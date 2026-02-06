@@ -84,3 +84,7 @@ Edit `js/translations.js` to change any text on the site in both PT-BR and EN.
 ## License
 
 © 2024 PensoIA. All rights reserved.
+
+---
+**Live Site:** https://pensoia.com
+**Last Updated:** 2026-02-05
