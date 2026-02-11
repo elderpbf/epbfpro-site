@@ -597,6 +597,16 @@ section[id] {
     background-color: var(--surface);
 }
 
+.services .section-title {
+    position: sticky;
+    top: 80px;
+    background-color: var(--surface);
+    z-index: 10;
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+    margin-bottom: 0;
+}
+
 .services-stack {
     max-width: 700px;
     margin: 4rem auto 0;
@@ -616,17 +626,17 @@ section[id] {
 }
 
 .service-card:nth-child(1) {
-    top: 100px;
+    top: 35vh;
     z-index: 1;
 }
 
 .service-card:nth-child(2) {
-    top: 120px;
+    top: 35vh;
     z-index: 2;
 }
 
 .service-card:nth-child(3) {
-    top: 140px;
+    top: 35vh;
     z-index: 3;
 }
 
@@ -1032,16 +1042,15 @@ section[id] {
         padding: 2rem 1.5rem;
     }
 
-    .service-card:nth-child(1) {
-        top: 80px;
+    .services .section-title {
+        top: 60px;
+        padding-bottom: 1.5rem;
     }
 
-    .service-card:nth-child(2) {
-        top: 90px;
-    }
-
+    .service-card:nth-child(1),
+    .service-card:nth-child(2),
     .service-card:nth-child(3) {
-        top: 100px;
+        top: 30vh;
     }
 
     .section-title {
