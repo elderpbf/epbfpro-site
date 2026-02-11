@@ -36,10 +36,20 @@
 
 body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
+    line-height: 1.7;
     color: var(--text-primary);
     background-color: var(--background);
     transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    opacity: 0;
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
 }
 
 /* Accessibility: Skip link */
@@ -231,9 +241,10 @@ section[id] {
 
 .hero-title {
     font-size: 2.5rem;
-    margin-bottom: 1rem;
-    line-height: 1.2;
+    margin-bottom: 1.25rem;
+    line-height: 1.15;
     font-weight: 700;
+    letter-spacing: -0.02em;
     background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 50%, var(--primary-dark) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -405,11 +416,12 @@ section[id] {
 .section-title {
     font-size: 2.5rem;
     color: var(--secondary);
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     text-align: center;
     position: relative;
-    padding-bottom: 1rem;
+    padding-bottom: 1.25rem;
     font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 .section-title::after {
@@ -493,8 +505,9 @@ section[id] {
 .about-text {
     font-size: 1.1rem;
     color: var(--text-secondary);
-    line-height: 1.8;
+    line-height: 1.9;
     text-align: justify;
+    letter-spacing: 0.01em;
 }
 
 /* Methodology */
@@ -565,6 +578,7 @@ section[id] {
     font-weight: 600;
     color: var(--secondary);
     margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
 }
 
 .step-desc {
@@ -652,6 +666,8 @@ section[id] {
     color: var(--secondary);
     margin-bottom: 1rem;
     font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
 }
 
 /* Certification Badge */
