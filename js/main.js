@@ -250,102 +250,6 @@ class CounterAnimation {
     }
 }
 
-// Horizontal Services Scroll
-class ServicesScroll {
-    constructor() {
-        this.scrollContainer = document.getElementById('servicesScroll');
-        this.leftBtn = document.getElementById('scrollLeft');
-        this.rightBtn = document.getElementById('scrollRight');
-        this.indicators = document.querySelectorAll('.indicator');
-
-        if (!this.scrollContainer) return;
-
-        this.init();
-    }
-
-    init() {
-        // Button controls
-        if (this.leftBtn) {
-            this.leftBtn.addEventListener('click', () => this.scroll('left'));
-        }
-        if (this.rightBtn) {
-            this.rightBtn.addEventListener('click', () => this.scroll('right'));
-        }
-
-        // Indicator controls
-        this.indicators.forEach((indicator, index) => {
-            indicator.addEventListener('click', () => this.scrollToIndex(index));
-        });
-
-        // Update indicators on scroll
-        this.scrollContainer.addEventListener('scroll', () => this.updateIndicators(), { passive: true });
-
-        // Keyboard navigation
-        this.scrollContainer.setAttribute('tabindex', '0');
-        this.scrollContainer.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                this.scroll('left');
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                this.scroll('right');
-            }
-        });
-
-        // Initial state
-        this.updateIndicators();
-        this.updateArrows();
-        window.addEventListener('resize', () => this.updateArrows());
-    }
-
-    scroll(direction) {
-        const cardWidth = this.scrollContainer.querySelector('.service-card').offsetWidth;
-        const gap = 32; // 2rem
-        const scrollAmount = cardWidth + gap;
-
-        if (direction === 'left') {
-            this.scrollContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-        } else {
-            this.scrollContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        }
-    }
-
-    scrollToIndex(index) {
-        const cardWidth = this.scrollContainer.querySelector('.service-card').offsetWidth;
-        const gap = 32;
-        const scrollPosition = index * (cardWidth + gap);
-        this.scrollContainer.scrollTo({ left: scrollPosition, behavior: 'smooth' });
-    }
-
-    updateIndicators() {
-        const scrollLeft = this.scrollContainer.scrollLeft;
-        const cardWidth = this.scrollContainer.querySelector('.service-card').offsetWidth;
-        const gap = 32;
-        const currentIndex = Math.round(scrollLeft / (cardWidth + gap));
-
-        this.indicators.forEach((indicator, index) => {
-            if (index === currentIndex) {
-                indicator.classList.add('active');
-                indicator.setAttribute('aria-selected', 'true');
-            } else {
-                indicator.classList.remove('active');
-                indicator.setAttribute('aria-selected', 'false');
-            }
-        });
-    }
-
-    updateArrows() {
-        const isScrollable = this.scrollContainer.scrollWidth > this.scrollContainer.clientWidth;
-
-        if (!isScrollable || window.innerWidth <= 768) {
-            if (this.leftBtn) this.leftBtn.classList.add('hidden');
-            if (this.rightBtn) this.rightBtn.classList.add('hidden');
-        } else {
-            if (this.leftBtn) this.leftBtn.classList.remove('hidden');
-            if (this.rightBtn) this.rightBtn.classList.remove('hidden');
-        }
-    }
-}
 
 // FAQ Accordion
 class FAQAccordion {
@@ -401,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.typewriterInstance = new TypewriterEffect();
     new ParallaxEffect();
     new CounterAnimation();
-    new ServicesScroll();
     new FAQAccordion();
 
     // Set current year

@@ -591,50 +591,49 @@ section[id] {
     line-height: 1.6;
 }
 
-/* Services Section - Horizontal Scroll */
+/* Services Section - Sticky Scroll Stack */
 .services {
-    padding: 5rem 0;
+    padding: 5rem 0 15rem;
     background-color: var(--surface);
 }
 
-.services-scroll-wrapper {
+.services-stack {
+    max-width: 700px;
+    margin: 4rem auto 0;
     position: relative;
-    margin-top: 3rem;
-}
-
-.services-scroll {
-    display: flex;
-    gap: 2rem;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    padding: 1rem 0 2rem;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    scroll-snap-type: x mandatory;
-}
-
-.services-scroll::-webkit-scrollbar {
-    display: none;
 }
 
 .service-card {
     background-color: var(--surface);
-    padding: 2.5rem 2rem;
-    border-radius: 15px;
-    box-shadow: 0 5px 20px var(--shadow);
+    padding: 3rem 2.5rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px var(--shadow);
+    border: 2px solid var(--primary-light);
+    margin-bottom: 2rem;
+    position: sticky;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 2px solid transparent;
-    text-align: center;
-    min-width: 320px;
-    flex-shrink: 0;
-    scroll-snap-align: center;
     transform-style: preserve-3d;
 }
 
+.service-card:nth-child(1) {
+    top: 100px;
+    z-index: 3;
+}
+
+.service-card:nth-child(2) {
+    top: 120px;
+    z-index: 2;
+}
+
+.service-card:nth-child(3) {
+    top: 140px;
+    z-index: 1;
+}
+
 .service-card:hover {
-    transform: translateY(-8px) rotateY(2deg) rotateX(-2deg);
-    box-shadow: 0 15px 40px rgba(20, 184, 166, 0.25);
-    border-color: var(--primary-light);
+    transform: scale(1.02);
+    box-shadow: 0 20px 60px rgba(20, 184, 166, 0.3);
+    border-color: var(--primary);
 }
 
 .service-icon {
@@ -691,77 +690,6 @@ section[id] {
     line-height: 1.6;
 }
 
-.scroll-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: var(--surface);
-    border: 2px solid var(--primary);
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 10;
-    box-shadow: 0 4px 12px var(--shadow);
-}
-
-.scroll-arrow:hover {
-    background-color: var(--primary);
-    color: white;
-    transform: translateY(-50%) scale(1.1);
-}
-
-.scroll-arrow.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.scroll-arrow svg {
-    width: 20px;
-    height: 20px;
-}
-
-.scroll-left {
-    left: -20px;
-}
-
-.scroll-right {
-    right: -20px;
-}
-
-.scroll-indicators {
-    display: flex;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-top: 2rem;
-}
-
-.indicator {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: var(--text-secondary);
-    opacity: 0.3;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    padding: 0;
-}
-
-.indicator.active {
-    background-color: var(--primary);
-    opacity: 1;
-    transform: scale(1.2);
-}
-
-.indicator:hover {
-    opacity: 0.7;
-}
 
 /* FAQ Section */
 .faq {
@@ -1095,17 +1023,25 @@ section[id] {
         display: none;
     }
 
-    .services-scroll {
-        padding-left: 1rem;
-        padding-right: 1rem;
+    .services-stack {
+        max-width: 100%;
+        padding: 0 1rem;
     }
 
     .service-card {
-        min-width: 280px;
+        padding: 2rem 1.5rem;
     }
 
-    .scroll-arrow {
-        display: none;
+    .service-card:nth-child(1) {
+        top: 80px;
+    }
+
+    .service-card:nth-child(2) {
+        top: 90px;
+    }
+
+    .service-card:nth-child(3) {
+        top: 100px;
     }
 
     .section-title {
@@ -1139,16 +1075,16 @@ section[id] {
         font-size: 1.5rem;
     }
 
-    .about, .services, .contact, .methodology, .faq {
+    .about, .contact, .methodology, .faq {
         padding: 3rem 0;
+    }
+
+    .services {
+        padding: 3rem 0 10rem;
     }
 
     .social-proof {
         padding: 2.5rem 0;
-    }
-
-    .service-card {
-        min-width: 260px;
     }
 
     .back-to-top {

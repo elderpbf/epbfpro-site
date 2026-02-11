@@ -186,56 +186,39 @@
             </div>
         </section>
 
-        <!-- Services Section - Horizontal Scroll -->
+        <!-- Services Section - Sticky Scroll Stack -->
         <section class="services" id="services" aria-labelledby="services-title">
             <div class="container">
                 <h2 id="services-title" class="section-title" data-key="servicesTitle">Serviços</h2>
-                <div class="services-scroll-wrapper">
-                    <button class="scroll-arrow scroll-left" id="scrollLeft" aria-label="Rolar serviços para esquerda" tabindex="-1">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M15 18l-6-6 6-6"/>
-                        </svg>
-                    </button>
-                    <div class="services-scroll" id="servicesScroll" role="list">
-                        <article class="service-card" role="listitem">
-                            <div class="service-icon">
-                                <img src="images/icons/course.png" alt="" class="icon-img" loading="lazy" role="presentation">
-                            </div>
-                            <h3 class="service-title" data-key="service1Title">Cursos de Engenharia de Prompts</h3>
-                            <span class="service-badge" data-key="serviceBadge">✓ Certificação Inclusa</span>
-                            <p class="service-description" data-key="service1Desc">
-                                Treinamentos especializados para magistrados, assessores e profissionais do direito que desejam dominar técnicas avançadas de prompt engineering.
-                            </p>
-                        </article>
-                        <article class="service-card" role="listitem">
-                            <div class="service-icon">
-                                <img src="images/icons/llm.png" alt="" class="icon-img" loading="lazy" role="presentation">
-                            </div>
-                            <h3 class="service-title" data-key="service2Title">Consultoria em IA Generativa</h3>
-                            <p class="service-description" data-key="service2Desc">
-                                Implementação de soluções personalizadas em IA para escritórios de advocacia e instituições jurídicas, focadas em automação inteligente de processos.
-                            </p>
-                        </article>
-                        <article class="service-card" role="listitem">
-                            <div class="service-icon">
-                                <img src="images/icons/optimization.png" alt="" class="icon-img" loading="lazy" role="presentation">
-                            </div>
-                            <h3 class="service-title" data-key="service3Title">Otimização de Workflows</h3>
-                            <p class="service-description" data-key="service3Desc">
-                                Análise e otimização de fluxos de trabalho através de LLMs, aumentando eficiência e precisão em tarefas intelectuais complexas.
-                            </p>
-                        </article>
-                    </div>
-                    <button class="scroll-arrow scroll-right" id="scrollRight" aria-label="Rolar serviços para direita" tabindex="-1">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M9 18l6-6-6-6"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="scroll-indicators" role="tablist" aria-label="Indicadores de serviços">
-                    <button class="indicator active" data-index="0" aria-label="Serviço 1" role="tab" aria-selected="true"></button>
-                    <button class="indicator" data-index="1" aria-label="Serviço 2" role="tab" aria-selected="false"></button>
-                    <button class="indicator" data-index="2" aria-label="Serviço 3" role="tab" aria-selected="false"></button>
+                <div class="services-stack">
+                    <article class="service-card">
+                        <div class="service-icon">
+                            <img src="images/icons/course.png" alt="" class="icon-img" loading="lazy" role="presentation">
+                        </div>
+                        <h3 class="service-title" data-key="service1Title">Cursos de Engenharia de Prompts</h3>
+                        <span class="service-badge" data-key="serviceBadge">✓ Certificação Inclusa</span>
+                        <p class="service-description" data-key="service1Desc">
+                            Treinamentos especializados para magistrados, assessores e profissionais do direito que desejam dominar técnicas avançadas de prompt engineering.
+                        </p>
+                    </article>
+                    <article class="service-card">
+                        <div class="service-icon">
+                            <img src="images/icons/llm.png" alt="" class="icon-img" loading="lazy" role="presentation">
+                        </div>
+                        <h3 class="service-title" data-key="service2Title">Consultoria em IA Generativa</h3>
+                        <p class="service-description" data-key="service2Desc">
+                            Implementação de soluções personalizadas em IA para escritórios de advocacia e instituições jurídicas, focadas em automação inteligente de processos.
+                        </p>
+                    </article>
+                    <article class="service-card">
+                        <div class="service-icon">
+                            <img src="images/icons/optimization.png" alt="" class="icon-img" loading="lazy" role="presentation">
+                        </div>
+                        <h3 class="service-title" data-key="service3Title">Otimização de Workflows</h3>
+                        <p class="service-description" data-key="service3Desc">
+                            Análise e otimização de fluxos de trabalho através de LLMs, aumentando eficiência e precisão em tarefas intelectuais complexas.
+                        </p>
+                    </article>
                 </div>
             </div>
         </section>
