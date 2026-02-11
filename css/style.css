@@ -601,7 +601,7 @@ section[id] {
     position: sticky;
     top: 120px;
     background-color: var(--surface);
-    z-index: 10;
+    z-index: 0;
     padding-top: 1rem;
     padding-bottom: 2rem;
     margin-bottom: 0;
