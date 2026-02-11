@@ -1,16 +1,18 @@
-// Theme Manager with circular wipe transition (12)
+// Theme Manager with circular wipe transition
 class ThemeManager {
     constructor() {
         this.currentTheme = localStorage.getItem('theme') || 'light';
         this.overlay = document.getElementById('themeTransition');
+        this.toggleBtn = document.getElementById('themeToggle');
         this.init();
     }
 
     init() {
         this.setTheme(this.currentTheme, false);
-        const toggleBtn = document.getElementById('themeToggle');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', (e) => this.toggleTheme(e));
+        if (this.toggleBtn) {
+            // Update aria-pressed attribute
+            this.toggleBtn.setAttribute('aria-pressed', this.currentTheme === 'dark');
+            this.toggleBtn.addEventListener('click', (e) => this.toggleTheme(e));
         }
     }
 
@@ -22,19 +24,14 @@ class ThemeManager {
             const x = rect.left + rect.width / 2;
             const y = rect.top + rect.height / 2;
 
-            // Set origin point
             this.overlay.style.setProperty('--tx', x + 'px');
             this.overlay.style.setProperty('--ty', y + 'px');
 
-            // Pre-set the overlay to the NEW theme's background
             document.documentElement.setAttribute('data-theme', nextTheme);
             const newBg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
             this.overlay.style.backgroundColor = newBg;
 
-            // Revert to current theme, then animate
             document.documentElement.setAttribute('data-theme', this.currentTheme);
-
-            // Force reflow
             this.overlay.offsetHeight;
             this.overlay.classList.add('active');
 
@@ -42,6 +39,7 @@ class ThemeManager {
                 this.currentTheme = nextTheme;
                 this.setTheme(this.currentTheme, false);
                 localStorage.setItem('theme', this.currentTheme);
+                this.toggleBtn.setAttribute('aria-pressed', this.currentTheme === 'dark');
 
                 setTimeout(() => {
                     this.overlay.classList.remove('active');
@@ -51,19 +49,22 @@ class ThemeManager {
             this.currentTheme = nextTheme;
             this.setTheme(this.currentTheme, false);
             localStorage.setItem('theme', this.currentTheme);
+            if (this.toggleBtn) {
+                this.toggleBtn.setAttribute('aria-pressed', this.currentTheme === 'dark');
+            }
         }
     }
 
-    setTheme(theme, animate = true) {
+    setTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         const themeIcon = document.getElementById('themeIcon');
         if (themeIcon) {
             if (theme === 'dark') {
                 themeIcon.src = 'images/icons/sun.png';
-                themeIcon.alt = 'Light mode';
+                themeIcon.alt = '';
             } else {
                 themeIcon.src = 'images/icons/moon.png';
-                themeIcon.alt = 'Dark mode';
+                themeIcon.alt = '';
             }
         }
     }
@@ -89,7 +90,6 @@ class LanguageManager {
         this.currentLang = this.currentLang === 'pt-BR' ? 'en' : 'pt-BR';
         this.setLanguage(this.currentLang);
         localStorage.setItem('language', this.currentLang);
-        // Restart typewriter with new language
         if (window.typewriterInstance) {
             window.typewriterInstance.updateLanguage(this.currentLang);
         }
@@ -113,7 +113,7 @@ class LanguageManager {
     }
 }
 
-// 7. Typewriter Effect
+// Typewriter Effect
 class TypewriterEffect {
     constructor() {
         this.element = document.getElementById('typewriter');
@@ -138,7 +138,6 @@ class TypewriterEffect {
         this.phraseIndex = 0;
         this.charIndex = 0;
         this.isDeleting = false;
-        this.isPaused = false;
 
         this.typeSpeed = 60;
         this.deleteSpeed = 35;
@@ -186,7 +185,7 @@ class TypewriterEffect {
     }
 }
 
-// 11. Parallax effect on hero image
+// Parallax effect on hero image
 class ParallaxEffect {
     constructor() {
         this.heroImage = document.getElementById('heroImage');
@@ -236,7 +235,6 @@ class CounterAnimation {
             const animate = (now) => {
                 const elapsed = now - start;
                 const progress = Math.min(elapsed / duration, 1);
-                // Ease out cubic
                 const eased = 1 - Math.pow(1 - progress, 3);
                 counter.textContent = Math.floor(eased * target);
 
@@ -249,6 +247,136 @@ class CounterAnimation {
 
             requestAnimationFrame(animate);
         });
+    }
+}
+
+// Horizontal Services Scroll
+class ServicesScroll {
+    constructor() {
+        this.scrollContainer = document.getElementById('servicesScroll');
+        this.leftBtn = document.getElementById('scrollLeft');
+        this.rightBtn = document.getElementById('scrollRight');
+        this.indicators = document.querySelectorAll('.indicator');
+
+        if (!this.scrollContainer) return;
+
+        this.init();
+    }
+
+    init() {
+        // Button controls
+        if (this.leftBtn) {
+            this.leftBtn.addEventListener('click', () => this.scroll('left'));
+        }
+        if (this.rightBtn) {
+            this.rightBtn.addEventListener('click', () => this.scroll('right'));
+        }
+
+        // Indicator controls
+        this.indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => this.scrollToIndex(index));
+        });
+
+        // Update indicators on scroll
+        this.scrollContainer.addEventListener('scroll', () => this.updateIndicators(), { passive: true });
+
+        // Keyboard navigation
+        this.scrollContainer.setAttribute('tabindex', '0');
+        this.scrollContainer.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.scroll('left');
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.scroll('right');
+            }
+        });
+
+        // Initial state
+        this.updateIndicators();
+        this.updateArrows();
+        window.addEventListener('resize', () => this.updateArrows());
+    }
+
+    scroll(direction) {
+        const cardWidth = this.scrollContainer.querySelector('.service-card').offsetWidth;
+        const gap = 32; // 2rem
+        const scrollAmount = cardWidth + gap;
+
+        if (direction === 'left') {
+            this.scrollContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+            this.scrollContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    }
+
+    scrollToIndex(index) {
+        const cardWidth = this.scrollContainer.querySelector('.service-card').offsetWidth;
+        const gap = 32;
+        const scrollPosition = index * (cardWidth + gap);
+        this.scrollContainer.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+    }
+
+    updateIndicators() {
+        const scrollLeft = this.scrollContainer.scrollLeft;
+        const cardWidth = this.scrollContainer.querySelector('.service-card').offsetWidth;
+        const gap = 32;
+        const currentIndex = Math.round(scrollLeft / (cardWidth + gap));
+
+        this.indicators.forEach((indicator, index) => {
+            if (index === currentIndex) {
+                indicator.classList.add('active');
+                indicator.setAttribute('aria-selected', 'true');
+            } else {
+                indicator.classList.remove('active');
+                indicator.setAttribute('aria-selected', 'false');
+            }
+        });
+    }
+
+    updateArrows() {
+        const isScrollable = this.scrollContainer.scrollWidth > this.scrollContainer.clientWidth;
+
+        if (!isScrollable || window.innerWidth <= 768) {
+            if (this.leftBtn) this.leftBtn.classList.add('hidden');
+            if (this.rightBtn) this.rightBtn.classList.add('hidden');
+        } else {
+            if (this.leftBtn) this.leftBtn.classList.remove('hidden');
+            if (this.rightBtn) this.rightBtn.classList.remove('hidden');
+        }
+    }
+}
+
+// FAQ Accordion
+class FAQAccordion {
+    constructor() {
+        this.faqItems = document.querySelectorAll('.faq-item');
+        if (!this.faqItems.length) return;
+
+        this.init();
+    }
+
+    init() {
+        this.faqItems.forEach(item => {
+            const question = item.querySelector('.faq-question');
+            question.addEventListener('click', () => this.toggle(item));
+        });
+    }
+
+    toggle(item) {
+        const question = item.querySelector('.faq-question');
+        const isExpanded = question.getAttribute('aria-expanded') === 'true';
+
+        // Close all others
+        this.faqItems.forEach(otherItem => {
+            if (otherItem !== item) {
+                const otherQuestion = otherItem.querySelector('.faq-question');
+                otherQuestion.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Toggle current
+        question.setAttribute('aria-expanded', !isExpanded);
     }
 }
 
@@ -273,6 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.typewriterInstance = new TypewriterEffect();
     new ParallaxEffect();
     new CounterAnimation();
+    new ServicesScroll();
+    new FAQAccordion();
 
     // Set current year
     const yearElement = document.getElementById('currentYear');
@@ -295,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Section fade-in + title underline animation + staggered cards
+    // Section fade-in + title underline animation
     const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -312,12 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     title.classList.add('animate-in');
                 }
 
-                // 9. Staggered card animations
-                const cards = entry.target.querySelectorAll('.service-card');
-                cards.forEach(card => {
-                    card.classList.add('animate-in');
-                });
-
                 // Stagger methodology steps
                 const steps = entry.target.querySelectorAll('.method-step');
                 steps.forEach((step, i) => {
@@ -329,11 +453,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         step.style.transform = 'translateY(0)';
                     });
                 });
+
+                // FAQ items stagger
+                const faqItems = entry.target.querySelectorAll('.faq-item');
+                faqItems.forEach((item, i) => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateY(20px)';
+                    item.style.transition = `opacity 0.5s ease ${i * 0.1}s, transform 0.5s ease ${i * 0.1}s`;
+                    requestAnimationFrame(() => {
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateY(0)';
+                    });
+                });
             }
         });
     }, observerOptions);
 
-    const sections = document.querySelectorAll('.about, .services, .contact, .methodology');
+    const sections = document.querySelectorAll('.about, .services, .contact, .methodology, .faq');
     sections.forEach(section => {
         section.style.opacity = '0';
         section.style.transform = 'translateY(20px)';

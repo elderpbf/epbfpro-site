@@ -32,12 +32,26 @@ const translations = {
 
         // Services Section
         servicesTitle: 'Serviços',
+        serviceBadge: '✓ Certificação Inclusa',
         service1Title: 'Cursos de Engenharia de Prompts',
         service1Desc: 'Treinamentos especializados para magistrados, assessores e profissionais do direito que desejam dominar técnicas avançadas de prompt engineering.',
         service2Title: 'Consultoria em IA Generativa',
         service2Desc: 'Implementação de soluções personalizadas em IA para escritórios de advocacia e instituições jurídicas, focadas em automação inteligente de processos.',
         service3Title: 'Otimização de Workflows',
         service3Desc: 'Análise e otimização de fluxos de trabalho através de LLMs, aumentando eficiência e precisão em tarefas intelectuais complexas.',
+
+        // FAQ Section
+        faqTitle: 'Perguntas Frequentes',
+        faq1Q: 'Preciso ter conhecimento técnico em programação?',
+        faq1A: 'Não. Os cursos são projetados para profissionais do Direito sem necessidade de conhecimento prévio em programação. Focamos em ensinar como usar e otimizar ferramentas de IA de forma prática.',
+        faq2Q: 'Qual a duração dos treinamentos?',
+        faq2A: 'A duração varia conforme o formato. Temos workshops de 4 horas, cursos intensivos de 2 dias e programas completos de 20+ horas. Todos podem ser adaptados às necessidades da instituição.',
+        faq3Q: 'Quais ferramentas de IA são ensinadas?',
+        faq3A: 'Trabalhamos com os principais LLMs do mercado (ChatGPT, Claude, Gemini) e ensinamos técnicas de prompt engineering aplicáveis a qualquer modelo. O foco é em princípios universais, não apenas ferramentas específicas.',
+        faq4Q: 'Os cursos oferecem certificação?',
+        faq4A: 'Sim. Todos os participantes que concluírem o treinamento recebem certificado digital com carga horária e conteúdo programático detalhado.',
+        faq5Q: 'Como funciona a consultoria personalizada?',
+        faq5A: 'Iniciamos com um diagnóstico gratuito para entender suas necessidades específicas. Depois, desenvolvemos uma solução personalizada que pode incluir treinamento, configuração de ferramentas e acompanhamento contínuo.',
 
         // Contact Section
         contactTitle: 'Contato',
@@ -79,12 +93,26 @@ const translations = {
 
         // Services Section
         servicesTitle: 'Services',
+        serviceBadge: '✓ Certification Included',
         service1Title: 'Prompt Engineering Courses',
         service1Desc: 'Specialized training for magistrates, advisors, and legal professionals who want to master advanced prompt engineering techniques.',
         service2Title: 'Generative AI Consulting',
         service2Desc: 'Implementation of customized AI solutions for law firms and legal institutions, focused on intelligent process automation.',
         service3Title: 'Workflow Optimization',
         service3Desc: 'Analysis and optimization of workflows through LLMs, increasing efficiency and precision in complex intellectual tasks.',
+
+        // FAQ Section
+        faqTitle: 'Frequently Asked Questions',
+        faq1Q: 'Do I need technical programming knowledge?',
+        faq1A: 'No. The courses are designed for legal professionals with no prior programming knowledge required. We focus on teaching how to use and optimize AI tools in a practical way.',
+        faq2Q: 'How long are the training programs?',
+        faq2A: 'Duration varies by format. We offer 4-hour workshops, 2-day intensive courses, and comprehensive 20+ hour programs. All can be adapted to institutional needs.',
+        faq3Q: 'Which AI tools are taught?',
+        faq3A: 'We work with leading market LLMs (ChatGPT, Claude, Gemini) and teach prompt engineering techniques applicable to any model. The focus is on universal principles, not just specific tools.',
+        faq4Q: 'Do courses offer certification?',
+        faq4A: 'Yes. All participants who complete the training receive a digital certificate with hours and detailed syllabus.',
+        faq5Q: 'How does personalized consulting work?',
+        faq5A: 'We start with a free diagnostic to understand your specific needs. Then we develop a customized solution that can include training, tool configuration, and ongoing support.',
 
         // Contact Section
         contactTitle: 'Contact',
