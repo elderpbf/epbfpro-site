@@ -599,7 +599,7 @@ section[id] {
 
 .services .section-title {
     position: sticky;
-    top: 80px;
+    top: 120px;
     background-color: var(--surface);
     z-index: 10;
     padding-top: 1rem;
@@ -1043,7 +1043,7 @@ section[id] {
     }
 
     .services .section-title {
-        top: 60px;
+        top: 100px;
         padding-bottom: 1.5rem;
     }
 
