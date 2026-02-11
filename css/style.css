@@ -266,22 +266,38 @@ section[id] {
 
 .btn-primary {
     display: inline-block;
-    background-color: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white;
     padding: 1rem 2rem;
     border-radius: 30px;
     text-decoration: none;
     font-family: 'Inter', sans-serif;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 4px 15px var(--shadow);
     position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(20, 184, 166, 0.4);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 30px rgba(20, 184, 166, 0.5);
 }
 
 .btn-primary::after {
@@ -432,6 +448,12 @@ section[id] {
     display: flex;
     gap: 1rem;
     align-items: flex-start;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.highlight-item:hover {
+    transform: translateX(5px);
 }
 
 .highlight-marker {
@@ -440,6 +462,13 @@ section[id] {
     background: linear-gradient(180deg, var(--primary), var(--primary-light));
     border-radius: 2px;
     flex-shrink: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 0 rgba(20, 184, 166, 0);
+}
+
+.highlight-item:hover .highlight-marker {
+    width: 6px;
+    box-shadow: 0 0 12px rgba(20, 184, 166, 0.6);
 }
 
 .highlight-label {
@@ -488,6 +517,12 @@ section[id] {
     text-align: center;
     position: relative;
     padding: 2rem 1.5rem;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.method-step:hover {
+    transform: translateY(-5px);
 }
 
 .step-number {
@@ -503,6 +538,12 @@ section[id] {
     justify-content: center;
     margin: 0 auto 1.25rem;
     box-shadow: 0 4px 15px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.method-step:hover .step-number {
+    transform: scale(1.15);
+    box-shadow: 0 6px 25px rgba(20, 184, 166, 0.4);
 }
 
 .step-connector {
@@ -563,17 +604,18 @@ section[id] {
     padding: 2.5rem 2rem;
     border-radius: 15px;
     box-shadow: 0 5px 20px var(--shadow);
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     border: 2px solid transparent;
     text-align: center;
     min-width: 320px;
     flex-shrink: 0;
     scroll-snap-align: center;
+    transform-style: preserve-3d;
 }
 
 .service-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(20, 184, 166, 0.2);
+    transform: translateY(-8px) rotateY(2deg) rotateX(-2deg);
+    box-shadow: 0 15px 40px rgba(20, 184, 166, 0.25);
     border-color: var(--primary-light);
 }
 
@@ -739,22 +781,46 @@ section[id] {
     color: var(--text-primary);
     text-align: left;
     transition: all 0.3s ease;
+    position: relative;
+}
+
+.faq-question::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.faq-question:hover::before,
+.faq-question[aria-expanded="true"]::before {
+    transform: scaleY(1);
 }
 
 .faq-question:hover {
     color: var(--primary);
+    padding-left: 2rem;
+}
+
+.faq-question[aria-expanded="true"] {
+    color: var(--primary);
+    padding-left: 2rem;
 }
 
 .faq-icon {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
-    transition: transform 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     color: var(--primary);
 }
 
 .faq-question[aria-expanded="true"] .faq-icon {
-    transform: rotate(180deg);
+    transform: rotate(180deg) scale(1.1);
 }
 
 .faq-answer {
@@ -803,20 +869,50 @@ section[id] {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background-color: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white;
     padding: 1rem 2rem;
     border-radius: 30px;
     text-decoration: none;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 4px 15px var(--shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+.contact-link::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.contact-link:hover::before {
+    width: 300px;
+    height: 300px;
 }
 
 .contact-link:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.3);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(20, 184, 166, 0.4);
+}
+
+.contact-icon {
+    transition: transform 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.contact-link:hover .contact-icon {
+    transform: rotate(-10deg) scale(1.1);
 }
 
 .contact-icon {
