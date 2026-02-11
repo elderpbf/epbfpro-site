@@ -35,15 +35,18 @@
     --shadow: rgba(0, 0, 0, 0.3);
 }
 
+/* A. Typography - Inter font */
 body {
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: var(--text-primary);
     background-color: var(--background);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* B. Smooth scroll offset for sticky header */
+section[id] {
+    scroll-margin-top: 80px;
 }
 
 .container {
@@ -138,6 +141,7 @@ body {
     padding: 0.5rem 1rem;
     border-radius: 25px;
     cursor: pointer;
+    font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
     font-weight: 600;
     transition: all 0.3s ease;
@@ -154,6 +158,22 @@ body {
 .hero {
     background: linear-gradient(135deg, var(--background) 0%, var(--accent) 100%);
     padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* C. Subtle dot pattern overlay */
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(var(--primary) 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+    opacity: 0.07;
+    pointer-events: none;
 }
 
 .hero-content {
@@ -161,13 +181,20 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 3rem;
     align-items: center;
+    position: relative;
+    z-index: 1;
 }
 
+/* F. Gradient text on hero title */
 .hero-title {
     font-size: 2.5rem;
-    color: var(--secondary);
     margin-bottom: 1rem;
     line-height: 1.2;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 50%, var(--primary-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .hero-subtitle {
@@ -176,6 +203,7 @@ body {
     margin-bottom: 2rem;
 }
 
+/* I. CTA button with glow pulse */
 .btn-primary {
     display: inline-block;
     background-color: var(--primary);
@@ -183,15 +211,35 @@ body {
     padding: 1rem 2rem;
     border-radius: 30px;
     text-decoration: none;
+    font-family: 'Inter', sans-serif;
     font-weight: 600;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px var(--shadow);
+    position: relative;
 }
 
 .btn-primary:hover {
     background-color: var(--primary-dark);
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.3);
+    box-shadow: 0 6px 25px rgba(20, 184, 166, 0.4);
+}
+
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 30px;
+    box-shadow: 0 0 20px rgba(20, 184, 166, 0.4);
+    opacity: 0;
+    animation: btnPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes btnPulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
 }
 
 .hero-image {
@@ -199,16 +247,22 @@ body {
     justify-content: center;
 }
 
+/* J. Profile image gradient border ring */
 .hero-image img {
     width: 100%;
     max-width: 400px;
     border-radius: 20px;
     box-shadow: 0 10px 40px rgba(20, 184, 166, 0.2);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 3px solid transparent;
+    background-image: linear-gradient(var(--surface), var(--surface)), linear-gradient(135deg, var(--primary), var(--primary-light), var(--primary-dark));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
 }
 
 .hero-image img:hover {
-    transform: scale(1.05);
+    transform: scale(1.03);
+    box-shadow: 0 15px 50px rgba(20, 184, 166, 0.3);
 }
 
 /* About Section */
@@ -217,6 +271,7 @@ body {
     background-color: var(--surface);
 }
 
+/* D. Animated section underline */
 .section-title {
     font-size: 2.5rem;
     color: var(--secondary);
@@ -224,6 +279,7 @@ body {
     text-align: center;
     position: relative;
     padding-bottom: 1rem;
+    font-weight: 700;
 }
 
 .section-title::after {
@@ -231,11 +287,16 @@ body {
     position: absolute;
     bottom: 0;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scaleX(0);
     width: 80px;
     height: 4px;
     background: linear-gradient(90deg, var(--primary), var(--primary-light));
     border-radius: 2px;
+    transition: transform 0.6s ease;
+}
+
+.section-title.animate-in::after {
+    transform: translateX(-50%) scaleX(1);
 }
 
 .about-content {
@@ -271,6 +332,7 @@ body {
     box-shadow: 0 5px 20px var(--shadow);
     transition: all 0.3s ease;
     border: 2px solid transparent;
+    text-align: center;
 }
 
 .service-card:hover {
@@ -279,33 +341,42 @@ body {
     border-color: var(--primary-light);
 }
 
+/* E. Icon background circle */
 .service-icon {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .service-icon .icon-img {
-    width: 64px;
-    height: 64px;
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), rgba(20, 184, 166, 0.1));
     transition: all 0.3s ease;
     filter: brightness(0) saturate(100%) invert(29%) sepia(51%) saturate(1392%) hue-rotate(129deg) brightness(94%) contrast(98%);
 }
 
 [data-theme="dark"] .service-icon .icon-img {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(94, 234, 212, 0.05));
     filter: brightness(0) saturate(100%) invert(88%) sepia(19%) saturate(1011%) hue-rotate(113deg) brightness(99%) contrast(96%);
 }
 
 .service-card:hover .icon-img {
     transform: scale(1.1);
     filter: brightness(0) saturate(100%) invert(44%) sepia(78%) saturate(1157%) hue-rotate(146deg) brightness(91%) contrast(93%);
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(94, 234, 212, 0.15));
 }
 
 .service-title {
     font-size: 1.5rem;
     color: var(--secondary);
     margin-bottom: 1rem;
+    font-weight: 600;
 }
 
 .service-description {
@@ -363,16 +434,93 @@ body {
     filter: brightness(0) invert(1);
 }
 
-/* Footer */
+/* G. Footer Enhancement */
 .footer {
-    background-color: var(--secondary);
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--primary-dark) 100%);
     color: white;
-    padding: 2rem 0;
+    padding: 2.5rem 0 1.5rem;
     text-align: center;
+    border-top: 3px solid var(--primary-light);
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.footer-social {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.footer-social a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.footer-social a:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-3px);
+}
+
+.footer-social img {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
 }
 
 .footer-text {
     font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+/* H. Back-to-Top Button */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px var(--shadow);
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    z-index: 99;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
+}
+
+.back-to-top svg {
+    width: 20px;
+    height: 20px;
 }
 
 /* Responsive Design */
@@ -405,6 +553,11 @@ body {
     .about-text {
         text-align: left;
     }
+
+    .footer-social a {
+        width: 36px;
+        height: 36px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -426,5 +579,10 @@ body {
 
     .about, .services, .contact {
         padding: 3rem 0;
+    }
+
+    .back-to-top {
+        bottom: 1rem;
+        right: 1rem;
     }
 }

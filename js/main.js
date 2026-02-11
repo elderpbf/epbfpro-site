@@ -6,10 +6,7 @@ class ThemeManager {
     }
 
     init() {
-        // Set initial theme
         this.setTheme(this.currentTheme);
-
-        // Add event listener to toggle button
         const toggleBtn = document.getElementById('themeToggle');
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => this.toggleTheme());
@@ -23,10 +20,7 @@ class ThemeManager {
     }
 
     setTheme(theme) {
-        // Update data-theme attribute on document
         document.documentElement.setAttribute('data-theme', theme);
-
-        // Update theme icon
         const themeIcon = document.getElementById('themeIcon');
         if (themeIcon) {
             if (theme === 'dark') {
@@ -48,16 +42,11 @@ class LanguageManager {
     }
 
     init() {
-        // Set initial language
         this.setLanguage(this.currentLang);
-
-        // Add event listener to toggle button
         const toggleBtn = document.getElementById('langToggle');
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => this.toggleLanguage());
         }
-
-        // Update HTML lang attribute
         document.documentElement.lang = this.currentLang;
     }
 
@@ -68,7 +57,6 @@ class LanguageManager {
     }
 
     setLanguage(lang) {
-        // Update all elements with data-key attribute
         const elements = document.querySelectorAll('[data-key]');
         elements.forEach(element => {
             const key = element.getAttribute('data-key');
@@ -77,13 +65,11 @@ class LanguageManager {
             }
         });
 
-        // Update toggle button text
         const langText = document.getElementById('langText');
         if (langText) {
             langText.textContent = lang === 'pt-BR' ? 'EN' : 'PT';
         }
 
-        // Update HTML lang attribute
         document.documentElement.lang = lang;
     }
 }
@@ -112,25 +98,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (yearElement) {
         yearElement.textContent = new Date().getFullYear();
     }
-});
 
-// Add scroll animation for sections
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
+    // H. Back-to-top button
+    const backToTop = document.getElementById('backToTop');
+    if (backToTop) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 400) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+        });
+        backToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
 
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
-    });
-}, observerOptions);
+    // D. Animated section title underlines + section fade-in
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
 
-// Observe all sections
-document.addEventListener('DOMContentLoaded', () => {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+                // Animate section title underline
+                const title = entry.target.querySelector('.section-title');
+                if (title) {
+                    title.classList.add('animate-in');
+                }
+            }
+        });
+    }, observerOptions);
+
     const sections = document.querySelectorAll('.about, .services, .contact');
     sections.forEach(section => {
         section.style.opacity = '0';
