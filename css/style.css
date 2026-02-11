@@ -658,9 +658,9 @@ section[id] {
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0d9488, #047857);
+    background: linear-gradient(135deg, #0d9488, #047857) !important;
     transition: all 0.3s ease;
-    filter: brightness(0) invert(1);
+    filter: brightness(0) invert(1) !important;
     box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
 }
 
