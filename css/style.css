@@ -658,9 +658,9 @@ section[id] {
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(240, 253, 250, 0.5));
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     transition: all 0.3s ease;
-    filter: brightness(0) saturate(100%) invert(17%) sepia(89%) saturate(1651%) hue-rotate(142deg) brightness(91%) contrast(101%);
+    filter: brightness(0) invert(1);
 }
 
 [data-theme="dark"] .service-icon .icon-img {
