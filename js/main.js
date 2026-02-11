@@ -1,25 +1,60 @@
-// Theme Manager - MVC Controller for dark/light mode
+// Theme Manager with circular wipe transition (12)
 class ThemeManager {
     constructor() {
         this.currentTheme = localStorage.getItem('theme') || 'light';
+        this.overlay = document.getElementById('themeTransition');
         this.init();
     }
 
     init() {
-        this.setTheme(this.currentTheme);
+        this.setTheme(this.currentTheme, false);
         const toggleBtn = document.getElementById('themeToggle');
         if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => this.toggleTheme());
+            toggleBtn.addEventListener('click', (e) => this.toggleTheme(e));
         }
     }
 
-    toggleTheme() {
-        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-        this.setTheme(this.currentTheme);
-        localStorage.setItem('theme', this.currentTheme);
+    toggleTheme(e) {
+        const nextTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+
+        if (this.overlay && e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+
+            // Set origin point
+            this.overlay.style.setProperty('--tx', x + 'px');
+            this.overlay.style.setProperty('--ty', y + 'px');
+
+            // Pre-set the overlay to the NEW theme's background
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            const newBg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
+            this.overlay.style.backgroundColor = newBg;
+
+            // Revert to current theme, then animate
+            document.documentElement.setAttribute('data-theme', this.currentTheme);
+
+            // Force reflow
+            this.overlay.offsetHeight;
+            this.overlay.classList.add('active');
+
+            setTimeout(() => {
+                this.currentTheme = nextTheme;
+                this.setTheme(this.currentTheme, false);
+                localStorage.setItem('theme', this.currentTheme);
+
+                setTimeout(() => {
+                    this.overlay.classList.remove('active');
+                }, 100);
+            }, 500);
+        } else {
+            this.currentTheme = nextTheme;
+            this.setTheme(this.currentTheme, false);
+            localStorage.setItem('theme', this.currentTheme);
+        }
     }
 
-    setTheme(theme) {
+    setTheme(theme, animate = true) {
         document.documentElement.setAttribute('data-theme', theme);
         const themeIcon = document.getElementById('themeIcon');
         if (themeIcon) {
@@ -34,7 +69,7 @@ class ThemeManager {
     }
 }
 
-// Language Manager - MVC Controller for translations
+// Language Manager
 class LanguageManager {
     constructor() {
         this.currentLang = localStorage.getItem('language') || 'pt-BR';
@@ -54,6 +89,10 @@ class LanguageManager {
         this.currentLang = this.currentLang === 'pt-BR' ? 'en' : 'pt-BR';
         this.setLanguage(this.currentLang);
         localStorage.setItem('language', this.currentLang);
+        // Restart typewriter with new language
+        if (window.typewriterInstance) {
+            window.typewriterInstance.updateLanguage(this.currentLang);
+        }
     }
 
     setLanguage(lang) {
@@ -74,6 +113,145 @@ class LanguageManager {
     }
 }
 
+// 7. Typewriter Effect
+class TypewriterEffect {
+    constructor() {
+        this.element = document.getElementById('typewriter');
+        if (!this.element) return;
+
+        this.phrases = {
+            'pt-BR': [
+                'para magistrados',
+                'para escritórios de advocacia',
+                'para o setor público',
+                'para profissionais do Direito'
+            ],
+            'en': [
+                'for magistrates',
+                'for law firms',
+                'for the public sector',
+                'for legal professionals'
+            ]
+        };
+
+        this.currentLang = localStorage.getItem('language') || 'pt-BR';
+        this.phraseIndex = 0;
+        this.charIndex = 0;
+        this.isDeleting = false;
+        this.isPaused = false;
+
+        this.typeSpeed = 60;
+        this.deleteSpeed = 35;
+        this.pauseTime = 2000;
+
+        this.tick();
+    }
+
+    updateLanguage(lang) {
+        this.currentLang = lang;
+        this.phraseIndex = 0;
+        this.charIndex = 0;
+        this.isDeleting = true;
+        this.element.textContent = '';
+    }
+
+    tick() {
+        const phrases = this.phrases[this.currentLang] || this.phrases['pt-BR'];
+        const currentPhrase = phrases[this.phraseIndex];
+
+        if (this.isDeleting) {
+            this.charIndex--;
+            this.element.textContent = currentPhrase.substring(0, this.charIndex);
+
+            if (this.charIndex === 0) {
+                this.isDeleting = false;
+                this.phraseIndex = (this.phraseIndex + 1) % phrases.length;
+                setTimeout(() => this.tick(), 300);
+                return;
+            }
+
+            setTimeout(() => this.tick(), this.deleteSpeed);
+        } else {
+            this.charIndex++;
+            this.element.textContent = currentPhrase.substring(0, this.charIndex);
+
+            if (this.charIndex === currentPhrase.length) {
+                this.isDeleting = true;
+                setTimeout(() => this.tick(), this.pauseTime);
+                return;
+            }
+
+            setTimeout(() => this.tick(), this.typeSpeed);
+        }
+    }
+}
+
+// 11. Parallax effect on hero image
+class ParallaxEffect {
+    constructor() {
+        this.heroImage = document.getElementById('heroImage');
+        if (!this.heroImage) return;
+
+        this.handleScroll = this.handleScroll.bind(this);
+        window.addEventListener('scroll', this.handleScroll, { passive: true });
+    }
+
+    handleScroll() {
+        const scrollY = window.scrollY;
+        const heroHeight = this.heroImage.closest('.hero').offsetHeight;
+
+        if (scrollY < heroHeight) {
+            const offset = scrollY * 0.15;
+            this.heroImage.style.transform = `translateY(${offset}px)`;
+        }
+    }
+}
+
+// Counter animation for social proof
+class CounterAnimation {
+    constructor() {
+        this.observed = false;
+        const proofSection = document.querySelector('.social-proof');
+        if (!proofSection) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !this.observed) {
+                    this.observed = true;
+                    this.animateCounters();
+                }
+            });
+        }, { threshold: 0.5 });
+
+        observer.observe(proofSection);
+    }
+
+    animateCounters() {
+        const counters = document.querySelectorAll('.proof-number');
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            const duration = 2000;
+            const start = performance.now();
+
+            const animate = (now) => {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease out cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
+                counter.textContent = Math.floor(eased * target);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    counter.textContent = target;
+                }
+            };
+
+            requestAnimationFrame(animate);
+        });
+    }
+}
+
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
@@ -88,18 +266,21 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Initialize managers when DOM is ready
+// Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     new ThemeManager();
     new LanguageManager();
+    window.typewriterInstance = new TypewriterEffect();
+    new ParallaxEffect();
+    new CounterAnimation();
 
-    // Set current year in footer
+    // Set current year
     const yearElement = document.getElementById('currentYear');
     if (yearElement) {
         yearElement.textContent = new Date().getFullYear();
     }
 
-    // H. Back-to-top button
+    // Back-to-top button
     const backToTop = document.getElementById('backToTop');
     if (backToTop) {
         window.addEventListener('scroll', () => {
@@ -114,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // D. Animated section title underlines + section fade-in
+    // Section fade-in + title underline animation + staggered cards
     const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -125,16 +306,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
                 entry.target.style.transform = 'translateY(0)';
-                // Animate section title underline
+
                 const title = entry.target.querySelector('.section-title');
                 if (title) {
                     title.classList.add('animate-in');
                 }
+
+                // 9. Staggered card animations
+                const cards = entry.target.querySelectorAll('.service-card');
+                cards.forEach(card => {
+                    card.classList.add('animate-in');
+                });
+
+                // Stagger methodology steps
+                const steps = entry.target.querySelectorAll('.method-step');
+                steps.forEach((step, i) => {
+                    step.style.opacity = '0';
+                    step.style.transform = 'translateY(20px)';
+                    step.style.transition = `opacity 0.5s ease ${i * 0.2}s, transform 0.5s ease ${i * 0.2}s`;
+                    requestAnimationFrame(() => {
+                        step.style.opacity = '1';
+                        step.style.transform = 'translateY(0)';
+                    });
+                });
             }
         });
     }, observerOptions);
 
-    const sections = document.querySelectorAll('.about, .services, .contact');
+    const sections = document.querySelectorAll('.about, .services, .contact, .methodology');
     sections.forEach(section => {
         section.style.opacity = '0';
         section.style.transform = 'translateY(20px)';

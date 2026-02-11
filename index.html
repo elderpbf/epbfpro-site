@@ -15,7 +15,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
     <link rel="manifest" href="site.webmanifest">
 
-    <!-- A. Google Fonts - Inter -->
+    <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,6 +23,9 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <!-- Theme transition overlay (12. Dark mode circular wipe) -->
+    <div class="theme-transition" id="themeTransition"></div>
+
     <!-- Header -->
     <header class="header">
         <div class="container">
@@ -47,46 +50,117 @@
         STAGING ENVIRONMENT - This is a preview site
     </div>
 
-    <!-- Hero Section -->
+    <!-- Hero Section (7. Typewriter + 11. Parallax) -->
     <section class="hero">
         <div class="container">
             <div class="hero-content">
                 <div class="hero-text">
                     <h1 class="hero-title" data-key="heroTitle">Inteligência Artificial que transforma o Direito</h1>
-                    <p class="hero-subtitle" data-key="heroSubtitle">Soluções em IA Generativa e Engenharia de Prompts para profissionais do Direito</p>
+                    <p class="hero-subtitle">
+                        <span data-key="heroSubtitleBase">Soluções em IA Generativa e Engenharia de Prompts</span>
+                        <span class="typewriter-wrapper">
+                            <span class="typewriter" id="typewriter"></span>
+                            <span class="typewriter-cursor">|</span>
+                        </span>
+                    </p>
                     <a href="#contact" class="btn-primary" data-key="heroButton">Entre em Contato</a>
                 </div>
-                <div class="hero-image">
+                <div class="hero-image" id="heroImage">
                     <img src="images/profile.jpg" alt="Perfil Profissional">
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- About Section -->
-    <section class="about" id="about">
+    <!-- 3. Social Proof / Impact Section -->
+    <section class="social-proof" id="impact">
         <div class="container">
-            <h2 class="section-title" data-key="aboutTitle">Sobre</h2>
-            <div class="about-content">
-                <p class="about-text" data-key="aboutP1">
-                    Sou Élder Prudente Barbosa Filho, instrutor em Inteligência Artificial Generativa com foco em arquitetura de prompts complexos e otimização de fluxos de trabalho através de Large Language Models (LLMs). Minha trajetória é definida pela convergência entre o Direito e a Tecnologia, possuindo formação híbrida em Direito e Análise e Desenvolvimento de Sistemas.
-                </p>
-                <p class="about-text" data-key="aboutP2">
-                    No setor público, atuo como servidor do Tribunal de Justiça de Sergipe (TJSE). Minha responsabilidade central envolve a integração de sistemas, a melhoria contínua de processos e a implementação de inovações voltadas ao ensino jurídico.
-                </p>
-                <p class="about-text" data-key="aboutP3">
-                    Como professor e consultor, ministro cursos de Engenharia de Prompts voltados para magistrados, assessores e escritórios de advocacia. A PensoIA consolida essa experiência, oferecendo soluções que traduzem a complexidade da inteligência artificial em ferramentas práticas para profissionais que buscam eficiência e rigor técnico na automação de tarefas intelectuais.
-                </p>
+            <div class="proof-content">
+                <div class="proof-stat">
+                    <span class="proof-number" data-target="600">0</span>
+                    <span class="proof-plus">+</span>
+                </div>
+                <p class="proof-text" data-key="proofText">Desembargadores, Juízes e Servidores do TJSE treinados em IA Generativa e Engenharia de Prompts</p>
             </div>
         </div>
     </section>
 
-    <!-- Services Section -->
+    <!-- 8. About Section - Redesigned two-column -->
+    <section class="about" id="about">
+        <div class="container">
+            <h2 class="section-title" data-key="aboutTitle">Sobre</h2>
+            <div class="about-grid">
+                <div class="about-highlights">
+                    <div class="highlight-item">
+                        <div class="highlight-marker"></div>
+                        <div class="highlight-content">
+                            <h3 class="highlight-label" data-key="aboutHighlight1Label">Formação</h3>
+                            <p class="highlight-text" data-key="aboutHighlight1Text">Direito + Análise e Desenvolvimento de Sistemas</p>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-marker"></div>
+                        <div class="highlight-content">
+                            <h3 class="highlight-label" data-key="aboutHighlight2Label">Atuação</h3>
+                            <p class="highlight-text" data-key="aboutHighlight2Text">Servidor do Tribunal de Justiça de Sergipe (TJSE)</p>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-marker"></div>
+                        <div class="highlight-content">
+                            <h3 class="highlight-label" data-key="aboutHighlight3Label">Especialidade</h3>
+                            <p class="highlight-text" data-key="aboutHighlight3Text">IA Generativa, Engenharia de Prompts e LLMs</p>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-marker"></div>
+                        <div class="highlight-content">
+                            <h3 class="highlight-label" data-key="aboutHighlight4Label">Missão</h3>
+                            <p class="highlight-text" data-key="aboutHighlight4Text">Traduzir IA em ferramentas práticas para profissionais</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-narrative">
+                    <p class="about-text" data-key="aboutNarrative">
+                        Sou Élder Prudente Barbosa Filho. Minha trajetória é definida pela convergência entre o Direito e a Tecnologia. Como instrutor e consultor, ministro cursos de Engenharia de Prompts para magistrados, assessores e escritórios de advocacia. A PensoIA consolida essa experiência, oferecendo soluções que traduzem a complexidade da inteligência artificial em ferramentas práticas para profissionais que buscam eficiência e rigor técnico na automação de tarefas intelectuais.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. How It Works / Methodology -->
+    <section class="methodology" id="methodology">
+        <div class="container">
+            <h2 class="section-title" data-key="methodologyTitle">Como Funciona</h2>
+            <div class="method-steps">
+                <div class="method-step">
+                    <div class="step-number">1</div>
+                    <div class="step-connector"></div>
+                    <h3 class="step-title" data-key="step1Title">Diagnóstico</h3>
+                    <p class="step-desc" data-key="step1Desc">Análise das necessidades, fluxos de trabalho e oportunidades de automação com IA no seu contexto.</p>
+                </div>
+                <div class="method-step">
+                    <div class="step-number">2</div>
+                    <div class="step-connector"></div>
+                    <h3 class="step-title" data-key="step2Title">Implementação</h3>
+                    <p class="step-desc" data-key="step2Desc">Treinamento personalizado e configuração de soluções com LLMs adaptadas à sua realidade profissional.</p>
+                </div>
+                <div class="method-step">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title" data-key="step3Title">Resultados</h3>
+                    <p class="step-desc" data-key="step3Desc">Acompanhamento contínuo para garantir adoção efetiva e ganhos mensuráveis de produtividade.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section (9. Staggered animations) -->
     <section class="services" id="services">
         <div class="container">
             <h2 class="section-title" data-key="servicesTitle">Serviços</h2>
             <div class="services-grid">
-                <div class="service-card">
+                <div class="service-card" style="--card-delay: 0s">
                     <div class="service-icon">
                         <img src="images/icons/course.png" alt="Courses icon" class="icon-img">
                     </div>
@@ -95,7 +169,7 @@
                         Treinamentos especializados para magistrados, assessores e profissionais do direito que desejam dominar técnicas avançadas de prompt engineering.
                     </p>
                 </div>
-                <div class="service-card">
+                <div class="service-card" style="--card-delay: 0.15s">
                     <div class="service-icon">
                         <img src="images/icons/llm.png" alt="AI Consulting icon" class="icon-img">
                     </div>
@@ -104,7 +178,7 @@
                         Implementação de soluções personalizadas em IA para escritórios de advocacia e instituições jurídicas, focadas em automação inteligente de processos.
                     </p>
                 </div>
-                <div class="service-card">
+                <div class="service-card" style="--card-delay: 0.3s">
                     <div class="service-icon">
                         <img src="images/icons/optimization.png" alt="Optimization icon" class="icon-img">
                     </div>
@@ -135,7 +209,7 @@
         </div>
     </section>
 
-    <!-- G. Enhanced Footer -->
+    <!-- Enhanced Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
@@ -155,7 +229,14 @@
         </div>
     </footer>
 
-    <!-- H. Back-to-Top Button -->
+    <!-- 5. WhatsApp Floating Button -->
+    <a href="https://wa.me/5579999999999" target="_blank" rel="noopener noreferrer" class="whatsapp-float" id="whatsappFloat" aria-label="WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+    </a>
+
+    <!-- Back-to-Top Button -->
     <button class="back-to-top" id="backToTop" aria-label="Back to top">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/>
