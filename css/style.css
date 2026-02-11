@@ -617,7 +617,7 @@ section[id] {
 
 .service-card:nth-child(1) {
     top: 100px;
-    z-index: 3;
+    z-index: 1;
 }
 
 .service-card:nth-child(2) {
@@ -627,7 +627,7 @@ section[id] {
 
 .service-card:nth-child(3) {
     top: 140px;
-    z-index: 1;
+    z-index: 3;
 }
 
 .service-card:hover {
