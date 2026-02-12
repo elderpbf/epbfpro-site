@@ -593,7 +593,7 @@ section[id] {
 
 /* Services Section - Sticky Scroll Stack */
 .services {
-    padding: 5rem 0 15rem;
+    padding: 5rem 0 8rem;
     background-color: var(--surface);
 }
 
@@ -1103,7 +1103,7 @@ section[id] {
     }
 
     .services {
-        padding: 3rem 0 10rem;
+        padding: 3rem 0 5rem;
     }
 
     .social-proof {
