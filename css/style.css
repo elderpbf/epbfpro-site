@@ -215,10 +215,14 @@ section[id] {
 
 /* Hero Section */
 .hero {
-    background: linear-gradient(135deg, var(--background) 0%, var(--accent) 100%);
+    background: linear-gradient(135deg, #edfcf7 0%, #ccfbf1 100%);
     padding: 5rem 0;
     position: relative;
     overflow: hidden;
+}
+
+[data-theme="dark"] .hero {
+    background: linear-gradient(135deg, var(--background) 0%, var(--accent) 100%);
 }
 
 .hero::before {
