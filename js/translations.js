@@ -43,15 +43,15 @@ const translations = {
         // FAQ Section
         faqTitle: 'Perguntas Frequentes',
         faq1Q: 'Preciso ter conhecimento técnico em programação?',
-        faq1A: 'Não. Os cursos são projetados para profissionais do Direito sem necessidade de conhecimento prévio em programação. Focamos em ensinar como usar e otimizar ferramentas de IA de forma prática.',
+        faq1A: 'Não. Os cursos são projetados para profissionais do Direito sem necessidade de conhecimento prévio em programação. O foco é ensinar como usar e otimizar ferramentas de IA de forma prática.',
         faq2Q: 'Qual a duração dos treinamentos?',
-        faq2A: 'A duração varia conforme o formato. Temos workshops de 4 horas, cursos intensivos de 2 dias e programas completos de 20+ horas. Todos podem ser adaptados às necessidades da instituição.',
+        faq2A: 'Depende da necessidade da equipe. Geralmente são 16 horas, distribuídas em workshops de 4 horas. O formato pode ser adaptado às necessidades da instituição.',
         faq3Q: 'Quais ferramentas de IA são ensinadas?',
-        faq3A: 'Trabalhamos com os principais LLMs do mercado (ChatGPT, Claude, Gemini) e ensinamos técnicas de prompt engineering aplicáveis a qualquer modelo. O foco é em princípios universais, não apenas ferramentas específicas.',
+        faq3A: 'O treinamento abrange os principais LLMs do mercado (ChatGPT, Claude, Gemini) com técnicas de prompt engineering aplicáveis a qualquer modelo. O foco é em princípios universais, não apenas ferramentas específicas.',
         faq4Q: 'Os cursos oferecem certificação?',
-        faq4A: 'Sim. Todos os participantes que concluírem o treinamento recebem certificado digital com carga horária e conteúdo programático detalhado.',
+        faq4A: 'Sim. Todo participante que concluir o treinamento recebe certificado digital com carga horária e conteúdo programático detalhado.',
         faq5Q: 'Como funciona a consultoria personalizada?',
-        faq5A: 'Iniciamos com um diagnóstico gratuito para entender suas necessidades específicas. Depois, desenvolvemos uma solução personalizada que pode incluir treinamento, configuração de ferramentas e acompanhamento contínuo.',
+        faq5A: 'Inicia-se com um diagnóstico para entender as necessidades específicas. A partir dele, é desenvolvida uma solução personalizada que pode incluir treinamento, configuração de ferramentas e acompanhamento posterior ao curso para dúvidas.',
 
         // Contact Section
         contactTitle: 'Contato',
@@ -104,15 +104,15 @@ const translations = {
         // FAQ Section
         faqTitle: 'Frequently Asked Questions',
         faq1Q: 'Do I need technical programming knowledge?',
-        faq1A: 'No. The courses are designed for legal professionals with no prior programming knowledge required. We focus on teaching how to use and optimize AI tools in a practical way.',
+        faq1A: 'No. The courses are designed for legal professionals with no prior programming knowledge required. The focus is on teaching how to use and optimize AI tools in a practical way.',
         faq2Q: 'How long are the training programs?',
-        faq2A: 'Duration varies by format. We offer 4-hour workshops, 2-day intensive courses, and comprehensive 20+ hour programs. All can be adapted to institutional needs.',
+        faq2A: 'It depends on the team\'s needs. Generally 16 hours, distributed in 4-hour workshops. The format can be adapted to institutional needs.',
         faq3Q: 'Which AI tools are taught?',
-        faq3A: 'We work with leading market LLMs (ChatGPT, Claude, Gemini) and teach prompt engineering techniques applicable to any model. The focus is on universal principles, not just specific tools.',
+        faq3A: 'The training covers leading market LLMs (ChatGPT, Claude, Gemini) with prompt engineering techniques applicable to any model. The focus is on universal principles, not just specific tools.',
         faq4Q: 'Do courses offer certification?',
-        faq4A: 'Yes. All participants who complete the training receive a digital certificate with hours and detailed syllabus.',
+        faq4A: 'Yes. Every participant who completes the training receives a digital certificate with hours and detailed syllabus.',
         faq5Q: 'How does personalized consulting work?',
-        faq5A: 'We start with a free diagnostic to understand your specific needs. Then we develop a customized solution that can include training, tool configuration, and ongoing support.',
+        faq5A: 'It starts with a diagnostic to understand the specific needs. From there, a customized solution is developed that can include training, tool configuration, and post-course follow-up support for questions.',
 
         // Contact Section
         contactTitle: 'Contact',

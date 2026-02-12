@@ -774,12 +774,12 @@ section[id] {
 }
 
 .faq-question:hover {
-    color: var(--primary);
+    color: var(--secondary);
     padding-left: 2rem;
 }
 
 .faq-question[aria-expanded="true"] {
-    color: var(--primary);
+    color: var(--secondary);
     padding-left: 2rem;
 }
 
