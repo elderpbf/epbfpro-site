@@ -653,25 +653,39 @@ section[id] {
     align-items: center;
 }
 
-.service-icon .icon-img {
-    padding: 12px;
+.service-icon-circle {
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), rgba(20, 184, 166, 0.1));
+    background: linear-gradient(135deg, #0d9488, #047857);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.3s ease;
-    filter: brightness(0) saturate(100%) invert(29%) sepia(51%) saturate(1392%) hue-rotate(129deg) brightness(94%) contrast(98%);
+}
+
+[data-theme="dark"] .service-icon-circle {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(94, 234, 212, 0.05));
+}
+
+.service-card:hover .service-icon-circle {
+    transform: scale(1.1);
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(94, 234, 212, 0.15));
+}
+
+.service-icon .icon-img {
+    width: 40px;
+    height: 40px;
+    transition: all 0.3s ease;
+    filter: brightness(0) invert(1);
 }
 
 [data-theme="dark"] .service-icon .icon-img {
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(94, 234, 212, 0.05));
     filter: brightness(0) saturate(100%) invert(88%) sepia(19%) saturate(1011%) hue-rotate(113deg) brightness(99%) contrast(96%);
 }
 
 .service-card:hover .icon-img {
-    transform: scale(1.1);
     filter: brightness(0) saturate(100%) invert(44%) sepia(78%) saturate(1157%) hue-rotate(146deg) brightness(91%) contrast(93%);
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(94, 234, 212, 0.15));
 }
 
 .service-title {
