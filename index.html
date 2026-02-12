@@ -4,7 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Élder Prudente Barbosa Filho - Sou instrutor em IA Generativa e Engenharia de Prompts para profissionais do Direito e demais áreas do conhecimento | PensoIA">
-    <title>PensoIA - Inteligência Artificial para o Direito</title>
+    <meta name="keywords" content="IA Generativa, Engenharia de Prompts, ChatGPT, Direito, LLMs, Inteligência Artificial, Consultoria IA, Treinamento IA, TJSE">
+    <meta name="author" content="Élder Prudente Barbosa Filho">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="Portuguese">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pensoia.com">
+    <meta property="og:title" content="PensoIA - Inteligência Artificial para o Direito">
+    <meta property="og:description" content="Soluções em IA Generativa e Engenharia de Prompts para profissionais do Direito">
+    <meta property="og:image" content="https://pensoia.com/images/og-image.jpg">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://pensoia.com">
+    <meta name="twitter:title" content="PensoIA - Inteligência Artificial para o Direito">
+    <meta name="twitter:description" content="Soluções em IA Generativa e Engenharia de Prompts para profissionais do Direito">
+    <meta name="twitter:image" content="https://pensoia.com/images/og-image.jpg">
+
+    <!-- Performance hints -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+
+    <title>PensoIA - Inteligência Artificial para o Direito | Engenharia de Prompts</title>
 
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -15,21 +38,35 @@
     <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
     <link rel="manifest" href="site.webmanifest">
 
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Preload hero image for faster LCP -->
+    <link rel="preload" as="image" href="images/profile.jpg" fetchpriority="high">
+
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <!-- Skip to main content link (Accessibility) -->
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+
+    <!-- Theme transition overlay -->
+    <div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
+
     <!-- Header -->
-    <header class="header">
+    <header class="header" role="banner">
         <div class="container">
             <div class="header-content">
                 <div class="logo">
                     <img src="images/logo.png" alt="PensoIA Logo" class="logo-img">
                 </div>
                 <div class="header-controls">
-                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-                        <img src="images/icons/moon.png" alt="Dark mode" class="theme-icon" id="themeIcon">
+                    <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema claro/escuro" aria-pressed="false">
+                        <img src="images/icons/moon.png" alt="" class="theme-icon" id="themeIcon" role="presentation">
                     </button>
-                    <button class="lang-toggle" id="langToggle" aria-label="Toggle language">
+                    <button class="lang-toggle" id="langToggle" aria-label="Alternar idioma">
                         <span id="langText">EN</span>
                     </button>
                 </div>
@@ -37,100 +74,277 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <div class="hero-text">
-                    <h1 class="hero-title" data-key="heroTitle">Inteligência Artificial que transforma o Direito</h1>
-                    <p class="hero-subtitle" data-key="heroSubtitle">Soluções em IA Generativa e Engenharia de Prompts para profissionais do Direito</p>
-                    <a href="#contact" class="btn-primary" data-key="heroButton">Entre em Contato</a>
-                </div>
-                <div class="hero-image">
-                    <img src="images/profile.jpg" alt="Perfil Profissional">
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- STAGING ENVIRONMENT -->
+    <div id="staging-banner" style="background: #ff9800; color: white; text-align: center; padding: 10px; font-weight: bold;" role="alert">
+        STAGING ENVIRONMENT - This is a preview site
+    </div>
 
-    <!-- About Section -->
-    <section class="about" id="about">
-        <div class="container">
-            <h2 class="section-title" data-key="aboutTitle">Sobre</h2>
-            <div class="about-content">
-                <p class="about-text" data-key="aboutP1">
-                    Sou Élder Prudente Barbosa Filho, instrutor em Inteligência Artificial Generativa com foco em arquitetura de prompts complexos e otimização de fluxos de trabalho através de Large Language Models (LLMs). Minha trajetória é definida pela convergência entre o Direito e a Tecnologia, possuindo formação híbrida em Direito e Análise e Desenvolvimento de Sistemas.
-                </p>
-                <p class="about-text" data-key="aboutP2">
-                    No setor público, atuo como servidor do Tribunal de Justiça de Sergipe (TJSE). Minha responsabilidade central envolve a integração de sistemas, a melhoria contínua de processos e a implementação de inovações voltadas ao ensino jurídico.
-                </p>
-                <p class="about-text" data-key="aboutP3">
-                    Como professor e consultor, ministro cursos de Engenharia de Prompts voltados para magistrados, assessores e escritórios de advocacia. A PensoIA consolida essa experiência, oferecendo soluções que traduzem a complexidade da inteligência artificial em ferramentas práticas para profissionais que buscam eficiência e rigor técnico na automação de tarefas intelectuais.
-                </p>
+    <!-- Main Content -->
+    <main id="main-content">
+        <!-- Hero Section -->
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1 id="hero-title" class="hero-title" data-key="heroTitle">Inteligência Artificial que transforma o Direito</h1>
+                        <p class="hero-subtitle">
+                            <span data-key="heroSubtitleBase">Soluções em IA Generativa e Engenharia de Prompts</span>
+                            <span class="typewriter-wrapper" aria-live="polite">
+                                <span class="typewriter" id="typewriter"></span>
+                                <span class="typewriter-cursor" aria-hidden="true">|</span>
+                            </span>
+                        </p>
+                        <a href="#contact" class="btn-primary" data-key="heroButton">Entre em Contato</a>
+                    </div>
+                    <div class="hero-image" id="heroImage">
+                        <img src="images/profile.jpg" alt="Élder Prudente Barbosa Filho - Instrutor em IA Generativa" fetchpriority="high">
+                    </div>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Services Section -->
-    <section class="services" id="services">
-        <div class="container">
-            <h2 class="section-title" data-key="servicesTitle">Serviços</h2>
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="service-icon">
-                        <img src="images/icons/course.png" alt="Courses icon" class="icon-img">
+        <!-- Social Proof / Impact Section -->
+        <section class="social-proof" id="impact" aria-labelledby="impact-stat">
+            <div class="container">
+                <div class="proof-content">
+                    <div class="proof-stat" id="impact-stat">
+                        <span class="proof-number" data-target="600" aria-label="Seiscentos">0</span>
+                        <span class="proof-plus" aria-hidden="true">+</span>
                     </div>
-                    <h3 class="service-title" data-key="service1Title">Cursos de Engenharia de Prompts</h3>
-                    <p class="service-description" data-key="service1Desc">
-                        Treinamentos especializados para magistrados, assessores e profissionais do direito que desejam dominar técnicas avançadas de prompt engineering.
-                    </p>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon">
-                        <img src="images/icons/llm.png" alt="AI Consulting icon" class="icon-img">
-                    </div>
-                    <h3 class="service-title" data-key="service2Title">Consultoria em IA Generativa</h3>
-                    <p class="service-description" data-key="service2Desc">
-                        Implementação de soluções personalizadas em IA para escritórios de advocacia e instituições jurídicas, focadas em automação inteligente de processos.
-                    </p>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon">
-                        <img src="images/icons/optimization.png" alt="Optimization icon" class="icon-img">
-                    </div>
-                    <h3 class="service-title" data-key="service3Title">Otimização de Workflows</h3>
-                    <p class="service-description" data-key="service3Desc">
-                        Análise e otimização de fluxos de trabalho através de LLMs, aumentando eficiência e precisão em tarefas intelectuais complexas.
-                    </p>
+                    <p class="proof-text" data-key="proofText">Desembargadores, Juízes e Servidores do TJSE treinados em IA Generativa e Engenharia de Prompts</p>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Contact Section -->
-    <section class="contact" id="contact">
-        <div class="container">
-            <h2 class="section-title" data-key="contactTitle">Contato</h2>
-            <div class="contact-content">
-                <p class="contact-text" data-key="contactText">
-                    Interessado em transformar sua prática jurídica com Inteligência Artificial? Entre em contato para discutirmos como a PensoIA pode ajudar.
-                </p>
-                <div class="contact-info">
-                    <a href="mailto:contato@pensoia.com" class="contact-link">
-                        <img src="images/icons/envelope.png" alt="Email icon" class="contact-icon">
-                        <span data-key="contactEmail">contato@pensoia.com</span>
-                    </a>
+        <!-- About Section -->
+        <section class="about" id="about" aria-labelledby="about-title">
+            <div class="container">
+                <h2 id="about-title" class="section-title" data-key="aboutTitle">Sobre</h2>
+                <div class="about-grid">
+                    <div class="about-highlights">
+                        <div class="highlight-item">
+                            <div class="highlight-marker" aria-hidden="true"></div>
+                            <div class="highlight-content">
+                                <h3 class="highlight-label" data-key="aboutHighlight1Label">Formação</h3>
+                                <p class="highlight-text" data-key="aboutHighlight1Text">Direito + Análise e Desenvolvimento de Sistemas</p>
+                            </div>
+                        </div>
+                        <div class="highlight-item">
+                            <div class="highlight-marker" aria-hidden="true"></div>
+                            <div class="highlight-content">
+                                <h3 class="highlight-label" data-key="aboutHighlight2Label">Atuação</h3>
+                                <p class="highlight-text" data-key="aboutHighlight2Text">Servidor do Tribunal de Justiça de Sergipe (TJSE)</p>
+                            </div>
+                        </div>
+                        <div class="highlight-item">
+                            <div class="highlight-marker" aria-hidden="true"></div>
+                            <div class="highlight-content">
+                                <h3 class="highlight-label" data-key="aboutHighlight3Label">Especialidade</h3>
+                                <p class="highlight-text" data-key="aboutHighlight3Text">IA Generativa, Engenharia de Prompts e LLMs</p>
+                            </div>
+                        </div>
+                        <div class="highlight-item">
+                            <div class="highlight-marker" aria-hidden="true"></div>
+                            <div class="highlight-content">
+                                <h3 class="highlight-label" data-key="aboutHighlight4Label">Missão</h3>
+                                <p class="highlight-text" data-key="aboutHighlight4Text">Traduzir IA em ferramentas práticas para profissionais</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="about-narrative">
+                        <p class="about-text" data-key="aboutNarrative">
+                            Sou Élder Prudente Barbosa Filho. Minha trajetória é definida pela convergência entre o Direito e a Tecnologia. Como instrutor e consultor, ministro cursos de Engenharia de Prompts para magistrados, assessores e escritórios de advocacia. A PensoIA consolida essa experiência, oferecendo soluções que traduzem a complexidade da inteligência artificial em ferramentas práticas para profissionais que buscam eficiência e rigor técnico na automação de tarefas intelectuais.
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <!-- Methodology Section -->
+        <section class="methodology" id="methodology" aria-labelledby="methodology-title">
+            <div class="container">
+                <h2 id="methodology-title" class="section-title" data-key="methodologyTitle">Como Funciona</h2>
+                <div class="method-steps">
+                    <div class="method-step">
+                        <div class="step-number" aria-label="Etapa 1">1</div>
+                        <div class="step-connector" aria-hidden="true"></div>
+                        <h3 class="step-title" data-key="step1Title">Diagnóstico</h3>
+                        <p class="step-desc" data-key="step1Desc">Análise das necessidades, fluxos de trabalho e oportunidades de automação com IA no seu contexto.</p>
+                    </div>
+                    <div class="method-step">
+                        <div class="step-number" aria-label="Etapa 2">2</div>
+                        <div class="step-connector" aria-hidden="true"></div>
+                        <h3 class="step-title" data-key="step2Title">Implementação</h3>
+                        <p class="step-desc" data-key="step2Desc">Treinamento personalizado e configuração de soluções com LLMs adaptadas à sua realidade profissional.</p>
+                    </div>
+                    <div class="method-step">
+                        <div class="step-number" aria-label="Etapa 3">3</div>
+                        <h3 class="step-title" data-key="step3Title">Resultados</h3>
+                        <p class="step-desc" data-key="step3Desc">Acompanhamento contínuo para garantir adoção efetiva e ganhos mensuráveis de produtividade.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section - Sticky Scroll Stack -->
+        <section class="services" id="services" aria-labelledby="services-title">
+            <div class="container">
+                <h2 id="services-title" class="section-title" data-key="servicesTitle">Serviços</h2>
+                <div class="services-stack">
+                    <article class="service-card">
+                        <div class="service-icon">
+                            <div class="service-icon-circle">
+                                <img src="images/icons/course.png" alt="" class="icon-img" loading="lazy" role="presentation">
+                            </div>
+                        </div>
+                        <h3 class="service-title" data-key="service1Title">Cursos de Engenharia de Prompts</h3>
+                        <span class="service-badge" data-key="serviceBadge">✓ Certificação Inclusa</span>
+                        <p class="service-description" data-key="service1Desc">
+                            Treinamentos especializados para magistrados, assessores e profissionais do direito que desejam dominar técnicas avançadas de prompt engineering.
+                        </p>
+                    </article>
+                    <article class="service-card">
+                        <div class="service-icon">
+                            <div class="service-icon-circle">
+                                <img src="images/icons/llm.png" alt="" class="icon-img" loading="lazy" role="presentation">
+                            </div>
+                        </div>
+                        <h3 class="service-title" data-key="service2Title">Consultoria em IA Generativa</h3>
+                        <p class="service-description" data-key="service2Desc">
+                            Implementação de soluções personalizadas em IA para escritórios de advocacia e instituições jurídicas, focadas em automação inteligente de processos.
+                        </p>
+                    </article>
+                    <article class="service-card">
+                        <div class="service-icon">
+                            <div class="service-icon-circle">
+                                <img src="images/icons/optimization.png" alt="" class="icon-img" loading="lazy" role="presentation">
+                            </div>
+                        </div>
+                        <h3 class="service-title" data-key="service3Title">Otimização de Workflows</h3>
+                        <p class="service-description" data-key="service3Desc">
+                            Análise e otimização de fluxos de trabalho através de LLMs, aumentando eficiência e precisão em tarefas intelectuais complexas.
+                        </p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq" id="faq" aria-labelledby="faq-title">
+            <div class="container">
+                <h2 id="faq-title" class="section-title" data-key="faqTitle">Perguntas Frequentes</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <button class="faq-question" aria-expanded="false">
+                            <span data-key="faq1Q">Preciso ter conhecimento técnico em programação?</span>
+                            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <div class="faq-answer">
+                            <p data-key="faq1A">Não. Os cursos são projetados para profissionais do Direito sem necessidade de conhecimento prévio em programação. O foco é ensinar como usar e otimizar ferramentas de IA de forma prática.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question" aria-expanded="false">
+                            <span data-key="faq2Q">Qual a duração dos treinamentos?</span>
+                            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <div class="faq-answer">
+                            <p data-key="faq2A">Depende da necessidade da equipe. Geralmente são 16 horas, distribuídas em workshops de 4 horas. O formato pode ser adaptado às necessidades da instituição.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question" aria-expanded="false">
+                            <span data-key="faq3Q">Quais ferramentas de IA são ensinadas?</span>
+                            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <div class="faq-answer">
+                            <p data-key="faq3A">O treinamento abrange os principais LLMs do mercado (ChatGPT, Claude, Gemini) com técnicas de prompt engineering aplicáveis a qualquer modelo. O foco é em princípios universais, não apenas ferramentas específicas.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question" aria-expanded="false">
+                            <span data-key="faq4Q">Os cursos oferecem certificação?</span>
+                            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <div class="faq-answer">
+                            <p data-key="faq4A">Sim. Todo participante que concluir o treinamento recebe certificado digital com carga horária e conteúdo programático detalhado.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question" aria-expanded="false">
+                            <span data-key="faq5Q">Como funciona a consultoria personalizada?</span>
+                            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <div class="faq-answer">
+                            <p data-key="faq5A">Inicia-se com um diagnóstico para entender as necessidades específicas. A partir dele, é desenvolvida uma solução personalizada que pode incluir treinamento, configuração de ferramentas e acompanhamento posterior ao curso para dúvidas.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="contact" id="contact" aria-labelledby="contact-title">
+            <div class="container">
+                <h2 id="contact-title" class="section-title" data-key="contactTitle">Contato</h2>
+                <div class="contact-content">
+                    <p class="contact-text" data-key="contactText">
+                        Interessado em transformar sua prática jurídica com Inteligência Artificial? Entre em contato para discutirmos como a PensoIA pode ajudar.
+                    </p>
+                    <div class="contact-info">
+                        <a href="mailto:contato@pensoia.com" class="contact-link">
+                            <img src="images/icons/envelope.png" alt="" class="contact-icon" loading="lazy" role="presentation">
+                            <span data-key="contactEmail">contato@pensoia.com</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="footer" role="contentinfo">
         <div class="container">
-            <p class="footer-text">&copy; <span id="currentYear"></span> PensoIA. <span data-key="footerRights">Todos os direitos reservados.</span></p>
+            <div class="footer-content">
+                <div class="footer-social">
+                    <a href="https://www.linkedin.com/in/elderpbf/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn - Élder Prudente">
+                        <img src="images/icons/linkedin.png" alt="" loading="lazy" role="presentation">
+                    </a>
+                    <a href="https://github.com/elderpbf" target="_blank" rel="noopener noreferrer" aria-label="GitHub - Élder Prudente">
+                        <img src="images/icons/github.png" alt="" loading="lazy" role="presentation">
+                    </a>
+                    <a href="https://www.instagram.com/elderpbf/" target="_blank" rel="noopener noreferrer" aria-label="Instagram - Élder Prudente">
+                        <img src="images/icons/instagram.png" alt="" loading="lazy" role="presentation">
+                    </a>
+                </div>
+                <p class="footer-text">&copy; <span id="currentYear"></span> PensoIA. <span data-key="footerRights">Todos os direitos reservados.</span></p>
+            </div>
         </div>
     </footer>
+
+    <!-- WhatsApp Floating Button -->
+    <a href="https://wa.me/557998014253" target="_blank" rel="noopener noreferrer" class="whatsapp-float" aria-label="Fale conosco no WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+    </a>
+
+    <!-- Back-to-Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Voltar ao topo">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/>
+        </svg>
+    </button>
 
     <script src="js/translations.js"></script>
     <script src="js/main.js"></script>
