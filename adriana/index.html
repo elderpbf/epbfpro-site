@@ -1059,10 +1059,6 @@
             document.getElementById('msg-modal').classList.remove('open');
         }
 
-        // Close modal on backdrop click
-        document.getElementById('msg-modal').addEventListener('click', function(e) {
-            if (e.target === this) closeMsgModal();
-        });
 
         async function sendMessage() {
             const nome   = document.getElementById('msg-nome').value.trim();
