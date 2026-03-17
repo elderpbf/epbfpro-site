@@ -1095,6 +1095,11 @@
         }
 
         function openMsgModal() {
+            // Random emoji default each time — user can still change it
+            selectedEmoji = CARD_EMOJIS[Math.floor(Math.random() * CARD_EMOJIS.length)];
+            document.getElementById('emoji-picker').querySelectorAll('button').forEach(btn => {
+                btn.style.borderColor = btn.textContent === selectedEmoji ? '#c4a97d' : '#e8e0d4';
+            });
             document.getElementById('msg-modal').classList.add('open');
             const saved = localStorage.getItem('adriana_msg_name');
             if (saved) document.getElementById('msg-nome').value = saved;
