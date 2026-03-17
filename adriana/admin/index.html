@@ -362,9 +362,17 @@
     // ====================================================
     // AUTH
     // ====================================================
+    const ADMIN_PW = 'adriana2026';
+
     function checkPassword() {
         const pw = document.getElementById('pw-input').value;
         if (!pw) return;
+        if (pw !== ADMIN_PW) {
+            document.getElementById('pw-error').style.display = 'block';
+            document.getElementById('pw-input').value = '';
+            return;
+        }
+        document.getElementById('pw-error').style.display = 'none';
         localStorage.setItem('adriana_admin_pw', pw);
         openAdmin();
     }
@@ -383,8 +391,8 @@
         location.reload();
     }
 
-    // Auto-open if password saved
-    if (localStorage.getItem('adriana_admin_pw')) {
+    // Auto-open if correct password saved
+    if (localStorage.getItem('adriana_admin_pw') === ADMIN_PW) {
         openAdmin();
     }
 
