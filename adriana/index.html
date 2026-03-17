@@ -524,6 +524,29 @@
         .modal-fb-ok  { background: #e8f5e9; color: #2e7d32; }
         .modal-fb-err { background: #fce4ec; color: #c62828; }
 
+        /* Section nav */
+        .section-nav {
+            display: flex;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 28px;
+            background: var(--card-bg);
+        }
+        .section-nav a {
+            flex: 1;
+            text-align: center;
+            padding: 9px 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-right: 1px solid var(--border);
+            transition: background 0.15s, color 0.15s;
+        }
+        .section-nav a:last-child { border-right: none; }
+        .section-nav a:hover { background: var(--bg); color: var(--heading); }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -556,6 +579,12 @@
             Assim ninguém precisa ficar sem notícias.
         </div>
 
+        <nav class="section-nav">
+            <a href="#summary-section">Como ela está</a>
+            <a href="#board-section">Mensagens</a>
+            <a href="#timeline-section">Histórico</a>
+        </nav>
+
         <div id="summary-section">
             <div class="loading">
                 <div class="loading-spinner"></div>
@@ -563,17 +592,17 @@
             </div>
         </div>
 
+        <!-- Message board -->
+        <div id="board-section">
+            <div class="board-header">Mural de carinho</div>
+            <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
+            <div class="board-cards" id="board-cards"></div>
+        </div>
+
         <div id="timeline-section">
         </div>
 
         <div class="refresh-bar" id="refresh-bar"></div>
-
-        <!-- Message board -->
-        <div id="board-section">
-            <div class="board-header">Mural de carinho</div>
-            <div class="board-cards" id="board-cards"></div>
-            <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem de carinho</button>
-        </div>
 
         <!-- Message modal -->
         <div class="modal-bg" id="msg-modal">
@@ -608,7 +637,8 @@
         const UPDATES_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
         const RESUMO_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
         const MENSAGENS_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Mensagens`;
-        const CURTIDAS_URL  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Curtidas`;
+        const CURTIDAS_URL       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Curtidas`;
+        const CONFIGURACOES_URL  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Configuracoes`;
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfTIqI5Pcfez0-8OZs8Ibi68G9NqO2P8xzzDkHKuRofJ7SopJ8-htDcjyEoTC8k79P/exec';
         const REFRESH_INTERVAL = 5 * 60 * 1000;
 
@@ -926,9 +956,26 @@
             });
         }
 
+        async function loadSettings() {
+            try {
+                const resp = await fetch(CONFIGURACOES_URL + '&t=' + Date.now());
+                const text = await resp.text();
+                const lines = text.trim().split('\n');
+                const cfg = {};
+                for (let i = 1; i < lines.length; i++) {
+                    const r = parseCSVLine(lines[i]);
+                    if (r[0]) cfg[r[0]] = r[1];
+                }
+                if (cfg['notif_bar'] === 'false') document.getElementById('notif-bar').style.setProperty('display','none','important');
+                if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
+                if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
+            } catch (e) { console.error(e); }
+        }
+
         // Initial load
         fetchData();
         loadMessages();
+        loadSettings();
 
         // Auto-refresh
         setInterval(fetchData, REFRESH_INTERVAL);

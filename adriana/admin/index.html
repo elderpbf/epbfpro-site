@@ -262,6 +262,17 @@
         .photo-preview .save-status.saving { background: rgba(255,200,0,0.85); color: #5c4a2f; }
         .photo-preview .save-status.saved  { background: rgba(50,150,50,0.8);  color: #fff; }
         .photo-preview .save-status.error  { background: rgba(200,50,50,0.8);  color: #fff; }
+        /* Toggle switches */
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid #e8e0d4; }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-info .toggle-label { font-size: 0.88rem; color: #3d3529; font-weight: 500; }
+        .toggle-info .toggle-desc  { font-size: 0.73rem; color: #a89880; margin-top: 2px; }
+        .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-slider { position: absolute; inset: 0; background: #e8e0d4; border-radius: 24px; cursor: pointer; transition: background 0.2s; }
+        .toggle-slider:before { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+        .toggle-switch input:checked + .toggle-slider { background: #5c4a2f; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
     </style>
 </head>
 <body>
@@ -349,6 +360,45 @@
         <div class="recent-list" id="recent-list">
             <p style="color:#a89880;font-size:0.85rem">Carregando...</p>
         </div>
+
+        <hr class="divider">
+
+        <!-- Settings -->
+        <div class="section-title">Configurações da página</div>
+        <p style="font-size:0.8rem;color:#a89880;margin-bottom:4px">Controla o que aparece na página pública.</p>
+        <div id="settings-list" style="margin-top:12px">
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-label">Barra de notificações</div>
+                    <div class="toggle-desc">Convite para ativar notificações push</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-notif-bar" onchange="saveSetting('notif_bar', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-label">Mural de carinho</div>
+                    <div class="toggle-desc">Seção com mensagens de familiares e amigos</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-message-board" onchange="saveSetting('message_board', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-label">Envio de novas mensagens</div>
+                    <div class="toggle-desc">Permite que visitantes deixem mensagens no mural</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-allow-messages" onchange="saveSetting('allow_messages', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        <div id="fb-settings" class="feedback" style="display:none"></div>
     </div>
 </div>
 
@@ -361,9 +411,10 @@
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfTIqI5Pcfez0-8OZs8Ibi68G9NqO2P8xzzDkHKuRofJ7SopJ8-htDcjyEoTC8k79P/exec';
     const ONESIGNAL_APP_ID  = '89faae5a-ef60-4165-aef4-1c274deea3b4';
     const ONESIGNAL_API_KEY = 'os_v2_app_rh5k4wxpmbawllxudqtu33vdwrfsyujepzbetfuicsrhur6tktbl5c2q4xsinwmb4lz75f2bfgswkjp4h755huhfvks3l2lrphkcjai';
-    const SPREADSHEET_ID = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
-    const UPDATES_CSV = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
-    const RESUMO_CSV  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
+    const SPREADSHEET_ID    = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
+    const UPDATES_CSV       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
+    const RESUMO_CSV        = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
+    const CONFIGURACOES_CSV = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Configuracoes`;
 
     // ====================================================
     // AUTH
@@ -390,6 +441,7 @@
         setDefaultDateTime();
         loadRecent();
         loadResumo();
+        loadSettings();
     }
 
     function logout() {
@@ -607,6 +659,37 @@
         } catch (e) {
             document.getElementById('recent-list').innerHTML = '<p style="color:#c44;font-size:0.85rem">Erro ao carregar.</p>';
         }
+    }
+
+    async function loadSettings() {
+        try {
+            const resp = await fetch(CONFIGURACOES_CSV + '&t=' + Date.now());
+            const text = await resp.text();
+            const lines = text.trim().split('\n');
+            const cfg = {};
+            for (let i = 1; i < lines.length; i++) {
+                const r = parseCSVLine(lines[i]);
+                if (r[0]) cfg[r[0]] = r[1];
+            }
+            const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages' };
+            for (const [key, id] of Object.entries(map)) {
+                const el = document.getElementById(id);
+                if (el) el.checked = cfg[key] !== 'false';
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function saveSetting(key, value) {
+        const fb = document.getElementById('fb-settings');
+        try {
+            const res = await postToScript({ action: 'update_setting', password: localStorage.getItem('adriana_admin_pw'), key, value: String(value) });
+            if (res.ok) {
+                showFb(fb, 'Salvo!', true);
+                setTimeout(() => fb.style.display = 'none', 1800);
+            } else {
+                showFb(fb, res.error || 'Erro ao salvar.', false);
+            }
+        } catch (e) { showFb(fb, 'Erro de conexão.', false); }
     }
 
     async function loadResumo() {
