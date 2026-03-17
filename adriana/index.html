@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Adriana - Atualizacoes</title>
+    <title>Adriana - Atualizações</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,6 +44,12 @@
         .header p {
             font-size: 0.875rem;
             color: #8a7b66;
+        }
+
+        .header .last-update {
+            font-size: 0.75rem;
+            color: #a89880;
+            margin-top: 8px;
         }
 
         /* Summary card */
@@ -190,6 +196,20 @@
             color: #bfb49e;
         }
 
+        /* Pull to refresh */
+        .pull-indicator {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #a89880;
+            padding: 8px 0;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .pull-indicator.visible {
+            opacity: 1;
+        }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -206,9 +226,11 @@
 </head>
 <body>
     <div class="container">
+        <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
         <div class="header">
             <h1>Adriana</h1>
-            <p>Atualizacoes sobre o estado de saude</p>
+            <p>Atualizações sobre o estado de saúde</p>
+            <p class="last-update" id="last-update"></p>
         </div>
 
         <div id="summary-section">
@@ -224,7 +246,7 @@
         <div class="refresh-bar" id="refresh-bar"></div>
 
         <div class="footer">
-            <p>Esta pagina atualiza automaticamente a cada 5 minutos</p>
+            <p>Esta página atualiza automaticamente a cada 5 minutos</p>
         </div>
     </div>
 
@@ -368,6 +390,7 @@
 
                 renderSummary(resumo);
                 renderTimeline(updates);
+                updateLastUpdate(updates);
                 updateRefreshBar();
             } catch (err) {
                 console.error('Erro ao carregar dados:', err);
@@ -379,14 +402,14 @@
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
                     <div class="summary-card">
-                        <div class="summary-label">Como ela esta</div>
-                        <p class="summary-empty">Nenhum resumo disponivel ainda.</p>
+                        <div class="summary-label">Como ela está</div>
+                        <p class="summary-empty">Nenhum resumo disponível ainda.</p>
                     </div>`;
                 return;
             }
             section.innerHTML = `
                 <div class="summary-card">
-                    <div class="summary-label">Como ela esta</div>
+                    <div class="summary-label">Como ela está</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
                 </div>`;
@@ -395,14 +418,14 @@
         function renderTimeline(updates) {
             const section = document.getElementById('timeline-section');
             if (updates.length === 0) {
-                section.innerHTML = '<div class="empty-state">Nenhuma atualizacao ainda.</div>';
+                section.innerHTML = '<div class="empty-state">Nenhuma atualização ainda.</div>';
                 return;
             }
 
             const grouped = groupByDate(updates);
             const sortedDates = sortDateKeysDesc(Object.keys(grouped));
 
-            let html = '<div class="timeline-header">Historico</div>';
+            let html = '<div class="timeline-header">Histórico</div>';
 
             for (const date of sortedDates) {
                 const entries = grouped[date];
@@ -431,8 +454,66 @@
         function updateRefreshBar() {
             const now = new Date();
             const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('refresh-bar').textContent = `Ultima atualizacao: ${time}`;
+            document.getElementById('refresh-bar').textContent = `Última atualização: ${time}`;
         }
+
+        function updateLastUpdate(updates) {
+            const el = document.getElementById('last-update');
+            if (updates.length === 0) {
+                el.textContent = '';
+                return;
+            }
+            // Find the most recent entry
+            const sorted = [...updates].sort((a, b) => {
+                const toISO = (d) => {
+                    if (d.includes('/')) {
+                        const [dd, mm, yy] = d.split('/');
+                        return `${yy}-${mm}-${dd}`;
+                    }
+                    return d;
+                };
+                const cmp = toISO(b.data).localeCompare(toISO(a.data));
+                if (cmp !== 0) return cmp;
+                return (b.hora || '').localeCompare(a.hora || '');
+            });
+            const latest = sorted[0];
+            el.textContent = `Última notícia: ${formatDate(latest.data)}${latest.hora ? ' às ' + latest.hora : ''}`;
+        }
+
+        // Pull-to-refresh
+        (function() {
+            let startY = 0;
+            let pulling = false;
+            const indicator = document.getElementById('pull-indicator');
+
+            document.addEventListener('touchstart', (e) => {
+                if (window.scrollY === 0) {
+                    startY = e.touches[0].clientY;
+                    pulling = true;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!pulling) return;
+                const diff = e.touches[0].clientY - startY;
+                if (diff > 60) {
+                    indicator.classList.add('visible');
+                } else {
+                    indicator.classList.remove('visible');
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', () => {
+                if (indicator.classList.contains('visible')) {
+                    indicator.textContent = 'Atualizando...';
+                    fetchData().then(() => {
+                        indicator.textContent = 'Solte para atualizar';
+                        indicator.classList.remove('visible');
+                    });
+                }
+                pulling = false;
+            });
+        })();
 
         // Initial load
         fetchData();
