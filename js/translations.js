@@ -19,7 +19,7 @@ const translations = {
         aboutHighlight3Text: 'IA Generativa, Engenharia de Prompts e LLMs',
         aboutHighlight4Label: 'Missão',
         aboutHighlight4Text: 'Traduzir IA em ferramentas práticas para profissionais',
-        aboutNarrative: 'Sou Élder Prudente Barbosa Filho. Minha trajetória é definida pela convergência entre o Direito e a Tecnologia. Como instrutor e consultor, ministro cursos de Engenharia de Prompts para magistrados, assessores e escritórios de advocacia. A PensoIA consolida essa experiência, oferecendo soluções que traduzem a complexidade da inteligência artificial em ferramentas práticas para profissionais que buscam eficiência e rigor técnico na automação de tarefas intelectuais.',
+        aboutNarrative: 'Sou Élder Prudente Barbosa Filho. Minha trajetória é definida pela convergência entre o Direito e a Tecnologia. Como instrutor e consultor, ministro cursos de Engenharia de Prompts para magistrados, assessores e escritórios de advocacia. A {brand} consolida essa experiência, oferecendo soluções que traduzem a complexidade da inteligência artificial em ferramentas práticas para profissionais que buscam eficiência e rigor técnico na automação de tarefas intelectuais.',
 
         // Methodology
         methodologyTitle: 'Como Funciona',
@@ -55,8 +55,7 @@ const translations = {
 
         // Contact Section
         contactTitle: 'Contato',
-        contactText: 'Interessado em transformar sua prática jurídica com Inteligência Artificial? Entre em contato para discutirmos como a PensoIA pode ajudar.',
-        contactEmail: 'contato@pensoia.com',
+        contactText: 'Interessado em transformar sua prática jurídica com Inteligência Artificial? Entre em contato para discutirmos como a {brand} pode ajudar.',
 
         // Footer
         footerRights: 'Todos os direitos reservados.'
@@ -80,7 +79,7 @@ const translations = {
         aboutHighlight3Text: 'Generative AI, Prompt Engineering and LLMs',
         aboutHighlight4Label: 'Mission',
         aboutHighlight4Text: 'Translate AI into practical tools for professionals',
-        aboutNarrative: 'I\'m Élder Prudente Barbosa Filho. My trajectory is defined by the convergence between Law and Technology. As an instructor and consultant, I teach Prompt Engineering courses for magistrates, advisors, and law firms. PensoIA consolidates this experience, offering solutions that translate the complexity of artificial intelligence into practical tools for professionals seeking efficiency and technical rigor in automating intellectual tasks.',
+        aboutNarrative: 'I\'m Élder Prudente Barbosa Filho. My trajectory is defined by the convergence between Law and Technology. As an instructor and consultant, I teach Prompt Engineering courses for magistrates, advisors, and law firms. {brand} consolidates this experience, offering solutions that translate the complexity of artificial intelligence into practical tools for professionals seeking efficiency and technical rigor in automating intellectual tasks.',
 
         // Methodology
         methodologyTitle: 'How It Works',
@@ -116,8 +115,7 @@ const translations = {
 
         // Contact Section
         contactTitle: 'Contact',
-        contactText: 'Interested in transforming your legal practice with Artificial Intelligence? Get in touch to discuss how PensoIA can help.',
-        contactEmail: 'contact@pensoia.com',
+        contactText: 'Interested in transforming your legal practice with Artificial Intelligence? Get in touch to discuss how {brand} can help.',
 
         // Footer
         footerRights: 'All rights reserved.'
