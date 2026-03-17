@@ -160,6 +160,108 @@
             cursor: pointer;
             font-family: inherit;
         }
+
+        /* Photo upload */
+        .folder-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 8px 10px;
+            background: #fff;
+            border: 1px solid #e8e0d4;
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+        .folder-bar.granted { border-color: #c8e6c9; background: #f1f8f1; }
+        .folder-bar span { flex: 1; color: #8a7b66; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .folder-bar.granted span { color: #4a7c59; }
+        .btn-folder {
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid #ddd2c0;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-family: inherit;
+            color: #5c4a2f;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .drop-zone {
+            border: 2px dashed #ddd2c0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            background: #fff;
+            position: relative;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #c4a97d;
+            background: #fdf8f2;
+        }
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .drop-zone-text { font-size: 0.85rem; color: #a89880; pointer-events: none; }
+        .drop-zone-text strong { display: block; color: #5c4a2f; font-size: 0.9rem; margin-bottom: 2px; }
+
+        .photo-previews {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .photo-preview {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #e8e0d4;
+        }
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .photo-preview .remove-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(0,0,0,0.55);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .photo-preview .save-status {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9px;
+            padding: 2px;
+        }
+        .photo-preview .save-status.saving { background: rgba(255,200,0,0.85); color: #5c4a2f; }
+        .photo-preview .save-status.saved  { background: rgba(50,150,50,0.8);  color: #fff; }
+        .photo-preview .save-status.error  { background: rgba(200,50,50,0.8);  color: #fff; }
     </style>
 </head>
 <body>
@@ -197,8 +299,26 @@
         <label>Texto</label>
         <textarea id="input-texto" placeholder="O que está acontecendo..."></textarea>
 
-        <label>Fotos <span style="font-weight:400;text-transform:none;letter-spacing:0">(caminhos separados por |)</span></label>
-        <input type="text" id="input-foto" placeholder="media/IMG-xxx.jpg  ou  media/a.jpg|media/b.jpg">
+        <label>Fotos</label>
+
+        <!-- Folder access bar -->
+        <div class="folder-bar" id="folder-bar">
+            <span id="folder-name">Pasta media não selecionada</span>
+            <button class="btn-folder" onclick="selectFolder()">Selecionar pasta</button>
+        </div>
+
+        <!-- Drop zone -->
+        <div class="drop-zone" id="drop-zone">
+            <input type="file" id="file-input" accept="image/*,video/*" multiple>
+            <div class="drop-zone-text">
+                <strong>Arraste fotos aqui</strong>
+                ou clique para escolher
+            </div>
+        </div>
+        <div class="photo-previews" id="photo-previews"></div>
+
+        <!-- Manual URL fallback -->
+        <input type="text" id="input-foto" placeholder="ou cole caminhos manualmente: media/a.jpg|media/b.jpg" style="margin-top:8px">
 
         <div>
             <button class="btn" id="btn-publish" onclick="publishUpdate()">Publicar</button>
@@ -321,7 +441,7 @@
             if (res.ok) {
                 showFb(fb, 'Publicado!', true);
                 document.getElementById('input-texto').value = '';
-                document.getElementById('input-foto').value = '';
+                clearPhotoState();
                 setDefaultDateTime();
                 loadRecent();
             } else {
@@ -471,6 +591,188 @@
 
     function escHtml(s) {
         return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ====================================================
+    // FILE SYSTEM ACCESS — save to media/ folder
+    // ====================================================
+    let mediaFolderHandle = null;
+    let pendingFiles = []; // { file, filename, saved }
+
+    // Restore folder handle from IndexedDB
+    (async function restoreFolder() {
+        try {
+            const handle = await idbGet('mediaFolderHandle');
+            if (handle) {
+                const perm = await handle.queryPermission({ mode: 'readwrite' });
+                if (perm === 'granted') {
+                    mediaFolderHandle = handle;
+                    updateFolderBar(handle.name);
+                }
+                // If prompt, we'll re-request on next use
+            }
+        } catch (e) {}
+    })();
+
+    async function selectFolder() {
+        if (!window.showDirectoryPicker) {
+            alert('Seu navegador não suporta acesso a pastas. Use Chrome ou Edge.');
+            return;
+        }
+        try {
+            const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+            mediaFolderHandle = handle;
+            await idbSet('mediaFolderHandle', handle);
+            updateFolderBar(handle.name);
+            // Re-save any pending unsaved files
+            for (const item of pendingFiles) {
+                if (!item.saved) await saveFileToFolder(item);
+            }
+        } catch (e) {
+            if (e.name !== 'AbortError') console.error(e);
+        }
+    }
+
+    function updateFolderBar(name) {
+        const bar = document.getElementById('folder-bar');
+        bar.className = 'folder-bar granted';
+        document.getElementById('folder-name').textContent = 'Pasta: ' + name;
+    }
+
+    async function saveFileToFolder(item) {
+        const statusEl = item.statusEl;
+        if (!mediaFolderHandle) {
+            statusEl.textContent = 'sem pasta';
+            statusEl.className = 'save-status error';
+            return;
+        }
+        try {
+            const perm = await mediaFolderHandle.requestPermission({ mode: 'readwrite' });
+            if (perm !== 'granted') {
+                statusEl.textContent = 'sem acesso';
+                statusEl.className = 'save-status error';
+                return;
+            }
+            statusEl.textContent = 'salvando';
+            statusEl.className = 'save-status saving';
+            const fileHandle = await mediaFolderHandle.getFileHandle(item.filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(item.file);
+            await writable.close();
+            item.saved = true;
+            statusEl.textContent = 'salvo';
+            statusEl.className = 'save-status saved';
+        } catch (e) {
+            console.error(e);
+            statusEl.textContent = 'erro';
+            statusEl.className = 'save-status error';
+        }
+    }
+
+    function addFiles(files) {
+        for (const file of files) {
+            if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) continue;
+
+            // Build filename: keep original name, sanitize spaces
+            const filename = file.name.replace(/\s+/g, '_');
+            const url = 'media/' + filename;
+
+            // Add to pending
+            const item = { file, filename, saved: false, statusEl: null };
+            pendingFiles.push(item);
+
+            // Build preview
+            const preview = document.createElement('div');
+            preview.className = 'photo-preview';
+
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.alt = filename;
+            preview.appendChild(img);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-btn';
+            removeBtn.textContent = '×';
+            removeBtn.onclick = () => {
+                pendingFiles = pendingFiles.filter(i => i !== item);
+                preview.remove();
+                syncFotoField();
+            };
+            preview.appendChild(removeBtn);
+
+            const statusEl = document.createElement('div');
+            statusEl.className = 'save-status saving';
+            statusEl.textContent = 'aguardando';
+            preview.appendChild(statusEl);
+            item.statusEl = statusEl;
+
+            document.getElementById('photo-previews').appendChild(preview);
+
+            // Save to folder
+            saveFileToFolder(item);
+
+            // Append to foto field
+            syncFotoField();
+        }
+    }
+
+    function syncFotoField() {
+        const urls = pendingFiles.map(i => 'media/' + i.filename);
+        document.getElementById('input-foto').value = urls.join('|');
+    }
+
+    // Drop zone events
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        addFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', () => {
+        addFiles(fileInput.files);
+        fileInput.value = ''; // reset so same file can be re-added
+    });
+
+    // Clear pending files after successful publish
+    function clearPhotoState() {
+        pendingFiles = [];
+        document.getElementById('photo-previews').innerHTML = '';
+        document.getElementById('input-foto').value = '';
+    }
+
+    // ====================================================
+    // INDEXEDDB — persist folder handle across sessions
+    // ====================================================
+    function idbOpen() {
+        return new Promise((res, rej) => {
+            const req = indexedDB.open('adriana-admin', 1);
+            req.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+            req.onsuccess  = e => res(e.target.result);
+            req.onerror    = e => rej(e.target.error);
+        });
+    }
+    async function idbGet(key) {
+        const db = await idbOpen();
+        return new Promise((res, rej) => {
+            const req = db.transaction('kv').objectStore('kv').get(key);
+            req.onsuccess = e => res(e.target.result);
+            req.onerror   = e => rej(e.target.error);
+        });
+    }
+    async function idbSet(key, val) {
+        const db = await idbOpen();
+        return new Promise((res, rej) => {
+            const req = db.transaction('kv', 'readwrite').objectStore('kv').put(val, key);
+            req.onsuccess = () => res();
+            req.onerror   = e => rej(e.target.error);
+        });
     }
 </script>
 </body>
