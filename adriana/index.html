@@ -569,6 +569,9 @@
             <div class="board-header">Mural de carinho</div>
             <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
             <div class="board-cards" id="board-cards"></div>
+            <div id="board-toggle-row" style="display:none;text-align:center;margin-top:14px;">
+                <button class="msg-leave-btn" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
+            </div>
         </div>
 
         <div id="timeline-section">
@@ -1022,12 +1025,15 @@
         }
 
         function renderMessages(msgs) {
-            const board = document.getElementById('board-cards');
+            const board     = document.getElementById('board-cards');
+            const toggleRow = document.getElementById('board-toggle-row');
+            const toggleBtn = document.getElementById('board-toggle-btn');
             if (msgs.length === 0) {
                 board.innerHTML = '<p style="color:#a89880;font-style:italic;font-size:0.85rem;width:100%;text-align:center;padding:8px 0">Seja o primeiro a deixar uma mensagem de carinho!</p>';
+                toggleRow.style.display = 'none';
                 return;
             }
-            board.innerHTML = msgs.map(m => {
+            board.innerHTML = msgs.map((m, i) => {
                 const h     = hashStr(m.nome + m.mensagem);
                 const color = CARD_COLORS[h % CARD_COLORS.length];
                 const rot   = ((h % 7) - 3);
@@ -1035,13 +1041,36 @@
                 const hasEmoji  = /\p{Emoji}/u.test(firstChar);
                 const emoji     = hasEmoji ? firstChar : '';
                 const name      = hasEmoji ? m.nome.slice(firstChar.length).trim() : m.nome;
-                return `<div class="msg-card" style="background:${color};--r:${rot}deg">
+                const hidden    = i >= 2 ? ' class="msg-card msg-card-extra"' : ' class="msg-card"';
+                const style     = `background:${color};--r:${rot}deg${i >= 2 ? ';display:none' : ''}`;
+                return `<div${hidden} style="${style}">
                     ${emoji ? `<div style="font-size:1.6rem;margin-bottom:6px">${emoji}</div>` : ''}
                     <div class="msg-card-name">${escapeHtml(name)}</div>
                     <div class="msg-card-text">${escapeHtml(m.mensagem)}</div>
                     ${m.data ? `<div class="msg-card-date">${escapeHtml(m.data)}</div>` : ''}
                 </div>`;
             }).join('');
+
+            if (msgs.length > 2) {
+                toggleBtn.textContent = `Ver todas as mensagens (${msgs.length})`;
+                toggleRow.style.display = 'block';
+            } else {
+                toggleRow.style.display = 'none';
+            }
+        }
+
+        function toggleBoardExpand() {
+            const extras   = document.querySelectorAll('.msg-card-extra');
+            const btn      = document.getElementById('board-toggle-btn');
+            const expanded = extras.length > 0 && extras[0].style.display !== 'none';
+            if (expanded) {
+                extras.forEach(el => el.style.display = 'none');
+                btn.textContent = `Ver todas as mensagens (${extras.length + 2})`;
+                document.getElementById('board-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                extras.forEach(el => el.style.display = '');
+                btn.textContent = 'Recolher';
+            }
         }
 
         async function toggleHeart(btn, h) {
