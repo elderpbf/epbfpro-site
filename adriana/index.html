@@ -52,6 +52,16 @@
             margin-top: 8px;
         }
 
+        .intro {
+            font-size: 0.9rem;
+            color: #6b5d4a;
+            text-align: center;
+            line-height: 1.6;
+            padding: 0 8px 28px;
+            border-bottom: 1px solid #e8e0d4;
+            margin-bottom: 32px;
+        }
+
         /* Summary card */
         .summary-card {
             background: #fff;
@@ -159,6 +169,26 @@
             border-radius: 8px;
         }
 
+        .update-photo video {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+
+        .update-media-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .update-media-grid .update-photo {
+            flex: 1 1 calc(50% - 4px);
+            min-width: 120px;
+            margin-top: 0;
+        }
+
         /* Loading & empty states */
         .loading {
             text-align: center;
@@ -233,6 +263,12 @@
             <p class="last-update" id="last-update"></p>
         </div>
 
+        <div class="intro">
+            Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
+            Aqui vocês encontram as atualizações mais recentes sobre o estado dela, sempre que houver novidades.
+            Assim ninguém precisa ficar sem notícias.
+        </div>
+
         <div id="summary-section">
             <div class="loading">
                 <div class="loading-spinner"></div>
@@ -299,17 +335,45 @@
             return result;
         }
 
-        function driveImageUrl(url) {
+        function resolveMediaUrl(url) {
             if (!url) return null;
-            // Extract Google Drive file ID from various URL formats
+            url = url.trim();
+            // Google Drive URLs
             let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
             if (!match) match = url.match(/id=([a-zA-Z0-9_-]+)/);
             if (match) {
                 return `https://lh3.googleusercontent.com/d/${match[1]}`;
             }
-            // If it's already a direct image URL, return as-is
-            if (url.match(/\.(jpg|jpeg|png|gif|webp)/i)) return url;
+            // Relative or direct URLs
+            if (url.match(/\.(jpg|jpeg|png|gif|webp|mp4|mov)/i)) return url;
             return null;
+        }
+
+        function isVideo(url) {
+            return url && /\.(mp4|mov|webm)/i.test(url);
+        }
+
+        function renderMedia(fotoField) {
+            if (!fotoField) return '';
+            const items = fotoField.split('|').map(s => resolveMediaUrl(s)).filter(Boolean);
+            if (items.length === 0) return '';
+            if (items.length === 1) {
+                const url = items[0];
+                if (isVideo(url)) {
+                    return `<div class="update-photo"><video src="${url}" controls preload="none" poster=""></video></div>`;
+                }
+                return `<div class="update-photo"><img src="${url}" alt="Foto" loading="lazy"></div>`;
+            }
+            let html = '<div class="update-media-grid">';
+            for (const url of items) {
+                if (isVideo(url)) {
+                    html += `<div class="update-photo"><video src="${url}" controls preload="none"></video></div>`;
+                } else {
+                    html += `<div class="update-photo"><img src="${url}" alt="Foto" loading="lazy"></div>`;
+                }
+            }
+            html += '</div>';
+            return html;
         }
 
         function formatDate(dateStr) {
@@ -382,7 +446,7 @@
                         texto: row[2] || '',
                         foto: row[3] || ''
                     }))
-                    .filter(u => u.texto);
+                    .filter(u => u.texto || u.foto);
 
                 const resumo = resumoRows.length > 0
                     ? { data: resumoRows[0][0] || '', texto: resumoRows[0][1] || '' }
@@ -436,12 +500,11 @@
                 entries.sort((a, b) => (b.hora || '').localeCompare(a.hora || ''));
 
                 for (const entry of entries) {
-                    const photoUrl = driveImageUrl(entry.foto);
                     html += `
                         <div class="update-entry">
                             ${entry.hora ? `<div class="update-time">${escapeHtml(entry.hora)}</div>` : ''}
                             <div class="update-text">${escapeHtml(entry.texto).replace(/\n/g, '<br>')}</div>
-                            ${photoUrl ? `<div class="update-photo"><img src="${photoUrl}" alt="Foto" loading="lazy"></div>` : ''}
+                            ${renderMedia(entry.foto)}
                         </div>`;
                 }
 
