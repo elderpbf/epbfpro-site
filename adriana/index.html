@@ -9,6 +9,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function(OneSignal) {
+            await OneSignal.init({ appId: '89faae5a-ef60-4165-aef4-1c274deea3b4', notifyButton: { enable: false } });
+            updateNotifBar();
+            OneSignal.User.PushSubscription.addEventListener('change', updateNotifBar);
+        });
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -248,6 +257,20 @@
             opacity: 1;
         }
 
+        /* Notification bar */
+        .notif-bar {
+            display: none;
+            text-align: center;
+            padding: 9px 16px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .notif-bar.prompt  { background: #fff8ec; color: #7a5c2a; border-color: #f0d9a8; }
+        .notif-bar.enabled { background: #edf7f0; color: #3a6b4a; border-color: #b8dfc7; cursor: default; }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -270,6 +293,8 @@
             <p>Atualizações sobre o estado de saúde de Adriana</p>
             <p class="last-update" id="last-update"></p>
         </div>
+
+        <div id="notif-bar" class="notif-bar" onclick="notifBarClick()"></div>
 
         <div class="intro">
             Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
@@ -587,6 +612,32 @@
                 pulling = false;
             });
         })();
+
+        // Notification bar
+        async function updateNotifBar() {
+            if (!window.OneSignalDeferred) return;
+            OneSignalDeferred.push(async function(OneSignal) {
+                const bar = document.getElementById('notif-bar');
+                const subscribed = OneSignal.User.PushSubscription.optedIn;
+                if (subscribed) {
+                    bar.className = 'notif-bar enabled';
+                    bar.textContent = 'Notificações ativadas ✓';
+                } else {
+                    bar.className = 'notif-bar prompt';
+                    bar.textContent = '🔔 Receber notificações quando houver novidades';
+                }
+                bar.style.display = 'block';
+            });
+        }
+
+        function notifBarClick() {
+            if (!window.OneSignalDeferred) return;
+            OneSignalDeferred.push(async function(OneSignal) {
+                if (!OneSignal.User.PushSubscription.optedIn) {
+                    await OneSignal.Notifications.requestPermission();
+                }
+            });
+        }
 
         // Initial load
         fetchData();
