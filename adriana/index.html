@@ -271,6 +271,145 @@
         .notif-bar.prompt  { background: #fff8ec; color: #7a5c2a; border-color: #f0d9a8; }
         .notif-bar.enabled { background: #edf7f0; color: #3a6b4a; border-color: #b8dfc7; cursor: default; }
 
+        /* Message board */
+        .board-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #8a7b66;
+            margin-bottom: 20px;
+            margin-top: 40px;
+        }
+
+        .board-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding: 4px 2px 8px;
+        }
+
+        .msg-card {
+            padding: 14px 15px 12px;
+            border-radius: 4px;
+            width: calc(50% - 7px);
+            min-width: 130px;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+            transform: rotate(var(--r));
+            transition: transform 0.18s, box-shadow 0.18s;
+            cursor: default;
+            position: relative;
+        }
+
+        .msg-card:hover {
+            transform: rotate(0deg) scale(1.03);
+            box-shadow: 3px 5px 14px rgba(0,0,0,0.14);
+            z-index: 2;
+        }
+
+        .msg-card-name {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #5c4a2f;
+            margin-bottom: 5px;
+        }
+
+        .msg-card-text {
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: #3d3529;
+            word-break: break-word;
+        }
+
+        .msg-card-date {
+            font-size: 0.68rem;
+            color: #a89880;
+            margin-top: 8px;
+        }
+
+        .msg-leave-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 9px 22px;
+            background: #fff;
+            border: 1px solid #ddd2c0;
+            border-radius: 20px;
+            color: #5c4a2f;
+            font-size: 0.83rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .msg-leave-btn:hover { background: #fdf8f2; }
+
+        /* Modal */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.38);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-bg.open { display: flex; }
+
+        .modal-box {
+            background: #faf8f5;
+            border-radius: 14px;
+            padding: 26px 22px 22px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        }
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #5c4a2f;
+            margin-bottom: 18px;
+        }
+        .modal-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #8a7b66;
+            margin-bottom: 5px;
+            margin-top: 14px;
+        }
+        .modal-input, .modal-textarea {
+            width: 100%;
+            padding: 9px 11px;
+            border: 1px solid #e8e0d4;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-family: inherit;
+            background: #fff;
+            color: #3d3529;
+            outline: none;
+        }
+        .modal-input:focus, .modal-textarea:focus { border-color: #c4a97d; }
+        .modal-textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .modal-btn-send { background: #5c4a2f; color: #fff; }
+        .modal-btn-cancel { background: #e8e0d4; color: #5c4a2f; }
+        .modal-fb { margin-top: 10px; font-size: 0.82rem; padding: 8px 10px; border-radius: 7px; }
+        .modal-fb-ok  { background: #e8f5e9; color: #2e7d32; }
+        .modal-fb-err { background: #fce4ec; color: #c62828; }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -314,6 +453,36 @@
 
         <div class="refresh-bar" id="refresh-bar"></div>
 
+        <!-- Message board -->
+        <div id="board-section">
+            <div class="board-header">Mural de carinho</div>
+            <div class="board-cards" id="board-cards"></div>
+            <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem de carinho</button>
+        </div>
+
+        <!-- Message modal -->
+        <div class="modal-bg" id="msg-modal">
+            <div class="modal-box">
+                <div class="modal-title">Uma mensagem para Adriana</div>
+
+                <span class="modal-label">Seu emoji (escolha um que represente você)</span>
+                <div id="emoji-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                </div>
+
+                <span class="modal-label">Seu nome</span>
+                <input class="modal-input" id="msg-nome" type="text" placeholder="Como quer se identificar?">
+
+                <span class="modal-label">Sua mensagem</span>
+                <textarea class="modal-textarea" id="msg-texto" placeholder="Escreva com carinho..."></textarea>
+
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-send" id="msg-send-btn" onclick="sendMessage()">Enviar</button>
+                    <button class="modal-btn modal-btn-cancel" onclick="closeMsgModal()">Cancelar</button>
+                </div>
+                <div id="msg-fb" style="display:none"></div>
+            </div>
+        </div>
+
         <div class="footer">
             <p>Esta página atualiza ao abrir e a cada 5 minutos</p>
         </div>
@@ -323,7 +492,9 @@
         const SPREADSHEET_ID = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
         const UPDATES_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
         const RESUMO_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
-        const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+        const MENSAGENS_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Mensagens`;
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfTIqI5Pcfez0-8OZs8Ibi68G9NqO2P8xzzDkHKuRofJ7SopJ8-htDcjyEoTC8k79P/exec';
+        const REFRESH_INTERVAL = 5 * 60 * 1000;
 
         function parseCSV(text) {
             const lines = text.trim().split('\n');
@@ -641,6 +812,7 @@
 
         // Initial load
         fetchData();
+        loadMessages();
 
         // Auto-refresh
         setInterval(fetchData, REFRESH_INTERVAL);
@@ -651,6 +823,153 @@
                 fetchData();
             }
         });
+
+        // ================================================
+        // MESSAGE BOARD
+        // ================================================
+        const CARD_COLORS  = ['#fffde7','#e8f5e9','#e3f2fd','#fce4ec','#f3e5f5','#fff3e0','#e0f7fa','#f1f8e9'];
+        const CARD_EMOJIS  = ['🌸','🌻','🌈','💛','🙏','💪','❤️','🌿','☀️','💐','🕊️','⭐'];
+        let selectedEmoji  = CARD_EMOJIS[0];
+
+        // Build emoji picker
+        (function() {
+            const picker = document.getElementById('emoji-picker');
+            CARD_EMOJIS.forEach(e => {
+                const btn = document.createElement('button');
+                btn.textContent = e;
+                btn.style.cssText = 'font-size:1.4rem;background:#fff;border:2px solid #e8e0d4;border-radius:8px;padding:4px 7px;cursor:pointer;transition:border-color 0.15s;';
+                btn.onclick = () => {
+                    selectedEmoji = e;
+                    picker.querySelectorAll('button').forEach(b => b.style.borderColor = '#e8e0d4');
+                    btn.style.borderColor = '#c4a97d';
+                };
+                if (e === selectedEmoji) btn.style.borderColor = '#c4a97d';
+                picker.appendChild(btn);
+            });
+        })();
+
+        function hashStr(s) {
+            let h = 0;
+            for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+            return Math.abs(h);
+        }
+
+        async function loadMessages() {
+            try {
+                const resp = await fetch(MENSAGENS_URL + '&t=' + Date.now());
+                const text = await resp.text();
+                const lines = text.trim().split('\n');
+                const msgs = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const r = parseCSVLine(lines[i]);
+                    if (r[0] && r[1]) msgs.push({ nome: r[0], mensagem: r[1], data: r[2] || '' });
+                }
+                renderMessages(msgs.reverse());
+            } catch (e) { console.error(e); }
+        }
+
+        function renderMessages(msgs) {
+            const board = document.getElementById('board-cards');
+            if (msgs.length === 0) {
+                board.innerHTML = '<p style="color:#a89880;font-style:italic;font-size:0.85rem;width:100%;text-align:center;padding:8px 0">Seja o primeiro a deixar uma mensagem de carinho!</p>';
+                return;
+            }
+            board.innerHTML = msgs.map(m => {
+                const h     = hashStr(m.nome + m.mensagem);
+                const color = CARD_COLORS[h % CARD_COLORS.length];
+                const rot   = ((h % 7) - 3);
+                // Extract emoji prefix if any (first char)
+                const firstChar = [...m.nome][0];
+                const hasEmoji  = /\p{Emoji}/u.test(firstChar);
+                const emoji     = hasEmoji ? firstChar : '';
+                const name      = hasEmoji ? m.nome.slice(firstChar.length).trim() : m.nome;
+                return `<div class="msg-card" style="background:${color};--r:${rot}deg">
+                    ${emoji ? `<div style="font-size:1.6rem;margin-bottom:6px">${emoji}</div>` : ''}
+                    <div class="msg-card-name">${escapeHtml(name)}</div>
+                    <div class="msg-card-text">${escapeHtml(m.mensagem)}</div>
+                    ${m.data ? `<div class="msg-card-date">${escapeHtml(m.data)}</div>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function openMsgModal() {
+            document.getElementById('msg-modal').classList.add('open');
+            const saved = localStorage.getItem('adriana_msg_name');
+            if (saved) document.getElementById('msg-nome').value = saved;
+            document.getElementById('msg-fb').style.display = 'none';
+        }
+
+        function closeMsgModal() {
+            document.getElementById('msg-modal').classList.remove('open');
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('msg-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeMsgModal();
+        });
+
+        async function sendMessage() {
+            const nome   = document.getElementById('msg-nome').value.trim();
+            const texto  = document.getElementById('msg-texto').value.trim();
+            const fb     = document.getElementById('msg-fb');
+            const btn    = document.getElementById('msg-send-btn');
+
+            if (!nome || !texto) {
+                fb.textContent = 'Preencha seu nome e a mensagem.';
+                fb.className = 'modal-fb modal-fb-err';
+                fb.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            fb.style.display = 'none';
+
+            // Prepend selected emoji to name so it's stored and displayed
+            const nomeComEmoji = selectedEmoji + ' ' + nome;
+            localStorage.setItem('adriana_msg_name', nome);
+
+            const br  = new Date(new Date().getTime() + (new Date().getTimezoneOffset() * 60000) - (3 * 3600000));
+            const data = `${String(br.getDate()).padStart(2,'0')}/${String(br.getMonth()+1).padStart(2,'0')}/${br.getFullYear()}`;
+
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'post_message', nome: nomeComEmoji, mensagem: texto, data })
+                });
+                const res = await resp.json();
+                if (res.ok) {
+                    fb.textContent = 'Mensagem enviada! 💛';
+                    fb.className = 'modal-fb modal-fb-ok';
+                    fb.style.display = 'block';
+                    document.getElementById('msg-texto').value = '';
+                    setTimeout(() => { closeMsgModal(); loadMessages(); }, 1600);
+                } else {
+                    fb.textContent = res.error || 'Erro ao enviar.';
+                    fb.className = 'modal-fb modal-fb-err';
+                    fb.style.display = 'block';
+                }
+            } catch (e) {
+                fb.textContent = 'Erro de conexão.';
+                fb.className = 'modal-fb modal-fb-err';
+                fb.style.display = 'block';
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Enviar';
+        }
+
+        // Returning visitor prompt after 8s
+        (function() {
+            if (localStorage.getItem('adriana_visited')) {
+                setTimeout(() => {
+                    if (!document.getElementById('msg-modal').classList.contains('open')) {
+                        openMsgModal();
+                    }
+                }, 8000);
+            }
+            localStorage.setItem('adriana_visited', '1');
+        })();
     </script>
 </body>
 </html>
