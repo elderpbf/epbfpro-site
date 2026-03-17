@@ -320,9 +320,13 @@
         <!-- Manual URL fallback -->
         <input type="text" id="input-foto" placeholder="ou cole caminhos manualmente: media/a.jpg|media/b.jpg" style="margin-top:8px">
 
-        <div>
-            <button class="btn" id="btn-publish" onclick="publishUpdate()">Publicar</button>
-            <button class="btn btn-outline" onclick="setDefaultDateTime()">Hora atual</button>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;">
+            <button class="btn" style="margin-top:0" id="btn-publish" onclick="publishUpdate()">Publicar</button>
+            <button class="btn btn-outline" style="margin-top:0; margin-left:0" onclick="setDefaultDateTime()">Hora atual</button>
+            <label style="display:flex; align-items:center; gap:6px; margin:0; text-transform:none; letter-spacing:0; font-size:0.82rem; color:#5c4a2f; cursor:pointer;">
+                <input type="checkbox" id="chk-notif" checked style="width:auto; margin:0">
+                Notificar seguidores
+            </label>
         </div>
         <div id="fb-update" class="feedback" style="display:none"></div>
 
@@ -355,6 +359,8 @@
     // CONFIG — replace APPS_SCRIPT_URL after deploying
     // ====================================================
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfTIqI5Pcfez0-8OZs8Ibi68G9NqO2P8xzzDkHKuRofJ7SopJ8-htDcjyEoTC8k79P/exec';
+    const ONESIGNAL_APP_ID  = '89faae5a-ef60-4165-aef4-1c274deea3b4';
+    const ONESIGNAL_API_KEY = 'ONESIGNAL_REST_API_KEY_HERE'; // Settings > Keys & IDs > REST API Key
     const SPREADSHEET_ID = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
     const UPDATES_CSV = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
     const RESUMO_CSV  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
@@ -447,6 +453,9 @@
                 foto
             });
             if (res.ok) {
+                if (document.getElementById('chk-notif').checked && texto) {
+                    await sendPushNotification(texto);
+                }
                 showFb(fb, 'Publicado!', true);
                 document.getElementById('input-texto').value = '';
                 clearPhotoState();
@@ -503,6 +512,30 @@
 
         btn.disabled = false;
         btn.textContent = 'Atualizar resumo';
+    }
+
+    // ====================================================
+    // ONESIGNAL PUSH
+    // ====================================================
+    async function sendPushNotification(texto) {
+        try {
+            await fetch('https://onesignal.com/api/v1/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Basic ' + ONESIGNAL_API_KEY
+                },
+                body: JSON.stringify({
+                    app_id: ONESIGNAL_APP_ID,
+                    included_segments: ['Total Subscriptions'],
+                    headings: { pt: 'Notícias de Adriana', en: 'Notícias de Adriana' },
+                    contents: { pt: texto, en: texto },
+                    url: 'https://epbf.com.br/adriana'
+                })
+            });
+        } catch (e) {
+            console.error('Notificação não enviada:', e);
+        }
     }
 
     // ====================================================
