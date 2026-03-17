@@ -262,6 +262,10 @@
         .photo-preview .save-status.saving { background: rgba(255,200,0,0.85); color: #5c4a2f; }
         .photo-preview .save-status.saved  { background: rgba(50,150,50,0.8);  color: #fff; }
         .photo-preview .save-status.error  { background: rgba(200,50,50,0.8);  color: #fff; }
+        .recent-entry { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+        .recent-entry-content { flex: 1; min-width: 0; }
+        .btn-delete { background: none; border: 1px solid #e8ccc8; color: #c44; border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; flex-shrink: 0; transition: background 0.15s; }
+        .btn-delete:hover { background: #fce4e4; }
         /* Toggle switches */
         .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid #e8e0d4; }
         .toggle-row:last-child { border-bottom: none; }
@@ -363,6 +367,15 @@
 
         <hr class="divider">
 
+        <!-- Messages -->
+        <div class="section-title">Mural de carinho</div>
+        <p style="font-size:0.8rem;color:#a89880;margin-bottom:12px">Mensagens enviadas pelos visitantes.</p>
+        <div class="recent-list" id="msg-admin-list">
+            <p style="color:#a89880;font-size:0.85rem">Carregando...</p>
+        </div>
+
+        <hr class="divider">
+
         <!-- Settings -->
         <div class="section-title">Configurações da página</div>
         <p style="font-size:0.8rem;color:#a89880;margin-bottom:4px">Controla o que aparece na página pública.</p>
@@ -415,6 +428,7 @@
     const UPDATES_CSV       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
     const RESUMO_CSV        = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
     const CONFIGURACOES_CSV = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Configuracoes`;
+    const MENSAGENS_CSV     = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Mensagens`;
 
     // ====================================================
     // AUTH
@@ -442,6 +456,7 @@
         loadRecent();
         loadResumo();
         loadSettings();
+        loadAdminMessages();
     }
 
     function logout() {
@@ -690,6 +705,59 @@
                 showFb(fb, res.error || 'Erro ao salvar.', false);
             }
         } catch (e) { showFb(fb, 'Erro de conexão.', false); }
+    }
+
+    async function loadAdminMessages() {
+        const el = document.getElementById('msg-admin-list');
+        try {
+            const resp = await fetch(MENSAGENS_CSV + '&t=' + Date.now());
+            const text = await resp.text();
+            const lines = text.trim().split('\n');
+            const msgs = [];
+            for (let i = 1; i < lines.length; i++) {
+                const r = parseCSVLine(lines[i]);
+                if (r[0]) msgs.push({ nome: r[0], mensagem: r[1] || '', data: r[2] || '', sheetRow: i + 1 });
+            }
+            if (msgs.length === 0) {
+                el.innerHTML = '<p style="color:#a89880;font-size:0.85rem">Nenhuma mensagem ainda.</p>';
+                return;
+            }
+            el.innerHTML = msgs.map(m => `
+                <div class="recent-entry" id="msg-row-${m.sheetRow}">
+                    <div class="recent-entry-content">
+                        <div class="recent-meta">${escHtml(m.nome)} &middot; ${escHtml(m.data)}</div>
+                        <div>${escHtml(m.mensagem)}</div>
+                    </div>
+                    <button class="btn-delete" onclick="deleteMessage(${m.sheetRow}, this)">Apagar</button>
+                </div>
+            `).join('');
+        } catch (e) {
+            el.innerHTML = '<p style="color:#c44;font-size:0.85rem">Erro ao carregar.</p>';
+        }
+    }
+
+    async function deleteMessage(sheetRow, btn) {
+        if (!confirm('Apagar esta mensagem?')) return;
+        btn.disabled = true;
+        btn.textContent = '...';
+        try {
+            const res = await postToScript({
+                action: 'delete_message',
+                password: localStorage.getItem('adriana_admin_pw'),
+                row: sheetRow
+            });
+            if (res.ok) {
+                document.getElementById('msg-row-' + sheetRow).remove();
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Apagar';
+                alert(res.error || 'Erro ao apagar.');
+            }
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = 'Apagar';
+            alert('Erro de conexão.');
+        }
     }
 
     async function loadResumo() {
