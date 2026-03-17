@@ -5,7 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Adriana - Atualizações</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="media/favicon-adriana.png">
+    <script>
+        (function() {
+            const s = localStorage.getItem('adriana_theme');
+            const dark = s === 'dark' || (!s && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,14 +26,66 @@
         });
     </script>
     <style>
+        :root {
+            --bg: #faf8f5;
+            --text: #3d3529;
+            --text-muted: #8a7b66;
+            --text-dim: #a89880;
+            --border: #e8e0d4;
+            --card-bg: #fff;
+            --heading: #5c4a2f;
+            --intro-text: #6b5d4a;
+            --accent: #c4a97d;
+            --footer-text: #bfb49e;
+            --spinner-border: #e8e0d4;
+            --update-inner-border: #ede7dc;
+            --update-left: #ddd2c0;
+            --modal-bg: #faf8f5;
+            --modal-input-bg: #fff;
+            --modal-cancel-bg: #e8e0d4;
+            --modal-cancel-text: #5c4a2f;
+            --notif-prompt-bg: #fff8ec;
+            --notif-prompt-text: #7a5c2a;
+            --notif-prompt-border: #f0d9a8;
+            --notif-on-bg: #edf7f0;
+            --notif-on-text: #3a6b4a;
+            --notif-on-border: #b8dfc7;
+        }
+        [data-theme="dark"] {
+            --bg: #1c1916;
+            --text: #e2d9ce;
+            --text-muted: #9a8b78;
+            --text-dim: #6e6050;
+            --border: #2d2923;
+            --card-bg: #252119;
+            --heading: #c8a97a;
+            --intro-text: #9a8272;
+            --accent: #c4a97d;
+            --footer-text: #4a4235;
+            --spinner-border: #2d2923;
+            --update-inner-border: #2d2923;
+            --update-left: #4a3f2f;
+            --modal-bg: #1c1916;
+            --modal-input-bg: #252119;
+            --modal-cancel-bg: #2d2923;
+            --modal-cancel-text: #c4a97d;
+            --notif-prompt-bg: #2a2418;
+            --notif-prompt-text: #d4a95a;
+            --notif-prompt-border: #4a3820;
+            --notif-on-bg: #1a2e20;
+            --notif-on-text: #6bbb85;
+            --notif-on-border: #2a4e35;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: #faf8f5;
-            color: #3d3529;
+            background: var(--bg);
+            color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
+            transition: background 0.2s, color 0.2s;
         }
 
         .container {
@@ -39,7 +98,7 @@
         .header {
             text-align: center;
             padding: 32px 0 24px;
-            border-bottom: 1px solid #e8e0d4;
+            border-bottom: 1px solid var(--border);
             margin-bottom: 32px;
         }
 
@@ -48,35 +107,35 @@
             height: 140px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid #e8e0d4;
+            border: 3px solid var(--border);
             margin-bottom: 14px;
         }
 
         .header p {
             font-size: 0.875rem;
-            color: #8a7b66;
+            color: var(--text-muted);
         }
 
         .header .last-update {
             font-size: 0.75rem;
-            color: #a89880;
+            color: var(--text-dim);
             margin-top: 8px;
         }
 
         .intro {
             font-size: 0.9rem;
-            color: #6b5d4a;
+            color: var(--intro-text);
             text-align: center;
             line-height: 1.6;
             padding: 0 8px 28px;
-            border-bottom: 1px solid #e8e0d4;
+            border-bottom: 1px solid var(--border);
             margin-bottom: 32px;
         }
 
         /* Summary card */
         .summary-card {
-            background: #fff;
-            border: 1px solid #e8e0d4;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 36px;
@@ -88,30 +147,30 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #8a7b66;
+            color: var(--text-muted);
             margin-bottom: 4px;
         }
 
         .summary-subtitle {
             font-size: 0.75rem;
-            color: #a89880;
+            color: var(--text-dim);
             margin-bottom: 8px;
         }
 
         .summary-date {
             font-size: 0.8rem;
-            color: #a89880;
+            color: var(--text-dim);
             margin-bottom: 12px;
         }
 
         .summary-text {
             font-size: 1.05rem;
             line-height: 1.7;
-            color: #3d3529;
+            color: var(--text);
         }
 
         .summary-empty {
-            color: #a89880;
+            color: var(--text-dim);
             font-style: italic;
         }
 
@@ -121,7 +180,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #8a7b66;
+            color: var(--text-muted);
             margin-bottom: 16px;
         }
 
@@ -132,7 +191,7 @@
         .day-label {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #5c4a2f;
+            color: var(--heading);
             margin-bottom: 12px;
             padding-left: 20px;
             position: relative;
@@ -146,23 +205,23 @@
             transform: translateY(-50%);
             width: 8px;
             height: 8px;
-            background: #c4a97d;
+            background: var(--accent);
             border-radius: 50%;
         }
 
         .update-entry {
-            background: #fff;
-            border: 1px solid #ede7dc;
+            background: var(--card-bg);
+            border: 1px solid var(--update-inner-border);
             border-radius: 10px;
             padding: 16px;
             margin-bottom: 10px;
             margin-left: 20px;
-            border-left: 3px solid #ddd2c0;
+            border-left: 3px solid var(--update-left);
         }
 
         .update-time {
             font-size: 0.75rem;
-            color: #a89880;
+            color: var(--text-dim);
             font-weight: 500;
             margin-bottom: 6px;
         }
@@ -170,7 +229,7 @@
         .update-text {
             font-size: 0.95rem;
             line-height: 1.65;
-            color: #3d3529;
+            color: var(--text);
         }
 
         .update-photo {
@@ -210,15 +269,15 @@
         .loading {
             text-align: center;
             padding: 48px 0;
-            color: #a89880;
+            color: var(--text-dim);
         }
 
         .loading-spinner {
             display: inline-block;
             width: 24px;
             height: 24px;
-            border: 2px solid #e8e0d4;
-            border-top-color: #c4a97d;
+            border: 2px solid var(--spinner-border);
+            border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             margin-bottom: 12px;
@@ -231,7 +290,7 @@
         .empty-state {
             text-align: center;
             padding: 48px 0;
-            color: #a89880;
+            color: var(--text-dim);
             font-style: italic;
         }
 
@@ -240,14 +299,14 @@
             text-align: center;
             padding: 8px 0;
             font-size: 0.7rem;
-            color: #bfb49e;
+            color: var(--footer-text);
         }
 
         /* Pull to refresh */
         .pull-indicator {
             text-align: center;
             font-size: 0.75rem;
-            color: #a89880;
+            color: var(--text-dim);
             padding: 8px 0;
             opacity: 0;
             transition: opacity 0.2s;
@@ -268,8 +327,28 @@
             cursor: pointer;
             border: 1px solid transparent;
         }
-        .notif-bar.prompt  { background: #fff8ec; color: #7a5c2a; border-color: #f0d9a8; }
-        .notif-bar.enabled { background: #edf7f0; color: #3a6b4a; border-color: #b8dfc7; cursor: default; }
+        .notif-bar.prompt  { background: var(--notif-prompt-bg); color: var(--notif-prompt-text); border-color: var(--notif-prompt-border); }
+        .notif-bar.enabled { background: var(--notif-on-bg); color: var(--notif-on-text); border-color: var(--notif-on-border); cursor: default; }
+
+        /* Dark mode toggle */
+        #dark-toggle {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            transition: background 0.2s, border-color 0.2s;
+        }
 
         /* Message board */
         .board-header {
@@ -277,7 +356,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #8a7b66;
+            color: var(--text-muted);
             margin-bottom: 20px;
             margin-top: 40px;
         }
@@ -290,7 +369,7 @@
         }
 
         .msg-card {
-            padding: 14px 15px 12px;
+            padding: 14px 15px 28px;
             border-radius: 4px;
             width: calc(50% - 7px);
             min-width: 130px;
@@ -299,6 +378,11 @@
             transition: transform 0.18s, box-shadow 0.18s;
             cursor: default;
             position: relative;
+        }
+
+        [data-theme="dark"] .msg-card {
+            filter: brightness(0.72) saturate(0.85);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.2);
         }
 
         .msg-card:hover {
@@ -327,20 +411,44 @@
             margin-top: 8px;
         }
 
+        /* Heart button */
+        .msg-heart-btn {
+            position: absolute;
+            bottom: 7px;
+            right: 8px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            transition: transform 0.15s;
+            line-height: 1;
+            opacity: 0.45;
+        }
+        .msg-heart-btn:hover { transform: scale(1.2); opacity: 1; }
+        .msg-heart-btn.hearted { opacity: 1; }
+        @keyframes heartPop {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.6); }
+            100% { transform: scale(1); }
+        }
+        .msg-heart-btn.pop { animation: heartPop 0.3s ease-out; }
+
         .msg-leave-btn {
             display: block;
             margin: 20px auto 0;
             padding: 9px 22px;
-            background: #fff;
-            border: 1px solid #ddd2c0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
             border-radius: 20px;
-            color: #5c4a2f;
+            color: var(--heading);
             font-size: 0.83rem;
             font-family: inherit;
             cursor: pointer;
             transition: background 0.15s;
         }
-        .msg-leave-btn:hover { background: #fdf8f2; }
+        .msg-leave-btn:hover { background: var(--bg); }
 
         /* Modal */
         .modal-bg {
@@ -356,7 +464,7 @@
         .modal-bg.open { display: flex; }
 
         .modal-box {
-            background: #faf8f5;
+            background: var(--modal-bg);
             border-radius: 14px;
             padding: 26px 22px 22px;
             max-width: 380px;
@@ -366,7 +474,7 @@
         .modal-title {
             font-size: 1rem;
             font-weight: 700;
-            color: #5c4a2f;
+            color: var(--heading);
             margin-bottom: 18px;
         }
         .modal-label {
@@ -375,22 +483,22 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            color: #8a7b66;
+            color: var(--text-muted);
             margin-bottom: 5px;
             margin-top: 14px;
         }
         .modal-input, .modal-textarea {
             width: 100%;
             padding: 9px 11px;
-            border: 1px solid #e8e0d4;
+            border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 0.92rem;
             font-family: inherit;
-            background: #fff;
-            color: #3d3529;
+            background: var(--modal-input-bg);
+            color: var(--text);
             outline: none;
         }
-        .modal-input:focus, .modal-textarea:focus { border-color: #c4a97d; }
+        .modal-input:focus, .modal-textarea:focus { border-color: var(--accent); }
         .modal-textarea { min-height: 80px; resize: vertical; }
         .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
         .modal-btn {
@@ -404,8 +512,8 @@
             transition: opacity 0.15s;
         }
         .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .modal-btn-send { background: #5c4a2f; color: #fff; }
-        .modal-btn-cancel { background: #e8e0d4; color: #5c4a2f; }
+        .modal-btn-send { background: var(--heading); color: #fff; }
+        .modal-btn-cancel { background: var(--modal-cancel-bg); color: var(--modal-cancel-text); }
         .modal-fb { margin-top: 10px; font-size: 0.82rem; padding: 8px 10px; border-radius: 7px; }
         .modal-fb-ok  { background: #e8f5e9; color: #2e7d32; }
         .modal-fb-err { background: #fce4ec; color: #c62828; }
@@ -414,17 +522,18 @@
         .footer {
             text-align: center;
             padding: 24px 0;
-            border-top: 1px solid #e8e0d4;
+            border-top: 1px solid var(--border);
             margin-top: 16px;
         }
 
         .footer p {
             font-size: 0.75rem;
-            color: #bfb49e;
+            color: var(--footer-text);
         }
     </style>
 </head>
 <body>
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
         <div class="header">
@@ -878,18 +987,34 @@
                 const h     = hashStr(m.nome + m.mensagem);
                 const color = CARD_COLORS[h % CARD_COLORS.length];
                 const rot   = ((h % 7) - 3);
-                // Extract emoji prefix if any (first char)
                 const firstChar = [...m.nome][0];
                 const hasEmoji  = /\p{Emoji}/u.test(firstChar);
                 const emoji     = hasEmoji ? firstChar : '';
                 const name      = hasEmoji ? m.nome.slice(firstChar.length).trim() : m.nome;
+                const hearted   = localStorage.getItem('heart_' + h) === '1';
                 return `<div class="msg-card" style="background:${color};--r:${rot}deg">
                     ${emoji ? `<div style="font-size:1.6rem;margin-bottom:6px">${emoji}</div>` : ''}
                     <div class="msg-card-name">${escapeHtml(name)}</div>
                     <div class="msg-card-text">${escapeHtml(m.mensagem)}</div>
                     ${m.data ? `<div class="msg-card-date">${escapeHtml(m.data)}</div>` : ''}
+                    <button class="msg-heart-btn${hearted ? ' hearted' : ''}" onclick="toggleHeart(this,${h})" title="Curtir">${hearted ? '❤️' : '🤍'}</button>
                 </div>`;
             }).join('');
+        }
+
+        function toggleHeart(btn, h) {
+            const hearted = localStorage.getItem('heart_' + h) === '1';
+            if (hearted) {
+                localStorage.removeItem('heart_' + h);
+                btn.textContent = '🤍';
+                btn.classList.remove('hearted');
+            } else {
+                localStorage.setItem('heart_' + h, '1');
+                btn.textContent = '❤️';
+                btn.classList.add('hearted');
+                btn.classList.add('pop');
+                setTimeout(() => btn.classList.remove('pop'), 350);
+            }
         }
 
         function openMsgModal() {
@@ -970,6 +1095,39 @@
             }
             localStorage.setItem('adriana_visited', '1');
         })();
+
+        // Dark mode
+        function toggleDark() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('adriana_theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('adriana_theme', 'dark');
+            }
+            updateDarkToggle();
+        }
+
+        function updateDarkToggle() {
+            const btn = document.getElementById('dark-toggle');
+            if (!btn) return;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            btn.textContent = isDark ? '☀️' : '🌙';
+            btn.title = isDark ? 'Modo claro' : 'Modo escuro';
+        }
+
+        // Sync toggle icon with initial state (set in <head>)
+        updateDarkToggle();
+
+        // Follow OS changes only when user hasn't set a manual preference
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('adriana_theme')) {
+                if (e.matches) document.documentElement.setAttribute('data-theme', 'dark');
+                else document.documentElement.removeAttribute('data-theme');
+                updateDarkToggle();
+            }
+        });
     </script>
 </body>
 </html>
