@@ -580,9 +580,9 @@
         <!-- Message modal -->
         <div class="modal-bg" id="msg-modal">
             <div class="modal-box">
-                <div class="modal-title">Uma mensagem para Adriana</div>
+                <div class="modal-title">Deixe uma mensagem para Adriana</div>
 
-                <span class="modal-label">Seu emoji (escolha um que represente você)</span>
+                <span class="modal-label">Escolha um emoji</span>
                 <div id="emoji-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
                 </div>
 
@@ -995,7 +995,7 @@
         // MESSAGE BOARD
         // ================================================
         const CARD_COLORS  = ['#fffde7','#e8f5e9','#e3f2fd','#fce4ec','#f3e5f5','#fff3e0','#e0f7fa','#f1f8e9'];
-        const CARD_EMOJIS  = ['🌸','🌻','🌈','💛','🙏','💪','❤️','🌿','☀️','💐','🕊️','⭐'];
+        const CARD_EMOJIS  = ['🌸','🌻','🌈','💛','🙏','💪','❤️','🌿','☀\uFE0F','💐','🕊\uFE0F','⭐\uFE0F'];
         let selectedEmoji  = CARD_EMOJIS[0];
 
         // Build emoji picker
@@ -1004,13 +1004,17 @@
             CARD_EMOJIS.forEach(e => {
                 const btn = document.createElement('button');
                 btn.textContent = e;
-                btn.style.cssText = 'font-size:1.4rem;background:#fff;border:2px solid #e8e0d4;border-radius:8px;padding:4px 7px;cursor:pointer;transition:border-color 0.15s;';
+                btn.style.cssText = 'font-size:1.4rem;background:var(--card-bg);border:2px solid var(--border);border-radius:8px;padding:4px 7px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;';
+                function markSelected(b, sel) {
+                    b.style.borderColor = sel ? '#c4a97d' : '';
+                    b.style.boxShadow = sel ? '0 0 0 2px #c4a97d' : 'none';
+                }
                 btn.onclick = () => {
                     selectedEmoji = e;
-                    picker.querySelectorAll('button').forEach(b => b.style.borderColor = '#e8e0d4');
-                    btn.style.borderColor = '#c4a97d';
+                    picker.querySelectorAll('button').forEach(b => markSelected(b, false));
+                    markSelected(btn, true);
                 };
-                if (e === selectedEmoji) btn.style.borderColor = '#c4a97d';
+                markSelected(btn, e === selectedEmoji);
                 picker.appendChild(btn);
             });
         })();
@@ -1128,7 +1132,9 @@
             // Random emoji default each time — user can still change it
             selectedEmoji = CARD_EMOJIS[Math.floor(Math.random() * CARD_EMOJIS.length)];
             document.getElementById('emoji-picker').querySelectorAll('button').forEach(btn => {
-                btn.style.borderColor = btn.textContent === selectedEmoji ? '#c4a97d' : '#e8e0d4';
+                const sel = btn.textContent === selectedEmoji;
+                btn.style.borderColor = sel ? '#c4a97d' : '';
+                btn.style.boxShadow = sel ? '0 0 0 2px #c4a97d' : 'none';
             });
             document.getElementById('msg-modal').classList.add('open');
             const saved = localStorage.getItem('adriana_msg_name');
