@@ -1050,10 +1050,9 @@
                 const h     = hashStr(m.nome + m.mensagem);
                 const color = CARD_COLORS[h % CARD_COLORS.length];
                 const rot   = ((h % 7) - 3);
-                const firstChar = [...m.nome][0];
-                const hasEmoji  = /\p{Emoji}/u.test(firstChar);
-                const emoji     = hasEmoji ? firstChar : '';
-                const name      = hasEmoji ? m.nome.slice(firstChar.length).trim() : m.nome;
+                const emojiMatch = m.nome.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(\u200D(\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*/u);
+                const emoji     = emojiMatch ? emojiMatch[0] : '';
+                const name      = emoji ? m.nome.slice(emoji.length).trim() : m.nome;
                 const hidden    = i >= 2 ? ' class="msg-card msg-card-extra"' : ' class="msg-card"';
                 const style     = `background:${color};--r:${rot}deg${i >= 2 ? ';display:none' : ''}`;
                 return `<div${hidden} style="${style}">
