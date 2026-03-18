@@ -548,35 +548,21 @@
             padding: 0 5px;
         }
 
-        /* Inline message CTA card */
-        .msg-cta-card {
-            background: var(--accent-soft);
-            border: 1px solid var(--accent);
-            border-radius: 14px;
-            padding: 16px 20px;
-            text-align: center;
-            margin: 20px 0;
+        /* FAB pulse glow - runs once on load */
+        @keyframes fabPulse {
+            0% { box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3); }
+            25% { box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3), 0 0 0 8px rgba(196, 169, 125, 0.25); }
+            50% { box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3), 0 0 0 16px rgba(196, 169, 125, 0); }
+            100% { box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3); }
         }
-        .msg-cta-card p {
-            color: var(--heading);
-            font-size: 0.9rem;
-            margin-bottom: 10px;
+        @keyframes fabPulseDark {
+            0% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); }
+            25% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 8px rgba(139, 122, 88, 0.3); }
+            50% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 16px rgba(139, 122, 88, 0); }
+            100% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); }
         }
-        .msg-cta-card button {
-            padding: 10px 24px;
-            background: var(--accent);
-            border: none;
-            border-radius: 24px;
-            color: #fff;
-            font-size: 0.85rem;
-            font-weight: 500;
-            font-family: inherit;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(196, 169, 125, 0.3);
-            transition: opacity 0.2s;
-        }
-        .msg-cta-card button:hover { opacity: 0.9; }
-        [data-theme="dark"] .msg-cta-card button { background: #8b7a58; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .msg-fab.pulse { animation: fabPulse 1s ease-out 3; }
+        [data-theme="dark"] .msg-fab.pulse { animation: fabPulseDark 1s ease-out 3; }
 
         /* Modal */
         .modal-bg {
@@ -703,11 +689,6 @@
             <div id="board-toggle-row" style="display:none;text-align:center;margin-top:14px;">
                 <button class="msg-leave-btn ghost" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
             </div>
-        </div>
-
-        <div class="msg-cta-card" id="msg-cta-card">
-            <p>Quer deixar uma palavra de carinho?</p>
-            <button onclick="openMsgModal()">💌 Escrever mensagem</button>
         </div>
 
         <div id="timeline-section">
@@ -1118,7 +1099,6 @@
                 if (cfg['allow_messages'] === 'false') {
                     const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none';
                     const fab = document.getElementById('msg-fab'); if (fab) fab.style.display = 'none';
-                    const cta = document.getElementById('msg-cta-card'); if (cta) cta.style.display = 'none';
                 }
             } catch (e) { console.error(e); }
         }
@@ -1127,6 +1107,15 @@
         fetchData();
         loadMessages();
         loadSettings();
+
+        // FAB pulse on load (3 pulses then stop)
+        setTimeout(() => {
+            const fab = document.getElementById('msg-fab');
+            if (fab) {
+                fab.classList.add('pulse');
+                fab.addEventListener('animationend', () => fab.classList.remove('pulse'), { once: true });
+            }
+        }, 2000);
 
         // Auto-refresh
         setInterval(fetchData, REFRESH_INTERVAL);
