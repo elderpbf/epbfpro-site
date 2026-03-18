@@ -1019,8 +1019,11 @@
         async function notifBarClick() {
             if (!window.OneSignal) return;
             try {
-                await OneSignal.Notifications.requestPermission();
-            } catch (e) { console.error('notif permission failed', e); }
+                await OneSignal.Slidedown.promptPush();
+            } catch (e) {
+                try { await OneSignal.Notifications.requestPermission(); }
+                catch (e2) { console.error('notif permission failed', e2); }
+            }
         }
 
         async function loadSettings() {
