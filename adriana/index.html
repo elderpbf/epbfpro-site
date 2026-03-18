@@ -859,7 +859,7 @@
                             <div class="update-text">${escapeHtml(entry.texto).replace(/\n/g, '<br>')}</div>
                             ${renderMedia(entry.foto)}
                             <div class="post-react-row">
-                                <button class="post-react-btn${reaction==='heart'?' active':''}" data-type="heart" onclick="toggleReaction(this,${h},'heart')" title="Curtir">${reaction==='heart'?'❤️':'🤍'}</button>
+                                <button class="post-react-btn${reaction==='heart'?' active':''}" data-type="heart" onclick="toggleReaction(this,${h},'heart')" title="Curtir">${reaction==='heart'?'❤️':'🩶'}</button>
                                 <button class="post-react-btn${reaction==='pray'?' active':''}" data-type="pray" onclick="toggleReaction(this,${h},'pray')" title="Orar">🙏</button>
                                 <span class="react-count">${count > 0 ? count : ''}</span>
                             </div>
@@ -1110,7 +1110,7 @@
             }
 
             const newReaction = localStorage.getItem(key);
-            heartBtn.textContent = newReaction === 'heart' ? '❤️' : '🤍';
+            heartBtn.textContent = newReaction === 'heart' ? '❤️' : '🩶';
             heartBtn.classList.toggle('active', newReaction === 'heart');
             prayBtn.classList.toggle('active', newReaction === 'pray');
             const newCount = curCount + countChange;
