@@ -618,8 +618,17 @@
         const REFRESH_INTERVAL = 5 * 60 * 1000;
 
         function parseCSV(text) {
-            const lines = text.trim().split('\n');
-            if (lines.length < 2) return [];
+            const raw = text.trim().split('\n');
+            if (raw.length < 2) return [];
+            // Rejoin lines that are inside quoted fields (newlines within cells)
+            const lines = [];
+            let buf = '';
+            for (const line of raw) {
+                buf = buf ? buf + '\n' + line : line;
+                const quotes = (buf.match(/"/g) || []).length;
+                if (quotes % 2 === 0) { lines.push(buf); buf = ''; }
+            }
+            if (buf) lines.push(buf);
             const rows = [];
             for (let i = 1; i < lines.length; i++) {
                 const row = parseCSVLine(lines[i]);
@@ -1014,12 +1023,10 @@
             try {
                 const resp = await fetch(MENSAGENS_URL + '&t=' + Date.now());
                 const text = await resp.text();
-                const msgs = [];
-                const lines = text.trim().split('\n');
-                for (let i = 1; i < lines.length; i++) {
-                    const r = parseCSVLine(lines[i]);
-                    if (r[0] && r[1]) msgs.push({ nome: r[0], mensagem: r[1], data: r[2] || '' });
-                }
+                const rows = parseCSV(text);
+                const msgs = rows
+                    .filter(r => r[0] && r[1])
+                    .map(r => ({ nome: r[0], mensagem: r[1], data: r[2] || '' }));
                 renderMessages(msgs.reverse());
             } catch (e) { console.error(e); }
         }
@@ -1046,7 +1053,7 @@
                 return `<div${hidden} style="${style}">
                     ${emoji ? `<div style="font-size:1.6rem;margin-bottom:6px">${emoji}</div>` : ''}
                     <div class="msg-card-name">${escapeHtml(name)}</div>
-                    <div class="msg-card-text">${escapeHtml(m.mensagem)}</div>
+                    <div class="msg-card-text">${escapeHtml(m.mensagem).replace(/\n/g, '<br>')}</div>
                     ${m.data ? `<div class="msg-card-date">${escapeHtml(m.data)}</div>` : ''}
                 </div>`;
             }).join('');
