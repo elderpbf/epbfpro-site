@@ -1095,9 +1095,8 @@
             let countChange = 0;
 
             if (current === type) {
-                // Deactivate same reaction
-                localStorage.removeItem(key);
-                countChange = -1;
+                // Already active, do nothing
+                return;
             } else if (current) {
                 // Switch reaction type, count stays
                 localStorage.setItem(key, type);
