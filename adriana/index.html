@@ -609,7 +609,6 @@
         </div>
 
         <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
-        <pre id="notif-debug" style="text-align:left;font-size:11px;background:#1a1a1a;color:#0f0;padding:10px;border-radius:8px;margin-bottom:16px;white-space:pre-wrap;display:block;"></pre>
 
         <div class="intro">
             Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
@@ -998,16 +997,8 @@
             });
         })();
 
-        // Notification bar (debug mode)
-        var _osDebug = [];
-        function dbg(msg) { _osDebug.push(msg); document.getElementById('notif-debug').textContent = _osDebug.join('\n'); console.log('[OS]', msg); }
-
-        dbg('1. script loaded');
-
+        // Notification bar
         OneSignalDeferred.push(async function(OneSignal) {
-            dbg('2. SDK ready, optedIn=' + OneSignal.User.PushSubscription.optedIn);
-            dbg('   permission=' + OneSignal.Notifications.permission);
-            dbg('   nativePerm=' + Notification.permission);
             if (OneSignal.User.PushSubscription.optedIn) {
                 const bar = document.getElementById('notif-bar');
                 bar.textContent = '✓ Notificações ativadas';
@@ -1018,22 +1009,15 @@
         function notifBarClick() {
             const bar = document.getElementById('notif-bar');
             if (bar.classList.contains('subscribed')) return;
-            dbg('3. click! nativePerm=' + Notification.permission);
             OneSignalDeferred.push(async function(OneSignal) {
                 try {
-                    dbg('4. calling native requestPermission...');
                     const perm = await Notification.requestPermission();
-                    dbg('5. native result=' + perm);
                     if (perm === 'granted') {
-                        dbg('6. calling OneSignal optIn...');
                         await OneSignal.User.PushSubscription.optIn();
-                        dbg('7. optIn done, optedIn=' + OneSignal.User.PushSubscription.optedIn);
                         bar.textContent = '✓ Notificações ativadas';
                         bar.classList.add('subscribed');
                     }
-                } catch (e) {
-                    dbg('ERR: ' + e.message);
-                }
+                } catch (e) { console.error('Push subscribe failed', e); }
             });
         }
 
