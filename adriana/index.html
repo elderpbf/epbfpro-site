@@ -360,28 +360,19 @@
             opacity: 1;
         }
 
-        /* Notification toggle (top-left) */
-        #notif-toggle {
-            position: fixed;
-            top: 14px;
-            left: 14px;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            font-size: 1rem;
-            cursor: pointer;
-            z-index: 100;
+        /* Notification bar */
+        .notif-bar {
             display: none;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--card-shadow);
-            transition: background 0.3s, border-color 0.3s, transform 0.15s;
+            text-align: center;
+            padding: 9px 16px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            border: 1px solid transparent;
         }
-        #notif-toggle:hover { transform: scale(1.08); }
-        #notif-toggle:active { transform: scale(0.95); }
-        #notif-toggle.enabled { border-color: var(--notif-on-border); }
+        .notif-bar.prompt  { background: var(--notif-prompt-bg); color: var(--notif-prompt-text); border-color: var(--notif-prompt-border); }
+        .notif-bar.enabled { background: var(--notif-on-bg); color: var(--notif-on-text); border-color: var(--notif-on-border); cursor: default; }
 
         /* Dark mode toggle */
         #dark-toggle {
@@ -610,7 +601,6 @@
     </style>
 </head>
 <body>
-    <button id="notif-toggle" onclick="notifBarClick()" title="Notificações">🔔</button>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
@@ -619,6 +609,8 @@
             <p>Atualizações sobre a recuperação de Adriana</p>
             <p class="last-update" id="last-update"></p>
         </div>
+
+        <div id="notif-bar" class="notif-bar" onclick="notifBarClick()"></div>
 
         <div class="intro">
             Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
@@ -1011,18 +1003,16 @@
         async function updateNotifBar() {
             if (!window.OneSignalDeferred) return;
             OneSignalDeferred.push(async function(OneSignal) {
-                const btn = document.getElementById('notif-toggle');
+                const bar = document.getElementById('notif-bar');
                 const subscribed = OneSignal.User.PushSubscription.optedIn;
                 if (subscribed) {
-                    btn.textContent = '🔔';
-                    btn.classList.add('enabled');
-                    btn.title = 'Notificações ativadas';
+                    bar.className = 'notif-bar enabled';
+                    bar.textContent = 'Notificações ativadas ✓';
                 } else {
-                    btn.textContent = '🔕';
-                    btn.classList.remove('enabled');
-                    btn.title = 'Ativar notificações';
+                    bar.className = 'notif-bar prompt';
+                    bar.textContent = '🔔 Receber notificações quando houver novidades';
                 }
-                btn.style.display = 'flex';
+                bar.style.display = 'block';
             });
         }
 
@@ -1043,7 +1033,7 @@
                     const r = parseCSVLine(lines[i]);
                     if (r[0]) cfg[r[0]] = r[1];
                 }
-                if (cfg['notif_bar'] === 'false') document.getElementById('notif-toggle').style.setProperty('display','none','important');
+                if (cfg['notif_bar'] === 'false') document.getElementById('notif-bar').style.setProperty('display','none','important');
                 if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
                 if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
             } catch (e) { console.error(e); }
