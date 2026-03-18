@@ -562,10 +562,12 @@
                 foto
             });
             if (res.ok) {
+                let msg = 'Publicado!';
                 if (document.getElementById('chk-notif').checked && texto) {
-                    await sendPushNotification(texto);
+                    const notif = await sendPushNotification(texto);
+                    msg = notif.ok ? 'Publicado! Notificação enviada.' : `Publicado! Notificação falhou: ${notif.error}`;
                 }
-                showFb(fb, 'Publicado!', true);
+                showFb(fb, msg, true);
                 document.getElementById('input-texto').value = '';
                 clearPhotoState();
                 setDefaultDateTime();
@@ -628,7 +630,7 @@
     // ====================================================
     async function sendPushNotification(texto) {
         try {
-            await fetch('https://onesignal.com/api/v1/notifications', {
+            const resp = await fetch('https://onesignal.com/api/v1/notifications', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -642,8 +644,11 @@
                     url: 'https://epbf.com.br/adriana'
                 })
             });
+            const data = await resp.json();
+            if (data.id) return { ok: true };
+            return { ok: false, error: JSON.stringify(data.errors || data) };
         } catch (e) {
-            console.error('Notificação não enviada:', e);
+            return { ok: false, error: e.message };
         }
     }
 
