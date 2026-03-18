@@ -111,8 +111,8 @@
         /* Header */
         .header {
             text-align: center;
-            padding: 12px 0 28px;
-            margin-bottom: 32px;
+            padding: 12px 0 20px;
+            margin-bottom: 12px;
         }
         .header::after {
             content: '';
@@ -362,7 +362,7 @@
 
         /* Notification bar */
         #notif-bar {
-            margin-bottom: 24px; text-align: center; cursor: pointer;
+            margin-bottom: 16px; text-align: center; cursor: pointer;
             padding: 12px 20px; border-radius: 10px;
             background: var(--accent-soft); color: var(--text);
             font-size: 0.95rem; font-weight: 500;
@@ -998,27 +998,29 @@
         })();
 
         // Notification bar
-        async function notifBarClick() {
+        function notifBarClick() {
             const bar = document.getElementById('notif-bar');
             if (bar.classList.contains('subscribed')) return;
-            try {
-                await OneSignal.Slidedown.promptPush();
-            } catch (e) {
-                console.error('Push prompt failed', e);
-                try { await OneSignal.Notifications.requestPermission(); } catch (e2) { console.error(e2); }
-            }
-            updateNotifBar();
-        }
-        function updateNotifBar() {
             OneSignalDeferred.push(async function(OneSignal) {
-                const bar = document.getElementById('notif-bar');
+                try {
+                    await OneSignal.Slidedown.promptPush();
+                } catch (e) {
+                    console.error('Push prompt failed', e);
+                    try { await OneSignal.Notifications.requestPermission(); } catch (e2) { console.error(e2); }
+                }
                 if (OneSignal.User.PushSubscription.optedIn) {
                     bar.textContent = '✓ Notificações ativadas';
                     bar.classList.add('subscribed');
                 }
             });
         }
-        updateNotifBar();
+        OneSignalDeferred.push(async function(OneSignal) {
+            if (OneSignal.User.PushSubscription.optedIn) {
+                const bar = document.getElementById('notif-bar');
+                bar.textContent = '✓ Notificações ativadas';
+                bar.classList.add('subscribed');
+            }
+        });
 
         async function loadSettings() {
             try {
