@@ -42,6 +42,7 @@
             --heading: #5c4a2f;
             --intro-text: #6b5d4a;
             --accent: #c4a97d;
+            --accent-soft: rgba(196, 169, 125, 0.12);
             --footer-text: #bfb49e;
             --spinner-border: #e8e0d4;
             --update-inner-border: #ede7dc;
@@ -56,24 +57,28 @@
             --notif-on-bg: #edf7f0;
             --notif-on-text: #3a6b4a;
             --notif-on-border: #b8dfc7;
+            --photo-glow: 0 0 0 4px rgba(196, 169, 125, 0.18), 0 4px 20px rgba(196, 169, 125, 0.15);
+            --card-shadow: 0 1px 3px rgba(92, 74, 47, 0.06);
+            --divider: linear-gradient(90deg, transparent, var(--border), transparent);
         }
         [data-theme="dark"] {
-            --bg: #1c1916;
+            --bg: #181613;
             --text: #e2d9ce;
             --text-muted: #9a8b78;
             --text-dim: #6e6050;
-            --border: #2d2923;
-            --card-bg: #252119;
-            --heading: #c8a97a;
+            --border: #302a23;
+            --card-bg: #211e19;
+            --heading: #d4b67e;
             --intro-text: #9a8272;
             --accent: #c4a97d;
+            --accent-soft: rgba(196, 169, 125, 0.10);
             --footer-text: #4a4235;
-            --spinner-border: #2d2923;
-            --update-inner-border: #2d2923;
+            --spinner-border: #302a23;
+            --update-inner-border: #302a23;
             --update-left: #4a3f2f;
-            --modal-bg: #1c1916;
-            --modal-input-bg: #252119;
-            --modal-cancel-bg: #2d2923;
+            --modal-bg: #1e1b17;
+            --modal-input-bg: #282420;
+            --modal-cancel-bg: #302a23;
             --modal-cancel-text: #c4a97d;
             --notif-prompt-bg: #2a2418;
             --notif-prompt-text: #d4a95a;
@@ -81,6 +86,9 @@
             --notif-on-bg: #1a2e20;
             --notif-on-text: #6bbb85;
             --notif-on-border: #2a4e35;
+            --photo-glow: 0 0 0 4px rgba(196, 169, 125, 0.12), 0 4px 24px rgba(0, 0, 0, 0.4);
+            --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            --divider: linear-gradient(90deg, transparent, var(--border), transparent);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -103,9 +111,15 @@
         /* Header */
         .header {
             text-align: center;
-            padding: 12px 0 24px;
-            border-bottom: 1px solid var(--border);
+            padding: 12px 0 28px;
             margin-bottom: 32px;
+        }
+        .header::after {
+            content: '';
+            display: block;
+            height: 1px;
+            margin-top: 28px;
+            background: var(--divider);
         }
 
         .header-photo {
@@ -113,8 +127,9 @@
             height: 164px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid var(--border);
+            border: 3px solid var(--accent);
             margin-bottom: 14px;
+            box-shadow: var(--photo-glow);
         }
 
         .header p {
@@ -134,18 +149,26 @@
             text-align: center;
             line-height: 1.6;
             padding: 0 8px 28px;
-            border-bottom: 1px solid var(--border);
             margin-bottom: 32px;
+            position: relative;
+        }
+        .intro::after {
+            content: '';
+            display: block;
+            height: 1px;
+            margin-top: 28px;
+            background: var(--divider);
         }
 
         /* Summary card */
         .summary-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
+            border-top: 3px solid var(--accent);
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 36px;
-            box-shadow: 0 1px 3px rgba(92, 74, 47, 0.06);
+            box-shadow: var(--card-shadow);
         }
 
         .summary-label {
@@ -192,6 +215,21 @@
 
         .day-group {
             margin-bottom: 28px;
+            position: relative;
+            padding-left: 20px;
+        }
+        .day-group::before {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 16px;
+            bottom: 10px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent), var(--border));
+            border-radius: 1px;
+        }
+        .day-group:last-child::before {
+            background: linear-gradient(to bottom, var(--accent), transparent);
         }
 
         .day-label {
@@ -199,20 +237,21 @@
             font-weight: 600;
             color: var(--heading);
             margin-bottom: 12px;
-            padding-left: 20px;
+            padding-left: 6px;
             position: relative;
         }
 
         .day-label::before {
             content: '';
             position: absolute;
-            left: 0;
+            left: -20px;
             top: 50%;
             transform: translateY(-50%);
             width: 8px;
             height: 8px;
             background: var(--accent);
             border-radius: 50%;
+            box-shadow: 0 0 0 3px var(--bg);
         }
 
         .update-entry {
@@ -221,8 +260,7 @@
             border-radius: 10px;
             padding: 16px;
             margin-bottom: 10px;
-            margin-left: 20px;
-            border-left: 3px solid var(--update-left);
+            box-shadow: var(--card-shadow);
         }
 
         .update-time {
@@ -352,9 +390,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-            transition: background 0.2s, border-color 0.2s;
+            box-shadow: var(--card-shadow);
+            transition: background 0.3s, border-color 0.3s, transform 0.15s;
         }
+        #dark-toggle:hover { transform: scale(1.08); }
+        #dark-toggle:active { transform: scale(0.95); }
 
         /* Message board */
         .board-header {
@@ -376,7 +416,7 @@
 
         .msg-card {
             padding: 14px 15px 12px;
-            border-radius: 4px;
+            border-radius: 6px;
             width: calc(50% - 7px);
             min-width: 130px;
             box-shadow: 2px 3px 8px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
@@ -387,8 +427,7 @@
         }
 
         [data-theme="dark"] .msg-card {
-            filter: brightness(0.72) saturate(0.85);
-            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: 2px 3px 10px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.2);
         }
 
         .msg-card:hover {
@@ -400,20 +439,20 @@
         .msg-card-name {
             font-size: 0.78rem;
             font-weight: 700;
-            color: #5c4a2f;
+            color: var(--heading);
             margin-bottom: 5px;
         }
 
         .msg-card-text {
             font-size: 0.88rem;
             line-height: 1.5;
-            color: #3d3529;
+            color: var(--text);
             word-break: break-word;
         }
 
         .msg-card-date {
             font-size: 0.68rem;
-            color: #a89880;
+            color: var(--text-dim);
             margin-top: 8px;
         }
 
@@ -428,10 +467,10 @@
             cursor: pointer;
             transition: background 0.15s, border-color 0.15s, opacity 0.15s;
             font-family: inherit;
-            opacity: 0.5;
+            opacity: 0.45;
         }
-        .post-react-btn:hover { opacity: 1; background: var(--bg); }
-        .post-react-btn.active { opacity: 1; border-color: #e0c090; }
+        .post-react-btn:hover { opacity: 1; background: var(--accent-soft); }
+        .post-react-btn.active { opacity: 1; border-color: var(--accent); background: var(--accent-soft); }
         .react-count { font-size: 0.8rem; color: var(--text-muted); min-width: 8px; }
         @keyframes heartPop {
             0%   { transform: scale(1); }
@@ -443,17 +482,27 @@
         .msg-leave-btn {
             display: block;
             margin: 20px auto 16px;
-            padding: 9px 22px;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            color: var(--heading);
-            font-size: 0.83rem;
+            padding: 10px 24px;
+            background: var(--accent);
+            border: none;
+            border-radius: 24px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 500;
             font-family: inherit;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: opacity 0.15s, transform 0.15s;
+            box-shadow: 0 2px 8px rgba(196, 169, 125, 0.3);
         }
-        .msg-leave-btn:hover { background: var(--bg); }
+        .msg-leave-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .msg-leave-btn.ghost {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--heading);
+            box-shadow: none;
+            font-weight: 400;
+        }
+        .msg-leave-btn.ghost:hover { opacity: 0.8; transform: none; }
 
         /* Modal */
         .modal-bg {
@@ -461,6 +510,8 @@
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.38);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             z-index: 200;
             align-items: center;
             justify-content: center;
@@ -527,8 +578,15 @@
         .footer {
             text-align: center;
             padding: 24px 0;
-            border-top: 1px solid var(--border);
             margin-top: 16px;
+            position: relative;
+        }
+        .footer::before {
+            content: '';
+            display: block;
+            height: 1px;
+            margin-bottom: 24px;
+            background: var(--divider);
         }
 
         .footer p {
@@ -568,7 +626,7 @@
             <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
             <div class="board-cards" id="board-cards"></div>
             <div id="board-toggle-row" style="display:none;text-align:center;margin-top:14px;">
-                <button class="msg-leave-btn" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
+                <button class="msg-leave-btn ghost" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
             </div>
         </div>
 
@@ -994,7 +1052,9 @@
         // ================================================
         // MESSAGE BOARD
         // ================================================
-        const CARD_COLORS  = ['#fffde7','#e8f5e9','#e3f2fd','#fce4ec','#f3e5f5','#fff3e0','#e0f7fa','#f1f8e9'];
+        const CARD_COLORS_LIGHT = ['#fffde7','#e8f5e9','#e3f2fd','#fce4ec','#f3e5f5','#fff3e0','#e0f7fa','#f1f8e9'];
+        const CARD_COLORS_DARK  = ['#33301a','#1e2e22','#1c2530','#302025','#2a1f2e','#302818','#1c2a2e','#232e1e'];
+        function getCardColors() { return document.documentElement.getAttribute('data-theme') === 'dark' ? CARD_COLORS_DARK : CARD_COLORS_LIGHT; }
         const CARD_EMOJIS  = ['🌸','🌻','🌈','💛','🙏','💪','❤️','🌿','☀\uFE0F','💐','🕊\uFE0F','⭐\uFE0F'];
         let selectedEmoji  = CARD_EMOJIS[0];
 
@@ -1048,7 +1108,8 @@
             }
             board.innerHTML = msgs.map((m, i) => {
                 const h     = hashStr(m.nome + m.mensagem);
-                const color = CARD_COLORS[h % CARD_COLORS.length];
+                const colors = getCardColors();
+                const color = colors[h % colors.length];
                 const rot   = ((h % 7) - 3);
                 const emojiMatch = m.nome.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(\u200D(\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*/u);
                 const emoji     = emojiMatch ? emojiMatch[0] : '';
@@ -1220,6 +1281,7 @@
                 localStorage.setItem('adriana_theme', 'dark');
             }
             updateDarkToggle();
+            loadMessages();
         }
 
         function updateDarkToggle() {
