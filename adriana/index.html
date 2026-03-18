@@ -508,6 +508,76 @@
         }
         .msg-leave-btn.ghost:hover { opacity: 0.8; transform: none; }
 
+        /* Floating message FAB */
+        .msg-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .msg-fab:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(92, 74, 47, 0.4); }
+        [data-theme="dark"] .msg-fab { background: #8b7a58; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); }
+        [data-theme="dark"] .msg-fab:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); }
+        .msg-fab-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background: #e05a4a;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        /* Inline message CTA card */
+        .msg-cta-card {
+            background: var(--accent-soft);
+            border: 1px solid var(--accent);
+            border-radius: 14px;
+            padding: 16px 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .msg-cta-card p {
+            color: var(--heading);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .msg-cta-card button {
+            padding: 10px 24px;
+            background: var(--accent);
+            border: none;
+            border-radius: 24px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(196, 169, 125, 0.3);
+            transition: opacity 0.2s;
+        }
+        .msg-cta-card button:hover { opacity: 0.9; }
+        [data-theme="dark"] .msg-cta-card button { background: #8b7a58; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+
         /* Modal */
         .modal-bg {
             display: none;
@@ -635,6 +705,11 @@
             </div>
         </div>
 
+        <div class="msg-cta-card" id="msg-cta-card">
+            <p>Quer deixar uma palavra de carinho?</p>
+            <button onclick="openMsgModal()">💌 Escrever mensagem</button>
+        </div>
+
         <div id="timeline-section">
         </div>
 
@@ -667,6 +742,11 @@
             <p>Esta página atualiza ao abrir e a cada 5 minutos</p>
         </div>
     </div>
+
+    <button class="msg-fab" id="msg-fab" onclick="openMsgModal()" title="Deixar mensagem">
+        💌
+        <span class="msg-fab-badge" id="msg-fab-badge" style="display:none"></span>
+    </button>
 
     <script>
         const SPREADSHEET_ID = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
@@ -1035,7 +1115,11 @@
                 }
                 if (cfg['notif_bar'] === 'false') document.getElementById('notif-bar').style.setProperty('display','none','important');
                 if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
-                if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
+                if (cfg['allow_messages'] === 'false') {
+                    const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none';
+                    const fab = document.getElementById('msg-fab'); if (fab) fab.style.display = 'none';
+                    const cta = document.getElementById('msg-cta-card'); if (cta) cta.style.display = 'none';
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -1106,6 +1190,9 @@
             const board     = document.getElementById('board-cards');
             const toggleRow = document.getElementById('board-toggle-row');
             const toggleBtn = document.getElementById('board-toggle-btn');
+            // Update FAB badge with message count
+            const fabBadge = document.getElementById('msg-fab-badge');
+            if (fabBadge && msgs.length > 0) { fabBadge.textContent = msgs.length; fabBadge.style.display = 'flex'; }
             if (msgs.length === 0) {
                 board.innerHTML = '<p style="color:#a89880;font-style:italic;font-size:0.85rem;width:100%;text-align:center;padding:8px 0">Seja o primeiro a deixar uma mensagem de carinho!</p>';
                 toggleRow.style.display = 'none';
