@@ -1007,7 +1007,7 @@
         OneSignalDeferred.push(async function(OneSignal) {
             dbg('2. SDK ready, optedIn=' + OneSignal.User.PushSubscription.optedIn);
             dbg('   permission=' + OneSignal.Notifications.permission);
-            dbg('   isPushSupported=' + OneSignal.Notifications.isPushSupported());
+            dbg('   nativePerm=' + Notification.permission);
             if (OneSignal.User.PushSubscription.optedIn) {
                 const bar = document.getElementById('notif-bar');
                 bar.textContent = '✓ Notificações ativadas';
@@ -1018,25 +1018,21 @@
         function notifBarClick() {
             const bar = document.getElementById('notif-bar');
             if (bar.classList.contains('subscribed')) return;
-            dbg('3. click!');
+            dbg('3. click! nativePerm=' + Notification.permission);
             OneSignalDeferred.push(async function(OneSignal) {
-                dbg('4. inside deferred after click');
                 try {
-                    dbg('5. calling Slidedown.promptPush()...');
-                    await OneSignal.Slidedown.promptPush();
-                    dbg('6. promptPush resolved');
+                    dbg('4. calling native requestPermission...');
+                    const perm = await Notification.requestPermission();
+                    dbg('5. native result=' + perm);
+                    if (perm === 'granted') {
+                        dbg('6. calling OneSignal optIn...');
+                        await OneSignal.User.PushSubscription.optIn();
+                        dbg('7. optIn done, optedIn=' + OneSignal.User.PushSubscription.optedIn);
+                        bar.textContent = '✓ Notificações ativadas';
+                        bar.classList.add('subscribed');
+                    }
                 } catch (e) {
-                    dbg('5err. promptPush failed: ' + e.message);
-                    try {
-                        dbg('6. trying requestPermission...');
-                        await OneSignal.Notifications.requestPermission();
-                        dbg('7. requestPermission resolved');
-                    } catch (e2) { dbg('7err. requestPermission failed: ' + e2.message); }
-                }
-                dbg('8. optedIn=' + OneSignal.User.PushSubscription.optedIn);
-                if (OneSignal.User.PushSubscription.optedIn) {
-                    bar.textContent = '✓ Notificações ativadas';
-                    bar.classList.add('subscribed');
+                    dbg('ERR: ' + e.message);
                 }
             });
         }
