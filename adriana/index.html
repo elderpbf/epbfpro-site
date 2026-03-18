@@ -610,7 +610,7 @@
             <p class="last-update" id="last-update"></p>
         </div>
 
-        <div id="notif-bar" class="notif-bar" onclick="notifBarClick()"></div>
+        <div id="notif-bar" class="notif-bar prompt" onclick="notifBarClick()" style="display:block">🔔 Receber notificações quando houver novidades</div>
 
         <div class="intro">
             Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
@@ -1008,11 +1008,8 @@
                 if (subscribed) {
                     bar.className = 'notif-bar enabled';
                     bar.textContent = 'Notificações ativadas ✓';
-                } else {
-                    bar.className = 'notif-bar prompt';
-                    bar.textContent = '🔔 Receber notificações quando houver novidades';
                 }
-                bar.style.display = 'block';
+                // If not subscribed, leave the default prompt state as-is
             });
         }
 
