@@ -417,30 +417,28 @@
             margin-top: 8px;
         }
 
-        /* Heart button on posts */
-        .post-heart-row { display: flex; justify-content: flex-end; margin-top: 10px; }
-        .post-heart-btn {
+        /* Reaction buttons on posts */
+        .post-react-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 10px; }
+        .post-react-btn {
             background: none;
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 3px 11px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
+            padding: 3px 10px;
+            font-size: 0.85rem;
             cursor: pointer;
-            transition: background 0.15s, border-color 0.15s, color 0.15s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            transition: background 0.15s, border-color 0.15s, opacity 0.15s;
             font-family: inherit;
+            opacity: 0.5;
         }
-        .post-heart-btn:hover { background: var(--bg); }
-        .post-heart-btn.hearted { color: #e0445a; border-color: #f5b8c0; }
+        .post-react-btn:hover { opacity: 1; background: var(--bg); }
+        .post-react-btn.active { opacity: 1; border-color: #e0c090; }
+        .react-count { font-size: 0.8rem; color: var(--text-muted); min-width: 8px; }
         @keyframes heartPop {
             0%   { transform: scale(1); }
             50%  { transform: scale(1.5); }
             100% { transform: scale(1); }
         }
-        .post-heart-btn.pop { animation: heartPop 0.3s ease-out; }
+        .post-react-btn.pop { animation: heartPop 0.3s ease-out; }
 
         .msg-leave-btn {
             display: block;
@@ -848,16 +846,22 @@
                 for (const entry of entries) {
                     const h       = hashStr(entry.data + entry.hora + entry.texto.slice(0, 30));
                     const count   = curtidas[String(h)] || 0;
-                    const hearted = localStorage.getItem('heart_' + h) === '1';
+                    // Migrate old heart_X to reaction_X
+                    let reaction  = localStorage.getItem('reaction_' + h);
+                    if (!reaction && localStorage.getItem('heart_' + h) === '1') {
+                        reaction = 'heart';
+                        localStorage.setItem('reaction_' + h, 'heart');
+                        localStorage.removeItem('heart_' + h);
+                    }
                     html += `
                         <div class="update-entry">
                             ${entry.hora ? `<div class="update-time">${escapeHtml(entry.hora)}</div>` : ''}
                             <div class="update-text">${escapeHtml(entry.texto).replace(/\n/g, '<br>')}</div>
                             ${renderMedia(entry.foto)}
-                            <div class="post-heart-row">
-                                <button class="post-heart-btn${hearted ? ' hearted' : ''}" onclick="toggleHeart(this,${h})" title="Curtir">
-                                    ${hearted ? '❤️' : '🤍'}<span>${count > 0 ? count : ''}</span>
-                                </button>
+                            <div class="post-react-row">
+                                <button class="post-react-btn${reaction==='heart'?' active':''}" data-type="heart" onclick="toggleReaction(this,${h},'heart')" title="Curtir">${reaction==='heart'?'❤️':'🤍'}</button>
+                                <button class="post-react-btn${reaction==='pray'?' active':''}" data-type="pray" onclick="toggleReaction(this,${h},'pray')" title="Orar">🙏</button>
+                                <span class="react-count">${count > 0 ? count : ''}</span>
                             </div>
                         </div>`;
                 }
@@ -1080,25 +1084,47 @@
             }
         }
 
-        async function toggleHeart(btn, h) {
-            const hearted    = localStorage.getItem('heart_' + h) === '1';
-            const newHearted = !hearted;
-            const span       = btn.querySelector('span');
-            const curCount   = parseInt(span.textContent || '0') || 0;
-            const newCount   = newHearted ? curCount + 1 : Math.max(0, curCount - 1);
+        async function toggleReaction(btn, h, type) {
+            const key      = 'reaction_' + h;
+            const current  = localStorage.getItem(key);
+            const row      = btn.closest('.post-react-row');
+            const heartBtn = row.querySelector('[data-type="heart"]');
+            const prayBtn  = row.querySelector('[data-type="pray"]');
+            const countEl  = row.querySelector('.react-count');
+            const curCount = parseInt(countEl.textContent || '0') || 0;
+            let countChange = 0;
 
-            localStorage.setItem('heart_' + h, newHearted ? '1' : '0');
-            btn.firstChild.textContent = newHearted ? '❤️' : '🤍';
-            span.textContent = newCount > 0 ? newCount : '';
-            btn.classList.toggle('hearted', newHearted);
-            if (newHearted) { btn.classList.add('pop'); setTimeout(() => btn.classList.remove('pop'), 350); }
+            if (current === type) {
+                // Deactivate same reaction
+                localStorage.removeItem(key);
+                countChange = -1;
+            } else if (current) {
+                // Switch reaction type, count stays
+                localStorage.setItem(key, type);
+                countChange = 0;
+            } else {
+                // New reaction
+                localStorage.setItem(key, type);
+                countChange = 1;
+            }
 
-            try {
-                await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'toggle_heart', hash: String(h), hearted: newHearted })
-                });
-            } catch (e) { console.error('heart sync failed', e); }
+            const newReaction = localStorage.getItem(key);
+            heartBtn.textContent = newReaction === 'heart' ? '❤️' : '🤍';
+            heartBtn.classList.toggle('active', newReaction === 'heart');
+            prayBtn.classList.toggle('active', newReaction === 'pray');
+            const newCount = curCount + countChange;
+            countEl.textContent = newCount > 0 ? newCount : '';
+
+            if (countChange !== 0) {
+                btn.classList.add('pop');
+                setTimeout(() => btn.classList.remove('pop'), 350);
+                try {
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'toggle_heart', hash: String(h), hearted: countChange > 0 })
+                    });
+                } catch (e) { console.error('reaction sync failed', e); }
+            }
         }
 
         function openMsgModal() {
