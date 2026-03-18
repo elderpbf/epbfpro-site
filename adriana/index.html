@@ -361,7 +361,16 @@
         }
 
         /* Notification bar */
-        #notif-bar { margin-bottom: 24px; text-align: center; }
+        #notif-bar {
+            margin-bottom: 24px; text-align: center; cursor: pointer;
+            padding: 12px 20px; border-radius: 10px;
+            background: var(--accent-soft); color: var(--text);
+            font-size: 0.95rem; font-weight: 500;
+            transition: background 0.2s;
+        }
+        #notif-bar:hover { background: var(--accent); color: #fff; }
+        #notif-bar.subscribed { cursor: default; opacity: 0.7; }
+        #notif-bar.subscribed:hover { background: var(--accent-soft); color: var(--text); }
 
         /* Dark mode toggle */
         #dark-toggle {
@@ -599,7 +608,7 @@
             <p class="last-update" id="last-update"></p>
         </div>
 
-        <div id="notif-bar"><div class="onesignal-customlink-container"></div></div>
+        <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
         <div class="intro">
             Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
@@ -988,7 +997,28 @@
             });
         })();
 
-        // Notification bar handled by OneSignal custom link container
+        // Notification bar
+        async function notifBarClick() {
+            const bar = document.getElementById('notif-bar');
+            if (bar.classList.contains('subscribed')) return;
+            try {
+                await OneSignal.Slidedown.promptPush();
+            } catch (e) {
+                console.error('Push prompt failed', e);
+                try { await OneSignal.Notifications.requestPermission(); } catch (e2) { console.error(e2); }
+            }
+            updateNotifBar();
+        }
+        function updateNotifBar() {
+            OneSignalDeferred.push(async function(OneSignal) {
+                const bar = document.getElementById('notif-bar');
+                if (OneSignal.User.PushSubscription.optedIn) {
+                    bar.textContent = '✓ Notificações ativadas';
+                    bar.classList.add('subscribed');
+                }
+            });
+        }
+        updateNotifBar();
 
         async function loadSettings() {
             try {
@@ -1232,18 +1262,7 @@
             btn.textContent = 'Enviar';
         }
 
-        // Returning visitor prompt after 8s (only if they haven't sent a message yet)
-        (function() {
-            const hasSent = localStorage.getItem('adriana_msg_sent');
-            if (!hasSent && localStorage.getItem('adriana_visited')) {
-                setTimeout(() => {
-                    if (!document.getElementById('msg-modal').classList.contains('open')) {
-                        openMsgModal();
-                    }
-                }, 30000);
-            }
-            localStorage.setItem('adriana_visited', '1');
-        })();
+        localStorage.setItem('adriana_visited', '1');
 
         // Dark mode
         function toggleDark() {
