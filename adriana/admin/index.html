@@ -277,6 +277,20 @@
         .toggle-slider:before { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
         .toggle-switch input:checked + .toggle-slider { background: #5c4a2f; }
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* Counters */
+        .counters-grid { display: flex; gap: 12px; margin-top: 12px; }
+        .counter-card {
+            flex: 1;
+            background: #fff;
+            border: 1px solid #e8e0d4;
+            border-top: 3px solid #c4a97d;
+            border-radius: 10px;
+            padding: 14px 16px;
+            text-align: center;
+        }
+        .counter-value { font-size: 2rem; font-weight: 700; color: #5c4a2f; line-height: 1; }
+        .counter-label { font-size: 0.72rem; color: #a89880; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
     </style>
 </head>
 <body>
@@ -296,6 +310,20 @@
 
     <!-- Admin form -->
     <div id="admin-section" class="admin-section">
+
+        <!-- Counters -->
+        <div class="counters-grid" id="counters-grid">
+            <div class="counter-card">
+                <div class="counter-value" id="cnt-sp"></div>
+                <div class="counter-label">dias em São Paulo</div>
+            </div>
+            <div class="counter-card">
+                <div class="counter-value" id="cnt-surgery"></div>
+                <div class="counter-label">dias desde a cirurgia</div>
+            </div>
+        </div>
+
+        <hr class="divider">
 
         <!-- New update -->
         <div class="section-title">Nova atualização</div>
@@ -423,7 +451,7 @@
     // ====================================================
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfTIqI5Pcfez0-8OZs8Ibi68G9NqO2P8xzzDkHKuRofJ7SopJ8-htDcjyEoTC8k79P/exec';
     const ONESIGNAL_APP_ID  = '89faae5a-ef60-4165-aef4-1c274deea3b4';
-    const ONESIGNAL_API_KEY = 'os_v2_app_rh5k4wxpmbawllxudqtu33vdwrfsyujepzbetfuicsrhur6tktbl5c2q4xsinwmb4lz75f2bfgswkjp4h755huhfvks3l2lrphkcjai';
+    const ONESIGNAL_API_KEY = 'os_v2_app_rh5k4wxpmbawllxudqtu33vdwtnn7qoxb56eno5gkrriygdzu4mtelugktzn6idz322oat3s77phuoosawl5ziqd5iow2a2jaybajqi';
     const SPREADSHEET_ID    = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
     const UPDATES_CSV       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
     const RESUMO_CSV        = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
@@ -453,10 +481,23 @@
         document.getElementById('admin-section').classList.add('visible');
         document.getElementById('logout-btn').style.display = 'block';
         setDefaultDateTime();
+        renderCounters();
         loadRecent();
         loadResumo();
         loadSettings();
         loadAdminMessages();
+    }
+
+    function renderCounters() {
+        function daysSince(dateStr) {
+            const [d, m, y] = dateStr.split('/').map(Number);
+            const ref = new Date(y, m - 1, d);
+            const now = brNow();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            return Math.floor((today - ref) / 86400000);
+        }
+        document.getElementById('cnt-sp').textContent      = daysSince('24/02/2026');
+        document.getElementById('cnt-surgery').textContent = daysSince('26/02/2026');
     }
 
     function logout() {
@@ -595,8 +636,8 @@
                 body: JSON.stringify({
                     app_id: ONESIGNAL_APP_ID,
                     included_segments: ['Total Subscriptions'],
-                    headings: { pt: 'Notícias de Adriana', en: 'Notícias de Adriana' },
-                    contents: { pt: texto, en: texto },
+                    headings: { en: 'Notícias de Adriana' },
+                    contents: { en: texto, pt: texto },
                     url: 'https://epbf.com.br/adriana'
                 })
             });
