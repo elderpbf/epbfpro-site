@@ -27,8 +27,6 @@
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         OneSignalDeferred.push(async function(OneSignal) {
             await OneSignal.init({ appId: '89faae5a-ef60-4165-aef4-1c274deea3b4', notifyButton: { enable: false } });
-            updateNotifBar();
-            OneSignal.User.PushSubscription.addEventListener('change', updateNotifBar);
         });
     </script>
     <style>
@@ -361,18 +359,7 @@
         }
 
         /* Notification bar */
-        .notif-bar {
-            display: none;
-            text-align: center;
-            padding: 9px 16px;
-            margin-bottom: 24px;
-            border-radius: 8px;
-            font-size: 0.82rem;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
-        .notif-bar.prompt  { background: var(--notif-prompt-bg); color: var(--notif-prompt-text); border-color: var(--notif-prompt-border); }
-        .notif-bar.enabled { background: var(--notif-on-bg); color: var(--notif-on-text); border-color: var(--notif-on-border); cursor: default; }
+        #notif-bar { margin-bottom: 24px; text-align: center; }
 
         /* Dark mode toggle */
         #dark-toggle {
@@ -610,7 +597,7 @@
             <p class="last-update" id="last-update"></p>
         </div>
 
-        <div id="notif-bar" class="notif-bar" onclick="notifBarClick()"></div>
+        <div id="notif-bar"><div class="onesignal-customlink-container"></div></div>
 
         <div class="intro">
             Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
@@ -999,29 +986,7 @@
             });
         })();
 
-        // Notification bar
-        async function updateNotifBar() {
-            if (!window.OneSignalDeferred) return;
-            OneSignalDeferred.push(async function(OneSignal) {
-                const bar = document.getElementById('notif-bar');
-                const subscribed = OneSignal.User.PushSubscription.optedIn;
-                if (subscribed) {
-                    bar.className = 'notif-bar enabled';
-                    bar.textContent = 'Notificações ativadas ✓';
-                } else {
-                    bar.className = 'notif-bar prompt';
-                    bar.textContent = '🔔 Receber notificações quando houver novidades';
-                }
-                bar.style.display = 'block';
-            });
-        }
-
-        async function notifBarClick() {
-            if (!window.OneSignal) return;
-            try {
-                await OneSignal.Notifications.requestPermission();
-            } catch (e) { console.error('notif permission failed', e); }
-        }
+        // Notification bar handled by OneSignal custom link container
 
         async function loadSettings() {
             try {
