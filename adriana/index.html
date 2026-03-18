@@ -508,61 +508,21 @@
         }
         .msg-leave-btn.ghost:hover { opacity: 0.8; transform: none; }
 
-        /* Floating message FAB */
-        .msg-fab {
-            position: fixed;
-            bottom: 24px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--accent);
-            border: none;
-            color: #fff;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3);
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, box-shadow 0.2s;
+        /* Button pulse glow - runs once on load */
+        @keyframes btnPulse {
+            0% { box-shadow: 0 2px 8px rgba(196, 169, 125, 0.3); }
+            25% { box-shadow: 0 2px 8px rgba(196, 169, 125, 0.3), 0 0 0 8px rgba(196, 169, 125, 0.25); }
+            50% { box-shadow: 0 2px 8px rgba(196, 169, 125, 0.3), 0 0 0 16px rgba(196, 169, 125, 0); }
+            100% { box-shadow: 0 2px 8px rgba(196, 169, 125, 0.3); }
         }
-        .msg-fab:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(92, 74, 47, 0.4); }
-        [data-theme="dark"] .msg-fab { background: #8b7a58; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); }
-        [data-theme="dark"] .msg-fab:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); }
-        .msg-fab-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            min-width: 20px;
-            height: 20px;
-            border-radius: 10px;
-            background: #e05a4a;
-            color: #fff;
-            font-size: 0.7rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 5px;
+        @keyframes btnPulseDark {
+            0% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+            25% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 8px rgba(139, 122, 88, 0.3); }
+            50% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 16px rgba(139, 122, 88, 0); }
+            100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         }
-
-        /* FAB pulse glow - runs once on load */
-        @keyframes fabPulse {
-            0% { box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3); }
-            25% { box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3), 0 0 0 8px rgba(196, 169, 125, 0.25); }
-            50% { box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3), 0 0 0 16px rgba(196, 169, 125, 0); }
-            100% { box-shadow: 0 4px 14px rgba(92, 74, 47, 0.3); }
-        }
-        @keyframes fabPulseDark {
-            0% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); }
-            25% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 8px rgba(139, 122, 88, 0.3); }
-            50% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 16px rgba(139, 122, 88, 0); }
-            100% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); }
-        }
-        .msg-fab.pulse { animation: fabPulse 1s ease-out 3; }
-        [data-theme="dark"] .msg-fab.pulse { animation: fabPulseDark 1s ease-out 3; }
+        .msg-leave-btn.pulse { animation: btnPulse 1s ease-out 3; }
+        [data-theme="dark"] .msg-leave-btn.pulse { animation: btnPulseDark 1s ease-out 3; }
 
         /* Modal */
         .modal-bg {
@@ -724,10 +684,6 @@
         </div>
     </div>
 
-    <button class="msg-fab" id="msg-fab" onclick="openMsgModal()" title="Deixar mensagem">
-        💌
-        <span class="msg-fab-badge" id="msg-fab-badge" style="display:none"></span>
-    </button>
 
     <script>
         const SPREADSHEET_ID = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
@@ -1096,10 +1052,7 @@
                 }
                 if (cfg['notif_bar'] === 'false') document.getElementById('notif-bar').style.setProperty('display','none','important');
                 if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
-                if (cfg['allow_messages'] === 'false') {
-                    const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none';
-                    const fab = document.getElementById('msg-fab'); if (fab) fab.style.display = 'none';
-                }
+                if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
             } catch (e) { console.error(e); }
         }
 
@@ -1108,12 +1061,12 @@
         loadMessages();
         loadSettings();
 
-        // FAB pulse on load (3 pulses then stop)
+        // Button pulse on load (3 pulses then stop)
         setTimeout(() => {
-            const fab = document.getElementById('msg-fab');
-            if (fab) {
-                fab.classList.add('pulse');
-                fab.addEventListener('animationend', () => fab.classList.remove('pulse'), { once: true });
+            const btn = document.querySelector('.msg-leave-btn:not(.ghost)');
+            if (btn) {
+                btn.classList.add('pulse');
+                btn.addEventListener('animationend', () => btn.classList.remove('pulse'), { once: true });
             }
         }, 2000);
 
@@ -1179,9 +1132,6 @@
             const board     = document.getElementById('board-cards');
             const toggleRow = document.getElementById('board-toggle-row');
             const toggleBtn = document.getElementById('board-toggle-btn');
-            // Update FAB badge with message count
-            const fabBadge = document.getElementById('msg-fab-badge');
-            if (fabBadge && msgs.length > 0) { fabBadge.textContent = msgs.length; fabBadge.style.display = 'flex'; }
             if (msgs.length === 0) {
                 board.innerHTML = '<p style="color:#a89880;font-style:italic;font-size:0.85rem;width:100%;text-align:center;padding:8px 0">Seja o primeiro a deixar uma mensagem de carinho!</p>';
                 toggleRow.style.display = 'none';
