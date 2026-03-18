@@ -369,8 +369,10 @@
             transition: background 0.2s;
         }
         #notif-bar:hover { background: var(--accent); color: #fff; }
-        #notif-bar.subscribed { cursor: default; opacity: 0.7; }
-        #notif-bar.subscribed:hover { background: var(--accent-soft); color: var(--text); }
+        #notif-bar.subscribed { cursor: default; background: #e8f5e9; color: #2e7d32; }
+        #notif-bar.subscribed:hover { background: #e8f5e9; color: #2e7d32; }
+        [data-theme="dark"] #notif-bar.subscribed,
+        [data-theme="dark"] #notif-bar.subscribed:hover { background: #1e2e22; color: #66bb6a; }
 
         /* Dark mode toggle */
         #dark-toggle {
