@@ -675,6 +675,24 @@
     // ====================================================
     // LOAD RECENT UPDATES
     // ====================================================
+    function parseCSV(text) {
+        const raw = text.trim().split('\n');
+        if (raw.length < 2) return [];
+        const lines = [];
+        let buf = '';
+        for (const line of raw) {
+            buf = buf ? buf + '\n' + line : line;
+            if ((buf.match(/"/g) || []).length % 2 === 0) { lines.push(buf); buf = ''; }
+        }
+        if (buf) lines.push(buf);
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const row = parseCSVLine(lines[i]);
+            if (row.length > 0 && row[0]) rows.push(row);
+        }
+        return rows;
+    }
+
     function parseCSVLine(line) {
         const result = [];
         let cur = '', inQ = false;
@@ -699,12 +717,7 @@
         try {
             const resp = await fetch(UPDATES_CSV + '&t=' + Date.now());
             const text = await resp.text();
-            const lines = text.trim().split('\n');
-            const entries = [];
-            for (let i = 1; i < lines.length; i++) {
-                const r = parseCSVLine(lines[i]);
-                if (r[0]) entries.push(r);
-            }
+            const entries = parseCSV(text);
             const recent = entries.slice(-5).reverse();
             const el = document.getElementById('recent-list');
             if (recent.length === 0) {
@@ -759,12 +772,8 @@
         try {
             const resp = await fetch(MENSAGENS_CSV + '&t=' + Date.now());
             const text = await resp.text();
-            const lines = text.trim().split('\n');
-            const msgs = [];
-            for (let i = 1; i < lines.length; i++) {
-                const r = parseCSVLine(lines[i]);
-                if (r[0]) msgs.push({ nome: r[0], mensagem: r[1] || '', data: r[2] || '', sheetRow: i + 1 });
-            }
+            const rows = parseCSV(text);
+            const msgs = rows.map((r, i) => ({ nome: r[0], mensagem: r[1] || '', data: r[2] || '', sheetRow: i + 2 }));
             if (msgs.length === 0) {
                 el.innerHTML = '<p style="color:#a89880;font-size:0.85rem">Nenhuma mensagem ainda.</p>';
                 return;
