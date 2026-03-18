@@ -1,70 +1,90 @@
-# PensoIA Site
+# PensoIA Website
 
-Static site on Netlify. Serves both `pensoia.com` and `epbf.com.br` from the same repo.
+Professional website for PensoIA - AI and Prompt Engineering consultancy for legal professionals.
 
-## Deployment
+## Features
 
-- `dev` branch → `staging.pensoia.com` (auto-deploys)
-- `master` branch → `pensoia.com` / `epbf.com.br` (auto-deploys)
+- ✅ Fully responsive design
+- ✅ Green-turquoise color scheme
+- ✅ PT-BR default with EN toggle
+- ✅ Language preference saved in browser
+- ✅ Smooth animations
+- ✅ Clean, professional layout
+- ✅ SEO-friendly structure
 
-Workflow: develop on `dev`, review on staging, cherry-pick or merge to `master` for production.
+## Project Structure
 
-Always increment `?v=X.X` on CSS/JS files in `index.html` when pushing changes (cache busting).
-
-## Brand Switcher
-
-To switch the site identity between PensoIA and EPBF, change one line in `js/brand.js`:
-
-```js
-const ACTIVE_BRAND = 'pensoia'; // or 'epbf'
+```
+pensoia-site/
+├── index.html          # Main page
+├── css/
+│   └── style.css      # All styles (green-turquoise theme)
+├── js/
+│   ├── translations.js # PT-BR and EN translations
+│   └── main.js        # Language toggle + animations
+└── images/
+    ├── logo.png       # PensoIA logo
+    └── profile.jpg    # Professional photo
 ```
 
-Affects: tab title, meta tags, logo alt text, about text, contact email. Footer always shows both.
+## How to Upload to Hostinger
+
+1. **Login to Hostinger**
+   - Go to your Hostinger panel
+   - Navigate to File Manager
+
+2. **Upload Files**
+   - Upload all files maintaining the folder structure:
+     - `index.html` → root directory (public_html)
+     - `css/` folder → root directory
+     - `js/` folder → root directory
+     - `images/` folder → root directory
+
+3. **Alternative: FTP Upload**
+   - Use FileZilla or any FTP client
+   - Connect to your Hostinger FTP
+   - Upload all files/folders
+
+## How to Customize
+
+### Change Contact Email
+Edit `index.html` line 90:
+```html
+<a href="mailto:YOUR-EMAIL@pensoia.com.br">
+```
+
+And update translations in `js/translations.js` (lines 24 and 50).
+
+### Change Colors
+Edit `css/style.css` (lines 9-18) to modify the color palette:
+```css
+--primary: #14b8a6;        /* Main turquoise */
+--primary-dark: #0d9488;   /* Darker turquoise */
+--primary-light: #5eead4;  /* Light turquoise */
+--secondary: #047857;      /* Dark green */
+--accent: #99f6e4;         /* Light accent */
+```
+
+### Update Content
+Edit `js/translations.js` to change any text on the site in both PT-BR and EN.
+
+## Testing Locally
+
+1. Open `index.html` in any browser
+2. Click the language toggle (🌐 EN/PT) to test translations
+3. Test on mobile by resizing browser window
+
+## Browser Support
+
+- Chrome/Edge (latest)
+- Firefox (latest)
+- Safari (latest)
+- Mobile browsers (iOS Safari, Chrome Mobile)
+
+## License
+
+© 2024 PensoIA. All rights reserved.
 
 ---
-
-## Adriana Subproject (`/adriana`)
-
-Family health updates page at `epbf.com.br/adriana`. Google Sheets as backend, Google Apps Script as POST endpoint.
-
-- Public page: `adriana/index.html`
-- Admin panel: `adriana/admin/index.html` (dark-only, password-gated)
-- Spreadsheet: `14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE`
-- Updates posted via `/adriana` Claude skill or directly in Google Sheets
-
-### Push Notifications (OneSignal)
-
-- **App ID:** `89faae5a-ef60-4165-aef4-1c274deea3b4`
-- **Site URL in dashboard:** `https://epbf.com.br` (root — cannot be scoped to /adriana/)
-- **Service worker:** `OneSignalSDKWorker.js` at repo root
-- **SDK:** `OneSignalSDK.page.js` v16, loaded with `defer`, initialized via `OneSignalDeferred` pattern
-
-**Subscribe flow — the working approach:**
-
-`OneSignal.Slidedown.promptPush()` does NOT work (resolves silently). Use native permission + explicit opt-in:
-
-```javascript
-function notifBarClick() {
-    OneSignalDeferred.push(async function(OneSignal) {
-        const perm = await Notification.requestPermission();
-        if (perm === 'granted') {
-            await OneSignal.User.PushSubscription.optIn();
-        }
-    });
-}
-```
-
-All OneSignal API calls must be inside `OneSignalDeferred.push()` — `OneSignal` is not a global.
-
-**Sending from admin panel:**
-
-```
-POST https://api.onesignal.com/notifications
-Authorization: Key <REST_API_KEY>
-```
-
-- Key format: `os_v2_app_...` from Dashboard > Keys & IDs
-- Auth header: `Key` not `Basic`
-- Payload: `included_segments: ["Total Subscriptions"]`, `contents/headings: { en: "...", pt: "..." }`
-
-**API key instability:** Keys disappeared repeatedly when account used Google/OAuth login only. Fixed by adding a password login to the OneSignal account. If keys vanish again, regenerate and update `adriana/admin/index.html` (ONESIGNAL_API_KEY) and `~/.claude/skills/adriana-update/skill.md`.
+**Live Site:** https://pensoia.com
+**Last Updated:** 2026-02-05
