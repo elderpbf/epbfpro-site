@@ -15,7 +15,7 @@
     <script>
         (function() {
             const s = localStorage.getItem('adriana_theme');
-            const dark = s === 'dark' || (!s && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            const dark = s === 'dark';
             if (dark) document.documentElement.setAttribute('data-theme', 'dark');
         })();
     </script>
