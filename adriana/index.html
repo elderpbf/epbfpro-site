@@ -1191,10 +1191,12 @@
                 daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
             }
             if (isOpen) {
+                const latestDate    = sortDateKeysDesc(Object.keys(groupByDate(updates)))[0] || fase.data_fim;
+                const openDateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(latestDate)}`;
                 return `
                 <details class="phase-block phase-block--open" open>
                     <summary class="phase-summary phase-summary--slim">
-                        <span class="phase-date-range">${escapeHtml(dateRange)}</span>
+                        <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
                         <span class="phase-chevron">▾</span>
                     </summary>
                     <div class="phase-days">${daysHtml}</div>
@@ -1242,33 +1244,13 @@
             const sortedFases = [...fases].sort((a, b) => dateToISO(b.data_fim).localeCompare(dateToISO(a.data_fim)));
             const openPhase   = sortedFases[0] || null;
 
-            let html = '<div class="timeline-header section-divider"><img src="media/flowers/1.png" alt="">Histórico<img src="media/flowers/1.png" alt=""></div>';
-
-            // Ungrouped (most recent, not yet in a phase) - wrapped in an open block
-            if (ungrouped.length > 0) {
-                const grouped = groupByDate(ungrouped);
-                const dates   = sortDateKeysDesc(Object.keys(grouped));
-                let daysHtml  = '';
-                for (let i = 0; i < dates.length; i++) {
-                    daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
-                }
-                const latestDate  = dates[0];
-                const earliestDate = dates[dates.length - 1];
-                const rangeLabel  = latestDate === earliestDate
-                    ? formatDateShort(latestDate)
-                    : `${formatDateShort(earliestDate)} – ${formatDateShort(latestDate)}`;
-                html += `
-                    <details class="phase-block" open>
-                        <summary class="phase-summary">
-                            <div class="phase-header-text">
-                                <span class="phase-date-range">${rangeLabel}</span>
-                                <span class="phase-title">Atualizações recentes</span>
-                            </div>
-                            <span class="phase-chevron">▾</span>
-                        </summary>
-                        <div class="phase-days">${daysHtml}</div>
-                    </details>`;
+            // Merge ungrouped updates into the open phase
+            if (openPhase && ungrouped.length > 0) {
+                if (!phaseUpdates[openPhase.nome]) phaseUpdates[openPhase.nome] = [];
+                phaseUpdates[openPhase.nome] = phaseUpdates[openPhase.nome].concat(ungrouped);
             }
+
+            let html = '<div class="timeline-header section-divider"><img src="media/flowers/1.png" alt="">Histórico<img src="media/flowers/1.png" alt=""></div>';
 
             // Phases, most recent first
             for (const fase of sortedFases) {
