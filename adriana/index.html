@@ -451,8 +451,11 @@
             align-items: flex-start;
             gap: 10px;
             padding: 14px 16px;
-            background: var(--accent-soft);
+            background: #f2ede5;
             user-select: none;
+        }
+        [data-theme="dark"] .phase-summary {
+            background: #2a261e;
         }
         .phase-summary::-webkit-details-marker { display: none; }
         .phase-header-text {
@@ -490,7 +493,7 @@
             transform: rotate(180deg);
         }
         .phase-days {
-            padding: 16px 0 4px 0;
+            padding: 16px 16px 4px 16px;
             border-top: 1px solid var(--border);
         }
         .phase-days .day-group:last-child {
@@ -1223,13 +1226,30 @@
 
             let html = '<div class="timeline-header section-divider"><img src="media/flowers/1.png" alt="">Histórico<img src="media/flowers/1.png" alt=""></div>';
 
-            // Ungrouped (most recent, not yet in a phase) - expanded, no wrapper
+            // Ungrouped (most recent, not yet in a phase) - wrapped in an open block
             if (ungrouped.length > 0) {
                 const grouped = groupByDate(ungrouped);
                 const dates   = sortDateKeysDesc(Object.keys(grouped));
+                let daysHtml  = '';
                 for (let i = 0; i < dates.length; i++) {
-                    html += renderDayGroup(grouped[dates[i]], dates[i], curtidas, false);
+                    daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
                 }
+                const latestDate  = dates[0];
+                const earliestDate = dates[dates.length - 1];
+                const rangeLabel  = latestDate === earliestDate
+                    ? formatDateShort(latestDate)
+                    : `${formatDateShort(earliestDate)} – ${formatDateShort(latestDate)}`;
+                html += `
+                    <details class="phase-block" open>
+                        <summary class="phase-summary">
+                            <div class="phase-header-text">
+                                <span class="phase-date-range">${rangeLabel}</span>
+                                <span class="phase-title">Atualizações recentes</span>
+                            </div>
+                            <span class="phase-chevron">▾</span>
+                        </summary>
+                        <div class="phase-days">${daysHtml}</div>
+                    </details>`;
             }
 
             // Phases, most recent first
