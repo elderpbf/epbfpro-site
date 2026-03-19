@@ -1165,7 +1165,9 @@
         })();
 
         // Notification bar
+        var _osReady = false;
         OneSignalDeferred.push(async function(OneSignal) {
+            _osReady = true;
             if (OneSignal.User.PushSubscription.optedIn) {
                 const bar = document.getElementById('notif-bar');
                 bar.textContent = '✓ Notificações ativadas';
@@ -1176,6 +1178,21 @@
         function notifBarClick() {
             const bar = document.getElementById('notif-bar');
             if (bar.classList.contains('subscribed')) return;
+
+            // Permission previously denied - guide user to settings
+            if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+                bar.textContent = '⚠ Notificações bloqueadas. Ative nas configurações do navegador e recarregue a página.';
+                bar.style.pointerEvents = 'none';
+                return;
+            }
+
+            // SDK failed to load - can't do push without it
+            if (!_osReady) {
+                bar.textContent = '⚠ Serviço indisponível. Desative o bloqueador de anúncios e recarregue.';
+                bar.style.pointerEvents = 'none';
+                return;
+            }
+
             bar.textContent = '⏳ Ativando notificações...';
             bar.style.pointerEvents = 'none';
             var timeout = setTimeout(function() {
@@ -1196,7 +1213,7 @@
                 } catch (e) {
                     clearTimeout(timeout);
                     console.error('Push subscribe failed', e);
-                    bar.textContent = '⚠ Erro: ' + e.message + '. Toque para tentar novamente.';
+                    bar.textContent = '⚠ Erro ao ativar. Toque para tentar novamente.';
                     bar.style.pointerEvents = '';
                 }
             });
