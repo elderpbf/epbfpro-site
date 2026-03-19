@@ -1014,7 +1014,7 @@
                     if (r[0]) curtidas[r[0]] = parseInt(r[1]) || 0;
                 }
 
-                renderSummary(resumo);
+                renderSummary(resumo, updates);
                 renderTimeline(updates, curtidas);
                 updateLastUpdate(updates);
                 updateRefreshBar();
@@ -1023,7 +1023,7 @@
             }
         }
 
-        function renderSummary(resumo) {
+        function renderSummary(resumo, updates) {
             const section = document.getElementById('summary-section');
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
@@ -1034,11 +1034,19 @@
                     </div>`;
                 return;
             }
+            let lastTime = '';
+            if (updates && resumo.data) {
+                const dayUpdates = updates.filter(u => u.data === resumo.data && u.hora);
+                if (dayUpdates.length) {
+                    dayUpdates.sort((a, b) => b.hora.localeCompare(a.hora));
+                    lastTime = ' às ' + dayUpdates[0].hora.replace(/^(\d{2}):(\d{2}).*/, '$1:$2');
+                }
+            }
             section.innerHTML = `
                 <div class="summary-card">
                     <div class="summary-label">Como ela está</div>
                     <div class="summary-subtitle">Resumo geral da situação atual</div>
-                    <div class="summary-date">Atualizado em ${formatDate(resumo.data)}</div>
+                    <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
                 </div>`;
         }
