@@ -451,8 +451,6 @@
     // CONFIG — replace APPS_SCRIPT_URL after deploying
     // ====================================================
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfTIqI5Pcfez0-8OZs8Ibi68G9NqO2P8xzzDkHKuRofJ7SopJ8-htDcjyEoTC8k79P/exec';
-    const ONESIGNAL_APP_ID  = '89faae5a-ef60-4165-aef4-1c274deea3b4';
-    const ONESIGNAL_API_KEY = 'os_v2_app_rh5k4wxpmbawllxudqtu33vdwqznaodqrrou6nnnry6riwbtqr6aezxg3nqgqzz33digxz43pf7d3rd4v4zx2g3kvb2wgjv2g7evb7y';
     const SPREADSHEET_ID    = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
     const UPDATES_CSV       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
     const RESUMO_CSV        = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
@@ -626,27 +624,13 @@
     }
 
     // ====================================================
-    // ONESIGNAL PUSH
+    // ONESIGNAL PUSH (via Apps Script to avoid CORS)
     // ====================================================
     async function sendPushNotification(texto) {
         try {
-            const resp = await fetch('https://onesignal.com/api/v1/notifications', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Key ' + ONESIGNAL_API_KEY
-                },
-                body: JSON.stringify({
-                    app_id: ONESIGNAL_APP_ID,
-                    included_segments: ['Total Subscriptions'],
-                    headings: { en: 'Notícias de Adriana' },
-                    contents: { en: texto, pt: texto },
-                    url: 'https://epbf.com.br/adriana'
-                })
-            });
-            const data = await resp.json();
-            if (data.id) return { ok: true };
-            return { ok: false, error: JSON.stringify(data.errors || data) };
+            const res = await postToScript({ action: 'send_notification', texto });
+            if (res.ok) return { ok: true };
+            return { ok: false, error: res.error || 'Unknown error' };
         } catch (e) {
             return { ok: false, error: e.message };
         }
