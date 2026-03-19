@@ -457,6 +457,14 @@
         [data-theme="dark"] .phase-summary {
             background: #2a261e;
         }
+        .phase-summary--slim {
+            padding: 8px 16px;
+            align-items: center;
+        }
+        .phase-summary--slim .phase-date-range {
+            margin-bottom: 0;
+            font-size: 0.72rem;
+        }
         .phase-summary::-webkit-details-marker { display: none; }
         .phase-header-text {
             flex: 1;
@@ -1182,8 +1190,18 @@
             for (let i = 0; i < dates.length; i++) {
                 daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
             }
+            if (isOpen) {
+                return `
+                <details class="phase-block phase-block--open" open>
+                    <summary class="phase-summary phase-summary--slim">
+                        <span class="phase-date-range">${escapeHtml(dateRange)}</span>
+                        <span class="phase-chevron">▾</span>
+                    </summary>
+                    <div class="phase-days">${daysHtml}</div>
+                </details>`;
+            }
             return `
-                <details class="phase-block"${isOpen ? ' open' : ''}>
+                <details class="phase-block">
                     <summary class="phase-summary">
                         <div class="phase-header-text">
                             <span class="phase-date-range">${escapeHtml(dateRange)}</span>
