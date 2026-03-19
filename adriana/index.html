@@ -26,10 +26,19 @@
     <script>
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.init({
-                appId: '89faae5a-ef60-4165-aef4-1c274deea3b4',
-                autoPrompt: false
-            });
+            try {
+                await OneSignal.init({
+                    appId: '89faae5a-ef60-4165-aef4-1c274deea3b4',
+                    autoPrompt: false
+                });
+                console.log('[OneSignal] init OK');
+                document.getElementById('notif-bar').dataset.sdkReady = '1';
+            } catch(e) {
+                console.error('[OneSignal] init FAILED', e);
+                var bar = document.getElementById('notif-bar');
+                bar.textContent = '⚠ ' + e.message;
+                bar.dataset.sdkReady = '0';
+            }
         });
     </script>
     <style>
@@ -1164,28 +1173,33 @@
             }
         });
 
-        async function notifBarClick() {
+        function notifBarClick() {
             const bar = document.getElementById('notif-bar');
             if (bar.classList.contains('subscribed')) return;
             bar.textContent = '⏳ Ativando notificações...';
             bar.style.pointerEvents = 'none';
-            try {
-                if (typeof OneSignal === 'undefined' || !OneSignal.User) {
-                    throw new Error('OneSignal SDK not loaded');
-                }
-                await OneSignal.User.PushSubscription.optIn();
-                if (OneSignal.User.PushSubscription.optedIn) {
-                    bar.textContent = '✓ Notificações ativadas';
-                    bar.classList.add('subscribed');
-                } else {
-                    bar.textContent = '🔔 Permissão negada. Toque para tentar novamente.';
+            var timeout = setTimeout(function() {
+                bar.textContent = '⚠ Tempo esgotado. Toque para tentar novamente.';
+                bar.style.pointerEvents = '';
+            }, 15000);
+            OneSignalDeferred.push(async function(OneSignal) {
+                try {
+                    await OneSignal.User.PushSubscription.optIn();
+                    clearTimeout(timeout);
+                    if (OneSignal.User.PushSubscription.optedIn) {
+                        bar.textContent = '✓ Notificações ativadas';
+                        bar.classList.add('subscribed');
+                    } else {
+                        bar.textContent = '🔔 Permissão negada. Toque para tentar novamente.';
+                        bar.style.pointerEvents = '';
+                    }
+                } catch (e) {
+                    clearTimeout(timeout);
+                    console.error('Push subscribe failed', e);
+                    bar.textContent = '⚠ Erro: ' + e.message + '. Toque para tentar novamente.';
                     bar.style.pointerEvents = '';
                 }
-            } catch (e) {
-                console.error('Push subscribe failed', e);
-                bar.textContent = '⚠ Erro: ' + e.message + '. Toque para tentar novamente.';
-                bar.style.pointerEvents = '';
-            }
+            });
         }
 
         async function loadSettings() {
