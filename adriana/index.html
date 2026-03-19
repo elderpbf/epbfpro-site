@@ -1197,7 +1197,10 @@
                 return `
                 <details class="phase-block phase-block--open" open>
                     <summary class="phase-summary phase-summary--slim">
-                        <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
+                        <div class="phase-header-text">
+                            <span class="phase-title">${escapeHtml(fase.nome)}</span>
+                            <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
+                        </div>
                         <span class="phase-chevron">▾</span>
                     </summary>
                     <div class="phase-days">${daysHtml}</div>
