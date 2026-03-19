@@ -437,6 +437,72 @@
             margin-top: 0;
         }
 
+        /* Phase blocks */
+        .phase-block {
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .phase-summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px 16px;
+            background: var(--accent-soft);
+            user-select: none;
+        }
+        .phase-summary::-webkit-details-marker { display: none; }
+        .phase-header-text {
+            flex: 1;
+            min-width: 0;
+        }
+        .phase-date-range {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+        .phase-title {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--heading);
+            margin-bottom: 4px;
+        }
+        .phase-resumo {
+            display: block;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+        .phase-chevron {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .phase-block[open] .phase-chevron {
+            transform: rotate(180deg);
+        }
+        .phase-days {
+            padding: 16px 0 4px 0;
+            border-top: 1px solid var(--border);
+        }
+        .phase-days .day-group:last-child {
+            margin-bottom: 4px;
+        }
+        [data-theme="dark"] .phase-block {
+            border-color: rgba(255,255,255,0.08);
+        }
+        [data-theme="dark"] .phase-days {
+            border-top-color: rgba(255,255,255,0.08);
+        }
+
         /* Loading & empty states */
         .loading {
             text-align: center;
@@ -832,6 +898,7 @@
         const MENSAGENS_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Mensagens`;
         const CURTIDAS_URL       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Curtidas`;
         const CONFIGURACOES_URL  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Configuracoes`;
+        const FASES_URL          = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Fases`;
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfTIqI5Pcfez0-8OZs8Ibi68G9NqO2P8xzzDkHKuRofJ7SopJ8-htDcjyEoTC8k79P/exec';
         const REFRESH_INTERVAL = 5 * 60 * 1000;
 
@@ -982,17 +1049,20 @@
         async function fetchData() {
             try {
                 const t = Date.now();
-                const [updatesResp, resumoResp, curtidasResp] = await Promise.all([
+                const [updatesResp, resumoResp, curtidasResp, fasesResp] = await Promise.all([
                     fetch(UPDATES_URL),
                     fetch(RESUMO_URL),
-                    fetch(CURTIDAS_URL + '&t=' + t)
+                    fetch(CURTIDAS_URL + '&t=' + t),
+                    fetch(FASES_URL).catch(() => null)
                 ]);
-                const [updatesText, resumoText, curtidasText] = await Promise.all([
-                    updatesResp.text(), resumoResp.text(), curtidasResp.text()
+                const [updatesText, resumoText, curtidasText, fasesText] = await Promise.all([
+                    updatesResp.text(), resumoResp.text(), curtidasResp.text(),
+                    fasesResp ? fasesResp.text() : Promise.resolve('')
                 ]);
 
                 const updatesRows = parseCSV(updatesText);
                 const resumoRows  = parseCSV(resumoText);
+                const fasesRows   = fasesText ? parseCSV(fasesText) : [];
 
                 const updates = updatesRows
                     .map(row => ({
@@ -1007,6 +1077,13 @@
                     ? { data: resumoRows[0][0] || '', texto: resumoRows[0][1] || '' }
                     : null;
 
+                const fases = fasesRows.map(row => ({
+                    nome:        row[0] || '',
+                    resumo:      row[1] || '',
+                    data_inicio: row[2] || '',
+                    data_fim:    row[3] || ''
+                })).filter(f => f.nome && f.data_inicio && f.data_fim);
+
                 const curtidas = {};
                 const curLines = curtidasText.trim().split('\n');
                 for (let i = 1; i < curLines.length; i++) {
@@ -1015,7 +1092,7 @@
                 }
 
                 renderSummary(resumo, updates);
-                renderTimeline(updates, curtidas);
+                renderTimeline(updates, curtidas, fases);
                 updateLastUpdate(updates);
                 updateRefreshBar();
             } catch (err) {
@@ -1051,50 +1128,114 @@
                 </div>`;
         }
 
-        function renderTimeline(updates, curtidas) {
+        function dateToISO(d) {
+            if (!d) return '';
+            if (d.includes('/')) { const [dd, mm, yy] = d.split('/'); return `${yy}-${mm}-${dd}`; }
+            return d;
+        }
+
+        function formatDateShort(dateStr) {
+            if (!dateStr) return '';
+            if (dateStr.includes('/')) { const [d, m] = dateStr.split('/'); return `${d.padStart(2,'0')}/${m.padStart(2,'0')}`; }
+            return dateStr;
+        }
+
+        function renderEntry(entry, curtidas) {
+            const h      = hashStr(entry.data + entry.hora + entry.texto.slice(0, 30));
+            const count  = curtidas[String(h)] || 0;
+            let reaction = localStorage.getItem('reaction_' + h);
+            if (!reaction && localStorage.getItem('heart_' + h) === '1') {
+                reaction = 'heart';
+                localStorage.setItem('reaction_' + h, 'heart');
+                localStorage.removeItem('heart_' + h);
+            }
+            return `
+                <div class="update-entry">
+                    ${entry.hora ? `<div class="update-time">${escapeHtml(entry.hora)}</div>` : ''}
+                    <div class="update-text">${escapeHtml(entry.texto).replace(/\n/g, '<br>')}</div>
+                    ${renderMedia(entry.foto)}
+                    <div class="post-react-row">
+                        <button class="post-react-btn${reaction==='heart'?' active':''}" data-type="heart" onclick="toggleReaction(this,${h},'heart')" title="Curtir">${reaction==='heart'?'❤️':'🩶'}</button>
+                        <button class="post-react-btn${reaction==='pray'?' active':''}" data-type="pray" onclick="toggleReaction(this,${h},'pray')" title="Orar">🙏</button>
+                        <span class="react-count">${count > 0 ? count : ''}</span>
+                    </div>
+                </div>`;
+        }
+
+        function renderDayGroup(entries, date, curtidas, isLast) {
+            entries = [...entries].sort((a, b) => (b.hora || '').localeCompare(a.hora || ''));
+            let html = `<div class="day-group${isLast ? ' day-group--last' : ''}">`;
+            html += `<div class="day-label">${formatDate(date)}</div>`;
+            for (const entry of entries) html += renderEntry(entry, curtidas);
+            html += '</div>';
+            return html;
+        }
+
+        function renderPhaseBlock(fase, updates, curtidas, isOpen) {
+            const dateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(fase.data_fim)}`;
+            const grouped   = groupByDate(updates);
+            const dates     = sortDateKeysDesc(Object.keys(grouped));
+            let daysHtml    = '';
+            for (let i = 0; i < dates.length; i++) {
+                daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
+            }
+            return `
+                <details class="phase-block"${isOpen ? ' open' : ''}>
+                    <summary class="phase-summary">
+                        <div class="phase-header-text">
+                            <span class="phase-date-range">${escapeHtml(dateRange)}</span>
+                            <span class="phase-title">${escapeHtml(fase.nome)}</span>
+                            <span class="phase-resumo">${escapeHtml(fase.resumo)}</span>
+                        </div>
+                        <span class="phase-chevron">▾</span>
+                    </summary>
+                    <div class="phase-days">${daysHtml}</div>
+                </details>`;
+        }
+
+        function renderTimeline(updates, curtidas, fases) {
             curtidas = curtidas || {};
+            fases    = fases    || [];
             const section = document.getElementById('timeline-section');
             if (updates.length === 0) {
                 section.innerHTML = '<div class="empty-state">Nenhuma atualização ainda.</div>';
                 return;
             }
 
-            const grouped = groupByDate(updates);
-            const sortedDates = sortDateKeysDesc(Object.keys(grouped));
+            function getPhase(dateStr) {
+                const iso = dateToISO(dateStr);
+                return fases.find(f => iso >= dateToISO(f.data_inicio) && iso <= dateToISO(f.data_fim));
+            }
+
+            const ungrouped    = updates.filter(u => !getPhase(u.data));
+            const phaseUpdates = {};
+            for (const u of updates) {
+                const p = getPhase(u.data);
+                if (p) {
+                    if (!phaseUpdates[p.nome]) phaseUpdates[p.nome] = [];
+                    phaseUpdates[p.nome].push(u);
+                }
+            }
+
+            // Open phase = the one with the latest data_fim
+            const sortedFases = [...fases].sort((a, b) => dateToISO(b.data_fim).localeCompare(dateToISO(a.data_fim)));
+            const openPhase   = sortedFases[0] || null;
 
             let html = '<div class="timeline-header section-divider"><img src="media/flowers/1.png" alt="">Histórico<img src="media/flowers/1.png" alt=""></div>';
 
-            for (const date of sortedDates) {
-                const entries = grouped[date];
-                html += `<div class="day-group">`;
-                html += `<div class="day-label">${formatDate(date)}</div>`;
-
-                entries.sort((a, b) => (b.hora || '').localeCompare(a.hora || ''));
-
-                for (const entry of entries) {
-                    const h       = hashStr(entry.data + entry.hora + entry.texto.slice(0, 30));
-                    const count   = curtidas[String(h)] || 0;
-                    // Migrate old heart_X to reaction_X
-                    let reaction  = localStorage.getItem('reaction_' + h);
-                    if (!reaction && localStorage.getItem('heart_' + h) === '1') {
-                        reaction = 'heart';
-                        localStorage.setItem('reaction_' + h, 'heart');
-                        localStorage.removeItem('heart_' + h);
-                    }
-                    html += `
-                        <div class="update-entry">
-                            ${entry.hora ? `<div class="update-time">${escapeHtml(entry.hora)}</div>` : ''}
-                            <div class="update-text">${escapeHtml(entry.texto).replace(/\n/g, '<br>')}</div>
-                            ${renderMedia(entry.foto)}
-                            <div class="post-react-row">
-                                <button class="post-react-btn${reaction==='heart'?' active':''}" data-type="heart" onclick="toggleReaction(this,${h},'heart')" title="Curtir">${reaction==='heart'?'❤️':'🩶'}</button>
-                                <button class="post-react-btn${reaction==='pray'?' active':''}" data-type="pray" onclick="toggleReaction(this,${h},'pray')" title="Orar">🙏</button>
-                                <span class="react-count">${count > 0 ? count : ''}</span>
-                            </div>
-                        </div>`;
+            // Ungrouped (most recent, not yet in a phase) - expanded, no wrapper
+            if (ungrouped.length > 0) {
+                const grouped = groupByDate(ungrouped);
+                const dates   = sortDateKeysDesc(Object.keys(grouped));
+                for (let i = 0; i < dates.length; i++) {
+                    html += renderDayGroup(grouped[dates[i]], dates[i], curtidas, false);
                 }
+            }
 
-                html += '</div>';
+            // Phases, most recent first
+            for (const fase of sortedFases) {
+                const phUpdates = phaseUpdates[fase.nome] || [];
+                html += renderPhaseBlock(fase, phUpdates, curtidas, fase === openPhase);
             }
 
             section.innerHTML = html;
