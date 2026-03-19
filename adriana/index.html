@@ -57,9 +57,10 @@
             --notif-on-bg: #edf7f0;
             --notif-on-text: #3a6b4a;
             --notif-on-border: #b8dfc7;
-            --photo-glow: 0 0 0 4px rgba(196, 169, 125, 0.18), 0 4px 20px rgba(196, 169, 125, 0.15);
+            --photo-glow: 0 0 0 3px #FDFDFA, 0 0 0 5px #FFC73F, 0 0 0 7px #D93977, 0 0 0 9px #A980C0, 0 4px 20px rgba(196, 169, 125, 0.15);
             --card-shadow: 0 1px 3px rgba(92, 74, 47, 0.06);
             --divider: linear-gradient(90deg, transparent, var(--border), transparent);
+            --flower-dots: radial-gradient(circle 3px, #FDFDFA 100%, transparent) 20%, radial-gradient(circle 3px, #FFC73F 100%, transparent) 40%, radial-gradient(circle 3px, #D93977 100%, transparent) 60%, radial-gradient(circle 3px, #A980C0 100%, transparent) 80%;
         }
         [data-theme="dark"] {
             --bg: #181613;
@@ -86,7 +87,7 @@
             --notif-on-bg: #1a2e20;
             --notif-on-text: #6bbb85;
             --notif-on-border: #2a4e35;
-            --photo-glow: 0 0 0 4px rgba(196, 169, 125, 0.12), 0 4px 24px rgba(0, 0, 0, 0.4);
+            --photo-glow: 0 0 0 3px rgba(253, 253, 250, 0.3), 0 0 0 5px rgba(255, 199, 63, 0.4), 0 0 0 7px rgba(217, 57, 119, 0.3), 0 0 0 9px rgba(169, 128, 192, 0.3), 0 4px 24px rgba(0, 0, 0, 0.4);
             --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
             --divider: linear-gradient(90deg, transparent, var(--border), transparent);
         }
@@ -122,12 +123,34 @@
             background: var(--divider);
         }
 
+        /* Flower dot dividers */
+        .flower-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+        }
+        .flower-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            opacity: 0.65;
+        }
+        .flower-dots .fd-cream { background: #FDFDFA; border: 1px solid rgba(0,0,0,0.08); }
+        .flower-dots .fd-gold { background: #FFC73F; }
+        .flower-dots .fd-pink { background: #D93977; }
+        .flower-dots .fd-purple { background: #A980C0; }
+        [data-theme="dark"] .flower-dots span { opacity: 0.5; }
+        [data-theme="dark"] .flower-dots .fd-cream { background: #e8e0c8; border: none; }
+
         .header-photo {
             width: 164px;
             height: 164px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid var(--accent);
+            border: none;
             margin-bottom: 14px;
             box-shadow: var(--photo-glow);
         }
@@ -164,11 +187,23 @@
         .summary-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-top: 3px solid var(--accent);
+            border-top: none;
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 36px;
             box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #FFC73F, #D93977, #A980C0);
+            border-radius: 12px 12px 0 0;
         }
 
         .summary-label {
@@ -605,7 +640,7 @@
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
         <div class="header">
-            <img class="header-photo" src="media/adriana.jpg" alt="Adriana">
+            <img class="header-photo" src="media/adriana-flowers.png" alt="Adriana">
             <p>Atualizações sobre a recuperação de Adriana</p>
             <p class="last-update" id="last-update"></p>
         </div>
@@ -617,6 +652,8 @@
             Aqui vocês encontram as atualizações mais recentes sobre o estado dela, sempre que houver novidades.
             Assim ninguém precisa ficar sem notícias.
         </div>
+
+        <div class="flower-dots"><span class="fd-cream"></span><span class="fd-gold"></span><span class="fd-pink"></span><span class="fd-purple"></span></div>
 
         <div id="summary-section">
             <div class="loading">
@@ -634,6 +671,8 @@
                 <button class="msg-leave-btn ghost" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
             </div>
         </div>
+
+        <div class="flower-dots"><span class="fd-cream"></span><span class="fd-gold"></span><span class="fd-pink"></span><span class="fd-purple"></span></div>
 
         <div id="timeline-section">
         </div>
@@ -1057,8 +1096,8 @@
         // ================================================
         // MESSAGE BOARD
         // ================================================
-        const CARD_COLORS_LIGHT = ['#fffde7','#e8f5e9','#e3f2fd','#fce4ec','#f3e5f5','#fff3e0','#e0f7fa','#f1f8e9'];
-        const CARD_COLORS_DARK  = ['#33301a','#1e2e22','#1c2530','#302025','#2a1f2e','#302818','#1c2a2e','#232e1e'];
+        const CARD_COLORS_LIGHT = ['#fffdf5','#fff8e0','#fce4ec','#f3e5f5','#fef9ec','#fdeef4','#f0e6f6','#fff6e8'];
+        const CARD_COLORS_DARK  = ['#2e2b1e','#33291a','#302025','#2a1f2e','#2e2718','#2d1e24','#251e2a','#2e2618'];
         function getCardColors() { return document.documentElement.getAttribute('data-theme') === 'dark' ? CARD_COLORS_DARK : CARD_COLORS_LIGHT; }
         const CARD_EMOJIS  = ['🌸','🌻','🌈','💛','🙏','💪','❤️','🌿','☀\uFE0F','💐','🕊\uFE0F','⭐\uFE0F'];
         let selectedEmoji  = CARD_EMOJIS[0];
