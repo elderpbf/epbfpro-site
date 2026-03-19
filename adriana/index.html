@@ -1480,5 +1480,73 @@
             }
         });
     </script>
+
+    <!-- DEBUG CONSOLE - REMOVE AFTER FIXING -->
+    <div id="dbg" onclick="this.style.display='none'" style="
+        position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow-y:auto;
+        background:#111;color:#0f0;font:11px/1.4 monospace;padding:8px;z-index:99999;
+        white-space:pre-wrap;word-break:break-all;
+    ">DEBUG CONSOLE (tap to hide)\n</div>
+    <script>
+    (function(){
+        var d=document.getElementById('dbg');
+        function ts(){return new Date().toLocaleTimeString('pt-BR',{hour12:false})}
+        function log(type,args){
+            var msg='['+ts()+'] '+type+': '+Array.prototype.slice.call(args).map(function(a){
+                try{return typeof a==='object'?JSON.stringify(a):String(a)}catch(e){return String(a)}
+            }).join(' ')+'\n';
+            d.textContent+=msg;
+            d.scrollTop=d.scrollHeight;
+        }
+        var cl=console.log,cw=console.warn,ce=console.error,ci=console.info;
+        console.log=function(){cl.apply(console,arguments);log('LOG',arguments)};
+        console.warn=function(){cw.apply(console,arguments);log('WARN',arguments)};
+        console.error=function(){ce.apply(console,arguments);log('ERR',arguments)};
+        console.info=function(){ci.apply(console,arguments);log('INFO',arguments)};
+        window.addEventListener('error',function(e){log('UNCAUGHT',[''+e.message+' at '+e.filename+':'+e.lineno])});
+        window.addEventListener('unhandledrejection',function(e){log('PROMISE',[''+e.reason])});
+
+        // OneSignal lifecycle
+        console.log('Debug console active');
+        console.log('navigator.serviceWorker: '+(!!navigator.serviceWorker));
+        console.log('Notification API: '+(typeof Notification));
+        if(typeof Notification!=='undefined') console.log('Notification.permission: '+Notification.permission);
+        console.log('Protocol: '+location.protocol);
+        console.log('Host: '+location.host);
+
+        // Monitor SDK load
+        var sdkScript=document.querySelector('script[src*="OneSignalSDK"]');
+        if(sdkScript){
+            sdkScript.addEventListener('load',function(){console.log('OneSignal SDK script LOADED')});
+            sdkScript.addEventListener('error',function(){console.error('OneSignal SDK script FAILED to load')});
+        } else {
+            console.error('No OneSignal SDK script tag found');
+        }
+
+        // Monitor OneSignal global
+        var checkCount=0;
+        var iv=setInterval(function(){
+            checkCount++;
+            if(typeof OneSignal!=='undefined'&&OneSignal.User){
+                console.log('OneSignal global ready (check #'+checkCount+')');
+                try{
+                    console.log('PushSubscription.optedIn: '+OneSignal.User.PushSubscription.optedIn);
+                    console.log('PushSubscription.id: '+OneSignal.User.PushSubscription.id);
+                    console.log('PushSubscription.token: '+(OneSignal.User.PushSubscription.token?'exists':'null'));
+                }catch(e){console.error('Error reading PushSubscription: '+e.message)}
+                clearInterval(iv);
+            }
+            if(checkCount>=30){console.warn('OneSignal global NOT ready after 30 checks');clearInterval(iv)}
+        },1000);
+
+        // Monitor SW registration
+        if(navigator.serviceWorker){
+            navigator.serviceWorker.getRegistrations().then(function(regs){
+                console.log('SW registrations: '+regs.length);
+                regs.forEach(function(r,i){console.log('SW['+i+']: scope='+r.scope+' active='+(r.active?r.active.scriptURL:'none'))});
+            });
+        }
+    })();
+    </script>
 </body>
 </html>
