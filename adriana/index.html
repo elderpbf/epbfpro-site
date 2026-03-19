@@ -103,11 +103,11 @@
             position: relative;
         }
 
-        /* Flower background scatter — real DOM element, not pseudo */
+        /* Flower background scatter — inside container, behind all content */
         #flower-bg {
-            position: fixed;
+            position: absolute;
             inset: 0;
-            z-index: 0;
+            z-index: -1;
             pointer-events: none;
             background:
                 url('media/flowers/1.png') 5% 8% / 45px no-repeat,
@@ -132,7 +132,6 @@
             margin: 0 auto;
             padding: 24px 16px 48px;
             position: relative;
-            z-index: 1;
         }
 
         /* Header */
@@ -744,9 +743,9 @@
     </style>
 </head>
 <body>
-    <div id="flower-bg"></div>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
+        <div id="flower-bg"></div>
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
         <div class="header">
             <img class="header-photo" src="media/adriana-flowers.png" alt="Adriana">
