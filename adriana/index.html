@@ -493,10 +493,11 @@
             margin-top: 20px;
             margin-bottom: 16px; text-align: center; cursor: pointer;
             padding: 12px 20px; border-radius: 10px;
-            background: var(--accent-soft); color: var(--text);
+            background: #f2ede5; color: var(--text);
             font-size: 0.95rem; font-weight: 500;
             transition: background 0.2s;
         }
+        [data-theme="dark"] #notif-bar { background: #2a261e; }
         #notif-bar:hover { background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4); color: #fff; }
         #notif-bar.subscribed { cursor: default; background: #e8f5e9; color: #2e7d32; }
         #notif-bar.subscribed:hover { background: #e8f5e9; color: #2e7d32; }
@@ -1162,19 +1163,33 @@
             }
         });
 
-        function notifBarClick() {
+        async function notifBarClick() {
             const bar = document.getElementById('notif-bar');
             if (bar.classList.contains('subscribed')) return;
-            OneSignalDeferred.push(async function(OneSignal) {
-                try {
-                    const perm = await Notification.requestPermission();
-                    if (perm === 'granted') {
-                        await OneSignal.User.PushSubscription.optIn();
-                        bar.textContent = '✓ Notificações ativadas';
-                        bar.classList.add('subscribed');
-                    }
-                } catch (e) { console.error('Push subscribe failed', e); }
-            });
+
+            if (!window.OneSignal) {
+                bar.textContent = '⏳ Carregando... toque novamente';
+                return;
+            }
+
+            if (Notification.permission === 'denied') {
+                bar.textContent = '🚫 Notificações bloqueadas no navegador';
+                return;
+            }
+
+            bar.textContent = '🔔 Ativando...';
+            try {
+                await OneSignal.User.PushSubscription.optIn();
+                bar.textContent = '✓ Notificações ativadas';
+                bar.classList.add('subscribed');
+            } catch (e) {
+                console.error('Push subscribe failed', e);
+                bar.textContent = '⚠ Não foi possível ativar. Toque para tentar de novo.';
+                setTimeout(function() {
+                    if (!bar.classList.contains('subscribed'))
+                        bar.textContent = '🔔 Receber notificações quando houver novidades';
+                }, 4000);
+            }
         }
 
         async function loadSettings() {
