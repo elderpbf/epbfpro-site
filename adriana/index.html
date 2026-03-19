@@ -25,10 +25,12 @@
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
         window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window._oneSignalReady = false;
         OneSignalDeferred.push(async function(OneSignal) {
             await OneSignal.init({
                 appId: '89faae5a-ef60-4165-aef4-1c274deea3b4'
             });
+            window._oneSignalReady = true;
         });
     </script>
     <style>
@@ -1167,8 +1169,12 @@
             const bar = document.getElementById('notif-bar');
             if (bar.classList.contains('subscribed')) return;
 
-            if (!window.OneSignal) {
+            if (!window._oneSignalReady) {
                 bar.textContent = '⏳ Carregando... toque novamente';
+                setTimeout(function() {
+                    if (!bar.classList.contains('subscribed'))
+                        bar.textContent = '🔔 Receber notificações quando houver novidades';
+                }, 3000);
                 return;
             }
 
