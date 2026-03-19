@@ -57,7 +57,7 @@
             --notif-on-bg: #edf7f0;
             --notif-on-text: #3a6b4a;
             --notif-on-border: #b8dfc7;
-            --photo-glow: 0 0 12px 2px rgba(253, 253, 250, 0.3), 0 0 20px 6px rgba(255, 199, 63, 0.2), 0 0 30px 10px rgba(217, 57, 119, 0.12), 0 0 40px 14px rgba(169, 128, 192, 0.08);
+            --photo-glow: 0 0 10px 4px rgba(240, 212, 138, 0.4), 0 0 22px 10px rgba(232, 160, 180, 0.25), 0 0 36px 16px rgba(196, 168, 212, 0.18);
             --card-shadow: 0 1px 3px rgba(92, 74, 47, 0.06);
             --divider: linear-gradient(90deg, transparent, var(--border), transparent);
         }
@@ -86,7 +86,7 @@
             --notif-on-bg: #1a2e20;
             --notif-on-text: #6bbb85;
             --notif-on-border: #2a4e35;
-            --photo-glow: 0 0 15px 3px rgba(253, 253, 250, 0.2), 0 0 25px 8px rgba(255, 199, 63, 0.15), 0 0 35px 12px rgba(217, 57, 119, 0.1), 0 0 45px 16px rgba(169, 128, 192, 0.07);
+            --photo-glow: 0 0 12px 5px rgba(240, 212, 138, 0.35), 0 0 24px 12px rgba(232, 160, 180, 0.2), 0 0 40px 18px rgba(196, 168, 212, 0.15);
             --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
             --divider: linear-gradient(90deg, transparent, var(--border), transparent);
         }
@@ -215,7 +215,7 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: linear-gradient(90deg, #FFC73F, #D93977, #A980C0);
+            background: linear-gradient(90deg, #f0d48a, #e8a0b4, #c4a8d4);
             border-radius: 12px 12px 0 0;
         }
         .summary-card::after {
@@ -303,12 +303,12 @@
             top: 16px;
             bottom: 10px;
             width: 2px;
-            background: linear-gradient(to bottom, #FFC73F, #D93977, #A980C0, var(--border));
+            background: linear-gradient(to bottom, #f0d48a, #e8a0b4, #c4a8d4, var(--border));
             border-radius: 1px;
             opacity: 0.4;
         }
         .day-group:last-child::before {
-            background: linear-gradient(to bottom, #FFC73F, #D93977, transparent);
+            background: linear-gradient(to bottom, #f0d48a, #e8a0b4, transparent);
             opacity: 0.4;
         }
 
@@ -452,7 +452,7 @@
             font-size: 0.95rem; font-weight: 500;
             transition: background 0.2s;
         }
-        #notif-bar:hover { background: linear-gradient(135deg, #FFC73F, #D93977, #A980C0); color: #fff; }
+        #notif-bar:hover { background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4); color: #fff; }
         #notif-bar.subscribed { cursor: default; background: #e8f5e9; color: #2e7d32; }
         #notif-bar.subscribed:hover { background: #e8f5e9; color: #2e7d32; }
         [data-theme="dark"] #notif-bar.subscribed,
@@ -567,7 +567,7 @@
             display: block;
             margin: 20px auto 16px;
             padding: 10px 24px;
-            background: linear-gradient(135deg, #FFC73F, #D93977, #A980C0);
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
             border: none;
             border-radius: 24px;
             color: #fff;
@@ -576,11 +576,11 @@
             font-family: inherit;
             cursor: pointer;
             transition: opacity 0.15s, transform 0.15s;
-            box-shadow: 0 2px 12px rgba(217, 57, 119, 0.25);
+            box-shadow: 0 2px 12px rgba(232, 160, 180, 0.35);
         }
         .msg-leave-btn:hover { opacity: 0.9; transform: translateY(-1px); }
         [data-theme="dark"] .msg-leave-btn:not(.ghost) {
-            background: linear-gradient(135deg, #b8922e, #a02d5a, #7d5e94);
+            background: linear-gradient(135deg, #b8a05a, #b07888, #9680a8);
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
         }
         .msg-leave-btn.ghost {
@@ -656,8 +656,8 @@
             transition: opacity 0.15s;
         }
         .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .modal-btn-send { background: linear-gradient(135deg, #FFC73F, #D93977, #A980C0); color: #fff; }
-        [data-theme="dark"] .modal-btn-send { background: linear-gradient(135deg, #b8922e, #a02d5a, #7d5e94); }
+        .modal-btn-send { background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4); color: #fff; }
+        [data-theme="dark"] .modal-btn-send { background: linear-gradient(135deg, #b8a05a, #b07888, #9680a8); }
         .modal-btn-cancel { background: var(--modal-cancel-bg); color: var(--modal-cancel-text); }
         .modal-fb { margin-top: 10px; font-size: 0.82rem; padding: 8px 10px; border-radius: 7px; }
         .modal-fb-ok  { background: #e8f5e9; color: #2e7d32; }
