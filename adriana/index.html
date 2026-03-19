@@ -27,7 +27,8 @@
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         OneSignalDeferred.push(async function(OneSignal) {
             await OneSignal.init({
-                appId: '89faae5a-ef60-4165-aef4-1c274deea3b4'
+                appId: '89faae5a-ef60-4165-aef4-1c274deea3b4',
+                autoPrompt: false
             });
         });
     </script>
@@ -1166,15 +1167,23 @@
         function notifBarClick() {
             const bar = document.getElementById('notif-bar');
             if (bar.classList.contains('subscribed')) return;
+            bar.textContent = '⏳ Ativando notificações...';
+            bar.style.pointerEvents = 'none';
             OneSignalDeferred.push(async function(OneSignal) {
                 try {
-                    const perm = await Notification.requestPermission();
-                    if (perm === 'granted') {
-                        await OneSignal.User.PushSubscription.optIn();
+                    await OneSignal.User.PushSubscription.optIn();
+                    if (OneSignal.User.PushSubscription.optedIn) {
                         bar.textContent = '✓ Notificações ativadas';
                         bar.classList.add('subscribed');
+                    } else {
+                        bar.textContent = '🔔 Permissão negada. Toque para tentar novamente.';
+                        bar.style.pointerEvents = '';
                     }
-                } catch (e) { console.error('Push subscribe failed', e); }
+                } catch (e) {
+                    console.error('Push subscribe failed', e);
+                    bar.textContent = '⚠ Erro ao ativar. Toque para tentar novamente.';
+                    bar.style.pointerEvents = '';
+                }
             });
         }
 
