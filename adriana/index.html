@@ -57,7 +57,7 @@
             --notif-on-bg: #edf7f0;
             --notif-on-text: #3a6b4a;
             --notif-on-border: #b8dfc7;
-            --photo-glow: 0 0 0 3px #FDFDFA, 0 0 0 5px #FFC73F, 0 0 0 7px #D93977, 0 0 0 9px #A980C0, 0 4px 20px rgba(196, 169, 125, 0.15);
+            --photo-glow: 0 0 12px 2px rgba(253, 253, 250, 0.3), 0 0 20px 6px rgba(255, 199, 63, 0.2), 0 0 30px 10px rgba(217, 57, 119, 0.12), 0 0 40px 14px rgba(169, 128, 192, 0.08);
             --card-shadow: 0 1px 3px rgba(92, 74, 47, 0.06);
             --divider: linear-gradient(90deg, transparent, var(--border), transparent);
         }
@@ -86,7 +86,7 @@
             --notif-on-bg: #1a2e20;
             --notif-on-text: #6bbb85;
             --notif-on-border: #2a4e35;
-            --photo-glow: 0 0 0 3px rgba(253, 253, 250, 0.3), 0 0 0 5px rgba(255, 199, 63, 0.4), 0 0 0 7px rgba(217, 57, 119, 0.3), 0 0 0 9px rgba(169, 128, 192, 0.3), 0 4px 24px rgba(0, 0, 0, 0.4);
+            --photo-glow: 0 0 15px 3px rgba(253, 253, 250, 0.2), 0 0 25px 8px rgba(255, 199, 63, 0.15), 0 0 35px 12px rgba(217, 57, 119, 0.1), 0 0 45px 16px rgba(169, 128, 192, 0.07);
             --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
             --divider: linear-gradient(90deg, transparent, var(--border), transparent);
         }
@@ -121,11 +121,11 @@
                 url('media/flowers/1.png') 93% 80% / 42px no-repeat,
                 url('media/flowers/shape.png') 88% 95% / 25px no-repeat,
                 url('media/flowers/chrysanthemum.png') 4% 95% / 35px no-repeat;
-            opacity: 0.04;
+            opacity: 0.08;
         }
         [data-theme="dark"] body::before {
             filter: invert(1);
-            opacity: 0.03;
+            opacity: 0.05;
         }
 
         .container {
@@ -143,11 +143,7 @@
             margin-bottom: 12px;
         }
         .header::after {
-            content: '';
-            display: block;
-            height: 1px;
-            margin-top: 28px;
-            background: var(--divider);
+            content: none;
         }
 
         /* Flower dividers */
@@ -156,16 +152,17 @@
             justify-content: center;
             align-items: center;
             gap: 14px;
-            padding: 12px 0;
+            padding: 16px 0;
+            margin: 4px 0;
         }
         .flower-divider img {
             width: 14px;
             height: 14px;
             opacity: 0.18;
         }
-        .flower-divider img:nth-child(1) { filter: none; transform: rotate(-15deg); }
-        .flower-divider img:nth-child(2) { filter: none; transform: rotate(10deg); width: 12px; height: 12px; }
-        .flower-divider img:nth-child(3) { filter: none; transform: rotate(-5deg); }
+        .flower-divider img:nth-child(1) { transform: rotate(-15deg); }
+        .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 12px; height: 12px; }
+        .flower-divider img:nth-child(3) { transform: rotate(-5deg); }
         [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.12; }
 
         .header-photo {
@@ -194,16 +191,9 @@
             color: var(--intro-text);
             text-align: center;
             line-height: 1.6;
-            padding: 0 8px 28px;
-            margin-bottom: 32px;
+            padding: 0 8px;
+            margin-bottom: 0;
             position: relative;
-        }
-        .intro::after {
-            content: '';
-            display: block;
-            height: 1px;
-            margin-top: 28px;
-            background: var(--divider);
         }
 
         /* Summary card */
@@ -462,7 +452,7 @@
             font-size: 0.95rem; font-weight: 500;
             transition: background 0.2s;
         }
-        #notif-bar:hover { background: var(--accent); color: #fff; }
+        #notif-bar:hover { background: linear-gradient(135deg, #FFC73F, #D93977, #A980C0); color: #fff; }
         #notif-bar.subscribed { cursor: default; background: #e8f5e9; color: #2e7d32; }
         #notif-bar.subscribed:hover { background: #e8f5e9; color: #2e7d32; }
         [data-theme="dark"] #notif-bar.subscribed,
@@ -577,7 +567,7 @@
             display: block;
             margin: 20px auto 16px;
             padding: 10px 24px;
-            background: var(--accent);
+            background: linear-gradient(135deg, #FFC73F, #D93977, #A980C0);
             border: none;
             border-radius: 24px;
             color: #fff;
@@ -586,12 +576,12 @@
             font-family: inherit;
             cursor: pointer;
             transition: opacity 0.15s, transform 0.15s;
-            box-shadow: 0 2px 8px rgba(196, 169, 125, 0.3);
+            box-shadow: 0 2px 12px rgba(217, 57, 119, 0.25);
         }
         .msg-leave-btn:hover { opacity: 0.9; transform: translateY(-1px); }
         [data-theme="dark"] .msg-leave-btn:not(.ghost) {
-            background: #8b7a58;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #b8922e, #a02d5a, #7d5e94);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
         }
         .msg-leave-btn.ghost {
             background: var(--card-bg);
@@ -666,8 +656,8 @@
             transition: opacity 0.15s;
         }
         .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .modal-btn-send { background: var(--heading); color: #fff; }
-        [data-theme="dark"] .modal-btn-send { background: #8b7a58; }
+        .modal-btn-send { background: linear-gradient(135deg, #FFC73F, #D93977, #A980C0); color: #fff; }
+        [data-theme="dark"] .modal-btn-send { background: linear-gradient(135deg, #b8922e, #a02d5a, #7d5e94); }
         .modal-btn-cancel { background: var(--modal-cancel-bg); color: var(--modal-cancel-text); }
         .modal-fb { margin-top: 10px; font-size: 0.82rem; padding: 8px 10px; border-radius: 7px; }
         .modal-fb-ok  { background: #e8f5e9; color: #2e7d32; }
@@ -717,6 +707,8 @@
             <p>Atualizações sobre a recuperação de Adriana</p>
             <p class="last-update" id="last-update"></p>
         </div>
+
+        <div class="flower-divider"><img src="media/flowers/1.png" alt=""><img src="media/flowers/flowers.png" alt=""><img src="media/flowers/jasmine.png" alt=""></div>
 
         <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
