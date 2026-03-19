@@ -103,12 +103,11 @@
             position: relative;
         }
 
-        /* Flower background scatter */
-        body::before {
-            content: '';
+        /* Flower background scatter — real DOM element, not pseudo */
+        #flower-bg {
             position: fixed;
             inset: 0;
-            z-index: -1;
+            z-index: 0;
             pointer-events: none;
             background:
                 url('media/flowers/1.png') 5% 8% / 45px no-repeat,
@@ -123,7 +122,7 @@
                 url('media/flowers/chrysanthemum.png') 4% 95% / 35px no-repeat;
             opacity: 0.08;
         }
-        [data-theme="dark"] body::before {
+        [data-theme="dark"] #flower-bg {
             filter: invert(1);
             opacity: 0.05;
         }
@@ -497,8 +496,6 @@
             background: var(--accent-soft); color: var(--text);
             font-size: 0.95rem; font-weight: 500;
             transition: background 0.2s;
-            position: relative;
-            z-index: 10;
         }
         #notif-bar:hover { background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4); color: #fff; }
         #notif-bar.subscribed { cursor: default; background: #e8f5e9; color: #2e7d32; }
@@ -747,6 +744,7 @@
     </style>
 </head>
 <body>
+    <div id="flower-bg"></div>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
