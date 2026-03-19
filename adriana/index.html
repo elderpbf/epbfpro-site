@@ -167,14 +167,12 @@
         .flower-divider img {
             width: 13px;
             height: 13px;
-            opacity: 0.55;
+            opacity: 0.22;
         }
-        .flower-divider img:nth-child(1) { transform: rotate(-15deg); filter: invert(1) sepia(1) saturate(2) hue-rotate(5deg) brightness(1.05); }
-        .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 11px; height: 11px; filter: invert(1) sepia(1) saturate(1.8) hue-rotate(310deg) brightness(1.05); }
-        .flower-divider img:nth-child(3) { transform: rotate(-5deg); filter: invert(1) sepia(1) saturate(1.8) hue-rotate(220deg) brightness(1.1); }
-        [data-theme="dark"] .flower-divider img:nth-child(1) { filter: invert(1) sepia(1) saturate(1.5) hue-rotate(5deg) brightness(0.8); opacity: 0.35; }
-        [data-theme="dark"] .flower-divider img:nth-child(2) { filter: invert(1) sepia(1) saturate(1.3) hue-rotate(310deg) brightness(0.8); opacity: 0.35; }
-        [data-theme="dark"] .flower-divider img:nth-child(3) { filter: invert(1) sepia(1) saturate(1.3) hue-rotate(220deg) brightness(0.8); opacity: 0.35; }
+        .flower-divider img:nth-child(1) { transform: rotate(-15deg); }
+        .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 11px; height: 11px; }
+        .flower-divider img:nth-child(3) { transform: rotate(-5deg); }
+        [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.15; }
 
         .section-divider {
             display: flex;
@@ -201,13 +199,12 @@
         .section-divider img {
             width: 10px;
             height: 10px;
-            opacity: 0.55;
+            opacity: 0.22;
             flex-shrink: 0;
         }
-        .section-divider img:first-child { transform: rotate(-20deg); filter: invert(1) sepia(1) saturate(2) hue-rotate(5deg) brightness(1.05); }
-        .section-divider img:last-child { transform: rotate(20deg) scaleX(-1); filter: invert(1) sepia(1) saturate(1.8) hue-rotate(220deg) brightness(1.1); }
-        [data-theme="dark"] .section-divider img:first-child { filter: invert(1) sepia(1) saturate(1.5) hue-rotate(5deg) brightness(0.8); opacity: 0.35; }
-        [data-theme="dark"] .section-divider img:last-child { filter: invert(1) sepia(1) saturate(1.3) hue-rotate(220deg) brightness(0.8); opacity: 0.35; }
+        .section-divider img:first-child { transform: rotate(-20deg); }
+        .section-divider img:last-child { transform: rotate(20deg) scaleX(-1); }
+        [data-theme="dark"] .section-divider img { filter: invert(1); opacity: 0.15; }
 
         .header-photo {
             width: 164px;
