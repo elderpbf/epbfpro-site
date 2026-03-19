@@ -151,19 +151,61 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 14px;
-            padding: 16px 0;
-            margin: 4px 0;
+            gap: 10px;
+            padding: 20px 0;
+            margin: 16px 0;
+        }
+        .flower-divider::before,
+        .flower-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(232,160,180,0.35), rgba(196,168,212,0.35));
+        }
+        .flower-divider::after {
+            background: linear-gradient(90deg, rgba(196,168,212,0.35), rgba(232,160,180,0.35), transparent);
         }
         .flower-divider img {
-            width: 14px;
-            height: 14px;
-            opacity: 0.18;
+            width: 13px;
+            height: 13px;
+            opacity: 0.22;
         }
         .flower-divider img:nth-child(1) { transform: rotate(-15deg); }
-        .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 12px; height: 12px; }
+        .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 11px; height: 11px; }
         .flower-divider img:nth-child(3) { transform: rotate(-5deg); }
-        [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.12; }
+        [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.15; }
+
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0 20px;
+            margin: 20px 0 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-muted);
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(232,160,180,0.35), rgba(196,168,212,0.35));
+        }
+        .section-divider::after {
+            background: linear-gradient(90deg, rgba(196,168,212,0.35), rgba(232,160,180,0.35), transparent);
+        }
+        .section-divider img {
+            width: 10px;
+            height: 10px;
+            opacity: 0.22;
+            flex-shrink: 0;
+        }
+        .section-divider img:first-child { transform: rotate(-20deg); }
+        .section-divider img:last-child { transform: rotate(20deg) scaleX(-1); }
+        [data-theme="dark"] .section-divider img { filter: invert(1); opacity: 0.15; }
 
         .header-photo {
             width: 164px;
@@ -234,6 +276,30 @@
         [data-theme="dark"] .summary-card::after {
             filter: invert(1);
             opacity: 0.05;
+        }
+        .summary-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 160px;
+            background: url('media/flowers/flowers.png') center/contain no-repeat;
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 0;
+        }
+        [data-theme="dark"] .summary-watermark {
+            filter: invert(1);
+            opacity: 0.03;
+        }
+        .summary-card .summary-label,
+        .summary-card .summary-subtitle,
+        .summary-card .summary-date,
+        .summary-card .summary-text,
+        .summary-card .summary-empty {
+            position: relative;
+            z-index: 1;
         }
 
         .summary-label {
@@ -404,13 +470,14 @@
 
         .loading-spinner {
             display: inline-block;
-            width: 24px;
-            height: 24px;
-            border: 2px solid var(--spinner-border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            width: 32px;
+            height: 32px;
+            background: url('media/flowers/flower.png') center/contain no-repeat;
+            animation: spin 2s linear infinite;
             margin-bottom: 12px;
+        }
+        [data-theme="dark"] .loading-spinner {
+            filter: invert(1);
         }
 
         @keyframes spin {
@@ -454,7 +521,8 @@
             font-size: 0.95rem; font-weight: 500;
             transition: background 0.2s;
             position: relative;
-            z-index: 2;
+            z-index: 10;
+            isolation: isolate;
         }
         #notif-bar:hover { background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4); color: #fff; }
         #notif-bar.subscribed { cursor: default; background: #e8f5e9; color: #2e7d32; }
@@ -712,15 +780,13 @@
             <p class="last-update" id="last-update"></p>
         </div>
 
-        <div class="flower-divider"><img src="media/flowers/1.png" alt=""><img src="media/flowers/flowers.png" alt=""><img src="media/flowers/jasmine.png" alt=""></div>
-
-        <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
-
         <div class="intro">
             Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
             Aqui vocês encontram as atualizações mais recentes sobre o estado dela, sempre que houver novidades.
             Assim ninguém precisa ficar sem notícias.
         </div>
+
+        <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
         <div class="flower-divider"><img src="media/flowers/1.png" alt=""><img src="media/flowers/flowers.png" alt=""><img src="media/flowers/jasmine.png" alt=""></div>
 
@@ -733,7 +799,7 @@
 
         <!-- Message board -->
         <div id="board-section">
-            <div class="board-header section-header"><img src="media/flowers/2.png" alt="">Mural de carinho<img src="media/flowers/2.png" alt=""></div>
+            <div class="board-header section-divider"><img src="media/flowers/2.png" alt="">Mural de carinho<img src="media/flowers/2.png" alt=""></div>
             <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
             <div class="board-cards" id="board-cards"></div>
             <div id="board-toggle-row" style="display:none;text-align:center;margin-top:14px;">
@@ -988,14 +1054,16 @@
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
                     <div class="summary-card">
+                        <div class="summary-watermark"></div>
                         <div class="summary-label">Como ela está</div>
-                    <div class="summary-subtitle">Resumo geral da situação atual</div>
+                        <div class="summary-subtitle">Resumo geral da situação atual</div>
                         <p class="summary-empty">Nenhum resumo disponível ainda.</p>
                     </div>`;
                 return;
             }
             section.innerHTML = `
                 <div class="summary-card">
+                    <div class="summary-watermark"></div>
                     <div class="summary-label">Como ela está</div>
                     <div class="summary-subtitle">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}</div>
@@ -1014,7 +1082,7 @@
             const grouped = groupByDate(updates);
             const sortedDates = sortDateKeysDesc(Object.keys(grouped));
 
-            let html = '<div class="timeline-header section-header"><img src="media/flowers/2.png" alt="">Histórico<img src="media/flowers/2.png" alt=""></div>';
+            let html = '<div class="timeline-header section-divider"><img src="media/flowers/2.png" alt="">Histórico<img src="media/flowers/2.png" alt=""></div>';
 
             for (const date of sortedDates) {
                 const entries = grouped[date];
