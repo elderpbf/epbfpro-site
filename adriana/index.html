@@ -105,7 +105,8 @@
         }
 
         /* Flower background scatter */
-        body::before { display: none; } body::before.off {
+        @media (max-width: 768px) { body::before { display: none; } }
+        body::before {
             content: '';
             position: fixed;
             inset: 0;
