@@ -108,7 +108,7 @@
             content: '';
             position: fixed;
             inset: 0;
-            z-index: 0;
+            z-index: -1;
             pointer-events: none;
             background:
                 url('media/flowers/1.png') 5% 8% / 45px no-repeat,
@@ -180,8 +180,8 @@
             align-items: center;
             gap: 10px;
             padding: 8px 0 20px;
-            margin: 20px 0 4px;
-            font-size: 0.72rem;
+            margin: 24px 0 4px;
+            font-size: 0.82rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.09em;
@@ -266,40 +266,16 @@
         .summary-card::after {
             content: '';
             position: absolute;
-            bottom: 10px;
-            right: 12px;
-            width: 28px;
-            height: 28px;
+            bottom: -10px;
+            right: -10px;
+            width: 100px;
+            height: 100px;
             background: url('media/flowers/jasmine.png') center/contain no-repeat;
-            opacity: 0.06;
+            opacity: 0.035;
         }
         [data-theme="dark"] .summary-card::after {
             filter: invert(1);
-            opacity: 0.05;
-        }
-        .summary-watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 160px;
-            height: 160px;
-            background: url('media/flowers/flowers.png') center/contain no-repeat;
-            opacity: 0.04;
-            pointer-events: none;
-            z-index: 0;
-        }
-        [data-theme="dark"] .summary-watermark {
-            filter: invert(1);
-            opacity: 0.03;
-        }
-        .summary-card .summary-label,
-        .summary-card .summary-subtitle,
-        .summary-card .summary-date,
-        .summary-card .summary-text,
-        .summary-card .summary-empty {
-            position: relative;
-            z-index: 1;
+            opacity: 0.025;
         }
 
         .summary-label {
@@ -515,6 +491,7 @@
 
         /* Notification bar */
         #notif-bar {
+            margin-top: 20px;
             margin-bottom: 16px; text-align: center; cursor: pointer;
             padding: 12px 20px; border-radius: 10px;
             background: var(--accent-soft); color: var(--text);
@@ -522,7 +499,6 @@
             transition: background 0.2s;
             position: relative;
             z-index: 10;
-            isolation: isolate;
         }
         #notif-bar:hover { background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4); color: #fff; }
         #notif-bar.subscribed { cursor: default; background: #e8f5e9; color: #2e7d32; }
@@ -807,8 +783,6 @@
             </div>
         </div>
 
-        <div class="flower-divider"><img src="media/flowers/1.png" alt=""><img src="media/flowers/flowers.png" alt=""><img src="media/flowers/jasmine.png" alt=""></div>
-
         <div id="timeline-section">
         </div>
 
@@ -1054,7 +1028,6 @@
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
                     <div class="summary-card">
-                        <div class="summary-watermark"></div>
                         <div class="summary-label">Como ela está</div>
                         <div class="summary-subtitle">Resumo geral da situação atual</div>
                         <p class="summary-empty">Nenhum resumo disponível ainda.</p>
@@ -1063,7 +1036,6 @@
             }
             section.innerHTML = `
                 <div class="summary-card">
-                    <div class="summary-watermark"></div>
                     <div class="summary-label">Como ela está</div>
                     <div class="summary-subtitle">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}</div>
