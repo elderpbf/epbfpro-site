@@ -60,7 +60,6 @@
             --photo-glow: 0 0 0 3px #FDFDFA, 0 0 0 5px #FFC73F, 0 0 0 7px #D93977, 0 0 0 9px #A980C0, 0 4px 20px rgba(196, 169, 125, 0.15);
             --card-shadow: 0 1px 3px rgba(92, 74, 47, 0.06);
             --divider: linear-gradient(90deg, transparent, var(--border), transparent);
-            --flower-dots: radial-gradient(circle 3px, #FDFDFA 100%, transparent) 20%, radial-gradient(circle 3px, #FFC73F 100%, transparent) 40%, radial-gradient(circle 3px, #D93977 100%, transparent) 60%, radial-gradient(circle 3px, #A980C0 100%, transparent) 80%;
         }
         [data-theme="dark"] {
             --bg: #181613;
@@ -101,12 +100,40 @@
             line-height: 1.6;
             min-height: 100vh;
             transition: background 0.2s, color 0.2s;
+            position: relative;
+        }
+
+        /* Flower background scatter */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background:
+                url('media/flowers/1.png') 5% 8% / 45px no-repeat,
+                url('media/flowers/jasmine.png') 92% 5% / 35px no-repeat,
+                url('media/flowers/shape.png') 3% 35% / 28px no-repeat,
+                url('media/flowers/chrysanthemum.png') 95% 30% / 40px no-repeat,
+                url('media/flowers/2.png') 8% 60% / 32px no-repeat,
+                url('media/flowers/flowers.png') 90% 55% / 38px no-repeat,
+                url('media/flowers/jasmine.png') 6% 85% / 30px no-repeat,
+                url('media/flowers/1.png') 93% 80% / 42px no-repeat,
+                url('media/flowers/shape.png') 88% 95% / 25px no-repeat,
+                url('media/flowers/chrysanthemum.png') 4% 95% / 35px no-repeat;
+            opacity: 0.04;
+        }
+        [data-theme="dark"] body::before {
+            filter: invert(1);
+            opacity: 0.03;
         }
 
         .container {
             max-width: 640px;
             margin: 0 auto;
             padding: 24px 16px 48px;
+            position: relative;
+            z-index: 1;
         }
 
         /* Header */
@@ -123,27 +150,23 @@
             background: var(--divider);
         }
 
-        /* Flower dot dividers */
-        .flower-dots {
+        /* Flower dividers */
+        .flower-divider {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
-            padding: 8px 0;
+            gap: 14px;
+            padding: 12px 0;
         }
-        .flower-dots span {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            display: inline-block;
-            opacity: 0.65;
+        .flower-divider img {
+            width: 14px;
+            height: 14px;
+            opacity: 0.18;
         }
-        .flower-dots .fd-cream { background: #FDFDFA; border: 1px solid rgba(0,0,0,0.08); }
-        .flower-dots .fd-gold { background: #FFC73F; }
-        .flower-dots .fd-pink { background: #D93977; }
-        .flower-dots .fd-purple { background: #A980C0; }
-        [data-theme="dark"] .flower-dots span { opacity: 0.5; }
-        [data-theme="dark"] .flower-dots .fd-cream { background: #e8e0c8; border: none; }
+        .flower-divider img:nth-child(1) { filter: none; transform: rotate(-15deg); }
+        .flower-divider img:nth-child(2) { filter: none; transform: rotate(10deg); width: 12px; height: 12px; }
+        .flower-divider img:nth-child(3) { filter: none; transform: rotate(-5deg); }
+        [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.12; }
 
         .header-photo {
             width: 164px;
@@ -205,6 +228,20 @@
             background: linear-gradient(90deg, #FFC73F, #D93977, #A980C0);
             border-radius: 12px 12px 0 0;
         }
+        .summary-card::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            background: url('media/flowers/jasmine.png') center/contain no-repeat;
+            opacity: 0.06;
+        }
+        [data-theme="dark"] .summary-card::after {
+            filter: invert(1);
+            opacity: 0.05;
+        }
 
         .summary-label {
             font-size: 0.75rem;
@@ -238,13 +275,29 @@
             font-style: italic;
         }
 
-        /* Timeline */
-        .timeline-header {
+        /* Section headers with flower ornaments */
+        .section-header {
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .section-header img {
+            width: 12px;
+            height: 12px;
+            opacity: 0.25;
+        }
+        .section-header img:first-child { transform: rotate(-20deg); }
+        .section-header img:last-child { transform: rotate(20deg) scaleX(-1); }
+        [data-theme="dark"] .section-header img { filter: invert(1); opacity: 0.18; }
+
+        /* Timeline */
+        .timeline-header {
             margin-bottom: 16px;
         }
 
@@ -260,11 +313,13 @@
             top: 16px;
             bottom: 10px;
             width: 2px;
-            background: linear-gradient(to bottom, var(--accent), var(--border));
+            background: linear-gradient(to bottom, #FFC73F, #D93977, #A980C0, var(--border));
             border-radius: 1px;
+            opacity: 0.4;
         }
         .day-group:last-child::before {
-            background: linear-gradient(to bottom, var(--accent), transparent);
+            background: linear-gradient(to bottom, #FFC73F, #D93977, transparent);
+            opacity: 0.4;
         }
 
         .day-label {
@@ -279,14 +334,18 @@
         .day-label::before {
             content: '';
             position: absolute;
-            left: -20px;
+            left: -23px;
             top: 50%;
             transform: translateY(-50%);
-            width: 8px;
-            height: 8px;
-            background: var(--accent);
-            border-radius: 50%;
-            box-shadow: 0 0 0 3px var(--bg);
+            width: 14px;
+            height: 14px;
+            background: url('media/flowers/flowers.png') center/contain no-repeat;
+            opacity: 0.35;
+            box-shadow: none;
+        }
+        [data-theme="dark"] .day-label::before {
+            filter: invert(1);
+            opacity: 0.25;
         }
 
         .update-entry {
@@ -614,20 +673,34 @@
         .modal-fb-ok  { background: #e8f5e9; color: #2e7d32; }
         .modal-fb-err { background: #fce4ec; color: #c62828; }
 
-        /* Footer */
+        /* Footer with flower garland */
         .footer {
             text-align: center;
             padding: 24px 0;
             margin-top: 16px;
             position: relative;
         }
-        .footer::before {
-            content: '';
-            display: block;
-            height: 1px;
-            margin-bottom: 24px;
-            background: var(--divider);
+        .footer-garland {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 16px;
+            opacity: 0.12;
         }
+        .footer-garland img {
+            width: 16px;
+            height: 16px;
+        }
+        .footer-garland img:nth-child(1) { transform: rotate(-25deg); }
+        .footer-garland img:nth-child(2) { transform: rotate(15deg); width: 20px; height: 20px; }
+        .footer-garland img:nth-child(3) { transform: rotate(-10deg); width: 14px; height: 14px; }
+        .footer-garland img:nth-child(4) { transform: rotate(20deg); width: 18px; height: 18px; }
+        .footer-garland img:nth-child(5) { transform: rotate(-15deg); }
+        .footer-garland img:nth-child(6) { transform: rotate(25deg); width: 14px; height: 14px; }
+        .footer-garland img:nth-child(7) { transform: rotate(-5deg); width: 20px; height: 20px; }
+        [data-theme="dark"] .footer-garland { opacity: 0.08; }
+        [data-theme="dark"] .footer-garland img { filter: invert(1); }
 
         .footer p {
             font-size: 0.75rem;
@@ -653,7 +726,7 @@
             Assim ninguém precisa ficar sem notícias.
         </div>
 
-        <div class="flower-dots"><span class="fd-cream"></span><span class="fd-gold"></span><span class="fd-pink"></span><span class="fd-purple"></span></div>
+        <div class="flower-divider"><img src="media/flowers/1.png" alt=""><img src="media/flowers/flowers.png" alt=""><img src="media/flowers/jasmine.png" alt=""></div>
 
         <div id="summary-section">
             <div class="loading">
@@ -664,7 +737,7 @@
 
         <!-- Message board -->
         <div id="board-section">
-            <div class="board-header">Mural de carinho</div>
+            <div class="board-header section-header"><img src="media/flowers/2.png" alt="">Mural de carinho<img src="media/flowers/2.png" alt=""></div>
             <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
             <div class="board-cards" id="board-cards"></div>
             <div id="board-toggle-row" style="display:none;text-align:center;margin-top:14px;">
@@ -672,7 +745,7 @@
             </div>
         </div>
 
-        <div class="flower-dots"><span class="fd-cream"></span><span class="fd-gold"></span><span class="fd-pink"></span><span class="fd-purple"></span></div>
+        <div class="flower-divider"><img src="media/flowers/1.png" alt=""><img src="media/flowers/flowers.png" alt=""><img src="media/flowers/jasmine.png" alt=""></div>
 
         <div id="timeline-section">
         </div>
@@ -703,6 +776,15 @@
         </div>
 
         <div class="footer">
+            <div class="footer-garland">
+                <img src="media/flowers/1.png" alt="">
+                <img src="media/flowers/chrysanthemum.png" alt="">
+                <img src="media/flowers/jasmine.png" alt="">
+                <img src="media/flowers/flowers.png" alt="">
+                <img src="media/flowers/shape.png" alt="">
+                <img src="media/flowers/2.png" alt="">
+                <img src="media/flowers/1.png" alt="">
+            </div>
             <p>Esta página atualiza ao abrir e a cada 5 minutos</p>
         </div>
     </div>
@@ -936,7 +1018,7 @@
             const grouped = groupByDate(updates);
             const sortedDates = sortDateKeysDesc(Object.keys(grouped));
 
-            let html = '<div class="timeline-header">Histórico</div>';
+            let html = '<div class="timeline-header section-header"><img src="media/flowers/2.png" alt="">Histórico<img src="media/flowers/2.png" alt=""></div>';
 
             for (const date of sortedDates) {
                 const entries = grouped[date];
