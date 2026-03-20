@@ -393,6 +393,35 @@
             box-shadow: var(--card-shadow);
         }
 
+        .update-entry--good-news {
+            position: relative;
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border-color: #81c784;
+            overflow: hidden;
+        }
+        .update-entry--good-news::before {
+            content: '🌸 🌺 🌷';
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .update-entry--good-news::after {
+            content: '🌻 🌼 🌸';
+            position: absolute;
+            bottom: 6px;
+            left: 10px;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        [data-theme="dark"] .update-entry--good-news {
+            background: linear-gradient(135deg, #1b3a1b, #2e4a2e);
+            border-color: #4a7c4a;
+        }
+
         .update-time {
             font-size: 0.75rem;
             color: var(--text-dim);
@@ -1077,12 +1106,12 @@
                 const fasesRows   = fasesText ? parseCSV(fasesText) : [];
 
                 const updates = updatesRows
-                    .map(row => ({
-                        data: row[0] || '',
-                        hora: row[1] || '',
-                        texto: row[2] || '',
-                        foto: row[3] || ''
-                    }))
+                    .map(row => {
+                        const fotoRaw = row[3] || '';
+                        const goodNews = fotoRaw.includes('#boa-noticia');
+                        const foto = fotoRaw.split('|').filter(s => s.trim() !== '#boa-noticia').join('|');
+                        return { data: row[0] || '', hora: row[1] || '', texto: row[2] || '', foto, goodNews };
+                    })
                     .filter(u => u.texto || u.foto);
 
                 const resumo = resumoRows.length > 0
@@ -1162,7 +1191,7 @@
                 localStorage.removeItem('heart_' + h);
             }
             return `
-                <div class="update-entry">
+                <div class="update-entry${entry.goodNews ? ' update-entry--good-news' : ''}">
                     ${entry.hora ? `<div class="update-time">${escapeHtml(entry.hora)}</div>` : ''}
                     <div class="update-text">${escapeHtml(entry.texto).replace(/\n/g, '<br>')}</div>
                     ${renderMedia(entry.foto)}
