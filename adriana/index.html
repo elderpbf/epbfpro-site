@@ -598,8 +598,8 @@
 
         /* Notification bar */
         #notif-bar {
-            margin-top: 20px;
-            margin-bottom: 16px; text-align: center; cursor: pointer;
+            margin-top: 40px;
+            margin-bottom: 0; text-align: center; cursor: pointer;
             padding: 12px 20px; border-radius: 10px;
             background: #f2ede5; color: var(--text);
             font-size: 0.95rem; font-weight: 500;
@@ -859,14 +859,10 @@
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
         <div class="header">
             <img class="header-photo" src="media/adriana-flowers.png" alt="Adriana">
-            <p>Atualizações sobre a recuperação de Adriana</p>
-            <p class="last-update" id="last-update"></p>
         </div>
 
         <div class="intro">
-            Criamos esta página para facilitar a vida de todos que se preocupam com a Adriana.
-            Aqui vocês encontram as atualizações mais recentes sobre o estado dela, sempre que houver novidades.
-            Assim ninguém precisa ficar sem notícias.
+            Se você está aqui, é porque se preocupa com a Adriana, e isso significa muito para nós. Criei esta página para que você possa acompanhar a recuperação dela de perto, no seu tempo. — Élder
         </div>
 
         <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
@@ -1146,8 +1142,7 @@
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
                     <div class="summary-card">
-                        <div class="summary-label">Como ela está</div>
-                        <div class="summary-subtitle">Resumo geral da situação atual</div>
+                        <div class="summary-label">Resumo geral da situação atual</div>
                         <p class="summary-empty">Nenhum resumo disponível ainda.</p>
                     </div>`;
                 return;
@@ -1162,8 +1157,7 @@
             }
             section.innerHTML = `
                 <div class="summary-card">
-                    <div class="summary-label">Como ela está</div>
-                    <div class="summary-subtitle">Resumo geral da situação atual</div>
+                    <div class="summary-label">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
                 </div>`;
