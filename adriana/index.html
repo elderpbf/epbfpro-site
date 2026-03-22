@@ -113,16 +113,16 @@
             z-index: 0;
             pointer-events: none;
             background:
-                url('media/flowers/1.png') 5% 8% / 45px no-repeat,
-                url('media/flowers/jasmine.png') 92% 5% / 35px no-repeat,
-                url('media/flowers/shape.png?v=2') 3% 35% / 28px no-repeat,
-                url('media/flowers/chrysanthemum.png?v=2') 95% 30% / 40px no-repeat,
-                url('media/flowers/1.png') 8% 60% / 32px no-repeat,
-                url('media/flowers/flowers.png') 90% 55% / 38px no-repeat,
-                url('media/flowers/jasmine.png') 6% 85% / 30px no-repeat,
-                url('media/flowers/1.png') 93% 80% / 42px no-repeat,
-                url('media/flowers/shape.png?v=2') 88% 95% / 25px no-repeat,
-                url('media/flowers/chrysanthemum.png?v=2') 4% 95% / 35px no-repeat;
+                url('media/optimized/flowers/1.webp') 5% 8% / 45px no-repeat,
+                url('media/optimized/flowers/jasmine.webp') 92% 5% / 35px no-repeat,
+                url('media/optimized/flowers/shape.webp') 3% 35% / 28px no-repeat,
+                url('media/optimized/flowers/chrysanthemum.webp') 95% 30% / 40px no-repeat,
+                url('media/optimized/flowers/1.webp') 8% 60% / 32px no-repeat,
+                url('media/optimized/flowers/flowers.webp') 90% 55% / 38px no-repeat,
+                url('media/optimized/flowers/jasmine.webp') 6% 85% / 30px no-repeat,
+                url('media/optimized/flowers/1.webp') 93% 80% / 42px no-repeat,
+                url('media/optimized/flowers/shape.webp') 88% 95% / 25px no-repeat,
+                url('media/optimized/flowers/chrysanthemum.webp') 4% 95% / 35px no-repeat;
             opacity: 0.08;
         }
         [data-theme="dark"] body::before {
@@ -271,7 +271,7 @@
             right: -10px;
             width: 100px;
             height: 100px;
-            background: url('media/flowers/jasmine.png') center/contain no-repeat;
+            background: url('media/optimized/flowers/jasmine.webp') center/contain no-repeat;
             opacity: 0.035;
         }
         [data-theme="dark"] .summary-card::after {
@@ -375,7 +375,7 @@
             transform: translateY(-50%);
             width: 14px;
             height: 14px;
-            background: url('media/flowers/jasmine.png') center/contain no-repeat;
+            background: url('media/optimized/flowers/jasmine.webp') center/contain no-repeat;
             opacity: 0.35;
             box-shadow: none;
         }
@@ -555,7 +555,7 @@
             display: inline-block;
             width: 32px;
             height: 32px;
-            background: url('media/flowers/flower.png') center/contain no-repeat;
+            background: url('media/optimized/flowers/flower.webp') center/contain no-repeat;
             animation: spin 2s linear infinite;
             margin-bottom: 12px;
         }
@@ -858,7 +858,10 @@
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
         <div class="header">
-            <img class="header-photo" src="media/adriana-flowers.png" alt="Adriana">
+            <picture>
+                <source srcset="media/optimized/adriana-flowers.webp" type="image/webp">
+                <img class="header-photo" src="media/optimized/adriana-flowers.jpg" alt="Adriana">
+            </picture>
         </div>
 
         <div class="intro">
@@ -867,7 +870,7 @@
 
         <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
-        <div class="flower-divider"><img src="media/flowers/1.png" alt=""><img src="media/flowers/flowers.png" alt=""><img src="media/flowers/jasmine.png" alt=""></div>
+        <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt=""><img src="media/optimized/flowers/flowers.webp" alt=""><img src="media/optimized/flowers/jasmine.webp" alt=""></div>
 
         <div id="summary-section">
             <div class="loading">
@@ -878,7 +881,7 @@
 
         <!-- Message board -->
         <div id="board-section">
-            <div class="board-header section-divider"><img src="media/flowers/1.png" alt="">Mural de carinho<img src="media/flowers/1.png" alt=""></div>
+            <div class="board-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Mural de carinho<img src="media/optimized/flowers/1.webp" alt=""></div>
             <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
             <div class="board-cards" id="board-cards"></div>
             <div id="board-toggle-row" style="display:none;text-align:center;margin-top:14px;">
@@ -916,13 +919,13 @@
 
         <div class="footer">
             <div class="footer-garland">
-                <img src="media/flowers/1.png" alt="">
-                <img src="media/flowers/chrysanthemum.png?v=2" alt="">
-                <img src="media/flowers/jasmine.png" alt="">
-                <img src="media/flowers/flowers.png" alt="">
-                <img src="media/flowers/shape.png?v=2" alt="">
-                <img src="media/flowers/1.png" alt="">
-                <img src="media/flowers/1.png" alt="">
+                <img src="media/optimized/flowers/1.webp" alt="">
+                <img src="media/optimized/flowers/chrysanthemum.webp" alt="">
+                <img src="media/optimized/flowers/jasmine.webp" alt="">
+                <img src="media/optimized/flowers/flowers.webp" alt="">
+                <img src="media/optimized/flowers/shape.webp" alt="">
+                <img src="media/optimized/flowers/1.webp" alt="">
+                <img src="media/optimized/flowers/1.webp" alt="">
             </div>
             <p>Esta página atualiza ao abrir e a cada 5 minutos</p>
         </div>
@@ -998,7 +1001,7 @@
             let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
             if (!match) match = url.match(/id=([a-zA-Z0-9_-]+)/);
             if (match) {
-                return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                return `https://lh3.googleusercontent.com/d/${match[1]}=s800`;
             }
             // Relative or direct URLs
             if (url.match(/\.(jpg|jpeg|png|gif|webp|mp4|mov)/i)) return url;
@@ -1277,7 +1280,7 @@
                 phaseUpdates[openPhase.nome] = phaseUpdates[openPhase.nome].concat(ungrouped);
             }
 
-            let html = '<div class="timeline-header section-divider"><img src="media/flowers/1.png" alt="">Histórico<img src="media/flowers/1.png" alt=""></div>';
+            let html = '<div class="timeline-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Histórico<img src="media/optimized/flowers/1.webp" alt=""></div>';
 
             // Phases, most recent first
             for (const fase of sortedFases) {
