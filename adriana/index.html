@@ -1111,7 +1111,15 @@
                         const foto = fotoRaw.split('|').filter(s => s.trim() !== '#boa-noticia').join('|');
                         return { data: row[0] || '', hora: row[1] || '', texto: row[2] || '', foto, goodNews };
                     })
-                    .filter(u => u.texto || u.foto);
+                    .filter(u => u.texto || u.foto)
+                    .filter(u => {
+                        // Hide entries scheduled for a future date/time (scheduling feature)
+                        if (!u.data || !u.hora) return true;
+                        const [dd, mm, yyyy] = u.data.split('/').map(Number);
+                        const [hh, min] = u.hora.split(':').map(Number);
+                        const entryTs = Date.UTC(yyyy, mm - 1, dd, hh + 3, min); // BRT = UTC-3
+                        return entryTs <= Date.now();
+                    });
 
                 const resumo = resumoRows.length > 0
                     ? { data: resumoRows[0][0] || '', texto: resumoRows[0][1] || '' }
