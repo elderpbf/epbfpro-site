@@ -311,6 +311,19 @@
             font-style: italic;
         }
 
+        .summary-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            float: right;
+            margin: 0 0 12px 16px;
+            box-shadow: var(--photo-glow);
+        }
+        [data-theme="dark"] .summary-photo {
+            filter: brightness(0.85);
+        }
+
         /* Section headers with flower ornaments */
         .section-header {
             font-size: 0.75rem;
@@ -1168,6 +1181,7 @@
             }
             section.innerHTML = `
                 <div class="summary-card">
+                    <img src="media/IMG-20260323-WA0001.jpg" class="summary-photo" alt="">
                     <div class="summary-label">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
