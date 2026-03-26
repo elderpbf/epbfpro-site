@@ -311,16 +311,24 @@
             font-style: italic;
         }
 
-        .summary-photo {
+        .summary-photo-wrap {
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            object-fit: cover;
             float: right;
             margin: 0 0 12px 16px;
-            box-shadow: var(--photo-glow);
+            padding: 3px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            flex-shrink: 0;
         }
-        [data-theme="dark"] .summary-photo {
+        .summary-photo-wrap img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+        [data-theme="dark"] .summary-photo-wrap img {
             filter: brightness(0.85);
         }
 
@@ -1181,7 +1189,7 @@
             }
             section.innerHTML = `
                 <div class="summary-card">
-                    <img src="media/IMG-20260323-WA0001.jpg" class="summary-photo" alt="">
+                    <div class="summary-photo-wrap"><img src="media/IMG-20260323-WA0001.jpg" alt=""></div>
                     <div class="summary-label">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
