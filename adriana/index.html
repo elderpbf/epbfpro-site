@@ -320,6 +320,7 @@
             padding: 3px;
             background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
             flex-shrink: 0;
+            cursor: pointer;
         }
         .summary-photo-wrap img {
             width: 100%;
@@ -331,6 +332,49 @@
         [data-theme="dark"] .summary-photo-wrap img {
             filter: brightness(0.85);
         }
+
+        /* Photo lightbox */
+        #photo-lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            z-index: 2000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+        }
+        #photo-lightbox.open { display: flex; }
+        .lightbox-ring {
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            padding: 4px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .lightbox-ring img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+        .lightbox-jump-btn {
+            background: #fff;
+            color: #333;
+            border: none;
+            border-radius: 24px;
+            padding: 11px 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 0.01em;
+        }
+        .lightbox-jump-btn:active { opacity: 0.8; }
 
         /* Section headers with flower ornaments */
         .section-header {
@@ -1189,7 +1233,7 @@
             }
             section.innerHTML = `
                 <div class="summary-card">
-                    <div class="summary-photo-wrap"><img src="media/IMG-20260323-WA0001.jpg" alt=""></div>
+                    <div class="summary-photo-wrap" onclick="openLightbox()"><img src="media/IMG-20260323-WA0001.jpg" alt=""></div>
                     <div class="summary-label">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
@@ -1218,7 +1262,7 @@
                 localStorage.removeItem('heart_' + h);
             }
             return `
-                <div class="update-entry${entry.goodNews ? ' update-entry--good-news' : ''}">
+                <div class="update-entry${entry.goodNews ? ' update-entry--good-news' : ''}" data-date="${escapeHtml(entry.data)}" data-hora="${escapeHtml(entry.hora || '')}">
                     ${entry.hora ? `<div class="update-time">${escapeHtml(entry.hora)}</div>` : ''}
                     <div class="update-text">${escapeHtml(entry.texto).replace(/\n/g, '<br>')}</div>
                     ${renderMedia(entry.foto)}
@@ -1718,5 +1762,37 @@
             }
         });
     </script>
+
+<div id="photo-lightbox" onclick="closeLightbox()">
+    <div class="lightbox-ring" onclick="event.stopPropagation()">
+        <img src="media/IMG-20260323-WA0001.jpg" alt="">
+    </div>
+    <button class="lightbox-jump-btn" onclick="event.stopPropagation(); jumpToPost('24/03/2026','09:15')">Ver publicação original ↓</button>
+</div>
+
+<script>
+function openLightbox() {
+    document.getElementById('photo-lightbox').classList.add('open');
+}
+function closeLightbox() {
+    document.getElementById('photo-lightbox').classList.remove('open');
+}
+function jumpToPost(date, hora) {
+    closeLightbox();
+    const entry = document.querySelector(`.update-entry[data-date="${date}"][data-hora="${hora}"]`);
+    if (!entry) return;
+    let details = entry.closest('details');
+    while (details) {
+        details.open = true;
+        details = details.parentElement && details.parentElement.closest('details');
+    }
+    setTimeout(() => {
+        entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        entry.style.transition = 'background-color 0.4s';
+        entry.style.backgroundColor = 'rgba(240,212,138,0.35)';
+        setTimeout(() => { entry.style.backgroundColor = ''; }, 1600);
+    }, 120);
+}
+</script>
 </body>
 </html>
