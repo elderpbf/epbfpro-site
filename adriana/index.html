@@ -1223,6 +1223,30 @@
                     </div>`;
                 return;
             }
+
+            // Find most recent update with a local media/ photo
+            let featuredPhoto = null;
+            if (updates) {
+                const sorted = [...updates].sort((a, b) => {
+                    const ka = dateToISO(a.data) + (a.hora || '');
+                    const kb = dateToISO(b.data) + (b.hora || '');
+                    return kb.localeCompare(ka);
+                });
+                for (const u of sorted) {
+                    if (!u.foto) continue;
+                    const mediaPath = u.foto.split('|').map(s => s.trim()).find(s => s.startsWith('media/'));
+                    if (mediaPath) { featuredPhoto = { src: mediaPath, date: u.data, hora: u.hora }; break; }
+                }
+            }
+
+            // Sync lightbox to the featured photo
+            const lb = document.getElementById('photo-lightbox');
+            if (lb && featuredPhoto) {
+                lb.querySelector('img').src = featuredPhoto.src;
+                lb.querySelector('.lightbox-jump-btn').setAttribute('data-date', featuredPhoto.date);
+                lb.querySelector('.lightbox-jump-btn').setAttribute('data-hora', featuredPhoto.hora);
+            }
+
             let lastTime = '';
             if (updates && resumo.data) {
                 const dayUpdates = updates.filter(u => u.data === resumo.data && u.hora);
@@ -1233,7 +1257,7 @@
             }
             section.innerHTML = `
                 <div class="summary-card">
-                    <div class="summary-photo-wrap" onclick="openLightbox()"><img src="media/IMG-20260323-WA0001.jpg" alt=""></div>
+                    ${featuredPhoto ? `<div class="summary-photo-wrap" onclick="openLightbox()"><img src="${featuredPhoto.src}" alt=""></div>` : ''}
                     <div class="summary-label">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
@@ -1767,7 +1791,7 @@
     <div class="lightbox-ring" onclick="event.stopPropagation()">
         <img src="media/IMG-20260323-WA0001.jpg" alt="">
     </div>
-    <button class="lightbox-jump-btn" onclick="event.stopPropagation(); jumpToPost('24/03/2026','09:15')">Ver publicação original ↓</button>
+    <button class="lightbox-jump-btn" onclick="event.stopPropagation(); jumpToPost(this.dataset.date, this.dataset.hora)" data-date="" data-hora="">Ver publicação original ↓</button>
     <span style="position:absolute;bottom:15vh;color:rgba(255,255,255,0.4);font-size:2.6rem;line-height:1;pointer-events:none;user-select:none;">×</span>
 </div>
 
