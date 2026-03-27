@@ -442,6 +442,15 @@
         </div>
         <div id="fb-settings" class="feedback" style="display:none"></div>
     </div>
+
+    <!-- Debug console -->
+    <div class="section-block" style="margin-top:24px;">
+        <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Debug console</span>
+            <button onclick="document.getElementById('debug-log').textContent=''" style="font-size:0.7rem;background:none;border:1px solid #302a23;color:#6e6050;padding:2px 8px;border-radius:4px;cursor:pointer;">Limpar</button>
+        </div>
+        <pre id="debug-log" style="background:#0d0b09;border:1px solid #302a23;border-radius:6px;padding:12px;font-size:0.72rem;color:#7ecb9a;font-family:monospace;min-height:60px;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:8px;">Aguardando...</pre>
+    </div>
 </div>
 
 <button class="logout-btn" id="logout-btn" onclick="logout()" style="display:none">Sair</button>
@@ -639,14 +648,31 @@
     // ====================================================
     // APPS SCRIPT
     // ====================================================
+    function dbg(msg) {
+        const el = document.getElementById('debug-log');
+        if (!el) return;
+        const ts = new Date().toLocaleTimeString('pt-BR');
+        el.textContent += `[${ts}] ${msg}\n`;
+        el.scrollTop = el.scrollHeight;
+    }
+
     async function postToScript(payload) {
-        const resp = await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-        });
-        return resp.json();
+        dbg('→ POST ' + JSON.stringify(payload).slice(0, 120));
+        try {
+            const resp = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                body: JSON.stringify(payload),
+                redirect: 'follow'
+            });
+            dbg('← status: ' + resp.status + ' ' + resp.statusText + ' (url: ' + resp.url.slice(0, 80) + ')');
+            const text = await resp.text();
+            dbg('← body: ' + text.slice(0, 300));
+            return JSON.parse(text);
+        } catch (e) {
+            dbg('✗ error: ' + e.message);
+            throw e;
+        }
     }
 
     function handleError(fb, error) {
