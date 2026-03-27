@@ -342,7 +342,7 @@
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <label style="margin:0;">Texto</label>
-            <button class="btn btn-outline" id="btn-ai" onclick="requestAiSuggestion()" style="margin:0;padding:5px 14px;font-size:0.78rem;">IA Sugerir</button>
+            <button type="button" class="btn btn-outline" id="btn-ai" onclick="requestAiSuggestion()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Melhorar com IA</button>
         </div>
         <textarea id="input-texto" placeholder="O que está acontecendo..." style="margin-top:0;"></textarea>
 
@@ -352,17 +352,17 @@
 
             <label style="font-size:0.78rem;margin-bottom:4px;">Texto da atualização</label>
             <textarea id="ai-texto" rows="4" style="margin-bottom:6px;font-size:0.88rem;"></textarea>
-            <button class="btn btn-outline" onclick="usarTextoAI()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Usar este texto</button>
+            <button type="button" class="btn btn-outline" onclick="usarTextoAI()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Usar este texto</button>
 
             <div style="height:16px;"></div>
 
             <label style="font-size:0.78rem;margin-bottom:2px;">Resumo geral</label>
             <div style="font-size:0.72rem;color:#6e6050;margin-bottom:4px;">Visão geral da situação (não é sobre esta atualização)</div>
             <textarea id="ai-resumo" rows="3" style="margin-bottom:6px;font-size:0.88rem;"></textarea>
-            <button class="btn btn-outline" onclick="usarResumoAI()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Usar este resumo</button>
+            <button type="button" class="btn btn-outline" onclick="usarResumoAI()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Usar este resumo</button>
 
             <div style="margin-top:12px;">
-                <button onclick="document.getElementById('ai-panel').style.display='none'" style="background:none;border:none;color:#6e6050;font-size:0.75rem;cursor:pointer;padding:0;">Descartar</button>
+                <button type="button" onclick="document.getElementById('ai-panel').style.display='none'" style="background:none;border:none;color:#6e6050;font-size:0.75rem;cursor:pointer;padding:0;">Descartar</button>
             </div>
         </div>
 
@@ -403,13 +403,29 @@
         <div class="section-title">Resumo — Como ela está</div>
         <p style="font-size:0.8rem;color:#a89880;margin-bottom:4px;">Só atualize quando houver mudança significativa no quadro geral.</p>
 
-        <label>Texto do resumo</label>
-        <textarea id="input-resumo" placeholder="Ex: Estável, infecção sob controle. Rins se recuperando. Na UTI com bom humor."></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <label style="margin:0;">Texto do resumo</label>
+            <button type="button" class="btn btn-outline" id="btn-ai-resumo" onclick="requestAiSuggestionResumo()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Melhorar com IA</button>
+        </div>
+        <textarea id="input-resumo" placeholder="Ex: Estável, infecção sob controle. Rins se recuperando. Na UTI com bom humor." style="margin-top:0;"></textarea>
 
         <button class="btn" id="btn-resumo" onclick="publishResumo()">Atualizar resumo</button>
         <div id="fb-resumo" class="feedback" style="display:none"></div>
 
         <hr class="divider">
+
+        <!-- Debug console -->
+        <div style="margin-bottom:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleDebug()">
+                <span style="font-size:0.75rem;color:#6e6050;text-transform:uppercase;letter-spacing:0.05em;">Console</span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <button type="button" id="btn-debug-copy" onclick="event.stopPropagation();copyDebug()" style="font-size:0.68rem;background:none;border:1px solid #302a23;color:#6e6050;padding:2px 8px;border-radius:4px;cursor:pointer;">Copiar</button>
+                    <button type="button" onclick="event.stopPropagation();document.getElementById('debug-log').textContent=''" style="font-size:0.68rem;background:none;border:1px solid #302a23;color:#6e6050;padding:2px 8px;border-radius:4px;cursor:pointer;">Limpar</button>
+                    <span id="debug-toggle-arrow" style="color:#6e6050;font-size:0.8rem;">▼</span>
+                </div>
+            </div>
+            <pre id="debug-log" style="background:#0d0b09;border:1px solid #302a23;border-radius:6px;padding:12px;font-size:0.72rem;color:#7ecb9a;font-family:monospace;min-height:40px;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:6px;">Aguardando...</pre>
+        </div>
 
         <!-- Recent -->
         <div class="section-title">Últimas atualizações</div>
@@ -466,14 +482,6 @@
         <div id="fb-settings" class="feedback" style="display:none"></div>
     </div>
 
-    <!-- Debug console -->
-    <div class="section-block" style="margin-top:24px;">
-        <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>Debug console</span>
-            <button onclick="document.getElementById('debug-log').textContent=''" style="font-size:0.7rem;background:none;border:1px solid #302a23;color:#6e6050;padding:2px 8px;border-radius:4px;cursor:pointer;">Limpar</button>
-        </div>
-        <pre id="debug-log" style="background:#0d0b09;border:1px solid #302a23;border-radius:6px;padding:12px;font-size:0.72rem;color:#7ecb9a;font-family:monospace;min-height:60px;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:8px;">Aguardando...</pre>
-    </div>
 </div>
 
 <button class="logout-btn" id="logout-btn" onclick="logout()" style="display:none">Sair</button>
@@ -704,7 +712,38 @@
             dbg('IA erro: ' + err.message);
         }
         btn.disabled = false;
-        btn.textContent = 'IA Sugerir';
+        btn.textContent = 'Melhorar com IA';
+    }
+
+    async function requestAiSuggestionResumo() {
+        const btn = document.getElementById('btn-ai-resumo');
+        const rascunho = document.getElementById('input-resumo').value.trim();
+        btn.disabled = true;
+        btn.textContent = 'Pensando...';
+        dbg('→ IA resumo: gerando sugestão...');
+        const atualizacoesRecentes = (window._recentUpdates || [])
+            .map(r => `${r[0]} ${r[1]}: ${r[2] || ''}`.trim())
+            .filter(s => s.length > 10)
+            .join('\n');
+        try {
+            const res = await postToScript({
+                action: 'ai_draft',
+                password: localStorage.getItem('adriana_admin_pw'),
+                texto_rascunho: rascunho || '(sem novas informações, apenas atualize o resumo com base nas atualizações recentes)',
+                resumo_atual: rascunho,
+                atualizacoes_recentes: atualizacoesRecentes
+            });
+            if (res.ok) {
+                document.getElementById('input-resumo').value = res.resumo_sugerido || rascunho;
+                dbg('IA resumo: sugestão aplicada.');
+            } else {
+                dbg('IA resumo erro: ' + (res.error || 'desconhecido'));
+            }
+        } catch (err) {
+            dbg('IA resumo erro: ' + err.message);
+        }
+        btn.disabled = false;
+        btn.textContent = 'Melhorar com IA';
     }
 
     function usarTextoAI() {
@@ -916,6 +955,18 @@
     // ====================================================
     // HELPERS
     // ====================================================
+    let _debugOpen = true;
+    function toggleDebug() {
+        _debugOpen = !_debugOpen;
+        document.getElementById('debug-log').style.display = _debugOpen ? 'block' : 'none';
+        document.getElementById('debug-toggle-arrow').textContent = _debugOpen ? '▼' : '▶';
+    }
+
+    function copyDebug() {
+        const text = document.getElementById('debug-log').textContent;
+        navigator.clipboard.writeText(text).then(() => dbg('— copiado.')).catch(() => {});
+    }
+
     function showFb(el, text, ok) {
         el.textContent = text;
         el.className = ok ? 'feedback feedback-ok' : 'feedback feedback-err';
