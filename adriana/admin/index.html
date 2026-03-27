@@ -340,8 +340,31 @@
             </div>
         </div>
 
-        <label>Texto</label>
-        <textarea id="input-texto" placeholder="O que está acontecendo..."></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <label style="margin:0;">Texto</label>
+            <button class="btn btn-outline" id="btn-ai" onclick="requestAiSuggestion()" style="margin:0;padding:5px 14px;font-size:0.78rem;">IA Sugerir</button>
+        </div>
+        <textarea id="input-texto" placeholder="O que está acontecendo..." style="margin-top:0;"></textarea>
+
+        <!-- AI suggestion panel -->
+        <div id="ai-panel" style="display:none;border-left:3px solid #d4b67e;padding:12px 14px;margin:8px 0 16px;background:#1a1612;border-radius:0 6px 6px 0;">
+            <div style="font-size:0.75rem;color:#d4b67e;font-weight:600;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">Sugestão da IA</div>
+
+            <label style="font-size:0.78rem;margin-bottom:4px;">Texto da atualização</label>
+            <textarea id="ai-texto" rows="4" style="margin-bottom:6px;font-size:0.88rem;"></textarea>
+            <button class="btn btn-outline" onclick="usarTextoAI()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Usar este texto</button>
+
+            <div style="height:16px;"></div>
+
+            <label style="font-size:0.78rem;margin-bottom:2px;">Resumo geral</label>
+            <div style="font-size:0.72rem;color:#6e6050;margin-bottom:4px;">Visão geral da situação (não é sobre esta atualização)</div>
+            <textarea id="ai-resumo" rows="3" style="margin-bottom:6px;font-size:0.88rem;"></textarea>
+            <button class="btn btn-outline" onclick="usarResumoAI()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Usar este resumo</button>
+
+            <div style="margin-top:12px;">
+                <button onclick="document.getElementById('ai-panel').style.display='none'" style="background:none;border:none;color:#6e6050;font-size:0.75rem;cursor:pointer;padding:0;">Descartar</button>
+            </div>
+        </div>
 
         <label>Fotos</label>
 
@@ -646,6 +669,55 @@
     }
 
     // ====================================================
+    // AI DRAFTING
+    // ====================================================
+    async function requestAiSuggestion() {
+        const btn = document.getElementById('btn-ai');
+        const rascunho = document.getElementById('input-texto').value.trim();
+        if (!rascunho) { dbg('IA: escreva algo no texto primeiro.'); return; }
+        btn.disabled = true;
+        btn.textContent = 'Pensando...';
+        document.getElementById('ai-panel').style.display = 'none';
+        dbg('→ IA: gerando sugestão...');
+        const resumoAtual = document.getElementById('input-resumo').value.trim();
+        const atualizacoesRecentes = (window._recentUpdates || [])
+            .map(r => `${r[0]} ${r[1]}: ${r[2] || ''}`.trim())
+            .filter(s => s.length > 10)
+            .join('\n');
+        try {
+            const res = await postToScript({
+                action: 'ai_draft',
+                password: localStorage.getItem('adriana_admin_pw'),
+                texto_rascunho: rascunho,
+                resumo_atual: resumoAtual,
+                atualizacoes_recentes: atualizacoesRecentes
+            });
+            if (res.ok) {
+                document.getElementById('ai-texto').value = res.texto_sugerido || '';
+                document.getElementById('ai-resumo').value = res.resumo_sugerido || '';
+                document.getElementById('ai-panel').style.display = 'block';
+                dbg('IA: sugestão recebida.');
+            } else {
+                dbg('IA erro: ' + (res.error || 'desconhecido'));
+            }
+        } catch (err) {
+            dbg('IA erro: ' + err.message);
+        }
+        btn.disabled = false;
+        btn.textContent = 'IA Sugerir';
+    }
+
+    function usarTextoAI() {
+        document.getElementById('input-texto').value = document.getElementById('ai-texto').value;
+        dbg('Texto da IA copiado para o campo.');
+    }
+
+    function usarResumoAI() {
+        document.getElementById('input-resumo').value = document.getElementById('ai-resumo').value;
+        dbg('Resumo da IA copiado para o campo.');
+    }
+
+    // ====================================================
     // APPS SCRIPT
     // ====================================================
     function dbg(msg) {
@@ -730,6 +802,7 @@
             const resp = await fetch(UPDATES_CSV + '&t=' + Date.now());
             const text = await resp.text();
             const entries = parseCSV(text);
+            window._recentUpdates = entries.slice(-15).reverse();
             const recent = entries.slice(-5).reverse();
             const el = document.getElementById('recent-list');
             if (recent.length === 0) {
