@@ -326,91 +326,70 @@
 
         <hr class="divider">
 
-        <!-- New update -->
-        <div class="section-title">Nova atualização</div>
+        <!-- Stage 1: Draft -->
+        <div class="section-title">Como ela está?</div>
+        <textarea id="input-notas" placeholder="Escreva o que está acontecendo, sem se preocupar com o texto..." style="min-height:110px;"></textarea>
+        <div style="display:flex;align-items:center;gap:16px;margin-top:12px;">
+            <button type="button" class="btn" id="btn-ai" onclick="requestAiSuggestion()" style="margin-top:0;">Melhorar com IA</button>
+            <button type="button" onclick="skipAI()" style="background:none;border:none;color:#6e6050;font-size:0.82rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px;">pular IA</button>
+        </div>
+        <div id="ai-status" style="display:none;font-size:0.8rem;margin-top:8px;padding:8px 10px;border-radius:6px;"></div>
 
-        <div class="row">
-            <div>
-                <label>Data</label>
-                <input type="date" id="input-data">
+        <!-- Stage 2: Edit + Publish -->
+        <div id="stage2" style="display:none;">
+            <div style="height:24px;"></div>
+
+            <label>Atualização</label>
+            <textarea id="input-texto" placeholder="Texto para publicar..."></textarea>
+
+            <label style="margin-top:16px;">Resumo geral</label>
+            <div style="font-size:0.72rem;color:#6e6050;margin-bottom:4px;">Visão geral do quadro — fica fixado no topo da página</div>
+            <textarea id="input-resumo" placeholder="Ex: Na UTI, estável. Rins em acompanhamento. Bom humor." style="margin-top:0;"></textarea>
+
+            <div class="row" style="margin-top:16px;">
+                <div>
+                    <label>Data</label>
+                    <input type="date" id="input-data">
+                </div>
+                <div>
+                    <label>Hora</label>
+                    <input type="time" id="input-hora">
+                </div>
             </div>
-            <div>
-                <label>Hora</label>
-                <input type="time" id="input-hora">
+            <button type="button" onclick="setDefaultDateTime()" style="background:none;border:none;color:#6e6050;font-size:0.78rem;cursor:pointer;padding:0;margin-top:4px;text-decoration:underline;text-underline-offset:3px;">Usar hora atual</button>
+
+            <label style="margin-top:16px;">Fotos</label>
+            <div class="folder-bar" id="folder-bar">
+                <span id="folder-name">Pasta media não selecionada</span>
+                <button class="btn-folder" onclick="selectFolder()">Selecionar pasta</button>
             </div>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <label style="margin:0;">Texto</label>
-            <button type="button" class="btn btn-outline" id="btn-ai" onclick="requestAiSuggestion()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Melhorar com IA</button>
-        </div>
-        <textarea id="input-texto" placeholder="O que está acontecendo..." style="margin-top:0;"></textarea>
-
-        <!-- AI suggestion panel -->
-        <div id="ai-panel" style="display:none;border-left:3px solid #d4b67e;padding:12px 14px;margin:8px 0 16px;background:#1a1612;border-radius:0 6px 6px 0;">
-            <div style="font-size:0.75rem;color:#d4b67e;font-weight:600;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">Sugestão da IA</div>
-
-            <label style="font-size:0.78rem;margin-bottom:4px;">Texto da atualização</label>
-            <textarea id="ai-texto" rows="4" style="margin-bottom:6px;font-size:0.88rem;"></textarea>
-            <button type="button" class="btn btn-outline" onclick="usarTextoAI()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Usar este texto</button>
-
-            <div style="height:16px;"></div>
-
-            <label style="font-size:0.78rem;margin-bottom:2px;">Resumo geral</label>
-            <div style="font-size:0.72rem;color:#6e6050;margin-bottom:4px;">Visão geral da situação (não é sobre esta atualização)</div>
-            <textarea id="ai-resumo" rows="3" style="margin-bottom:6px;font-size:0.88rem;"></textarea>
-            <button type="button" class="btn btn-outline" onclick="usarResumoAI()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Usar este resumo</button>
-
-            <div style="margin-top:12px;">
-                <button type="button" onclick="document.getElementById('ai-panel').style.display='none'" style="background:none;border:none;color:#6e6050;font-size:0.75rem;cursor:pointer;padding:0;">Descartar</button>
+            <div class="drop-zone" id="drop-zone">
+                <input type="file" id="file-input" accept="image/*,video/*" multiple>
+                <div class="drop-zone-text">
+                    <strong>Arraste fotos aqui</strong>
+                    ou clique para escolher
+                </div>
             </div>
-        </div>
+            <div class="photo-previews" id="photo-previews"></div>
+            <input type="text" id="input-foto" placeholder="ou cole caminhos manualmente: media/a.jpg|media/b.jpg" style="margin-top:8px">
 
-        <label>Fotos</label>
-
-        <!-- Folder access bar -->
-        <div class="folder-bar" id="folder-bar">
-            <span id="folder-name">Pasta media não selecionada</span>
-            <button class="btn-folder" onclick="selectFolder()">Selecionar pasta</button>
-        </div>
-
-        <!-- Drop zone -->
-        <div class="drop-zone" id="drop-zone">
-            <input type="file" id="file-input" accept="image/*,video/*" multiple>
-            <div class="drop-zone-text">
-                <strong>Arraste fotos aqui</strong>
-                ou clique para escolher
+            <div style="margin-top:20px;padding:14px 16px;background:#211e19;border-radius:8px;border:1px solid #302a23;">
+                <label style="display:flex;align-items:center;gap:8px;margin:0 0 10px;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#e2d9ce;cursor:pointer;">
+                    <input type="checkbox" id="chk-pub-update" checked style="width:auto;margin:0;">
+                    Publicar atualização
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;margin:0 0 10px;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#e2d9ce;cursor:pointer;">
+                    <input type="checkbox" id="chk-pub-resumo" checked style="width:auto;margin:0;">
+                    Atualizar resumo geral
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:0.82rem;color:#9a8b78;cursor:pointer;">
+                    <input type="checkbox" id="chk-notif" checked style="width:auto;margin:0;">
+                    Notificar seguidores
+                </label>
             </div>
+            <button type="button" class="btn" style="margin-top:12px;" id="btn-publish" onclick="publishAll()">Publicar</button>
+            <div id="fb-update" class="feedback" style="display:none"></div>
         </div>
-        <div class="photo-previews" id="photo-previews"></div>
-
-        <!-- Manual URL fallback -->
-        <input type="text" id="input-foto" placeholder="ou cole caminhos manualmente: media/a.jpg|media/b.jpg" style="margin-top:8px">
-
-        <div style="display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;">
-            <button class="btn" style="margin-top:0" id="btn-publish" onclick="publishUpdate()">Publicar</button>
-            <button class="btn btn-outline" style="margin-top:0; margin-left:0" onclick="setDefaultDateTime()">Hora atual</button>
-            <label style="display:flex; align-items:center; gap:6px; margin:0; text-transform:none; letter-spacing:0; font-size:0.82rem; color:#9a8b78; cursor:pointer;">
-                <input type="checkbox" id="chk-notif" checked style="width:auto; margin:0">
-                Notificar seguidores
-            </label>
-        </div>
-        <div id="fb-update" class="feedback" style="display:none"></div>
-
-        <hr class="divider">
-
-        <!-- Resumo -->
-        <div class="section-title">Resumo — Como ela está</div>
-        <p style="font-size:0.8rem;color:#a89880;margin-bottom:4px;">Só atualize quando houver mudança significativa no quadro geral.</p>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <label style="margin:0;">Texto do resumo</label>
-            <button type="button" class="btn btn-outline" id="btn-ai-resumo" onclick="requestAiSuggestionResumo()" style="margin:0;padding:5px 14px;font-size:0.78rem;">Melhorar com IA</button>
-        </div>
-        <textarea id="input-resumo" placeholder="Ex: Estável, infecção sob controle. Rins se recuperando. Na UTI com bom humor." style="margin-top:0;"></textarea>
-
-        <button class="btn" id="btn-resumo" onclick="publishResumo()">Atualizar resumo</button>
-        <div id="fb-resumo" class="feedback" style="display:none"></div>
 
         <hr class="divider">
 
@@ -569,98 +548,93 @@
     }
 
     // ====================================================
-    // PUBLISH UPDATE
+    // PUBLISH ALL
     // ====================================================
-    async function publishUpdate() {
+    function showStage2() {
+        document.getElementById('stage2').style.display = 'block';
+        setDefaultDateTime();
+    }
+
+    function skipAI() {
+        document.getElementById('ai-status').style.display = 'none';
+        showStage2();
+    }
+
+    async function publishAll() {
         const btn = document.getElementById('btn-publish');
         const fb  = document.getElementById('fb-update');
-        const texto = document.getElementById('input-texto').value.trim();
-        const foto  = document.getElementById('input-foto').value.trim();
+        const pubUpdate = document.getElementById('chk-pub-update').checked;
+        const pubResumo = document.getElementById('chk-pub-resumo').checked;
 
-        if (!texto && !foto) {
-            showFb(fb, 'Preencha o texto ou adicione uma foto.', false);
+        if (!pubUpdate && !pubResumo) {
+            showFb(fb, 'Selecione o que publicar.', false);
             return;
         }
-
-        const [y, m, d] = document.getElementById('input-data').value.split('-');
-        const dataBR = `${d}/${m}/${y}`;
-        const hora   = document.getElementById('input-hora').value;
 
         btn.disabled = true;
         btn.textContent = 'Publicando...';
         fb.style.display = 'none';
 
-        try {
-            const res = await postToScript({
-                action: 'append_update',
-                password: localStorage.getItem('adriana_admin_pw'),
-                data: dataBR,
-                hora,
-                texto,
-                foto
-            });
-            if (res.ok) {
-                let msg = 'Publicado!';
-                if (document.getElementById('chk-notif').checked && texto) {
-                    const notif = await sendPushNotification(texto);
-                    msg = notif.ok ? 'Publicado! Notificação enviada.' : `Publicado! Notificação falhou: ${notif.error}`;
+        const msgs = [];
+        let hasError = false;
+
+        if (pubUpdate) {
+            const texto = document.getElementById('input-texto').value.trim();
+            const foto  = document.getElementById('input-foto').value.trim();
+            const [y, m, d] = document.getElementById('input-data').value.split('-');
+            const dataBR = `${d}/${m}/${y}`;
+            const hora   = document.getElementById('input-hora').value;
+            try {
+                const res = await postToScript({
+                    action: 'append_update',
+                    password: localStorage.getItem('adriana_admin_pw'),
+                    data: dataBR, hora, texto, foto
+                });
+                if (res.ok) {
+                    msgs.push('Atualização publicada!');
+                    if (document.getElementById('chk-notif').checked && texto) {
+                        const notif = await sendPushNotification(texto);
+                        msgs.push(notif.ok ? 'Notificação enviada.' : 'Notificação falhou: ' + notif.error);
+                    }
+                    document.getElementById('input-texto').value = '';
+                    clearPhotoState();
+                    loadRecent();
+                } else {
+                    hasError = true;
+                    msgs.push('Erro (atualização): ' + (res.error || 'desconhecido'));
                 }
-                showFb(fb, msg, true);
-                document.getElementById('input-texto').value = '';
-                clearPhotoState();
-                setDefaultDateTime();
-                loadRecent();
-            } else {
-                handleError(fb, res.error);
+            } catch (e) {
+                hasError = true;
+                msgs.push('Erro de conexão (atualização).');
             }
-        } catch (e) {
-            showFb(fb, 'Erro de conexão. Tente novamente.', false);
         }
 
+        if (pubResumo) {
+            const texto = document.getElementById('input-resumo').value.trim();
+            if (texto) {
+                const br = brNow();
+                const d = String(br.getDate()).padStart(2, '0');
+                const m = String(br.getMonth() + 1).padStart(2, '0');
+                const y = br.getFullYear();
+                try {
+                    const res = await postToScript({
+                        action: 'update_resumo',
+                        password: localStorage.getItem('adriana_admin_pw'),
+                        data: `${d}/${m}/${y}`,
+                        texto
+                    });
+                    if (res.ok) msgs.push('Resumo atualizado!');
+                    else { hasError = true; msgs.push('Erro (resumo): ' + (res.error || 'desconhecido')); }
+                } catch (e) {
+                    hasError = true;
+                    msgs.push('Erro de conexão (resumo).');
+                }
+            }
+        }
+
+        showFb(fb, msgs.join(' '), !hasError);
         btn.disabled = false;
         btn.textContent = 'Publicar';
-    }
-
-    // ====================================================
-    // UPDATE RESUMO
-    // ====================================================
-    async function publishResumo() {
-        const btn  = document.getElementById('btn-resumo');
-        const fb   = document.getElementById('fb-resumo');
-        const texto = document.getElementById('input-resumo').value.trim();
-
-        if (!texto) {
-            showFb(fb, 'Preencha o resumo.', false);
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Salvando...';
-        fb.style.display = 'none';
-
-        const br = brNow();
-        const d  = String(br.getDate()).padStart(2, '0');
-        const m  = String(br.getMonth() + 1).padStart(2, '0');
-        const y  = br.getFullYear();
-
-        try {
-            const res = await postToScript({
-                action: 'update_resumo',
-                password: localStorage.getItem('adriana_admin_pw'),
-                data: `${d}/${m}/${y}`,
-                texto
-            });
-            if (res.ok) {
-                showFb(fb, 'Resumo atualizado!', true);
-            } else {
-                handleError(fb, res.error);
-            }
-        } catch (e) {
-            showFb(fb, 'Erro de conexão. Tente novamente.', false);
-        }
-
-        btn.disabled = false;
-        btn.textContent = 'Atualizar resumo';
     }
 
     // ====================================================
@@ -681,11 +655,17 @@
     // ====================================================
     async function requestAiSuggestion() {
         const btn = document.getElementById('btn-ai');
-        const rascunho = document.getElementById('input-texto').value.trim();
-        if (!rascunho) { dbg('IA: escreva algo no texto primeiro.'); return; }
+        const statusEl = document.getElementById('ai-status');
+        const rascunho = document.getElementById('input-notas').value.trim();
+        if (!rascunho) {
+            statusEl.textContent = 'Escreva algo antes de usar a IA.';
+            statusEl.className = 'feedback feedback-err';
+            statusEl.style.display = 'block';
+            return;
+        }
         btn.disabled = true;
         btn.textContent = 'Pensando...';
-        document.getElementById('ai-panel').style.display = 'none';
+        statusEl.style.display = 'none';
         dbg('→ IA: gerando sugestão...');
         const resumoAtual = document.getElementById('input-resumo').value.trim();
         const atualizacoesRecentes = (window._recentUpdates || [])
@@ -701,59 +681,26 @@
                 atualizacoes_recentes: atualizacoesRecentes
             });
             if (res.ok) {
-                document.getElementById('ai-texto').value = res.texto_sugerido || '';
-                document.getElementById('ai-resumo').value = res.resumo_sugerido || '';
-                document.getElementById('ai-panel').style.display = 'block';
+                document.getElementById('input-texto').value = res.texto_sugerido || '';
+                document.getElementById('input-resumo').value = res.resumo_sugerido || '';
+                showStage2();
                 dbg('IA: sugestão recebida.');
             } else {
                 dbg('IA erro: ' + (res.error || 'desconhecido'));
+                showStage2();
+                statusEl.textContent = 'IA indisponível. Preencha manualmente.';
+                statusEl.className = 'feedback feedback-err';
+                statusEl.style.display = 'block';
             }
         } catch (err) {
             dbg('IA erro: ' + err.message);
+            showStage2();
+            statusEl.textContent = 'IA indisponível. Preencha manualmente.';
+            statusEl.className = 'feedback feedback-err';
+            statusEl.style.display = 'block';
         }
         btn.disabled = false;
         btn.textContent = 'Melhorar com IA';
-    }
-
-    async function requestAiSuggestionResumo() {
-        const btn = document.getElementById('btn-ai-resumo');
-        const rascunho = document.getElementById('input-resumo').value.trim();
-        btn.disabled = true;
-        btn.textContent = 'Pensando...';
-        dbg('→ IA resumo: gerando sugestão...');
-        const atualizacoesRecentes = (window._recentUpdates || [])
-            .map(r => `${r[0]} ${r[1]}: ${r[2] || ''}`.trim())
-            .filter(s => s.length > 10)
-            .join('\n');
-        try {
-            const res = await postToScript({
-                action: 'ai_draft',
-                password: localStorage.getItem('adriana_admin_pw'),
-                texto_rascunho: rascunho || '(sem novas informações, apenas atualize o resumo com base nas atualizações recentes)',
-                resumo_atual: rascunho,
-                atualizacoes_recentes: atualizacoesRecentes
-            });
-            if (res.ok) {
-                document.getElementById('input-resumo').value = res.resumo_sugerido || rascunho;
-                dbg('IA resumo: sugestão aplicada.');
-            } else {
-                dbg('IA resumo erro: ' + (res.error || 'desconhecido'));
-            }
-        } catch (err) {
-            dbg('IA resumo erro: ' + err.message);
-        }
-        btn.disabled = false;
-        btn.textContent = 'Melhorar com IA';
-    }
-
-    function usarTextoAI() {
-        document.getElementById('input-texto').value = document.getElementById('ai-texto').value;
-        dbg('Texto da IA copiado para o campo.');
-    }
-
-    function usarResumoAI() {
-        document.getElementById('input-resumo').value = document.getElementById('ai-resumo').value;
-        dbg('Resumo da IA copiado para o campo.');
     }
 
     // ====================================================
