@@ -360,9 +360,13 @@
                     <input type="checkbox" id="chk-pub-resumo" checked style="width:auto;margin:0;">
                     Atualizar resumo geral
                 </label>
-                <label style="display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#e2d9ce;cursor:pointer;">
+                <label style="display:flex;align-items:center;gap:8px;margin:0 0 10px;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#e2d9ce;cursor:pointer;">
                     <input type="checkbox" id="chk-notif" checked style="width:auto;margin:0;">
                     Notificar seguidores
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#d4b67e;cursor:pointer;">
+                    <input type="checkbox" id="chk-boa-noticia" style="width:auto;margin:0;">
+                    Marcar como boa notícia
                 </label>
             </div>
             <button type="button" class="btn" style="margin-top:12px;" id="btn-publish" onclick="publishAll()">Publicar</button>
@@ -594,7 +598,11 @@
             const fotoBase = document.getElementById('input-foto').value.trim();
             const destaqueChecked = document.getElementById('chk-destaque').checked &&
                                     document.getElementById('lbl-destaque').style.display !== 'none';
-            const foto = (fotoBase && destaqueChecked) ? fotoBase + '|#destaque' : fotoBase;
+            const boaNoticia = document.getElementById('chk-boa-noticia').checked;
+            let fotoParts = fotoBase ? fotoBase.split('|') : [];
+            if (destaqueChecked && fotoBase) fotoParts.push('#destaque');
+            if (boaNoticia) fotoParts.push('#boa-noticia');
+            const foto = fotoParts.join('|');
             const [y, m, d] = document.getElementById('input-data').value.split('-');
             const dataBR = `${d}/${m}/${y}`;
             const hora   = document.getElementById('input-hora').value;
@@ -1056,6 +1064,7 @@
         const lbl = document.getElementById('lbl-destaque');
         lbl.style.display = 'none';
         document.getElementById('chk-destaque').checked = true;
+        document.getElementById('chk-boa-noticia').checked = false;
     }
 </script>
 </body>
