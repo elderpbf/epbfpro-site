@@ -404,7 +404,11 @@
         <hr class="divider">
 
         <!-- Settings -->
-        <div class="section-title">Configurações da página</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleSection('settings-body','settings-arrow')">
+            <div class="section-title" style="margin-bottom:0;">Configurações da página</div>
+            <span id="settings-arrow" style="color:#6e6050;font-size:0.8rem;">▶</span>
+        </div>
+        <div id="settings-body" style="display:none;margin-top:12px;">
         <p style="font-size:0.8rem;color:#a89880;margin-bottom:4px">Controla o que aparece na página pública.</p>
         <div id="settings-list" style="margin-top:12px">
             <div class="toggle-row">
@@ -455,6 +459,7 @@
             </div>
         </div>
         <div id="fb-settings" class="feedback" style="display:none"></div>
+        </div>
     </div>
 
 </div>
