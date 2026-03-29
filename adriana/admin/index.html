@@ -341,13 +341,17 @@
                 </div>
             </div>
             <div class="photo-previews" id="photo-previews"></div>
-            <input type="text" id="input-foto" placeholder="URLs geradas aparecem aqui (editável)" style="margin-top:8px">
-            <label id="lbl-destaque" style="display:none;align-items:center;gap:8px;margin-top:10px;font-size:0.82rem;color:#9a8b78;cursor:pointer;">
-                <input type="checkbox" id="chk-destaque" checked style="width:auto;margin:0;">
-                Destacar foto na seção "Como ela está"
-            </label>
+            <input type="hidden" id="input-foto">
+            <div id="lbl-destaque" style="display:none;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:#9a8b78;cursor:pointer;margin:0;">
+                    <input type="checkbox" id="chk-destaque" checked style="width:auto;margin:0;">
+                    Destacar na seção "Como ela está"
+                </label>
+                <span id="destaque-multi-hint" style="display:none;font-size:0.75rem;color:#6e6050;">— a primeira foto enviada será destacada</span>
+            </div>
 
-            <div style="margin-top:20px;padding:14px 16px;background:#211e19;border-radius:8px;border:1px solid #302a23;">
+            <label style="margin-top:20px;">Ações</label>
+            <div style="padding:14px 16px;background:#211e19;border-radius:8px;border:1px solid #302a23;">
                 <label style="display:flex;align-items:center;gap:8px;margin:0 0 10px;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#e2d9ce;cursor:pointer;">
                     <input type="checkbox" id="chk-pub-update" checked style="width:auto;margin:0;">
                     Publicar atualização
@@ -356,7 +360,7 @@
                     <input type="checkbox" id="chk-pub-resumo" checked style="width:auto;margin:0;">
                     Atualizar resumo geral
                 </label>
-                <label style="display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:0.82rem;color:#9a8b78;cursor:pointer;">
+                <label style="display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#e2d9ce;cursor:pointer;">
                     <input type="checkbox" id="chk-notif" checked style="width:auto;margin:0;">
                     Notificar seguidores
                 </label>
@@ -985,8 +989,9 @@
 
     function syncFotoField() {
         document.getElementById('input-foto').value = uploadedUrls.map(u => u.url).join('|');
-        const lbl = document.getElementById('lbl-destaque');
-        lbl.style.display = uploadedUrls.length > 0 ? 'flex' : 'none';
+        const count = uploadedUrls.length;
+        document.getElementById('lbl-destaque').style.display = count > 0 ? 'flex' : 'none';
+        document.getElementById('destaque-multi-hint').style.display = count > 1 ? 'inline' : 'none';
     }
 
     function addFiles(files) {
