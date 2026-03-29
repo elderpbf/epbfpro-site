@@ -639,14 +639,6 @@
             font-style: italic;
         }
 
-        /* Refresh indicator */
-        .refresh-bar {
-            text-align: center;
-            padding: 8px 0;
-            font-size: 0.7rem;
-            color: var(--footer-text);
-        }
-
         /* Pull to refresh */
         .pull-indicator {
             text-align: center;
@@ -957,8 +949,6 @@
         <div id="timeline-section">
         </div>
 
-        <div class="refresh-bar" id="refresh-bar"></div>
-
         <!-- Message modal -->
         <div class="modal-bg" id="msg-modal">
             <div class="modal-box">
@@ -992,7 +982,6 @@
                 <img src="media/optimized/flowers/1.webp" alt="">
                 <img src="media/optimized/flowers/1.webp" alt="">
             </div>
-            <p>Esta página atualiza ao abrir e a cada 5 minutos</p>
         </div>
     </div>
 
@@ -1207,7 +1196,6 @@
                 renderSummary(resumo, updates);
                 renderTimeline(updates, curtidas, fases);
                 updateLastUpdate(updates);
-                updateRefreshBar();
             } catch (err) {
                 console.error('Erro ao carregar dados:', err);
             }
@@ -1387,12 +1375,6 @@
             }
 
             section.innerHTML = html;
-        }
-
-        function updateRefreshBar() {
-            const now = new Date();
-            const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('refresh-bar').textContent = `Última atualização: ${time}`;
         }
 
         function updateLastUpdate(updates) {
