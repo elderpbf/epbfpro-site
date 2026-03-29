@@ -377,18 +377,28 @@
         </div>
 
         <!-- Recent -->
-        <div class="section-title">Últimas atualizações</div>
-        <div class="recent-list" id="recent-list">
-            <p style="color:#a89880;font-size:0.85rem">Carregando...</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleSection('recent-body','recent-arrow')">
+            <div class="section-title" style="margin-bottom:0;">Últimas atualizações</div>
+            <span id="recent-arrow" style="color:#6e6050;font-size:0.8rem;">▶</span>
+        </div>
+        <div id="recent-body" style="display:none;margin-top:12px;">
+            <div class="recent-list" id="recent-list">
+                <p style="color:#a89880;font-size:0.85rem">Carregando...</p>
+            </div>
         </div>
 
         <hr class="divider">
 
         <!-- Messages -->
-        <div class="section-title">Mural de carinho</div>
-        <p style="font-size:0.8rem;color:#a89880;margin-bottom:12px">Mensagens enviadas pelos visitantes.</p>
-        <div class="recent-list" id="msg-admin-list">
-            <p style="color:#a89880;font-size:0.85rem">Carregando...</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleSection('msg-body','msg-arrow')">
+            <div class="section-title" style="margin-bottom:0;">Mural de carinho</div>
+            <span id="msg-arrow" style="color:#6e6050;font-size:0.8rem;">▶</span>
+        </div>
+        <div id="msg-body" style="display:none;margin-top:12px;">
+            <p style="font-size:0.8rem;color:#a89880;margin-bottom:12px">Mensagens enviadas pelos visitantes.</p>
+            <div class="recent-list" id="msg-admin-list">
+                <p style="color:#a89880;font-size:0.85rem">Carregando...</p>
+            </div>
         </div>
 
         <hr class="divider">
@@ -893,6 +903,14 @@
     // ====================================================
     // HELPERS
     // ====================================================
+    function toggleSection(bodyId, arrowId) {
+        const body = document.getElementById(bodyId);
+        const arrow = document.getElementById(arrowId);
+        const open = body.style.display === 'none';
+        body.style.display = open ? 'block' : 'none';
+        arrow.textContent = open ? '▼' : '▶';
+    }
+
     let _debugOpen = false;
     function toggleDebug() {
         _debugOpen = !_debugOpen;
