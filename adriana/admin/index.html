@@ -428,6 +428,22 @@
                 </label>
             </div>
         </div>
+        <div style="margin-top:20px;">
+            <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:10px;">Curtidas automáticas</div>
+            <div style="font-size:0.75rem;color:#6e6050;margin-bottom:12px;">Ao publicar, o post anterior é completado até esse intervalo.</div>
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+                <span style="font-size:0.8rem;color:#9a8b78;min-width:130px;">Post regular</span>
+                <input type="number" id="likes-min-regular" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_min_regular', this.value)">
+                <span style="font-size:0.8rem;color:#6e6050;">até</span>
+                <input type="number" id="likes-max-regular" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_max_regular', this.value)">
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <span style="font-size:0.8rem;color:#9a8b78;min-width:130px;">Foto / boa notícia</span>
+                <input type="number" id="likes-min-special" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_min_special', this.value)">
+                <span style="font-size:0.8rem;color:#6e6050;">até</span>
+                <input type="number" id="likes-max-special" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_max_special', this.value)">
+            </div>
+        </div>
         <div id="fb-settings" class="feedback" style="display:none"></div>
     </div>
 
@@ -791,6 +807,11 @@
             for (const [key, id] of Object.entries(map)) {
                 const el = document.getElementById(id);
                 if (el) el.checked = cfg[key] !== 'false';
+            }
+            const defaults = { 'likes_min_regular': 5, 'likes_max_regular': 8, 'likes_min_special': 10, 'likes_max_special': 15 };
+            for (const [key, def] of Object.entries(defaults)) {
+                const el = document.getElementById(key.replace(/_/g, '-'));
+                if (el) el.value = cfg[key] !== undefined ? cfg[key] : def;
             }
         } catch (e) { console.error(e); }
     }
