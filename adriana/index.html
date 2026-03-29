@@ -1212,7 +1212,7 @@
                 return;
             }
 
-            // Find most recent update with a local media/ photo
+            // Find most recent update marked with #destaque
             let featuredPhoto = null;
             if (updates) {
                 const sorted = [...updates].sort((a, b) => {
@@ -1222,8 +1222,11 @@
                 });
                 for (const u of sorted) {
                     if (!u.foto) continue;
-                    const mediaPath = u.foto.split('|').map(s => s.trim()).find(s => s.startsWith('media/'));
-                    if (mediaPath) { featuredPhoto = { src: mediaPath, date: u.data, hora: u.hora }; break; }
+                    const parts = u.foto.split('|').map(s => s.trim());
+                    if (!parts.includes('#destaque')) continue;
+                    const photoUrl = parts.find(s => s && !s.startsWith('#'));
+                    const resolved = photoUrl ? resolveMediaUrl(photoUrl) : null;
+                    if (resolved) { featuredPhoto = { src: resolved, date: u.data, hora: u.hora }; break; }
                 }
             }
 

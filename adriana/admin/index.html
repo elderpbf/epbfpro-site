@@ -342,6 +342,10 @@
             </div>
             <div class="photo-previews" id="photo-previews"></div>
             <input type="text" id="input-foto" placeholder="URLs geradas aparecem aqui (editável)" style="margin-top:8px">
+            <label id="lbl-destaque" style="display:none;align-items:center;gap:8px;margin-top:10px;font-size:0.82rem;color:#9a8b78;cursor:pointer;">
+                <input type="checkbox" id="chk-destaque" checked style="width:auto;margin:0;">
+                Destacar foto na seção "Como ela está"
+            </label>
 
             <div style="margin-top:20px;padding:14px 16px;background:#211e19;border-radius:8px;border:1px solid #302a23;">
                 <label style="display:flex;align-items:center;gap:8px;margin:0 0 10px;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#e2d9ce;cursor:pointer;">
@@ -364,17 +368,19 @@
         <hr class="divider">
 
         <!-- Debug console -->
-        <div style="margin-bottom:24px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleDebug()">
-                <span style="font-size:0.75rem;color:#6e6050;text-transform:uppercase;letter-spacing:0.05em;">Debug console</span>
-                <div style="display:flex;gap:6px;align-items:center;">
-                    <button type="button" id="btn-debug-copy" onclick="event.stopPropagation();copyDebug()" style="font-size:0.68rem;background:none;border:1px solid #302a23;color:#6e6050;padding:2px 8px;border-radius:4px;cursor:pointer;">Copiar</button>
-                    <button type="button" onclick="event.stopPropagation();document.getElementById('debug-log').textContent=''" style="font-size:0.68rem;background:none;border:1px solid #302a23;color:#6e6050;padding:2px 8px;border-radius:4px;cursor:pointer;">Limpar</button>
-                    <span id="debug-toggle-arrow" style="color:#6e6050;font-size:0.8rem;">▶</span>
-                </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleDebug()">
+            <div class="section-title" style="margin-bottom:0;">Debug console</div>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <button type="button" id="btn-debug-copy" onclick="event.stopPropagation();copyDebug()" style="font-size:0.68rem;background:none;border:1px solid #302a23;color:#6e6050;padding:2px 8px;border-radius:4px;cursor:pointer;">Copiar</button>
+                <button type="button" onclick="event.stopPropagation();document.getElementById('debug-log').textContent=''" style="font-size:0.68rem;background:none;border:1px solid #302a23;color:#6e6050;padding:2px 8px;border-radius:4px;cursor:pointer;">Limpar</button>
+                <span id="debug-toggle-arrow" style="color:#6e6050;font-size:0.8rem;">▶</span>
             </div>
-            <pre id="debug-log" style="display:none;background:#0d0b09;border:1px solid #302a23;border-radius:6px;padding:12px;font-size:0.72rem;color:#7ecb9a;font-family:monospace;min-height:40px;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:6px;">Aguardando...</pre>
         </div>
+        <div id="debug-log-wrap" style="display:none;margin-top:12px;">
+            <pre id="debug-log" style="background:#0d0b09;border:1px solid #302a23;border-radius:6px;padding:12px;font-size:0.72rem;color:#7ecb9a;font-family:monospace;min-height:40px;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin:0;">Aguardando...</pre>
+        </div>
+
+        <hr class="divider">
 
         <!-- Recent -->
         <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleSection('recent-body','recent-arrow')">
@@ -581,7 +587,10 @@
 
         if (pubUpdate) {
             const texto = document.getElementById('input-texto').value.trim();
-            const foto  = document.getElementById('input-foto').value.trim();
+            const fotoBase = document.getElementById('input-foto').value.trim();
+            const destaqueChecked = document.getElementById('chk-destaque').checked &&
+                                    document.getElementById('lbl-destaque').style.display !== 'none';
+            const foto = (fotoBase && destaqueChecked) ? fotoBase + '|#destaque' : fotoBase;
             const [y, m, d] = document.getElementById('input-data').value.split('-');
             const dataBR = `${d}/${m}/${y}`;
             const hora   = document.getElementById('input-hora').value;
@@ -919,7 +928,7 @@
     let _debugOpen = false;
     function toggleDebug() {
         _debugOpen = !_debugOpen;
-        document.getElementById('debug-log').style.display = _debugOpen ? 'block' : 'none';
+        document.getElementById('debug-log-wrap').style.display = _debugOpen ? 'block' : 'none';
         document.getElementById('debug-toggle-arrow').textContent = _debugOpen ? '▼' : '▶';
     }
 
@@ -976,6 +985,8 @@
 
     function syncFotoField() {
         document.getElementById('input-foto').value = uploadedUrls.map(u => u.url).join('|');
+        const lbl = document.getElementById('lbl-destaque');
+        lbl.style.display = uploadedUrls.length > 0 ? 'flex' : 'none';
     }
 
     function addFiles(files) {
@@ -1037,6 +1048,9 @@
         uploadedUrls = [];
         document.getElementById('photo-previews').innerHTML = '';
         document.getElementById('input-foto').value = '';
+        const lbl = document.getElementById('lbl-destaque');
+        lbl.style.display = 'none';
+        document.getElementById('chk-destaque').checked = true;
     }
 </script>
 </body>
