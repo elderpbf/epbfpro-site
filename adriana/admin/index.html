@@ -342,6 +342,10 @@
             </div>
             <div class="photo-previews" id="photo-previews"></div>
             <input type="text" id="input-foto" placeholder="URLs geradas aparecem aqui (editável)" style="margin-top:8px">
+            <label id="lbl-destaque" style="display:none;align-items:center;gap:8px;margin-top:10px;font-size:0.82rem;color:#9a8b78;cursor:pointer;">
+                <input type="checkbox" id="chk-destaque" checked style="width:auto;margin:0;">
+                Destacar foto na seção "Como ela está"
+            </label>
 
             <div style="margin-top:20px;padding:14px 16px;background:#211e19;border-radius:8px;border:1px solid #302a23;">
                 <label style="display:flex;align-items:center;gap:8px;margin:0 0 10px;text-transform:none;letter-spacing:0;font-size:0.85rem;color:#e2d9ce;cursor:pointer;">
@@ -583,7 +587,10 @@
 
         if (pubUpdate) {
             const texto = document.getElementById('input-texto').value.trim();
-            const foto  = document.getElementById('input-foto').value.trim();
+            const fotoBase = document.getElementById('input-foto').value.trim();
+            const destaqueChecked = document.getElementById('chk-destaque').checked &&
+                                    document.getElementById('lbl-destaque').style.display !== 'none';
+            const foto = (fotoBase && destaqueChecked) ? fotoBase + '|#destaque' : fotoBase;
             const [y, m, d] = document.getElementById('input-data').value.split('-');
             const dataBR = `${d}/${m}/${y}`;
             const hora   = document.getElementById('input-hora').value;
@@ -978,6 +985,8 @@
 
     function syncFotoField() {
         document.getElementById('input-foto').value = uploadedUrls.map(u => u.url).join('|');
+        const lbl = document.getElementById('lbl-destaque');
+        lbl.style.display = uploadedUrls.length > 0 ? 'flex' : 'none';
     }
 
     function addFiles(files) {
@@ -1039,6 +1048,9 @@
         uploadedUrls = [];
         document.getElementById('photo-previews').innerHTML = '';
         document.getElementById('input-foto').value = '';
+        const lbl = document.getElementById('lbl-destaque');
+        lbl.style.display = 'none';
+        document.getElementById('chk-destaque').checked = true;
     }
 </script>
 </body>
