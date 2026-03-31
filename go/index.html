@@ -394,7 +394,7 @@
         if (lastActiveQId && !showingResultsFor) {
           const prevQ    = questions.find(r => r[0].trim() === lastActiveQId);
           const myAnswer = localStorage.getItem('cl_ans_' + lastActiveQId);
-          const doShow   = prevQ && prevQ[6].trim() === 'true';
+          const doShow   = prevQ && prevQ[6].trim().toLowerCase() === 'true';
 
           if (doShow && myAnswer !== null) {
             showingResultsFor = lastActiveQId;
@@ -474,7 +474,7 @@
     let options = [];
     try { options = JSON.parse(row[3]); } catch {}
     const correctAnswer = row[4].trim() !== '' ? parseInt(row[4]) : null;
-    const revealAnswer  = row[7].trim() === 'true';
+    const revealAnswer  = row[7].trim().toLowerCase() === 'true';
 
     const counts = new Array(options.length).fill(0);
     answerRows.filter(r => r[1].trim() === qId).forEach(r => {

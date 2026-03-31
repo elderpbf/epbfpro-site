@@ -282,7 +282,7 @@
     let options  = [];
     try { options = JSON.parse(qRow[3]); } catch {}
     const correctAnswer = qRow[4].trim() !== '' ? parseInt(qRow[4]) : null;
-    const revealAnswer  = status === 'closed' && qRow[7].trim() === 'true';
+    const revealAnswer  = status === 'closed' && qRow[7].trim().toLowerCase() === 'true';
 
     // Count answers per option
     const counts = new Array(options.length).fill(0);
