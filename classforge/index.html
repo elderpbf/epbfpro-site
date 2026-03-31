@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ClassForge - Transforme seus slides do Google Slides em aulas interativas com Reveal.js | PensoIA">
+<meta property="og:title" content="ClassForge - PensoIA">
+<meta property="og:description" content="Crie no Google Slides. Apresente com Reveal.js. Compartilhe com um link.">
+<meta property="og:url" content="https://pensoia.com/classforge">
+<title>ClassForge - PensoIA</title>
+
+<link rel="icon" type="image/x-icon" href="../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../css/style.css?v=2.1">
+
+<style>
+/* ClassForge page-specific styles */
+
+/* Hero: centered single-column variant */
+.cf-hero-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.cf-badge {
+  display: inline-block;
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--primary-dark);
+  border: 1px solid rgba(20, 184, 166, 0.4);
+  border-radius: 20px;
+  padding: 0.3rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 1.25rem;
+}
+
+[data-theme="dark"] .cf-badge {
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--primary-light);
+  border-color: rgba(20, 184, 166, 0.3);
+}
+
+.cf-hero-inner .hero-subtitle {
+  min-height: auto;
+  margin-bottom: 2.5rem;
+}
+
+.cf-hero-btns {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  padding: 0.9rem 2rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(20, 184, 166, 0.3);
+  text-decoration: none;
+}
+
+/* Instructor CTA section */
+.cf-instructor {
+  background: linear-gradient(135deg, var(--surface) 0%, var(--background) 100%);
+  padding: 5rem 0;
+  text-align: center;
+}
+
+.cf-instructor-inner {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.cf-instructor h2 {
+  font-size: 2rem;
+  color: var(--secondary);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.cf-instructor p {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+
+/* Footer */
+.cf-footer {
+  background-color: var(--surface);
+  border-top: 1px solid rgba(20, 184, 166, 0.15);
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.cf-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.cf-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Steps: override min-height from main site if any */
+.methodology {
+  padding: 5rem 0;
+}
+
+.step-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 1rem 0 0.5rem;
+}
+
+.step-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
+
+<header class="header" role="banner">
+  <div class="container">
+    <div class="header-content">
+      <a href="https://pensoia.com" class="logo" aria-label="Voltar para PensoIA">
+        <img src="../images/logo.png" alt="PensoIA" class="logo-img">
+      </a>
+      <div class="header-controls">
+        <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema claro/escuro" aria-pressed="false">
+          <span id="themeIcon" style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;color:var(--primary)">
+            <!-- icon injected by JS -->
+          </span>
+        </button>
+        <button class="lang-toggle" id="langToggle" aria-label="Alternar idioma">
+          <span id="langText">EN</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main-content">
+
+  <!-- Hero -->
+  <section class="hero" aria-labelledby="cf-hero-title">
+    <div class="container">
+      <div class="cf-hero-inner">
+        <span class="cf-badge" data-key="hero_badge">Ferramenta PensoIA</span>
+        <h1 id="cf-hero-title" class="hero-title" data-key="hero_title">
+          Transforme slides em aulas interativas
+        </h1>
+        <p class="hero-subtitle" data-key="hero_subtitle">
+          Crie no Google Slides. Apresente com Reveal.js. Compartilhe com um link.
+        </p>
+        <div class="cf-hero-btns">
+          <a href="viewer/?demo=1" class="btn-primary" data-key="cta_demo">Experimentar Demo</a>
+          <a href="viewer/" class="btn-secondary" data-key="cta_instructor">Sou instrutor</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="methodology" id="como-funciona" aria-labelledby="cf-steps-title">
+    <div class="container">
+      <h2 id="cf-steps-title" class="section-title" data-key="steps_title">Como funciona</h2>
+      <div class="method-steps">
+
+        <div class="method-step">
+          <div class="step-number" aria-label="Etapa 1">1</div>
+          <div class="step-connector" aria-hidden="true"></div>
+          <h3 class="step-title" data-key="step1_title">Crie no Google Slides</h3>
+          <p class="step-desc" data-key="step1_desc">
+            Use o editor que você já conhece. Organize sua aula em slides com texto, imagens e anotações de palestrante.
+          </p>
+        </div>
+
+        <div class="method-step">
+          <div class="step-number" aria-label="Etapa 2">2</div>
+          <div class="step-connector" aria-hidden="true"></div>
+          <h3 class="step-title" data-key="step2_title">Conecte em minutos</h3>
+          <p class="step-desc" data-key="step2_desc">
+            Cole um Apps Script no seu projeto do Google. Sem servidor, sem instalação, sem código para escrever.
+          </p>
+        </div>
+
+        <div class="method-step">
+          <div class="step-number" aria-label="Etapa 3">3</div>
+          <h3 class="step-title" data-key="step3_title">Compartilhe o link</h3>
+          <p class="step-desc" data-key="step3_desc">
+            Seus alunos abrem a aula em qualquer dispositivo. Navegação fluida, modo apresentador e temas visuais inclusos.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Instructor CTA -->
+  <section class="cf-instructor" aria-labelledby="cf-instructor-title">
+    <div class="container">
+      <div class="cf-instructor-inner">
+        <h2 id="cf-instructor-title" data-key="instructor_title">Para instrutores</h2>
+        <p data-key="instructor_desc">
+          Configure sua conta uma vez. A partir daí, gere um link para qualquer apresentação do Google Slides e compartilhe com seus alunos. Eles não precisam de conta Google.
+        </p>
+        <a href="viewer/" class="btn-primary" data-key="instructor_cta">Configurar agora</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="cf-footer">
+  <div class="container">
+    <p>
+      ClassForge &mdash;
+      <span data-key="footer_product">um produto</span>
+      <a href="https://pensoia.com">PensoIA</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+// ---------------------------------------------------------------------------
+// i18n
+// ---------------------------------------------------------------------------
+
+const TRANSLATIONS = {
+  'pt-BR': {
+    hero_badge:        'Ferramenta PensoIA',
+    hero_title:        'Transforme slides em aulas interativas',
+    hero_subtitle:     'Crie no Google Slides. Apresente com Reveal.js. Compartilhe com um link.',
+    cta_demo:          'Experimentar Demo',
+    cta_instructor:    'Sou instrutor',
+    steps_title:       'Como funciona',
+    step1_title:       'Crie no Google Slides',
+    step1_desc:        'Use o editor que você já conhece. Organize sua aula em slides com texto, imagens e anotações de palestrante.',
+    step2_title:       'Conecte em minutos',
+    step2_desc:        'Cole um Apps Script no seu projeto do Google. Sem servidor, sem instalação, sem código para escrever.',
+    step3_title:       'Compartilhe o link',
+    step3_desc:        'Seus alunos abrem a aula em qualquer dispositivo. Navegação fluida, modo apresentador e temas visuais inclusos.',
+    instructor_title:  'Para instrutores',
+    instructor_desc:   'Configure sua conta uma vez. A partir daí, gere um link para qualquer apresentação do Google Slides e compartilhe com seus alunos. Eles não precisam de conta Google.',
+    instructor_cta:    'Configurar agora',
+    footer_product:    'um produto'
+  },
+  'en': {
+    hero_badge:        'PensoIA Tool',
+    hero_title:        'Turn slides into interactive lessons',
+    hero_subtitle:     'Author in Google Slides. Present with Reveal.js. Share with a link.',
+    cta_demo:          'Try the Demo',
+    cta_instructor:    'I am an instructor',
+    steps_title:       'How it works',
+    step1_title:       'Create in Google Slides',
+    step1_desc:        'Use the tool you already know. Organize your lesson into slides with text, images, and speaker notes.',
+    step2_title:       'Connect in minutes',
+    step2_desc:        'Paste an Apps Script into your Google project. No server, no install, no code to write.',
+    step3_title:       'Share the link',
+    step3_desc:        'Students open the lesson on any device. Smooth navigation, presenter mode, and visual themes included.',
+    instructor_title:  'For instructors',
+    instructor_desc:   'Set up your account once. From then on, generate a link for any Google Slides presentation and share it with your students. They do not need a Google account.',
+    instructor_cta:    'Set up now',
+    footer_product:    'a product by'
+  }
+};
+
+let currentLang = localStorage.getItem('pensoia_lang') || 'pt-BR';
+
+function applyLang(lang) {
+  if (!TRANSLATIONS[lang]) lang = 'pt-BR';
+  currentLang = lang;
+  document.getElementById('html-root').lang = lang === 'pt-BR' ? 'pt-BR' : 'en';
+  document.getElementById('langText').textContent = lang === 'pt-BR' ? 'EN' : 'PT';
+  const t = TRANSLATIONS[lang];
+  document.querySelectorAll('[data-key]').forEach(function(el) {
+    var key = el.dataset.key;
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+  localStorage.setItem('pensoia_lang', lang);
+}
+
+document.getElementById('langToggle').addEventListener('click', function() {
+  applyLang(currentLang === 'pt-BR' ? 'en' : 'pt-BR');
+});
+
+// ---------------------------------------------------------------------------
+// Theme
+// ---------------------------------------------------------------------------
+
+var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+var themeIcon   = document.getElementById('themeIcon');
+var themeToggle = document.getElementById('themeToggle');
+var overlay     = document.getElementById('themeTransition');
+
+function applyTheme(theme, animate, originX, originY) {
+  if (animate && overlay) {
+    overlay.style.setProperty('--tx', (originX || 0) + 'px');
+    overlay.style.setProperty('--ty', (originY || 0) + 'px');
+    document.documentElement.setAttribute('data-theme', theme);
+    var newBg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
+    overlay.style.backgroundColor = newBg;
+    overlay.offsetHeight; // force reflow
+    overlay.classList.add('active');
+    setTimeout(function() {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+      themeToggle.setAttribute('aria-pressed', theme === 'dark');
+      setTimeout(function() { overlay.classList.remove('active'); }, 100);
+    }, 500);
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+    themeToggle.setAttribute('aria-pressed', theme === 'dark');
+  }
+  localStorage.setItem('theme', theme);
+}
+
+// Init theme without animation
+var savedTheme = localStorage.getItem('theme') || 'light';
+applyTheme(savedTheme, false);
+
+themeToggle.addEventListener('click', function(e) {
+  var current = document.documentElement.getAttribute('data-theme') || 'light';
+  var next = current === 'dark' ? 'light' : 'dark';
+  var rect = e.currentTarget.getBoundingClientRect();
+  applyTheme(next, true, rect.left + rect.width / 2, rect.top + rect.height / 2);
+});
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+applyLang(currentLang);
+</script>
+</body>
+</html>

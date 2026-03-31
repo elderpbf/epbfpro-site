@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClassForge</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
+<link rel="stylesheet" id="reveal-theme" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
+<style>
+
+/* =========================================================
+   PAGE OVERLAYS (setup, loading, error)
+   ========================================================= */
+
+[hidden] { display: none !important; }
+
+.cf-page {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #111;
+  z-index: 9999;
+  font-family: system-ui, sans-serif;
+  color: #eee;
+}
+
+.cf-card {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 2.5rem;
+  width: 100%; max-width: 500px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+}
+
+.cf-card h1 {
+  font-size: 1.6rem; font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: #fff;
+}
+
+.cf-tagline {
+  color: #888; font-size: 0.9rem; margin: 0 0 1.5rem;
+}
+
+.cf-card label {
+  display: block; font-size: 0.8rem; color: #aaa;
+  margin: 1rem 0 0.25rem;
+}
+
+.cf-card input {
+  width: 100%; padding: 0.6rem 0.8rem;
+  background: #2a2a2a; border: 1px solid #444;
+  border-radius: 6px; color: #eee; font-size: 0.9rem;
+  outline: none; box-sizing: border-box;
+}
+
+.cf-card input:focus { border-color: #666; }
+
+.cf-btn {
+  display: inline-block; padding: 0.65rem 1.2rem;
+  border-radius: 6px; border: none; cursor: pointer;
+  font-size: 0.9rem; font-weight: 600;
+  transition: opacity .15s;
+}
+
+.cf-btn:hover { opacity: .85; }
+.cf-btn-primary  { background: #4f8ef7; color: #fff; }
+.cf-btn-secondary { background: #333; color: #ccc; }
+
+.cf-btn-row {
+  display: flex; gap: 0.75rem; margin-top: 1.5rem;
+}
+
+.cf-form-error {
+  color: #f87171; font-size: 0.8rem;
+  margin: 0.5rem 0 0; min-height: 1rem;
+}
+
+/* spinner */
+.cf-spinner {
+  width: 40px; height: 40px;
+  border: 4px solid #333; border-top-color: #4f8ef7;
+  border-radius: 50%;
+  animation: cf-spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes cf-spin { to { transform: rotate(360deg); } }
+
+/* error screen */
+.cf-error-box {
+  background: rgba(200,50,50,.15);
+  border: 1px solid rgba(200,50,50,.4);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  word-break: break-word;
+}
+
+/* =========================================================
+   CONTROL BAR
+   ========================================================= */
+
+#control-bar {
+  position: fixed; bottom: 16px; right: 16px;
+  display: flex; align-items: center; gap: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(6px);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: system-ui, sans-serif;
+}
+
+#control-bar label {
+  color: #aaa; font-size: 0.75rem; margin: 0;
+}
+
+#control-bar select,
+#control-bar button {
+  font-size: 0.78rem;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 4px;
+  color: #eee;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+
+#control-bar button:hover { background: rgba(255,255,255,.2); }
+
+/* =========================================================
+   REVEAL.JS OVERRIDES
+   ========================================================= */
+
+/* callout box */
+.reveal .cf-callout {
+  border-left: 4px solid rgba(79,142,247,.8);
+  background: rgba(79,142,247,.1);
+  padding: 0.6rem 1rem;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.9em;
+  text-align: left;
+  margin: 0.5rem 0;
+}
+
+/* images */
+.reveal img {
+  max-width: 70%; max-height: 500px;
+  margin: 0 auto; display: block;
+  border-radius: 8px;
+}
+
+/* video iframes */
+.reveal iframe {
+  border-radius: 8px;
+  border: none;
+}
+
+/* bullet nesting */
+.reveal ul ul,
+.reveal ul ul ul { margin-left: 1.5rem; }
+
+/* blockquote */
+.reveal blockquote {
+  border-left: 3px solid rgba(255,255,255,.4);
+  padding: 0.5rem 1rem;
+  font-style: italic;
+  background: rgba(255,255,255,.05);
+  border-radius: 0 6px 6px 0;
+  width: 100%;
+}
+
+/* cover subtitle */
+.reveal .cf-subtitle {
+  font-size: 0.85em;
+  opacity: 0.7;
+  margin-top: 0.5rem;
+}
+
+</style>
+</head>
+<body>
+
+<!-- Setup screen -->
+<div id="setup-screen" class="cf-page">
+  <div class="cf-card">
+    <h1>ClassForge</h1>
+    <p class="cf-tagline">Reveal.js lesson viewer for Google Slides</p>
+    <label for="pres-input">Presentation ID or URL</label>
+    <input id="pres-input" type="text" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+    <label for="script-input">Apps Script URL</label>
+    <input id="script-input" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    <p class="cf-form-error" id="form-error"></p>
+    <div class="cf-btn-row">
+      <button class="cf-btn cf-btn-primary" id="load-btn">Load</button>
+      <button class="cf-btn cf-btn-secondary" id="demo-btn">Try Demo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading screen -->
+<div id="loading-screen" class="cf-page" hidden>
+  <div style="text-align:center">
+    <div class="cf-spinner"></div>
+    <p>Loading lesson...</p>
+  </div>
+</div>
+
+<!-- Error screen -->
+<div id="error-screen" class="cf-page" hidden>
+  <div class="cf-card">
+    <h1>Could not load</h1>
+    <div class="cf-error-box" id="error-message"></div>
+    <button class="cf-btn cf-btn-secondary" id="back-btn">Back to setup</button>
+  </div>
+</div>
+
+<!-- Reveal.js presentation container -->
+<div class="reveal" id="reveal-container" hidden>
+  <div class="slides" id="slides-container"></div>
+</div>
+
+<!-- Control bar -->
+<div id="control-bar" hidden>
+  <label>Theme</label>
+  <select id="theme-select"></select>
+  <button id="copy-link-btn" hidden>Copy link</button>
+</div>
+
+<script type="module">
+import Reveal from 'https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.esm.js';
+import RevealHighlight from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/highlight.esm.js';
+import RevealNotes from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.esm.js';
+import RevealMarkdown from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/markdown/markdown.esm.js';
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
+
+const ALL_SCREENS = ['setup-screen','loading-screen','error-screen','reveal-container','control-bar'];
+
+// ---------------------------------------------------------------------------
+// Security helpers
+// ---------------------------------------------------------------------------
+
+function safeUrl(url) {
+  return (typeof url === 'string' && /^https?:\/\//.test(url)) ? url : '#';
+}
+
+// ---------------------------------------------------------------------------
+// Theme
+// ---------------------------------------------------------------------------
+
+function themeUrl(name) {
+  return 'https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/' + name + '.css';
+}
+
+function setTheme(name) {
+  if (!THEMES.includes(name)) name = 'black';
+  document.getElementById('reveal-theme').href = themeUrl(name);
+  document.getElementById('theme-select').value = name;
+  localStorage.setItem('cf_theme', name);
+}
+
+function resolveTheme(lessonTheme) {
+  const params = new URLSearchParams(location.search);
+  return params.get('theme') || lessonTheme || localStorage.getItem('cf_theme') || 'black';
+}
+
+// Populate theme dropdown
+(function initThemeSelect() {
+  const sel = document.getElementById('theme-select');
+  for (const t of THEMES) {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', () => setTheme(sel.value));
+})();
+
+// ---------------------------------------------------------------------------
+// Screen management
+// ---------------------------------------------------------------------------
+
+function showOnly(ids) {
+  const visible = new Set(Array.isArray(ids) ? ids : [ids]);
+  for (const id of ALL_SCREENS) {
+    document.getElementById(id).hidden = !visible.has(id);
+  }
+}
+
+function showSetup(presId) {
+  showOnly('setup-screen');
+  if (presId) document.getElementById('pres-input').value = presId;
+  const saved = localStorage.getItem('cf_script_url');
+  if (saved) document.getElementById('script-input').value = saved;
+}
+
+function showLoading() {
+  showOnly('loading-screen');
+}
+
+function showError(msg) {
+  document.getElementById('error-message').textContent = msg;
+  showOnly('error-screen');
+}
+
+function showFormError(msg) {
+  const el = document.getElementById('form-error');
+  el.textContent = msg;
+}
+
+// ---------------------------------------------------------------------------
+// DOM builders
+// ---------------------------------------------------------------------------
+
+function buildBulletGroup(items) {
+  const topUl = document.createElement('ul');
+  let lastL0 = null, lastL1 = null, ul1 = null, ul2 = null;
+
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.textContent = item.text || '';
+    const lvl = Math.min(item.level || 0, 2);
+
+    if (lvl === 0) {
+      topUl.appendChild(li);
+      lastL0 = li; lastL1 = null; ul1 = null; ul2 = null;
+    } else if (lvl === 1) {
+      if (!ul1) {
+        ul1 = document.createElement('ul');
+        (lastL0 || topUl).appendChild(ul1);
+        ul2 = null; lastL1 = null;
+      }
+      ul1.appendChild(li);
+      lastL1 = li;
+    } else {
+      if (!ul2) {
+        ul2 = document.createElement('ul');
+        (lastL1 || ul1 || topUl).appendChild(ul2);
+      }
+      ul2.appendChild(li);
+    }
+  }
+
+  return topUl;
+}
+
+function buildContentItem(item) {
+  switch (item.type) {
+
+    case 'divider':
+      return document.createElement('hr');
+
+    case 'quote': {
+      const bq = document.createElement('blockquote');
+      const p = document.createElement('p');
+      p.textContent = item.text || '';
+      bq.appendChild(p);
+      return bq;
+    }
+
+    case 'callout': {
+      const div = document.createElement('div');
+      div.className = 'cf-callout';
+      div.textContent = item.text || '';
+      return div;
+    }
+
+    case 'code': {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.setAttribute('data-trim', '');
+      if (item.language) code.className = 'language-' + item.language;
+      code.textContent = item.text || '';
+      pre.appendChild(code);
+      return pre;
+    }
+
+    case 'image': {
+      const url = safeUrl(item.url);
+      if (url === '#') return null;
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = item.alt || '';
+      return img;
+    }
+
+    case 'video': {
+      const url = safeUrl(item.url);
+      if (url === '#') return null;
+      const iframe = document.createElement('iframe');
+      iframe.src = url;
+      iframe.width = '100%';
+      iframe.height = '400';
+      iframe.setAttribute('allowfullscreen', '');
+      iframe.setAttribute('frameborder', '0');
+      return iframe;
+    }
+
+    case 'link': {
+      const url = safeUrl(item.url);
+      const p = document.createElement('p');
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = item.text || item.url || url;
+      p.appendChild(a);
+      return p;
+    }
+
+    default:
+      return null;
+  }
+}
+
+function buildSlide(sectionData) {
+  const section = document.createElement('section');
+
+  if (sectionData.notes) {
+    section.dataset.notes = sectionData.notes;
+  }
+
+  const layout = sectionData.layout || 'default';
+
+  // For media layout with a single image, use it as background
+  if (layout === 'media') {
+    const images = (sectionData.content || []).filter(i => i.type === 'image');
+    if (images.length === 1) {
+      const url = safeUrl(images[0].url);
+      if (url !== '#') {
+        section.setAttribute('data-background-image', url);
+        section.setAttribute('data-background-size', 'contain');
+      }
+    }
+  }
+
+  const h2 = document.createElement('h2');
+  h2.textContent = sectionData.title || '';
+  section.appendChild(h2);
+
+  if (layout === 'title-only') return section;
+
+  const items = sectionData.content || [];
+  let i = 0;
+
+  while (i < items.length) {
+    if (items[i].type === 'bullet') {
+      const bullets = [];
+      while (i < items.length && items[i].type === 'bullet') bullets.push(items[i++]);
+      section.appendChild(buildBulletGroup(bullets));
+    } else {
+      // For media layout with background image, skip the image in content
+      if (layout === 'media' && items[i].type === 'image') { i++; continue; }
+      const el = buildContentItem(items[i]);
+      if (el) section.appendChild(el);
+      i++;
+    }
+  }
+
+  return section;
+}
+
+function buildCoverSlide(lesson) {
+  const section = document.createElement('section');
+  const h1 = document.createElement('h1');
+  h1.textContent = lesson.title || 'Untitled';
+  section.appendChild(h1);
+  if (lesson.subtitle) {
+    const p = document.createElement('p');
+    p.className = 'cf-subtitle';
+    p.textContent = lesson.subtitle;
+    section.appendChild(p);
+  }
+  return section;
+}
+
+// ---------------------------------------------------------------------------
+// Fetch
+// ---------------------------------------------------------------------------
+
+async function fetchLesson(scriptUrl, presId) {
+  const url = scriptUrl + '?action=get&id=' + encodeURIComponent(presId);
+  let resp;
+  try {
+    resp = await fetch(url);
+  } catch (err) {
+    throw new Error('Network error: ' + err.message);
+  }
+  if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Show presentation
+// ---------------------------------------------------------------------------
+
+let revealInited = false;
+
+async function showPresentation(lesson, isDemo) {
+  const container = document.getElementById('slides-container');
+  container.innerHTML = '';
+
+  container.appendChild(buildCoverSlide(lesson));
+  for (const s of lesson.sections || []) {
+    container.appendChild(buildSlide(s));
+  }
+
+  setTheme(resolveTheme(lesson.theme));
+  showOnly(['reveal-container', 'control-bar']);
+
+  document.getElementById('copy-link-btn').hidden = !!isDemo;
+
+  if (!revealInited) {
+    await Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      progress: true,
+      controls: true,
+      center: true,
+      transition: 'slide',
+      width: 1200,
+      height: 700,
+      margin: 0.1,
+      plugins: [RevealHighlight, RevealNotes, RevealMarkdown]
+    });
+    revealInited = true;
+  } else {
+    Reveal.sync();
+    Reveal.slide(0);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Event listeners
+// ---------------------------------------------------------------------------
+
+document.getElementById('load-btn').addEventListener('click', async () => {
+  showFormError('');
+
+  let presId = document.getElementById('pres-input').value.trim();
+  const scriptUrl = document.getElementById('script-input').value.trim();
+
+  if (!presId) { showFormError('Enter a Presentation ID or URL.'); return; }
+  if (!scriptUrl) { showFormError('Enter the Apps Script URL.'); return; }
+
+  // Extract ID from full URL if pasted
+  const m = presId.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) presId = m[1];
+
+  localStorage.setItem('cf_script_url', scriptUrl);
+
+  showLoading();
+  try {
+    const lesson = await fetchLesson(scriptUrl, presId);
+    await showPresentation(lesson, false);
+  } catch (err) {
+    showError(err.message);
+  }
+});
+
+document.getElementById('demo-btn').addEventListener('click', () => {
+  const base = location.href.split('?')[0].split('#')[0];
+  location.href = base + '?demo=1';
+});
+
+document.getElementById('back-btn').addEventListener('click', () => showSetup());
+
+document.getElementById('copy-link-btn').addEventListener('click', async () => {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id') || '';
+  const script = params.get('script') || localStorage.getItem('cf_script_url') || '';
+  const base = location.href.split('?')[0].split('#')[0];
+  const shareUrl = base + '?id=' + encodeURIComponent(id) + '&script=' + encodeURIComponent(script);
+
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    const btn = document.getElementById('copy-link-btn');
+    const prev = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = prev; }, 2000);
+  } catch (e) {
+    showError('Could not copy. Share URL: ' + shareUrl);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Demo content
+// ---------------------------------------------------------------------------
+
+function getDemoContent() {
+  return {
+    "id": "demo",
+    "title": "Why Ducks Are Cool",
+    "subtitle": "A Totally Serious Academic Presentation",
+    "theme": "dracula",
+    "warnings": [],
+    "sections": [
+      {
+        "index": 1,
+        "title": "Introduction to Duck Appreciation",
+        "content": [
+          { "type": "bullet", "text": "Ducks are found on every continent except Antarctica", "level": 0 },
+          { "type": "bullet", "text": "Over 120 species worldwide", "level": 1 },
+          { "type": "bullet", "text": "From the tiny Cotton Pygmy Goose to the massive Muscovy", "level": 1 },
+          { "type": "divider" },
+          { "type": "callout", "text": "Fun fact: a group of ducks on water is called a paddling, on land it's a waddle." },
+          { "type": "image", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Anas_platyrhynchos_male_female_quadrat.jpg/1280px-Anas_platyrhynchos_male_female_quadrat.jpg", "alt": "Mallard duck pair" }
+        ],
+        "notes": "Open with something fun. Ask the audience: who has fed ducks at a park? This builds rapport. Transition: ducks are more interesting than most people realize.",
+        "layout": "default"
+      },
+      {
+        "index": 2,
+        "title": "Waterproof Engineering",
+        "content": [
+          { "type": "bullet", "text": "Duck feathers are coated in natural oil from the uropygial gland", "level": 0 },
+          { "type": "bullet", "text": "The oil makes feathers hydrophobic", "level": 1 },
+          { "type": "bullet", "text": "Water literally rolls off their backs", "level": 1 },
+          { "type": "quote", "text": "Like water off a duck's back - now you know where that idiom comes from." },
+          { "type": "bullet", "text": "Their down layer traps air for insulation", "level": 0 },
+          { "type": "bullet", "text": "Ducks can swim in near-freezing water without hypothermia", "level": 1 }
+        ],
+        "notes": "This is the section that usually surprises people the most. Emphasize that this is a real engineering problem - waterproofing while maintaining flexibility. Compare to Gore-Tex if the audience is technical.",
+        "layout": "default"
+      },
+      {
+        "index": 3,
+        "title": "The Quack Myth",
+        "content": [
+          { "type": "callout", "text": "MYTH: A duck's quack does not echo." },
+          { "type": "bullet", "text": "This has been thoroughly debunked", "level": 0 },
+          { "type": "bullet", "text": "Tested by acoustics researchers at the University of Salford in 2003", "level": 1 },
+          { "type": "bullet", "text": "The echo is just hard to hear because the quack fades gradually", "level": 1 },
+          { "type": "divider" },
+          { "type": "bullet", "text": "Not all ducks quack - only female Mallards do the classic quack", "level": 0 },
+          { "type": "bullet", "text": "Males make a softer rasping sound", "level": 1 },
+          { "type": "bullet", "text": "Some species whistle, grunt, or squeak", "level": 1 }
+        ],
+        "notes": "Good opportunity for audience interaction: ask who has heard this myth. Most hands will go up. The debunking is a nice 'aha' moment. Keep this section light.",
+        "layout": "default"
+      },
+      {
+        "index": 4,
+        "title": "\"Like water off a duck's back\"",
+        "content": [
+          { "type": "bullet", "text": "The most famous duck idiom in English", "level": 0 },
+          { "type": "bullet", "text": "Means criticism or problems that have no effect on someone", "level": 0 },
+          { "type": "bullet", "text": "Based on real physics - covered in the waterproofing section", "level": 0 }
+        ],
+        "notes": "This is a lighter slide to give the audience a breather. The quote layout makes the text large and centered.",
+        "layout": "quote"
+      },
+      {
+        "index": 5,
+        "title": "Navigation: The Magnetic Compass",
+        "content": [
+          { "type": "bullet", "text": "Migratory ducks navigate using Earth's magnetic field", "level": 0 },
+          { "type": "bullet", "text": "They have magnetite crystals in their bills", "level": 1 },
+          { "type": "bullet", "text": "This gives them a built-in compass", "level": 1 },
+          { "type": "bullet", "text": "Some species migrate over 1,000 miles", "level": 0 },
+          { "type": "bullet", "text": "The Northern Pintail migrates from Alaska to Hawaii - 2,000 miles over open ocean", "level": 1 },
+          { "type": "callout", "text": "Imagine flying 2,000 miles over open water with no landmarks. Ducks do it every year." }
+        ],
+        "notes": "This is the 'wow' section. The 2,000-mile open ocean flight usually gets an audible reaction. Let it land before moving on. If time allows, mention that they fly in V-formation to reduce drag - connecting back to the engineering theme.",
+        "layout": "default"
+      },
+      {
+        "index": 6,
+        "title": "Duck Vision",
+        "content": [
+          { "type": "bullet", "text": "Ducks can see nearly 340 degrees without turning their heads", "level": 0 },
+          { "type": "bullet", "text": "Humans see about 180 degrees", "level": 1 },
+          { "type": "bullet", "text": "They have UV vision - they see colors we cannot", "level": 0 },
+          { "type": "bullet", "text": "Males appear much more colorful to female ducks than to us", "level": 1 },
+          { "type": "divider" },
+          { "type": "bullet", "text": "Each eye can focus independently", "level": 0 },
+          { "type": "bullet", "text": "One eye watches for predators while the other searches for food", "level": 1 }
+        ],
+        "notes": "The independent eye focus is the key takeaway here. It connects to a theme of ducks as sophisticated biological machines, not the silly pond birds people assume.",
+        "layout": "default"
+      },
+      {
+        "index": 7,
+        "title": "Ducks in Culture",
+        "content": [
+          { "type": "bullet", "text": "Donald Duck - created 1934, one of the most recognizable characters on Earth", "level": 0 },
+          { "type": "bullet", "text": "The Rubber Duck - invented in the late 1800s, still a cultural icon", "level": 0 },
+          { "type": "bullet", "text": "Ducks Unlimited - largest wetland conservation organization, founded 1937", "level": 0 },
+          { "type": "quote", "text": "Be like a duck. Calm on the surface, but always paddling like the dickens underneath. - Michael Caine" },
+          { "type": "bullet", "text": "Duck sauce, duck tape (yes, the original name), duck hunting seasons", "level": 0 }
+        ],
+        "notes": "Light section. The Michael Caine quote works well as a transition to the next section about what makes ducks resilient. The 'duck tape' fact always gets a laugh - it was originally made with duck cloth in WWII.",
+        "layout": "default"
+      },
+      {
+        "index": 8,
+        "title": "Feet That Never Get Cold",
+        "content": [
+          { "type": "bullet", "text": "Ducks stand on ice without frostbite", "level": 0 },
+          { "type": "bullet", "text": "Counter-current heat exchange in their legs", "level": 0 },
+          { "type": "bullet", "text": "Warm arterial blood heats cold venous blood returning from the feet", "level": 1 },
+          { "type": "bullet", "text": "Feet stay just above freezing - warm enough to function, cold enough to prevent heat loss", "level": 1 },
+          { "type": "callout", "text": "This same engineering principle is used in industrial heat exchangers and HVAC systems." },
+          { "type": "code", "text": "# Simplified counter-current model\ndef foot_temp(arterial=38, ambient=-5, efficiency=0.95):\n    venous_return = ambient + efficiency * (arterial - ambient)\n    foot_surface = arterial - efficiency * (arterial - ambient)\n    return foot_surface  # ~2.15 C above freezing", "language": "python" }
+        ],
+        "notes": "The code snippet is optional - use it if the audience is technical. The key insight is that nature solved this engineering problem millions of years before humans invented heat exchangers. This is a great hook for any engineering or biology audience.",
+        "layout": "default"
+      },
+      {
+        "index": 9,
+        "title": "Conservation Status",
+        "content": [
+          { "type": "bullet", "text": "Most common duck species are stable or increasing", "level": 0 },
+          { "type": "bullet", "text": "But 25+ species are threatened or endangered", "level": 0 },
+          { "type": "bullet", "text": "The Laysan Duck: fewer than 1,000 individuals remain", "level": 1 },
+          { "type": "bullet", "text": "The Madagascar Pochard: was thought extinct until 2006", "level": 1 },
+          { "type": "divider" },
+          { "type": "bullet", "text": "Biggest threats: habitat loss, pollution, climate change", "level": 0 },
+          { "type": "bullet", "text": "Wetland conservation is duck conservation", "level": 0 },
+          { "type": "link", "url": "https://www.ducks.org", "text": "Ducks Unlimited - wetland conservation" }
+        ],
+        "notes": "Shift tone here - this is the serious part. The Madagascar Pochard story is remarkable: rediscovered after 15 years of assumed extinction. Use it to show that conservation efforts matter. End on a hopeful note to set up the closing.",
+        "layout": "default"
+      },
+      {
+        "index": 10,
+        "title": "Why Ducks Matter",
+        "content": [
+          { "type": "bullet", "text": "Indicator species for wetland health", "level": 0 },
+          { "type": "bullet", "text": "Seed dispersal across water ecosystems", "level": 0 },
+          { "type": "bullet", "text": "Pest control - ducks eat mosquito larvae, snails, slugs", "level": 0 },
+          { "type": "bullet", "text": "Bio-inspiration for engineering and materials science", "level": 0 },
+          { "type": "divider" },
+          { "type": "quote", "text": "Ducks are not just charming pond visitors. They are engineers, navigators, and ecological linchpins. Next time you see one, look a little closer." }
+        ],
+        "notes": "Closing slide. Read the final quote slowly. Let it land. If there is time for Q&A, this is a natural stopping point. Thank the audience.",
+        "layout": "default"
+      }
+    ]
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+
+(async function main() {
+  const params = new URLSearchParams(location.search);
+  const isDemo = params.get('demo') === '1';
+  const presId = params.get('id');
+  const scriptParam = params.get('script');
+
+  if (isDemo) {
+    await showPresentation(getDemoContent(), true);
+    return;
+  }
+
+  if (presId) {
+    const scriptUrl = scriptParam || localStorage.getItem('cf_script_url');
+    if (scriptUrl) {
+      if (scriptParam) localStorage.setItem('cf_script_url', scriptParam);
+      showLoading();
+      try {
+        const lesson = await fetchLesson(scriptUrl, presId);
+        await showPresentation(lesson, false);
+      } catch (err) {
+        showError(err.message);
+      }
+      return;
+    }
+  }
+
+  showSetup(presId || '');
+})();
+
+</script>
+</body>
+</html>
