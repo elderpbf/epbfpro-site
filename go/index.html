@@ -265,12 +265,18 @@
         body: JSON.stringify({ action, ...data }),
         redirect: 'follow'
       });
-      const result = await resp.json();
+      const txt = await resp.text();
+      dbg('poll', `← ${resp.status} ${resp.url.slice(0,60)}…`);
+      if (txt.startsWith('<')) {
+        dbg('error', `← ${action}: got HTML instead of JSON — check Apps Script deployment permissions`);
+        return { error: 'server returned HTML' };
+      }
+      const result = JSON.parse(txt);
       if (result.error) dbg('error', `← ${action}: ${result.error}`);
       else              dbg('ok',    `← ${action}: ok`);
       return result;
     } catch (err) {
-      dbg('error', `← ${action} FAIL: ${err.message}`);
+      dbg('error', `← ${action} FAIL: ${err.message} — likely CORS. Deployment "Who has access" must be "Anyone".`);
       throw err;
     }
   }

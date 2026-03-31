@@ -349,6 +349,20 @@
   let pollTimer      = null;
   let historyItems   = [];
 
+  // ── STARTUP CONNECTIVITY TEST ──────────────────────────────────────────────
+  (async function() {
+    dbg('info', 'testing Apps Script connectivity…');
+    try {
+      const r = await fetch(APPS_SCRIPT_URL, { redirect: 'follow' });
+      const txt = await r.text();
+      if (txt.includes('"ok"'))      dbg('ok',   `GET ok (${r.status}) — deployment reachable`);
+      else if (txt.includes('<'))    dbg('error', `GET ${r.status} — got HTML (auth redirect?). Check deployment: "Who has access" must be "Anyone".`);
+      else                           dbg('warn',  `GET ${r.status} — unexpected: ${txt.slice(0,120)}`);
+    } catch (err) {
+      dbg('error', `GET FAIL: ${err.message} — Apps Script unreachable. Check URL and deployment permissions.`);
+    }
+  })();
+
   // ── PASSWORD GATE ────────────────────────────────────────────────────────────
   function checkPassword() {
     const pw = document.getElementById('pw-input').value.trim();
@@ -640,12 +654,18 @@
         body: JSON.stringify({ action, ...data }),
         redirect: 'follow'
       });
-      const result = await resp.json();
+      const txt = await resp.text();
+      dbg('poll', `← ${resp.status} ${resp.url.slice(0,60)}…`);
+      if (txt.startsWith('<')) {
+        dbg('error', `← ${action}: got HTML instead of JSON (auth redirect?). Check deployment: "Who has access" = "Anyone".`);
+        return { error: 'server returned HTML — check Apps Script deployment permissions' };
+      }
+      const result = JSON.parse(txt);
       if (result.error) dbg('error', `← ${action}: ${result.error}`);
       else              dbg('ok',    `← ${action}: ok`);
       return result;
     } catch (err) {
-      dbg('error', `← ${action} FAIL: ${err.message}`);
+      dbg('error', `← ${action} FAIL: ${err.message} — likely CORS. Check: deployment "Who has access" = "Anyone", not "Only myself".`);
       throw err;
     }
   }
