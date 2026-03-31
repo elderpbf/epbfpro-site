@@ -255,20 +255,16 @@
     return result;
   }
 
-  // ── POST HELPER ──────────────────────────────────────────────────────────
+  // ── POST HELPER (uses GET to avoid CORS on Apps Script redirects) ────────
   async function post(action, data) {
-    dbg('info', `→ POST ${action}`);
+    dbg('info', `→ ${action}`);
     try {
-      const resp = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action, ...data }),
-        redirect: 'follow'
-      });
+      const payload = encodeURIComponent(JSON.stringify({ action, ...data }));
+      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload, { redirect: 'follow' });
       const txt = await resp.text();
-      dbg('poll', `← ${resp.status} ${resp.url.slice(0,60)}…`);
+      dbg('poll', `← ${resp.status} (${txt.length} bytes)`);
       if (txt.startsWith('<')) {
-        dbg('error', `← ${action}: got HTML instead of JSON — check Apps Script deployment permissions`);
+        dbg('error', `← ${action}: got HTML — check deployment permissions`);
         return { error: 'server returned HTML' };
       }
       const result = JSON.parse(txt);
@@ -276,7 +272,7 @@
       else              dbg('ok',    `← ${action}: ok`);
       return result;
     } catch (err) {
-      dbg('error', `← ${action} FAIL: ${err.message} — likely CORS. Deployment "Who has access" must be "Anyone".`);
+      dbg('error', `← ${action} FAIL: ${err.message}`);
       throw err;
     }
   }
