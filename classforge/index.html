@@ -3,11 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="ClassForge - Transforme seus slides do Google Slides em aulas interativas com Reveal.js | PensoIA">
-<meta property="og:title" content="ClassForge - PensoIA">
-<meta property="og:description" content="Crie no Google Slides. Apresente com Reveal.js. Compartilhe com um link.">
-<meta property="og:url" content="https://pensoia.com/classforge">
-<title>ClassForge - PensoIA</title>
+<title>ClassForge</title>
 
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
@@ -20,303 +16,805 @@
 <link rel="stylesheet" href="../css/style.css?v=2.1">
 
 <style>
-/* ClassForge page-specific styles */
 
-/* Hero: centered single-column variant */
-.cf-hero-inner {
-  max-width: 720px;
-  margin: 0 auto;
-  text-align: center;
-  position: relative;
-  z-index: 1;
+/* =========================================================
+   BASE OVERRIDES
+   ========================================================= */
+
+[hidden] { display: none !important; }
+
+body {
+  min-height: 100vh;
 }
 
-.cf-badge {
-  display: inline-block;
-  background: rgba(20, 184, 166, 0.15);
-  color: var(--primary-dark);
-  border: 1px solid rgba(20, 184, 166, 0.4);
-  border-radius: 20px;
-  padding: 0.3rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 1.25rem;
-}
+/* =========================================================
+   AUTH SCREENS (login + first-time setup)
+   ========================================================= */
 
-[data-theme="dark"] .cf-badge {
-  background: rgba(20, 184, 166, 0.1);
-  color: var(--primary-light);
-  border-color: rgba(20, 184, 166, 0.3);
-}
-
-.cf-hero-inner .hero-subtitle {
-  min-height: auto;
-  margin-bottom: 2.5rem;
-}
-
-.cf-hero-btns {
+.cf-screen {
   display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
 }
 
-.btn-secondary {
-  display: inline-block;
-  background: transparent;
-  color: var(--primary);
-  border: 2px solid var(--primary);
-  padding: 0.9rem 2rem;
-  border-radius: 50px;
-  font-size: 1rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s ease;
+.cf-auth-bg {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--background);
+  z-index: 50;
 }
 
-.btn-secondary:hover {
-  background: var(--primary);
-  color: white;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(20, 184, 166, 0.3);
-  text-decoration: none;
+.cf-auth-card {
+  background: var(--surface);
+  border: 1px solid rgba(20,184,166,.2);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%; max-width: 400px;
+  box-shadow: 0 8px 40px var(--shadow);
 }
 
-/* Instructor CTA section */
-.cf-instructor {
-  background: linear-gradient(135deg, var(--surface) 0%, var(--background) 100%);
-  padding: 5rem 0;
-  text-align: center;
+.cf-auth-logo {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 2rem;
 }
 
-.cf-instructor-inner {
-  max-width: 620px;
-  margin: 0 auto;
+.cf-auth-logo img {
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 8px;
+  padding: 4px;
 }
 
-.cf-instructor h2 {
-  font-size: 2rem;
-  color: var(--secondary);
+.cf-auth-logo .cf-product {
+  font-size: 1.2rem;
   font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.cf-auth-card h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.cf-auth-card p.cf-auth-hint {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.cf-field {
   margin-bottom: 1rem;
 }
 
-.cf-instructor p {
-  color: var(--text-secondary);
-  font-size: 1.05rem;
-  margin-bottom: 2rem;
-  line-height: 1.7;
-}
-
-/* Footer */
-.cf-footer {
-  background-color: var(--surface);
-  border-top: 1px solid rgba(20, 184, 166, 0.15);
-  padding: 2rem 0;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.cf-footer a {
-  color: var(--primary);
-  text-decoration: none;
+.cf-field label {
+  display: block;
+  font-size: 0.8rem;
   font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.cf-footer a:hover {
-  text-decoration: underline;
+.cf-field input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: var(--background);
+  border: 1.5px solid rgba(20,184,166,.25);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color .2s;
+  box-sizing: border-box;
 }
 
-/* Steps: override min-height from main site if any */
-.methodology {
-  padding: 5rem 0;
+.cf-field input:focus {
+  border-color: var(--primary);
 }
 
-.step-title {
-  font-size: 1.1rem;
+.cf-form-error {
+  color: #ef4444;
+  font-size: 0.82rem;
+  min-height: 1rem;
+  margin: -0.25rem 0 0.75rem;
+}
+
+.cf-auth-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: opacity .2s, transform .2s;
+}
+
+.cf-auth-btn:hover { opacity: .9; transform: translateY(-1px); }
+.cf-auth-btn:active { transform: translateY(0); }
+
+/* =========================================================
+   DASHBOARD LAYOUT
+   ========================================================= */
+
+.cf-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+.cf-topbar {
+  background: var(--surface);
+  border-bottom: 1px solid rgba(20,184,166,.15);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+
+.cf-topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cf-topbar-logo {
+  display: flex; align-items: center; gap: 0.6rem;
+  text-decoration: none;
+}
+
+.cf-topbar-logo img {
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.cf-topbar-name {
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 1rem 0 0.5rem;
+  letter-spacing: -0.02em;
 }
 
-.step-desc {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.6;
+.cf-topbar-spacer { flex: 1; }
+
+.cf-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.3);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--primary);
+  transition: all .2s;
 }
+
+.cf-icon-btn:hover {
+  background: rgba(20,184,166,.1);
+  border-color: var(--primary);
+}
+
+.cf-logout-btn {
+  padding: 0.4rem 1rem;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.3);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.cf-logout-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239,68,68,.06);
+}
+
+/* Main content */
+.cf-main {
+  flex: 1;
+  padding: 2.5rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cf-toolbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.cf-toolbar h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.cf-new-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.55rem 1.2rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity .2s, transform .2s;
+}
+
+.cf-new-btn:hover { opacity: .9; transform: translateY(-1px); text-decoration: none; color: white; }
+
+.cf-refresh-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.3);
+  border-radius: 8px;
+  color: var(--primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.cf-refresh-btn:hover { background: rgba(20,184,166,.08); border-color: var(--primary); }
+
+/* =========================================================
+   PRESENTATION CARDS
+   ========================================================= */
+
+.cf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.cf-card {
+  background: var(--surface);
+  border: 1px solid rgba(20,184,166,.15);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform .25s, box-shadow .25s;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.cf-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px var(--shadow);
+  border-color: rgba(20,184,166,.35);
+}
+
+.cf-card-thumb {
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: rgba(255,255,255,.7);
+  letter-spacing: -0.03em;
+  position: relative;
+}
+
+.cf-card-badge {
+  position: absolute;
+  top: 10px; left: 10px;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+}
+
+.cf-card-body {
+  padding: 1.1rem 1.2rem 1.2rem;
+}
+
+.cf-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cf-card-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.cf-card-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.cf-btn-present {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+
+.cf-btn-present:hover { opacity: .85; color: white; text-decoration: none; }
+
+.cf-btn-edit {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.35);
+  border-radius: 6px;
+  color: var(--primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.cf-btn-edit:hover {
+  background: rgba(20,184,166,.08);
+  border-color: var(--primary);
+  text-decoration: none;
+  color: var(--primary-dark);
+}
+
+.cf-btn-edit[disabled], .cf-btn-edit.cf-disabled {
+  opacity: .3;
+  pointer-events: none;
+}
+
+/* =========================================================
+   STATES (loading, empty, error)
+   ========================================================= */
+
+.cf-state-block {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  color: var(--text-secondary);
+}
+
+.cf-state-block p {
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.cf-state-block .cf-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  display: block;
+  opacity: .5;
+}
+
+.cf-inline-btn {
+  display: inline-block;
+  padding: 0.5rem 1.2rem;
+  background: rgba(20,184,166,.12);
+  border: 1.5px solid rgba(20,184,166,.4);
+  border-radius: 8px;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all .2s;
+}
+
+.cf-inline-btn:hover { background: rgba(20,184,166,.2); }
+
+/* Skeleton loader */
+.cf-skeleton {
+  background: linear-gradient(90deg, rgba(20,184,166,.08) 25%, rgba(20,184,166,.16) 50%, rgba(20,184,166,.08) 75%);
+  background-size: 200% 100%;
+  animation: cf-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes cf-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.cf-card-skeleton .cf-card-thumb { background: none; }
+.cf-card-skeleton .cf-card-thumb-sk {
+  width: 100%; aspect-ratio: 16/9;
+}
+.cf-card-skeleton .cf-sk-line {
+  height: 14px; margin-bottom: 8px; border-radius: 4px;
+}
+.cf-card-skeleton .cf-sk-line.short { width: 55%; }
+
+/* =========================================================
+   SETTINGS DRAWER
+   ========================================================= */
+
+.cf-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 200;
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.cf-overlay.open { opacity: 1; }
+
+.cf-drawer {
+  position: fixed;
+  top: 0; right: -440px; bottom: 0;
+  width: 400px; max-width: 100vw;
+  background: var(--surface);
+  border-left: 1px solid rgba(20,184,166,.2);
+  z-index: 201;
+  padding: 2rem;
+  overflow-y: auto;
+  transition: right .3s ease;
+  box-shadow: -4px 0 30px rgba(0,0,0,.2);
+  box-sizing: border-box;
+}
+
+.cf-drawer.open { right: 0; }
+
+.cf-drawer h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cf-drawer h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 2rem 0 1rem;
+}
+
+.cf-drawer hr {
+  border: none;
+  border-top: 1px solid rgba(20,184,166,.15);
+  margin: 2rem 0;
+}
+
+.cf-drawer-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  line-height: 1;
+  padding: 0;
+}
+
+.cf-drawer-close:hover { color: var(--text-primary); }
+
+.cf-save-btn {
+  width: 100%;
+  padding: 0.7rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .2s;
+  margin-top: 0.25rem;
+}
+
+.cf-save-btn:hover { opacity: .88; }
+
+.cf-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+
+.cf-drawer-save-msg {
+  font-size: 0.82rem;
+  color: var(--primary);
+  margin-top: 0.5rem;
+  min-height: 1rem;
+}
+
+.cf-change-pw-btn {
+  display: block;
+  width: 100%;
+  padding: 0.65rem;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.35);
+  border-radius: 8px;
+  color: var(--primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all .2s;
+}
+
+.cf-change-pw-btn:hover { background: rgba(20,184,166,.08); }
+
+/* Change password sub-form */
+#change-pw-form { margin-top: 1rem; }
+
+/* =========================================================
+   THEME TOGGLE (reuse site classes, inline SVG icon)
+   ========================================================= */
+
+#themeIcon {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  color: var(--primary);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .cf-grid { grid-template-columns: 1fr; }
+  .cf-drawer { width: 100%; right: -100%; }
+  .cf-main { padding: 1.5rem 1rem; }
+  .cf-topbar-name { display: none; }
+}
+
 </style>
 </head>
 <body>
 
 <div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
 
-<header class="header" role="banner">
-  <div class="container">
-    <div class="header-content">
-      <a href="https://pensoia.com" class="logo" aria-label="Voltar para PensoIA">
-        <img src="../images/logo.png" alt="PensoIA" class="logo-img">
+<!-- =====================================================
+     SCREEN: FIRST-TIME PASSWORD SETUP
+     ===================================================== -->
+<div id="screen-setup-pw" class="cf-auth-bg" hidden>
+  <div class="cf-auth-card">
+    <div class="cf-auth-logo">
+      <img src="../images/logo.png" alt="PensoIA">
+      <span class="cf-product">ClassForge</span>
+    </div>
+    <h2 data-key="setup_title">Criar senha de acesso</h2>
+    <p class="cf-auth-hint" data-key="setup_hint">Esta senha protege seu painel. Guarde-a em local seguro.</p>
+    <div class="cf-field">
+      <label data-key="setup_pw_label">Senha</label>
+      <input id="setup-pw" type="password" autocomplete="new-password">
+    </div>
+    <div class="cf-field">
+      <label data-key="setup_confirm_label">Confirmar senha</label>
+      <input id="setup-pw-confirm" type="password" autocomplete="new-password">
+    </div>
+    <p class="cf-form-error" id="setup-error"></p>
+    <button class="cf-auth-btn" id="setup-btn" data-key="setup_btn">Criar senha e entrar</button>
+  </div>
+</div>
+
+<!-- =====================================================
+     SCREEN: LOGIN
+     ===================================================== -->
+<div id="screen-login" class="cf-auth-bg" hidden>
+  <div class="cf-auth-card">
+    <div class="cf-auth-logo">
+      <img src="../images/logo.png" alt="PensoIA">
+      <span class="cf-product">ClassForge</span>
+    </div>
+    <h2 data-key="login_title">Bem-vindo de volta</h2>
+    <p class="cf-auth-hint" data-key="login_hint">Entre com sua senha para acessar o painel.</p>
+    <div class="cf-field">
+      <label data-key="login_pw_label">Senha</label>
+      <input id="login-pw" type="password" autocomplete="current-password">
+    </div>
+    <p class="cf-form-error" id="login-error"></p>
+    <button class="cf-auth-btn" id="login-btn" data-key="login_btn">Entrar</button>
+  </div>
+</div>
+
+<!-- =====================================================
+     SCREEN: DASHBOARD
+     ===================================================== -->
+<div id="screen-dashboard" class="cf-app" hidden>
+
+  <header class="cf-topbar">
+    <div class="cf-topbar-inner">
+      <a href="https://pensoia.com" class="cf-topbar-logo" aria-label="PensoIA">
+        <img src="../images/logo.png" alt="PensoIA">
+        <span class="cf-topbar-name">ClassForge</span>
       </a>
-      <div class="header-controls">
-        <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema claro/escuro" aria-pressed="false">
-          <span id="themeIcon" style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;color:var(--primary)">
-            <!-- icon injected by JS -->
-          </span>
-        </button>
-        <button class="lang-toggle" id="langToggle" aria-label="Alternar idioma">
-          <span id="langText">EN</span>
-        </button>
-      </div>
+      <div class="cf-topbar-spacer"></div>
+      <button class="cf-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
+        <span id="themeIcon"></span>
+      </button>
+      <button class="cf-icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button class="cf-logout-btn" id="logout-btn" data-key="logout_btn">Sair</button>
     </div>
+  </header>
+
+  <main class="cf-main">
+
+    <div class="cf-toolbar">
+      <h1 data-key="dashboard_title">Apresentações</h1>
+      <button class="cf-refresh-btn" id="refresh-btn" title="Recarregar lista">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        <span data-key="refresh_btn">Atualizar</span>
+      </button>
+      <a href="https://slides.google.com/" target="_blank" rel="noopener noreferrer" class="cf-new-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span data-key="new_btn">Nova apresentação</span>
+      </a>
+    </div>
+
+    <div id="cf-grid" class="cf-grid">
+      <!-- Demo card injected by JS -->
+      <!-- Dynamic cards appended by JS -->
+    </div>
+
+  </main>
+
+</div><!-- /screen-dashboard -->
+
+<!-- =====================================================
+     SETTINGS DRAWER
+     ===================================================== -->
+<div id="settings-overlay" class="cf-overlay" hidden></div>
+
+<aside id="settings-drawer" class="cf-drawer" hidden aria-label="Configurações">
+
+  <h2>
+    <span data-key="settings_title">Configurações</span>
+    <button class="cf-drawer-close" id="settings-close" aria-label="Fechar">&times;</button>
+  </h2>
+
+  <!-- Script URL -->
+  <h3 data-key="settings_script_section">Apps Script</h3>
+  <div class="cf-field">
+    <label data-key="settings_script_label">URL do Apps Script</label>
+    <input id="settings-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
   </div>
-</header>
+  <p class="cf-hint" data-key="settings_script_hint">
+    Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.
+  </p>
+  <button class="cf-save-btn" id="settings-save-btn" data-key="settings_save_btn">Salvar</button>
+  <p class="cf-drawer-save-msg" id="settings-save-msg"></p>
 
-<main id="main-content">
+  <hr>
 
-  <!-- Hero -->
-  <section class="hero" aria-labelledby="cf-hero-title">
-    <div class="container">
-      <div class="cf-hero-inner">
-        <span class="cf-badge" data-key="hero_badge">Ferramenta PensoIA</span>
-        <h1 id="cf-hero-title" class="hero-title" data-key="hero_title">
-          Transforme slides em aulas interativas
-        </h1>
-        <p class="hero-subtitle" data-key="hero_subtitle">
-          Crie no Google Slides. Apresente com Reveal.js. Compartilhe com um link.
-        </p>
-        <div class="cf-hero-btns">
-          <a href="viewer/?demo=1" class="btn-primary" data-key="cta_demo">Experimentar Demo</a>
-          <a href="viewer/" class="btn-secondary" data-key="cta_instructor">Sou instrutor</a>
-        </div>
-      </div>
+  <!-- Change password -->
+  <h3 data-key="settings_security_section">Segurança</h3>
+  <button class="cf-change-pw-btn" id="show-change-pw-btn" data-key="settings_change_pw_btn">Alterar senha</button>
+
+  <div id="change-pw-form" hidden>
+    <div class="cf-field" style="margin-top:1rem">
+      <label data-key="change_pw_current">Senha atual</label>
+      <input id="change-pw-current" type="password" autocomplete="current-password">
     </div>
-  </section>
-
-  <!-- How it works -->
-  <section class="methodology" id="como-funciona" aria-labelledby="cf-steps-title">
-    <div class="container">
-      <h2 id="cf-steps-title" class="section-title" data-key="steps_title">Como funciona</h2>
-      <div class="method-steps">
-
-        <div class="method-step">
-          <div class="step-number" aria-label="Etapa 1">1</div>
-          <div class="step-connector" aria-hidden="true"></div>
-          <h3 class="step-title" data-key="step1_title">Crie no Google Slides</h3>
-          <p class="step-desc" data-key="step1_desc">
-            Use o editor que você já conhece. Organize sua aula em slides com texto, imagens e anotações de palestrante.
-          </p>
-        </div>
-
-        <div class="method-step">
-          <div class="step-number" aria-label="Etapa 2">2</div>
-          <div class="step-connector" aria-hidden="true"></div>
-          <h3 class="step-title" data-key="step2_title">Conecte em minutos</h3>
-          <p class="step-desc" data-key="step2_desc">
-            Cole um Apps Script no seu projeto do Google. Sem servidor, sem instalação, sem código para escrever.
-          </p>
-        </div>
-
-        <div class="method-step">
-          <div class="step-number" aria-label="Etapa 3">3</div>
-          <h3 class="step-title" data-key="step3_title">Compartilhe o link</h3>
-          <p class="step-desc" data-key="step3_desc">
-            Seus alunos abrem a aula em qualquer dispositivo. Navegação fluida, modo apresentador e temas visuais inclusos.
-          </p>
-        </div>
-
-      </div>
+    <div class="cf-field">
+      <label data-key="change_pw_new">Nova senha</label>
+      <input id="change-pw-new" type="password" autocomplete="new-password">
     </div>
-  </section>
-
-  <!-- Instructor CTA -->
-  <section class="cf-instructor" aria-labelledby="cf-instructor-title">
-    <div class="container">
-      <div class="cf-instructor-inner">
-        <h2 id="cf-instructor-title" data-key="instructor_title">Para instrutores</h2>
-        <p data-key="instructor_desc">
-          Configure sua conta uma vez. A partir daí, gere um link para qualquer apresentação do Google Slides e compartilhe com seus alunos. Eles não precisam de conta Google.
-        </p>
-        <a href="viewer/" class="btn-primary" data-key="instructor_cta">Configurar agora</a>
-      </div>
+    <div class="cf-field">
+      <label data-key="change_pw_confirm">Confirmar nova senha</label>
+      <input id="change-pw-confirm" type="password" autocomplete="new-password">
     </div>
-  </section>
-
-</main>
-
-<footer class="cf-footer">
-  <div class="container">
-    <p>
-      ClassForge &mdash;
-      <span data-key="footer_product">um produto</span>
-      <a href="https://pensoia.com">PensoIA</a>
-    </p>
+    <p class="cf-form-error" id="change-pw-error"></p>
+    <button class="cf-save-btn" id="change-pw-save-btn" data-key="change_pw_save_btn">Atualizar senha</button>
   </div>
-</footer>
 
+</aside>
+
+<!-- =====================================================
+     SCRIPT
+     ===================================================== -->
 <script>
+'use strict';
+
 // ---------------------------------------------------------------------------
-// i18n
+// i18n (PT-BR default; add new language objects to TRANSLATIONS to expand)
 // ---------------------------------------------------------------------------
 
 const TRANSLATIONS = {
   'pt-BR': {
-    hero_badge:        'Ferramenta PensoIA',
-    hero_title:        'Transforme slides em aulas interativas',
-    hero_subtitle:     'Crie no Google Slides. Apresente com Reveal.js. Compartilhe com um link.',
-    cta_demo:          'Experimentar Demo',
-    cta_instructor:    'Sou instrutor',
-    steps_title:       'Como funciona',
-    step1_title:       'Crie no Google Slides',
-    step1_desc:        'Use o editor que você já conhece. Organize sua aula em slides com texto, imagens e anotações de palestrante.',
-    step2_title:       'Conecte em minutos',
-    step2_desc:        'Cole um Apps Script no seu projeto do Google. Sem servidor, sem instalação, sem código para escrever.',
-    step3_title:       'Compartilhe o link',
-    step3_desc:        'Seus alunos abrem a aula em qualquer dispositivo. Navegação fluida, modo apresentador e temas visuais inclusos.',
-    instructor_title:  'Para instrutores',
-    instructor_desc:   'Configure sua conta uma vez. A partir daí, gere um link para qualquer apresentação do Google Slides e compartilhe com seus alunos. Eles não precisam de conta Google.',
-    instructor_cta:    'Configurar agora',
-    footer_product:    'um produto'
-  },
-  'en': {
-    hero_badge:        'PensoIA Tool',
-    hero_title:        'Turn slides into interactive lessons',
-    hero_subtitle:     'Author in Google Slides. Present with Reveal.js. Share with a link.',
-    cta_demo:          'Try the Demo',
-    cta_instructor:    'I am an instructor',
-    steps_title:       'How it works',
-    step1_title:       'Create in Google Slides',
-    step1_desc:        'Use the tool you already know. Organize your lesson into slides with text, images, and speaker notes.',
-    step2_title:       'Connect in minutes',
-    step2_desc:        'Paste an Apps Script into your Google project. No server, no install, no code to write.',
-    step3_title:       'Share the link',
-    step3_desc:        'Students open the lesson on any device. Smooth navigation, presenter mode, and visual themes included.',
-    instructor_title:  'For instructors',
-    instructor_desc:   'Set up your account once. From then on, generate a link for any Google Slides presentation and share it with your students. They do not need a Google account.',
-    instructor_cta:    'Set up now',
-    footer_product:    'a product by'
+    setup_title:            'Criar senha de acesso',
+    setup_hint:             'Esta senha protege seu painel. Guarde-a em local seguro.',
+    setup_pw_label:         'Senha',
+    setup_confirm_label:    'Confirmar senha',
+    setup_btn:              'Criar senha e entrar',
+    login_title:            'Bem-vindo de volta',
+    login_hint:             'Entre com sua senha para acessar o painel.',
+    login_pw_label:         'Senha',
+    login_btn:              'Entrar',
+    logout_btn:             'Sair',
+    dashboard_title:        'Apresentações',
+    refresh_btn:            'Atualizar',
+    new_btn:                'Nova apresentação',
+    settings_title:         'Configurações',
+    settings_script_section:'Apps Script',
+    settings_script_label:  'URL do Apps Script',
+    settings_script_hint:   'Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.',
+    settings_save_btn:      'Salvar',
+    settings_security_section: 'Segurança',
+    settings_change_pw_btn: 'Alterar senha',
+    change_pw_current:      'Senha atual',
+    change_pw_new:          'Nova senha',
+    change_pw_confirm:      'Confirmar nova senha',
+    change_pw_save_btn:     'Atualizar senha',
+    card_present:           'Apresentar',
+    card_edit:              'Editar',
+    card_demo_badge:        'Demo',
+    card_demo_title:        'Por que patos são legais?',
+    card_demo_meta:         'Apresentação de demonstração',
+    state_no_script_msg:    'Configure o Apps Script para ver suas apresentações.',
+    state_no_script_btn:    'Configurar agora',
+    state_loading_msg:      'Carregando apresentações...',
+    state_error_btn:        'Tentar novamente',
+    state_empty_msg:        'Nenhuma apresentação encontrada na pasta.',
+    save_ok:                'Salvo com sucesso.',
+    error_pw_short:         'A senha deve ter pelo menos 6 caracteres.',
+    error_pw_match:         'As senhas não coincidem.',
+    error_pw_wrong:         'Senha incorreta.',
+    error_pw_current_wrong: 'Senha atual incorreta.',
+    change_pw_ok:           'Senha alterada com sucesso.',
   }
 };
 
-let currentLang = localStorage.getItem('pensoia_lang') || 'pt-BR';
+const LANG = 'pt-BR';
+const T = TRANSLATIONS[LANG];
 
-function applyLang(lang) {
-  if (!TRANSLATIONS[lang]) lang = 'pt-BR';
-  currentLang = lang;
-  document.getElementById('html-root').lang = lang === 'pt-BR' ? 'pt-BR' : 'en';
-  document.getElementById('langText').textContent = lang === 'pt-BR' ? 'EN' : 'PT';
-  const t = TRANSLATIONS[lang];
-  document.querySelectorAll('[data-key]').forEach(function(el) {
-    var key = el.dataset.key;
-    if (t[key] !== undefined) el.textContent = t[key];
-  });
-  localStorage.setItem('pensoia_lang', lang);
-}
-
-document.getElementById('langToggle').addEventListener('click', function() {
-  applyLang(currentLang === 'pt-BR' ? 'en' : 'pt-BR');
-});
+function t(key) { return T[key] || key; }
 
 // ---------------------------------------------------------------------------
 // Theme
@@ -327,47 +825,415 @@ var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" v
 
 var themeIcon   = document.getElementById('themeIcon');
 var themeToggle = document.getElementById('themeToggle');
-var overlay     = document.getElementById('themeTransition');
+var themeOverlay = document.getElementById('themeTransition');
 
-function applyTheme(theme, animate, originX, originY) {
-  if (animate && overlay) {
-    overlay.style.setProperty('--tx', (originX || 0) + 'px');
-    overlay.style.setProperty('--ty', (originY || 0) + 'px');
+function applyTheme(theme, animate, ox, oy) {
+  if (animate && themeOverlay) {
+    themeOverlay.style.setProperty('--tx', (ox||0)+'px');
+    themeOverlay.style.setProperty('--ty', (oy||0)+'px');
     document.documentElement.setAttribute('data-theme', theme);
-    var newBg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
+    var bg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
     document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
-    overlay.style.backgroundColor = newBg;
-    overlay.offsetHeight; // force reflow
-    overlay.classList.add('active');
+    themeOverlay.style.backgroundColor = bg;
+    themeOverlay.offsetHeight;
+    themeOverlay.classList.add('active');
     setTimeout(function() {
       document.documentElement.setAttribute('data-theme', theme);
       themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
       themeToggle.setAttribute('aria-pressed', theme === 'dark');
-      setTimeout(function() { overlay.classList.remove('active'); }, 100);
+      localStorage.setItem('theme', theme);
+      setTimeout(function() { themeOverlay.classList.remove('active'); }, 100);
     }, 500);
   } else {
     document.documentElement.setAttribute('data-theme', theme);
     themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
     themeToggle.setAttribute('aria-pressed', theme === 'dark');
+    localStorage.setItem('theme', theme);
   }
-  localStorage.setItem('theme', theme);
 }
 
-// Init theme without animation
-var savedTheme = localStorage.getItem('theme') || 'light';
-applyTheme(savedTheme, false);
+applyTheme(localStorage.getItem('theme') || 'light', false);
 
 themeToggle.addEventListener('click', function(e) {
-  var current = document.documentElement.getAttribute('data-theme') || 'light';
-  var next = current === 'dark' ? 'light' : 'dark';
+  var cur = document.documentElement.getAttribute('data-theme') || 'light';
   var rect = e.currentTarget.getBoundingClientRect();
-  applyTheme(next, true, rect.left + rect.width / 2, rect.top + rect.height / 2);
+  applyTheme(cur === 'dark' ? 'light' : 'dark', true, rect.left + rect.width/2, rect.top + rect.height/2);
+});
+
+// ---------------------------------------------------------------------------
+// Crypto helpers
+// ---------------------------------------------------------------------------
+
+async function hashPw(pw) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Screen management
+// ---------------------------------------------------------------------------
+
+var SCREENS = ['screen-setup-pw', 'screen-login', 'screen-dashboard'];
+
+function showScreen(id) {
+  SCREENS.forEach(function(s) {
+    document.getElementById(s).hidden = (s !== id);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+var PW_KEY   = 'cf_pw_hash';
+var AUTH_KEY = 'cf_auth';
+
+async function init() {
+  var hash = localStorage.getItem(PW_KEY);
+  if (!hash) {
+    showScreen('screen-setup-pw');
+    document.getElementById('setup-pw').focus();
+    return;
+  }
+  if (sessionStorage.getItem(AUTH_KEY) === '1') {
+    showDashboard();
+    return;
+  }
+  showScreen('screen-login');
+  document.getElementById('login-pw').focus();
+}
+
+document.getElementById('setup-btn').addEventListener('click', async function() {
+  var pw  = document.getElementById('setup-pw').value;
+  var pw2 = document.getElementById('setup-pw-confirm').value;
+  var err = document.getElementById('setup-error');
+  err.textContent = '';
+  if (pw.length < 6)   { err.textContent = t('error_pw_short'); return; }
+  if (pw !== pw2)      { err.textContent = t('error_pw_match'); return; }
+  localStorage.setItem(PW_KEY, await hashPw(pw));
+  sessionStorage.setItem(AUTH_KEY, '1');
+  showDashboard();
+});
+
+document.getElementById('login-btn').addEventListener('click', async function() {
+  var pw  = document.getElementById('login-pw').value;
+  var err = document.getElementById('login-error');
+  err.textContent = '';
+  var hash = await hashPw(pw);
+  if (hash !== localStorage.getItem(PW_KEY)) {
+    err.textContent = t('error_pw_wrong');
+    document.getElementById('login-pw').value = '';
+    document.getElementById('login-pw').focus();
+    return;
+  }
+  sessionStorage.setItem(AUTH_KEY, '1');
+  showDashboard();
+});
+
+['setup-pw-confirm','login-pw'].forEach(function(id) {
+  document.getElementById(id).addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var btn = id === 'login-pw' ? 'login-btn' : 'setup-btn';
+      document.getElementById(btn).click();
+    }
+  });
+});
+document.getElementById('setup-pw').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('setup-pw-confirm').focus();
+});
+
+document.getElementById('logout-btn').addEventListener('click', function() {
+  sessionStorage.removeItem(AUTH_KEY);
+  document.getElementById('login-pw').value = '';
+  document.getElementById('login-error').textContent = '';
+  showScreen('screen-login');
+  document.getElementById('login-pw').focus();
+});
+
+// ---------------------------------------------------------------------------
+// Dashboard
+// ---------------------------------------------------------------------------
+
+var THUMB_GRADIENTS = [
+  'linear-gradient(135deg, #0d9488 0%, #047857 100%)',
+  'linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)',
+  'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
+  'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+  'linear-gradient(135deg, #be123c 0%, #e11d48 100%)',
+  'linear-gradient(135deg, #0369a1 0%, #0891b2 100%)',
+];
+
+function thumbGrad(index) {
+  return THUMB_GRADIENTS[index % THUMB_GRADIENTS.length];
+}
+
+function initial(title) {
+  return (title || '?').trim().charAt(0).toUpperCase();
+}
+
+function buildDemoCard() {
+  var card = document.createElement('div');
+  card.className = 'cf-card';
+
+  var thumb = document.createElement('div');
+  thumb.className = 'cf-card-thumb';
+  thumb.style.background = 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)';
+  thumb.innerHTML =
+    '<span style="font-size:2.5rem">P</span>' +
+    '<span class="cf-card-badge">' + t('card_demo_badge') + '</span>';
+  card.appendChild(thumb);
+
+  var body = document.createElement('div');
+  body.className = 'cf-card-body';
+
+  var title = document.createElement('h3');
+  title.className = 'cf-card-title';
+  title.textContent = t('card_demo_title');
+  body.appendChild(title);
+
+  var meta = document.createElement('p');
+  meta.className = 'cf-card-meta';
+  meta.textContent = t('card_demo_meta');
+  body.appendChild(meta);
+
+  var actions = document.createElement('div');
+  actions.className = 'cf-card-actions';
+
+  var present = document.createElement('a');
+  present.className = 'cf-btn-present';
+  present.href = 'viewer/?demo=1';
+  present.textContent = t('card_present');
+  actions.appendChild(present);
+
+  var edit = document.createElement('span');
+  edit.className = 'cf-btn-edit cf-disabled';
+  edit.textContent = t('card_edit');
+  edit.title = 'Demonstração - sem edição';
+  actions.appendChild(edit);
+
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+function buildCard(pres, index) {
+  var scriptUrl = localStorage.getItem('cf_script_url') || '';
+
+  var card = document.createElement('div');
+  card.className = 'cf-card';
+
+  var thumb = document.createElement('div');
+  thumb.className = 'cf-card-thumb';
+  thumb.style.background = thumbGrad(index);
+  thumb.textContent = initial(pres.title);
+  card.appendChild(thumb);
+
+  var body = document.createElement('div');
+  body.className = 'cf-card-body';
+
+  var title = document.createElement('h3');
+  title.className = 'cf-card-title';
+  title.textContent = pres.title || 'Sem título';
+  body.appendChild(title);
+
+  var meta = document.createElement('p');
+  meta.className = 'cf-card-meta';
+  meta.textContent = 'Modificado: ' + (pres.modified || '--');
+  body.appendChild(meta);
+
+  var actions = document.createElement('div');
+  actions.className = 'cf-card-actions';
+
+  var viewerUrl = 'viewer/?id=' + encodeURIComponent(pres.id);
+  if (scriptUrl) viewerUrl += '&script=' + encodeURIComponent(scriptUrl);
+
+  var present = document.createElement('a');
+  present.className = 'cf-btn-present';
+  present.href = viewerUrl;
+  present.textContent = t('card_present');
+  actions.appendChild(present);
+
+  if (pres.url) {
+    var edit = document.createElement('a');
+    edit.className = 'cf-btn-edit';
+    edit.href = pres.url;
+    edit.target = '_blank';
+    edit.rel = 'noopener noreferrer';
+    edit.textContent = t('card_edit');
+    actions.appendChild(edit);
+  }
+
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+function buildSkeletonCard() {
+  var card = document.createElement('div');
+  card.className = 'cf-card cf-card-skeleton';
+  card.innerHTML =
+    '<div class="cf-card-thumb cf-skeleton cf-card-thumb-sk"></div>' +
+    '<div class="cf-card-body">' +
+      '<div class="cf-skeleton cf-sk-line" style="margin-bottom:10px"></div>' +
+      '<div class="cf-skeleton cf-sk-line short"></div>' +
+    '</div>';
+  return card;
+}
+
+function buildStateBlock(html) {
+  var div = document.createElement('div');
+  div.className = 'cf-state-block';
+  div.innerHTML = html;
+  return div;
+}
+
+var grid = document.getElementById('cf-grid');
+
+function renderCards(presentations) {
+  // Clear everything except the demo card (always first)
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+
+  if (!presentations) return;
+
+  if (presentations.length === 0) {
+    grid.appendChild(buildStateBlock('<p>' + t('state_empty_msg') + '</p>'));
+    return;
+  }
+
+  presentations.forEach(function(pres, i) {
+    grid.appendChild(buildCard(pres, i));
+  });
+}
+
+function showSkeletons() {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  for (var i = 0; i < 3; i++) grid.appendChild(buildSkeletonCard());
+}
+
+function showNoScriptState() {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  grid.appendChild(buildStateBlock(
+    '<p>' + t('state_no_script_msg') + '</p>' +
+    '<button class="cf-inline-btn" id="state-settings-btn">' + t('state_no_script_btn') + '</button>'
+  ));
+  var btn = document.getElementById('state-settings-btn');
+  if (btn) btn.addEventListener('click', openSettings);
+}
+
+function showErrorState(msg) {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  grid.appendChild(buildStateBlock(
+    '<p style="color:#ef4444">' + (msg || 'Erro ao carregar') + '</p>' +
+    '<button class="cf-inline-btn" id="state-retry-btn">' + t('state_error_btn') + '</button>'
+  ));
+  var btn = document.getElementById('state-retry-btn');
+  if (btn) btn.addEventListener('click', loadPresentations);
+}
+
+async function loadPresentations() {
+  var scriptUrl = localStorage.getItem('cf_script_url') || '';
+  if (!scriptUrl) { showNoScriptState(); return; }
+
+  showSkeletons();
+  try {
+    var resp = await fetch(scriptUrl + '?action=list');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    renderCards(data.lessons || []);
+  } catch (err) {
+    showErrorState(err.message);
+  }
+}
+
+function showDashboard() {
+  showScreen('screen-dashboard');
+  loadPresentations();
+}
+
+document.getElementById('refresh-btn').addEventListener('click', loadPresentations);
+
+// ---------------------------------------------------------------------------
+// Settings drawer
+// ---------------------------------------------------------------------------
+
+var overlay = document.getElementById('settings-overlay');
+var drawer  = document.getElementById('settings-drawer');
+
+function openSettings() {
+  document.getElementById('settings-script-url').value = localStorage.getItem('cf_script_url') || '';
+  document.getElementById('settings-save-msg').textContent = '';
+  overlay.hidden = false;
+  drawer.hidden = false;
+  requestAnimationFrame(function() {
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+  });
+}
+
+function closeSettings() {
+  overlay.classList.remove('open');
+  drawer.classList.remove('open');
+  setTimeout(function() {
+    overlay.hidden = true;
+    drawer.hidden = true;
+  }, 300);
+}
+
+document.getElementById('settings-btn').addEventListener('click', openSettings);
+document.getElementById('settings-close').addEventListener('click', closeSettings);
+overlay.addEventListener('click', closeSettings);
+
+document.getElementById('settings-save-btn').addEventListener('click', function() {
+  var url = document.getElementById('settings-script-url').value.trim();
+  localStorage.setItem('cf_script_url', url);
+  document.getElementById('settings-save-msg').textContent = t('save_ok');
+  setTimeout(function() {
+    document.getElementById('settings-save-msg').textContent = '';
+  }, 3000);
+  loadPresentations();
+});
+
+// Change password
+document.getElementById('show-change-pw-btn').addEventListener('click', function() {
+  var form = document.getElementById('change-pw-form');
+  form.hidden = !form.hidden;
+  if (!form.hidden) document.getElementById('change-pw-current').focus();
+});
+
+document.getElementById('change-pw-save-btn').addEventListener('click', async function() {
+  var cur     = document.getElementById('change-pw-current').value;
+  var newPw   = document.getElementById('change-pw-new').value;
+  var confirm = document.getElementById('change-pw-confirm').value;
+  var err     = document.getElementById('change-pw-error');
+  err.textContent = '';
+
+  var curHash = await hashPw(cur);
+  if (curHash !== localStorage.getItem(PW_KEY)) { err.textContent = t('error_pw_current_wrong'); return; }
+  if (newPw.length < 6)  { err.textContent = t('error_pw_short'); return; }
+  if (newPw !== confirm)  { err.textContent = t('error_pw_match'); return; }
+
+  localStorage.setItem(PW_KEY, await hashPw(newPw));
+  document.getElementById('change-pw-current').value = '';
+  document.getElementById('change-pw-new').value = '';
+  document.getElementById('change-pw-confirm').value = '';
+  err.style.color = 'var(--primary)';
+  err.textContent = t('change_pw_ok');
+  setTimeout(function() {
+    err.textContent = '';
+    err.style.color = '';
+    document.getElementById('change-pw-form').hidden = true;
+  }, 2500);
 });
 
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
-applyLang(currentLang);
+init();
 </script>
 </body>
 </html>
