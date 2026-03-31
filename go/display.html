@@ -339,28 +339,38 @@
 <div id="dbg-wrap">
   <button id="dbg-btn" onclick="dbgToggle()" title="Debug panel">DBG</button>
   <div id="dbg-panel">
-    <div id="dbg-head"><span>Debug · display</span><button onclick="dbgClear()">clear</button></div>
+    <div id="dbg-head">
+      <span>Debug · display</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="dbgCopy()" title="Copy log">copy</button>
+        <button onclick="dbgDock()" id="dbg-dock-btn" title="Dock">dock</button>
+        <button onclick="dbgClear()">clear</button>
+      </div>
+    </div>
     <div id="dbg-log"></div>
   </div>
 </div>
 <style>
-  #dbg-wrap  { position:fixed; bottom:12px; right:12px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-family:monospace; font-size:11px; }
-  #dbg-btn   { background:#1a1a1a; color:#4f4; border:1px solid #333; border-radius:4px; padding:3px 9px; cursor:pointer; opacity:0.6; }
-  #dbg-btn:hover { opacity:1; }
-  #dbg-panel { display:none; background:rgba(12,12,12,0.95); color:#ccc; border:1px solid #333; border-radius:8px; width:340px; max-height:280px; flex-direction:column; overflow:hidden; }
-  #dbg-panel.open { display:flex; }
-  #dbg-head  { display:flex; justify-content:space-between; align-items:center; padding:5px 10px; border-bottom:1px solid #2a2a2a; flex-shrink:0; }
-  #dbg-head span { color:#4f4; font-weight:bold; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; }
+  #dbg-wrap        { position:fixed; bottom:12px; right:12px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-family:monospace; font-size:11px; }
+  #dbg-wrap.docked { bottom:0; right:0; top:0; justify-content:stretch; gap:0; }
+  #dbg-btn         { background:#1a1a1a; color:#4f4; border:1px solid #333; border-radius:4px; padding:3px 9px; cursor:pointer; opacity:0.6; }
+  #dbg-btn:hover   { opacity:1; }
+  #dbg-wrap.docked #dbg-btn { display:none; }
+  #dbg-panel       { display:none; background:rgba(12,12,12,0.95); color:#ccc; border:1px solid #333; border-radius:8px; width:340px; max-height:280px; flex-direction:column; overflow:hidden; }
+  #dbg-panel.open  { display:flex; }
+  #dbg-wrap.docked #dbg-panel { width:360px; max-height:none; height:100vh; border-radius:0; border-right:none; border-top:none; border-bottom:none; }
+  #dbg-head        { display:flex; justify-content:space-between; align-items:center; padding:5px 10px; border-bottom:1px solid #2a2a2a; flex-shrink:0; }
+  #dbg-head span   { color:#4f4; font-weight:bold; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; }
   #dbg-head button { background:none; border:none; color:#555; cursor:pointer; font-family:monospace; font-size:10px; padding:0; }
   #dbg-head button:hover { color:#aaa; }
-  #dbg-log   { overflow-y:auto; flex:1; padding:4px 8px; }
-  .dl        { display:flex; gap:6px; padding:1px 0; border-bottom:1px solid #1a1a1a; font-size:10px; line-height:1.5; word-break:break-all; }
-  .dl-t      { color:#444; flex-shrink:0; }
-  .dl-info   { color:#bbb; }
-  .dl-poll   { color:#468; }
-  .dl-warn   { color:#c80; }
-  .dl-error  { color:#f44; font-weight:bold; }
-  .dl-ok     { color:#4a4; }
+  #dbg-log         { overflow-y:auto; flex:1; padding:4px 8px; }
+  .dl              { display:flex; gap:6px; padding:1px 0; border-bottom:1px solid #1a1a1a; font-size:10px; line-height:1.5; word-break:break-all; }
+  .dl-t            { color:#444; flex-shrink:0; }
+  .dl-info  { color:#bbb; }
+  .dl-poll  { color:#468; }
+  .dl-warn  { color:#c80; }
+  .dl-error { color:#f44; font-weight:bold; }
+  .dl-ok    { color:#4a4; }
 </style>
 <script>
   function dbg(type, msg) {
@@ -377,6 +387,19 @@
   function _dbgEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function dbgToggle() { document.getElementById('dbg-panel').classList.toggle('open'); }
   function dbgClear()  { document.getElementById('dbg-log').innerHTML = ''; }
+  function dbgCopy() {
+    const lines = Array.from(document.querySelectorAll('.dl'))
+      .map(el => { const s = el.querySelectorAll('span'); return s[0].textContent + ' ' + s[1].textContent; });
+    navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
+  }
+  function dbgDock() {
+    const wrap = document.getElementById('dbg-wrap');
+    const panel = document.getElementById('dbg-panel');
+    wrap.classList.toggle('docked');
+    const docked = wrap.classList.contains('docked');
+    document.getElementById('dbg-dock-btn').textContent = docked ? 'undock' : 'dock';
+    panel.classList.add('open');
+  }
 </script>
 </body>
 </html>
