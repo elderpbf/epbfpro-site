@@ -610,47 +610,97 @@ body {
   line-height: 1.5;
 }
 
-/* Custom theme list items */
-.cf-theme-item {
-  display: flex;
-  align-items: center;
+/* Visual theme grid */
+.cf-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(20,184,166,.1);
-  font-size: 0.85rem;
 }
 
-.cf-theme-item:last-child { border-bottom: none; }
-
-.cf-theme-swatches {
-  display: flex;
-  gap: 3px;
-}
-
-.cf-theme-swatch {
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,.2);
-  flex-shrink: 0;
-}
-
-.cf-theme-item-name {
-  flex: 1;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.cf-theme-delete {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
+.cf-theme-card {
+  border-radius: 8px;
+  border: 2px solid transparent;
   cursor: pointer;
+  overflow: hidden;
+  transition: border-color .2s, transform .15s;
+  outline: none;
+}
+
+.cf-theme-card:hover { transform: translateY(-2px); }
+
+.cf-theme-card.cf-selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(20,184,166,.3);
+}
+
+.cf-theme-card-preview {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  aspect-ratio: 16/9;
+}
+
+.cf-theme-card-heading {
   font-size: 1rem;
-  padding: 0 4px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: 'Inter', sans-serif;
+}
+
+.cf-theme-card-bar {
+  height: 2px;
+  border-radius: 1px;
+  width: 80%;
+}
+
+.cf-theme-card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.cf-theme-card-line {
+  height: 2px;
+  border-radius: 1px;
+  opacity: 0.45;
+}
+
+.cf-theme-card-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px 2px;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Delete button on custom theme cards */
+.cf-theme-card-delete {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 18px; height: 18px;
+  background: rgba(0,0,0,.5);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity .15s;
   line-height: 1;
 }
 
-.cf-theme-delete:hover { color: #ef4444; }
+.cf-theme-card:hover .cf-theme-card-delete { opacity: 1; }
+.cf-theme-card-delete:hover { background: rgba(239,68,68,.8); }
+
+.cf-theme-card-wrap {
+  position: relative;
+}
 
 /* =========================================================
    THEME TOGGLE (reuse site classes, inline SVG icon)
@@ -802,11 +852,8 @@ body {
 
   <!-- Theme -->
   <h3 data-key="settings_theme_section">Tema de apresentação</h3>
-  <div class="cf-field">
-    <label data-key="settings_theme_label">Tema padrão</label>
-    <select id="settings-theme-select" class="cf-select"></select>
-  </div>
-  <p class="cf-hint" data-key="settings_theme_hint">Aplicado a todas as apresentações ao clicar em Apresentar.</p>
+  <p class="cf-hint" style="margin-bottom:0.75rem" data-key="settings_theme_hint">Aplicado a todas as apresentações ao clicar em Apresentar.</p>
+  <div id="settings-theme-grid" class="cf-theme-grid"></div>
 
   <div style="margin-top:1.25rem">
     <button class="cf-change-pw-btn" id="show-theme-gen-btn" data-key="settings_theme_gen_btn">+ Criar tema com IA</button>
@@ -832,7 +879,6 @@ body {
       </div>
     </div>
 
-    <div id="custom-themes-list" style="margin-top:1rem"></div>
   </div>
 
   <hr>
@@ -1348,7 +1394,23 @@ document.getElementById('change-pw-save-btn').addEventListener('click', async fu
 // Theme management
 // ---------------------------------------------------------------------------
 
+// Actual colors for each built-in Reveal.js theme
 var BUILTIN_THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
+
+var THEME_DATA = {
+  black:     { bg: '#191919', heading: '#fff',     accent: '#42affa', text: '#fff'     },
+  white:     { bg: '#fff',    heading: '#222',     accent: '#2a76dd', text: '#222'     },
+  league:    { bg: '#1a1a2e', heading: '#eee',     accent: '#f6c90e', text: '#eee'     },
+  beige:     { bg: '#f7f2d3', heading: '#333',     accent: '#8b743d', text: '#333'     },
+  night:     { bg: '#1c1e20', heading: '#eee',     accent: '#e7ad52', text: '#eee'     },
+  serif:     { bg: '#f0ede0', heading: '#383d3d',  accent: '#8b4513', text: '#383d3d'  },
+  simple:    { bg: '#fff',    heading: '#333',     accent: '#333',    text: '#444'     },
+  solarized: { bg: '#002b36', heading: '#93a1a1',  accent: '#268bd2', text: '#657b83'  },
+  moon:      { bg: '#002b36', heading: '#93a1a1',  accent: '#00bcd4', text: '#839496'  },
+  dracula:   { bg: '#282a36', heading: '#f8f8f2',  accent: '#bd93f9', text: '#f8f8f2'  },
+  sky:       { bg: '#add9e4', heading: '#003b4f',  accent: '#007da3', text: '#003b4f'  },
+  blood:     { bg: '#2a0000', heading: '#eee',     accent: '#a23', text: '#eee'        }
+};
 
 function getCustomThemes() {
   return JSON.parse(localStorage.getItem('cf_custom_themes') || '[]');
@@ -1362,81 +1424,147 @@ function getActiveTheme() {
   return localStorage.getItem('cf_theme') || 'black';
 }
 
-function populateThemeSelect() {
-  var sel = document.getElementById('settings-theme-select');
-  sel.innerHTML = '';
+function renderThemeGrid() {
+  var grid = document.getElementById('settings-theme-grid');
+  grid.innerHTML = '';
+  var active = getActiveTheme();
 
+  // Built-in themes
   BUILTIN_THEMES.forEach(function(t) {
-    var opt = document.createElement('option');
-    opt.value = t;
-    opt.textContent = t.charAt(0).toUpperCase() + t.slice(1);
-    sel.appendChild(opt);
-  });
+    var d = THEME_DATA[t] || { bg: '#222', heading: '#fff', accent: '#aaa', text: '#ccc' };
+    var wrap = document.createElement('div');
+    wrap.className = 'cf-theme-card-wrap';
 
-  getCustomThemes().forEach(function(ct) {
-    var opt = document.createElement('option');
-    opt.value = 'custom:' + ct.name;
-    opt.textContent = ct.name + ' (personalizado)';
-    sel.appendChild(opt);
-  });
+    var card = document.createElement('div');
+    card.className = 'cf-theme-card' + (active === t ? ' cf-selected' : '');
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.dataset.value = t;
 
-  sel.value = getActiveTheme();
-}
+    var preview = document.createElement('div');
+    preview.className = 'cf-theme-card-preview';
+    preview.style.background = d.bg;
 
-function renderCustomThemeList() {
-  var container = document.getElementById('custom-themes-list');
-  var customs = getCustomThemes();
-  container.innerHTML = '';
+    var heading = document.createElement('div');
+    heading.className = 'cf-theme-card-heading';
+    heading.style.color = d.heading;
+    heading.textContent = 'Aa';
 
-  if (customs.length === 0) return;
+    var bar = document.createElement('div');
+    bar.className = 'cf-theme-card-bar';
+    bar.style.background = d.accent;
 
-  customs.forEach(function(ct, idx) {
-    var item = document.createElement('div');
-    item.className = 'cf-theme-item';
-
-    var swatches = document.createElement('div');
-    swatches.className = 'cf-theme-swatches';
-    var colors = [
-      ct.overrides['--r-background-color'],
-      ct.overrides['--r-heading-color'],
-      ct.overrides['--r-link-color']
-    ].filter(Boolean);
-    colors.forEach(function(c) {
-      var s = document.createElement('div');
-      s.className = 'cf-theme-swatch';
-      s.style.background = c;
-      swatches.appendChild(s);
+    var lines = document.createElement('div');
+    lines.className = 'cf-theme-card-lines';
+    [d.text, d.text].forEach(function(c) {
+      var line = document.createElement('div');
+      line.className = 'cf-theme-card-line';
+      line.style.background = c;
+      lines.appendChild(line);
     });
 
-    var name = document.createElement('span');
-    name.className = 'cf-theme-item-name';
-    name.textContent = ct.name;
+    preview.appendChild(heading);
+    preview.appendChild(bar);
+    preview.appendChild(lines);
+
+    var label = document.createElement('div');
+    label.className = 'cf-theme-card-label';
+    label.style.background = d.bg;
+    label.style.color = d.text;
+    label.textContent = t;
+
+    card.appendChild(preview);
+    card.appendChild(label);
+    wrap.appendChild(card);
+    grid.appendChild(wrap);
+
+    card.addEventListener('click', function() {
+      localStorage.setItem('cf_theme', t);
+      renderThemeGrid();
+    });
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+  });
+
+  // Custom themes
+  getCustomThemes().forEach(function(ct, idx) {
+    var ov = ct.overrides || {};
+    var bg      = ov['--r-background-color'] || '#222';
+    var heading = ov['--r-heading-color']    || '#fff';
+    var accent  = ov['--r-link-color']       || '#aaa';
+    var text    = ov['--r-main-color']       || '#ccc';
+    var key     = 'custom:' + ct.name;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'cf-theme-card-wrap';
+
+    var card = document.createElement('div');
+    card.className = 'cf-theme-card' + (active === key ? ' cf-selected' : '');
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.dataset.value = key;
+
+    var preview = document.createElement('div');
+    preview.className = 'cf-theme-card-preview';
+    preview.style.background = bg;
+
+    var hdg = document.createElement('div');
+    hdg.className = 'cf-theme-card-heading';
+    hdg.style.color = heading;
+    hdg.textContent = 'Aa';
+
+    var bar = document.createElement('div');
+    bar.className = 'cf-theme-card-bar';
+    bar.style.background = accent;
+
+    var lines = document.createElement('div');
+    lines.className = 'cf-theme-card-lines';
+    [text, text].forEach(function(c) {
+      var line = document.createElement('div');
+      line.className = 'cf-theme-card-line';
+      line.style.background = c;
+      lines.appendChild(line);
+    });
+
+    preview.appendChild(hdg);
+    preview.appendChild(bar);
+    preview.appendChild(lines);
+
+    var label = document.createElement('div');
+    label.className = 'cf-theme-card-label';
+    label.style.background = bg;
+    label.style.color = text;
+    label.textContent = ct.name + ' ✦';
 
     var del = document.createElement('button');
-    del.className = 'cf-theme-delete';
+    del.className = 'cf-theme-card-delete';
     del.textContent = '×';
     del.title = 'Excluir tema';
-    del.addEventListener('click', function() {
+    del.addEventListener('click', function(e) {
+      e.stopPropagation();
       var list = getCustomThemes();
       list.splice(idx, 1);
       saveCustomThemes(list);
-      if (getActiveTheme() === 'custom:' + ct.name) {
-        localStorage.setItem('cf_theme', 'black');
-      }
-      populateThemeSelect();
-      renderCustomThemeList();
+      if (getActiveTheme() === key) localStorage.setItem('cf_theme', 'black');
+      renderThemeGrid();
     });
 
-    item.appendChild(swatches);
-    item.appendChild(name);
-    item.appendChild(del);
-    container.appendChild(item);
+    card.appendChild(preview);
+    card.appendChild(label);
+    card.appendChild(del);
+    wrap.appendChild(card);
+    grid.appendChild(wrap);
+
+    card.addEventListener('click', function() {
+      localStorage.setItem('cf_theme', key);
+      renderThemeGrid();
+    });
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
   });
 }
-
-document.getElementById('settings-theme-select').addEventListener('change', function() {
-  localStorage.setItem('cf_theme', this.value);
-});
 
 // Theme generator toggle
 document.getElementById('show-theme-gen-btn').addEventListener('click', function() {
@@ -1506,8 +1634,7 @@ document.getElementById('theme-save-btn').addEventListener('click', function() {
   document.getElementById('theme-gen-preview').hidden = true;
   document.getElementById('theme-desc-input').value = '';
   pendingTheme = null;
-  populateThemeSelect();
-  renderCustomThemeList();
+  renderThemeGrid();
 });
 
 async function callGeminiTheme(description, apiKey) {
@@ -1562,8 +1689,7 @@ async function callGeminiTheme(description, apiKey) {
 var _origOpenSettings = openSettings;
 openSettings = function() {
   _origOpenSettings();
-  populateThemeSelect();
-  renderCustomThemeList();
+  renderThemeGrid();
   var savedKey = localStorage.getItem('cf_gemini_key') || '';
   document.getElementById('settings-gemini-key').value = savedKey;
 };
