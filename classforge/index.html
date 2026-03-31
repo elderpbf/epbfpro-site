@@ -585,6 +585,73 @@ body {
 /* Change password sub-form */
 #change-pw-form { margin-top: 1rem; }
 
+/* Shared select + textarea */
+.cf-select,
+.cf-textarea {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: var(--background);
+  border: 1.5px solid rgba(20,184,166,.25);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color .2s;
+  box-sizing: border-box;
+}
+
+.cf-select:focus,
+.cf-textarea:focus { border-color: var(--primary); }
+
+.cf-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+/* Custom theme list items */
+.cf-theme-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(20,184,166,.1);
+  font-size: 0.85rem;
+}
+
+.cf-theme-item:last-child { border-bottom: none; }
+
+.cf-theme-swatches {
+  display: flex;
+  gap: 3px;
+}
+
+.cf-theme-swatch {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.2);
+  flex-shrink: 0;
+}
+
+.cf-theme-item-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.cf-theme-delete {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.cf-theme-delete:hover { color: #ef4444; }
+
 /* =========================================================
    THEME TOGGLE (reuse site classes, inline SVG icon)
    ========================================================= */
@@ -733,6 +800,43 @@ body {
 
   <hr>
 
+  <!-- Theme -->
+  <h3 data-key="settings_theme_section">Tema de apresentação</h3>
+  <div class="cf-field">
+    <label data-key="settings_theme_label">Tema padrão</label>
+    <select id="settings-theme-select" class="cf-select"></select>
+  </div>
+  <p class="cf-hint" data-key="settings_theme_hint">Aplicado a todas as apresentações ao clicar em Apresentar.</p>
+
+  <div style="margin-top:1.25rem">
+    <button class="cf-change-pw-btn" id="show-theme-gen-btn" data-key="settings_theme_gen_btn">+ Criar tema com IA</button>
+
+    <div id="theme-gen-form" hidden style="margin-top:1rem">
+      <div class="cf-field">
+        <label data-key="settings_gemini_key_label">Chave da API Gemini</label>
+        <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
+        <p class="cf-hint" data-key="settings_gemini_key_hint">Armazenada localmente, nunca enviada a terceiros.</p>
+      </div>
+      <div class="cf-field">
+        <label data-key="settings_theme_desc_label">Descreva o tema</label>
+        <textarea id="theme-desc-input" class="cf-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano. Tipografia moderna, fundo quase preto, destaques em ciano..."></textarea>
+      </div>
+      <p class="cf-form-error" id="theme-gen-error"></p>
+      <button class="cf-save-btn" id="theme-gen-btn" data-key="settings_theme_gen_submit">Gerar com Gemini</button>
+
+      <div id="theme-gen-preview" hidden style="margin-top:1rem; padding:0.75rem; border-radius:8px; border:1px solid rgba(20,184,166,.3)">
+        <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.5rem" data-key="theme_preview_label">Pré-visualização</p>
+        <div id="theme-preview-swatches" style="display:flex; gap:6px; margin-bottom:0.75rem"></div>
+        <p id="theme-preview-name" style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:0.75rem"></p>
+        <button class="cf-save-btn" id="theme-save-btn" data-key="theme_save_btn">Salvar tema</button>
+      </div>
+    </div>
+
+    <div id="custom-themes-list" style="margin-top:1rem"></div>
+  </div>
+
+  <hr>
+
   <!-- Change password -->
   <h3 data-key="settings_security_section">Segurança</h3>
   <button class="cf-change-pw-btn" id="show-change-pw-btn" data-key="settings_change_pw_btn">Alterar senha</button>
@@ -786,6 +890,16 @@ const TRANSLATIONS = {
     settings_script_label:  'URL do Apps Script',
     settings_script_hint:   'Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.',
     settings_save_btn:      'Salvar',
+    settings_theme_section:    'Tema de apresentação',
+    settings_theme_label:      'Tema padrão',
+    settings_theme_hint:       'Aplicado a todas as apresentações ao clicar em Apresentar.',
+    settings_theme_gen_btn:    '+ Criar tema com IA',
+    settings_gemini_key_label: 'Chave da API Gemini',
+    settings_gemini_key_hint:  'Armazenada localmente, nunca enviada a terceiros.',
+    settings_theme_desc_label: 'Descreva o tema',
+    settings_theme_gen_submit: 'Gerar com Gemini',
+    theme_preview_label:       'Pré-visualização',
+    theme_save_btn:            'Salvar tema',
     settings_security_section: 'Segurança',
     settings_change_pw_btn: 'Alterar senha',
     change_pw_current:      'Senha atual',
@@ -1229,6 +1343,230 @@ document.getElementById('change-pw-save-btn').addEventListener('click', async fu
     document.getElementById('change-pw-form').hidden = true;
   }, 2500);
 });
+
+// ---------------------------------------------------------------------------
+// Theme management
+// ---------------------------------------------------------------------------
+
+var BUILTIN_THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
+
+function getCustomThemes() {
+  return JSON.parse(localStorage.getItem('cf_custom_themes') || '[]');
+}
+
+function saveCustomThemes(list) {
+  localStorage.setItem('cf_custom_themes', JSON.stringify(list));
+}
+
+function getActiveTheme() {
+  return localStorage.getItem('cf_theme') || 'black';
+}
+
+function populateThemeSelect() {
+  var sel = document.getElementById('settings-theme-select');
+  sel.innerHTML = '';
+
+  BUILTIN_THEMES.forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+    sel.appendChild(opt);
+  });
+
+  getCustomThemes().forEach(function(ct) {
+    var opt = document.createElement('option');
+    opt.value = 'custom:' + ct.name;
+    opt.textContent = ct.name + ' (personalizado)';
+    sel.appendChild(opt);
+  });
+
+  sel.value = getActiveTheme();
+}
+
+function renderCustomThemeList() {
+  var container = document.getElementById('custom-themes-list');
+  var customs = getCustomThemes();
+  container.innerHTML = '';
+
+  if (customs.length === 0) return;
+
+  customs.forEach(function(ct, idx) {
+    var item = document.createElement('div');
+    item.className = 'cf-theme-item';
+
+    var swatches = document.createElement('div');
+    swatches.className = 'cf-theme-swatches';
+    var colors = [
+      ct.overrides['--r-background-color'],
+      ct.overrides['--r-heading-color'],
+      ct.overrides['--r-link-color']
+    ].filter(Boolean);
+    colors.forEach(function(c) {
+      var s = document.createElement('div');
+      s.className = 'cf-theme-swatch';
+      s.style.background = c;
+      swatches.appendChild(s);
+    });
+
+    var name = document.createElement('span');
+    name.className = 'cf-theme-item-name';
+    name.textContent = ct.name;
+
+    var del = document.createElement('button');
+    del.className = 'cf-theme-delete';
+    del.textContent = '×';
+    del.title = 'Excluir tema';
+    del.addEventListener('click', function() {
+      var list = getCustomThemes();
+      list.splice(idx, 1);
+      saveCustomThemes(list);
+      if (getActiveTheme() === 'custom:' + ct.name) {
+        localStorage.setItem('cf_theme', 'black');
+      }
+      populateThemeSelect();
+      renderCustomThemeList();
+    });
+
+    item.appendChild(swatches);
+    item.appendChild(name);
+    item.appendChild(del);
+    container.appendChild(item);
+  });
+}
+
+document.getElementById('settings-theme-select').addEventListener('change', function() {
+  localStorage.setItem('cf_theme', this.value);
+});
+
+// Theme generator toggle
+document.getElementById('show-theme-gen-btn').addEventListener('click', function() {
+  var form = document.getElementById('theme-gen-form');
+  form.hidden = !form.hidden;
+});
+
+// Gemini theme generation
+var pendingTheme = null;
+
+document.getElementById('theme-gen-btn').addEventListener('click', async function() {
+  var apiKey = document.getElementById('settings-gemini-key').value.trim();
+  var desc   = document.getElementById('theme-desc-input').value.trim();
+  var errEl  = document.getElementById('theme-gen-error');
+  var preview = document.getElementById('theme-gen-preview');
+
+  errEl.textContent = '';
+  preview.hidden = true;
+  pendingTheme = null;
+
+  if (!apiKey) { errEl.textContent = 'Insira a chave da API Gemini.'; return; }
+  if (!desc)   { errEl.textContent = 'Descreva o tema antes de gerar.'; return; }
+
+  var btn = this;
+  btn.textContent = 'Gerando...';
+  btn.disabled = true;
+
+  try {
+    var theme = await callGeminiTheme(desc, apiKey);
+    pendingTheme = theme;
+
+    // Show swatches
+    var swatchContainer = document.getElementById('theme-preview-swatches');
+    swatchContainer.innerHTML = '';
+    var swatchColors = [
+      theme.overrides['--r-background-color'],
+      theme.overrides['--r-main-color'],
+      theme.overrides['--r-heading-color'],
+      theme.overrides['--r-link-color']
+    ].filter(Boolean);
+    swatchColors.forEach(function(c) {
+      var s = document.createElement('div');
+      s.style.cssText = 'width:28px;height:28px;border-radius:6px;background:' + c + ';border:1px solid rgba(0,0,0,.2)';
+      swatchContainer.appendChild(s);
+    });
+
+    document.getElementById('theme-preview-name').textContent = theme.name;
+    localStorage.setItem('cf_gemini_key', apiKey);
+    preview.hidden = false;
+  } catch (err) {
+    errEl.textContent = 'Erro: ' + err.message;
+  } finally {
+    btn.textContent = t('settings_theme_gen_submit');
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('theme-save-btn').addEventListener('click', function() {
+  if (!pendingTheme) return;
+  var list = getCustomThemes();
+  // Replace if same name
+  var existIdx = list.findIndex(function(x) { return x.name === pendingTheme.name; });
+  if (existIdx >= 0) list[existIdx] = pendingTheme;
+  else list.push(pendingTheme);
+  saveCustomThemes(list);
+  localStorage.setItem('cf_theme', 'custom:' + pendingTheme.name);
+  document.getElementById('theme-gen-preview').hidden = true;
+  document.getElementById('theme-desc-input').value = '';
+  pendingTheme = null;
+  populateThemeSelect();
+  renderCustomThemeList();
+});
+
+async function callGeminiTheme(description, apiKey) {
+  var prompt = 'You are a CSS theme designer for Reveal.js presentations.\n' +
+    'Generate a professional, visually cohesive theme based on this description: "' + description + '"\n\n' +
+    'Return ONLY valid JSON with this exact structure (no markdown, no explanation):\n' +
+    '{\n' +
+    '  "name": "Nome do Tema (2-3 words in Portuguese)",\n' +
+    '  "base": "black",\n' +
+    '  "overrides": {\n' +
+    '    "--r-background-color": "#hex",\n' +
+    '    "--r-main-color": "#hex",\n' +
+    '    "--r-heading-color": "#hex",\n' +
+    '    "--r-link-color": "#hex",\n' +
+    '    "--r-selection-background-color": "rgba(r,g,b,0.75)"\n' +
+    '  }\n' +
+    '}\n\n' +
+    'base must be one of: black, white, night, moon, dracula, sky, beige, serif, simple.\n' +
+    'Choose the base that best complements the described style.\n' +
+    'All color values must be valid CSS. Ensure high contrast between background and text.';
+
+  var resp = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.8 }
+      })
+    }
+  );
+
+  if (!resp.ok) {
+    var err = await resp.json().catch(function() { return {}; });
+    throw new Error(err.error && err.error.message ? err.error.message : 'HTTP ' + resp.status);
+  }
+
+  var data = await resp.json();
+  var raw = data.candidates && data.candidates[0] &&
+            data.candidates[0].content && data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+
+  if (!raw) throw new Error('Resposta vazia da API.');
+
+  // Strip markdown code fences if present
+  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/,'').trim();
+  return JSON.parse(clean);
+}
+
+// Populate themes and restore Gemini key on settings open (patch openSettings)
+var _origOpenSettings = openSettings;
+openSettings = function() {
+  _origOpenSettings();
+  populateThemeSelect();
+  renderCustomThemeList();
+  var savedKey = localStorage.getItem('cf_gemini_key') || '';
+  document.getElementById('settings-gemini-key').value = savedKey;
+};
 
 // ---------------------------------------------------------------------------
 // Boot

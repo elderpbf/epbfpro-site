@@ -99,37 +99,7 @@
   word-break: break-word;
 }
 
-/* =========================================================
-   CONTROL BAR
-   ========================================================= */
-
-#control-bar {
-  position: fixed; bottom: 16px; right: 16px;
-  display: flex; align-items: center; gap: 8px;
-  z-index: 100;
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(6px);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-family: system-ui, sans-serif;
-}
-
-#control-bar label {
-  color: #aaa; font-size: 0.75rem; margin: 0;
-}
-
-#control-bar select,
-#control-bar button {
-  font-size: 0.78rem;
-  background: rgba(255,255,255,.1);
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 4px;
-  color: #eee;
-  padding: 3px 6px;
-  cursor: pointer;
-}
-
-#control-bar button:hover { background: rgba(255,255,255,.2); }
+/* custom theme overrides injected by JS */
 
 /* =========================================================
    REVEAL.JS OVERRIDES
@@ -223,12 +193,6 @@
   <div class="slides" id="slides-container"></div>
 </div>
 
-<!-- Control bar -->
-<div id="control-bar" hidden>
-  <label>Theme</label>
-  <select id="theme-select"></select>
-  <button id="copy-link-btn" hidden>Copy link</button>
-</div>
 
 <script type="module">
 import Reveal from 'https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.esm.js';
@@ -242,7 +206,7 @@ import RevealMarkdown from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/mark
 
 const THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
 
-const ALL_SCREENS = ['setup-screen','loading-screen','error-screen','reveal-container','control-bar'];
+const ALL_SCREENS = ['setup-screen','loading-screen','error-screen','reveal-container'];
 
 // ---------------------------------------------------------------------------
 // Security helpers
@@ -263,26 +227,32 @@ function themeUrl(name) {
 function setTheme(name) {
   if (!THEMES.includes(name)) name = 'black';
   document.getElementById('reveal-theme').href = themeUrl(name);
-  document.getElementById('theme-select').value = name;
-  localStorage.setItem('cf_theme', name);
+}
+
+function applyCustomTheme(themeName) {
+  const customs = JSON.parse(localStorage.getItem('cf_custom_themes') || '[]');
+  const theme = customs.find(t => t.name === themeName);
+  if (!theme) { setTheme('black'); return; }
+  setTheme(theme.base || 'black');
+  let el = document.getElementById('cf-theme-overrides');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'cf-theme-overrides';
+    document.head.appendChild(el);
+  }
+  const css = Object.entries(theme.overrides || {}).map(([k,v]) => k+':'+v).join(';');
+  el.textContent = '.reveal{' + css + '}';
+}
+
+function initTheme(name) {
+  if (name && name.startsWith('custom:')) applyCustomTheme(name.slice(7));
+  else setTheme(name || 'black');
 }
 
 function resolveTheme(lessonTheme) {
   const params = new URLSearchParams(location.search);
   return params.get('theme') || lessonTheme || localStorage.getItem('cf_theme') || 'black';
 }
-
-// Populate theme dropdown
-(function initThemeSelect() {
-  const sel = document.getElementById('theme-select');
-  for (const t of THEMES) {
-    const opt = document.createElement('option');
-    opt.value = t;
-    opt.textContent = t.charAt(0).toUpperCase() + t.slice(1);
-    sel.appendChild(opt);
-  }
-  sel.addEventListener('change', () => setTheme(sel.value));
-})();
 
 // ---------------------------------------------------------------------------
 // Screen management
@@ -515,10 +485,8 @@ async function showPresentation(lesson, isDemo) {
     container.appendChild(buildSlide(s));
   }
 
-  setTheme(resolveTheme(lesson.theme));
-  showOnly(['reveal-container', 'control-bar']);
-
-  document.getElementById('copy-link-btn').hidden = !!isDemo;
+  initTheme(resolveTheme(lesson.theme));
+  showOnly('reveal-container');
 
   if (!revealInited) {
     await Reveal.initialize({
@@ -575,23 +543,6 @@ document.getElementById('demo-btn').addEventListener('click', () => {
 
 document.getElementById('back-btn').addEventListener('click', () => showSetup());
 
-document.getElementById('copy-link-btn').addEventListener('click', async () => {
-  const params = new URLSearchParams(location.search);
-  const id = params.get('id') || '';
-  const script = params.get('script') || localStorage.getItem('cf_script_url') || '';
-  const base = location.href.split('?')[0].split('#')[0];
-  const shareUrl = base + '?id=' + encodeURIComponent(id) + '&script=' + encodeURIComponent(script);
-
-  try {
-    await navigator.clipboard.writeText(shareUrl);
-    const btn = document.getElementById('copy-link-btn');
-    const prev = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = prev; }, 2000);
-  } catch (e) {
-    showError('Could not copy. Share URL: ' + shareUrl);
-  }
-});
 
 // ---------------------------------------------------------------------------
 // Demo content
