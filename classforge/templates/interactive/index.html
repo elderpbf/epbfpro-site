@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apresentação</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!--
+  ============================================================
+  ClassForge Interactive Presentation Template
+  ============================================================
+  Self-contained single file. Fork this for each presentation.
+  Edit the CONFIGURATION block below, then update the content
+  sections in <main>.
+
+  SECTIONS: Add/remove <section class="pres-section"> blocks.
+  The sidebar is auto-built from sections with data-title.
+
+  COMPONENTS available:
+    .pres-two-col           Two-column grid
+    .pres-three-col         Three-column equal grid
+    .pres-card              Elevated card
+    .pres-callout           Info/warning/success callout
+    .pres-stat              Big number + label
+    .pres-timeline          Vertical timeline
+    .pres-collapsible       Click to expand
+    .pres-tabs              Tabbed content
+    .pres-quote             Styled blockquote
+    .pres-img-frame         Rounded image with shadow
+    .pres-badge             Pill tag
+    .pres-list-check        Checklist with icons
+    .pres-progress-bar      Horizontal progress
+    .pres-highlight         Inline text highlight
+  ============================================================
+-->
+
+<style>
+
+/* ============================================================
+   CONFIGURATION — edit these to match your brand
+   ============================================================ */
+:root {
+  --pres-primary:   #14b8a6;   /* main accent (teal) */
+  --pres-secondary: #6366f1;   /* secondary accent (indigo) */
+  --pres-bg:        #0f172a;   /* page background */
+  --pres-surface:   #1e293b;   /* card/section surface */
+  --pres-surface2:  #263348;   /* elevated surface */
+  --pres-border:    rgba(255,255,255,.08);
+  --pres-text:      #cbd5e1;   /* body text */
+  --pres-heading:   #f1f5f9;   /* headings */
+  --pres-muted:     #64748b;   /* muted text */
+  --pres-accent:    #f59e0b;   /* highlight accent (amber) */
+  --pres-danger:    #ef4444;
+  --pres-success:   #22c55e;
+  --pres-warning:   #f59e0b;
+  --pres-info:      #38bdf8;
+  --pres-font:      'Inter', system-ui, sans-serif;
+  --pres-sidebar-w: 260px;
+  --pres-topbar-h:  60px;
+  --pres-radius:    10px;
+}
+
+/* ============================================================
+   RESET + BASE
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+[hidden] { display: none !important; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--pres-font);
+  background: var(--pres-bg);
+  color: var(--pres-text);
+  line-height: 1.65;
+  font-size: 16px;
+}
+
+h1, h2, h3, h4, h5 {
+  color: var(--pres-heading);
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+a { color: var(--pres-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+p { margin-bottom: 0.9rem; }
+p:last-child { margin-bottom: 0; }
+
+ul, ol { padding-left: 1.4rem; }
+li { margin-bottom: 0.3rem; }
+
+code {
+  font-family: 'Consolas', 'Menlo', monospace;
+  font-size: 0.88em;
+  background: rgba(255,255,255,.08);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: var(--pres-info);
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+
+.pres-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--pres-topbar-h);
+  background: rgba(15,23,42,.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--pres-border);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  gap: 1rem;
+  z-index: 100;
+}
+
+.pres-topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.pres-topbar-logo img {
+  height: 32px;
+  border-radius: 6px;
+}
+
+.pres-topbar-brand {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--pres-heading);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.pres-topbar-title {
+  flex: 1;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--pres-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 1rem;
+}
+
+.pres-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.pres-topbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--pres-border);
+  border-radius: 6px;
+  color: var(--pres-muted);
+  font-family: var(--pres-font);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+
+.pres-topbar-btn:hover {
+  border-color: var(--pres-primary);
+  color: var(--pres-primary);
+}
+
+.pres-topbar-btn.active {
+  background: rgba(20,184,166,.12);
+  border-color: var(--pres-primary);
+  color: var(--pres-primary);
+}
+
+/* Progress bar under topbar */
+.pres-scroll-progress {
+  position: fixed;
+  top: var(--pres-topbar-h);
+  left: 0;
+  height: 2px;
+  background: var(--pres-primary);
+  z-index: 101;
+  transition: width .1s linear;
+  width: 0%;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+.pres-sidebar {
+  position: fixed;
+  top: var(--pres-topbar-h);
+  left: 0;
+  bottom: 0;
+  width: var(--pres-sidebar-w);
+  background: rgba(15,23,42,.97);
+  border-right: 1px solid var(--pres-border);
+  overflow-y: auto;
+  z-index: 90;
+  padding: 1.5rem 0;
+  transition: transform .3s ease;
+}
+
+.pres-sidebar.collapsed {
+  transform: translateX(calc(-1 * var(--pres-sidebar-w)));
+}
+
+.pres-sidebar-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pres-muted);
+  padding: 0 1.25rem 0.75rem;
+}
+
+.pres-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--pres-muted);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all .15s;
+  text-decoration: none;
+}
+
+.pres-nav-item:hover {
+  color: var(--pres-text);
+  background: rgba(255,255,255,.04);
+  text-decoration: none;
+}
+
+.pres-nav-item.active {
+  color: var(--pres-primary);
+  border-left-color: var(--pres-primary);
+  background: rgba(20,184,166,.08);
+}
+
+.pres-nav-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--pres-muted);
+  min-width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.pres-nav-item.active .pres-nav-num { color: var(--pres-primary); }
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+
+.pres-main {
+  margin-left: var(--pres-sidebar-w);
+  margin-top: var(--pres-topbar-h);
+  min-height: calc(100vh - var(--pres-topbar-h));
+  transition: margin-left .3s ease;
+}
+
+.pres-main.sidebar-collapsed {
+  margin-left: 0;
+}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+
+.pres-section {
+  padding: 3.5rem 3rem;
+  border-bottom: 1px solid var(--pres-border);
+  max-width: 1100px;
+}
+
+.pres-section:last-child { border-bottom: none; }
+
+.pres-section-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--pres-heading);
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pres-section-title::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 1.6em;
+  background: var(--pres-primary);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.pres-section-subtitle {
+  font-size: 1rem;
+  color: var(--pres-muted);
+  margin-bottom: 2rem;
+  padding-left: calc(4px + 0.75rem);
+}
+
+/* Cover section */
+.pres-cover {
+  min-height: calc(100vh - var(--pres-topbar-h));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 3rem;
+  border-bottom: 1px solid var(--pres-border);
+  background: radial-gradient(ellipse at 60% 40%, rgba(20,184,166,.12) 0%, transparent 65%),
+              radial-gradient(ellipse at 20% 80%, rgba(99,102,241,.1) 0%, transparent 60%);
+}
+
+.pres-cover-tag {
+  display: inline-block;
+  padding: 0.3rem 0.9rem;
+  background: rgba(20,184,166,.15);
+  border: 1px solid rgba(20,184,166,.3);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pres-primary);
+  margin-bottom: 1.5rem;
+}
+
+.pres-cover h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+}
+
+.pres-cover-desc {
+  font-size: 1.1rem;
+  color: var(--pres-muted);
+  max-width: 600px;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+
+.pres-cover-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--pres-muted);
+}
+
+.pres-cover-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ============================================================
+   LAYOUT HELPERS
+   ============================================================ */
+
+.pres-two-col {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.pres-two-col.equal { grid-template-columns: 1fr 1fr; }
+.pres-two-col.flip  { grid-template-columns: 2fr 3fr; }
+
+.pres-three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.pres-gap-sm { gap: 0.75rem !important; }
+.pres-gap-lg { gap: 2.5rem !important; }
+
+.pres-mt { margin-top: 1.5rem; }
+.pres-mt-sm { margin-top: 0.75rem; }
+.pres-mt-lg { margin-top: 2.5rem; }
+.pres-mb { margin-bottom: 1.5rem; }
+
+/* ============================================================
+   CARD
+   ============================================================ */
+
+.pres-card {
+  background: var(--pres-surface);
+  border: 1px solid var(--pres-border);
+  border-radius: var(--pres-radius);
+  padding: 1.5rem;
+}
+
+.pres-card.elevated {
+  background: var(--pres-surface2);
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+
+.pres-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--pres-heading);
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pres-card-title .pres-icon {
+  font-size: 1.2rem;
+}
+
+/* ============================================================
+   CALLOUT
+   ============================================================ */
+
+.pres-callout {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--pres-radius);
+  border-left: 4px solid;
+  margin: 1rem 0;
+}
+
+.pres-callout-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.pres-callout-body { flex: 1; }
+
+.pres-callout-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.pres-callout p { font-size: 0.9rem; margin-bottom: 0; }
+
+/* Variants */
+.pres-callout.info {
+  background: rgba(56,189,248,.08);
+  border-color: var(--pres-info);
+  color: var(--pres-text);
+}
+.pres-callout.info .pres-callout-title { color: var(--pres-info); }
+
+.pres-callout.success {
+  background: rgba(34,197,94,.08);
+  border-color: var(--pres-success);
+}
+.pres-callout.success .pres-callout-title { color: var(--pres-success); }
+
+.pres-callout.warning {
+  background: rgba(245,158,11,.08);
+  border-color: var(--pres-warning);
+}
+.pres-callout.warning .pres-callout-title { color: var(--pres-warning); }
+
+.pres-callout.danger {
+  background: rgba(239,68,68,.08);
+  border-color: var(--pres-danger);
+}
+.pres-callout.danger .pres-callout-title { color: var(--pres-danger); }
+
+/* ============================================================
+   STAT
+   ============================================================ */
+
+.pres-stat {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.pres-stat-number {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--pres-primary);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.pres-stat-label {
+  font-size: 0.85rem;
+  color: var(--pres-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pres-stat-desc {
+  font-size: 0.8rem;
+  color: var(--pres-muted);
+  margin-top: 0.4rem;
+}
+
+/* ============================================================
+   TIMELINE
+   ============================================================ */
+
+.pres-timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.pres-timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  bottom: 0;
+  width: 2px;
+  background: var(--pres-border);
+}
+
+.pres-timeline-item {
+  position: relative;
+  padding-bottom: 1.75rem;
+}
+
+.pres-timeline-item:last-child { padding-bottom: 0; }
+
+.pres-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -1.75rem;
+  top: 6px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--pres-surface2);
+  border: 2px solid var(--pres-primary);
+}
+
+.pres-timeline-item.done::before {
+  background: var(--pres-primary);
+}
+
+.pres-timeline-date {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--pres-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.2rem;
+}
+
+.pres-timeline-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--pres-heading);
+  margin-bottom: 0.25rem;
+}
+
+.pres-timeline-body {
+  font-size: 0.85rem;
+  color: var(--pres-muted);
+}
+
+/* ============================================================
+   COLLAPSIBLE
+   ============================================================ */
+
+.pres-collapsible {
+  border: 1px solid var(--pres-border);
+  border-radius: var(--pres-radius);
+  overflow: hidden;
+  margin: 0.75rem 0;
+}
+
+.pres-collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  cursor: pointer;
+  background: var(--pres-surface);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--pres-heading);
+  user-select: none;
+  transition: background .15s;
+}
+
+.pres-collapsible-header:hover { background: var(--pres-surface2); }
+
+.pres-collapsible-arrow {
+  font-size: 0.75rem;
+  color: var(--pres-muted);
+  transition: transform .25s;
+  flex-shrink: 0;
+}
+
+.pres-collapsible.open .pres-collapsible-arrow { transform: rotate(180deg); }
+
+.pres-collapsible-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .35s ease;
+  background: var(--pres-bg);
+}
+
+.pres-collapsible-body-inner {
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+
+.pres-tabs {}
+
+.pres-tab-headers {
+  display: flex;
+  border-bottom: 1px solid var(--pres-border);
+  margin-bottom: 1.25rem;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.pres-tab-btn {
+  padding: 0.6rem 1.1rem;
+  font-family: var(--pres-font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--pres-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+
+.pres-tab-btn:hover { color: var(--pres-text); }
+
+.pres-tab-btn.active {
+  color: var(--pres-primary);
+  border-bottom-color: var(--pres-primary);
+}
+
+.pres-tab-panel { display: none; }
+.pres-tab-panel.active { display: block; }
+
+/* ============================================================
+   QUOTE
+   ============================================================ */
+
+.pres-quote {
+  border-left: 3px solid var(--pres-primary);
+  padding: 0.75rem 1.25rem;
+  margin: 1rem 0;
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--pres-text);
+  background: rgba(20,184,166,.05);
+  border-radius: 0 var(--pres-radius) var(--pres-radius) 0;
+}
+
+.pres-quote-attr {
+  display: block;
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--pres-muted);
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+/* ============================================================
+   IMAGE
+   ============================================================ */
+
+.pres-img-frame {
+  border-radius: var(--pres-radius);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+
+.pres-img-frame img {
+  width: 100%;
+  display: block;
+}
+
+.pres-img-caption {
+  font-size: 0.78rem;
+  color: var(--pres-muted);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* ============================================================
+   BADGE
+   ============================================================ */
+
+.pres-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pres-badge.primary  { background: rgba(20,184,166,.2);  color: var(--pres-primary); }
+.pres-badge.accent   { background: rgba(245,158,11,.2);  color: var(--pres-accent); }
+.pres-badge.info     { background: rgba(56,189,248,.2);  color: var(--pres-info); }
+.pres-badge.success  { background: rgba(34,197,94,.2);   color: var(--pres-success); }
+.pres-badge.danger   { background: rgba(239,68,68,.2);   color: var(--pres-danger); }
+.pres-badge.muted    { background: rgba(100,116,139,.2); color: var(--pres-muted); }
+
+/* ============================================================
+   CHECKLIST
+   ============================================================ */
+
+.pres-list-check {
+  list-style: none;
+  padding-left: 0;
+}
+
+.pres-list-check li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+
+.pres-list-check li:last-child { border-bottom: none; }
+
+.pres-list-check .check-icon {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
+}
+
+.pres-list-check .check-icon.ok   { background: rgba(34,197,94,.2);  color: var(--pres-success); }
+.pres-list-check .check-icon.no   { background: rgba(239,68,68,.2);  color: var(--pres-danger); }
+.pres-list-check .check-icon.wait { background: rgba(245,158,11,.2); color: var(--pres-accent); }
+
+/* ============================================================
+   PROGRESS BAR
+   ============================================================ */
+
+.pres-progress-bar {
+  margin: 0.5rem 0;
+}
+
+.pres-progress-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--pres-muted);
+  margin-bottom: 0.3rem;
+}
+
+.pres-progress-bar-track {
+  height: 8px;
+  background: rgba(255,255,255,.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pres-progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--pres-primary);
+  transition: width 1s ease;
+}
+
+.pres-progress-bar-fill.accent  { background: var(--pres-accent); }
+.pres-progress-bar-fill.success { background: var(--pres-success); }
+.pres-progress-bar-fill.danger  { background: var(--pres-danger); }
+
+/* ============================================================
+   HIGHLIGHT
+   ============================================================ */
+
+.pres-highlight {
+  background: rgba(245,158,11,.2);
+  color: var(--pres-accent);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.pres-highlight.primary {
+  background: rgba(20,184,166,.2);
+  color: var(--pres-primary);
+}
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+
+.pres-divider {
+  border: none;
+  border-top: 1px solid var(--pres-border);
+  margin: 2rem 0;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.pres-footer {
+  background: rgba(15,23,42,.8);
+  border-top: 1px solid var(--pres-border);
+  padding: 1.5rem 3rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--pres-muted);
+}
+
+.pres-footer-brand {
+  font-weight: 700;
+  color: var(--pres-text);
+}
+
+.pres-footer-spacer { flex: 1; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .pres-sidebar { transform: translateX(calc(-1 * var(--pres-sidebar-w))); }
+  .pres-sidebar.mobile-open { transform: translateX(0); }
+  .pres-main { margin-left: 0; }
+  .pres-two-col { grid-template-columns: 1fr; }
+  .pres-three-col { grid-template-columns: 1fr 1fr; }
+  .pres-section { padding: 2.5rem 1.5rem; }
+  .pres-cover { padding: 3rem 1.5rem; }
+  .pres-footer { padding: 1rem 1.5rem; }
+}
+
+@media (max-width: 600px) {
+  .pres-three-col { grid-template-columns: 1fr; }
+  .pres-topbar-title { display: none; }
+}
+
+/* ============================================================
+   PRINT MODE
+   ============================================================ */
+
+@media print {
+  .pres-topbar,
+  .pres-sidebar,
+  .pres-scroll-progress,
+  .pres-topbar-btn { display: none !important; }
+
+  .pres-main { margin: 0; }
+  .pres-section { page-break-inside: avoid; padding: 2rem 1rem; border: none; }
+  .pres-collapsible-body { max-height: none !important; }
+  .pres-tab-panel { display: block !important; }
+
+  body { background: white; color: #111; }
+  h1, h2, h3, h4 { color: #111; }
+  .pres-section-title { color: #111; }
+
+  a { color: #0066cc; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     TOP BAR
+     ============================================================ -->
+<header class="pres-topbar">
+  <div class="pres-topbar-logo">
+    <!-- Replace src with your logo. Remove the img tag to hide logo. -->
+    <img src="../../img/logo.webp" alt="Logo" onerror="this.style.display='none'">
+    <span class="pres-topbar-brand" id="topbar-brand">PensoIA</span>
+  </div>
+
+  <div class="pres-topbar-title" id="topbar-title">Apresentação</div>
+
+  <div class="pres-topbar-actions">
+    <button class="pres-topbar-btn" id="btn-sidebar" title="Alternar sumário (S)">
+      &#9776; Sumário
+    </button>
+    <button class="pres-topbar-btn" id="btn-fullscreen" title="Tela cheia (F)">
+      &#9974; Tela cheia
+    </button>
+    <button class="pres-topbar-btn" id="btn-print" title="Imprimir / exportar PDF">
+      &#128424; Imprimir
+    </button>
+  </div>
+</header>
+
+<div class="pres-scroll-progress" id="scroll-progress"></div>
+
+<!-- ============================================================
+     SIDEBAR (auto-populated from sections with data-title)
+     ============================================================ -->
+<nav class="pres-sidebar" id="sidebar">
+  <div class="pres-sidebar-label">Sumário</div>
+  <div id="sidebar-nav"></div>
+</nav>
+
+<!-- ============================================================
+     MAIN CONTENT
+     Edit sections below. Each section with data-title appears
+     in the sidebar. The id is used for anchor navigation.
+     ============================================================ -->
+<main class="pres-main" id="main">
+
+  <!-- COVER (no sidebar entry — no data-title) -->
+  <section class="pres-cover" id="cover">
+    <div>
+      <div class="pres-cover-tag">Formação de Facilitadores</div>
+      <h1>Metodologias Ativas no Ensino Jurídico</h1>
+      <p class="pres-cover-desc">
+        Uma abordagem prática para transformar a sala de aula em espaço de construção coletiva do conhecimento.
+      </p>
+      <div class="pres-cover-meta">
+        <span>&#128197; Março 2026</span>
+        <span>&#127979; EJUSE</span>
+        <span>&#128100; Elder P. B. Ferreira</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 1 -->
+  <section class="pres-section" id="contexto" data-title="Contexto">
+
+    <h2 class="pres-section-title">Contexto</h2>
+    <p class="pres-section-subtitle">Por que mudar a forma de ensinar?</p>
+
+    <div class="pres-two-col">
+      <div>
+        <p>
+          O modelo tradicional de ensino tem limitações evidentes: o facilitador fala, o participante escuta. Essa dinâmica reduz o engajamento e a retenção do conhecimento.
+        </p>
+        <p>
+          As metodologias ativas invertem esse processo: o participante é protagonista. O facilitador cria condições para que o aprendizado aconteça por meio da experiência, da reflexão e da interação.
+        </p>
+
+        <div class="pres-callout info pres-mt">
+          <div class="pres-callout-icon">&#128161;</div>
+          <div class="pres-callout-body">
+            <div class="pres-callout-title">Dado de referência</div>
+            <p>Pessoas retêm 10% do que leem, 20% do que escutam, e 75% do que praticam ativamente (cone de aprendizagem de Dale).</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="pres-three-col pres-gap-sm">
+          <div class="pres-stat pres-card">
+            <div class="pres-stat-number">10%</div>
+            <div class="pres-stat-label">Leitura passiva</div>
+          </div>
+          <div class="pres-stat pres-card">
+            <div class="pres-stat-number">50%</div>
+            <div class="pres-stat-label">Discussão em grupo</div>
+          </div>
+          <div class="pres-stat pres-card">
+            <div class="pres-stat-number">75%</div>
+            <div class="pres-stat-label">Prática ativa</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- SECTION 2 -->
+  <section class="pres-section" id="metodologias" data-title="Metodologias">
+
+    <h2 class="pres-section-title">Metodologias</h2>
+    <p class="pres-section-subtitle">Principais abordagens e como aplicá-las</p>
+
+    <!-- Tabs example -->
+    <div class="pres-tabs" data-tabs>
+      <div class="pres-tab-headers">
+        <button class="pres-tab-btn active" data-tab="apb">Aprendizagem Baseada em Problemas</button>
+        <button class="pres-tab-btn" data-tab="sala-invertida">Sala Invertida</button>
+        <button class="pres-tab-btn" data-tab="gamificacao">Gamificação</button>
+      </div>
+
+      <div class="pres-tab-panel active" id="tab-apb">
+        <div class="pres-card">
+          <div class="pres-card-title"><span class="pres-icon">&#129300;</span> Aprendizagem Baseada em Problemas (ABP)</div>
+          <p>Os participantes recebem um problema real e precisam construir o conhecimento necessário para resolvê-lo. O facilitador atua como orientador, não como fonte de respostas.</p>
+          <ul class="pres-list-check pres-mt-sm">
+            <li><span class="check-icon ok">&#10003;</span> Desenvolve raciocínio crítico</li>
+            <li><span class="check-icon ok">&#10003;</span> Alta retenção de conteúdo</li>
+            <li><span class="check-icon ok">&#10003;</span> Simula situações reais</li>
+            <li><span class="check-icon wait">&#9679;</span> Requer planejamento cuidadoso</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pres-tab-panel" id="tab-sala-invertida">
+        <div class="pres-card">
+          <div class="pres-card-title"><span class="pres-icon">&#128196;</span> Sala de Aula Invertida</div>
+          <p>O conteúdo teórico é estudado antes do encontro (vídeos, textos, podcasts). O tempo em sala é dedicado exclusivamente à prática, discussão e resolução de problemas.</p>
+          <div class="pres-callout warning pres-mt-sm">
+            <div class="pres-callout-icon">&#9888;</div>
+            <div class="pres-callout-body">
+              <div class="pres-callout-title">Atenção</div>
+              <p>Requer disciplina dos participantes no estudo prévio. Defina prazos e mecanismos de acompanhamento.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pres-tab-panel" id="tab-gamificacao">
+        <div class="pres-card">
+          <div class="pres-card-title"><span class="pres-icon">&#127918;</span> Gamificação</div>
+          <p>Elementos de jogos (pontuação, rankings, desafios, recompensas) aplicados ao aprendizado para aumentar motivação e engajamento.</p>
+          <div class="pres-three-col pres-mt-sm">
+            <div class="pres-card elevated" style="text-align:center; padding:1rem">
+              <div style="font-size:1.8rem; margin-bottom:0.4rem">&#127942;</div>
+              <div style="font-size:0.8rem; font-weight:600; color:var(--pres-heading)">Pontuação</div>
+            </div>
+            <div class="pres-card elevated" style="text-align:center; padding:1rem">
+              <div style="font-size:1.8rem; margin-bottom:0.4rem">&#127941;</div>
+              <div style="font-size:0.8rem; font-weight:600; color:var(--pres-heading)">Ranking</div>
+            </div>
+            <div class="pres-card elevated" style="text-align:center; padding:1rem">
+              <div style="font-size:1.8rem; margin-bottom:0.4rem">&#9889;</div>
+              <div style="font-size:0.8rem; font-weight:600; color:var(--pres-heading)">Desafios</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- SECTION 3 -->
+  <section class="pres-section" id="planejamento" data-title="Planejamento">
+
+    <h2 class="pres-section-title">Planejamento</h2>
+    <p class="pres-section-subtitle">Etapas para estruturar uma aula ativa</p>
+
+    <div class="pres-timeline">
+      <div class="pres-timeline-item done">
+        <div class="pres-timeline-date">Etapa 1</div>
+        <div class="pres-timeline-title">Definir objetivos de aprendizagem</div>
+        <div class="pres-timeline-body">O que o participante deve saber e ser capaz de fazer ao final da aula? Use verbos de ação (analisar, aplicar, criar, avaliar).</div>
+      </div>
+      <div class="pres-timeline-item done">
+        <div class="pres-timeline-date">Etapa 2</div>
+        <div class="pres-timeline-title">Escolher a metodologia adequada</div>
+        <div class="pres-timeline-body">A escolha depende do objetivo, do perfil do grupo, do tempo disponível e dos recursos da instituição.</div>
+      </div>
+      <div class="pres-timeline-item">
+        <div class="pres-timeline-date">Etapa 3</div>
+        <div class="pres-timeline-title">Criar o material de apoio</div>
+        <div class="pres-timeline-body">Casos práticos, vídeos, fichas de trabalho, questões disparadoras. O material deve provocar, não entregar respostas prontas.</div>
+      </div>
+      <div class="pres-timeline-item">
+        <div class="pres-timeline-date">Etapa 4</div>
+        <div class="pres-timeline-title">Planejar a avaliação</div>
+        <div class="pres-timeline-body">Diagnóstica (antes), formativa (durante) e somativa (após). Defina os critérios com antecedência.</div>
+      </div>
+    </div>
+
+    <!-- Collapsibles -->
+    <div class="pres-mt">
+      <div class="pres-collapsible">
+        <div class="pres-collapsible-header">
+          &#128161; Perguntas disparadoras eficazes
+          <span class="pres-collapsible-arrow">&#9660;</span>
+        </div>
+        <div class="pres-collapsible-body">
+          <div class="pres-collapsible-body-inner">
+            <p>Boas perguntas disparadoras têm algumas características em comum:</p>
+            <ul>
+              <li>Não têm resposta única ou óbvia</li>
+              <li>Conectam o conteúdo à experiência do participante</li>
+              <li>Geram desconforto produtivo</li>
+              <li>Estimulam pesquisa e discussão</li>
+            </ul>
+            <div class="pres-quote pres-mt-sm">
+              "A questão não é dar respostas corretas, mas fazer as perguntas certas."
+              <span class="pres-quote-attr">Claude Lévi-Strauss</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pres-collapsible">
+        <div class="pres-collapsible-header">
+          &#128203; Checklist de planejamento
+          <span class="pres-collapsible-arrow">&#9660;</span>
+        </div>
+        <div class="pres-collapsible-body">
+          <div class="pres-collapsible-body-inner">
+            <ul class="pres-list-check">
+              <li><span class="check-icon ok">&#10003;</span> Objetivos de aprendizagem definidos com verbos de ação</li>
+              <li><span class="check-icon ok">&#10003;</span> Metodologia escolhida e justificada</li>
+              <li><span class="check-icon wait">&#9679;</span> Material de apoio preparado com antecedência mínima de 48h</li>
+              <li><span class="check-icon no">&#10005;</span> Critérios de avaliação comunicados aos participantes</li>
+              <li><span class="check-icon no">&#10005;</span> Plano B para imprevistos (tecnologia, ausências)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- SECTION 4 -->
+  <section class="pres-section" id="resultados" data-title="Resultados">
+
+    <h2 class="pres-section-title">Resultados Esperados</h2>
+    <p class="pres-section-subtitle">Indicadores de sucesso do programa</p>
+
+    <div class="pres-three-col">
+      <div class="pres-card elevated">
+        <div class="pres-card-title"><span class="pres-icon">&#127919;</span> Engajamento</div>
+        <div class="pres-progress-bar pres-mt-sm">
+          <div class="pres-progress-bar-label"><span>Meta: 85% de participação ativa</span><span>75%</span></div>
+          <div class="pres-progress-bar-track"><div class="pres-progress-bar-fill" style="width:75%"></div></div>
+        </div>
+        <div class="pres-progress-bar pres-mt-sm">
+          <div class="pres-progress-bar-label"><span>Satisfação geral</span><span>90%</span></div>
+          <div class="pres-progress-bar-track"><div class="pres-progress-bar-fill" style="width:90%"></div></div>
+        </div>
+      </div>
+
+      <div class="pres-card elevated">
+        <div class="pres-card-title"><span class="pres-icon">&#128200;</span> Retenção</div>
+        <div class="pres-progress-bar pres-mt-sm">
+          <div class="pres-progress-bar-label"><span>Conhecimento retido (30 dias)</span><span>68%</span></div>
+          <div class="pres-progress-bar-track"><div class="pres-progress-bar-fill accent" style="width:68%"></div></div>
+        </div>
+        <div class="pres-progress-bar pres-mt-sm">
+          <div class="pres-progress-bar-label"><span>Aplicação prática</span><span>55%</span></div>
+          <div class="pres-progress-bar-track"><div class="pres-progress-bar-fill accent" style="width:55%"></div></div>
+        </div>
+      </div>
+
+      <div class="pres-card elevated">
+        <div class="pres-card-title"><span class="pres-icon">&#9889;</span> Impacto</div>
+        <ul class="pres-list-check pres-mt-sm">
+          <li><span class="check-icon ok">&#10003;</span> Facilitadores mais confiantes</li>
+          <li><span class="check-icon ok">&#10003;</span> Aulas mais dinâmicas</li>
+          <li><span class="check-icon wait">&#9679;</span> Avaliação em andamento</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pres-callout success pres-mt">
+      <div class="pres-callout-icon">&#10003;</div>
+      <div class="pres-callout-body">
+        <div class="pres-callout-title">Próximos passos</div>
+        <p>Aplicação das metodologias nas turmas do segundo semestre com acompanhamento mensal e relatório consolidado em dezembro.</p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- SECTION 5 -->
+  <section class="pres-section" id="recursos" data-title="Recursos">
+
+    <h2 class="pres-section-title">Recursos e Referências</h2>
+    <p class="pres-section-subtitle">Para aprofundamento</p>
+
+    <div class="pres-two-col equal">
+      <div>
+        <h3 style="font-size:0.95rem; margin-bottom:1rem; color:var(--pres-muted); text-transform:uppercase; letter-spacing:0.05em;">Leituras recomendadas</h3>
+        <div class="pres-card">
+          <p style="font-size:0.88rem; line-height:1.8;">
+            <span class="pres-badge primary pres-mb">Livro</span><br>
+            <strong>Sala de Aula Invertida</strong> - Jonathan Bergmann &amp; Aaron Sams<br><br>
+            <span class="pres-badge accent">Artigo</span><br>
+            <strong>Active Learning: Creating Excitement in the Classroom</strong> - Bonwell &amp; Eison<br><br>
+            <span class="pres-badge info">Manual</span><br>
+            <strong>Guia de Metodologias Ativas</strong> - CNJ (2023)
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-size:0.95rem; margin-bottom:1rem; color:var(--pres-muted); text-transform:uppercase; letter-spacing:0.05em;">Contato e suporte</h3>
+        <div class="pres-card">
+          <p style="font-size:0.9rem; margin-bottom:1rem;">
+            Em caso de dúvidas sobre a aplicação das metodologias ou necessidade de suporte na elaboração dos planos de aula, entre em contato:
+          </p>
+          <p style="font-size:0.88rem; color:var(--pres-muted);">
+            &#128231; <a href="mailto:formacao@ejuse.jus.br">formacao@ejuse.jus.br</a><br>
+            &#128222; (79) XXXX-XXXX<br>
+            &#128197; Seg a Sex, 08h-17h
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="pres-footer">
+    <span class="pres-footer-brand">PensoIA</span>
+    <span>Escola Judicial do Sergipe</span>
+    <span class="pres-footer-spacer"></span>
+    <span id="footer-date"></span>
+  </footer>
+
+</main>
+
+<script>
+// ============================================================
+// CONFIG — update to match your presentation
+// ============================================================
+var CONFIG = {
+  title: 'Metodologias Ativas no Ensino Jurídico',
+  brand: 'PensoIA'
+};
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('topbar-title').textContent = CONFIG.title;
+  document.getElementById('topbar-brand').textContent = CONFIG.brand;
+  document.getElementById('footer-date').textContent = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+  buildSidebar();
+  initCollapsibles();
+  initTabs();
+  initScrollProgress();
+  initSidebarHighlight();
+  initTopbarButtons();
+});
+
+// ============================================================
+// SIDEBAR — auto-built from sections with data-title
+// ============================================================
+function buildSidebar() {
+  var nav = document.getElementById('sidebar-nav');
+  var sections = document.querySelectorAll('.pres-section[data-title], .pres-cover[data-title]');
+  sections.forEach(function(sec, i) {
+    var a = document.createElement('a');
+    a.className = 'pres-nav-item';
+    a.href = '#' + sec.id;
+    a.innerHTML = '<span class="pres-nav-num">' + (i + 1) + '</span>' + sec.dataset.title;
+    a.addEventListener('click', function(e) {
+      // On mobile, close sidebar after click
+      if (window.innerWidth < 900) {
+        document.getElementById('sidebar').classList.remove('mobile-open');
+      }
+    });
+    nav.appendChild(a);
+  });
+}
+
+// ============================================================
+// SCROLL PROGRESS BAR
+// ============================================================
+function initScrollProgress() {
+  var bar = document.getElementById('scroll-progress');
+  window.addEventListener('scroll', function() {
+    var doc = document.documentElement;
+    var scrollTop = doc.scrollTop || document.body.scrollTop;
+    var scrollHeight = doc.scrollHeight - doc.clientHeight;
+    var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    bar.style.width = pct + '%';
+  }, { passive: true });
+}
+
+// ============================================================
+// SIDEBAR ACTIVE HIGHLIGHT (IntersectionObserver)
+// ============================================================
+function initSidebarHighlight() {
+  var navItems = document.querySelectorAll('.pres-nav-item');
+  var sections = [];
+  navItems.forEach(function(item) {
+    var id = item.getAttribute('href').slice(1);
+    var sec = document.getElementById(id);
+    if (sec) sections.push({ id: id, el: sec, nav: item });
+  });
+
+  if (!sections.length || !window.IntersectionObserver) return;
+
+  var activeId = null;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        activeId = entry.target.id;
+        sections.forEach(function(s) {
+          s.nav.classList.toggle('active', s.id === activeId);
+        });
+      }
+    });
+  }, { threshold: 0.25 });
+
+  sections.forEach(function(s) { observer.observe(s.el); });
+}
+
+// ============================================================
+// COLLAPSIBLES
+// ============================================================
+function initCollapsibles() {
+  document.querySelectorAll('.pres-collapsible').forEach(function(col) {
+    var header = col.querySelector('.pres-collapsible-header');
+    var body   = col.querySelector('.pres-collapsible-body');
+    if (!header || !body) return;
+
+    header.addEventListener('click', function() {
+      var isOpen = col.classList.contains('open');
+      if (isOpen) {
+        col.classList.remove('open');
+        body.style.maxHeight = '0';
+      } else {
+        col.classList.add('open');
+        body.style.maxHeight = body.scrollHeight + 'px';
+      }
+    });
+  });
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function initTabs() {
+  document.querySelectorAll('[data-tabs]').forEach(function(container) {
+    var btns   = container.querySelectorAll('.pres-tab-btn');
+    var panels = container.querySelectorAll('.pres-tab-panel');
+
+    btns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var target = btn.dataset.tab;
+        btns.forEach(function(b) { b.classList.remove('active'); });
+        panels.forEach(function(p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        var panel = container.querySelector('#tab-' + target);
+        if (panel) panel.classList.add('active');
+      });
+    });
+  });
+}
+
+// ============================================================
+// TOPBAR BUTTONS
+// ============================================================
+function initTopbarButtons() {
+  var sidebar = document.getElementById('sidebar');
+  var main    = document.getElementById('main');
+
+  // Sidebar toggle
+  document.getElementById('btn-sidebar').addEventListener('click', function() {
+    var isMobile = window.innerWidth < 900;
+    if (isMobile) {
+      sidebar.classList.toggle('mobile-open');
+    } else {
+      sidebar.classList.toggle('collapsed');
+      main.classList.toggle('sidebar-collapsed');
+      this.classList.toggle('active');
+    }
+  });
+
+  // Fullscreen
+  document.getElementById('btn-fullscreen').addEventListener('click', function() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  });
+
+  // Print
+  document.getElementById('btn-print').addEventListener('click', function() {
+    // Expand all collapsibles before printing
+    document.querySelectorAll('.pres-collapsible').forEach(function(col) {
+      col.classList.add('open');
+      var body = col.querySelector('.pres-collapsible-body');
+      if (body) body.style.maxHeight = '9999px';
+    });
+    window.print();
+  });
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', function(e) {
+  // Ignore when focused on an input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  var sidebar = document.getElementById('sidebar');
+  var main    = document.getElementById('main');
+
+  switch (e.key) {
+    case 's':
+    case 'S':
+      // Toggle sidebar
+      document.getElementById('btn-sidebar').click();
+      break;
+    case 'f':
+    case 'F':
+      document.getElementById('btn-fullscreen').click();
+      break;
+    case 'ArrowDown':
+    case 'ArrowRight':
+      e.preventDefault();
+      scrollToNextSection(1);
+      break;
+    case 'ArrowUp':
+    case 'ArrowLeft':
+      e.preventDefault();
+      scrollToNextSection(-1);
+      break;
+  }
+});
+
+function scrollToNextSection(dir) {
+  var sections = Array.from(document.querySelectorAll('.pres-cover, .pres-section'));
+  var scrollY = window.scrollY + (window.innerHeight / 2);
+  var current = 0;
+  sections.forEach(function(s, i) {
+    if (s.offsetTop <= scrollY) current = i;
+  });
+  var next = Math.max(0, Math.min(sections.length - 1, current + dir));
+  sections[next].scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
