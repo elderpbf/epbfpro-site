@@ -10,246 +10,104 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
       --bg: #0f0f0f;
       --text: #f0ece4;
       --text-muted: #a89880;
-      --text-dim: #666;
+      --text-dim: #555;
       --border: #2a2a2a;
       --card-bg: #1a1a1a;
       --accent: #c4a97d;
       --accent-dark: #e8d5b0;
       --success: #6dbf8a;
-      --pinned-bg: #1e1a14;
-      --pinned-border: #c4a97d;
+      --success-bg: #1a3a25;
+      --error-bg: #3a1a1a;
     }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
 
-    html, body {
-      height: 100%;
-    }
+    /* Top bar */
+    .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .top-bar .logo { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+    .top-bar .session-title { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    .top-bar .session-code { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    /* Main content */
+    .main { flex: 1; padding: 32px 40px 24px; overflow-y: auto; max-width: 1000px; width: 100%; margin: 0 auto; }
 
-    /* ── Top bar ── */
-    .top-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 28px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .top-bar .logo {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-    .top-bar .session-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .top-bar .session-code {
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: var(--text-muted);
-      background: var(--card-bg);
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-    }
+    /* Center states */
+    .center-state { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; min-height: 300px; }
+    .center-state .state-icon { font-size: 3rem; }
+    .center-state .state-text { font-size: 1.4rem; color: var(--text-muted); font-weight: 500; }
+    .center-state .state-code { font-size: 3rem; font-weight: 700; letter-spacing: 0.3em; color: var(--accent); margin-top: 8px; }
+    .center-state .state-sub  { font-size: 0.9rem; color: var(--text-dim); }
 
-    /* ── Main content ── */
-    .main {
-      flex: 1;
-      padding: 28px 32px 24px;
-      overflow-y: auto;
-      max-width: 960px;
-      width: 100%;
-      margin: 0 auto;
-    }
+    /* Question display */
+    .question-area { margin-bottom: 32px; }
+    .question-status { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .status-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; }
+    .status-badge.live   { background: #1a3a1a; color: var(--success); }
+    .status-badge.closed { background: #2a2a2a; color: var(--text-muted); }
+    .answer-count { font-size: 0.82rem; color: var(--text-dim); }
 
-    /* ── Section labels ── */
-    .section-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 14px;
-    }
+    .question-text-display { font-size: 1.9rem; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 32px; }
 
-    /* ── Pinned question ── */
-    .pinned-section {
-      margin-bottom: 32px;
-    }
-    .pinned-card {
-      background: var(--pinned-bg);
-      border: 1px solid var(--pinned-border);
-      border-left: 4px solid var(--pinned-border);
-      border-radius: 14px;
-      padding: 24px 28px;
-    }
-    .pinned-card .pin-icon {
-      font-size: 1rem;
-      margin-bottom: 10px;
-      display: block;
-    }
-    .pinned-card .question-text {
-      font-size: 1.6rem;
-      font-weight: 600;
-      line-height: 1.4;
-      color: var(--text);
-      margin-bottom: 14px;
-    }
-    .pinned-card .question-meta {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
+    /* Option bars */
+    .option-bar { display: grid; grid-template-columns: 44px 1fr 60px; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .bar-letter { font-size: 0.85rem; font-weight: 700; color: var(--accent-dark); background: var(--card-bg); border: 1px solid var(--border); padding: 8px 0; border-radius: 8px; text-align: center; }
+    .bar-right { }
+    .bar-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .bar-opt-text { font-size: 1rem; color: var(--text); font-weight: 400; }
+    .bar-pct { font-size: 0.9rem; font-weight: 700; color: var(--text-muted); }
+    .bar-track { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.8s ease; }
+    .bar-fill.correct { background: var(--success); }
+    .bar-count { font-size: 0.88rem; font-weight: 600; color: var(--text-muted); text-align: right; }
 
-    /* ── Top questions list ── */
-    .questions-section {
-      margin-bottom: 24px;
-    }
-    .question-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      padding: 16px 20px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      margin-bottom: 10px;
-    }
-    .question-rank {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--text-dim);
-      min-width: 20px;
-      padding-top: 3px;
-    }
-    .question-body {
-      flex: 1;
-    }
-    .question-body .question-text {
-      font-size: 1.15rem;
-      font-weight: 500;
-      line-height: 1.45;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-    .question-body .question-author {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-    }
-    .question-votes {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      padding-top: 2px;
-      white-space: nowrap;
-    }
+    /* Correct answer highlight */
+    .option-bar.is-correct .bar-letter   { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+    .option-bar.is-correct .bar-opt-text { font-weight: 600; color: var(--success); }
+    .option-bar.is-correct .bar-pct      { color: var(--success); }
 
-    /* ── Empty / closed states ── */
-    .center-state {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      min-height: 300px;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .center-state .state-icon { font-size: 2.5rem; }
-    .center-state .state-text { font-size: 1.1rem; color: var(--text-muted); }
-    .center-state .state-sub  { font-size: 0.82rem; color: var(--text-dim); }
-
-    /* ── Bottom bar ── */
-    .bottom-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 28px;
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .bottom-bar .join-hint {
-      font-size: 0.78rem;
-      color: var(--text-dim);
-    }
-    .bottom-bar .join-hint strong {
-      color: var(--accent);
-    }
-    .bottom-bar .refresh-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      transition: background 0.3s;
-    }
-    .bottom-bar .refresh-dot.active { background: var(--success); }
-
-    /* ── No code screen ── */
-    #no-code-screen {
-      display: none;
-      padding: 60px 0;
-      text-align: center;
-      color: var(--text-muted);
-    }
+    /* No code screen */
+    #no-code-screen { display: none; padding: 60px 0; text-align: center; color: var(--text-muted); }
     #no-code-screen p   { font-size: 0.88rem; margin-bottom: 8px; }
-    #no-code-screen code {
-      font-size: 0.82rem;
-      background: var(--card-bg);
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-    }
+    #no-code-screen code { font-size: 0.82rem; background: var(--card-bg); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
+
+    /* Bottom bar */
+    .bottom-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 28px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .bottom-bar .join-hint { font-size: 0.78rem; color: var(--text-dim); }
+    .bottom-bar .join-hint strong { color: var(--accent); }
+    .refresh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); transition: background 0.3s; }
+    .refresh-dot.active { background: var(--success); }
   </style>
 </head>
 <body>
 
-  <!-- ── Top bar ── -->
   <div class="top-bar">
     <span class="logo">PensoIA</span>
-    <span class="session-title" id="display-title">Loading…</span>
-    <span class="session-code" id="display-code"></span>
+    <span class="session-title" id="display-title">Carregando…</span>
+    <span class="session-code"  id="display-code"></span>
   </div>
 
-  <!-- ── Main content ── -->
   <div class="main" id="main-content">
     <div class="center-state">
       <span class="state-icon">⏳</span>
-      <span class="state-text">Loading…</span>
+      <span class="state-text">Carregando…</span>
     </div>
   </div>
 
   <div id="no-code-screen">
-    <p>No session code in URL.</p>
-    <p>Open this page as: <code>display.html?code=AB12</code></p>
+    <p>Nenhum código de sessão na URL.</p>
+    <p>Abra esta página como: <code>display.html?code=AB12</code></p>
   </div>
 
-  <!-- ── Bottom bar ── -->
   <div class="bottom-bar">
     <span class="join-hint">
-      Students go to <strong>pensoia.com/go</strong> and enter code
+      Alunos acessam <strong>pensoia.com/go</strong> · código:
       <strong id="bottom-code" style="color:var(--accent)"></strong>
     </span>
-    <div class="refresh-dot" id="refresh-dot" title="Live"></div>
+    <div class="refresh-dot" id="refresh-dot" title="Ao vivo"></div>
   </div>
 
 <script>
@@ -257,15 +115,36 @@
   const SPREADSHEET_ID = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
   const SESSIONS_CSV   = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`;
   const QUESTIONS_CSV  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`;
-  const REFRESH_INTERVAL = 5000;
-  const MAX_DISPLAY      = 5; // max questions shown in list (excluding pinned)
+  const ANSWERS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Answers`;
+  const POLL_INTERVAL  = 3000;
   // ────────────────────────────────────────────────────────────────────────
 
-  // ── CONFIG CHECK ───────────────────────────────────────────────────────
+  // ── I18N ────────────────────────────────────────────────────────────────
+  const ACTIVE_LANG = 'pt';
+  const STRINGS = {
+    pt: {
+      sessionEnded:  'Sessão encerrada',
+      waiting:       'Aguardando pergunta…',
+      live:          '● Ao vivo',
+      final:         'Resultado final',
+      answers:       n => `${n} resposta${n !== 1 ? 's' : ''}`,
+    },
+    en: {
+      sessionEnded:  'Session ended',
+      waiting:       'Waiting for question…',
+      live:          '● Live',
+      final:         'Final result',
+      answers:       n => `${n} answer${n !== 1 ? 's' : ''}`,
+    }
+  };
+  const t = STRINGS[ACTIVE_LANG] || STRINGS.pt;
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── CONFIG CHECK ─────────────────────────────────────────────────────────
   if (SPREADSHEET_ID.includes('REPLACE')) {
     document.querySelector('.main').innerHTML =
       '<div style="padding:40px;text-align:center;color:#c44;font-size:0.9rem;">' +
-      '<strong>Setup incomplete.</strong><br>Replace SPREADSHEET_ID in this file.' +
+      '<strong>Setup incompleto.</strong><br>Configure SPREADSHEET_ID neste arquivo.' +
       '</div>';
     throw new Error('Classroom Light: config placeholders not replaced');
   }
@@ -274,8 +153,8 @@
   const params      = new URLSearchParams(window.location.search);
   const sessionCode = (params.get('code') || '').trim().toUpperCase();
 
-  let sessionTitle  = '';
-  let isClosed      = false;
+  let sessionTitle     = '';
+  let lastDisplayedQ   = null; // last question rendered (active or closed)
 
   if (!sessionCode) {
     document.querySelector('.main').style.display       = 'none';
@@ -290,11 +169,10 @@
   function parseCSV(text) {
     const trimmed = text.trim();
     if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
-      console.error('Classroom Light: CSV endpoint returned HTML. Is the Sheet published to web?');
+      console.error('Classroom Light: CSV returned HTML. Is the Sheet published to web?');
       return [];
     }
-    const lines = trimmed.split('\n');
-    return lines.slice(1).map(parseCSVLine);
+    return trimmed.split('\n').slice(1).map(parseCSVLine);
   }
 
   function parseCSVLine(line) {
@@ -315,7 +193,7 @@
   // ── INIT ─────────────────────────────────────────────────────────────────
   async function init() {
     await fetchData();
-    setInterval(fetchData, REFRESH_INTERVAL);
+    setInterval(fetchData, POLL_INTERVAL);
   }
 
   // ── FETCH ─────────────────────────────────────────────────────────────────
@@ -324,134 +202,131 @@
     dot.classList.add('active');
 
     try {
-      const t = Date.now();
-      const [sessResp, qResp] = await Promise.all([
-        fetch(SESSIONS_CSV  + '&t=' + t),
-        fetch(QUESTIONS_CSV + '&t=' + t)
+      const ts = '&t=' + Date.now();
+      const [sessText, qText, aText] = await Promise.all([
+        fetch(SESSIONS_CSV  + ts).then(r => r.text()),
+        fetch(QUESTIONS_CSV + ts).then(r => r.text()),
+        fetch(ANSWERS_CSV   + ts).then(r => r.text())
       ]);
 
-      const sessText = await sessResp.text();
-      const qText    = await qResp.text();
+      const sessions  = parseCSV(sessText);
+      const questions = parseCSV(qText);
+      const answers   = parseCSV(aText);
 
-      const sessions = parseCSV(sessText);
-      // cols: A=code, B=title, C=status
+      // Session status
       const sess = sessions.find(r => r[0].trim().toUpperCase() === sessionCode);
       if (sess) {
         sessionTitle = sess[1].trim();
-        isClosed     = sess[2].trim().toLowerCase() === 'closed';
         document.getElementById('display-title').textContent = sessionTitle;
+
+        if (sess[2].trim().toLowerCase() === 'closed') {
+          render(null, null, true);
+          return;
+        }
       }
 
-      const rows = parseCSV(qText);
-      // cols: A=id, B=session_code, C=name, D=text, E=upvotes, F=status, G=timestamp
-      const questions = rows
-        .filter(r => r[1].trim().toUpperCase() === sessionCode)
-        .map(r => ({
-          id:      r[0].trim(),
-          name:    r[2].trim() || 'Anonymous',
-          text:    r[3].trim(),
-          upvotes: parseInt(r[4]) || 0,
-          status:  r[5].trim().toLowerCase(),
-          time:    r[6].trim()
-        }))
-        .filter(q => q.status !== 'hidden');
+      // Questions cols: A=id, B=session_code, C=text, D=options, E=correct_answer, F=status, G=show_results, H=reveal_answer
+      const sessionQs = questions.filter(r => r[1].trim().toUpperCase() === sessionCode);
+      const activeQ   = sessionQs.find(r => r[5].trim() === 'active');
 
-      render(questions);
-
-    } catch {
-      // Keep last rendered state on error
+      if (activeQ) {
+        lastDisplayedQ = activeQ;
+        render(activeQ, answers, false);
+      } else if (lastDisplayedQ) {
+        // Show last known question (should be closed now)
+        const refreshed = sessionQs.find(r => r[0].trim() === lastDisplayedQ[0].trim());
+        render(refreshed || lastDisplayedQ, answers, false);
+      } else {
+        render(null, null, false);
+      }
+    } catch (err) {
+      console.error('display fetch error:', err);
     } finally {
       setTimeout(() => dot.classList.remove('active'), 600);
     }
   }
 
   // ── RENDER ────────────────────────────────────────────────────────────────
-  function render(questions) {
+  function render(qRow, answers, sessionClosed) {
     const main = document.getElementById('main-content');
 
-    if (isClosed) {
+    if (sessionClosed) {
       main.innerHTML = `
         <div class="center-state">
           <span class="state-icon">✓</span>
-          <span class="state-text">Session ended</span>
-          <span class="state-sub">${sessionTitle}</span>
+          <span class="state-text">${t.sessionEnded}</span>
+          <span class="state-sub">${escapeHtml(sessionTitle)}</span>
         </div>`;
       return;
     }
 
-    if (!sessionCode || questions.length === 0) {
+    if (!qRow) {
       main.innerHTML = `
         <div class="center-state">
           <span class="state-icon">💬</span>
-          <span class="state-text">Waiting for questions…</span>
-          <span class="state-sub">Share the session code: <strong style="color:var(--accent)">${sessionCode}</strong></span>
+          <span class="state-text">${t.waiting}</span>
+          <span class="state-code">${sessionCode}</span>
         </div>`;
       return;
     }
 
-    const pinned = questions.filter(q => q.status === 'pinned');
-    const open   = questions
-      .filter(q => q.status !== 'pinned' && q.status !== 'answered')
-      .sort((a, b) => {
-        if (b.upvotes !== a.upvotes) return b.upvotes - a.upvotes;
-        return new Date(a.time) - new Date(b.time);
-      })
-      .slice(0, MAX_DISPLAY);
+    const qId    = qRow[0].trim();
+    const text   = qRow[2].trim();
+    const status = qRow[5].trim(); // active or closed
+    let options  = [];
+    try { options = JSON.parse(qRow[3]); } catch {}
+    const correctAnswer = qRow[4].trim() !== '' ? parseInt(qRow[4]) : null;
+    const revealAnswer  = status === 'closed' && qRow[7].trim() === 'true';
 
-    let html = '';
+    // Count answers per option
+    const counts = new Array(options.length).fill(0);
+    (answers || []).filter(r => r[1].trim() === qId).forEach(r => {
+      const idx = parseInt(r[4]);
+      if (idx >= 0 && idx < options.length) counts[idx]++;
+    });
+    const total = counts.reduce((a, b) => a + b, 0);
+    const letters = ['A','B','C','D'];
 
-    // Pinned section
-    if (pinned.length > 0) {
-      html += `<div class="pinned-section">
-        <div class="section-label">📌 Pinned</div>`;
-      pinned.forEach(q => {
-        html += `
-          <div class="pinned-card">
-            <div class="question-text">${escapeHtml(q.text)}</div>
-            <div class="question-meta">${escapeHtml(q.name)} · ▲ ${q.upvotes}</div>
-          </div>`;
-      });
-      html += `</div>`;
-    }
+    const badgeClass = status === 'active' ? 'live' : 'closed';
+    const badgeLabel = status === 'active' ? t.live : t.final;
 
-    // Top questions section
-    if (open.length > 0) {
-      html += `<div class="questions-section">
-        <div class="section-label">Top questions</div>`;
-      open.forEach((q, i) => {
-        html += `
-          <div class="question-item">
-            <span class="question-rank">${i + 1}.</span>
-            <div class="question-body">
-              <div class="question-text">${escapeHtml(q.text)}</div>
-              <div class="question-author">${escapeHtml(q.name)}</div>
+    let html = `
+      <div class="question-area">
+        <div class="question-status">
+          <span class="status-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="answer-count">${t.answers(total)}</span>
+        </div>
+        <div class="question-text-display">${escapeHtml(text)}</div>
+      </div>`;
+
+    options.forEach((opt, i) => {
+      const pct       = total > 0 ? Math.round(counts[i] / total * 100) : 0;
+      const isCorrect = revealAnswer && correctAnswer !== null && i === correctAnswer;
+      const fillClass = isCorrect ? 'correct' : '';
+      html += `
+        <div class="option-bar ${isCorrect ? 'is-correct' : ''}">
+          <div class="bar-letter">${letters[i]}</div>
+          <div class="bar-right">
+            <div class="bar-label">
+              <span class="bar-opt-text">${escapeHtml(opt)}${isCorrect ? ' ✓' : ''}</span>
+              <span class="bar-pct">${status === 'active' && total === 0 ? '' : pct + '%'}</span>
             </div>
-            <div class="question-votes">▲ ${q.upvotes}</div>
-          </div>`;
-      });
-      html += `</div>`;
-    }
-
-    if (!html) {
-      main.innerHTML = `
-        <div class="center-state">
-          <span class="state-icon">💬</span>
-          <span class="state-text">Waiting for questions…</span>
+            <div class="bar-track">
+              <div class="bar-fill ${fillClass}" style="width:${pct}%"></div>
+            </div>
+          </div>
+          <div class="bar-count">${counts[i]}</div>
         </div>`;
-    } else {
-      main.innerHTML = html;
-    }
+    });
+
+    main.innerHTML = html;
   }
 
-  // ── UTILS ────────────────────────────────────────────────────────────────
-  function escapeHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  function escapeHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // Refetch when tab becomes visible
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') fetchData();
-  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fetchData(); });
 </script>
 </body>
 </html>

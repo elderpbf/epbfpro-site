@@ -15,495 +15,601 @@
       --bg: #faf8f5;
       --text: #3d3529;
       --text-muted: #8a7b66;
-      --text-dim: #a89880;
+      --text-dim: #b8a898;
       --border: #e8e0d4;
       --card-bg: #fff;
       --accent: #c4a97d;
       --accent-dark: #5c4a2f;
       --success: #4a7c59;
+      --success-bg: #edf7f1;
       --error: #c44;
-      --pinned-bg: #fdf6ec;
-      --pinned-border: #c4a97d;
-      --answered-opacity: 0.5;
       --danger: #b03030;
+      --ai-bg: #f0ece7;
     }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      min-height: 100vh;
-    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
 
-    .container {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 24px 16px 80px;
-    }
+    .container { max-width: 700px; margin: 0 auto; padding: 24px 16px 80px; }
 
-    /* ── Header ── */
-    .header {
-      text-align: center;
-      padding: 28px 0 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 28px;
-    }
-    .header .logo {
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--accent-dark);
-      margin-bottom: 6px;
-    }
+    /* Header */
+    .header { text-align: center; padding: 28px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    .header .logo { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-dark); margin-bottom: 6px; }
     .header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent-dark); }
     .header p  { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* ── Form elements ── */
-    label {
-      display: block;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
-      margin-bottom: 6px;
+    /* Form */
+    label { display: block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+    input[type="text"], input[type="password"], select, textarea {
+      width: 100%; padding: 11px 14px; border: 1px solid var(--border);
+      border-radius: 10px; font-size: 0.92rem; font-family: inherit;
+      background: var(--card-bg); color: var(--text); outline: none; transition: border-color 0.15s;
     }
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 11px 14px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-family: inherit;
-      background: var(--card-bg);
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    input:focus { border-color: var(--accent); }
-    .form-group { margin-bottom: 18px; }
+    textarea { resize: vertical; min-height: 80px; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    .form-group { margin-bottom: 16px; }
 
-    /* ── Buttons ── */
-    .btn-primary {
-      width: 100%;
-      padding: 13px;
-      background: var(--accent-dark);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .btn-primary:hover { opacity: 0.85; }
-    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+    /* Buttons */
+    .btn { padding: 11px 20px; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: var(--accent-dark); color: #fff; }
+    .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+    .btn-accent  { background: var(--accent); color: #fff; }
+    .btn-accent:hover:not(:disabled)  { opacity: 0.85; }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled)  { opacity: 0.85; }
+    .btn-ghost   { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled)   { background: var(--border); }
+    .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+    .btn-full { width: 100%; }
 
-    .btn-secondary {
-      padding: 8px 16px;
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.82rem;
-      font-family: inherit;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent-dark); }
+    /* Card */
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+    .card-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
 
-    .btn-danger {
-      padding: 8px 16px;
-      background: none;
-      border: 1px solid #e0b0b0;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      font-family: inherit;
-      color: var(--danger);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .btn-danger:hover { background: #fdf0f0; }
+    /* Session bar */
+    .session-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; }
+    .session-bar .code-block { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.2em; color: var(--accent-dark); }
+    .session-bar .session-name { font-size: 0.85rem; color: var(--text-muted); }
+    .session-bar-actions { display: flex; gap: 8px; }
 
-    /* ── Error / success messages ── */
-    .error-msg   { font-size: 0.82rem; color: var(--error); margin-top: 10px; min-height: 1.2em; }
-    .success-msg { font-size: 0.82rem; color: var(--success); margin-top: 10px; min-height: 1.2em; }
+    /* Option inputs */
+    .option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .option-letter { font-size: 0.8rem; font-weight: 700; color: var(--accent-dark); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 36px; text-align: center; }
+    .option-row input { flex: 1; }
 
-    /* ── Divider ── */
-    .divider {
-      display: flex; align-items: center; gap: 12px;
-      margin: 22px 0; color: var(--text-dim); font-size: 0.78rem;
-    }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    /* AI section */
+    .ai-toggle-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .ai-box { background: var(--ai-bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; display: none; }
+    .ai-box.open { display: block; }
+    .ai-box label { color: var(--accent-dark); }
+    .ai-box-actions { display: flex; gap: 8px; margin-top: 10px; }
 
-    /* ── Session info bar ── */
-    .session-info-bar {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 18px;
-      margin-bottom: 20px;
-    }
-    .session-info-bar .session-name {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--accent-dark);
-      margin-bottom: 10px;
-    }
-    .session-info-bar .info-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .code-display {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      color: var(--accent-dark);
-      background: var(--pinned-bg);
-      padding: 4px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--accent);
-    }
-    .btn-copy {
-      padding: 6px 12px;
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.78rem;
-      font-family: inherit;
-      color: var(--text-muted);
-      cursor: pointer;
-    }
-    .btn-copy:hover { border-color: var(--accent); color: var(--accent-dark); }
-    .btn-copy.copied { color: var(--success); border-color: var(--success); }
+    /* Active question panel */
+    .active-q-panel { background: var(--card-bg); border: 2px solid var(--accent); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+    .active-q-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: #fdf3e3; color: var(--accent-dark); border-radius: 4px; padding: 3px 8px; margin-bottom: 10px; }
+    .active-q-text { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 16px; line-height: 1.4; }
+    .active-q-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .answer-tally { font-size: 0.85rem; color: var(--text-muted); }
 
-    /* ── Stats row ── */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .stat-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-      text-align: center;
-    }
-    .stat-card .stat-num {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: var(--accent-dark);
-    }
-    .stat-card .stat-label {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-top: 2px;
-    }
+    /* Result bars */
+    .result-bar { display: grid; grid-template-columns: 34px 1fr 44px; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .rb-letter { font-size: 0.78rem; font-weight: 700; color: var(--accent-dark); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 0; text-align: center; }
+    .rb-right { }
+    .rb-label { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 4px; }
+    .rb-opt { color: var(--text); }
+    .rb-pct { font-weight: 600; color: var(--text-muted); }
+    .rb-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .rb-fill  { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.6s ease; }
+    .rb-count { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-align: right; }
+    .result-bar.is-correct .rb-letter { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+    .result-bar.is-correct .rb-opt    { color: var(--success); font-weight: 600; }
+    .result-bar.is-correct .rb-pct    { color: var(--success); }
+    .result-bar.is-correct .rb-fill   { background: var(--success); }
 
-    /* ── Questions section ── */
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .section-title {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
-    }
-    .refresh-indicator { font-size: 0.7rem; color: var(--text-dim); }
-    .refresh-indicator.fetching { color: var(--accent); }
+    /* Close options */
+    .close-options { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+    .close-options label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); cursor: pointer; }
+    .close-options input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-dark); cursor: pointer; }
 
-    /* ── Question cards ── */
-    .question-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 10px;
-    }
-    .question-card.pinned  { border-left: 3px solid var(--pinned-border); background: var(--pinned-bg); }
-    .question-card.answered { opacity: var(--answered-opacity); }
-    .question-card.hidden-q { opacity: 0.3; }
+    /* History */
+    .history-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .history-item:last-child { border-bottom: none; }
+    .hi-text { font-size: 0.9rem; color: var(--text); flex: 1; }
+    .hi-meta { font-size: 0.75rem; color: var(--text-dim); white-space: nowrap; }
 
-    .question-text {
-      font-size: 0.95rem;
-      line-height: 1.5;
-      margin-bottom: 10px;
-    }
-    .question-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-    .question-author { font-size: 0.75rem; color: var(--text-dim); }
-    .question-time   { font-size: 0.72rem; color: var(--text-dim); }
-    .upvote-count    { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
+    /* Inline row */
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-    .question-status-badge {
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 2px 7px;
-      border-radius: 4px;
-    }
-    .question-status-badge.pinned   { background: #f4e6c8; color: #8a6020; }
-    .question-status-badge.answered { background: #e0f0e8; color: var(--success); }
-    .question-status-badge.hidden   { background: #eee; color: #999; }
+    /* Alert */
+    .alert { padding: 12px 16px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 16px; display: none; }
+    .alert.show { display: block; }
+    .alert-error   { background: #fde8e8; color: var(--danger); border: 1px solid #f5c6c6; }
+    .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #b8dfc7; }
 
-    .action-row {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .action-row .btn-action {
-      padding: 5px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-family: inherit;
-      background: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.12s;
-    }
-    .action-row .btn-action:hover { border-color: var(--accent); color: var(--accent-dark); }
-    .action-row .btn-action.btn-pin:hover    { border-color: var(--accent); }
-    .action-row .btn-action.btn-answered:hover { border-color: var(--success); color: var(--success); }
-    .action-row .btn-action.btn-hide:hover  { border-color: #aaa; }
+    /* Screen toggling */
+    .screen { display: none; }
+    .screen.active { display: block; }
 
-    .empty-state {
-      text-align: center;
-      padding: 40px 0;
-      color: var(--text-dim);
-      font-size: 0.88rem;
-    }
-
-    /* ── QR Modal ── */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
+    /* QR modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 100; }
     .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 28px 24px;
-      max-width: 320px;
-      width: 90%;
-      text-align: center;
-    }
-    .modal h3  { font-size: 0.9rem; font-weight: 700; color: var(--accent-dark); margin-bottom: 16px; }
-    .modal img { border-radius: 8px; }
-    .modal p   { font-size: 0.78rem; color: var(--text-muted); margin-top: 12px; }
-    .modal .modal-close {
-      margin-top: 16px;
-      padding: 8px 24px;
-      background: var(--accent-dark);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 0.85rem;
-      cursor: pointer;
-    }
+    .modal { background: var(--card-bg); border-radius: 16px; padding: 28px; max-width: 340px; width: 90%; text-align: center; }
+    .modal h3 { font-size: 0.95rem; font-weight: 700; color: var(--accent-dark); margin-bottom: 16px; }
+    .modal img { max-width: 220px; }
+    .modal-close { margin-top: 18px; }
 
-    /* ── Session end summary ── */
-    .summary-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .summary-card h3 { font-size: 0.9rem; font-weight: 700; color: var(--accent-dark); margin-bottom: 12px; }
-    .summary-card p  { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 6px; }
-    .summary-card .top-question {
-      margin-top: 12px;
-      padding: 10px 14px;
-      background: var(--pinned-bg);
-      border-left: 3px solid var(--accent);
-      border-radius: 6px;
-      font-size: 0.88rem;
-    }
+    /* Spinner */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Screen visibility ── */
-    #pw-gate       { display: block; }
-    #no-session    { display: none; }
-    #active-session{ display: none; }
-    #summary       { display: none; }
+    .mt-8  { margin-top: 8px; }
+    .mt-16 { margin-top: 16px; }
+    .flex-gap { display: flex; gap: 10px; }
   </style>
 </head>
 <body>
+
 <div class="container">
   <div class="header">
     <div class="logo">PensoIA</div>
-    <h1>Classroom · Instructor</h1>
-    <p>Manage your Q&amp;A session</p>
+    <h1 id="header-title">Classroom</h1>
+    <p id="header-sub">Painel do professor</p>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       PASSWORD GATE
-  ══════════════════════════════════════════ -->
-  <div id="pw-gate" style="text-align:center; padding: 40px 0;">
-    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:16px;">Instructor access</p>
-    <div style="max-width:280px; margin:0 auto;">
+  <!-- Alert -->
+  <div class="alert alert-error"   id="alert-error"></div>
+  <div class="alert alert-success" id="alert-success"></div>
+
+  <!-- ── SCREEN: password gate ─────────────────────────────────── -->
+  <div class="screen active" id="screen-pw">
+    <div class="card">
+      <div class="card-title">Acesso restrito</div>
       <div class="form-group">
-        <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password">
+        <label>Senha do professor</label>
+        <input type="password" id="pw-input" placeholder="Digite a senha" autocomplete="current-password">
       </div>
-      <button class="btn-primary" onclick="checkPassword()">Enter</button>
-      <div class="error-msg" id="pw-error" style="text-align:center"></div>
+      <button class="btn btn-primary btn-full" id="pw-btn" onclick="checkPassword()">Entrar</button>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       NO ACTIVE SESSION
-  ══════════════════════════════════════════ -->
-  <div id="no-session">
-    <div class="form-group">
-      <label for="session-title-input">Session title</label>
-      <input type="text" id="session-title-input" placeholder="e.g. Class 01 – Intro to AI" maxlength="60">
+  <!-- ── SCREEN: no session ─────────────────────────────────────── -->
+  <div class="screen" id="screen-nosession">
+    <div class="card">
+      <div class="card-title">Nova sessão</div>
+      <div class="form-group">
+        <label>Título da sessão</label>
+        <input type="text" id="session-title-input" placeholder="Ex: Aula 5 — Termodinâmica">
+      </div>
+      <button class="btn btn-primary btn-full" id="create-btn" onclick="createSession()">Criar sessão</button>
     </div>
-    <div class="form-group">
-      <label for="session-pw-input">Session password <span style="font-weight:400;text-transform:none;letter-spacing:0">(used to manage questions)</span></label>
-      <input type="password" id="session-pw-input" placeholder="Choose a password" maxlength="40" autocomplete="new-password">
+    <div class="card" style="margin-top:0">
+      <div class="card-title">Retomar sessão</div>
+      <div class="form-group">
+        <label>Código da sessão</label>
+        <input type="text" id="reopen-code-input" placeholder="Ex: AB12" maxlength="4" style="text-transform:uppercase">
+      </div>
+      <button class="btn btn-ghost btn-full" onclick="reopenSession()">Retomar</button>
     </div>
-    <button class="btn-primary" id="create-btn" onclick="createSession()">Create session</button>
-    <div class="error-msg" id="create-error"></div>
-
-    <div class="divider">or reopen an existing session</div>
-
-    <div style="display:flex; gap:10px;">
-      <input type="text" id="reopen-code-input" placeholder="Code (e.g. AB12)"
-             maxlength="4" style="text-transform:uppercase; letter-spacing:0.12em; font-size:1rem;"
-             oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-      <input type="password" id="reopen-pw-input" placeholder="Password" style="flex:1">
-      <button class="btn-secondary" onclick="reopenSession()">Open</button>
-    </div>
-    <div class="error-msg" id="reopen-error"></div>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       ACTIVE SESSION
-  ══════════════════════════════════════════ -->
-  <div id="active-session">
+  <!-- ── SCREEN: active session ────────────────────────────────── -->
+  <div class="screen" id="screen-session">
 
-    <!-- Session info -->
-    <div class="session-info-bar">
-      <div class="session-name" id="active-title"></div>
-      <div class="info-row">
-        <span class="code-display" id="active-code"></span>
-        <button class="btn-copy" id="copy-btn" onclick="copyCode()">Copy</button>
-        <button class="btn-secondary" onclick="showQR()">QR Code</button>
-        <a id="display-link" href="#" target="_blank" class="btn-secondary" style="text-decoration:none">
-          Open display →
-        </a>
-        <button class="btn-danger" onclick="confirmClose()">End session</button>
+    <!-- Session bar -->
+    <div class="session-bar">
+      <div>
+        <div class="code-block" id="session-code-display"></div>
+        <div class="session-name" id="session-name-display"></div>
+      </div>
+      <div class="session-bar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openQR()">QR</button>
+        <a id="display-link" target="_blank"><button class="btn btn-ghost btn-sm">Display</button></a>
+        <button class="btn btn-danger btn-sm" onclick="closeSessionConfirm()">Encerrar</button>
       </div>
     </div>
 
-    <!-- Stats -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-num" id="stat-total">0</div>
-        <div class="stat-label">Total</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num" id="stat-open">0</div>
-        <div class="stat-label">Open</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num" id="stat-answered">0</div>
-        <div class="stat-label">Answered</div>
+    <!-- Active question panel (shown when a question is running) -->
+    <div id="active-q-panel" style="display:none">
+      <div class="active-q-panel">
+        <span class="active-q-badge">● Ao vivo</span>
+        <div class="active-q-text" id="aq-text"></div>
+        <div id="aq-bars"></div>
+        <div class="active-q-footer">
+          <span class="answer-tally" id="aq-tally">0 respostas</span>
+          <div class="close-options">
+            <label><input type="checkbox" id="chk-show-results"> Mostrar resultados aos alunos</label>
+            <label><input type="checkbox" id="chk-reveal-answer"> Revelar resposta correta</label>
+          </div>
+        </div>
+        <div class="mt-8">
+          <button class="btn btn-danger btn-full" onclick="closeQuestion()">Fechar pergunta</button>
+        </div>
       </div>
     </div>
 
-    <!-- Questions -->
-    <div class="section-header">
-      <span class="section-title">Questions</span>
-      <span class="refresh-indicator" id="host-refresh">live</span>
+    <!-- Create question card -->
+    <div class="card" id="create-q-card">
+      <div class="card-title">Nova pergunta</div>
+
+      <!-- AI toggle row -->
+      <div class="ai-toggle-row">
+        <button class="btn btn-ghost btn-sm" onclick="toggleGenerateBox()">✦ Gerar com IA</button>
+        <button class="btn btn-ghost btn-sm" id="improve-btn" onclick="improveWithAI()" disabled>✦ Melhorar com IA</button>
+      </div>
+
+      <!-- AI generate box -->
+      <div class="ai-box" id="ai-generate-box">
+        <label>Tópico para a IA gerar</label>
+        <input type="text" id="ai-topic-input" placeholder="Ex: Segunda Lei da Termodinâmica">
+        <div class="ai-box-actions">
+          <button class="btn btn-accent btn-sm" id="ai-gen-btn" onclick="generateWithAI()">Gerar</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeGenerateBox()">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Pergunta</label>
+        <textarea id="q-text" placeholder="Escreva a pergunta aqui…" oninput="onQuestionInput()"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Opções de resposta</label>
+        <div id="options-container">
+          <div class="option-row"><span class="option-letter">A</span><input type="text" class="opt-input" placeholder="Opção A"></div>
+          <div class="option-row"><span class="option-letter">B</span><input type="text" class="opt-input" placeholder="Opção B"></div>
+          <div class="option-row"><span class="option-letter">C</span><input type="text" class="opt-input" placeholder="Opção C"></div>
+          <div class="option-row"><span class="option-letter">D</span><input type="text" class="opt-input" placeholder="Opção D"></div>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="form-group">
+          <label>Resposta correta (opcional)</label>
+          <select id="correct-answer-select">
+            <option value="">Nenhuma</option>
+            <option value="0">A</option>
+            <option value="1">B</option>
+            <option value="2">C</option>
+            <option value="3">D</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end">
+          <button class="btn btn-primary btn-full" id="launch-btn" onclick="launchQuestion()">Lançar pergunta</button>
+        </div>
+      </div>
     </div>
-    <div id="host-questions-list"></div>
+
+    <!-- Question history -->
+    <div class="card" id="history-card" style="display:none">
+      <div class="card-title">Histórico desta sessão</div>
+      <div id="history-list"></div>
+    </div>
+
   </div>
 
-  <!-- ══════════════════════════════════════════
-       SESSION ENDED SUMMARY
-  ══════════════════════════════════════════ -->
-  <div id="summary">
-    <div class="summary-card">
-      <h3>Session ended</h3>
-      <p id="summary-stats"></p>
-      <div class="top-question" id="summary-top" style="display:none"></div>
+  <!-- ── SCREEN: session closed ─────────────────────────────────── -->
+  <div class="screen" id="screen-closed">
+    <div class="card" style="text-align:center;padding:40px 24px">
+      <div style="font-size:2rem;margin-bottom:12px">✓</div>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--accent-dark);margin-bottom:6px">Sessão encerrada</div>
+      <div style="font-size:0.85rem;color:var(--text-muted)" id="closed-session-name"></div>
+      <button class="btn btn-primary mt-16" onclick="startOver()">Nova sessão</button>
     </div>
-    <button class="btn-primary" onclick="startOver()">Start a new session</button>
   </div>
-
 </div>
 
 <!-- QR Modal -->
-<div class="modal-overlay" id="qr-modal" onclick="closeQR(event)">
-  <div class="modal">
-    <h3>Scan to join</h3>
-    <img id="qr-img" src="" alt="QR Code" width="220" height="220">
-    <p>Students go to <strong>pensoia.com/go</strong> and enter code</p>
-    <p style="margin-top:6px; font-size:1.2rem; font-weight:700; color:var(--accent-dark)" id="qr-code-label"></p>
-    <button class="modal-close" onclick="closeQR()">Close</button>
+<div class="modal-overlay" id="qr-modal" onclick="closeQR()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Alunos entram pelo código</h3>
+    <div style="font-size:2.2rem;font-weight:700;letter-spacing:0.25em;color:var(--accent-dark);margin-bottom:16px" id="qr-code-text"></div>
+    <img id="qr-img" src="" alt="QR Code">
+    <div style="font-size:0.8rem;color:var(--text-muted);margin-top:10px">pensoia.com/go</div>
+    <button class="btn btn-ghost btn-full modal-close" onclick="closeQR()">Fechar</button>
   </div>
 </div>
 
 <script>
-  // ── CONFIG ──────────────────────────────────────────────────────────────
-  const SPREADSHEET_ID   = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
-  const APPS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbwdynfo6geXRNyrJtuAzXxCpOztsnvCGRz2FWkhLC05dsVAjOF2P1QV9bjLTZbVQbDlbg/exec';
-  const HOST_PASSWORD    = 'pensoia2026'; // instructor page access
-  const SESSIONS_CSV     = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`;
-  const QUESTIONS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`;
-  const REFRESH_INTERVAL = 3000; // 3 seconds (faster than student view)
-  // ────────────────────────────────────────────────────────────────────────
+  // ── CONFIG ──────────────────────────────────────────────────────────────────
+  const SPREADSHEET_ID  = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwdynfo6geXRNyrJtuAzXxCpOztsnvCGRz2FWkhLC05dsVAjOF2P1QV9bjLTZbVQbDlbg/exec';
+  const HOST_PASSWORD   = 'pensoia2026';
+  const SESSIONS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`;
+  const QUESTIONS_CSV   = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`;
+  const ANSWERS_CSV     = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Answers`;
+  const POLL_INTERVAL   = 4000;
+  // ────────────────────────────────────────────────────────────────────────────
 
-  // ── CONFIG CHECK ───────────────────────────────────────────────────────
+  // ── I18N ────────────────────────────────────────────────────────────────────
+  const ACTIVE_LANG = 'pt';
+  const STRINGS = {
+    pt: {
+      answers: n => `${n} resposta${n !== 1 ? 's' : ''}`,
+    },
+    en: {
+      answers: n => `${n} answer${n !== 1 ? 's' : ''}`,
+    }
+  };
+  const t = STRINGS[ACTIVE_LANG] || STRINGS.pt;
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // ── CONFIG CHECK ─────────────────────────────────────────────────────────────
   if (SPREADSHEET_ID.includes('REPLACE') || APPS_SCRIPT_URL.includes('REPLACE') || HOST_PASSWORD.includes('REPLACE')) {
     document.querySelector('.container').innerHTML =
       '<div style="padding:40px;text-align:center;color:#c44;font-size:0.9rem;">' +
-      '<strong>Setup incomplete.</strong><br>Replace SPREADSHEET_ID, APPS_SCRIPT_URL, and HOST_PASSWORD in this file.' +
+      '<strong>Setup incompleto.</strong><br>Configure SPREADSHEET_ID, APPS_SCRIPT_URL e HOST_PASSWORD neste arquivo.' +
       '</div>';
     throw new Error('Classroom Light: config placeholders not replaced');
   }
-  // ────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
 
-  let activeSession = null; // { code, title, password }
-  let refreshTimer  = null;
-  let allQuestions  = [];
+  let sessionCode    = null;
+  let sessionName    = '';
+  let activeQId      = null;
+  let pollTimer      = null;
+  let historyItems   = [];
 
-  // ── CSV PARSING ──────────────────────────────────────────────────────────
+  // ── PASSWORD GATE ────────────────────────────────────────────────────────────
+  function checkPassword() {
+    const pw = document.getElementById('pw-input').value.trim();
+    if (pw === HOST_PASSWORD) {
+      showScreen('screen-nosession');
+    } else {
+      showAlert('error', 'Senha incorreta.');
+    }
+  }
+  document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+
+  // ── SESSION MANAGEMENT ───────────────────────────────────────────────────────
+  async function createSession() {
+    const title = document.getElementById('session-title-input').value.trim();
+    if (!title) return showAlert('error', 'Informe o título da sessão.');
+    setBusy('create-btn', true);
+    try {
+      const res = await post('create_session', { title, password: HOST_PASSWORD });
+      if (res.error) return showAlert('error', res.error);
+      enterSession(res.code, title);
+    } catch { showAlert('error', 'Erro de conexão.'); }
+    finally   { setBusy('create-btn', false); }
+  }
+
+  async function reopenSession() {
+    const code = document.getElementById('reopen-code-input').value.trim().toUpperCase();
+    if (!code) return showAlert('error', 'Informe o código da sessão.');
+    // Validate session exists via CSV
+    const sessions = await fetchCSV(SESSIONS_CSV);
+    const row = sessions.find(r => r[0].trim().toUpperCase() === code);
+    if (!row) return showAlert('error', 'Sessão não encontrada.');
+    enterSession(code, row[1].trim());
+  }
+
+  function enterSession(code, name) {
+    sessionCode = code;
+    sessionName = name;
+    document.getElementById('session-code-display').textContent = code;
+    document.getElementById('session-name-display').textContent = name;
+    document.getElementById('display-link').href = `display.html?code=${code}`;
+    document.getElementById('qr-code-text').textContent = code;
+    document.getElementById('qr-img').src =
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('https://pensoia.com/go?code=' + code)}`;
+    showScreen('screen-session');
+    clearAlert();
+    startPolling();
+  }
+
+  async function closeSessionConfirm() {
+    if (!confirm('Encerrar a sessão? Os alunos verão a mensagem de sessão encerrada.')) return;
+    const res = await post('close_session', { code: sessionCode, password: HOST_PASSWORD });
+    if (res.error) return showAlert('error', res.error);
+    stopPolling();
+    document.getElementById('closed-session-name').textContent = sessionName;
+    showScreen('screen-closed');
+  }
+
+  function startOver() {
+    sessionCode = null;
+    sessionName = '';
+    activeQId   = null;
+    historyItems = [];
+    document.getElementById('session-title-input').value = '';
+    showScreen('screen-nosession');
+  }
+
+  // ── QUESTION FORM ────────────────────────────────────────────────────────────
+  function onQuestionInput() {
+    const hasText = document.getElementById('q-text').value.trim().length > 0;
+    document.getElementById('improve-btn').disabled = !hasText;
+  }
+
+  function getFormOptions() {
+    return Array.from(document.querySelectorAll('.opt-input'))
+      .map(i => i.value.trim())
+      .filter(v => v.length > 0);
+  }
+
+  function fillFormFromAI(data) {
+    document.getElementById('q-text').value = data.text || '';
+    const inputs = document.querySelectorAll('.opt-input');
+    (data.options || []).forEach((opt, i) => { if (inputs[i]) inputs[i].value = opt; });
+    const ca = data.correct_answer !== null && data.correct_answer !== undefined ? String(data.correct_answer) : '';
+    document.getElementById('correct-answer-select').value = ca;
+    onQuestionInput();
+  }
+
+  function toggleGenerateBox() {
+    const box = document.getElementById('ai-generate-box');
+    box.classList.toggle('open');
+  }
+  function closeGenerateBox() {
+    document.getElementById('ai-generate-box').classList.remove('open');
+  }
+
+  async function generateWithAI() {
+    const topic = document.getElementById('ai-topic-input').value.trim();
+    if (!topic) return showAlert('error', 'Informe o tópico para a IA gerar.');
+    setBusy('ai-gen-btn', true, 'Gerando…');
+    try {
+      const res = await post('ai_question', { mode: 'generate', topic, session_code: sessionCode, password: HOST_PASSWORD });
+      if (res.error) return showAlert('error', 'IA: ' + res.error);
+      fillFormFromAI(res);
+      closeGenerateBox();
+      clearAlert();
+    } catch { showAlert('error', 'Erro ao contactar IA.'); }
+    finally   { setBusy('ai-gen-btn', false, 'Gerar'); }
+  }
+
+  async function improveWithAI() {
+    const currentText    = document.getElementById('q-text').value.trim();
+    const currentOptions = getFormOptions();
+    if (!currentText) return showAlert('error', 'Escreva a pergunta antes de melhorar.');
+    setBusy('improve-btn', true, 'Melhorando…');
+    try {
+      const res = await post('ai_question', { mode: 'improve', current_text: currentText, current_options: currentOptions, session_code: sessionCode, password: HOST_PASSWORD });
+      if (res.error) return showAlert('error', 'IA: ' + res.error);
+      fillFormFromAI(res);
+      clearAlert();
+    } catch { showAlert('error', 'Erro ao contactar IA.'); }
+    finally   { setBusy('improve-btn', false, '✦ Melhorar com IA'); }
+  }
+
+  async function launchQuestion() {
+    const text    = document.getElementById('q-text').value.trim();
+    const options = getFormOptions();
+    const caVal   = document.getElementById('correct-answer-select').value;
+    const ca      = caVal !== '' ? parseInt(caVal) : null;
+    if (!text)             return showAlert('error', 'Escreva a pergunta.');
+    if (options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
+    setBusy('launch-btn', true, 'Lançando…');
+    try {
+      const res = await post('launch_question', { session_code: sessionCode, password: HOST_PASSWORD, text, options, correct_answer: ca });
+      if (res.error) return showAlert('error', res.error);
+      activeQId = res.id;
+      clearAlert();
+      clearQuestionForm();
+      // Panel will render on next poll
+    } catch { showAlert('error', 'Erro de conexão.'); }
+    finally   { setBusy('launch-btn', false, 'Lançar pergunta'); }
+  }
+
+  async function closeQuestion() {
+    if (!activeQId) return;
+    const showResults   = document.getElementById('chk-show-results').checked;
+    const revealAnswer  = document.getElementById('chk-reveal-answer').checked;
+    const res = await post('close_question', { question_id: activeQId, session_code: sessionCode, password: HOST_PASSWORD, show_results: showResults, reveal_answer: revealAnswer });
+    if (res.error) return showAlert('error', res.error);
+    activeQId = null;
+    document.getElementById('active-q-panel').style.display = 'none';
+  }
+
+  function clearQuestionForm() {
+    document.getElementById('q-text').value = '';
+    document.querySelectorAll('.opt-input').forEach(i => i.value = '');
+    document.getElementById('correct-answer-select').value = '';
+    document.getElementById('improve-btn').disabled = true;
+  }
+
+  // ── POLLING ──────────────────────────────────────────────────────────────────
+  function startPolling() { fetchData(); pollTimer = setInterval(fetchData, POLL_INTERVAL); }
+  function stopPolling()  { clearInterval(pollTimer); }
+
+  async function fetchData() {
+    if (!sessionCode) return;
+    try {
+      const ts = '&t=' + Date.now();
+      const [qText, aText] = await Promise.all([
+        fetch(QUESTIONS_CSV + ts).then(r => r.text()),
+        fetch(ANSWERS_CSV   + ts).then(r => r.text()),
+      ]);
+      const questions = parseCSV(qText);
+      const answers   = parseCSV(aText);
+      const sessionQs = questions.filter(r => r[1].trim().toUpperCase() === sessionCode);
+      const activeQ   = sessionQs.find(r => r[5].trim() === 'active');
+
+      if (activeQ) {
+        activeQId = activeQ[0].trim();
+        renderActiveQuestion(activeQ, answers);
+        renderHistory(sessionQs.filter(r => r[5].trim() === 'closed'));
+      } else {
+        activeQId = null;
+        document.getElementById('active-q-panel').style.display = 'none';
+        renderHistory(sessionQs.filter(r => r[5].trim() === 'closed'));
+      }
+    } catch (err) {
+      console.error('host poll error:', err);
+    }
+  }
+
+  // ── RENDER ACTIVE QUESTION ───────────────────────────────────────────────────
+  function renderActiveQuestion(qRow, answers) {
+    const qId    = qRow[0].trim();
+    const text   = qRow[2].trim();
+    let options  = [];
+    try { options = JSON.parse(qRow[3]); } catch {}
+    const correctAnswer = qRow[4].trim() !== '' ? parseInt(qRow[4]) : null;
+    const letters = ['A','B','C','D'];
+
+    const counts = new Array(options.length).fill(0);
+    (answers || []).filter(r => r[1].trim() === qId).forEach(r => {
+      const idx = parseInt(r[4]);
+      if (idx >= 0 && idx < options.length) counts[idx]++;
+    });
+    const total = counts.reduce((a,b) => a+b, 0);
+
+    document.getElementById('aq-text').textContent = text;
+    document.getElementById('aq-tally').textContent = t.answers(total);
+
+    let barsHtml = '';
+    options.forEach((opt, i) => {
+      const pct = total > 0 ? Math.round(counts[i] / total * 100) : 0;
+      const isCorrect = correctAnswer !== null && i === correctAnswer;
+      barsHtml += `
+        <div class="result-bar ${isCorrect ? 'is-correct' : ''}">
+          <div class="rb-letter">${letters[i]}</div>
+          <div class="rb-right">
+            <div class="rb-label">
+              <span class="rb-opt">${escapeHtml(opt)}</span>
+              <span class="rb-pct">${pct}%</span>
+            </div>
+            <div class="rb-track"><div class="rb-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="rb-count">${counts[i]}</div>
+        </div>`;
+    });
+    document.getElementById('aq-bars').innerHTML = barsHtml;
+    document.getElementById('active-q-panel').style.display = 'block';
+  }
+
+  // ── RENDER HISTORY ───────────────────────────────────────────────────────────
+  function renderHistory(closedQs) {
+    if (!closedQs.length) {
+      document.getElementById('history-card').style.display = 'none';
+      return;
+    }
+    const list = closedQs.slice().reverse().map(r => {
+      const text = r[2].trim();
+      const ts   = r[8] ? r[8].trim() : '';
+      return `<div class="history-item">
+        <span class="hi-text">${escapeHtml(text)}</span>
+        <span class="hi-meta">${ts ? formatTime(ts) : ''}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('history-list').innerHTML = list;
+    document.getElementById('history-card').style.display = 'block';
+  }
+
+  // ── CSV & FETCH HELPERS ──────────────────────────────────────────────────────
+  async function fetchCSV(url) {
+    const text = await fetch(url + '&t=' + Date.now()).then(r => r.text());
+    return parseCSV(text);
+  }
+
   function parseCSV(text) {
     const trimmed = text.trim();
     if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
-      console.error('Classroom Light: CSV endpoint returned HTML. Is the Sheet published to web?');
+      console.error('Classroom Light: CSV returned HTML. Is the Sheet published to web?');
       return [];
     }
-    const lines = trimmed.split('\n');
-    return lines.slice(1).map(parseCSVLine);
+    return trimmed.split('\n').slice(1).map(parseCSVLine);
   }
 
   function parseCSVLine(line) {
@@ -521,7 +627,6 @@
     return result;
   }
 
-  // ── POST HELPER ──────────────────────────────────────────────────────────
   async function post(action, data) {
     const resp = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -532,309 +637,46 @@
     return resp.json();
   }
 
-  // ── PASSWORD GATE ────────────────────────────────────────────────────────
-  function checkPassword() {
-    const val = document.getElementById('pw-input').value;
-    if (val === HOST_PASSWORD) {
-      sessionStorage.setItem('classroom_host_auth', '1');
-      document.getElementById('pw-gate').style.display    = 'none';
-      // Restore active session if any
-      const saved = sessionStorage.getItem('classroom_host_session');
-      if (saved) {
-        try { activeSession = JSON.parse(saved); showActiveSession(); return; } catch {}
-      }
-      document.getElementById('no-session').style.display = 'block';
-    } else {
-      document.getElementById('pw-error').textContent = 'Incorrect password.';
-    }
+  // ── UI HELPERS ───────────────────────────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
   }
 
-  document.getElementById('pw-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') checkPassword();
-  });
+  function showAlert(type, msg) {
+    const el = document.getElementById('alert-' + type);
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 5000);
+  }
 
-  // ── CREATE SESSION ───────────────────────────────────────────────────────
-  async function createSession() {
-    const title = document.getElementById('session-title-input').value.trim();
-    const pw    = document.getElementById('session-pw-input').value.trim();
-    const errorEl = document.getElementById('create-error');
-    const btn   = document.getElementById('create-btn');
+  function clearAlert() {
+    document.querySelectorAll('.alert').forEach(a => a.classList.remove('show'));
+  }
 
-    errorEl.textContent = '';
-    if (!title) { errorEl.textContent = 'Please enter a session title.'; return; }
-    if (!pw)    { errorEl.textContent = 'Please set a session password.'; return; }
+  function setBusy(id, busy, label) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = busy;
+    if (label !== undefined) btn.textContent = busy ? label : label;
+  }
 
-    btn.disabled = true;
-    btn.textContent = 'Creating…';
+  function escapeHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
+  function formatTime(iso) {
     try {
-      const result = await post('create_session', { title, password: pw });
-      if (result.ok) {
-        activeSession = { code: result.code, title, password: pw };
-        sessionStorage.setItem('classroom_host_session', JSON.stringify(activeSession));
-        showActiveSession();
-      } else {
-        errorEl.textContent = result.error || 'Failed to create session.';
-      }
-    } catch {
-      errorEl.textContent = 'Connection error. Please try again.';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Create session';
-    }
+      const d = new Date(iso);
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
   }
 
-  // ── REOPEN SESSION ───────────────────────────────────────────────────────
-  async function reopenSession() {
-    const code = document.getElementById('reopen-code-input').value.trim().toUpperCase();
-    const pw   = document.getElementById('reopen-pw-input').value.trim();
-    const errorEl = document.getElementById('reopen-error');
+  // ── QR MODAL ─────────────────────────────────────────────────────────────────
+  function openQR()  { document.getElementById('qr-modal').classList.add('open'); }
+  function closeQR() { document.getElementById('qr-modal').classList.remove('open'); }
 
-    errorEl.textContent = '';
-    if (code.length !== 4) { errorEl.textContent = 'Enter a valid 4-character code.'; return; }
-    if (!pw) { errorEl.textContent = 'Enter the session password.'; return; }
-
-    try {
-      const resp = await fetch(SESSIONS_CSV + '&t=' + Date.now());
-      const text = await resp.text();
-      const rows = parseCSV(text);
-      const session = rows.find(r => r[0].trim().toUpperCase() === code);
-
-      if (!session) { errorEl.textContent = 'Session not found.'; return; }
-      if (session[4].trim() !== pw) { errorEl.textContent = 'Incorrect password.'; return; }
-
-      activeSession = { code: session[0].trim().toUpperCase(), title: session[1].trim(), password: pw };
-      sessionStorage.setItem('classroom_host_session', JSON.stringify(activeSession));
-      showActiveSession();
-    } catch {
-      errorEl.textContent = 'Connection error. Please try again.';
-    }
-  }
-
-  // ── SHOW ACTIVE SESSION ──────────────────────────────────────────────────
-  function showActiveSession() {
-    document.getElementById('no-session').style.display     = 'none';
-    document.getElementById('pw-gate').style.display        = 'none';
-    document.getElementById('active-session').style.display = 'block';
-    document.getElementById('summary').style.display        = 'none';
-
-    document.getElementById('active-title').textContent = activeSession.title;
-    document.getElementById('active-code').textContent  = activeSession.code;
-
-    // Display link
-    const displayUrl = `display.html?code=${activeSession.code}`;
-    document.getElementById('display-link').href = displayUrl;
-
-    fetchHostQuestions();
-    refreshTimer = setInterval(fetchHostQuestions, REFRESH_INTERVAL);
-  }
-
-  // ── FETCH QUESTIONS (HOST VIEW) ──────────────────────────────────────────
-  async function fetchHostQuestions() {
-    const indicator = document.getElementById('host-refresh');
-    indicator.textContent = 'refreshing…';
-    indicator.classList.add('fetching');
-
-    try {
-      const resp = await fetch(QUESTIONS_CSV + '&t=' + Date.now());
-      const text = await resp.text();
-      const rows = parseCSV(text);
-
-      allQuestions = rows
-        .filter(r => r[1].trim().toUpperCase() === activeSession.code)
-        .map(r => ({
-          id:      r[0].trim(),
-          name:    r[2].trim() || 'Anonymous',
-          text:    r[3].trim(),
-          upvotes: parseInt(r[4]) || 0,
-          status:  r[5].trim().toLowerCase(),
-          time:    r[6].trim()
-        }));
-
-      renderHostQuestions();
-      updateStats();
-      indicator.textContent = 'live';
-      indicator.classList.remove('fetching');
-    } catch {
-      indicator.textContent = 'offline';
-      indicator.classList.remove('fetching');
-    }
-  }
-
-  function updateStats() {
-    const visible  = allQuestions.filter(q => q.status !== 'hidden');
-    const open     = visible.filter(q => q.status === 'open' || q.status === 'pinned');
-    const answered = visible.filter(q => q.status === 'answered');
-    document.getElementById('stat-total').textContent    = visible.length;
-    document.getElementById('stat-open').textContent     = open.length;
-    document.getElementById('stat-answered').textContent = answered.length;
-  }
-
-  function renderHostQuestions() {
-    const listEl = document.getElementById('host-questions-list');
-
-    if (allQuestions.length === 0) {
-      listEl.innerHTML = '<div class="empty-state">No questions yet. Share the session code!</div>';
-      return;
-    }
-
-    // Sort: pinned first, then by upvotes desc, then timestamp asc
-    const sorted = [...allQuestions].sort((a, b) => {
-      if (a.status === 'pinned' && b.status !== 'pinned') return -1;
-      if (b.status === 'pinned' && a.status !== 'pinned') return 1;
-      if (a.status === 'hidden' && b.status !== 'hidden') return 1;
-      if (b.status === 'hidden' && a.status !== 'hidden') return -1;
-      if (b.upvotes !== a.upvotes) return b.upvotes - a.upvotes;
-      return new Date(a.time) - new Date(b.time);
-    });
-
-    listEl.innerHTML = sorted.map(q => {
-      let badge = '';
-      if (q.status === 'pinned')   badge = '<span class="question-status-badge pinned">📌 Pinned</span> ';
-      if (q.status === 'answered') badge = '<span class="question-status-badge answered">✓ Answered</span> ';
-      if (q.status === 'hidden')   badge = '<span class="question-status-badge hidden">Hidden</span> ';
-
-      const actions = buildActionButtons(q);
-      const timeStr = q.time ? new Date(q.time).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
-
-      return `
-        <div class="question-card ${q.status === 'pinned' ? 'pinned' : ''} ${q.status === 'answered' ? 'answered' : ''} ${q.status === 'hidden' ? 'hidden-q' : ''}"
-             id="qcard-${q.id}">
-          <div class="question-text">${escapeHtml(q.text)}</div>
-          <div class="question-meta">
-            <span class="question-author">${badge}${escapeHtml(q.name)}</span>
-            <span class="question-time">${timeStr}</span>
-            <span class="upvote-count">▲ ${q.upvotes}</span>
-          </div>
-          <div class="action-row">${actions}</div>
-        </div>`;
-    }).join('');
-  }
-
-  function buildActionButtons(q) {
-    const btns = [];
-    if (q.status === 'pinned') {
-      btns.push(`<button class="btn-action btn-pin" onclick="setStatus('${q.id}','open')">Unpin</button>`);
-    } else if (q.status !== 'hidden') {
-      btns.push(`<button class="btn-action btn-pin" onclick="setStatus('${q.id}','pinned')">📌 Pin</button>`);
-    }
-    if (q.status === 'answered') {
-      btns.push(`<button class="btn-action btn-answered" onclick="setStatus('${q.id}','open')">Reopen</button>`);
-    } else if (q.status !== 'hidden') {
-      btns.push(`<button class="btn-action btn-answered" onclick="setStatus('${q.id}','answered')">✓ Answered</button>`);
-    }
-    if (q.status === 'hidden') {
-      btns.push(`<button class="btn-action" onclick="setStatus('${q.id}','open')">Show</button>`);
-    } else {
-      btns.push(`<button class="btn-action btn-hide" onclick="setStatus('${q.id}','hidden')">Hide</button>`);
-    }
-    return btns.join('');
-  }
-
-  // ── SET QUESTION STATUS ──────────────────────────────────────────────────
-  async function setStatus(id, status) {
-    // Optimistic update
-    const q = allQuestions.find(q => q.id === id);
-    if (q) { q.status = status; renderHostQuestions(); updateStats(); }
-
-    try {
-      await post('update_status', {
-        id, status,
-        password:     activeSession.password,
-        session_code: activeSession.code
-      });
-    } catch {
-      // Revert on failure — next fetch will correct it
-    }
-  }
-
-  // ── COPY CODE ────────────────────────────────────────────────────────────
-  function copyCode() {
-    navigator.clipboard.writeText(activeSession.code).then(() => {
-      const btn = document.getElementById('copy-btn');
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-    });
-  }
-
-  // ── QR CODE ──────────────────────────────────────────────────────────────
-  function showQR() {
-    const url = 'https://pensoia.com/go';
-    document.getElementById('qr-img').src =
-      `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}&bgcolor=faf8f5&color=3d3529`;
-    document.getElementById('qr-code-label').textContent = activeSession.code;
-    document.getElementById('qr-modal').classList.add('open');
-  }
-  function closeQR(e) {
-    if (!e || e.target === document.getElementById('qr-modal') || e.currentTarget === document.querySelector('.modal-close')) {
-      document.getElementById('qr-modal').classList.remove('open');
-    }
-  }
-
-  // ── CLOSE SESSION ────────────────────────────────────────────────────────
-  function confirmClose() {
-    if (!confirm(`End session "${activeSession.title}"? Students will no longer be able to submit questions.`)) return;
-    closeSession();
-  }
-
-  async function closeSession() {
-    clearInterval(refreshTimer);
-    try {
-      await post('close_session', { code: activeSession.code, password: activeSession.password });
-    } catch {}
-    showSummary();
-  }
-
-  function showSummary() {
-    document.getElementById('active-session').style.display = 'none';
-    document.getElementById('summary').style.display        = 'block';
-
-    const visible  = allQuestions.filter(q => q.status !== 'hidden');
-    const answered = visible.filter(q => q.status === 'answered');
-    const totalVotes = visible.reduce((sum, q) => sum + q.upvotes, 0);
-    const top = [...visible].sort((a,b) => b.upvotes - a.upvotes)[0];
-
-    document.getElementById('summary-stats').textContent =
-      `${visible.length} questions · ${answered.length} answered · ${totalVotes} total upvotes`;
-
-    if (top && top.upvotes > 0) {
-      const topEl = document.getElementById('summary-top');
-      topEl.textContent = `Most popular: "${top.text}" (${top.upvotes} votes)`;
-      topEl.style.display = 'block';
-    }
-
-    sessionStorage.removeItem('classroom_host_session');
-    activeSession = null;
-  }
-
-  function startOver() {
-    document.getElementById('summary').style.display     = 'none';
-    document.getElementById('no-session').style.display  = 'block';
-    document.getElementById('session-title-input').value = '';
-    document.getElementById('session-pw-input').value    = '';
-  }
-
-  // ── UTILS ────────────────────────────────────────────────────────────────
-  function escapeHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  // ── INIT ─────────────────────────────────────────────────────────────────
-  if (sessionStorage.getItem('classroom_host_auth') === '1') {
-    document.getElementById('pw-gate').style.display = 'none';
-    const saved = sessionStorage.getItem('classroom_host_session');
-    if (saved) {
-      try { activeSession = JSON.parse(saved); showActiveSession(); }
-      catch { document.getElementById('no-session').style.display = 'block'; }
-    } else {
-      document.getElementById('no-session').style.display = 'block';
-    }
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && activeSession) fetchHostQuestions();
-  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && sessionCode) fetchData(); });
 </script>
 </body>
 </html>
