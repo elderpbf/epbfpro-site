@@ -170,6 +170,7 @@
     const trimmed = text.trim();
     if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
       console.error('Classroom Light: CSV returned HTML. Is the Sheet published to web?');
+      dbg('warn', 'CSV returned HTML — sheet not published to web?');
       return [];
     }
     return trimmed.split('\n').slice(1).map(parseCSVLine);
@@ -230,6 +231,7 @@
       const activeQ   = sessionQs.find(r => r[5].trim() === 'active');
 
       if (activeQ) {
+        dbg('poll', `active Q …${activeQ[0].trim().slice(-6)} | sess: ${sess ? sess[2].trim() : '?'}`);
         lastDisplayedQ = activeQ;
         render(activeQ, answers, false);
       } else if (lastDisplayedQ) {
@@ -241,6 +243,7 @@
       }
     } catch (err) {
       console.error('display fetch error:', err);
+      dbg('error', `fetch: ${err.message}`);
     } finally {
       setTimeout(() => dot.classList.remove('active'), 600);
     }
@@ -248,6 +251,9 @@
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   function render(qRow, answers, sessionClosed) {
+    if (sessionClosed)       dbg('info', 'render: session closed');
+    else if (!qRow)          dbg('info', 'render: waiting');
+    else                     dbg('info', `render: Q status=${qRow[5].trim()} reveal=${qRow[7].trim()}`);
     const main = document.getElementById('main-content');
 
     if (sessionClosed) {
@@ -327,6 +333,50 @@
   }
 
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fetchData(); });
+</script>
+
+<!-- ── DEBUG PANEL ──────────────────────────────────────────────────────────── -->
+<div id="dbg-wrap">
+  <button id="dbg-btn" onclick="dbgToggle()" title="Debug panel">DBG</button>
+  <div id="dbg-panel">
+    <div id="dbg-head"><span>Debug · display</span><button onclick="dbgClear()">clear</button></div>
+    <div id="dbg-log"></div>
+  </div>
+</div>
+<style>
+  #dbg-wrap  { position:fixed; bottom:12px; right:12px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-family:monospace; font-size:11px; }
+  #dbg-btn   { background:#1a1a1a; color:#4f4; border:1px solid #333; border-radius:4px; padding:3px 9px; cursor:pointer; opacity:0.6; }
+  #dbg-btn:hover { opacity:1; }
+  #dbg-panel { display:none; background:rgba(12,12,12,0.95); color:#ccc; border:1px solid #333; border-radius:8px; width:340px; max-height:280px; flex-direction:column; overflow:hidden; }
+  #dbg-panel.open { display:flex; }
+  #dbg-head  { display:flex; justify-content:space-between; align-items:center; padding:5px 10px; border-bottom:1px solid #2a2a2a; flex-shrink:0; }
+  #dbg-head span { color:#4f4; font-weight:bold; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; }
+  #dbg-head button { background:none; border:none; color:#555; cursor:pointer; font-family:monospace; font-size:10px; padding:0; }
+  #dbg-head button:hover { color:#aaa; }
+  #dbg-log   { overflow-y:auto; flex:1; padding:4px 8px; }
+  .dl        { display:flex; gap:6px; padding:1px 0; border-bottom:1px solid #1a1a1a; font-size:10px; line-height:1.5; word-break:break-all; }
+  .dl-t      { color:#444; flex-shrink:0; }
+  .dl-info   { color:#bbb; }
+  .dl-poll   { color:#468; }
+  .dl-warn   { color:#c80; }
+  .dl-error  { color:#f44; font-weight:bold; }
+  .dl-ok     { color:#4a4; }
+</style>
+<script>
+  function dbg(type, msg) {
+    const log = document.getElementById('dbg-log');
+    if (!log) return;
+    const now = new Date().toTimeString().slice(0,8);
+    const el  = document.createElement('div');
+    el.className = 'dl';
+    el.innerHTML = `<span class="dl-t">${now}</span><span class="dl-${type}">${_dbgEsc(msg)}</span>`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    while (log.children.length > 150) log.removeChild(log.firstChild);
+  }
+  function _dbgEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function dbgToggle() { document.getElementById('dbg-panel').classList.toggle('open'); }
+  function dbgClear()  { document.getElementById('dbg-log').innerHTML = ''; }
 </script>
 </body>
 </html>
