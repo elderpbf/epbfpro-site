@@ -177,16 +177,6 @@
 
   <hr>
 
-  <!-- ClassPulse Apps Script -->
-  <h3 data-key="settings_cp_section">Apps Script (ClassPulse)</h3>
-  <div class="bs-field">
-    <label data-key="settings_cp_sheet_label">ID da planilha</label>
-    <input id="settings-cp-sheet-id" type="text" placeholder="1BxiM..." autocomplete="off">
-    <p class="bs-hint" data-key="settings_cp_sheet_hint">Encontrado na URL da planilha do Google Sheets.</p>
-  </div>
-  <button class="bs-save-btn" id="settings-cp-save-btn" data-key="settings_cp_save_btn">Salvar</button>
-  <p class="bs-drawer-save-msg" id="settings-cp-save-msg"></p>
-
   <hr>
 
   <!-- AI API keys -->
@@ -772,7 +762,6 @@ var drawer  = document.getElementById('settings-drawer');
 function openSettings() {
   document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
   document.getElementById('settings-save-msg').textContent = '';
-  document.getElementById('settings-cp-sheet-id').value = localStorage.getItem('bs_cp_spreadsheet_id') || '';
   document.getElementById('settings-cp-save-msg').textContent = '';
   document.getElementById('settings-gemini-key').value = localStorage.getItem('bs_gemini_key') || '';
   document.getElementById('debug-toggle-btn') && (function() {
@@ -817,13 +806,6 @@ document.getElementById('settings-save-btn').addEventListener('click', function(
   if (!document.getElementById('view-classforge').hidden) loadPresentations();
 });
 
-document.getElementById('settings-cp-save-btn').addEventListener('click', function() {
-  localStorage.setItem('bs_cp_spreadsheet_id', document.getElementById('settings-cp-sheet-id').value.trim());
-  document.getElementById('settings-cp-save-msg').textContent = t('save_ok');
-  setTimeout(function() {
-    document.getElementById('settings-cp-save-msg').textContent = '';
-  }, 3000);
-});
 
 document.getElementById('settings-gemini-save-btn').addEventListener('click', function() {
   localStorage.setItem('bs_gemini_key', document.getElementById('settings-gemini-key').value.trim());
