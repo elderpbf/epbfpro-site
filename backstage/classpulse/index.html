@@ -622,24 +622,24 @@ async function confirmDeleteSet(name) {
 // ---------------------------------------------------------------------------
 
 async function callAI(prompt) {
-  var geminiKey   = localStorage.getItem('bs_gemini_key') || '';
-  var deepseekKey = localStorage.getItem('bs_deepseek_key') || '';
+  var key1 = localStorage.getItem('bs_gemini_key') || '';
+  var key2 = localStorage.getItem('bs_gemini_key2') || '';
 
-  if (!geminiKey && !deepseekKey) {
+  if (!key1 && !key2) {
     throw new Error('Nenhuma chave de IA configurada. Adicione em Backstage > Configuracoes.');
   }
 
-  if (geminiKey) {
+  if (key1) {
     try {
-      return await callGemini(prompt, geminiKey);
+      return await callGemini(prompt, key1);
     } catch (e) {
       var isQuota = e.message && (e.message.indexOf('quota') !== -1 || e.message.indexOf('429') !== -1 || e.message.indexOf('RESOURCE_EXHAUSTED') !== -1);
-      if (!isQuota || !deepseekKey) throw e;
-      // quota exceeded - fall through to DeepSeek
+      if (!isQuota || !key2) throw e;
+      // quota exceeded - fall through to backup key
     }
   }
 
-  return await callDeepSeek(prompt, deepseekKey);
+  return await callGemini(prompt, key2);
 }
 
 async function callGemini(prompt, apiKey) {
@@ -669,28 +669,6 @@ async function callGemini(prompt, apiKey) {
   return JSON.parse(clean);
 }
 
-async function callDeepSeek(prompt, apiKey) {
-  var resp = await fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7
-    })
-  });
-
-  if (!resp.ok) {
-    var errData = await resp.json().catch(function() { return {}; });
-    throw new Error(errData.error && errData.error.message ? errData.error.message : 'DeepSeek HTTP ' + resp.status);
-  }
-
-  var data = await resp.json();
-  var raw = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (!raw) throw new Error('Resposta vazia do DeepSeek.');
-  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
-  return JSON.parse(clean);
-}
 
 document.getElementById('q-generate-btn').addEventListener('click', async function() {
   var instruction = document.getElementById('q-text').value.trim();
