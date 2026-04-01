@@ -1,0 +1,341 @@
+/* =========================================================
+   Backstage — ClassForge styles
+   Presentation cards, states, theme grid.
+   All class names use cf- prefix (ClassForge-scoped).
+   ========================================================= */
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.cf-toolbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.cf-toolbar h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.cf-new-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.55rem 1.2rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity .2s, transform .2s;
+}
+
+.cf-new-btn:hover { opacity: .9; transform: translateY(-1px); text-decoration: none; color: white; }
+
+.cf-refresh-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.3);
+  border-radius: 8px;
+  color: var(--primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.cf-refresh-btn:hover { background: rgba(20,184,166,.08); border-color: var(--primary); }
+
+/* =========================================================
+   PRESENTATION CARDS
+   ========================================================= */
+
+.cf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.cf-card {
+  background: var(--surface);
+  border: 1px solid rgba(20,184,166,.15);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform .25s, box-shadow .25s;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.cf-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px var(--shadow);
+  border-color: rgba(20,184,166,.35);
+}
+
+.cf-card-thumb {
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: rgba(255,255,255,.7);
+  letter-spacing: -0.03em;
+  position: relative;
+}
+
+.cf-card-badge {
+  position: absolute;
+  top: 10px; left: 10px;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+}
+
+.cf-card-body {
+  padding: 1.1rem 1.2rem 1.2rem;
+}
+
+.cf-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cf-card-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.cf-card-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.cf-btn-present {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+
+.cf-btn-present:hover { opacity: .85; color: white; text-decoration: none; }
+
+.cf-btn-edit {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.35);
+  border-radius: 6px;
+  color: var(--primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.cf-btn-edit:hover {
+  background: rgba(20,184,166,.08);
+  border-color: var(--primary);
+  text-decoration: none;
+  color: var(--primary-dark);
+}
+
+.cf-btn-edit[disabled], .cf-btn-edit.cf-disabled {
+  opacity: .3;
+  pointer-events: none;
+}
+
+/* =========================================================
+   STATES (loading, empty, error)
+   ========================================================= */
+
+.cf-state-block {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  color: var(--text-secondary);
+}
+
+.cf-state-block p {
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.cf-state-block .cf-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  display: block;
+  opacity: .5;
+}
+
+.cf-inline-btn {
+  display: inline-block;
+  padding: 0.5rem 1.2rem;
+  background: rgba(20,184,166,.12);
+  border: 1.5px solid rgba(20,184,166,.4);
+  border-radius: 8px;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all .2s;
+}
+
+.cf-inline-btn:hover { background: rgba(20,184,166,.2); }
+
+/* Skeleton loader */
+.cf-skeleton {
+  background: linear-gradient(90deg, rgba(20,184,166,.08) 25%, rgba(20,184,166,.16) 50%, rgba(20,184,166,.08) 75%);
+  background-size: 200% 100%;
+  animation: cf-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes cf-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.cf-card-skeleton .cf-card-thumb { background: none; }
+.cf-card-skeleton .cf-card-thumb-sk {
+  width: 100%; aspect-ratio: 16/9;
+}
+.cf-card-skeleton .cf-sk-line {
+  height: 14px; margin-bottom: 8px; border-radius: 4px;
+}
+.cf-card-skeleton .cf-sk-line.short { width: 55%; }
+
+/* =========================================================
+   VISUAL THEME GRID (in settings drawer)
+   ========================================================= */
+
+.cf-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.cf-theme-card {
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color .2s, transform .15s;
+  outline: none;
+}
+
+.cf-theme-card:hover { transform: translateY(-2px); }
+
+.cf-theme-card.cf-selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(20,184,166,.3);
+}
+
+.cf-theme-card-preview {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  aspect-ratio: 16/9;
+}
+
+.cf-theme-card-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  font-family: 'Inter', sans-serif;
+}
+
+.cf-theme-card-bar {
+  height: 2px;
+  border-radius: 1px;
+  width: 80%;
+}
+
+.cf-theme-card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.cf-theme-card-line {
+  height: 2px;
+  border-radius: 1px;
+  opacity: 0.45;
+}
+
+.cf-theme-card-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px 2px;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  font-family: 'Inter', sans-serif;
+}
+
+.cf-theme-card-delete {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 18px; height: 18px;
+  background: rgba(0,0,0,.5);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity .15s;
+  line-height: 1;
+}
+
+.cf-theme-card:hover .cf-theme-card-delete { opacity: 1; }
+.cf-theme-card-delete:hover { background: rgba(239,68,68,.8); }
+
+.cf-theme-card-wrap {
+  position: relative;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .cf-grid { grid-template-columns: 1fr; }
+}

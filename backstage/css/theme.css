@@ -1,0 +1,48 @@
+/* =========================================================
+   Backstage — Design Tokens
+   CSS custom properties for colors + base body styles.
+   This is the ONLY file that defines color variables.
+   All other CSS files reference these via var(--...).
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+[hidden] { display: none !important; }
+
+:root {
+  --primary: #14b8a6;
+  --primary-dark: #0d9488;
+  --primary-light: #5eead4;
+  --secondary: #047857;
+  --accent: #7de8d6;
+  --background: #d4f4ed;
+  --surface: #ffffff;
+  --text-primary: #134e4a;
+  --text-secondary: #115e59;
+  --text-light: #2dd4bf;
+  --shadow: rgba(20, 184, 166, 0.1);
+}
+
+[data-theme="dark"] {
+  --primary: #14b8a6;
+  --primary-dark: #0d9488;
+  --primary-light: #2dd4bf;
+  --secondary: #0f766e;
+  --accent: #134e4a;
+  --background: #0f1419;
+  --surface: #1a1f26;
+  --text-primary: #e5e7eb;
+  --text-secondary: #d1d5db;
+  --text-light: #5eead4;
+  --shadow: rgba(0, 0, 0, 0.3);
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.7;
+  color: var(--text-primary);
+  background-color: var(--background);
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}

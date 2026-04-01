@@ -3,20 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ClassForge</title>
+<meta name="robots" content="noindex, nofollow">
+<title>Backstage - PensoIA</title>
 
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="../css/style.css?v=2.1">
-<link rel="stylesheet" href="css/common.css?v=1.0">
-<link rel="stylesheet" href="css/dashboard.css?v=1.0">
-
+<link rel="stylesheet" href="css/theme.css?v=1.0">
+<link rel="stylesheet" href="css/backstage.css?v=1.0">
+<link rel="stylesheet" href="css/classforge.css?v=1.0">
 </head>
 <body>
 
@@ -25,150 +21,188 @@
 <!-- =====================================================
      SCREEN: FIRST-TIME PASSWORD SETUP
      ===================================================== -->
-<div id="screen-setup-pw" class="cf-auth-bg" hidden>
-  <div class="cf-auth-card">
-    <div class="cf-auth-logo">
+<div id="screen-setup-pw" class="bs-auth-bg" hidden>
+  <div class="bs-auth-card">
+    <div class="bs-auth-logo">
       <img src="../images/logo.png" alt="PensoIA">
-      <span class="cf-product">ClassForge</span>
+      <span class="bs-product">Backstage</span>
     </div>
     <h2 data-key="setup_title">Criar senha de acesso</h2>
-    <p class="cf-auth-hint" data-key="setup_hint">Esta senha protege seu painel. Guarde-a em local seguro.</p>
-    <div class="cf-field">
+    <p class="bs-auth-hint" data-key="setup_hint">Esta senha protege seu painel. Guarde-a em local seguro.</p>
+    <div class="bs-field">
       <label data-key="setup_pw_label">Senha</label>
-      <input id="setup-pw" type="password" autocomplete="new-password">
+      <input id="setup-pw" type="password" autocomplete="off">
     </div>
-    <div class="cf-field">
+    <div class="bs-field">
       <label data-key="setup_confirm_label">Confirmar senha</label>
-      <input id="setup-pw-confirm" type="password" autocomplete="new-password">
+      <input id="setup-pw-confirm" type="password" autocomplete="off">
     </div>
-    <p class="cf-form-error" id="setup-error"></p>
-    <button class="cf-auth-btn" id="setup-btn" data-key="setup_btn">Criar senha e entrar</button>
+    <p class="bs-form-error" id="setup-error"></p>
+    <button class="bs-auth-btn" id="setup-btn" data-key="setup_btn">Criar senha e entrar</button>
   </div>
 </div>
 
 <!-- =====================================================
      SCREEN: LOGIN
      ===================================================== -->
-<div id="screen-login" class="cf-auth-bg" hidden>
-  <div class="cf-auth-card">
-    <div class="cf-auth-logo">
+<div id="screen-login" class="bs-auth-bg" hidden>
+  <div class="bs-auth-card">
+    <div class="bs-auth-logo">
       <img src="../images/logo.png" alt="PensoIA">
-      <span class="cf-product">ClassForge</span>
+      <span class="bs-product">Backstage</span>
     </div>
     <h2 data-key="login_title">Bem-vindo de volta</h2>
-    <p class="cf-auth-hint" data-key="login_hint">Entre com sua senha para acessar o painel.</p>
-    <div class="cf-field">
+    <p class="bs-auth-hint" data-key="login_hint">Entre com sua senha para acessar o painel.</p>
+    <div class="bs-field">
       <label data-key="login_pw_label">Senha</label>
-      <input id="login-pw" type="password" autocomplete="current-password">
+      <input id="login-pw" type="password" autocomplete="off">
     </div>
-    <p class="cf-form-error" id="login-error"></p>
-    <button class="cf-auth-btn" id="login-btn" data-key="login_btn">Entrar</button>
+    <p class="bs-form-error" id="login-error"></p>
+    <button class="bs-auth-btn" id="login-btn" data-key="login_btn">Entrar</button>
   </div>
 </div>
 
 <!-- =====================================================
-     SCREEN: DASHBOARD
+     SCREEN: APP
      ===================================================== -->
-<div id="screen-dashboard" class="cf-app" hidden>
+<div id="screen-app" class="bs-app" hidden>
 
-  <header class="cf-topbar">
-    <div class="cf-topbar-inner">
-      <a href="https://pensoia.com" class="cf-topbar-logo" aria-label="PensoIA">
+  <header class="bs-topbar">
+    <div class="bs-topbar-inner">
+      <a href="https://pensoia.com" class="bs-topbar-logo" aria-label="PensoIA">
         <img src="../images/logo.png" alt="PensoIA">
-        <span class="cf-topbar-name">ClassForge</span>
+        <div class="bs-topbar-wordmark">
+          <span class="bs-topbar-brand">PensoIA</span>
+          <span class="bs-topbar-name">Backstage</span>
+        </div>
       </a>
-      <div class="cf-topbar-spacer"></div>
-      <button class="cf-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
+      <div class="bs-topbar-spacer"></div>
+      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
         <span id="themeIcon"></span>
       </button>
-      <button class="cf-icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
+      <button class="bs-icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       </button>
-      <button class="cf-logout-btn" id="logout-btn" data-key="logout_btn">Sair</button>
+      <button class="bs-logout-btn" id="logout-btn" data-key="logout_btn">Sair</button>
     </div>
   </header>
 
-  <main class="cf-main">
+  <main class="bs-main">
 
-    <div class="cf-toolbar">
-      <h1 data-key="dashboard_title">Apresentações</h1>
-      <button class="cf-refresh-btn" id="refresh-btn" title="Recarregar lista">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-        </svg>
-        <span data-key="refresh_btn">Atualizar</span>
-      </button>
-      <a href="https://slides.google.com/" target="_blank" rel="noopener noreferrer" class="cf-new-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        <span data-key="new_btn">Nova apresentação</span>
-      </a>
+    <!-- Dashboard view -->
+    <div id="view-dashboard">
+      <h1 class="bs-dashboard-title" data-key="dashboard_title">Ferramentas</h1>
+      <div class="bs-tool-grid">
+
+        <!-- ClassForge -->
+        <div class="bs-tool-card" id="card-classforge" role="button" tabindex="0" aria-label="Abrir ClassForge">
+          <div class="bs-tool-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div class="bs-tool-name">ClassForge</div>
+          <div class="bs-tool-desc" data-key="classforge_desc">Apresentações</div>
+        </div>
+
+        <!-- ClassPulse (coming soon) -->
+        <div class="bs-tool-card bs-disabled" aria-label="ClassPulse - Em breve">
+          <div class="bs-soon-badge" data-key="soon_badge">Em breve</div>
+          <div class="bs-tool-icon" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </div>
+          <div class="bs-tool-name">ClassPulse</div>
+          <div class="bs-tool-desc" data-key="classpulse_desc">Interacao em sala</div>
+        </div>
+
+      </div>
     </div>
 
-    <div id="cf-grid" class="cf-grid">
-      <!-- Demo card injected by JS -->
-      <!-- Dynamic cards appended by JS -->
+    <!-- ClassForge view -->
+    <div id="view-classforge" hidden>
+
+      <div class="cf-toolbar">
+        <h1 data-key="cf_title">Apresentacoes</h1>
+        <button class="cf-refresh-btn" id="refresh-btn" title="Recarregar lista">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          <span data-key="refresh_btn">Atualizar</span>
+        </button>
+        <a href="https://slides.google.com/" target="_blank" rel="noopener noreferrer" class="cf-new-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span data-key="new_btn">Nova apresentacao</span>
+        </a>
+      </div>
+
+      <div id="cf-grid" class="cf-grid">
+        <!-- Demo card + dynamic cards injected by JS -->
+      </div>
+
     </div>
 
   </main>
 
-</div><!-- /screen-dashboard -->
+</div><!-- /screen-app -->
 
 <!-- =====================================================
      SETTINGS DRAWER
      ===================================================== -->
-<div id="settings-overlay" class="cf-overlay" hidden></div>
+<div id="settings-overlay" class="bs-overlay" hidden></div>
 
-<aside id="settings-drawer" class="cf-drawer" hidden aria-label="Configurações">
+<aside id="settings-drawer" class="bs-drawer" hidden aria-label="Configuracoes">
 
   <h2>
-    <span data-key="settings_title">Configurações</span>
-    <button class="cf-drawer-close" id="settings-close" aria-label="Fechar">&times;</button>
+    <span data-key="settings_title">Configuracoes</span>
+    <button class="bs-drawer-close" id="settings-close" aria-label="Fechar">&times;</button>
   </h2>
 
-  <!-- Script URL -->
-  <h3 data-key="settings_script_section">Apps Script</h3>
-  <div class="cf-field">
+  <!-- ClassForge Apps Script -->
+  <h3 data-key="settings_script_section">Apps Script (ClassForge)</h3>
+  <div class="bs-field">
     <label data-key="settings_script_label">URL do Apps Script</label>
-    <input id="settings-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    <input id="settings-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
   </div>
-  <p class="cf-hint" data-key="settings_script_hint">
-    Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.
+  <p class="bs-hint" data-key="settings_script_hint">
+    Implante o Code.gs como Web App e cole a URL aqui. Necessario para carregar suas apresentacoes.
   </p>
-  <button class="cf-save-btn" id="settings-save-btn" data-key="settings_save_btn">Salvar</button>
-  <p class="cf-drawer-save-msg" id="settings-save-msg"></p>
+  <button class="bs-save-btn" id="settings-save-btn" data-key="settings_save_btn">Salvar</button>
+  <p class="bs-drawer-save-msg" id="settings-save-msg"></p>
 
   <hr>
 
-  <!-- Theme -->
-  <h3 data-key="settings_theme_section">Tema de apresentação</h3>
-  <p class="cf-hint" style="margin-bottom:0.75rem" data-key="settings_theme_hint">Aplicado a todas as apresentações ao clicar em Apresentar.</p>
+  <!-- Reveal.js theme -->
+  <h3 data-key="settings_theme_section">Tema de apresentacao</h3>
+  <p class="bs-hint" style="margin-bottom:0.75rem" data-key="settings_theme_hint">Aplicado a todas as apresentacoes ao clicar em Apresentar.</p>
   <div id="settings-theme-grid" class="cf-theme-grid"></div>
 
   <div style="margin-top:1.25rem">
-    <button class="cf-change-pw-btn" id="show-theme-gen-btn" data-key="settings_theme_gen_btn">+ Criar tema com IA</button>
+    <button class="bs-toggle-btn" id="show-theme-gen-btn" data-key="settings_theme_gen_btn">+ Criar tema com IA</button>
 
     <div id="theme-gen-form" hidden style="margin-top:1rem">
-      <div class="cf-field">
+      <div class="bs-field">
         <label data-key="settings_gemini_key_label">Chave da API Gemini</label>
         <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
-        <p class="cf-hint" data-key="settings_gemini_key_hint">Armazenada localmente, nunca enviada a terceiros.</p>
+        <p class="bs-hint" data-key="settings_gemini_key_hint">Armazenada localmente, nunca enviada a terceiros.</p>
       </div>
-      <div class="cf-field">
+      <div class="bs-field">
         <label data-key="settings_theme_desc_label">Descreva o tema</label>
-        <textarea id="theme-desc-input" class="cf-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano. Tipografia moderna, fundo quase preto, destaques em ciano..."></textarea>
+        <textarea id="theme-desc-input" class="bs-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano. Tipografia moderna, fundo quase preto, destaques em ciano..."></textarea>
       </div>
-      <p class="cf-form-error" id="theme-gen-error"></p>
-      <button class="cf-save-btn" id="theme-gen-btn" data-key="settings_theme_gen_submit">Gerar com Gemini</button>
+      <p class="bs-form-error" id="theme-gen-error"></p>
+      <button class="bs-save-btn" id="theme-gen-btn" data-key="settings_theme_gen_submit">Gerar com Gemini</button>
 
       <div id="theme-gen-preview" hidden style="margin-top:1rem; padding:0.75rem; border-radius:8px; border:1px solid rgba(20,184,166,.3)">
-        <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.5rem" data-key="theme_preview_label">Pré-visualização</p>
+        <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.5rem" data-key="theme_preview_label">Pre-visualizacao</p>
         <div id="theme-preview-swatches" style="display:flex; gap:6px; margin-bottom:0.75rem"></div>
         <p id="theme-preview-name" style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:0.75rem"></p>
-        <button class="cf-save-btn" id="theme-save-btn" data-key="theme_save_btn">Salvar tema</button>
+        <button class="bs-save-btn" id="theme-save-btn" data-key="theme_save_btn">Salvar tema</button>
       </div>
     </div>
 
@@ -176,25 +210,25 @@
 
   <hr>
 
-  <!-- Change password -->
-  <h3 data-key="settings_security_section">Segurança</h3>
-  <button class="cf-change-pw-btn" id="show-change-pw-btn" data-key="settings_change_pw_btn">Alterar senha</button>
+  <!-- Security -->
+  <h3 data-key="settings_security_section">Seguranca</h3>
+  <button class="bs-toggle-btn" id="show-change-pw-btn" data-key="settings_change_pw_btn">Alterar senha</button>
 
   <div id="change-pw-form" hidden>
-    <div class="cf-field" style="margin-top:1rem">
+    <div class="bs-field" style="margin-top:1rem">
       <label data-key="change_pw_current">Senha atual</label>
-      <input id="change-pw-current" type="password" autocomplete="current-password">
+      <input id="change-pw-current" type="password" autocomplete="off">
     </div>
-    <div class="cf-field">
+    <div class="bs-field">
       <label data-key="change_pw_new">Nova senha</label>
-      <input id="change-pw-new" type="password" autocomplete="new-password">
+      <input id="change-pw-new" type="password" autocomplete="off">
     </div>
-    <div class="cf-field">
+    <div class="bs-field">
       <label data-key="change_pw_confirm">Confirmar nova senha</label>
-      <input id="change-pw-confirm" type="password" autocomplete="new-password">
+      <input id="change-pw-confirm" type="password" autocomplete="off">
     </div>
-    <p class="cf-form-error" id="change-pw-error"></p>
-    <button class="cf-save-btn" id="change-pw-save-btn" data-key="change_pw_save_btn">Atualizar senha</button>
+    <p class="bs-form-error" id="change-pw-error"></p>
+    <button class="bs-save-btn" id="change-pw-save-btn" data-key="change_pw_save_btn">Atualizar senha</button>
   </div>
 
 </aside>
@@ -206,31 +240,34 @@
 'use strict';
 
 // ---------------------------------------------------------------------------
-// i18n (PT-BR default; add new language objects to TRANSLATIONS to expand)
+// i18n (PT-BR)
 // ---------------------------------------------------------------------------
 
-const TRANSLATIONS = {
+var TRANSLATIONS = {
   'pt-BR': {
-    setup_title:            'Criar senha de acesso',
-    setup_hint:             'Esta senha protege seu painel. Guarde-a em local seguro.',
-    setup_pw_label:         'Senha',
-    setup_confirm_label:    'Confirmar senha',
-    setup_btn:              'Criar senha e entrar',
-    login_title:            'Bem-vindo de volta',
-    login_hint:             'Entre com sua senha para acessar o painel.',
-    login_pw_label:         'Senha',
-    login_btn:              'Entrar',
-    logout_btn:             'Sair',
-    dashboard_title:        'Apresentações',
-    refresh_btn:            'Atualizar',
-    new_btn:                'Nova apresentação',
-    settings_title:         'Configurações',
-    settings_script_section:'Apps Script',
-    settings_script_label:  'URL do Apps Script',
-    settings_script_hint:   'Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.',
-    settings_save_btn:      'Salvar',
+    setup_title:               'Criar senha de acesso',
+    setup_hint:                'Esta senha protege seu painel. Guarde-a em local seguro.',
+    setup_pw_label:            'Senha',
+    setup_confirm_label:       'Confirmar senha',
+    setup_btn:                 'Criar senha e entrar',
+    login_title:               'Bem-vindo de volta',
+    login_hint:                'Entre com sua senha para acessar o painel.',
+    login_pw_label:            'Senha',
+    login_btn:                 'Entrar',
+    logout_btn:                'Sair',
+    dashboard_title:           'Ferramentas',
+    classforge_desc:           'Apresentações',
+    classpulse_desc:           'Interação em sala',
+    soon_badge:                'Em breve',
+    cf_title:                  'Apresentações',
+    refresh_btn:               'Atualizar',
+    new_btn:                   'Nova apresentação',
+    settings_title:            'Configurações',
+    settings_script_section:   'Apps Script (ClassForge)',
+    settings_script_label:     'URL do Apps Script',
+    settings_script_hint:      'Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.',
+    settings_save_btn:         'Salvar',
     settings_theme_section:    'Tema de apresentação',
-    settings_theme_label:      'Tema padrão',
     settings_theme_hint:       'Aplicado a todas as apresentações ao clicar em Apresentar.',
     settings_theme_gen_btn:    '+ Criar tema com IA',
     settings_gemini_key_label: 'Chave da API Gemini',
@@ -240,50 +277,81 @@ const TRANSLATIONS = {
     theme_preview_label:       'Pré-visualização',
     theme_save_btn:            'Salvar tema',
     settings_security_section: 'Segurança',
-    settings_change_pw_btn: 'Alterar senha',
-    change_pw_current:      'Senha atual',
-    change_pw_new:          'Nova senha',
-    change_pw_confirm:      'Confirmar nova senha',
-    change_pw_save_btn:     'Atualizar senha',
-    card_present:           'Apresentar',
-    card_edit:              'Editar',
-    card_demo_badge:        'Demo',
-    card_demo_title:        'Por que patos são legais?',
-    card_demo_meta:         'Apresentação de demonstração',
-    state_no_script_msg:    'Configure o Apps Script para ver suas apresentações.',
-    state_no_script_btn:    'Configurar agora',
-    state_loading_msg:      'Carregando apresentações...',
-    state_error_btn:        'Tentar novamente',
-    state_empty_msg:        'Nenhuma apresentação encontrada na pasta.',
-    save_ok:                'Salvo com sucesso.',
-    error_pw_short:         'A senha deve ter pelo menos 6 caracteres.',
-    error_pw_match:         'As senhas não coincidem.',
-    error_pw_wrong:         'Senha incorreta.',
-    error_pw_current_wrong: 'Senha atual incorreta.',
-    change_pw_ok:           'Senha alterada com sucesso.',
+    settings_change_pw_btn:    'Alterar senha',
+    change_pw_current:         'Senha atual',
+    change_pw_new:             'Nova senha',
+    change_pw_confirm:         'Confirmar nova senha',
+    change_pw_save_btn:        'Atualizar senha',
+    card_present:              'Apresentar',
+    card_edit:                 'Editar',
+    card_demo_badge:           'Demo',
+    card_demo_title:           'Por que patos são legais?',
+    card_demo_meta:            'Apresentação de demonstração',
+    state_no_script_msg:       'Configure o Apps Script para ver suas apresentações.',
+    state_no_script_btn:       'Configurar agora',
+    state_loading_msg:         'Carregando apresentações...',
+    state_error_btn:           'Tentar novamente',
+    state_empty_msg:           'Nenhuma apresentação encontrada na pasta.',
+    save_ok:                   'Salvo com sucesso.',
+    error_pw_short:            'A senha deve ter pelo menos 6 caracteres.',
+    error_pw_match:            'As senhas não coincidem.',
+    error_pw_wrong:            'Senha incorreta.',
+    error_pw_current_wrong:    'Senha atual incorreta.',
+    change_pw_ok:              'Senha alterada com sucesso.',
   }
 };
 
-const LANG = 'pt-BR';
-const T = TRANSLATIONS[LANG];
-
+var LANG = 'pt-BR';
+var T = TRANSLATIONS[LANG];
 function t(key) { return T[key] || key; }
 
+// Apply translations
+document.querySelectorAll('[data-key]').forEach(function(el) {
+  var key = el.getAttribute('data-key');
+  if (T[key]) el.textContent = T[key];
+});
+
 // ---------------------------------------------------------------------------
-// Theme
+// Migration from old cf_ keys to bs_ keys
+// ---------------------------------------------------------------------------
+
+function migrateOldKeys() {
+  var migrations = [
+    ['cf_pw_hash',      'bs_pw_hash'],
+    ['cf_script_url',   'bs_cf_script_url'],
+    ['cf_theme',        'bs_reveal_theme'],
+    ['cf_custom_themes','bs_custom_themes'],
+    ['cf_gemini_key',   'bs_gemini_key']
+  ];
+  migrations.forEach(function(pair) {
+    var old = localStorage.getItem(pair[0]);
+    if (old && !localStorage.getItem(pair[1])) {
+      localStorage.setItem(pair[1], old);
+    }
+  });
+  // Migrate site theme preference
+  var oldTheme = localStorage.getItem('theme');
+  if (oldTheme && !localStorage.getItem('bs_theme')) {
+    localStorage.setItem('bs_theme', oldTheme);
+  }
+}
+migrateOldKeys();
+
+// ---------------------------------------------------------------------------
+// Theme toggle
 // ---------------------------------------------------------------------------
 
 var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
 
-var themeIcon   = document.getElementById('themeIcon');
-var themeToggle = document.getElementById('themeToggle');
+var themeIcon    = document.getElementById('themeIcon');
+var themeToggle  = document.getElementById('themeToggle');
 var themeOverlay = document.getElementById('themeTransition');
 
 function applyTheme(theme, animate, ox, oy) {
   if (animate && themeOverlay) {
-    themeOverlay.style.setProperty('--tx', (ox||0)+'px');
-    themeOverlay.style.setProperty('--ty', (oy||0)+'px');
+    themeOverlay.style.setProperty('--tx', (ox || 0) + 'px');
+    themeOverlay.style.setProperty('--ty', (oy || 0) + 'px');
     document.documentElement.setAttribute('data-theme', theme);
     var bg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
     document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
@@ -294,23 +362,26 @@ function applyTheme(theme, animate, ox, oy) {
       document.documentElement.setAttribute('data-theme', theme);
       themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
       themeToggle.setAttribute('aria-pressed', theme === 'dark');
-      localStorage.setItem('theme', theme);
+      localStorage.setItem('bs_theme', theme);
       setTimeout(function() { themeOverlay.classList.remove('active'); }, 100);
     }, 500);
   } else {
     document.documentElement.setAttribute('data-theme', theme);
     themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
     themeToggle.setAttribute('aria-pressed', theme === 'dark');
-    localStorage.setItem('theme', theme);
+    localStorage.setItem('bs_theme', theme);
   }
 }
 
-applyTheme(localStorage.getItem('theme') || 'light', false);
+// Default to dark
+var savedTheme = localStorage.getItem('bs_theme') || 'dark';
+if (!localStorage.getItem('bs_theme')) localStorage.setItem('bs_theme', 'dark');
+applyTheme(savedTheme, false);
 
 themeToggle.addEventListener('click', function(e) {
-  var cur = document.documentElement.getAttribute('data-theme') || 'light';
+  var cur = document.documentElement.getAttribute('data-theme') || 'dark';
   var rect = e.currentTarget.getBoundingClientRect();
-  applyTheme(cur === 'dark' ? 'light' : 'dark', true, rect.left + rect.width/2, rect.top + rect.height/2);
+  applyTheme(cur === 'dark' ? 'light' : 'dark', true, rect.left + rect.width / 2, rect.top + rect.height / 2);
 });
 
 // ---------------------------------------------------------------------------
@@ -319,14 +390,17 @@ themeToggle.addEventListener('click', function(e) {
 
 async function hashPw(pw) {
   var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 }
 
 // ---------------------------------------------------------------------------
 // Screen management
 // ---------------------------------------------------------------------------
 
-var SCREENS = ['screen-setup-pw', 'screen-login', 'screen-dashboard'];
+var PW_KEY   = 'bs_pw_hash';
+var AUTH_KEY = 'bs_auth';
+
+var SCREENS = ['screen-setup-pw', 'screen-login', 'screen-app'];
 
 function showScreen(id) {
   SCREENS.forEach(function(s) {
@@ -335,11 +409,13 @@ function showScreen(id) {
 }
 
 // ---------------------------------------------------------------------------
-// Auth
+// Boot
 // ---------------------------------------------------------------------------
 
-var PW_KEY   = 'cf_pw_hash';
-var AUTH_KEY = 'cf_auth';
+// Clear any browser-injected password values on load
+document.querySelectorAll('input[type="password"]').forEach(function(el) {
+  el.value = '';
+});
 
 async function init() {
   var hash = localStorage.getItem(PW_KEY);
@@ -349,23 +425,27 @@ async function init() {
     return;
   }
   if (sessionStorage.getItem(AUTH_KEY) === '1') {
-    showDashboard();
+    showApp();
     return;
   }
   showScreen('screen-login');
   document.getElementById('login-pw').focus();
 }
 
+// ---------------------------------------------------------------------------
+// Auth event handlers
+// ---------------------------------------------------------------------------
+
 document.getElementById('setup-btn').addEventListener('click', async function() {
   var pw  = document.getElementById('setup-pw').value;
   var pw2 = document.getElementById('setup-pw-confirm').value;
   var err = document.getElementById('setup-error');
   err.textContent = '';
-  if (pw.length < 6)   { err.textContent = t('error_pw_short'); return; }
-  if (pw !== pw2)      { err.textContent = t('error_pw_match'); return; }
+  if (pw.length < 6)  { err.textContent = t('error_pw_short'); return; }
+  if (pw !== pw2)     { err.textContent = t('error_pw_match'); return; }
   localStorage.setItem(PW_KEY, await hashPw(pw));
   sessionStorage.setItem(AUTH_KEY, '1');
-  showDashboard();
+  showApp();
 });
 
 document.getElementById('login-btn').addEventListener('click', async function() {
@@ -380,10 +460,10 @@ document.getElementById('login-btn').addEventListener('click', async function() 
     return;
   }
   sessionStorage.setItem(AUTH_KEY, '1');
-  showDashboard();
+  showApp();
 });
 
-['setup-pw-confirm','login-pw'].forEach(function(id) {
+['setup-pw-confirm', 'login-pw'].forEach(function(id) {
   document.getElementById(id).addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       var btn = id === 'login-pw' ? 'login-btn' : 'setup-btn';
@@ -404,7 +484,33 @@ document.getElementById('logout-btn').addEventListener('click', function() {
 });
 
 // ---------------------------------------------------------------------------
-// Dashboard
+// App views
+// ---------------------------------------------------------------------------
+
+function showApp() {
+  showScreen('screen-app');
+  showDashboard();
+}
+
+function showDashboard() {
+  document.getElementById('view-dashboard').hidden = false;
+  document.getElementById('view-classforge').hidden = true;
+}
+
+function showClassForge() {
+  document.getElementById('view-dashboard').hidden = true;
+  document.getElementById('view-classforge').hidden = false;
+  loadPresentations();
+}
+
+// Tool card click
+document.getElementById('card-classforge').addEventListener('click', showClassForge);
+document.getElementById('card-classforge').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showClassForge(); }
+});
+
+// ---------------------------------------------------------------------------
+// ClassForge: Presentation grid
 // ---------------------------------------------------------------------------
 
 var THUMB_GRADIENTS = [
@@ -454,7 +560,7 @@ function buildDemoCard() {
 
   var present = document.createElement('a');
   present.className = 'cf-btn-present';
-  present.href = 'viewer/?demo=1';
+  present.href = 'classforge/viewer/?demo=1';
   present.textContent = t('card_present');
   actions.appendChild(present);
 
@@ -470,7 +576,7 @@ function buildDemoCard() {
 }
 
 function buildCard(pres, index) {
-  var scriptUrl = localStorage.getItem('cf_script_url') || '';
+  var scriptUrl = localStorage.getItem('bs_cf_script_url') || '';
 
   var card = document.createElement('div');
   card.className = 'cf-card';
@@ -497,7 +603,7 @@ function buildCard(pres, index) {
   var actions = document.createElement('div');
   actions.className = 'cf-card-actions';
 
-  var viewerUrl = 'viewer/?id=' + encodeURIComponent(pres.id);
+  var viewerUrl = 'classforge/viewer/?id=' + encodeURIComponent(pres.id);
   if (scriptUrl) viewerUrl += '&script=' + encodeURIComponent(scriptUrl);
 
   var present = document.createElement('a');
@@ -507,13 +613,13 @@ function buildCard(pres, index) {
   actions.appendChild(present);
 
   if (pres.url) {
-    var edit = document.createElement('a');
-    edit.className = 'cf-btn-edit';
-    edit.href = pres.url;
-    edit.target = '_blank';
-    edit.rel = 'noopener noreferrer';
-    edit.textContent = t('card_edit');
-    actions.appendChild(edit);
+    var editLink = document.createElement('a');
+    editLink.className = 'cf-btn-edit';
+    editLink.href = pres.url;
+    editLink.target = '_blank';
+    editLink.rel = 'noopener noreferrer';
+    editLink.textContent = t('card_edit');
+    actions.appendChild(editLink);
   }
 
   body.appendChild(actions);
@@ -543,17 +649,13 @@ function buildStateBlock(html) {
 var grid = document.getElementById('cf-grid');
 
 function renderCards(presentations) {
-  // Clear everything except the demo card (always first)
   grid.innerHTML = '';
   grid.appendChild(buildDemoCard());
-
   if (!presentations) return;
-
   if (presentations.length === 0) {
     grid.appendChild(buildStateBlock('<p>' + t('state_empty_msg') + '</p>'));
     return;
   }
-
   presentations.forEach(function(pres, i) {
     grid.appendChild(buildCard(pres, i));
   });
@@ -588,9 +690,8 @@ function showErrorState(msg) {
 }
 
 async function loadPresentations() {
-  var scriptUrl = localStorage.getItem('cf_script_url') || '';
+  var scriptUrl = localStorage.getItem('bs_cf_script_url') || '';
   if (!scriptUrl) { showNoScriptState(); return; }
-
   showSkeletons();
   try {
     var resp = await fetch(scriptUrl + '?action=list');
@@ -603,11 +704,6 @@ async function loadPresentations() {
   }
 }
 
-function showDashboard() {
-  showScreen('screen-dashboard');
-  loadPresentations();
-}
-
 document.getElementById('refresh-btn').addEventListener('click', loadPresentations);
 
 // ---------------------------------------------------------------------------
@@ -618,7 +714,7 @@ var overlay = document.getElementById('settings-overlay');
 var drawer  = document.getElementById('settings-drawer');
 
 function openSettings() {
-  document.getElementById('settings-script-url').value = localStorage.getItem('cf_script_url') || '';
+  document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
   document.getElementById('settings-save-msg').textContent = '';
   overlay.hidden = false;
   drawer.hidden = false;
@@ -626,6 +722,9 @@ function openSettings() {
     overlay.classList.add('open');
     drawer.classList.add('open');
   });
+  renderThemeGrid();
+  var savedKey = localStorage.getItem('bs_gemini_key') || '';
+  document.getElementById('settings-gemini-key').value = savedKey;
 }
 
 function closeSettings() {
@@ -643,12 +742,12 @@ overlay.addEventListener('click', closeSettings);
 
 document.getElementById('settings-save-btn').addEventListener('click', function() {
   var url = document.getElementById('settings-script-url').value.trim();
-  localStorage.setItem('cf_script_url', url);
+  localStorage.setItem('bs_cf_script_url', url);
   document.getElementById('settings-save-msg').textContent = t('save_ok');
   setTimeout(function() {
     document.getElementById('settings-save-msg').textContent = '';
   }, 3000);
-  loadPresentations();
+  if (!document.getElementById('view-classforge').hidden) loadPresentations();
 });
 
 // Change password
@@ -667,8 +766,8 @@ document.getElementById('change-pw-save-btn').addEventListener('click', async fu
 
   var curHash = await hashPw(cur);
   if (curHash !== localStorage.getItem(PW_KEY)) { err.textContent = t('error_pw_current_wrong'); return; }
-  if (newPw.length < 6)  { err.textContent = t('error_pw_short'); return; }
-  if (newPw !== confirm)  { err.textContent = t('error_pw_match'); return; }
+  if (newPw.length < 6) { err.textContent = t('error_pw_short'); return; }
+  if (newPw !== confirm) { err.textContent = t('error_pw_match'); return; }
 
   localStorage.setItem(PW_KEY, await hashPw(newPw));
   document.getElementById('change-pw-current').value = '';
@@ -684,10 +783,9 @@ document.getElementById('change-pw-save-btn').addEventListener('click', async fu
 });
 
 // ---------------------------------------------------------------------------
-// Theme management
+// Theme management (Reveal.js themes in settings)
 // ---------------------------------------------------------------------------
 
-// Actual colors for each built-in Reveal.js theme
 var BUILTIN_THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
 
 var THEME_DATA = {
@@ -702,37 +800,36 @@ var THEME_DATA = {
   moon:      { bg: '#002b36', heading: '#93a1a1',  accent: '#00bcd4', text: '#839496'  },
   dracula:   { bg: '#282a36', heading: '#f8f8f2',  accent: '#bd93f9', text: '#f8f8f2'  },
   sky:       { bg: '#add9e4', heading: '#003b4f',  accent: '#007da3', text: '#003b4f'  },
-  blood:     { bg: '#2a0000', heading: '#eee',     accent: '#a23', text: '#eee'        }
+  blood:     { bg: '#2a0000', heading: '#eee',     accent: '#a23',    text: '#eee'     }
 };
 
 function getCustomThemes() {
-  return JSON.parse(localStorage.getItem('cf_custom_themes') || '[]');
+  return JSON.parse(localStorage.getItem('bs_custom_themes') || '[]');
 }
 
 function saveCustomThemes(list) {
-  localStorage.setItem('cf_custom_themes', JSON.stringify(list));
+  localStorage.setItem('bs_custom_themes', JSON.stringify(list));
 }
 
 function getActiveTheme() {
-  return localStorage.getItem('cf_theme') || 'black';
+  return localStorage.getItem('bs_reveal_theme') || 'black';
 }
 
 function renderThemeGrid() {
-  var grid = document.getElementById('settings-theme-grid');
-  grid.innerHTML = '';
+  var gridEl = document.getElementById('settings-theme-grid');
+  gridEl.innerHTML = '';
   var active = getActiveTheme();
 
-  // Built-in themes
-  BUILTIN_THEMES.forEach(function(t) {
-    var d = THEME_DATA[t] || { bg: '#222', heading: '#fff', accent: '#aaa', text: '#ccc' };
+  BUILTIN_THEMES.forEach(function(themeName) {
+    var d = THEME_DATA[themeName] || { bg: '#222', heading: '#fff', accent: '#aaa', text: '#ccc' };
     var wrap = document.createElement('div');
     wrap.className = 'cf-theme-card-wrap';
 
     var card = document.createElement('div');
-    card.className = 'cf-theme-card' + (active === t ? ' cf-selected' : '');
+    card.className = 'cf-theme-card' + (active === themeName ? ' cf-selected' : '');
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
-    card.dataset.value = t;
+    card.dataset.value = themeName;
 
     var preview = document.createElement('div');
     preview.className = 'cf-theme-card-preview';
@@ -764,15 +861,15 @@ function renderThemeGrid() {
     label.className = 'cf-theme-card-label';
     label.style.background = d.bg;
     label.style.color = d.text;
-    label.textContent = t;
+    label.textContent = themeName;
 
     card.appendChild(preview);
     card.appendChild(label);
     wrap.appendChild(card);
-    grid.appendChild(wrap);
+    gridEl.appendChild(wrap);
 
     card.addEventListener('click', function() {
-      localStorage.setItem('cf_theme', t);
+      localStorage.setItem('bs_reveal_theme', themeName);
       renderThemeGrid();
     });
     card.addEventListener('keydown', function(e) {
@@ -828,18 +925,18 @@ function renderThemeGrid() {
     label.className = 'cf-theme-card-label';
     label.style.background = bg;
     label.style.color = text;
-    label.textContent = ct.name + ' ✦';
+    label.textContent = ct.name + ' \u2736';
 
     var del = document.createElement('button');
     del.className = 'cf-theme-card-delete';
-    del.textContent = '×';
+    del.textContent = '\u00d7';
     del.title = 'Excluir tema';
     del.addEventListener('click', function(e) {
       e.stopPropagation();
       var list = getCustomThemes();
       list.splice(idx, 1);
       saveCustomThemes(list);
-      if (getActiveTheme() === key) localStorage.setItem('cf_theme', 'black');
+      if (getActiveTheme() === key) localStorage.setItem('bs_reveal_theme', 'black');
       renderThemeGrid();
     });
 
@@ -847,10 +944,10 @@ function renderThemeGrid() {
     card.appendChild(label);
     card.appendChild(del);
     wrap.appendChild(card);
-    grid.appendChild(wrap);
+    gridEl.appendChild(wrap);
 
     card.addEventListener('click', function() {
-      localStorage.setItem('cf_theme', key);
+      localStorage.setItem('bs_reveal_theme', key);
       renderThemeGrid();
     });
     card.addEventListener('keydown', function(e) {
@@ -865,13 +962,12 @@ document.getElementById('show-theme-gen-btn').addEventListener('click', function
   form.hidden = !form.hidden;
 });
 
-// Gemini theme generation
 var pendingTheme = null;
 
 document.getElementById('theme-gen-btn').addEventListener('click', async function() {
-  var apiKey = document.getElementById('settings-gemini-key').value.trim();
-  var desc   = document.getElementById('theme-desc-input').value.trim();
-  var errEl  = document.getElementById('theme-gen-error');
+  var apiKey  = document.getElementById('settings-gemini-key').value.trim();
+  var desc    = document.getElementById('theme-desc-input').value.trim();
+  var errEl   = document.getElementById('theme-gen-error');
   var preview = document.getElementById('theme-gen-preview');
 
   errEl.textContent = '';
@@ -889,7 +985,6 @@ document.getElementById('theme-gen-btn').addEventListener('click', async functio
     var theme = await callGeminiTheme(desc, apiKey);
     pendingTheme = theme;
 
-    // Show swatches
     var swatchContainer = document.getElementById('theme-preview-swatches');
     swatchContainer.innerHTML = '';
     var swatchColors = [
@@ -905,7 +1000,7 @@ document.getElementById('theme-gen-btn').addEventListener('click', async functio
     });
 
     document.getElementById('theme-preview-name').textContent = theme.name;
-    localStorage.setItem('cf_gemini_key', apiKey);
+    localStorage.setItem('bs_gemini_key', apiKey);
     preview.hidden = false;
   } catch (err) {
     errEl.textContent = 'Erro: ' + err.message;
@@ -918,12 +1013,11 @@ document.getElementById('theme-gen-btn').addEventListener('click', async functio
 document.getElementById('theme-save-btn').addEventListener('click', function() {
   if (!pendingTheme) return;
   var list = getCustomThemes();
-  // Replace if same name
   var existIdx = list.findIndex(function(x) { return x.name === pendingTheme.name; });
   if (existIdx >= 0) list[existIdx] = pendingTheme;
   else list.push(pendingTheme);
   saveCustomThemes(list);
-  localStorage.setItem('cf_theme', 'custom:' + pendingTheme.name);
+  localStorage.setItem('bs_reveal_theme', 'custom:' + pendingTheme.name);
   document.getElementById('theme-gen-preview').hidden = true;
   document.getElementById('theme-desc-input').value = '';
   pendingTheme = null;
@@ -931,7 +1025,8 @@ document.getElementById('theme-save-btn').addEventListener('click', function() {
 });
 
 async function callGeminiTheme(description, apiKey) {
-  var prompt = 'You are a CSS theme designer for Reveal.js presentations.\n' +
+  var prompt =
+    'You are a CSS theme designer for Reveal.js presentations.\n' +
     'Generate a professional, visually cohesive theme based on this description: "' + description + '"\n\n' +
     'Return ONLY valid JSON with this exact structure (no markdown, no explanation):\n' +
     '{\n' +
@@ -962,8 +1057,8 @@ async function callGeminiTheme(description, apiKey) {
   );
 
   if (!resp.ok) {
-    var err = await resp.json().catch(function() { return {}; });
-    throw new Error(err.error && err.error.message ? err.error.message : 'HTTP ' + resp.status);
+    var errData = await resp.json().catch(function() { return {}; });
+    throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + resp.status);
   }
 
   var data = await resp.json();
@@ -973,22 +1068,12 @@ async function callGeminiTheme(description, apiKey) {
 
   if (!raw) throw new Error('Resposta vazia da API.');
 
-  // Strip markdown code fences if present
-  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/,'').trim();
+  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
   return JSON.parse(clean);
 }
 
-// Populate themes and restore Gemini key on settings open (patch openSettings)
-var _origOpenSettings = openSettings;
-openSettings = function() {
-  _origOpenSettings();
-  renderThemeGrid();
-  var savedKey = localStorage.getItem('cf_gemini_key') || '';
-  document.getElementById('settings-gemini-key').value = savedKey;
-};
-
 // ---------------------------------------------------------------------------
-// Boot
+// Start
 // ---------------------------------------------------------------------------
 init();
 </script>
