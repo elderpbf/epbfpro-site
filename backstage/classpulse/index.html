@@ -169,6 +169,21 @@
       </div>
     </div>
 
+    <!-- ============================================================
+         DIAGNOSTIC BOX (remove after debugging)
+         ============================================================ -->
+    <div style="margin:2rem auto; max-width:640px; padding:1.2rem; background:var(--surface); border:2px dashed #f59e0b; border-radius:12px;">
+      <h3 style="color:#f59e0b; margin:0 0 1rem; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">Diagnostic</h3>
+      <pre id="diag-info" style="font-size:0.78rem; color:var(--text-secondary); white-space:pre-wrap; word-break:break-all; margin:0 0 1rem;"></pre>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.8rem;">
+        <button id="diag-ping" class="cp-btn-ghost" style="font-size:0.8rem;">1. Ping Script URL</button>
+        <button id="diag-list" class="cp-btn-ghost" style="font-size:0.8rem;">2. List Sessions</button>
+        <button id="diag-ai" class="cp-btn-ghost" style="font-size:0.8rem;">3. AI Test</button>
+      </div>
+      <textarea id="diag-topic" placeholder="Topic for AI test (step 3)" style="width:100%; min-height:40px; margin-bottom:0.5rem; padding:0.5rem; border-radius:8px; border:1px solid var(--border); background:var(--background); color:var(--text-primary); font-size:0.82rem; box-sizing:border-box;"></textarea>
+      <pre id="diag-result" style="font-size:0.78rem; color:var(--text-primary); white-space:pre-wrap; word-break:break-all; margin:0; min-height:2rem; padding:0.6rem; background:var(--background); border-radius:8px;"></pre>
+    </div>
+
   </main>
 </div>
 
@@ -685,6 +700,66 @@ document.getElementById('q-improve-btn').addEventListener('click', async functio
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg> Melhorar';
   }
 });
+
+// ---------------------------------------------------------------------------
+// Diagnostic (remove after debugging)
+// ---------------------------------------------------------------------------
+
+(function() {
+  var info = document.getElementById('diag-info');
+  var result = document.getElementById('diag-result');
+  var url = getScriptUrl();
+  var token = AUTH_TOKEN;
+
+  info.textContent =
+    'Script URL: ' + (url || '(EMPTY!)') + '\n' +
+    'Auth token: ' + (token ? token.substring(0, 8) + '...' + token.substring(token.length - 4) : '(EMPTY!)') + '\n' +
+    'Token length: ' + token.length;
+
+  function log(msg) {
+    result.textContent += '[' + new Date().toLocaleTimeString() + '] ' + msg + '\n';
+  }
+
+  document.getElementById('diag-ping').addEventListener('click', async function() {
+    result.textContent = '';
+    log('Pinging: ' + url);
+    if (!url) { log('ERROR: No script URL configured!'); return; }
+    try {
+      var resp = await fetch(url, { redirect: 'follow' });
+      log('Status: ' + resp.status);
+      var text = await resp.text();
+      log('Response: ' + text.substring(0, 500));
+    } catch (e) {
+      log('FETCH ERROR: ' + e.message);
+      log('Error type: ' + e.constructor.name);
+    }
+  });
+
+  document.getElementById('diag-list').addEventListener('click', async function() {
+    result.textContent = '';
+    log('Calling list_sessions...');
+    try {
+      var data = await callScript({ action: 'list_sessions' });
+      log('OK: ' + JSON.stringify(data).substring(0, 500));
+    } catch (e) {
+      log('ERROR: ' + e.message);
+    }
+  });
+
+  document.getElementById('diag-ai').addEventListener('click', async function() {
+    result.textContent = '';
+    var topic = document.getElementById('diag-topic').value.trim() || 'redes neurais';
+    log('Calling ai_question with topic: ' + topic);
+    log('Payload: ' + JSON.stringify({ action: 'ai_question', auth_token: token, mode: 'generate', topic: topic }));
+    try {
+      var data = await callScript({ action: 'ai_question', auth_token: token, mode: 'generate', topic: topic });
+      log('OK: ' + JSON.stringify(data));
+    } catch (e) {
+      log('ERROR: ' + e.message);
+      log('Error type: ' + e.constructor.name);
+    }
+  });
+})();
 
 // ---------------------------------------------------------------------------
 // Boot
