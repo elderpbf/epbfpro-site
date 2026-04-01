@@ -1,7 +1,10 @@
 /* =========================================================
    ClassForge — Viewer
-   Styles for classforge/viewer/index.html (Reveal.js viewer).
+   Styles for backstage/classforge/viewer/index.html (Reveal.js viewer).
    ========================================================= */
+
+/* .cf-page sets display:flex which overrides the browser's [hidden] default */
+[hidden] { display: none !important; }
 
 /* =========================================================
    PAGE OVERLAYS (setup, loading, error)
