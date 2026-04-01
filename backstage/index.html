@@ -10,10 +10,10 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
 
-<link rel="stylesheet" href="css/theme.css?v=1.0">
-<link rel="stylesheet" href="css/backstage.css?v=1.1">
-<link rel="stylesheet" href="css/classforge.css?v=1.0">
-<script src="js/debug.js?v=1.0"></script>
+<link rel="stylesheet" href="css/theme.css?v=1.2">
+<link rel="stylesheet" href="css/backstage.css?v=1.2">
+<link rel="stylesheet" href="css/classforge.css?v=1.2">
+<script src="js/debug.js?v=1.2"></script>
 </head>
 <body>
 
@@ -179,10 +179,6 @@
 
   <!-- ClassPulse Apps Script -->
   <h3 data-key="settings_cp_section">Apps Script (ClassPulse)</h3>
-  <div class="bs-field">
-    <label data-key="settings_cp_script_label">URL do Apps Script</label>
-    <input id="settings-cp-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
-  </div>
   <div class="bs-field">
     <label data-key="settings_cp_sheet_label">ID da planilha</label>
     <input id="settings-cp-sheet-id" type="text" placeholder="1BxiM..." autocomplete="off">
@@ -776,7 +772,6 @@ var drawer  = document.getElementById('settings-drawer');
 function openSettings() {
   document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
   document.getElementById('settings-save-msg').textContent = '';
-  document.getElementById('settings-cp-script-url').value = localStorage.getItem('bs_cp_script_url') || '';
   document.getElementById('settings-cp-sheet-id').value = localStorage.getItem('bs_cp_spreadsheet_id') || '';
   document.getElementById('settings-cp-save-msg').textContent = '';
   document.getElementById('settings-gemini-key').value = localStorage.getItem('bs_gemini_key') || '';
@@ -823,7 +818,6 @@ document.getElementById('settings-save-btn').addEventListener('click', function(
 });
 
 document.getElementById('settings-cp-save-btn').addEventListener('click', function() {
-  localStorage.setItem('bs_cp_script_url', document.getElementById('settings-cp-script-url').value.trim());
   localStorage.setItem('bs_cp_spreadsheet_id', document.getElementById('settings-cp-sheet-id').value.trim());
   document.getElementById('settings-cp-save-msg').textContent = t('save_ok');
   setTimeout(function() {
