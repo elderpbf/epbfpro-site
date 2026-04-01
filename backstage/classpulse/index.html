@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="../css/theme.css?v=1.0">
 <link rel="stylesheet" href="../css/backstage.css?v=1.0">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.0">
+<script src="../js/debug.js?v=1.0"></script>
 </head>
 <body>
 
@@ -622,24 +623,60 @@ async function confirmDeleteSet(name) {
 // ---------------------------------------------------------------------------
 
 async function callAI(prompt) {
-  var key1 = localStorage.getItem('bs_gemini_key') || '';
-  var key2 = localStorage.getItem('bs_gemini_key2') || '';
+  var key1      = localStorage.getItem('bs_gemini_key') || '';
+  var key2      = localStorage.getItem('bs_gemini_key2') || '';
+  var deepseek  = localStorage.getItem('bs_deepseek_key') || '';
 
-  if (!key1 && !key2) {
+  if (!key1 && !key2 && !deepseek) {
     throw new Error('Nenhuma chave de IA configurada. Adicione em Backstage > Configuracoes.');
   }
 
-  if (key1) {
-    try {
-      return await callGemini(prompt, key1);
-    } catch (e) {
-      var isQuota = e.message && (e.message.indexOf('quota') !== -1 || e.message.indexOf('429') !== -1 || e.message.indexOf('RESOURCE_EXHAUSTED') !== -1);
-      if (!isQuota || !key2) throw e;
-      // quota exceeded - fall through to backup key
-    }
+  function isQuotaErr(e) {
+    return e.message && (
+      e.message.indexOf('quota') !== -1 ||
+      e.message.indexOf('429') !== -1 ||
+      e.message.indexOf('RESOURCE_EXHAUSTED') !== -1
+    );
   }
 
-  return await callGemini(prompt, key2);
+  if (key1) {
+    try { return await callGemini(prompt, key1); } catch (e) {
+      if (typeof bsLog !== 'undefined') bsLog('Gemini key1 failed: ' + e.message, 'warn');
+      if (!isQuotaErr(e)) throw e;
+    }
+  }
+  if (key2) {
+    try { return await callGemini(prompt, key2); } catch (e) {
+      if (typeof bsLog !== 'undefined') bsLog('Gemini key2 failed: ' + e.message, 'warn');
+      if (!isQuotaErr(e)) throw e;
+    }
+  }
+  if (deepseek) {
+    return await callDeepSeek(prompt, deepseek);
+  }
+
+  throw new Error('Todas as chaves de IA atingiram o limite de quota.');
+}
+
+async function callDeepSeek(prompt, apiKey) {
+  var resp = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7
+    })
+  });
+  if (!resp.ok) {
+    var errData = await resp.json().catch(function() { return {}; });
+    throw new Error(errData.error && errData.error.message ? errData.error.message : 'DeepSeek HTTP ' + resp.status);
+  }
+  var data = await resp.json();
+  var raw = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!raw) throw new Error('Resposta vazia do DeepSeek.');
+  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
+  return JSON.parse(clean);
 }
 
 async function callGemini(prompt, apiKey) {
