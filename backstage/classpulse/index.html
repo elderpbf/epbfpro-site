@@ -632,11 +632,8 @@ async function callAI(prompt) {
   }
 
   function isQuotaErr(e) {
-    return e.message && (
-      e.message.indexOf('quota') !== -1 ||
-      e.message.indexOf('429') !== -1 ||
-      e.message.indexOf('RESOURCE_EXHAUSTED') !== -1
-    );
+    var m = (e.message || '').toLowerCase();
+    return m.indexOf('quota') !== -1 || m.indexOf('429') !== -1 || m.indexOf('resource_exhausted') !== -1;
   }
 
   if (key1) {
