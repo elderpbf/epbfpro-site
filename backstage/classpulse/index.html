@@ -10,10 +10,10 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png">
 
-<link rel="stylesheet" href="../css/theme.css?v=1.0">
-<link rel="stylesheet" href="../css/backstage.css?v=1.0">
-<link rel="stylesheet" href="../css/classpulse.css?v=1.0">
-<script src="../js/debug.js?v=1.0"></script>
+<link rel="stylesheet" href="../css/theme.css?v=1.1">
+<link rel="stylesheet" href="../css/backstage.css?v=1.1">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.1">
+<script src="../js/debug.js?v=1.1"></script>
 </head>
 <body>
 
@@ -618,92 +618,6 @@ async function confirmDeleteSet(name) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// AI generation (Gemini with DeepSeek fallback)
-// ---------------------------------------------------------------------------
-
-async function callAI(prompt) {
-  var key1      = localStorage.getItem('bs_gemini_key') || '';
-  var key2      = localStorage.getItem('bs_gemini_key2') || '';
-  var deepseek  = localStorage.getItem('bs_deepseek_key') || '';
-
-  if (!key1 && !key2 && !deepseek) {
-    throw new Error('Nenhuma chave de IA configurada. Adicione em Backstage > Configuracoes.');
-  }
-
-  function isQuotaErr(e) {
-    var m = (e.message || '').toLowerCase();
-    return m.indexOf('quota') !== -1 || m.indexOf('429') !== -1 || m.indexOf('resource_exhausted') !== -1;
-  }
-
-  if (key1) {
-    try { return await callGemini(prompt, key1); } catch (e) {
-      if (typeof bsLog !== 'undefined') bsLog('Gemini key1 failed: ' + e.message, 'warn');
-      if (!isQuotaErr(e)) throw e;
-    }
-  }
-  if (key2) {
-    try { return await callGemini(prompt, key2); } catch (e) {
-      if (typeof bsLog !== 'undefined') bsLog('Gemini key2 failed: ' + e.message, 'warn');
-      if (!isQuotaErr(e)) throw e;
-    }
-  }
-  if (deepseek) {
-    return await callDeepSeek(prompt, deepseek);
-  }
-
-  throw new Error('Todas as chaves de IA atingiram o limite de quota.');
-}
-
-async function callDeepSeek(prompt, apiKey) {
-  var resp = await fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7
-    })
-  });
-  if (!resp.ok) {
-    var errData = await resp.json().catch(function() { return {}; });
-    throw new Error(errData.error && errData.error.message ? errData.error.message : 'DeepSeek HTTP ' + resp.status);
-  }
-  var data = await resp.json();
-  var raw = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (!raw) throw new Error('Resposta vazia do DeepSeek.');
-  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
-  return JSON.parse(clean);
-}
-
-async function callGemini(prompt, apiKey) {
-  var resp = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' + apiKey,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7 }
-      })
-    }
-  );
-
-  if (!resp.ok) {
-    var errData = await resp.json().catch(function() { return {}; });
-    throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + resp.status);
-  }
-
-  var data = await resp.json();
-  var raw = data.candidates && data.candidates[0] &&
-            data.candidates[0].content && data.candidates[0].content.parts &&
-            data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-  if (!raw) throw new Error('Resposta vazia da API.');
-  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
-  return JSON.parse(clean);
-}
-
-
 document.getElementById('q-generate-btn').addEventListener('click', async function() {
   var instruction = document.getElementById('q-text').value.trim();
   var err = document.getElementById('q-error');
@@ -715,19 +629,7 @@ document.getElementById('q-generate-btn').addEventListener('click', async functi
   btn.textContent = 'Gerando...';
 
   try {
-    var prompt =
-      'Voce esta criando uma questao de multipla escolha para uma aula universitaria.\n\n' +
-      'Com base nesta instrucao: "' + instruction + '"\n\n' +
-      'Retorne SOMENTE JSON valido (sem markdown, sem explicacao):\n' +
-      '{"question":"texto da pergunta em portugues","option_a":"Opcao A","option_b":"Opcao B","option_c":"Opcao C","option_d":"Opcao D","correct":"a"}\n\n' +
-      'Regras:\n' +
-      '- Pergunta e opcoes em portugues (pt-BR)\n' +
-      '- Exatamente 4 opcoes\n' +
-      '- "correct" deve ser "a", "b", "c" ou "d"\n' +
-      '- Opcoes plausíveis (sem erros obvios)\n' +
-      '- Opcoes concisas (max 100 caracteres cada)';
-
-    var result = await callAI(prompt);
+    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'generate', topic: instruction });
     document.getElementById('q-text').value = result.question || '';
     document.getElementById('q-opt-a').value = result.option_a || '';
     document.getElementById('q-opt-b').value = result.option_b || '';
@@ -766,19 +668,7 @@ document.getElementById('q-improve-btn').addEventListener('click', async functio
   btn.textContent = 'Melhorando...';
 
   try {
-    var prompt =
-      'Melhore esta questao de multipla escolha. Corrija gramatica, melhore a clareza, equilibre as opcoes.\n' +
-      'Mantenha a mesma resposta correta.\n\n' +
-      'Pergunta: "' + text + '"\n' +
-      'A: "' + optA + '"\n' +
-      'B: "' + optB + '"\n' +
-      'C: "' + optC + '"\n' +
-      'D: "' + optD + '"\n' +
-      'Correta: "' + (correct ? correct.value : '?') + '"\n\n' +
-      'Retorne SOMENTE JSON valido:\n' +
-      '{"question":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","correct":"a"}';
-
-    var result = await callAI(prompt);
+    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'improve', current_text: text, current_options: [optA, optB, optC, optD] });
     document.getElementById('q-text').value = result.question || text;
     document.getElementById('q-opt-a').value = result.option_a || optA;
     document.getElementById('q-opt-b').value = result.option_b || optB;
