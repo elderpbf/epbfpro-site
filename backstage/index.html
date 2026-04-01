@@ -107,16 +107,15 @@
           <div class="bs-tool-desc" data-key="classforge_desc">Apresentações</div>
         </div>
 
-        <!-- ClassPulse (coming soon) -->
-        <div class="bs-tool-card bs-disabled" aria-label="ClassPulse - Em breve">
-          <div class="bs-soon-badge" data-key="soon_badge">Em breve</div>
+        <!-- ClassPulse -->
+        <div class="bs-tool-card" id="card-classpulse" role="button" tabindex="0" aria-label="Abrir ClassPulse">
           <div class="bs-tool-icon" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
             </svg>
           </div>
           <div class="bs-tool-name">ClassPulse</div>
-          <div class="bs-tool-desc" data-key="classpulse_desc">Interacao em sala</div>
+          <div class="bs-tool-desc" data-key="classpulse_desc">Interação em sala</div>
         </div>
 
       </div>
@@ -174,6 +173,22 @@
   </p>
   <button class="bs-save-btn" id="settings-save-btn" data-key="settings_save_btn">Salvar</button>
   <p class="bs-drawer-save-msg" id="settings-save-msg"></p>
+
+  <hr>
+
+  <!-- ClassPulse Apps Script -->
+  <h3 data-key="settings_cp_section">Apps Script (ClassPulse)</h3>
+  <div class="bs-field">
+    <label data-key="settings_cp_script_label">URL do Apps Script</label>
+    <input id="settings-cp-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+  </div>
+  <div class="bs-field">
+    <label data-key="settings_cp_sheet_label">ID da planilha</label>
+    <input id="settings-cp-sheet-id" type="text" placeholder="1BxiM..." autocomplete="off">
+    <p class="bs-hint" data-key="settings_cp_sheet_hint">Encontrado na URL da planilha do Google Sheets.</p>
+  </div>
+  <button class="bs-save-btn" id="settings-cp-save-btn" data-key="settings_cp_save_btn">Salvar</button>
+  <p class="bs-drawer-save-msg" id="settings-cp-save-msg"></p>
 
   <hr>
 
@@ -258,7 +273,6 @@ var TRANSLATIONS = {
     dashboard_title:           'Ferramentas',
     classforge_desc:           'Apresentações',
     classpulse_desc:           'Interação em sala',
-    soon_badge:                'Em breve',
     cf_title:                  'Apresentações',
     refresh_btn:               'Atualizar',
     new_btn:                   'Nova apresentação',
@@ -267,6 +281,11 @@ var TRANSLATIONS = {
     settings_script_label:     'URL do Apps Script',
     settings_script_hint:      'Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.',
     settings_save_btn:         'Salvar',
+    settings_cp_section:       'Apps Script (ClassPulse)',
+    settings_cp_script_label:  'URL do Apps Script',
+    settings_cp_sheet_label:   'ID da planilha',
+    settings_cp_sheet_hint:    'Encontrado na URL da planilha do Google Sheets.',
+    settings_cp_save_btn:      'Salvar',
     settings_theme_section:    'Tema de apresentação',
     settings_theme_hint:       'Aplicado a todas as apresentações ao clicar em Apresentar.',
     settings_theme_gen_btn:    '+ Criar tema com IA',
@@ -509,6 +528,13 @@ document.getElementById('card-classforge').addEventListener('keydown', function(
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showClassForge(); }
 });
 
+document.getElementById('card-classpulse').addEventListener('click', function() {
+  location.href = 'classpulse/';
+});
+document.getElementById('card-classpulse').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); location.href = 'classpulse/'; }
+});
+
 // ---------------------------------------------------------------------------
 // ClassForge: Presentation grid
 // ---------------------------------------------------------------------------
@@ -716,6 +742,9 @@ var drawer  = document.getElementById('settings-drawer');
 function openSettings() {
   document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
   document.getElementById('settings-save-msg').textContent = '';
+  document.getElementById('settings-cp-script-url').value = localStorage.getItem('bs_cp_script_url') || '';
+  document.getElementById('settings-cp-sheet-id').value = localStorage.getItem('bs_cp_spreadsheet_id') || '';
+  document.getElementById('settings-cp-save-msg').textContent = '';
   overlay.hidden = false;
   drawer.hidden = false;
   requestAnimationFrame(function() {
@@ -748,6 +777,15 @@ document.getElementById('settings-save-btn').addEventListener('click', function(
     document.getElementById('settings-save-msg').textContent = '';
   }, 3000);
   if (!document.getElementById('view-classforge').hidden) loadPresentations();
+});
+
+document.getElementById('settings-cp-save-btn').addEventListener('click', function() {
+  localStorage.setItem('bs_cp_script_url', document.getElementById('settings-cp-script-url').value.trim());
+  localStorage.setItem('bs_cp_spreadsheet_id', document.getElementById('settings-cp-sheet-id').value.trim());
+  document.getElementById('settings-cp-save-msg').textContent = t('save_ok');
+  setTimeout(function() {
+    document.getElementById('settings-cp-save-msg').textContent = '';
+  }, 3000);
 });
 
 // Change password

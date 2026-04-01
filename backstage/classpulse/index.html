@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ClassPulse - Backstage</title>
+
+<link rel="icon" type="image/x-icon" href="../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png">
+
+<link rel="stylesheet" href="../css/theme.css?v=1.0">
+<link rel="stylesheet" href="../css/backstage.css?v=1.0">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.0">
+</head>
+<body>
+
+<div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
+
+<div id="screen-app" class="bs-app">
+
+  <header class="bs-topbar">
+    <div class="bs-topbar-inner">
+      <a href="/backstage/" class="bs-topbar-logo" aria-label="Voltar ao Backstage">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <div class="bs-topbar-wordmark">
+        <span class="bs-topbar-brand">Backstage</span>
+        <span class="bs-topbar-name">ClassPulse</span>
+      </div>
+      <div class="bs-topbar-spacer"></div>
+      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
+        <span id="themeIcon"></span>
+      </button>
+      <button class="bs-logout-btn" id="logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <main class="bs-main">
+
+    <div class="cp-tabs">
+      <button class="cp-tab active" id="tab-sessions" data-tab="sessions">Sessoes</button>
+      <button class="cp-tab" id="tab-banks" data-tab="banks">Banco de Questoes</button>
+    </div>
+
+    <!-- ============================================================
+         PANEL: SESSIONS
+         ============================================================ -->
+    <div class="cp-panel active" id="panel-sessions">
+
+      <div class="cp-create-session">
+        <h3>Nova sessao</h3>
+        <div class="cp-row">
+          <div class="bs-field">
+            <label>Titulo da sessao</label>
+            <input type="text" id="session-title" placeholder="Ex: Aula 3 — Redes Neurais" autocomplete="off">
+          </div>
+          <div class="bs-field" style="max-width:160px">
+            <label>Senha da sessao</label>
+            <input type="password" id="session-password" placeholder="••••••" autocomplete="off">
+          </div>
+          <button class="cp-btn-primary" id="create-session-btn">Criar sessao</button>
+        </div>
+        <p class="cp-form-error" id="session-error"></p>
+      </div>
+
+      <div id="sessions-list-wrap">
+        <div class="cp-empty" id="sessions-empty" hidden>
+          <div class="cp-empty-icon">📋</div>
+          <p>Nenhuma sessao encontrada.<br>Crie uma sessao acima.</p>
+        </div>
+        <div class="cp-sessions-list" id="sessions-list"></div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         PANEL: QUESTION BANKS
+         ============================================================ -->
+    <div class="cp-panel" id="panel-banks">
+
+      <div class="cp-banks-layout">
+
+        <!-- Set list sidebar -->
+        <div>
+          <div class="cp-set-list" id="set-list-container">
+            <div class="cp-set-list-header">Conjuntos</div>
+            <div id="set-list-items">
+              <div class="cp-empty" style="padding:1.5rem 1rem">
+                <div class="cp-empty-icon">📦</div>
+                <p>Nenhum conjunto.<br>Crie questoes ao lado.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form + question list -->
+        <div class="cp-question-area">
+
+          <div class="cp-question-form">
+            <h3>Nova questao</h3>
+
+            <div class="cp-set-select-row">
+              <div class="bs-field">
+                <label>Conjunto</label>
+                <input type="text" id="q-set-name" placeholder="Nome do conjunto (ex: Semana 3)" autocomplete="off" list="set-suggestions">
+                <datalist id="set-suggestions"></datalist>
+              </div>
+            </div>
+
+            <div class="bs-field">
+              <label>Pergunta ou instrucao para IA</label>
+              <textarea class="bs-textarea" id="q-text" placeholder="Escreva a pergunta diretamente, ou descreva o que voce quer para o botao Gerar." style="min-height:72px"></textarea>
+            </div>
+
+            <div id="q-options">
+              <div class="cp-option-row" id="opt-row-a">
+                <div class="cp-option-letter">A</div>
+                <input type="text" id="q-opt-a" placeholder="Opcao A" autocomplete="off">
+                <input type="radio" name="correct" value="a" id="q-correct-a" title="Correta">
+              </div>
+              <div class="cp-option-row" id="opt-row-b">
+                <div class="cp-option-letter">B</div>
+                <input type="text" id="q-opt-b" placeholder="Opcao B" autocomplete="off">
+                <input type="radio" name="correct" value="b" id="q-correct-b" title="Correta">
+              </div>
+              <div class="cp-option-row" id="opt-row-c">
+                <div class="cp-option-letter">C</div>
+                <input type="text" id="q-opt-c" placeholder="Opcao C" autocomplete="off">
+                <input type="radio" name="correct" value="c" id="q-correct-c" title="Correta">
+              </div>
+              <div class="cp-option-row" id="opt-row-d">
+                <div class="cp-option-letter">D</div>
+                <input type="text" id="q-opt-d" placeholder="Opcao D" autocomplete="off">
+                <input type="radio" name="correct" value="d" id="q-correct-d" title="Correta">
+              </div>
+            </div>
+
+            <p class="cp-form-error" id="q-error"></p>
+            <p class="cp-form-msg" id="q-msg"></p>
+
+            <div class="cp-form-actions">
+              <button class="cp-btn-ghost" id="q-generate-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                Gerar
+              </button>
+              <button class="cp-btn-ghost" id="q-improve-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+                Melhorar
+              </button>
+              <button class="cp-btn-primary" id="q-save-btn" style="flex:1">Salvar</button>
+            </div>
+          </div>
+
+          <!-- Question list for selected set -->
+          <div id="question-list-wrap" hidden>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem">
+              <h3 style="font-size:0.9rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.06em" id="question-list-title">Questoes</h3>
+              <button class="cp-btn-danger" id="delete-set-btn" style="font-size:0.78rem; padding:0.4rem 0.8rem">Excluir conjunto</button>
+            </div>
+            <div class="cp-question-list" id="question-list"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Auth check
+// ---------------------------------------------------------------------------
+
+var PW_KEY   = 'bs_pw_hash';
+var AUTH_KEY = 'bs_auth';
+
+document.querySelectorAll('input[type="password"]').forEach(function(el) { el.value = ''; });
+
+if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
+  location.replace('/backstage/');
+}
+
+// ---------------------------------------------------------------------------
+// Theme
+// ---------------------------------------------------------------------------
+
+var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+var themeIcon    = document.getElementById('themeIcon');
+var themeToggle  = document.getElementById('themeToggle');
+var themeOverlay = document.getElementById('themeTransition');
+
+function applyTheme(theme, animate, ox, oy) {
+  if (animate && themeOverlay) {
+    themeOverlay.style.setProperty('--tx', (ox || 0) + 'px');
+    themeOverlay.style.setProperty('--ty', (oy || 0) + 'px');
+    document.documentElement.setAttribute('data-theme', theme);
+    var bg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
+    themeOverlay.style.backgroundColor = bg;
+    themeOverlay.offsetHeight;
+    themeOverlay.classList.add('active');
+    setTimeout(function() {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+      themeToggle.setAttribute('aria-pressed', theme === 'dark');
+      localStorage.setItem('bs_theme', theme);
+      setTimeout(function() { themeOverlay.classList.remove('active'); }, 100);
+    }, 500);
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+    themeToggle.setAttribute('aria-pressed', theme === 'dark');
+    localStorage.setItem('bs_theme', theme);
+  }
+}
+
+applyTheme(localStorage.getItem('bs_theme') || 'dark', false);
+
+themeToggle.addEventListener('click', function(e) {
+  var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  var rect = e.currentTarget.getBoundingClientRect();
+  applyTheme(cur === 'dark' ? 'light' : 'dark', true, rect.left + rect.width / 2, rect.top + rect.height / 2);
+});
+
+document.getElementById('logout-btn').addEventListener('click', function() {
+  sessionStorage.removeItem(AUTH_KEY);
+  location.replace('/backstage/');
+});
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
+var SCRIPT_URL = localStorage.getItem('bs_cp_script_url') || '';
+var AUTH_TOKEN = localStorage.getItem('bs_pw_hash') || '';
+
+function getScriptUrl() {
+  return localStorage.getItem('bs_cp_script_url') || '';
+}
+
+async function callScript(params) {
+  var url = getScriptUrl();
+  if (!url) throw new Error('URL do Apps Script nao configurada. Configure em Backstage > Configuracoes.');
+  var payload = encodeURIComponent(JSON.stringify(params));
+  var resp = await fetch(url + '?payload=' + payload, { redirect: 'follow' });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  var data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------------
+
+document.querySelectorAll('.cp-tab').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var tab = this.dataset.tab;
+    document.querySelectorAll('.cp-tab').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.cp-panel').forEach(function(p) { p.classList.remove('active'); });
+    this.classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+    if (tab === 'sessions') loadSessions();
+    if (tab === 'banks') loadSets();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SESSIONS
+// ---------------------------------------------------------------------------
+
+var sessions = [];
+
+async function loadSessions() {
+  try {
+    var data = await callScript({ action: 'list_sessions' });
+    sessions = data.sessions || [];
+  } catch (err) {
+    sessions = [];
+  }
+  renderSessions();
+}
+
+function renderSessions() {
+  var list = document.getElementById('sessions-list');
+  var empty = document.getElementById('sessions-empty');
+  list.innerHTML = '';
+
+  if (sessions.length === 0) {
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+
+  sessions.forEach(function(s) {
+    var card = document.createElement('div');
+    card.className = 'cp-session-card';
+
+    var codeEl = document.createElement('div');
+    codeEl.className = 'cp-session-code';
+    codeEl.textContent = s.code;
+
+    var info = document.createElement('div');
+    info.className = 'cp-session-info';
+    var title = document.createElement('div');
+    title.className = 'cp-session-title';
+    title.textContent = s.title || 'Sem titulo';
+    var meta = document.createElement('div');
+    meta.className = 'cp-session-meta';
+    meta.textContent = s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '';
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    var status = document.createElement('span');
+    status.className = 'cp-session-status ' + (s.status || 'open');
+    status.textContent = s.status === 'closed' ? 'Encerrada' : 'Aberta';
+
+    var actions = document.createElement('div');
+    actions.className = 'cp-session-actions';
+
+    if (s.status !== 'closed') {
+      var hostBtn = document.createElement('a');
+      hostBtn.className = 'cp-btn-ghost';
+      hostBtn.href = 'host.html?code=' + encodeURIComponent(s.code);
+      hostBtn.textContent = 'Host';
+      actions.appendChild(hostBtn);
+    }
+
+    card.appendChild(codeEl);
+    card.appendChild(info);
+    card.appendChild(status);
+    card.appendChild(actions);
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('create-session-btn').addEventListener('click', async function() {
+  var title = document.getElementById('session-title').value.trim();
+  var password = document.getElementById('session-password').value;
+  var err = document.getElementById('session-error');
+  err.textContent = '';
+
+  if (!title) { err.textContent = 'Informe o titulo da sessao.'; return; }
+  if (!password || password.length < 4) { err.textContent = 'Senha deve ter pelo menos 4 caracteres.'; return; }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Criando...';
+
+  try {
+    var data = await callScript({ action: 'create_session', title: title, password: password });
+    document.getElementById('session-title').value = '';
+    document.getElementById('session-password').value = '';
+    // Prepend new session
+    sessions.unshift({ code: data.code, title: title, status: 'open', created_at: new Date().toISOString() });
+    renderSessions();
+  } catch (e) {
+    err.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Criar sessao';
+  }
+});
+
+// ---------------------------------------------------------------------------
+// QUESTION BANKS
+// ---------------------------------------------------------------------------
+
+var sets = [];
+var activeSet = null;
+var questions = [];
+
+async function loadSets() {
+  try {
+    var data = await callScript({ action: 'list_question_sets' });
+    sets = data.sets || [];
+  } catch (err) {
+    sets = [];
+  }
+  renderSets();
+  updateSetSuggestions();
+}
+
+function renderSets() {
+  var container = document.getElementById('set-list-items');
+  container.innerHTML = '';
+
+  if (sets.length === 0) {
+    container.innerHTML = '<div class="cp-empty" style="padding:1.5rem 1rem"><div class="cp-empty-icon">📦</div><p>Nenhum conjunto.<br>Crie questoes ao lado.</p></div>';
+    activeSet = null;
+    document.getElementById('question-list-wrap').hidden = true;
+    return;
+  }
+
+  sets.forEach(function(s) {
+    var item = document.createElement('div');
+    item.className = 'cp-set-item' + (activeSet === s.name ? ' active' : '');
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'cp-set-name';
+    nameEl.textContent = s.name;
+
+    var countEl = document.createElement('div');
+    countEl.className = 'cp-set-count';
+    countEl.textContent = s.count;
+
+    var delBtn = document.createElement('button');
+    delBtn.className = 'cp-set-delete-btn';
+    delBtn.textContent = '\u00d7';
+    delBtn.title = 'Excluir conjunto';
+    delBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      confirmDeleteSet(s.name);
+    });
+
+    item.appendChild(nameEl);
+    item.appendChild(countEl);
+    item.appendChild(delBtn);
+    container.appendChild(item);
+
+    item.addEventListener('click', function() {
+      selectSet(s.name);
+    });
+  });
+}
+
+function updateSetSuggestions() {
+  var dl = document.getElementById('set-suggestions');
+  dl.innerHTML = '';
+  sets.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s.name;
+    dl.appendChild(opt);
+  });
+}
+
+async function selectSet(name) {
+  activeSet = name;
+  renderSets();
+
+  document.getElementById('q-set-name').value = name;
+  document.getElementById('question-list-wrap').hidden = false;
+  document.getElementById('question-list-title').textContent = name;
+  document.getElementById('question-list').innerHTML = '<div class="cp-empty"><p>Carregando...</p></div>';
+
+  try {
+    var data = await callScript({ action: 'get_questions', list: name });
+    questions = data.questions || [];
+  } catch (err) {
+    questions = [];
+  }
+  renderQuestions();
+}
+
+function renderQuestions() {
+  var list = document.getElementById('question-list');
+  list.innerHTML = '';
+
+  if (questions.length === 0) {
+    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">❓</div><p>Nenhuma questao neste conjunto.</p></div>';
+    return;
+  }
+
+  questions.forEach(function(q) {
+    var card = document.createElement('div');
+    card.className = 'cp-question-card';
+
+    var qText = document.createElement('div');
+    qText.className = 'cp-question-text';
+    qText.textContent = q.question;
+    card.appendChild(qText);
+
+    var opts = document.createElement('div');
+    opts.className = 'cp-question-options';
+    ['a','b','c','d'].forEach(function(letter) {
+      var opt = document.createElement('div');
+      opt.className = 'cp-question-option' + (q.correct === letter ? ' is-correct' : '');
+      opt.innerHTML = '<span class="opt-letter">' + letter.toUpperCase() + '</span> ' + (q['option_' + letter] || '');
+      opts.appendChild(opt);
+    });
+    card.appendChild(opts);
+
+    var footer = document.createElement('div');
+    footer.className = 'cp-question-footer';
+    var tag = document.createElement('span');
+    tag.className = 'cp-question-set-tag';
+    tag.textContent = q.list_name;
+    var delBtn = document.createElement('button');
+    delBtn.className = 'cp-btn-danger';
+    delBtn.style.cssText = 'font-size:0.75rem;padding:0.3rem 0.7rem';
+    delBtn.textContent = 'Excluir';
+    delBtn.addEventListener('click', function() {
+      deleteQuestion(q.question);
+    });
+    footer.appendChild(tag);
+    footer.appendChild(delBtn);
+    card.appendChild(footer);
+
+    list.appendChild(card);
+  });
+}
+
+// Save question
+document.getElementById('q-save-btn').addEventListener('click', async function() {
+  var setName = document.getElementById('q-set-name').value.trim();
+  var text    = document.getElementById('q-text').value.trim();
+  var optA    = document.getElementById('q-opt-a').value.trim();
+  var optB    = document.getElementById('q-opt-b').value.trim();
+  var optC    = document.getElementById('q-opt-c').value.trim();
+  var optD    = document.getElementById('q-opt-d').value.trim();
+  var correct = document.querySelector('input[name="correct"]:checked');
+  var err     = document.getElementById('q-error');
+  var msg     = document.getElementById('q-msg');
+
+  err.textContent = '';
+  msg.textContent = '';
+
+  if (!setName) { err.textContent = 'Informe o nome do conjunto.'; return; }
+  if (!text)    { err.textContent = 'A pergunta nao pode estar vazia.'; return; }
+  if (!optA || !optB || !optC || !optD) { err.textContent = 'Preencha todas as 4 opcoes.'; return; }
+  if (!correct) { err.textContent = 'Selecione a opcao correta.'; return; }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    await callScript({
+      action: 'add_question',
+      auth_token: AUTH_TOKEN,
+      list_name: setName,
+      question:  text,
+      option_a:  optA,
+      option_b:  optB,
+      option_c:  optC,
+      option_d:  optD,
+      correct:   correct.value
+    });
+    msg.textContent = 'Questao salva!';
+    clearQuestionForm();
+    // Refresh set list and question list
+    await loadSets();
+    if (activeSet === setName) {
+      await selectSet(setName);
+    } else {
+      activeSet = setName;
+      await selectSet(setName);
+    }
+    setTimeout(function() { msg.textContent = ''; }, 3000);
+  } catch (e) {
+    err.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Salvar';
+  }
+});
+
+function clearQuestionForm() {
+  document.getElementById('q-text').value = '';
+  document.getElementById('q-opt-a').value = '';
+  document.getElementById('q-opt-b').value = '';
+  document.getElementById('q-opt-c').value = '';
+  document.getElementById('q-opt-d').value = '';
+  document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
+  updateCorrectHighlight();
+}
+
+// Highlight correct option row
+function updateCorrectHighlight() {
+  ['a','b','c','d'].forEach(function(l) {
+    var row = document.getElementById('opt-row-' + l);
+    var radio = document.getElementById('q-correct-' + l);
+    if (row) row.classList.toggle('correct-selected', radio && radio.checked);
+  });
+}
+
+document.querySelectorAll('input[name="correct"]').forEach(function(r) {
+  r.addEventListener('change', updateCorrectHighlight);
+});
+
+// Delete one question
+async function deleteQuestion(questionText) {
+  if (!activeSet) return;
+  if (!confirm('Excluir esta questao?')) return;
+  try {
+    await callScript({ action: 'delete_question', auth_token: AUTH_TOKEN, list_name: activeSet, question: questionText });
+    await selectSet(activeSet);
+    await loadSets();
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+// Delete entire set
+document.getElementById('delete-set-btn').addEventListener('click', function() {
+  if (activeSet) confirmDeleteSet(activeSet);
+});
+
+async function confirmDeleteSet(name) {
+  if (!confirm('Excluir o conjunto "' + name + '" e todas as suas questoes?')) return;
+  try {
+    await callScript({ action: 'delete_question_set', auth_token: AUTH_TOKEN, list_name: name });
+    activeSet = null;
+    document.getElementById('question-list-wrap').hidden = true;
+    await loadSets();
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AI generation (Gemini)
+// ---------------------------------------------------------------------------
+
+function getGeminiKey() {
+  return localStorage.getItem('bs_gemini_key') || '';
+}
+
+async function callGemini(prompt) {
+  var apiKey = getGeminiKey();
+  if (!apiKey) throw new Error('Chave da API Gemini nao configurada. Adicione em Backstage > Configuracoes.');
+
+  var resp = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7 }
+      })
+    }
+  );
+
+  if (!resp.ok) {
+    var errData = await resp.json().catch(function() { return {}; });
+    throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + resp.status);
+  }
+
+  var data = await resp.json();
+  var raw = data.candidates && data.candidates[0] &&
+            data.candidates[0].content && data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+  if (!raw) throw new Error('Resposta vazia da API.');
+  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
+  return JSON.parse(clean);
+}
+
+document.getElementById('q-generate-btn').addEventListener('click', async function() {
+  var instruction = document.getElementById('q-text').value.trim();
+  var err = document.getElementById('q-error');
+  err.textContent = '';
+  if (!instruction) { err.textContent = 'Descreva o que voce quer antes de gerar.'; return; }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+
+  try {
+    var prompt =
+      'Voce esta criando uma questao de multipla escolha para uma aula universitaria.\n\n' +
+      'Com base nesta instrucao: "' + instruction + '"\n\n' +
+      'Retorne SOMENTE JSON valido (sem markdown, sem explicacao):\n' +
+      '{"question":"texto da pergunta em portugues","option_a":"Opcao A","option_b":"Opcao B","option_c":"Opcao C","option_d":"Opcao D","correct":"a"}\n\n' +
+      'Regras:\n' +
+      '- Pergunta e opcoes em portugues (pt-BR)\n' +
+      '- Exatamente 4 opcoes\n' +
+      '- "correct" deve ser "a", "b", "c" ou "d"\n' +
+      '- Opcoes plausíveis (sem erros obvios)\n' +
+      '- Opcoes concisas (max 100 caracteres cada)';
+
+    var result = await callGemini(prompt);
+    document.getElementById('q-text').value = result.question || '';
+    document.getElementById('q-opt-a').value = result.option_a || '';
+    document.getElementById('q-opt-b').value = result.option_b || '';
+    document.getElementById('q-opt-c').value = result.option_c || '';
+    document.getElementById('q-opt-d').value = result.option_d || '';
+    if (result.correct) {
+      var radio = document.getElementById('q-correct-' + result.correct);
+      if (radio) { radio.checked = true; updateCorrectHighlight(); }
+    }
+  } catch (e) {
+    err.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Gerar';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Gerar';
+  }
+});
+
+document.getElementById('q-improve-btn').addEventListener('click', async function() {
+  var text = document.getElementById('q-text').value.trim();
+  var optA = document.getElementById('q-opt-a').value.trim();
+  var optB = document.getElementById('q-opt-b').value.trim();
+  var optC = document.getElementById('q-opt-c').value.trim();
+  var optD = document.getElementById('q-opt-d').value.trim();
+  var correct = document.querySelector('input[name="correct"]:checked');
+  var err = document.getElementById('q-error');
+  err.textContent = '';
+
+  if (!text || !optA || !optB || !optC || !optD) {
+    err.textContent = 'Preencha a questao e as 4 opcoes antes de melhorar.';
+    return;
+  }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Melhorando...';
+
+  try {
+    var prompt =
+      'Melhore esta questao de multipla escolha. Corrija gramatica, melhore a clareza, equilibre as opcoes.\n' +
+      'Mantenha a mesma resposta correta.\n\n' +
+      'Pergunta: "' + text + '"\n' +
+      'A: "' + optA + '"\n' +
+      'B: "' + optB + '"\n' +
+      'C: "' + optC + '"\n' +
+      'D: "' + optD + '"\n' +
+      'Correta: "' + (correct ? correct.value : '?') + '"\n\n' +
+      'Retorne SOMENTE JSON valido:\n' +
+      '{"question":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","correct":"a"}';
+
+    var result = await callGemini(prompt);
+    document.getElementById('q-text').value = result.question || text;
+    document.getElementById('q-opt-a').value = result.option_a || optA;
+    document.getElementById('q-opt-b').value = result.option_b || optB;
+    document.getElementById('q-opt-c').value = result.option_c || optC;
+    document.getElementById('q-opt-d').value = result.option_d || optD;
+    if (result.correct) {
+      var radio = document.getElementById('q-correct-' + result.correct);
+      if (radio) { radio.checked = true; updateCorrectHighlight(); }
+    }
+  } catch (e) {
+    err.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg> Melhorar';
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+loadSessions();
+</script>
+</body>
+</html>
