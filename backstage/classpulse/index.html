@@ -43,8 +43,8 @@
   <main class="bs-main">
 
     <div class="cp-tabs">
-      <button class="cp-tab active" id="tab-sessions" data-tab="sessions">Sessoes</button>
-      <button class="cp-tab" id="tab-banks" data-tab="banks">Banco de Questoes</button>
+      <button class="cp-tab active" id="tab-sessions" data-tab="sessions">Sessões</button>
+      <button class="cp-tab" id="tab-banks" data-tab="banks">Banco de Questões</button>
     </div>
 
     <!-- ============================================================
@@ -53,17 +53,17 @@
     <div class="cp-panel active" id="panel-sessions">
 
       <div class="cp-create-session">
-        <h3>Nova sessao</h3>
+        <h3>Nova sessão</h3>
         <div class="cp-row">
           <div class="bs-field">
-            <label>Titulo da sessao</label>
+            <label>Título da sessão</label>
             <input type="text" id="session-title" placeholder="Ex: Aula 3 — Redes Neurais" autocomplete="off">
           </div>
           <div class="bs-field" style="max-width:160px">
-            <label>Senha da sessao</label>
+            <label>Senha da sessão</label>
             <input type="password" id="session-password" placeholder="••••••" autocomplete="off">
           </div>
-          <button class="cp-btn-primary" id="create-session-btn">Criar sessao</button>
+          <button class="cp-btn-primary" id="create-session-btn">Criar sessão</button>
         </div>
         <p class="cp-form-error" id="session-error"></p>
       </div>
@@ -71,7 +71,7 @@
       <div id="sessions-list-wrap">
         <div class="cp-empty" id="sessions-empty" hidden>
           <div class="cp-empty-icon">📋</div>
-          <p>Nenhuma sessao encontrada.<br>Crie uma sessao acima.</p>
+          <p>Nenhuma sessão encontrada.<br>Crie uma sessão acima.</p>
         </div>
         <div class="cp-sessions-list" id="sessions-list"></div>
       </div>
@@ -92,7 +92,7 @@
             <div id="set-list-items">
               <div class="cp-empty" style="padding:1.5rem 1rem">
                 <div class="cp-empty-icon">📦</div>
-                <p>Nenhum conjunto.<br>Crie questoes ao lado.</p>
+                <p>Nenhum conjunto.<br>Crie questões ao lado.</p>
               </div>
             </div>
           </div>
@@ -102,7 +102,7 @@
         <div class="cp-question-area">
 
           <div class="cp-question-form">
-            <h3>Nova questao</h3>
+            <h3>Nova questão</h3>
 
             <div class="cp-set-select-row">
               <div class="bs-field">
@@ -113,29 +113,29 @@
             </div>
 
             <div class="bs-field">
-              <label>Pergunta ou instrucao para IA</label>
-              <textarea class="bs-textarea" id="q-text" placeholder="Escreva a pergunta diretamente, ou descreva o que voce quer para o botao Gerar." style="min-height:72px"></textarea>
+              <label>Pergunta ou instrução para IA</label>
+              <textarea class="bs-textarea" id="q-text" placeholder="Escreva a pergunta diretamente, ou descreva o que você quer para o botão Gerar." style="min-height:72px"></textarea>
             </div>
 
             <div id="q-options">
               <div class="cp-option-row" id="opt-row-a">
                 <div class="cp-option-letter">A</div>
-                <input type="text" id="q-opt-a" placeholder="Opcao A" autocomplete="off">
+                <input type="text" id="q-opt-a" placeholder="Opção A" autocomplete="off">
                 <input type="radio" name="correct" value="a" id="q-correct-a" title="Correta">
               </div>
               <div class="cp-option-row" id="opt-row-b">
                 <div class="cp-option-letter">B</div>
-                <input type="text" id="q-opt-b" placeholder="Opcao B" autocomplete="off">
+                <input type="text" id="q-opt-b" placeholder="Opção B" autocomplete="off">
                 <input type="radio" name="correct" value="b" id="q-correct-b" title="Correta">
               </div>
               <div class="cp-option-row" id="opt-row-c">
                 <div class="cp-option-letter">C</div>
-                <input type="text" id="q-opt-c" placeholder="Opcao C" autocomplete="off">
+                <input type="text" id="q-opt-c" placeholder="Opção C" autocomplete="off">
                 <input type="radio" name="correct" value="c" id="q-correct-c" title="Correta">
               </div>
               <div class="cp-option-row" id="opt-row-d">
                 <div class="cp-option-letter">D</div>
-                <input type="text" id="q-opt-d" placeholder="Opcao D" autocomplete="off">
+                <input type="text" id="q-opt-d" placeholder="Opção D" autocomplete="off">
                 <input type="radio" name="correct" value="d" id="q-correct-d" title="Correta">
               </div>
             </div>
@@ -159,7 +159,7 @@
           <!-- Question list for selected set -->
           <div id="question-list-wrap" hidden>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem">
-              <h3 style="font-size:0.9rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.06em" id="question-list-title">Questoes</h3>
+              <h3 style="font-size:0.9rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.06em" id="question-list-title">Questões</h3>
               <button class="cp-btn-danger" id="delete-set-btn" style="font-size:0.78rem; padding:0.4rem 0.8rem">Excluir conjunto</button>
             </div>
             <div class="cp-question-list" id="question-list"></div>
@@ -314,7 +314,7 @@ function renderSessions() {
     info.className = 'cp-session-info';
     var title = document.createElement('div');
     title.className = 'cp-session-title';
-    title.textContent = s.title || 'Sem titulo';
+    title.textContent = s.title || 'Sem título';
     var meta = document.createElement('div');
     meta.className = 'cp-session-meta';
     meta.textContent = s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '';
@@ -350,7 +350,7 @@ document.getElementById('create-session-btn').addEventListener('click', async fu
   var err = document.getElementById('session-error');
   err.textContent = '';
 
-  if (!title) { err.textContent = 'Informe o titulo da sessao.'; return; }
+  if (!title) { err.textContent = 'Informe o título da sessão.'; return; }
   if (!password || password.length < 4) { err.textContent = 'Senha deve ter pelo menos 4 caracteres.'; return; }
 
   var btn = this;
@@ -368,7 +368,7 @@ document.getElementById('create-session-btn').addEventListener('click', async fu
     err.textContent = 'Erro: ' + e.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Criar sessao';
+    btn.textContent = 'Criar sessão';
   }
 });
 
@@ -396,7 +396,7 @@ function renderSets() {
   container.innerHTML = '';
 
   if (sets.length === 0) {
-    container.innerHTML = '<div class="cp-empty" style="padding:1.5rem 1rem"><div class="cp-empty-icon">📦</div><p>Nenhum conjunto.<br>Crie questoes ao lado.</p></div>';
+    container.innerHTML = '<div class="cp-empty" style="padding:1.5rem 1rem"><div class="cp-empty-icon">📦</div><p>Nenhum conjunto.<br>Crie questões ao lado.</p></div>';
     activeSet = null;
     document.getElementById('question-list-wrap').hidden = true;
     return;
@@ -467,7 +467,7 @@ function renderQuestions() {
   list.innerHTML = '';
 
   if (questions.length === 0) {
-    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">❓</div><p>Nenhuma questao neste conjunto.</p></div>';
+    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">❓</div><p>Nenhuma questão neste conjunto.</p></div>';
     return;
   }
 
@@ -526,9 +526,9 @@ document.getElementById('q-save-btn').addEventListener('click', async function()
   msg.textContent = '';
 
   if (!setName) { err.textContent = 'Informe o nome do conjunto.'; return; }
-  if (!text)    { err.textContent = 'A pergunta nao pode estar vazia.'; return; }
-  if (!optA || !optB || !optC || !optD) { err.textContent = 'Preencha todas as 4 opcoes.'; return; }
-  if (!correct) { err.textContent = 'Selecione a opcao correta.'; return; }
+  if (!text)    { err.textContent = 'A pergunta não pode estar vazia.'; return; }
+  if (!optA || !optB || !optC || !optD) { err.textContent = 'Preencha todas as 4 opções.'; return; }
+  if (!correct) { err.textContent = 'Selecione a opção correta.'; return; }
 
   var btn = this;
   btn.disabled = true;
@@ -546,7 +546,7 @@ document.getElementById('q-save-btn').addEventListener('click', async function()
       option_d:  optD,
       correct:   correct.value
     });
-    msg.textContent = 'Questao salva!';
+    msg.textContent = 'Questão salva!';
     clearQuestionForm();
     // Refresh set list and question list
     await loadSets();
@@ -591,7 +591,7 @@ document.querySelectorAll('input[name="correct"]').forEach(function(r) {
 // Delete one question
 async function deleteQuestion(questionText) {
   if (!activeSet) return;
-  if (!confirm('Excluir esta questao?')) return;
+  if (!confirm('Excluir esta questão?')) return;
   try {
     await callScript({ action: 'delete_question', auth_token: AUTH_TOKEN, list_name: activeSet, question: questionText });
     await selectSet(activeSet);
@@ -607,7 +607,7 @@ document.getElementById('delete-set-btn').addEventListener('click', function() {
 });
 
 async function confirmDeleteSet(name) {
-  if (!confirm('Excluir o conjunto "' + name + '" e todas as suas questoes?')) return;
+  if (!confirm('Excluir o conjunto "' + name + '" e todas as suas questões?')) return;
   try {
     await callScript({ action: 'delete_question_set', auth_token: AUTH_TOKEN, list_name: name });
     activeSet = null;
@@ -622,7 +622,7 @@ document.getElementById('q-generate-btn').addEventListener('click', async functi
   var instruction = document.getElementById('q-text').value.trim();
   var err = document.getElementById('q-error');
   err.textContent = '';
-  if (!instruction) { err.textContent = 'Descreva o que voce quer antes de gerar.'; return; }
+  if (!instruction) { err.textContent = 'Descreva o que você quer antes de gerar.'; return; }
 
   var btn = this;
   btn.disabled = true;
@@ -659,7 +659,7 @@ document.getElementById('q-improve-btn').addEventListener('click', async functio
   err.textContent = '';
 
   if (!text || !optA || !optB || !optC || !optD) {
-    err.textContent = 'Preencha a questao e as 4 opcoes antes de melhorar.';
+    err.textContent = 'Preencha a questão e as 4 opções antes de melhorar.';
     return;
   }
 
