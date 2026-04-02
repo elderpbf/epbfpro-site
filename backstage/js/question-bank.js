@@ -124,7 +124,7 @@ var QuestionBank = (function () {
 
     callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, prompt: topic })
       .then(function (result) {
-        opts.onSelect(result);
+        opts.onSelect(normalizeAiResult(result));
       })
       .catch(function (e) {
         errEl.textContent = 'Erro: ' + e.message;
@@ -157,7 +157,7 @@ var QuestionBank = (function () {
       improve_from: state.text
     })
       .then(function (result) {
-        opts.onSelect(result);
+        opts.onSelect(normalizeAiResult(result));
       })
       .catch(function (e) {
         errEl.textContent = 'Erro: ' + e.message;
@@ -189,6 +189,22 @@ var QuestionBank = (function () {
     });
     opts.generateBtn.addEventListener('click', generate);
     opts.improveBtn.addEventListener('click', improve);
+  }
+
+  // Worker returns { ok, ai: { question, options: [...], correct: 0 } }
+  // Normalize to flat { question, option_a/b/c/d, correct: "a" } for onSelect callbacks
+  function normalizeAiResult(result) {
+    var ai = result.ai || result;
+    var opts = ai.options || [];
+    var letters = ['a', 'b', 'c', 'd'];
+    return {
+      question: ai.question || '',
+      option_a: opts[0] || '',
+      option_b: opts[1] || '',
+      option_c: opts[2] || '',
+      option_d: opts[3] || '',
+      correct: typeof ai.correct === 'number' ? letters[ai.correct] : (ai.correct || '')
+    };
   }
 
   function escHtml(s) {
