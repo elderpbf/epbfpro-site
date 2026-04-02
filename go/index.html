@@ -497,7 +497,7 @@
     document.getElementById('q-text').textContent = activeQuestionData.text;
     document.getElementById('answer-error').textContent = '';
     const letters = ['A','B','C','D'];
-    document.getElementById('q-options').innerHTML = options.map((opt, i) => `
+    document.getElementById('q-options').innerHTML = (row.options || []).map((opt, i) => `
       <button class="option-btn" onclick="submitAnswer(${i}, this)">
         <span class="option-letter">${letters[i]}</span>
         <span>${escapeHtml(opt)}</span>
