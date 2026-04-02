@@ -337,7 +337,11 @@
         render(activeQ, false);
       } else if (lastDisplayedQ) {
         const refreshed = (data.history || []).find(q => q.id === lastDisplayedQ.id);
-        render(refreshed || lastDisplayedQ, false);
+        if (refreshed) {
+          dbg('poll', `closed Q …${refreshed.id.slice(-6)} show=${refreshed.show_results} reveal=${refreshed.reveal_answer}`);
+          lastDisplayedQ = refreshed;
+        }
+        render(lastDisplayedQ, false);
       } else {
         render(null, false);
       }
@@ -383,6 +387,7 @@
     const status        = q.status;
     const options       = q.options || [];
     const correctAnswer = q.correct_answer;
+    const showResults   = status === 'active' || q.show_results === true;
     const revealAnswer  = status === 'closed' && q.reveal_answer === true;
 
     const counts = q.answer_counts || new Array(options.length).fill(0);
@@ -402,7 +407,7 @@
       </div>`;
 
     options.forEach((opt, i) => {
-      const pct       = total > 0 ? Math.round(counts[i] / total * 100) : 0;
+      const pct       = showResults && total > 0 ? Math.round(counts[i] / total * 100) : 0;
       const isCorrect = revealAnswer && correctAnswer !== null && i === correctAnswer;
       const fillClass = isCorrect ? 'correct' : '';
       html += `
@@ -411,13 +416,13 @@
           <div class="bar-right">
             <div class="bar-label">
               <span class="bar-opt-text">${escapeHtml(opt)}${isCorrect ? ' ✓' : ''}</span>
-              <span class="bar-pct">${status === 'active' && total === 0 ? '' : pct + '%'}</span>
+              <span class="bar-pct">${showResults && !(status === 'active' && total === 0) ? pct + '%' : ''}</span>
             </div>
             <div class="bar-track">
-              <div class="bar-fill ${fillClass}" style="width:${pct}%"></div>
+              <div class="bar-fill ${fillClass}" style="width:${showResults ? pct : 0}%"></div>
             </div>
           </div>
-          <div class="bar-count">${counts[i]}</div>
+          <div class="bar-count">${showResults ? counts[i] : ''}</div>
         </div>`;
     });
 
