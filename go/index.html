@@ -370,13 +370,14 @@
     btn.textContent = t.btnJoining;
 
     try {
-      const rows = parseCSV(await (await fetch(SESSIONS_CSV + '&t=' + Date.now())).text());
-      const sess = rows.find(r => r[0].trim().toUpperCase() === code);
+      const payload = encodeURIComponent(JSON.stringify({ action: 'get_session_state', code }));
+      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload);
+      const data = await resp.json();
 
-      if (!sess)                                        { errorEl.textContent = t.errNotFound; return; }
-      if (sess[2].trim().toLowerCase() === 'closed')   { errorEl.textContent = t.errClosed;   return; }
+      if (data.error === 'session not found' || !data.session) { errorEl.textContent = t.errNotFound; return; }
+      if (data.session.status === 'closed')                    { errorEl.textContent = t.errClosed;   return; }
 
-      currentSession = { code: sess[0].trim().toUpperCase(), title: sess[1].trim(), studentName: name || 'Anônimo' };
+      currentSession = { code: data.session.code, title: data.session.title, studentName: name || 'Anônimo' };
       sessionStorage.setItem('cl_session', JSON.stringify(currentSession));
       startSession();
     } catch {
@@ -426,18 +427,11 @@
   // ── POLLING ───────────────────────────────────────────────────────────────
   async function pollData() {
     try {
-      const ts = '&t=' + Date.now();
-      const [sessText, qText] = await Promise.all([
-        fetch(SESSIONS_CSV  + ts).then(r => r.text()),
-        fetch(QUESTIONS_CSV + ts).then(r => r.text())
-      ]);
+      const payload = encodeURIComponent(JSON.stringify({ action: 'get_session_state', code: currentSession.code }));
+      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload);
+      const data = await resp.json();
 
-      const sessions  = parseCSV(sessText);
-      const questions = parseCSV(qText);
-
-      // Check if session was closed
-      const sess = sessions.find(r => r[0].trim().toUpperCase() === currentSession.code);
-      if (sess && sess[2].trim().toLowerCase() === 'closed') {
+      if (!data.session || data.session.status === 'closed') {
         clearInterval(pollTimer);
         showState('closed');
         return;
@@ -446,14 +440,11 @@
       pulseDot('dot-waiting');
       pulseDot('dot-answered');
 
-      // Questions cols: A=id, B=session_code, C=text, D=options, E=correct_answer, F=status, G=show_results, H=reveal_answer
-      const activeQ = questions.find(r =>
-        r[1].trim().toUpperCase() === currentSession.code && r[5].trim() === 'active'
-      );
+      const activeQ = data.active_question;
 
       if (activeQ) {
-        const qId = activeQ[0].trim();
-        dbg('poll', `active Q …${qId.slice(-6)} | sess: ${sess ? sess[2].trim() : '?'}`);
+        const qId = activeQ.id;
+        dbg('poll', `active Q …${qId.slice(-6)}`);
         lastActiveQId = qId;
         showingResultsFor = null;
 
@@ -467,16 +458,14 @@
       } else {
         // No active question
         if (lastActiveQId && !showingResultsFor) {
-          const prevQ    = questions.find(r => r[0].trim() === lastActiveQId);
+          const prevQ    = (data.history || []).find(q => q.id === lastActiveQId);
           const myAnswer = localStorage.getItem('cl_ans_' + lastActiveQId);
-          const doShow   = prevQ && prevQ[6].trim().toLowerCase() === 'true';
+          const doShow   = prevQ && prevQ.show_results === true;
 
           if (doShow && myAnswer !== null) {
             showingResultsFor = lastActiveQId;
             lastActiveQId = null;
-            const aText  = await fetch(ANSWERS_CSV + '&t=' + Date.now()).then(r => r.text());
-            const answers = parseCSV(aText);
-            renderResults(prevQ, answers, parseInt(myAnswer));
+            renderResults(prevQ, parseInt(myAnswer));
             showState('results');
             setTimeout(() => { showingResultsFor = null; if (pollTimer) showState('waiting'); }, 12000);
           } else {
@@ -495,10 +484,7 @@
 
   // ── RENDER QUESTION ───────────────────────────────────────────────────────
   function renderQuestion(row) {
-    const id = row[0].trim();
-    let options = [];
-    try { options = JSON.parse(row[3]); } catch { options = []; }
-    activeQuestionData = { id, text: row[2].trim(), options };
+    activeQuestionData = { id: row.id, text: row.text, options: row.options };
 
     document.getElementById('q-text').textContent = activeQuestionData.text;
     document.getElementById('answer-error').textContent = '';
@@ -547,22 +533,16 @@
   }
 
   // ── RENDER RESULTS ────────────────────────────────────────────────────────
-  function renderResults(row, answerRows, myAnswerIndex) {
-    const qId = row[0].trim();
-    let options = [];
-    try { options = JSON.parse(row[3]); } catch {}
-    const correctAnswer = row[4].trim() !== '' ? parseInt(row[4]) : null;
-    const revealAnswer  = row[7].trim().toLowerCase() === 'true';
+  function renderResults(row, myAnswerIndex) {
+    const options       = row.options || [];
+    const correctAnswer = row.correct_answer;
+    const revealAnswer  = row.reveal_answer === true;
 
-    const counts = new Array(options.length).fill(0);
-    answerRows.filter(r => r[1].trim() === qId).forEach(r => {
-      const idx = parseInt(r[4]);
-      if (idx >= 0 && idx < options.length) counts[idx]++;
-    });
-    const total = counts.reduce((a, b) => a + b, 0);
+    const counts = row.answer_counts || new Array(options.length).fill(0);
+    const total  = counts.reduce((a, b) => a + b, 0);
     const letters = ['A','B','C','D'];
 
-    document.getElementById('results-q-text').textContent = row[2].trim();
+    document.getElementById('results-q-text').textContent = row.text || '';
     document.getElementById('results-bars').innerHTML = options.map((opt, i) => {
       const pct       = total > 0 ? Math.round(counts[i] / total * 100) : 0;
       const isCorrect = revealAnswer && correctAnswer !== null && i === correctAnswer;

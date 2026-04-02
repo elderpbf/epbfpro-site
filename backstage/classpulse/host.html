@@ -593,49 +593,34 @@ function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
 
 async function fetchData() {
   if (!sessionCode) return;
-
   try {
-    var ts   = '&t=' + Date.now();
-    var qUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/gviz/tq?tqx=out:csv&sheet=Questions' + ts;
-    var aUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/gviz/tq?tqx=out:csv&sheet=Answers' + ts;
+    var payload = encodeURIComponent(JSON.stringify({ action: 'get_session_state', code: sessionCode }));
+    var resp = await fetch(SCRIPT_URL + '?payload=' + payload);
+    var data = await resp.json();
+    if (data.error) { if (typeof bsLog !== 'undefined') bsLog('host poll: ' + data.error, 'error'); return; }
 
-    var results = await Promise.all([
-      fetch(qUrl).then(function(r) { return r.text(); }),
-      fetch(aUrl).then(function(r) { return r.text(); })
-    ]);
-
-    var questions = parseCSV(results[0]);
-    var answers   = parseCSV(results[1]);
-    var sessionQs = questions.filter(function(r) { return r[1] && r[1].trim().toUpperCase() === sessionCode; });
-    var activeQ   = sessionQs.find(function(r) { return r[5] && r[5].trim() === 'active'; });
-
-    if (activeQ) {
-      activeQId = activeQ[0].trim();
-      renderActiveQuestion(activeQ, answers);
-      renderHistory(sessionQs.filter(function(r) { return r[5] && r[5].trim() === 'closed'; }));
+    var q = data.active_question;
+    if (q) {
+      activeQId = q.id;
+      renderActiveQuestion(q);
+      renderHistory(data.history || []);
     } else {
       activeQId = null;
       document.getElementById('active-q-panel').style.display = 'none';
-      renderHistory(sessionQs.filter(function(r) { return r[5] && r[5].trim() === 'closed'; }));
+      renderHistory(data.history || []);
     }
   } catch (err) {
     if (typeof bsLog !== 'undefined') bsLog('host poll: ' + err.message, 'error');
   }
 }
 
-function renderActiveQuestion(qRow, answers) {
-  var qId     = qRow[0].trim();
-  var text    = qRow[2].trim();
-  var options = [];
-  try { options = JSON.parse(qRow[3]); } catch(e) {}
-  var correctAnswer = qRow[4] && qRow[4].trim() !== '' ? parseInt(qRow[4]) : null;
+function renderActiveQuestion(q) {
+  var text    = q.text;
+  var options = q.options;
+  var correctAnswer = q.correct_answer;
   var letters = ['A','B','C','D'];
 
-  var counts = new Array(options.length).fill(0);
-  (answers || []).filter(function(r) { return r[1] && r[1].trim() === qId; }).forEach(function(r) {
-    var idx = parseInt(r[4]);
-    if (idx >= 0 && idx < options.length) counts[idx]++;
-  });
+  var counts = q.answer_counts || new Array(options.length).fill(0);
   var total = counts.reduce(function(a,b) { return a+b; }, 0);
 
   document.getElementById('aq-text').textContent = text;
@@ -662,10 +647,8 @@ function renderHistory(closedQs) {
     document.getElementById('history-card').style.display = 'none';
     return;
   }
-  var html = closedQs.slice().reverse().map(function(r) {
-    var text = r[2] ? r[2].trim() : '';
-    var ts   = r[8] ? r[8].trim() : '';
-    return '<div class="history-item"><span class="hi-text">' + escHtml(text) + '</span><span class="hi-meta">' + escHtml(ts) + '</span></div>';
+  var html = closedQs.map(function(q) {
+    return '<div class="history-item"><span class="hi-text">' + escHtml(q.text || '') + '</span><span class="hi-meta">' + escHtml(q.created_at || '') + '</span></div>';
   }).join('');
   document.getElementById('history-list').innerHTML = html;
   document.getElementById('history-card').style.display = 'block';

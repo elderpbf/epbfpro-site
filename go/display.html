@@ -221,10 +221,11 @@
   // ────────────────────────────────────────────────────────────────────────
 
   // ── CONFIG ──────────────────────────────────────────────────────────────
-  const SPREADSHEET_ID = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
-  const SESSIONS_CSV   = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`;
-  const QUESTIONS_CSV  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`;
-  const ANSWERS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Answers`;
+  const SPREADSHEET_ID = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA'; // dormant
+  const SESSIONS_CSV   = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`; // dormant
+  const QUESTIONS_CSV  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`; // dormant
+  const ANSWERS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Answers`; // dormant
+  const WORKER_URL     = 'https://backstage-api.pensoia.workers.dev';
   const POLL_INTERVAL  = 3000;
   // ────────────────────────────────────────────────────────────────────────
 
@@ -316,43 +317,29 @@
     dot.classList.add('active');
 
     try {
-      const ts = '&t=' + Date.now();
-      const [sessText, qText, aText] = await Promise.all([
-        fetch(SESSIONS_CSV  + ts).then(r => r.text()),
-        fetch(QUESTIONS_CSV + ts).then(r => r.text()),
-        fetch(ANSWERS_CSV   + ts).then(r => r.text())
-      ]);
+      const payload = encodeURIComponent(JSON.stringify({ action: 'get_session_state', code: sessionCode }));
+      const resp = await fetch(WORKER_URL + '?payload=' + payload);
+      const data = await resp.json();
 
-      const sessions  = parseCSV(sessText);
-      const questions = parseCSV(qText);
-      const answers   = parseCSV(aText);
-
-      // Session status
-      const sess = sessions.find(r => r[0].trim().toUpperCase() === sessionCode);
-      if (sess) {
-        sessionTitle = sess[1].trim();
+      if (data.session) {
+        sessionTitle = data.session.title;
         document.getElementById('display-title').textContent = sessionTitle;
-
-        if (sess[2].trim().toLowerCase() === 'closed') {
-          render(null, null, true);
+        if (data.session.status === 'closed') {
+          render(null, true);
           return;
         }
       }
 
-      // Questions cols: A=id, B=session_code, C=text, D=options, E=correct_answer, F=status, G=show_results, H=reveal_answer
-      const sessionQs = questions.filter(r => r[1].trim().toUpperCase() === sessionCode);
-      const activeQ   = sessionQs.find(r => r[5].trim() === 'active');
-
+      const activeQ = data.active_question;
       if (activeQ) {
-        dbg('poll', `active Q …${activeQ[0].trim().slice(-6)} | sess: ${sess ? sess[2].trim() : '?'}`);
+        dbg('poll', `active Q …${activeQ.id.slice(-6)}`);
         lastDisplayedQ = activeQ;
-        render(activeQ, answers, false);
+        render(activeQ, false);
       } else if (lastDisplayedQ) {
-        // Show last known question (should be closed now)
-        const refreshed = sessionQs.find(r => r[0].trim() === lastDisplayedQ[0].trim());
-        render(refreshed || lastDisplayedQ, answers, false);
+        const refreshed = (data.history || []).find(q => q.id === lastDisplayedQ.id);
+        render(refreshed || lastDisplayedQ, false);
       } else {
-        render(null, null, false);
+        render(null, false);
       }
     } catch (err) {
       console.error('display fetch error:', err);
@@ -368,10 +355,10 @@
     document.getElementById('idle-screen').style.display  = visible ? 'flex' : 'none';
   }
 
-  function render(qRow, answers, sessionClosed) {
-    if (sessionClosed)       dbg('info', 'render: session closed');
-    else if (!qRow)          dbg('info', 'render: waiting (idle)');
-    else                     dbg('info', `render: Q status=${qRow[5].trim()} reveal=${qRow[7].trim()}`);
+  function render(q, sessionClosed) {
+    if (sessionClosed)  dbg('info', 'render: session closed');
+    else if (!q)        dbg('info', 'render: waiting (idle)');
+    else                dbg('info', `render: Q status=${q.status} reveal=${q.reveal_answer}`);
     const main = document.getElementById('main-content');
 
     if (sessionClosed) {
@@ -385,28 +372,21 @@
       return;
     }
 
-    if (!qRow) {
+    if (!q) {
       showIdle(true);
       return;
     }
 
     showIdle(false);
 
-    const qId    = qRow[0].trim();
-    const text   = qRow[2].trim();
-    const status = qRow[5].trim(); // active or closed
-    let options  = [];
-    try { options = JSON.parse(qRow[3]); } catch {}
-    const correctAnswer = qRow[4].trim() !== '' ? parseInt(qRow[4]) : null;
-    const revealAnswer  = status === 'closed' && qRow[7].trim().toLowerCase() === 'true';
+    const text          = q.text;
+    const status        = q.status;
+    const options       = q.options || [];
+    const correctAnswer = q.correct_answer;
+    const revealAnswer  = status === 'closed' && q.reveal_answer === true;
 
-    // Count answers per option
-    const counts = new Array(options.length).fill(0);
-    (answers || []).filter(r => r[1].trim() === qId).forEach(r => {
-      const idx = parseInt(r[4]);
-      if (idx >= 0 && idx < options.length) counts[idx]++;
-    });
-    const total = counts.reduce((a, b) => a + b, 0);
+    const counts = q.answer_counts || new Array(options.length).fill(0);
+    const total  = counts.reduce((a, b) => a + b, 0);
     const letters = ['A','B','C','D'];
 
     const badgeClass = status === 'active' ? 'live' : 'closed';
