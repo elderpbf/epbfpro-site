@@ -679,7 +679,7 @@ document.getElementById('q-generate-btn').addEventListener('click', async functi
   btn.textContent = 'Gerando...';
 
   try {
-    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'generate', topic: instruction });
+    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, prompt: instruction });
     document.getElementById('q-text').value = result.question || '';
     document.getElementById('q-opt-a').value = result.option_a || '';
     document.getElementById('q-opt-b').value = result.option_b || '';
@@ -718,7 +718,7 @@ document.getElementById('q-improve-btn').addEventListener('click', async functio
   btn.textContent = 'Melhorando...';
 
   try {
-    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'improve', current_text: text, current_options: [optA, optB, optC, optD] });
+    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, improve_from: text });
     document.getElementById('q-text').value = result.question || text;
     document.getElementById('q-opt-a').value = result.option_a || optA;
     document.getElementById('q-opt-b').value = result.option_b || optB;

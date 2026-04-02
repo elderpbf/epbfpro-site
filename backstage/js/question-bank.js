@@ -122,7 +122,7 @@ var QuestionBank = (function () {
     btn.disabled = true;
     btn.textContent = 'Gerando...';
 
-    callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'generate', topic: topic })
+    callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, prompt: topic })
       .then(function (result) {
         opts.onSelect(result);
       })
@@ -154,9 +154,7 @@ var QuestionBank = (function () {
     callScript({
       action: 'ai_question',
       auth_token: AUTH_TOKEN,
-      mode: 'improve',
-      current_text: state.text,
-      current_options: options
+      improve_from: state.text
     })
       .then(function (result) {
         opts.onSelect(result);
