@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Classroom · PensoIA</title>
+  <link rel="stylesheet" href="../backstage/css/theme.css?v=1.1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #faf8f5;
+      --text: #3d3529;
+      --text-muted: #8a7b66;
+      --text-dim: #a89880;
+      --border: #e8e0d4;
+      --card-bg: #fff;
+      --accent: #c4a97d;
+      --accent-dark: #5c4a2f;
+      --success: #4a7c59;
+      --success-bg: #e8f5ee;
+      --error: #c44;
+    }
+    [data-theme="dark"] {
+      --bg: #141210;
+      --text: #e8e0d4;
+      --text-muted: #a89880;
+      --text-dim: #6b5e4e;
+      --border: #2e2820;
+      --card-bg: #1e1a16;
+      --accent: #c4a97d;
+      --accent-dark: #e8c98a;
+      --success: #6dbf8a;
+      --success-bg: #1a3a25;
+      --error: #f07070;
+      --option-hover-bg: rgba(196, 169, 125, 0.15);
+      --option-selected-bg: rgba(196, 169, 125, 0.2);
+    }
+    [data-theme="light"] {
+      --bg: #faf8f5;
+      --text: #3d3529;
+      --text-muted: #8a7b66;
+      --text-dim: #a89880;
+      --border: #e8e0d4;
+      --card-bg: #fff;
+      --accent: #c4a97d;
+      --accent-dark: #5c4a2f;
+      --success: #4a7c59;
+      --success-bg: #e8f5ee;
+      --error: #c44;
+      --option-hover-bg: #fdf6ec;
+      --option-selected-bg: #fdf6ec;
+    }
+
+    /* Theme toggle button */
+    #theme-btn {
+      position: fixed; top: 14px; right: 14px; z-index: 100;
+      width: 36px; height: 36px;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 8px; cursor: pointer; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #theme-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+    .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 80px; }
+
+    /* Header */
+    .header { text-align: center; padding: 28px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    .header .logo { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-dark); margin-bottom: 6px; }
+    .header h1 { font-size: 1.15rem; font-weight: 700; color: var(--accent-dark); }
+    .header p  { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Session bar */
+    .session-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    .session-bar .session-title { font-size: 0.95rem; font-weight: 600; color: var(--accent-dark); }
+    .session-bar .session-code  { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); background: var(--border); padding: 3px 8px; border-radius: 6px; }
+    .btn-exit { font-size: 0.8rem; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 4px 0; font-family: inherit; }
+    .btn-exit:hover { color: var(--text); }
+
+    /* Form */
+    label { display: block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+    input[type="text"] { width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: inherit; background: var(--card-bg); color: var(--text); outline: none; transition: border-color 0.15s; }
+    input[type="text"]:focus { border-color: var(--accent); }
+    input.code-input { text-transform: uppercase; letter-spacing: 0.2em; font-size: 1.4rem; font-weight: 700; text-align: center; }
+    .form-group { margin-bottom: 18px; }
+    .btn-primary { width: 100%; padding: 13px; background: var(--accent-dark); color: #fff; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: var(--text-dim); font-size: 0.78rem; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .host-link { display: block; text-align: center; font-size: 0.82rem; color: var(--text-muted); text-decoration: none; }
+    .host-link:hover { color: var(--accent-dark); }
+    .error-msg { font-size: 1rem; color: var(--error); margin-top: 10px; min-height: 1.2em; text-align: center; }
+
+    /* States */
+    .state-center { text-align: center; padding: 56px 0; }
+    .state-icon  { font-size: 2.4rem; margin-bottom: 14px; }
+    .state-title { font-size: 1.05rem; font-weight: 600; color: var(--accent-dark); margin-bottom: 8px; }
+    .state-sub   { font-size: 1rem; color: var(--text-muted); }
+
+    /* Option buttons */
+    .question-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 14px; }
+    .question-text  { font-size: 1.1rem; font-weight: 600; color: var(--text); line-height: 1.5; margin-bottom: 22px; }
+    .option-btn {
+      width: 100%; padding: 14px 18px; background: var(--card-bg); border: 2px solid var(--border);
+      border-radius: 12px; font-size: 1.1rem; font-family: inherit; color: var(--text); cursor: pointer;
+      text-align: left; display: flex; align-items: center; gap: 14px; transition: all 0.15s; margin-bottom: 10px;
+    }
+    .option-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--option-hover-bg); }
+    .option-btn:disabled { cursor: default; opacity: 0.6; }
+    .option-btn.selected { border-color: var(--accent-dark); background: var(--option-selected-bg); opacity: 1; }
+    .option-letter { font-size: 0.78rem; font-weight: 700; color: var(--accent-dark); background: var(--border); padding: 3px 9px; border-radius: 5px; flex-shrink: 0; min-width: 30px; text-align: center; }
+
+    /* Results bars */
+    .results-section { }
+    .results-question { font-size: 1rem; font-weight: 600; color: var(--text); line-height: 1.5; margin-bottom: 22px; }
+    .result-option { margin-bottom: 14px; }
+    .result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+    .result-letter { font-size: 0.78rem; font-weight: 700; color: var(--accent-dark); background: var(--border); padding: 3px 9px; border-radius: 5px; flex-shrink: 0; min-width: 30px; text-align: center; }
+    .result-text { flex: 1; font-size: 0.88rem; color: var(--text); }
+    .result-pct  { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); min-width: 36px; text-align: right; }
+    .bar-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .bar-fill  { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.6s ease; }
+    .bar-fill.correct { background: var(--success); }
+    .bar-fill.mine    { background: var(--accent-dark); }
+    .result-option.is-correct .result-letter { background: var(--success-bg); color: var(--success); }
+    .result-option.is-correct .result-text   { font-weight: 600; color: var(--success); }
+    .results-count { font-size: 0.78rem; color: var(--text-dim); text-align: center; margin-top: 18px; }
+    .results-next  { font-size: 0.82rem; color: var(--text-muted); text-align: center; margin-top: 10px; }
+
+    /* Refresh dot */
+    .dot-wrap { text-align: center; margin-top: 18px; }
+    .refresh-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); transition: background 0.3s; }
+    .refresh-dot.active { background: var(--success); }
+
+    /* Screen visibility */
+    #join-screen    { display: block; }
+    #session-screen { display: none; }
+  </style>
+</head>
+<body>
+<button id="theme-btn" aria-label="Alternar tema" onclick="toggleTheme()">
+  <span id="theme-icon"></span>
+</button>
+<div class="container">
+
+  <!-- ── JOIN SCREEN ── -->
+  <div id="join-screen">
+    <div class="header">
+      <div class="logo">PensoIA</div>
+      <h1>Classroom</h1>
+      <p>Entre com o código da sessão</p>
+    </div>
+    <div class="form-group">
+      <label for="code-input">Código da sessão</label>
+      <input type="text" id="code-input" class="code-input" placeholder="AB12" maxlength="4"
+             autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+    </div>
+    <div class="form-group">
+      <label for="name-input">Seu nome <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <input type="text" id="name-input" placeholder="Anônimo" maxlength="30" autocomplete="off">
+    </div>
+    <button class="btn-primary" id="join-btn" onclick="joinSession()">Entrar na sessão</button>
+    <div class="error-msg" id="join-error"></div>
+    <div class="divider">ou</div>
+    <a class="host-link" href="host.html">Criar uma sessão como instrutor →</a>
+  </div>
+
+  <!-- ── SESSION SCREEN ── -->
+  <div id="session-screen">
+    <div class="session-bar">
+      <button class="btn-exit" onclick="exitSession()">← Sair</button>
+      <span class="session-title" id="session-title-bar"></span>
+      <span class="session-code"  id="session-code-bar"></span>
+    </div>
+
+    <!-- waiting -->
+    <div id="state-waiting" class="state-center" style="display:none">
+      <div class="state-icon">⏳</div>
+      <div class="state-title">Aguardando próxima pergunta…</div>
+      <div class="dot-wrap"><div class="refresh-dot" id="dot-waiting"></div></div>
+    </div>
+
+    <!-- question -->
+    <div id="state-question" style="display:none">
+      <div class="question-label">Pergunta</div>
+      <div class="question-text" id="q-text"></div>
+      <div id="q-options"></div>
+      <p id="answer-sending-msg" style="display:none;font-size:0.82rem;color:var(--text-muted);text-align:center;margin-top:10px">Enviando...</p>
+      <div class="error-msg" id="answer-error"></div>
+    </div>
+
+    <!-- answered -->
+    <div id="state-answered" class="state-center" style="display:none">
+      <div class="state-icon">✓</div>
+      <div class="state-title">Resposta enviada!</div>
+      <div class="state-sub">Aguardando o resultado…</div>
+      <div class="dot-wrap"><div class="refresh-dot" id="dot-answered"></div></div>
+    </div>
+
+    <!-- results -->
+    <div id="state-results" class="results-section" style="display:none">
+      <div class="question-label">Resultado</div>
+      <div class="results-question" id="results-q-text"></div>
+      <div id="results-bars"></div>
+      <div class="results-count" id="results-count"></div>
+      <div class="results-next">Próxima pergunta em breve…</div>
+    </div>
+
+    <!-- closed -->
+    <div id="state-closed" class="state-center" style="display:none">
+      <div class="state-icon">✓</div>
+      <div class="state-title">Sessão encerrada</div>
+      <div class="state-sub">Obrigado pela participação!</div>
+    </div>
+  </div>
+
+</div>
+<script>
+  // ── THEME ────────────────────────────────────────────────────────────────
+  var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var icon = document.getElementById('theme-icon');
+    if (icon) icon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+    localStorage.setItem('bs_theme', theme);
+  }
+
+  function toggleTheme() {
+    var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  }
+
+  (function() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlTheme  = urlParams.get('theme');
+    var stored    = localStorage.getItem('bs_theme');
+    var theme;
+    if (urlTheme === 'dark' || urlTheme === 'light') {
+      theme = urlTheme;
+    } else if (stored === 'dark' || stored === 'light') {
+      theme = stored;
+    } else {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    applyTheme(theme);
+  })();
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── CONFIG ──────────────────────────────────────────────────────────────
+  const SPREADSHEET_ID  = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwdynfo6geXRNyrJtuAzXxCpOztsnvCGRz2FWkhLC05dsVAjOF2P1QV9bjLTZbVQbDlbg/exec';
+  const SESSIONS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`;
+  const QUESTIONS_CSV   = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`;
+  const ANSWERS_CSV     = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Answers`;
+  const POLL_INTERVAL   = 3000;
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── I18N ────────────────────────────────────────────────────────────────
+  const ACTIVE_LANG = 'pt';
+  const STRINGS = {
+    pt: {
+      btnJoin:       'Entrar na sessão',
+      btnJoining:    'Verificando…',
+      errCodeLength: 'Digite um código de 4 caracteres.',
+      errNotFound:   'Sessão não encontrada. Verifique o código.',
+      errClosed:     'Esta sessão foi encerrada.',
+      errConnection: 'Erro de conexão. Tente novamente.',
+      errSubmit:     'Falha ao enviar. Tente novamente.',
+      errTimeout:    'Tempo esgotado para esta pergunta.',
+      answersCount:  n => `${n} resposta${n !== 1 ? 's' : ''}`,
+    },
+    en: {
+      btnJoin:       'Join session',
+      btnJoining:    'Checking…',
+      errCodeLength: 'Enter a 4-character session code.',
+      errNotFound:   'Session not found. Check the code.',
+      errClosed:     'This session has ended.',
+      errConnection: 'Connection error. Please try again.',
+      errSubmit:     'Failed to submit. Please try again.',
+      errTimeout:    'This question has already closed.',
+      answersCount:  n => `${n} answer${n !== 1 ? 's' : ''}`,
+    }
+  };
+  const t = STRINGS[ACTIVE_LANG] || STRINGS.pt;
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── CONFIG CHECK ─────────────────────────────────────────────────────────
+  if (SPREADSHEET_ID.includes('REPLACE') || APPS_SCRIPT_URL.includes('REPLACE')) {
+    document.querySelector('.container').innerHTML =
+      '<div style="padding:40px;text-align:center;color:#c44;font-size:0.9rem;">' +
+      '<strong>Setup incompleto.</strong><br>Configure SPREADSHEET_ID e APPS_SCRIPT_URL.' +
+      '</div>';
+    throw new Error('Classroom Light: config placeholders not replaced');
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  let currentSession    = null; // { code, title, studentName }
+  let pollTimer         = null;
+  let activeQuestionData = null; // { id, text, options[] }
+  let lastActiveQId     = null;  // ID of last seen active question
+  let showingResultsFor = null;  // ID of question currently showing results
+
+  // ── CSV PARSING ──────────────────────────────────────────────────────────
+  function parseCSV(text) {
+    const trimmed = text.trim();
+    if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
+      console.error('Classroom Light: CSV returned HTML. Is the Sheet published to web?');
+      dbg('warn', 'CSV returned HTML — sheet not published to web?');
+      return [];
+    }
+    return trimmed.split('\n').slice(1).map(parseCSVLine);
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '', inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') {
+        if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (line[i] === ',' && !inQuotes) {
+        result.push(current); current = '';
+      } else { current += line[i]; }
+    }
+    result.push(current);
+    return result;
+  }
+
+  // ── POST HELPER (uses GET to avoid CORS on Apps Script redirects) ────────
+  async function post(action, data) {
+    dbg('info', `→ ${action}`);
+    try {
+      const payload = encodeURIComponent(JSON.stringify({ action, ...data }));
+      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload, { redirect: 'follow' });
+      const txt = await resp.text();
+      dbg('poll', `← ${resp.status} (${txt.length} bytes)`);
+      if (txt.startsWith('<')) {
+        dbg('error', `← ${action}: got HTML — check deployment permissions`);
+        return { error: 'server returned HTML' };
+      }
+      const result = JSON.parse(txt);
+      if (result.error) dbg('error', `← ${action}: ${result.error}`);
+      else              dbg('ok',    `← ${action}: ok`);
+      return result;
+    } catch (err) {
+      dbg('error', `← ${action} FAIL: ${err.message}`);
+      throw err;
+    }
+  }
+
+  // ── JOIN ─────────────────────────────────────────────────────────────────
+  document.getElementById('code-input').addEventListener('input', function() {
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  });
+
+  async function joinSession() {
+    const code    = document.getElementById('code-input').value.trim().toUpperCase();
+    const name    = document.getElementById('name-input').value.trim();
+    const errorEl = document.getElementById('join-error');
+    const btn     = document.getElementById('join-btn');
+
+    errorEl.textContent = '';
+    if (code.length !== 4) { errorEl.textContent = t.errCodeLength; return; }
+
+    btn.disabled = true;
+    btn.textContent = t.btnJoining;
+
+    try {
+      const rows = parseCSV(await (await fetch(SESSIONS_CSV + '&t=' + Date.now())).text());
+      const sess = rows.find(r => r[0].trim().toUpperCase() === code);
+
+      if (!sess)                                        { errorEl.textContent = t.errNotFound; return; }
+      if (sess[2].trim().toLowerCase() === 'closed')   { errorEl.textContent = t.errClosed;   return; }
+
+      currentSession = { code: sess[0].trim().toUpperCase(), title: sess[1].trim(), studentName: name || 'Anônimo' };
+      sessionStorage.setItem('cl_session', JSON.stringify(currentSession));
+      startSession();
+    } catch {
+      errorEl.textContent = t.errConnection;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = t.btnJoin;
+    }
+  }
+
+  function startSession() {
+    document.getElementById('join-screen').style.display    = 'none';
+    document.getElementById('session-screen').style.display = 'block';
+    document.getElementById('session-title-bar').textContent = currentSession.title;
+    document.getElementById('session-code-bar').textContent  = currentSession.code;
+    showState('waiting');
+    pollData();
+    pollTimer = setInterval(pollData, POLL_INTERVAL);
+  }
+
+  function exitSession() {
+    clearInterval(pollTimer);
+    currentSession = lastActiveQId = showingResultsFor = null;
+    activeQuestionData = null;
+    sessionStorage.removeItem('cl_session');
+    document.getElementById('session-screen').style.display = 'none';
+    document.getElementById('join-screen').style.display    = 'block';
+    document.getElementById('code-input').value = '';
+    document.getElementById('join-error').textContent = '';
+  }
+
+  // ── STATE MANAGEMENT ─────────────────────────────────────────────────────
+  function showState(state) {
+    dbg('info', `state → ${state}`);
+    ['waiting','question','answered','results','closed'].forEach(s => {
+      document.getElementById('state-' + s).style.display = (s === state) ? '' : 'none';
+    });
+  }
+
+  function pulseDot(id) {
+    const dot = document.getElementById(id);
+    if (!dot) return;
+    dot.classList.add('active');
+    setTimeout(() => dot.classList.remove('active'), 500);
+  }
+
+  // ── POLLING ───────────────────────────────────────────────────────────────
+  async function pollData() {
+    try {
+      const ts = '&t=' + Date.now();
+      const [sessText, qText] = await Promise.all([
+        fetch(SESSIONS_CSV  + ts).then(r => r.text()),
+        fetch(QUESTIONS_CSV + ts).then(r => r.text())
+      ]);
+
+      const sessions  = parseCSV(sessText);
+      const questions = parseCSV(qText);
+
+      // Check if session was closed
+      const sess = sessions.find(r => r[0].trim().toUpperCase() === currentSession.code);
+      if (sess && sess[2].trim().toLowerCase() === 'closed') {
+        clearInterval(pollTimer);
+        showState('closed');
+        return;
+      }
+
+      pulseDot('dot-waiting');
+      pulseDot('dot-answered');
+
+      // Questions cols: A=id, B=session_code, C=text, D=options, E=correct_answer, F=status, G=show_results, H=reveal_answer
+      const activeQ = questions.find(r =>
+        r[1].trim().toUpperCase() === currentSession.code && r[5].trim() === 'active'
+      );
+
+      if (activeQ) {
+        const qId = activeQ[0].trim();
+        dbg('poll', `active Q …${qId.slice(-6)} | sess: ${sess ? sess[2].trim() : '?'}`);
+        lastActiveQId = qId;
+        showingResultsFor = null;
+
+        const myAnswer = localStorage.getItem('cl_ans_' + qId);
+        if (myAnswer !== null) {
+          showState('answered');
+        } else {
+          renderQuestion(activeQ);
+          showState('question');
+        }
+      } else {
+        // No active question
+        if (lastActiveQId && !showingResultsFor) {
+          const prevQ    = questions.find(r => r[0].trim() === lastActiveQId);
+          const myAnswer = localStorage.getItem('cl_ans_' + lastActiveQId);
+          const doShow   = prevQ && prevQ[6].trim().toLowerCase() === 'true';
+
+          if (doShow && myAnswer !== null) {
+            showingResultsFor = lastActiveQId;
+            lastActiveQId = null;
+            const aText  = await fetch(ANSWERS_CSV + '&t=' + Date.now()).then(r => r.text());
+            const answers = parseCSV(aText);
+            renderResults(prevQ, answers, parseInt(myAnswer));
+            showState('results');
+            setTimeout(() => { showingResultsFor = null; if (pollTimer) showState('waiting'); }, 12000);
+          } else {
+            lastActiveQId = null;
+            showState('waiting');
+          }
+        } else if (!showingResultsFor) {
+          showState('waiting');
+        }
+      }
+    } catch (err) {
+      console.error('poll error:', err);
+      dbg('error', `poll: ${err.message}`);
+    }
+  }
+
+  // ── RENDER QUESTION ───────────────────────────────────────────────────────
+  function renderQuestion(row) {
+    const id = row[0].trim();
+    let options = [];
+    try { options = JSON.parse(row[3]); } catch { options = []; }
+    activeQuestionData = { id, text: row[2].trim(), options };
+
+    document.getElementById('q-text').textContent = activeQuestionData.text;
+    document.getElementById('answer-error').textContent = '';
+    const letters = ['A','B','C','D'];
+    document.getElementById('q-options').innerHTML = options.map((opt, i) => `
+      <button class="option-btn" onclick="submitAnswer(${i}, this)">
+        <span class="option-letter">${letters[i]}</span>
+        <span>${escapeHtml(opt)}</span>
+      </button>`).join('');
+  }
+
+  // ── SUBMIT ANSWER ─────────────────────────────────────────────────────────
+  async function submitAnswer(answerIndex, btn) {
+    if (!activeQuestionData) return;
+    document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+    btn.classList.add('selected');
+    document.getElementById('answer-error').textContent = '';
+    document.getElementById('answer-sending-msg').style.display = '';
+    const qId = activeQuestionData.id;
+
+    try {
+      const result = await post('submit_answer', {
+        question_id:  qId,
+        session_code: currentSession.code,
+        student_name: currentSession.studentName,
+        answer_index: answerIndex
+      });
+
+      if (result.ok || result.error === 'already answered') {
+        localStorage.setItem('cl_ans_' + qId, String(answerIndex));
+        dbg('ok', `answer ${answerIndex} saved for Q …${qId.slice(-6)}`);
+        showState('answered');
+      } else {
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = false);
+        btn.classList.remove('selected');
+        document.getElementById('answer-sending-msg').style.display = 'none';
+        document.getElementById('answer-error').textContent =
+          result.error === 'question is not active' ? t.errTimeout : t.errSubmit;
+      }
+    } catch {
+      document.querySelectorAll('.option-btn').forEach(b => b.disabled = false);
+      btn.classList.remove('selected');
+      document.getElementById('answer-sending-msg').style.display = 'none';
+      document.getElementById('answer-error').textContent = t.errConnection;
+    }
+  }
+
+  // ── RENDER RESULTS ────────────────────────────────────────────────────────
+  function renderResults(row, answerRows, myAnswerIndex) {
+    const qId = row[0].trim();
+    let options = [];
+    try { options = JSON.parse(row[3]); } catch {}
+    const correctAnswer = row[4].trim() !== '' ? parseInt(row[4]) : null;
+    const revealAnswer  = row[7].trim().toLowerCase() === 'true';
+
+    const counts = new Array(options.length).fill(0);
+    answerRows.filter(r => r[1].trim() === qId).forEach(r => {
+      const idx = parseInt(r[4]);
+      if (idx >= 0 && idx < options.length) counts[idx]++;
+    });
+    const total = counts.reduce((a, b) => a + b, 0);
+    const letters = ['A','B','C','D'];
+
+    document.getElementById('results-q-text').textContent = row[2].trim();
+    document.getElementById('results-bars').innerHTML = options.map((opt, i) => {
+      const pct       = total > 0 ? Math.round(counts[i] / total * 100) : 0;
+      const isCorrect = revealAnswer && correctAnswer !== null && i === correctAnswer;
+      const isMine    = i === myAnswerIndex;
+      const fillClass = isCorrect ? 'correct' : (isMine ? 'mine' : '');
+      return `
+        <div class="result-option ${isCorrect ? 'is-correct' : ''}">
+          <div class="result-header">
+            <span class="result-letter">${letters[i]}</span>
+            <span class="result-text">${escapeHtml(opt)}${isCorrect ? ' ✓' : ''}</span>
+            <span class="result-pct">${pct}%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill ${fillClass}" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }).join('');
+    document.getElementById('results-count').textContent = t.answersCount(total);
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────────────────
+  const saved = sessionStorage.getItem('cl_session');
+  if (saved) { try { currentSession = JSON.parse(saved); startSession(); } catch { sessionStorage.removeItem('cl_session'); } }
+
+  document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinSession(); });
+  document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinSession(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && currentSession) pollData(); });
+</script>
+
+<!-- ── DEBUG PANEL ──────────────────────────────────────────────────────────── -->
+<div id="dbg-wrap">
+  <button id="dbg-btn" onclick="dbgToggle()" title="Debug panel">DBG</button>
+  <div id="dbg-panel">
+    <div id="dbg-head">
+      <span>Debug · student</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="dbgCopy()" title="Copy log">copy</button>
+        <button onclick="dbgDock()" id="dbg-dock-btn" title="Dock">dock</button>
+        <button onclick="dbgClear()">clear</button>
+      </div>
+    </div>
+    <div id="dbg-log"></div>
+  </div>
+</div>
+<style>
+  #dbg-wrap        { position:fixed; bottom:12px; right:12px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-family:monospace; font-size:11px; }
+  #dbg-wrap.docked { bottom:0; right:0; top:0; justify-content:stretch; gap:0; }
+  #dbg-btn         { background:#1a1a1a; color:#4f4; border:1px solid #333; border-radius:4px; padding:3px 9px; cursor:pointer; opacity:0.6; }
+  #dbg-btn:hover   { opacity:1; }
+  #dbg-wrap.docked #dbg-btn { display:none; }
+  #dbg-panel       { display:none; background:rgba(12,12,12,0.95); color:#ccc; border:1px solid #333; border-radius:8px; width:340px; max-height:280px; flex-direction:column; overflow:hidden; }
+  #dbg-panel.open  { display:flex; }
+  #dbg-wrap.docked #dbg-panel { width:360px; max-height:none; height:100vh; border-radius:0; border-right:none; border-top:none; border-bottom:none; }
+  #dbg-head        { display:flex; justify-content:space-between; align-items:center; padding:5px 10px; border-bottom:1px solid #2a2a2a; flex-shrink:0; }
+  #dbg-head span   { color:#4f4; font-weight:bold; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; }
+  #dbg-head button { background:none; border:none; color:#555; cursor:pointer; font-family:monospace; font-size:10px; padding:0; }
+  #dbg-head button:hover { color:#aaa; }
+  #dbg-log         { overflow-y:auto; flex:1; padding:4px 8px; }
+  .dl              { display:flex; gap:6px; padding:1px 0; border-bottom:1px solid #1a1a1a; font-size:10px; line-height:1.5; word-break:break-all; }
+  .dl-t            { color:#444; flex-shrink:0; }
+  .dl-info  { color:#bbb; }
+  .dl-poll  { color:#468; }
+  .dl-warn  { color:#c80; }
+  .dl-error { color:#f44; font-weight:bold; }
+  .dl-ok    { color:#4a4; }
+</style>
+<script>
+  function dbg(type, msg) {
+    const log = document.getElementById('dbg-log');
+    if (!log) return;
+    const now = new Date().toTimeString().slice(0,8);
+    const el  = document.createElement('div');
+    el.className = 'dl';
+    el.innerHTML = `<span class="dl-t">${now}</span><span class="dl-${type}">${_dbgEsc(msg)}</span>`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    while (log.children.length > 150) log.removeChild(log.firstChild);
+  }
+  function _dbgEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function dbgToggle() { document.getElementById('dbg-panel').classList.toggle('open'); }
+  function dbgClear()  { document.getElementById('dbg-log').innerHTML = ''; }
+  function dbgCopy() {
+    const lines = Array.from(document.querySelectorAll('.dl'))
+      .map(el => { const s = el.querySelectorAll('span'); return s[0].textContent + ' ' + s[1].textContent; });
+    navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
+  }
+  function dbgDock() {
+    const wrap = document.getElementById('dbg-wrap');
+    const panel = document.getElementById('dbg-panel');
+    wrap.classList.toggle('docked');
+    const docked = wrap.classList.contains('docked');
+    document.getElementById('dbg-dock-btn').textContent = docked ? 'undock' : 'dock';
+    panel.classList.add('open');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClassForge - Viewer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
+<link rel="stylesheet" id="reveal-theme" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
+<link rel="stylesheet" href="../../css/viewer.css?v=1.1">
+<script src="../../js/debug.js?v=1.0"></script>
+</head>
+<body>
+
+<!-- Setup screen -->
+<div id="setup-screen" class="cf-page">
+  <div class="cf-card">
+    <h1>ClassForge</h1>
+    <p class="cf-tagline">Reveal.js lesson viewer for Google Slides</p>
+    <label for="pres-input">Presentation ID or URL</label>
+    <input id="pres-input" type="text" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+    <label for="script-input">Apps Script URL</label>
+    <input id="script-input" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    <p class="cf-form-error" id="form-error"></p>
+    <div class="cf-btn-row">
+      <button class="cf-btn cf-btn-primary" id="load-btn">Load</button>
+      <button class="cf-btn cf-btn-secondary" id="demo-btn">Try Demo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading screen -->
+<div id="loading-screen" class="cf-page" hidden>
+  <div style="text-align:center">
+    <div class="cf-spinner"></div>
+    <p>Loading lesson...</p>
+  </div>
+</div>
+
+<!-- Error screen -->
+<div id="error-screen" class="cf-page" hidden>
+  <div class="cf-card">
+    <h1>Could not load</h1>
+    <div class="cf-error-box" id="error-message"></div>
+    <button class="cf-btn cf-btn-secondary" id="back-btn">Back to setup</button>
+  </div>
+</div>
+
+<!-- Reveal.js presentation container -->
+<div class="reveal" id="reveal-container" hidden>
+  <div class="slides" id="slides-container"></div>
+</div>
+
+
+<script type="module">
+import Reveal from 'https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.esm.js';
+import RevealHighlight from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/highlight.esm.js';
+import RevealNotes from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.esm.js';
+import RevealMarkdown from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/markdown/markdown.esm.js';
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
+
+const ALL_SCREENS = ['setup-screen','loading-screen','error-screen','reveal-container'];
+
+// ---------------------------------------------------------------------------
+// Security helpers
+// ---------------------------------------------------------------------------
+
+function safeUrl(url) {
+  return (typeof url === 'string' && /^https?:\/\//.test(url)) ? url : '#';
+}
+
+// ---------------------------------------------------------------------------
+// Theme
+// ---------------------------------------------------------------------------
+
+function themeUrl(name) {
+  return 'https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/' + name + '.css';
+}
+
+function setTheme(name) {
+  if (!THEMES.includes(name)) name = 'black';
+  document.getElementById('reveal-theme').href = themeUrl(name);
+}
+
+function applyCustomTheme(themeName) {
+  const customs = JSON.parse(localStorage.getItem('bs_custom_themes') || '[]');
+  const theme = customs.find(t => t.name === themeName);
+  if (!theme) { setTheme('black'); return; }
+  setTheme(theme.base || 'black');
+  let el = document.getElementById('cf-theme-overrides');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'cf-theme-overrides';
+    document.head.appendChild(el);
+  }
+  const css = Object.entries(theme.overrides || {}).map(([k,v]) => k+':'+v).join(';');
+  el.textContent = '.reveal{' + css + '}';
+}
+
+function initTheme(name) {
+  if (name && name.startsWith('custom:')) applyCustomTheme(name.slice(7));
+  else setTheme(name || 'black');
+}
+
+function resolveTheme(lessonTheme) {
+  const params = new URLSearchParams(location.search);
+  return params.get('theme') || lessonTheme || localStorage.getItem('bs_reveal_theme') || 'black';
+}
+
+// ---------------------------------------------------------------------------
+// Screen management
+// ---------------------------------------------------------------------------
+
+function showOnly(ids) {
+  const visible = new Set(Array.isArray(ids) ? ids : [ids]);
+  for (const id of ALL_SCREENS) {
+    document.getElementById(id).hidden = !visible.has(id);
+  }
+}
+
+function showSetup(presId) {
+  showOnly('setup-screen');
+  if (presId) document.getElementById('pres-input').value = presId;
+  const saved = localStorage.getItem('bs_cf_script_url');
+  if (saved) document.getElementById('script-input').value = saved;
+}
+
+function showLoading() {
+  showOnly('loading-screen');
+}
+
+function showError(msg) {
+  document.getElementById('error-message').textContent = msg;
+  showOnly('error-screen');
+}
+
+function showFormError(msg) {
+  const el = document.getElementById('form-error');
+  el.textContent = msg;
+}
+
+// ---------------------------------------------------------------------------
+// DOM builders
+// ---------------------------------------------------------------------------
+
+function buildBulletGroup(items) {
+  const topUl = document.createElement('ul');
+  let lastL0 = null, lastL1 = null, ul1 = null, ul2 = null;
+
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.textContent = item.text || '';
+    const lvl = Math.min(item.level || 0, 2);
+
+    if (lvl === 0) {
+      topUl.appendChild(li);
+      lastL0 = li; lastL1 = null; ul1 = null; ul2 = null;
+    } else if (lvl === 1) {
+      if (!ul1) {
+        ul1 = document.createElement('ul');
+        (lastL0 || topUl).appendChild(ul1);
+        ul2 = null; lastL1 = null;
+      }
+      ul1.appendChild(li);
+      lastL1 = li;
+    } else {
+      if (!ul2) {
+        ul2 = document.createElement('ul');
+        (lastL1 || ul1 || topUl).appendChild(ul2);
+      }
+      ul2.appendChild(li);
+    }
+  }
+
+  return topUl;
+}
+
+function buildContentItem(item) {
+  switch (item.type) {
+
+    case 'divider':
+      return document.createElement('hr');
+
+    case 'quote': {
+      const bq = document.createElement('blockquote');
+      const p = document.createElement('p');
+      p.textContent = item.text || '';
+      bq.appendChild(p);
+      return bq;
+    }
+
+    case 'callout': {
+      const div = document.createElement('div');
+      div.className = 'cf-callout';
+      div.textContent = item.text || '';
+      return div;
+    }
+
+    case 'code': {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.setAttribute('data-trim', '');
+      if (item.language) code.className = 'language-' + item.language;
+      code.textContent = item.text || '';
+      pre.appendChild(code);
+      return pre;
+    }
+
+    case 'image': {
+      const url = safeUrl(item.url);
+      if (url === '#') return null;
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = item.alt || '';
+      return img;
+    }
+
+    case 'video': {
+      const url = safeUrl(item.url);
+      if (url === '#') return null;
+      const iframe = document.createElement('iframe');
+      iframe.src = url;
+      iframe.width = '100%';
+      iframe.height = '400';
+      iframe.setAttribute('allowfullscreen', '');
+      iframe.setAttribute('frameborder', '0');
+      return iframe;
+    }
+
+    case 'link': {
+      const url = safeUrl(item.url);
+      const p = document.createElement('p');
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = item.text || item.url || url;
+      p.appendChild(a);
+      return p;
+    }
+
+    default:
+      return null;
+  }
+}
+
+function buildSlide(sectionData) {
+  const section = document.createElement('section');
+
+  if (sectionData.notes) {
+    section.dataset.notes = sectionData.notes;
+  }
+
+  const layout = sectionData.layout || 'default';
+
+  if (layout === 'media') {
+    const images = (sectionData.content || []).filter(i => i.type === 'image');
+    if (images.length === 1) {
+      const url = safeUrl(images[0].url);
+      if (url !== '#') {
+        section.setAttribute('data-background-image', url);
+        section.setAttribute('data-background-size', 'contain');
+      }
+    }
+  }
+
+  const h2 = document.createElement('h2');
+  h2.textContent = sectionData.title || '';
+  section.appendChild(h2);
+
+  if (layout === 'title-only') return section;
+
+  const items = sectionData.content || [];
+  let i = 0;
+
+  while (i < items.length) {
+    if (items[i].type === 'bullet') {
+      const bullets = [];
+      while (i < items.length && items[i].type === 'bullet') bullets.push(items[i++]);
+      section.appendChild(buildBulletGroup(bullets));
+    } else {
+      if (layout === 'media' && items[i].type === 'image') { i++; continue; }
+      const el = buildContentItem(items[i]);
+      if (el) section.appendChild(el);
+      i++;
+    }
+  }
+
+  return section;
+}
+
+function buildCoverSlide(lesson) {
+  const section = document.createElement('section');
+  const h1 = document.createElement('h1');
+  h1.textContent = lesson.title || 'Untitled';
+  section.appendChild(h1);
+  if (lesson.subtitle) {
+    const p = document.createElement('p');
+    p.className = 'cf-subtitle';
+    p.textContent = lesson.subtitle;
+    section.appendChild(p);
+  }
+  return section;
+}
+
+// ---------------------------------------------------------------------------
+// Fetch
+// ---------------------------------------------------------------------------
+
+async function fetchLesson(scriptUrl, presId) {
+  const url = scriptUrl + '?action=get&id=' + encodeURIComponent(presId);
+  let resp;
+  try {
+    resp = await fetch(url);
+  } catch (err) {
+    throw new Error('Network error: ' + err.message);
+  }
+  if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Show presentation
+// ---------------------------------------------------------------------------
+
+let revealInited = false;
+
+async function showPresentation(lesson, isDemo) {
+  const container = document.getElementById('slides-container');
+  container.innerHTML = '';
+
+  container.appendChild(buildCoverSlide(lesson));
+  for (const s of lesson.sections || []) {
+    container.appendChild(buildSlide(s));
+  }
+
+  initTheme(resolveTheme(lesson.theme));
+  showOnly('reveal-container');
+
+  if (!revealInited) {
+    await Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      progress: true,
+      controls: true,
+      center: true,
+      transition: 'slide',
+      width: 1200,
+      height: 700,
+      margin: 0.1,
+      plugins: [RevealHighlight, RevealNotes, RevealMarkdown]
+    });
+    revealInited = true;
+  } else {
+    Reveal.sync();
+    Reveal.slide(0);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Event listeners
+// ---------------------------------------------------------------------------
+
+document.getElementById('load-btn').addEventListener('click', async () => {
+  showFormError('');
+
+  let presId = document.getElementById('pres-input').value.trim();
+  const scriptUrl = document.getElementById('script-input').value.trim();
+
+  if (!presId) { showFormError('Enter a Presentation ID or URL.'); return; }
+  if (!scriptUrl) { showFormError('Enter the Apps Script URL.'); return; }
+
+  const m = presId.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) presId = m[1];
+
+  localStorage.setItem('bs_cf_script_url', scriptUrl);
+
+  showLoading();
+  try {
+    const lesson = await fetchLesson(scriptUrl, presId);
+    await showPresentation(lesson, false);
+  } catch (err) {
+    showError(err.message);
+  }
+});
+
+document.getElementById('demo-btn').addEventListener('click', () => {
+  const base = location.href.split('?')[0].split('#')[0];
+  location.href = base + '?demo=1';
+});
+
+document.getElementById('back-btn').addEventListener('click', () => showSetup());
+
+// ---------------------------------------------------------------------------
+// Demo content
+// ---------------------------------------------------------------------------
+
+function getDemoContent() {
+  return {
+    "id": "demo",
+    "title": "Why Ducks Are Cool",
+    "subtitle": "A Totally Serious Academic Presentation",
+    "theme": "dracula",
+    "warnings": [],
+    "sections": [
+      {
+        "index": 1,
+        "title": "Introduction to Duck Appreciation",
+        "content": [
+          { "type": "bullet", "text": "Ducks are found on every continent except Antarctica", "level": 0 },
+          { "type": "bullet", "text": "Over 120 species worldwide", "level": 1 },
+          { "type": "bullet", "text": "From the tiny Cotton Pygmy Goose to the massive Muscovy", "level": 1 },
+          { "type": "divider" },
+          { "type": "callout", "text": "Fun fact: a group of ducks on water is called a paddling, on land it's a waddle." },
+          { "type": "image", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Anas_platyrhynchos_male_female_quadrat.jpg/1280px-Anas_platyrhynchos_male_female_quadrat.jpg", "alt": "Mallard duck pair" }
+        ],
+        "notes": "Open with something fun. Ask the audience: who has fed ducks at a park?",
+        "layout": "default"
+      },
+      {
+        "index": 2,
+        "title": "Waterproof Engineering",
+        "content": [
+          { "type": "bullet", "text": "Duck feathers are coated in natural oil from the uropygial gland", "level": 0 },
+          { "type": "bullet", "text": "The oil makes feathers hydrophobic", "level": 1 },
+          { "type": "bullet", "text": "Water literally rolls off their backs", "level": 1 },
+          { "type": "quote", "text": "Like water off a duck's back - now you know where that idiom comes from." },
+          { "type": "bullet", "text": "Their down layer traps air for insulation", "level": 0 },
+          { "type": "bullet", "text": "Ducks can swim in near-freezing water without hypothermia", "level": 1 }
+        ],
+        "layout": "default"
+      },
+      {
+        "index": 3,
+        "title": "The Quack Myth",
+        "content": [
+          { "type": "callout", "text": "MYTH: A duck's quack does not echo." },
+          { "type": "bullet", "text": "This has been thoroughly debunked", "level": 0 },
+          { "type": "bullet", "text": "Tested by acoustics researchers at the University of Salford in 2003", "level": 1 },
+          { "type": "bullet", "text": "The echo is just hard to hear because the quack fades gradually", "level": 1 },
+          { "type": "divider" },
+          { "type": "bullet", "text": "Not all ducks quack - only female Mallards do the classic quack", "level": 0 },
+          { "type": "bullet", "text": "Males make a softer rasping sound", "level": 1 }
+        ],
+        "layout": "default"
+      },
+      {
+        "index": 4,
+        "title": "Navigation: The Magnetic Compass",
+        "content": [
+          { "type": "bullet", "text": "Migratory ducks navigate using Earth's magnetic field", "level": 0 },
+          { "type": "bullet", "text": "They have magnetite crystals in their bills", "level": 1 },
+          { "type": "bullet", "text": "This gives them a built-in compass", "level": 1 },
+          { "type": "bullet", "text": "The Northern Pintail migrates from Alaska to Hawaii - 2,000 miles over open ocean", "level": 0 },
+          { "type": "callout", "text": "Imagine flying 2,000 miles over open water with no landmarks. Ducks do it every year." }
+        ],
+        "layout": "default"
+      },
+      {
+        "index": 5,
+        "title": "Why Ducks Matter",
+        "content": [
+          { "type": "bullet", "text": "Indicator species for wetland health", "level": 0 },
+          { "type": "bullet", "text": "Seed dispersal across water ecosystems", "level": 0 },
+          { "type": "bullet", "text": "Pest control - ducks eat mosquito larvae, snails, slugs", "level": 0 },
+          { "type": "bullet", "text": "Bio-inspiration for engineering and materials science", "level": 0 },
+          { "type": "divider" },
+          { "type": "quote", "text": "Ducks are not just charming pond visitors. They are engineers, navigators, and ecological linchpins. Next time you see one, look a little closer." }
+        ],
+        "layout": "default"
+      }
+    ]
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+
+(async function main() {
+  const params = new URLSearchParams(location.search);
+  const isDemo = params.get('demo') === '1';
+  const presId = params.get('id');
+  const scriptParam = params.get('script');
+
+  if (isDemo) {
+    await showPresentation(getDemoContent(), true);
+    return;
+  }
+
+  if (presId) {
+    const scriptUrl = scriptParam || localStorage.getItem('bs_cf_script_url');
+    if (scriptUrl) {
+      if (scriptParam) localStorage.setItem('bs_cf_script_url', scriptParam);
+      showLoading();
+      try {
+        const lesson = await fetchLesson(scriptUrl, presId);
+        await showPresentation(lesson, false);
+      } catch (err) {
+        showError(err.message);
+      }
+      return;
+    }
+  }
+
+  showSetup(presId || '');
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Classroom · Display</title>
+  <link rel="stylesheet" href="../backstage/css/theme.css?v=1.1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0f0f0f;
+      --text: #f0ece4;
+      --text-muted: #a89880;
+      --text-dim: #555;
+      --border: #2a2a2a;
+      --card-bg: #1a1a1a;
+      --accent: #c4a97d;
+      --accent-dark: #e8d5b0;
+      --success: #6dbf8a;
+      --success-bg: #1a3a25;
+      --error-bg: #3a1a1a;
+    }
+    [data-theme="dark"] {
+      --bg: #0f0f0f;
+      --text: #f0ece4;
+      --text-muted: #a89880;
+      --text-dim: #555;
+      --border: #2a2a2a;
+      --card-bg: #1a1a1a;
+      --accent: #c4a97d;
+      --accent-dark: #e8d5b0;
+      --success: #6dbf8a;
+      --success-bg: #1a3a25;
+      --error-bg: #3a1a1a;
+      --status-live-bg: #1a3a1a;
+      --status-live-text: #a3d9a5;
+      --status-closed-bg: #2a2a2a;
+      --status-closed-text: #aaa;
+    }
+    [data-theme="light"] {
+      --bg: #f5f3f0;
+      --text: #2a2218;
+      --text-muted: #7a6b56;
+      --text-dim: #a89880;
+      --border: #ddd6cc;
+      --card-bg: #fff;
+      --accent: #b8945a;
+      --accent-dark: #5c4a2f;
+      --success: #4a7c59;
+      --success-bg: #e8f5ee;
+      --error-bg: #fce8e8;
+      --status-live-bg: #d4edda;
+      --status-live-text: #155724;
+      --status-closed-bg: #e2e3e5;
+      --status-closed-text: #383d41;
+    }
+
+    /* Theme toggle inside top-bar */
+    #theme-btn {
+      width: 34px; height: 34px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 7px; cursor: pointer; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s, color 0.15s; flex-shrink: 0;
+    }
+    #theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Top bar */
+    .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .top-bar .logo { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+    .top-bar .session-title { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    .top-bar .session-code { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.14em; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
+
+    /* Main content */
+    .main { flex: 1; padding: 32px 40px 24px; overflow-y: auto; max-width: 1000px; width: 100%; margin: 0 auto; }
+
+    /* Center states */
+    .center-state { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; min-height: 300px; }
+    .center-state .state-icon { font-size: 3rem; }
+    .center-state .state-text { font-size: 2rem; color: var(--text-muted); font-weight: 500; }
+    .center-state .state-code { font-size: 3rem; font-weight: 700; letter-spacing: 0.3em; color: var(--accent); margin-top: 8px; }
+    .center-state .state-sub  { font-size: 0.9rem; color: var(--text-dim); }
+
+    /* Question display */
+    .question-area { margin-bottom: 32px; }
+    .question-status { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .status-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; }
+    .status-badge.live   { background: var(--status-live-bg); color: var(--status-live-text); }
+    .status-badge.closed { background: var(--status-closed-bg); color: var(--status-closed-text); }
+    .answer-count { font-size: 0.82rem; color: var(--text-dim); }
+
+    .question-text-display { font-size: 1.9rem; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 32px; }
+
+    /* Option bars */
+    .option-bar { display: grid; grid-template-columns: 44px 1fr 60px; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .bar-letter { font-size: 0.85rem; font-weight: 700; color: var(--accent-dark); background: var(--card-bg); border: 1px solid var(--border); padding: 8px 0; border-radius: 8px; text-align: center; }
+    .bar-right { }
+    .bar-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .bar-opt-text { font-size: 1.3rem; color: var(--text); font-weight: 400; }
+    .bar-pct { font-size: 1.1rem; font-weight: 700; color: var(--text-muted); }
+    .bar-track { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.8s ease; }
+    .bar-fill.correct { background: var(--success); }
+    .bar-count { font-size: 1.1rem; font-weight: 600; color: var(--text-muted); text-align: right; }
+
+    /* Correct answer highlight */
+    .option-bar.is-correct .bar-letter   { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+    .option-bar.is-correct .bar-opt-text { font-weight: 600; color: var(--success); }
+    .option-bar.is-correct .bar-pct      { color: var(--success); }
+
+    /* Idle screen */
+    .idle-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 3rem;
+      min-height: 60vh;
+    }
+    .idle-code {
+      font-size: 4rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+    }
+    .idle-qr {
+      width: 280px;
+      height: 280px;
+      border-radius: 12px;
+    }
+    .idle-url {
+      font-size: 1.5rem;
+      color: var(--text-muted);
+    }
+
+    /* No code screen */
+    #no-code-screen { display: none; padding: 60px 0; text-align: center; color: var(--text-muted); }
+    #no-code-screen p   { font-size: 0.88rem; margin-bottom: 8px; }
+    #no-code-screen code { font-size: 0.82rem; background: var(--card-bg); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
+
+    /* Bottom bar */
+    .bottom-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 28px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .bottom-bar .join-hint { font-size: 0.78rem; color: var(--text-dim); }
+    .bottom-bar .join-hint strong { color: var(--accent); }
+    .refresh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); transition: background 0.3s; }
+    .refresh-dot.active { background: var(--success); }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span class="logo">PensoIA</span>
+    <span class="session-title" id="display-title">Carregando…</span>
+    <span class="session-code"  id="display-code"></span>
+    <button id="theme-btn" aria-label="Alternar tema" onclick="toggleTheme()">
+      <span id="theme-icon"></span>
+    </button>
+  </div>
+
+  <div class="main" id="main-content">
+    <div class="center-state">
+      <span class="state-icon">⏳</span>
+      <span class="state-text">Carregando…</span>
+    </div>
+  </div>
+
+  <div id="idle-screen" class="idle-screen main" style="display:none">
+    <div class="idle-code" id="idle-code-display"></div>
+    <img class="idle-qr" id="idle-qr" src="" alt="QR Code">
+    <div class="idle-url">pensoia.com/go</div>
+  </div>
+
+  <div id="no-code-screen">
+    <p>Nenhum código de sessão na URL.</p>
+    <p>Abra esta página como: <code>display.html?code=AB12</code></p>
+  </div>
+
+  <div class="bottom-bar">
+    <span class="join-hint">
+      Alunos acessam <strong>pensoia.com/go</strong> · código:
+      <strong id="bottom-code" style="color:var(--accent)"></strong>
+    </span>
+    <div class="refresh-dot" id="refresh-dot" title="Ao vivo"></div>
+  </div>
+
+<script>
+  // ── THEME ────────────────────────────────────────────────────────────────
+  var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var icon = document.getElementById('theme-icon');
+    if (icon) icon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+    localStorage.setItem('bs_theme', theme);
+  }
+
+  function toggleTheme() {
+    var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  }
+
+  (function() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlTheme  = urlParams.get('theme');
+    var stored    = localStorage.getItem('bs_theme');
+    var theme;
+    if (urlTheme === 'dark' || urlTheme === 'light') {
+      theme = urlTheme;
+    } else if (stored === 'dark' || stored === 'light') {
+      theme = stored;
+    } else {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    applyTheme(theme);
+  })();
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── CONFIG ──────────────────────────────────────────────────────────────
+  const SPREADSHEET_ID = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
+  const SESSIONS_CSV   = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`;
+  const QUESTIONS_CSV  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`;
+  const ANSWERS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Answers`;
+  const POLL_INTERVAL  = 3000;
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── I18N ────────────────────────────────────────────────────────────────
+  const ACTIVE_LANG = 'pt';
+  const STRINGS = {
+    pt: {
+      sessionEnded:  'Sessão encerrada',
+      waiting:       'Aguardando pergunta…',
+      live:          '● Ao vivo',
+      final:         'Resultado final',
+      answers:       n => `${n} resposta${n !== 1 ? 's' : ''}`,
+    },
+    en: {
+      sessionEnded:  'Session ended',
+      waiting:       'Waiting for question…',
+      live:          '● Live',
+      final:         'Final result',
+      answers:       n => `${n} answer${n !== 1 ? 's' : ''}`,
+    }
+  };
+  const t = STRINGS[ACTIVE_LANG] || STRINGS.pt;
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── CONFIG CHECK ─────────────────────────────────────────────────────────
+  if (SPREADSHEET_ID.includes('REPLACE')) {
+    document.querySelector('.main').innerHTML =
+      '<div style="padding:40px;text-align:center;color:#c44;font-size:0.9rem;">' +
+      '<strong>Setup incompleto.</strong><br>Configure SPREADSHEET_ID neste arquivo.' +
+      '</div>';
+    throw new Error('Classroom Light: config placeholders not replaced');
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  const params      = new URLSearchParams(window.location.search);
+  const sessionCode = (params.get('code') || '').trim().toUpperCase();
+
+  let sessionTitle     = '';
+  let lastDisplayedQ   = null; // last question rendered (active or closed)
+
+  if (!sessionCode) {
+    document.querySelector('.main').style.display       = 'none';
+    document.getElementById('no-code-screen').style.display = 'block';
+  } else {
+    document.getElementById('display-code').textContent = sessionCode;
+    document.getElementById('bottom-code').textContent  = sessionCode;
+    document.getElementById('idle-code-display').textContent = sessionCode;
+    document.getElementById('idle-qr').src =
+      'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' +
+      encodeURIComponent('https://pensoia.com/go?code=' + sessionCode);
+    init();
+  }
+
+  // ── CSV PARSING ──────────────────────────────────────────────────────────
+  function parseCSV(text) {
+    const trimmed = text.trim();
+    if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
+      console.error('Classroom Light: CSV returned HTML. Is the Sheet published to web?');
+      dbg('warn', 'CSV returned HTML — sheet not published to web?');
+      return [];
+    }
+    return trimmed.split('\n').slice(1).map(parseCSVLine);
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '', inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') {
+        if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (line[i] === ',' && !inQuotes) {
+        result.push(current); current = '';
+      } else { current += line[i]; }
+    }
+    result.push(current);
+    return result;
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────────────────
+  async function init() {
+    await fetchData();
+    setInterval(fetchData, POLL_INTERVAL);
+  }
+
+  // ── FETCH ─────────────────────────────────────────────────────────────────
+  async function fetchData() {
+    const dot = document.getElementById('refresh-dot');
+    dot.classList.add('active');
+
+    try {
+      const ts = '&t=' + Date.now();
+      const [sessText, qText, aText] = await Promise.all([
+        fetch(SESSIONS_CSV  + ts).then(r => r.text()),
+        fetch(QUESTIONS_CSV + ts).then(r => r.text()),
+        fetch(ANSWERS_CSV   + ts).then(r => r.text())
+      ]);
+
+      const sessions  = parseCSV(sessText);
+      const questions = parseCSV(qText);
+      const answers   = parseCSV(aText);
+
+      // Session status
+      const sess = sessions.find(r => r[0].trim().toUpperCase() === sessionCode);
+      if (sess) {
+        sessionTitle = sess[1].trim();
+        document.getElementById('display-title').textContent = sessionTitle;
+
+        if (sess[2].trim().toLowerCase() === 'closed') {
+          render(null, null, true);
+          return;
+        }
+      }
+
+      // Questions cols: A=id, B=session_code, C=text, D=options, E=correct_answer, F=status, G=show_results, H=reveal_answer
+      const sessionQs = questions.filter(r => r[1].trim().toUpperCase() === sessionCode);
+      const activeQ   = sessionQs.find(r => r[5].trim() === 'active');
+
+      if (activeQ) {
+        dbg('poll', `active Q …${activeQ[0].trim().slice(-6)} | sess: ${sess ? sess[2].trim() : '?'}`);
+        lastDisplayedQ = activeQ;
+        render(activeQ, answers, false);
+      } else if (lastDisplayedQ) {
+        // Show last known question (should be closed now)
+        const refreshed = sessionQs.find(r => r[0].trim() === lastDisplayedQ[0].trim());
+        render(refreshed || lastDisplayedQ, answers, false);
+      } else {
+        render(null, null, false);
+      }
+    } catch (err) {
+      console.error('display fetch error:', err);
+      dbg('error', `fetch: ${err.message}`);
+    } finally {
+      setTimeout(() => dot.classList.remove('active'), 600);
+    }
+  }
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  function showIdle(visible) {
+    document.getElementById('main-content').style.display = visible ? 'none' : '';
+    document.getElementById('idle-screen').style.display  = visible ? 'flex' : 'none';
+  }
+
+  function render(qRow, answers, sessionClosed) {
+    if (sessionClosed)       dbg('info', 'render: session closed');
+    else if (!qRow)          dbg('info', 'render: waiting (idle)');
+    else                     dbg('info', `render: Q status=${qRow[5].trim()} reveal=${qRow[7].trim()}`);
+    const main = document.getElementById('main-content');
+
+    if (sessionClosed) {
+      showIdle(false);
+      main.innerHTML = `
+        <div class="center-state">
+          <span class="state-icon">✓</span>
+          <span class="state-text">${t.sessionEnded}</span>
+          <span class="state-sub">${escapeHtml(sessionTitle)}</span>
+        </div>`;
+      return;
+    }
+
+    if (!qRow) {
+      showIdle(true);
+      return;
+    }
+
+    showIdle(false);
+
+    const qId    = qRow[0].trim();
+    const text   = qRow[2].trim();
+    const status = qRow[5].trim(); // active or closed
+    let options  = [];
+    try { options = JSON.parse(qRow[3]); } catch {}
+    const correctAnswer = qRow[4].trim() !== '' ? parseInt(qRow[4]) : null;
+    const revealAnswer  = status === 'closed' && qRow[7].trim().toLowerCase() === 'true';
+
+    // Count answers per option
+    const counts = new Array(options.length).fill(0);
+    (answers || []).filter(r => r[1].trim() === qId).forEach(r => {
+      const idx = parseInt(r[4]);
+      if (idx >= 0 && idx < options.length) counts[idx]++;
+    });
+    const total = counts.reduce((a, b) => a + b, 0);
+    const letters = ['A','B','C','D'];
+
+    const badgeClass = status === 'active' ? 'live' : 'closed';
+    const badgeLabel = status === 'active' ? t.live : t.final;
+
+    let html = `
+      <div class="question-area">
+        <div class="question-status">
+          <span class="status-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="answer-count">${t.answers(total)}</span>
+        </div>
+        <div class="question-text-display">${escapeHtml(text)}</div>
+      </div>`;
+
+    options.forEach((opt, i) => {
+      const pct       = total > 0 ? Math.round(counts[i] / total * 100) : 0;
+      const isCorrect = revealAnswer && correctAnswer !== null && i === correctAnswer;
+      const fillClass = isCorrect ? 'correct' : '';
+      html += `
+        <div class="option-bar ${isCorrect ? 'is-correct' : ''}">
+          <div class="bar-letter">${letters[i]}</div>
+          <div class="bar-right">
+            <div class="bar-label">
+              <span class="bar-opt-text">${escapeHtml(opt)}${isCorrect ? ' ✓' : ''}</span>
+              <span class="bar-pct">${status === 'active' && total === 0 ? '' : pct + '%'}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill ${fillClass}" style="width:${pct}%"></div>
+            </div>
+          </div>
+          <div class="bar-count">${counts[i]}</div>
+        </div>`;
+    });
+
+    main.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fetchData(); });
+</script>
+
+<!-- ── DEBUG PANEL ──────────────────────────────────────────────────────────── -->
+<div id="dbg-wrap">
+  <button id="dbg-btn" onclick="dbgToggle()" title="Debug panel">DBG</button>
+  <div id="dbg-panel">
+    <div id="dbg-head">
+      <span>Debug · display</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="dbgCopy()" title="Copy log">copy</button>
+        <button onclick="dbgDock()" id="dbg-dock-btn" title="Dock">dock</button>
+        <button onclick="dbgClear()">clear</button>
+      </div>
+    </div>
+    <div id="dbg-log"></div>
+  </div>
+</div>
+<style>
+  #dbg-wrap        { position:fixed; bottom:12px; right:12px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-family:monospace; font-size:11px; }
+  #dbg-wrap.docked { bottom:0; right:0; top:0; justify-content:stretch; gap:0; }
+  #dbg-btn         { background:#1a1a1a; color:#4f4; border:1px solid #333; border-radius:4px; padding:3px 9px; cursor:pointer; opacity:0.6; }
+  #dbg-btn:hover   { opacity:1; }
+  #dbg-wrap.docked #dbg-btn { display:none; }
+  #dbg-panel       { display:none; background:rgba(12,12,12,0.95); color:#ccc; border:1px solid #333; border-radius:8px; width:340px; max-height:280px; flex-direction:column; overflow:hidden; }
+  #dbg-panel.open  { display:flex; }
+  #dbg-wrap.docked #dbg-panel { width:360px; max-height:none; height:100vh; border-radius:0; border-right:none; border-top:none; border-bottom:none; }
+  #dbg-head        { display:flex; justify-content:space-between; align-items:center; padding:5px 10px; border-bottom:1px solid #2a2a2a; flex-shrink:0; }
+  #dbg-head span   { color:#4f4; font-weight:bold; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; }
+  #dbg-head button { background:none; border:none; color:#555; cursor:pointer; font-family:monospace; font-size:10px; padding:0; }
+  #dbg-head button:hover { color:#aaa; }
+  #dbg-log         { overflow-y:auto; flex:1; padding:4px 8px; }
+  .dl              { display:flex; gap:6px; padding:1px 0; border-bottom:1px solid #1a1a1a; font-size:10px; line-height:1.5; word-break:break-all; }
+  .dl-t            { color:#444; flex-shrink:0; }
+  .dl-info  { color:#bbb; }
+  .dl-poll  { color:#468; }
+  .dl-warn  { color:#c80; }
+  .dl-error { color:#f44; font-weight:bold; }
+  .dl-ok    { color:#4a4; }
+</style>
+<script>
+  function dbg(type, msg) {
+    const log = document.getElementById('dbg-log');
+    if (!log) return;
+    const now = new Date().toTimeString().slice(0,8);
+    const el  = document.createElement('div');
+    el.className = 'dl';
+    el.innerHTML = `<span class="dl-t">${now}</span><span class="dl-${type}">${_dbgEsc(msg)}</span>`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    while (log.children.length > 150) log.removeChild(log.firstChild);
+  }
+  function _dbgEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function dbgToggle() { document.getElementById('dbg-panel').classList.toggle('open'); }
+  function dbgClear()  { document.getElementById('dbg-log').innerHTML = ''; }
+  function dbgCopy() {
+    const lines = Array.from(document.querySelectorAll('.dl'))
+      .map(el => { const s = el.querySelectorAll('span'); return s[0].textContent + ' ' + s[1].textContent; });
+    navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
+  }
+  function dbgDock() {
+    const wrap = document.getElementById('dbg-wrap');
+    const panel = document.getElementById('dbg-panel');
+    wrap.classList.toggle('docked');
+    const docked = wrap.classList.contains('docked');
+    document.getElementById('dbg-dock-btn').textContent = docked ? 'undock' : 'dock';
+    panel.classList.add('open');
+  }
+</script>
+</body>
+</html>

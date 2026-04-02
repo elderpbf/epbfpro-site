@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Backstage - PensoIA</title>
+
+<link rel="icon" type="image/x-icon" href="../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+
+<link rel="stylesheet" href="css/theme.css?v=1.2">
+<link rel="stylesheet" href="css/backstage.css?v=1.2">
+<link rel="stylesheet" href="css/classforge.css?v=1.2">
+<script src="js/debug.js?v=1.2"></script>
+</head>
+<body>
+
+<div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
+
+<!-- =====================================================
+     SCREEN: FIRST-TIME PASSWORD SETUP
+     ===================================================== -->
+<div id="screen-setup-pw" class="bs-auth-bg" hidden>
+  <div class="bs-auth-card">
+    <div class="bs-auth-logo">
+      <img src="../images/logo.png" alt="PensoIA">
+      <span class="bs-product">Backstage</span>
+    </div>
+    <h2 data-key="setup_title">Criar senha de acesso</h2>
+    <p class="bs-auth-hint" data-key="setup_hint">Esta senha protege seu painel. Guarde-a em local seguro.</p>
+    <div class="bs-field">
+      <label data-key="setup_pw_label">Senha</label>
+      <input id="setup-pw" type="password" autocomplete="off">
+    </div>
+    <div class="bs-field">
+      <label data-key="setup_confirm_label">Confirmar senha</label>
+      <input id="setup-pw-confirm" type="password" autocomplete="off">
+    </div>
+    <p class="bs-form-error" id="setup-error"></p>
+    <button class="bs-auth-btn" id="setup-btn" data-key="setup_btn">Criar senha e entrar</button>
+  </div>
+</div>
+
+<!-- =====================================================
+     SCREEN: LOGIN
+     ===================================================== -->
+<div id="screen-login" class="bs-auth-bg" hidden>
+  <div class="bs-auth-card">
+    <div class="bs-auth-logo">
+      <img src="../images/logo.png" alt="PensoIA">
+      <span class="bs-product">Backstage</span>
+    </div>
+    <h2 data-key="login_title">Bem-vindo de volta</h2>
+    <p class="bs-auth-hint" data-key="login_hint">Entre com sua senha para acessar o painel.</p>
+    <div class="bs-field">
+      <label data-key="login_pw_label">Senha</label>
+      <input id="login-pw" type="password" autocomplete="off">
+    </div>
+    <p class="bs-form-error" id="login-error"></p>
+    <button class="bs-auth-btn" id="login-btn" data-key="login_btn">Entrar</button>
+  </div>
+</div>
+
+<!-- =====================================================
+     SCREEN: APP
+     ===================================================== -->
+<div id="screen-app" class="bs-app" hidden>
+
+  <header class="bs-topbar">
+    <div class="bs-topbar-inner">
+      <a href="https://pensoia.com" class="bs-topbar-logo" aria-label="PensoIA">
+        <img src="../images/logo.png" alt="PensoIA">
+        <div class="bs-topbar-wordmark">
+          <span class="bs-topbar-brand">PensoIA</span>
+          <span class="bs-topbar-name">Backstage</span>
+        </div>
+      </a>
+      <div class="bs-topbar-spacer"></div>
+      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
+        <span id="themeIcon"></span>
+      </button>
+      <button class="bs-icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button class="bs-logout-btn" id="logout-btn" data-key="logout_btn">Sair</button>
+    </div>
+  </header>
+
+  <main class="bs-main">
+
+    <!-- Dashboard view -->
+    <div id="view-dashboard">
+      <h1 class="bs-dashboard-title" data-key="dashboard_title">Ferramentas</h1>
+      <div class="bs-tool-grid">
+
+        <!-- ClassForge -->
+        <div class="bs-tool-card" id="card-classforge" role="button" tabindex="0" aria-label="Abrir ClassForge">
+          <div class="bs-tool-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div class="bs-tool-name">ClassForge</div>
+          <div class="bs-tool-desc" data-key="classforge_desc">Apresentações</div>
+        </div>
+
+        <!-- ClassPulse -->
+        <div class="bs-tool-card" id="card-classpulse" role="button" tabindex="0" aria-label="Abrir ClassPulse">
+          <div class="bs-tool-icon" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </div>
+          <div class="bs-tool-name">ClassPulse</div>
+          <div class="bs-tool-desc" data-key="classpulse_desc">Interação em sala</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ClassForge view -->
+    <div id="view-classforge" hidden>
+
+      <div class="cf-toolbar">
+        <h1 data-key="cf_title">Apresentacoes</h1>
+        <button class="cf-refresh-btn" id="refresh-btn" title="Recarregar lista">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          <span data-key="refresh_btn">Atualizar</span>
+        </button>
+        <a href="https://slides.google.com/" target="_blank" rel="noopener noreferrer" class="cf-new-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span data-key="new_btn">Nova apresentacao</span>
+        </a>
+      </div>
+
+      <div id="cf-grid" class="cf-grid">
+        <!-- Demo card + dynamic cards injected by JS -->
+      </div>
+
+    </div>
+
+  </main>
+
+</div><!-- /screen-app -->
+
+<!-- =====================================================
+     SETTINGS DRAWER
+     ===================================================== -->
+<div id="settings-overlay" class="bs-overlay" hidden></div>
+
+<aside id="settings-drawer" class="bs-drawer" hidden aria-label="Configuracoes">
+
+  <h2>
+    <span data-key="settings_title">Configuracoes</span>
+    <button class="bs-drawer-close" id="settings-close" aria-label="Fechar">&times;</button>
+  </h2>
+
+  <!-- ClassForge Apps Script -->
+  <h3 data-key="settings_script_section">Apps Script (ClassForge)</h3>
+  <div class="bs-field">
+    <label data-key="settings_script_label">URL do Apps Script</label>
+    <input id="settings-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+  </div>
+  <p class="bs-hint" data-key="settings_script_hint">
+    Implante o Code.gs como Web App e cole a URL aqui. Necessario para carregar suas apresentacoes.
+  </p>
+  <button class="bs-save-btn" id="settings-save-btn" data-key="settings_save_btn">Salvar</button>
+  <p class="bs-drawer-save-msg" id="settings-save-msg"></p>
+
+  <hr>
+
+  <hr>
+
+  <!-- AI API keys -->
+  <h3 data-key="settings_ai_section">IA</h3>
+  <div class="bs-field">
+    <label data-key="settings_gemini_key_label">Chave da API Gemini</label>
+    <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
+  </div>
+  <div class="bs-field">
+    <label data-key="settings_gemini_key2_label">Chave da API Gemini (backup)</label>
+    <input id="settings-gemini-key2" type="password" placeholder="AIzaSy..." autocomplete="off">
+  </div>
+  <div class="bs-field">
+    <label data-key="settings_deepseek_key_label">Chave da API DeepSeek (fallback final)</label>
+    <input id="settings-deepseek-key" type="password" placeholder="sk-..." autocomplete="off">
+    <p class="bs-hint" data-key="settings_ai_key_hint">Armazenadas localmente, nunca enviadas a terceiros.</p>
+  </div>
+  <button class="bs-save-btn" id="settings-gemini-save-btn" data-key="settings_save_btn">Salvar</button>
+  <p class="bs-drawer-save-msg" id="settings-gemini-save-msg"></p>
+
+  <hr>
+
+  <!-- Reveal.js theme -->
+  <h3 data-key="settings_theme_section">Tema de apresentacao</h3>
+  <p class="bs-hint" style="margin-bottom:0.75rem" data-key="settings_theme_hint">Aplicado a todas as apresentacoes ao clicar em Apresentar.</p>
+  <div id="settings-theme-grid" class="cf-theme-grid"></div>
+
+  <div style="margin-top:1.25rem">
+    <button class="bs-toggle-btn" id="show-theme-gen-btn" data-key="settings_theme_gen_btn">+ Criar tema com IA</button>
+
+    <div id="theme-gen-form" hidden style="margin-top:1rem">
+      <div class="bs-field">
+        <label data-key="settings_theme_desc_label">Descreva o tema</label>
+        <textarea id="theme-desc-input" class="bs-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano. Tipografia moderna, fundo quase preto, destaques em ciano..."></textarea>
+      </div>
+      <p class="bs-form-error" id="theme-gen-error"></p>
+      <button class="bs-save-btn" id="theme-gen-btn" data-key="settings_theme_gen_submit">Gerar com Gemini</button>
+
+      <div id="theme-gen-preview" hidden style="margin-top:1rem; padding:0.75rem; border-radius:8px; border:1px solid rgba(20,184,166,.3)">
+        <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.5rem" data-key="theme_preview_label">Pre-visualizacao</p>
+        <div id="theme-preview-swatches" style="display:flex; gap:6px; margin-bottom:0.75rem"></div>
+        <p id="theme-preview-name" style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:0.75rem"></p>
+        <button class="bs-save-btn" id="theme-save-btn" data-key="theme_save_btn">Salvar tema</button>
+      </div>
+    </div>
+
+  </div>
+
+  <hr>
+
+  <!-- Developer -->
+  <h3 data-key="settings_dev_section">Desenvolvedor</h3>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+    <span style="font-size:.88rem;color:var(--text-primary)" data-key="settings_debug_label">Painel de debug</span>
+    <button class="bs-toggle-btn" id="debug-toggle-btn" data-key="settings_debug_off">Desativado</button>
+  </div>
+  <p class="bs-hint" data-key="settings_debug_hint">Exibe pill flutuante com logs em todas as paginas do Backstage.</p>
+
+  <hr>
+
+  <!-- Security -->
+  <h3 data-key="settings_security_section">Seguranca</h3>
+  <button class="bs-toggle-btn" id="show-change-pw-btn" data-key="settings_change_pw_btn">Alterar senha</button>
+
+  <div id="change-pw-form" hidden>
+    <div class="bs-field" style="margin-top:1rem">
+      <label data-key="change_pw_current">Senha atual</label>
+      <input id="change-pw-current" type="password" autocomplete="off">
+    </div>
+    <div class="bs-field">
+      <label data-key="change_pw_new">Nova senha</label>
+      <input id="change-pw-new" type="password" autocomplete="off">
+    </div>
+    <div class="bs-field">
+      <label data-key="change_pw_confirm">Confirmar nova senha</label>
+      <input id="change-pw-confirm" type="password" autocomplete="off">
+    </div>
+    <p class="bs-form-error" id="change-pw-error"></p>
+    <button class="bs-save-btn" id="change-pw-save-btn" data-key="change_pw_save_btn">Atualizar senha</button>
+  </div>
+
+</aside>
+
+<!-- =====================================================
+     SCRIPT
+     ===================================================== -->
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// i18n (PT-BR)
+// ---------------------------------------------------------------------------
+
+var TRANSLATIONS = {
+  'pt-BR': {
+    setup_title:               'Criar senha de acesso',
+    setup_hint:                'Esta senha protege seu painel. Guarde-a em local seguro.',
+    setup_pw_label:            'Senha',
+    setup_confirm_label:       'Confirmar senha',
+    setup_btn:                 'Criar senha e entrar',
+    login_title:               'Bem-vindo de volta',
+    login_hint:                'Entre com sua senha para acessar o painel.',
+    login_pw_label:            'Senha',
+    login_btn:                 'Entrar',
+    logout_btn:                'Sair',
+    dashboard_title:           'Ferramentas',
+    classforge_desc:           'Apresentações',
+    classpulse_desc:           'Interação em sala',
+    cf_title:                  'Apresentações',
+    refresh_btn:               'Atualizar',
+    new_btn:                   'Nova apresentação',
+    settings_title:            'Configurações',
+    settings_script_section:   'Apps Script (ClassForge)',
+    settings_script_label:     'URL do Apps Script',
+    settings_script_hint:      'Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.',
+    settings_save_btn:         'Salvar',
+    settings_cp_section:       'Apps Script (ClassPulse)',
+    settings_cp_script_label:  'URL do Apps Script',
+    settings_cp_sheet_label:   'ID da planilha',
+    settings_cp_sheet_hint:    'Encontrado na URL da planilha do Google Sheets.',
+    settings_cp_save_btn:      'Salvar',
+    settings_theme_section:    'Tema de apresentação',
+    settings_theme_hint:       'Aplicado a todas as apresentações ao clicar em Apresentar.',
+    settings_theme_gen_btn:    '+ Criar tema com IA',
+    settings_ai_section:        'IA',
+    settings_gemini_key_label:  'Chave da API Gemini',
+    settings_gemini_key2_label:  'Chave da API Gemini (backup)',
+    settings_deepseek_key_label: 'Chave da API DeepSeek (fallback final)',
+    settings_ai_key_hint:       'Armazenadas localmente, nunca enviadas a terceiros.',
+    settings_theme_desc_label: 'Descreva o tema',
+    settings_theme_gen_submit: 'Gerar com Gemini',
+    theme_preview_label:       'Pré-visualização',
+    theme_save_btn:            'Salvar tema',
+    settings_dev_section:      'Desenvolvedor',
+    settings_debug_label:      'Painel de debug',
+    settings_debug_on:         'Ativado',
+    settings_debug_off:        'Desativado',
+    settings_debug_hint:       'Exibe pill flutuante com logs em todas as páginas do Backstage.',
+    settings_security_section: 'Segurança',
+    settings_change_pw_btn:    'Alterar senha',
+    change_pw_current:         'Senha atual',
+    change_pw_new:             'Nova senha',
+    change_pw_confirm:         'Confirmar nova senha',
+    change_pw_save_btn:        'Atualizar senha',
+    card_present:              'Apresentar',
+    card_edit:                 'Editar',
+    card_demo_badge:           'Demo',
+    card_demo_title:           'Por que patos são legais?',
+    card_demo_meta:            'Apresentação de demonstração',
+    state_no_script_msg:       'Configure o Apps Script para ver suas apresentações.',
+    state_no_script_btn:       'Configurar agora',
+    state_loading_msg:         'Carregando apresentações...',
+    state_error_btn:           'Tentar novamente',
+    state_empty_msg:           'Nenhuma apresentação encontrada na pasta.',
+    save_ok:                   'Salvo com sucesso.',
+    error_pw_short:            'A senha deve ter pelo menos 6 caracteres.',
+    error_pw_match:            'As senhas não coincidem.',
+    error_pw_wrong:            'Senha incorreta.',
+    error_pw_current_wrong:    'Senha atual incorreta.',
+    change_pw_ok:              'Senha alterada com sucesso.',
+  }
+};
+
+var LANG = 'pt-BR';
+var T = TRANSLATIONS[LANG];
+function t(key) { return T[key] || key; }
+
+// Apply translations
+document.querySelectorAll('[data-key]').forEach(function(el) {
+  var key = el.getAttribute('data-key');
+  if (T[key]) el.textContent = T[key];
+});
+
+// ---------------------------------------------------------------------------
+// Migration from old cf_ keys to bs_ keys
+// ---------------------------------------------------------------------------
+
+function migrateOldKeys() {
+  var migrations = [
+    ['cf_pw_hash',      'bs_pw_hash'],
+    ['cf_script_url',   'bs_cf_script_url'],
+    ['cf_theme',        'bs_reveal_theme'],
+    ['cf_custom_themes','bs_custom_themes'],
+    ['cf_gemini_key',   'bs_gemini_key']
+  ];
+  migrations.forEach(function(pair) {
+    var old = localStorage.getItem(pair[0]);
+    if (old && !localStorage.getItem(pair[1])) {
+      localStorage.setItem(pair[1], old);
+    }
+  });
+  // Migrate site theme preference
+  var oldTheme = localStorage.getItem('theme');
+  if (oldTheme && !localStorage.getItem('bs_theme')) {
+    localStorage.setItem('bs_theme', oldTheme);
+  }
+}
+migrateOldKeys();
+
+// ---------------------------------------------------------------------------
+// Theme toggle
+// ---------------------------------------------------------------------------
+
+var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+var themeIcon    = document.getElementById('themeIcon');
+var themeToggle  = document.getElementById('themeToggle');
+var themeOverlay = document.getElementById('themeTransition');
+
+function applyTheme(theme, animate, ox, oy) {
+  if (animate && themeOverlay) {
+    themeOverlay.style.setProperty('--tx', (ox || 0) + 'px');
+    themeOverlay.style.setProperty('--ty', (oy || 0) + 'px');
+    document.documentElement.setAttribute('data-theme', theme);
+    var bg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
+    themeOverlay.style.backgroundColor = bg;
+    themeOverlay.offsetHeight;
+    themeOverlay.classList.add('active');
+    setTimeout(function() {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+      themeToggle.setAttribute('aria-pressed', theme === 'dark');
+      localStorage.setItem('bs_theme', theme);
+      setTimeout(function() { themeOverlay.classList.remove('active'); }, 100);
+    }, 500);
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+    themeToggle.setAttribute('aria-pressed', theme === 'dark');
+    localStorage.setItem('bs_theme', theme);
+  }
+}
+
+// Default to dark
+var savedTheme = localStorage.getItem('bs_theme') || 'dark';
+if (!localStorage.getItem('bs_theme')) localStorage.setItem('bs_theme', 'dark');
+applyTheme(savedTheme, false);
+
+themeToggle.addEventListener('click', function(e) {
+  var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  var rect = e.currentTarget.getBoundingClientRect();
+  applyTheme(cur === 'dark' ? 'light' : 'dark', true, rect.left + rect.width / 2, rect.top + rect.height / 2);
+});
+
+// ---------------------------------------------------------------------------
+// Crypto helpers
+// ---------------------------------------------------------------------------
+
+async function hashPw(pw) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Screen management
+// ---------------------------------------------------------------------------
+
+var PW_KEY   = 'bs_pw_hash';
+var AUTH_KEY = 'bs_auth';
+
+var SCREENS = ['screen-setup-pw', 'screen-login', 'screen-app'];
+
+function showScreen(id) {
+  SCREENS.forEach(function(s) {
+    document.getElementById(s).hidden = (s !== id);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+
+// Clear any browser-injected password values on load
+document.querySelectorAll('input[type="password"]').forEach(function(el) {
+  el.value = '';
+});
+
+async function init() {
+  var hash = localStorage.getItem(PW_KEY);
+  if (!hash) {
+    showScreen('screen-setup-pw');
+    document.getElementById('setup-pw').focus();
+    return;
+  }
+  if (sessionStorage.getItem(AUTH_KEY) === '1') {
+    showApp();
+    return;
+  }
+  showScreen('screen-login');
+  document.getElementById('login-pw').focus();
+}
+
+// ---------------------------------------------------------------------------
+// Auth event handlers
+// ---------------------------------------------------------------------------
+
+document.getElementById('setup-btn').addEventListener('click', async function() {
+  var pw  = document.getElementById('setup-pw').value;
+  var pw2 = document.getElementById('setup-pw-confirm').value;
+  var err = document.getElementById('setup-error');
+  err.textContent = '';
+  if (pw.length < 6)  { err.textContent = t('error_pw_short'); return; }
+  if (pw !== pw2)     { err.textContent = t('error_pw_match'); return; }
+  localStorage.setItem(PW_KEY, await hashPw(pw));
+  sessionStorage.setItem(AUTH_KEY, '1');
+  showApp();
+});
+
+document.getElementById('login-btn').addEventListener('click', async function() {
+  var pw  = document.getElementById('login-pw').value;
+  var err = document.getElementById('login-error');
+  err.textContent = '';
+  var hash = await hashPw(pw);
+  if (hash !== localStorage.getItem(PW_KEY)) {
+    err.textContent = t('error_pw_wrong');
+    document.getElementById('login-pw').value = '';
+    document.getElementById('login-pw').focus();
+    return;
+  }
+  sessionStorage.setItem(AUTH_KEY, '1');
+  showApp();
+});
+
+['setup-pw-confirm', 'login-pw'].forEach(function(id) {
+  document.getElementById(id).addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var btn = id === 'login-pw' ? 'login-btn' : 'setup-btn';
+      document.getElementById(btn).click();
+    }
+  });
+});
+document.getElementById('setup-pw').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('setup-pw-confirm').focus();
+});
+
+document.getElementById('logout-btn').addEventListener('click', function() {
+  sessionStorage.removeItem(AUTH_KEY);
+  document.getElementById('login-pw').value = '';
+  document.getElementById('login-error').textContent = '';
+  showScreen('screen-login');
+  document.getElementById('login-pw').focus();
+});
+
+// ---------------------------------------------------------------------------
+// App views
+// ---------------------------------------------------------------------------
+
+function showApp() {
+  showScreen('screen-app');
+  showDashboard();
+}
+
+function showDashboard() {
+  document.getElementById('view-dashboard').hidden = false;
+  document.getElementById('view-classforge').hidden = true;
+}
+
+function showClassForge() {
+  document.getElementById('view-dashboard').hidden = true;
+  document.getElementById('view-classforge').hidden = false;
+  loadPresentations();
+}
+
+// Tool card click
+document.getElementById('card-classforge').addEventListener('click', showClassForge);
+document.getElementById('card-classforge').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showClassForge(); }
+});
+
+document.getElementById('card-classpulse').addEventListener('click', function() {
+  location.href = 'classpulse/';
+});
+document.getElementById('card-classpulse').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); location.href = 'classpulse/'; }
+});
+
+// ---------------------------------------------------------------------------
+// ClassForge: Presentation grid
+// ---------------------------------------------------------------------------
+
+var THUMB_GRADIENTS = [
+  'linear-gradient(135deg, #0d9488 0%, #047857 100%)',
+  'linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)',
+  'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
+  'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+  'linear-gradient(135deg, #be123c 0%, #e11d48 100%)',
+  'linear-gradient(135deg, #0369a1 0%, #0891b2 100%)',
+];
+
+function thumbGrad(index) {
+  return THUMB_GRADIENTS[index % THUMB_GRADIENTS.length];
+}
+
+function initial(title) {
+  return (title || '?').trim().charAt(0).toUpperCase();
+}
+
+function buildDemoCard() {
+  var card = document.createElement('div');
+  card.className = 'cf-card';
+
+  var thumb = document.createElement('div');
+  thumb.className = 'cf-card-thumb';
+  thumb.style.background = 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)';
+  thumb.innerHTML =
+    '<span style="font-size:2.5rem">P</span>' +
+    '<span class="cf-card-badge">' + t('card_demo_badge') + '</span>';
+  card.appendChild(thumb);
+
+  var body = document.createElement('div');
+  body.className = 'cf-card-body';
+
+  var title = document.createElement('h3');
+  title.className = 'cf-card-title';
+  title.textContent = t('card_demo_title');
+  body.appendChild(title);
+
+  var meta = document.createElement('p');
+  meta.className = 'cf-card-meta';
+  meta.textContent = t('card_demo_meta');
+  body.appendChild(meta);
+
+  var actions = document.createElement('div');
+  actions.className = 'cf-card-actions';
+
+  var present = document.createElement('a');
+  present.className = 'cf-btn-present';
+  present.href = 'classforge/viewer/?demo=1';
+  present.textContent = t('card_present');
+  actions.appendChild(present);
+
+  var edit = document.createElement('span');
+  edit.className = 'cf-btn-edit cf-disabled';
+  edit.textContent = t('card_edit');
+  edit.title = 'Demonstração - sem edição';
+  actions.appendChild(edit);
+
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+function buildCard(pres, index) {
+  var scriptUrl = localStorage.getItem('bs_cf_script_url') || '';
+
+  var card = document.createElement('div');
+  card.className = 'cf-card';
+
+  var thumb = document.createElement('div');
+  thumb.className = 'cf-card-thumb';
+  thumb.style.background = thumbGrad(index);
+  thumb.textContent = initial(pres.title);
+  card.appendChild(thumb);
+
+  var body = document.createElement('div');
+  body.className = 'cf-card-body';
+
+  var title = document.createElement('h3');
+  title.className = 'cf-card-title';
+  title.textContent = pres.title || 'Sem título';
+  body.appendChild(title);
+
+  var meta = document.createElement('p');
+  meta.className = 'cf-card-meta';
+  meta.textContent = 'Modificado: ' + (pres.modified || '--');
+  body.appendChild(meta);
+
+  var actions = document.createElement('div');
+  actions.className = 'cf-card-actions';
+
+  var viewerUrl = 'classforge/viewer/?id=' + encodeURIComponent(pres.id);
+  if (scriptUrl) viewerUrl += '&script=' + encodeURIComponent(scriptUrl);
+
+  var present = document.createElement('a');
+  present.className = 'cf-btn-present';
+  present.href = viewerUrl;
+  present.textContent = t('card_present');
+  actions.appendChild(present);
+
+  if (pres.url) {
+    var editLink = document.createElement('a');
+    editLink.className = 'cf-btn-edit';
+    editLink.href = pres.url;
+    editLink.target = '_blank';
+    editLink.rel = 'noopener noreferrer';
+    editLink.textContent = t('card_edit');
+    actions.appendChild(editLink);
+  }
+
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+function buildSkeletonCard() {
+  var card = document.createElement('div');
+  card.className = 'cf-card cf-card-skeleton';
+  card.innerHTML =
+    '<div class="cf-card-thumb cf-skeleton cf-card-thumb-sk"></div>' +
+    '<div class="cf-card-body">' +
+      '<div class="cf-skeleton cf-sk-line" style="margin-bottom:10px"></div>' +
+      '<div class="cf-skeleton cf-sk-line short"></div>' +
+    '</div>';
+  return card;
+}
+
+function buildStateBlock(html) {
+  var div = document.createElement('div');
+  div.className = 'cf-state-block';
+  div.innerHTML = html;
+  return div;
+}
+
+var grid = document.getElementById('cf-grid');
+
+function renderCards(presentations) {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  if (!presentations) return;
+  if (presentations.length === 0) {
+    grid.appendChild(buildStateBlock('<p>' + t('state_empty_msg') + '</p>'));
+    return;
+  }
+  presentations.forEach(function(pres, i) {
+    grid.appendChild(buildCard(pres, i));
+  });
+}
+
+function showSkeletons() {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  for (var i = 0; i < 3; i++) grid.appendChild(buildSkeletonCard());
+}
+
+function showNoScriptState() {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  grid.appendChild(buildStateBlock(
+    '<p>' + t('state_no_script_msg') + '</p>' +
+    '<button class="cf-inline-btn" id="state-settings-btn">' + t('state_no_script_btn') + '</button>'
+  ));
+  var btn = document.getElementById('state-settings-btn');
+  if (btn) btn.addEventListener('click', openSettings);
+}
+
+function showErrorState(msg) {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  grid.appendChild(buildStateBlock(
+    '<p style="color:#ef4444">' + (msg || 'Erro ao carregar') + '</p>' +
+    '<button class="cf-inline-btn" id="state-retry-btn">' + t('state_error_btn') + '</button>'
+  ));
+  var btn = document.getElementById('state-retry-btn');
+  if (btn) btn.addEventListener('click', loadPresentations);
+}
+
+async function loadPresentations() {
+  var scriptUrl = localStorage.getItem('bs_cf_script_url') || '';
+  if (!scriptUrl) { showNoScriptState(); return; }
+  showSkeletons();
+  try {
+    var resp = await fetch(scriptUrl + '?action=list');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    renderCards(data.lessons || []);
+  } catch (err) {
+    showErrorState(err.message);
+  }
+}
+
+document.getElementById('refresh-btn').addEventListener('click', loadPresentations);
+
+// ---------------------------------------------------------------------------
+// Settings drawer
+// ---------------------------------------------------------------------------
+
+var overlay = document.getElementById('settings-overlay');
+var drawer  = document.getElementById('settings-drawer');
+
+function openSettings() {
+  document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
+  document.getElementById('settings-save-msg').textContent = '';
+  document.getElementById('settings-cp-save-msg').textContent = '';
+  document.getElementById('settings-gemini-key').value = localStorage.getItem('bs_gemini_key') || '';
+  document.getElementById('debug-toggle-btn') && (function() {
+    var on = localStorage.getItem('bs_debug') === '1';
+    var btn = document.getElementById('debug-toggle-btn');
+    btn.textContent = on ? t('settings_debug_on') : t('settings_debug_off');
+    btn.style.color = on ? 'var(--primary)' : '';
+    btn.style.borderColor = on ? 'var(--primary)' : '';
+  })();
+  document.getElementById('settings-gemini-key2').value = localStorage.getItem('bs_gemini_key2') || '';
+  document.getElementById('settings-deepseek-key').value = localStorage.getItem('bs_deepseek_key') || '';
+  document.getElementById('settings-gemini-save-msg').textContent = '';
+  overlay.hidden = false;
+  drawer.hidden = false;
+  requestAnimationFrame(function() {
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+  });
+  renderThemeGrid();
+}
+
+function closeSettings() {
+  overlay.classList.remove('open');
+  drawer.classList.remove('open');
+  setTimeout(function() {
+    overlay.hidden = true;
+    drawer.hidden = true;
+  }, 300);
+}
+
+document.getElementById('settings-btn').addEventListener('click', openSettings);
+document.getElementById('settings-close').addEventListener('click', closeSettings);
+overlay.addEventListener('click', closeSettings);
+
+document.getElementById('settings-save-btn').addEventListener('click', function() {
+  var url = document.getElementById('settings-script-url').value.trim();
+  localStorage.setItem('bs_cf_script_url', url);
+  document.getElementById('settings-save-msg').textContent = t('save_ok');
+  setTimeout(function() {
+    document.getElementById('settings-save-msg').textContent = '';
+  }, 3000);
+  if (!document.getElementById('view-classforge').hidden) loadPresentations();
+});
+
+
+document.getElementById('settings-gemini-save-btn').addEventListener('click', function() {
+  localStorage.setItem('bs_gemini_key', document.getElementById('settings-gemini-key').value.trim());
+  localStorage.setItem('bs_gemini_key2', document.getElementById('settings-gemini-key2').value.trim());
+  localStorage.setItem('bs_deepseek_key', document.getElementById('settings-deepseek-key').value.trim());
+  document.getElementById('settings-gemini-save-msg').textContent = t('save_ok');
+  setTimeout(function() {
+    document.getElementById('settings-gemini-save-msg').textContent = '';
+  }, 3000);
+});
+
+// Debug toggle
+(function() {
+  var btn = document.getElementById('debug-toggle-btn');
+  function syncDebugBtn() {
+    var on = localStorage.getItem('bs_debug') === '1';
+    btn.textContent = on ? t('settings_debug_on') : t('settings_debug_off');
+    btn.style.color = on ? 'var(--primary)' : '';
+    btn.style.borderColor = on ? 'var(--primary)' : '';
+  }
+  syncDebugBtn();
+  btn.addEventListener('click', function() {
+    var on = localStorage.getItem('bs_debug') === '1';
+    localStorage.setItem('bs_debug', on ? '0' : '1');
+    syncDebugBtn();
+  });
+})();
+
+// Change password
+document.getElementById('show-change-pw-btn').addEventListener('click', function() {
+  var form = document.getElementById('change-pw-form');
+  form.hidden = !form.hidden;
+  if (!form.hidden) document.getElementById('change-pw-current').focus();
+});
+
+document.getElementById('change-pw-save-btn').addEventListener('click', async function() {
+  var cur     = document.getElementById('change-pw-current').value;
+  var newPw   = document.getElementById('change-pw-new').value;
+  var confirm = document.getElementById('change-pw-confirm').value;
+  var err     = document.getElementById('change-pw-error');
+  err.textContent = '';
+
+  var curHash = await hashPw(cur);
+  if (curHash !== localStorage.getItem(PW_KEY)) { err.textContent = t('error_pw_current_wrong'); return; }
+  if (newPw.length < 6) { err.textContent = t('error_pw_short'); return; }
+  if (newPw !== confirm) { err.textContent = t('error_pw_match'); return; }
+
+  localStorage.setItem(PW_KEY, await hashPw(newPw));
+  document.getElementById('change-pw-current').value = '';
+  document.getElementById('change-pw-new').value = '';
+  document.getElementById('change-pw-confirm').value = '';
+  err.style.color = 'var(--primary)';
+  err.textContent = t('change_pw_ok');
+  setTimeout(function() {
+    err.textContent = '';
+    err.style.color = '';
+    document.getElementById('change-pw-form').hidden = true;
+  }, 2500);
+});
+
+// ---------------------------------------------------------------------------
+// Theme management (Reveal.js themes in settings)
+// ---------------------------------------------------------------------------
+
+var BUILTIN_THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
+
+var THEME_DATA = {
+  black:     { bg: '#191919', heading: '#fff',     accent: '#42affa', text: '#fff'     },
+  white:     { bg: '#fff',    heading: '#222',     accent: '#2a76dd', text: '#222'     },
+  league:    { bg: '#1a1a2e', heading: '#eee',     accent: '#f6c90e', text: '#eee'     },
+  beige:     { bg: '#f7f2d3', heading: '#333',     accent: '#8b743d', text: '#333'     },
+  night:     { bg: '#1c1e20', heading: '#eee',     accent: '#e7ad52', text: '#eee'     },
+  serif:     { bg: '#f0ede0', heading: '#383d3d',  accent: '#8b4513', text: '#383d3d'  },
+  simple:    { bg: '#fff',    heading: '#333',     accent: '#333',    text: '#444'     },
+  solarized: { bg: '#002b36', heading: '#93a1a1',  accent: '#268bd2', text: '#657b83'  },
+  moon:      { bg: '#002b36', heading: '#93a1a1',  accent: '#00bcd4', text: '#839496'  },
+  dracula:   { bg: '#282a36', heading: '#f8f8f2',  accent: '#bd93f9', text: '#f8f8f2'  },
+  sky:       { bg: '#add9e4', heading: '#003b4f',  accent: '#007da3', text: '#003b4f'  },
+  blood:     { bg: '#2a0000', heading: '#eee',     accent: '#a23',    text: '#eee'     }
+};
+
+function getCustomThemes() {
+  return JSON.parse(localStorage.getItem('bs_custom_themes') || '[]');
+}
+
+function saveCustomThemes(list) {
+  localStorage.setItem('bs_custom_themes', JSON.stringify(list));
+}
+
+function getActiveTheme() {
+  return localStorage.getItem('bs_reveal_theme') || 'black';
+}
+
+function renderThemeGrid() {
+  var gridEl = document.getElementById('settings-theme-grid');
+  gridEl.innerHTML = '';
+  var active = getActiveTheme();
+
+  BUILTIN_THEMES.forEach(function(themeName) {
+    var d = THEME_DATA[themeName] || { bg: '#222', heading: '#fff', accent: '#aaa', text: '#ccc' };
+    var wrap = document.createElement('div');
+    wrap.className = 'cf-theme-card-wrap';
+
+    var card = document.createElement('div');
+    card.className = 'cf-theme-card' + (active === themeName ? ' cf-selected' : '');
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.dataset.value = themeName;
+
+    var preview = document.createElement('div');
+    preview.className = 'cf-theme-card-preview';
+    preview.style.background = d.bg;
+
+    var heading = document.createElement('div');
+    heading.className = 'cf-theme-card-heading';
+    heading.style.color = d.heading;
+    heading.textContent = 'Aa';
+
+    var bar = document.createElement('div');
+    bar.className = 'cf-theme-card-bar';
+    bar.style.background = d.accent;
+
+    var lines = document.createElement('div');
+    lines.className = 'cf-theme-card-lines';
+    [d.text, d.text].forEach(function(c) {
+      var line = document.createElement('div');
+      line.className = 'cf-theme-card-line';
+      line.style.background = c;
+      lines.appendChild(line);
+    });
+
+    preview.appendChild(heading);
+    preview.appendChild(bar);
+    preview.appendChild(lines);
+
+    var label = document.createElement('div');
+    label.className = 'cf-theme-card-label';
+    label.style.background = d.bg;
+    label.style.color = d.text;
+    label.textContent = themeName;
+
+    card.appendChild(preview);
+    card.appendChild(label);
+    wrap.appendChild(card);
+    gridEl.appendChild(wrap);
+
+    card.addEventListener('click', function() {
+      localStorage.setItem('bs_reveal_theme', themeName);
+      renderThemeGrid();
+    });
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+  });
+
+  // Custom themes
+  getCustomThemes().forEach(function(ct, idx) {
+    var ov = ct.overrides || {};
+    var bg      = ov['--r-background-color'] || '#222';
+    var heading = ov['--r-heading-color']    || '#fff';
+    var accent  = ov['--r-link-color']       || '#aaa';
+    var text    = ov['--r-main-color']       || '#ccc';
+    var key     = 'custom:' + ct.name;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'cf-theme-card-wrap';
+
+    var card = document.createElement('div');
+    card.className = 'cf-theme-card' + (active === key ? ' cf-selected' : '');
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.dataset.value = key;
+
+    var preview = document.createElement('div');
+    preview.className = 'cf-theme-card-preview';
+    preview.style.background = bg;
+
+    var hdg = document.createElement('div');
+    hdg.className = 'cf-theme-card-heading';
+    hdg.style.color = heading;
+    hdg.textContent = 'Aa';
+
+    var bar = document.createElement('div');
+    bar.className = 'cf-theme-card-bar';
+    bar.style.background = accent;
+
+    var lines = document.createElement('div');
+    lines.className = 'cf-theme-card-lines';
+    [text, text].forEach(function(c) {
+      var line = document.createElement('div');
+      line.className = 'cf-theme-card-line';
+      line.style.background = c;
+      lines.appendChild(line);
+    });
+
+    preview.appendChild(hdg);
+    preview.appendChild(bar);
+    preview.appendChild(lines);
+
+    var label = document.createElement('div');
+    label.className = 'cf-theme-card-label';
+    label.style.background = bg;
+    label.style.color = text;
+    label.textContent = ct.name + ' \u2736';
+
+    var del = document.createElement('button');
+    del.className = 'cf-theme-card-delete';
+    del.textContent = '\u00d7';
+    del.title = 'Excluir tema';
+    del.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var list = getCustomThemes();
+      list.splice(idx, 1);
+      saveCustomThemes(list);
+      if (getActiveTheme() === key) localStorage.setItem('bs_reveal_theme', 'black');
+      renderThemeGrid();
+    });
+
+    card.appendChild(preview);
+    card.appendChild(label);
+    card.appendChild(del);
+    wrap.appendChild(card);
+    gridEl.appendChild(wrap);
+
+    card.addEventListener('click', function() {
+      localStorage.setItem('bs_reveal_theme', key);
+      renderThemeGrid();
+    });
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+  });
+}
+
+// Theme generator toggle
+document.getElementById('show-theme-gen-btn').addEventListener('click', function() {
+  var form = document.getElementById('theme-gen-form');
+  form.hidden = !form.hidden;
+});
+
+var pendingTheme = null;
+
+document.getElementById('theme-gen-btn').addEventListener('click', async function() {
+  var apiKey  = document.getElementById('settings-gemini-key').value.trim();
+  var desc    = document.getElementById('theme-desc-input').value.trim();
+  var errEl   = document.getElementById('theme-gen-error');
+  var preview = document.getElementById('theme-gen-preview');
+
+  errEl.textContent = '';
+  preview.hidden = true;
+  pendingTheme = null;
+
+  if (!apiKey) { errEl.textContent = 'Configure a chave da API Gemini nas Configuracoes.'; return; }
+  if (!desc)   { errEl.textContent = 'Descreva o tema antes de gerar.'; return; }
+
+  var btn = this;
+  btn.textContent = 'Gerando...';
+  btn.disabled = true;
+
+  try {
+    var theme = await callGeminiTheme(desc, apiKey);
+    pendingTheme = theme;
+
+    var swatchContainer = document.getElementById('theme-preview-swatches');
+    swatchContainer.innerHTML = '';
+    var swatchColors = [
+      theme.overrides['--r-background-color'],
+      theme.overrides['--r-main-color'],
+      theme.overrides['--r-heading-color'],
+      theme.overrides['--r-link-color']
+    ].filter(Boolean);
+    swatchColors.forEach(function(c) {
+      var s = document.createElement('div');
+      s.style.cssText = 'width:28px;height:28px;border-radius:6px;background:' + c + ';border:1px solid rgba(0,0,0,.2)';
+      swatchContainer.appendChild(s);
+    });
+
+    document.getElementById('theme-preview-name').textContent = theme.name;
+    localStorage.setItem('bs_gemini_key', apiKey);
+    preview.hidden = false;
+  } catch (err) {
+    errEl.textContent = 'Erro: ' + err.message;
+  } finally {
+    btn.textContent = t('settings_theme_gen_submit');
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('theme-save-btn').addEventListener('click', function() {
+  if (!pendingTheme) return;
+  var list = getCustomThemes();
+  var existIdx = list.findIndex(function(x) { return x.name === pendingTheme.name; });
+  if (existIdx >= 0) list[existIdx] = pendingTheme;
+  else list.push(pendingTheme);
+  saveCustomThemes(list);
+  localStorage.setItem('bs_reveal_theme', 'custom:' + pendingTheme.name);
+  document.getElementById('theme-gen-preview').hidden = true;
+  document.getElementById('theme-desc-input').value = '';
+  pendingTheme = null;
+  renderThemeGrid();
+});
+
+async function callGeminiTheme(description, apiKey) {
+  var prompt =
+    'You are a CSS theme designer for Reveal.js presentations.\n' +
+    'Generate a professional, visually cohesive theme based on this description: "' + description + '"\n\n' +
+    'Return ONLY valid JSON with this exact structure (no markdown, no explanation):\n' +
+    '{\n' +
+    '  "name": "Nome do Tema (2-3 words in Portuguese)",\n' +
+    '  "base": "black",\n' +
+    '  "overrides": {\n' +
+    '    "--r-background-color": "#hex",\n' +
+    '    "--r-main-color": "#hex",\n' +
+    '    "--r-heading-color": "#hex",\n' +
+    '    "--r-link-color": "#hex",\n' +
+    '    "--r-selection-background-color": "rgba(r,g,b,0.75)"\n' +
+    '  }\n' +
+    '}\n\n' +
+    'base must be one of: black, white, night, moon, dracula, sky, beige, serif, simple.\n' +
+    'Choose the base that best complements the described style.\n' +
+    'All color values must be valid CSS. Ensure high contrast between background and text.';
+
+  var resp = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' + apiKey,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.8 }
+      })
+    }
+  );
+
+  if (!resp.ok) {
+    var errData = await resp.json().catch(function() { return {}; });
+    throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + resp.status);
+  }
+
+  var data = await resp.json();
+  var raw = data.candidates && data.candidates[0] &&
+            data.candidates[0].content && data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+
+  if (!raw) throw new Error('Resposta vazia da API.');
+
+  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
+  return JSON.parse(clean);
+}
+
+// ---------------------------------------------------------------------------
+// Start
+// ---------------------------------------------------------------------------
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Host - ClassPulse</title>
+
+<link rel="icon" type="image/x-icon" href="../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png">
+
+<link rel="stylesheet" href="../css/theme.css?v=1.0">
+<link rel="stylesheet" href="../css/backstage.css?v=1.0">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.2">
+<script src="../js/debug.js?v=1.0"></script>
+<style>
+  /* Host-specific styles */
+  .host-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; width: 100%; box-sizing: border-box; }
+
+  .host-session-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    background: var(--surface); border: 1px solid rgba(20,184,166,.2);
+    border-radius: 12px; padding: 1rem 1.3rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+  }
+  .host-code { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.2em; color: var(--primary); }
+  .host-session-name { font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.1rem; }
+  .host-bar-actions { display: flex; gap: 0.6rem; }
+
+  /* Cards */
+  .host-card { background: var(--surface); border: 1px solid rgba(20,184,166,.15); border-radius: 14px; padding: 1.3rem; margin-bottom: 1.25rem; }
+  .host-card-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 1rem; }
+
+  /* Form elements */
+  .host-label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .host-input { width: 100%; padding: 0.7rem 1rem; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.9rem; outline: none; transition: border-color .2s; box-sizing: border-box; }
+  .host-input:focus { border-color: var(--primary); }
+  textarea.host-input { resize: vertical; min-height: 72px; line-height: 1.5; }
+  .host-form-group { margin-bottom: 0.9rem; }
+  .host-select { width: 100%; padding: 0.65rem 1rem; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.88rem; outline: none; }
+
+  /* Buttons */
+  .host-btn { padding: 0.65rem 1.2rem; border: none; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+  .host-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .host-btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+  .host-btn-primary:hover:not(:disabled) { opacity: .88; }
+  .host-btn-ghost { background: transparent; border: 1.5px solid rgba(20,184,166,.3); color: var(--primary); }
+  .host-btn-ghost:hover:not(:disabled) { background: rgba(20,184,166,.08); }
+  .host-btn-danger { background: transparent; border: 1.5px solid rgba(239,68,68,.3); color: #ef4444; }
+  .host-btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.05); }
+  .host-btn-full { width: 100%; }
+  .host-btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  /* Option inputs */
+  .opt-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+  .opt-letter { font-size: 0.75rem; font-weight: 700; color: var(--primary); background: rgba(20,184,166,.12); border: 1px solid rgba(20,184,166,.2); border-radius: 6px; padding: 0.5rem 0.55rem; min-width: 32px; text-align: center; flex-shrink: 0; }
+  .opt-row input { flex: 1; }
+
+  /* Active question */
+  .active-q-panel { background: var(--surface); border: 2px solid var(--primary); border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; display: none; }
+  .active-q-badge { display: inline-block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: rgba(20,184,166,.15); color: var(--primary); border-radius: 4px; padding: 0.2rem 0.6rem; margin-bottom: 0.75rem; }
+  .active-q-text { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; line-height: 1.4; }
+  .answer-tally { font-size: 0.82rem; color: var(--text-secondary); }
+
+  /* Result bars */
+  .result-bar { display: grid; grid-template-columns: 32px 1fr 40px; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; }
+  .rb-letter { font-size: 0.75rem; font-weight: 700; color: var(--primary); background: rgba(20,184,166,.1); border: 1px solid rgba(20,184,166,.2); border-radius: 6px; padding: 0.45rem 0; text-align: center; }
+  .rb-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 3px; }
+  .rb-opt { color: var(--text-primary); }
+  .rb-pct { font-weight: 600; color: var(--text-secondary); }
+  .rb-track { height: 7px; background: rgba(20,184,166,.12); border-radius: 4px; overflow: hidden; }
+  .rb-fill  { height: 100%; background: var(--primary); border-radius: 4px; transition: width .5s ease; }
+  .rb-count { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); text-align: right; }
+  .result-bar.is-correct .rb-letter { background: rgba(74,180,100,.15); border-color: rgba(74,180,100,.4); color: #4ab464; }
+  .result-bar.is-correct .rb-opt    { color: #4ab464; font-weight: 600; }
+  .result-bar.is-correct .rb-fill   { background: #4ab464; }
+
+  /* Close checkboxes */
+  .close-options { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .close-options label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .close-options input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+
+  /* History */
+  .history-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid rgba(20,184,166,.08); }
+  .history-item:last-child { border-bottom: none; }
+  .hi-text { font-size: 0.88rem; color: var(--text-primary); flex: 1; }
+  .hi-meta { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; }
+
+  /* Alert */
+  .host-alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; display: none; }
+  .host-alert.show { display: block; }
+  .host-alert-error   { background: rgba(239,68,68,.1); color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
+  .host-alert-success { background: rgba(20,184,166,.1); color: var(--primary); border: 1px solid rgba(20,184,166,.3); }
+
+  /* Session picker */
+  .picker-card { max-width: 480px; margin: 3rem auto; }
+  .picker-session-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.7rem 0; border-bottom: 1px solid rgba(20,184,166,.08); cursor: pointer; }
+  .picker-session-row:last-child { border-bottom: none; }
+  .picker-session-row:hover .picker-code { color: var(--primary); }
+  .picker-code { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.12em; color: var(--text-primary); transition: color .15s; }
+  .picker-meta { font-size: 0.8rem; color: var(--text-secondary); }
+  .picker-arrow { font-size: 0.9rem; color: var(--text-secondary); }
+  .picker-empty { font-size: 0.88rem; color: var(--text-secondary); text-align: center; padding: 1.5rem 0; }
+
+  /* Screen toggle */
+  .host-screen { display: none; }
+  .host-screen.active { display: block; }
+
+  /* QR modal */
+  .qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }
+  .qr-modal.open { display: flex; }
+  .qr-box { background: var(--surface); border-radius: 16px; padding: 2rem; max-width: 320px; width: 90%; text-align: center; }
+  .qr-box h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
+  .qr-code-big { font-size: 2rem; font-weight: 700; letter-spacing: 0.25em; color: var(--primary); margin-bottom: 1rem; }
+
+  /* Question bank collapsible */
+  .bank-toggle-btn { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); cursor: pointer; margin-bottom: 0.9rem; }
+  .bank-toggle-btn .bank-chevron { transition: transform .2s; font-style: normal; }
+  .bank-toggle-btn.open .bank-chevron { transform: rotate(180deg); }
+  .bank-panel { display: none; margin-bottom: 1.1rem; padding-bottom: 1.1rem; border-bottom: 1px solid rgba(20,184,166,.15); }
+  .bank-panel.open { display: block; }
+
+  /* Correct answer radio buttons */
+  .opt-correct-radio { display: flex; align-items: center; cursor: pointer; }
+  .opt-correct-radio input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+
+  @media (max-width: 600px) {
+    .host-container { padding: 1.5rem 1rem 3rem; }
+    .host-bar-actions { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
+
+<div id="screen-app" class="bs-app">
+
+  <header class="bs-topbar">
+    <div class="bs-topbar-inner">
+      <a href="/backstage/classpulse/" class="bs-topbar-logo" aria-label="Voltar ao ClassPulse">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <div class="bs-topbar-wordmark">
+        <span class="bs-topbar-brand">ClassPulse</span>
+        <span class="bs-topbar-name">Host</span>
+      </div>
+      <div class="bs-topbar-spacer"></div>
+      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
+        <span id="themeIcon"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="host-container">
+
+    <div class="host-alert host-alert-error"   id="alert-error"></div>
+    <div class="host-alert host-alert-success" id="alert-success"></div>
+
+    <!-- ── SCREEN: session picker ────────────────────────── -->
+    <div class="host-screen active" id="screen-picker">
+      <div class="host-card picker-card">
+        <div class="host-card-title">Sessões abertas</div>
+        <div id="picker-list"><div class="picker-empty">Carregando...</div></div>
+        <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:1.25rem">
+          <a href="/backstage/classpulse/" style="color:var(--primary)">+ Criar nova sessão</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- ── SCREEN: active session ───────────────────────── -->
+    <div class="host-screen" id="screen-session">
+
+      <!-- Session bar -->
+      <div class="host-session-bar">
+        <div>
+          <div class="host-code" id="session-code-display"></div>
+          <div class="host-session-name" id="session-name-display"></div>
+        </div>
+        <div class="host-bar-actions">
+          <button class="host-btn host-btn-ghost" id="qr-btn">QR</button>
+          <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener">Display</a>
+          <button class="host-btn host-btn-ghost" id="reopen-session-btn" style="display:none">Reabrir sessão</button>
+          <button class="host-btn host-btn-danger" id="close-session-btn">Encerrar sessão</button>
+        </div>
+      </div>
+
+      <!-- Active question panel -->
+      <div class="active-q-panel" id="active-q-panel">
+        <div class="active-q-badge">Pergunta ativa</div>
+        <div class="active-q-text" id="aq-text"></div>
+        <div id="aq-bars"></div>
+        <div style="margin-top:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+          <span class="answer-tally" id="aq-tally"></span>
+          <div>
+            <div class="close-options">
+              <label><input type="checkbox" id="chk-show-results" checked> Mostrar resultados</label>
+              <label><input type="checkbox" id="chk-reveal-answer"> Revelar resposta correta</label>
+            </div>
+            <button class="host-btn host-btn-danger" id="close-question-btn">Encerrar pergunta</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Launch question form -->
+      <div class="host-card">
+        <div class="host-card-title">Lançar pergunta</div>
+
+        <!-- Banco de questões collapsible -->
+        <button class="bank-toggle-btn" id="bank-toggle-btn" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          Banco de questões
+          <i class="bank-chevron">▾</i>
+        </button>
+        <div class="bank-panel" id="bank-panel">
+          <div class="qb-set-row">
+            <label for="bank-set-select" style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em">Conjunto</label>
+            <select class="host-select" id="bank-set-select">
+              <option value="">Escolha um conjunto...</option>
+            </select>
+          </div>
+          <div class="qb-list" id="bank-q-list">
+            <div class="qb-msg">Selecione um conjunto acima.</div>
+          </div>
+          <div class="qb-ai-row">
+            <button class="host-btn host-btn-ghost" id="bank-generate-btn" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Gerar com IA
+            </button>
+            <button class="host-btn host-btn-ghost" id="bank-improve-btn" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+              Melhorar com IA
+            </button>
+          </div>
+          <p class="qb-error" id="bank-error"></p>
+        </div>
+
+        <div class="host-form-group">
+          <label class="host-label">Texto da pergunta</label>
+          <textarea class="host-input" id="q-text" placeholder="Escreva a pergunta para os alunos..." rows="2"></textarea>
+        </div>
+
+        <div id="q-opts">
+          <div class="opt-row">
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="0"></label>
+            <div class="opt-letter">A</div>
+            <input class="host-input opt-input" type="text" placeholder="Opção A">
+          </div>
+          <div class="opt-row">
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="1"></label>
+            <div class="opt-letter">B</div>
+            <input class="host-input opt-input" type="text" placeholder="Opção B">
+          </div>
+          <div class="opt-row">
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="2"></label>
+            <div class="opt-letter">C</div>
+            <input class="host-input opt-input" type="text" placeholder="Opção C">
+          </div>
+          <div class="opt-row">
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="3"></label>
+            <div class="opt-letter">D</div>
+            <input class="host-input opt-input" type="text" placeholder="Opção D">
+          </div>
+        </div>
+
+        <div class="host-btn-row" style="margin-top:1rem">
+          <button class="host-btn host-btn-primary" id="launch-btn">Lançar pergunta</button>
+          <button class="host-btn host-btn-ghost" id="clear-form-btn">Limpar</button>
+        </div>
+      </div>
+
+      <!-- Question history -->
+      <div class="host-card" id="history-card" style="display:none">
+        <div class="host-card-title">Histórico</div>
+        <div id="history-list"></div>
+      </div>
+
+    </div>
+
+    <!-- ── SCREEN: session closed ───────────────────────── -->
+    <div class="host-screen" id="screen-closed">
+      <div class="host-card" style="text-align:center;padding:2.5rem">
+        <div style="font-size:2rem;margin-bottom:1rem">✓</div>
+        <div style="font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Sessão encerrada</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem" id="closed-session-name"></div>
+        <a href="/backstage/classpulse/" class="host-btn host-btn-primary">Voltar ao ClassPulse</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- QR Modal -->
+<div class="qr-modal" id="qr-modal">
+  <div class="qr-box">
+    <h3>Alunos entram pelo código</h3>
+    <div class="qr-code-big" id="qr-code-text"></div>
+    <img id="qr-img" src="" alt="QR Code" style="max-width:200px">
+    <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem">pensoia.com/go</div>
+    <button class="host-btn host-btn-ghost host-btn-full" id="qr-close-btn" style="margin-top:1rem">Fechar</button>
+  </div>
+</div>
+
+<script src="../js/question-bank.js?v=1.0"></script>
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Backstage auth check
+// ---------------------------------------------------------------------------
+
+var PW_KEY   = 'bs_pw_hash';
+var AUTH_KEY = 'bs_auth';
+
+if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
+  location.replace('/backstage/');
+}
+
+// ---------------------------------------------------------------------------
+// Theme
+// ---------------------------------------------------------------------------
+
+var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+var themeIcon    = document.getElementById('themeIcon');
+var themeToggle  = document.getElementById('themeToggle');
+var themeOverlay = document.getElementById('themeTransition');
+
+function applyTheme(theme, animate, ox, oy) {
+  if (animate && themeOverlay) {
+    themeOverlay.style.setProperty('--tx', (ox || 0) + 'px');
+    themeOverlay.style.setProperty('--ty', (oy || 0) + 'px');
+    document.documentElement.setAttribute('data-theme', theme);
+    var bg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
+    themeOverlay.style.backgroundColor = bg;
+    themeOverlay.offsetHeight;
+    themeOverlay.classList.add('active');
+    setTimeout(function() {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+      themeToggle.setAttribute('aria-pressed', theme === 'dark');
+      localStorage.setItem('bs_theme', theme);
+      setTimeout(function() { themeOverlay.classList.remove('active'); }, 100);
+    }, 500);
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
+    themeToggle.setAttribute('aria-pressed', theme === 'dark');
+    localStorage.setItem('bs_theme', theme);
+  }
+}
+
+applyTheme(localStorage.getItem('bs_theme') || 'dark', false);
+
+themeToggle.addEventListener('click', function(e) {
+  var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  var rect = e.currentTarget.getBoundingClientRect();
+  applyTheme(cur === 'dark' ? 'light' : 'dark', true, rect.left + rect.width / 2, rect.top + rect.height / 2);
+});
+
+// ---------------------------------------------------------------------------
+// Config (hardcoded - never configure via settings)
+// ---------------------------------------------------------------------------
+
+var SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwdynfo6geXRNyrJtuAzXxCpOztsnvCGRz2FWkhLC05dsVAjOF2P1QV9bjLTZbVQbDlbg/exec';
+var SPREADSHEET_ID = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
+var AUTH_TOKEN     = localStorage.getItem('bs_pw_hash') || '';
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
+var sessionCode = null;
+var activeQId   = null;
+var pollTimer   = null;
+
+// ---------------------------------------------------------------------------
+// Screens
+// ---------------------------------------------------------------------------
+
+function showScreen(id) {
+  document.querySelectorAll('.host-screen').forEach(function(el) {
+    el.classList.toggle('active', el.id === id);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Alert helpers
+// ---------------------------------------------------------------------------
+
+function showAlert(type, msg) {
+  var el = document.getElementById('alert-' + type);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function clearAlert() {
+  ['error','success'].forEach(function(t) {
+    var el = document.getElementById('alert-' + t);
+    el.textContent = '';
+    el.classList.remove('show');
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Apps Script fetch
+// ---------------------------------------------------------------------------
+
+async function callScript(params) {
+  var payload = encodeURIComponent(JSON.stringify(params));
+  var resp = await fetch(SCRIPT_URL + '?payload=' + payload, { redirect: 'follow' });
+  if (!resp.ok) {
+    if (typeof bsLog !== 'undefined') bsLog('callScript HTTP ' + resp.status + ' | action: ' + (params.action || '?'), 'error');
+    throw new Error('HTTP ' + resp.status);
+  }
+  var data = await resp.json();
+  if (data.error) {
+    if (typeof bsLog !== 'undefined') bsLog('callScript error | action: ' + (params.action || '?') + ' | ' + data.error, 'error');
+    throw new Error(data.error);
+  }
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Session picker
+// ---------------------------------------------------------------------------
+
+var urlCode = new URLSearchParams(location.search).get('code');
+
+async function loadPicker() {
+  var listEl = document.getElementById('picker-list');
+  try {
+    var data = await callScript({ action: 'list_sessions' });
+    var open = (data.sessions || []).filter(function(s) { return s.status === 'open'; });
+
+    // Auto-select if code in URL
+    if (urlCode) {
+      var match = open.find(function(s) { return s.code === urlCode.toUpperCase(); });
+      if (match) { selectSession(match); return; }
+      // Code not found or closed - show picker with a note
+    }
+
+    if (!open.length) {
+      listEl.innerHTML = '<div class="picker-empty">Nenhuma sessão aberta.<br>Crie uma sessão no ClassPulse.</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    open.forEach(function(s) {
+      var row = document.createElement('div');
+      row.className = 'picker-session-row';
+      row.innerHTML =
+        '<div>' +
+          '<div class="picker-code">' + escHtml(s.code) + '</div>' +
+          '<div class="picker-meta">' + escHtml(s.title || '') + (s.created_at ? ' &middot; ' + new Date(s.created_at).toLocaleDateString('pt-BR') : '') + '</div>' +
+        '</div>' +
+        '<span class="picker-arrow">→</span>';
+      row.addEventListener('click', function() { selectSession(s); });
+      listEl.appendChild(row);
+    });
+  } catch (e) {
+    listEl.innerHTML = '<div class="picker-empty" style="color:#ef4444">Erro ao carregar sessões: ' + escHtml(e.message) + '</div>';
+  }
+}
+
+function selectSession(s) {
+  sessionCode = s.code;
+
+  document.getElementById('session-code-display').textContent = s.code;
+  document.getElementById('session-name-display').textContent = s.title || ('Sessão ' + s.code);
+  document.getElementById('display-link').href = '/go/display.html?code=' + encodeURIComponent(s.code);
+  document.getElementById('qr-code-text').textContent = s.code;
+  document.getElementById('qr-img').src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent('https://pensoia.com/go?code=' + s.code);
+
+  showScreen('screen-session');
+  clearAlert();
+  startPolling();
+}
+
+// Start the picker on load
+loadPicker();
+
+// ---------------------------------------------------------------------------
+// Session actions
+// ---------------------------------------------------------------------------
+
+document.getElementById('close-session-btn').addEventListener('click', async function() {
+  if (!confirm('Encerrar a sessão? Os alunos verão a mensagem de sessão encerrada.')) return;
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Encerrando sessão...';
+  try {
+    await callScript({ action: 'close_session', auth_token: AUTH_TOKEN, code: sessionCode });
+    stopPolling();
+    document.getElementById('closed-session-name').textContent = 'Sessão ' + sessionCode;
+    showScreen('screen-closed');
+  } catch (e) {
+    showAlert('error', 'Erro: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Encerrar sessão';
+  }
+});
+
+document.getElementById('reopen-session-btn').addEventListener('click', async function() {
+  try {
+    await callScript({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: sessionCode });
+    document.getElementById('reopen-session-btn').style.display = 'none';
+    document.getElementById('close-session-btn').style.display = '';
+    showAlert('success', 'Sessão reaberta.');
+  } catch (e) {
+    showAlert('error', 'Erro: ' + e.message);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Question form
+// ---------------------------------------------------------------------------
+
+document.getElementById('launch-btn').addEventListener('click', async function() {
+  var text    = document.getElementById('q-text').value.trim();
+  var options = Array.from(document.querySelectorAll('.opt-input')).map(function(i) { return i.value.trim(); }).filter(Boolean);
+  var caEl    = document.querySelector('input[name="correct-answer"]:checked');
+  var ca      = caEl ? parseInt(caEl.value) : null;
+
+  if (!text)              return showAlert('error', 'Escreva a pergunta.');
+  if (options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Lançando...';
+
+  try {
+    var res = await callScript({
+      action: 'launch_question', auth_token: AUTH_TOKEN,
+      session_code: sessionCode, text: text, options: options, correct_answer: ca
+    });
+    activeQId = res.id;
+    clearAlert();
+    clearForm();
+  } catch (e) {
+    showAlert('error', 'Erro: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Lançar pergunta';
+  }
+});
+
+document.getElementById('close-question-btn').addEventListener('click', async function() {
+  if (!activeQId) return;
+  var showResults  = document.getElementById('chk-show-results').checked;
+  var revealAnswer = document.getElementById('chk-reveal-answer').checked;
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Encerrando...';
+  try {
+    await callScript({
+      action: 'close_question', auth_token: AUTH_TOKEN,
+      question_id: activeQId, session_code: sessionCode,
+      show_results: showResults, reveal_answer: revealAnswer
+    });
+    activeQId = null;
+    document.getElementById('active-q-panel').style.display = 'none';
+    clearAlert();
+  } catch (e) {
+    showAlert('error', 'Erro: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Encerrar pergunta';
+  }
+});
+
+document.getElementById('clear-form-btn').addEventListener('click', clearForm);
+
+function clearForm() {
+  document.getElementById('q-text').value = '';
+  document.querySelectorAll('.opt-input').forEach(function(i) { i.value = ''; });
+  document.querySelectorAll('input[name="correct-answer"]').forEach(function(r) { r.checked = false; });
+}
+
+// ---------------------------------------------------------------------------
+// Polling
+// ---------------------------------------------------------------------------
+
+var POLL_INTERVAL = 4000;
+
+function startPolling() { fetchData(); pollTimer = setInterval(fetchData, POLL_INTERVAL); }
+function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
+
+async function fetchData() {
+  if (!sessionCode) return;
+
+  try {
+    var ts   = '&t=' + Date.now();
+    var qUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/gviz/tq?tqx=out:csv&sheet=Questions' + ts;
+    var aUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/gviz/tq?tqx=out:csv&sheet=Answers' + ts;
+
+    var results = await Promise.all([
+      fetch(qUrl).then(function(r) { return r.text(); }),
+      fetch(aUrl).then(function(r) { return r.text(); })
+    ]);
+
+    var questions = parseCSV(results[0]);
+    var answers   = parseCSV(results[1]);
+    var sessionQs = questions.filter(function(r) { return r[1] && r[1].trim().toUpperCase() === sessionCode; });
+    var activeQ   = sessionQs.find(function(r) { return r[5] && r[5].trim() === 'active'; });
+
+    if (activeQ) {
+      activeQId = activeQ[0].trim();
+      renderActiveQuestion(activeQ, answers);
+      renderHistory(sessionQs.filter(function(r) { return r[5] && r[5].trim() === 'closed'; }));
+    } else {
+      activeQId = null;
+      document.getElementById('active-q-panel').style.display = 'none';
+      renderHistory(sessionQs.filter(function(r) { return r[5] && r[5].trim() === 'closed'; }));
+    }
+  } catch (err) {
+    if (typeof bsLog !== 'undefined') bsLog('host poll: ' + err.message, 'error');
+  }
+}
+
+function renderActiveQuestion(qRow, answers) {
+  var qId     = qRow[0].trim();
+  var text    = qRow[2].trim();
+  var options = [];
+  try { options = JSON.parse(qRow[3]); } catch(e) {}
+  var correctAnswer = qRow[4] && qRow[4].trim() !== '' ? parseInt(qRow[4]) : null;
+  var letters = ['A','B','C','D'];
+
+  var counts = new Array(options.length).fill(0);
+  (answers || []).filter(function(r) { return r[1] && r[1].trim() === qId; }).forEach(function(r) {
+    var idx = parseInt(r[4]);
+    if (idx >= 0 && idx < options.length) counts[idx]++;
+  });
+  var total = counts.reduce(function(a,b) { return a+b; }, 0);
+
+  document.getElementById('aq-text').textContent = text;
+  document.getElementById('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
+
+  var barsHtml = '';
+  options.forEach(function(opt, i) {
+    var pct = total > 0 ? Math.round(counts[i] / total * 100) : 0;
+    var isCorrect = correctAnswer !== null && i === correctAnswer;
+    barsHtml +=
+      '<div class="result-bar ' + (isCorrect ? 'is-correct' : '') + '">' +
+        '<div class="rb-letter">' + (letters[i] || i) + '</div>' +
+        '<div><div class="rb-label"><span class="rb-opt">' + escHtml(opt) + '</span><span class="rb-pct">' + pct + '%</span></div>' +
+        '<div class="rb-track"><div class="rb-fill" style="width:' + pct + '%"></div></div></div>' +
+        '<div class="rb-count">' + counts[i] + '</div>' +
+      '</div>';
+  });
+  document.getElementById('aq-bars').innerHTML = barsHtml;
+  document.getElementById('active-q-panel').style.display = 'block';
+}
+
+function renderHistory(closedQs) {
+  if (!closedQs.length) {
+    document.getElementById('history-card').style.display = 'none';
+    return;
+  }
+  var html = closedQs.slice().reverse().map(function(r) {
+    var text = r[2] ? r[2].trim() : '';
+    var ts   = r[8] ? r[8].trim() : '';
+    return '<div class="history-item"><span class="hi-text">' + escHtml(text) + '</span><span class="hi-meta">' + escHtml(ts) + '</span></div>';
+  }).join('');
+  document.getElementById('history-list').innerHTML = html;
+  document.getElementById('history-card').style.display = 'block';
+}
+
+// ---------------------------------------------------------------------------
+// CSV helpers
+// ---------------------------------------------------------------------------
+
+function parseCSV(text) {
+  var trimmed = text.trim();
+  if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) return [];
+  return trimmed.split('\n').slice(1).map(parseCSVLine);
+}
+
+function parseCSVLine(line) {
+  var result = [], current = '', inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    if (line[i] === '"') {
+      if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (line[i] === ',' && !inQuotes) {
+      result.push(current); current = '';
+    } else { current += line[i]; }
+  }
+  result.push(current);
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// QR modal
+// ---------------------------------------------------------------------------
+
+document.getElementById('qr-btn').addEventListener('click', function() {
+  document.getElementById('qr-modal').classList.add('open');
+});
+
+document.getElementById('qr-close-btn').addEventListener('click', function() {
+  document.getElementById('qr-modal').classList.remove('open');
+});
+
+document.getElementById('qr-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+
+// ---------------------------------------------------------------------------
+// Question bank
+// ---------------------------------------------------------------------------
+
+// Toggle open/close
+document.getElementById('bank-toggle-btn').addEventListener('click', function() {
+  var panel = document.getElementById('bank-panel');
+  var isOpen = panel.classList.toggle('open');
+  this.classList.toggle('open', isOpen);
+  if (isOpen) QuestionBank.loadSets();
+});
+
+QuestionBank.init({
+  setSelect:    document.getElementById('bank-set-select'),
+  questionList: document.getElementById('bank-q-list'),
+  generateBtn:  document.getElementById('bank-generate-btn'),
+  improveBtn:   document.getElementById('bank-improve-btn'),
+  errorEl:      document.getElementById('bank-error'),
+  canDelete:    false,
+  canCreateSet: false,
+  onSelect: function(q) { prefillForm(q); },
+  getFormState: function() {
+    return {
+      text: document.getElementById('q-text').value.trim(),
+      options: Array.from(document.querySelectorAll('.opt-input')).map(function(i) { return i.value.trim(); })
+    };
+  }
+});
+
+function prefillForm(q) {
+  document.getElementById('q-text').value = q.question || '';
+  var optInputs = document.querySelectorAll('.opt-input');
+  if (optInputs[0]) optInputs[0].value = q.option_a || '';
+  if (optInputs[1]) optInputs[1].value = q.option_b || '';
+  if (optInputs[2]) optInputs[2].value = q.option_c || '';
+  if (optInputs[3]) optInputs[3].value = q.option_d || '';
+  document.querySelectorAll('input[name="correct-answer"]').forEach(function(r) { r.checked = false; });
+  var letterMap = { a: 0, b: 1, c: 2, d: 3 };
+  if (q.correct) {
+    var idx = letterMap[q.correct.toLowerCase()];
+    if (idx !== undefined) {
+      var radio = document.querySelector('input[name="correct-answer"][value="' + idx + '"]');
+      if (radio) radio.checked = true;
+    }
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
