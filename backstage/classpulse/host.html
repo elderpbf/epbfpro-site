@@ -560,7 +560,7 @@ document.getElementById('close-question-btn').addEventListener('click', async fu
   try {
     await callScript({
       action: 'close_question', auth_token: AUTH_TOKEN,
-      question_id: activeQId, session_code: sessionCode,
+      id: activeQId, session_code: sessionCode,
       show_results: showResults, reveal_answer: revealAnswer
     });
     activeQId = null;
