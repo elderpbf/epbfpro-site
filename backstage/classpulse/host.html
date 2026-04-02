@@ -90,8 +90,15 @@
   .host-alert-error   { background: rgba(239,68,68,.1); color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
   .host-alert-success { background: rgba(20,184,166,.1); color: var(--primary); border: 1px solid rgba(20,184,166,.3); }
 
-  /* Password gate */
-  .pw-gate { max-width: 380px; margin: 3rem auto; }
+  /* Session picker */
+  .picker-card { max-width: 480px; margin: 3rem auto; }
+  .picker-session-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.7rem 0; border-bottom: 1px solid rgba(20,184,166,.08); cursor: pointer; }
+  .picker-session-row:last-child { border-bottom: none; }
+  .picker-session-row:hover .picker-code { color: var(--primary); }
+  .picker-code { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.12em; color: var(--text-primary); transition: color .15s; }
+  .picker-meta { font-size: 0.8rem; color: var(--text-secondary); }
+  .picker-arrow { font-size: 0.9rem; color: var(--text-secondary); }
+  .picker-empty { font-size: 0.88rem; color: var(--text-secondary); text-align: center; padding: 1.5rem 0; }
 
   /* Screen toggle */
   .host-screen { display: none; }
@@ -139,20 +146,14 @@
     <div class="host-alert host-alert-error"   id="alert-error"></div>
     <div class="host-alert host-alert-success" id="alert-success"></div>
 
-    <!-- ── SCREEN: password gate ────────────────────────── -->
-    <div class="host-screen active" id="screen-pw">
-      <div class="host-card pw-gate">
-        <div class="host-card-title">Autenticacao da sessao</div>
-        <div class="host-form-group">
-          <label class="host-label">Codigo da sessao</label>
-          <input class="host-input" type="text" id="pw-code-input" placeholder="XXXX" style="text-transform:uppercase;letter-spacing:0.15em;font-weight:700" autocomplete="off">
-        </div>
-        <div class="host-form-group">
-          <label class="host-label">Senha da sessao</label>
-          <input class="host-input" type="password" id="pw-input" placeholder="Senha definida ao criar a sessao" autocomplete="off">
-        </div>
-        <p id="pw-error" style="color:#ef4444;font-size:0.82rem;min-height:1rem;margin-bottom:0.75rem"></p>
-        <button class="host-btn host-btn-primary host-btn-full" id="pw-btn">Entrar na sessao</button>
+    <!-- ── SCREEN: session picker ────────────────────────── -->
+    <div class="host-screen active" id="screen-picker">
+      <div class="host-card picker-card">
+        <div class="host-card-title">Sessões abertas</div>
+        <div id="picker-list"><div class="picker-empty">Carregando...</div></div>
+        <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:1.25rem">
+          <a href="/backstage/classpulse/" style="color:var(--primary)">+ Criar nova sessão</a>
+        </p>
       </div>
     </div>
 
@@ -168,7 +169,8 @@
         <div class="host-bar-actions">
           <button class="host-btn host-btn-ghost" id="qr-btn">QR</button>
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener">Display</a>
-          <button class="host-btn host-btn-danger" id="close-session-btn">Encerrar sessao</button>
+          <button class="host-btn host-btn-ghost" id="reopen-session-btn" style="display:none">Reabrir sessão</button>
+          <button class="host-btn host-btn-danger" id="close-session-btn">Encerrar sessão</button>
         </div>
       </div>
 
@@ -191,7 +193,7 @@
 
       <!-- Launch question form -->
       <div class="host-card">
-        <div class="host-card-title">Lancar pergunta</div>
+        <div class="host-card-title">Lançar pergunta</div>
 
         <div class="host-form-group">
           <label class="host-label">Texto da pergunta</label>
@@ -199,10 +201,10 @@
         </div>
 
         <div id="q-opts">
-          <div class="opt-row"><div class="opt-letter">A</div><input class="host-input opt-input" type="text" placeholder="Opcao A"></div>
-          <div class="opt-row"><div class="opt-letter">B</div><input class="host-input opt-input" type="text" placeholder="Opcao B"></div>
-          <div class="opt-row"><div class="opt-letter">C</div><input class="host-input opt-input" type="text" placeholder="Opcao C"></div>
-          <div class="opt-row"><div class="opt-letter">D</div><input class="host-input opt-input" type="text" placeholder="Opcao D"></div>
+          <div class="opt-row"><div class="opt-letter">A</div><input class="host-input opt-input" type="text" placeholder="Opção A"></div>
+          <div class="opt-row"><div class="opt-letter">B</div><input class="host-input opt-input" type="text" placeholder="Opção B"></div>
+          <div class="opt-row"><div class="opt-letter">C</div><input class="host-input opt-input" type="text" placeholder="Opção C"></div>
+          <div class="opt-row"><div class="opt-letter">D</div><input class="host-input opt-input" type="text" placeholder="Opção D"></div>
         </div>
 
         <div class="host-form-group" style="margin-top:0.75rem">
@@ -217,14 +219,14 @@
         </div>
 
         <div class="host-btn-row" style="margin-top:1rem">
-          <button class="host-btn host-btn-primary" id="launch-btn">Lancar pergunta</button>
+          <button class="host-btn host-btn-primary" id="launch-btn">Lançar pergunta</button>
           <button class="host-btn host-btn-ghost" id="clear-form-btn">Limpar</button>
         </div>
       </div>
 
       <!-- Question history -->
       <div class="host-card" id="history-card" style="display:none">
-        <div class="host-card-title">Historico</div>
+        <div class="host-card-title">Histórico</div>
         <div id="history-list"></div>
       </div>
 
@@ -234,7 +236,7 @@
     <div class="host-screen" id="screen-closed">
       <div class="host-card" style="text-align:center;padding:2.5rem">
         <div style="font-size:2rem;margin-bottom:1rem">✓</div>
-        <div style="font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Sessao encerrada</div>
+        <div style="font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Sessão encerrada</div>
         <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem" id="closed-session-name"></div>
         <a href="/backstage/classpulse/" class="host-btn host-btn-primary">Voltar ao ClassPulse</a>
       </div>
@@ -246,7 +248,7 @@
 <!-- QR Modal -->
 <div class="qr-modal" id="qr-modal">
   <div class="qr-box">
-    <h3>Alunos entram pelo codigo</h3>
+    <h3>Alunos entram pelo código</h3>
     <div class="qr-code-big" id="qr-code-text"></div>
     <img id="qr-img" src="" alt="QR Code" style="max-width:200px">
     <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem">pensoia.com/go</div>
@@ -263,8 +265,6 @@
 
 var PW_KEY   = 'bs_pw_hash';
 var AUTH_KEY = 'bs_auth';
-
-document.querySelectorAll('input[type="password"]').forEach(function(el) { el.value = ''; });
 
 if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
   location.replace('/backstage/');
@@ -315,20 +315,20 @@ themeToggle.addEventListener('click', function(e) {
 });
 
 // ---------------------------------------------------------------------------
-// Config
+// Config (hardcoded - never configure via settings)
 // ---------------------------------------------------------------------------
 
-function getScriptUrl() { return localStorage.getItem('bs_cp_script_url') || ''; }
-function getSpreadsheetId() { return localStorage.getItem('bs_cp_spreadsheet_id') || ''; }
+var SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwdynfo6geXRNyrJtuAzXxCpOztsnvCGRz2FWkhLC05dsVAjOF2P1QV9bjLTZbVQbDlbg/exec';
+var SPREADSHEET_ID = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
+var AUTH_TOKEN     = localStorage.getItem('bs_pw_hash') || '';
 
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
 
 var sessionCode = null;
-var sessionPassword = null;
-var activeQId  = null;
-var pollTimer  = null;
+var activeQId   = null;
+var pollTimer   = null;
 
 // ---------------------------------------------------------------------------
 // Screens
@@ -359,83 +359,106 @@ function clearAlert() {
 }
 
 // ---------------------------------------------------------------------------
-// Password gate
+// Apps Script fetch
 // ---------------------------------------------------------------------------
 
-// Pre-fill session code from URL param
-var urlCode = new URLSearchParams(location.search).get('code');
-if (urlCode) {
-  document.getElementById('pw-code-input').value = urlCode.toUpperCase();
-  document.getElementById('pw-input').focus();
+async function callScript(params) {
+  var payload = encodeURIComponent(JSON.stringify(params));
+  var resp = await fetch(SCRIPT_URL + '?payload=' + payload, { redirect: 'follow' });
+  if (!resp.ok) {
+    if (typeof bsLog !== 'undefined') bsLog('callScript HTTP ' + resp.status + ' | action: ' + (params.action || '?'), 'error');
+    throw new Error('HTTP ' + resp.status);
+  }
+  var data = await resp.json();
+  if (data.error) {
+    if (typeof bsLog !== 'undefined') bsLog('callScript error | action: ' + (params.action || '?') + ' | ' + data.error, 'error');
+    throw new Error(data.error);
+  }
+  return data;
 }
 
-document.getElementById('pw-btn').addEventListener('click', enterSession);
-document.getElementById('pw-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') enterSession();
-});
+// ---------------------------------------------------------------------------
+// Session picker
+// ---------------------------------------------------------------------------
 
-async function enterSession() {
-  var code = document.getElementById('pw-code-input').value.trim().toUpperCase();
-  var pw   = document.getElementById('pw-input').value;
-  var err  = document.getElementById('pw-error');
-  err.textContent = '';
+var urlCode = new URLSearchParams(location.search).get('code');
 
-  if (!code) { err.textContent = 'Informe o codigo da sessao.'; return; }
-  if (!pw)   { err.textContent = 'Informe a senha da sessao.'; return; }
-
-  var scriptUrl = getScriptUrl();
-  if (!scriptUrl) {
-    err.textContent = 'URL do Apps Script nao configurada. Configure em Backstage > Configuracoes.';
-    return;
-  }
-
-  // Validate: try a no-op read to verify the session exists
-  var btn = document.getElementById('pw-btn');
-  btn.disabled = true;
-  btn.textContent = 'Verificando...';
-
+async function loadPicker() {
+  var listEl = document.getElementById('picker-list');
   try {
-    // Attempt to launch then immediately not - just fetch the spreadsheet CSV to see if session exists
-    // Simpler: just accept the code and password optimistically; write ops will fail if wrong
-    sessionCode = code;
-    sessionPassword = pw;
+    var data = await callScript({ action: 'list_sessions' });
+    var open = (data.sessions || []).filter(function(s) { return s.status === 'open'; });
 
-    document.getElementById('session-code-display').textContent = code;
-    document.getElementById('session-name-display').textContent = 'Sessao ' + code;
-
-    var ssId = getSpreadsheetId();
-    document.getElementById('display-link').href = '/go/display.html?code=' + encodeURIComponent(code);
-    document.getElementById('qr-code-text').textContent = code;
-    if (ssId) {
-      document.getElementById('qr-img').src =
-        'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent('https://pensoia.com/go?code=' + code);
+    // Auto-select if code in URL
+    if (urlCode) {
+      var match = open.find(function(s) { return s.code === urlCode.toUpperCase(); });
+      if (match) { selectSession(match); return; }
+      // Code not found or closed - show picker with a note
     }
 
-    showScreen('screen-session');
-    clearAlert();
-    startPolling();
+    if (!open.length) {
+      listEl.innerHTML = '<div class="picker-empty">Nenhuma sessão aberta.<br>Crie uma sessão no ClassPulse.</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    open.forEach(function(s) {
+      var row = document.createElement('div');
+      row.className = 'picker-session-row';
+      row.innerHTML =
+        '<div>' +
+          '<div class="picker-code">' + escHtml(s.code) + '</div>' +
+          '<div class="picker-meta">' + escHtml(s.title || '') + (s.created_at ? ' &middot; ' + new Date(s.created_at).toLocaleDateString('pt-BR') : '') + '</div>' +
+        '</div>' +
+        '<span class="picker-arrow">→</span>';
+      row.addEventListener('click', function() { selectSession(s); });
+      listEl.appendChild(row);
+    });
   } catch (e) {
-    err.textContent = 'Erro: ' + e.message;
-    sessionCode = null;
-    sessionPassword = null;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Entrar na sessao';
+    listEl.innerHTML = '<div class="picker-empty" style="color:#ef4444">Erro ao carregar sessões: ' + escHtml(e.message) + '</div>';
   }
 }
+
+function selectSession(s) {
+  sessionCode = s.code;
+
+  document.getElementById('session-code-display').textContent = s.code;
+  document.getElementById('session-name-display').textContent = s.title || ('Sessão ' + s.code);
+  document.getElementById('display-link').href = '/go/display.html?code=' + encodeURIComponent(s.code);
+  document.getElementById('qr-code-text').textContent = s.code;
+  document.getElementById('qr-img').src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent('https://pensoia.com/go?code=' + s.code);
+
+  showScreen('screen-session');
+  clearAlert();
+  startPolling();
+}
+
+// Start the picker on load
+loadPicker();
 
 // ---------------------------------------------------------------------------
 // Session actions
 // ---------------------------------------------------------------------------
 
 document.getElementById('close-session-btn').addEventListener('click', async function() {
-  if (!confirm('Encerrar a sessao? Os alunos verao a mensagem de sessao encerrada.')) return;
+  if (!confirm('Encerrar a sessão? Os alunos verão a mensagem de sessão encerrada.')) return;
   try {
-    var res = await postScript('close_session', { code: sessionCode, password: sessionPassword });
-    if (res.error) return showAlert('error', res.error);
+    await callScript({ action: 'close_session', auth_token: AUTH_TOKEN, code: sessionCode });
     stopPolling();
-    document.getElementById('closed-session-name').textContent = 'Sessao ' + sessionCode;
+    document.getElementById('closed-session-name').textContent = 'Sessão ' + sessionCode;
     showScreen('screen-closed');
+  } catch (e) {
+    showAlert('error', 'Erro: ' + e.message);
+  }
+});
+
+document.getElementById('reopen-session-btn').addEventListener('click', async function() {
+  try {
+    await callScript({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: sessionCode });
+    document.getElementById('reopen-session-btn').style.display = 'none';
+    document.getElementById('close-session-btn').style.display = '';
+    showAlert('success', 'Sessão reaberta.');
   } catch (e) {
     showAlert('error', 'Erro: ' + e.message);
   }
@@ -451,19 +474,18 @@ document.getElementById('launch-btn').addEventListener('click', async function()
   var caVal   = document.getElementById('correct-answer-select').value;
   var ca      = caVal !== '' ? parseInt(caVal) : null;
 
-  if (!text)             return showAlert('error', 'Escreva a pergunta.');
-  if (options.length < 2) return showAlert('error', 'Informe pelo menos 2 opcoes.');
+  if (!text)              return showAlert('error', 'Escreva a pergunta.');
+  if (options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
 
   var btn = this;
   btn.disabled = true;
-  btn.textContent = 'Lancando...';
+  btn.textContent = 'Lançando...';
 
   try {
-    var res = await postScript('launch_question', {
-      session_code: sessionCode, password: sessionPassword,
-      text: text, options: options, correct_answer: ca
+    var res = await callScript({
+      action: 'launch_question', auth_token: AUTH_TOKEN,
+      session_code: sessionCode, text: text, options: options, correct_answer: ca
     });
-    if (res.error) return showAlert('error', res.error);
     activeQId = res.id;
     clearAlert();
     clearForm();
@@ -471,7 +493,7 @@ document.getElementById('launch-btn').addEventListener('click', async function()
     showAlert('error', 'Erro: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Lancar pergunta';
+    btn.textContent = 'Lançar pergunta';
   }
 });
 
@@ -480,11 +502,11 @@ document.getElementById('close-question-btn').addEventListener('click', async fu
   var showResults  = document.getElementById('chk-show-results').checked;
   var revealAnswer = document.getElementById('chk-reveal-answer').checked;
   try {
-    var res = await postScript('close_question', {
-      question_id: activeQId, session_code: sessionCode, password: sessionPassword,
+    await callScript({
+      action: 'close_question', auth_token: AUTH_TOKEN,
+      question_id: activeQId, session_code: sessionCode,
       show_results: showResults, reveal_answer: revealAnswer
     });
-    if (res.error) return showAlert('error', res.error);
     activeQId = null;
     document.getElementById('active-q-panel').style.display = 'none';
     clearAlert();
@@ -512,13 +534,11 @@ function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
 
 async function fetchData() {
   if (!sessionCode) return;
-  var ssId = getSpreadsheetId();
-  if (!ssId) return;
 
   try {
-    var ts = '&t=' + Date.now();
-    var qUrl = 'https://docs.google.com/spreadsheets/d/' + ssId + '/gviz/tq?tqx=out:csv&sheet=Questions' + ts;
-    var aUrl = 'https://docs.google.com/spreadsheets/d/' + ssId + '/gviz/tq?tqx=out:csv&sheet=Answers' + ts;
+    var ts   = '&t=' + Date.now();
+    var qUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/gviz/tq?tqx=out:csv&sheet=Questions' + ts;
+    var aUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/gviz/tq?tqx=out:csv&sheet=Answers' + ts;
 
     var results = await Promise.all([
       fetch(qUrl).then(function(r) { return r.text(); }),
@@ -540,7 +560,7 @@ async function fetchData() {
       renderHistory(sessionQs.filter(function(r) { return r[5] && r[5].trim() === 'closed'; }));
     }
   } catch (err) {
-    console.error('host poll:', err.message);
+    if (typeof bsLog !== 'undefined') bsLog('host poll: ' + err.message, 'error');
   }
 }
 
@@ -614,20 +634,6 @@ function parseCSVLine(line) {
   }
   result.push(current);
   return result;
-}
-
-// ---------------------------------------------------------------------------
-// Apps Script fetch
-// ---------------------------------------------------------------------------
-
-async function postScript(action, data) {
-  var url = getScriptUrl();
-  if (!url) throw new Error('URL do Apps Script nao configurada.');
-  var payload = encodeURIComponent(JSON.stringify(Object.assign({ action: action }, data)));
-  var resp = await fetch(url + '?payload=' + payload, { redirect: 'follow' });
-  var txt = await resp.text();
-  if (txt.startsWith('<')) return { error: 'server returned HTML - check deployment permissions' };
-  return JSON.parse(txt);
 }
 
 // ---------------------------------------------------------------------------

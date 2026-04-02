@@ -12,7 +12,7 @@
 
 <link rel="stylesheet" href="../css/theme.css?v=1.1">
 <link rel="stylesheet" href="../css/backstage.css?v=1.1">
-<link rel="stylesheet" href="../css/classpulse.css?v=1.1">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.2">
 <script src="../js/debug.js?v=1.1"></script>
 </head>
 <body>
@@ -58,10 +58,6 @@
           <div class="bs-field">
             <label>Título da sessão</label>
             <input type="text" id="session-title" placeholder="Ex: Aula 3 — Redes Neurais" autocomplete="off">
-          </div>
-          <div class="bs-field" style="max-width:160px">
-            <label>Senha da sessão</label>
-            <input type="password" id="session-password" placeholder="••••••" autocomplete="off">
           </div>
           <button class="cp-btn-primary" id="create-session-btn">Criar sessão</button>
         </div>
@@ -334,6 +330,33 @@ function renderSessions() {
       hostBtn.href = 'host.html?code=' + encodeURIComponent(s.code);
       hostBtn.textContent = 'Host';
       actions.appendChild(hostBtn);
+
+      var closeBtn = document.createElement('button');
+      closeBtn.className = 'cp-btn-danger';
+      closeBtn.textContent = 'Encerrar';
+      closeBtn.style.cssText = 'font-size:0.78rem;padding:0.4rem 0.8rem';
+      closeBtn.addEventListener('click', async function() {
+        if (!confirm('Encerrar sessão ' + s.code + '?')) return;
+        try {
+          await callScript({ action: 'close_session', auth_token: AUTH_TOKEN, code: s.code });
+          s.status = 'closed';
+          renderSessions();
+        } catch (e) { alert('Erro: ' + e.message); }
+      });
+      actions.appendChild(closeBtn);
+    } else {
+      var reopenBtn = document.createElement('button');
+      reopenBtn.className = 'cp-btn-ghost';
+      reopenBtn.textContent = 'Reabrir';
+      reopenBtn.style.cssText = 'font-size:0.78rem;padding:0.4rem 0.8rem';
+      reopenBtn.addEventListener('click', async function() {
+        try {
+          await callScript({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: s.code });
+          s.status = 'open';
+          renderSessions();
+        } catch (e) { alert('Erro: ' + e.message); }
+      });
+      actions.appendChild(reopenBtn);
     }
 
     card.appendChild(codeEl);
@@ -346,21 +369,18 @@ function renderSessions() {
 
 document.getElementById('create-session-btn').addEventListener('click', async function() {
   var title = document.getElementById('session-title').value.trim();
-  var password = document.getElementById('session-password').value;
   var err = document.getElementById('session-error');
   err.textContent = '';
 
   if (!title) { err.textContent = 'Informe o título da sessão.'; return; }
-  if (!password || password.length < 4) { err.textContent = 'Senha deve ter pelo menos 4 caracteres.'; return; }
 
   var btn = this;
   btn.disabled = true;
   btn.textContent = 'Criando...';
 
   try {
-    var data = await callScript({ action: 'create_session', title: title, password: password });
+    var data = await callScript({ action: 'create_session', auth_token: AUTH_TOKEN, title: title });
     document.getElementById('session-title').value = '';
-    document.getElementById('session-password').value = '';
     // Prepend new session
     sessions.unshift({ code: data.code, title: title, status: 'open', created_at: new Date().toISOString() });
     renderSessions();
