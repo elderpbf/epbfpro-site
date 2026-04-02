@@ -33,6 +33,10 @@
       --success: #6dbf8a;
       --success-bg: #1a3a25;
       --error-bg: #3a1a1a;
+      --status-live-bg: #1a3a1a;
+      --status-live-text: #a3d9a5;
+      --status-closed-bg: #2a2a2a;
+      --status-closed-text: #aaa;
     }
     [data-theme="light"] {
       --bg: #f5f3f0;
@@ -46,6 +50,10 @@
       --success: #4a7c59;
       --success-bg: #e8f5ee;
       --error-bg: #fce8e8;
+      --status-live-bg: #d4edda;
+      --status-live-text: #155724;
+      --status-closed-bg: #e2e3e5;
+      --status-closed-text: #383d41;
     }
 
     /* Theme toggle inside top-bar */
@@ -64,7 +72,7 @@
     .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .top-bar .logo { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
     .top-bar .session-title { font-size: 0.95rem; font-weight: 600; color: var(--text); }
-    .top-bar .session-code { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
+    .top-bar .session-code { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.14em; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
 
     /* Main content */
     .main { flex: 1; padding: 32px 40px 24px; overflow-y: auto; max-width: 1000px; width: 100%; margin: 0 auto; }
@@ -72,7 +80,7 @@
     /* Center states */
     .center-state { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; min-height: 300px; }
     .center-state .state-icon { font-size: 3rem; }
-    .center-state .state-text { font-size: 1.4rem; color: var(--text-muted); font-weight: 500; }
+    .center-state .state-text { font-size: 2rem; color: var(--text-muted); font-weight: 500; }
     .center-state .state-code { font-size: 3rem; font-weight: 700; letter-spacing: 0.3em; color: var(--accent); margin-top: 8px; }
     .center-state .state-sub  { font-size: 0.9rem; color: var(--text-dim); }
 
@@ -80,8 +88,8 @@
     .question-area { margin-bottom: 32px; }
     .question-status { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
     .status-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; }
-    .status-badge.live   { background: #1a3a1a; color: var(--success); }
-    .status-badge.closed { background: #2a2a2a; color: var(--text-muted); }
+    .status-badge.live   { background: var(--status-live-bg); color: var(--status-live-text); }
+    .status-badge.closed { background: var(--status-closed-bg); color: var(--status-closed-text); }
     .answer-count { font-size: 0.82rem; color: var(--text-dim); }
 
     .question-text-display { font-size: 1.9rem; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 32px; }
@@ -91,17 +99,43 @@
     .bar-letter { font-size: 0.85rem; font-weight: 700; color: var(--accent-dark); background: var(--card-bg); border: 1px solid var(--border); padding: 8px 0; border-radius: 8px; text-align: center; }
     .bar-right { }
     .bar-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-    .bar-opt-text { font-size: 1rem; color: var(--text); font-weight: 400; }
-    .bar-pct { font-size: 0.9rem; font-weight: 700; color: var(--text-muted); }
+    .bar-opt-text { font-size: 1.3rem; color: var(--text); font-weight: 400; }
+    .bar-pct { font-size: 1.1rem; font-weight: 700; color: var(--text-muted); }
     .bar-track { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
     .bar-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.8s ease; }
     .bar-fill.correct { background: var(--success); }
-    .bar-count { font-size: 0.88rem; font-weight: 600; color: var(--text-muted); text-align: right; }
+    .bar-count { font-size: 1.1rem; font-weight: 600; color: var(--text-muted); text-align: right; }
 
     /* Correct answer highlight */
     .option-bar.is-correct .bar-letter   { background: var(--success-bg); border-color: var(--success); color: var(--success); }
     .option-bar.is-correct .bar-opt-text { font-weight: 600; color: var(--success); }
     .option-bar.is-correct .bar-pct      { color: var(--success); }
+
+    /* Idle screen */
+    .idle-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 3rem;
+      min-height: 60vh;
+    }
+    .idle-code {
+      font-size: 4rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+    }
+    .idle-qr {
+      width: 280px;
+      height: 280px;
+      border-radius: 12px;
+    }
+    .idle-url {
+      font-size: 1.5rem;
+      color: var(--text-muted);
+    }
 
     /* No code screen */
     #no-code-screen { display: none; padding: 60px 0; text-align: center; color: var(--text-muted); }
@@ -132,6 +166,12 @@
       <span class="state-icon">⏳</span>
       <span class="state-text">Carregando…</span>
     </div>
+  </div>
+
+  <div id="idle-screen" class="idle-screen main" style="display:none">
+    <div class="idle-code" id="idle-code-display"></div>
+    <img class="idle-qr" id="idle-qr" src="" alt="QR Code">
+    <div class="idle-url">pensoia.com/go</div>
   </div>
 
   <div id="no-code-screen">
@@ -231,6 +271,10 @@
   } else {
     document.getElementById('display-code').textContent = sessionCode;
     document.getElementById('bottom-code').textContent  = sessionCode;
+    document.getElementById('idle-code-display').textContent = sessionCode;
+    document.getElementById('idle-qr').src =
+      'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' +
+      encodeURIComponent('https://pensoia.com/go?code=' + sessionCode);
     init();
   }
 
@@ -319,13 +363,19 @@
   }
 
   // ── RENDER ────────────────────────────────────────────────────────────────
+  function showIdle(visible) {
+    document.getElementById('main-content').style.display = visible ? 'none' : '';
+    document.getElementById('idle-screen').style.display  = visible ? 'flex' : 'none';
+  }
+
   function render(qRow, answers, sessionClosed) {
     if (sessionClosed)       dbg('info', 'render: session closed');
-    else if (!qRow)          dbg('info', 'render: waiting');
+    else if (!qRow)          dbg('info', 'render: waiting (idle)');
     else                     dbg('info', `render: Q status=${qRow[5].trim()} reveal=${qRow[7].trim()}`);
     const main = document.getElementById('main-content');
 
     if (sessionClosed) {
+      showIdle(false);
       main.innerHTML = `
         <div class="center-state">
           <span class="state-icon">✓</span>
@@ -336,14 +386,11 @@
     }
 
     if (!qRow) {
-      main.innerHTML = `
-        <div class="center-state">
-          <span class="state-icon">💬</span>
-          <span class="state-text">${t.waiting}</span>
-          <span class="state-code">${sessionCode}</span>
-        </div>`;
+      showIdle(true);
       return;
     }
+
+    showIdle(false);
 
     const qId    = qRow[0].trim();
     const text   = qRow[2].trim();

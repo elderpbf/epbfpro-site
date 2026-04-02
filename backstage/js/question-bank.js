@@ -1,0 +1,211 @@
+/* =========================================================
+   Question Bank — shared module
+   Used by classpulse/host.html and classpulse/index.html.
+
+   Depends on globals defined by each host page:
+     callScript(params)  — Apps Script fetch helper
+     AUTH_TOKEN          — auth string from localStorage
+
+   Usage:
+     QuestionBank.init({ setSelect, questionList, generateBtn,
+       improveBtn, errorEl, onSelect, getFormState,
+       canDelete, canCreateSet });
+   ========================================================= */
+
+var QuestionBank = (function () {
+  'use strict';
+
+  var opts = null;
+
+  // -------------------------------------------------------
+  // Public API
+  // -------------------------------------------------------
+
+  function init(options) {
+    opts = options;
+    bindEvents();
+  }
+
+  function loadSets() {
+    var sel = opts.setSelect;
+    sel.innerHTML = '<option value="">Carregando...</option>';
+
+    callScript({ action: 'list_question_sets' })
+      .then(function (data) {
+        var sets = data.sets || [];
+        sel.innerHTML = '<option value="">Escolha um conjunto...</option>';
+        sets.forEach(function (s) {
+          var opt = document.createElement('option');
+          opt.value = s.name;
+          opt.textContent = s.name + (s.count ? ' (' + s.count + ')' : '');
+          sel.appendChild(opt);
+        });
+        if (opts.canCreateSet) {
+          var newOpt = document.createElement('option');
+          newOpt.value = '__new__';
+          newOpt.textContent = 'Novo conjunto...';
+          sel.appendChild(newOpt);
+        }
+      })
+      .catch(function () {
+        sel.innerHTML = '<option value="">Erro ao carregar</option>';
+      });
+  }
+
+  function loadQuestions(name) {
+    var listEl = opts.questionList;
+    if (!name || name === '__new__') {
+      listEl.innerHTML = '<div class="qb-msg">Selecione um conjunto acima.</div>';
+      return;
+    }
+
+    listEl.innerHTML = '<div class="qb-msg">Carregando...</div>';
+
+    callScript({ action: 'get_questions', list: name })
+      .then(function (data) {
+        var qs = data.questions || [];
+        listEl.innerHTML = '';
+
+        if (!qs.length) {
+          listEl.innerHTML = '<div class="qb-msg">Nenhuma questão neste conjunto.</div>';
+          return;
+        }
+
+        qs.forEach(function (q) {
+          var item = document.createElement('div');
+          item.className = 'qb-item';
+
+          var textSpan = document.createElement('span');
+          var full = q.question || '';
+          textSpan.textContent = full.length > 80 ? full.slice(0, 80) + '…' : full;
+          textSpan.title = full;
+          item.appendChild(textSpan);
+
+          item.addEventListener('click', function (e) {
+            if (e.target.tagName === 'BUTTON') return;
+            opts.onSelect(q);
+          });
+
+          if (opts.canDelete) {
+            var delBtn = document.createElement('button');
+            delBtn.className = 'qb-del-btn';
+            delBtn.textContent = '×';
+            delBtn.title = 'Excluir questão';
+            delBtn.addEventListener('click', function (e) {
+              e.stopPropagation();
+              deleteQuestion(name, q.question);
+            });
+            item.appendChild(delBtn);
+          }
+
+          listEl.appendChild(item);
+        });
+      })
+      .catch(function (e) {
+        listEl.innerHTML = '<div class="qb-msg" style="color:#ef4444">Erro: ' + escHtml(e.message) + '</div>';
+      });
+  }
+
+  function generate() {
+    var state = opts.getFormState();
+    var topic = state.text;
+    var errEl = opts.errorEl;
+    errEl.textContent = '';
+
+    if (!topic) {
+      errEl.textContent = 'Escreva uma instrução ou tópico no campo de texto antes de gerar.';
+      return;
+    }
+
+    var btn = opts.generateBtn;
+    var origHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+
+    callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'generate', topic: topic })
+      .then(function (result) {
+        opts.onSelect(result);
+      })
+      .catch(function (e) {
+        errEl.textContent = 'Erro: ' + e.message;
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      });
+  }
+
+  function improve() {
+    var state = opts.getFormState();
+    var errEl = opts.errorEl;
+    errEl.textContent = '';
+
+    var options = state.options || [];
+    if (!state.text || options.length < 4 || options.some(function (o) { return !o; })) {
+      errEl.textContent = 'Preencha a pergunta e todas as 4 opções antes de melhorar.';
+      return;
+    }
+
+    var btn = opts.improveBtn;
+    var origHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = 'Melhorando...';
+
+    callScript({
+      action: 'ai_question',
+      auth_token: AUTH_TOKEN,
+      mode: 'improve',
+      current_text: state.text,
+      current_options: options
+    })
+      .then(function (result) {
+        opts.onSelect(result);
+      })
+      .catch(function (e) {
+        errEl.textContent = 'Erro: ' + e.message;
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      });
+  }
+
+  // -------------------------------------------------------
+  // Internal helpers
+  // -------------------------------------------------------
+
+  function deleteQuestion(setName, questionText) {
+    if (!confirm('Excluir esta questão?')) return;
+    callScript({ action: 'delete_question', auth_token: AUTH_TOKEN, list_name: setName, question: questionText })
+      .then(function () {
+        loadQuestions(opts.setSelect.value);
+      })
+      .catch(function (e) {
+        opts.errorEl.textContent = 'Erro ao excluir: ' + e.message;
+      });
+  }
+
+  function bindEvents() {
+    opts.setSelect.addEventListener('change', function () {
+      loadQuestions(this.value);
+    });
+    opts.generateBtn.addEventListener('click', generate);
+    opts.improveBtn.addEventListener('click', improve);
+  }
+
+  function escHtml(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // -------------------------------------------------------
+  // Expose
+  // -------------------------------------------------------
+
+  return {
+    init: init,
+    loadSets: loadSets,
+    loadQuestions: loadQuestions,
+    generate: generate,
+    improve: improve
+  };
+})();

@@ -480,3 +480,33 @@
   .cp-row { flex-direction: column; align-items: stretch; }
   .cp-form-actions { flex-direction: column; }
 }
+
+/* =========================================================
+   Question Bank shared styles (.qb-*)
+   Used by host.html and index.html via question-bank.js
+   ========================================================= */
+
+.qb-set-row { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem; }
+.qb-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--border, rgba(20,184,166,.2)); border-radius: 8px; margin-bottom: 0.75rem; }
+.qb-item { padding: 0.6rem 0.75rem; cursor: pointer; border-bottom: 1px solid var(--border, rgba(20,184,166,.1)); font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; color: var(--text-primary); transition: background .15s; }
+.qb-item:last-child { border-bottom: none; }
+.qb-item:hover { background: var(--hover-bg, rgba(20,184,166,.06)); }
+.qb-ai-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+.qb-msg { padding: 0.75rem; color: var(--text-secondary); font-size: 0.88rem; text-align: center; }
+.qb-error { color: var(--error, #ef4444); font-size: 0.85rem; min-height: 1.2em; margin-top: 0.4rem; }
+
+.qb-del-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity .15s, color .15s;
+  flex-shrink: 0;
+}
+.qb-item:hover .qb-del-btn { opacity: 1; }
+.qb-del-btn:hover { color: #ef4444; }

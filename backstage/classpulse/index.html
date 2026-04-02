@@ -100,6 +100,35 @@
           <div class="cp-question-form">
             <h3>Nova questão</h3>
 
+            <!-- Bank picker (collapsed by default) -->
+            <button class="bank-toggle-btn" id="bank-toggle-btn" type="button" style="display:flex;align-items:center;gap:0.5rem;background:none;border:none;padding:0;font-family:'Inter',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--primary);cursor:pointer;margin-bottom:0.9rem">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+              Preencher do banco
+              <i style="transition:transform .2s;font-style:normal" id="bank-chevron">▾</i>
+            </button>
+            <div style="display:none;margin-bottom:1.1rem;padding-bottom:1.1rem;border-bottom:1px solid rgba(20,184,166,.15)" id="bank-panel">
+              <div class="qb-set-row">
+                <label for="bank-set-select" style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em">Conjunto</label>
+                <select class="cp-set-select-row" id="bank-set-select" style="width:100%;padding:0.65rem 1rem;background:var(--background);border:1.5px solid rgba(20,184,166,.25);border-radius:8px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none">
+                  <option value="">Escolha um conjunto...</option>
+                </select>
+              </div>
+              <div class="qb-list" id="bank-q-list">
+                <div class="qb-msg">Selecione um conjunto acima.</div>
+              </div>
+              <div class="qb-ai-row">
+                <button class="cp-btn-ghost" id="bank-generate-btn" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Gerar com IA
+                </button>
+                <button class="cp-btn-ghost" id="bank-improve-btn" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+                  Melhorar com IA
+                </button>
+              </div>
+              <p class="qb-error" id="bank-error"></p>
+            </div>
+
             <div class="cp-set-select-row">
               <div class="bs-field">
                 <label>Conjunto</label>
@@ -168,6 +197,7 @@
   </main>
 </div>
 
+<script src="../js/question-bank.js?v=1.0"></script>
 <script>
 'use strict';
 
@@ -703,6 +733,59 @@ document.getElementById('q-improve-btn').addEventListener('click', async functio
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg> Melhorar';
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Question bank picker (bank panel in question form)
+// ---------------------------------------------------------------------------
+
+document.getElementById('bank-toggle-btn').addEventListener('click', function() {
+  var panel = document.getElementById('bank-panel');
+  var chevron = document.getElementById('bank-chevron');
+  var isOpen = panel.style.display !== 'none' && panel.style.display !== '';
+  if (isOpen) {
+    panel.style.display = 'none';
+    chevron.style.transform = '';
+  } else {
+    panel.style.display = 'block';
+    chevron.style.transform = 'rotate(180deg)';
+    QuestionBank.loadSets();
+  }
+});
+
+function prefillQuestionForm(q) {
+  document.getElementById('q-text').value = q.question || '';
+  document.getElementById('q-opt-a').value = q.option_a || '';
+  document.getElementById('q-opt-b').value = q.option_b || '';
+  document.getElementById('q-opt-c').value = q.option_c || '';
+  document.getElementById('q-opt-d').value = q.option_d || '';
+  document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
+  if (q.correct) {
+    var radio = document.getElementById('q-correct-' + q.correct.toLowerCase());
+    if (radio) { radio.checked = true; updateCorrectHighlight(); }
+  }
+}
+
+QuestionBank.init({
+  setSelect:    document.getElementById('bank-set-select'),
+  questionList: document.getElementById('bank-q-list'),
+  generateBtn:  document.getElementById('bank-generate-btn'),
+  improveBtn:   document.getElementById('bank-improve-btn'),
+  errorEl:      document.getElementById('bank-error'),
+  canDelete:    true,
+  canCreateSet: true,
+  onSelect: function(q) { prefillQuestionForm(q); },
+  getFormState: function() {
+    return {
+      text: document.getElementById('q-text').value.trim(),
+      options: [
+        document.getElementById('q-opt-a').value.trim(),
+        document.getElementById('q-opt-b').value.trim(),
+        document.getElementById('q-opt-c').value.trim(),
+        document.getElementById('q-opt-d').value.trim()
+      ]
+    };
   }
 });
 

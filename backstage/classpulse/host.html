@@ -11,6 +11,7 @@
 
 <link rel="stylesheet" href="../css/theme.css?v=1.0">
 <link rel="stylesheet" href="../css/backstage.css?v=1.0">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.2">
 <script src="../js/debug.js?v=1.0"></script>
 <style>
   /* Host-specific styles */
@@ -117,14 +118,10 @@
   .bank-toggle-btn.open .bank-chevron { transform: rotate(180deg); }
   .bank-panel { display: none; margin-bottom: 1.1rem; padding-bottom: 1.1rem; border-bottom: 1px solid rgba(20,184,166,.15); }
   .bank-panel.open { display: block; }
-  .bank-set-row { display: flex; gap: 0.6rem; align-items: flex-end; margin-bottom: 0.75rem; }
-  .bank-set-row .bs-field-wrap { flex: 1; }
-  .bank-set-row .bs-field-wrap label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
-  .bank-q-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 220px; overflow-y: auto; margin-bottom: 0.75rem; }
-  .bank-q-item { padding: 0.55rem 0.8rem; background: var(--background); border: 1px solid rgba(20,184,166,.15); border-radius: 8px; font-size: 0.84rem; color: var(--text-primary); cursor: pointer; line-height: 1.4; transition: border-color .15s, background .15s; }
-  .bank-q-item:hover { border-color: var(--primary); background: rgba(20,184,166,.06); }
-  .bank-ai-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-  .bank-msg { font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0; }
+
+  /* Correct answer radio buttons */
+  .opt-correct-radio { display: flex; align-items: center; cursor: pointer; }
+  .opt-correct-radio input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
 
   @media (max-width: 600px) {
     .host-container { padding: 1.5rem 1rem 3rem; }
@@ -217,18 +214,16 @@
           <i class="bank-chevron">▾</i>
         </button>
         <div class="bank-panel" id="bank-panel">
-          <div class="bank-set-row">
-            <div class="bs-field-wrap">
-              <label for="bank-set-select">Conjunto</label>
-              <select class="host-select" id="bank-set-select">
-                <option value="">Carregando...</option>
-              </select>
-            </div>
+          <div class="qb-set-row">
+            <label for="bank-set-select" style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em">Conjunto</label>
+            <select class="host-select" id="bank-set-select">
+              <option value="">Escolha um conjunto...</option>
+            </select>
           </div>
-          <div class="bank-q-list" id="bank-q-list">
-            <div class="bank-msg">Selecione um conjunto acima.</div>
+          <div class="qb-list" id="bank-q-list">
+            <div class="qb-msg">Selecione um conjunto acima.</div>
           </div>
-          <div class="bank-ai-row">
+          <div class="qb-ai-row">
             <button class="host-btn host-btn-ghost" id="bank-generate-btn" type="button">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               Gerar com IA
@@ -238,7 +233,7 @@
               Melhorar com IA
             </button>
           </div>
-          <p class="cp-form-error" id="bank-error" style="font-size:0.8rem;color:#ef4444;margin-top:0.5rem"></p>
+          <p class="qb-error" id="bank-error"></p>
         </div>
 
         <div class="host-form-group">
@@ -247,21 +242,26 @@
         </div>
 
         <div id="q-opts">
-          <div class="opt-row"><div class="opt-letter">A</div><input class="host-input opt-input" type="text" placeholder="Opção A"></div>
-          <div class="opt-row"><div class="opt-letter">B</div><input class="host-input opt-input" type="text" placeholder="Opção B"></div>
-          <div class="opt-row"><div class="opt-letter">C</div><input class="host-input opt-input" type="text" placeholder="Opção C"></div>
-          <div class="opt-row"><div class="opt-letter">D</div><input class="host-input opt-input" type="text" placeholder="Opção D"></div>
-        </div>
-
-        <div class="host-form-group" style="margin-top:0.75rem">
-          <label class="host-label">Resposta correta (opcional)</label>
-          <select class="host-select" id="correct-answer-select">
-            <option value="">Sem resposta definida</option>
-            <option value="0">A</option>
-            <option value="1">B</option>
-            <option value="2">C</option>
-            <option value="3">D</option>
-          </select>
+          <div class="opt-row">
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="0"></label>
+            <div class="opt-letter">A</div>
+            <input class="host-input opt-input" type="text" placeholder="Opção A">
+          </div>
+          <div class="opt-row">
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="1"></label>
+            <div class="opt-letter">B</div>
+            <input class="host-input opt-input" type="text" placeholder="Opção B">
+          </div>
+          <div class="opt-row">
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="2"></label>
+            <div class="opt-letter">C</div>
+            <input class="host-input opt-input" type="text" placeholder="Opção C">
+          </div>
+          <div class="opt-row">
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="3"></label>
+            <div class="opt-letter">D</div>
+            <input class="host-input opt-input" type="text" placeholder="Opção D">
+          </div>
         </div>
 
         <div class="host-btn-row" style="margin-top:1rem">
@@ -302,6 +302,7 @@
   </div>
 </div>
 
+<script src="../js/question-bank.js?v=1.0"></script>
 <script>
 'use strict';
 
@@ -489,6 +490,9 @@ loadPicker();
 
 document.getElementById('close-session-btn').addEventListener('click', async function() {
   if (!confirm('Encerrar a sessão? Os alunos verão a mensagem de sessão encerrada.')) return;
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Encerrando sessão...';
   try {
     await callScript({ action: 'close_session', auth_token: AUTH_TOKEN, code: sessionCode });
     stopPolling();
@@ -496,6 +500,9 @@ document.getElementById('close-session-btn').addEventListener('click', async fun
     showScreen('screen-closed');
   } catch (e) {
     showAlert('error', 'Erro: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Encerrar sessão';
   }
 });
 
@@ -517,8 +524,8 @@ document.getElementById('reopen-session-btn').addEventListener('click', async fu
 document.getElementById('launch-btn').addEventListener('click', async function() {
   var text    = document.getElementById('q-text').value.trim();
   var options = Array.from(document.querySelectorAll('.opt-input')).map(function(i) { return i.value.trim(); }).filter(Boolean);
-  var caVal   = document.getElementById('correct-answer-select').value;
-  var ca      = caVal !== '' ? parseInt(caVal) : null;
+  var caEl    = document.querySelector('input[name="correct-answer"]:checked');
+  var ca      = caEl ? parseInt(caEl.value) : null;
 
   if (!text)              return showAlert('error', 'Escreva a pergunta.');
   if (options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
@@ -547,6 +554,9 @@ document.getElementById('close-question-btn').addEventListener('click', async fu
   if (!activeQId) return;
   var showResults  = document.getElementById('chk-show-results').checked;
   var revealAnswer = document.getElementById('chk-reveal-answer').checked;
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Encerrando...';
   try {
     await callScript({
       action: 'close_question', auth_token: AUTH_TOKEN,
@@ -558,6 +568,9 @@ document.getElementById('close-question-btn').addEventListener('click', async fu
     clearAlert();
   } catch (e) {
     showAlert('error', 'Erro: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Encerrar pergunta';
   }
 });
 
@@ -566,7 +579,7 @@ document.getElementById('clear-form-btn').addEventListener('click', clearForm);
 function clearForm() {
   document.getElementById('q-text').value = '';
   document.querySelectorAll('.opt-input').forEach(function(i) { i.value = ''; });
-  document.getElementById('correct-answer-select').value = '';
+  document.querySelectorAll('input[name="correct-answer"]').forEach(function(r) { r.checked = false; });
 }
 
 // ---------------------------------------------------------------------------
@@ -702,60 +715,28 @@ document.getElementById('qr-modal').addEventListener('click', function(e) {
 // Question bank
 // ---------------------------------------------------------------------------
 
-var bankSets = [];
-
 // Toggle open/close
 document.getElementById('bank-toggle-btn').addEventListener('click', function() {
   var panel = document.getElementById('bank-panel');
   var isOpen = panel.classList.toggle('open');
   this.classList.toggle('open', isOpen);
-  if (isOpen && bankSets.length === 0) loadBankSets();
+  if (isOpen) QuestionBank.loadSets();
 });
 
-async function loadBankSets() {
-  var sel = document.getElementById('bank-set-select');
-  sel.innerHTML = '<option value="">Carregando...</option>';
-  try {
-    var data = await callScript({ action: 'list_question_sets' });
-    bankSets = data.sets || [];
-    sel.innerHTML = '<option value="">Escolha um conjunto...</option>';
-    bankSets.forEach(function(s) {
-      var opt = document.createElement('option');
-      opt.value = s.name;
-      opt.textContent = s.name + (s.count ? ' (' + s.count + ')' : '');
-      sel.appendChild(opt);
-    });
-  } catch (e) {
-    sel.innerHTML = '<option value="">Erro ao carregar</option>';
-  }
-}
-
-document.getElementById('bank-set-select').addEventListener('change', async function() {
-  var name = this.value;
-  var listEl = document.getElementById('bank-q-list');
-  if (!name) { listEl.innerHTML = '<div class="bank-msg">Selecione um conjunto acima.</div>'; return; }
-
-  listEl.innerHTML = '<div class="bank-msg">Carregando...</div>';
-  try {
-    var data = await callScript({ action: 'get_questions', list: name });
-    var qs = data.questions || [];
-    listEl.innerHTML = '';
-    if (!qs.length) {
-      listEl.innerHTML = '<div class="bank-msg">Nenhuma questão neste conjunto.</div>';
-      return;
-    }
-    qs.forEach(function(q) {
-      var item = document.createElement('div');
-      item.className = 'bank-q-item';
-      item.textContent = q.question;
-      item.title = 'Clique para pré-preencher o formulário';
-      item.addEventListener('click', function() {
-        prefillForm(q);
-      });
-      listEl.appendChild(item);
-    });
-  } catch (e) {
-    listEl.innerHTML = '<div class="bank-msg" style="color:#ef4444">Erro: ' + escHtml(e.message) + '</div>';
+QuestionBank.init({
+  setSelect:    document.getElementById('bank-set-select'),
+  questionList: document.getElementById('bank-q-list'),
+  generateBtn:  document.getElementById('bank-generate-btn'),
+  improveBtn:   document.getElementById('bank-improve-btn'),
+  errorEl:      document.getElementById('bank-error'),
+  canDelete:    false,
+  canCreateSet: false,
+  onSelect: function(q) { prefillForm(q); },
+  getFormState: function() {
+    return {
+      text: document.getElementById('q-text').value.trim(),
+      options: Array.from(document.querySelectorAll('.opt-input')).map(function(i) { return i.value.trim(); })
+    };
   }
 });
 
@@ -766,81 +747,17 @@ function prefillForm(q) {
   if (optInputs[1]) optInputs[1].value = q.option_b || '';
   if (optInputs[2]) optInputs[2].value = q.option_c || '';
   if (optInputs[3]) optInputs[3].value = q.option_d || '';
-  // Map letter (a/b/c/d) to numeric index for correct-answer-select
-  var letterMap = { a: '0', b: '1', c: '2', d: '3' };
-  var sel = document.getElementById('correct-answer-select');
-  if (q.correct && letterMap[q.correct.toLowerCase()] !== undefined) {
-    sel.value = letterMap[q.correct.toLowerCase()];
-  } else {
-    sel.value = '';
+  document.querySelectorAll('input[name="correct-answer"]').forEach(function(r) { r.checked = false; });
+  var letterMap = { a: 0, b: 1, c: 2, d: 3 };
+  if (q.correct) {
+    var idx = letterMap[q.correct.toLowerCase()];
+    if (idx !== undefined) {
+      var radio = document.querySelector('input[name="correct-answer"][value="' + idx + '"]');
+      if (radio) radio.checked = true;
+    }
   }
 }
 
-document.getElementById('bank-generate-btn').addEventListener('click', async function() {
-  var topic = document.getElementById('q-text').value.trim();
-  var errEl = document.getElementById('bank-error');
-  errEl.textContent = '';
-  if (!topic) { errEl.textContent = 'Escreva uma instrução ou tópico no campo de texto antes de gerar.'; return; }
-
-  var btn = this;
-  btn.disabled = true;
-  btn.textContent = 'Gerando...';
-
-  try {
-    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'generate', topic: topic });
-    prefillFromAI(result);
-  } catch (e) {
-    errEl.textContent = 'Erro: ' + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Gerar com IA';
-  }
-});
-
-document.getElementById('bank-improve-btn').addEventListener('click', async function() {
-  var text = document.getElementById('q-text').value.trim();
-  var optInputs = document.querySelectorAll('.opt-input');
-  var optA = optInputs[0] ? optInputs[0].value.trim() : '';
-  var optB = optInputs[1] ? optInputs[1].value.trim() : '';
-  var optC = optInputs[2] ? optInputs[2].value.trim() : '';
-  var optD = optInputs[3] ? optInputs[3].value.trim() : '';
-  var errEl = document.getElementById('bank-error');
-  errEl.textContent = '';
-
-  if (!text || !optA || !optB || !optC || !optD) {
-    errEl.textContent = 'Preencha a pergunta e todas as 4 opções antes de melhorar.';
-    return;
-  }
-
-  var btn = this;
-  btn.disabled = true;
-  btn.textContent = 'Melhorando...';
-
-  try {
-    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'improve', current_text: text, current_options: [optA, optB, optC, optD] });
-    prefillFromAI(result);
-  } catch (e) {
-    errEl.textContent = 'Erro: ' + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg> Melhorar com IA';
-  }
-});
-
-function prefillFromAI(result) {
-  if (result.question) document.getElementById('q-text').value = result.question;
-  var optInputs = document.querySelectorAll('.opt-input');
-  if (optInputs[0] && result.option_a) optInputs[0].value = result.option_a;
-  if (optInputs[1] && result.option_b) optInputs[1].value = result.option_b;
-  if (optInputs[2] && result.option_c) optInputs[2].value = result.option_c;
-  if (optInputs[3] && result.option_d) optInputs[3].value = result.option_d;
-  if (result.correct) {
-    var letterMap = { a: '0', b: '1', c: '2', d: '3' };
-    var sel = document.getElementById('correct-answer-select');
-    var mapped = letterMap[result.correct.toLowerCase()];
-    if (mapped !== undefined) sel.value = mapped;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
