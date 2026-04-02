@@ -111,6 +111,21 @@
   .qr-box h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
   .qr-code-big { font-size: 2rem; font-weight: 700; letter-spacing: 0.25em; color: var(--primary); margin-bottom: 1rem; }
 
+  /* Question bank collapsible */
+  .bank-toggle-btn { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); cursor: pointer; margin-bottom: 0.9rem; }
+  .bank-toggle-btn .bank-chevron { transition: transform .2s; font-style: normal; }
+  .bank-toggle-btn.open .bank-chevron { transform: rotate(180deg); }
+  .bank-panel { display: none; margin-bottom: 1.1rem; padding-bottom: 1.1rem; border-bottom: 1px solid rgba(20,184,166,.15); }
+  .bank-panel.open { display: block; }
+  .bank-set-row { display: flex; gap: 0.6rem; align-items: flex-end; margin-bottom: 0.75rem; }
+  .bank-set-row .bs-field-wrap { flex: 1; }
+  .bank-set-row .bs-field-wrap label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
+  .bank-q-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 220px; overflow-y: auto; margin-bottom: 0.75rem; }
+  .bank-q-item { padding: 0.55rem 0.8rem; background: var(--background); border: 1px solid rgba(20,184,166,.15); border-radius: 8px; font-size: 0.84rem; color: var(--text-primary); cursor: pointer; line-height: 1.4; transition: border-color .15s, background .15s; }
+  .bank-q-item:hover { border-color: var(--primary); background: rgba(20,184,166,.06); }
+  .bank-ai-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .bank-msg { font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0; }
+
   @media (max-width: 600px) {
     .host-container { padding: 1.5rem 1rem 3rem; }
     .host-bar-actions { flex-wrap: wrap; }
@@ -194,6 +209,37 @@
       <!-- Launch question form -->
       <div class="host-card">
         <div class="host-card-title">Lançar pergunta</div>
+
+        <!-- Banco de questões collapsible -->
+        <button class="bank-toggle-btn" id="bank-toggle-btn" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          Banco de questões
+          <i class="bank-chevron">▾</i>
+        </button>
+        <div class="bank-panel" id="bank-panel">
+          <div class="bank-set-row">
+            <div class="bs-field-wrap">
+              <label for="bank-set-select">Conjunto</label>
+              <select class="host-select" id="bank-set-select">
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+          </div>
+          <div class="bank-q-list" id="bank-q-list">
+            <div class="bank-msg">Selecione um conjunto acima.</div>
+          </div>
+          <div class="bank-ai-row">
+            <button class="host-btn host-btn-ghost" id="bank-generate-btn" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Gerar com IA
+            </button>
+            <button class="host-btn host-btn-ghost" id="bank-improve-btn" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+              Melhorar com IA
+            </button>
+          </div>
+          <p class="cp-form-error" id="bank-error" style="font-size:0.8rem;color:#ef4444;margin-top:0.5rem"></p>
+        </div>
 
         <div class="host-form-group">
           <label class="host-label">Texto da pergunta</label>
@@ -651,6 +697,150 @@ document.getElementById('qr-close-btn').addEventListener('click', function() {
 document.getElementById('qr-modal').addEventListener('click', function(e) {
   if (e.target === this) this.classList.remove('open');
 });
+
+// ---------------------------------------------------------------------------
+// Question bank
+// ---------------------------------------------------------------------------
+
+var bankSets = [];
+
+// Toggle open/close
+document.getElementById('bank-toggle-btn').addEventListener('click', function() {
+  var panel = document.getElementById('bank-panel');
+  var isOpen = panel.classList.toggle('open');
+  this.classList.toggle('open', isOpen);
+  if (isOpen && bankSets.length === 0) loadBankSets();
+});
+
+async function loadBankSets() {
+  var sel = document.getElementById('bank-set-select');
+  sel.innerHTML = '<option value="">Carregando...</option>';
+  try {
+    var data = await callScript({ action: 'list_question_sets' });
+    bankSets = data.sets || [];
+    sel.innerHTML = '<option value="">Escolha um conjunto...</option>';
+    bankSets.forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s.name;
+      opt.textContent = s.name + (s.count ? ' (' + s.count + ')' : '');
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    sel.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+document.getElementById('bank-set-select').addEventListener('change', async function() {
+  var name = this.value;
+  var listEl = document.getElementById('bank-q-list');
+  if (!name) { listEl.innerHTML = '<div class="bank-msg">Selecione um conjunto acima.</div>'; return; }
+
+  listEl.innerHTML = '<div class="bank-msg">Carregando...</div>';
+  try {
+    var data = await callScript({ action: 'get_questions', list: name });
+    var qs = data.questions || [];
+    listEl.innerHTML = '';
+    if (!qs.length) {
+      listEl.innerHTML = '<div class="bank-msg">Nenhuma questão neste conjunto.</div>';
+      return;
+    }
+    qs.forEach(function(q) {
+      var item = document.createElement('div');
+      item.className = 'bank-q-item';
+      item.textContent = q.question;
+      item.title = 'Clique para pré-preencher o formulário';
+      item.addEventListener('click', function() {
+        prefillForm(q);
+      });
+      listEl.appendChild(item);
+    });
+  } catch (e) {
+    listEl.innerHTML = '<div class="bank-msg" style="color:#ef4444">Erro: ' + escHtml(e.message) + '</div>';
+  }
+});
+
+function prefillForm(q) {
+  document.getElementById('q-text').value = q.question || '';
+  var optInputs = document.querySelectorAll('.opt-input');
+  if (optInputs[0]) optInputs[0].value = q.option_a || '';
+  if (optInputs[1]) optInputs[1].value = q.option_b || '';
+  if (optInputs[2]) optInputs[2].value = q.option_c || '';
+  if (optInputs[3]) optInputs[3].value = q.option_d || '';
+  // Map letter (a/b/c/d) to numeric index for correct-answer-select
+  var letterMap = { a: '0', b: '1', c: '2', d: '3' };
+  var sel = document.getElementById('correct-answer-select');
+  if (q.correct && letterMap[q.correct.toLowerCase()] !== undefined) {
+    sel.value = letterMap[q.correct.toLowerCase()];
+  } else {
+    sel.value = '';
+  }
+}
+
+document.getElementById('bank-generate-btn').addEventListener('click', async function() {
+  var topic = document.getElementById('q-text').value.trim();
+  var errEl = document.getElementById('bank-error');
+  errEl.textContent = '';
+  if (!topic) { errEl.textContent = 'Escreva uma instrução ou tópico no campo de texto antes de gerar.'; return; }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+
+  try {
+    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'generate', topic: topic });
+    prefillFromAI(result);
+  } catch (e) {
+    errEl.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Gerar com IA';
+  }
+});
+
+document.getElementById('bank-improve-btn').addEventListener('click', async function() {
+  var text = document.getElementById('q-text').value.trim();
+  var optInputs = document.querySelectorAll('.opt-input');
+  var optA = optInputs[0] ? optInputs[0].value.trim() : '';
+  var optB = optInputs[1] ? optInputs[1].value.trim() : '';
+  var optC = optInputs[2] ? optInputs[2].value.trim() : '';
+  var optD = optInputs[3] ? optInputs[3].value.trim() : '';
+  var errEl = document.getElementById('bank-error');
+  errEl.textContent = '';
+
+  if (!text || !optA || !optB || !optC || !optD) {
+    errEl.textContent = 'Preencha a pergunta e todas as 4 opções antes de melhorar.';
+    return;
+  }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Melhorando...';
+
+  try {
+    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'improve', current_text: text, current_options: [optA, optB, optC, optD] });
+    prefillFromAI(result);
+  } catch (e) {
+    errEl.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg> Melhorar com IA';
+  }
+});
+
+function prefillFromAI(result) {
+  if (result.question) document.getElementById('q-text').value = result.question;
+  var optInputs = document.querySelectorAll('.opt-input');
+  if (optInputs[0] && result.option_a) optInputs[0].value = result.option_a;
+  if (optInputs[1] && result.option_b) optInputs[1].value = result.option_b;
+  if (optInputs[2] && result.option_c) optInputs[2].value = result.option_c;
+  if (optInputs[3] && result.option_d) optInputs[3].value = result.option_d;
+  if (result.correct) {
+    var letterMap = { a: '0', b: '1', c: '2', d: '3' };
+    var sel = document.getElementById('correct-answer-select');
+    var mapped = letterMap[result.correct.toLowerCase()];
+    if (mapped !== undefined) sel.value = mapped;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
