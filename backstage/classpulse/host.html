@@ -223,17 +223,6 @@
           <div class="qb-list" id="bank-q-list">
             <div class="qb-msg">Selecione um conjunto acima.</div>
           </div>
-          <div class="qb-ai-row">
-            <button class="host-btn host-btn-ghost" id="bank-generate-btn" type="button">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              Gerar com IA
-            </button>
-            <button class="host-btn host-btn-ghost" id="bank-improve-btn" type="button">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-              Melhorar com IA
-            </button>
-          </div>
-          <p class="qb-error" id="bank-error"></p>
         </div>
 
         <div class="host-form-group">
@@ -243,28 +232,40 @@
 
         <div id="q-opts">
           <div class="opt-row">
-            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="0"></label>
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct" value="a" id="q-correct-a"></label>
             <div class="opt-letter">A</div>
-            <input class="host-input opt-input" type="text" placeholder="Opção A">
+            <input class="host-input" type="text" id="q-opt-a" placeholder="Opção A">
           </div>
           <div class="opt-row">
-            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="1"></label>
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct" value="b" id="q-correct-b"></label>
             <div class="opt-letter">B</div>
-            <input class="host-input opt-input" type="text" placeholder="Opção B">
+            <input class="host-input" type="text" id="q-opt-b" placeholder="Opção B">
           </div>
           <div class="opt-row">
-            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="2"></label>
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct" value="c" id="q-correct-c"></label>
             <div class="opt-letter">C</div>
-            <input class="host-input opt-input" type="text" placeholder="Opção C">
+            <input class="host-input" type="text" id="q-opt-c" placeholder="Opção C">
           </div>
           <div class="opt-row">
-            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct-answer" value="3"></label>
+            <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct" value="d" id="q-correct-d"></label>
             <div class="opt-letter">D</div>
-            <input class="host-input opt-input" type="text" placeholder="Opção D">
+            <input class="host-input" type="text" id="q-opt-d" placeholder="Opção D">
           </div>
         </div>
 
-        <div class="host-btn-row" style="margin-top:1rem">
+        <div class="host-btn-row" style="margin-top:0.75rem">
+          <button class="host-btn host-btn-ghost" id="q-generate-btn" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Gerar com IA
+          </button>
+          <button class="host-btn host-btn-ghost" id="q-improve-btn" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+            Melhorar com IA
+          </button>
+        </div>
+        <p id="q-error" style="font-size:0.82rem;color:#ef4444;margin:0.4rem 0 0;min-height:1.2em"></p>
+
+        <div class="host-btn-row" style="margin-top:0.75rem">
           <button class="host-btn host-btn-primary" id="launch-btn">Lançar pergunta</button>
           <button class="host-btn host-btn-ghost" id="clear-form-btn">Limpar</button>
         </div>
@@ -302,7 +303,7 @@
   </div>
 </div>
 
-<script src="../js/question-bank.js?v=1.0"></script>
+<script src="../js/question-bank.js?v=1.1"></script>
 <script>
 'use strict';
 
@@ -523,9 +524,9 @@ document.getElementById('reopen-session-btn').addEventListener('click', async fu
 
 document.getElementById('launch-btn').addEventListener('click', async function() {
   var text    = document.getElementById('q-text').value.trim();
-  var options = Array.from(document.querySelectorAll('.opt-input')).map(function(i) { return i.value.trim(); }).filter(Boolean);
-  var caEl    = document.querySelector('input[name="correct-answer"]:checked');
-  var ca      = caEl ? parseInt(caEl.value) : null;
+  var options = ['a','b','c','d'].map(function(l) { return document.getElementById('q-opt-' + l).value.trim(); }).filter(Boolean);
+  var caEl    = document.querySelector('input[name="correct"]:checked');
+  var ca      = caEl ? ['a','b','c','d'].indexOf(caEl.value) : null;
 
   if (!text)              return showAlert('error', 'Escreva a pergunta.');
   if (options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
@@ -578,8 +579,8 @@ document.getElementById('clear-form-btn').addEventListener('click', clearForm);
 
 function clearForm() {
   document.getElementById('q-text').value = '';
-  document.querySelectorAll('.opt-input').forEach(function(i) { i.value = ''; });
-  document.querySelectorAll('input[name="correct-answer"]').forEach(function(r) { r.checked = false; });
+  ['a','b','c','d'].forEach(function(l) { document.getElementById('q-opt-' + l).value = ''; });
+  document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
 }
 
 // ---------------------------------------------------------------------------
@@ -709,35 +710,34 @@ document.getElementById('bank-toggle-btn').addEventListener('click', function() 
 QuestionBank.init({
   setSelect:    document.getElementById('bank-set-select'),
   questionList: document.getElementById('bank-q-list'),
-  generateBtn:  document.getElementById('bank-generate-btn'),
-  improveBtn:   document.getElementById('bank-improve-btn'),
-  errorEl:      document.getElementById('bank-error'),
+  generateBtn:  document.getElementById('q-generate-btn'),
+  improveBtn:   document.getElementById('q-improve-btn'),
+  errorEl:      document.getElementById('q-error'),
   canDelete:    false,
   canCreateSet: false,
   onSelect: function(q) { prefillForm(q); },
   getFormState: function() {
     return {
       text: document.getElementById('q-text').value.trim(),
-      options: Array.from(document.querySelectorAll('.opt-input')).map(function(i) { return i.value.trim(); })
+      options: [
+        document.getElementById('q-opt-a').value.trim(),
+        document.getElementById('q-opt-b').value.trim(),
+        document.getElementById('q-opt-c').value.trim(),
+        document.getElementById('q-opt-d').value.trim()
+      ]
     };
   }
 });
 
 function prefillForm(q) {
   document.getElementById('q-text').value = q.question || '';
-  var optInputs = document.querySelectorAll('.opt-input');
-  if (optInputs[0]) optInputs[0].value = q.option_a || '';
-  if (optInputs[1]) optInputs[1].value = q.option_b || '';
-  if (optInputs[2]) optInputs[2].value = q.option_c || '';
-  if (optInputs[3]) optInputs[3].value = q.option_d || '';
-  document.querySelectorAll('input[name="correct-answer"]').forEach(function(r) { r.checked = false; });
-  var letterMap = { a: 0, b: 1, c: 2, d: 3 };
+  ['a','b','c','d'].forEach(function(l) {
+    document.getElementById('q-opt-' + l).value = q['option_' + l] || '';
+  });
+  document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
   if (q.correct) {
-    var idx = letterMap[q.correct.toLowerCase()];
-    if (idx !== undefined) {
-      var radio = document.querySelector('input[name="correct-answer"][value="' + idx + '"]');
-      if (radio) radio.checked = true;
-    }
+    var radio = document.getElementById('q-correct-' + q.correct.toLowerCase());
+    if (radio) radio.checked = true;
   }
 }
 
