@@ -436,10 +436,15 @@
             lastActiveQId = null;
             renderResults(prevQ, parseInt(myAnswer));
             showState('results');
-            setTimeout(() => { showingResultsFor = null; if (pollTimer) showState('waiting'); }, 12000);
+            // Stay in results until a new question is launched — no timeout
           } else {
-            lastActiveQId = null;
-            showState('waiting');
+            // No results to show; stay in 'answered' if student answered, else 'waiting'
+            if (myAnswer !== null) {
+              showState('answered');
+            } else {
+              lastActiveQId = null;
+              showState('waiting');
+            }
           }
         } else if (!showingResultsFor) {
           showState('waiting');

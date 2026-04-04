@@ -291,15 +291,18 @@
         dbg('poll', `active Q …${activeQ.id.slice(-6)}`);
         lastDisplayedQ = activeQ;
         render(activeQ, false);
-      } else if (lastDisplayedQ) {
-        const refreshed = (data.history || []).find(q => q.id === lastDisplayedQ.id);
-        if (refreshed) {
-          dbg('poll', `closed Q …${refreshed.id.slice(-6)} show=${refreshed.show_results} reveal=${refreshed.reveal_answer}`);
-          lastDisplayedQ = refreshed;
-        }
-        render(lastDisplayedQ, false);
       } else {
-        render(null, false);
+        // No active question — refresh lastDisplayedQ from history (handles page-reload-after-close)
+        const recentlyClosed = lastDisplayedQ
+          ? (data.history || []).find(q => q.id === lastDisplayedQ.id) || lastDisplayedQ
+          : (data.history || [])[0] || null;
+        if (recentlyClosed) {
+          dbg('poll', `closed Q …${recentlyClosed.id.slice(-6)} show=${recentlyClosed.show_results} reveal=${recentlyClosed.reveal_answer}`);
+          lastDisplayedQ = recentlyClosed;
+          render(lastDisplayedQ, false);
+        } else {
+          render(null, false);
+        }
       }
     } catch (err) {
       console.error('display fetch error:', err);
