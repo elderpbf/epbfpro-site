@@ -371,7 +371,7 @@
           <div class="bar-letter">${letters[i]}</div>
           <div class="bar-right">
             <div class="bar-label">
-              <span class="bar-opt-text">${escapeHtml(opt)}</span>
+              <span class="bar-opt-text">${escapeHtml(opt.replace(/^[A-Da-d][.)]\s*/, ''))}</span>
               <span class="bar-pct">${showResults && !(status === 'active' && total === 0) ? pct + '%' : ''}</span>
             </div>
             <div class="bar-track">
