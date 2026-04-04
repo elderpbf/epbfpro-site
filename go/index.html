@@ -372,14 +372,16 @@
 
     try {
       bsProbe('→ join code=' + code, 'info');
-      const payload = encodeURIComponent(JSON.stringify({ action: 'get_session_state', code }));
-      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload);
+      const payloadObj = { action: 'get_session_state', code, _t: Date.now() };
+      const payload = encodeURIComponent(JSON.stringify(payloadObj));
+      bsProbe('→ fetch URL: ' + APPS_SCRIPT_URL + '?payload=' + payload, 'info');
+      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload, { cache: 'no-store' });
       const txt  = await resp.text();
-      bsProbe('← ' + resp.status + ' | ' + txt.slice(0, 300), resp.ok ? 'info' : 'error');
+      bsProbe('← status: ' + resp.status + ' ok: ' + resp.ok + ' | raw: ' + txt.slice(0, 300), resp.ok ? 'info' : 'error');
       const data = JSON.parse(txt);
 
       if (data.error === 'session not found' || !data.session) {
-        bsProbe('not found | error=' + data.error + ' | session=' + JSON.stringify(data.session), 'error');
+        bsProbe('not found | code sent: ' + code + ' | parsed error: ' + data.error + ' | session obj: ' + JSON.stringify(data.session), 'error');
         errorEl.textContent = t.errNotFound; return;
       }
       if (data.session.status === 'closed') { errorEl.textContent = t.errClosed; return; }
