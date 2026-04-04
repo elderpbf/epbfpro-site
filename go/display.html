@@ -48,7 +48,7 @@
     .question-text-display { font-size: 1.9rem; font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 32px; }
 
     /* Option bars */
-    .option-bar { display: grid; grid-template-columns: 44px 1fr 60px; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .option-bar { display: grid; grid-template-columns: 44px 1fr 60px; align-items: center; gap: 14px; margin-bottom: 18px; padding: 12px 16px; border-radius: 12px; border: 3px solid transparent; transition: all 0.3s; }
     .bar-letter { font-size: 0.85rem; font-weight: 700; color: var(--primary-dark); background: var(--surface); border: 1px solid var(--border); padding: 8px 0; border-radius: 8px; text-align: center; }
     .bar-right { }
     .bar-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -59,10 +59,15 @@
     .bar-fill.correct { background: var(--success); }
     .bar-count { font-size: 1.1rem; font-weight: 600; color: var(--text-secondary); text-align: right; }
 
-    /* Correct answer highlight */
-    .option-bar.is-correct .bar-letter   { background: var(--success-bg); border-color: var(--success); color: var(--success); }
-    .option-bar.is-correct .bar-opt-text { font-weight: 600; color: var(--success); }
+    /* Correct answer high-visibility */
+    .option-bar.is-correct { border-color: var(--success); background: var(--success-bg); }
+    .option-bar.is-correct .bar-letter   { background: var(--success); border-color: var(--success); color: #fff; }
+    .option-bar.is-correct .bar-opt-text { font-weight: 700; color: var(--success); }
     .option-bar.is-correct .bar-pct      { color: var(--success); }
+    .option-bar.is-correct .bar-opt-text::after { content: ' ✓'; font-weight: 800; }
+
+    /* Hide boxes for non-correct letters when results are revealed */
+    .main.revealed .option-bar:not(.is-correct) .bar-letter { background: transparent; border-color: transparent; }
 
     /* Idle screen */
     .idle-screen {
@@ -341,6 +346,8 @@
     const correctAnswer = q.correct_answer;
     const showResults   = status === 'active' || q.show_results === true;
     const revealAnswer  = status === 'closed' && q.reveal_answer === true;
+
+    main.classList.toggle('revealed', revealAnswer);
 
     const counts = q.answer_counts || new Array(options.length).fill(0);
     const total  = counts.reduce((a, b) => a + b, 0);

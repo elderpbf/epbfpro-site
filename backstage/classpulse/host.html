@@ -83,7 +83,12 @@
   .history-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid rgba(20,184,166,.08); }
   .history-item:last-child { border-bottom: none; }
   .hi-text { font-size: 0.88rem; color: var(--text-primary); flex: 1; }
-  .hi-meta { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; }
+  .hi-meta { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; margin-bottom: 0.4rem; }
+  .hi-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+  .hi-btn { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+  .hi-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(20,184,166,0.05); }
+  .hi-btn-primary { border-color: var(--primary); color: var(--primary); }
+  .hi-btn-primary:hover { background: var(--primary); color: #fff; }
 
   /* Alert */
   .host-alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; display: none; }
@@ -649,10 +654,61 @@ function renderHistory(closedQs) {
     return;
   }
   var html = closedQs.map(function(q) {
-    return '<div class="history-item"><span class="hi-text">' + escHtml(q.text || '') + '</span><span class="hi-meta">' + escHtml(q.created_at || '') + '</span></div>';
+    var qJson = escHtml(JSON.stringify(q));
+    return '<div class="history-item">' +
+             '<div style="flex:1">' +
+               '<div class="hi-text">' + escHtml(q.text || '') + '</div>' +
+               '<div class="hi-meta">' + escHtml(q.created_at ? new Date(q.created_at).toLocaleString('pt-BR') : '') + '</div>' +
+               '<div class="hi-actions">' +
+                 '<button class="hi-btn hi-btn-primary" onclick=\'relaunchFromHistory(' + qJson + ')\'>Reabrir</button>' +
+                 '<button class="hi-btn" onclick=\'editFromHistory(' + qJson + ')\'>Editar</button>' +
+               '</div>' +
+             '</div>' +
+           '</div>';
   }).join('');
   document.getElementById('history-list').innerHTML = html;
   document.getElementById('history-card').style.display = 'block';
+}
+
+async function relaunchFromHistory(q) {
+  if (activeQId && !confirm('Já existe uma pergunta ativa. Encerrar a atual e lançar esta?')) return;
+
+  var btn = event.currentTarget;
+  var oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  try {
+    var res = await callScript({
+      action: 'launch_question', auth_token: AUTH_TOKEN,
+      session_code: sessionCode,
+      text: q.text,
+      options: q.options,
+      correct_answer: q.correct_answer
+    });
+    activeQId = res.id;
+    clearAlert();
+    showAlert('success', 'Pergunta relançada!');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) {
+    showAlert('error', 'Erro ao relançar: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+function editFromHistory(q) {
+  document.getElementById('q-text').value = q.text || '';
+  ['a','b','c','d'].forEach(function(l, i) {
+    document.getElementById('q-opt-' + l).value = (q.options && q.options[i]) ? q.options[i] : '';
+  });
+  document.querySelectorAll('input[name="correct"]').forEach(function(r, i) {
+    r.checked = (q.correct_answer !== null && i === q.correct_answer);
+  });
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('q-text').focus();
 }
 
 // ---------------------------------------------------------------------------
