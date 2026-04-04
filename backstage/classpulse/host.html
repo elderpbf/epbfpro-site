@@ -639,7 +639,7 @@ function renderActiveQuestion(q) {
     barsHtml +=
       '<div class="result-bar ' + (isCorrect ? 'is-correct' : '') + '">' +
         '<div class="rb-letter">' + (letters[i] || i) + '</div>' +
-        '<div><div class="rb-label"><span class="rb-opt">' + escHtml(opt) + '</span><span class="rb-pct">' + pct + '%</span></div>' +
+        '<div><div class="rb-label"><span class="rb-opt">' + escHtml(opt.replace(/^[A-Da-d][.)]\s*/, '')) + '</span><span class="rb-pct">' + pct + '%</span></div>' +
         '<div class="rb-track"><div class="rb-fill" style="width:' + pct + '%"></div></div></div>' +
         '<div class="rb-count">' + counts[i] + '</div>' +
       '</div>';

@@ -461,7 +461,7 @@
     document.getElementById('q-options').innerHTML = (row.options || []).map((opt, i) => `
       <button class="option-btn" onclick="submitAnswer(${i}, this)">
         <span class="option-letter">${letters[i]}</span>
-        <span>${escapeHtml(opt)}</span>
+        <span>${escapeHtml(opt.replace(/^[A-Da-d][.)]\s*/, ''))}</span>
       </button>`).join('');
   }
 
@@ -524,7 +524,7 @@
         <div class="result-option ${isCorrect ? 'is-correct' : ''}">
           <div class="result-header">
             <span class="result-letter">${letters[i]}</span>
-            <span class="result-text">${escapeHtml(opt)}${isCorrect ? ' ✓' : ''}</span>
+            <span class="result-text">${escapeHtml(opt.replace(/^[A-Da-d][.)]\s*/, ''))}${isCorrect ? ' ✓' : ''}</span>
             <span class="result-pct">${pct}%</span>
           </div>
           <div class="bar-track">
