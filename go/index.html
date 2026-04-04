@@ -529,7 +529,7 @@
         <div class="result-option ${isCorrect ? 'is-correct' : ''}">
           <div class="result-header">
             <span class="result-letter">${letters[i]}</span>
-            <span class="result-text">${escapeHtml(opt.replace(/^[A-Da-d][.)]\s*/, ''))}${isCorrect ? ' ✓' : ''}</span>
+            <span class="result-text">${escapeHtml(opt.replace(/^[A-Da-d][.)]\s*/, ''))}</span>
             <span class="result-pct">${pct}%</span>
           </div>
           <div class="bar-track">
