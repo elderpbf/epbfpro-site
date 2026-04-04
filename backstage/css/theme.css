@@ -35,6 +35,17 @@
   --text-secondary: #d1d5db;
   --text-light: #5eead4;
   --shadow: rgba(0, 0, 0, 0.3);
+  --border: #0f766e;
+  --success: #34d399;
+  --success-bg: #064e3b;
+  --error: #f87171;
+  --error-bg: #7f1d1d;
+  --option-hover-bg: rgba(20, 184, 166, 0.15);
+  --option-selected-bg: rgba(20, 184, 166, 0.25);
+  --status-live-bg: #065f46;
+  --status-live-text: #6ee7b7;
+  --status-closed-bg: #374151;
+  --status-closed-text: #d1d5db;
 }
 
 body {
