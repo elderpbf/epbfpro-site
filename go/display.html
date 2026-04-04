@@ -48,7 +48,7 @@
     .question-text-display { font-size: 1.9rem; font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 32px; }
 
     /* Option bars */
-    .option-bar { display: grid; grid-template-columns: 44px 1fr 60px; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .option-bar { display: grid; grid-template-columns: 44px 1fr 60px; align-items: center; gap: 14px; margin-bottom: 18px; padding: 12px 16px; border-radius: 12px; border: 3px solid transparent; transition: all 0.3s; }
     .bar-letter { font-size: 0.85rem; font-weight: 700; color: var(--primary-dark); background: var(--surface); border: 1px solid var(--border); padding: 8px 0; border-radius: 8px; text-align: center; }
     .bar-right { }
     .bar-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -59,10 +59,14 @@
     .bar-fill.correct { background: var(--success); }
     .bar-count { font-size: 1.1rem; font-weight: 600; color: var(--text-secondary); text-align: right; }
 
-    /* Correct answer highlight */
-    .option-bar.is-correct .bar-letter   { background: var(--success-bg); border-color: var(--success); color: var(--success); }
-    .option-bar.is-correct .bar-opt-text { font-weight: 600; color: var(--success); }
-    .option-bar.is-correct .bar-pct      { color: var(--success); }
+    /* Correct answer high-visibility */
+    .option-bar.is-correct { background: #0d9488; border-color: #0d9488; color: #fff; }
+    .option-bar.is-correct .bar-letter   { background: rgba(255,255,255,0.2); border-color: transparent; color: #fff; }
+    .option-bar.is-correct .bar-opt-text { font-weight: 700; color: #fff; }
+    .option-bar.is-correct .bar-pct      { color: #fff; }
+    .option-bar.is-correct .bar-fill     { background: #fff; }
+    .option-bar.is-correct .bar-count    { color: #fff; }
+    .option-bar.is-correct .bar-opt-text::after { content: ' ✓'; font-weight: 800; }
 
     /* Idle screen */
     .idle-screen {
@@ -149,7 +153,7 @@
     document.documentElement.setAttribute('data-theme', theme);
     var icon = document.getElementById('theme-icon');
     if (icon) icon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
-    localStorage.setItem('bs_theme', theme);
+    localStorage.setItem('bs_theme_public', theme);
   }
 
   function toggleTheme() {
@@ -160,14 +164,13 @@
   (function() {
     var urlParams = new URLSearchParams(window.location.search);
     var urlTheme  = urlParams.get('theme');
-    var stored    = localStorage.getItem('bs_theme');
-    var theme;
+    var stored    = localStorage.getItem('bs_theme_public');
+    var theme     = 'light'; // Default to light mode for public display
+
     if (urlTheme === 'dark' || urlTheme === 'light') {
       theme = urlTheme;
     } else if (stored === 'dark' || stored === 'light') {
       theme = stored;
-    } else {
-      theme = 'light';
     }
     applyTheme(theme);
   })();
@@ -368,7 +371,7 @@
           <div class="bar-letter">${letters[i]}</div>
           <div class="bar-right">
             <div class="bar-label">
-              <span class="bar-opt-text">${escapeHtml(opt)}${isCorrect ? ' ✓' : ''}</span>
+              <span class="bar-opt-text">${escapeHtml(opt)}</span>
               <span class="bar-pct">${showResults && !(status === 'active' && total === 0) ? pct + '%' : ''}</span>
             </div>
             <div class="bar-track">
