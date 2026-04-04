@@ -60,14 +60,13 @@
     .bar-count { font-size: 1.1rem; font-weight: 600; color: var(--text-secondary); text-align: right; }
 
     /* Correct answer high-visibility */
-    .option-bar.is-correct { border-color: var(--success); background: var(--success-bg); }
-    .option-bar.is-correct .bar-letter   { background: var(--success); border-color: var(--success); color: #fff; }
-    .option-bar.is-correct .bar-opt-text { font-weight: 700; color: var(--success); }
-    .option-bar.is-correct .bar-pct      { color: var(--success); }
+    .option-bar.is-correct { background: var(--success); border-color: var(--success); color: #fff; }
+    .option-bar.is-correct .bar-letter   { background: rgba(255,255,255,0.2); border-color: transparent; color: #fff; }
+    .option-bar.is-correct .bar-opt-text { font-weight: 700; color: #fff; }
+    .option-bar.is-correct .bar-pct      { color: #fff; }
+    .option-bar.is-correct .bar-fill     { background: #fff; }
+    .option-bar.is-correct .bar-count    { color: #fff; }
     .option-bar.is-correct .bar-opt-text::after { content: ' ✓'; font-weight: 800; }
-
-    /* Hide boxes for non-correct letters when results are revealed */
-    .main.revealed .option-bar:not(.is-correct) .bar-letter { background: transparent; border-color: transparent; }
 
     /* Idle screen */
     .idle-screen {
@@ -346,8 +345,6 @@
     const correctAnswer = q.correct_answer;
     const showResults   = status === 'active' || q.show_results === true;
     const revealAnswer  = status === 'closed' && q.reveal_answer === true;
-
-    main.classList.toggle('revealed', revealAnswer);
 
     const counts = q.answer_counts || new Array(options.length).fill(0);
     const total  = counts.reduce((a, b) => a + b, 0);
