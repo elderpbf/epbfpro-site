@@ -426,7 +426,7 @@ var questions = [];
 async function loadSets() {
   try {
     var data = await callScript({ action: 'list_question_sets' });
-    sets = data.sets || [];
+    sets = data.banks || [];
   } catch (err) {
     sets = [];
   }
