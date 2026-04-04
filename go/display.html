@@ -149,7 +149,7 @@
     document.documentElement.setAttribute('data-theme', theme);
     var icon = document.getElementById('theme-icon');
     if (icon) icon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
-    localStorage.setItem('bs_theme', theme);
+    localStorage.setItem('bs_theme_public', theme);
   }
 
   function toggleTheme() {
@@ -160,14 +160,13 @@
   (function() {
     var urlParams = new URLSearchParams(window.location.search);
     var urlTheme  = urlParams.get('theme');
-    var stored    = localStorage.getItem('bs_theme');
-    var theme;
+    var stored    = localStorage.getItem('bs_theme_public');
+    var theme     = 'light'; // Default to light mode for public display
+
     if (urlTheme === 'dark' || urlTheme === 'light') {
       theme = urlTheme;
     } else if (stored === 'dark' || stored === 'light') {
       theme = stored;
-    } else {
-      theme = 'light';
     }
     applyTheme(theme);
   })();
