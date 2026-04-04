@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../css/theme.css?v=1.1">
 <link rel="stylesheet" href="../css/backstage.css?v=1.1">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.2">
-<script src="../js/debug.js?v=1.1"></script>
+<script src="../js/debug.js?v=2.0"></script>
 </head>
 <body>
 
@@ -116,17 +116,6 @@
               <div class="qb-list" id="bank-q-list">
                 <div class="qb-msg">Selecione um conjunto acima.</div>
               </div>
-              <div class="qb-ai-row">
-                <button class="cp-btn-ghost" id="bank-generate-btn" type="button">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                  Gerar com IA
-                </button>
-                <button class="cp-btn-ghost" id="bank-improve-btn" type="button">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-                  Melhorar com IA
-                </button>
-              </div>
-              <p class="qb-error" id="bank-error"></p>
             </div>
 
             <div class="cp-set-select-row">
@@ -197,7 +186,7 @@
   </main>
 </div>
 
-<script src="../js/question-bank.js?v=1.0"></script>
+<script src="../js/question-bank.js?v=1.2"></script>
 <script>
 'use strict';
 
@@ -267,7 +256,7 @@ document.getElementById('logout-btn').addEventListener('click', function() {
 // Config
 // ---------------------------------------------------------------------------
 
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwdynfo6geXRNyrJtuAzXxCpOztsnvCGRz2FWkhLC05dsVAjOF2P1QV9bjLTZbVQbDlbg/exec';
+var SCRIPT_URL = 'https://backstage-api.pensoia.workers.dev';
 var AUTH_TOKEN = localStorage.getItem('bs_pw_hash') || '';
 
 async function callScript(params) {
@@ -668,73 +657,6 @@ async function confirmDeleteSet(name) {
   }
 }
 
-document.getElementById('q-generate-btn').addEventListener('click', async function() {
-  var instruction = document.getElementById('q-text').value.trim();
-  var err = document.getElementById('q-error');
-  err.textContent = '';
-  if (!instruction) { err.textContent = 'Descreva o que você quer antes de gerar.'; return; }
-
-  var btn = this;
-  btn.disabled = true;
-  btn.textContent = 'Gerando...';
-
-  try {
-    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'generate', topic: instruction });
-    document.getElementById('q-text').value = result.question || '';
-    document.getElementById('q-opt-a').value = result.option_a || '';
-    document.getElementById('q-opt-b').value = result.option_b || '';
-    document.getElementById('q-opt-c').value = result.option_c || '';
-    document.getElementById('q-opt-d').value = result.option_d || '';
-    if (result.correct) {
-      var radio = document.getElementById('q-correct-' + result.correct);
-      if (radio) { radio.checked = true; updateCorrectHighlight(); }
-    }
-  } catch (e) {
-    err.textContent = 'Erro: ' + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Gerar';
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Gerar';
-  }
-});
-
-document.getElementById('q-improve-btn').addEventListener('click', async function() {
-  var text = document.getElementById('q-text').value.trim();
-  var optA = document.getElementById('q-opt-a').value.trim();
-  var optB = document.getElementById('q-opt-b').value.trim();
-  var optC = document.getElementById('q-opt-c').value.trim();
-  var optD = document.getElementById('q-opt-d').value.trim();
-  var correct = document.querySelector('input[name="correct"]:checked');
-  var err = document.getElementById('q-error');
-  err.textContent = '';
-
-  if (!text || !optA || !optB || !optC || !optD) {
-    err.textContent = 'Preencha a questão e as 4 opções antes de melhorar.';
-    return;
-  }
-
-  var btn = this;
-  btn.disabled = true;
-  btn.textContent = 'Melhorando...';
-
-  try {
-    var result = await callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, mode: 'improve', current_text: text, current_options: [optA, optB, optC, optD] });
-    document.getElementById('q-text').value = result.question || text;
-    document.getElementById('q-opt-a').value = result.option_a || optA;
-    document.getElementById('q-opt-b').value = result.option_b || optB;
-    document.getElementById('q-opt-c').value = result.option_c || optC;
-    document.getElementById('q-opt-d').value = result.option_d || optD;
-    if (result.correct) {
-      var radio = document.getElementById('q-correct-' + result.correct);
-      if (radio) { radio.checked = true; updateCorrectHighlight(); }
-    }
-  } catch (e) {
-    err.textContent = 'Erro: ' + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg> Melhorar';
-  }
-});
 
 // ---------------------------------------------------------------------------
 // Question bank picker (bank panel in question form)
@@ -770,9 +692,9 @@ function prefillQuestionForm(q) {
 QuestionBank.init({
   setSelect:    document.getElementById('bank-set-select'),
   questionList: document.getElementById('bank-q-list'),
-  generateBtn:  document.getElementById('bank-generate-btn'),
-  improveBtn:   document.getElementById('bank-improve-btn'),
-  errorEl:      document.getElementById('bank-error'),
+  generateBtn:  document.getElementById('q-generate-btn'),
+  improveBtn:   document.getElementById('q-improve-btn'),
+  errorEl:      document.getElementById('q-error'),
   canDelete:    true,
   canCreateSet: true,
   onSelect: function(q) { prefillQuestionForm(q); },
