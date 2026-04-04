@@ -84,9 +84,9 @@
     .bar-fill.mine    { background: var(--primary-dark); }
     
     /* Correct answer high-visibility */
-    .result-option.is-correct { border-color: var(--success); background: var(--success-bg); }
-    .result-option.is-correct .result-letter { background: var(--success); color: #fff; }
-    .result-option.is-correct .result-text   { font-weight: 700; color: var(--success); }
+    .result-option.is-correct { border-color: #0d9488; background: #0d9488; color: #fff; }
+    .result-option.is-correct .result-letter { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid transparent; }
+    .result-option.is-correct .result-text   { font-weight: 700; color: #fff; }
     .result-option.is-correct .result-text::after { content: ' ✓'; font-weight: 800; }
     
     /* Hide boxes for non-correct letters when results are revealed */
@@ -335,17 +335,13 @@
     btn.textContent = t.btnJoining;
 
     try {
-      bsProbe('→ join code=' + code, 'info');
       const payloadObj = { action: 'get_session_state', code, _t: Date.now() };
       const payload = encodeURIComponent(JSON.stringify(payloadObj));
-      bsProbe('→ fetch URL: ' + APPS_SCRIPT_URL + '?payload=' + payload, 'info');
       const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload, { cache: 'no-store' });
       const txt  = await resp.text();
-      bsProbe('← status: ' + resp.status + ' ok: ' + resp.ok + ' | raw: ' + txt.slice(0, 300), resp.ok ? 'info' : 'error');
       const data = JSON.parse(txt);
 
       if (data.error === 'session not found' || !data.session) {
-        bsProbe('not found | code sent: ' + code + ' | parsed error: ' + data.error + ' | session obj: ' + JSON.stringify(data.session), 'error');
         errorEl.textContent = t.errNotFound; return;
       }
       if (data.session.status === 'closed') { errorEl.textContent = t.errClosed; return; }
@@ -354,7 +350,6 @@
       sessionStorage.setItem('cl_session', JSON.stringify(currentSession));
       startSession();
     } catch(err) {
-      bsProbe('join FAIL: ' + err.message, 'error');
       errorEl.textContent = t.errConnection;
     } finally {
       btn.disabled = false;

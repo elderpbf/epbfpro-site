@@ -660,7 +660,7 @@ function renderHistory(closedQs) {
                '<div class="hi-text">' + escHtml(q.text || '') + '</div>' +
                '<div class="hi-meta">' + escHtml(q.created_at ? new Date(q.created_at).toLocaleString('pt-BR') : '') + '</div>' +
                '<div class="hi-actions">' +
-                 '<button class="hi-btn hi-btn-primary" onclick=\'relaunchFromHistory(' + qJson + ')\'>Reabrir</button>' +
+                 '<button class="hi-btn hi-btn-primary" onclick=\'relaunchFromHistory(this, ' + qJson + ')\'>Reabrir</button>' +
                  '<button class="hi-btn" onclick=\'editFromHistory(' + qJson + ')\'>Editar</button>' +
                '</div>' +
              '</div>' +
@@ -670,10 +670,9 @@ function renderHistory(closedQs) {
   document.getElementById('history-card').style.display = 'block';
 }
 
-async function relaunchFromHistory(q) {
+async function relaunchFromHistory(btn, q) {
   if (activeQId && !confirm('Já existe uma pergunta ativa. Encerrar a atual e lançar esta?')) return;
 
-  var btn = event.currentTarget;
   var oldText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '...';
