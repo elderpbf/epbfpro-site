@@ -45,7 +45,10 @@
 .option-bar.is-correct .bar-opt-text,
 .result-bar.is-correct .rb-opt,
 .result-bar.is-correct .rb-pct,
-.result-bar.is-correct .rb-count {
+.result-bar.is-correct .rb-count,
+.result-option.is-correct .result-pct,
+.option-bar.is-correct .bar-pct,
+.option-bar.is-correct .bar-count {
   font-weight: 700 !important;
   color: #fff !important;
 }
