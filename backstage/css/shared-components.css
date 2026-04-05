@@ -1,0 +1,71 @@
+/* Shared structural CSS for bar track/fill */
+.bar-track,
+.rb-track {
+  background: var(--border, rgba(20, 184, 166, 0.12));
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bar-fill,
+.rb-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 6px;
+  transition: width 0.6s ease;
+}
+
+.bar-fill.correct { background: var(--success); }
+.bar-fill.mine    { background: var(--primary-dark); }
+
+/* Shared correct answer highlighting block (solid teal) */
+.result-option.is-correct,
+.option-bar.is-correct,
+.result-bar.is-correct {
+  background-color: #0d9488 !important;
+  border-color: #0d9488 !important;
+  color: #fff !important;
+}
+
+/* Specifically pad host.html's grid bar which lacks default padding */
+.result-bar.is-correct {
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+}
+
+/* Inner elements adjustments for high-visibility contrast */
+.result-option.is-correct .result-letter,
+.option-bar.is-correct .bar-letter,
+.result-bar.is-correct .rb-letter {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.result-option.is-correct .result-text,
+.option-bar.is-correct .bar-opt-text,
+.result-bar.is-correct .rb-opt,
+.result-bar.is-correct .rb-pct,
+.result-bar.is-correct .rb-count {
+  font-weight: 700 !important;
+  color: #fff !important;
+}
+
+.result-option.is-correct .result-text::after,
+.option-bar.is-correct .bar-opt-text::after,
+.result-bar.is-correct .rb-opt::after {
+  content: ' \2713';
+  font-weight: 800;
+}
+
+/* Set track fill to white to contrast against the teal correct block */
+.result-option.is-correct .bar-fill,
+.option-bar.is-correct .bar-fill,
+.result-bar.is-correct .rb-fill {
+  background: #fff !important;
+}
+
+/* Optional clear background for non-correct letters when revealed */
+.results-section.revealed .result-option:not(.is-correct) .result-letter {
+  background: transparent;
+  border: 1px solid transparent;
+}
