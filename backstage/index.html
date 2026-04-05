@@ -710,7 +710,8 @@ async function loadPresentations() {
     if (data.error) throw new Error(data.error);
     renderCards(data.lessons || []);
   } catch (err) {
-    showErrorState(err.message);
+    console.error('loadPresentations: ' + err.message);
+    showNoScriptState();
   }
 }
 
