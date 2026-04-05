@@ -1051,7 +1051,9 @@
         function resolveMediaUrl(url) {
             if (!url) return null;
             url = url.trim();
-            // Google Drive URLs
+            // Drive video preview URLs — pass through as-is
+            if (url.includes('/preview')) return url;
+            // Google Drive image URLs
             let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
             if (!match) match = url.match(/id=([a-zA-Z0-9_-]+)/);
             if (match) {
@@ -1066,12 +1068,19 @@
             return url && /\.(mp4|mov|webm)/i.test(url);
         }
 
+        function isDriveVideo(url) {
+            return url && url.includes('/preview');
+        }
+
         function renderMedia(fotoField) {
             if (!fotoField) return '';
             const items = fotoField.split('|').map(s => resolveMediaUrl(s)).filter(Boolean);
             if (items.length === 0) return '';
             if (items.length === 1) {
                 const url = items[0];
+                if (isDriveVideo(url)) {
+                    return `<div class="update-photo"><iframe src="${url}" frameborder="0" allowfullscreen style="width:100%;aspect-ratio:16/9;border-radius:8px;"></iframe></div>`;
+                }
                 if (isVideo(url)) {
                     return `<div class="update-photo"><video src="${url}" controls preload="none" poster=""></video></div>`;
                 }
@@ -1079,7 +1088,9 @@
             }
             let html = '<div class="update-media-grid">';
             for (const url of items) {
-                if (isVideo(url)) {
+                if (isDriveVideo(url)) {
+                    html += `<div class="update-photo"><iframe src="${url}" frameborder="0" allowfullscreen style="width:100%;aspect-ratio:16/9;border-radius:8px;"></iframe></div>`;
+                } else if (isVideo(url)) {
                     html += `<div class="update-photo"><video src="${url}" controls preload="none"></video></div>`;
                 } else {
                     html += `<div class="update-photo"><img src="${url}" alt="Foto" loading="lazy"></div>`;
