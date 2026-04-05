@@ -1081,7 +1081,7 @@
                     return `<div class="update-photo"><iframe src="${url}" frameborder="0" allowfullscreen style="width:100%;aspect-ratio:16/9;border-radius:8px;"></iframe></div>`;
                 }
                 if (isVideo(url)) {
-                    return `<div class="update-photo"><video src="${url}" controls preload="none" poster=""></video></div>`;
+                    return `<div class="update-photo"><video src="${url}" controls playsinline style="width:100%;border-radius:6px;"></video></div>`;
                 }
                 return `<div class="update-photo"><img src="${url}" alt="Foto" loading="lazy"></div>`;
             }
@@ -1090,7 +1090,7 @@
                 if (isDriveVideo(url)) {
                     html += `<div class="update-photo"><iframe src="${url}" frameborder="0" allowfullscreen style="width:100%;aspect-ratio:16/9;border-radius:8px;"></iframe></div>`;
                 } else if (isVideo(url)) {
-                    html += `<div class="update-photo"><video src="${url}" controls preload="none"></video></div>`;
+                    html += `<div class="update-photo"><video src="${url}" controls playsinline style="width:100%;border-radius:6px;"></video></div>`;
                 } else {
                     html += `<div class="update-photo"><img src="${url}" alt="Foto" loading="lazy"></div>`;
                 }
