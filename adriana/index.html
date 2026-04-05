@@ -1053,12 +1053,8 @@
             url = url.trim();
             // Drive video preview URLs — pass through as-is
             if (url.includes('/preview')) return url;
-            // Google Drive image URLs
-            let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-            if (!match) match = url.match(/id=([a-zA-Z0-9_-]+)/);
-            if (match) {
-                return `https://lh3.googleusercontent.com/d/${match[1]}=s800`;
-            }
+            // Drive image URLs (uc?export=view) — pass through as-is
+            if (url.includes('drive.google.com')) return url;
             // Relative or direct URLs
             if (url.match(/\.(jpg|jpeg|png|gif|webp|mp4|mov)/i)) return url;
             return null;
