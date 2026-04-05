@@ -3,7 +3,7 @@
    Used by classpulse/host.html and classpulse/index.html.
 
    Depends on globals defined by each host page:
-     callScript(params)  — Apps Script fetch helper
+     callWorker(params)  — Worker API fetch helper
      AUTH_TOKEN          — auth string from localStorage
 
    Usage:
@@ -30,7 +30,7 @@ var QuestionBank = (function () {
     var sel = opts.setSelect;
     sel.innerHTML = '<option value="">Carregando...</option>';
 
-    callScript({ action: 'list_question_sets' })
+    callWorker({ action: 'list_question_sets' })
       .then(function (data) {
         var sets = data.sets || [];
         sel.innerHTML = '<option value="">Escolha um conjunto...</option>';
@@ -61,7 +61,7 @@ var QuestionBank = (function () {
 
     listEl.innerHTML = '<div class="qb-msg">Carregando...</div>';
 
-    callScript({ action: 'get_questions', list: name })
+    callWorker({ action: 'get_questions', list: name })
       .then(function (data) {
         var qs = data.questions || [];
         listEl.innerHTML = '';
@@ -122,7 +122,7 @@ var QuestionBank = (function () {
     btn.disabled = true;
     btn.textContent = 'Gerando...';
 
-    callScript({ action: 'ai_question', auth_token: AUTH_TOKEN, prompt: topic })
+    callWorker({ action: 'ai_question', auth_token: AUTH_TOKEN, prompt: topic })
       .then(function (result) {
         opts.onSelect(normalizeAiResult(result));
       })
@@ -151,7 +151,7 @@ var QuestionBank = (function () {
     btn.disabled = true;
     btn.textContent = 'Melhorando...';
 
-    callScript({
+    callWorker({
       action: 'ai_question',
       auth_token: AUTH_TOKEN,
       improve_from: state.text
@@ -174,7 +174,7 @@ var QuestionBank = (function () {
 
   function deleteQuestion(setName, questionText) {
     if (!confirm('Excluir esta questão?')) return;
-    callScript({ action: 'delete_question', auth_token: AUTH_TOKEN, list_name: setName, question: questionText })
+    callWorker({ action: 'delete_question', auth_token: AUTH_TOKEN, list_name: setName, question: questionText })
       .then(function () {
         loadQuestions(opts.setSelect.value);
       })
