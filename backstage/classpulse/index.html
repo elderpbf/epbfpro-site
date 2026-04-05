@@ -12,7 +12,7 @@
 
 <link rel="stylesheet" href="../css/theme.css?v=1.1">
 <link rel="stylesheet" href="../css/backstage.css?v=1.1">
-<link rel="stylesheet" href="../css/classpulse.css?v=1.3">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.4">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.1">
 <script src="../js/debug.js?v=2.3"></script>
 </head>
@@ -71,6 +71,34 @@
           <p>Nenhuma sessão encontrada.<br>Crie uma sessão acima.</p>
         </div>
         <div class="cp-sessions-list" id="sessions-list"></div>
+      </div>
+
+      <!-- ============================================================
+           STATS PANEL (Overlay)
+           ============================================================ -->
+      <div class="cp-stats-panel" id="stats-panel" hidden>
+        <div class="cp-stats-header">
+          <div>
+            <h2 id="stats-title">Sessão</h2>
+            <span class="cp-session-code" id="stats-code"></span>
+          </div>
+          <button class="cp-btn-ghost" id="stats-close-btn">Fechar</button>
+        </div>
+        <div class="cp-stats-kpi">
+          <div class="kpi-box">
+            <div class="kpi-val" id="stats-kpi-q">0</div>
+            <div class="kpi-label">Questões</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-val" id="stats-kpi-s">0</div>
+            <div class="kpi-label">Alunos únicos</div>
+          </div>
+        </div>
+        <div class="cp-stats-most-missed" id="stats-most-missed" hidden>
+          <strong>Mais errada:</strong> <span id="stats-mm-text"></span> (<span id="stats-mm-acc"></span>% acerto)
+        </div>
+        <div class="cp-stats-empty" id="stats-empty" hidden>Nenhum dado de resposta encontrado.</div>
+        <div class="cp-stats-qlist" id="stats-qlist"></div>
       </div>
 
     </div>
@@ -294,6 +322,14 @@ function renderSessions() {
     var actions = document.createElement('div');
     actions.className = 'cp-session-actions';
 
+    var statsBtn = document.createElement('button');
+    statsBtn.className = 'cp-btn-ghost cp-stats-btn';
+    statsBtn.textContent = 'Estatísticas';
+    statsBtn.addEventListener('click', function() {
+      openStats(s);
+    });
+    actions.appendChild(statsBtn);
+
     if (s.status !== 'closed') {
       var hostBtn = document.createElement('a');
       hostBtn.className = 'cp-btn-ghost';
@@ -364,6 +400,86 @@ document.getElementById('create-session-btn').addEventListener('click', async fu
     btn.disabled = false;
     btn.textContent = 'Criar sessão';
   }
+});
+
+// ---------------------------------------------------------------------------
+// SESSION STATS
+// ---------------------------------------------------------------------------
+async function openStats(session) {
+  var panel = document.getElementById('stats-panel');
+  var listWrap = document.getElementById('sessions-list-wrap');
+  var createWrap = document.querySelector('.cp-create-session');
+  
+  document.getElementById('stats-title').textContent = session.title || 'Sem título';
+  document.getElementById('stats-code').textContent = session.code;
+  document.getElementById('stats-kpi-q').textContent = '...';
+  document.getElementById('stats-kpi-s').textContent = '...';
+  document.getElementById('stats-most-missed').hidden = true;
+  document.getElementById('stats-empty').hidden = true;
+  document.getElementById('stats-qlist').innerHTML = '<div class="cp-empty">Carregando estatísticas...</div>';
+  
+  createWrap.hidden = true;
+  listWrap.hidden = true;
+  panel.hidden = false;
+
+  try {
+    var data = await callWorker({ action: 'session_stats', auth_token: AUTH_TOKEN, code: session.code });
+    if (!data.ok) throw new Error(data.error || 'Erro desconhecido');
+    
+    document.getElementById('stats-kpi-q').textContent = data.total_questions || 0;
+    document.getElementById('stats-kpi-s').textContent = data.unique_students || 0;
+    
+    if (data.most_missed) {
+      document.getElementById('stats-most-missed').hidden = false;
+      document.getElementById('stats-mm-text').textContent = data.most_missed.text;
+      document.getElementById('stats-mm-acc').textContent = Math.round(data.most_missed.accuracy * 100);
+    } else {
+      document.getElementById('stats-most-missed').hidden = true;
+    }
+    
+    var qlist = document.getElementById('stats-qlist');
+    qlist.innerHTML = '';
+    
+    if (!data.questions || data.questions.length === 0) {
+      document.getElementById('stats-empty').hidden = false;
+    } else {
+      document.getElementById('stats-empty').hidden = true;
+      data.questions.forEach(function(q) {
+        var qDiv = document.createElement('div');
+        qDiv.className = 'cp-stats-question';
+        
+        var textDiv = document.createElement('div');
+        textDiv.className = 'cp-stats-qtext';
+        textDiv.textContent = q.text;
+        
+        var metaDiv = document.createElement('div');
+        metaDiv.className = 'cp-stats-qmeta';
+        metaDiv.textContent = q.total_answers + ' respostas';
+        
+        var accBar = document.createElement('div');
+        accBar.className = 'cp-stats-bar';
+        if (q.accuracy !== null) {
+          var pct = Math.round(q.accuracy * 100);
+          accBar.innerHTML = '<div class="cp-stats-bar-fill" style="width:' + pct + '%"></div><span class="cp-stats-bar-text">' + pct + '% acerto</span>';
+        } else {
+          accBar.innerHTML = '<span class="cp-stats-bar-text">N/A</span>';
+        }
+        
+        qDiv.appendChild(textDiv);
+        qDiv.appendChild(metaDiv);
+        qDiv.appendChild(accBar);
+        qlist.appendChild(qDiv);
+      });
+    }
+  } catch(e) {
+    document.getElementById('stats-qlist').innerHTML = '<div class="cp-empty cp-form-error">Erro: ' + e.message + '</div>';
+  }
+}
+
+document.getElementById('stats-close-btn').addEventListener('click', function() {
+  document.getElementById('stats-panel').hidden = true;
+  document.querySelector('.cp-create-session').hidden = false;
+  document.getElementById('sessions-list-wrap').hidden = false;
 });
 
 // ---------------------------------------------------------------------------
