@@ -1,5 +1,5 @@
 /* =========================================================
-   ClassPulse — Shared Debug Panel  v2.1
+   ClassPulse — Shared Debug Panel  v2.2
    3 tabs: Log · Errors · Probe
    ─────────────────────────────────────────────────────────
    Tab 1  Log    — explicit bsLog() / dbg() calls
@@ -27,6 +27,7 @@
   var activeTab    = 'log';
   var probeVisible = false;
   var mounted      = false;
+  var enabled      = localStorage.getItem('bs_debug') === '1';
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -66,6 +67,18 @@
       updateBadges();
     }
   }
+
+  window.bsDebugMount = function() {
+    enabled = true;
+    mount();
+  };
+
+  window.bsDebugUnmount = function() {
+    var el = document.getElementById('bsdp');
+    if (el) el.remove();
+    mounted = false;
+    enabled = false;
+  };
 
   window.bsLog   = bsLog;
   window.dbg     = dbg;
@@ -151,6 +164,7 @@
 
   function mount() {
     if (mounted) return;
+    if (!enabled) return;
     mounted = true;
 
     var styleEl = document.createElement('style');
