@@ -1053,8 +1053,11 @@
             url = url.trim();
             // Drive video preview URLs — pass through as-is
             if (url.includes('/preview')) return url;
-            // Drive image URLs (uc?export=view) — pass through as-is
-            if (url.includes('drive.google.com')) return url;
+            // Drive image URLs — convert to thumbnail URL
+            if (url.includes('drive.google.com')) {
+                const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+                if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+            }
             // Relative or direct URLs
             if (url.match(/\.(jpg|jpeg|png|gif|webp|mp4|mov)/i)) return url;
             return null;
