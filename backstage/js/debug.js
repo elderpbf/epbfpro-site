@@ -1,5 +1,5 @@
 /* =========================================================
-   ClassPulse — Shared Debug Panel  v2.0
+   ClassPulse — Shared Debug Panel  v2.1
    3 tabs: Log · Errors · Probe
    ─────────────────────────────────────────────────────────
    Tab 1  Log    — explicit bsLog() / dbg() calls
@@ -102,7 +102,7 @@
   var css = [
     // container + toggle button
     '#bsdp{position:fixed;bottom:1rem;right:1rem;z-index:99999;font-family:monospace;font-size:11px;display:flex;flex-direction:column;align-items:flex-end;gap:4px}',
-    '#bsdp-toggle{background:#1a1a1a;color:#4f4;border:1px solid #333;border-radius:4px;padding:3px 9px;cursor:pointer;opacity:.65;font-family:monospace;font-size:11px;display:flex;align-items:center;gap:5px}',
+    '#bsdp-toggle{background:#1a1a1a;color:#0d9488;border:1px solid #333;border-radius:4px;padding:3px 9px;cursor:pointer;opacity:.65;font-family:monospace;font-size:11px;display:flex;align-items:center;gap:5px}',
     '#bsdp-toggle:hover{opacity:1}',
     '#bsdp-main-badge{background:#fc8181;color:#000;border-radius:8px;padding:0 4px;font-size:9px;font-weight:700;display:none;line-height:1.4}',
     '#bsdp-main-badge.vis{display:inline}',
@@ -115,10 +115,10 @@
     '#bsdp-tabs{display:flex;border-bottom:1px solid #222;flex-shrink:0}',
     '.bsdp-tab{background:none;border:none;border-bottom:2px solid transparent;color:#555;cursor:pointer;font-family:monospace;font-size:10px;padding:5px 11px;letter-spacing:.05em;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px}',
     '.bsdp-tab:hover{color:#aaa}',
-    '.bsdp-tab.active{color:#4f4;border-bottom-color:#4f4}',
+    '.bsdp-tab.active{color:#0d9488;border-bottom-color:#0d9488}',
     '#bsdp-tab-errors.active{color:#fc8181;border-bottom-color:#fc8181}',
-    '#bsdp-tab-probe{color:#c80}',
-    '#bsdp-tab-probe.active{color:#f90;border-bottom-color:#f90}',
+    '#bsdp-tab-probe{color:#0891b2}',
+    '#bsdp-tab-probe.active{color:#06b6d4;border-bottom-color:#06b6d4}',
     '.bsdp-tab-badge{background:#fc8181;color:#000;border-radius:8px;padding:0 3px;font-size:9px;font-weight:700;line-height:1.4;display:none}',
     '.bsdp-tab-badge.vis{display:inline}',
     '.bsdp-tab-x{color:#555;cursor:pointer;font-size:14px;line-height:1;padding:0 1px;margin-left:1px}',
@@ -139,7 +139,7 @@
     '.bsdp-msg{color:#bbb}',
     '.bsdp-entry.error .bsdp-msg{color:#fc8181;font-weight:bold}',
     '.bsdp-entry.warn  .bsdp-msg{color:#c80}',
-    '.bsdp-entry.ok    .bsdp-msg{color:#4a4}',
+    '.bsdp-entry.ok    .bsdp-msg{color:#0d9488}',
     '.bsdp-entry.info  .bsdp-msg{color:#bbb}',
     '.bsdp-entry.poll  .bsdp-msg{color:#3a6080}',
 
