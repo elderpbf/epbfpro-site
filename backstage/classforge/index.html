@@ -545,40 +545,22 @@ document.getElementById('theme-save-btn').addEventListener('click', function() {
 
 async function callGeminiTheme(description, apiKey) {
   var prompt =
-    'You are a CSS theme designer for Reveal.js presentations.
-' +
-    'Generate a professional, visually cohesive theme based on this description: "' + description + '"
-
-' +
-    'Return ONLY valid JSON with this exact structure (no markdown, no explanation):
-' +
-    '{
-' +
-    '  "name": "Nome do Tema (2-3 words in Portuguese)",
-' +
-    '  "base": "black",
-' +
-    '  "overrides": {
-' +
-    '    "--r-background-color": "#hex",
-' +
-    '    "--r-main-color": "#hex",
-' +
-    '    "--r-heading-color": "#hex",
-' +
-    '    "--r-link-color": "#hex",
-' +
-    '    "--r-selection-background-color": "rgba(r,g,b,0.75)"
-' +
-    '  }
-' +
-    '}
-
-' +
-    'base must be one of: black, white, night, moon, dracula, sky, beige, serif, simple.
-' +
-    'Choose the base that best complements the described style.
-' +
+    'You are a CSS theme designer for Reveal.js presentations.\n' +
+    'Generate a professional, visually cohesive theme based on this description: "' + description + '"\n\n' +
+    'Return ONLY valid JSON with this exact structure (no markdown, no explanation):\n' +
+    '{\n' +
+    '  "name": "Nome do Tema (2-3 words in Portuguese)",\n' +
+    '  "base": "black",\n' +
+    '  "overrides": {\n' +
+    '    "--r-background-color": "#hex",\n' +
+    '    "--r-main-color": "#hex",\n' +
+    '    "--r-heading-color": "#hex",\n' +
+    '    "--r-link-color": "#hex",\n' +
+    '    "--r-selection-background-color": "rgba(r,g,b,0.75)"\n' +
+    '  }\n' +
+    '}\n\n' +
+    'base must be one of: black, white, night, moon, dracula, sky, beige, serif, simple.\n' +
+    'Choose the base that best complements the described style.\n' +
     'All color values must be valid CSS. Ensure high contrast between background and text.';
   var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
     method: 'POST',
@@ -591,8 +573,7 @@ async function callGeminiTheme(description, apiKey) {
   }
   var data = await resp.json();
   var raw = data.candidates[0].content.parts[0].text;
-  var clean = raw.replace(/^```[a-z]*
-?/i, '').replace(/```$/, '').trim();
+  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
   return JSON.parse(clean);
 }
 
