@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ClassForge - Backstage</title>
+
+<link rel="icon" type="image/x-icon" href="../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png">
+
+<link rel="stylesheet" href="../css/theme.css?v=1.2">
+<link rel="stylesheet" href="../css/backstage.css?v=1.2">
+<link rel="stylesheet" href="../css/classforge.css?v=1.4">
+<link rel="stylesheet" href="../css/shared-components.css?v=1.1">
+<script src="../js/debug.js?v=2.3"></script>
+</head>
+<body>
+
+<div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
+
+<div id="screen-app" class="bs-app">
+
+  <header class="bs-topbar">
+    <div class="bs-topbar-inner">
+      <a href="/backstage/" class="bs-topbar-logo" aria-label="Voltar ao Backstage">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <div class="bs-topbar-wordmark">
+        <span class="bs-topbar-brand">Backstage</span>
+        <span class="bs-topbar-name">ClassForge</span>
+      </div>
+      <div class="bs-topbar-spacer"></div>
+      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
+        <span id="themeIcon"></span>
+      </button>
+      <button class="bs-icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button class="bs-logout-btn" id="logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <main class="bs-main">
+
+      <div class="cf-toolbar">
+        <h1 data-key="cf_title">Apresentações</h1>
+        <button class="cf-refresh-btn" id="refresh-btn" title="Recarregar lista">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          <span data-key="refresh_btn">Atualizar</span>
+        </button>
+        <a href="https://slides.google.com/" target="_blank" rel="noopener noreferrer" class="cf-new-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span data-key="new_btn">Nova apresentação</span>
+        </a>
+      </div>
+
+      <div id="cf-grid" class="cf-grid">
+        <!-- Demo card + dynamic cards injected by JS -->
+      </div>
+
+  </main>
+
+</div>
+
+<!-- =====================================================
+     SETTINGS DRAWER
+     ===================================================== -->
+<div id="settings-overlay" class="bs-overlay" hidden></div>
+
+<aside id="settings-drawer" class="bs-drawer" hidden aria-label="Configurações">
+
+  <h2>
+    <span data-key="settings_title">Configurações</span>
+    <button class="bs-drawer-close" id="settings-close" aria-label="Fechar">&times;</button>
+  </h2>
+
+  <!-- ClassForge Apps Script -->
+  <h3 data-key="settings_script_section">Apps Script (ClassForge)</h3>
+  <div class="bs-field">
+    <label data-key="settings_script_label">URL do Apps Script</label>
+    <input id="settings-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+  </div>
+  <p class="bs-hint" data-key="settings_script_hint">
+    Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.
+  </p>
+  <button class="bs-save-btn" id="settings-save-btn" data-key="settings_save_btn">Salvar</button>
+  <p class="bs-drawer-save-msg" id="settings-save-msg"></p>
+
+  <hr>
+
+  <!-- Reveal.js theme -->
+  <h3 data-key="settings_theme_section">Tema de apresentação</h3>
+  <p class="bs-hint" style="margin-bottom:0.75rem" data-key="settings_theme_hint">Aplicado a todas as apresentações ao clicar em Apresentar.</p>
+  <div id="settings-theme-grid" class="cf-theme-grid"></div>
+
+  <div style="margin-top:1.25rem">
+    <button class="bs-toggle-btn" id="show-theme-gen-btn" data-key="settings_theme_gen_btn">+ Criar tema com IA</button>
+
+    <div id="theme-gen-form" hidden style="margin-top:1rem">
+      <div class="bs-field">
+        <label data-key="settings_theme_desc_label">Descreva o tema</label>
+        <textarea id="theme-desc-input" class="bs-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano..."></textarea>
+      </div>
+       <div class="bs-field">
+        <label>Chave da API Gemini (para gerar tema)</label>
+        <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
+      </div>
+      <p class="bs-form-error" id="theme-gen-error"></p>
+      <button class="bs-save-btn" id="theme-gen-btn" data-key="settings_theme_gen_submit">Gerar com Gemini</button>
+
+      <div id="theme-gen-preview" hidden style="margin-top:1rem; padding:0.75rem; border-radius:8px; border:1px solid rgba(20,184,166,.3)">
+        <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.5rem" data-key="theme_preview_label">Pré-visualização</p>
+        <div id="theme-preview-swatches" style="display:flex; gap:6px; margin-bottom:0.75rem"></div>
+        <p id="theme-preview-name" style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:0.75rem"></p>
+        <button class="bs-save-btn" id="theme-save-btn" data-key="theme_save_btn">Salvar tema</button>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+
+<script src="../js/utils.js?v=1.0"></script>
+<script src="../js/api-client.js?v=1.0"></script>
+<script src="../js/theme-manager.js?v=1.0"></script>
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Auth check
+// ---------------------------------------------------------------------------
+var PW_KEY = 'bs_pw_hash';
+var AUTH_KEY = 'bs_auth';
+document.querySelectorAll('input[type="password"]').forEach(function(el) { el.value = ''; });
+if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
+  location.replace('/backstage/');
+}
+
+// ---------------------------------------------------------------------------
+// i18n
+// ---------------------------------------------------------------------------
+var TRANSLATIONS = {
+  'pt-BR': {
+    logout_btn:                'Sair',
+    cf_title:                  'Apresentações',
+    refresh_btn:               'Atualizar',
+    new_btn:                   'Nova apresentação',
+    settings_title:            'Configurações',
+    settings_script_section:   'Apps Script (ClassForge)',
+    settings_script_label:     'URL do Apps Script',
+    settings_script_hint:      'Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.',
+    settings_save_btn:         'Salvar',
+    settings_theme_section:    'Tema de apresentação',
+    settings_theme_hint:       'Aplicado a todas as apresentações ao clicar em Apresentar.',
+    settings_theme_gen_btn:    '+ Criar tema com IA',
+    settings_theme_desc_label: 'Descreva o tema',
+    settings_theme_gen_submit: 'Gerar com Gemini',
+    theme_preview_label:       'Pré-visualização',
+    theme_save_btn:            'Salvar tema',
+    card_present:              'Apresentar',
+    card_edit:                 'Editar',
+    card_demo_badge:           'Demo',
+    card_demo_title:           'Por que patos são legais?',
+    card_demo_meta:            'Apresentação de demonstração',
+    state_no_script_msg:       'Configure o Apps Script para ver suas apresentações.',
+    state_no_script_btn:       'Configurar agora',
+    state_loading_msg:         'Carregando apresentações...',
+    state_error_btn:           'Tentar novamente',
+    state_empty_msg:           'Nenhuma apresentação encontrada na pasta.',
+    save_ok:                   'Salvo com sucesso.',
+  }
+};
+var LANG = 'pt-BR';
+var T = TRANSLATIONS[LANG];
+function t(key) { return T[key] || key; }
+
+document.querySelectorAll('[data-key]').forEach(function(el) {
+  var key = el.getAttribute('data-key');
+  if (T[key]) el.textContent = T[key];
+});
+
+
+// ---------------------------------------------------------------------------
+// Theme
+// ---------------------------------------------------------------------------
+ThemeManager.init({ storageKey: 'bs_theme' });
+ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
+
+document.getElementById('logout-btn').addEventListener('click', function() {
+  sessionStorage.removeItem(AUTH_KEY);
+  location.replace('/backstage/');
+});
+
+// ---------------------------------------------------------------------------
+// ClassForge: Presentation grid
+// ---------------------------------------------------------------------------
+
+var THUMB_GRADIENTS = [
+  'linear-gradient(135deg, #0d9488 0%, #047857 100%)',
+  'linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)',
+  'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
+  'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+  'linear-gradient(135deg, #be123c 0%, #e11d48 100%)',
+  'linear-gradient(135deg, #0369a1 0%, #0891b2 100%)',
+];
+
+function thumbGrad(index) {
+  return THUMB_GRADIENTS[index % THUMB_GRADIENTS.length];
+}
+
+function initial(title) {
+  return (title || '?').trim().charAt(0).toUpperCase();
+}
+
+function buildDemoCard() {
+  var card = document.createElement('div');
+  card.className = 'cf-card';
+  var thumb = document.createElement('div');
+  thumb.className = 'cf-card-thumb';
+  thumb.style.background = 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)';
+  thumb.innerHTML =
+    '<span style="font-size:2.5rem">P</span>' +
+    '<span class="cf-card-badge">' + t('card_demo_badge') + '</span>';
+  card.appendChild(thumb);
+  var body = document.createElement('div');
+  body.className = 'cf-card-body';
+  var title = document.createElement('h3');
+  title.className = 'cf-card-title';
+  title.textContent = t('card_demo_title');
+  body.appendChild(title);
+  var meta = document.createElement('p');
+  meta.className = 'cf-card-meta';
+  meta.textContent = t('card_demo_meta');
+  body.appendChild(meta);
+  var actions = document.createElement('div');
+  actions.className = 'cf-card-actions';
+  var present = document.createElement('a');
+  present.className = 'cf-btn-present';
+  present.href = 'viewer/?demo=1';
+  present.textContent = t('card_present');
+  actions.appendChild(present);
+  var edit = document.createElement('span');
+  edit.className = 'cf-btn-edit cf-disabled';
+  edit.textContent = t('card_edit');
+  edit.title = 'Demonstração - sem edição';
+  actions.appendChild(edit);
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+function buildCard(pres, index) {
+  var scriptUrl = localStorage.getItem('bs_cf_script_url') || '';
+  var card = document.createElement('div');
+  card.className = 'cf-card';
+  var thumb = document.createElement('div');
+  thumb.className = 'cf-card-thumb';
+  thumb.style.background = thumbGrad(index);
+  thumb.textContent = initial(pres.title);
+  card.appendChild(thumb);
+  var body = document.createElement('div');
+  body.className = 'cf-card-body';
+  var title = document.createElement('h3');
+  title.className = 'cf-card-title';
+  title.textContent = pres.title || 'Sem título';
+  body.appendChild(title);
+  var meta = document.createElement('p');
+  meta.className = 'cf-card-meta';
+  meta.textContent = 'Modificado: ' + (pres.modified || '--');
+  body.appendChild(meta);
+  var actions = document.createElement('div');
+  actions.className = 'cf-card-actions';
+  var viewerUrl = 'viewer/?id=' + encodeURIComponent(pres.id);
+  if (scriptUrl) viewerUrl += '&script=' + encodeURIComponent(scriptUrl);
+  var present = document.createElement('a');
+  present.className = 'cf-btn-present';
+  present.href = viewerUrl;
+  present.textContent = t('card_present');
+  actions.appendChild(present);
+  if (pres.url) {
+    var editLink = document.createElement('a');
+    editLink.className = 'cf-btn-edit';
+    editLink.href = pres.url;
+    editLink.target = '_blank';
+    editLink.rel = 'noopener noreferrer';
+    editLink.textContent = t('card_edit');
+    actions.appendChild(editLink);
+  }
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+function buildSkeletonCard() {
+  var card = document.createElement('div');
+  card.className = 'cf-card cf-card-skeleton';
+  card.innerHTML =
+    '<div class="cf-card-thumb cf-skeleton cf-card-thumb-sk"></div>' +
+    '<div class="cf-card-body">' +
+      '<div class="cf-skeleton cf-sk-line" style="margin-bottom:10px"></div>' +
+      '<div class="cf-skeleton cf-sk-line short"></div>' +
+    '</div>';
+  return card;
+}
+
+function buildStateBlock(html) {
+  var div = document.createElement('div');
+  div.className = 'cf-state-block';
+  div.innerHTML = html;
+  return div;
+}
+
+var grid = document.getElementById('cf-grid');
+
+function renderCards(presentations) {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  if (!presentations) return;
+  if (presentations.length === 0) {
+    grid.appendChild(buildStateBlock('<p>' + t('state_empty_msg') + '</p>'));
+    return;
+  }
+  presentations.forEach(function(pres, i) {
+    grid.appendChild(buildCard(pres, i));
+  });
+}
+
+function showSkeletons() {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  for (var i = 0; i < 3; i++) grid.appendChild(buildSkeletonCard());
+}
+
+function showNoScriptState() {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  grid.appendChild(buildStateBlock(
+    '<p>' + t('state_no_script_msg') + '</p>' +
+    '<button class="cf-inline-btn" id="state-settings-btn">' + t('state_no_script_btn') + '</button>'
+  ));
+  var btn = document.getElementById('state-settings-btn');
+  if (btn) btn.addEventListener('click', openSettings);
+}
+
+function showErrorState(msg) {
+  grid.innerHTML = '';
+  grid.appendChild(buildDemoCard());
+  grid.appendChild(buildStateBlock(
+    '<p style="color:#ef4444">' + (msg || 'Erro ao carregar') + '</p>' +
+    '<button class="cf-inline-btn" id="state-retry-btn">' + t('state_error_btn') + '</button>'
+  ));
+  var btn = document.getElementById('state-retry-btn');
+  if (btn) btn.addEventListener('click', loadPresentations);
+}
+
+async function loadPresentations() {
+  var scriptUrl = localStorage.getItem('bs_cf_script_url') || '';
+  if (!scriptUrl || !scriptUrl.startsWith('https://')) { showNoScriptState(); return; }
+  showSkeletons();
+  try {
+    var resp = await fetch(scriptUrl + '?action=list');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    renderCards(data.lessons || []);
+  } catch (err) {
+    console.error('loadPresentations: ' + err.message);
+    showNoScriptState();
+  }
+}
+
+document.getElementById('refresh-btn').addEventListener('click', loadPresentations);
+
+// ---------------------------------------------------------------------------
+// Settings drawer
+// ---------------------------------------------------------------------------
+
+var overlay = document.getElementById('settings-overlay');
+var drawer  = document.getElementById('settings-drawer');
+
+function openSettings() {
+  document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
+  document.getElementById('settings-save-msg').textContent = '';
+  document.getElementById('settings-gemini-key').value = localStorage.getItem('bs_gemini_key') || '';
+  overlay.hidden = false;
+  drawer.hidden = false;
+  requestAnimationFrame(function() {
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+  });
+  renderThemeGrid();
+}
+
+function closeSettings() {
+  overlay.classList.remove('open');
+  drawer.classList.remove('open');
+  setTimeout(function() {
+    overlay.hidden = true;
+    drawer.hidden = true;
+  }, 300);
+}
+
+document.getElementById('settings-btn').addEventListener('click', openSettings);
+document.getElementById('settings-close').addEventListener('click', closeSettings);
+overlay.addEventListener('click', closeSettings);
+
+document.getElementById('settings-save-btn').addEventListener('click', function() {
+  var url = document.getElementById('settings-script-url').value.trim();
+  localStorage.setItem('bs_cf_script_url', url);
+  document.getElementById('settings-save-msg').textContent = t('save_ok');
+  setTimeout(function() {
+    document.getElementById('settings-save-msg').textContent = '';
+  }, 3000);
+  loadPresentations();
+});
+
+// ---------------------------------------------------------------------------
+// Theme management (Reveal.js themes in settings)
+// ---------------------------------------------------------------------------
+
+var BUILTIN_THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
+var THEME_DATA = {
+  black:     { bg: '#191919', heading: '#fff',     accent: '#42affa', text: '#fff'     },
+  white:     { bg: '#fff',    heading: '#222',     accent: '#2a76dd', text: '#222'     },
+  league:    { bg: '#1a1a2e', heading: '#eee',     accent: '#f6c90e', text: '#eee'     },
+  beige:     { bg: '#f7f2d3', heading: '#333',     accent: '#8b743d', text: '#333'     },
+  night:     { bg: '#1c1e20', heading: '#eee',     accent: '#e7ad52', text: '#eee'     },
+  serif:     { bg: '#f0ede0', heading: '#383d3d',  accent: '#8b4513', text: '#383d3d'  },
+  simple:    { bg: '#fff',    heading: '#333',     accent: '#333',    text: '#444'     },
+  solarized: { bg: '#002b36', heading: '#93a1a1',  accent: '#268bd2', text: '#657b83'  },
+  moon:      { bg: '#002b36', heading: '#93a1a1',  accent: '#00bcd4', text: '#839496'  },
+  dracula:   { bg: '#282a36', heading: '#f8f8f2',  accent: '#bd93f9', text: '#f8f8f2'  },
+  sky:       { bg: '#add9e4', heading: '#003b4f',  accent: '#007da3', text: '#003b4f'  },
+  blood:     { bg: '#2a0000', heading: '#eee',     accent: '#a23',    text: '#eee'     }
+};
+
+function getCustomThemes() { return JSON.parse(localStorage.getItem('bs_custom_themes') || '[]'); }
+function saveCustomThemes(list) { localStorage.setItem('bs_custom_themes', JSON.stringify(list)); }
+function getActiveTheme() { return localStorage.getItem('bs_reveal_theme') || 'black'; }
+
+function renderThemeGrid() {
+  var gridEl = document.getElementById('settings-theme-grid');
+  gridEl.innerHTML = '';
+  var active = getActiveTheme();
+
+  BUILTIN_THEMES.forEach(function(themeName) {
+    var d = THEME_DATA[themeName] || {};
+    var card = document.createElement('div');
+    card.className = 'cf-theme-card' + (active === themeName ? ' cf-selected' : '');
+    card.dataset.value = themeName;
+    card.innerHTML = `<div class="cf-theme-card-preview" style="background:${d.bg}"><div class="cf-theme-card-heading" style="color:${d.heading}">Aa</div><div class="cf-theme-card-bar" style="background:${d.accent}"></div><div class="cf-theme-card-lines"><div class="cf-theme-card-line" style="background:${d.text}"></div><div class="cf-theme-card-line" style="background:${d.text}"></div></div></div><div class="cf-theme-card-label" style="background:${d.bg};color:${d.text}">${themeName}</div>`;
+    gridEl.appendChild(card);
+    card.addEventListener('click', function() {
+      localStorage.setItem('bs_reveal_theme', themeName);
+      renderThemeGrid();
+    });
+  });
+
+  getCustomThemes().forEach(function(ct, idx) {
+    var ov = ct.overrides || {};
+    var bg = ov['--r-background-color'] || '#222', heading = ov['--r-heading-color'] || '#fff', accent = ov['--r-link-color'] || '#aaa', text = ov['--r-main-color'] || '#ccc';
+    var key = 'custom:' + ct.name;
+    var card = document.createElement('div');
+    card.className = 'cf-theme-card' + (active === key ? ' cf-selected' : '');
+    card.dataset.value = key;
+    card.innerHTML = `<div class="cf-theme-card-preview" style="background:${bg}"><div class="cf-theme-card-heading" style="color:${heading}">Aa</div><div class="cf-theme-card-bar" style="background:${accent}"></div><div class="cf-theme-card-lines"><div class="cf-theme-card-line" style="background:${text}"></div><div class="cf-theme-card-line" style="background:${text}"></div></div></div><div class="cf-theme-card-label" style="background:${bg};color:${text}">${ct.name} \u2736</div>`;
+    var del = document.createElement('button');
+    del.className = 'cf-theme-card-delete';
+    del.textContent = '\u00d7';
+    del.title = 'Excluir tema';
+    del.onclick = function(e) {
+      e.stopPropagation();
+      var list = getCustomThemes();
+      list.splice(idx, 1);
+      saveCustomThemes(list);
+      if (getActiveTheme() === key) localStorage.setItem('bs_reveal_theme', 'black');
+      renderThemeGrid();
+    };
+    card.appendChild(del);
+    gridEl.appendChild(card);
+    card.addEventListener('click', function() {
+      localStorage.setItem('bs_reveal_theme', key);
+      renderThemeGrid();
+    });
+  });
+}
+
+document.getElementById('show-theme-gen-btn').addEventListener('click', function() { document.getElementById('theme-gen-form').hidden = !document.getElementById('theme-gen-form').hidden; });
+
+var pendingTheme = null;
+document.getElementById('theme-gen-btn').addEventListener('click', async function() {
+  var apiKey  = document.getElementById('settings-gemini-key').value.trim();
+  var desc    = document.getElementById('theme-desc-input').value.trim();
+  var errEl   = document.getElementById('theme-gen-error');
+  var preview = document.getElementById('theme-gen-preview');
+  errEl.textContent = ''; preview.hidden = true; pendingTheme = null;
+
+  if (!apiKey) { errEl.textContent = 'Configure a chave da API Gemini.'; return; }
+  if (!desc)   { errEl.textContent = 'Descreva o tema antes de gerar.'; return; }
+
+  var btn = this; btn.textContent = 'Gerando...'; btn.disabled = true;
+  try {
+    var theme = await callGeminiTheme(desc, apiKey);
+    pendingTheme = theme;
+    var swatchContainer = document.getElementById('theme-preview-swatches');
+    swatchContainer.innerHTML = '';
+    [theme.overrides['--r-background-color'], theme.overrides['--r-main-color'], theme.overrides['--r-heading-color'], theme.overrides['--r-link-color']].filter(Boolean).forEach(function(c) {
+      var s = document.createElement('div');
+      s.style.cssText = 'width:28px;height:28px;border-radius:6px;background:'+c+';border:1px solid rgba(0,0,0,.2)';
+      swatchContainer.appendChild(s);
+    });
+    document.getElementById('theme-preview-name').textContent = theme.name;
+    localStorage.setItem('bs_gemini_key', apiKey);
+    preview.hidden = false;
+  } catch (err) {
+    errEl.textContent = 'Erro: ' + err.message;
+  } finally {
+    btn.textContent = t('settings_theme_gen_submit'); btn.disabled = false;
+  }
+});
+
+document.getElementById('theme-save-btn').addEventListener('click', function() {
+  if (!pendingTheme) return;
+  var list = getCustomThemes();
+  var existIdx = list.findIndex(function(x) { return x.name === pendingTheme.name; });
+  if (existIdx >= 0) list[existIdx] = pendingTheme;
+  else list.push(pendingTheme);
+  saveCustomThemes(list);
+  localStorage.setItem('bs_reveal_theme', 'custom:' + pendingTheme.name);
+  document.getElementById('theme-gen-preview').hidden = true;
+  document.getElementById('theme-desc-input').value = '';
+  pendingTheme = null;
+  renderThemeGrid();
+});
+
+async function callGeminiTheme(description, apiKey) {
+  var prompt =
+    'You are a CSS theme designer for Reveal.js presentations.
+' +
+    'Generate a professional, visually cohesive theme based on this description: "' + description + '"
+
+' +
+    'Return ONLY valid JSON with this exact structure (no markdown, no explanation):
+' +
+    '{
+' +
+    '  "name": "Nome do Tema (2-3 words in Portuguese)",
+' +
+    '  "base": "black",
+' +
+    '  "overrides": {
+' +
+    '    "--r-background-color": "#hex",
+' +
+    '    "--r-main-color": "#hex",
+' +
+    '    "--r-heading-color": "#hex",
+' +
+    '    "--r-link-color": "#hex",
+' +
+    '    "--r-selection-background-color": "rgba(r,g,b,0.75)"
+' +
+    '  }
+' +
+    '}
+
+' +
+    'base must be one of: black, white, night, moon, dracula, sky, beige, serif, simple.
+' +
+    'Choose the base that best complements the described style.
+' +
+    'All color values must be valid CSS. Ensure high contrast between background and text.';
+  var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+  });
+  if (!resp.ok) {
+    var errData = await resp.json().catch(function(){ return {}; });
+    throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + resp.status);
+  }
+  var data = await resp.json();
+  var raw = data.candidates[0].content.parts[0].text;
+  var clean = raw.replace(/^```[a-z]*
+?/i, '').replace(/```$/, '').trim();
+  return JSON.parse(clean);
+}
+
+// ---------------------------------------------------------------------------
+// Start
+// ---------------------------------------------------------------------------
+loadPresentations();
+</script>
+</body>
+</html>
