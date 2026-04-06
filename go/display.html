@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
   <title>Classroom · Display</title>
-  <link rel="stylesheet" href="../backstage/css/theme.css?v=1.1">
+  <link rel="stylesheet" href="../backstage/css/theme.css?v=1.2">
+  <link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.1">
+  <script src="/backstage/js/debug.js?v=2.4"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -50,7 +52,7 @@
     /* Option bars */
     .option-bar { display: grid; grid-template-columns: 44px 1fr 60px; align-items: center; gap: 14px; margin-bottom: 18px; padding: 12px 16px; border-radius: 12px; border: 3px solid transparent; transition: all 0.3s; }
     .bar-letter { font-size: 0.85rem; font-weight: 700; color: var(--primary-dark); background: var(--surface); border: 1px solid var(--border); padding: 8px 0; border-radius: 8px; text-align: center; }
-    .bar-right { }
+
     .bar-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
     .bar-opt-text { font-size: 1.3rem; color: var(--text-primary); font-weight: 400; }
     .bar-pct { font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); }
@@ -59,14 +61,6 @@
     .bar-fill.correct { background: var(--success); }
     .bar-count { font-size: 1.1rem; font-weight: 600; color: var(--text-secondary); text-align: right; }
 
-    /* Correct answer high-visibility */
-    .option-bar.is-correct { background: #0d9488; border-color: #0d9488; color: #fff; }
-    .option-bar.is-correct .bar-letter   { background: rgba(255,255,255,0.2); border-color: transparent; color: #fff; }
-    .option-bar.is-correct .bar-opt-text { font-weight: 700; color: #fff; }
-    .option-bar.is-correct .bar-pct      { color: #fff; }
-    .option-bar.is-correct .bar-fill     { background: #fff; }
-    .option-bar.is-correct .bar-count    { color: #fff; }
-    .option-bar.is-correct .bar-opt-text::after { content: ' ✓'; font-weight: 800; }
 
     /* Idle screen */
     .idle-screen {
@@ -113,7 +107,7 @@
     <span class="logo">PensoIA</span>
     <span class="session-title" id="display-title">Carregando…</span>
     <span class="session-code"  id="display-code"></span>
-    <button id="theme-btn" aria-label="Alternar tema" onclick="toggleTheme()">
+    <button id="theme-btn" aria-label="Alternar tema" onclick="ThemeManager.toggleTheme()">
       <span id="theme-icon"></span>
     </button>
   </div>
@@ -144,44 +138,24 @@
     <div class="refresh-dot" id="refresh-dot" title="Ao vivo"></div>
   </div>
 
+<script src="../backstage/js/utils.js?v=1.0"></script>
+<script src="../backstage/js/api-client.js?v=1.0"></script>
+<script src="../backstage/js/theme-manager.js?v=1.0"></script>
 <script>
   // ── THEME ────────────────────────────────────────────────────────────────
-  var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-  var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-
-  function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    var icon = document.getElementById('theme-icon');
-    if (icon) icon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
-    localStorage.setItem('bs_theme_public', theme);
-  }
-
-  function toggleTheme() {
-    var cur = document.documentElement.getAttribute('data-theme') || 'dark';
-    applyTheme(cur === 'dark' ? 'light' : 'dark');
-  }
-
+  ThemeManager.init({ storageKey: 'bs_theme_public' });
   (function() {
     var urlParams = new URLSearchParams(window.location.search);
     var urlTheme  = urlParams.get('theme');
     var stored    = localStorage.getItem('bs_theme_public');
-    var theme     = 'light'; // Default to light mode for public display
-
-    if (urlTheme === 'dark' || urlTheme === 'light') {
-      theme = urlTheme;
-    } else if (stored === 'dark' || stored === 'light') {
-      theme = stored;
-    }
-    applyTheme(theme);
+    var theme     = 'light';
+    if (urlTheme === 'dark' || urlTheme === 'light') theme = urlTheme;
+    else if (stored === 'dark' || stored === 'light') theme = stored;
+    ThemeManager.applyTheme(theme);
   })();
   // ────────────────────────────────────────────────────────────────────────
 
-  // ── CONFIG ──────────────────────────────────────────────────────────────
-  const SPREADSHEET_ID = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA'; // dormant
-  const SESSIONS_CSV   = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`; // dormant
-  const QUESTIONS_CSV  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`; // dormant
-  const ANSWERS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Answers`; // dormant
-  const WORKER_URL     = 'https://backstage-api.pensoia.workers.dev';
+  // ── CONFIG ────────────────────────────────────────────────────────────────
   const POLL_INTERVAL  = 3000;
   // ────────────────────────────────────────────────────────────────────────
 
@@ -206,16 +180,6 @@
   const t = STRINGS[ACTIVE_LANG] || STRINGS.pt;
   // ────────────────────────────────────────────────────────────────────────
 
-  // ── CONFIG CHECK ─────────────────────────────────────────────────────────
-  if (SPREADSHEET_ID.includes('REPLACE')) {
-    document.querySelector('.main').innerHTML =
-      '<div style="padding:40px;text-align:center;color:#c44;font-size:0.9rem;">' +
-      '<strong>Setup incompleto.</strong><br>Configure SPREADSHEET_ID neste arquivo.' +
-      '</div>';
-    throw new Error('Classroom Light: config placeholders not replaced');
-  }
-  // ────────────────────────────────────────────────────────────────────────
-
   const params      = new URLSearchParams(window.location.search);
   const sessionCode = (params.get('code') || '').trim().toUpperCase();
 
@@ -235,31 +199,6 @@
     init();
   }
 
-  // ── CSV PARSING ──────────────────────────────────────────────────────────
-  function parseCSV(text) {
-    const trimmed = text.trim();
-    if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
-      console.error('Classroom Light: CSV returned HTML. Is the Sheet published to web?');
-      dbg('warn', 'CSV returned HTML — sheet not published to web?');
-      return [];
-    }
-    return trimmed.split('\n').slice(1).map(parseCSVLine);
-  }
-
-  function parseCSVLine(line) {
-    const result = [];
-    let current = '', inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') {
-        if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
-        else inQuotes = !inQuotes;
-      } else if (line[i] === ',' && !inQuotes) {
-        result.push(current); current = '';
-      } else { current += line[i]; }
-    }
-    result.push(current);
-    return result;
-  }
 
   // ── INIT ─────────────────────────────────────────────────────────────────
   async function init() {
@@ -273,9 +212,7 @@
     dot.classList.add('active');
 
     try {
-      const payload = encodeURIComponent(JSON.stringify({ action: 'get_session_state', code: sessionCode }));
-      const resp = await fetch(WORKER_URL + '?payload=' + payload);
-      const data = await resp.json();
+      const data = await callWorker({ action: 'get_session_state', code: sessionCode });
 
       if (data.session) {
         sessionTitle = data.session.title;
@@ -330,7 +267,7 @@
         <div class="center-state">
           <span class="state-icon">✓</span>
           <span class="state-text">${t.sessionEnded}</span>
-          <span class="state-sub">${escapeHtml(sessionTitle)}</span>
+          <span class="state-sub">${escHtml(sessionTitle)}</span>
         </div>`;
       return;
     }
@@ -351,7 +288,6 @@
 
     const counts = q.answer_counts || new Array(options.length).fill(0);
     const total  = counts.reduce((a, b) => a + b, 0);
-    const letters = ['A','B','C','D'];
 
     const badgeClass = status === 'active' ? 'live' : 'closed';
     const badgeLabel = status === 'active' ? t.live : t.final;
@@ -362,7 +298,7 @@
           <span class="status-badge ${badgeClass}">${badgeLabel}</span>
           <span class="answer-count">${t.answers(total)}</span>
         </div>
-        <div class="question-text-display">${escapeHtml(text)}</div>
+        <div class="question-text-display">${escHtml(text)}</div>
       </div>`;
 
     options.forEach((opt, i) => {
@@ -371,10 +307,10 @@
       const fillClass = isCorrect ? 'correct' : '';
       html += `
         <div class="option-bar ${isCorrect ? 'is-correct' : ''}">
-          <div class="bar-letter">${letters[i]}</div>
+          <div class="bar-letter">${LETTERS[i]}</div>
           <div class="bar-right">
             <div class="bar-label">
-              <span class="bar-opt-text">${escapeHtml(opt.replace(/^[A-Da-d][.)]\s*/, ''))}</span>
+              <span class="bar-opt-text">${escHtml(stripOptPrefix(opt))}</span>
               <span class="bar-pct">${showResults && !(status === 'active' && total === 0) ? pct + '%' : ''}</span>
             </div>
             <div class="bar-track">
@@ -388,79 +324,11 @@
     main.innerHTML = html;
   }
 
-  function escapeHtml(s) {
-    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
 
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fetchData(); });
 </script>
 
-<!-- ── DEBUG PANEL ──────────────────────────────────────────────────────────── -->
-<div id="dbg-wrap">
-  <button id="dbg-btn" onclick="dbgToggle()" title="Debug panel">DBG</button>
-  <div id="dbg-panel">
-    <div id="dbg-head">
-      <span>Debug · display</span>
-      <div style="display:flex;gap:8px">
-        <button onclick="dbgCopy()" title="Copy log">copy</button>
-        <button onclick="dbgDock()" id="dbg-dock-btn" title="Dock">dock</button>
-        <button onclick="dbgClear()">clear</button>
-      </div>
-    </div>
-    <div id="dbg-log"></div>
-  </div>
-</div>
-<style>
-  #dbg-wrap        { position:fixed; bottom:12px; right:12px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-family:monospace; font-size:11px; }
-  #dbg-wrap.docked { bottom:0; right:0; top:0; justify-content:stretch; gap:0; }
-  #dbg-btn         { background:#1a1a1a; color:#4f4; border:1px solid #333; border-radius:4px; padding:3px 9px; cursor:pointer; opacity:0.6; }
-  #dbg-btn:hover   { opacity:1; }
-  #dbg-wrap.docked #dbg-btn { display:none; }
-  #dbg-panel       { display:none; background:rgba(12,12,12,0.95); color:#ccc; border:1px solid #333; border-radius:8px; width:340px; max-height:280px; flex-direction:column; overflow:hidden; }
-  #dbg-panel.open  { display:flex; }
-  #dbg-wrap.docked #dbg-panel { width:360px; max-height:none; height:100vh; border-radius:0; border-right:none; border-top:none; border-bottom:none; }
-  #dbg-head        { display:flex; justify-content:space-between; align-items:center; padding:5px 10px; border-bottom:1px solid #2a2a2a; flex-shrink:0; }
-  #dbg-head span   { color:#4f4; font-weight:bold; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; }
-  #dbg-head button { background:none; border:none; color:#555; cursor:pointer; font-family:monospace; font-size:10px; padding:0; }
-  #dbg-head button:hover { color:#aaa; }
-  #dbg-log         { overflow-y:auto; flex:1; padding:4px 8px; }
-  .dl              { display:flex; gap:6px; padding:1px 0; border-bottom:1px solid #1a1a1a; font-size:10px; line-height:1.5; word-break:break-all; }
-  .dl-t            { color:#444; flex-shrink:0; }
-  .dl-info  { color:#bbb; }
-  .dl-poll  { color:#468; }
-  .dl-warn  { color:#c80; }
-  .dl-error { color:#f44; font-weight:bold; }
-  .dl-ok    { color:#4a4; }
-</style>
-<script>
-  function dbg(type, msg) {
-    const log = document.getElementById('dbg-log');
-    if (!log) return;
-    const now = new Date().toTimeString().slice(0,8);
-    const el  = document.createElement('div');
-    el.className = 'dl';
-    el.innerHTML = `<span class="dl-t">${now}</span><span class="dl-${type}">${_dbgEsc(msg)}</span>`;
-    log.appendChild(el);
-    log.scrollTop = log.scrollHeight;
-    while (log.children.length > 150) log.removeChild(log.firstChild);
-  }
-  function _dbgEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function dbgToggle() { document.getElementById('dbg-panel').classList.toggle('open'); }
-  function dbgClear()  { document.getElementById('dbg-log').innerHTML = ''; }
-  function dbgCopy() {
-    const lines = Array.from(document.querySelectorAll('.dl'))
-      .map(el => { const s = el.querySelectorAll('span'); return s[0].textContent + ' ' + s[1].textContent; });
-    navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
-  }
-  function dbgDock() {
-    const wrap = document.getElementById('dbg-wrap');
-    const panel = document.getElementById('dbg-panel');
-    wrap.classList.toggle('docked');
-    const docked = wrap.classList.contains('docked');
-    document.getElementById('dbg-dock-btn').textContent = docked ? 'undock' : 'dock';
-    panel.classList.add('open');
-  }
-</script>
+
 </body>
 </html>
 

@@ -1,5 +1,5 @@
 /* =========================================================
-   ClassPulse — Shared Debug Panel  v2.0
+   ClassPulse — Shared Debug Panel  v2.2
    3 tabs: Log · Errors · Probe
    ─────────────────────────────────────────────────────────
    Tab 1  Log    — explicit bsLog() / dbg() calls
@@ -27,6 +27,7 @@
   var activeTab    = 'log';
   var probeVisible = false;
   var mounted      = false;
+  var enabled      = localStorage.getItem('bs_debug') === '1';
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -67,6 +68,18 @@
     }
   }
 
+  window.bsDebugMount = function() {
+    enabled = true;
+    mount();
+  };
+
+  window.bsDebugUnmount = function() {
+    var el = document.getElementById('bsdp');
+    if (el) el.remove();
+    mounted = false;
+    enabled = false;
+  };
+
   window.bsLog   = bsLog;
   window.dbg     = dbg;
   window.bsProbe = bsProbe;
@@ -102,55 +115,56 @@
   var css = [
     // container + toggle button
     '#bsdp{position:fixed;bottom:1rem;right:1rem;z-index:99999;font-family:monospace;font-size:11px;display:flex;flex-direction:column;align-items:flex-end;gap:4px}',
-    '#bsdp-toggle{background:#1a1a1a;color:#4f4;border:1px solid #333;border-radius:4px;padding:3px 9px;cursor:pointer;opacity:.65;font-family:monospace;font-size:11px;display:flex;align-items:center;gap:5px}',
-    '#bsdp-toggle:hover{opacity:1}',
+    '#bsdp-toggle{background:#0f2020;color:#2dd4bf;border:1px solid #0d4040;border-radius:4px;padding:3px 9px;cursor:pointer;opacity:.8;font-family:monospace;font-size:11px;display:flex;align-items:center;gap:5px}',
+    '#bsdp-toggle:hover{opacity:1;border-color:#0d9488}',
     '#bsdp-main-badge{background:#fc8181;color:#000;border-radius:8px;padding:0 4px;font-size:9px;font-weight:700;display:none;line-height:1.4}',
     '#bsdp-main-badge.vis{display:inline}',
 
     // panel
-    '#bsdp-panel{display:none;background:rgba(12,12,12,.97);border:1px solid #2a2a2a;border-radius:8px;width:430px;max-height:320px;flex-direction:column;overflow:hidden}',
+    '#bsdp-panel{display:none;background:#0f1e1e;border:1px solid #0d4040;border-radius:8px;width:430px;max-height:320px;flex-direction:column;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.6)}',
     '#bsdp-panel.open{display:flex}',
 
     // tab bar
-    '#bsdp-tabs{display:flex;border-bottom:1px solid #222;flex-shrink:0}',
-    '.bsdp-tab{background:none;border:none;border-bottom:2px solid transparent;color:#555;cursor:pointer;font-family:monospace;font-size:10px;padding:5px 11px;letter-spacing:.05em;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px}',
-    '.bsdp-tab:hover{color:#aaa}',
-    '.bsdp-tab.active{color:#4f4;border-bottom-color:#4f4}',
+    '#bsdp-tabs{display:flex;border-bottom:1px solid #0d4040;flex-shrink:0;background:#0a1818}',
+    '.bsdp-tab{background:none;border:none;border-bottom:2px solid transparent;color:#4a8080;cursor:pointer;font-family:monospace;font-size:10px;padding:6px 12px;letter-spacing:.05em;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px;transition:color .15s}',
+    '.bsdp-tab:hover{color:#2dd4bf}',
+    '.bsdp-tab.active{color:#2dd4bf;border-bottom-color:#0d9488}',
     '#bsdp-tab-errors.active{color:#fc8181;border-bottom-color:#fc8181}',
-    '#bsdp-tab-probe{color:#c80}',
-    '#bsdp-tab-probe.active{color:#f90;border-bottom-color:#f90}',
+    '#bsdp-tab-probe{color:#22d3ee}',
+    '#bsdp-tab-probe.active{color:#06b6d4;border-bottom-color:#06b6d4}',
     '.bsdp-tab-badge{background:#fc8181;color:#000;border-radius:8px;padding:0 3px;font-size:9px;font-weight:700;line-height:1.4;display:none}',
     '.bsdp-tab-badge.vis{display:inline}',
-    '.bsdp-tab-x{color:#555;cursor:pointer;font-size:14px;line-height:1;padding:0 1px;margin-left:1px}',
+    '.bsdp-tab-x{color:#4a8080;cursor:pointer;font-size:14px;line-height:1;padding:0 1px;margin-left:1px}',
     '.bsdp-tab-x:hover{color:#fc8181}',
 
     // toolbar
-    '#bsdp-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:3px 8px;border-bottom:1px solid #1a1a1a;flex-shrink:0}',
-    '.bsdp-tbtn{background:none;border:1px solid #333;border-radius:3px;color:#555;cursor:pointer;font-family:monospace;font-size:10px;padding:1px 7px}',
-    '.bsdp-tbtn:hover{color:#ccc;border-color:#555}',
+    '#bsdp-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:3px 8px;border-bottom:1px solid #0d2c2c;flex-shrink:0;background:#0a1818}',
+    '.bsdp-tbtn{background:none;border:1px solid #0d4040;border-radius:3px;color:#4a8080;cursor:pointer;font-family:monospace;font-size:10px;padding:1px 7px;transition:color .15s,border-color .15s}',
+    '.bsdp-tbtn:hover{color:#2dd4bf;border-color:#0d9488}',
 
     // content areas
     '.bsdp-content{display:none;overflow-y:auto;flex:1;padding:2px 0}',
     '.bsdp-content.active{display:block}',
 
     // log entries
-    '.bsdp-entry{display:flex;gap:6px;padding:1px 8px;border-bottom:1px solid #111;font-size:10px;line-height:1.5;word-break:break-all}',
-    '.bsdp-ts{color:#3a3a3a;flex-shrink:0}',
-    '.bsdp-msg{color:#bbb}',
+    '.bsdp-entry{display:flex;gap:6px;padding:2px 8px;border-bottom:1px solid #0a1e1e;font-size:10px;line-height:1.6;word-break:break-all}',
+    '.bsdp-ts{color:#1a5050;flex-shrink:0}',
+    '.bsdp-msg{color:#a0c4c4}',
     '.bsdp-entry.error .bsdp-msg{color:#fc8181;font-weight:bold}',
-    '.bsdp-entry.warn  .bsdp-msg{color:#c80}',
-    '.bsdp-entry.ok    .bsdp-msg{color:#4a4}',
-    '.bsdp-entry.info  .bsdp-msg{color:#bbb}',
-    '.bsdp-entry.poll  .bsdp-msg{color:#3a6080}',
+    '.bsdp-entry.warn  .bsdp-msg{color:#fbbf24}',
+    '.bsdp-entry.ok    .bsdp-msg{color:#2dd4bf}',
+    '.bsdp-entry.info  .bsdp-msg{color:#a0c4c4}',
+    '.bsdp-entry.poll  .bsdp-msg{color:#2a6060}',
 
     // probe empty state
-    '#bsdp-empty-probe{color:#444;font-size:10px;padding:14px 10px;text-align:center;display:none}',
+    '#bsdp-empty-probe{color:#2a5050;font-size:10px;padding:14px 10px;text-align:center;display:none}',
   ].join('');
 
   // ── DOM ────────────────────────────────────────────────────────────────────
 
   function mount() {
     if (mounted) return;
+    if (!enabled) return;
     mounted = true;
 
     var styleEl = document.createElement('style');

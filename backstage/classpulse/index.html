@@ -11,9 +11,10 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png">
 
 <link rel="stylesheet" href="../css/theme.css?v=1.1">
-<link rel="stylesheet" href="../css/backstage.css?v=1.1">
-<link rel="stylesheet" href="../css/classpulse.css?v=1.2">
-<script src="../js/debug.js?v=2.0"></script>
+<link rel="stylesheet" href="../css/backstage.css?v=1.3">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.5">
+<link rel="stylesheet" href="../css/shared-components.css?v=1.2">
+<script src="../js/debug.js?v=2.4"></script>
 </head>
 <body>
 
@@ -45,6 +46,7 @@
     <div class="cp-tabs">
       <button class="cp-tab active" id="tab-sessions" data-tab="sessions">Sessões</button>
       <button class="cp-tab" id="tab-banks" data-tab="banks">Banco de Questões</button>
+      <button class="cp-tab" id="tab-global-stats" data-tab="global-stats">Estatísticas</button>
     </div>
 
     <!-- ============================================================
@@ -70,6 +72,34 @@
           <p>Nenhuma sessão encontrada.<br>Crie uma sessão acima.</p>
         </div>
         <div class="cp-sessions-list" id="sessions-list"></div>
+      </div>
+
+      <!-- ============================================================
+           STATS PANEL (Overlay)
+           ============================================================ -->
+      <div class="cp-stats-panel" id="stats-panel" hidden>
+        <div class="cp-stats-header">
+          <div>
+            <h2 id="stats-title">Sessão</h2>
+            <span class="cp-session-code" id="stats-code"></span>
+          </div>
+          <button class="cp-btn-ghost" id="stats-close-btn">Fechar</button>
+        </div>
+        <div class="cp-stats-kpi">
+          <div class="kpi-box">
+            <div class="kpi-val" id="stats-kpi-q">0</div>
+            <div class="kpi-label">Questões</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-val" id="stats-kpi-s">0</div>
+            <div class="kpi-label">Alunos únicos</div>
+          </div>
+        </div>
+        <div class="cp-stats-most-missed" id="stats-most-missed" hidden>
+          <strong>Mais errada:</strong> <span id="stats-mm-text"></span> (<span id="stats-mm-acc"></span>% acerto)
+        </div>
+        <div class="cp-stats-empty" id="stats-empty" hidden>Nenhum dado de resposta encontrado.</div>
+        <div class="cp-stats-qlist" id="stats-qlist"></div>
       </div>
 
     </div>
@@ -183,10 +213,70 @@
       </div>
     </div>
 
+    <!-- ============================================================
+         PANEL: GLOBAL STATS
+         ============================================================ -->
+    <div class="cp-panel" id="panel-global-stats">
+      <div class="cp-global-stats-filter">
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <label for="stats-date-from" style="color:var(--text-secondary); font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">De:</label>
+          <input type="date" id="stats-date-from" class="cp-input" style="width:130px; font-size:0.85rem; padding:0.4rem 0.6rem;">
+          <label for="stats-date-to" style="color:var(--text-secondary); font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-left:0.5rem;">Até:</label>
+          <input type="date" id="stats-date-to" class="cp-input" style="width:130px; font-size:0.85rem; padding:0.4rem 0.6rem;">
+        </div>
+        <div style="display:flex; gap:0.8rem; align-items:center;">
+          <a href="#" id="stats-clear-filter" style="color:var(--text-secondary); font-size:0.85rem; text-decoration:underline;">Limpar</a>
+          <button class="cp-btn-primary" id="stats-filter-btn" style="padding:0.4rem 1rem; font-size:0.85rem;">Filtrar</button>
+        </div>
+      </div>
+
+      <div class="cp-stats-kpi">
+        <div class="kpi-box">
+          <div class="kpi-val" id="gs-kpi-sessions">0</div>
+          <div class="kpi-label">Sessões</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-val" id="gs-kpi-questions">0</div>
+          <div class="kpi-label">Questões</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-val" id="gs-kpi-students">0</div>
+          <div class="kpi-label">Alunos Únicos</div>
+        </div>
+      </div>
+
+      <div id="gs-empty-state" class="cp-stats-empty" hidden>
+        Nenhum dado encontrado para o período selecionado.
+      </div>
+
+      <div id="gs-content">
+        <h3 class="cp-global-stats-section">Questões mais difíceis</h3>
+        <div id="gs-toughest-list"></div>
+
+        <h3 class="cp-global-stats-section">Participação por sessão</h3>
+        <div class="cp-global-stats-table-wrap">
+          <table class="cp-global-stats-table">
+            <thead>
+              <tr>
+                <th>Sessão</th>
+                <th>Data</th>
+                <th style="text-align:center">Alunos</th>
+                <th style="text-align:center">Respostas</th>
+              </tr>
+            </thead>
+            <tbody id="gs-trend-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
-<script src="../js/question-bank.js?v=1.2"></script>
+<script src="../js/utils.js?v=1.1"></script>
+<script src="../js/api-client.js?v=1.0"></script>
+<script src="../js/theme-manager.js?v=1.0"></script>
+<script src="../js/question-bank.js?v=1.3"></script>
 <script>
 'use strict';
 
@@ -207,45 +297,8 @@ if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
 // Theme
 // ---------------------------------------------------------------------------
 
-var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-
-var themeIcon    = document.getElementById('themeIcon');
-var themeToggle  = document.getElementById('themeToggle');
-var themeOverlay = document.getElementById('themeTransition');
-
-function applyTheme(theme, animate, ox, oy) {
-  if (animate && themeOverlay) {
-    themeOverlay.style.setProperty('--tx', (ox || 0) + 'px');
-    themeOverlay.style.setProperty('--ty', (oy || 0) + 'px');
-    document.documentElement.setAttribute('data-theme', theme);
-    var bg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
-    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
-    themeOverlay.style.backgroundColor = bg;
-    themeOverlay.offsetHeight;
-    themeOverlay.classList.add('active');
-    setTimeout(function() {
-      document.documentElement.setAttribute('data-theme', theme);
-      themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
-      themeToggle.setAttribute('aria-pressed', theme === 'dark');
-      localStorage.setItem('bs_theme', theme);
-      setTimeout(function() { themeOverlay.classList.remove('active'); }, 100);
-    }, 500);
-  } else {
-    document.documentElement.setAttribute('data-theme', theme);
-    themeIcon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
-    themeToggle.setAttribute('aria-pressed', theme === 'dark');
-    localStorage.setItem('bs_theme', theme);
-  }
-}
-
-applyTheme(localStorage.getItem('bs_theme') || 'dark', false);
-
-themeToggle.addEventListener('click', function(e) {
-  var cur = document.documentElement.getAttribute('data-theme') || 'dark';
-  var rect = e.currentTarget.getBoundingClientRect();
-  applyTheme(cur === 'dark' ? 'light' : 'dark', true, rect.left + rect.width / 2, rect.top + rect.height / 2);
-});
+ThemeManager.init({ storageKey: 'bs_theme' });
+ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
 
 document.getElementById('logout-btn').addEventListener('click', function() {
   sessionStorage.removeItem(AUTH_KEY);
@@ -256,23 +309,7 @@ document.getElementById('logout-btn').addEventListener('click', function() {
 // Config
 // ---------------------------------------------------------------------------
 
-var SCRIPT_URL = 'https://backstage-api.pensoia.workers.dev';
 var AUTH_TOKEN = localStorage.getItem('bs_pw_hash') || '';
-
-async function callScript(params) {
-  var payload = encodeURIComponent(JSON.stringify(params));
-  var resp = await fetch(SCRIPT_URL + '?payload=' + payload, { redirect: 'follow' });
-  if (!resp.ok) {
-    if (typeof bsLog !== 'undefined') bsLog('callScript HTTP ' + resp.status + ' | action: ' + (params.action || '?'), 'error');
-    throw new Error('HTTP ' + resp.status);
-  }
-  var data = await resp.json();
-  if (data.error) {
-    if (typeof bsLog !== 'undefined') bsLog('callScript error | action: ' + (params.action || '?') + ' | ' + data.error, 'error');
-    throw new Error(data.error);
-  }
-  return data;
-}
 
 // ---------------------------------------------------------------------------
 // Tabs
@@ -287,6 +324,7 @@ document.querySelectorAll('.cp-tab').forEach(function(btn) {
     document.getElementById('panel-' + tab).classList.add('active');
     if (tab === 'sessions') loadSessions();
     if (tab === 'banks') loadSets();
+    if (tab === 'global-stats') loadGlobalStats();
   });
 });
 
@@ -298,7 +336,7 @@ var sessions = [];
 
 async function loadSessions() {
   try {
-    var data = await callScript({ action: 'list_sessions' });
+    var data = await callWorker({ action: 'list_sessions' });
     sessions = data.sessions || [];
   } catch (err) {
     sessions = [];
@@ -343,6 +381,14 @@ function renderSessions() {
     var actions = document.createElement('div');
     actions.className = 'cp-session-actions';
 
+    var statsBtn = document.createElement('button');
+    statsBtn.className = 'cp-btn-ghost cp-stats-btn';
+    statsBtn.textContent = 'Estatísticas';
+    statsBtn.addEventListener('click', function() {
+      openStats(s);
+    });
+    actions.appendChild(statsBtn);
+
     if (s.status !== 'closed') {
       var hostBtn = document.createElement('a');
       hostBtn.className = 'cp-btn-ghost';
@@ -357,10 +403,10 @@ function renderSessions() {
       closeBtn.addEventListener('click', async function() {
         if (!confirm('Encerrar sessão ' + s.code + '?')) return;
         try {
-          await callScript({ action: 'close_session', auth_token: AUTH_TOKEN, code: s.code });
+          await callWorker({ action: 'close_session', auth_token: AUTH_TOKEN, code: s.code });
           s.status = 'closed';
           renderSessions();
-        } catch (e) { alert('Erro: ' + e.message); }
+        } catch (e) { showToastError(e.message); }
       });
       actions.appendChild(closeBtn);
     } else {
@@ -370,10 +416,10 @@ function renderSessions() {
       reopenBtn.style.cssText = 'font-size:0.78rem;padding:0.4rem 0.8rem';
       reopenBtn.addEventListener('click', async function() {
         try {
-          await callScript({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: s.code });
+          await callWorker({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: s.code });
           s.status = 'open';
           renderSessions();
-        } catch (e) { alert('Erro: ' + e.message); }
+        } catch (e) { showToastError(e.message); }
       });
       actions.appendChild(reopenBtn);
     }
@@ -402,17 +448,102 @@ document.getElementById('create-session-btn').addEventListener('click', async fu
   btn.textContent = 'Criando...';
 
   try {
-    var data = await callScript({ action: 'create_session', auth_token: AUTH_TOKEN, title: title });
+    var data = await callWorker({ action: 'create_session', auth_token: AUTH_TOKEN, title: title });
     document.getElementById('session-title').value = '';
     // Prepend new session
     sessions.unshift({ code: data.code, title: title, status: 'open', created_at: new Date().toISOString() });
     renderSessions();
   } catch (e) {
-    err.textContent = 'Erro: ' + e.message;
+    showToastError(e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Criar sessão';
   }
+});
+
+// ---------------------------------------------------------------------------
+// SESSION STATS
+// ---------------------------------------------------------------------------
+// --- Helpers for Stats Rendering ---
+function renderAccBar(accuracy) {
+  var el = document.createElement('div');
+  el.className = 'cp-stats-bar';
+  if (accuracy !== null) {
+    var pct = Math.round(accuracy * 100);
+    el.innerHTML = '<div class="cp-stats-bar-fill" style="width:' + pct + '%"></div><span class="cp-stats-bar-text">' + pct + '% acerto</span>';
+  } else {
+    el.innerHTML = '<span class="cp-stats-bar-text">N/A</span>';
+  }
+  return el;
+}
+
+function renderQuestionCard(q, metaText) {
+  var qDiv = document.createElement('div');
+  qDiv.className = 'cp-stats-question';
+  var textDiv = document.createElement('div');
+  textDiv.className = 'cp-stats-qtext';
+  textDiv.textContent = q.text;
+  var metaDiv = document.createElement('div');
+  metaDiv.className = 'cp-stats-qmeta';
+  metaDiv.textContent = metaText;
+  qDiv.appendChild(textDiv);
+  qDiv.appendChild(metaDiv);
+  qDiv.appendChild(renderAccBar(q.accuracy));
+  return qDiv;
+}
+
+async function openStats(session) {
+  var panel = document.getElementById('stats-panel');
+  var listWrap = document.getElementById('sessions-list-wrap');
+  var createWrap = document.querySelector('.cp-create-session');
+  
+  document.getElementById('stats-title').textContent = session.title || 'Sem título';
+  document.getElementById('stats-code').textContent = session.code;
+  document.getElementById('stats-kpi-q').textContent = '...';
+  document.getElementById('stats-kpi-s').textContent = '...';
+  document.getElementById('stats-most-missed').hidden = true;
+  document.getElementById('stats-empty').hidden = true;
+  document.getElementById('stats-qlist').innerHTML = '<div class="cp-empty">Carregando estatísticas...</div>';
+  
+  createWrap.hidden = true;
+  listWrap.hidden = true;
+  panel.hidden = false;
+
+  try {
+    var data = await callWorker({ action: 'session_stats', auth_token: AUTH_TOKEN, code: session.code });
+    if (!data.ok) throw new Error(data.error || 'Erro desconhecido');
+    
+    document.getElementById('stats-kpi-q').textContent = data.total_questions || 0;
+    document.getElementById('stats-kpi-s').textContent = data.unique_students || 0;
+    
+    if (data.most_missed) {
+      document.getElementById('stats-most-missed').hidden = false;
+      document.getElementById('stats-mm-text').textContent = data.most_missed.text;
+      document.getElementById('stats-mm-acc').textContent = Math.round(data.most_missed.accuracy * 100);
+    } else {
+      document.getElementById('stats-most-missed').hidden = true;
+    }
+    
+    var qlist = document.getElementById('stats-qlist');
+    qlist.innerHTML = '';
+    
+    if (!data.questions || data.questions.length === 0) {
+      document.getElementById('stats-empty').hidden = false;
+    } else {
+      document.getElementById('stats-empty').hidden = true;
+      data.questions.forEach(function(q) {
+        qlist.appendChild(renderQuestionCard(q, q.total_answers + ' respostas'));
+      });
+    }
+  } catch(e) {
+    showToastError(e.message);
+  }
+}
+
+document.getElementById('stats-close-btn').addEventListener('click', function() {
+  document.getElementById('stats-panel').hidden = true;
+  document.querySelector('.cp-create-session').hidden = false;
+  document.getElementById('sessions-list-wrap').hidden = false;
 });
 
 // ---------------------------------------------------------------------------
@@ -425,7 +556,7 @@ var questions = [];
 
 async function loadSets() {
   try {
-    var data = await callScript({ action: 'list_question_sets' });
+    var data = await callWorker({ action: 'list_question_sets' });
     sets = data.banks || [];
   } catch (err) {
     sets = [];
@@ -497,7 +628,7 @@ async function selectSet(name) {
   document.getElementById('question-list').innerHTML = '<div class="cp-empty"><p>Carregando...</p></div>';
 
   try {
-    var data = await callScript({ action: 'get_questions', list: name });
+    var data = await callWorker({ action: 'get_questions', list: name });
     questions = data.questions || [];
   } catch (err) {
     questions = [];
@@ -578,7 +709,7 @@ document.getElementById('q-save-btn').addEventListener('click', async function()
   btn.textContent = 'Salvando...';
 
   try {
-    await callScript({
+    await callWorker({
       action: 'add_question',
       auth_token: AUTH_TOKEN,
       list_name: setName,
@@ -601,7 +732,7 @@ document.getElementById('q-save-btn').addEventListener('click', async function()
     }
     setTimeout(function() { msg.textContent = ''; }, 3000);
   } catch (e) {
-    err.textContent = 'Erro: ' + e.message;
+    showToastError(e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Salvar';
@@ -636,11 +767,11 @@ async function deleteQuestion(questionText) {
   if (!activeSet) return;
   if (!confirm('Excluir esta questão?')) return;
   try {
-    await callScript({ action: 'delete_question', auth_token: AUTH_TOKEN, list_name: activeSet, question: questionText });
+    await callWorker({ action: 'delete_question', auth_token: AUTH_TOKEN, list_name: activeSet, question: questionText });
     await selectSet(activeSet);
     await loadSets();
   } catch (e) {
-    alert('Erro: ' + e.message);
+    showToastError(e.message);
   }
 }
 
@@ -652,12 +783,12 @@ document.getElementById('delete-set-btn').addEventListener('click', function() {
 async function confirmDeleteSet(name) {
   if (!confirm('Excluir o conjunto "' + name + '" e todas as suas questões?')) return;
   try {
-    await callScript({ action: 'delete_question_set', auth_token: AUTH_TOKEN, list_name: name });
+    await callWorker({ action: 'delete_question_set', auth_token: AUTH_TOKEN, list_name: name });
     activeSet = null;
     document.getElementById('question-list-wrap').hidden = true;
     await loadSets();
   } catch (e) {
-    alert('Erro: ' + e.message);
+    showToastError(e.message);
   }
 }
 
@@ -713,6 +844,86 @@ QuestionBank.init({
       ]
     };
   }
+});
+
+// ---------------------------------------------------------------------------
+// GLOBAL STATS
+// ---------------------------------------------------------------------------
+var globalStatsLoaded = false;
+
+async function loadGlobalStats(force = false) {
+  if (globalStatsLoaded && !force) return;
+
+  var dateFrom = document.getElementById('stats-date-from').value;
+  var dateTo = document.getElementById('stats-date-to').value;
+
+  document.getElementById('gs-kpi-sessions').textContent = '...';
+  document.getElementById('gs-kpi-questions').textContent = '...';
+  document.getElementById('gs-kpi-students').textContent = '...';
+  document.getElementById('gs-toughest-list').innerHTML = '';
+  document.getElementById('gs-trend-body').innerHTML = '';
+  document.getElementById('gs-empty-state').hidden = true;
+  document.getElementById('gs-content').hidden = true;
+
+  try {
+    var params = { action: 'global_stats', auth_token: AUTH_TOKEN };
+    if (dateFrom && dateTo) {
+      params.date_from = dateFrom;
+      params.date_to = dateTo;
+    }
+    
+    var data = await callWorker(params);
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar estatísticas globais');
+
+    document.getElementById('gs-kpi-sessions').textContent = data.total_sessions || 0;
+    document.getElementById('gs-kpi-questions').textContent = data.total_questions || 0;
+    document.getElementById('gs-kpi-students').textContent = data.total_students || 0;
+
+    if (data.total_sessions === 0) {
+      document.getElementById('gs-empty-state').hidden = false;
+    } else {
+      document.getElementById('gs-content').hidden = false;
+
+      // Toughest Questions
+      var list = document.getElementById('gs-toughest-list');
+      if (data.toughest && data.toughest.length > 0) {
+        data.toughest.forEach(function(q) {
+          list.appendChild(renderQuestionCard(q, q.session_title + ' -- ' + q.total_answers + ' respostas'));
+        });
+      } else {
+        list.innerHTML = '<div class="cp-stats-empty" style="padding:1rem;font-size:0.85rem;">Sem dados suficientes.</div>';
+      }
+
+      // Participation Trend
+      var tbody = document.getElementById('gs-trend-body');
+      if (data.trend && data.trend.length > 0) {
+        data.trend.forEach(function(row) {
+          var tr = document.createElement('tr');
+          var dateObj = new Date(row.created_at);
+          var dateStr = dateObj.toLocaleDateString('pt-BR');
+          tr.innerHTML = '<td>' + escHtml(row.title) + '</td>' +
+                         '<td>' + dateStr + '</td>' +
+                         '<td style="text-align:center; font-weight:bold; color:var(--primary)">' + row.students + '</td>' +
+                         '<td style="text-align:center">' + row.answers + '</td>';
+          tbody.appendChild(tr);
+        });
+      }
+    }
+    globalStatsLoaded = true;
+  } catch (e) {
+    showToastError(e.message);
+  }
+}
+
+document.getElementById('stats-filter-btn').addEventListener('click', function() {
+  loadGlobalStats(true);
+});
+
+document.getElementById('stats-clear-filter').addEventListener('click', function(e) {
+  e.preventDefault();
+  document.getElementById('stats-date-from').value = '';
+  document.getElementById('stats-date-to').value = '';
+  loadGlobalStats(true);
 });
 
 // ---------------------------------------------------------------------------

@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
   <title>Classroom · PensoIA</title>
-  <link rel="stylesheet" href="../backstage/css/theme.css?v=1.1">
-  <script src="/backstage/js/debug.js?v=2.0"></script>
+  <link rel="stylesheet" href="../backstage/css/theme.css?v=1.2">
+  <link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.1">
+  <script src="/backstage/js/debug.js?v=2.4"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -71,7 +72,6 @@
     .option-letter { font-size: 0.78rem; font-weight: 700; color: var(--primary-dark); background: var(--border); padding: 3px 9px; border-radius: 5px; flex-shrink: 0; min-width: 30px; text-align: center; }
 
     /* Results bars */
-    .results-section { }
     .results-question { font-size: 1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; }
     .result-option { margin-bottom: 14px; padding: 10px; border-radius: 10px; border: 2px solid transparent; transition: all 0.2s; }
     .result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
@@ -83,14 +83,6 @@
     .bar-fill.correct { background: var(--success); }
     .bar-fill.mine    { background: var(--primary-dark); }
     
-    /* Correct answer high-visibility */
-    .result-option.is-correct { border-color: #0d9488; background: #0d9488; color: #fff; }
-    .result-option.is-correct .result-letter { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid transparent; }
-    .result-option.is-correct .result-text   { font-weight: 700; color: #fff; }
-    .result-option.is-correct .result-text::after { content: ' ✓'; font-weight: 800; }
-    
-    /* Hide boxes for non-correct letters when results are revealed */
-    .results-section.revealed .result-option:not(.is-correct) .result-letter { background: transparent; border: 1px solid transparent; }
 
     .results-count { font-size: 0.78rem; color: var(--text-light); text-align: center; margin-top: 18px; }
     .results-next  { font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-top: 10px; }
@@ -106,7 +98,7 @@
   </style>
 </head>
 <body>
-<button id="theme-btn" aria-label="Alternar tema" onclick="toggleTheme()">
+<button id="theme-btn" aria-label="Alternar tema" onclick="ThemeManager.toggleTheme()">
   <span id="theme-icon"></span>
 </button>
 <div class="container">
@@ -183,44 +175,24 @@
   </div>
 
 </div>
+<script src="../backstage/js/utils.js?v=1.0"></script>
+<script src="../backstage/js/api-client.js?v=1.0"></script>
+<script src="../backstage/js/theme-manager.js?v=1.0"></script>
 <script>
   // ── THEME ────────────────────────────────────────────────────────────────
-  var SVG_MOON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-  var SVG_SUN  = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-
-  function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    var icon = document.getElementById('theme-icon');
-    if (icon) icon.innerHTML = theme === 'dark' ? SVG_SUN : SVG_MOON;
-    localStorage.setItem('bs_theme_public', theme);
-  }
-
-  function toggleTheme() {
-    var cur = document.documentElement.getAttribute('data-theme') || 'dark';
-    applyTheme(cur === 'dark' ? 'light' : 'dark');
-  }
-
+  ThemeManager.init({ storageKey: 'bs_theme_public' });
   (function() {
     var urlParams = new URLSearchParams(window.location.search);
     var urlTheme  = urlParams.get('theme');
     var stored    = localStorage.getItem('bs_theme_public');
-    var theme     = 'light'; // Default to light mode for public pages
-
-    if (urlTheme === 'dark' || urlTheme === 'light') {
-      theme = urlTheme;
-    } else if (stored === 'dark' || stored === 'light') {
-      theme = stored;
-    }
-    applyTheme(theme);
+    var theme     = 'light';
+    if (urlTheme === 'dark' || urlTheme === 'light') theme = urlTheme;
+    else if (stored === 'dark' || stored === 'light') theme = stored;
+    ThemeManager.applyTheme(theme);
   })();
   // ────────────────────────────────────────────────────────────────────────
 
   // ── CONFIG ──────────────────────────────────────────────────────────────
-  const SPREADSHEET_ID  = '14UnmqEmPk6xP0oGwmuAbffuywwlW3dmYhQOAbEadsmA';
-  const APPS_SCRIPT_URL = 'https://backstage-api.pensoia.workers.dev';
-  const SESSIONS_CSV    = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sessions`;
-  const QUESTIONS_CSV   = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Questions`;
-  const ANSWERS_CSV     = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Answers`;
   const POLL_INTERVAL   = 3000;
   // ────────────────────────────────────────────────────────────────────────
 
@@ -253,69 +225,12 @@
   const t = STRINGS[ACTIVE_LANG] || STRINGS.pt;
   // ────────────────────────────────────────────────────────────────────────
 
-  // ── CONFIG CHECK ─────────────────────────────────────────────────────────
-  if (SPREADSHEET_ID.includes('REPLACE') || APPS_SCRIPT_URL.includes('REPLACE')) {
-    document.querySelector('.container').innerHTML =
-      '<div style="padding:40px;text-align:center;color:#c44;font-size:0.9rem;">' +
-      '<strong>Setup incompleto.</strong><br>Configure SPREADSHEET_ID e APPS_SCRIPT_URL.' +
-      '</div>';
-    throw new Error('Classroom Light: config placeholders not replaced');
-  }
-  // ────────────────────────────────────────────────────────────────────────
-
   let currentSession    = null; // { code, title, studentName }
   let pollTimer         = null;
   let activeQuestionData = null; // { id, text, options[] }
   let lastActiveQId     = null;  // ID of last seen active question
   let showingResultsFor = null;  // ID of question currently showing results
 
-  // ── CSV PARSING ──────────────────────────────────────────────────────────
-  function parseCSV(text) {
-    const trimmed = text.trim();
-    if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
-      console.error('Classroom Light: CSV returned HTML. Is the Sheet published to web?');
-      dbg('warn', 'CSV returned HTML — sheet not published to web?');
-      return [];
-    }
-    return trimmed.split('\n').slice(1).map(parseCSVLine);
-  }
-
-  function parseCSVLine(line) {
-    const result = [];
-    let current = '', inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') {
-        if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
-        else inQuotes = !inQuotes;
-      } else if (line[i] === ',' && !inQuotes) {
-        result.push(current); current = '';
-      } else { current += line[i]; }
-    }
-    result.push(current);
-    return result;
-  }
-
-  // ── POST HELPER (uses GET to avoid CORS on Apps Script redirects) ────────
-  async function post(action, data) {
-    dbg('info', `→ ${action}`);
-    try {
-      const payload = encodeURIComponent(JSON.stringify({ action, ...data }));
-      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload, { redirect: 'follow' });
-      const txt = await resp.text();
-      dbg('poll', `← ${resp.status} (${txt.length} bytes)`);
-      if (txt.startsWith('<')) {
-        dbg('error', `← ${action}: got HTML — check deployment permissions`);
-        return { error: 'server returned HTML' };
-      }
-      const result = JSON.parse(txt);
-      if (result.error) dbg('error', `← ${action}: ${result.error}`);
-      else              dbg('ok',    `← ${action}: ok`);
-      return result;
-    } catch (err) {
-      dbg('error', `← ${action} FAIL: ${err.message}`);
-      throw err;
-    }
-  }
 
   // ── JOIN ─────────────────────────────────────────────────────────────────
   document.getElementById('code-input').addEventListener('input', function() {
@@ -335,11 +250,7 @@
     btn.textContent = t.btnJoining;
 
     try {
-      const payloadObj = { action: 'get_session_state', code, _t: Date.now() };
-      const payload = encodeURIComponent(JSON.stringify(payloadObj));
-      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload, { cache: 'no-store' });
-      const txt  = await resp.text();
-      const data = JSON.parse(txt);
+      const data = await callWorker({ action: 'get_session_state', code, _t: Date.now() });
 
       if (data.error === 'session not found' || !data.session) {
         errorEl.textContent = t.errNotFound; return;
@@ -396,9 +307,7 @@
   // ── POLLING ───────────────────────────────────────────────────────────────
   async function pollData() {
     try {
-      const payload = encodeURIComponent(JSON.stringify({ action: 'get_session_state', code: currentSession.code }));
-      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload);
-      const data = await resp.json();
+      const data = await callWorker({ action: 'get_session_state', code: currentSession.code });
 
       if (!data.session || data.session.status === 'closed') {
         clearInterval(pollTimer);
@@ -462,11 +371,11 @@
 
     document.getElementById('q-text').textContent = activeQuestionData.text;
     document.getElementById('answer-error').textContent = '';
-    const letters = ['A','B','C','D'];
+    const letters = LETTERS;
     document.getElementById('q-options').innerHTML = (row.options || []).map((opt, i) => `
       <button class="option-btn" onclick="submitAnswer(${i}, this)">
         <span class="option-letter">${letters[i]}</span>
-        <span>${escapeHtml(opt.replace(/^[A-Da-d][.)]\s*/, ''))}</span>
+        <span>${escHtml(stripOptPrefix(opt))}</span>
       </button>`).join('');
   }
 
@@ -480,7 +389,8 @@
     const qId = activeQuestionData.id;
 
     try {
-      const result = await post('submit_answer', {
+      const result = await callWorker({
+        action: 'submit_answer',
         question_id:  qId,
         session_code: currentSession.code,
         student_name: currentSession.studentName,
@@ -514,7 +424,7 @@
 
     const counts = row.answer_counts || new Array(options.length).fill(0);
     const total  = counts.reduce((a, b) => a + b, 0);
-    const letters = ['A','B','C','D'];
+    const letters = LETTERS;
 
     const resSection = document.getElementById('state-results');
     resSection.classList.toggle('revealed', revealAnswer);
@@ -529,7 +439,7 @@
         <div class="result-option ${isCorrect ? 'is-correct' : ''}">
           <div class="result-header">
             <span class="result-letter">${letters[i]}</span>
-            <span class="result-text">${escapeHtml(opt.replace(/^[A-Da-d][.)]\s*/, ''))}${isCorrect ? ' ✓' : ''}</span>
+            <span class="result-text">${escHtml(stripOptPrefix(opt))}</span>
             <span class="result-pct">${pct}%</span>
           </div>
           <div class="bar-track">
@@ -540,9 +450,6 @@
     document.getElementById('results-count').textContent = t.answersCount(total);
   }
 
-  function escapeHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
 
   // ── INIT ─────────────────────────────────────────────────────────────────
   const saved = sessionStorage.getItem('cl_session');
