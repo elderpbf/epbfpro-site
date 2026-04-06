@@ -72,3 +72,13 @@
   background: transparent;
   border: 1px solid transparent;
 }
+
+/* Error toast */
+.bs-toast-error {
+  position: fixed; bottom: 3.5rem; right: 1rem; z-index: 99998;
+  background: rgba(239,68,68,.15); color: #ef4444; border: 1px solid rgba(239,68,68,.3);
+  border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem;
+  opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .3s;
+  pointer-events: none; max-width: 320px;
+}
+.bs-toast-error.show { opacity: 1; transform: translateY(0); }

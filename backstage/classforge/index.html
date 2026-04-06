@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../css/theme.css?v=1.2">
 <link rel="stylesheet" href="../css/backstage.css?v=1.2">
 <link rel="stylesheet" href="../css/classforge.css?v=1.4">
-<link rel="stylesheet" href="../css/shared-components.css?v=1.1">
+<link rel="stylesheet" href="../css/shared-components.css?v=1.2">
 <script src="../js/debug.js?v=2.4"></script>
 </head>
 <body>
@@ -130,7 +130,7 @@
 </aside>
 
 
-<script src="../js/utils.js?v=1.0"></script>
+<script src="../js/utils.js?v=1.1"></script>
 <script src="../js/api-client.js?v=1.0"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script>
@@ -353,14 +353,8 @@ function showNoScriptState() {
 }
 
 function showErrorState(msg) {
-  grid.innerHTML = '';
-  grid.appendChild(buildDemoCard());
-  grid.appendChild(buildStateBlock(
-    '<p style="color:#ef4444">' + (msg || 'Erro ao carregar') + '</p>' +
-    '<button class="cf-inline-btn" id="state-retry-btn">' + t('state_error_btn') + '</button>'
-  ));
-  var btn = document.getElementById('state-retry-btn');
-  if (btn) btn.addEventListener('click', loadPresentations);
+  showToastError(msg || 'Erro ao carregar');
+  showNoScriptState();
 }
 
 async function loadPresentations() {

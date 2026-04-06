@@ -37,3 +37,15 @@ function parseCSVLine(line) {
   result.push(current);
   return result;
 }
+
+function showToastError(msg) {
+  console.error(msg);
+  var el = document.createElement('div');
+  el.className = 'bs-toast-error';
+  el.textContent = msg.length > 80 ? msg.slice(0, 80) + '...' : msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.classList.add('show'); }, 10);
+  setTimeout(function() { el.classList.remove('show'); setTimeout(function() { el.remove(); }, 300); }, 3500);
+}
+
+window.alert = function(msg) { showToastError(String(msg)); };
