@@ -395,7 +395,7 @@ document.getElementById('create-session-btn').addEventListener('click', async fu
     sessions.unshift({ code: data.code, title: title, status: 'open', created_at: new Date().toISOString() });
     renderSessions();
   } catch (e) {
-    err.textContent = 'Erro: ' + e.message;
+    showToastError(e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Criar sessão';
@@ -472,7 +472,7 @@ async function openStats(session) {
       });
     }
   } catch(e) {
-    document.getElementById('stats-qlist').innerHTML = '<div class="cp-empty cp-form-error">Erro: ' + e.message + '</div>';
+    showToastError(e.message);
   }
 }
 
@@ -668,7 +668,7 @@ document.getElementById('q-save-btn').addEventListener('click', async function()
     }
     setTimeout(function() { msg.textContent = ''; }, 3000);
   } catch (e) {
-    err.textContent = 'Erro: ' + e.message;
+    showToastError(e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Salvar';
