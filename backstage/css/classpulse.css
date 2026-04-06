@@ -322,6 +322,65 @@
 }
 
 /* =========================================================
+   GLOBAL STATS
+   ========================================================= */
+
+.cp-global-stats-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid rgba(20,184,166,.15);
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.cp-global-stats-section {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 2rem 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cp-global-stats-table-wrap {
+  background: var(--surface);
+  border: 1px solid rgba(20,184,166,.15);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cp-global-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.cp-global-stats-table th {
+  background: rgba(20,184,166,.05);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid rgba(20,184,166,.15);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+}
+
+.cp-global-stats-table td {
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid rgba(20,184,166,.05);
+  color: var(--text-primary);
+}
+
+.cp-global-stats-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* =========================================================
    QUESTION BANKS
    ========================================================= */
 

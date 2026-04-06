@@ -11,8 +11,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png">
 
 <link rel="stylesheet" href="../css/theme.css?v=1.1">
-<link rel="stylesheet" href="../css/backstage.css?v=1.1">
-<link rel="stylesheet" href="../css/classpulse.css?v=1.4">
+<link rel="stylesheet" href="../css/backstage.css?v=1.3">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.5">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.2">
 <script src="../js/debug.js?v=2.4"></script>
 </head>
@@ -46,6 +46,7 @@
     <div class="cp-tabs">
       <button class="cp-tab active" id="tab-sessions" data-tab="sessions">Sessões</button>
       <button class="cp-tab" id="tab-banks" data-tab="banks">Banco de Questões</button>
+      <button class="cp-tab" id="tab-global-stats" data-tab="global-stats">Estatísticas</button>
     </div>
 
     <!-- ============================================================
@@ -212,6 +213,63 @@
       </div>
     </div>
 
+    <!-- ============================================================
+         PANEL: GLOBAL STATS
+         ============================================================ -->
+    <div class="cp-panel" id="panel-global-stats">
+      <div class="cp-global-stats-filter">
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <label for="stats-date-from" style="color:var(--text-secondary); font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">De:</label>
+          <input type="date" id="stats-date-from" class="cp-input" style="width:130px; font-size:0.85rem; padding:0.4rem 0.6rem;">
+          <label for="stats-date-to" style="color:var(--text-secondary); font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-left:0.5rem;">Até:</label>
+          <input type="date" id="stats-date-to" class="cp-input" style="width:130px; font-size:0.85rem; padding:0.4rem 0.6rem;">
+        </div>
+        <div style="display:flex; gap:0.8rem; align-items:center;">
+          <a href="#" id="stats-clear-filter" style="color:var(--text-secondary); font-size:0.85rem; text-decoration:underline;">Limpar</a>
+          <button class="cp-btn-primary" id="stats-filter-btn" style="padding:0.4rem 1rem; font-size:0.85rem;">Filtrar</button>
+        </div>
+      </div>
+
+      <div class="cp-stats-kpi">
+        <div class="kpi-box">
+          <div class="kpi-val" id="gs-kpi-sessions">0</div>
+          <div class="kpi-label">Sessões</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-val" id="gs-kpi-questions">0</div>
+          <div class="kpi-label">Questões</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-val" id="gs-kpi-students">0</div>
+          <div class="kpi-label">Alunos Únicos</div>
+        </div>
+      </div>
+
+      <div id="gs-empty-state" class="cp-stats-empty" hidden>
+        Nenhum dado encontrado para o período selecionado.
+      </div>
+
+      <div id="gs-content">
+        <h3 class="cp-global-stats-section">Questões mais difíceis</h3>
+        <div id="gs-toughest-list"></div>
+
+        <h3 class="cp-global-stats-section">Participação por sessão</h3>
+        <div class="cp-global-stats-table-wrap">
+          <table class="cp-global-stats-table">
+            <thead>
+              <tr>
+                <th>Sessão</th>
+                <th>Data</th>
+                <th style="text-align:center">Alunos</th>
+                <th style="text-align:center">Respostas</th>
+              </tr>
+            </thead>
+            <tbody id="gs-trend-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -266,6 +324,7 @@ document.querySelectorAll('.cp-tab').forEach(function(btn) {
     document.getElementById('panel-' + tab).classList.add('active');
     if (tab === 'sessions') loadSessions();
     if (tab === 'banks') loadSets();
+    if (tab === 'global-stats') loadGlobalStats();
   });
 });
 
@@ -785,6 +844,86 @@ QuestionBank.init({
       ]
     };
   }
+});
+
+// ---------------------------------------------------------------------------
+// GLOBAL STATS
+// ---------------------------------------------------------------------------
+var globalStatsLoaded = false;
+
+async function loadGlobalStats(force = false) {
+  if (globalStatsLoaded && !force) return;
+
+  var dateFrom = document.getElementById('stats-date-from').value;
+  var dateTo = document.getElementById('stats-date-to').value;
+
+  document.getElementById('gs-kpi-sessions').textContent = '...';
+  document.getElementById('gs-kpi-questions').textContent = '...';
+  document.getElementById('gs-kpi-students').textContent = '...';
+  document.getElementById('gs-toughest-list').innerHTML = '';
+  document.getElementById('gs-trend-body').innerHTML = '';
+  document.getElementById('gs-empty-state').hidden = true;
+  document.getElementById('gs-content').hidden = true;
+
+  try {
+    var params = { action: 'global_stats', auth_token: AUTH_TOKEN };
+    if (dateFrom && dateTo) {
+      params.date_from = dateFrom;
+      params.date_to = dateTo;
+    }
+    
+    var data = await callWorker(params);
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar estatísticas globais');
+
+    document.getElementById('gs-kpi-sessions').textContent = data.total_sessions || 0;
+    document.getElementById('gs-kpi-questions').textContent = data.total_questions || 0;
+    document.getElementById('gs-kpi-students').textContent = data.total_students || 0;
+
+    if (data.total_sessions === 0) {
+      document.getElementById('gs-empty-state').hidden = false;
+    } else {
+      document.getElementById('gs-content').hidden = false;
+
+      // Toughest Questions
+      var list = document.getElementById('gs-toughest-list');
+      if (data.toughest && data.toughest.length > 0) {
+        data.toughest.forEach(function(q) {
+          list.appendChild(renderQuestionCard(q, q.session_title + ' -- ' + q.total_answers + ' respostas'));
+        });
+      } else {
+        list.innerHTML = '<div class="cp-stats-empty" style="padding:1rem;font-size:0.85rem;">Sem dados suficientes.</div>';
+      }
+
+      // Participation Trend
+      var tbody = document.getElementById('gs-trend-body');
+      if (data.trend && data.trend.length > 0) {
+        data.trend.forEach(function(row) {
+          var tr = document.createElement('tr');
+          var dateObj = new Date(row.created_at);
+          var dateStr = dateObj.toLocaleDateString('pt-BR');
+          tr.innerHTML = '<td>' + escHtml(row.title) + '</td>' +
+                         '<td>' + dateStr + '</td>' +
+                         '<td style="text-align:center; font-weight:bold; color:var(--primary)">' + row.students + '</td>' +
+                         '<td style="text-align:center">' + row.answers + '</td>';
+          tbody.appendChild(tr);
+        });
+      }
+    }
+    globalStatsLoaded = true;
+  } catch (e) {
+    showToastError(e.message);
+  }
+}
+
+document.getElementById('stats-filter-btn').addEventListener('click', function() {
+  loadGlobalStats(true);
+});
+
+document.getElementById('stats-clear-filter').addEventListener('click', function(e) {
+  e.preventDefault();
+  document.getElementById('stats-date-from').value = '';
+  document.getElementById('stats-date-to').value = '';
+  loadGlobalStats(true);
 });
 
 // ---------------------------------------------------------------------------
