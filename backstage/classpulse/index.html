@@ -405,6 +405,34 @@ document.getElementById('create-session-btn').addEventListener('click', async fu
 // ---------------------------------------------------------------------------
 // SESSION STATS
 // ---------------------------------------------------------------------------
+// --- Helpers for Stats Rendering ---
+function renderAccBar(accuracy) {
+  var el = document.createElement('div');
+  el.className = 'cp-stats-bar';
+  if (accuracy !== null) {
+    var pct = Math.round(accuracy * 100);
+    el.innerHTML = '<div class="cp-stats-bar-fill" style="width:' + pct + '%"></div><span class="cp-stats-bar-text">' + pct + '% acerto</span>';
+  } else {
+    el.innerHTML = '<span class="cp-stats-bar-text">N/A</span>';
+  }
+  return el;
+}
+
+function renderQuestionCard(q, metaText) {
+  var qDiv = document.createElement('div');
+  qDiv.className = 'cp-stats-question';
+  var textDiv = document.createElement('div');
+  textDiv.className = 'cp-stats-qtext';
+  textDiv.textContent = q.text;
+  var metaDiv = document.createElement('div');
+  metaDiv.className = 'cp-stats-qmeta';
+  metaDiv.textContent = metaText;
+  qDiv.appendChild(textDiv);
+  qDiv.appendChild(metaDiv);
+  qDiv.appendChild(renderAccBar(q.accuracy));
+  return qDiv;
+}
+
 async function openStats(session) {
   var panel = document.getElementById('stats-panel');
   var listWrap = document.getElementById('sessions-list-wrap');
@@ -445,30 +473,7 @@ async function openStats(session) {
     } else {
       document.getElementById('stats-empty').hidden = true;
       data.questions.forEach(function(q) {
-        var qDiv = document.createElement('div');
-        qDiv.className = 'cp-stats-question';
-        
-        var textDiv = document.createElement('div');
-        textDiv.className = 'cp-stats-qtext';
-        textDiv.textContent = q.text;
-        
-        var metaDiv = document.createElement('div');
-        metaDiv.className = 'cp-stats-qmeta';
-        metaDiv.textContent = q.total_answers + ' respostas';
-        
-        var accBar = document.createElement('div');
-        accBar.className = 'cp-stats-bar';
-        if (q.accuracy !== null) {
-          var pct = Math.round(q.accuracy * 100);
-          accBar.innerHTML = '<div class="cp-stats-bar-fill" style="width:' + pct + '%"></div><span class="cp-stats-bar-text">' + pct + '% acerto</span>';
-        } else {
-          accBar.innerHTML = '<span class="cp-stats-bar-text">N/A</span>';
-        }
-        
-        qDiv.appendChild(textDiv);
-        qDiv.appendChild(metaDiv);
-        qDiv.appendChild(accBar);
-        qlist.appendChild(qDiv);
+        qlist.appendChild(renderQuestionCard(q, q.total_answers + ' respostas'));
       });
     }
   } catch(e) {
