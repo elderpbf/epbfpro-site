@@ -1622,11 +1622,13 @@
 
         // Auto-refresh
         setInterval(fetchData, REFRESH_INTERVAL);
+        setInterval(loadSettings, REFRESH_INTERVAL);
 
         // Refetch immediately when tab becomes visible again
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 fetchData();
+                loadSettings();
             }
         });
 
