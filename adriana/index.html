@@ -944,7 +944,7 @@
             width: 28px;
             opacity: 0.85;
             z-index: 0;
-            filter: brightness(1.2);
+            filter: brightness(0) invert(1) opacity(0.4);
         }
         .top-banner .banner-flower.left { left: 12px; top: 50%; transform: translateY(-50%) rotate(-15deg); }
         .top-banner .banner-flower.right { right: 12px; top: 50%; transform: translateY(-50%) rotate(15deg); width: 24px; }
@@ -1595,7 +1595,7 @@
                 if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
                 if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
                 
-                if (cfg['top_banner_text']) {
+                if (cfg['top_banner_text'] && cfg['banner_visible'] !== 'false') {
                     const banner = document.getElementById('top-banner');
                     const bannerText = document.getElementById('top-banner-text');
                     if (banner && bannerText) {
