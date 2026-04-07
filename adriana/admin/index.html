@@ -455,7 +455,24 @@
                     <span class="toggle-slider"></span>
                 </label>
             </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-label">Chuva de Flores</div>
+                    <div class="toggle-desc">Efeito especial de comemoração na tela</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-flower-shower" onchange="saveSetting('flower_shower', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
         </div>
+        <div style="margin-top:16px;">
+            <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:4px;">Mensagem de Destaque (Banner)</div>
+            <div style="font-size:0.75rem;color:#6e6050;margin-bottom:8px;">Texto que aparecerá fixado no topo da página. Deixe em branco para ocultar.</div>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="input-top-banner" placeholder="Ex: Adriana teve alta! 🏡💛" style="flex:1;padding:8px 12px;font-size:0.9rem;">
+                <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveSetting('top_banner_text', document.getElementById('input-top-banner').value)">Salvar Banner</button>
+            </div>
         <div style="margin-top:20px;">
             <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:10px;">Curtidas automáticas</div>
             <div style="font-size:0.75rem;color:#6e6050;margin-bottom:12px;">Ao publicar, o post anterior é completado até esse intervalo.</div>
@@ -839,11 +856,13 @@
                 const r = parseCSVLine(lines[i]);
                 if (r[0]) cfg[r[0]] = r[1];
             }
-            const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages' };
+            const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages', 'flower_shower': 'toggle-flower-shower' };
             for (const [key, id] of Object.entries(map)) {
                 const el = document.getElementById(id);
                 if (el) el.checked = cfg[key] !== 'false';
             }
+            const elBanner = document.getElementById('input-top-banner');
+            if (elBanner) elBanner.value = cfg['top_banner_text'] || '';
             const defaults = { 'likes_min_regular': 5, 'likes_max_regular': 8, 'likes_min_special': 10, 'likes_max_special': 15 };
             for (const [key, def] of Object.entries(defaults)) {
                 const el = document.getElementById(key.replace(/_/g, '-'));

@@ -909,12 +909,74 @@
             font-size: 0.75rem;
             color: var(--footer-text);
         }
+
+        /* Top Banner */
+        .top-banner {
+            position: relative;
+            margin: 0 0 24px;
+            padding: 18px 40px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(232, 160, 180, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        [data-theme="dark"] .top-banner {
+            background: linear-gradient(135deg, #b8a05a, #b07888, #9680a8);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+        .top-banner .banner-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            z-index: 1;
+            line-height: 1.4;
+        }
+        [data-theme="dark"] .top-banner .banner-text {
+            color: #f5f0eb;
+        }
+        .top-banner .banner-flower {
+            position: absolute;
+            width: 28px;
+            opacity: 0.85;
+            z-index: 0;
+            filter: brightness(1.2);
+        }
+        .top-banner .banner-flower.left { left: 12px; top: 50%; transform: translateY(-50%) rotate(-15deg); }
+        .top-banner .banner-flower.right { right: 12px; top: 50%; transform: translateY(-50%) rotate(15deg); width: 24px; }
+        [data-theme="dark"] .top-banner .banner-flower { filter: invert(1) opacity(0.6); }
+
+        /* Flower Shower */
+        .flower-flake {
+            position: fixed;
+            top: -5vh;
+            z-index: 9999;
+            pointer-events: none;
+            user-select: none;
+            animation: fall linear forwards;
+            font-size: 1.5rem;
+            will-change: transform;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+        }
     </style>
 </head>
 <body>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
+        <div id="top-banner" class="top-banner" style="display:none;">
+            <img src="media/optimized/flowers/1.webp" class="banner-flower left" alt="">
+            <div class="banner-text" id="top-banner-text"></div>
+            <img src="media/optimized/flowers/jasmine.webp" class="banner-flower right" alt="">
+        </div>
         <div class="header">
             <picture>
                 <source srcset="media/optimized/adriana-flowers.webp" type="image/webp">
@@ -1504,6 +1566,30 @@
             });
         }
 
+        function triggerFlowerShower() {
+            if (sessionStorage.getItem('flower_shower_played')) return;
+            sessionStorage.setItem('flower_shower_played', '1');
+
+            const emojis = ['🌸', '🌺', '🌻', '🌼', '🌷', '✨'];
+            const container = document.body;
+            const flakeCount = 40;
+
+            for (let i = 0; i < flakeCount; i++) {
+                setTimeout(() => {
+                    const flake = document.createElement('div');
+                    flake.className = 'flower-flake';
+                    flake.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    flake.style.left = Math.random() * 100 + 'vw';
+                    const size = Math.random() * 1 + 0.8;
+                    flake.style.fontSize = size + 'rem';
+                    const duration = Math.random() * 3 + 4;
+                    flake.style.animationDuration = duration + 's';
+                    container.appendChild(flake);
+                    setTimeout(() => flake.remove(), duration * 1000);
+                }, Math.random() * 2000);
+            }
+        }
+
         async function loadSettings() {
             try {
                 const resp = await fetch(CONFIGURACOES_URL + '&t=' + Date.now());
@@ -1517,6 +1603,18 @@
                 if (cfg['notif_bar'] === 'false') document.getElementById('notif-bar').style.setProperty('display','none','important');
                 if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
                 if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
+                
+                if (cfg['top_banner_text']) {
+                    const banner = document.getElementById('top-banner');
+                    const bannerText = document.getElementById('top-banner-text');
+                    if (banner && bannerText) {
+                        bannerText.textContent = cfg['top_banner_text'];
+                        banner.style.display = 'flex';
+                    }
+                }
+                if (cfg['flower_shower'] === 'true') {
+                    triggerFlowerShower();
+                }
             } catch (e) { console.error(e); }
         }
 
