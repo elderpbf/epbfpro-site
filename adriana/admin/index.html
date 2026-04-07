@@ -859,7 +859,7 @@
             const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages', 'flower_shower': 'toggle-flower-shower' };
             for (const [key, id] of Object.entries(map)) {
                 const el = document.getElementById(id);
-                if (el) el.checked = cfg[key] !== 'false';
+                if (el) el.checked = (cfg[key] || '').toLowerCase() !== 'false';
             }
             const elBanner = document.getElementById('input-top-banner');
             if (elBanner) elBanner.value = cfg['top_banner_text'] || '';

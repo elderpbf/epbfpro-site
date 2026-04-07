@@ -1612,7 +1612,7 @@
                         banner.style.display = 'flex';
                     }
                 }
-                if (cfg['flower_shower'] === 'true') {
+                if (cfg['flower_shower'] && cfg['flower_shower'].toLowerCase() === 'true') {
                     triggerFlowerShower();
                 }
             } catch (e) { console.error(e); }
