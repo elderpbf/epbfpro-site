@@ -1567,9 +1567,6 @@
         }
 
         function triggerFlowerShower() {
-            if (sessionStorage.getItem('flower_shower_played')) return;
-            sessionStorage.setItem('flower_shower_played', '1');
-
             const emojis = ['🌸', '🌺', '🌻', '🌼', '🌷', '✨'];
             const container = document.body;
             const flakeCount = 40;
