@@ -1056,7 +1056,7 @@
         const CURTIDAS_URL       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Curtidas`;
         const CONFIGURACOES_URL  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Configuracoes`;
         const FASES_URL          = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Fases`;
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyqHidXXgUUstPGwpZ_Q31ddhp8cEbtO0nP3yDGcgDTy7O9gjhKKxQo9sjPKU2WC7ncxQ/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFpm4kTYwWHUi-Tn_yX7_uMOzkJcofM_cMHySVek9mtU-Hk0wu-4hQYs5eMFcIwOLUqw/exec';
         const REFRESH_INTERVAL = 5 * 60 * 1000;
 
         function parseCSV(text) {
@@ -1589,14 +1589,8 @@
 
         async function loadSettings() {
             try {
-                const resp = await fetch(CONFIGURACOES_URL + '&t=' + Date.now());
-                const text = await resp.text();
-                const lines = text.trim().split('\n');
-                const cfg = {};
-                for (let i = 1; i < lines.length; i++) {
-                    const r = parseCSVLine(lines[i]);
-                    if (r[0]) cfg[r[0]] = r[1];
-                }
+                const resp = await fetch(APPS_SCRIPT_URL + '?action=get_settings&t=' + Date.now());
+                const cfg = await resp.json();
                 if (cfg['notif_bar'] === 'false') document.getElementById('notif-bar').style.setProperty('display','none','important');
                 if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
                 if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
