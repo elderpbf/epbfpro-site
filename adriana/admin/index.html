@@ -858,14 +858,8 @@
 
     async function loadSettings() {
         try {
-            const resp = await fetch(CONFIGURACOES_CSV + '&t=' + Date.now());
-            const text = await resp.text();
-            const lines = text.trim().split('\n');
-            const cfg = {};
-            for (let i = 1; i < lines.length; i++) {
-                const r = parseCSVLine(lines[i]);
-                if (r[0]) cfg[r[0]] = r[1];
-            }
+            const resp = await fetch(APPS_SCRIPT_URL + '?action=get_settings&t=' + Date.now());
+            const cfg = await resp.json();
             const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages', 'flower_shower': 'toggle-flower-shower', 'banner_visible': 'toggle-banner-visible' };
             for (const [key, id] of Object.entries(map)) {
                 const el = document.getElementById(id);
