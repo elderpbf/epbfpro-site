@@ -615,10 +615,6 @@
     // ====================================================
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFpm4kTYwWHUi-Tn_yX7_uMOzkJcofM_cMHySVek9mtU-Hk0wu-4hQYs5eMFcIwOLUqw/exec';
     const SPREADSHEET_ID    = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
-    const _gt1 = 'ghp_kaJmQ8wVYCjoz7D'; const _gt2 = 'bz748qLAMeHcT9y2B9Jpv';
-    const GITHUB_TOKEN  = _gt1 + _gt2;
-    const GITHUB_REPO   = 'elderpbf/epbfpro-site';
-    const GITHUB_BRANCH = 'dev'; // change to 'master' when promoting to production
     const UPDATES_CSV       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
     const RESUMO_CSV        = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
     const CONFIGURACOES_CSV = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Configuracoes`;
@@ -1012,39 +1008,15 @@
     async function saveConfig(key, value) {
         const fb = document.getElementById('fb-settings');
         try {
-            const getResp = await fetch(
-                `https://api.github.com/repos/${GITHUB_REPO}/contents/adriana/config.json?ref=${GITHUB_BRANCH}`,
-                { headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github+json' } }
-            );
-            const fileData = await getResp.json();
-            const currentConfig = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, '')))));
-            currentConfig[key] = value;
-            const putResp = await fetch(
-                `https://api.github.com/repos/${GITHUB_REPO}/contents/adriana/config.json`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                        'Accept': 'application/vnd.github+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `config: ${key}=${value}`,
-                        content: btoa(unescape(encodeURIComponent(JSON.stringify(currentConfig, null, 2)))),
-                        sha: fileData.sha,
-                        branch: GITHUB_BRANCH
-                    })
-                }
-            );
-            if (putResp.ok) {
-                showFb(fb, 'Salvo! Página atualiza em instantes.', true);
+            const res = await postToScript({ action: 'update_config', password: localStorage.getItem('adriana_admin_pw'), key, value: value });
+            if (res.ok) {
+                showFb(fb, 'Salvo! Atualizando site em instantes...', true);
                 setTimeout(() => fb.style.display = 'none', 3000);
             } else {
-                const err = await putResp.json();
-                showFb(fb, 'Erro GitHub: ' + (err.message || 'API falhou'), false);
+                showFb(fb, res.error || 'Erro ao salvar backend.', false);
             }
         } catch (e) {
-            showFb(fb, 'Erro de conexão com GitHub.', false);
+            showFb(fb, 'Erro de conexão.', false);
             console.error(e);
         }
     }
