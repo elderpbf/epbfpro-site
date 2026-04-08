@@ -171,15 +171,15 @@
             width: 13px;
             height: 13px;
             opacity: 0.22;
-            cursor: pointer;
             transition: transform 0.2s, opacity 0.2s;
         }
-        .flower-divider img:hover { opacity: 0.6; }
+        .flower-divider img:nth-child(2) { cursor: pointer; }
+        .flower-divider img:nth-child(2):hover { opacity: 0.6; }
         .flower-divider img:nth-child(1) { transform: rotate(-15deg); }
         .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 11px; height: 11px; }
         .flower-divider img:nth-child(3) { transform: rotate(-5deg); }
         [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.15; }
-        [data-theme="dark"] .flower-divider img:hover { opacity: 0.4; }
+        [data-theme="dark"] .flower-divider img:nth-child(2):hover { opacity: 0.4; }
 
         .flower-grow {
             position: fixed;
@@ -1033,7 +1033,7 @@
 
         <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
-        <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt="" onclick="testAnim1(this)"><img src="media/optimized/flowers/flowers.webp" alt="" onclick="testAnim2(this)"><img src="media/optimized/flowers/jasmine.webp" alt="" onclick="testAnim3(this)"></div>
+        <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt=""><img src="media/optimized/flowers/flowers.webp" alt="" onclick="testAnim2(this)"><img src="media/optimized/flowers/jasmine.webp" alt=""></div>
 
         <div id="summary-section">
             <div class="loading">
