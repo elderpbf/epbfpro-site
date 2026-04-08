@@ -1015,7 +1015,7 @@
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
-        <div id="top-banner" class="top-banner" style="display:flex;">
+        <div id="top-banner" class="top-banner" style="display:none;">
             <img src="media/optimized/flowers/1.webp" class="banner-flower left" alt="">
             <div class="banner-text" id="top-banner-text">ALTA DA UTI!</div>
             <img src="media/optimized/flowers/jasmine.webp" class="banner-flower right" alt="">
@@ -1704,22 +1704,37 @@
                 if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
                 if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
                 
-                if (cfg['top_banner_text'] && cfg['banner_visible'] !== 'false') {
-                    const banner = document.getElementById('top-banner');
-                    const bannerText = document.getElementById('top-banner-text');
-                    if (banner && bannerText) {
-                        bannerText.textContent = cfg['top_banner_text'];
-                        banner.style.display = 'flex';
-                    }
+
+            } catch (e) { console.error(e); }
+        }
+
+        function applyConfig(cfg, triggerEffects) {
+            const banner = document.getElementById('top-banner');
+            const bannerText = document.getElementById('top-banner-text');
+            if (banner && bannerText) {
+                if (cfg.banner_visible && cfg.banner_text) {
+                    bannerText.textContent = cfg.banner_text;
+                    banner.style.display = 'flex';
+                } else {
+                    banner.style.display = 'none';
                 }
-                if (cfg['flower_shower'] && cfg['flower_shower'].toLowerCase() === 'true') {
-                    triggerFlowerShower();
-                }
+            }
+            if (triggerEffects && cfg.flower_shower) setTimeout(triggerFlowerShower, 500);
+        }
+
+        async function loadConfig(triggerEffects) {
+            const cached = localStorage.getItem('adriana_config');
+            if (cached) { try { applyConfig(JSON.parse(cached), false); } catch (_) {} }
+            try {
+                const resp = await fetch('./config.json?t=' + Date.now());
+                const cfg = await resp.json();
+                localStorage.setItem('adriana_config', JSON.stringify(cfg));
+                applyConfig(cfg, triggerEffects);
             } catch (e) { console.error(e); }
         }
 
         // Initial load
-        Promise.all([fetchData(), loadMessages(), loadSettings()]).finally(() => {
+        Promise.all([fetchData(), loadMessages(), loadSettings(), loadConfig(true)]).finally(() => {
             const overlay = document.getElementById('loading-overlay');
             if (overlay) {
                 overlay.classList.add('hidden');
@@ -1727,18 +1742,18 @@
             }
         });
         
-        // Hardcoded flower shower for high impact updates
-        setTimeout(triggerFlowerShower, 1000);
 
         // Auto-refresh
         setInterval(fetchData, REFRESH_INTERVAL);
         setInterval(loadSettings, REFRESH_INTERVAL);
+        setInterval(() => loadConfig(false), REFRESH_INTERVAL);
 
         // Refetch immediately when tab becomes visible again
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 fetchData();
                 loadSettings();
+                loadConfig(false);
             }
         });
 

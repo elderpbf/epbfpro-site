@@ -506,7 +506,7 @@
                     <div class="toggle-desc">Efeito especial de comemoração na tela</div>
                 </div>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-flower-shower" onchange="saveSetting('flower_shower', this.checked)">
+                    <input type="checkbox" id="toggle-flower-shower" onchange="saveConfig('flower_shower', this.checked)">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -516,7 +516,7 @@
             <div style="font-size:0.75rem;color:#6e6050;margin-bottom:8px;">Texto que aparecerá fixado no topo da página.</div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <input type="text" id="input-top-banner" placeholder="Ex: Adriana teve alta! 🏡💛" style="flex:1;padding:8px 12px;font-size:0.9rem;">
-                <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveSetting('top_banner_text', document.getElementById('input-top-banner').value)">Salvar</button>
+                <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveConfig('banner_text', document.getElementById('input-top-banner').value)">Salvar</button>
             </div>
             <div class="toggle-row">
                 <div class="toggle-info">
@@ -524,7 +524,7 @@
                     <div class="toggle-desc">Mostra ou oculta o banner sem apagar o texto</div>
                 </div>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-banner-visible" onchange="saveSetting('banner_visible', this.checked)">
+                    <input type="checkbox" id="toggle-banner-visible" onchange="saveConfig('banner_visible', this.checked)">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -615,6 +615,9 @@
     // ====================================================
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFpm4kTYwWHUi-Tn_yX7_uMOzkJcofM_cMHySVek9mtU-Hk0wu-4hQYs5eMFcIwOLUqw/exec';
     const SPREADSHEET_ID    = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
+    const GITHUB_TOKEN  = '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';
+    const GITHUB_REPO   = 'elderpbf/epbfpro-site';
+    const GITHUB_BRANCH = 'dev'; // change to 'master' when promoting to production
     const UPDATES_CSV       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
     const RESUMO_CSV        = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
     const CONFIGURACOES_CSV = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Configuracoes`;
@@ -647,6 +650,7 @@
         loadRecent();
         loadResumo();
         loadSettings();
+        loadConfig();
         loadAdminMessages();
     }
 
@@ -962,13 +966,11 @@
         try {
             const resp = await fetch(APPS_SCRIPT_URL + '?action=get_settings&t=' + Date.now());
             const cfg = await resp.json();
-            const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages', 'flower_shower': 'toggle-flower-shower', 'banner_visible': 'toggle-banner-visible' };
+            const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages' };
             for (const [key, id] of Object.entries(map)) {
                 const el = document.getElementById(id);
                 if (el) el.checked = (cfg[key] || '').toLowerCase() !== 'false';
             }
-            const elBanner = document.getElementById('input-top-banner');
-            if (elBanner) elBanner.value = cfg['top_banner_text'] || '';
             const defaults = { 'likes_min_regular': 5, 'likes_max_regular': 8, 'likes_min_special': 10, 'likes_max_special': 15 };
             for (const [key, def] of Object.entries(defaults)) {
                 const el = document.getElementById(key.replace(/_/g, '-'));
@@ -988,6 +990,62 @@
                 showFb(fb, res.error || 'Erro ao salvar.', false);
             }
         } catch (e) { showFb(fb, 'Erro de conexão.', false); }
+    }
+
+    // ====================================================
+    // CONFIG.JSON — GitHub API (banner, flower shower)
+    // ====================================================
+    async function loadConfig() {
+        try {
+            const resp = await fetch('../config.json?t=' + Date.now());
+            const cfg = await resp.json();
+            const elVisible = document.getElementById('toggle-banner-visible');
+            if (elVisible) elVisible.checked = cfg.banner_visible === true;
+            const elText = document.getElementById('input-top-banner');
+            if (elText) elText.value = cfg.banner_text || '';
+            const elShower = document.getElementById('toggle-flower-shower');
+            if (elShower) elShower.checked = cfg.flower_shower === true;
+        } catch (e) { console.error('loadConfig error:', e); }
+    }
+
+    async function saveConfig(key, value) {
+        const fb = document.getElementById('fb-settings');
+        try {
+            const getResp = await fetch(
+                `https://api.github.com/repos/${GITHUB_REPO}/contents/adriana/config.json?ref=${GITHUB_BRANCH}`,
+                { headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github+json' } }
+            );
+            const fileData = await getResp.json();
+            const currentConfig = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, '')))));
+            currentConfig[key] = value;
+            const putResp = await fetch(
+                `https://api.github.com/repos/${GITHUB_REPO}/contents/adriana/config.json`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `config: ${key}=${value}`,
+                        content: btoa(unescape(encodeURIComponent(JSON.stringify(currentConfig, null, 2)))),
+                        sha: fileData.sha,
+                        branch: GITHUB_BRANCH
+                    })
+                }
+            );
+            if (putResp.ok) {
+                showFb(fb, 'Salvo! Página atualiza em instantes.', true);
+                setTimeout(() => fb.style.display = 'none', 3000);
+            } else {
+                const err = await putResp.json();
+                showFb(fb, 'Erro GitHub: ' + (err.message || 'API falhou'), false);
+            }
+        } catch (e) {
+            showFb(fb, 'Erro de conexão com GitHub.', false);
+            console.error(e);
+        }
     }
 
     async function loadAdminMessages() {
