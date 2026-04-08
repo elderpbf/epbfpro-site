@@ -1087,12 +1087,14 @@
             const x = rect.left + rect.width / 2;
             const y = rect.top + rect.height / 2;
             
-            const flower = document.createElement('img');
-            flower.src = 'media/optimized/flowers/jasmine.webp';
+            const flower = document.createElement('div');
             flower.className = 'flower-grow';
+            flower.style.webkitMaskImage = "url('media/optimized/flowers/jasmine.webp')";
+            flower.style.maskImage = "url('media/optimized/flowers/jasmine.webp')";
             flower.style.left = x + 'px';
             flower.style.top = y + 'px';
             flower.style.width = '100px';
+            flower.style.height = '100px';
             flower.style.animation = 'pulseEthereal 2s ease-out forwards';
             document.body.appendChild(flower);
             setTimeout(() => flower.remove(), 2000);
@@ -1106,12 +1108,14 @@
             
             images.forEach((img, i) => {
                 setTimeout(() => {
-                    const flower = document.createElement('img');
-                    flower.src = 'media/optimized/flowers/' + img;
+                    const flower = document.createElement('div');
                     flower.className = 'flower-grow';
+                    flower.style.webkitMaskImage = `url('media/optimized/flowers/${img}')`;
+                    flower.style.maskImage = `url('media/optimized/flowers/${img}')`;
                     flower.style.left = x + 'px';
                     flower.style.top = y + 'px';
                     flower.style.width = '80px';
+                    flower.style.height = '80px';
                     flower.style.setProperty('--rot', (i * 30 - 30) + 'deg');
                     flower.style.animation = 'layeredBloom 2s ease-out forwards';
                     document.body.appendChild(flower);
@@ -1126,12 +1130,14 @@
             const y = rect.top + rect.height / 2;
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             
-            const flower = document.createElement('img');
-            flower.src = 'media/optimized/flowers/chrysanthemum.webp';
+            const flower = document.createElement('div');
             flower.className = 'flower-grow';
+            flower.style.webkitMaskImage = "url('media/optimized/flowers/chrysanthemum.webp')";
+            flower.style.maskImage = "url('media/optimized/flowers/chrysanthemum.webp')";
             flower.style.left = x + 'px';
             flower.style.top = y + 'px';
             flower.style.width = '120px';
+            flower.style.height = '120px';
             flower.style.animation = (isDark ? 'organicGrowthDark' : 'organicGrowth') + ' 2.5s ease-in-out forwards';
             document.body.appendChild(flower);
             setTimeout(() => flower.remove(), 2500);
