@@ -187,8 +187,15 @@
             pointer-events: none;
             user-select: none;
             will-change: transform, opacity, filter;
+            background-color: var(--accent);
+            -webkit-mask-size: contain;
+            -webkit-mask-position: center;
+            -webkit-mask-repeat: no-repeat;
+            mask-size: contain;
+            mask-position: center;
+            mask-repeat: no-repeat;
         }
-        [data-theme="dark"] .flower-grow { filter: brightness(0.8) sepia(0.3); }
+        [data-theme="dark"] .flower-grow { background-color: var(--heading); }
 
         @keyframes pulseEthereal {
             0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; }
