@@ -7,6 +7,7 @@
   <title>Classroom · PensoIA</title>
   <link rel="stylesheet" href="../backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.1">
+  <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.0">
   <script src="/backstage/js/debug.js?v=2.4"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -61,28 +62,10 @@
     /* Option buttons */
     .question-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin-bottom: 14px; }
     .question-text  { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; }
-    .option-btn {
-      width: 100%; padding: 14px 18px; background: var(--surface); border: 2px solid var(--border);
-      border-radius: 12px; font-size: 1.1rem; font-family: inherit; color: var(--text-primary); cursor: pointer;
-      text-align: left; display: flex; align-items: center; gap: 14px; transition: all 0.15s; margin-bottom: 10px;
-    }
-    .option-btn:hover:not(:disabled) { border-color: var(--primary); background: var(--option-hover-bg); }
-    .option-btn:disabled { cursor: default; opacity: 0.6; }
-    .option-btn.selected { border-color: var(--primary-dark); background: var(--option-selected-bg); opacity: 1; }
-    .option-letter { font-size: 0.78rem; font-weight: 700; color: var(--primary-dark); background: var(--border); padding: 3px 9px; border-radius: 5px; flex-shrink: 0; min-width: 30px; text-align: center; }
 
     /* Results bars */
     .results-question { font-size: 1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; }
-    .result-option { margin-bottom: 14px; padding: 10px; border-radius: 10px; border: 2px solid transparent; transition: all 0.2s; }
-    .result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
-    .result-letter { font-size: 0.78rem; font-weight: 700; color: var(--primary-dark); background: var(--border); padding: 3px 9px; border-radius: 5px; flex-shrink: 0; min-width: 30px; text-align: center; }
-    .result-text { flex: 1; font-size: 0.88rem; color: var(--text-primary); }
-    .result-pct  { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); min-width: 36px; text-align: right; }
-    .bar-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
-    .bar-fill  { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.6s ease; }
-    .bar-fill.correct { background: var(--success); }
-    .bar-fill.mine    { background: var(--primary-dark); }
-    
+
 
     .results-count { font-size: 0.78rem; color: var(--text-light); text-align: center; margin-top: 18px; }
     .results-next  { font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-top: 10px; }
@@ -177,6 +160,7 @@
 </div>
 <script src="../backstage/js/utils.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.0"></script>
+<script src="../backstage/js/question-renderer.js?v=1.0"></script>
 <script src="../backstage/js/theme-manager.js?v=1.0"></script>
 <script>
   // ── THEME ────────────────────────────────────────────────────────────────
@@ -367,22 +351,21 @@
 
   // ── RENDER QUESTION ───────────────────────────────────────────────────────
   function renderQuestion(row) {
-    activeQuestionData = { id: row.id, text: row.text, options: row.options };
+    activeQuestionData = { id: row.id, text: row.text, options: row.options, type: row.type };
 
     document.getElementById('q-text').textContent = activeQuestionData.text;
     document.getElementById('answer-error').textContent = '';
-    const letters = LETTERS;
-    document.getElementById('q-options').innerHTML = (row.options || []).map((opt, i) => `
-      <button class="option-btn" onclick="submitAnswer(${i}, this)">
-        <span class="option-letter">${letters[i]}</span>
-        <span>${escHtml(stripOptPrefix(opt))}</span>
-      </button>`).join('');
+    var container = document.getElementById('q-options');
+    QR.renderInput(row, container, {
+      mode: 'student',
+      onSelect: function(index, btn) { submitAnswer(index, btn); }
+    });
   }
 
   // ── SUBMIT ANSWER ─────────────────────────────────────────────────────────
   async function submitAnswer(answerIndex, btn) {
     if (!activeQuestionData) return;
-    document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+    document.querySelectorAll('.qr-option-btn').forEach(b => b.disabled = true);
     btn.classList.add('selected');
     document.getElementById('answer-error').textContent = '';
     document.getElementById('answer-sending-msg').style.display = '';
@@ -402,14 +385,14 @@
         dbg('ok', `answer ${answerIndex} saved for Q …${qId.slice(-6)}`);
         showState('answered');
       } else {
-        document.querySelectorAll('.option-btn').forEach(b => b.disabled = false);
+        document.querySelectorAll('.qr-option-btn').forEach(b => b.disabled = false);
         btn.classList.remove('selected');
         document.getElementById('answer-sending-msg').style.display = 'none';
         document.getElementById('answer-error').textContent =
           result.error === 'question is not active' ? t.errTimeout : t.errSubmit;
       }
     } catch {
-      document.querySelectorAll('.option-btn').forEach(b => b.disabled = false);
+      document.querySelectorAll('.qr-option-btn').forEach(b => b.disabled = false);
       btn.classList.remove('selected');
       document.getElementById('answer-sending-msg').style.display = 'none';
       document.getElementById('answer-error').textContent = t.errConnection;
@@ -418,35 +401,22 @@
 
   // ── RENDER RESULTS ────────────────────────────────────────────────────────
   function renderResults(row, myAnswerIndex) {
-    const options       = row.options || [];
-    const correctAnswer = row.correct_answer;
-    const revealAnswer  = row.reveal_answer === true;
-
-    const counts = row.answer_counts || new Array(options.length).fill(0);
-    const total  = counts.reduce((a, b) => a + b, 0);
-    const letters = LETTERS;
+    const counts      = row.answer_counts || new Array((row.options || []).length).fill(0);
+    const total       = counts.reduce((a, b) => a + b, 0);
+    const revealAnswer = row.reveal_answer === true;
 
     const resSection = document.getElementById('state-results');
     resSection.classList.toggle('revealed', revealAnswer);
 
     document.getElementById('results-q-text').textContent = row.text || '';
-    document.getElementById('results-bars').innerHTML = options.map((opt, i) => {
-      const pct       = total > 0 ? Math.round(counts[i] / total * 100) : 0;
-      const isCorrect = revealAnswer && correctAnswer !== null && i === correctAnswer;
-      const isMine    = i === myAnswerIndex;
-      const fillClass = isCorrect ? 'correct' : (isMine ? 'mine' : '');
-      return `
-        <div class="result-option ${isCorrect ? 'is-correct' : ''}">
-          <div class="result-header">
-            <span class="result-letter">${letters[i]}</span>
-            <span class="result-text">${escHtml(stripOptPrefix(opt))}</span>
-            <span class="result-pct">${pct}%</span>
-          </div>
-          <div class="bar-track">
-            <div class="bar-fill ${fillClass}" style="width:${pct}%"></div>
-          </div>
-        </div>`;
-    }).join('');
+    var barsEl = document.getElementById('results-bars');
+    barsEl.className = 'qr-student';
+    QR.renderResults(row, counts, barsEl, {
+      mode: 'student',
+      revealAnswer,
+      correctAnswer: row.correct_answer,
+      myAnswerIndex,
+    });
     document.getElementById('results-count').textContent = t.answersCount(total);
   }
 

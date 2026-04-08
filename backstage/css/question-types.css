@@ -1,0 +1,126 @@
+/* =========================================================
+   Backstage — Question Type Rendering Styles
+   Shared rendering CSS for all question types across pages.
+   All class names use qr- prefix (Question Renderer-scoped).
+   Context classes: .qr-display, .qr-student, .qr-host
+   ========================================================= */
+
+/* ── OPTION BUTTONS (student input) ─────────────────────── */
+
+.qr-option-btn {
+  width: 100%; padding: 14px 18px;
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 12px; font-size: 1.1rem; font-family: inherit;
+  color: var(--text-primary); cursor: pointer;
+  text-align: left; display: flex; align-items: center; gap: 14px;
+  transition: all 0.15s; margin-bottom: 10px;
+}
+.qr-option-btn:hover:not(:disabled) { border-color: var(--primary); background: var(--option-hover-bg); }
+.qr-option-btn:disabled { cursor: default; opacity: 0.6; }
+.qr-option-btn.selected { border-color: var(--primary-dark); background: var(--option-selected-bg); opacity: 1; }
+
+.qr-option-letter {
+  font-size: 0.78rem; font-weight: 700; color: var(--primary-dark);
+  background: var(--border); padding: 3px 9px; border-radius: 5px;
+  flex-shrink: 0; min-width: 30px; text-align: center;
+}
+
+/* ── RESULT BARS (shared base, mode overrides below) ─────── */
+
+.qr-bar {
+  display: grid;
+  grid-template-columns: 44px 1fr 60px;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 3px solid transparent;
+  transition: all 0.3s;
+}
+
+.qr-bar-letter {
+  font-size: 0.85rem; font-weight: 700;
+  color: var(--primary-dark); background: var(--surface);
+  border: 1px solid var(--border); padding: 8px 0;
+  border-radius: 8px; text-align: center;
+}
+
+.qr-bar-body { min-width: 0; }
+
+.qr-bar-label {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 6px;
+}
+
+.qr-bar-text { font-size: 1.3rem; color: var(--text-primary); font-weight: 400; }
+.qr-bar-pct  { font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); }
+
+.qr-bar-track { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
+.qr-bar-fill  { height: 100%; background: var(--primary); border-radius: 6px; transition: width 0.8s ease; }
+.qr-bar-fill.correct { background: var(--success); }
+.qr-bar-fill.mine    { background: var(--primary-dark); }
+
+.qr-bar-count { font-size: 1.1rem; font-weight: 600; color: var(--text-secondary); text-align: right; }
+
+/* ── HOST MODE overrides ─────────────────────────────────── */
+
+.qr-host .qr-bar {
+  grid-template-columns: 32px 1fr 40px;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+}
+.qr-host .qr-bar-letter {
+  font-size: 0.75rem; padding: 0.45rem 0;
+  background: rgba(20,184,166,.1);
+  border-color: rgba(20,184,166,.2);
+  border-radius: 6px;
+}
+.qr-host .qr-bar-label { margin-bottom: 3px; }
+.qr-host .qr-bar-text  { font-size: 0.8rem; color: var(--text-primary); }
+.qr-host .qr-bar-pct   { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+.qr-host .qr-bar-track { height: 7px; background: rgba(20,184,166,.12); }
+.qr-host .qr-bar-count { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+
+/* ── STUDENT MODE overrides ──────────────────────────────── */
+
+.qr-student .qr-bar {
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px;
+  border-radius: 10px;
+  border-width: 2px;
+}
+.qr-student .qr-bar-letter {
+  font-size: 0.78rem; padding: 3px 9px;
+  border-radius: 5px; min-width: 30px;
+}
+.qr-student .qr-bar-text  { font-size: 0.88rem; }
+.qr-student .qr-bar-pct   { font-size: 0.82rem; font-weight: 700; min-width: 36px; text-align: right; }
+.qr-student .qr-bar-track { height: 8px; border-radius: 4px; }
+.qr-student .qr-bar-count { display: none; }
+
+/* ── CORRECT ANSWER highlighting ─────────────────────────── */
+
+.qr-bar.is-correct {
+  background-color: #0d9488 !important;
+  border-color: #0d9488 !important;
+  color: #fff !important;
+}
+.qr-bar.is-correct .qr-bar-letter {
+  background: rgba(255,255,255,0.2) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+.qr-bar.is-correct .qr-bar-text,
+.qr-bar.is-correct .qr-bar-pct,
+.qr-bar.is-correct .qr-bar-count {
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+.qr-bar.is-correct .qr-bar-text::after { content: ' \2713'; font-weight: 800; }
+.qr-bar.is-correct .qr-bar-fill { background: #fff !important; }
