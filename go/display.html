@@ -7,7 +7,7 @@
   <title>Classroom · Display</title>
   <link rel="stylesheet" href="../backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.1">
-  <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.0">
+  <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.1">
   <script src="/backstage/js/debug.js?v=2.4"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,13 +25,13 @@
     body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); display: flex; flex-direction: column; min-height: 100vh; }
 
     /* Top bar */
-    .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .top-bar .logo { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }
-    .top-bar .session-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
-    .top-bar .session-code { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.14em; color: var(--text-secondary); background: var(--surface); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
+    .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .top-bar .logo { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }
+    .top-bar .session-title { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+    .top-bar .session-code { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.14em; color: var(--text-secondary); background: var(--surface); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border); }
 
     /* Main content */
-    .main { flex: 1; padding: 32px 40px 24px; overflow-y: auto; max-width: 1000px; width: 100%; margin: 0 auto; }
+    .main { display: flex; flex-direction: column; height: calc(100vh - 72px); flex: 1; padding: clamp(12px, 1.8vh, 28px) clamp(16px, 2.5vw, 44px); overflow-y: auto; max-width: min(1200px, 92vw); width: 100%; margin: 0 auto; }
 
     /* Center states */
     .center-state { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; min-height: 300px; }
@@ -41,16 +41,17 @@
     .center-state .state-sub  { font-size: 0.9rem; color: var(--text-light); }
 
     /* Question display */
-    .question-area { margin-bottom: 32px; }
+    .question-area { margin-bottom: 32px; flex-shrink: 0; }
     .question-status { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
     .status-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; }
     .status-badge.live   { background: var(--status-live-bg); color: var(--status-live-text); }
     .status-badge.closed { background: var(--status-closed-bg); color: var(--status-closed-text); }
     .answer-count { font-size: 0.82rem; color: var(--text-light); }
 
-    .question-text-display { font-size: 1.9rem; font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 32px; }
+    .question-text-display { font-size: clamp(1.3rem, 2.5vw, 2.8rem); font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 32px; }
 
-
+    /* Display Mode Results Area */
+    .qr-display { flex: 1; overflow-y: auto; min-height: 0; }
 
     /* Idle screen */
     .idle-screen {
@@ -63,18 +64,18 @@
       min-height: 60vh;
     }
     .idle-code {
-      font-size: 4rem;
+      font-size: clamp(2.2rem, 4.5vw, 5rem);
       font-weight: 700;
       letter-spacing: 0.2em;
       color: var(--primary);
     }
     .idle-qr {
-      width: 280px;
-      height: 280px;
+      width: clamp(160px, 20vh, 380px);
+      height: clamp(160px, 20vh, 380px);
       border-radius: 12px;
     }
     .idle-url {
-      font-size: 1.5rem;
+      font-size: clamp(0.95rem, 1.8vw, 1.8rem);
       color: var(--text-secondary);
     }
 
@@ -84,11 +85,16 @@
     #no-code-screen code { font-size: 0.82rem; background: var(--surface); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
 
     /* Bottom bar */
-    .bottom-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 28px; border-top: 1px solid var(--border); flex-shrink: 0; }
-    .bottom-bar .join-hint { font-size: 0.78rem; color: var(--text-light); }
+    .bottom-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .bottom-bar .join-hint { font-size: 0.7rem; color: var(--text-light); }
     .bottom-bar .join-hint strong { color: var(--primary); }
     .refresh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-light); transition: background 0.3s; }
     .refresh-dot.active { background: var(--success); }
+
+    /* Landscape Tablets / Projectors Override */
+    @media (max-height: 600px) {
+      .top-bar, .bottom-bar { padding: 4px 16px; }
+    }
   </style>
 </head>
 <body>

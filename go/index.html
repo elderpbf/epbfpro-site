@@ -7,14 +7,14 @@
   <title>Classroom · PensoIA</title>
   <link rel="stylesheet" href="../backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.1">
-  <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.0">
+  <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.1">
   <script src="/backstage/js/debug.js?v=2.4"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     /* Theme toggle button */
     #theme-btn {
-      position: fixed; top: 14px; right: 14px; z-index: 100;
+      position: absolute; top: 24px; right: 16px; z-index: 100;
       width: 36px; height: 36px;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 8px; cursor: pointer; color: var(--text-secondary);
@@ -23,7 +23,7 @@
     }
     #theme-btn:hover { border-color: var(--primary); color: var(--primary-dark); }
     body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); line-height: 1.6; min-height: 100vh; }
-    .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 80px; }
+    .container { position: relative; max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; }
 
     /* Header */
     .header { text-align: center; padding: 28px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
@@ -32,7 +32,7 @@
     .header p  { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
 
     /* Session bar */
-    .session-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    .session-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 0 18px; padding-right: 44px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
     .session-bar .session-title { font-size: 0.95rem; font-weight: 600; color: var(--primary-dark); }
     .session-bar .session-code  { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-secondary); background: var(--border); padding: 3px 8px; border-radius: 6px; }
     .btn-exit { font-size: 0.8rem; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 4px 0; font-family: inherit; }
@@ -63,6 +63,11 @@
     .question-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin-bottom: 14px; }
     .question-text  { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; }
 
+    @media (min-width: 600px) {
+      #q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .qr-option-btn { margin-bottom: 0 !important; }
+    }
+
     /* Results bars */
     .results-question { font-size: 1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; }
 
@@ -81,10 +86,11 @@
   </style>
 </head>
 <body>
+
+<div class="container">
 <button id="theme-btn" aria-label="Alternar tema" onclick="ThemeManager.toggleTheme()">
   <span id="theme-icon"></span>
 </button>
-<div class="container">
 
   <!-- ── JOIN SCREEN ── -->
   <div id="join-screen">

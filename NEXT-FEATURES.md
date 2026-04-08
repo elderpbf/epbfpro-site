@@ -83,8 +83,7 @@
 - **7.A.iii** - Client-side validation (HTML5 + custom)
 - **7.A.iv** - Backend integration options:
   - **7.A.iv.a** - FormSpree (simple, free tier)
-  - **7.A.iv.b** - Netlify Forms (if hosting on Netlify)
-  - **7.A.iv.c** - Custom PHP handler (requires PHP on Hostinger)
+  - **7.A.iv.b** - Custom PHP handler (requires PHP on Hostinger)
   - **7.A.iv.d** - Formsubmit.co (no backend needed)
 - **7.A.v** - Success/error messages
 - **7.A.vi** - Loading state during submission

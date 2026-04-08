@@ -24,6 +24,9 @@
   background: var(--border); padding: 3px 9px; border-radius: 5px;
   flex-shrink: 0; min-width: 30px; text-align: center;
 }
+[data-theme="dark"] .qr-option-letter {
+  background: rgba(20,184,166,.25); color: #fff;
+}
 
 /* ── RESULT BARS (shared base, mode overrides below) ─────── */
 
@@ -124,3 +127,20 @@
 }
 .qr-bar.is-correct .qr-bar-text::after { content: ' \2713'; font-weight: 800; }
 .qr-bar.is-correct .qr-bar-fill { background: #fff !important; }
+
+/* ── DISPLAY MODE overrides ──────────────────────────────── */
+
+.qr-display .qr-bar {
+  margin-bottom: clamp(10px, 1.5vh, 18px);
+  padding: clamp(8px, 1.2vh, 12px) clamp(12px, 2vw, 16px);
+  gap: clamp(10px, 1.5vw, 14px);
+  grid-template-columns: clamp(34px, 4vw, 44px) 1fr clamp(45px, 6vw, 60px);
+}
+.qr-display .qr-bar-letter {
+  font-size: clamp(0.78rem, 1vw, 1rem);
+  padding: clamp(6px, 0.8vh, 8px) 0;
+}
+.qr-display .qr-bar-text { font-size: clamp(0.95rem, 1.6vw, 1.6rem); }
+.qr-display .qr-bar-pct { font-size: clamp(0.82rem, 1.1vw, 1.25rem); }
+.qr-display .qr-bar-track { height: clamp(10px, 1.2vh, 16px); }
+.qr-display .qr-bar-count { font-size: clamp(0.82rem, 1.1vw, 1.25rem); }
