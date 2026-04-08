@@ -990,7 +990,7 @@
 
         <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
-        <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt=""><img src="media/optimized/flowers/flowers.webp" alt=""><img src="media/optimized/flowers/jasmine.webp" alt=""></div>
+        <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt="" onclick="testAnim1(this)"><img src="media/optimized/flowers/flowers.webp" alt="" onclick="testAnim2(this)"><img src="media/optimized/flowers/jasmine.webp" alt="" onclick="testAnim3(this)"></div>
 
         <div id="summary-section">
             <div class="loading">
@@ -1849,6 +1849,66 @@
                 document.documentElement.setAttribute('data-theme', 'dark');
                 localStorage.setItem('adriana_theme', 'dark');
             }
+            updateDarkToggle();
+            loadMessages();
+        }
+
+        function updateDarkToggle() {
+            const btn = document.getElementById('dark-toggle');
+            if (!btn) return;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            btn.textContent = isDark ? '☀️' : '🌙';
+            btn.title = isDark ? 'Modo claro' : 'Modo escuro';
+        }
+
+        // Sync toggle icon with initial state (set in <head>)
+        updateDarkToggle();
+
+        // Follow OS changes only when user hasn't set a manual preference
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('adriana_theme')) {
+                if (e.matches) document.documentElement.setAttribute('data-theme', 'dark');
+                else document.documentElement.removeAttribute('data-theme');
+                updateDarkToggle();
+            }
+        });
+    </script>
+
+<div id="photo-lightbox" onclick="closeLightbox()">
+    <div class="lightbox-ring" onclick="event.stopPropagation()">
+        <img src="media/IMG-20260323-WA0001.jpg" alt="">
+    </div>
+    <button class="lightbox-jump-btn" onclick="event.stopPropagation(); jumpToPost(this.dataset.date, this.dataset.hora)" data-date="" data-hora="">Ver publicação original ↓</button>
+    <span style="position:absolute;bottom:15vh;color:rgba(255,255,255,0.4);font-size:2.6rem;line-height:1;pointer-events:none;user-select:none;">×</span>
+</div>
+
+<script>
+function openLightbox() {
+    document.getElementById('photo-lightbox').classList.add('open');
+}
+function closeLightbox() {
+    document.getElementById('photo-lightbox').classList.remove('open');
+}
+function jumpToPost(date, hora) {
+    closeLightbox();
+    const entry = document.querySelector(`.update-entry[data-date="${date}"][data-hora="${hora}"]`);
+    if (!entry) return;
+    let details = entry.closest('details');
+    while (details) {
+        details.open = true;
+        details = details.parentElement && details.parentElement.closest('details');
+    }
+    setTimeout(() => {
+        entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        entry.style.transition = 'background-color 0.4s';
+        entry.style.backgroundColor = 'rgba(240,212,138,0.35)';
+        setTimeout(() => { entry.style.backgroundColor = ''; }, 1600);
+    }, 120);
+}
+</script>
+</body>
+</html>
+      }
             updateDarkToggle();
             loadMessages();
         }
