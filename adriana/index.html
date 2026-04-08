@@ -171,11 +171,44 @@
             width: 13px;
             height: 13px;
             opacity: 0.22;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
         }
+        .flower-divider img:hover { opacity: 0.6; }
         .flower-divider img:nth-child(1) { transform: rotate(-15deg); }
         .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 11px; height: 11px; }
         .flower-divider img:nth-child(3) { transform: rotate(-5deg); }
         [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.15; }
+        [data-theme="dark"] .flower-divider img:hover { opacity: 0.4; }
+
+        .flower-grow {
+            position: fixed;
+            z-index: 10000;
+            pointer-events: none;
+            user-select: none;
+            will-change: transform, opacity, filter;
+        }
+        [data-theme="dark"] .flower-grow { filter: invert(1); }
+
+        @keyframes pulseEthereal {
+            0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+        }
+
+        @keyframes layeredBloom {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { opacity: 0.7; }
+            100% { transform: translate(-50%, -50%) scale(4) rotate(var(--rot)); opacity: 0; }
+        }
+
+        @keyframes organicGrowth {
+            0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 0.9; filter: blur(0); }
+            100% { transform: translate(-50%, -50%) scale(4) rotate(45deg); opacity: 0; filter: blur(8px); }
+        }
+        @keyframes organicGrowthDark {
+            0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 0.9; filter: invert(1) blur(0); }
+            100% { transform: translate(-50%, -50%) scale(4) rotate(45deg); opacity: 0; filter: invert(1) blur(8px); }
+        }
 
         .section-divider {
             display: flex;
@@ -1049,6 +1082,61 @@
     </div>
 
     <script>
+        function testAnim1(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            
+            const flower = document.createElement('img');
+            flower.src = 'media/optimized/flowers/jasmine.webp';
+            flower.className = 'flower-grow';
+            flower.style.left = x + 'px';
+            flower.style.top = y + 'px';
+            flower.style.width = '100px';
+            flower.style.animation = 'pulseEthereal 2s ease-out forwards';
+            document.body.appendChild(flower);
+            setTimeout(() => flower.remove(), 2000);
+        }
+
+        function testAnim2(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            const images = ['jasmine.webp', '1.webp', 'flowers.webp'];
+            
+            images.forEach((img, i) => {
+                setTimeout(() => {
+                    const flower = document.createElement('img');
+                    flower.src = 'media/optimized/flowers/' + img;
+                    flower.className = 'flower-grow';
+                    flower.style.left = x + 'px';
+                    flower.style.top = y + 'px';
+                    flower.style.width = '80px';
+                    flower.style.setProperty('--rot', (i * 30 - 30) + 'deg');
+                    flower.style.animation = 'layeredBloom 2s ease-out forwards';
+                    document.body.appendChild(flower);
+                    setTimeout(() => flower.remove(), 2000);
+                }, i * 200);
+            });
+        }
+
+        function testAnim3(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            const flower = document.createElement('img');
+            flower.src = 'media/optimized/flowers/chrysanthemum.webp';
+            flower.className = 'flower-grow';
+            flower.style.left = x + 'px';
+            flower.style.top = y + 'px';
+            flower.style.width = '120px';
+            flower.style.animation = (isDark ? 'organicGrowthDark' : 'organicGrowth') + ' 2.5s ease-in-out forwards';
+            document.body.appendChild(flower);
+            setTimeout(() => flower.remove(), 2500);
+        }
+
         const SPREADSHEET_ID = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
         const UPDATES_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
         const RESUMO_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
@@ -1849,66 +1937,6 @@
                 document.documentElement.setAttribute('data-theme', 'dark');
                 localStorage.setItem('adriana_theme', 'dark');
             }
-            updateDarkToggle();
-            loadMessages();
-        }
-
-        function updateDarkToggle() {
-            const btn = document.getElementById('dark-toggle');
-            if (!btn) return;
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            btn.textContent = isDark ? '☀️' : '🌙';
-            btn.title = isDark ? 'Modo claro' : 'Modo escuro';
-        }
-
-        // Sync toggle icon with initial state (set in <head>)
-        updateDarkToggle();
-
-        // Follow OS changes only when user hasn't set a manual preference
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-            if (!localStorage.getItem('adriana_theme')) {
-                if (e.matches) document.documentElement.setAttribute('data-theme', 'dark');
-                else document.documentElement.removeAttribute('data-theme');
-                updateDarkToggle();
-            }
-        });
-    </script>
-
-<div id="photo-lightbox" onclick="closeLightbox()">
-    <div class="lightbox-ring" onclick="event.stopPropagation()">
-        <img src="media/IMG-20260323-WA0001.jpg" alt="">
-    </div>
-    <button class="lightbox-jump-btn" onclick="event.stopPropagation(); jumpToPost(this.dataset.date, this.dataset.hora)" data-date="" data-hora="">Ver publicação original ↓</button>
-    <span style="position:absolute;bottom:15vh;color:rgba(255,255,255,0.4);font-size:2.6rem;line-height:1;pointer-events:none;user-select:none;">×</span>
-</div>
-
-<script>
-function openLightbox() {
-    document.getElementById('photo-lightbox').classList.add('open');
-}
-function closeLightbox() {
-    document.getElementById('photo-lightbox').classList.remove('open');
-}
-function jumpToPost(date, hora) {
-    closeLightbox();
-    const entry = document.querySelector(`.update-entry[data-date="${date}"][data-hora="${hora}"]`);
-    if (!entry) return;
-    let details = entry.closest('details');
-    while (details) {
-        details.open = true;
-        details = details.parentElement && details.parentElement.closest('details');
-    }
-    setTimeout(() => {
-        entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        entry.style.transition = 'background-color 0.4s';
-        entry.style.backgroundColor = 'rgba(240,212,138,0.35)';
-        setTimeout(() => { entry.style.backgroundColor = ''; }, 1600);
-    }, 120);
-}
-</script>
-</body>
-</html>
-      }
             updateDarkToggle();
             loadMessages();
         }

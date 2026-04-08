@@ -48,4 +48,6 @@ function showToastError(msg) {
   setTimeout(function() { el.classList.remove('show'); setTimeout(function() { el.remove(); }, 300); }, 3500);
 }
 
-window.alert = function(msg) { showToastError(String(msg)); };
+if (typeof window !== 'undefined') window.alert = function(msg) { showToastError(String(msg)); };
+
+if (typeof module !== 'undefined') module.exports = { escHtml, parseCSV, parseCSVLine, LETTERS, stripOptPrefix };
