@@ -171,11 +171,37 @@
             width: 13px;
             height: 13px;
             opacity: 0.22;
+            transition: transform 0.2s, opacity 0.2s;
         }
+        .flower-divider img:nth-child(2) { cursor: pointer; }
+        .flower-divider img:nth-child(2):hover { opacity: 0.6; }
         .flower-divider img:nth-child(1) { transform: rotate(-15deg); }
         .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 11px; height: 11px; }
         .flower-divider img:nth-child(3) { transform: rotate(-5deg); }
         [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.15; }
+        [data-theme="dark"] .flower-divider img:nth-child(2):hover { opacity: 0.4; }
+
+        .flower-grow {
+            position: fixed;
+            z-index: 10000;
+            pointer-events: none;
+            user-select: none;
+            will-change: transform, opacity, filter;
+            background-color: var(--accent);
+            -webkit-mask-size: contain;
+            -webkit-mask-position: center;
+            -webkit-mask-repeat: no-repeat;
+            mask-size: contain;
+            mask-position: center;
+            mask-repeat: no-repeat;
+        }
+        [data-theme="dark"] .flower-grow { background-color: var(--heading); }
+
+        @keyframes layeredBloom {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { opacity: 0.7; }
+            100% { transform: translate(-50%, -50%) scale(4) rotate(var(--rot)); opacity: 0; }
+        }
 
         .section-divider {
             display: flex;
@@ -966,15 +992,32 @@
             80% { opacity: 1; }
             100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
         }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--bg, #fdfaf6);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+        }
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
-        <div id="top-banner" class="top-banner" style="display:none;">
+        <div id="top-banner" class="top-banner" style="display:flex;">
             <img src="media/optimized/flowers/1.webp" class="banner-flower left" alt="">
-            <div class="banner-text" id="top-banner-text"></div>
+            <div class="banner-text" id="top-banner-text">ALTA DA UTI!</div>
             <img src="media/optimized/flowers/jasmine.webp" class="banner-flower right" alt="">
         </div>
         <div class="header">
@@ -990,7 +1033,7 @@
 
         <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
-        <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt=""><img src="media/optimized/flowers/flowers.webp" alt=""><img src="media/optimized/flowers/jasmine.webp" alt=""></div>
+        <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt=""><img src="media/optimized/flowers/flowers.webp" alt="" onclick="testAnim2(this)"><img src="media/optimized/flowers/jasmine.webp" alt=""></div>
 
         <div id="summary-section">
             <div class="loading">
@@ -1049,6 +1092,72 @@
     </div>
 
     <script>
+        function testAnim1(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            
+            const flower = document.createElement('div');
+            flower.className = 'flower-grow';
+            flower.style.webkitMaskImage = "url('media/optimized/flowers/jasmine.webp')";
+            flower.style.maskImage = "url('media/optimized/flowers/jasmine.webp')";
+            flower.style.left = x + 'px';
+            flower.style.top = y + 'px';
+            flower.style.width = '100px';
+            flower.style.height = '100px';
+            flower.style.animation = 'pulseEthereal 2s ease-out forwards';
+            document.body.appendChild(flower);
+            setTimeout(() => flower.remove(), 2000);
+        }
+
+        function testAnim2(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            const images = ['jasmine.webp', '1.webp', 'flowers.webp'];
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const colors = isDark 
+                ? ['#b8a05a', '#b07888', '#9680a8']
+                : ['#f0d48a', '#e8a0b4', '#c4a8d4'];
+            
+            images.forEach((img, i) => {
+                setTimeout(() => {
+                    const flower = document.createElement('div');
+                    flower.className = 'flower-grow';
+                    flower.style.backgroundColor = colors[i];
+                    flower.style.webkitMaskImage = `url('media/optimized/flowers/${img}')`;
+                    flower.style.maskImage = `url('media/optimized/flowers/${img}')`;
+                    flower.style.left = x + 'px';
+                    flower.style.top = y + 'px';
+                    flower.style.width = '80px';
+                    flower.style.height = '80px';
+                    flower.style.setProperty('--rot', (i * 30 - 30) + 'deg');
+                    flower.style.animation = 'layeredBloom 2s ease-out forwards';
+                    document.body.appendChild(flower);
+                    setTimeout(() => flower.remove(), 2000);
+                }, i * 200);
+            });
+        }
+
+        function testAnim3(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            const flower = document.createElement('div');
+            flower.className = 'flower-grow';
+            flower.style.webkitMaskImage = "url('media/optimized/flowers/chrysanthemum.webp')";
+            flower.style.maskImage = "url('media/optimized/flowers/chrysanthemum.webp')";
+            flower.style.left = x + 'px';
+            flower.style.top = y + 'px';
+            flower.style.width = '120px';
+            flower.style.height = '120px';
+            flower.style.animation = (isDark ? 'organicGrowthDark' : 'organicGrowth') + ' 2.5s ease-in-out forwards';
+            document.body.appendChild(flower);
+            setTimeout(() => flower.remove(), 2500);
+        }
+
         const SPREADSHEET_ID = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
         const UPDATES_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
         const RESUMO_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
@@ -1610,9 +1719,16 @@
         }
 
         // Initial load
-        fetchData();
-        loadMessages();
-        loadSettings();
+        Promise.all([fetchData(), loadMessages(), loadSettings()]).finally(() => {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                setTimeout(() => overlay.remove(), 500);
+            }
+        });
+        
+        // Hardcoded flower shower for high impact updates
+        setTimeout(triggerFlowerShower, 1000);
 
         // Auto-refresh
         setInterval(fetchData, REFRESH_INTERVAL);

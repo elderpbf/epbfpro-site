@@ -29,6 +29,51 @@
         .header h1 { font-size: 1.1rem; font-weight: 700; color: #d4b67e; }
         .header p { font-size: 0.8rem; color: #6e6050; margin-top: 4px; }
 
+        /* Test Animations Section */
+        .test-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .test-btn {
+            background: #2a261e;
+            border: 1px solid #4a3f2f;
+            color: #d4b67e;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .test-btn:hover { background: #3d3529; border-color: #c4a97d; }
+
+        .flower-grow {
+            position: fixed;
+            z-index: 10000;
+            pointer-events: none;
+            user-select: none;
+            will-change: transform, opacity, filter;
+        }
+
+        @keyframes pulseEthereal {
+            0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+        }
+
+        @keyframes layeredBloom {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { opacity: 0.7; }
+            100% { transform: translate(-50%, -50%) scale(4) rotate(var(--rot)); opacity: 0; }
+        }
+
+        @keyframes organicGrowth {
+            0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 0.9; filter: blur(0); }
+            100% { transform: translate(-50%, -50%) scale(4) rotate(45deg); opacity: 0; filter: blur(8px); }
+        }
+
         /* Password gate */
         .pw-gate {
             text-align: center;
@@ -508,6 +553,63 @@
 <button class="logout-btn" id="logout-btn" onclick="logout()" style="display:none">Sair</button>
 
 <script>
+    // ====================================================
+    // TEST ANIMATIONS
+    // ====================================================
+    function testAnim1(btn) {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        
+        const flower = document.createElement('img');
+        flower.src = '../media/optimized/flowers/jasmine.webp';
+        flower.className = 'flower-grow';
+        flower.style.left = x + 'px';
+        flower.style.top = y + 'px';
+        flower.style.width = '100px';
+        flower.style.animation = 'pulseEthereal 2s ease-out forwards';
+        document.body.appendChild(flower);
+        setTimeout(() => flower.remove(), 2000);
+    }
+
+    function testAnim2(btn) {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const images = ['jasmine.webp', '1.webp', 'flowers.webp'];
+        
+        images.forEach((img, i) => {
+            setTimeout(() => {
+                const flower = document.createElement('img');
+                flower.src = '../media/optimized/flowers/' + img;
+                flower.className = 'flower-grow';
+                flower.style.left = x + 'px';
+                flower.style.top = y + 'px';
+                flower.style.width = '80px';
+                flower.style.setProperty('--rot', (i * 30 - 30) + 'deg');
+                flower.style.animation = 'layeredBloom 2s ease-out forwards';
+                document.body.appendChild(flower);
+                setTimeout(() => flower.remove(), 2000);
+            }, i * 200);
+        });
+    }
+
+    function testAnim3(btn) {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        
+        const flower = document.createElement('img');
+        flower.src = '../media/optimized/flowers/chrysanthemum.webp';
+        flower.className = 'flower-grow';
+        flower.style.left = x + 'px';
+        flower.style.top = y + 'px';
+        flower.style.width = '120px';
+        flower.style.animation = 'organicGrowth 2.5s ease-in-out forwards';
+        document.body.appendChild(flower);
+        setTimeout(() => flower.remove(), 2500);
+    }
+
     // ====================================================
     // CONFIG — replace APPS_SCRIPT_URL after deploying
     // ====================================================
