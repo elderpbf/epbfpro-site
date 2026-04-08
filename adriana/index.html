@@ -1112,11 +1112,16 @@
             const x = rect.left + rect.width / 2;
             const y = rect.top + rect.height / 2;
             const images = ['jasmine.webp', '1.webp', 'flowers.webp'];
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const colors = isDark 
+                ? ['#b8a05a', '#b07888', '#9680a8']
+                : ['#f0d48a', '#e8a0b4', '#c4a8d4'];
             
             images.forEach((img, i) => {
                 setTimeout(() => {
                     const flower = document.createElement('div');
                     flower.className = 'flower-grow';
+                    flower.style.backgroundColor = colors[i];
                     flower.style.webkitMaskImage = `url('media/optimized/flowers/${img}')`;
                     flower.style.maskImage = `url('media/optimized/flowers/${img}')`;
                     flower.style.left = x + 'px';
