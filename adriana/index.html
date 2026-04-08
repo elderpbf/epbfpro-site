@@ -197,24 +197,10 @@
         }
         [data-theme="dark"] .flower-grow { background-color: var(--heading); }
 
-        @keyframes pulseEthereal {
-            0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; }
-            100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
-        }
-
         @keyframes layeredBloom {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
             20% { opacity: 0.7; }
             100% { transform: translate(-50%, -50%) scale(4) rotate(var(--rot)); opacity: 0; }
-        }
-
-        @keyframes organicGrowth {
-            0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 0.9; filter: blur(0); }
-            100% { transform: translate(-50%, -50%) scale(4) rotate(45deg); opacity: 0; filter: blur(8px); }
-        }
-        @keyframes organicGrowthDark {
-            0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 0.9; filter: brightness(0.8) sepia(0.3) blur(0); }
-            100% { transform: translate(-50%, -50%) scale(4) rotate(45deg); opacity: 0; filter: brightness(0.8) sepia(0.3) blur(8px); }
         }
 
         .section-divider {
@@ -1994,6 +1980,27 @@ function openLightbox() {
 }
 function closeLightbox() {
     document.getElementById('photo-lightbox').classList.remove('open');
+}
+function jumpToPost(date, hora) {
+    closeLightbox();
+    const entry = document.querySelector(`.update-entry[data-date="${date}"][data-hora="${hora}"]`);
+    if (!entry) return;
+    let details = entry.closest('details');
+    while (details) {
+        details.open = true;
+        details = details.parentElement && details.parentElement.closest('details');
+    }
+    setTimeout(() => {
+        entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        entry.style.transition = 'background-color 0.4s';
+        entry.style.backgroundColor = 'rgba(240,212,138,0.35)';
+        setTimeout(() => { entry.style.backgroundColor = ''; }, 1600);
+    }, 120);
+}
+</script>
+</body>
+</html>
+entById('photo-lightbox').classList.remove('open');
 }
 function jumpToPost(date, hora) {
     closeLightbox();
