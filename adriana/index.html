@@ -188,7 +188,7 @@
             user-select: none;
             will-change: transform, opacity, filter;
         }
-        [data-theme="dark"] .flower-grow { filter: invert(1); }
+        [data-theme="dark"] .flower-grow { filter: brightness(0.8) sepia(0.3); }
 
         @keyframes pulseEthereal {
             0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; }
@@ -206,8 +206,8 @@
             100% { transform: translate(-50%, -50%) scale(4) rotate(45deg); opacity: 0; filter: blur(8px); }
         }
         @keyframes organicGrowthDark {
-            0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 0.9; filter: invert(1) blur(0); }
-            100% { transform: translate(-50%, -50%) scale(4) rotate(45deg); opacity: 0; filter: invert(1) blur(8px); }
+            0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 0.9; filter: brightness(0.8) sepia(0.3) blur(0); }
+            100% { transform: translate(-50%, -50%) scale(4) rotate(45deg); opacity: 0; filter: brightness(0.8) sepia(0.3) blur(8px); }
         }
 
         .section-divider {
