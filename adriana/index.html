@@ -997,7 +997,7 @@
         #loading-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--bg-color, #fdfaf6);
+            background-color: var(--bg, #fdfaf6);
             z-index: 10000;
             display: flex;
             flex-direction: column;
@@ -1005,30 +1005,15 @@
             justify-content: center;
             transition: opacity 0.4s ease;
         }
-        [data-theme="dark"] #loading-overlay {
-            background-color: var(--bg-color, #1a1614);
-        }
         #loading-overlay.hidden {
             opacity: 0;
             pointer-events: none;
         }
-        .spinner {
-            width: 40px; height: 40px;
-            border: 4px solid rgba(196, 169, 125, 0.3);
-            border-top-color: #c4a97d;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        [data-theme="dark"] .spinner {
-            border: 4px solid rgba(184, 160, 90, 0.3);
-            border-top-color: #b8a05a;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="loading-overlay">
-        <div class="spinner"></div>
+        <div class="loading-spinner" style="width: 50px; height: 50px;"></div>
     </div>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
