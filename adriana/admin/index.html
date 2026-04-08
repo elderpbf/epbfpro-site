@@ -506,7 +506,7 @@
                     <div class="toggle-desc">Efeito especial de comemoração na tela</div>
                 </div>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-flower-shower" onchange="saveSetting('flower_shower', this.checked)">
+                    <input type="checkbox" id="toggle-flower-shower" onchange="saveConfig('flower_shower', this.checked)">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -516,7 +516,7 @@
             <div style="font-size:0.75rem;color:#6e6050;margin-bottom:8px;">Texto que aparecerá fixado no topo da página.</div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <input type="text" id="input-top-banner" placeholder="Ex: Adriana teve alta! 🏡💛" style="flex:1;padding:8px 12px;font-size:0.9rem;">
-                <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveSetting('top_banner_text', document.getElementById('input-top-banner').value)">Salvar</button>
+                <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveConfig('banner_text', document.getElementById('input-top-banner').value)">Salvar</button>
             </div>
             <div class="toggle-row">
                 <div class="toggle-info">
@@ -524,7 +524,7 @@
                     <div class="toggle-desc">Mostra ou oculta o banner sem apagar o texto</div>
                 </div>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-banner-visible" onchange="saveSetting('banner_visible', this.checked)">
+                    <input type="checkbox" id="toggle-banner-visible" onchange="saveConfig('banner_visible', this.checked)">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -647,6 +647,7 @@
         loadRecent();
         loadResumo();
         loadSettings();
+        loadConfig();
         loadAdminMessages();
     }
 
@@ -962,13 +963,11 @@
         try {
             const resp = await fetch(APPS_SCRIPT_URL + '?action=get_settings&t=' + Date.now());
             const cfg = await resp.json();
-            const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages', 'flower_shower': 'toggle-flower-shower', 'banner_visible': 'toggle-banner-visible' };
+            const map = { 'notif_bar': 'toggle-notif-bar', 'message_board': 'toggle-message-board', 'allow_messages': 'toggle-allow-messages' };
             for (const [key, id] of Object.entries(map)) {
                 const el = document.getElementById(id);
                 if (el) el.checked = (cfg[key] || '').toLowerCase() !== 'false';
             }
-            const elBanner = document.getElementById('input-top-banner');
-            if (elBanner) elBanner.value = cfg['top_banner_text'] || '';
             const defaults = { 'likes_min_regular': 5, 'likes_max_regular': 8, 'likes_min_special': 10, 'likes_max_special': 15 };
             for (const [key, def] of Object.entries(defaults)) {
                 const el = document.getElementById(key.replace(/_/g, '-'));
@@ -988,6 +987,38 @@
                 showFb(fb, res.error || 'Erro ao salvar.', false);
             }
         } catch (e) { showFb(fb, 'Erro de conexão.', false); }
+    }
+
+    // ====================================================
+    // CONFIG.JSON — GitHub API (banner, flower shower)
+    // ====================================================
+    async function loadConfig() {
+        try {
+            const resp = await fetch('../config.json?t=' + Date.now());
+            const cfg = await resp.json();
+            const elVisible = document.getElementById('toggle-banner-visible');
+            if (elVisible) elVisible.checked = cfg.banner_visible === true;
+            const elText = document.getElementById('input-top-banner');
+            if (elText) elText.value = cfg.banner_text || '';
+            const elShower = document.getElementById('toggle-flower-shower');
+            if (elShower) elShower.checked = cfg.flower_shower === true;
+        } catch (e) { console.error('loadConfig error:', e); }
+    }
+
+    async function saveConfig(key, value) {
+        const fb = document.getElementById('fb-settings');
+        try {
+            const res = await postToScript({ action: 'update_config', password: localStorage.getItem('adriana_admin_pw'), key, value: value });
+            if (res.ok) {
+                showFb(fb, 'Salvo! Atualizando site em instantes...', true);
+                setTimeout(() => fb.style.display = 'none', 3000);
+            } else {
+                showFb(fb, res.error || 'Erro ao salvar backend.', false);
+            }
+        } catch (e) {
+            showFb(fb, 'Erro de conexão.', false);
+            console.error(e);
+        }
     }
 
     async function loadAdminMessages() {
