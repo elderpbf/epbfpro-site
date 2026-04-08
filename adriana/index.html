@@ -992,9 +992,44 @@
             80% { opacity: 1; }
             100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
         }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--bg-color, #fdfaf6);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+        }
+        [data-theme="dark"] #loading-overlay {
+            background-color: var(--bg-color, #1a1614);
+        }
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(196, 169, 125, 0.3);
+            border-top-color: #c4a97d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        [data-theme="dark"] .spinner {
+            border: 4px solid rgba(184, 160, 90, 0.3);
+            border-top-color: #b8a05a;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
@@ -1702,9 +1737,13 @@
         }
 
         // Initial load
-        fetchData();
-        loadMessages();
-        loadSettings();
+        Promise.all([fetchData(), loadMessages(), loadSettings()]).finally(() => {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                setTimeout(() => overlay.remove(), 500);
+            }
+        });
 
         // Auto-refresh
         setInterval(fetchData, REFRESH_INTERVAL);
@@ -1980,27 +2019,6 @@ function openLightbox() {
 }
 function closeLightbox() {
     document.getElementById('photo-lightbox').classList.remove('open');
-}
-function jumpToPost(date, hora) {
-    closeLightbox();
-    const entry = document.querySelector(`.update-entry[data-date="${date}"][data-hora="${hora}"]`);
-    if (!entry) return;
-    let details = entry.closest('details');
-    while (details) {
-        details.open = true;
-        details = details.parentElement && details.parentElement.closest('details');
-    }
-    setTimeout(() => {
-        entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        entry.style.transition = 'background-color 0.4s';
-        entry.style.backgroundColor = 'rgba(240,212,138,0.35)';
-        setTimeout(() => { entry.style.backgroundColor = ''; }, 1600);
-    }, 120);
-}
-</script>
-</body>
-</html>
-entById('photo-lightbox').classList.remove('open');
 }
 function jumpToPost(date, hora) {
     closeLightbox();
