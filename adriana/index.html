@@ -1018,9 +1018,9 @@
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
-        <div id="top-banner" class="top-banner" style="display:none;">
+        <div id="top-banner" class="top-banner" style="display:flex;">
             <img src="media/optimized/flowers/1.webp" class="banner-flower left" alt="">
-            <div class="banner-text" id="top-banner-text"></div>
+            <div class="banner-text" id="top-banner-text">Hoje recebemos alta! Estamos em casa!</div>
             <img src="media/optimized/flowers/jasmine.webp" class="banner-flower right" alt="">
         </div>
         <div class="header">
@@ -1729,6 +1729,9 @@
                 setTimeout(() => overlay.remove(), 500);
             }
         });
+        
+        // Hardcoded flower shower for high impact updates
+        setTimeout(triggerFlowerShower, 1000);
 
         // Auto-refresh
         setInterval(fetchData, REFRESH_INTERVAL);
