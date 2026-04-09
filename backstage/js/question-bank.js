@@ -32,7 +32,7 @@ var QuestionBank = (function () {
 
     callWorker({ action: 'list_question_sets' })
       .then(function (data) {
-        var sets = data.sets || [];
+        var sets = data.banks || [];
         sel.innerHTML = '<option value="">Escolha um conjunto...</option>';
         sets.forEach(function (s) {
           var opt = document.createElement('option');
@@ -61,7 +61,7 @@ var QuestionBank = (function () {
 
     listEl.innerHTML = '<div class="qb-msg">Carregando...</div>';
 
-    callWorker({ action: 'get_questions', list: name })
+    callWorker({ action: 'get_questions', list_name: name })
       .then(function (data) {
         var qs = data.questions || [];
         listEl.innerHTML = '';

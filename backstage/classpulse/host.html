@@ -524,7 +524,7 @@ function applyTypeUI(qType) {
     document.querySelectorAll('#q-opts-mc .opt-row').forEach(function(row, i) {
       row.style.display = i < 2 ? '' : 'none';
     });
-    document.querySelectorAll('#q-opts-mc .opt-correct-radio').forEach(function(el) { el.style.display = 'none'; });
+    document.querySelectorAll('#q-opts-mc .opt-correct-radio').forEach(function(el, i) { el.style.display = i < 2 ? '' : 'none'; });
   } else if (isMC) {
     document.querySelectorAll('#q-opts-mc .opt-row').forEach(function(row) { row.style.display = ''; });
     document.querySelectorAll('#q-opts-mc .opt-correct-radio').forEach(function(el) { el.style.display = ''; });
@@ -537,6 +537,9 @@ function applyTypeUI(qType) {
 document.getElementById('q-type').addEventListener('change', function() {
   applyTypeUI(this.value);
   document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
+  var isAiType = this.value === 'mc';
+  document.getElementById('q-generate-btn').disabled = !isAiType;
+  document.getElementById('q-improve-btn').disabled = !isAiType;
 });
 
 document.getElementById('poll-add-btn').addEventListener('click', function() {
@@ -556,7 +559,8 @@ document.getElementById('launch-btn').addEventListener('click', async function()
 
   if (qType === 'tf') {
     options = ['Verdadeiro', 'Falso'];
-    ca = null;
+    var caEl = document.querySelector('input[name="correct"]:checked');
+    ca = caEl ? ['a','b','c','d'].indexOf(caEl.value) : null;
   } else if (qType === 'poll') {
     options = Array.from(document.querySelectorAll('#poll-rows .host-input')).map(function(i) { return i.value.trim(); }).filter(Boolean);
     ca = null;
