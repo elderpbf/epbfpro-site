@@ -282,7 +282,7 @@ pensoia-header[mode="display"] .ph-modal-code {
   align-self: start;
   justify-self: center;
   text-align: center;
-  font-size: clamp(3.2rem, 8vmin, 8rem);
+  font-size: clamp(6rem, 16vmin, 14rem);
   letter-spacing: 0.35em;
 }
 
