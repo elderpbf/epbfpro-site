@@ -271,6 +271,8 @@ pensoia-header[mode="display"] .ph-modal-qr {
 pensoia-header[mode="display"] .ph-modal-url {
   grid-area: url;
   align-self: end;
+  justify-self: center;
+  text-align: center;
   font-size: clamp(2rem, 5vmin, 4.8rem);
   font-weight: 700;
   color: var(--primary);
@@ -280,6 +282,8 @@ pensoia-header[mode="display"] .ph-modal-url {
 pensoia-header[mode="display"] .ph-modal-code {
   grid-area: code;
   align-self: start;
+  justify-self: center;
+  text-align: center;
   font-size: clamp(6rem, 16vmin, 14rem);
   letter-spacing: 0.35em;
 }
