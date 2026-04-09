@@ -7,8 +7,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
 <link rel="stylesheet" id="reveal-theme" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
-<link rel="stylesheet" href="../../css/viewer.css?v=1.1">
+<link rel="stylesheet" href="../../css/viewer.css?v=1.2">
 <script src="../../js/debug.js?v=2.4"></script>
+<script src="../../js/api-client.js?v=1.0"></script>
 </head>
 <body>
 
@@ -50,6 +51,9 @@
 <div class="reveal" id="reveal-container" hidden>
   <div class="slides" id="slides-container"></div>
 </div>
+
+<!-- Logo overlay (persists across slides, positioned by CSS class) -->
+<div id="cf-logo" hidden></div>
 
 
 <script type="module">
@@ -249,14 +253,134 @@ function buildContentItem(item) {
   }
 }
 
+function buildImageLeftSlide(sectionData) {
+  const section = document.createElement('section');
+  section.className = 'cf-layout-image-left';
+  if (sectionData.css_class) section.classList.add(sectionData.css_class);
+  if (sectionData.notes) section.dataset.notes = sectionData.notes;
+  const imgItem = (sectionData.content || []).find(i => i.type === 'image');
+  if (imgItem) {
+    const img = document.createElement('img');
+    img.className = 'cf-slide-image';
+    img.src = safeUrl(imgItem.url);
+    img.alt = imgItem.alt || '';
+    section.appendChild(img);
+  }
+  const body = document.createElement('div');
+  body.className = 'cf-slide-body';
+  const h2 = document.createElement('h2');
+  h2.textContent = sectionData.title || '';
+  body.appendChild(h2);
+  const bullets = (sectionData.content || []).filter(i => i.type === 'bullet');
+  if (bullets.length) body.appendChild(buildBulletGroup(bullets));
+  section.appendChild(body);
+  return section;
+}
+
+function buildImageRightSlide(sectionData) {
+  const section = buildImageLeftSlide(sectionData);
+  section.className = section.className.replace('cf-layout-image-left', 'cf-layout-image-right');
+  return section;
+}
+
+function buildFullBleedSlide(sectionData) {
+  const section = document.createElement('section');
+  section.className = 'cf-layout-full-bleed';
+  if (sectionData.css_class) section.classList.add(sectionData.css_class);
+  if (sectionData.notes) section.dataset.notes = sectionData.notes;
+  const imgItem = (sectionData.content || []).find(i => i.type === 'image');
+  if (imgItem) {
+    const url = safeUrl(imgItem.url);
+    if (url !== '#') {
+      section.setAttribute('data-background-image', url);
+      section.setAttribute('data-background-size', 'cover');
+    }
+  }
+  const body = document.createElement('div');
+  body.className = 'cf-slide-body';
+  const h2 = document.createElement('h2');
+  h2.textContent = sectionData.title || '';
+  body.appendChild(h2);
+  const bullets = (sectionData.content || []).filter(i => i.type === 'bullet');
+  if (bullets.length) body.appendChild(buildBulletGroup(bullets));
+  section.appendChild(body);
+  return section;
+}
+
+function buildStatementSlide(sectionData) {
+  const section = document.createElement('section');
+  section.className = 'cf-layout-statement';
+  if (sectionData.css_class) section.classList.add(sectionData.css_class);
+  if (sectionData.notes) section.dataset.notes = sectionData.notes;
+  const p = document.createElement('p');
+  p.className = 'cf-statement-text';
+  p.textContent = sectionData.title || '';
+  section.appendChild(p);
+  return section;
+}
+
+function buildTwoColumnSlide(sectionData) {
+  const section = document.createElement('section');
+  section.className = 'cf-layout-two-column';
+  if (sectionData.css_class) section.classList.add(sectionData.css_class);
+  if (sectionData.notes) section.dataset.notes = sectionData.notes;
+  const grid = document.createElement('div');
+  grid.className = 'cf-two-col-grid';
+  const h2 = document.createElement('h2');
+  h2.textContent = sectionData.title || '';
+  grid.appendChild(h2);
+  const cols = sectionData.columns || [];
+  for (const col of cols) {
+    const div = document.createElement('div');
+    const colBullets = (col.content || []).filter(i => i.type === 'bullet');
+    if (colBullets.length) div.appendChild(buildBulletGroup(colBullets));
+    grid.appendChild(div);
+  }
+  section.appendChild(grid);
+  return section;
+}
+
+function buildTopicGridSlide(sectionData) {
+  const section = document.createElement('section');
+  section.className = 'cf-layout-topic-grid';
+  if (sectionData.css_class) section.classList.add(sectionData.css_class);
+  if (sectionData.notes) section.dataset.notes = sectionData.notes;
+  const h2 = document.createElement('h2');
+  h2.textContent = sectionData.title || '';
+  section.appendChild(h2);
+  const grid = document.createElement('div');
+  grid.className = 'cf-topic-grid';
+  for (const topic of (sectionData.topics || [])) {
+    const card = document.createElement('div');
+    card.className = 'cf-topic-card';
+    const strong = document.createElement('strong');
+    strong.textContent = topic.title || '';
+    card.appendChild(strong);
+    if (topic.description) {
+      const p = document.createElement('p');
+      p.textContent = topic.description;
+      card.appendChild(p);
+    }
+    grid.appendChild(card);
+  }
+  section.appendChild(grid);
+  return section;
+}
+
 function buildSlide(sectionData) {
+  const layout = sectionData.layout || 'default';
+  if (layout === 'image-left')  return buildImageLeftSlide(sectionData);
+  if (layout === 'image-right') return buildImageRightSlide(sectionData);
+  if (layout === 'full-bleed')  return buildFullBleedSlide(sectionData);
+  if (layout === 'statement')   return buildStatementSlide(sectionData);
+  if (layout === 'two-column')  return buildTwoColumnSlide(sectionData);
+  if (layout === 'topic-grid')  return buildTopicGridSlide(sectionData);
+
   const section = document.createElement('section');
 
   if (sectionData.notes) {
     section.dataset.notes = sectionData.notes;
   }
-
-  const layout = sectionData.layout || 'default';
 
   if (layout === 'media') {
     const images = (sectionData.content || []).filter(i => i.type === 'image');
@@ -326,13 +450,53 @@ async function fetchLesson(scriptUrl, presId) {
   return data;
 }
 
+async function fetchSlugPresentation(slug) {
+  let data;
+  try {
+    data = await callWorker({ action: 'get_presentation_json', slug });
+  } catch (err) {
+    throw new Error('Could not load presentation: ' + err.message);
+  }
+  if (!data.data) throw new Error('Presentation data missing from R2');
+  return data.data;
+}
+
+function initLogo(logoConfig) {
+  const el = document.getElementById('cf-logo');
+  if (!logoConfig || !logoConfig.url) { el.hidden = true; return []; }
+  const img = document.createElement('img');
+  img.src = safeUrl(logoConfig.url);
+  img.alt = 'Logo';
+  el.innerHTML = '';
+  el.appendChild(img);
+  el.className = '';
+  const pos = logoConfig.position || 'top-right';
+  el.classList.add('cf-logo-' + pos);
+  el.hidden = false;
+  return logoConfig.hide_on || [];
+}
+
+function initCustomCss(css) {
+  if (!css) return;
+  let el = document.getElementById('cf-custom-css');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'cf-custom-css';
+    document.head.appendChild(el);
+  }
+  el.textContent = css;
+}
+
 // ---------------------------------------------------------------------------
 // Show presentation
 // ---------------------------------------------------------------------------
 
 let revealInited = false;
 
-async function showPresentation(lesson, isDemo) {
+async function showPresentation(lesson, isDemo, opts) {
+  const logoHideOn = opts && opts.logoConfig ? initLogo(opts.logoConfig) : null;
+  if (opts && opts.customCss) initCustomCss(opts.customCss);
+
   const container = document.getElementById('slides-container');
   container.innerHTML = '';
 
@@ -358,6 +522,11 @@ async function showPresentation(lesson, isDemo) {
       plugins: [RevealHighlight, RevealNotes, RevealMarkdown]
     });
     revealInited = true;
+    if (logoHideOn && logoHideOn.length) {
+      Reveal.on('slidechanged', ({ indexh }) => {
+        document.getElementById('cf-logo').hidden = logoHideOn.includes(indexh);
+      });
+    }
   } else {
     Reveal.sync();
     Reveal.slide(0);
@@ -492,6 +661,21 @@ function getDemoContent() {
 
   if (isDemo) {
     await showPresentation(getDemoContent(), true);
+    return;
+  }
+
+  const slug = params.get('slug');
+  if (slug) {
+    showLoading();
+    try {
+      const lesson = await fetchSlugPresentation(slug);
+      await showPresentation(lesson, false, {
+        logoConfig: lesson.logo_config,
+        customCss: lesson.custom_css
+      });
+    } catch (err) {
+      showError(err.message);
+    }
     return;
   }
 
