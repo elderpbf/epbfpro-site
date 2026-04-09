@@ -7,6 +7,7 @@ const Panels = (() => {
   let channel = null;
   let fadeTimer = null;
   let logoHideOn = [];
+  let presenterUrl = './presenter.html';
   let touchStartX = 0;
   let touchStartY = 0;
 
@@ -88,6 +89,12 @@ const Panels = (() => {
     overview.id = 'pn-overview';
     overview.className = 'pn-overview';
 
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'pn-overview-close';
+    closeBtn.textContent = '× Fechar (Esc)';
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeOverview(); });
+    overview.appendChild(closeBtn);
+
     panels.forEach((panel, i) => {
       const thumb = document.createElement('div');
       thumb.className = 'pn-thumb' + (i === current ? ' pn-thumb-active' : '');
@@ -146,8 +153,8 @@ const Panels = (() => {
   }
 
   function openPresenter() {
-    const presenterUrl = new URL('./presenter.html', location.href).href;
-    window.open(presenterUrl, 'pn-presenter', 'width=1200,height=700');
+    const url = new URL(presenterUrl, location.href).href;
+    window.open(url, 'pn-presenter', 'width=1200,height=700');
     channel = new BroadcastChannel('panels-presenter');
     setTimeout(broadcastState, 500);
   }
@@ -197,6 +204,7 @@ const Panels = (() => {
   function init(opts) {
     opts = opts || {};
     logoHideOn = opts.logoHideOn || [];
+    if (opts.presenterUrl) presenterUrl = opts.presenterUrl;
 
     panels = Array.from(document.querySelectorAll('.panel'));
     if (!panels.length) return;
