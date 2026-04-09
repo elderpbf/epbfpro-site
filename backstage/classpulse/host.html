@@ -350,9 +350,10 @@ var AUTH_TOKEN     = localStorage.getItem('bs_pw_hash') || '';
 // State
 // ---------------------------------------------------------------------------
 
-var sessionCode = null;
-var activeQId   = null;
-var pollTimer   = null;
+var sessionCode  = null;
+var activeQId    = null;
+var pollTimer    = null;
+var _historyMap  = {};
 
 // ---------------------------------------------------------------------------
 // Screens
@@ -592,8 +593,9 @@ function renderHistory(closedQs) {
     document.getElementById('history-card').style.display = 'none';
     return;
   }
+  _historyMap = {};
   var html = closedQs.map(function(q) {
-    var qJson = escHtml(JSON.stringify(q));
+    _historyMap[q.id] = q;
 
     var resultsHtml = '';
     if (q.options && q.answer_counts && q.options.length > 0) {
@@ -604,7 +606,7 @@ function renderHistory(closedQs) {
         var isCorrect = q.correct_answer !== null && i === q.correct_answer;
         resultsHtml += '<div class="hi-bar">' +
                          '<div class="hi-bar-label">' +
-                           '<span class="hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' + LETTERS[i] + (isCorrect ? ' ✓' : '') + '</span> ' +
+                           '<span class="hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' + LETTERS[i] + (isCorrect ? ' \u2713' : '') + '</span> ' +
                            escHtml(stripOptPrefix(opt)) +
                          '</div>' +
                          '<div class="hi-bar-pct">' + pct + '%</div>' +
@@ -620,13 +622,21 @@ function renderHistory(closedQs) {
                '<div class="hi-meta">' + escHtml(q.created_at ? new Date(q.created_at).toLocaleString('pt-BR') : '') + '</div>' +
                resultsHtml +
                '<div class="hi-actions">' +
-                 '<button class="hi-btn hi-btn-primary" onclick=\'relaunchFromHistory(this, ' + qJson + ')\'>Reabrir</button>' +
-                 '<button class="hi-btn" onclick=\'editFromHistory(' + qJson + ')\'>Editar</button>' +
+                 '<button class="hi-btn hi-btn-primary" data-action="relaunch" data-qid="' + escHtml(q.id) + '">Reabrir</button>' +
+                 '<button class="hi-btn" data-action="edit" data-qid="' + escHtml(q.id) + '">Editar</button>' +
                '</div>' +
              '</div>' +
            '</div>';
   }).join('');
   document.getElementById('history-list').innerHTML = html;
+  document.getElementById('history-list').querySelectorAll('.hi-btn[data-action]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var q = _historyMap[btn.dataset.qid];
+      if (!q) return;
+      if (btn.dataset.action === 'relaunch') relaunchFromHistory(btn, q);
+      else if (btn.dataset.action === 'edit') editFromHistory(q);
+    });
+  });
   document.getElementById('history-card').style.display = 'block';
 }
 

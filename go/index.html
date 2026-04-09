@@ -8,35 +8,19 @@
   <link rel="stylesheet" href="../backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.1">
   <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.1">
+  <link rel="stylesheet" href="../backstage/css/public-header.css?v=1.0">
   <script src="/backstage/js/debug.js?v=2.4"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* Theme toggle button */
-    #theme-btn {
-      position: absolute; top: 24px; right: 16px; z-index: 100;
-      width: 36px; height: 36px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; cursor: pointer; color: var(--text-secondary);
-      display: flex; align-items: center; justify-content: center;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    #theme-btn:hover { border-color: var(--primary); color: var(--primary-dark); }
-    body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); line-height: 1.6; min-height: 100vh; }
-    .container { position: relative; max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; }
+    body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+    .container { position: relative; max-width: clamp(480px, 80vw, 720px); margin: 0 auto; padding: 24px 16px 80px; width: 100%; }
 
-    /* Header */
+    /* Header (join screen) */
     .header { text-align: center; padding: 28px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
     .header .logo { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary-dark); margin-bottom: 6px; }
     .header h1 { font-size: 1.15rem; font-weight: 700; color: var(--primary-dark); }
     .header p  { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
-
-    /* Session bar */
-    .session-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 0 18px; padding-right: 44px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
-    .session-bar .session-title { font-size: 0.95rem; font-weight: 600; color: var(--primary-dark); }
-    .session-bar .session-code  { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-secondary); background: var(--border); padding: 3px 8px; border-radius: 6px; }
-    .btn-exit { font-size: 0.8rem; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 4px 0; font-family: inherit; }
-    .btn-exit:hover { color: var(--text-primary); }
 
     /* Form */
     label { display: block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin-bottom: 6px; }
@@ -47,10 +31,6 @@
     .btn-primary { width: 100%; padding: 13px; background: var(--primary-dark); color: #fff; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
     .btn-primary:hover { opacity: 0.85; }
     .btn-primary:disabled { opacity: 0.4; cursor: default; }
-    .divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: var(--text-light); font-size: 0.78rem; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-    .host-link { display: block; text-align: center; font-size: 0.82rem; color: var(--text-secondary); text-decoration: none; }
-    .host-link:hover { color: var(--primary-dark); }
     .error-msg { font-size: 1rem; color: var(--error); margin-top: 10px; min-height: 1.2em; text-align: center; }
 
     /* States */
@@ -87,40 +67,32 @@
 </head>
 <body>
 
+<pensoia-header mode="student" theme-storage-key="bs_theme_public" exitable></pensoia-header>
+
 <div class="container">
-<button id="theme-btn" aria-label="Alternar tema" onclick="ThemeManager.toggleTheme()">
-  <span id="theme-icon"></span>
-</button>
 
   <!-- ── JOIN SCREEN ── -->
   <div id="join-screen">
     <div class="header">
       <div class="logo">PensoIA</div>
       <h1>Classroom</h1>
-      <p>Entre com o código da sessão</p>
+      <p>Entre com o codigo da sessao</p>
     </div>
     <div class="form-group">
-      <label for="code-input">Código da sessão</label>
+      <label for="code-input">Codigo da sessao</label>
       <input type="text" id="code-input" class="code-input" placeholder="AB12" maxlength="4"
              autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
     </div>
     <div class="form-group">
       <label for="name-input">Seu nome <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-      <input type="text" id="name-input" placeholder="Anônimo" maxlength="30" autocomplete="off">
+      <input type="text" id="name-input" placeholder="Anonimo" maxlength="30" autocomplete="off">
     </div>
-    <button class="btn-primary" id="join-btn" onclick="joinSession()">Entrar na sessão</button>
+    <button class="btn-primary" id="join-btn" onclick="joinSession()">Entrar na sessao</button>
     <div class="error-msg" id="join-error"></div>
-    <div class="divider">ou</div>
-    <a class="host-link" href="host.html">Criar uma sessão como instrutor →</a>
   </div>
 
   <!-- ── SESSION SCREEN ── -->
   <div id="session-screen">
-    <div class="session-bar">
-      <button class="btn-exit" onclick="exitSession()">← Sair</button>
-      <span class="session-title" id="session-title-bar"></span>
-      <span class="session-code"  id="session-code-bar"></span>
-    </div>
 
     <!-- waiting -->
     <div id="state-waiting" class="state-center" style="display:none">
@@ -168,9 +140,11 @@
 <script src="../backstage/js/api-client.js?v=1.0"></script>
 <script src="../backstage/js/question-renderer.js?v=1.0"></script>
 <script src="../backstage/js/theme-manager.js?v=1.0"></script>
+<script src="../backstage/js/pensoia-header.js?v=1.0"></script>
 <script>
   // ── THEME ────────────────────────────────────────────────────────────────
-  ThemeManager.init({ storageKey: 'bs_theme_public' });
+  // ThemeManager is initialized by <pensoia-header> via theme-storage-key.
+  // We still need to apply the initial theme before paint.
   (function() {
     var urlParams = new URLSearchParams(window.location.search);
     var urlTheme  = urlParams.get('theme');
@@ -180,6 +154,11 @@
     else if (stored === 'dark' || stored === 'light') theme = stored;
     ThemeManager.applyTheme(theme);
   })();
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── HEADER COMPONENT ───────────────────────────────────────────────────
+  var headerEl = document.querySelector('pensoia-header');
+  headerEl.addEventListener('ph-exit', function() { exitSession(); });
   // ────────────────────────────────────────────────────────────────────────
 
   // ── CONFIG ──────────────────────────────────────────────────────────────
@@ -261,8 +240,8 @@
   function startSession() {
     document.getElementById('join-screen').style.display    = 'none';
     document.getElementById('session-screen').style.display = 'block';
-    document.getElementById('session-title-bar').textContent = currentSession.title;
-    document.getElementById('session-code-bar').textContent  = currentSession.code;
+    headerEl.setAttribute('session-title', currentSession.title);
+    headerEl.setAttribute('code', currentSession.code);
     showState('waiting');
     pollData();
     pollTimer = setInterval(pollData, POLL_INTERVAL);
@@ -277,6 +256,8 @@
     document.getElementById('join-screen').style.display    = 'block';
     document.getElementById('code-input').value = '';
     document.getElementById('join-error').textContent = '';
+    headerEl.removeAttribute('code');
+    headerEl.removeAttribute('session-title');
   }
 
   // ── STATE MANAGEMENT ─────────────────────────────────────────────────────
@@ -430,6 +411,14 @@
   // ── INIT ─────────────────────────────────────────────────────────────────
   const saved = sessionStorage.getItem('cl_session');
   if (saved) { try { currentSession = JSON.parse(saved); startSession(); } catch { sessionStorage.removeItem('cl_session'); } }
+
+  // Auto-fill code from URL (QR scan lands here with ?code=XXXX)
+  const urlCode = new URLSearchParams(window.location.search).get('code');
+  if (urlCode && !currentSession) {
+    const codeInput = document.getElementById('code-input');
+    codeInput.value = urlCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    document.getElementById('name-input').focus();
+  }
 
   document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinSession(); });
   document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinSession(); });
