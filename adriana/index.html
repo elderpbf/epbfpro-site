@@ -306,62 +306,29 @@
             opacity: 0.025;
         }
 
-        /* === STAGING TEST: 3 resumo highlight variants === */
-        .sv-test-label {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 6px;
-        }
-
-        /* Variant 1: Glow pulsante */
-        @keyframes sv-glow-pulse {
-            0%, 100% { box-shadow: 0 0 8px 3px rgba(240,212,138,.45), 0 0 22px 8px rgba(232,160,180,.25); }
-            50%       { box-shadow: 0 0 18px 6px rgba(240,212,138,.7), 0 0 42px 14px rgba(196,168,212,.45); }
-        }
-        .summary-card--glow { animation: sv-glow-pulse 2.8s ease-in-out infinite; }
-
-        /* Variant 2: Borda gradiente animado */
+        /* === Resumo: borda gradiente animada === */
         @keyframes sv-border-flow {
             0%   { background-position: 0% 50%; }
             50%  { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-        .summary-gradient-wrap {
-            padding: 2px;
-            border-radius: 14px;
+        .summary-card--gradient {
+            border: none;
+            overflow: visible;
+        }
+        .summary-card--gradient::before {
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            height: auto;
+            border-radius: 15px;
             background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4, #e8a0b4, #f0d48a);
             background-size: 300% 300%;
             animation: sv-border-flow 3s ease infinite;
-            margin-bottom: 36px;
-        }
-        .summary-gradient-wrap .summary-card {
-            border: none;
-            border-radius: 10px;
-            margin-bottom: 0;
-        }
-
-        /* Variant 3: Shimmer */
-        @keyframes sv-shimmer {
-            0%   { transform: translateX(-120%) skewX(-15deg); }
-            100% { transform: translateX(350%) skewX(-15deg); }
-        }
-        .summary-card--shimmer::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 35%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
-            animation: sv-shimmer 2.6s ease-in-out infinite;
-            z-index: 1;
-            pointer-events: none;
-            border-radius: 0;
-        }
-        [data-theme="dark"] .summary-card--shimmer::after {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent);
+            z-index: -1;
+            -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,.65) 35%, rgba(0,0,0,.2) 70%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,.65) 35%, rgba(0,0,0,.2) 70%, transparent 100%);
         }
 
         .summary-label {
@@ -1486,20 +1453,13 @@
                     lastTime = ' às ' + dayUpdates[0].hora.replace(/^(\d{2}):(\d{2}).*/, '$1:$2');
                 }
             }
-            const _cardInner = `
+            section.innerHTML = `
+                <div class="summary-card summary-card--gradient">
                     ${featuredPhoto ? `<div class="summary-photo-wrap" onclick="openLightbox()"><img src="${featuredPhoto.src}" alt=""></div>` : ''}
                     <div class="summary-label">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
-                    <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>`;
-            section.innerHTML = `
-                <div class="sv-test-label">Variante 1 — Glow Pulsante</div>
-                <div class="summary-card summary-card--glow">${_cardInner}</div>
-
-                <div class="sv-test-label">Variante 2 — Borda Gradiente</div>
-                <div class="summary-gradient-wrap"><div class="summary-card">${_cardInner}</div></div>
-
-                <div class="sv-test-label">Variante 3 — Shimmer</div>
-                <div class="summary-card summary-card--shimmer">${_cardInner}</div>`;
+                    <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
+                </div>`;
         }
 
         function dateToISO(d) {
