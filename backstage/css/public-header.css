@@ -206,18 +206,39 @@ pensoia-header[mode="display"] .ph-logo {
   font-size: clamp(0.9rem, 1.4vw, 1.3rem);
 }
 
-pensoia-header[mode="display"] .ph-code-btn {
-  font-size: clamp(1.2rem, 2.2vw, 2.4rem);
-  padding: clamp(8px, 1.2vh, 16px) clamp(14px, 1.8vw, 24px);
+/* Display mode modal: near-fullscreen card, everything readable from the back of a room */
+pensoia-header[mode="display"] .ph-modal-card {
+  width: min(96vw, 1100px);
+  max-width: 96vw;
+  max-height: 96vh;
+  padding: clamp(32px, 5vmin, 72px) clamp(40px, 7vmin, 100px);
+  gap: clamp(20px, 4vmin, 48px);
 }
 
-/* Modal text scale for display mode (visible on a projector from distance) */
+pensoia-header[mode="display"] .ph-modal-close {
+  width: 52px;
+  height: 52px;
+  font-size: 2.4rem;
+}
+
 pensoia-header[mode="display"] .ph-modal-label {
-  font-size: clamp(1rem, 2.2vmin, 1.8rem);
+  font-size: clamp(1.1rem, 2.8vmin, 2.2rem);
+  letter-spacing: 0.2em;
+}
+
+pensoia-header[mode="display"] .ph-modal-qr {
+  width: clamp(280px, 44vmin, 580px);
+  height: clamp(280px, 44vmin, 580px);
+}
+
+pensoia-header[mode="display"] .ph-modal-code {
+  font-size: clamp(5rem, 14vmin, 10rem);
+  letter-spacing: 0.3em;
 }
 
 pensoia-header[mode="display"] .ph-modal-url {
-  font-size: clamp(1.4rem, 3.2vmin, 2.8rem);
+  font-size: clamp(1.8rem, 4.5vmin, 4rem);
+  font-weight: 600;
 }
 
 /* ---------- tight screens: drop title ---------- */
