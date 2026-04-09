@@ -206,13 +206,36 @@ pensoia-header[mode="display"] .ph-logo {
   font-size: clamp(0.9rem, 1.4vw, 1.3rem);
 }
 
-/* Display mode modal: near-fullscreen card, everything readable from the back of a room */
+/* Display mode modal: two-column layout, fullscreen, readable from the back of a room.
+   Left column: label + QR. Right column: URL + session code.
+   HTML is unchanged — pure CSS grid placement. Student modal stays flex column. */
+
 pensoia-header[mode="display"] .ph-modal-card {
-  width: min(96vw, 1100px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "label url"
+    "qr    code";
+  align-items: center;
+  justify-items: center;
+  width: min(96vw, 1200px);
   max-width: 96vw;
   max-height: 96vh;
-  padding: clamp(32px, 5vmin, 72px) clamp(40px, 7vmin, 100px);
-  gap: clamp(20px, 4vmin, 48px);
+  padding: clamp(48px, 7vmin, 90px) clamp(40px, 6vw, 80px) clamp(36px, 5vmin, 70px);
+  column-gap: clamp(32px, 6vw, 80px);
+  row-gap: clamp(16px, 3vmin, 32px);
+}
+
+/* Vertical divider between the two columns */
+pensoia-header[mode="display"] .ph-modal-card::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  bottom: 12%;
+  width: 1px;
+  background: var(--border);
+  transform: translateX(-50%);
 }
 
 pensoia-header[mode="display"] .ph-modal-close {
@@ -222,23 +245,29 @@ pensoia-header[mode="display"] .ph-modal-close {
 }
 
 pensoia-header[mode="display"] .ph-modal-label {
-  font-size: clamp(1.1rem, 2.8vmin, 2.2rem);
-  letter-spacing: 0.2em;
+  grid-area: label;
+  align-self: end;
+  font-size: clamp(1rem, 2.4vmin, 2rem);
+  letter-spacing: 0.18em;
 }
 
 pensoia-header[mode="display"] .ph-modal-qr {
-  width: clamp(280px, 44vmin, 580px);
-  height: clamp(280px, 44vmin, 580px);
-}
-
-pensoia-header[mode="display"] .ph-modal-code {
-  font-size: clamp(5rem, 14vmin, 10rem);
-  letter-spacing: 0.3em;
+  grid-area: qr;
+  width: clamp(260px, 38vmin, 520px);
+  height: clamp(260px, 38vmin, 520px);
 }
 
 pensoia-header[mode="display"] .ph-modal-url {
-  font-size: clamp(1.8rem, 4.5vmin, 4rem);
-  font-weight: 600;
+  grid-area: url;
+  align-self: end;
+  font-size: clamp(1.6rem, 4vmin, 3.6rem);
+  font-weight: 700;
+}
+
+pensoia-header[mode="display"] .ph-modal-code {
+  grid-area: code;
+  font-size: clamp(5rem, 13vmin, 10rem);
+  letter-spacing: 0.3em;
 }
 
 /* ---------- tight screens: drop title ---------- */
