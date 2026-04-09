@@ -5,8 +5,55 @@
    ========================================================= */
 
 /* =========================================================
-   PAGE HEADER / TAB BAR
+   SETTINGS PANEL
    ========================================================= */
+
+.cp-settings-section {
+  border-bottom: 1px solid rgba(20,184,166,.15);
+  margin-bottom: 1rem;
+}
+.cp-settings-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  padding: 0.8rem 0;
+  cursor: pointer;
+  user-select: none;
+}
+.cp-settings-title:hover { color: var(--text-primary); }
+.cp-settings-title svg { transition: transform 0.2s; }
+.cp-settings-title[aria-expanded="true"] svg { transform: rotate(180deg); }
+.cp-settings-body {
+  padding: 0.5rem 0 1.5rem;
+  display: none;
+}
+.cp-settings-body.open {
+  display: block;
+}
+
+/* Style select elements and number inputs in settings to match .bs-field */
+.cp-settings-body select,
+.cp-settings-body input[type="number"] {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.cp-settings-body select:focus,
+.cp-settings-body input[type="number"]:focus {
+  border-color: var(--primary);
+}
 
 .cp-tabs {
   display: flex;

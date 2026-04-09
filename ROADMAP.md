@@ -238,7 +238,7 @@
   - Name, Email, Message fields
   - Service selection dropdown
   - Form validation
-  - FormSpree/Netlify Forms integration
+  - FormSpree integration
 
 - **b)** Add social links
   - LinkedIn profile
