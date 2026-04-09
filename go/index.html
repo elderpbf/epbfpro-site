@@ -412,6 +412,14 @@
   const saved = sessionStorage.getItem('cl_session');
   if (saved) { try { currentSession = JSON.parse(saved); startSession(); } catch { sessionStorage.removeItem('cl_session'); } }
 
+  // Auto-fill code from URL (QR scan lands here with ?code=XXXX)
+  const urlCode = new URLSearchParams(window.location.search).get('code');
+  if (urlCode && !currentSession) {
+    const codeInput = document.getElementById('code-input');
+    codeInput.value = urlCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    document.getElementById('name-input').focus();
+  }
+
   document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinSession(); });
   document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinSession(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && currentSession) pollData(); });
