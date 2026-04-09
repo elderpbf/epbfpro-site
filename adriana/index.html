@@ -306,15 +306,24 @@
             opacity: 0.025;
         }
 
-        /* === Resumo: glow animado ciclando paleta === */
-        @keyframes sv-glow-cycle {
-            0%, 100% { box-shadow: 0 0 0 3px rgba(240,212,138,.95), 0 0 10px 5px rgba(240,212,138,.6), 0 0 24px 12px rgba(240,212,138,.28), 0 0 44px 22px rgba(240,212,138,.1); }
-               33%   { box-shadow: 0 0 0 3px rgba(232,160,180,.95), 0 0 10px 5px rgba(232,160,180,.6), 0 0 24px 12px rgba(232,160,180,.28), 0 0 44px 22px rgba(232,160,180,.1); }
-               66%   { box-shadow: 0 0 0 3px rgba(196,168,212,.95), 0 0 10px 5px rgba(196,168,212,.6), 0 0 24px 12px rgba(196,168,212,.28), 0 0 44px 22px rgba(196,168,212,.1); }
+        /* === Resumo: glow com cores girando === */
+        @property --sv-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
         }
-        .summary-card--gradient {
-            overflow: visible;
-            animation: sv-glow-cycle 4s ease-in-out infinite;
+        @keyframes sv-spin {
+            to { --sv-angle: 360deg; }
+        }
+        .summary-card--gradient { overflow: visible; }
+        .summary-card--gradient::before {
+            top: 0; left: 0; right: 0; bottom: 0;
+            height: auto;
+            border-radius: 12px;
+            background: conic-gradient(from var(--sv-angle), #f0d48a, #e8a0b4, #c4a8d4, #f0d48a);
+            filter: blur(14px);
+            z-index: -1;
+            animation: sv-spin 4s linear infinite;
         }
 
         .summary-label {
@@ -1394,6 +1403,7 @@
             }
         }
 
+        let _resumoGlow = false;
         function renderSummary(resumo, updates) {
             const section = document.getElementById('summary-section');
             if (!resumo || !resumo.texto) {
@@ -1440,12 +1450,14 @@
                 }
             }
             section.innerHTML = `
-                <div class="summary-card summary-card--gradient">
+                <div class="summary-card">
                     ${featuredPhoto ? `<div class="summary-photo-wrap" onclick="openLightbox()"><img src="${featuredPhoto.src}" alt=""></div>` : ''}
                     <div class="summary-label">Resumo geral da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
                 </div>`;
+            const _sc = section.querySelector('.summary-card');
+            if (_sc) _sc.classList.toggle('summary-card--gradient', _resumoGlow);
         }
 
         function dateToISO(d) {
@@ -1731,8 +1743,9 @@
                 }
             }
             if (triggerEffects && cfg.flower_shower) setTimeout(triggerFlowerShower, 500);
+            _resumoGlow = cfg.resumo_glow === true;
             const summaryCard = document.querySelector('.summary-card');
-            if (summaryCard) summaryCard.classList.toggle('summary-card--gradient', cfg.resumo_glow === true);
+            if (summaryCard) summaryCard.classList.toggle('summary-card--gradient', _resumoGlow);
         }
 
         async function loadConfig(triggerEffects) {
