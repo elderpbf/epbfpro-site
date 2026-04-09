@@ -1731,6 +1731,8 @@
                 }
             }
             if (triggerEffects && cfg.flower_shower) setTimeout(triggerFlowerShower, 500);
+            const summaryCard = document.querySelector('.summary-card');
+            if (summaryCard) summaryCard.classList.toggle('summary-card--gradient', cfg.resumo_glow === true);
         }
 
         async function loadConfig(triggerEffects) {

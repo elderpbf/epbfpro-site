@@ -510,6 +510,16 @@
                     <span class="toggle-slider"></span>
                 </label>
             </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-label">Glow no Resumo</div>
+                    <div class="toggle-desc">Aura animada ao redor do card de resumo</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-resumo-glow" onchange="saveConfig('resumo_glow', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
         </div>
         <div style="margin-top:16px;">
             <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:4px;">Mensagem de Destaque (Banner)</div>
@@ -1002,6 +1012,8 @@
             if (elText) elText.value = cfg.banner_text || '';
             const elShower = document.getElementById('toggle-flower-shower');
             if (elShower) elShower.checked = cfg.flower_shower === true;
+            const elGlow = document.getElementById('toggle-resumo-glow');
+            if (elGlow) elGlow.checked = cfg.resumo_glow === true;
         } catch (e) { console.error('loadConfig error:', e); }
     }
 
