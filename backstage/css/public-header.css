@@ -206,33 +206,36 @@ pensoia-header[mode="display"] .ph-logo {
   font-size: clamp(0.9rem, 1.4vw, 1.3rem);
 }
 
-/* Display mode modal: two-column layout, fullscreen, readable from the back of a room.
-   Left column: label + QR. Right column: URL + session code.
-   HTML is unchanged — pure CSS grid placement. Student modal stays flex column. */
+/* Display mode modal: fullscreen, two-column, readable from 20m away.
+   Row 1: label spans full width (centered).
+   Row 2-3 left: QR code (tall). Row 2 right: URL. Row 3 right: session code.
+   HTML/JS unchanged — pure CSS grid placement. Student modal stays flex column. */
 
 pensoia-header[mode="display"] .ph-modal-card {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr 1fr;
   grid-template-areas:
-    "label url"
+    "label label"
+    "qr    url"
     "qr    code";
   align-items: center;
   justify-items: center;
-  width: min(96vw, 1200px);
+  width: min(96vw, 1300px);
   max-width: 96vw;
   max-height: 96vh;
-  padding: clamp(48px, 7vmin, 90px) clamp(40px, 6vw, 80px) clamp(36px, 5vmin, 70px);
+  padding: clamp(36px, 5vmin, 64px) clamp(40px, 6vw, 80px);
   column-gap: clamp(32px, 6vw, 80px);
-  row-gap: clamp(16px, 3vmin, 32px);
+  row-gap: clamp(12px, 2.5vmin, 28px);
 }
 
-/* Vertical divider between the two columns */
+/* Vertical divider */
 pensoia-header[mode="display"] .ph-modal-card::after {
   content: '';
   position: absolute;
   left: 50%;
-  top: 12%;
-  bottom: 12%;
+  top: 14%;
+  bottom: 6%;
   width: 1px;
   background: var(--border);
   transform: translateX(-50%);
@@ -244,30 +247,41 @@ pensoia-header[mode="display"] .ph-modal-close {
   font-size: 2.4rem;
 }
 
+/* Label: full-width centered header */
 pensoia-header[mode="display"] .ph-modal-label {
   grid-area: label;
-  align-self: end;
-  font-size: clamp(1rem, 2.4vmin, 2rem);
-  letter-spacing: 0.18em;
+  justify-self: center;
+  font-size: clamp(1.4rem, 3.2vmin, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--text-primary);
 }
 
+/* QR: spans both content rows, fills the left column */
 pensoia-header[mode="display"] .ph-modal-qr {
   grid-area: qr;
-  width: clamp(260px, 38vmin, 520px);
-  height: clamp(260px, 38vmin, 520px);
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  max-width: clamp(260px, 40vmin, 560px);
+  max-height: clamp(260px, 40vmin, 560px);
 }
 
+/* URL: right column, top half */
 pensoia-header[mode="display"] .ph-modal-url {
   grid-area: url;
   align-self: end;
-  font-size: clamp(1.6rem, 4vmin, 3.6rem);
+  font-size: clamp(2rem, 5vmin, 4.8rem);
   font-weight: 700;
+  color: var(--primary);
 }
 
+/* Code: right column, bottom half — dominant element */
 pensoia-header[mode="display"] .ph-modal-code {
   grid-area: code;
-  font-size: clamp(5rem, 13vmin, 10rem);
-  letter-spacing: 0.3em;
+  align-self: start;
+  font-size: clamp(6rem, 16vmin, 14rem);
+  letter-spacing: 0.35em;
 }
 
 /* ---------- tight screens: drop title ---------- */
