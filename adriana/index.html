@@ -306,29 +306,15 @@
             opacity: 0.025;
         }
 
-        /* === Resumo: borda gradiente animada === */
-        @keyframes sv-border-flow {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        /* === Resumo: glow animado ciclando paleta === */
+        @keyframes sv-glow-cycle {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(240,212,138,.95), 0 0 10px 5px rgba(240,212,138,.6), 0 0 24px 12px rgba(240,212,138,.28), 0 0 44px 22px rgba(240,212,138,.1); }
+               33%   { box-shadow: 0 0 0 3px rgba(232,160,180,.95), 0 0 10px 5px rgba(232,160,180,.6), 0 0 24px 12px rgba(232,160,180,.28), 0 0 44px 22px rgba(232,160,180,.1); }
+               66%   { box-shadow: 0 0 0 3px rgba(196,168,212,.95), 0 0 10px 5px rgba(196,168,212,.6), 0 0 24px 12px rgba(196,168,212,.28), 0 0 44px 22px rgba(196,168,212,.1); }
         }
         .summary-card--gradient {
-            border: none;
             overflow: visible;
-        }
-        .summary-card--gradient::before {
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            height: auto;
-            border-radius: 15px;
-            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4, #e8a0b4, #f0d48a);
-            background-size: 300% 300%;
-            animation: sv-border-flow 3s ease infinite;
-            z-index: -1;
-            -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,.65) 35%, rgba(0,0,0,.2) 70%, transparent 100%);
-            mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,.65) 35%, rgba(0,0,0,.2) 70%, transparent 100%);
+            animation: sv-glow-cycle 4s ease-in-out infinite;
         }
 
         .summary-label {
