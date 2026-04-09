@@ -21,12 +21,26 @@ pensoia-header {
 /* ---------- topbar row ---------- */
 
 pensoia-header .ph-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: clamp(8px, 1.6vw, 18px);
   padding: clamp(8px, 1.4vh, 14px) clamp(14px, 2.4vw, 28px);
   border-bottom: 1px solid var(--border);
   background: var(--background);
+}
+
+pensoia-header .ph-left {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1vw, 12px);
+}
+
+pensoia-header .ph-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(6px, 1vw, 12px);
 }
 
 pensoia-header .ph-logo {
@@ -39,7 +53,6 @@ pensoia-header .ph-logo {
 }
 
 pensoia-header .ph-title {
-  flex: 1;
   min-width: 0;
   font-size: clamp(0.86rem, 1.4vw, 1.05rem);
   font-weight: 600;
@@ -95,7 +108,7 @@ pensoia-header[code=""] .ph-code-btn {
   display: none;
 }
 
-/* ---------- zoom controls (display mode only) ---------- */
+/* ---------- zoom controls ---------- */
 
 pensoia-header .ph-zoom {
   display: none;
@@ -103,8 +116,16 @@ pensoia-header .ph-zoom {
   flex-shrink: 0;
 }
 
+/* Always show on display mode */
 pensoia-header[mode="display"] .ph-zoom {
   display: flex;
+}
+
+/* Show on student mode for desktop users */
+@media (min-width: 768px) {
+  pensoia-header[mode="student"] .ph-zoom {
+    display: flex;
+  }
 }
 
 pensoia-header .ph-zoom-btn {
@@ -174,16 +195,29 @@ pensoia-header:not([exitable]) .ph-exit-btn {
 /* ---------- display-mode scale bump ---------- */
 
 pensoia-header[mode="display"] .ph-bar {
-  padding: clamp(10px, 1.8vh, 18px) clamp(20px, 3vw, 40px);
+  padding: clamp(10px, 1.8vh, 22px) clamp(20px, 3vw, 48px);
 }
 
 pensoia-header[mode="display"] .ph-title {
-  font-size: clamp(1rem, 1.8vw, 1.4rem);
+  font-size: clamp(1.1rem, 2vw, 2rem);
+}
+
+pensoia-header[mode="display"] .ph-logo {
+  font-size: clamp(0.9rem, 1.4vw, 1.3rem);
 }
 
 pensoia-header[mode="display"] .ph-code-btn {
-  font-size: clamp(1rem, 1.7vw, 1.3rem);
-  padding: clamp(8px, 1.2vh, 14px) clamp(14px, 1.8vw, 20px);
+  font-size: clamp(1.2rem, 2.2vw, 2.4rem);
+  padding: clamp(8px, 1.2vh, 16px) clamp(14px, 1.8vw, 24px);
+}
+
+/* Modal text scale for display mode (visible on a projector from distance) */
+pensoia-header[mode="display"] .ph-modal-label {
+  font-size: clamp(1rem, 2.2vmin, 1.8rem);
+}
+
+pensoia-header[mode="display"] .ph-modal-url {
+  font-size: clamp(1.4rem, 3.2vmin, 2.8rem);
 }
 
 /* ---------- tight screens: drop title ---------- */

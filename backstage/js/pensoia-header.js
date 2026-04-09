@@ -78,20 +78,24 @@
   function buildHtml() {
     return (
       '<header class="ph-bar">' +
-        '<div class="ph-logo">PensoIA</div>' +
-        '<div class="ph-title"></div>' +
-        '<button class="ph-exit-btn" type="button">\u2190 Sair</button>' +
-        '<button class="ph-code-btn" type="button" aria-label="Mostrar codigo de acesso">' +
-          QR_GLYPH +
-          '<span class="ph-code-text"></span>' +
-        '</button>' +
-        '<div class="ph-zoom" role="group" aria-label="Ajuste de texto">' +
-          '<button class="ph-zoom-btn" data-delta="-1" type="button" aria-label="Diminuir texto">A\u2212</button>' +
-          '<button class="ph-zoom-btn" data-delta="1" type="button" aria-label="Aumentar texto">A+</button>' +
+        '<div class="ph-left">' +
+          '<div class="ph-logo">PensoIA</div>' +
+          '<button class="ph-exit-btn" type="button">\u2190 Sair</button>' +
         '</div>' +
-        '<button class="ph-theme-btn" type="button" aria-label="Alternar tema">' +
-          '<span class="ph-theme-icon"></span>' +
-        '</button>' +
+        '<div class="ph-title"></div>' +
+        '<div class="ph-right">' +
+          '<button class="ph-code-btn" type="button" aria-label="Mostrar codigo de acesso">' +
+            QR_GLYPH +
+            '<span class="ph-code-text"></span>' +
+          '</button>' +
+          '<div class="ph-zoom" role="group" aria-label="Ajuste de texto">' +
+            '<button class="ph-zoom-btn" data-delta="-1" type="button" aria-label="Diminuir texto">A\u2212</button>' +
+            '<button class="ph-zoom-btn" data-delta="1" type="button" aria-label="Aumentar texto">A+</button>' +
+          '</div>' +
+          '<button class="ph-theme-btn" type="button" aria-label="Alternar tema">' +
+            '<span class="ph-theme-icon"></span>' +
+          '</button>' +
+        '</div>' +
       '</header>' +
       '<div class="ph-modal" hidden>' +
         '<div class="ph-modal-backdrop"></div>' +
