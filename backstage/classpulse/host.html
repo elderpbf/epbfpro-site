@@ -237,11 +237,20 @@
         </div>
 
         <div class="host-form-group">
+          <label class="host-label">Tipo de pergunta</label>
+          <select class="host-select" id="q-type">
+            <option value="mc">Múltipla Escolha</option>
+            <option value="tf">Verdadeiro / Falso</option>
+            <option value="poll">Enquete</option>
+          </select>
+        </div>
+
+        <div class="host-form-group">
           <label class="host-label">Texto da pergunta</label>
           <textarea class="host-input" id="q-text" placeholder="Escreva a pergunta para os alunos..." rows="2"></textarea>
         </div>
 
-        <div id="q-opts">
+        <div id="q-opts-mc">
           <div class="opt-row">
             <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct" value="a" id="q-correct-a"></label>
             <div class="opt-letter">A</div>
@@ -262,6 +271,11 @@
             <div class="opt-letter">D</div>
             <input class="host-input" type="text" id="q-opt-d" placeholder="Opção D">
           </div>
+        </div>
+
+        <div id="q-opts-poll" style="display:none">
+          <div id="poll-rows"></div>
+          <button class="host-btn host-btn-ghost" id="poll-add-btn" type="button" style="font-size:0.82rem;margin-top:0.3rem">+ Adicionar opção</button>
         </div>
 
         <div class="host-btn-row" style="margin-top:0.75rem">
@@ -318,7 +332,7 @@
 <script src="../js/api-client.js?v=1.0"></script>
 <script src="../js/question-renderer.js?v=1.0"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
-<script src="../js/question-bank.js?v=1.3"></script>
+<script src="../js/question-bank.js?v=1.4"></script>
 <script>
 'use strict';
 
@@ -477,14 +491,80 @@ document.getElementById('reopen-session-btn').addEventListener('click', async fu
 });
 
 // ---------------------------------------------------------------------------
+// Question type selector
+// ---------------------------------------------------------------------------
+
+var MAX_POLL_OPTS = 6;
+
+function buildPollRow(idx) {
+  var row = document.createElement('div');
+  row.className = 'opt-row';
+  row.innerHTML = '<div class="opt-letter">' + LETTERS[idx] + '</div>' +
+    '<input class="host-input" type="text" placeholder="Opção ' + LETTERS[idx] + '">';
+  return row;
+}
+
+function initPollRows(count) {
+  var container = document.getElementById('poll-rows');
+  container.innerHTML = '';
+  for (var i = 0; i < count; i++) container.appendChild(buildPollRow(i));
+}
+
+function applyTypeUI(qType) {
+  var isMC   = qType === 'mc';
+  var isTF   = qType === 'tf';
+  var isPoll = qType === 'poll';
+  document.getElementById('q-opts-mc').style.display   = (isMC || isTF) ? '' : 'none';
+  document.getElementById('q-opts-poll').style.display = isPoll ? '' : 'none';
+  if (isTF) {
+    document.getElementById('q-opt-a').value = 'Verdadeiro';
+    document.getElementById('q-opt-b').value = 'Falso';
+    document.getElementById('q-opt-c').value = '';
+    document.getElementById('q-opt-d').value = '';
+    document.querySelectorAll('#q-opts-mc .opt-row').forEach(function(row, i) {
+      row.style.display = i < 2 ? '' : 'none';
+    });
+    document.querySelectorAll('#q-opts-mc .opt-correct-radio').forEach(function(el) { el.style.display = 'none'; });
+  } else if (isMC) {
+    document.querySelectorAll('#q-opts-mc .opt-row').forEach(function(row) { row.style.display = ''; });
+    document.querySelectorAll('#q-opts-mc .opt-correct-radio').forEach(function(el) { el.style.display = ''; });
+  }
+  if (isPoll && document.getElementById('poll-rows').children.length === 0) {
+    initPollRows(2);
+  }
+}
+
+document.getElementById('q-type').addEventListener('change', function() {
+  applyTypeUI(this.value);
+  document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
+});
+
+document.getElementById('poll-add-btn').addEventListener('click', function() {
+  var container = document.getElementById('poll-rows');
+  if (container.children.length >= MAX_POLL_OPTS) return;
+  container.appendChild(buildPollRow(container.children.length));
+});
+
+// ---------------------------------------------------------------------------
 // Question form
 // ---------------------------------------------------------------------------
 
 document.getElementById('launch-btn').addEventListener('click', async function() {
+  var qType   = document.getElementById('q-type').value;
   var text    = document.getElementById('q-text').value.trim();
-  var options = ['a','b','c','d'].map(function(l) { return document.getElementById('q-opt-' + l).value.trim(); }).filter(Boolean);
-  var caEl    = document.querySelector('input[name="correct"]:checked');
-  var ca      = caEl ? ['a','b','c','d'].indexOf(caEl.value) : null;
+  var options, ca;
+
+  if (qType === 'tf') {
+    options = ['Verdadeiro', 'Falso'];
+    ca = null;
+  } else if (qType === 'poll') {
+    options = Array.from(document.querySelectorAll('#poll-rows .host-input')).map(function(i) { return i.value.trim(); }).filter(Boolean);
+    ca = null;
+  } else {
+    options = ['a','b','c','d'].map(function(l) { return document.getElementById('q-opt-' + l).value.trim(); }).filter(Boolean);
+    var caEl = document.querySelector('input[name="correct"]:checked');
+    ca = caEl ? ['a','b','c','d'].indexOf(caEl.value) : null;
+  }
 
   if (!text)              return showAlert('error', 'Escreva a pergunta.');
   if (options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
@@ -496,7 +576,7 @@ document.getElementById('launch-btn').addEventListener('click', async function()
   try {
     var res = await callWorker({
       action: 'launch_question', auth_token: AUTH_TOKEN,
-      session_code: sessionCode, text: text, options: options, correct_answer: ca
+      session_code: sessionCode, type: qType, text: text, options: options, correct_answer: ca
     });
     activeQId = res.id;
     clearAlert();
@@ -539,6 +619,9 @@ function clearForm() {
   document.getElementById('q-text').value = '';
   ['a','b','c','d'].forEach(function(l) { document.getElementById('q-opt-' + l).value = ''; });
   document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
+  document.getElementById('q-type').value = 'mc';
+  applyTypeUI('mc');
+  document.getElementById('poll-rows').innerHTML = '';
 }
 
 // ---------------------------------------------------------------------------
@@ -669,13 +752,24 @@ async function relaunchFromHistory(btn, q) {
 
 function editFromHistory(q) {
   document.getElementById('q-text').value = q.text || '';
-  ['a','b','c','d'].forEach(function(l, i) {
-    document.getElementById('q-opt-' + l).value = (q.options && q.options[i]) ? q.options[i] : '';
-  });
-  document.querySelectorAll('input[name="correct"]').forEach(function(r, i) {
-    r.checked = (q.correct_answer !== null && i === q.correct_answer);
-  });
-  
+  var qType = q.type || 'mc';
+  document.getElementById('q-type').value = qType;
+  applyTypeUI(qType);
+  document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
+  if (qType === 'poll') {
+    var pollOpts = q.options || [];
+    initPollRows(pollOpts.length || 2);
+    Array.from(document.querySelectorAll('#poll-rows .host-input')).forEach(function(inp, i) { inp.value = pollOpts[i] || ''; });
+  } else {
+    ['a','b','c','d'].forEach(function(l, i) {
+      document.getElementById('q-opt-' + l).value = (q.options && q.options[i]) ? q.options[i] : '';
+    });
+    if (q.correct_answer !== null && q.correct_answer !== undefined) {
+      var r = document.querySelectorAll('input[name="correct"]')[q.correct_answer];
+      if (r) r.checked = true;
+    }
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.getElementById('q-text').focus();
 }
@@ -733,13 +827,22 @@ QuestionBank.init({
 
 function prefillForm(q) {
   document.getElementById('q-text').value = q.question || '';
-  ['a','b','c','d'].forEach(function(l) {
-    document.getElementById('q-opt-' + l).value = q['option_' + l] || '';
-  });
+  var qType = q.type || 'mc';
+  document.getElementById('q-type').value = qType;
+  applyTypeUI(qType);
   document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
-  if (q.correct) {
-    var radio = document.getElementById('q-correct-' + q.correct.toLowerCase());
-    if (radio) radio.checked = true;
+  if (qType === 'poll') {
+    var pollOpts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+    initPollRows(pollOpts.length || 2);
+    Array.from(document.querySelectorAll('#poll-rows .host-input')).forEach(function(inp, i) { inp.value = pollOpts[i] || ''; });
+  } else if (qType === 'mc') {
+    var mcOpts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+    ['a','b','c','d'].forEach(function(l, i) { document.getElementById('q-opt-' + l).value = mcOpts[i] || ''; });
+    var ca = parseInt(q.correct_answer);
+    if (!isNaN(ca) && ca >= 0) {
+      var radio = document.querySelector('input[name="correct"][value="' + ['a','b','c','d'][ca] + '"]');
+      if (radio) radio.checked = true;
+    }
   }
 }
 

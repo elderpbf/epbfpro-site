@@ -191,19 +191,16 @@ var QuestionBank = (function () {
     opts.improveBtn.addEventListener('click', improve);
   }
 
-  // Worker returns { ok, ai: { question, options: [...], correct: 0 } }
-  // Normalize to flat { question, option_a/b/c/d, correct: "a" } for onSelect callbacks
+  // Worker returns { ok, ai: { question, type, options: [...], correct: 0 } }
+  // Normalize to { question, type, options (JSON string), correct_answer } for onSelect callbacks
   function normalizeAiResult(result) {
     var ai = result.ai || result;
-    var opts = ai.options || [];
-    var letters = ['a', 'b', 'c', 'd'];
+    var optArr = ai.options || [];
     return {
       question: ai.question || '',
-      option_a: opts[0] || '',
-      option_b: opts[1] || '',
-      option_c: opts[2] || '',
-      option_d: opts[3] || '',
-      correct: typeof ai.correct === 'number' ? letters[ai.correct] : (ai.correct || '')
+      type: ai.type || 'mc',
+      options: JSON.stringify(optArr),
+      correct_answer: typeof ai.correct === 'number' ? String(ai.correct) : (ai.correct || '')
     };
   }
 

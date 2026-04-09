@@ -158,6 +158,19 @@
               </div>
             </div>
 
+            <div class="bs-field" style="margin-bottom:0.75rem">
+              <label>Tipo de questão</label>
+              <select id="q-type-bank" style="width:100%;padding:0.55rem 0.8rem;background:var(--background);border:1.5px solid rgba(20,184,166,.25);border-radius:8px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none">
+                <option value="mc">Múltipla Escolha</option>
+                <option value="tf">Verdadeiro / Falso</option>
+                <option value="poll">Enquete</option>
+                <option value="open">Texto Aberto</option>
+                <option value="wordcloud">Nuvem de Palavras</option>
+                <option value="rating">Avaliação</option>
+                <option value="numeric">Numérico</option>
+              </select>
+            </div>
+
             <div class="bs-field">
               <label>Pergunta ou instrução para IA</label>
               <textarea class="bs-textarea" id="q-text" placeholder="Escreva a pergunta diretamente, ou descreva o que você quer para o botão Gerar." style="min-height:72px"></textarea>
@@ -431,7 +444,7 @@
 <script src="../js/utils.js?v=1.1"></script>
 <script src="../js/api-client.js?v=1.0"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
-<script src="../js/question-bank.js?v=1.3"></script>
+<script src="../js/question-bank.js?v=1.4"></script>
 <script>
 'use strict';
 
@@ -812,16 +825,22 @@ function renderQuestions() {
 
     var opts = document.createElement('div');
     opts.className = 'cp-question-options';
-    ['a','b','c','d'].forEach(function(letter) {
+    var qOpts = typeof q.options === 'string' ? JSON.parse(q.options || '[]') : (q.options || []);
+    var qCA = (q.correct_answer !== null && q.correct_answer !== undefined) ? parseInt(q.correct_answer) : -1;
+    qOpts.forEach(function(optText, i) {
       var opt = document.createElement('div');
-      opt.className = 'cp-question-option' + (q.correct === letter ? ' is-correct' : '');
-      opt.innerHTML = '<span class="opt-letter">' + letter.toUpperCase() + '</span> ' + (q['option_' + letter] || '');
+      opt.className = 'cp-question-option' + (i === qCA ? ' is-correct' : '');
+      opt.innerHTML = '<span class="opt-letter">' + LETTERS[i] + '</span> ' + escHtml(optText);
       opts.appendChild(opt);
     });
     card.appendChild(opts);
 
     var footer = document.createElement('div');
     footer.className = 'cp-question-footer';
+    var typeBadge = document.createElement('span');
+    typeBadge.className = 'cp-question-set-tag';
+    typeBadge.style.cssText = 'margin-right:auto;background:rgba(20,184,166,.1);color:var(--primary)';
+    typeBadge.textContent = q.type || 'mc';
     var tag = document.createElement('span');
     tag.className = 'cp-question-set-tag';
     tag.textContent = q.list_name;
@@ -832,6 +851,7 @@ function renderQuestions() {
     delBtn.addEventListener('click', function() {
       deleteQuestion(q.question);
     });
+    footer.appendChild(typeBadge);
     footer.appendChild(tag);
     footer.appendChild(delBtn);
     card.appendChild(footer);
@@ -840,25 +860,68 @@ function renderQuestions() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Question type selector (bank)
+// ---------------------------------------------------------------------------
+
+function applyBankTypeUI(bankType) {
+  var needsOpts = (bankType === 'mc' || bankType === 'tf' || bankType === 'poll');
+  document.getElementById('q-options').style.display = needsOpts ? '' : 'none';
+  if (bankType === 'tf') {
+    document.getElementById('q-opt-a').value = 'Verdadeiro';
+    document.getElementById('q-opt-b').value = 'Falso';
+    document.getElementById('q-opt-c').value = '';
+    document.getElementById('q-opt-d').value = '';
+    document.getElementById('opt-row-c').style.display = 'none';
+    document.getElementById('opt-row-d').style.display = 'none';
+    document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.style.display = 'none'; r.checked = false; });
+  } else if (bankType === 'mc') {
+    document.getElementById('opt-row-c').style.display = '';
+    document.getElementById('opt-row-d').style.display = '';
+    document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.style.display = ''; });
+  } else if (bankType === 'poll') {
+    document.getElementById('opt-row-c').style.display = '';
+    document.getElementById('opt-row-d').style.display = '';
+    document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.style.display = 'none'; r.checked = false; });
+  }
+}
+
+document.getElementById('q-type-bank').addEventListener('change', function() {
+  applyBankTypeUI(this.value);
+});
+
 // Save question
 document.getElementById('q-save-btn').addEventListener('click', async function() {
-  var setName = document.getElementById('q-set-name').value.trim();
-  var text    = document.getElementById('q-text').value.trim();
-  var optA    = document.getElementById('q-opt-a').value.trim();
-  var optB    = document.getElementById('q-opt-b').value.trim();
-  var optC    = document.getElementById('q-opt-c').value.trim();
-  var optD    = document.getElementById('q-opt-d').value.trim();
-  var correct = document.querySelector('input[name="correct"]:checked');
-  var err     = document.getElementById('q-error');
-  var msg     = document.getElementById('q-msg');
+  var setName  = document.getElementById('q-set-name').value.trim();
+  var text     = document.getElementById('q-text').value.trim();
+  var bankType = document.getElementById('q-type-bank').value;
+  var err      = document.getElementById('q-error');
+  var msg      = document.getElementById('q-msg');
 
   err.textContent = '';
   msg.textContent = '';
 
   if (!setName) { err.textContent = 'Informe o nome do conjunto.'; return; }
   if (!text)    { err.textContent = 'A pergunta não pode estar vazia.'; return; }
-  if (!optA || !optB || !optC || !optD) { err.textContent = 'Preencha todas as 4 opções.'; return; }
-  if (!correct) { err.textContent = 'Selecione a opção correta.'; return; }
+
+  var bankOpts, bankCorrect;
+  if (bankType === 'tf') {
+    bankOpts = ['Verdadeiro', 'Falso'];
+    bankCorrect = null;
+  } else if (bankType === 'mc' || bankType === 'poll') {
+    bankOpts = ['a','b','c','d'].map(function(l) { return document.getElementById('q-opt-' + l).value.trim(); }).filter(Boolean);
+    if (bankOpts.length < 2) { err.textContent = 'Informe pelo menos 2 opções.'; return; }
+    if (bankType === 'mc') {
+      var correct = document.querySelector('input[name="correct"]:checked');
+      if (!correct) { err.textContent = 'Selecione a opção correta.'; return; }
+      bankCorrect = String(['a','b','c','d'].indexOf(correct.value));
+    } else {
+      bankCorrect = null;
+    }
+  } else {
+    bankOpts = [];
+    bankCorrect = null;
+  }
 
   var btn = this;
   btn.disabled = true;
@@ -868,13 +931,11 @@ document.getElementById('q-save-btn').addEventListener('click', async function()
     await callWorker({
       action: 'add_question',
       auth_token: AUTH_TOKEN,
-      list_name: setName,
-      question:  text,
-      option_a:  optA,
-      option_b:  optB,
-      option_c:  optC,
-      option_d:  optD,
-      correct:   correct.value
+      list_name:     setName,
+      question:      text,
+      type:          bankType,
+      options:       JSON.stringify(bankOpts),
+      correct_answer: bankCorrect
     });
     msg.textContent = 'Questão salva!';
     clearQuestionForm();
@@ -897,11 +958,10 @@ document.getElementById('q-save-btn').addEventListener('click', async function()
 
 function clearQuestionForm() {
   document.getElementById('q-text').value = '';
-  document.getElementById('q-opt-a').value = '';
-  document.getElementById('q-opt-b').value = '';
-  document.getElementById('q-opt-c').value = '';
-  document.getElementById('q-opt-d').value = '';
+  ['a','b','c','d'].forEach(function(l) { document.getElementById('q-opt-' + l).value = ''; });
   document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
+  document.getElementById('q-type-bank').value = 'mc';
+  applyBankTypeUI('mc');
   updateCorrectHighlight();
 }
 
@@ -969,13 +1029,15 @@ document.getElementById('bank-toggle-btn').addEventListener('click', function() 
 
 function prefillQuestionForm(q) {
   document.getElementById('q-text').value = q.question || '';
-  document.getElementById('q-opt-a').value = q.option_a || '';
-  document.getElementById('q-opt-b').value = q.option_b || '';
-  document.getElementById('q-opt-c').value = q.option_c || '';
-  document.getElementById('q-opt-d').value = q.option_d || '';
+  var bankType = q.type || 'mc';
+  document.getElementById('q-type-bank').value = bankType;
+  applyBankTypeUI(bankType);
   document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
-  if (q.correct) {
-    var radio = document.getElementById('q-correct-' + q.correct.toLowerCase());
+  var prefillOpts = typeof q.options === 'string' ? JSON.parse(q.options || '[]') : (q.options || []);
+  ['a','b','c','d'].forEach(function(l, i) { document.getElementById('q-opt-' + l).value = prefillOpts[i] || ''; });
+  if (bankType === 'mc' && q.correct_answer !== null && q.correct_answer !== undefined) {
+    var idx = parseInt(q.correct_answer);
+    var radio = document.querySelector('input[name="correct"][value="' + ['a','b','c','d'][idx] + '"]');
     if (radio) { radio.checked = true; updateCorrectHighlight(); }
   }
 }
@@ -992,6 +1054,7 @@ QuestionBank.init({
   getFormState: function() {
     return {
       text: document.getElementById('q-text').value.trim(),
+      type: document.getElementById('q-type-bank').value,
       options: [
         document.getElementById('q-opt-a').value.trim(),
         document.getElementById('q-opt-b').value.trim(),
