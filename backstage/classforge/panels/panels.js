@@ -108,7 +108,7 @@ const Panels = (() => {
       label.textContent = (i + 1) + ' / ' + panels.length;
       thumb.appendChild(label);
 
-      thumb.addEventListener('click', () => { closeOverview(); goTo(i); });
+      thumb.addEventListener('click', (e) => { e.stopPropagation(); closeOverview(); goTo(i); });
       overview.appendChild(thumb);
     });
 
@@ -165,7 +165,7 @@ const Panels = (() => {
 
   function onKeyDown(e) {
     if (overviewOpen) {
-      if (e.key === 'Escape') { closeOverview(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); closeOverview(); return; }
       return;
     }
     switch (e.key) {
