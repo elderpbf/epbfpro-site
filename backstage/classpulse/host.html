@@ -92,6 +92,14 @@
   .history-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid rgba(20,184,166,.08); }
   .history-item:last-child { border-bottom: none; }
   .hi-text { font-size: 0.88rem; color: var(--text-primary); flex: 1; }
+  .hi-type-badge { display: inline-block; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 3px; margin: 3px 0 5px; }
+  .hi-type-mc   { background: rgba(20,184,166,.15); color: var(--primary); }
+  .hi-type-tf   { background: rgba(99,102,241,.15); color: #6366f1; }
+  .hi-type-poll { background: rgba(245,158,11,.15); color: #d97706; }
+  .hi-type-open { background: rgba(239,68,68,.15);  color: #dc2626; }
+  .hi-type-wordcloud { background: rgba(168,85,247,.15); color: #9333ea; }
+  .hi-type-rating    { background: rgba(34,197,94,.15);  color: #16a34a; }
+  .hi-type-numeric   { background: rgba(14,165,233,.15); color: #0284c7; }
   .hi-meta { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; margin-bottom: 0.4rem; }
   .hi-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
   .hi-btn { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
@@ -754,6 +762,12 @@ async function removeAnswer(answerId, cardEl) {
   }
 }
 
+var TYPE_LABELS = { mc: 'MC', tf: 'V/F', poll: 'Enquete', open: 'Aberta', wordcloud: 'Nuvem', rating: 'Avaliação', numeric: 'Número' };
+function typeTag(type) {
+  var label = TYPE_LABELS[type] || type;
+  return '<span class="hi-type-badge hi-type-' + (type || 'mc') + '">' + label + '</span>';
+}
+
 function renderHistory(closedQs) {
   if (!closedQs.length) {
     document.getElementById('history-card').style.display = 'none';
@@ -785,6 +799,7 @@ function renderHistory(closedQs) {
     return '<div class="history-item">' +
              '<div style="flex:1">' +
                '<div class="hi-text">' + escHtml(q.text || '') + '</div>' +
+               typeTag(q.type || 'mc') +
                '<div class="hi-meta">' + escHtml(q.created_at ? new Date(q.created_at).toLocaleString('pt-BR') : '') + '</div>' +
                resultsHtml +
                '<div class="hi-actions">' +
@@ -841,6 +856,17 @@ function stripHtml(str) {
     .trim();
 }
 
+function setCorrectRadio(qType, correctAnswer) {
+  if ((qType === 'mc' || qType === 'tf') &&
+      correctAnswer !== null && correctAnswer !== undefined) {
+    var idx = parseInt(correctAnswer);
+    if (!isNaN(idx) && idx >= 0) {
+      var radio = document.querySelector('input[name="correct"][value="' + ['a','b','c','d'][idx] + '"]');
+      if (radio) radio.checked = true;
+    }
+  }
+}
+
 function editFromHistory(q) {
   document.getElementById('q-text').value = stripHtml(q.text || '');
   var qType = q.type || 'mc';
@@ -855,10 +881,7 @@ function editFromHistory(q) {
     ['a','b','c','d'].forEach(function(l, i) {
       document.getElementById('q-opt-' + l).value = (q.options && q.options[i]) ? q.options[i] : '';
     });
-    if (q.correct_answer !== null && q.correct_answer !== undefined) {
-      var r = document.querySelectorAll('input[name="correct"]')[q.correct_answer];
-      if (r) r.checked = true;
-    }
+    setCorrectRadio(qType, q.correct_answer);
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -927,14 +950,10 @@ function prefillForm(q) {
     var pollOpts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
     initPollRows(pollOpts.length || 2);
     Array.from(document.querySelectorAll('#poll-rows .host-input')).forEach(function(inp, i) { inp.value = pollOpts[i] || ''; });
-  } else if (qType === 'mc') {
-    var mcOpts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
-    ['a','b','c','d'].forEach(function(l, i) { document.getElementById('q-opt-' + l).value = mcOpts[i] || ''; });
-    var ca = parseInt(q.correct_answer);
-    if (!isNaN(ca) && ca >= 0) {
-      var radio = document.querySelector('input[name="correct"][value="' + ['a','b','c','d'][ca] + '"]');
-      if (radio) radio.checked = true;
-    }
+  } else {
+    var opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+    ['a','b','c','d'].forEach(function(l, i) { document.getElementById('q-opt-' + l).value = opts[i] || ''; });
+    setCorrectRadio(qType, q.correct_answer);
   }
 }
 
