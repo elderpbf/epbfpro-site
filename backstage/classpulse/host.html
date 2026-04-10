@@ -332,7 +332,7 @@
 <script src="../js/api-client.js?v=1.0"></script>
 <script src="../js/question-renderer.js?v=1.0"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
-<script src="../js/question-bank.js?v=1.4"></script>
+<script src="../js/question-bank.js?v=1.5"></script>
 <script>
 'use strict';
 
@@ -532,8 +532,6 @@ function applyTypeUI(qType) {
   if (isPoll && document.getElementById('poll-rows').children.length === 0) {
     initPollRows(2);
   }
-  document.getElementById('q-generate-btn').disabled = qType !== 'mc';
-  document.getElementById('q-improve-btn').disabled = qType !== 'mc';
 }
 
 document.getElementById('q-type').addEventListener('change', function() {

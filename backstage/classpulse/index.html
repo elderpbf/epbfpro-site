@@ -444,7 +444,7 @@
 <script src="../js/utils.js?v=1.1"></script>
 <script src="../js/api-client.js?v=1.0"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
-<script src="../js/question-bank.js?v=1.4"></script>
+<script src="../js/question-bank.js?v=1.5"></script>
 <script>
 'use strict';
 
@@ -782,7 +782,7 @@ function updateSetSuggestions() {
   dl.innerHTML = '';
   sets.forEach(function(s) {
     var opt = document.createElement('option');
-    opt.value = s.name;
+    opt.value = s.list_name;
     dl.appendChild(opt);
   });
 }
@@ -888,8 +888,6 @@ function applyBankTypeUI(bankType) {
 
 document.getElementById('q-type-bank').addEventListener('change', function() {
   applyBankTypeUI(this.value);
-  document.getElementById('q-generate-btn').disabled = this.value !== 'mc';
-  document.getElementById('q-improve-btn').disabled = this.value !== 'mc';
 });
 
 // Save question

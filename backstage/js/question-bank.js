@@ -122,9 +122,10 @@ var QuestionBank = (function () {
     btn.disabled = true;
     btn.textContent = 'Gerando...';
 
-    callWorker({ action: 'ai_question', auth_token: AUTH_TOKEN, prompt: topic })
+    var qType = state.type || 'mc';
+    callWorker({ action: 'ai_question', auth_token: AUTH_TOKEN, prompt: topic, type: qType })
       .then(function (result) {
-        opts.onSelect(normalizeAiResult(result));
+        opts.onSelect(normalizeAiResult(result, qType));
       })
       .catch(function (e) {
         errEl.textContent = 'Erro: ' + e.message;
@@ -140,12 +141,12 @@ var QuestionBank = (function () {
     var errEl = opts.errorEl;
     errEl.textContent = '';
 
-    var options = state.options || [];
-    if (!state.text || options.length < 4 || options.some(function (o) { return !o; })) {
-      errEl.textContent = 'Preencha a pergunta e todas as 4 opções antes de melhorar.';
+    if (!state.text) {
+      errEl.textContent = 'Escreva a pergunta antes de melhorar.';
       return;
     }
 
+    var qType = state.type || 'mc';
     var btn = opts.improveBtn;
     var origHTML = btn.innerHTML;
     btn.disabled = true;
@@ -154,10 +155,11 @@ var QuestionBank = (function () {
     callWorker({
       action: 'ai_question',
       auth_token: AUTH_TOKEN,
-      improve_from: state.text
+      improve_from: state.text,
+      type: qType
     })
       .then(function (result) {
-        opts.onSelect(normalizeAiResult(result));
+        opts.onSelect(normalizeAiResult(result, qType));
       })
       .catch(function (e) {
         errEl.textContent = 'Erro: ' + e.message;
@@ -193,12 +195,12 @@ var QuestionBank = (function () {
 
   // Worker returns { ok, ai: { question, type, options: [...], correct: 0 } }
   // Normalize to { question, type, options (JSON string), correct_answer } for onSelect callbacks
-  function normalizeAiResult(result) {
+  function normalizeAiResult(result, requestedType) {
     var ai = result.ai || result;
     var optArr = ai.options || [];
     return {
       question: ai.question || '',
-      type: ai.type || 'mc',
+      type: requestedType || ai.type || 'mc',
       options: JSON.stringify(optArr),
       correct_answer: typeof ai.correct === 'number' ? String(ai.correct) : (ai.correct || '')
     };
