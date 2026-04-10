@@ -139,24 +139,6 @@
     <button class="bs-drawer-close" id="settings-close" aria-label="Fechar">&times;</button>
   </h2>
 
-  <!-- AI API keys -->
-  <h3 data-key="settings_ai_section">IA</h3>
-  <div class="bs-field">
-    <label data-key="settings_gemini_key_label">Chave da API Gemini</label>
-    <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
-  </div>
-  <div class="bs-field">
-    <label data-key="settings_gemini_key2_label">Chave da API Gemini (backup)</label>
-    <input id="settings-gemini-key2" type="password" placeholder="AIzaSy..." autocomplete="off">
-  </div>
-  <div class="bs-field">
-    <label data-key="settings_deepseek_key_label">Chave da API DeepSeek (fallback final)</label>
-    <input id="settings-deepseek-key" type="password" placeholder="sk-..." autocomplete="off">
-    <p class="bs-hint" data-key="settings_ai_key_hint">Armazenadas localmente, nunca enviadas a terceiros.</p>
-  </div>
-  <button class="bs-save-btn" id="settings-gemini-save-btn" data-key="settings_save_btn">Salvar</button>
-  <p class="bs-drawer-save-msg" id="settings-gemini-save-msg"></p>
-
   <hr>
 
   <!-- Developer -->
@@ -221,11 +203,6 @@ var TRANSLATIONS = {
     classforge_desc:           'Apresentações',
     classpulse_desc:           'Interação em sala',
     settings_title:            'Configurações',
-    settings_ai_section:        'IA',
-    settings_gemini_key_label:  'Chave da API Gemini',
-    settings_gemini_key2_label:  'Chave da API Gemini (backup)',
-    settings_deepseek_key_label: 'Chave da API DeepSeek (fallback final)',
-    settings_ai_key_hint:       'Armazenadas localmente, nunca enviadas a terceiros.',
     settings_save_btn:         'Salvar',
     settings_dev_section:      'Desenvolvedor',
     settings_debug_label:      'Painel de debug',
@@ -267,7 +244,7 @@ function migrateOldKeys() {
     ['cf_script_url',   'bs_cf_script_url'],
     ['cf_theme',        'bs_reveal_theme'],
     ['cf_custom_themes','bs_custom_themes'],
-    ['cf_gemini_key',   'bs_gemini_key']
+    ['cf_gemini_key',   'bs_gemini_key']  // kept for migration cleanup only
   ];
   migrations.forEach(function(pair) {
     var old = localStorage.getItem(pair[0]);
@@ -406,7 +383,6 @@ var drawer  = document.getElementById('settings-drawer');
 
 function openSettings() {
   var cpMsg = document.getElementById('settings-cp-save-msg'); if (cpMsg) cpMsg.textContent = '';
-  document.getElementById('settings-gemini-key').value = localStorage.getItem('bs_gemini_key') || '';
   document.getElementById('debug-toggle-btn') && (function() {
     var on = localStorage.getItem('bs_debug') === '1';
     var btn = document.getElementById('debug-toggle-btn');
@@ -414,9 +390,6 @@ function openSettings() {
     btn.style.color = on ? 'var(--primary)' : '';
     btn.style.borderColor = on ? 'var(--primary)' : '';
   })();
-  document.getElementById('settings-gemini-key2').value = localStorage.getItem('bs_gemini_key2') || '';
-  document.getElementById('settings-deepseek-key').value = localStorage.getItem('bs_deepseek_key') || '';
-  document.getElementById('settings-gemini-save-msg').textContent = '';
   overlay.hidden = false;
   drawer.hidden = false;
   requestAnimationFrame(function() {
@@ -438,16 +411,6 @@ document.getElementById('settings-btn').addEventListener('click', openSettings);
 document.getElementById('settings-close').addEventListener('click', closeSettings);
 overlay.addEventListener('click', closeSettings);
 
-
-document.getElementById('settings-gemini-save-btn').addEventListener('click', function() {
-  localStorage.setItem('bs_gemini_key', document.getElementById('settings-gemini-key').value.trim());
-  localStorage.setItem('bs_gemini_key2', document.getElementById('settings-gemini-key2').value.trim());
-  localStorage.setItem('bs_deepseek_key', document.getElementById('settings-deepseek-key').value.trim());
-  document.getElementById('settings-gemini-save-msg').textContent = t('save_ok');
-  setTimeout(function() {
-    document.getElementById('settings-gemini-save-msg').textContent = '';
-  }, 3000);
-});
 
 // Debug toggle
 (function() {
