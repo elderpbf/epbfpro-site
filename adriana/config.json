@@ -1,6 +1,6 @@
 {
   "banner_visible": true,
   "banner_text": "EM BREVE, EM AJU!",
-  "flower_shower": true,
+  "flower_shower": false,
   "resumo_glow": true
 }
