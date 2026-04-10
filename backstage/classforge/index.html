@@ -111,11 +111,7 @@
         <label data-key="settings_theme_desc_label">Descreva o tema</label>
         <textarea id="theme-desc-input" class="bs-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano..."></textarea>
       </div>
-       <div class="bs-field">
-        <label>Chave da API Gemini (para gerar tema)</label>
-        <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
-      </div>
-      <p class="bs-form-error" id="theme-gen-error"></p>
+       <p class="bs-form-error" id="theme-gen-error"></p>
       <button class="bs-save-btn" id="theme-gen-btn" data-key="settings_theme_gen_submit">Gerar com Gemini</button>
 
       <div id="theme-gen-preview" hidden style="margin-top:1rem; padding:0.75rem; border-radius:8px; border:1px solid rgba(20,184,166,.3)">
@@ -132,6 +128,7 @@
 
 <script src="../js/utils.js?v=1.1"></script>
 <script src="../js/api-client.js?v=1.0"></script>
+<script src="../js/ai-client.js?v=1.1"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script>
 'use strict';
@@ -385,7 +382,6 @@ var drawer  = document.getElementById('settings-drawer');
 function openSettings() {
   document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
   document.getElementById('settings-save-msg').textContent = '';
-  document.getElementById('settings-gemini-key').value = localStorage.getItem('bs_gemini_key') || '';
   overlay.hidden = false;
   drawer.hidden = false;
   requestAnimationFrame(function() {
@@ -493,18 +489,18 @@ document.getElementById('show-theme-gen-btn').addEventListener('click', function
 
 var pendingTheme = null;
 document.getElementById('theme-gen-btn').addEventListener('click', async function() {
-  var apiKey  = document.getElementById('settings-gemini-key').value.trim();
   var desc    = document.getElementById('theme-desc-input').value.trim();
   var errEl   = document.getElementById('theme-gen-error');
   var preview = document.getElementById('theme-gen-preview');
   errEl.textContent = ''; preview.hidden = true; pendingTheme = null;
 
-  if (!apiKey) { errEl.textContent = 'Configure a chave da API Gemini.'; return; }
-  if (!desc)   { errEl.textContent = 'Descreva o tema antes de gerar.'; return; }
+  if (!desc) { errEl.textContent = 'Descreva o tema antes de gerar.'; return; }
 
   var btn = this; btn.textContent = 'Gerando...'; btn.disabled = true;
   try {
-    var theme = await callGeminiTheme(desc, apiKey);
+    var resp = await AIClient.generate({ action: 'ai_theme', description: desc });
+    if (!resp) { errEl.textContent = 'IA indisponível temporariamente. Tente novamente em instantes.'; return; }
+    var theme = resp.theme;
     pendingTheme = theme;
     var swatchContainer = document.getElementById('theme-preview-swatches');
     swatchContainer.innerHTML = '';
@@ -514,7 +510,6 @@ document.getElementById('theme-gen-btn').addEventListener('click', async functio
       swatchContainer.appendChild(s);
     });
     document.getElementById('theme-preview-name').textContent = theme.name;
-    localStorage.setItem('bs_gemini_key', apiKey);
     preview.hidden = false;
   } catch (err) {
     errEl.textContent = 'Erro: ' + err.message;
@@ -536,40 +531,6 @@ document.getElementById('theme-save-btn').addEventListener('click', function() {
   pendingTheme = null;
   renderThemeGrid();
 });
-
-async function callGeminiTheme(description, apiKey) {
-  var prompt =
-    'You are a CSS theme designer for Reveal.js presentations.\n' +
-    'Generate a professional, visually cohesive theme based on this description: "' + description + '"\n\n' +
-    'Return ONLY valid JSON with this exact structure (no markdown, no explanation):\n' +
-    '{\n' +
-    '  "name": "Nome do Tema (2-3 words in Portuguese)",\n' +
-    '  "base": "black",\n' +
-    '  "overrides": {\n' +
-    '    "--r-background-color": "#hex",\n' +
-    '    "--r-main-color": "#hex",\n' +
-    '    "--r-heading-color": "#hex",\n' +
-    '    "--r-link-color": "#hex",\n' +
-    '    "--r-selection-background-color": "rgba(r,g,b,0.75)"\n' +
-    '  }\n' +
-    '}\n\n' +
-    'base must be one of: black, white, night, moon, dracula, sky, beige, serif, simple.\n' +
-    'Choose the base that best complements the described style.\n' +
-    'All color values must be valid CSS. Ensure high contrast between background and text.';
-  var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-  });
-  if (!resp.ok) {
-    var errData = await resp.json().catch(function(){ return {}; });
-    throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + resp.status);
-  }
-  var data = await resp.json();
-  var raw = data.candidates[0].content.parts[0].text;
-  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
-  return JSON.parse(clean);
-}
 
 // ---------------------------------------------------------------------------
 // Start

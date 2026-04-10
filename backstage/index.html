@@ -243,8 +243,7 @@ function migrateOldKeys() {
     ['cf_pw_hash',      'bs_pw_hash'],
     ['cf_script_url',   'bs_cf_script_url'],
     ['cf_theme',        'bs_reveal_theme'],
-    ['cf_custom_themes','bs_custom_themes'],
-    ['cf_gemini_key',   'bs_gemini_key']  // kept for migration cleanup only
+    ['cf_custom_themes','bs_custom_themes']
   ];
   migrations.forEach(function(pair) {
     var old = localStorage.getItem(pair[0]);
