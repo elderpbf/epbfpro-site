@@ -41,7 +41,7 @@
 
     /* Option buttons */
     .question-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin-bottom: 14px; }
-    .question-text  { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; }
+    .question-text  { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; text-align: justify; }
 
     @media (min-width: 600px) {
       #q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -144,7 +144,7 @@
 </div>
 <script src="../backstage/js/utils.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.0"></script>
-<script src="../backstage/js/question-renderer.js?v=1.0"></script>
+<script src="../backstage/js/question-renderer.js?v=1.1"></script>
 <script src="../backstage/js/theme-manager.js?v=1.0"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
 <script>
@@ -307,7 +307,9 @@
         if (myAnswer !== null) {
           showState('answered');
         } else {
-          renderQuestion(activeQ);
+          if (!activeQuestionData || activeQuestionData.id !== qId) {
+            renderQuestion(activeQ);
+          }
           showState('question');
         }
       } else {
@@ -360,6 +362,7 @@
   }
 
   function renderOpenTextInput(container) {
+    container.style.display = 'block';
     container.innerHTML =
       '<div class="open-text-form">' +
         '<textarea class="open-textarea" id="open-answer-input" maxlength="500" placeholder="Digite sua resposta..."></textarea>' +

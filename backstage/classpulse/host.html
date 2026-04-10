@@ -99,6 +99,10 @@
   .hi-btn-primary { border-color: var(--primary); color: var(--primary); }
   .hi-btn-primary:hover { background: var(--primary); color: #fff; }
 
+  /* Greyed checkbox labels */
+  .close-options label.disabled { opacity: 0.35; cursor: not-allowed; }
+  .close-options label.disabled input { pointer-events: none; }
+
   .hi-results { margin-top: 0.6rem; background: rgba(0,0,0,0.1); border-radius: 6px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
   .hi-bar { display: flex; align-items: center; font-size: 0.72rem; gap: 0.5rem; }
   .hi-bar-label { flex: 1; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 0.3rem; }
@@ -526,6 +530,7 @@ function applyTypeUI(qType) {
   var isMC   = qType === 'mc';
   var isTF   = qType === 'tf';
   var isPoll = qType === 'poll';
+  var isOpen = qType === 'open';
   document.getElementById('q-opts-mc').style.display   = (isMC || isTF) ? '' : 'none';
   document.getElementById('q-opts-poll').style.display = isPoll ? '' : 'none';
   if (isTF) {
@@ -544,6 +549,22 @@ function applyTypeUI(qType) {
   if (isPoll && document.getElementById('poll-rows').children.length === 0) {
     initPollRows(2);
   }
+
+  // Checkbox state: Revelar resposta correta -- only meaningful for mc/tf
+  var chkReveal = document.getElementById('chk-reveal-answer');
+  var lblReveal = chkReveal.closest('label');
+  var hasCorrect = isMC || isTF;
+  chkReveal.disabled = !hasCorrect;
+  chkReveal.checked  = hasCorrect;
+  lblReveal.classList.toggle('disabled', !hasCorrect);
+
+  // Checkbox state: Mostrar resultados -- not meaningful for open type
+  var chkShow = document.getElementById('chk-show-results');
+  var lblShow = chkShow.closest('label');
+  var hasResults = !isOpen;
+  chkShow.disabled = !hasResults;
+  chkShow.checked  = hasResults;
+  lblShow.classList.toggle('disabled', !hasResults);
 }
 
 document.getElementById('q-type').addEventListener('change', function() {
@@ -801,8 +822,16 @@ async function relaunchFromHistory(btn, q) {
   }
 }
 
+function stripHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .trim();
+}
+
 function editFromHistory(q) {
-  document.getElementById('q-text').value = q.text || '';
+  document.getElementById('q-text').value = stripHtml(q.text || '');
   var qType = q.type || 'mc';
   document.getElementById('q-type').value = qType;
   applyTypeUI(qType);
@@ -878,7 +907,7 @@ QuestionBank.init({
 });
 
 function prefillForm(q) {
-  document.getElementById('q-text').value = q.question || '';
+  document.getElementById('q-text').value = stripHtml(q.question || '');
   var qType = q.type || 'mc';
   document.getElementById('q-type').value = qType;
   applyTypeUI(qType);
