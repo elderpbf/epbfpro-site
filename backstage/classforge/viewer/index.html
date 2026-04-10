@@ -113,7 +113,7 @@ function initTheme(name) {
 
 function resolveTheme(lessonTheme) {
   const params = new URLSearchParams(location.search);
-  return params.get('theme') || lessonTheme || localStorage.getItem('bs_reveal_theme') || 'black';
+  return params.get('theme') || localStorage.getItem('bs_reveal_theme') || lessonTheme || 'black';
 }
 
 // ---------------------------------------------------------------------------

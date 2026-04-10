@@ -38,6 +38,15 @@ function parseCSVLine(line) {
   return result;
 }
 
+function showToast(msg) {
+  var el = document.createElement('div');
+  el.className = 'bs-toast';
+  el.textContent = msg.length > 80 ? msg.slice(0, 80) + '...' : msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.classList.add('show'); }, 10);
+  setTimeout(function() { el.classList.remove('show'); setTimeout(function() { el.remove(); }, 300); }, 3000);
+}
+
 function showToastError(msg) {
   console.error(msg);
   var el = document.createElement('div');
