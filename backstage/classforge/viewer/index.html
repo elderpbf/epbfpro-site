@@ -543,9 +543,7 @@ async function showPresentation(lesson, isDemo, opts) {
       plugins: [RevealHighlight, RevealNotes, RevealMarkdown]
     });
     revealInited = true;
-    Reveal.on('ready', () => {
-      if (window.ClassPulseEmbed) window.ClassPulseEmbed.scan();
-    });
+    if (window.ClassPulseEmbed) window.ClassPulseEmbed.scan();
     if (logoHideOn && logoHideOn.length) {
       Reveal.on('slidechanged', ({ indexh }) => {
         document.getElementById('cf-logo').hidden = logoHideOn.includes(indexh);
@@ -554,6 +552,7 @@ async function showPresentation(lesson, isDemo, opts) {
   } else {
     Reveal.sync();
     Reveal.slide(0);
+    if (window.ClassPulseEmbed) window.ClassPulseEmbed.scan();
   }
 }
 

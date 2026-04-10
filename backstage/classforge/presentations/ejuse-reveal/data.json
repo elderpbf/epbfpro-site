@@ -1,6 +1,6 @@
 {
   "title": "Gestão e Inovação na Justiça",
-  "subtitle": "EJUSE / JFSE — Programa de Formação Continuada",
+  "subtitle": "EJUSE / JFSE - Programa de Formação Continuada",
   "theme": "black",
   "logo_config": {
     "url": "https://backstage-api.pensoia.workers.dev/r2/classforge/ejuse/logo.png",
@@ -18,7 +18,7 @@
         { "type": "bullet", "text": "Contexto da gestão pública no Judiciário", "level": 0 },
         { "type": "bullet", "text": "Inovação como estratégia institucional", "level": 0 },
         { "type": "bullet", "text": "Ferramentas e metodologias", "level": 0 },
-        { "type": "bullet", "text": "Casos práticos — EJUSE e JFSE", "level": 0 },
+        { "type": "bullet", "text": "Casos práticos - EJUSE e JFSE", "level": 0 },
         { "type": "bullet", "text": "Discussão e próximos passos", "level": 0 }
       ]
     },
@@ -41,7 +41,7 @@
     },
     {
       "layout": "statement",
-      "title": "\"Inovar não é opcional — é parte da missão institucional.\"",
+      "title": "\"Inovar não é opcional - é parte da missão institucional.\"",
       "notes": "Pausa para reflexão. Deixar a frase no ar por alguns segundos antes de avançar."
     },
     {
@@ -52,17 +52,17 @@
     {
       "layout": "topic-grid",
       "title": "Abordagens para Inovação",
-      "notes": "Apresentar as quatro ferramentas principais. Não detalhar ainda — só apresentar.",
+      "notes": "Apresentar as quatro ferramentas principais. Não detalhar ainda - só apresentar.",
       "topics": [
         { "title": "Design Thinking", "description": "Foco no usuário para redesenhar serviços judiciários" },
         { "title": "Gestão Ágil", "description": "Entregas iterativas e adaptação contínua" },
-        { "title": "Dados e Indicadores", "description": "Decisões baseadas em evidências — não intuição" },
+        { "title": "Dados e Indicadores", "description": "Decisões baseadas em evidências - não intuição" },
         { "title": "Governança Participativa", "description": "Engajamento de servidores no processo de mudança" }
       ]
     },
     {
       "layout": "image-left",
-      "title": "Caso Prático — EJUSE",
+      "title": "Caso Prático - EJUSE",
       "notes": "Exemplo concreto. Pedir que alguém do grupo compartilhe experiência similar.",
       "content": [
         { "type": "image", "url": "https://backstage-api.pensoia.workers.dev/r2/classforge/ejuse/caso.jpg", "alt": "Caso prático" },
@@ -78,7 +78,7 @@
       "notes": "Imagem de impacto para marcar a transição para o encerramento.",
       "content": [
         { "type": "image", "url": "https://backstage-api.pensoia.workers.dev/r2/classforge/ejuse/tribunal.jpg", "alt": "Tribunal" },
-        { "type": "bullet", "text": "Inovação começa com as pessoas — não com a tecnologia.", "level": 0 }
+        { "type": "bullet", "text": "Inovação começa com as pessoas - não com a tecnologia.", "level": 0 }
       ]
     },
     {
@@ -86,6 +86,11 @@
       "title": "Enquete ao vivo",
       "notes": "Ponto de parada para enquete ao vivo. Lance a questão no ClassPulse antes de avançar.",
       "embed": { "session": "EJU1", "question_id": "PLACEHOLDER" }
+    },
+    {
+      "layout": "statement",
+      "title": "Obrigado",
+      "notes": "Encerramento. Abrir para perguntas. Agradecer a presença."
     }
   ]
 }
