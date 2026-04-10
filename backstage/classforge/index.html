@@ -500,8 +500,13 @@ document.getElementById('theme-gen-btn').addEventListener('click', async functio
   var btn = this; btn.textContent = 'Gerando...'; btn.disabled = true;
   try {
     var resp = await AIClient.generate({ action: 'ai_theme', description: desc });
-    if (!resp) { errEl.textContent = 'IA indisponível temporariamente. Tente novamente em instantes.'; return; }
+    if (!resp) { showToastError('IA indisponível temporariamente. Tente novamente em instantes.'); return; }
     var theme = resp.theme;
+    if (!theme || !theme.overrides) {
+      dbg('error', 'ai_theme: resposta inválida — ' + JSON.stringify(resp));
+      showToastError('Resposta da IA inválida. Tente novamente.');
+      return;
+    }
     pendingTheme = theme;
     var swatchContainer = document.getElementById('theme-preview-swatches');
     swatchContainer.innerHTML = '';
@@ -513,8 +518,8 @@ document.getElementById('theme-gen-btn').addEventListener('click', async functio
     document.getElementById('theme-preview-name').textContent = theme.name;
     preview.hidden = false;
   } catch (err) {
-    errEl.textContent = 'Erro ao gerar tema. Tente novamente.';
-    if (typeof dbg !== 'undefined') dbg('error', 'ai_theme: ' + err.message);
+    dbg('error', 'ai_theme: ' + err.message);
+    showToastError('Erro ao gerar tema. Tente novamente.');
   } finally {
     btn.textContent = t('settings_theme_gen_submit'); btn.disabled = false;
   }
