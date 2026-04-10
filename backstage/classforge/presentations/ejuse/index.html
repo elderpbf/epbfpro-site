@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../css/question-types.css?v=1.3">
 <link rel="stylesheet" href="../../panels/panels.css">
 <style>
   /* EJUSE brand overrides */
@@ -158,7 +159,15 @@
   </div>
 </section>
 
-<!-- 9: Closing -->
+<!-- 9: Live poll embed -->
+<section class="panel panel-statement" data-notes="Ponto de parada para enquete ao vivo. Lance a questão no ClassPulse antes de avançar para este painel.">
+  <div style="width:100%;max-width:700px;text-align:center">
+    <h2 style="font-size:clamp(1.2rem,2.5vw,1.8rem);margin-bottom:1.5rem">Enquete ao vivo</h2>
+    <div class="cf-classpulse-embed" data-session="EJU1" data-question-id="PLACEHOLDER"></div>
+  </div>
+</section>
+
+<!-- 10: Closing -->
 <section class="panel panel-cover" data-notes="Encerramento. Abrir para perguntas. Agradecer a presença.">
   <h1>Obrigado</h1>
   <p class="pn-subtitle">Dúvidas e discussão</p>
@@ -167,9 +176,12 @@
 <!-- =====================================================
      ENGINE
      ===================================================== -->
+<script src="../../../js/api-client.js?v=1.0"></script>
+<script src="../../../js/question-renderer.js?v=1.3"></script>
+<script src="../../embed-classpulse.js?v=1.0"></script>
 <script type="module">
   import Panels from '../../panels/panels.js';
-  Panels.init({ logoHideOn: [0, 9], presenterUrl: '../../panels/presenter.html' });
+  Panels.init({ logoHideOn: [0, 10], presenterUrl: '../../panels/presenter.html' });
 
   // Show logo after init
   const logo = document.getElementById('pn-logo');

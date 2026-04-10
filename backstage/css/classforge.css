@@ -107,6 +107,14 @@
   border-radius: 20px;
 }
 
+.cf-card-badge--engine {
+  top: auto; left: auto;
+  bottom: 10px; right: 10px;
+  background: rgba(0,0,0,.55);
+}
+.cf-card-badge--engine[data-engine="reveal"]  { background: rgba(30,80,200,.75); }
+.cf-card-badge--engine[data-engine="panels"]  { background: rgba(10,130,80,.75); }
+
 .cf-card-body {
   padding: 1.1rem 1.2rem 1.2rem;
 }
@@ -327,6 +335,24 @@
 
 .cf-theme-card:hover .cf-theme-card-delete { opacity: 1; }
 .cf-theme-card-delete:hover { background: rgba(239,68,68,.8); }
+
+.cf-theme-card-rename {
+  position: absolute;
+  top: 4px; right: 26px;
+  width: 18px; height: 18px;
+  background: rgba(0,0,0,.5);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity .15s;
+  line-height: 1;
+}
+.cf-theme-card:hover .cf-theme-card-rename { opacity: 1; }
+.cf-theme-card-rename:hover { background: rgba(99,102,241,.8); }
 
 .cf-theme-card-wrap {
   position: relative;

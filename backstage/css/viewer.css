@@ -194,3 +194,15 @@
 #cf-logo.cf-logo-top-right    { top: 1rem; right: 1rem; }
 #cf-logo.cf-logo-bottom-left  { bottom: 1rem; left: 1rem; }
 #cf-logo.cf-logo-bottom-right { bottom: 1rem; right: 1rem; }
+
+/* =========================================================
+   EMBED LAYOUT (Phase 4D)
+   ========================================================= */
+
+.reveal .cf-layout-embed {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding-top: 2rem;
+}
+.reveal .cf-layout-embed h2 { margin-bottom: 1.5rem; }
+.reveal .cf-layout-embed .cf-classpulse-embed { width: 100%; max-width: 700px; }
