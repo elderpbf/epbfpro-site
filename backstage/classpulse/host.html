@@ -526,6 +526,17 @@ function initPollRows(count) {
   for (var i = 0; i < count; i++) container.appendChild(buildPollRow(i));
 }
 
+function setChk(id, enabled) {
+  var chk = document.getElementById(id);
+  if (!chk) return;
+  var lbl = chk.parentElement; // input is a direct child of <label>
+  chk.disabled = !enabled;
+  chk.checked  = enabled;
+  lbl.style.opacity       = enabled ? '' : '0.35';
+  lbl.style.cursor        = enabled ? '' : 'not-allowed';
+  lbl.style.pointerEvents = enabled ? '' : 'none';
+}
+
 function applyTypeUI(qType) {
   var isMC   = qType === 'mc';
   var isTF   = qType === 'tf';
@@ -551,20 +562,10 @@ function applyTypeUI(qType) {
   }
 
   // Checkbox state: Revelar resposta correta -- only meaningful for mc/tf
-  var chkReveal = document.getElementById('chk-reveal-answer');
-  var lblReveal = chkReveal.closest('label');
-  var hasCorrect = isMC || isTF;
-  chkReveal.disabled = !hasCorrect;
-  chkReveal.checked  = hasCorrect;
-  lblReveal.classList.toggle('disabled', !hasCorrect);
+  setChk('chk-reveal-answer', isMC || isTF);
 
   // Checkbox state: Mostrar resultados -- not meaningful for open type
-  var chkShow = document.getElementById('chk-show-results');
-  var lblShow = chkShow.closest('label');
-  var hasResults = !isOpen;
-  chkShow.disabled = !hasResults;
-  chkShow.checked  = hasResults;
-  lblShow.classList.toggle('disabled', !hasResults);
+  setChk('chk-show-results', !isOpen);
 }
 
 document.getElementById('q-type').addEventListener('change', function() {
