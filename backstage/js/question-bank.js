@@ -77,7 +77,8 @@ var QuestionBank = (function () {
 
           var typeBadge = document.createElement('span');
           typeBadge.className = 'qb-type-badge';
-          typeBadge.textContent = q.type || 'mc';
+          var typeLabels = { mc: 'ME', tf: 'FV', poll: 'ENQ', open: 'ABE', wordcloud: 'NUV', rating: 'AVA', numeric: 'NUM' };
+          typeBadge.textContent = typeLabels[q.type] || (q.type || 'ME');
           item.appendChild(typeBadge);
 
           var textSpan = document.createElement('span');
