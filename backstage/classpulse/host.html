@@ -662,6 +662,9 @@ function clearForm() {
   document.getElementById('poll-rows').innerHTML = '';
 }
 
+// Initialize checkbox state on page load
+applyTypeUI(document.getElementById('q-type').value);
+
 // ---------------------------------------------------------------------------
 // Polling
 // ---------------------------------------------------------------------------

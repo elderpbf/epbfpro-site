@@ -232,7 +232,17 @@
       }
       if (data.session.status === 'closed') { errorEl.textContent = t.errClosed; return; }
 
-      currentSession = { code: data.session.code, title: data.session.title, studentName: name || 'Anônimo' };
+      // Assign a persistent device-local ID so anonymous devices don't collide
+      var displayName = name;
+      if (!displayName) {
+        var anonKey = 'bs_anon_id';
+        displayName = localStorage.getItem(anonKey);
+        if (!displayName) {
+          displayName = 'Anon_' + Math.random().toString(36).slice(2, 5).toUpperCase();
+          localStorage.setItem(anonKey, displayName);
+        }
+      }
+      currentSession = { code: data.session.code, title: data.session.title, studentName: displayName };
       sessionStorage.setItem('cl_session', JSON.stringify(currentSession));
       startSession();
     } catch(err) {
