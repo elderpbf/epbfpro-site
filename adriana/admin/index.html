@@ -500,6 +500,36 @@
                     <span class="toggle-slider"></span>
                 </label>
             </div>
+        </div>
+        <div style="margin-top:20px;">
+            <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:10px;">Curtidas automáticas</div>
+            <div style="font-size:0.75rem;color:#6e6050;margin-bottom:12px;">Ao publicar, o post anterior é completado até esse intervalo.</div>
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+                <span style="font-size:0.8rem;color:#9a8b78;min-width:130px;">Post regular</span>
+                <input type="number" id="likes-min-regular" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_min_regular', this.value)">
+                <span style="font-size:0.8rem;color:#6e6050;">até</span>
+                <input type="number" id="likes-max-regular" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_max_regular', this.value)">
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <span style="font-size:0.8rem;color:#9a8b78;min-width:130px;">Foto / boa notícia</span>
+                <input type="number" id="likes-min-special" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_min_special', this.value)">
+                <span style="font-size:0.8rem;color:#6e6050;">até</span>
+                <input type="number" id="likes-max-special" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_max_special', this.value)">
+            </div>
+        </div>
+        <div id="fb-settings" class="feedback" style="display:none"></div>
+        </div>
+    </div>
+
+        <hr class="divider">
+
+        <!-- Efeitos de Grande Notícia -->
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleSection('goodnews-body','goodnews-arrow')">
+            <div class="section-title" style="margin-bottom:0;">Efeitos de Grande Notícia</div>
+            <span id="goodnews-arrow" style="color:#6e6050;font-size:0.8rem;">▶</span>
+        </div>
+        <div id="goodnews-body" style="display:none;margin-top:12px;">
+            <p style="font-size:0.8rem;color:#a89880;margin-bottom:12px;">Ative apenas em momentos especiais.</p>
             <div class="toggle-row">
                 <div class="toggle-info">
                     <div class="toggle-label">Chuva de Flores</div>
@@ -520,41 +550,25 @@
                     <span class="toggle-slider"></span>
                 </label>
             </div>
-        </div>
-        <div style="margin-top:16px;">
-            <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:4px;">Mensagem de Destaque (Banner)</div>
-            <div style="font-size:0.75rem;color:#6e6050;margin-bottom:8px;">Texto que aparecerá fixado no topo da página.</div>
-            <div style="display:flex;gap:8px;margin-bottom:8px;">
-                <input type="text" id="input-top-banner" placeholder="Ex: Adriana teve alta! 🏡💛" style="flex:1;padding:8px 12px;font-size:0.9rem;">
-                <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveConfig('banner_text', document.getElementById('input-top-banner').value)">Salvar</button>
-            </div>
-            <div class="toggle-row">
-                <div class="toggle-info">
-                    <div class="toggle-label">Exibir banner</div>
-                    <div class="toggle-desc">Mostra ou oculta o banner sem apagar o texto</div>
+            <div style="margin-top:16px;">
+                <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:4px;">Mensagem de Destaque (Banner)</div>
+                <div style="font-size:0.75rem;color:#6e6050;margin-bottom:8px;">Texto que aparecerá fixado no topo da página.</div>
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input type="text" id="input-top-banner" placeholder="Ex: Adriana teve alta! 🏡💛" style="flex:1;padding:8px 12px;font-size:0.9rem;">
+                    <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveConfig('banner_text', document.getElementById('input-top-banner').value)">Salvar</button>
                 </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-banner-visible" onchange="saveConfig('banner_visible', this.checked)">
-                    <span class="toggle-slider"></span>
-                </label>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">Exibir banner</div>
+                        <div class="toggle-desc">Mostra ou oculta o banner sem apagar o texto</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-banner-visible" onchange="saveConfig('banner_visible', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
             </div>
-        <div style="margin-top:20px;">
-            <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:10px;">Curtidas automáticas</div>
-            <div style="font-size:0.75rem;color:#6e6050;margin-bottom:12px;">Ao publicar, o post anterior é completado até esse intervalo.</div>
-            <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-                <span style="font-size:0.8rem;color:#9a8b78;min-width:130px;">Post regular</span>
-                <input type="number" id="likes-min-regular" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_min_regular', this.value)">
-                <span style="font-size:0.8rem;color:#6e6050;">até</span>
-                <input type="number" id="likes-max-regular" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_max_regular', this.value)">
-            </div>
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-                <span style="font-size:0.8rem;color:#9a8b78;min-width:130px;">Foto / boa notícia</span>
-                <input type="number" id="likes-min-special" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_min_special', this.value)">
-                <span style="font-size:0.8rem;color:#6e6050;">até</span>
-                <input type="number" id="likes-max-special" min="1" max="50" style="width:60px;padding:5px 8px;font-size:0.85rem;" onchange="saveSetting('likes_max_special', this.value)">
-            </div>
-        </div>
-        <div id="fb-settings" class="feedback" style="display:none"></div>
+            <div id="fb-goodnews" class="feedback" style="display:none"></div>
         </div>
     </div>
 
@@ -1018,7 +1032,7 @@
     }
 
     async function saveConfig(key, value) {
-        const fb = document.getElementById('fb-settings');
+        const fb = document.getElementById('fb-goodnews');
         try {
             const res = await postToScript({ action: 'update_config', password: localStorage.getItem('adriana_admin_pw'), key, value: value });
             if (res.ok) {
