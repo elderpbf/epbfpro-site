@@ -462,6 +462,56 @@
 
         <hr class="divider">
 
+        <!-- Efeitos de Grande Notícia -->
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleSection('goodnews-body','goodnews-arrow')">
+            <div class="section-title" style="margin-bottom:0;">Efeitos de Grande Notícia</div>
+            <span id="goodnews-arrow" style="color:#6e6050;font-size:0.8rem;">▶</span>
+        </div>
+        <div id="goodnews-body" style="display:none;margin-top:12px;">
+            <p style="font-size:0.8rem;color:#a89880;margin-bottom:12px;">Ative apenas em momentos especiais.</p>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-label">Chuva de Flores</div>
+                    <div class="toggle-desc">Efeito especial de comemoração na tela</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-flower-shower" onchange="saveConfig('flower_shower', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-label">Glow no Resumo</div>
+                    <div class="toggle-desc">Aura animada ao redor do card de resumo</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggle-resumo-glow" onchange="saveConfig('resumo_glow', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div style="margin-top:16px;">
+                <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:4px;">Mensagem de Destaque (Banner)</div>
+                <div style="font-size:0.75rem;color:#6e6050;margin-bottom:8px;">Texto que aparecerá fixado no topo da página.</div>
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <input type="text" id="input-top-banner" placeholder="Ex: Adriana teve alta! 🏡💛" style="flex:1;padding:8px 12px;font-size:0.9rem;">
+                    <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveConfig('banner_text', document.getElementById('input-top-banner').value)">Salvar</button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">Exibir banner</div>
+                        <div class="toggle-desc">Mostra ou oculta o banner sem apagar o texto</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-banner-visible" onchange="saveConfig('banner_visible', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div id="fb-goodnews" class="feedback" style="display:none"></div>
+        </div>
+
+        <hr class="divider">
+
         <!-- Settings -->
         <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleSection('settings-body','settings-arrow')">
             <div class="section-title" style="margin-bottom:0;">Configurações da página</div>
@@ -518,57 +568,6 @@
             </div>
         </div>
         <div id="fb-settings" class="feedback" style="display:none"></div>
-        </div>
-    </div>
-
-        <hr class="divider">
-
-        <!-- Efeitos de Grande Notícia -->
-        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleSection('goodnews-body','goodnews-arrow')">
-            <div class="section-title" style="margin-bottom:0;">Efeitos de Grande Notícia</div>
-            <span id="goodnews-arrow" style="color:#6e6050;font-size:0.8rem;">▶</span>
-        </div>
-        <div id="goodnews-body" style="display:none;margin-top:12px;">
-            <p style="font-size:0.8rem;color:#a89880;margin-bottom:12px;">Ative apenas em momentos especiais.</p>
-            <div class="toggle-row">
-                <div class="toggle-info">
-                    <div class="toggle-label">Chuva de Flores</div>
-                    <div class="toggle-desc">Efeito especial de comemoração na tela</div>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-flower-shower" onchange="saveConfig('flower_shower', this.checked)">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="toggle-row">
-                <div class="toggle-info">
-                    <div class="toggle-label">Glow no Resumo</div>
-                    <div class="toggle-desc">Aura animada ao redor do card de resumo</div>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-resumo-glow" onchange="saveConfig('resumo_glow', this.checked)">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div style="margin-top:16px;">
-                <div style="font-size:0.8rem;font-weight:600;color:#d4b67e;margin-bottom:4px;">Mensagem de Destaque (Banner)</div>
-                <div style="font-size:0.75rem;color:#6e6050;margin-bottom:8px;">Texto que aparecerá fixado no topo da página.</div>
-                <div style="display:flex;gap:8px;margin-bottom:8px;">
-                    <input type="text" id="input-top-banner" placeholder="Ex: Adriana teve alta! 🏡💛" style="flex:1;padding:8px 12px;font-size:0.9rem;">
-                    <button class="btn" style="margin-top:0;padding:8px 16px;" onclick="saveConfig('banner_text', document.getElementById('input-top-banner').value)">Salvar</button>
-                </div>
-                <div class="toggle-row">
-                    <div class="toggle-info">
-                        <div class="toggle-label">Exibir banner</div>
-                        <div class="toggle-desc">Mostra ou oculta o banner sem apagar o texto</div>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-banner-visible" onchange="saveConfig('banner_visible', this.checked)">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-            <div id="fb-goodnews" class="feedback" style="display:none"></div>
         </div>
     </div>
 
