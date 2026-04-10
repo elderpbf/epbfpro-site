@@ -75,6 +75,11 @@ var QuestionBank = (function () {
           var item = document.createElement('div');
           item.className = 'qb-item';
 
+          var typeBadge = document.createElement('span');
+          typeBadge.className = 'qb-type-badge';
+          typeBadge.textContent = q.type || 'mc';
+          item.appendChild(typeBadge);
+
           var textSpan = document.createElement('span');
           var full = q.question || '';
           textSpan.textContent = full.length > 80 ? full.slice(0, 80) + '…' : full;
