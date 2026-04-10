@@ -714,6 +714,13 @@ function renderActiveQuestion(q) {
       correctAnswer: q.correct_answer,
     });
   }
+
+  // Grey out checkboxes that don't apply to this question type
+  var qType = q.type || 'mc';
+  var isMcOrTf = qType === 'mc' || qType === 'tf';
+  setChk('chk-reveal-answer', isMcOrTf);
+  setChk('chk-show-results', qType !== 'open');
+
   document.getElementById('active-q-panel').style.display = 'block';
 }
 
