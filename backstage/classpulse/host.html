@@ -79,6 +79,15 @@
   .close-options label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; font-weight: 500; text-transform: none; letter-spacing: 0; }
   .close-options input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
 
+  /* Open text feed — host */
+  .host-text-feed  { display: flex; flex-direction: column; gap: 8px; }
+  .host-feed-card  { display: flex; align-items: baseline; gap: 0.75rem; background: var(--background); border: 1px solid rgba(20,184,166,.12); border-radius: 8px; padding: 0.55rem 0.75rem; }
+  .host-feed-name  { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--primary); flex-shrink: 0; }
+  .host-feed-text  { font-size: 0.9rem; color: var(--text-primary); flex: 1; word-break: break-word; }
+  .host-feed-empty { font-size: 0.85rem; color: var(--text-secondary); padding: 0.5rem 0; }
+  .host-feed-remove { margin-left: auto; background: none; border: none; color: var(--text-light); font-size: 1.1rem; cursor: pointer; padding: 0 0.25rem; line-height: 1; flex-shrink: 0; }
+  .host-feed-remove:hover { color: #ef4444; }
+
   /* History */
   .history-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid rgba(20,184,166,.08); }
   .history-item:last-child { border-bottom: none; }
@@ -242,6 +251,7 @@
             <option value="mc">Múltipla Escolha</option>
             <option value="tf">Verdadeiro / Falso</option>
             <option value="poll">Enquete</option>
+            <option value="open">Texto Aberto</option>
           </select>
         </div>
 
@@ -556,7 +566,10 @@ document.getElementById('launch-btn').addEventListener('click', async function()
   var text    = document.getElementById('q-text').value.trim();
   var options, ca;
 
-  if (qType === 'tf') {
+  if (qType === 'open') {
+    options = [];
+    ca = null;
+  } else if (qType === 'tf') {
     options = ['Verdadeiro', 'Falso'];
     var caEl = document.querySelector('input[name="correct"]:checked');
     ca = caEl ? ['a','b','c','d'].indexOf(caEl.value) : null;
@@ -569,8 +582,8 @@ document.getElementById('launch-btn').addEventListener('click', async function()
     ca = caEl ? ['a','b','c','d'].indexOf(caEl.value) : null;
   }
 
-  if (!text)              return showAlert('error', 'Escreva a pergunta.');
-  if (options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
+  if (!text) return showAlert('error', 'Escreva a pergunta.');
+  if (qType !== 'open' && options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
 
   var btn = this;
   btn.disabled = true;
@@ -657,21 +670,56 @@ async function fetchData() {
 }
 
 function renderActiveQuestion(q) {
-  var counts = q.answer_counts || new Array((q.options || []).length).fill(0);
-  var total  = counts.reduce(function(a, b) { return a + b; }, 0);
-
   document.getElementById('aq-text').textContent = q.text;
-  document.getElementById('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
-
   var barsEl = document.getElementById('aq-bars');
-  barsEl.className = 'qr-host';
-  QR.renderResults(q, counts, barsEl, {
-    mode: 'host',
-    showResults: true,
-    revealAnswer: false,
-    correctAnswer: q.correct_answer,
-  });
+
+  if (q.type === 'open') {
+    var answers = q.text_answers || [];
+    document.getElementById('aq-tally').textContent = answers.length + ' resposta' + (answers.length !== 1 ? 's' : '');
+    renderTextFeedHost(answers, barsEl);
+  } else {
+    var counts = q.answer_counts || new Array((q.options || []).length).fill(0);
+    var total  = counts.reduce(function(a, b) { return a + b; }, 0);
+    document.getElementById('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
+    barsEl.className = 'qr-host';
+    QR.renderResults(q, counts, barsEl, {
+      mode: 'host',
+      showResults: true,
+      revealAnswer: false,
+      correctAnswer: q.correct_answer,
+    });
+  }
   document.getElementById('active-q-panel').style.display = 'block';
+}
+
+function renderTextFeedHost(answers, container) {
+  container.innerHTML = '';
+  container.className = 'host-text-feed';
+  if (answers.length === 0) {
+    container.innerHTML = '<div class="host-feed-empty">Aguardando respostas...</div>';
+    return;
+  }
+  answers.forEach(function(a) {
+    var card = document.createElement('div');
+    card.className = 'host-feed-card';
+    card.innerHTML =
+      '<span class="host-feed-name">' + escHtml(a.name) + '</span>' +
+      '<span class="host-feed-text">' + escHtml(a.value) + '</span>' +
+      '<button class="host-feed-remove" title="Remover resposta">×</button>';
+    card.querySelector('.host-feed-remove').addEventListener('click', function() {
+      removeAnswer(a.id, card);
+    });
+    container.appendChild(card);
+  });
+}
+
+async function removeAnswer(answerId, cardEl) {
+  try {
+    await callWorker({ action: 'delete_answer', auth_token: AUTH_TOKEN, answer_id: answerId });
+    cardEl.remove();
+  } catch(e) {
+    showAlert('error', 'Erro ao remover resposta: ' + escHtml(e.message));
+  }
 }
 
 function renderHistory(closedQs) {

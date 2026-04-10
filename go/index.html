@@ -55,6 +55,12 @@
     .results-count { font-size: 0.78rem; color: var(--text-light); text-align: center; margin-top: 18px; }
     .results-next  { font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-top: 10px; }
 
+    /* Open text input */
+    .open-text-form { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+    .open-textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: inherit; background: var(--surface); color: var(--text-primary); outline: none; transition: border-color 0.15s; resize: vertical; min-height: 90px; line-height: 1.5; box-sizing: border-box; }
+    .open-textarea:focus { border-color: var(--primary); }
+    .char-counter { font-size: 0.72rem; color: var(--text-light); text-align: right; }
+
     /* Refresh dot */
     .dot-wrap { text-align: center; margin-top: 18px; }
     .refresh-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--text-light); transition: background 0.3s; }
@@ -343,10 +349,64 @@
     document.getElementById('q-text').textContent = activeQuestionData.text;
     document.getElementById('answer-error').textContent = '';
     var container = document.getElementById('q-options');
-    QR.renderInput(row, container, {
-      mode: 'student',
-      onSelect: function(index, btn) { submitAnswer(index, btn); }
+    if (row.type === 'open') {
+      renderOpenTextInput(container);
+    } else {
+      QR.renderInput(row, container, {
+        mode: 'student',
+        onSelect: function(index, btn) { submitAnswer(index, btn); }
+      });
+    }
+  }
+
+  function renderOpenTextInput(container) {
+    container.innerHTML =
+      '<div class="open-text-form">' +
+        '<textarea class="open-textarea" id="open-answer-input" maxlength="500" placeholder="Digite sua resposta..."></textarea>' +
+        '<div class="char-counter"><span id="open-char-count">0</span>/500</div>' +
+        '<button class="btn-primary" id="open-submit-btn">Enviar resposta</button>' +
+      '</div>';
+    document.getElementById('open-answer-input').addEventListener('input', function() {
+      document.getElementById('open-char-count').textContent = this.value.length;
     });
+    document.getElementById('open-submit-btn').addEventListener('click', function() {
+      submitOpenAnswer(this);
+    });
+  }
+
+  async function submitOpenAnswer(btn) {
+    if (!activeQuestionData) return;
+    var text = (document.getElementById('open-answer-input').value || '').trim();
+    if (!text) { document.getElementById('answer-error').textContent = 'Escreva sua resposta antes de enviar.'; return; }
+    btn.disabled = true;
+    document.getElementById('answer-error').textContent = '';
+    document.getElementById('answer-sending-msg').style.display = '';
+    var qId = activeQuestionData.id;
+    try {
+      var result = await callWorker({
+        action: 'submit_answer',
+        question_id:  qId,
+        session_code: currentSession.code,
+        student_name: currentSession.studentName,
+        answer_value: text
+      });
+      if (result.ok || result.error === 'Você já enviou resposta.') {
+        localStorage.setItem('cl_ans_' + qId, '1');
+        dbg('ok', 'open answer saved for Q ...' + qId.slice(-6));
+        showState('answered');
+      } else {
+        btn.disabled = false;
+        document.getElementById('answer-sending-msg').style.display = 'none';
+        document.getElementById('answer-error').textContent =
+          result.error === 'Question is closed' ? t.errTimeout :
+          result.error === 'VALIDATION_FAILED'  ? result.message :
+          t.errSubmit;
+      }
+    } catch(e) {
+      btn.disabled = false;
+      document.getElementById('answer-sending-msg').style.display = 'none';
+      document.getElementById('answer-error').textContent = t.errConnection;
+    }
   }
 
   // ── SUBMIT ANSWER ─────────────────────────────────────────────────────────

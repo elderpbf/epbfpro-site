@@ -47,6 +47,13 @@
     .refresh-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--text-light); transition: background 0.3s; }
     .refresh-dot.active { background: var(--success); }
 
+    /* Open text feed */
+    .text-feed { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; padding-right: 4px; }
+    .feed-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: clamp(12px,1.6vw,22px) clamp(14px,2vw,28px); }
+    .feed-name { font-size: clamp(0.7rem,1vw,0.85rem); font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .feed-text { font-size: clamp(1.1rem,2.2vw,2rem); color: var(--text-primary); line-height: 1.4; word-break: break-word; }
+    .feed-empty { font-size: clamp(1rem,2vw,1.6rem); color: var(--text-light); }
+
     /* Landscape Tablets / Projectors Override */
     @media (max-height: 600px) {
       pensoia-header .ph-bar { padding: 4px 16px; }
@@ -223,15 +230,34 @@
 
     main.innerHTML = html;
 
-    const barsEl = document.createElement('div');
-    barsEl.className = 'qr-display';
-    QR.renderResults(q, counts, barsEl, {
-      mode: 'display',
-      showResults,
-      revealAnswer,
-      correctAnswer,
-    });
-    main.appendChild(barsEl);
+    if (q.type === 'open' && q.text_answers !== undefined) {
+      const feedEl = document.createElement('div');
+      feedEl.className = 'text-feed';
+      if (q.text_answers.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'feed-card';
+        empty.innerHTML = '<div class="feed-empty">Aguardando respostas...</div>';
+        feedEl.appendChild(empty);
+      } else {
+        q.text_answers.forEach(function(a) {
+          const card = document.createElement('div');
+          card.className = 'feed-card';
+          card.innerHTML = '<div class="feed-name">' + escHtml(a.name) + '</div><div class="feed-text">' + escHtml(a.value) + '</div>';
+          feedEl.appendChild(card);
+        });
+      }
+      main.appendChild(feedEl);
+    } else {
+      const barsEl = document.createElement('div');
+      barsEl.className = 'qr-display';
+      QR.renderResults(q, counts, barsEl, {
+        mode: 'display',
+        showResults,
+        revealAnswer,
+        correctAnswer,
+      });
+      main.appendChild(barsEl);
+    }
   }
 
 
