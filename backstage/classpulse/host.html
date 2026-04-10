@@ -817,6 +817,7 @@ QuestionBank.init({
   getFormState: function() {
     return {
       text: document.getElementById('q-text').value.trim(),
+      type: document.getElementById('q-type').value,
       options: [
         document.getElementById('q-opt-a').value.trim(),
         document.getElementById('q-opt-b').value.trim(),
