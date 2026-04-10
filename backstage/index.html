@@ -140,22 +140,24 @@
   </h2>
 
   <!-- AI API keys -->
-  <h3 data-key="settings_ai_section">IA</h3>
-  <div class="bs-field">
-    <label data-key="settings_gemini_key_label">Chave da API Gemini</label>
-    <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
-  </div>
-  <div class="bs-field">
-    <label data-key="settings_gemini_key2_label">Chave da API Gemini (backup)</label>
-    <input id="settings-gemini-key2" type="password" placeholder="AIzaSy..." autocomplete="off">
-  </div>
-  <div class="bs-field">
-    <label data-key="settings_deepseek_key_label">Chave da API DeepSeek (fallback final)</label>
-    <input id="settings-deepseek-key" type="password" placeholder="sk-..." autocomplete="off">
-    <p class="bs-hint" data-key="settings_ai_key_hint">Armazenadas localmente, nunca enviadas a terceiros.</p>
-  </div>
-  <button class="bs-save-btn" id="settings-gemini-save-btn" data-key="settings_save_btn">Salvar</button>
-  <p class="bs-drawer-save-msg" id="settings-gemini-save-msg"></p>
+  <details>
+    <summary><h3 data-key="settings_ai_section" style="display:inline">IA</h3></summary>
+    <div class="bs-field">
+      <label data-key="settings_gemini_key_label">Chave da API Gemini</label>
+      <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
+    </div>
+    <div class="bs-field">
+      <label data-key="settings_gemini_key2_label">Chave da API Gemini (backup)</label>
+      <input id="settings-gemini-key2" type="password" placeholder="AIzaSy..." autocomplete="off">
+    </div>
+    <div class="bs-field">
+      <label data-key="settings_deepseek_key_label">Chave da API DeepSeek (fallback final)</label>
+      <input id="settings-deepseek-key" type="password" placeholder="sk-..." autocomplete="off">
+      <p class="bs-hint" data-key="settings_ai_key_hint">Armazenadas localmente, nunca enviadas a terceiros.</p>
+    </div>
+    <button class="bs-save-btn" id="settings-gemini-save-btn" data-key="settings_save_btn">Salvar</button>
+    <p class="bs-drawer-save-msg" id="settings-gemini-save-msg"></p>
+  </details>
 
   <hr>
 

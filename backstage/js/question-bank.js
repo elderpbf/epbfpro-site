@@ -129,9 +129,9 @@ var QuestionBank = (function () {
     btn.textContent = 'Gerando...';
 
     var qType = state.type || 'mc';
-    callWorker({ action: 'ai_question', auth_token: AUTH_TOKEN, prompt: topic, type: qType })
+    AIClient.generate({ prompt: topic, type: qType })
       .then(function (result) {
-        opts.onSelect(normalizeAiResult(result, qType));
+        if (result) opts.onSelect(normalizeAiResult(result, qType));
       })
       .catch(function (e) {
         errEl.textContent = 'Erro: ' + e.message;
@@ -158,14 +158,9 @@ var QuestionBank = (function () {
     btn.disabled = true;
     btn.textContent = 'Melhorando...';
 
-    callWorker({
-      action: 'ai_question',
-      auth_token: AUTH_TOKEN,
-      improve_from: state.text,
-      type: qType
-    })
+    AIClient.generate({ improve_from: state.text, type: qType })
       .then(function (result) {
-        opts.onSelect(normalizeAiResult(result, qType));
+        if (result) opts.onSelect(normalizeAiResult(result, qType));
       })
       .catch(function (e) {
         errEl.textContent = 'Erro: ' + e.message;
