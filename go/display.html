@@ -54,6 +54,10 @@
     .feed-text { font-size: clamp(1.1rem,2.2vw,2rem); color: var(--text-primary); line-height: 1.4; word-break: break-word; }
     .feed-empty { font-size: clamp(1rem,2vw,1.6rem); color: var(--text-light); }
 
+    /* Word cloud */
+    .word-cloud { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; padding: 24px 8px; flex: 1; }
+    .wc-word { font-weight: 700; line-height: 1.2; transition: opacity 0.3s; cursor: default; }
+
     /* Landscape Tablets / Projectors Override */
     @media (max-height: 600px) {
       pensoia-header .ph-bar { padding: 4px 16px; }
@@ -247,6 +251,11 @@
         });
       }
       main.appendChild(feedEl);
+    } else if (q.type === 'wordcloud' && q.text_answers !== undefined) {
+      const cloudEl = document.createElement('div');
+      cloudEl.className = 'qr-display';
+      renderWordCloud(q.text_answers, cloudEl);
+      main.appendChild(cloudEl);
     } else {
       const barsEl = document.createElement('div');
       barsEl.className = 'qr-display';
@@ -258,6 +267,34 @@
       });
       main.appendChild(barsEl);
     }
+  }
+
+  function renderWordCloud(answers, container) {
+    var freq = {};
+    answers.forEach(function(a) {
+      var word = (a.value || '').trim().toLowerCase();
+      if (word) freq[word] = (freq[word] || 0) + 1;
+    });
+    var entries = Object.entries(freq).sort(function(a, b) { return b[1] - a[1]; });
+    var PALETTE = ['#14b8a6','#6366f1','#3b82f6','#7c3aed','#c026d3','#16a34a','#0284c7'];
+    if (entries.length === 0) {
+      container.innerHTML = '<div class="center-state"><span class="state-text">Aguardando respostas...</span></div>';
+      return;
+    }
+    var maxFreq = entries[0][1];
+    var cloud = document.createElement('div');
+    cloud.className = 'word-cloud';
+    entries.forEach(function(entry, i) {
+      var word = entry[0], count = entry[1];
+      var size = 1 + (count / maxFreq) * 2;
+      var span = document.createElement('span');
+      span.className = 'wc-word';
+      span.textContent = word;
+      span.style.fontSize = size.toFixed(2) + 'rem';
+      span.style.color = PALETTE[i % PALETTE.length];
+      cloud.appendChild(span);
+    });
+    container.appendChild(cloud);
   }
 
 

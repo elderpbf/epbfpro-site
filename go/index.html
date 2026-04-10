@@ -61,6 +61,9 @@
     .open-textarea:focus { border-color: var(--primary); }
     .char-counter { font-size: 0.72rem; color: var(--text-light); text-align: right; }
 
+    /* Word cloud input */
+    .wordcloud-hint { font-size: 0.72rem; color: var(--text-light); margin-top: 4px; }
+
     /* Refresh dot */
     .dot-wrap { text-align: center; margin-top: 18px; }
     .refresh-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--text-light); transition: background 0.3s; }
@@ -144,7 +147,7 @@
 </div>
 <script src="../backstage/js/utils.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.0"></script>
-<script src="../backstage/js/question-renderer.js?v=1.1"></script>
+<script src="../backstage/js/question-renderer.js?v=1.2"></script>
 <script src="../backstage/js/theme-manager.js?v=1.0"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
 <script>
@@ -363,6 +366,8 @@
     var container = document.getElementById('q-options');
     if (row.type === 'open') {
       renderOpenTextInput(container);
+    } else if (row.type === 'wordcloud') {
+      renderWordcloudInput(container);
     } else {
       QR.renderInput(row, container, {
         mode: 'student',
@@ -385,6 +390,63 @@
     document.getElementById('open-submit-btn').addEventListener('click', function() {
       submitOpenAnswer(this);
     });
+  }
+
+  function renderWordcloudInput(container) {
+    container.style.display = 'block';
+    container.innerHTML =
+      '<div class="open-text-form">' +
+        '<input type="text" class="open-textarea" id="wc-answer-input" maxlength="50" ' +
+               'placeholder="Digite 1 a 3 palavras..." style="min-height:auto;resize:none;padding:12px 14px">' +
+        '<div class="wordcloud-hint">M\u00e1ximo 3 palavras</div>' +
+        '<button class="btn-primary" id="wc-submit-btn">Enviar resposta</button>' +
+      '</div>';
+    document.getElementById('wc-answer-input').addEventListener('input', function() {
+      var words = this.value.trim().split(/\s+/).filter(Boolean);
+      if (words.length > 3) {
+        this.value = words.slice(0, 3).join(' ');
+      }
+    });
+    document.getElementById('wc-submit-btn').addEventListener('click', function() {
+      submitWordcloudAnswer(this);
+    });
+  }
+
+  async function submitWordcloudAnswer(btn) {
+    if (!activeQuestionData) return;
+    var text = (document.getElementById('wc-answer-input').value || '').trim();
+    if (!text) { document.getElementById('answer-error').textContent = 'Escreva sua resposta antes de enviar.'; return; }
+    var words = text.split(/\s+/).filter(Boolean);
+    if (words.length > 3) { document.getElementById('answer-error').textContent = 'Use no m\u00e1ximo 3 palavras.'; return; }
+    btn.disabled = true;
+    document.getElementById('answer-error').textContent = '';
+    document.getElementById('answer-sending-msg').style.display = '';
+    var qId = activeQuestionData.id;
+    try {
+      var result = await callWorker({
+        action: 'submit_answer',
+        question_id:  qId,
+        session_code: currentSession.code,
+        student_name: currentSession.studentName,
+        answer_value: text
+      });
+      if (result.ok || result.error === 'Voc\u00ea j\u00e1 enviou resposta.') {
+        localStorage.setItem('cl_ans_' + qId, '1');
+        dbg('ok', 'wordcloud answer saved for Q ...' + qId.slice(-6));
+        showState('answered');
+      } else {
+        btn.disabled = false;
+        document.getElementById('answer-sending-msg').style.display = 'none';
+        document.getElementById('answer-error').textContent =
+          result.error === 'Question is closed' ? t.errTimeout :
+          result.error === 'VALIDATION_FAILED'  ? result.message :
+          t.errSubmit;
+      }
+    } catch(e) {
+      btn.disabled = false;
+      document.getElementById('answer-sending-msg').style.display = 'none';
+      document.getElementById('answer-error').textContent = t.errConnection;
+    }
   }
 
   async function submitOpenAnswer(btn) {

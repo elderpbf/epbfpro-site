@@ -264,6 +264,7 @@
             <option value="tf">Verdadeiro / Falso</option>
             <option value="poll">Enquete</option>
             <option value="open">Texto Aberto</option>
+            <option value="wordcloud">Nuvem de Palavras</option>
           </select>
         </div>
 
@@ -546,10 +547,11 @@ function setChk(id, enabled) {
 }
 
 function applyTypeUI(qType) {
-  var isMC   = qType === 'mc';
-  var isTF   = qType === 'tf';
-  var isPoll = qType === 'poll';
-  var isOpen = qType === 'open';
+  var isMC        = qType === 'mc';
+  var isTF        = qType === 'tf';
+  var isPoll      = qType === 'poll';
+  var isOpen      = qType === 'open';
+  var isWordcloud = qType === 'wordcloud';
   document.getElementById('q-opts-mc').style.display   = (isMC || isTF) ? '' : 'none';
   document.getElementById('q-opts-poll').style.display = isPoll ? '' : 'none';
   if (isTF) {
@@ -572,8 +574,8 @@ function applyTypeUI(qType) {
   // Checkbox state: Revelar resposta correta -- only meaningful for mc/tf
   setChk('chk-reveal-answer', isMC || isTF);
 
-  // Checkbox state: Mostrar resultados -- not meaningful for open type
-  setChk('chk-show-results', !isOpen);
+  // Checkbox state: Mostrar resultados -- not meaningful for open or wordcloud types
+  setChk('chk-show-results', !isOpen && !isWordcloud);
 }
 
 document.getElementById('q-type').addEventListener('change', function() {
@@ -596,7 +598,7 @@ document.getElementById('launch-btn').addEventListener('click', async function()
   var text    = document.getElementById('q-text').value.trim();
   var options, ca;
 
-  if (qType === 'open') {
+  if (qType === 'open' || qType === 'wordcloud') {
     options = [];
     ca = null;
   } else if (qType === 'tf') {
@@ -613,7 +615,7 @@ document.getElementById('launch-btn').addEventListener('click', async function()
   }
 
   if (!text) return showAlert('error', 'Escreva a pergunta.');
-  if (qType !== 'open' && options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
+  if (qType !== 'open' && qType !== 'wordcloud' && options.length < 2) return showAlert('error', 'Informe pelo menos 2 opções.');
 
   var btn = this;
   btn.disabled = true;
@@ -710,6 +712,10 @@ function renderActiveQuestion(q) {
     var answers = q.text_answers || [];
     document.getElementById('aq-tally').textContent = answers.length + ' resposta' + (answers.length !== 1 ? 's' : '');
     renderTextFeedHost(answers, barsEl);
+  } else if (q.type === 'wordcloud') {
+    var wcAnswers = q.text_answers || [];
+    document.getElementById('aq-tally').textContent = wcAnswers.length + ' resposta' + (wcAnswers.length !== 1 ? 's' : '');
+    renderWordCloudHost(wcAnswers, barsEl);
   } else {
     var counts = q.answer_counts || new Array((q.options || []).length).fill(0);
     var total  = counts.reduce(function(a, b) { return a + b; }, 0);
@@ -727,7 +733,7 @@ function renderActiveQuestion(q) {
   var qType = q.type || 'mc';
   var isMcOrTf = qType === 'mc' || qType === 'tf';
   setChk('chk-reveal-answer', isMcOrTf);
-  setChk('chk-show-results', qType !== 'open');
+  setChk('chk-show-results', qType !== 'open' && qType !== 'wordcloud');
 
   document.getElementById('active-q-panel').style.display = 'block';
 }
@@ -751,6 +757,34 @@ function renderTextFeedHost(answers, container) {
     });
     container.appendChild(card);
   });
+}
+
+function renderWordCloudHost(answers, container) {
+  container.innerHTML = '';
+  container.className = 'host-text-feed';
+  if (answers.length === 0) {
+    container.innerHTML = '<div class="host-feed-empty">Aguardando respostas...</div>';
+    return;
+  }
+  var freq = {};
+  answers.forEach(function(a) {
+    var word = (a.value || '').trim().toLowerCase();
+    if (word) freq[word] = (freq[word] || 0) + 1;
+  });
+  var entries = Object.entries(freq).sort(function(a, b) { return b[1] - a[1]; });
+  var PALETTE = ['#14b8a6','#6366f1','#3b82f6','#7c3aed','#c026d3','#16a34a','#0284c7'];
+  var maxFreq = entries[0][1];
+  var cloud = document.createElement('div');
+  cloud.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 0';
+  entries.forEach(function(entry, i) {
+    var word = entry[0], count = entry[1];
+    var size = 0.75 + (count / maxFreq) * 0.9;
+    var span = document.createElement('span');
+    span.textContent = word + (count > 1 ? ' \u00d7' + count : '');
+    span.style.cssText = 'font-weight:700;font-size:' + size.toFixed(2) + 'rem;color:' + PALETTE[i % PALETTE.length];
+    cloud.appendChild(span);
+  });
+  container.appendChild(cloud);
 }
 
 async function removeAnswer(answerId, cardEl) {
