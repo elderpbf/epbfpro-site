@@ -138,6 +138,7 @@
 // ---------------------------------------------------------------------------
 var PW_KEY = 'bs_pw_hash';
 var AUTH_KEY = 'bs_auth';
+var AUTH_TOKEN = localStorage.getItem('bs_pw_hash') || '';
 document.querySelectorAll('input[type="password"]').forEach(function(el) { el.value = ''; });
 if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
   location.replace('/backstage/');
@@ -512,7 +513,8 @@ document.getElementById('theme-gen-btn').addEventListener('click', async functio
     document.getElementById('theme-preview-name').textContent = theme.name;
     preview.hidden = false;
   } catch (err) {
-    errEl.textContent = 'Erro: ' + err.message;
+    errEl.textContent = 'Erro ao gerar tema. Tente novamente.';
+    if (typeof dbg !== 'undefined') dbg('error', 'ai_theme: ' + err.message);
   } finally {
     btn.textContent = t('settings_theme_gen_submit'); btn.disabled = false;
   }
