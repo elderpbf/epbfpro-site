@@ -532,14 +532,13 @@ function applyTypeUI(qType) {
   if (isPoll && document.getElementById('poll-rows').children.length === 0) {
     initPollRows(2);
   }
+  document.getElementById('q-generate-btn').disabled = qType !== 'mc';
+  document.getElementById('q-improve-btn').disabled = qType !== 'mc';
 }
 
 document.getElementById('q-type').addEventListener('change', function() {
   applyTypeUI(this.value);
   document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
-  var isAiType = this.value === 'mc';
-  document.getElementById('q-generate-btn').disabled = !isAiType;
-  document.getElementById('q-improve-btn').disabled = !isAiType;
 });
 
 document.getElementById('poll-add-btn').addEventListener('click', function() {

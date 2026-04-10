@@ -747,11 +747,11 @@ function renderSets() {
 
   sets.forEach(function(s) {
     var item = document.createElement('div');
-    item.className = 'cp-set-item' + (activeSet === s.name ? ' active' : '');
+    item.className = 'cp-set-item' + (activeSet === s.list_name ? ' active' : '');
 
     var nameEl = document.createElement('div');
     nameEl.className = 'cp-set-name';
-    nameEl.textContent = s.name;
+    nameEl.textContent = s.list_name;
 
     var countEl = document.createElement('div');
     countEl.className = 'cp-set-count';
@@ -763,7 +763,7 @@ function renderSets() {
     delBtn.title = 'Excluir conjunto';
     delBtn.addEventListener('click', function(e) {
       e.stopPropagation();
-      confirmDeleteSet(s.name);
+      confirmDeleteSet(s.list_name);
     });
 
     item.appendChild(nameEl);
@@ -772,7 +772,7 @@ function renderSets() {
     container.appendChild(item);
 
     item.addEventListener('click', function() {
-      selectSet(s.name);
+      selectSet(s.list_name);
     });
   });
 }
@@ -797,7 +797,7 @@ async function selectSet(name) {
   document.getElementById('question-list').innerHTML = '<div class="cp-empty"><p>Carregando...</p></div>';
 
   try {
-    var data = await callWorker({ action: 'get_questions', list: name });
+    var data = await callWorker({ action: 'get_questions', list_name: name });
     questions = data.questions || [];
   } catch (err) {
     questions = [];
@@ -888,6 +888,8 @@ function applyBankTypeUI(bankType) {
 
 document.getElementById('q-type-bank').addEventListener('change', function() {
   applyBankTypeUI(this.value);
+  document.getElementById('q-generate-btn').disabled = this.value !== 'mc';
+  document.getElementById('q-improve-btn').disabled = this.value !== 'mc';
 });
 
 // Save question

@@ -36,8 +36,8 @@ var QuestionBank = (function () {
         sel.innerHTML = '<option value="">Escolha um conjunto...</option>';
         sets.forEach(function (s) {
           var opt = document.createElement('option');
-          opt.value = s.name;
-          opt.textContent = s.name + (s.count ? ' (' + s.count + ')' : '');
+          opt.value = s.list_name;
+          opt.textContent = s.list_name + (s.count ? ' (' + s.count + ')' : '');
           sel.appendChild(opt);
         });
         if (opts.canCreateSet) {
