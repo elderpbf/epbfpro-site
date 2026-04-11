@@ -591,8 +591,7 @@ function renderSessions() {
       presentations.forEach(function(p) {
         var opt = document.createElement('option');
         opt.value = p.slug;
-        var ENGINE_LABELS = { reveal: 'Reveal', panels: 'Panels', 'reveal-legacy': 'Legacy' };
-        opt.textContent = p.title + ' (' + (ENGINE_LABELS[p.engine] || p.engine) + ')';
+        opt.textContent = p.title + ' \u2014 ' + p.slug;
         picker.appendChild(opt);
       });
       picker.addEventListener('change', async function() {
