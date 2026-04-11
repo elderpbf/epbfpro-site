@@ -32,7 +32,7 @@
 
     function poll() {
       if (!container.isConnected) return;
-      callWorker({ action: 'get_session_state', code: session }).then(function(data) {
+      callWorker({ action: 'get_session_state', code: session, _silent: true }).then(function(data) {
         if (!container.isConnected) return;
         var aq = data.active_question;
         if (!aq) { showWaiting(); return; }

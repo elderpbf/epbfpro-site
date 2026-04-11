@@ -30,8 +30,10 @@ async function callWorker(params) {
   var data = JSON.parse(txt);
 
   if (data.error) {
-    if (typeof bsLog !== 'undefined') bsLog('callWorker error | action: ' + action + ' | ' + data.error, 'error');
-    if (typeof dbg !== 'undefined') dbg('error', '← ' + action + ': ' + data.error);
+    if (!params._silent) {
+      if (typeof bsLog !== 'undefined') bsLog('callWorker error | action: ' + action + ' | ' + data.error, 'error');
+      if (typeof dbg !== 'undefined') dbg('error', '← ' + action + ': ' + data.error);
+    }
     var errJson = new Error(data.error);
     errJson.data = data;
     throw errJson;
