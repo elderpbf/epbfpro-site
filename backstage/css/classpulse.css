@@ -232,6 +232,32 @@
   gap: 0.5rem;
 }
 
+/* Presentation link badge + picker (session-presentation linking) */
+.cp-pres-link {
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.cp-pres-badge {
+  font-size: 0.72rem; font-weight: 600;
+  background: rgba(99,102,241,.15); color: var(--primary);
+  border-radius: 6px; padding: 0.2rem 0.5rem;
+  cursor: pointer; white-space: nowrap; max-width: 160px;
+  overflow: hidden; text-overflow: ellipsis;
+  display: inline-flex; align-items: center;
+}
+.cp-pres-badge:hover { background: rgba(99,102,241,.28); }
+.cp-pres-unlink {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-secondary); font-size: 1rem; padding: 0 0.2rem;
+  line-height: 1;
+}
+.cp-pres-unlink:hover { color: var(--error, #ef4444); }
+.cp-pres-picker {
+  font-size: 0.78rem; padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(20,184,166,.25); border-radius: 6px;
+  background: var(--surface); color: var(--text-primary);
+  max-width: 200px;
+}
+
 /* =========================================================
    SESSION STATS (Overlay panel)
    ========================================================= */

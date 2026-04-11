@@ -85,7 +85,7 @@
       "layout": "embed",
       "title": "Enquete ao vivo",
       "notes": "Ponto de parada para enquete ao vivo. Lance a questão no ClassPulse antes de avançar.",
-      "embed": { "session": "EJU1", "question_id": "PLACEHOLDER" }
+      "embed": { "slug": "ejuse-reveal" }
     },
     {
       "layout": "statement",

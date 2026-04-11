@@ -163,7 +163,7 @@
 <section class="panel panel-statement" data-notes="Ponto de parada para enquete ao vivo. Lance a questão no ClassPulse antes de avançar para este painel.">
   <div style="width:100%;max-width:700px;text-align:center">
     <h2 style="font-size:clamp(1.2rem,2.5vw,1.8rem);margin-bottom:1.5rem">Enquete ao vivo</h2>
-    <div class="cf-classpulse-embed" data-session="EJU1" data-question-id="PLACEHOLDER"></div>
+    <div class="cf-classpulse-embed" data-slug="ejuse"></div>
   </div>
 </section>
 
@@ -179,7 +179,7 @@
 <script src="../../../js/debug.js?v=2.4"></script>
 <script src="../../../js/api-client.js?v=1.1"></script>
 <script src="../../../js/question-renderer.js?v=1.3"></script>
-<script src="../../embed-classpulse.js?v=1.1"></script>
+<script src="../../embed-classpulse.js?v=1.2"></script>
 <script type="module">
   import Panels from '../../panels/panels.js';
   Panels.init({ logoHideOn: [0, 10], presenterUrl: '../../panels/presenter.html' });
@@ -187,6 +187,18 @@
   // Show logo after init
   const logo = document.getElementById('pn-logo');
   if (logo) logo.hidden = false;
+
+  // Session badge: show if a ClassPulse session is linked to this presentation
+  callWorker({ action: 'get_linked_session', slug: 'ejuse', _silent: true }).then(function(data) {
+    if (data && data.session) {
+      var badge = document.createElement('a');
+      badge.className = 'cf-session-badge';
+      badge.href = '/backstage/classpulse/host.html?code=' + encodeURIComponent(data.session.code);
+      badge.target = '_blank';
+      badge.textContent = 'ClassPulse: ' + data.session.code;
+      document.body.appendChild(badge);
+    }
+  }).catch(function() {});
 </script>
 
 </body>
