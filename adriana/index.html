@@ -1416,7 +1416,7 @@
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
                     <div class="summary-card">
-                        <div class="summary-label">Resumo geral da situação atual</div>
+                        <div class="summary-label">Resumo da situação atual</div>
                         <p class="summary-empty">Nenhum resumo disponível ainda.</p>
                     </div>`;
                 return;
@@ -1459,7 +1459,7 @@
             section.innerHTML = `
                 <div class="summary-card">
                     ${featuredPhoto ? `<div class="summary-photo-wrap" onclick="openLightbox()"><img src="${featuredPhoto.src}" alt=""></div>` : ''}
-                    <div class="summary-label">Resumo geral da situação atual</div>
+                    <div class="summary-label">Resumo da situação atual</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
                 </div>`;
