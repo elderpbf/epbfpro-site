@@ -1554,7 +1554,7 @@
             for (let i = 0; i < dates.length; i++) {
                 daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
             }
-            const photoUrl  = getPhasePhoto(updates);
+            const photoUrl  = isOpen ? null : getPhasePhoto(updates);
             const photoHtml = photoUrl ? `<div class="phase-photo-ring"><img src="${photoUrl}" alt="" loading="lazy"></div>` : '';
             if (isOpen) {
                 const latestDate    = sortDateKeysDesc(Object.keys(groupByDate(updates)))[0] || fase.data_fim;
