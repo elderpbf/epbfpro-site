@@ -113,10 +113,14 @@ QR.renderInput = function(question, container, opts) {
     case 'poll':
       QR._renderButtonGrid(question.options || [], container, opts);
       break;
+    case 'open':
+    case 'wordcloud':
+    case 'rating':
+    case 'numeric':
+      // Handled by the page-level renderer; QR.renderInput is a no-op for these types.
+      container.innerHTML = '';
+      break;
     default:
-      if (typeof showToastError === 'function') {
-        showToastError('Tipo de questao nao suportado: ' + type);
-      }
       container.innerHTML = '';
   }
 };

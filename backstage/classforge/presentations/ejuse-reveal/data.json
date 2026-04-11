@@ -1,0 +1,96 @@
+{
+  "title": "Gestão e Inovação na Justiça",
+  "subtitle": "EJUSE / JFSE - Programa de Formação Continuada",
+  "theme": "black",
+  "logo_config": {
+    "url": "https://backstage-api.pensoia.workers.dev/r2/classforge/ejuse/logo.png",
+    "position": "top-right",
+    "hide_on": [0, 10]
+  },
+  "custom_css": ":root { --r-background-color: #0e1e30; --r-heading-color: #ffffff; --r-main-color: #e8edf2; --r-link-color: #c8a84b; }",
+  "sections": [
+    {
+      "layout": "image-left",
+      "title": "O que vamos ver hoje",
+      "notes": "Apresentar a estrutura da aula. Deixar claro o objetivo de cada bloco.",
+      "content": [
+        { "type": "image", "url": "https://backstage-api.pensoia.workers.dev/r2/classforge/ejuse/agenda.jpg", "alt": "Agenda da aula" },
+        { "type": "bullet", "text": "Contexto da gestão pública no Judiciário", "level": 0 },
+        { "type": "bullet", "text": "Inovação como estratégia institucional", "level": 0 },
+        { "type": "bullet", "text": "Ferramentas e metodologias", "level": 0 },
+        { "type": "bullet", "text": "Casos práticos - EJUSE e JFSE", "level": 0 },
+        { "type": "bullet", "text": "Discussão e próximos passos", "level": 0 }
+      ]
+    },
+    {
+      "layout": "statement",
+      "title": "Contexto Atual",
+      "notes": "Transição para o primeiro bloco temático."
+    },
+    {
+      "layout": "image-left",
+      "title": "Desafios da Gestão Judiciária",
+      "notes": "Destacar a pressão por eficiência no Judiciário brasileiro. Dados do CNJ são úteis aqui.",
+      "content": [
+        { "type": "image", "url": "https://backstage-api.pensoia.workers.dev/r2/classforge/ejuse/contexto.jpg", "alt": "Contexto do Judiciário" },
+        { "type": "bullet", "text": "Volume crescente de processos", "level": 0 },
+        { "type": "bullet", "text": "Demanda por transparência e acesso", "level": 0 },
+        { "type": "bullet", "text": "Restrições orçamentárias", "level": 0 },
+        { "type": "bullet", "text": "Expectativa de modernização digital", "level": 0 }
+      ]
+    },
+    {
+      "layout": "statement",
+      "title": "\"Inovar não é opcional - é parte da missão institucional.\"",
+      "notes": "Pausa para reflexão. Deixar a frase no ar por alguns segundos antes de avançar."
+    },
+    {
+      "layout": "statement",
+      "title": "Ferramentas e Métodos",
+      "notes": "Transição para o bloco de ferramentas."
+    },
+    {
+      "layout": "topic-grid",
+      "title": "Abordagens para Inovação",
+      "notes": "Apresentar as quatro ferramentas principais. Não detalhar ainda - só apresentar.",
+      "topics": [
+        { "title": "Design Thinking", "description": "Foco no usuário para redesenhar serviços judiciários" },
+        { "title": "Gestão Ágil", "description": "Entregas iterativas e adaptação contínua" },
+        { "title": "Dados e Indicadores", "description": "Decisões baseadas em evidências - não intuição" },
+        { "title": "Governança Participativa", "description": "Engajamento de servidores no processo de mudança" }
+      ]
+    },
+    {
+      "layout": "image-left",
+      "title": "Caso Prático - EJUSE",
+      "notes": "Exemplo concreto. Pedir que alguém do grupo compartilhe experiência similar.",
+      "content": [
+        { "type": "image", "url": "https://backstage-api.pensoia.workers.dev/r2/classforge/ejuse/caso.jpg", "alt": "Caso prático" },
+        { "type": "bullet", "text": "Redesenho do programa de formação continuada", "level": 0 },
+        { "type": "bullet", "text": "Metodologia: mapeamento de competências + lacunas", "level": 0 },
+        { "type": "bullet", "text": "Resultado: 40% de aumento na adesão aos cursos", "level": 0 },
+        { "type": "bullet", "text": "Próximo passo: plataforma integrada com JFSE", "level": 0 }
+      ]
+    },
+    {
+      "layout": "full-bleed",
+      "title": "Construindo o Judiciário do Futuro",
+      "notes": "Imagem de impacto para marcar a transição para o encerramento.",
+      "content": [
+        { "type": "image", "url": "https://backstage-api.pensoia.workers.dev/r2/classforge/ejuse/tribunal.jpg", "alt": "Tribunal" },
+        { "type": "bullet", "text": "Inovação começa com as pessoas - não com a tecnologia.", "level": 0 }
+      ]
+    },
+    {
+      "layout": "embed",
+      "title": "Enquete ao vivo",
+      "notes": "Ponto de parada para enquete ao vivo. Lance a questão no ClassPulse antes de avançar.",
+      "embed": { "session": "EJU1", "question_id": "PLACEHOLDER" }
+    },
+    {
+      "layout": "statement",
+      "title": "Obrigado",
+      "notes": "Encerramento. Abrir para perguntas. Agradecer a presença."
+    }
+  ]
+}

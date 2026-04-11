@@ -73,6 +73,16 @@
   border: 1px solid transparent;
 }
 
+/* Success toast */
+.bs-toast {
+  position: fixed; bottom: 3.5rem; right: 1rem; z-index: 99998;
+  background: rgba(20,184,166,.15); color: var(--primary); border: 1px solid rgba(20,184,166,.3);
+  border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem;
+  opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .3s;
+  pointer-events: none; max-width: 320px;
+}
+.bs-toast.show { opacity: 1; transform: translateY(0); }
+
 /* Error toast */
 .bs-toast-error {
   position: fixed; bottom: 3.5rem; right: 1rem; z-index: 99998;

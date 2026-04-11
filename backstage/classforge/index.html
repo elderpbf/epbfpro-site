@@ -12,8 +12,8 @@
 
 <link rel="stylesheet" href="../css/theme.css?v=1.2">
 <link rel="stylesheet" href="../css/backstage.css?v=1.2">
-<link rel="stylesheet" href="../css/classforge.css?v=1.4">
-<link rel="stylesheet" href="../css/shared-components.css?v=1.2">
+<link rel="stylesheet" href="../css/classforge.css?v=1.5">
+<link rel="stylesheet" href="../css/shared-components.css?v=1.3">
 <script src="../js/debug.js?v=2.4"></script>
 </head>
 <body>
@@ -111,11 +111,7 @@
         <label data-key="settings_theme_desc_label">Descreva o tema</label>
         <textarea id="theme-desc-input" class="bs-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano..."></textarea>
       </div>
-       <div class="bs-field">
-        <label>Chave da API Gemini (para gerar tema)</label>
-        <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." autocomplete="off">
-      </div>
-      <p class="bs-form-error" id="theme-gen-error"></p>
+       <p class="bs-form-error" id="theme-gen-error"></p>
       <button class="bs-save-btn" id="theme-gen-btn" data-key="settings_theme_gen_submit">Gerar com Gemini</button>
 
       <div id="theme-gen-preview" hidden style="margin-top:1rem; padding:0.75rem; border-radius:8px; border:1px solid rgba(20,184,166,.3)">
@@ -130,8 +126,9 @@
 </aside>
 
 
-<script src="../js/utils.js?v=1.1"></script>
-<script src="../js/api-client.js?v=1.0"></script>
+<script src="../js/utils.js?v=1.2"></script>
+<script src="../js/api-client.js?v=1.1"></script>
+<script src="../js/ai-client.js?v=1.1"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script>
 'use strict';
@@ -141,6 +138,7 @@
 // ---------------------------------------------------------------------------
 var PW_KEY = 'bs_pw_hash';
 var AUTH_KEY = 'bs_auth';
+var AUTH_TOKEN = localStorage.getItem('bs_pw_hash') || '';
 document.querySelectorAll('input[type="password"]').forEach(function(el) { el.value = ''; });
 if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
   location.replace('/backstage/');
@@ -259,14 +257,35 @@ function buildDemoCard() {
   return card;
 }
 
+var ENGINE_LABELS = { 'reveal': 'Reveal', 'panels': 'Panels', 'reveal-legacy': 'Legacy' };
+
+function getPresentHref(engine, slug, id, scriptUrl) {
+  if (engine === 'reveal-legacy') {
+    var url = 'viewer/?id=' + encodeURIComponent(id || slug || '');
+    if (scriptUrl) url += '&script=' + encodeURIComponent(scriptUrl);
+    return url;
+  }
+  if (engine === 'reveal') return 'viewer/?slug=' + encodeURIComponent(slug || '');
+  if (engine === 'panels') return 'presentations/' + encodeURIComponent(slug || '') + '/';
+  return '#';
+}
+
 function buildCard(pres, index) {
   var scriptUrl = localStorage.getItem('bs_cf_script_url') || '';
+  var engine = pres.engine || 'reveal-legacy';
   var card = document.createElement('div');
   card.className = 'cf-card';
   var thumb = document.createElement('div');
   thumb.className = 'cf-card-thumb';
   thumb.style.background = thumbGrad(index);
   thumb.textContent = initial(pres.title);
+  if (engine !== 'reveal-legacy') {
+    var badge = document.createElement('span');
+    badge.className = 'cf-card-badge cf-card-badge--engine';
+    badge.setAttribute('data-engine', engine);
+    badge.textContent = ENGINE_LABELS[engine] || engine;
+    thumb.appendChild(badge);
+  }
   card.appendChild(thumb);
   var body = document.createElement('div');
   body.className = 'cf-card-body';
@@ -276,15 +295,13 @@ function buildCard(pres, index) {
   body.appendChild(title);
   var meta = document.createElement('p');
   meta.className = 'cf-card-meta';
-  meta.textContent = 'Modificado: ' + (pres.modified || '--');
+  meta.textContent = 'Modificado: ' + (pres.modified || pres.updated_at || '--');
   body.appendChild(meta);
   var actions = document.createElement('div');
   actions.className = 'cf-card-actions';
-  var viewerUrl = 'viewer/?id=' + encodeURIComponent(pres.id);
-  if (scriptUrl) viewerUrl += '&script=' + encodeURIComponent(scriptUrl);
   var present = document.createElement('a');
   present.className = 'cf-btn-present';
-  present.href = viewerUrl;
+  present.href = getPresentHref(engine, pres.slug, pres.id, scriptUrl);
   present.textContent = t('card_present');
   actions.appendChild(present);
   if (pres.url) {
@@ -359,18 +376,42 @@ function showErrorState(msg) {
 
 async function loadPresentations() {
   var scriptUrl = localStorage.getItem('bs_cf_script_url') || '';
-  if (!scriptUrl || !scriptUrl.startsWith('https://')) { showNoScriptState(); return; }
   showSkeletons();
-  try {
-    var resp = await fetch(scriptUrl + '?action=list');
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    var data = await resp.json();
-    if (data.error) throw new Error(data.error);
-    renderCards(data.lessons || []);
-  } catch (err) {
-    console.error('loadPresentations: ' + err.message);
-    showNoScriptState();
+
+  var results = await Promise.allSettled([
+    // D1 presentations (always attempted)
+    callWorker({ action: 'list_presentations' }),
+    // Apps Script presentations (only if URL is set)
+    scriptUrl && scriptUrl.startsWith('https://')
+      ? fetch(scriptUrl + '?action=list').then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      : Promise.reject(new Error('no script url'))
+  ]);
+
+  var d1Result     = results[0];
+  var scriptResult = results[1];
+
+  var merged = [];
+
+  // D1 presentations first
+  if (d1Result.status === 'fulfilled' && d1Result.value && d1Result.value.presentations) {
+    d1Result.value.presentations.forEach(function(p) {
+      merged.push({ engine: p.engine || 'panels', slug: p.slug, id: p.slug, title: p.title, updated_at: (p.updated_at || '').slice(0, 10) });
+    });
   }
+
+  // Apps Script presentations (reveal-legacy, appended after D1)
+  if (scriptResult.status === 'fulfilled' && scriptResult.value && scriptResult.value.lessons) {
+    scriptResult.value.lessons.forEach(function(p) {
+      merged.push({ engine: 'reveal-legacy', slug: null, id: p.id, title: p.title, modified: p.modified, url: p.url });
+    });
+  }
+
+  if (merged.length === 0 && !scriptUrl) {
+    showNoScriptState();
+    return;
+  }
+
+  renderCards(merged);
 }
 
 document.getElementById('refresh-btn').addEventListener('click', loadPresentations);
@@ -385,7 +426,6 @@ var drawer  = document.getElementById('settings-drawer');
 function openSettings() {
   document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
   document.getElementById('settings-save-msg').textContent = '';
-  document.getElementById('settings-gemini-key').value = localStorage.getItem('bs_gemini_key') || '';
   overlay.hidden = false;
   drawer.hidden = false;
   requestAnimationFrame(function() {
@@ -457,6 +497,7 @@ function renderThemeGrid() {
     card.addEventListener('click', function() {
       localStorage.setItem('bs_reveal_theme', themeName);
       renderThemeGrid();
+      showToast('Tema "' + themeName + '" selecionado.');
     });
   });
 
@@ -468,6 +509,27 @@ function renderThemeGrid() {
     card.className = 'cf-theme-card' + (active === key ? ' cf-selected' : '');
     card.dataset.value = key;
     card.innerHTML = `<div class="cf-theme-card-preview" style="background:${bg}"><div class="cf-theme-card-heading" style="color:${heading}">Aa</div><div class="cf-theme-card-bar" style="background:${accent}"></div><div class="cf-theme-card-lines"><div class="cf-theme-card-line" style="background:${text}"></div><div class="cf-theme-card-line" style="background:${text}"></div></div></div><div class="cf-theme-card-label" style="background:${bg};color:${text}">${ct.name} \u2736</div>`;
+    var ren = document.createElement('button');
+    ren.className = 'cf-theme-card-rename';
+    ren.textContent = '\u270e';
+    ren.title = 'Renomear tema';
+    ren.onclick = (function(capturedIdx, capturedKey, capturedCt) {
+      return function(e) {
+        e.stopPropagation();
+        var newName = prompt('Novo nome para o tema:', capturedCt.name);
+        if (!newName || !newName.trim()) return;
+        newName = newName.trim();
+        var list = getCustomThemes();
+        if (!list[capturedIdx]) return;
+        var wasActive = getActiveTheme() === capturedKey;
+        list[capturedIdx].name = newName;
+        saveCustomThemes(list);
+        if (wasActive) localStorage.setItem('bs_reveal_theme', 'custom:' + newName);
+        renderThemeGrid();
+      };
+    }(idx, key, ct));
+    card.appendChild(ren);
+
     var del = document.createElement('button');
     del.className = 'cf-theme-card-delete';
     del.textContent = '\u00d7';
@@ -485,6 +547,7 @@ function renderThemeGrid() {
     card.addEventListener('click', function() {
       localStorage.setItem('bs_reveal_theme', key);
       renderThemeGrid();
+      showToast('Tema "' + ct.name + '" selecionado.');
     });
   });
 }
@@ -493,18 +556,23 @@ document.getElementById('show-theme-gen-btn').addEventListener('click', function
 
 var pendingTheme = null;
 document.getElementById('theme-gen-btn').addEventListener('click', async function() {
-  var apiKey  = document.getElementById('settings-gemini-key').value.trim();
   var desc    = document.getElementById('theme-desc-input').value.trim();
   var errEl   = document.getElementById('theme-gen-error');
   var preview = document.getElementById('theme-gen-preview');
   errEl.textContent = ''; preview.hidden = true; pendingTheme = null;
 
-  if (!apiKey) { errEl.textContent = 'Configure a chave da API Gemini.'; return; }
-  if (!desc)   { errEl.textContent = 'Descreva o tema antes de gerar.'; return; }
+  if (!desc) { errEl.textContent = 'Descreva o tema antes de gerar.'; return; }
 
   var btn = this; btn.textContent = 'Gerando...'; btn.disabled = true;
   try {
-    var theme = await callGeminiTheme(desc, apiKey);
+    var resp = await AIClient.generate({ action: 'ai_theme', description: desc });
+    if (!resp) { showToastError('IA indisponível temporariamente. Tente novamente em instantes.'); return; }
+    var theme = resp.theme;
+    if (!theme || !theme.overrides) {
+      dbg('error', 'ai_theme: resposta inválida — ' + JSON.stringify(resp));
+      showToastError('Resposta da IA inválida. Tente novamente.');
+      return;
+    }
     pendingTheme = theme;
     var swatchContainer = document.getElementById('theme-preview-swatches');
     swatchContainer.innerHTML = '';
@@ -514,10 +582,10 @@ document.getElementById('theme-gen-btn').addEventListener('click', async functio
       swatchContainer.appendChild(s);
     });
     document.getElementById('theme-preview-name').textContent = theme.name;
-    localStorage.setItem('bs_gemini_key', apiKey);
     preview.hidden = false;
   } catch (err) {
-    errEl.textContent = 'Erro: ' + err.message;
+    dbg('error', 'ai_theme: ' + err.message);
+    showToastError('Erro ao gerar tema. Tente novamente.');
   } finally {
     btn.textContent = t('settings_theme_gen_submit'); btn.disabled = false;
   }
@@ -536,40 +604,6 @@ document.getElementById('theme-save-btn').addEventListener('click', function() {
   pendingTheme = null;
   renderThemeGrid();
 });
-
-async function callGeminiTheme(description, apiKey) {
-  var prompt =
-    'You are a CSS theme designer for Reveal.js presentations.\n' +
-    'Generate a professional, visually cohesive theme based on this description: "' + description + '"\n\n' +
-    'Return ONLY valid JSON with this exact structure (no markdown, no explanation):\n' +
-    '{\n' +
-    '  "name": "Nome do Tema (2-3 words in Portuguese)",\n' +
-    '  "base": "black",\n' +
-    '  "overrides": {\n' +
-    '    "--r-background-color": "#hex",\n' +
-    '    "--r-main-color": "#hex",\n' +
-    '    "--r-heading-color": "#hex",\n' +
-    '    "--r-link-color": "#hex",\n' +
-    '    "--r-selection-background-color": "rgba(r,g,b,0.75)"\n' +
-    '  }\n' +
-    '}\n\n' +
-    'base must be one of: black, white, night, moon, dracula, sky, beige, serif, simple.\n' +
-    'Choose the base that best complements the described style.\n' +
-    'All color values must be valid CSS. Ensure high contrast between background and text.';
-  var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-  });
-  if (!resp.ok) {
-    var errData = await resp.json().catch(function(){ return {}; });
-    throw new Error(errData.error && errData.error.message ? errData.error.message : 'HTTP ' + resp.status);
-  }
-  var data = await resp.json();
-  var raw = data.candidates[0].content.parts[0].text;
-  var clean = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
-  return JSON.parse(clean);
-}
 
 // ---------------------------------------------------------------------------
 // Start

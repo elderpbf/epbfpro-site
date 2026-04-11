@@ -33,7 +33,7 @@
     .status-badge.closed { background: var(--status-closed-bg); color: var(--status-closed-text); }
     .answer-count { font-size: 0.82rem; color: var(--text-light); }
 
-    .question-text-display { font-size: clamp(1.3rem, 2.5vw, 2.8rem); font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 32px; }
+    .question-text-display { font-size: clamp(1.3rem, 2.5vw, 2.8rem); font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 32px; text-align: justify; }
 
     /* Display Mode Results Area */
     .qr-display { flex: 1; overflow-y: auto; min-height: 0; }
@@ -46,6 +46,17 @@
     /* Refresh dot */
     .refresh-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--text-light); transition: background 0.3s; }
     .refresh-dot.active { background: var(--success); }
+
+    /* Open text feed */
+    .text-feed { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; padding-right: 4px; }
+    .feed-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: clamp(12px,1.6vw,22px) clamp(14px,2vw,28px); }
+    .feed-name { font-size: clamp(0.7rem,1vw,0.85rem); font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .feed-text { font-size: clamp(1.1rem,2.2vw,2rem); color: var(--text-primary); line-height: 1.4; word-break: break-word; }
+    .feed-empty { font-size: clamp(1rem,2vw,1.6rem); color: var(--text-light); }
+
+    /* Word cloud */
+    .word-cloud { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; padding: 24px 8px; flex: 1; }
+    .wc-word { font-weight: 700; line-height: 1.2; transition: opacity 0.3s; cursor: default; }
 
     /* Landscape Tablets / Projectors Override */
     @media (max-height: 600px) {
@@ -70,7 +81,7 @@
   </div>
 
 <script src="../backstage/js/utils.js?v=1.0"></script>
-<script src="../backstage/js/api-client.js?v=1.0"></script>
+<script src="../backstage/js/api-client.js?v=1.1"></script>
 <script src="../backstage/js/question-renderer.js?v=1.0"></script>
 <script src="../backstage/js/theme-manager.js?v=1.0"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
@@ -223,15 +234,67 @@
 
     main.innerHTML = html;
 
-    const barsEl = document.createElement('div');
-    barsEl.className = 'qr-display';
-    QR.renderResults(q, counts, barsEl, {
-      mode: 'display',
-      showResults,
-      revealAnswer,
-      correctAnswer,
+    if (q.type === 'open' && q.text_answers !== undefined) {
+      const feedEl = document.createElement('div');
+      feedEl.className = 'text-feed';
+      if (q.text_answers.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'feed-card';
+        empty.innerHTML = '<div class="feed-empty">Aguardando respostas...</div>';
+        feedEl.appendChild(empty);
+      } else {
+        q.text_answers.forEach(function(a) {
+          const card = document.createElement('div');
+          card.className = 'feed-card';
+          card.innerHTML = '<div class="feed-name">' + escHtml(a.name) + '</div><div class="feed-text">' + escHtml(a.value) + '</div>';
+          feedEl.appendChild(card);
+        });
+      }
+      main.appendChild(feedEl);
+    } else if (q.type === 'wordcloud' && q.text_answers !== undefined) {
+      const cloudEl = document.createElement('div');
+      cloudEl.className = 'qr-display';
+      renderWordCloud(q.text_answers, cloudEl);
+      main.appendChild(cloudEl);
+    } else {
+      const barsEl = document.createElement('div');
+      barsEl.className = 'qr-display';
+      QR.renderResults(q, counts, barsEl, {
+        mode: 'display',
+        showResults,
+        revealAnswer,
+        correctAnswer,
+      });
+      main.appendChild(barsEl);
+    }
+  }
+
+  function renderWordCloud(answers, container) {
+    var freq = {};
+    answers.forEach(function(a) {
+      var word = (a.value || '').trim().toLowerCase();
+      if (word) freq[word] = (freq[word] || 0) + 1;
     });
-    main.appendChild(barsEl);
+    var entries = Object.entries(freq).sort(function(a, b) { return b[1] - a[1]; });
+    var PALETTE = ['#14b8a6','#6366f1','#3b82f6','#7c3aed','#c026d3','#16a34a','#0284c7'];
+    if (entries.length === 0) {
+      container.innerHTML = '<div class="center-state"><span class="state-text">Aguardando respostas...</span></div>';
+      return;
+    }
+    var maxFreq = entries[0][1];
+    var cloud = document.createElement('div');
+    cloud.className = 'word-cloud';
+    entries.forEach(function(entry, i) {
+      var word = entry[0], count = entry[1];
+      var size = 1 + (count / maxFreq) * 2;
+      var span = document.createElement('span');
+      span.className = 'wc-word';
+      span.textContent = word;
+      span.style.fontSize = size.toFixed(2) + 'rem';
+      span.style.color = PALETTE[i % PALETTE.length];
+      cloud.appendChild(span);
+    });
+    container.appendChild(cloud);
   }
 
 

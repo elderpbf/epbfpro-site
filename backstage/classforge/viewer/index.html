@@ -7,9 +7,12 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
 <link rel="stylesheet" id="reveal-theme" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
-<link rel="stylesheet" href="../../css/viewer.css?v=1.2">
+<link rel="stylesheet" href="../../css/question-types.css?v=1.3">
+<link rel="stylesheet" href="../../css/viewer.css?v=1.3">
 <script src="../../js/debug.js?v=2.4"></script>
-<script src="../../js/api-client.js?v=1.0"></script>
+<script src="../../js/api-client.js?v=1.1"></script>
+<script src="../../js/question-renderer.js?v=1.3"></script>
+<script src="../embed-classpulse.js?v=1.1"></script>
 </head>
 <body>
 
@@ -113,7 +116,7 @@ function initTheme(name) {
 
 function resolveTheme(lessonTheme) {
   const params = new URLSearchParams(location.search);
-  return params.get('theme') || lessonTheme || localStorage.getItem('bs_reveal_theme') || 'black';
+  return params.get('theme') || localStorage.getItem('bs_reveal_theme') || lessonTheme || 'black';
 }
 
 // ---------------------------------------------------------------------------
@@ -367,6 +370,23 @@ function buildTopicGridSlide(sectionData) {
   return section;
 }
 
+function buildEmbedSlide(sectionData) {
+  const section = document.createElement('section');
+  section.className = 'cf-layout-embed';
+  if (sectionData.css_class) section.classList.add(sectionData.css_class);
+  if (sectionData.notes) section.dataset.notes = sectionData.notes;
+  const h2 = document.createElement('h2');
+  h2.textContent = sectionData.title || '';
+  section.appendChild(h2);
+  const embed = sectionData.embed || {};
+  const div = document.createElement('div');
+  div.className = 'cf-classpulse-embed';
+  div.dataset.session = embed.session || '';
+  div.dataset.questionId = embed.question_id || '';
+  section.appendChild(div);
+  return section;
+}
+
 function buildSlide(sectionData) {
   const layout = sectionData.layout || 'default';
   if (layout === 'image-left')  return buildImageLeftSlide(sectionData);
@@ -375,6 +395,7 @@ function buildSlide(sectionData) {
   if (layout === 'statement')   return buildStatementSlide(sectionData);
   if (layout === 'two-column')  return buildTwoColumnSlide(sectionData);
   if (layout === 'topic-grid')  return buildTopicGridSlide(sectionData);
+  if (layout === 'embed')       return buildEmbedSlide(sectionData);
 
   const section = document.createElement('section');
 
@@ -522,6 +543,7 @@ async function showPresentation(lesson, isDemo, opts) {
       plugins: [RevealHighlight, RevealNotes, RevealMarkdown]
     });
     revealInited = true;
+    if (window.ClassPulseEmbed) window.ClassPulseEmbed.scan();
     if (logoHideOn && logoHideOn.length) {
       Reveal.on('slidechanged', ({ indexh }) => {
         document.getElementById('cf-logo').hidden = logoHideOn.includes(indexh);
@@ -530,6 +552,7 @@ async function showPresentation(lesson, isDemo, opts) {
   } else {
     Reveal.sync();
     Reveal.slide(0);
+    if (window.ClassPulseEmbed) window.ClassPulseEmbed.scan();
   }
 }
 

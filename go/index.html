@@ -41,7 +41,7 @@
 
     /* Option buttons */
     .question-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin-bottom: 14px; }
-    .question-text  { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; }
+    .question-text  { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; text-align: justify; }
 
     @media (min-width: 600px) {
       #q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -54,6 +54,15 @@
 
     .results-count { font-size: 0.78rem; color: var(--text-light); text-align: center; margin-top: 18px; }
     .results-next  { font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-top: 10px; }
+
+    /* Open text input */
+    .open-text-form { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+    .open-textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: inherit; background: var(--surface); color: var(--text-primary); outline: none; transition: border-color 0.15s; resize: vertical; min-height: 90px; line-height: 1.5; box-sizing: border-box; }
+    .open-textarea:focus { border-color: var(--primary); }
+    .char-counter { font-size: 0.72rem; color: var(--text-light); text-align: right; }
+
+    /* Word cloud input */
+    .wordcloud-hint { font-size: 0.72rem; color: var(--text-light); margin-top: 4px; }
 
     /* Refresh dot */
     .dot-wrap { text-align: center; margin-top: 18px; }
@@ -137,8 +146,8 @@
 
 </div>
 <script src="../backstage/js/utils.js?v=1.0"></script>
-<script src="../backstage/js/api-client.js?v=1.0"></script>
-<script src="../backstage/js/question-renderer.js?v=1.0"></script>
+<script src="../backstage/js/api-client.js?v=1.1"></script>
+<script src="../backstage/js/question-renderer.js?v=1.2"></script>
 <script src="../backstage/js/theme-manager.js?v=1.0"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
 <script>
@@ -226,7 +235,17 @@
       }
       if (data.session.status === 'closed') { errorEl.textContent = t.errClosed; return; }
 
-      currentSession = { code: data.session.code, title: data.session.title, studentName: name || 'Anônimo' };
+      // Assign a persistent device-local ID so anonymous devices don't collide
+      var displayName = name;
+      if (!displayName) {
+        var anonKey = 'bs_anon_id';
+        displayName = localStorage.getItem(anonKey);
+        if (!displayName) {
+          displayName = 'Anon_' + Math.random().toString(36).slice(2, 5).toUpperCase();
+          localStorage.setItem(anonKey, displayName);
+        }
+      }
+      currentSession = { code: data.session.code, title: data.session.title, studentName: displayName };
       sessionStorage.setItem('cl_session', JSON.stringify(currentSession));
       startSession();
     } catch(err) {
@@ -301,7 +320,9 @@
         if (myAnswer !== null) {
           showState('answered');
         } else {
-          renderQuestion(activeQ);
+          if (!activeQuestionData || activeQuestionData.id !== qId) {
+            renderQuestion(activeQ);
+          }
           showState('question');
         }
       } else {
@@ -343,10 +364,124 @@
     document.getElementById('q-text').textContent = activeQuestionData.text;
     document.getElementById('answer-error').textContent = '';
     var container = document.getElementById('q-options');
-    QR.renderInput(row, container, {
-      mode: 'student',
-      onSelect: function(index, btn) { submitAnswer(index, btn); }
+    if (row.type === 'open') {
+      renderOpenTextInput(container);
+    } else if (row.type === 'wordcloud') {
+      renderWordcloudInput(container);
+    } else {
+      QR.renderInput(row, container, {
+        mode: 'student',
+        onSelect: function(index, btn) { submitAnswer(index, btn); }
+      });
+    }
+  }
+
+  function renderOpenTextInput(container) {
+    container.style.display = 'block';
+    container.innerHTML =
+      '<div class="open-text-form">' +
+        '<textarea class="open-textarea" id="open-answer-input" maxlength="500" placeholder="Digite sua resposta..."></textarea>' +
+        '<div class="char-counter"><span id="open-char-count">0</span>/500</div>' +
+        '<button class="btn-primary" id="open-submit-btn">Enviar resposta</button>' +
+      '</div>';
+    document.getElementById('open-answer-input').addEventListener('input', function() {
+      document.getElementById('open-char-count').textContent = this.value.length;
     });
+    document.getElementById('open-submit-btn').addEventListener('click', function() {
+      submitOpenAnswer(this);
+    });
+  }
+
+  function renderWordcloudInput(container) {
+    container.style.display = 'block';
+    container.innerHTML =
+      '<div class="open-text-form">' +
+        '<input type="text" class="open-textarea" id="wc-answer-input" maxlength="50" ' +
+               'placeholder="Digite 1 a 3 palavras..." style="min-height:auto;resize:none;padding:12px 14px">' +
+        '<div class="wordcloud-hint">M\u00e1ximo 3 palavras</div>' +
+        '<button class="btn-primary" id="wc-submit-btn">Enviar resposta</button>' +
+      '</div>';
+    document.getElementById('wc-answer-input').addEventListener('input', function() {
+      var words = this.value.trim().split(/\s+/).filter(Boolean);
+      if (words.length > 3) {
+        this.value = words.slice(0, 3).join(' ');
+      }
+    });
+    document.getElementById('wc-submit-btn').addEventListener('click', function() {
+      submitWordcloudAnswer(this);
+    });
+  }
+
+  async function submitWordcloudAnswer(btn) {
+    if (!activeQuestionData) return;
+    var text = (document.getElementById('wc-answer-input').value || '').trim();
+    if (!text) { document.getElementById('answer-error').textContent = 'Escreva sua resposta antes de enviar.'; return; }
+    var words = text.split(/\s+/).filter(Boolean);
+    if (words.length > 3) { document.getElementById('answer-error').textContent = 'Use no m\u00e1ximo 3 palavras.'; return; }
+    btn.disabled = true;
+    document.getElementById('answer-error').textContent = '';
+    document.getElementById('answer-sending-msg').style.display = '';
+    var qId = activeQuestionData.id;
+    try {
+      var result = await callWorker({
+        action: 'submit_answer',
+        question_id:  qId,
+        session_code: currentSession.code,
+        student_name: currentSession.studentName,
+        answer_value: text
+      });
+      if (result.ok || result.error === 'Voc\u00ea j\u00e1 enviou resposta.') {
+        localStorage.setItem('cl_ans_' + qId, '1');
+        dbg('ok', 'wordcloud answer saved for Q ...' + qId.slice(-6));
+        showState('answered');
+      } else {
+        btn.disabled = false;
+        document.getElementById('answer-sending-msg').style.display = 'none';
+        document.getElementById('answer-error').textContent =
+          result.error === 'Question is closed' ? t.errTimeout :
+          result.error === 'VALIDATION_FAILED'  ? result.message :
+          t.errSubmit;
+      }
+    } catch(e) {
+      btn.disabled = false;
+      document.getElementById('answer-sending-msg').style.display = 'none';
+      document.getElementById('answer-error').textContent = t.errConnection;
+    }
+  }
+
+  async function submitOpenAnswer(btn) {
+    if (!activeQuestionData) return;
+    var text = (document.getElementById('open-answer-input').value || '').trim();
+    if (!text) { document.getElementById('answer-error').textContent = 'Escreva sua resposta antes de enviar.'; return; }
+    btn.disabled = true;
+    document.getElementById('answer-error').textContent = '';
+    document.getElementById('answer-sending-msg').style.display = '';
+    var qId = activeQuestionData.id;
+    try {
+      var result = await callWorker({
+        action: 'submit_answer',
+        question_id:  qId,
+        session_code: currentSession.code,
+        student_name: currentSession.studentName,
+        answer_value: text
+      });
+      if (result.ok || result.error === 'Você já enviou resposta.') {
+        localStorage.setItem('cl_ans_' + qId, '1');
+        dbg('ok', 'open answer saved for Q ...' + qId.slice(-6));
+        showState('answered');
+      } else {
+        btn.disabled = false;
+        document.getElementById('answer-sending-msg').style.display = 'none';
+        document.getElementById('answer-error').textContent =
+          result.error === 'Question is closed' ? t.errTimeout :
+          result.error === 'VALIDATION_FAILED'  ? result.message :
+          t.errSubmit;
+      }
+    } catch(e) {
+      btn.disabled = false;
+      document.getElementById('answer-sending-msg').style.display = 'none';
+      document.getElementById('answer-error').textContent = t.errConnection;
+    }
   }
 
   // ── SUBMIT ANSWER ─────────────────────────────────────────────────────────

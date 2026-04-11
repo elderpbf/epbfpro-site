@@ -852,6 +852,12 @@
         }
         .msg-leave-btn.ghost:hover { opacity: 0.8; transform: none; }
 
+        #board-toggle-row {
+            position: sticky;
+            bottom: 12px;
+            z-index: 10;
+        }
+
         /* Modal */
         .modal-bg {
             display: none;
@@ -1068,7 +1074,7 @@
             <div class="board-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Mural de carinho<img src="media/optimized/flowers/1.webp" alt=""></div>
             <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
             <div class="board-cards" id="board-cards"></div>
-            <div id="board-toggle-row" style="display:none;text-align:center;margin-top:14px;">
+            <div id="board-toggle-row" style="display:none;text-align:center;">
                 <button class="msg-leave-btn ghost" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
             </div>
         </div>
