@@ -633,6 +633,22 @@
             color: var(--text-dim);
             line-height: 1.4;
         }
+        .phase-photo-ring {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            padding: 2px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            flex-shrink: 0;
+            align-self: center;
+        }
+        .phase-photo-ring img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
         .phase-chevron {
             font-size: 0.75rem;
             color: var(--text-muted);
@@ -1510,6 +1526,26 @@
             return html;
         }
 
+        function getPhasePhoto(updates) {
+            const sorted = [...updates].sort((a, b) => {
+                const ka = dateToISO(a.data) + (a.hora || '');
+                const kb = dateToISO(b.data) + (b.hora || '');
+                return kb.localeCompare(ka);
+            });
+            for (const preferTagged of [true, false]) {
+                for (const u of sorted) {
+                    if (!u.foto) continue;
+                    const parts = u.foto.split('|').map(s => s.trim());
+                    if (preferTagged && !parts.includes('#boa-noticia')) continue;
+                    const url = parts.find(s => s && !s.startsWith('#'));
+                    if (!url) continue;
+                    const resolved = resolveMediaUrl(url);
+                    if (resolved && !isVideo(resolved) && !isDriveVideo(resolved)) return resolved;
+                }
+            }
+            return null;
+        }
+
         function renderPhaseBlock(fase, updates, curtidas, isOpen) {
             const dateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(fase.data_fim)}`;
             const grouped   = groupByDate(updates);
@@ -1518,6 +1554,8 @@
             for (let i = 0; i < dates.length; i++) {
                 daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
             }
+            const photoUrl  = isOpen ? null : getPhasePhoto(updates);
+            const photoHtml = photoUrl ? `<div class="phase-photo-ring"><img src="${photoUrl}" alt="" loading="lazy"></div>` : '';
             if (isOpen) {
                 const latestDate    = sortDateKeysDesc(Object.keys(groupByDate(updates)))[0] || fase.data_fim;
                 const openDateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(latestDate)}`;
@@ -1528,6 +1566,7 @@
                             <span class="phase-title">${escapeHtml(fase.nome)}</span>
                             <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
                         </div>
+                        ${photoHtml}
                         <span class="phase-chevron">▾</span>
                     </summary>
                     <div class="phase-days">${daysHtml}</div>
@@ -1541,6 +1580,7 @@
                             <span class="phase-title">${escapeHtml(fase.nome)}</span>
                             <span class="phase-resumo">${escapeHtml(fase.resumo)}</span>
                         </div>
+                        ${photoHtml}
                         <span class="phase-chevron">▾</span>
                     </summary>
                     <div class="phase-days">${daysHtml}</div>
