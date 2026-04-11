@@ -852,7 +852,7 @@
         }
         .msg-leave-btn.ghost:hover { opacity: 0.8; transform: none; }
 
-        #board-toggle-row {
+        #board-toggle-row.sticky {
             position: sticky;
             bottom: 12px;
             z-index: 10;
@@ -1877,13 +1877,16 @@
             const extras   = document.querySelectorAll('.msg-card-extra');
             const btn      = document.getElementById('board-toggle-btn');
             const expanded = extras.length > 0 && extras[0].style.display !== 'none';
+            const toggleRow = document.getElementById('board-toggle-row');
             if (expanded) {
                 extras.forEach(el => el.style.display = 'none');
                 btn.textContent = `Ver todas as mensagens (${extras.length + 2})`;
+                toggleRow.classList.remove('sticky');
                 document.getElementById('board-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
                 extras.forEach(el => el.style.display = '');
                 btn.textContent = 'Esconder mensagens';
+                toggleRow.classList.add('sticky');
             }
         }
 
