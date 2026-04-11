@@ -591,8 +591,8 @@
             list-style: none;
             cursor: pointer;
             display: flex;
-            align-items: flex-start;
-            gap: 10px;
+            flex-direction: column;
+            gap: 6px;
             padding: 14px 16px;
             background: #f2ede5;
             user-select: none;
@@ -602,13 +602,19 @@
         }
         .phase-summary--slim {
             padding: 8px 16px;
-            align-items: center;
-        }
-        .phase-summary--slim .phase-date-range {
-            margin-bottom: 0;
-            font-size: 0.72rem;
         }
         .phase-summary::-webkit-details-marker { display: none; }
+        .phase-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .phase-bottom-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
         .phase-header-text {
             flex: 1;
             min-width: 0;
@@ -618,16 +624,15 @@
             font-size: 0.7rem;
             font-weight: 500;
             color: var(--text-muted);
-            margin-bottom: 2px;
         }
         .phase-title {
             display: block;
             font-size: 0.88rem;
             font-weight: 600;
             color: var(--heading);
-            margin-bottom: 4px;
         }
         .phase-resumo {
+            flex: 1;
             display: block;
             font-size: 0.78rem;
             color: var(--text-dim);
@@ -640,7 +645,6 @@
             padding: 2px;
             background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
             flex-shrink: 0;
-            align-self: center;
         }
         .phase-photo-ring img {
             width: 100%;
@@ -652,7 +656,6 @@
         .phase-chevron {
             font-size: 0.75rem;
             color: var(--text-muted);
-            margin-top: 2px;
             transition: transform 0.2s;
             flex-shrink: 0;
         }
@@ -1562,12 +1565,11 @@
                 return `
                 <details class="phase-block phase-block--open" open>
                     <summary class="phase-summary phase-summary--slim">
-                        <div class="phase-header-text">
+                        <div class="phase-top-row">
                             <span class="phase-title">${escapeHtml(fase.nome)}</span>
-                            <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
+                            <span class="phase-chevron">▾</span>
                         </div>
-                        ${photoHtml}
-                        <span class="phase-chevron">▾</span>
+                        <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
                     </summary>
                     <div class="phase-days">${daysHtml}</div>
                 </details>`;
@@ -1575,13 +1577,15 @@
             return `
                 <details class="phase-block">
                     <summary class="phase-summary">
-                        <div class="phase-header-text">
+                        <div class="phase-top-row">
                             <span class="phase-date-range">${escapeHtml(dateRange)}</span>
-                            <span class="phase-title">${escapeHtml(fase.nome)}</span>
-                            <span class="phase-resumo">${escapeHtml(fase.resumo)}</span>
+                            <span class="phase-chevron">▾</span>
                         </div>
-                        ${photoHtml}
-                        <span class="phase-chevron">▾</span>
+                        <span class="phase-title">${escapeHtml(fase.nome)}</span>
+                        <div class="phase-bottom-row">
+                            <span class="phase-resumo">${escapeHtml(fase.resumo)}</span>
+                            ${photoHtml}
+                        </div>
                     </summary>
                     <div class="phase-days">${daysHtml}</div>
                 </details>`;
