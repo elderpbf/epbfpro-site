@@ -21,6 +21,25 @@
   function startEmbed(container) {
     var session    = container.dataset.session;
     var questionId = container.dataset.questionId;
+    var slug       = container.dataset.slug;
+
+    // Slug-mode: resolve session code dynamically from linked session
+    if (slug && !session) {
+      callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
+        if (!container.isConnected) return;
+        if (!data.session) {
+          container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Nenhuma sess\u00e3o vinculada.</p>';
+          return;
+        }
+        container.dataset.session = data.session.code;
+        startEmbed(container);
+      }).catch(function() {
+        if (container.isConnected) {
+          container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Nenhuma sess\u00e3o vinculada.</p>';
+        }
+      });
+      return;
+    }
 
     if (!session) return;
 
@@ -57,7 +76,7 @@
   }
 
   function scan() {
-    var els = document.querySelectorAll('.cf-classpulse-embed[data-session][data-question-id]');
+    var els = document.querySelectorAll('.cf-classpulse-embed[data-session][data-question-id], .cf-classpulse-embed[data-slug]');
     els.forEach(function(el) {
       if (el.dataset.embedStarted) return;
       el.dataset.embedStarted = '1';

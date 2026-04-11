@@ -206,3 +206,16 @@
 }
 .reveal .cf-layout-embed h2 { margin-bottom: 1.5rem; }
 .reveal .cf-layout-embed .cf-classpulse-embed { width: 100%; max-width: 700px; }
+
+/* Session badge overlay (shown when a session is linked to this presentation) */
+.cf-session-badge {
+  position: fixed;
+  bottom: 12px; left: 12px; z-index: 100;
+  background: rgba(0,0,0,.55); color: #fff;
+  font-size: 0.72rem; font-weight: 600;
+  padding: 0.3rem 0.7rem; border-radius: 20px;
+  text-decoration: none;
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  opacity: 0.7; transition: opacity .2s;
+}
+.cf-session-badge:hover { opacity: 1; color: #fff; }
