@@ -2212,11 +2212,13 @@ function buildCollage() {
         if (!u.foto) continue;
         for (const part of u.foto.split('|').map(s => s.trim())) {
             if (!part || part.startsWith('#')) continue;
-            if (!part.startsWith('media/')) continue;
-            if (/\.(mp4|mov|webm)$/i.test(part)) continue;
-            if (seen.has(part)) continue;
-            seen.add(part);
-            photos.push({ src: part, date: u.data });
+            if (part.includes('/preview')) continue;        // Drive video embed
+            if (/\.(mp4|mov|webm)$/i.test(part)) continue; // local video
+            const resolved = resolveMediaUrl(part);
+            if (!resolved) continue;
+            if (seen.has(resolved)) continue;
+            seen.add(resolved);
+            photos.push({ src: resolved, date: u.data });
         }
     }
 
