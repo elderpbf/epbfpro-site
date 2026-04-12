@@ -447,6 +447,7 @@
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
 <script src="../js/question-bank.js?v=1.7"></script>
+<script src="../js/auth.js?v=1.1"></script>
 <script>
 'use strict';
 
@@ -454,16 +455,8 @@
 // Auth check
 // ---------------------------------------------------------------------------
 
-var PW_KEY   = 'bs_pw_hash';
-var AUTH_KEY = 'bs_auth';
-
-document.querySelectorAll('input[type="password"]').forEach(function(el) { el.value = ''; });
-
-if (!localStorage.getItem(PW_KEY)) {
-  location.replace('/backstage/');
-} else if (sessionStorage.getItem(AUTH_KEY) !== '1') {
-  sessionStorage.setItem(AUTH_KEY, '1');
-}
+BS_AUTH.guard();
+BS_AUTH.clearPasswordInputs();
 
 // ---------------------------------------------------------------------------
 // Theme
@@ -472,16 +465,13 @@ if (!localStorage.getItem(PW_KEY)) {
 ThemeManager.init({ storageKey: 'bs_theme' });
 ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
 
-document.getElementById('logout-btn').addEventListener('click', function() {
-  sessionStorage.removeItem(AUTH_KEY);
-  location.replace('/backstage/');
-});
+document.getElementById('logout-btn').addEventListener('click', BS_AUTH.logout);
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
-var AUTH_TOKEN = localStorage.getItem('bs_pw_hash') || '';
+var AUTH_TOKEN = BS_AUTH.TOKEN;
 
 // ---------------------------------------------------------------------------
 // Tabs

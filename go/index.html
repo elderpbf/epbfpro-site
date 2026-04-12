@@ -148,21 +148,13 @@
 <script src="../backstage/js/utils.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.1"></script>
 <script src="../backstage/js/question-renderer.js?v=1.2"></script>
-<script src="../backstage/js/theme-manager.js?v=1.0"></script>
+<script src="../backstage/js/theme-manager.js?v=1.1"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
 <script>
   // ── THEME ────────────────────────────────────────────────────────────────
   // ThemeManager is initialized by <pensoia-header> via theme-storage-key.
   // We still need to apply the initial theme before paint.
-  (function() {
-    var urlParams = new URLSearchParams(window.location.search);
-    var urlTheme  = urlParams.get('theme');
-    var stored    = localStorage.getItem('bs_theme_public');
-    var theme     = 'light';
-    if (urlTheme === 'dark' || urlTheme === 'light') theme = urlTheme;
-    else if (stored === 'dark' || stored === 'light') theme = stored;
-    ThemeManager.applyTheme(theme);
-  })();
+  ThemeManager.initPublic();
   // ────────────────────────────────────────────────────────────────────────
 
   // ── HEADER COMPONENT ───────────────────────────────────────────────────

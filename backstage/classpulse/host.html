@@ -369,6 +369,7 @@
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
 <script src="../js/question-bank.js?v=1.7"></script>
+<script src="../js/auth.js?v=1.1"></script>
 <script>
 'use strict';
 
@@ -376,14 +377,7 @@
 // Backstage auth check
 // ---------------------------------------------------------------------------
 
-var PW_KEY   = 'bs_pw_hash';
-var AUTH_KEY = 'bs_auth';
-
-if (!localStorage.getItem(PW_KEY)) {
-  location.replace('/backstage/');
-} else if (sessionStorage.getItem(AUTH_KEY) !== '1') {
-  sessionStorage.setItem(AUTH_KEY, '1');
-}
+BS_AUTH.guard();
 
 // ---------------------------------------------------------------------------
 // Theme
@@ -396,7 +390,7 @@ ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
 // Config (hardcoded - never configure via settings)
 // ---------------------------------------------------------------------------
 
-var AUTH_TOKEN     = localStorage.getItem('bs_pw_hash') || '';
+var AUTH_TOKEN     = BS_AUTH.TOKEN;
 
 // ---------------------------------------------------------------------------
 // State

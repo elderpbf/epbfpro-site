@@ -20,29 +20,6 @@
 
 <div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
 
-<!-- =====================================================
-     SCREEN: FIRST-TIME PASSWORD SETUP
-     ===================================================== -->
-<div id="screen-setup-pw" class="bs-auth-bg" hidden>
-  <div class="bs-auth-card">
-    <div class="bs-auth-logo">
-      <img src="../images/logo.png" alt="PensoIA">
-      <span class="bs-product">Backstage</span>
-    </div>
-    <h2 data-key="setup_title">Criar senha de acesso</h2>
-    <p class="bs-auth-hint" data-key="setup_hint">Esta senha protege seu painel. Guarde-a em local seguro.</p>
-    <div class="bs-field">
-      <label data-key="setup_pw_label">Senha</label>
-      <input id="setup-pw" type="password" autocomplete="off">
-    </div>
-    <div class="bs-field">
-      <label data-key="setup_confirm_label">Confirmar senha</label>
-      <input id="setup-pw-confirm" type="password" autocomplete="off">
-    </div>
-    <p class="bs-form-error" id="setup-error"></p>
-    <button class="bs-auth-btn" id="setup-btn" data-key="setup_btn">Criar senha e entrar</button>
-  </div>
-</div>
 
 <!-- =====================================================
      SCREEN: LOGIN
@@ -189,11 +166,6 @@
 
 var TRANSLATIONS = {
   'pt-BR': {
-    setup_title:               'Criar senha de acesso',
-    setup_hint:                'Esta senha protege seu painel. Guarde-a em local seguro.',
-    setup_pw_label:            'Senha',
-    setup_confirm_label:       'Confirmar senha',
-    setup_btn:                 'Criar senha e entrar',
     login_title:               'Bem-vindo de volta',
     login_hint:                'Entre com sua senha para acessar o painel.',
     login_pw_label:            'Senha',
@@ -282,7 +254,7 @@ async function hashPw(pw) {
 var PW_KEY   = 'bs_pw_hash';
 var AUTH_KEY = 'bs_auth';
 
-var SCREENS = ['screen-setup-pw', 'screen-login', 'screen-app'];
+var SCREENS = ['screen-login', 'screen-app'];
 
 function showScreen(id) {
   SCREENS.forEach(function(s) {
@@ -300,13 +272,7 @@ document.querySelectorAll('input[type="password"]').forEach(function(el) {
 });
 
 async function init() {
-  var hash = localStorage.getItem(PW_KEY);
-  if (!hash) {
-    showScreen('screen-setup-pw');
-    document.getElementById('setup-pw').focus();
-    return;
-  }
-  if (sessionStorage.getItem(AUTH_KEY) === '1') {
+  if (sessionStorage.getItem(AUTH_KEY) === '1' && localStorage.getItem(PW_KEY)) {
     showApp();
     return;
   }
@@ -318,46 +284,39 @@ async function init() {
 // Auth event handlers
 // ---------------------------------------------------------------------------
 
-document.getElementById('setup-btn').addEventListener('click', async function() {
-  var pw  = document.getElementById('setup-pw').value;
-  var pw2 = document.getElementById('setup-pw-confirm').value;
-  var err = document.getElementById('setup-error');
-  err.textContent = '';
-  if (pw.length < 6)  { err.textContent = t('error_pw_short'); return; }
-  if (pw !== pw2)     { err.textContent = t('error_pw_match'); return; }
-  localStorage.setItem(PW_KEY, await hashPw(pw));
-  sessionStorage.setItem(AUTH_KEY, '1');
-  showApp();
-});
-
 document.getElementById('login-btn').addEventListener('click', async function() {
+  var btn = this;
   var pw  = document.getElementById('login-pw').value;
   var err = document.getElementById('login-error');
   err.textContent = '';
-  var hash = await hashPw(pw);
-  if (hash !== localStorage.getItem(PW_KEY)) {
+  btn.disabled = true;
+  try {
+    var hash   = await hashPw(pw);
+    var result = await callWorker({ action: 'validate_auth', auth_token: hash });
+    if (!result.ok) {
+      err.textContent = t('error_pw_wrong');
+      document.getElementById('login-pw').value = '';
+      document.getElementById('login-pw').focus();
+      return;
+    }
+    localStorage.setItem(PW_KEY, hash);
+    sessionStorage.setItem(AUTH_KEY, '1');
+    showApp();
+  } catch (e) {
     err.textContent = t('error_pw_wrong');
     document.getElementById('login-pw').value = '';
     document.getElementById('login-pw').focus();
-    return;
+  } finally {
+    btn.disabled = false;
   }
-  sessionStorage.setItem(AUTH_KEY, '1');
-  showApp();
 });
 
-['setup-pw-confirm', 'login-pw'].forEach(function(id) {
-  document.getElementById(id).addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      var btn = id === 'login-pw' ? 'login-btn' : 'setup-btn';
-      document.getElementById(btn).click();
-    }
-  });
-});
-document.getElementById('setup-pw').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('setup-pw-confirm').focus();
+document.getElementById('login-pw').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('login-btn').click();
 });
 
 document.getElementById('logout-btn').addEventListener('click', function() {
+  localStorage.removeItem(PW_KEY);
   sessionStorage.removeItem(AUTH_KEY);
   document.getElementById('login-pw').value = '';
   document.getElementById('login-error').textContent = '';
@@ -438,28 +397,37 @@ document.getElementById('show-change-pw-btn').addEventListener('click', function
 });
 
 document.getElementById('change-pw-save-btn').addEventListener('click', async function() {
+  var btn     = this;
   var cur     = document.getElementById('change-pw-current').value;
   var newPw   = document.getElementById('change-pw-new').value;
   var confirm = document.getElementById('change-pw-confirm').value;
   var err     = document.getElementById('change-pw-error');
   err.textContent = '';
 
-  var curHash = await hashPw(cur);
-  if (curHash !== localStorage.getItem(PW_KEY)) { err.textContent = t('error_pw_current_wrong'); return; }
   if (newPw.length < 6) { err.textContent = t('error_pw_short'); return; }
   if (newPw !== confirm) { err.textContent = t('error_pw_match'); return; }
 
-  localStorage.setItem(PW_KEY, await hashPw(newPw));
-  document.getElementById('change-pw-current').value = '';
-  document.getElementById('change-pw-new').value = '';
-  document.getElementById('change-pw-confirm').value = '';
-  err.style.color = 'var(--primary)';
-  err.textContent = t('change_pw_ok');
-  setTimeout(function() {
-    err.textContent = '';
-    err.style.color = '';
-    document.getElementById('change-pw-form').hidden = true;
-  }, 2500);
+  btn.disabled = true;
+  try {
+    var curHash = await hashPw(cur);
+    var newHash = await hashPw(newPw);
+    await callWorker({ action: 'change_password', auth_token: curHash, new_hash: newHash });
+    localStorage.setItem(PW_KEY, newHash);
+    document.getElementById('change-pw-current').value = '';
+    document.getElementById('change-pw-new').value = '';
+    document.getElementById('change-pw-confirm').value = '';
+    err.style.color = 'var(--primary)';
+    err.textContent = t('change_pw_ok');
+    setTimeout(function() {
+      err.textContent = '';
+      err.style.color = '';
+      document.getElementById('change-pw-form').hidden = true;
+    }, 2500);
+  } catch (e) {
+    err.textContent = t('error_pw_current_wrong');
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 // ---------------------------------------------------------------------------
