@@ -450,15 +450,17 @@
             line-height: 1;
             width: 36px;
             height: 36px;
-            display: none;
             align-items: center;
             justify-content: center;
-            background: rgba(30, 20, 10, 0.65);
+            background: linear-gradient(135deg, rgba(240,212,138,0.82), rgba(232,160,180,0.82), rgba(196,168,212,0.82));
             border-radius: 50%;
             user-select: none;
-            transition: background 0.15s;
+            transition: opacity 0.15s;
         }
-        #collage-close-btn:hover { background: rgba(30, 20, 10, 0.88); }
+        #collage-close-btn:hover { opacity: 0.85; }
+        [data-theme="dark"] #collage-close-btn {
+            background: linear-gradient(135deg, rgba(184,160,90,0.82), rgba(176,120,136,0.82), rgba(150,128,168,0.82));
+        }
         #gallery-back-btn {
             display: none;
             position: fixed;
@@ -2292,7 +2294,11 @@ function buildCollage() {
     canvas.innerHTML = '';
 
     const hint = document.createElement('p');
-    hint.style.cssText = 'position:absolute;top:58px;left:50%;transform:translateX(-50%);white-space:nowrap;text-align:center;color:#fff;font-size:0.82rem;font-family:Inter,sans-serif;pointer-events:none;letter-spacing:0.02em;background:rgba(30,20,10,0.62);border-radius:20px;padding:6px 16px;';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const hintGrad = isDark
+        ? 'linear-gradient(135deg,rgba(184,160,90,0.78),rgba(176,120,136,0.78),rgba(150,128,168,0.78))'
+        : 'linear-gradient(135deg,rgba(240,212,138,0.78),rgba(232,160,180,0.78),rgba(196,168,212,0.78))';
+    hint.style.cssText = 'position:absolute;top:58px;left:50%;transform:translateX(-50%);white-space:nowrap;text-align:center;color:#fff;font-size:0.82rem;font-family:Inter,sans-serif;pointer-events:none;letter-spacing:0.02em;background:' + hintGrad + ';border-radius:20px;padding:6px 18px;z-index:1000;';
     hint.textContent = 'Toque em uma foto para ver a publicação original';
     canvas.appendChild(hint);
 
