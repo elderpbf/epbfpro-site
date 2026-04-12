@@ -387,7 +387,7 @@
     document.getElementById('open-answer-input').addEventListener('input', function() {
       document.getElementById('open-char-count').textContent = this.value.length;
     });
-    document.getElementById('open-answer-input').focus();
+    setTimeout(function() { document.getElementById('open-answer-input').focus(); }, 0);
     document.getElementById('open-submit-btn').addEventListener('click', function() {
       submitOpenAnswer(this);
     });
@@ -403,7 +403,7 @@
         '<button class="btn-primary" id="wc-submit-btn">Enviar resposta</button>' +
       '</div>';
     var wcInp = document.getElementById('wc-answer-input');
-    wcInp.focus();
+    setTimeout(function() { wcInp.focus(); }, 0);
     wcInp.addEventListener('input', function() {
       var words = this.value.trim().split(/\s+/).filter(Boolean);
       if (words.length > 3) {

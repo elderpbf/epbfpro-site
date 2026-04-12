@@ -252,6 +252,7 @@
       }
       main.appendChild(feedEl);
     } else if (q.type === 'wordcloud' && q.text_answers !== undefined) {
+      dbg('info', 'wc-render: branch fired ta=' + q.text_answers.length);
       const cloudEl = document.createElement('div');
       cloudEl.className = 'qr-display';
       renderWordCloud(q.text_answers, cloudEl);
@@ -276,6 +277,7 @@
       if (word) freq[word] = (freq[word] || 0) + 1;
     });
     var entries = Object.entries(freq).sort(function(a, b) { return b[1] - a[1]; });
+    dbg('info', 'renderWC: answers=' + answers.length + ' entries=' + entries.length);
     var PALETTE = ['#14b8a6','#6366f1','#3b82f6','#7c3aed','#c026d3','#16a34a','#0284c7'];
     if (entries.length === 0) {
       container.innerHTML = '<div class="center-state"><span class="state-text">Aguardando respostas...</span></div>';
