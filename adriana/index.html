@@ -2228,7 +2228,7 @@ function buildCollage() {
     }
 
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-    const cols = vw < 520 ? 2 : 3;
+    const cols = vw < 520 ? 2 : vw < 900 ? 3 : 4;
     const sidePad = 32;
     const gapX = 10;
     const polaroidW = Math.floor((vw - sidePad - gapX * (cols - 1)) / cols);
