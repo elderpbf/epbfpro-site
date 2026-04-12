@@ -27,6 +27,7 @@
     var session    = container.dataset.session;
     var questionId = container.dataset.questionId;
     var slug       = container.dataset.slug;
+    var _lastActiveId = null;
 
     function showWaiting() {
       if (container.dataset.state === 'waiting') return;
@@ -34,25 +35,57 @@
       container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Aguardando quest\u00e3o...</p>';
     }
 
+    function findInHistory(history, id) {
+      for (var i = 0; i < history.length; i++) {
+        if (history[i].id === id) return history[i];
+      }
+      return null;
+    }
+
+    function showRevealed(q) {
+      var stateKey = 'revealed-' + q.id;
+      if (container.dataset.state === stateKey) return;
+      container.dataset.state = stateKey;
+      probe('showing revealed question id=' + q.id, 'ok');
+      QR.renderResults(q, q.answer_counts || [], container, {
+        mode: 'display',
+        showResults: q.show_results !== false,
+        revealAnswer: q.reveal_answer === true,
+        correctAnswer: q.correct_answer
+      });
+    }
+
     function poll() {
       if (!container.isConnected) return;
       callWorker({ action: 'get_session_state', code: session, _silent: true }).then(function(data) {
         if (!container.isConnected) return;
-        var aq = data.active_question;
-        if (!aq) {
-          probe('poll – no active question (session=' + session + ')');
-          showWaiting();
-          return;
+        var aq   = data.active_question;
+        var hist = data.history || [];
+        var pinId = (questionId && questionId !== 'PLACEHOLDER') ? questionId : null;
+
+        if (aq) {
+          var matches = !pinId || aq.id === pinId;
+          if (matches) {
+            _lastActiveId = aq.id;
+            probe('poll – rendering type=' + aq.type + ' id=' + aq.id, 'ok');
+            container.dataset.state = 'active';
+            QR.renderResults(aq, aq.answer_counts || [], container, { mode: 'display' });
+            return;
+          }
         }
-        // Match by questionId if not placeholder
-        if (questionId && questionId !== 'PLACEHOLDER' && aq.id !== questionId) {
-          probe('poll – question mismatch: got ' + aq.id + ', want ' + questionId);
-          showWaiting();
-          return;
+
+        // No matching active question: check history for reveal/results state
+        var lookupId = pinId || _lastActiveId;
+        if (lookupId) {
+          var hq = findInHistory(hist, lookupId);
+          if (hq && (hq.show_results || hq.reveal_answer)) {
+            showRevealed(hq);
+            return;
+          }
         }
-        probe('poll – rendering type=' + aq.type + ' id=' + aq.id, 'ok');
-        container.dataset.state = 'active';
-        QR.renderResults(aq, aq.answer_counts || [], container, { mode: 'display' });
+
+        probe('poll – no active question (session=' + session + ')');
+        showWaiting();
       }).catch(function(err) {
         probe('poll catch: ' + (err && err.message ? err.message : 'error'), 'error');
         if (container.isConnected) showWaiting();
