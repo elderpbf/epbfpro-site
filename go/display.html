@@ -171,7 +171,7 @@
           ? (data.history || []).find(q => q.id === lastDisplayedQ.id) || lastDisplayedQ
           : (data.history || [])[0] || null;
         if (recentlyClosed) {
-          dbg('poll', `closed Q ...${recentlyClosed.id.slice(-6)} show=${recentlyClosed.show_results} reveal=${recentlyClosed.reveal_answer}`);
+          dbg('poll', `closed Q ...${recentlyClosed.id.slice(-6)} type=${recentlyClosed.type} ta=${recentlyClosed.text_answers !== undefined ? recentlyClosed.text_answers.length : 'undef'} show=${recentlyClosed.show_results}`);
           lastDisplayedQ = recentlyClosed;
           render(lastDisplayedQ, false);
         } else {
@@ -272,7 +272,7 @@
   function renderWordCloud(answers, container) {
     var freq = {};
     answers.forEach(function(a) {
-      var word = (a.value || '').trim().toLowerCase();
+      var word = (a.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       if (word) freq[word] = (freq[word] || 0) + 1;
     });
     var entries = Object.entries(freq).sort(function(a, b) { return b[1] - a[1]; });

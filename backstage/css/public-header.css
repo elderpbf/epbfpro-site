@@ -294,6 +294,24 @@ pensoia-header[mode="display"] .ph-modal-code {
   }
 }
 
+/* ---------- narrow phones: prevent ph-right overflow ---------- */
+
+@media (max-width: 480px) {
+  pensoia-header[mode="student"] .ph-right {
+    min-width: 0;
+    overflow: hidden;
+    gap: 6px;
+  }
+  pensoia-header[mode="student"] .ph-code-btn {
+    padding: 5px 8px;
+    font-size: 0.88rem;
+    gap: 4px;
+  }
+  pensoia-header[mode="student"] .ph-qr-glyph {
+    display: none;
+  }
+}
+
 /* =========================================================
    Info modal (lives inside the component)
    ========================================================= */

@@ -770,7 +770,7 @@ function renderWordCloudHost(answers, container) {
   }
   var freq = {};
   answers.forEach(function(a) {
-    var word = (a.value || '').trim().toLowerCase();
+    var word = (a.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     if (word) freq[word] = (freq[word] || 0) + 1;
   });
   var entries = Object.entries(freq).sort(function(a, b) { return b[1] - a[1]; });
@@ -868,6 +868,7 @@ async function relaunchFromHistory(btn, q) {
     var res = await callWorker({
       action: 'launch_question', auth_token: AUTH_TOKEN,
       session_code: sessionCode,
+      type: q.type || 'mc',
       text: q.text,
       options: q.options,
       correct_answer: q.correct_answer

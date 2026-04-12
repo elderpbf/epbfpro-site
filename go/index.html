@@ -387,6 +387,7 @@
     document.getElementById('open-answer-input').addEventListener('input', function() {
       document.getElementById('open-char-count').textContent = this.value.length;
     });
+    document.getElementById('open-answer-input').focus();
     document.getElementById('open-submit-btn').addEventListener('click', function() {
       submitOpenAnswer(this);
     });
@@ -401,11 +402,18 @@
         '<div class="wordcloud-hint">M\u00e1ximo 3 palavras</div>' +
         '<button class="btn-primary" id="wc-submit-btn">Enviar resposta</button>' +
       '</div>';
-    document.getElementById('wc-answer-input').addEventListener('input', function() {
+    var wcInp = document.getElementById('wc-answer-input');
+    wcInp.focus();
+    wcInp.addEventListener('input', function() {
       var words = this.value.trim().split(/\s+/).filter(Boolean);
       if (words.length > 3) {
         this.value = words.slice(0, 3).join(' ');
+      } else if (words.length === 3 && this.value !== this.value.trimEnd()) {
+        this.value = this.value.trimEnd();
       }
+    });
+    wcInp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); submitWordcloudAnswer(document.getElementById('wc-submit-btn')); }
     });
     document.getElementById('wc-submit-btn').addEventListener('click', function() {
       submitWordcloudAnswer(this);
