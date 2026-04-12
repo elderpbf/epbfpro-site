@@ -429,7 +429,9 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(18, 14, 10, 0.94);
+            background: rgba(18, 14, 10, 0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
             z-index: 2100;
             overflow-y: auto;
             overflow-x: hidden;
@@ -2226,6 +2228,9 @@ function buildCollage() {
         canvas.innerHTML = '<p style="color:rgba(255,255,255,0.35);text-align:center;padding:80px 20px;font-family:Inter,sans-serif;">Nenhuma foto ainda.</p>';
         return;
     }
+
+    // Shuffle deterministically so layout looks scattered, not chronological
+    photos.sort((a, b) => _strHash(a.src + 'x') - _strHash(b.src + 'x'));
 
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     const cols = vw < 520 ? 2 : vw < 900 ? 3 : 4;
