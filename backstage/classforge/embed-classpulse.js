@@ -3,7 +3,8 @@
 // ============================================================
 // ClassPulse Embed
 // Scans for .cf-classpulse-embed[data-session][data-question-id]
-// and polls the Worker every 3s to render live results.
+// or .cf-classpulse-embed[data-slug] and polls the Worker every 3s
+// to render live results.
 //
 // Depends on: api-client.js (callWorker), question-renderer.js (QR)
 // Exposes: window.ClassPulseEmbed = { scan, stopAll }
@@ -22,10 +23,81 @@
     var session    = container.dataset.session;
     var questionId = container.dataset.questionId;
     var slug       = container.dataset.slug;
+    var _lastActiveId = null;
+
+    function showWaiting() {
+      if (container.dataset.state === 'waiting') return;
+      container.dataset.state = 'waiting';
+      container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Aguardando quest\u00e3o...</p>';
+    }
+
+    function findInHistory(history, id) {
+      for (var i = 0; i < history.length; i++) {
+        if (history[i].id === id) return history[i];
+      }
+      return null;
+    }
+
+    function showRevealed(q) {
+      var stateKey = 'revealed-' + q.id;
+      if (container.dataset.state === stateKey) return;
+      container.dataset.state = stateKey;
+      QR.renderDisplay(q, q.answer_counts || [], container, {
+        mode: 'display',
+        showResults: q.show_results !== false,
+        revealAnswer: q.reveal_answer === true,
+        correctAnswer: q.correct_answer
+      });
+    }
+
+    function poll() {
+      if (!container.isConnected) return;
+      callWorker({ action: 'get_session_state', code: session, _silent: true }).then(function(data) {
+        if (!container.isConnected) return;
+        var aq   = data.active_question;
+        var hist = data.history || [];
+        var pinId = (questionId && questionId !== 'PLACEHOLDER') ? questionId : null;
+
+        if (aq) {
+          var matches = !pinId || aq.id === pinId;
+          if (matches) {
+            _lastActiveId = aq.id;
+            container.dataset.state = 'active';
+            QR.renderDisplay(aq, aq.answer_counts || [], container, { mode: 'display' });
+            return;
+          }
+        }
+
+        // No matching active question: check history for reveal/results state
+        var lookupId = pinId || _lastActiveId;
+        if (lookupId) {
+          var hq = findInHistory(hist, lookupId);
+          if (hq && (hq.show_results || hq.reveal_answer)) {
+            showRevealed(hq);
+            return;
+          }
+        }
+
+        showWaiting();
+      }).catch(function(err) {
+        if (typeof dbg === 'function') dbg('[embed] poll error: ' + (err && err.message ? err.message : 'error'), 'error');
+        if (container.isConnected) showWaiting();
+      });
+    }
+
+    function armPoll() {
+      showWaiting();
+      poll();
+      var id = setInterval(function() {
+        if (!container.isConnected) { clearInterval(id); return; }
+        poll();
+      }, POLL_MS);
+      _timers.push(id);
+    }
 
     // Slug-mode: resolve session code dynamically; retries every 10s until a session is linked
     if (slug && !session) {
-      function tryResolveSlug() {
+      var tryResolveSlug = function tryResolveSlug() {
         if (!container.isConnected) return;
         callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
           if (!container.isConnected) return;
@@ -34,48 +106,19 @@
             setTimeout(tryResolveSlug, 10000);
             return;
           }
-          container.dataset.session = data.session.code;
-          startEmbed(container);
-        }).catch(function() {
+          session = data.session.code;
+          armPoll();
+        }).catch(function(err) {
+          if (typeof dbg === 'function') dbg('[embed] resolve error: ' + (err && err.message ? err.message : 'error'), 'error');
           if (container.isConnected) setTimeout(tryResolveSlug, 10000);
         });
-      }
+      };
       tryResolveSlug();
       return;
     }
 
     if (!session) return;
-
-    function showWaiting() {
-      if (container.dataset.state === 'waiting') return;
-      container.dataset.state = 'waiting';
-      container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Aguardando questão...</p>';
-    }
-
-    function poll() {
-      if (!container.isConnected) return;
-      callWorker({ action: 'get_session_state', code: session, _silent: true }).then(function(data) {
-        if (!container.isConnected) return;
-        var aq = data.active_question;
-        if (!aq) { showWaiting(); return; }
-        // Match by questionId if not placeholder
-        if (questionId && questionId !== 'PLACEHOLDER' && aq.id !== questionId) {
-          showWaiting(); return;
-        }
-        container.dataset.state = 'active';
-        QR.renderResults(aq, aq.answer_counts || [], container, { mode: 'display' });
-      }).catch(function() {
-        if (container.isConnected) showWaiting();
-      });
-    }
-
-    showWaiting();
-    poll();
-    var id = setInterval(function() {
-      if (!container.isConnected) { clearInterval(id); return; }
-      poll();
-    }, POLL_MS);
-    _timers.push(id);
+    armPoll();
   }
 
   function scan() {

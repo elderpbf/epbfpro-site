@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="../backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.1">
   <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.1">
-  <link rel="stylesheet" href="../backstage/css/public-header.css?v=1.0">
+  <link rel="stylesheet" href="../backstage/css/public-header.css?v=1.2">
   <script src="/backstage/js/debug.js?v=2.4"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -171,7 +171,7 @@
           ? (data.history || []).find(q => q.id === lastDisplayedQ.id) || lastDisplayedQ
           : (data.history || [])[0] || null;
         if (recentlyClosed) {
-          dbg('poll', `closed Q ...${recentlyClosed.id.slice(-6)} show=${recentlyClosed.show_results} reveal=${recentlyClosed.reveal_answer}`);
+          dbg('poll', `closed Q ...${recentlyClosed.id.slice(-6)} type=${recentlyClosed.type} ta=${recentlyClosed.text_answers !== undefined ? recentlyClosed.text_answers.length : 'undef'} show=${recentlyClosed.show_results}`);
           lastDisplayedQ = recentlyClosed;
           render(lastDisplayedQ, false);
         } else {
@@ -218,7 +218,9 @@
     const revealAnswer  = status === 'closed' && q.reveal_answer === true;
 
     const counts = q.answer_counts || new Array(options.length).fill(0);
-    const total  = counts.reduce((a, b) => a + b, 0);
+    const total  = (['open','wordcloud'].includes(q.type) && q.text_answers !== undefined)
+      ? q.text_answers.length
+      : counts.reduce((a, b) => a + b, 0);
 
     const badgeClass = status === 'active' ? 'live' : 'closed';
     const badgeLabel = status === 'active' ? t.live : t.final;
@@ -252,6 +254,7 @@
       }
       main.appendChild(feedEl);
     } else if (q.type === 'wordcloud' && q.text_answers !== undefined) {
+      dbg('info', 'wc-render: branch fired ta=' + q.text_answers.length);
       const cloudEl = document.createElement('div');
       cloudEl.className = 'qr-display';
       renderWordCloud(q.text_answers, cloudEl);
@@ -272,10 +275,11 @@
   function renderWordCloud(answers, container) {
     var freq = {};
     answers.forEach(function(a) {
-      var word = (a.value || '').trim().toLowerCase();
+      var word = (a.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       if (word) freq[word] = (freq[word] || 0) + 1;
     });
     var entries = Object.entries(freq).sort(function(a, b) { return b[1] - a[1]; });
+    dbg('info', 'renderWC: answers=' + answers.length + ' entries=' + entries.length);
     var PALETTE = ['#14b8a6','#6366f1','#3b82f6','#7c3aed','#c026d3','#16a34a','#0284c7'];
     if (entries.length === 0) {
       container.innerHTML = '<div class="center-state"><span class="state-text">Aguardando respostas...</span></div>';

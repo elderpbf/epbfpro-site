@@ -283,6 +283,9 @@
     var el = document.getElementById('bsdp-content-' + tab);
     if (!el) return;
 
+    // Capture scroll position BEFORE clearing so we know if user was pinned to bottom
+    var wasAtBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 30;
+
     // probe empty state
     if (tab === 'probe') {
       var empty = document.getElementById('bsdp-empty-probe');
@@ -300,7 +303,9 @@
                       '<span class="bsdp-msg">' + esc(entry.msg) + '</span>';
       el.appendChild(div);
     });
-    el.scrollTop = el.scrollHeight;
+
+    // Only auto-scroll if user was already at (or near) the bottom
+    if (wasAtBottom) el.scrollTop = el.scrollHeight;
   }
 
   function renderAll() {

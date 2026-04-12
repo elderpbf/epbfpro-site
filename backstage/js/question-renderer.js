@@ -76,6 +76,34 @@ QR._renderBarChart = function(options, counts, container, opts) {
   container.innerHTML = html;
 };
 
+// ── INTERNAL: Word cloud ──────────────────────────────────────
+// Renders a frequency word cloud from an array of text answer strings.
+QR._renderWordCloud = function(question, container) {
+  var textAnswers = question.text_answers || [];
+  var freq = {};
+  textAnswers.forEach(function(ans) {
+    var val = typeof ans === 'string' ? ans : (ans && ans.value ? String(ans.value) : '');
+    val.toLowerCase().trim().split(/\s+/).filter(Boolean).forEach(function(w) {
+      freq[w] = (freq[w] || 0) + 1;
+    });
+  });
+  var words = Object.keys(freq);
+  if (!words.length) {
+    container.innerHTML = '<p style="text-align:center;opacity:.5;font-size:0.9em">Aguardando respostas\u2026</p>';
+    return;
+  }
+  var max = Math.max.apply(null, words.map(function(w) { return freq[w]; }));
+  words.sort(function(a, b) { return freq[b] - freq[a]; });
+  words = words.slice(0, 30);
+  var html = '<div class="qr-wordcloud">';
+  words.forEach(function(w) {
+    var sz = (0.9 + (freq[w] / max) * 2.1).toFixed(2);
+    html += '<span class="qr-word" style="font-size:' + sz + 'em">' + escHtml(w) + '</span>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+};
+
 // ── INTERNAL: Button grid ─────────────────────────────────────
 // Renders clickable option buttons into container. Used by renderInput for mc/tf/poll.
 // opts: { onSelect(index, btn) }
@@ -125,6 +153,22 @@ QR.renderInput = function(question, container, opts) {
   }
 };
 
+// ── PUBLIC: renderDisplay ─────────────────────────────────────
+// Renders question text + results into container for display/embed contexts.
+// Mirrors the pattern in go/display.html: text heading above QR results.
+// opts: same as renderResults
+QR.renderDisplay = function(question, counts, container, opts) {
+  var resultsEl = document.createElement('div');
+  resultsEl.className = 'qr-display';
+  var html = '';
+  if (question.text) {
+    html += '<div class="question-text-display">' + escHtml(question.text) + '</div>';
+  }
+  container.innerHTML = html;
+  container.appendChild(resultsEl);
+  QR.renderResults(question, counts, resultsEl, opts);
+};
+
 // ── PUBLIC: renderResults ─────────────────────────────────────
 // Renders results display for the given question type.
 // opts: { mode, showResults, revealAnswer, correctAnswer, myAnswerIndex }
@@ -137,6 +181,9 @@ QR.renderResults = function(question, counts, container, opts) {
     case 'tf':
     case 'poll':
       QR._renderBarChart(question.options || [], counts, container, opts);
+      break;
+    case 'wordcloud':
+      QR._renderWordCloud(question, container);
       break;
     default:
       if (typeof showToastError === 'function') {
