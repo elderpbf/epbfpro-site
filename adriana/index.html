@@ -2226,32 +2226,32 @@ function buildCollage() {
     }
 
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-    const isMobile = vw < 520;
-    const cols = isMobile ? 2 : 3;
-    const photoSize = isMobile ? 128 : 150;
-    const polaroidW = photoSize + 20;
+    const cols = vw < 520 ? 2 : 3;
+    const sidePad = 32;
+    const gapX = 10;
+    const polaroidW = Math.floor((vw - sidePad - gapX * (cols - 1)) / cols);
+    const photoSize = polaroidW - 20;
     const polaroidH = photoSize + 46;
-    const stepX = polaroidW + 28;
-    const stepY = polaroidH + 22;
+    const stepX = polaroidW + gapX;
+    const stepY = polaroidH + 14;
     const rows = Math.ceil(photos.length / cols);
-    const gridW = cols * stepX;
-    const canvasW = Math.max(vw, gridW + 80);
-    const canvasH = rows * stepY + 140;
+    const canvasW = vw;
+    const canvasH = rows * stepY + 120;
 
     canvas.style.width = canvasW + 'px';
     canvas.style.height = canvasH + 'px';
     canvas.innerHTML = '';
 
-    const gridLeft = (canvasW - gridW) / 2;
+    const gridLeft = sidePad / 2;
 
     photos.forEach(function(photo, i) {
         const col = i % cols;
         const row = Math.floor(i / cols);
         const h = _strHash(photo.src);
 
-        const angle = (_sfrac(h, 7919) - 0.5) * 22;
-        const ox    = (_sfrac(h, 6271) - 0.5) * 34;
-        const oy    = (_sfrac(h, 5003) - 0.5) * 34;
+        const angle = (_sfrac(h, 7919) - 0.5) * 20;
+        const ox    = (_sfrac(h, 6271) - 0.5) * 16;
+        const oy    = (_sfrac(h, 5003) - 0.5) * 20;
 
         const x = gridLeft + col * stepX + ox;
         const y = 70 + row * stepY + oy;
