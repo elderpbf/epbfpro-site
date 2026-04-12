@@ -81,7 +81,8 @@ QR._renderBarChart = function(options, counts, container, opts) {
 QR._renderWordCloud = function(textAnswers, container) {
   var freq = {};
   (textAnswers || []).forEach(function(ans) {
-    (ans || '').toLowerCase().trim().split(/\s+/).filter(Boolean).forEach(function(w) {
+    var val = typeof ans === 'string' ? ans : (ans && ans.value ? String(ans.value) : '');
+    val.toLowerCase().trim().split(/\s+/).filter(Boolean).forEach(function(w) {
       freq[w] = (freq[w] || 0) + 1;
     });
   });
