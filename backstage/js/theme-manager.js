@@ -68,10 +68,23 @@ var ThemeManager = (function() {
     }
   }
 
+  function initPublic(opts) {
+    opts = opts || {};
+    var key      = opts.storageKey   || 'bs_theme_public';
+    var def      = opts.defaultTheme || 'light';
+    var urlTheme = new URLSearchParams(window.location.search).get('theme');
+    var stored   = localStorage.getItem(key);
+    var theme    = def;
+    if (urlTheme === 'dark' || urlTheme === 'light') theme = urlTheme;
+    else if (stored === 'dark' || stored === 'light') theme = stored;
+    applyTheme(theme);
+  }
+
   return {
     init: init,
     applyTheme: applyTheme,
     toggleTheme: toggleTheme,
+    initPublic: initPublic,
     SVG_SUN: SVG_SUN,
     SVG_MOON: SVG_MOON
   };
