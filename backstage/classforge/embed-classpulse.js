@@ -47,7 +47,7 @@
       if (container.dataset.state === stateKey) return;
       container.dataset.state = stateKey;
       probe('showing revealed question id=' + q.id, 'ok');
-      QR.renderResults(q, q.answer_counts || [], container, {
+      QR.renderDisplay(q, q.answer_counts || [], container, {
         mode: 'display',
         showResults: q.show_results !== false,
         revealAnswer: q.reveal_answer === true,
@@ -69,7 +69,7 @@
             _lastActiveId = aq.id;
             probe('poll – rendering type=' + aq.type + ' id=' + aq.id, 'ok');
             container.dataset.state = 'active';
-            QR.renderResults(aq, aq.answer_counts || [], container, { mode: 'display' });
+            QR.renderDisplay(aq, aq.answer_counts || [], container, { mode: 'display' });
             return;
           }
         }
