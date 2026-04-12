@@ -23,21 +23,24 @@
     var questionId = container.dataset.questionId;
     var slug       = container.dataset.slug;
 
-    // Slug-mode: resolve session code dynamically from linked session
+    // Slug-mode: resolve session code dynamically; retries every 10s until a session is linked
     if (slug && !session) {
-      callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
+      function tryResolveSlug() {
         if (!container.isConnected) return;
-        if (!data.session) {
-          container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Nenhuma sess\u00e3o vinculada.</p>';
-          return;
-        }
-        container.dataset.session = data.session.code;
-        startEmbed(container);
-      }).catch(function() {
-        if (container.isConnected) {
-          container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Nenhuma sess\u00e3o vinculada.</p>';
-        }
-      });
+        callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
+          if (!container.isConnected) return;
+          if (!data.session) {
+            container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Aguardando sess\u00e3o vinculada\u2026</p>';
+            setTimeout(tryResolveSlug, 10000);
+            return;
+          }
+          container.dataset.session = data.session.code;
+          startEmbed(container);
+        }).catch(function() {
+          if (container.isConnected) setTimeout(tryResolveSlug, 10000);
+        });
+      }
+      tryResolveSlug();
       return;
     }
 

@@ -424,6 +424,108 @@
         }
         .lightbox-jump-btn:active { opacity: 0.8; }
 
+        /* Photo collage overlay */
+        #collage-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(18, 14, 10, 0.18);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            z-index: 2100;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        #collage-overlay.open { display: block; }
+        #collage-topbar {
+            display: none;
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            z-index: 2102;
+            align-items: center;
+            justify-content: center;
+        }
+        #collage-topbar.open { display: flex; }
+        .collage-pill {
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            padding: 7px 16px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(240,212,138,0.82), rgba(232,160,180,0.82), rgba(196,168,212,0.82));
+            user-select: none;
+            cursor: default;
+            white-space: nowrap;
+        }
+        [data-theme="dark"] .collage-pill {
+            background: linear-gradient(135deg, rgba(184,160,90,0.82), rgba(176,120,136,0.82), rgba(150,128,168,0.82));
+        }
+        #collage-close-btn {
+            cursor: pointer;
+            font-size: 1.3rem;
+            line-height: 1;
+            padding: 7px 14px;
+            position: absolute;
+            right: 0;
+            transition: opacity 0.15s;
+        }
+        #collage-close-btn:hover { opacity: 0.8; }
+        #gallery-back-btn {
+            display: none;
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            color: #fff;
+            border: none;
+            border-radius: 24px;
+            padding: 11px 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 1999;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 2px 14px rgba(232,160,180,0.5);
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+        #collage-canvas {
+            position: relative;
+        }
+        .polaroid {
+            position: absolute;
+            background: #faf8f4;
+            padding: 10px 10px 36px;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.25);
+            will-change: transform;
+            transition: box-shadow 0.15s, z-index 0s;
+            cursor: pointer;
+        }
+        .polaroid:hover {
+            box-shadow: 0 8px 28px rgba(0,0,0,0.65), 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .polaroid img {
+            display: block;
+            object-fit: cover;
+        }
+        .polaroid-caption {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.6rem;
+            color: #999;
+            text-align: center;
+            margin-top: 7px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0.03em;
+        }
+
         /* Section headers with flower ornaments */
         .section-header {
             font-size: 0.75rem;
@@ -1418,6 +1520,7 @@
                     if (r[0]) curtidas[r[0]] = parseInt(r[1]) || 0;
                 }
 
+                window._collageUpdates = updates;
                 renderSummary(resumo, updates);
                 renderTimeline(updates, curtidas, fases);
                 updateLastUpdate(updates);
@@ -1621,7 +1724,8 @@
                 phaseUpdates[openPhase.nome] = phaseUpdates[openPhase.nome].concat(ungrouped);
             }
 
-            let html = '<div class="timeline-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Histórico<img src="media/optimized/flowers/1.webp" alt=""></div>';
+            let html = '<div class="timeline-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Histórico<img src="media/optimized/flowers/1.webp" alt=""></div>'
+                     + '<button class="msg-leave-btn" onclick="openCollage()" style="margin:12px auto 20px;">📷 Ver galeria de fotos</button>';
 
             // Phases, most recent first
             for (const fase of sortedFases) {
@@ -2111,6 +2215,136 @@ function jumpToPost(date, hora) {
         entry.style.backgroundColor = 'rgba(240,212,138,0.35)';
         setTimeout(() => { entry.style.backgroundColor = ''; }, 1600);
     }, 120);
+}
+</script>
+
+<div id="collage-topbar">
+    <span class="collage-pill">Toque para ver publicação original</span>
+    <span class="collage-pill" id="collage-close-btn" onclick="closeCollage()">×</span>
+</div>
+<div id="collage-overlay">
+    <div id="collage-canvas"></div>
+</div>
+<button id="gallery-back-btn" onclick="openCollage()">← Voltar à galeria</button>
+
+<script>
+function openCollage() {
+    buildCollage();
+    document.getElementById('collage-overlay').classList.add('open');
+    document.getElementById('collage-topbar').classList.add('open');
+    document.getElementById('gallery-back-btn').style.display = 'none';
+    clearTimeout(window._galleryBackTimer);
+    document.body.style.overflow = 'hidden';
+}
+function closeCollage() {
+    document.getElementById('collage-overlay').classList.remove('open');
+    document.getElementById('collage-topbar').classList.remove('open');
+    document.body.style.overflow = '';
+}
+function jumpToCollagePhoto(date, hora) {
+    closeCollage();
+    jumpToPost(date, hora);
+    const btn = document.getElementById('gallery-back-btn');
+    btn.style.display = 'block';
+    clearTimeout(window._galleryBackTimer);
+    window._galleryBackTimer = setTimeout(function() { btn.style.display = 'none'; }, 9000);
+}
+
+function _strHash(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+    return Math.abs(h >>> 0);
+}
+function _sfrac(h, seed) {
+    return ((h * seed) % 9973) / 9973;
+}
+
+function buildCollage() {
+    const canvas = document.getElementById('collage-canvas');
+    const updates = window._collageUpdates || [];
+
+    // Collect unique local image photos, oldest first (lowest z-index = bottom of pile)
+    const seen = new Set();
+    const photos = [];
+    const sorted = [...updates].sort((a, b) => {
+        const ka = dateToISO(a.data) + (a.hora || '');
+        const kb = dateToISO(b.data) + (b.hora || '');
+        return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    for (const u of sorted) {
+        if (!u.foto) continue;
+        for (const part of u.foto.split('|').map(s => s.trim())) {
+            if (!part || part.startsWith('#')) continue;
+            if (part.includes('/preview')) continue;        // Drive video embed
+            if (/\.(mp4|mov|webm)$/i.test(part)) continue; // local video
+            const resolved = resolveMediaUrl(part);
+            if (!resolved) continue;
+            if (seen.has(resolved)) continue;
+            seen.add(resolved);
+            photos.push({ src: resolved, date: u.data, hora: u.hora });
+        }
+    }
+
+    if (photos.length === 0) {
+        canvas.innerHTML = '<p style="color:rgba(255,255,255,0.35);text-align:center;padding:80px 20px;font-family:Inter,sans-serif;">Nenhuma foto ainda.</p>';
+        return;
+    }
+
+    // Shuffle deterministically so layout looks scattered, not chronological
+    photos.sort((a, b) => _strHash(a.src + 'x') - _strHash(b.src + 'x'));
+
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const cols = vw < 520 ? 2 : vw < 900 ? 3 : 4;
+    const sidePad = 16;
+    const gapX = 6;
+    const polaroidW = Math.floor((vw - sidePad - gapX * (cols - 1)) / cols);
+    const photoSize = polaroidW - 14;
+    const polaroidH = photoSize + 46;
+    const stepX = polaroidW + gapX;
+    const stepY = polaroidH + 14;
+    const rows = Math.ceil(photos.length / cols);
+    const canvasW = vw;
+    const canvasH = rows * stepY + 120;
+
+    canvas.style.width = canvasW + 'px';
+    canvas.style.height = canvasH + 'px';
+    canvas.innerHTML = '';
+
+    const gridLeft = sidePad / 2;
+
+    photos.forEach(function(photo, i) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const h = _strHash(photo.src);
+
+        const angle = (_sfrac(h, 7919) - 0.5) * 34;
+        const ox    = (_sfrac(h, 6271) - 0.5) * 55;
+        const oy    = (_sfrac(h, 5003) - 0.5) * 55;
+
+        const x = gridLeft + col * stepX + ox;
+        const y = 70 + row * stepY + oy;
+
+        const el = document.createElement('div');
+        el.className = 'polaroid';
+        el.style.cssText = 'left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;transform:rotate(' + angle.toFixed(2) + 'deg);z-index:' + (i + 1) + ';';
+
+        const img = document.createElement('img');
+        img.src = photo.src;
+        img.width = photoSize;
+        img.height = photoSize;
+        img.alt = '';
+        img.loading = 'lazy';
+
+        const cap = document.createElement('div');
+        cap.className = 'polaroid-caption';
+        cap.textContent = formatDateShort(photo.date);
+
+        el.onclick = (function(d, h) { return function() { jumpToCollagePhoto(d, h); }; })(photo.date, photo.hora);
+
+        el.appendChild(img);
+        el.appendChild(cap);
+        canvas.appendChild(el);
+    });
 }
 </script>
 </body>
