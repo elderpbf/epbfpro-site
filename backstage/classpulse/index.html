@@ -459,8 +459,10 @@ var AUTH_KEY = 'bs_auth';
 
 document.querySelectorAll('input[type="password"]').forEach(function(el) { el.value = ''; });
 
-if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
+if (!localStorage.getItem(PW_KEY)) {
   location.replace('/backstage/');
+} else if (sessionStorage.getItem(AUTH_KEY) !== '1') {
+  sessionStorage.setItem(AUTH_KEY, '1');
 }
 
 // ---------------------------------------------------------------------------
@@ -591,7 +593,8 @@ function renderSessions() {
       presentations.forEach(function(p) {
         var opt = document.createElement('option');
         opt.value = p.slug;
-        opt.textContent = p.title + ' \u2014 ' + p.slug;
+        var engineLabel = p.engine === 'panels' ? 'Panels' : 'Reveal';
+        opt.textContent = p.title + ' (' + engineLabel + ')';
         picker.appendChild(opt);
       });
       picker.addEventListener('change', async function() {

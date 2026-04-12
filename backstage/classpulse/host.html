@@ -368,8 +368,10 @@
 var PW_KEY   = 'bs_pw_hash';
 var AUTH_KEY = 'bs_auth';
 
-if (!localStorage.getItem(PW_KEY) || sessionStorage.getItem(AUTH_KEY) !== '1') {
+if (!localStorage.getItem(PW_KEY)) {
   location.replace('/backstage/');
+} else if (sessionStorage.getItem(AUTH_KEY) !== '1') {
+  sessionStorage.setItem(AUTH_KEY, '1');
 }
 
 // ---------------------------------------------------------------------------
