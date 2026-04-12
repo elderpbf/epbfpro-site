@@ -710,12 +710,6 @@ function getDemoContent() {
             href:  '/backstage/classpulse/host.html?code=' + encodeURIComponent(data.session.code),
             title: 'Abrir host ClassPulse'
           });
-          var badge = document.createElement('a');
-          badge.className = 'cf-session-badge';
-          badge.href = '/backstage/classpulse/host.html?code=' + encodeURIComponent(data.session.code);
-          badge.target = '_blank';
-          badge.textContent = 'ClassPulse: ' + data.session.code;
-          document.body.appendChild(badge);
         }
       }).catch(function() {});
     } catch (err) {

@@ -514,18 +514,20 @@ function renderPresentationLink() {
     var linked = _presentations.find(function(p) { return p.slug === slug; });
     var title   = linked ? linked.title : slug;
     var engine  = linked ? linked.engine : 'reveal';
+    var engLabel = engine === 'panels' ? 'Panels' : 'Reveal';
     var href    = engine === 'panels'
       ? '/backstage/classforge/presentations/' + slug + '/'
       : '/backstage/classforge/viewer/?slug=' + encodeURIComponent(slug);
     row.innerHTML =
       '<span class="host-pres-label">Apresenta\u00e7\u00e3o</span>' +
-      '<a class="host-pres-badge" href="' + escHtml(href) + '" target="_blank" rel="noopener">' + escHtml(title) + '</a>' +
+      '<a class="host-pres-badge" href="' + escHtml(href) + '" target="_blank" rel="noopener">' + escHtml(title) + ' (' + engLabel + ')</a>' +
       '<button class="host-btn host-btn-ghost" id="pres-unlink-btn" style="padding:0.3rem 0.75rem;font-size:0.78rem">Desvincular</button>';
     document.getElementById('pres-unlink-btn').addEventListener('click', doUnlinkPresentation);
   } else if (_presentations.length > 0) {
     var opts = '<option value="">Vincular apresenta\u00e7\u00e3o\u2026</option>';
     _presentations.forEach(function(p) {
-      opts += '<option value="' + escHtml(p.slug) + '">' + escHtml(p.title) + '</option>';
+      var el = p.engine === 'panels' ? 'Panels' : 'Reveal';
+      opts += '<option value="' + escHtml(p.slug) + '">' + escHtml(p.title) + ' (' + el + ')</option>';
     });
     row.innerHTML =
       '<span class="host-pres-label">Apresenta\u00e7\u00e3o</span>' +
