@@ -119,6 +119,14 @@
   .hi-bar-pct { font-weight: 600; color: var(--text-primary); width: 32px; text-align: right; }
   .hi-bar-count { color: var(--text-light); width: 20px; text-align: right; }
 
+  /* Presentation link row */
+  .host-pres-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; background: var(--surface); border: 1px solid rgba(20,184,166,.12); border-radius: 10px; padding: 0.55rem 1rem; margin-bottom: 1.25rem; }
+  .host-pres-row:empty { display: none; }
+  .host-pres-label { color: var(--text-secondary); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+  .host-pres-badge { color: var(--primary); font-weight: 600; font-size: 0.88rem; text-decoration: none; }
+  .host-pres-badge:hover { text-decoration: underline; }
+  .host-pres-select { padding: 0.35rem 0.7rem; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 7px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.84rem; outline: none; flex: 1; min-width: 0; }
+
   /* Alert */
   .host-alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; display: none; }
   .host-alert.show { display: block; }
@@ -217,6 +225,9 @@
           <button class="host-btn host-btn-danger" id="close-session-btn">Encerrar sessão</button>
         </div>
       </div>
+
+      <!-- Presentation link row -->
+      <div class="host-pres-row" id="pres-row"></div>
 
       <!-- Active question panel -->
       <div class="active-q-panel" id="active-q-panel">
@@ -391,10 +402,12 @@ var AUTH_TOKEN     = localStorage.getItem('bs_pw_hash') || '';
 // State
 // ---------------------------------------------------------------------------
 
-var sessionCode  = null;
-var activeQId    = null;
-var pollTimer    = null;
-var _historyMap  = {};
+var sessionCode    = null;
+var activeQId      = null;
+var pollTimer      = null;
+var _historyMap    = {};
+var _presentations = [];
+var _currentSession = null;
 
 // ---------------------------------------------------------------------------
 // Screens
@@ -433,7 +446,12 @@ var urlCode = new URLSearchParams(location.search).get('code');
 async function loadPicker() {
   var listEl = document.getElementById('picker-list');
   try {
-    var data = await callWorker({ action: 'list_sessions' });
+    var results = await Promise.allSettled([
+      callWorker({ action: 'list_sessions' }),
+      callWorker({ action: 'list_presentations' })
+    ]);
+    var data = results[0].status === 'fulfilled' ? results[0].value : { sessions: [] };
+    _presentations = (results[1].status === 'fulfilled' ? results[1].value.presentations : null) || [];
     var open = (data.sessions || []).filter(function(s) { return s.status === 'open'; });
 
     // Auto-select if code in URL
@@ -468,6 +486,7 @@ async function loadPicker() {
 
 function selectSession(s) {
   sessionCode = s.code;
+  _currentSession = s;
 
   document.getElementById('session-code-display').textContent = s.code;
   document.getElementById('session-name-display').textContent = s.title || ('Sessão ' + s.code);
@@ -478,7 +497,70 @@ function selectSession(s) {
 
   showScreen('screen-session');
   clearAlert();
+  renderPresentationLink();
   startPolling();
+}
+
+// ---------------------------------------------------------------------------
+// Presentation linking
+// ---------------------------------------------------------------------------
+
+function renderPresentationLink() {
+  var row = document.getElementById('pres-row');
+  if (!row) return;
+  var slug = _currentSession && _currentSession.presentation_slug;
+
+  if (slug) {
+    var linked = _presentations.find(function(p) { return p.slug === slug; });
+    var title   = linked ? linked.title : slug;
+    var engine  = linked ? linked.engine : 'reveal';
+    var href    = engine === 'panels'
+      ? '/backstage/classforge/presentations/' + slug + '/'
+      : '/backstage/classforge/viewer/?slug=' + encodeURIComponent(slug);
+    row.innerHTML =
+      '<span class="host-pres-label">Apresenta\u00e7\u00e3o</span>' +
+      '<a class="host-pres-badge" href="' + escHtml(href) + '" target="_blank" rel="noopener">' + escHtml(title) + '</a>' +
+      '<button class="host-btn host-btn-ghost" id="pres-unlink-btn" style="padding:0.3rem 0.75rem;font-size:0.78rem">Desvincular</button>';
+    document.getElementById('pres-unlink-btn').addEventListener('click', doUnlinkPresentation);
+  } else if (_presentations.length > 0) {
+    var opts = '<option value="">Vincular apresenta\u00e7\u00e3o\u2026</option>';
+    _presentations.forEach(function(p) {
+      opts += '<option value="' + escHtml(p.slug) + '">' + escHtml(p.title) + '</option>';
+    });
+    row.innerHTML =
+      '<span class="host-pres-label">Apresenta\u00e7\u00e3o</span>' +
+      '<select class="host-pres-select" id="pres-picker">' + opts + '</select>' +
+      '<button class="host-btn host-btn-ghost" id="pres-link-btn" style="padding:0.3rem 0.75rem;font-size:0.78rem">Vincular</button>';
+    document.getElementById('pres-link-btn').addEventListener('click', async function() {
+      var s = document.getElementById('pres-picker').value;
+      if (!s) return;
+      await doLinkPresentation(s);
+    });
+  } else {
+    row.innerHTML = '';
+  }
+}
+
+async function doLinkPresentation(slug) {
+  try {
+    await callWorker({ action: 'link_presentation', auth_token: AUTH_TOKEN, code: sessionCode, slug: slug });
+    _currentSession.presentation_slug = slug;
+    renderPresentationLink();
+    showToast('Apresenta\u00e7\u00e3o vinculada.');
+  } catch (e) {
+    showToastError(e.message);
+  }
+}
+
+async function doUnlinkPresentation() {
+  try {
+    await callWorker({ action: 'unlink_presentation', auth_token: AUTH_TOKEN, code: sessionCode });
+    _currentSession.presentation_slug = null;
+    renderPresentationLink();
+    showToast('Apresenta\u00e7\u00e3o desvinculada.');
+  } catch (e) {
+    showToastError(e.message);
+  }
 }
 
 // Start the picker on load
