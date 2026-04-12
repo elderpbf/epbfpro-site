@@ -240,7 +240,7 @@
   font-size: 0.72rem; font-weight: 600;
   background: rgba(99,102,241,.15); color: var(--primary);
   border-radius: 6px; padding: 0.2rem 0.5rem;
-  cursor: pointer; white-space: nowrap; max-width: 160px;
+  cursor: pointer; white-space: nowrap; max-width: 220px;
   overflow: hidden; text-overflow: ellipsis;
   display: inline-flex; align-items: center;
 }
