@@ -439,10 +439,11 @@
         }
         #collage-overlay.open { display: block; }
         #collage-close-btn {
+            display: none;
             position: fixed;
             top: 14px;
             right: 18px;
-            color: rgba(255,255,255,0.45);
+            color: rgba(255,255,255,0.55);
             font-size: 2.4rem;
             cursor: pointer;
             z-index: 2102;
@@ -451,7 +452,27 @@
             user-select: none;
             transition: color 0.15s;
         }
-        #collage-close-btn:hover { color: rgba(255,255,255,0.8); }
+        #collage-close-btn:hover { color: rgba(255,255,255,0.9); }
+        #gallery-back-btn {
+            display: none;
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            color: #fff;
+            border: none;
+            border-radius: 24px;
+            padding: 11px 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 1999;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 2px 14px rgba(232,160,180,0.5);
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
         #collage-canvas {
             position: relative;
         }
@@ -2175,20 +2196,33 @@ function jumpToPost(date, hora) {
 }
 </script>
 
+<span id="collage-close-btn" onclick="closeCollage()">×</span>
 <div id="collage-overlay">
-    <span id="collage-close-btn" onclick="closeCollage()">×</span>
     <div id="collage-canvas"></div>
 </div>
+<button id="gallery-back-btn" onclick="openCollage()">← Voltar à galeria</button>
 
 <script>
 function openCollage() {
     buildCollage();
     document.getElementById('collage-overlay').classList.add('open');
+    document.getElementById('collage-close-btn').style.display = 'block';
+    document.getElementById('gallery-back-btn').style.display = 'none';
+    clearTimeout(window._galleryBackTimer);
     document.body.style.overflow = 'hidden';
 }
 function closeCollage() {
     document.getElementById('collage-overlay').classList.remove('open');
+    document.getElementById('collage-close-btn').style.display = 'none';
     document.body.style.overflow = '';
+}
+function jumpToCollagePhoto(date, hora) {
+    closeCollage();
+    jumpToPost(date, hora);
+    const btn = document.getElementById('gallery-back-btn');
+    btn.style.display = 'block';
+    clearTimeout(window._galleryBackTimer);
+    window._galleryBackTimer = setTimeout(function() { btn.style.display = 'none'; }, 9000);
 }
 
 function _strHash(s) {
@@ -2251,6 +2285,11 @@ function buildCollage() {
     canvas.style.height = canvasH + 'px';
     canvas.innerHTML = '';
 
+    const hint = document.createElement('p');
+    hint.style.cssText = 'position:absolute;top:16px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.4);font-size:0.7rem;font-family:Inter,sans-serif;pointer-events:none;letter-spacing:0.02em;';
+    hint.textContent = 'Toque em uma foto para ver a publicação original';
+    canvas.appendChild(hint);
+
     const gridLeft = sidePad / 2;
 
     photos.forEach(function(photo, i) {
@@ -2280,7 +2319,7 @@ function buildCollage() {
         cap.className = 'polaroid-caption';
         cap.textContent = formatDateShort(photo.date);
 
-        el.onclick = (function(d, h) { return function() { closeCollage(); jumpToPost(d, h); }; })(photo.date, photo.hora);
+        el.onclick = (function(d, h) { return function() { jumpToCollagePhoto(d, h); }; })(photo.date, photo.hora);
 
         el.appendChild(img);
         el.appendChild(cap);
