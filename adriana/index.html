@@ -446,8 +446,7 @@
             right: 14px;
             z-index: 2102;
             align-items: center;
-            justify-content: space-between;
-            gap: 10px;
+            justify-content: center;
         }
         #collage-topbar.open { display: flex; }
         .collage-pill {
@@ -471,7 +470,8 @@
             font-size: 1.3rem;
             line-height: 1;
             padding: 7px 14px;
-            flex-shrink: 0;
+            position: absolute;
+            right: 0;
             transition: opacity 0.15s;
         }
         #collage-close-btn:hover { opacity: 0.8; }
