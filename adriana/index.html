@@ -2239,15 +2239,13 @@ function openCollage() {
 function closeCollage() {
     document.getElementById('collage-overlay').classList.remove('open');
     document.getElementById('collage-topbar').classList.remove('open');
+    document.getElementById('gallery-back-btn').style.display = 'none';
     document.body.style.overflow = '';
 }
 function jumpToCollagePhoto(date, hora) {
     closeCollage();
     jumpToPost(date, hora);
-    const btn = document.getElementById('gallery-back-btn');
-    btn.style.display = 'block';
-    clearTimeout(window._galleryBackTimer);
-    window._galleryBackTimer = setTimeout(function() { btn.style.display = 'none'; }, 9000);
+    document.getElementById('gallery-back-btn').style.display = 'block';
 }
 
 function _strHash(s) {
