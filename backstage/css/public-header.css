@@ -22,7 +22,7 @@ pensoia-header {
 
 pensoia-header .ph-bar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr auto max-content;
   align-items: center;
   gap: clamp(8px, 1.6vw, 18px);
   padding: clamp(8px, 1.4vh, 14px) clamp(14px, 2.4vw, 28px);
@@ -294,12 +294,10 @@ pensoia-header[mode="display"] .ph-modal-code {
   }
 }
 
-/* ---------- narrow phones: prevent ph-right overflow ---------- */
+/* ---------- narrow phones: tighten ph-right ---------- */
 
 @media (max-width: 480px) {
   pensoia-header[mode="student"] .ph-right {
-    min-width: 0;
-    overflow: hidden;
     gap: 6px;
   }
   pensoia-header[mode="student"] .ph-code-btn {
