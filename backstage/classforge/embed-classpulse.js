@@ -14,10 +14,6 @@
   var POLL_MS = 3000;
   var _timers = [];
 
-  function probe(msg, level) {
-    if (typeof bsProbe === 'function') bsProbe('[embed] ' + msg, level || 'info');
-  }
-
   function stopAll() {
     _timers.forEach(function(id) { clearInterval(id); });
     _timers = [];
@@ -46,7 +42,6 @@
       var stateKey = 'revealed-' + q.id;
       if (container.dataset.state === stateKey) return;
       container.dataset.state = stateKey;
-      probe('showing revealed question id=' + q.id, 'ok');
       QR.renderDisplay(q, q.answer_counts || [], container, {
         mode: 'display',
         showResults: q.show_results !== false,
@@ -67,7 +62,6 @@
           var matches = !pinId || aq.id === pinId;
           if (matches) {
             _lastActiveId = aq.id;
-            probe('poll – rendering type=' + aq.type + ' id=' + aq.id, 'ok');
             container.dataset.state = 'active';
             QR.renderDisplay(aq, aq.answer_counts || [], container, { mode: 'display' });
             return;
@@ -84,16 +78,14 @@
           }
         }
 
-        probe('poll – no active question (session=' + session + ')');
         showWaiting();
       }).catch(function(err) {
-        probe('poll catch: ' + (err && err.message ? err.message : 'error'), 'error');
+        if (typeof dbg === 'function') dbg('[embed] poll error: ' + (err && err.message ? err.message : 'error'), 'error');
         if (container.isConnected) showWaiting();
       });
     }
 
     function armPoll() {
-      probe('armPoll – session=' + session);
       showWaiting();
       poll();
       var id = setInterval(function() {
@@ -105,23 +97,19 @@
 
     // Slug-mode: resolve session code dynamically; retries every 10s until a session is linked
     if (slug && !session) {
-      probe('slug-mode start, slug=' + slug);
       var tryResolveSlug = function tryResolveSlug() {
-        probe('resolving slug=' + slug + '...');
         if (!container.isConnected) return;
         callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
           if (!container.isConnected) return;
           if (!data.session) {
-            probe('no session linked to slug=' + slug + ', retry in 10s');
             container.innerHTML = '<p style="text-align:center;opacity:.6;font-size:0.9em">Aguardando sess\u00e3o vinculada\u2026</p>';
             setTimeout(tryResolveSlug, 10000);
             return;
           }
-          probe('session resolved: slug=' + slug + ' -> code=' + data.session.code, 'ok');
           session = data.session.code;
           armPoll();
         }).catch(function(err) {
-          probe('resolve catch: ' + (err && err.message ? err.message : 'error') + ', retry in 10s', 'error');
+          if (typeof dbg === 'function') dbg('[embed] resolve error: ' + (err && err.message ? err.message : 'error'), 'error');
           if (container.isConnected) setTimeout(tryResolveSlug, 10000);
         });
       };
@@ -130,13 +118,11 @@
     }
 
     if (!session) return;
-    probe('session-mode, session=' + session);
     armPoll();
   }
 
   function scan() {
     var els = document.querySelectorAll('.cf-classpulse-embed[data-session][data-question-id], .cf-classpulse-embed[data-slug]');
-    probe('scan: found ' + els.length + ' embed(s)');
     els.forEach(function(el) {
       if (el.dataset.embedStarted) return;
       el.dataset.embedStarted = '1';
