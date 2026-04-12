@@ -462,6 +462,7 @@
             box-shadow: 0 5px 18px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.25);
             will-change: transform;
             transition: box-shadow 0.15s, z-index 0s;
+            cursor: pointer;
         }
         .polaroid:hover {
             box-shadow: 0 8px 28px rgba(0,0,0,0.65), 0 2px 6px rgba(0,0,0,0.3);
@@ -1124,7 +1125,7 @@
         <div class="header">
             <picture>
                 <source srcset="media/optimized/adriana-flowers.webp" type="image/webp">
-                <img class="header-photo" src="media/optimized/adriana-flowers.jpg" alt="Adriana" onclick="openCollage()" style="cursor:pointer">
+                <img class="header-photo" src="media/optimized/adriana-flowers.jpg" alt="Adriana">
             </picture>
         </div>
 
@@ -1680,7 +1681,8 @@
                 phaseUpdates[openPhase.nome] = phaseUpdates[openPhase.nome].concat(ungrouped);
             }
 
-            let html = '<div class="timeline-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Histórico<img src="media/optimized/flowers/1.webp" alt=""></div>';
+            let html = '<div class="timeline-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Histórico<img src="media/optimized/flowers/1.webp" alt=""></div>'
+                     + '<button class="msg-leave-btn ghost" onclick="openCollage()" style="margin:12px auto 20px;">📷 Ver galeria de fotos</button>';
 
             // Phases, most recent first
             for (const fase of sortedFases) {
@@ -2220,7 +2222,7 @@ function buildCollage() {
             if (!resolved) continue;
             if (seen.has(resolved)) continue;
             seen.add(resolved);
-            photos.push({ src: resolved, date: u.data });
+            photos.push({ src: resolved, date: u.data, hora: u.hora });
         }
     }
 
@@ -2277,6 +2279,8 @@ function buildCollage() {
         const cap = document.createElement('div');
         cap.className = 'polaroid-caption';
         cap.textContent = formatDateShort(photo.date);
+
+        el.onclick = (function(d, h) { return function() { closeCollage(); jumpToPost(d, h); }; })(photo.date, photo.hora);
 
         el.appendChild(img);
         el.appendChild(cap);
