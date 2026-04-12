@@ -429,7 +429,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(18, 14, 10, 0.35);
+            background: rgba(18, 14, 10, 0.18);
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
             z-index: 2100;
@@ -443,7 +443,7 @@
             position: fixed;
             top: 14px;
             right: 18px;
-            color: rgba(255,255,255,0.55);
+            color: rgba(255,255,255,0.9);
             font-size: 2.4rem;
             cursor: pointer;
             z-index: 2102;
@@ -2270,10 +2270,10 @@ function buildCollage() {
 
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     const cols = vw < 520 ? 2 : vw < 900 ? 3 : 4;
-    const sidePad = 32;
-    const gapX = 10;
+    const sidePad = 16;
+    const gapX = 6;
     const polaroidW = Math.floor((vw - sidePad - gapX * (cols - 1)) / cols);
-    const photoSize = polaroidW - 20;
+    const photoSize = polaroidW - 14;
     const polaroidH = photoSize + 46;
     const stepX = polaroidW + gapX;
     const stepY = polaroidH + 14;
@@ -2286,7 +2286,7 @@ function buildCollage() {
     canvas.innerHTML = '';
 
     const hint = document.createElement('p');
-    hint.style.cssText = 'position:absolute;top:16px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.4);font-size:0.7rem;font-family:Inter,sans-serif;pointer-events:none;letter-spacing:0.02em;';
+    hint.style.cssText = 'position:absolute;top:16px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.82);font-size:0.7rem;font-family:Inter,sans-serif;pointer-events:none;letter-spacing:0.02em;text-shadow:0 1px 4px rgba(0,0,0,0.6);';
     hint.textContent = 'Toque em uma foto para ver a publicação original';
     canvas.appendChild(hint);
 
@@ -2297,9 +2297,9 @@ function buildCollage() {
         const row = Math.floor(i / cols);
         const h = _strHash(photo.src);
 
-        const angle = (_sfrac(h, 7919) - 0.5) * 28;
-        const ox    = (_sfrac(h, 6271) - 0.5) * 40;
-        const oy    = (_sfrac(h, 5003) - 0.5) * 40;
+        const angle = (_sfrac(h, 7919) - 0.5) * 34;
+        const ox    = (_sfrac(h, 6271) - 0.5) * 55;
+        const oy    = (_sfrac(h, 5003) - 0.5) * 55;
 
         const x = gridLeft + col * stepX + ox;
         const y = 70 + row * stepY + oy;
