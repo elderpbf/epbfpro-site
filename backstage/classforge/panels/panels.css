@@ -301,4 +301,21 @@ html, body {
   margin-bottom: 0.5rem;
 }
 
+.cf-session-badge {
+  position: fixed;
+  bottom: 12px; left: 12px;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.72);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.cf-session-badge:hover { opacity: 1; }
+
 
