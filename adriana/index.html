@@ -429,7 +429,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(18, 14, 10, 0.72);
+            background: rgba(18, 14, 10, 0.35);
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
             z-index: 2100;
@@ -2256,9 +2256,9 @@ function buildCollage() {
         const row = Math.floor(i / cols);
         const h = _strHash(photo.src);
 
-        const angle = (_sfrac(h, 7919) - 0.5) * 20;
-        const ox    = (_sfrac(h, 6271) - 0.5) * 16;
-        const oy    = (_sfrac(h, 5003) - 0.5) * 20;
+        const angle = (_sfrac(h, 7919) - 0.5) * 28;
+        const ox    = (_sfrac(h, 6271) - 0.5) * 40;
+        const oy    = (_sfrac(h, 5003) - 0.5) * 40;
 
         const x = gridLeft + col * stepX + ox;
         const y = 70 + row * stepY + oy;
