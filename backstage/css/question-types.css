@@ -184,7 +184,7 @@
 
 /* ── INPUTS (STUDENT MODE) ───────────────────────────────── */
 .qr-open-form, .qr-wc-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
-.qr-open-textarea { width: 100%; padding: 14px 16px; border-radius: 8px; border: 2px solid var(--border); background: var(--background); color: var(--text-primary); font-family: inherit; font-size: 1.05rem; outline: none; transition: border-color 0.2s; resize: vertical; min-height: 100px; box-sizing: border-box; }
+.qr-open-textarea { width: 100%; padding: 14px 16px; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 1.05rem; outline: none; transition: border-color 0.2s; resize: vertical; min-height: 100px; box-sizing: border-box; }
 .qr-open-textarea:focus { border-color: var(--primary); }
 .qr-char-counter { font-size: 0.85rem; color: var(--text-light); }
 
