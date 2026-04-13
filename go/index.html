@@ -7,7 +7,7 @@
   <title>Classroom · PensoIA</title>
   <link rel="stylesheet" href="../backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.1">
-  <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.1">
+  <link rel="stylesheet" href="../backstage/css/question-types.css?v=1.2">
   <link rel="stylesheet" href="../backstage/css/public-header.css?v=1.2">
   <script src="/backstage/js/debug.js?v=2.4"></script>
   <style>
@@ -55,14 +55,6 @@
     .results-count { font-size: 0.78rem; color: var(--text-light); text-align: center; margin-top: 18px; }
     .results-next  { font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-top: 10px; }
 
-    /* Open text input */
-    .open-text-form { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
-    .open-textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: inherit; background: var(--surface); color: var(--text-primary); outline: none; transition: border-color 0.15s; resize: vertical; min-height: 90px; line-height: 1.5; box-sizing: border-box; }
-    .open-textarea:focus { border-color: var(--primary); }
-    .char-counter { font-size: 0.72rem; color: var(--text-light); text-align: right; }
-
-    /* Word cloud input */
-    .wordcloud-hint { font-size: 0.72rem; color: var(--text-light); margin-top: 4px; }
 
     /* Refresh dot */
     .dot-wrap { text-align: center; margin-top: 18px; }
@@ -110,13 +102,13 @@
       <div class="dot-wrap"><div class="refresh-dot" id="dot-waiting"></div></div>
     </div>
 
-    <!-- question -->
-    <div id="state-question" style="display:none">
-      <div class="question-label">Pergunta</div>
-      <div class="question-text" id="q-text"></div>
-      <div id="q-options"></div>
+    <!-- cpq area -->
+    <div id="state-cpq" class="panel-card" style="display:none; padding-bottom: 24px;">
+      <h2 id="cpq-q-text" class="question-text"></h2>
+      <classpulse-question id="cpq" mode="student"></classpulse-question>
       <p id="answer-sending-msg" style="display:none;font-size:0.82rem;color:var(--text-secondary);text-align:center;margin-top:10px">Enviando...</p>
-      <div class="error-msg" id="answer-error"></div>
+      <div class="error-msg" id="answer-error" style="margin-top: 10px;"></div>
+      <div id="results-footer" class="results-next" style="display:none; margin-top:20px;">Próxima pergunta em breve…</div>
     </div>
 
     <!-- answered -->
@@ -125,15 +117,6 @@
       <div class="state-title">Resposta enviada!</div>
       <div class="state-sub">Aguardando o resultado…</div>
       <div class="dot-wrap"><div class="refresh-dot" id="dot-answered"></div></div>
-    </div>
-
-    <!-- results -->
-    <div id="state-results" class="results-section" style="display:none">
-      <div class="question-label">Resultado</div>
-      <div class="results-question" id="results-q-text"></div>
-      <div id="results-bars"></div>
-      <div class="results-count" id="results-count"></div>
-      <div class="results-next">Próxima pergunta em breve…</div>
     </div>
 
     <!-- closed -->
@@ -147,7 +130,8 @@
 </div>
 <script src="../backstage/js/utils.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.1"></script>
-<script src="../backstage/js/question-renderer.js?v=1.2"></script>
+<script src="../backstage/js/question-renderer.js?v=2.2"></script>
+<script src="../backstage/js/classpulse-question.js?v=1.0"></script>
 <script src="../backstage/js/theme-manager.js?v=1.1"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
 <script>
@@ -162,9 +146,6 @@
   headerEl.addEventListener('ph-exit', function() { exitSession(); });
   // ────────────────────────────────────────────────────────────────────────
 
-  // ── CONFIG ──────────────────────────────────────────────────────────────
-  const POLL_INTERVAL   = 3000;
-  // ────────────────────────────────────────────────────────────────────────
 
   // ── I18N ────────────────────────────────────────────────────────────────
   const ACTIVE_LANG = 'pt';
@@ -195,11 +176,8 @@
   const t = STRINGS[ACTIVE_LANG] || STRINGS.pt;
   // ────────────────────────────────────────────────────────────────────────
 
-  let currentSession    = null; // { code, title, studentName }
-  let pollTimer         = null;
+  let currentSession     = null; // { code, title, studentName }
   let activeQuestionData = null; // { id, text, options[] }
-  let lastActiveQId     = null;  // ID of last seen active question
-  let showingResultsFor = null;  // ID of question currently showing results
 
 
   // ── JOIN ─────────────────────────────────────────────────────────────────
@@ -254,15 +232,16 @@
     headerEl.setAttribute('session-title', currentSession.title);
     headerEl.setAttribute('code', currentSession.code);
     showState('waiting');
-    pollData();
-    pollTimer = setInterval(pollData, POLL_INTERVAL);
+    
+    document.getElementById('cpq').setAttribute('session', currentSession.code);
   }
 
   function exitSession() {
-    clearInterval(pollTimer);
-    currentSession = lastActiveQId = showingResultsFor = null;
-    activeQuestionData = null;
+    currentSession = activeQuestionData = null;
     sessionStorage.removeItem('cl_session');
+    
+    document.getElementById('cpq').removeAttribute('session');
+    
     document.getElementById('session-screen').style.display = 'none';
     document.getElementById('join-screen').style.display    = 'block';
     document.getElementById('code-input').value = '';
@@ -274,7 +253,7 @@
   // ── STATE MANAGEMENT ─────────────────────────────────────────────────────
   function showState(state) {
     dbg('info', `state → ${state}`);
-    ['waiting','question','answered','results','closed'].forEach(s => {
+    ['waiting','cpq','answered','closed'].forEach(s => {
       document.getElementById('state-' + s).style.display = (s === state) ? '' : 'none';
     });
   }
@@ -286,139 +265,64 @@
     setTimeout(() => dot.classList.remove('active'), 500);
   }
 
-  // ── POLLING ───────────────────────────────────────────────────────────────
-  async function pollData() {
-    try {
-      const data = await callWorker({ action: 'get_session_state', code: currentSession.code });
+  // ── COMPONENT EVENT LISTENERS ─────────────────────────────────────────────
+  const cpqEl = document.getElementById('cpq');
 
-      if (!data.session || data.session.status === 'closed') {
-        clearInterval(pollTimer);
-        showState('closed');
-        return;
-      }
-
-      pulseDot('dot-waiting');
-      pulseDot('dot-answered');
-
-      const activeQ = data.active_question;
-
-      if (activeQ) {
-        const qId = activeQ.id;
-        dbg('poll', `active Q …${qId.slice(-6)}`);
-        lastActiveQId = qId;
-        showingResultsFor = null;
-
-        const myAnswer = localStorage.getItem('cl_ans_' + qId);
-        if (myAnswer !== null) {
-          showState('answered');
-        } else {
-          if (!activeQuestionData || activeQuestionData.id !== qId) {
-            renderQuestion(activeQ);
-          }
-          showState('question');
-        }
-      } else {
-        // No active question
-        if (lastActiveQId && !showingResultsFor) {
-          const prevQ    = (data.history || []).find(q => q.id === lastActiveQId);
-          const myAnswer = localStorage.getItem('cl_ans_' + lastActiveQId);
-          const doShow   = prevQ && prevQ.show_results === true;
-
-          if (doShow && myAnswer !== null) {
-            showingResultsFor = lastActiveQId;
-            lastActiveQId = null;
-            renderResults(prevQ, parseInt(myAnswer));
-            showState('results');
-            // Stay in results until a new question is launched — no timeout
-          } else {
-            // No results to show; stay in 'answered' if student answered, else 'waiting'
-            if (myAnswer !== null) {
-              showState('answered');
-            } else {
-              lastActiveQId = null;
-              showState('waiting');
-            }
-          }
-        } else if (!showingResultsFor) {
-          showState('waiting');
-        }
-      }
-    } catch (err) {
-      console.error('poll error:', err);
-      dbg('error', `poll: ${err.message}`);
+  cpqEl.addEventListener('cpq-data', (e) => {
+    const data = e.detail;
+    if (!data.session || data.session.status === 'closed') {
+      showState('closed');
+      return;
     }
-  }
+    pulseDot('dot-waiting');
+    pulseDot('dot-answered');
+  });
 
-  // ── RENDER QUESTION ───────────────────────────────────────────────────────
-  function renderQuestion(row) {
+  cpqEl.addEventListener('cpq-idle', () => {
+    showState('waiting');
+    activeQuestionData = null;
+  });
+
+  cpqEl.addEventListener('cpq-question', (e) => {
+    const row = e.detail;
     activeQuestionData = { id: row.id, text: row.text, options: row.options, type: row.type };
-
-    document.getElementById('q-text').textContent = activeQuestionData.text;
+    document.getElementById('cpq-q-text').textContent = row.text;
     document.getElementById('answer-error').textContent = '';
-    var container = document.getElementById('q-options');
-    if (row.type === 'open') {
-      renderOpenTextInput(container);
-    } else if (row.type === 'wordcloud') {
-      renderWordcloudInput(container);
+    document.getElementById('results-footer').style.display = 'none';
+    
+    const myAnswer = localStorage.getItem('cl_ans_' + row.id);
+    if (myAnswer !== null) {
+      showState('answered');
     } else {
-      QR.renderInput(row, container, {
-        mode: 'student',
-        onSelect: function(index, btn) { submitAnswer(index, btn); }
-      });
+      cpqEl.removeAttribute('my-answer');
+      showState('cpq');
     }
-  }
+  });
 
-  function renderOpenTextInput(container) {
-    container.style.display = 'block';
-    container.innerHTML =
-      '<div class="open-text-form">' +
-        '<textarea class="open-textarea" id="open-answer-input" maxlength="500" placeholder="Digite sua resposta..."></textarea>' +
-        '<div class="char-counter"><span id="open-char-count">0</span>/500</div>' +
-        '<button class="btn-primary" id="open-submit-btn">Enviar resposta</button>' +
-      '</div>';
-    document.getElementById('open-answer-input').addEventListener('input', function() {
-      document.getElementById('open-char-count').textContent = this.value.length;
-    });
-    setTimeout(function() { document.getElementById('open-answer-input').focus(); }, 0);
-    document.getElementById('open-submit-btn').addEventListener('click', function() {
-      submitOpenAnswer(this);
-    });
-  }
+  cpqEl.addEventListener('cpq-revealed', (e) => {
+    const row = e.detail;
+    document.getElementById('cpq-q-text').textContent = row.text;
+    document.getElementById('results-footer').style.display = 'block';
+    document.getElementById('answer-sending-msg').style.display = 'none';
+    document.getElementById('answer-error').textContent = '';
 
-  function renderWordcloudInput(container) {
-    container.style.display = 'block';
-    container.innerHTML =
-      '<div class="open-text-form">' +
-        '<input type="text" class="open-textarea" id="wc-answer-input" maxlength="50" ' +
-               'placeholder="Digite 1 a 3 palavras..." style="min-height:auto;resize:none;padding:12px 14px">' +
-        '<div class="wordcloud-hint">M\u00e1ximo 3 palavras</div>' +
-        '<button class="btn-primary" id="wc-submit-btn">Enviar resposta</button>' +
-      '</div>';
-    var wcInp = document.getElementById('wc-answer-input');
-    setTimeout(function() { wcInp.focus(); }, 0);
-    wcInp.addEventListener('input', function() {
-      var words = this.value.trim().split(/\s+/).filter(Boolean);
-      if (words.length > 3) {
-        this.value = words.slice(0, 3).join(' ');
-      } else if (words.length === 3 && this.value !== this.value.trimEnd()) {
-        this.value = this.value.trimEnd();
-      }
-    });
-    wcInp.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { e.preventDefault(); submitWordcloudAnswer(document.getElementById('wc-submit-btn')); }
-    });
-    document.getElementById('wc-submit-btn').addEventListener('click', function() {
-      submitWordcloudAnswer(this);
-    });
-  }
+    const myAnswer = localStorage.getItem('cl_ans_' + row.id);
+    if (myAnswer !== null) cpqEl.setAttribute('my-answer', myAnswer);
+    
+    showState('cpq');
+  });
 
-  async function submitWordcloudAnswer(btn) {
+  cpqEl.addEventListener('cpq-submit', (e) => {
+    const detail = e.detail;
+    if (detail.type === 'index') submitAnswer(detail.value, detail.el);
+    else submitValueAnswer(detail.value);
+  });
+
+  async function submitValueAnswer(value) {
     if (!activeQuestionData) return;
-    var text = (document.getElementById('wc-answer-input').value || '').trim();
-    if (!text) { document.getElementById('answer-error').textContent = 'Escreva sua resposta antes de enviar.'; return; }
-    var words = text.split(/\s+/).filter(Boolean);
-    if (words.length > 3) { document.getElementById('answer-error').textContent = 'Use no m\u00e1ximo 3 palavras.'; return; }
-    btn.disabled = true;
+    if (!value || typeof value !== 'string') return;
+    var btn = document.querySelector('.qr-submit-btn') || document.querySelector('.qr-rating-btn.selected');
+    if (btn) btn.disabled = true;
     document.getElementById('answer-error').textContent = '';
     document.getElementById('answer-sending-msg').style.display = '';
     var qId = activeQuestionData.id;
@@ -428,49 +332,14 @@
         question_id:  qId,
         session_code: currentSession.code,
         student_name: currentSession.studentName,
-        answer_value: text
-      });
-      if (result.ok || result.error === 'Voc\u00ea j\u00e1 enviou resposta.') {
-        localStorage.setItem('cl_ans_' + qId, '1');
-        dbg('ok', 'wordcloud answer saved for Q ...' + qId.slice(-6));
-        showState('answered');
-      } else {
-        btn.disabled = false;
-        document.getElementById('answer-sending-msg').style.display = 'none';
-        document.getElementById('answer-error').textContent =
-          result.error === 'Question is closed' ? t.errTimeout :
-          result.error === 'VALIDATION_FAILED'  ? result.message :
-          t.errSubmit;
-      }
-    } catch(e) {
-      btn.disabled = false;
-      document.getElementById('answer-sending-msg').style.display = 'none';
-      document.getElementById('answer-error').textContent = t.errConnection;
-    }
-  }
-
-  async function submitOpenAnswer(btn) {
-    if (!activeQuestionData) return;
-    var text = (document.getElementById('open-answer-input').value || '').trim();
-    if (!text) { document.getElementById('answer-error').textContent = 'Escreva sua resposta antes de enviar.'; return; }
-    btn.disabled = true;
-    document.getElementById('answer-error').textContent = '';
-    document.getElementById('answer-sending-msg').style.display = '';
-    var qId = activeQuestionData.id;
-    try {
-      var result = await callWorker({
-        action: 'submit_answer',
-        question_id:  qId,
-        session_code: currentSession.code,
-        student_name: currentSession.studentName,
-        answer_value: text
+        answer_value: value
       });
       if (result.ok || result.error === 'Você já enviou resposta.') {
         localStorage.setItem('cl_ans_' + qId, '1');
-        dbg('ok', 'open answer saved for Q ...' + qId.slice(-6));
+        dbg('ok', 'value answer saved for Q ...' + qId.slice(-6));
         showState('answered');
       } else {
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
         document.getElementById('answer-sending-msg').style.display = 'none';
         document.getElementById('answer-error').textContent =
           result.error === 'Question is closed' ? t.errTimeout :
@@ -478,7 +347,7 @@
           t.errSubmit;
       }
     } catch(e) {
-      btn.disabled = false;
+      if (btn) btn.disabled = false;
       document.getElementById('answer-sending-msg').style.display = 'none';
       document.getElementById('answer-error').textContent = t.errConnection;
     }
@@ -521,26 +390,7 @@
     }
   }
 
-  // ── RENDER RESULTS ────────────────────────────────────────────────────────
-  function renderResults(row, myAnswerIndex) {
-    const counts      = row.answer_counts || new Array((row.options || []).length).fill(0);
-    const total       = counts.reduce((a, b) => a + b, 0);
-    const revealAnswer = row.reveal_answer === true;
 
-    const resSection = document.getElementById('state-results');
-    resSection.classList.toggle('revealed', revealAnswer);
-
-    document.getElementById('results-q-text').textContent = row.text || '';
-    var barsEl = document.getElementById('results-bars');
-    barsEl.className = 'qr-student';
-    QR.renderResults(row, counts, barsEl, {
-      mode: 'student',
-      revealAnswer,
-      correctAnswer: row.correct_answer,
-      myAnswerIndex,
-    });
-    document.getElementById('results-count').textContent = t.answersCount(total);
-  }
 
 
   // ── INIT ─────────────────────────────────────────────────────────────────
@@ -557,7 +407,12 @@
 
   document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinSession(); });
   document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinSession(); });
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && currentSession) pollData(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && currentSession) {
+      const cpq = document.getElementById('cpq');
+      if (cpq) cpq.startPolling();
+    }
+  });
 </script>
 
 </body>

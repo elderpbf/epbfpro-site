@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../css/backstage.css?v=1.3">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.8">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.3">
-<link rel="stylesheet" href="../css/question-types.css?v=1.1">
+<link rel="stylesheet" href="../css/question-types.css?v=1.2">
 <script src="../js/debug.js?v=2.4"></script>
 <style>
   /* Host-specific styles */
@@ -79,15 +79,6 @@
   .close-options label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; font-weight: 500; text-transform: none; letter-spacing: 0; }
   .close-options input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
 
-  /* Open text feed — host */
-  .host-text-feed  { display: flex; flex-direction: column; gap: 8px; }
-  .host-feed-card  { display: flex; align-items: baseline; gap: 0.75rem; background: var(--background); border: 1px solid rgba(20,184,166,.12); border-radius: 8px; padding: 0.55rem 0.75rem; }
-  .host-feed-name  { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--primary); flex-shrink: 0; }
-  .host-feed-text  { font-size: 0.9rem; color: var(--text-primary); flex: 1; word-break: break-word; }
-  .host-feed-empty { font-size: 0.85rem; color: var(--text-secondary); padding: 0.5rem 0; }
-  .host-feed-remove { margin-left: auto; background: none; border: none; color: var(--text-light); font-size: 1.1rem; cursor: pointer; padding: 0 0.25rem; line-height: 1; flex-shrink: 0; }
-  .host-feed-remove:hover { color: #ef4444; }
-
   /* History */
   .history-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid rgba(20,184,166,.08); }
   .history-item:last-child { border-bottom: none; }
@@ -113,8 +104,9 @@
 
   .hi-results { margin-top: 0.6rem; background: rgba(0,0,0,0.1); border-radius: 6px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
   .hi-bar { display: flex; align-items: center; font-size: 0.72rem; gap: 0.5rem; }
-  .hi-bar-label { flex: 1; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 0.3rem; }
-  .hi-bar-badge { font-weight: 700; background: var(--surface); border: 1px solid var(--border); padding: 0.1rem 0.3rem; border-radius: 4px; color: var(--primary); }
+  .hi-bar-label { flex: 1; min-width: 0; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; overflow: hidden; }
+  .hi-bar-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hi-bar-badge { font-weight: 700; background: var(--surface); border: 1px solid var(--border); padding: 0.1rem 0.3rem; border-radius: 4px; color: var(--primary); white-space: nowrap; flex-shrink: 0; }
   .hi-bar-badge.correct { background: var(--success); color: #fff; border-color: var(--success); }
   .hi-bar-pct { font-weight: 600; color: var(--text-primary); width: 32px; text-align: right; }
   .hi-bar-count { color: var(--text-light); width: 20px; text-align: right; }
@@ -191,6 +183,11 @@
       <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
         <span id="themeIcon"></span>
       </button>
+      <button class="bs-icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -233,7 +230,7 @@
       <div class="active-q-panel" id="active-q-panel">
         <div class="active-q-badge">Pergunta ativa</div>
         <div class="active-q-text" id="aq-text"></div>
-        <div id="aq-bars"></div>
+        <classpulse-question id="cpq" mode="host"></classpulse-question>
         <div style="margin-top:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
           <span class="answer-tally" id="aq-tally"></span>
           <div>
@@ -365,11 +362,13 @@
 
 <script src="../js/utils.js?v=1.2"></script>
 <script src="../js/api-client.js?v=1.1"></script>
-<script src="../js/question-renderer.js?v=1.0"></script>
+<script src="../js/question-renderer.js?v=2.2"></script>
+<script src="../js/classpulse-question.js?v=1.0"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
 <script src="../js/question-bank.js?v=1.7"></script>
 <script src="../js/auth.js?v=1.1"></script>
+<script src="../js/settings-drawer.js?v=1.0"></script>
 <script>
 'use strict';
 
@@ -492,7 +491,7 @@ function selectSession(s) {
   showScreen('screen-session');
   clearAlert();
   renderPresentationLink();
-  startPolling();
+  document.getElementById('cpq').setAttribute('session', s.code);
 }
 
 // ---------------------------------------------------------------------------
@@ -573,7 +572,7 @@ document.getElementById('close-session-btn').addEventListener('click', async fun
   btn.textContent = 'Encerrando sessão...';
   try {
     await callWorker({ action: 'close_session', auth_token: AUTH_TOKEN, code: sessionCode });
-    stopPolling();
+    document.getElementById('cpq').removeAttribute('session');
     document.getElementById('closed-session-name').textContent = 'Sessão ' + sessionCode;
     showScreen('screen-closed');
   } catch (e) {
@@ -756,116 +755,47 @@ function clearForm() {
 applyTypeUI(document.getElementById('q-type').value);
 
 // ---------------------------------------------------------------------------
-// Polling
+// Component Events
 // ---------------------------------------------------------------------------
 
-var POLL_INTERVAL = 4000;
+const cpqEl = document.getElementById('cpq');
 
-function startPolling() { fetchData(); pollTimer = setInterval(fetchData, POLL_INTERVAL); }
-function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
-
-async function fetchData() {
+cpqEl.addEventListener('cpq-data', (e) => {
+  const data = e.detail;
   if (!sessionCode) return;
-  try {
-    var data = await callWorker({ action: 'get_session_state', code: sessionCode });
 
-    var q = data.active_question;
-    if (q) {
-      activeQId = q.id;
-      renderActiveQuestion(q);
-      renderHistory(data.history || []);
+  renderHistory(data.history || []);
+
+  const q = data.active_question;
+  if (q) {
+    activeQId = q.id;
+    document.getElementById('aq-text').textContent = q.text;
+
+    let total = 0;
+    if (['open','wordcloud','rating','numeric'].includes(q.type)) {
+      total = (q.text_answers || []).length;
     } else {
-      activeQId = null;
-      document.getElementById('active-q-panel').style.display = 'none';
-      renderHistory(data.history || []);
+      const counts = q.answer_counts || [];
+      total = counts.reduce((a, b) => a + b, 0);
     }
-  } catch (err) {
-    if (typeof bsLog !== 'undefined') bsLog('host poll: ' + err.message, 'error');
-  }
-}
-
-function renderActiveQuestion(q) {
-  document.getElementById('aq-text').textContent = q.text;
-  var barsEl = document.getElementById('aq-bars');
-
-  if (q.type === 'open') {
-    var answers = q.text_answers || [];
-    document.getElementById('aq-tally').textContent = answers.length + ' resposta' + (answers.length !== 1 ? 's' : '');
-    renderTextFeedHost(answers, barsEl);
-  } else if (q.type === 'wordcloud') {
-    var wcAnswers = q.text_answers || [];
-    document.getElementById('aq-tally').textContent = wcAnswers.length + ' resposta' + (wcAnswers.length !== 1 ? 's' : '');
-    renderWordCloudHost(wcAnswers, barsEl);
-  } else {
-    var counts = q.answer_counts || new Array((q.options || []).length).fill(0);
-    var total  = counts.reduce(function(a, b) { return a + b; }, 0);
     document.getElementById('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
-    barsEl.className = 'qr-host';
-    QR.renderResults(q, counts, barsEl, {
-      mode: 'host',
-      showResults: true,
-      revealAnswer: false,
-      correctAnswer: q.correct_answer,
-    });
+
+    var qType = q.type || 'mc';
+    var isMcOrTf = qType === 'mc' || qType === 'tf';
+    setChk('chk-reveal-answer', isMcOrTf);
+    setChk('chk-show-results', qType !== 'open' && qType !== 'wordcloud');
+
+    document.getElementById('active-q-panel').style.display = 'block';
+  } else {
+    activeQId = null;
+    document.getElementById('active-q-panel').style.display = 'none';
   }
+});
 
-  // Grey out checkboxes that don't apply to this question type
-  var qType = q.type || 'mc';
-  var isMcOrTf = qType === 'mc' || qType === 'tf';
-  setChk('chk-reveal-answer', isMcOrTf);
-  setChk('chk-show-results', qType !== 'open' && qType !== 'wordcloud');
+cpqEl.addEventListener('cpq-remove-answer', (e) => {
+  removeAnswer(e.detail.id, e.detail.el);
+});
 
-  document.getElementById('active-q-panel').style.display = 'block';
-}
-
-function renderTextFeedHost(answers, container) {
-  container.innerHTML = '';
-  container.className = 'host-text-feed';
-  if (answers.length === 0) {
-    container.innerHTML = '<div class="host-feed-empty">Aguardando respostas...</div>';
-    return;
-  }
-  answers.forEach(function(a) {
-    var card = document.createElement('div');
-    card.className = 'host-feed-card';
-    card.innerHTML =
-      '<span class="host-feed-name">' + escHtml(a.name) + '</span>' +
-      '<span class="host-feed-text">' + escHtml(a.value) + '</span>' +
-      '<button class="host-feed-remove" title="Remover resposta">×</button>';
-    card.querySelector('.host-feed-remove').addEventListener('click', function() {
-      removeAnswer(a.id, card);
-    });
-    container.appendChild(card);
-  });
-}
-
-function renderWordCloudHost(answers, container) {
-  container.innerHTML = '';
-  container.className = 'host-text-feed';
-  if (answers.length === 0) {
-    container.innerHTML = '<div class="host-feed-empty">Aguardando respostas...</div>';
-    return;
-  }
-  var freq = {};
-  answers.forEach(function(a) {
-    var word = (a.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    if (word) freq[word] = (freq[word] || 0) + 1;
-  });
-  var entries = Object.entries(freq).sort(function(a, b) { return b[1] - a[1]; });
-  var PALETTE = ['#14b8a6','#6366f1','#3b82f6','#7c3aed','#c026d3','#16a34a','#0284c7'];
-  var maxFreq = entries[0][1];
-  var cloud = document.createElement('div');
-  cloud.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 0';
-  entries.forEach(function(entry, i) {
-    var word = entry[0], count = entry[1];
-    var size = 0.75 + (count / maxFreq) * 0.9;
-    var span = document.createElement('span');
-    span.textContent = word + (count > 1 ? ' \u00d7' + count : '');
-    span.style.cssText = 'font-weight:700;font-size:' + size.toFixed(2) + 'rem;color:' + PALETTE[i % PALETTE.length];
-    cloud.appendChild(span);
-  });
-  container.appendChild(cloud);
-}
 
 async function removeAnswer(answerId, cardEl) {
   try {
@@ -900,8 +830,8 @@ function renderHistory(closedQs) {
         var isCorrect = q.correct_answer !== null && i === q.correct_answer;
         resultsHtml += '<div class="hi-bar">' +
                          '<div class="hi-bar-label">' +
-                           '<span class="hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' + LETTERS[i] + (isCorrect ? ' \u2713' : '') + '</span> ' +
-                           escHtml(stripOptPrefix(opt)) +
+                           '<span class="hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' + LETTERS[i] + (isCorrect ? ' \u2713' : '') + '</span>' +
+                           '<span class="hi-bar-text">' + escHtml(stripOptPrefix(opt)) + '</span>' +
                          '</div>' +
                          '<div class="hi-bar-pct">' + pct + '%</div>' +
                          '<div class="hi-bar-count">' + q.answer_counts[i] + '</div>' +
@@ -911,7 +841,7 @@ function renderHistory(closedQs) {
     }
 
     return '<div class="history-item">' +
-             '<div style="flex:1">' +
+             '<div style="flex:1;min-width:0">' +
                '<div class="hi-text">' + escHtml(q.text || '') + '</div>' +
                typeTag(q.type || 'mc') +
                '<div class="hi-meta">' + escHtml(q.created_at ? new Date(q.created_at).toLocaleString('pt-BR') : '') + '</div>' +
@@ -1072,7 +1002,7 @@ function prefillForm(q) {
   }
 }
 
-
+SettingsDrawer.init();
 
 </script>
 </body>

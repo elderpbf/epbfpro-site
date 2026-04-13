@@ -104,52 +104,6 @@
 
 </div><!-- /screen-app -->
 
-<!-- =====================================================
-     SETTINGS DRAWER
-     ===================================================== -->
-<div id="settings-overlay" class="bs-overlay" hidden></div>
-
-<aside id="settings-drawer" class="bs-drawer" hidden aria-label="Configuracoes">
-
-  <h2>
-    <span data-key="settings_title">Configuracoes</span>
-    <button class="bs-drawer-close" id="settings-close" aria-label="Fechar">&times;</button>
-  </h2>
-
-  <hr>
-
-  <!-- Developer -->
-  <h3 data-key="settings_dev_section">Desenvolvedor</h3>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
-    <span style="font-size:.88rem;color:var(--text-primary)" data-key="settings_debug_label">Painel de debug</span>
-    <button class="bs-toggle-btn" id="debug-toggle-btn" data-key="settings_debug_off">Desativado</button>
-  </div>
-  <p class="bs-hint" data-key="settings_debug_hint">Exibe pill flutuante com logs em todas as paginas do Backstage.</p>
-
-  <hr>
-
-  <!-- Security -->
-  <h3 data-key="settings_security_section">Seguranca</h3>
-  <button class="bs-toggle-btn" id="show-change-pw-btn" data-key="settings_change_pw_btn">Alterar senha</button>
-
-  <div id="change-pw-form" hidden>
-    <div class="bs-field" style="margin-top:1rem">
-      <label data-key="change_pw_current">Senha atual</label>
-      <input id="change-pw-current" type="password" autocomplete="off">
-    </div>
-    <div class="bs-field">
-      <label data-key="change_pw_new">Nova senha</label>
-      <input id="change-pw-new" type="password" autocomplete="off">
-    </div>
-    <div class="bs-field">
-      <label data-key="change_pw_confirm">Confirmar nova senha</label>
-      <input id="change-pw-confirm" type="password" autocomplete="off">
-    </div>
-    <p class="bs-form-error" id="change-pw-error"></p>
-    <button class="bs-save-btn" id="change-pw-save-btn" data-key="change_pw_save_btn">Atualizar senha</button>
-  </div>
-
-</aside>
 
 <!-- =====================================================
      SCRIPT
@@ -157,6 +111,7 @@
 <script src="js/utils.js?v=1.2"></script>
 <script src="js/api-client.js?v=1.1"></script>
 <script src="js/theme-manager.js?v=1.0"></script>
+<script src="js/settings-drawer.js?v=1.0"></script>
 <script>
 'use strict';
 
@@ -333,107 +288,10 @@ function showApp() {
 }
 
 // ---------------------------------------------------------------------------
-// Settings drawer
-// ---------------------------------------------------------------------------
-
-var overlay = document.getElementById('settings-overlay');
-var drawer  = document.getElementById('settings-drawer');
-
-function openSettings() {
-  var cpMsg = document.getElementById('settings-cp-save-msg'); if (cpMsg) cpMsg.textContent = '';
-  document.getElementById('debug-toggle-btn') && (function() {
-    var on = localStorage.getItem('bs_debug') === '1';
-    var btn = document.getElementById('debug-toggle-btn');
-    btn.textContent = on ? t('settings_debug_on') : t('settings_debug_off');
-    btn.style.color = on ? 'var(--primary)' : '';
-    btn.style.borderColor = on ? 'var(--primary)' : '';
-  })();
-  overlay.hidden = false;
-  drawer.hidden = false;
-  requestAnimationFrame(function() {
-    overlay.classList.add('open');
-    drawer.classList.add('open');
-  });
-}
-
-function closeSettings() {
-  overlay.classList.remove('open');
-  drawer.classList.remove('open');
-  setTimeout(function() {
-    overlay.hidden = true;
-    drawer.hidden = true;
-  }, 300);
-}
-
-document.getElementById('settings-btn').addEventListener('click', openSettings);
-document.getElementById('settings-close').addEventListener('click', closeSettings);
-overlay.addEventListener('click', closeSettings);
-
-
-// Debug toggle
-(function() {
-  var btn = document.getElementById('debug-toggle-btn');
-  function syncDebugBtn() {
-    var on = localStorage.getItem('bs_debug') === '1';
-    btn.textContent = on ? t('settings_debug_on') : t('settings_debug_off');
-    btn.style.color = on ? 'var(--primary)' : '';
-    btn.style.borderColor = on ? 'var(--primary)' : '';
-  }
-  syncDebugBtn();
-  btn.addEventListener('click', function() {
-    var on = localStorage.getItem('bs_debug') === '1';
-    localStorage.setItem('bs_debug', on ? '0' : '1');
-    syncDebugBtn();
-    if (!on) { if (window.bsDebugMount) window.bsDebugMount(); }
-    else     { if (window.bsDebugUnmount) window.bsDebugUnmount(); }
-  });
-})();
-
-// Change password
-document.getElementById('show-change-pw-btn').addEventListener('click', function() {
-  var form = document.getElementById('change-pw-form');
-  form.hidden = !form.hidden;
-  if (!form.hidden) document.getElementById('change-pw-current').focus();
-});
-
-document.getElementById('change-pw-save-btn').addEventListener('click', async function() {
-  var btn     = this;
-  var cur     = document.getElementById('change-pw-current').value;
-  var newPw   = document.getElementById('change-pw-new').value;
-  var confirm = document.getElementById('change-pw-confirm').value;
-  var err     = document.getElementById('change-pw-error');
-  err.textContent = '';
-
-  if (newPw.length < 6) { err.textContent = t('error_pw_short'); return; }
-  if (newPw !== confirm) { err.textContent = t('error_pw_match'); return; }
-
-  btn.disabled = true;
-  try {
-    var curHash = await hashPw(cur);
-    var newHash = await hashPw(newPw);
-    await callWorker({ action: 'change_password', auth_token: curHash, new_hash: newHash });
-    localStorage.setItem(PW_KEY, newHash);
-    document.getElementById('change-pw-current').value = '';
-    document.getElementById('change-pw-new').value = '';
-    document.getElementById('change-pw-confirm').value = '';
-    err.style.color = 'var(--primary)';
-    err.textContent = t('change_pw_ok');
-    setTimeout(function() {
-      err.textContent = '';
-      err.style.color = '';
-      document.getElementById('change-pw-form').hidden = true;
-    }, 2500);
-  } catch (e) {
-    err.textContent = t('error_pw_current_wrong');
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-// ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
 init();
+SettingsDrawer.init();
 </script>
 </body>
 </html>
