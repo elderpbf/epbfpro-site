@@ -72,58 +72,6 @@
 
 </div>
 
-<!-- =====================================================
-     SETTINGS DRAWER
-     ===================================================== -->
-<div id="settings-overlay" class="bs-overlay" hidden></div>
-
-<aside id="settings-drawer" class="bs-drawer" hidden aria-label="Configurações">
-
-  <h2>
-    <span data-key="settings_title">Configurações</span>
-    <button class="bs-drawer-close" id="settings-close" aria-label="Fechar">&times;</button>
-  </h2>
-
-  <!-- ClassForge Apps Script -->
-  <h3 data-key="settings_script_section">Apps Script (ClassForge)</h3>
-  <div class="bs-field">
-    <label data-key="settings_script_label">URL do Apps Script</label>
-    <input id="settings-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
-  </div>
-  <p class="bs-hint" data-key="settings_script_hint">
-    Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.
-  </p>
-  <button class="bs-save-btn" id="settings-save-btn" data-key="settings_save_btn">Salvar</button>
-  <p class="bs-drawer-save-msg" id="settings-save-msg"></p>
-
-  <hr>
-
-  <!-- Reveal.js theme -->
-  <h3 data-key="settings_theme_section">Tema de apresentação</h3>
-  <p class="bs-hint" style="margin-bottom:0.75rem" data-key="settings_theme_hint">Aplicado a todas as apresentações ao clicar em Apresentar.</p>
-  <div id="settings-theme-grid" class="cf-theme-grid"></div>
-
-  <div style="margin-top:1.25rem">
-    <button class="bs-toggle-btn" id="show-theme-gen-btn" data-key="settings_theme_gen_btn">+ Criar tema com IA</button>
-
-    <div id="theme-gen-form" hidden style="margin-top:1rem">
-      <div class="bs-field">
-        <label data-key="settings_theme_desc_label">Descreva o tema</label>
-        <textarea id="theme-desc-input" class="bs-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano..."></textarea>
-      </div>
-       <p class="bs-form-error" id="theme-gen-error"></p>
-      <button class="bs-save-btn" id="theme-gen-btn" data-key="settings_theme_gen_submit">Gerar com Gemini</button>
-
-      <div id="theme-gen-preview" hidden style="margin-top:1rem; padding:0.75rem; border-radius:8px; border:1px solid rgba(20,184,166,.3)">
-        <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.5rem" data-key="theme_preview_label">Pré-visualização</p>
-        <div id="theme-preview-swatches" style="display:flex; gap:6px; margin-bottom:0.75rem"></div>
-        <p id="theme-preview-name" style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:0.75rem"></p>
-        <button class="bs-save-btn" id="theme-save-btn" data-key="theme_save_btn">Salvar tema</button>
-      </div>
-    </div>
-  </div>
-
-</aside>
 
 
 <script src="../js/utils.js?v=1.2"></script>
@@ -131,6 +79,7 @@
 <script src="../js/ai-client.js?v=1.1"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/auth.js?v=1.1"></script>
+<script src="../js/settings-drawer.js?v=1.0"></script>
 <script>
 'use strict';
 
@@ -360,7 +309,7 @@ function showNoScriptState() {
     '<button class="cf-inline-btn" id="state-settings-btn">' + t('state_no_script_btn') + '</button>'
   ));
   var btn = document.getElementById('state-settings-btn');
-  if (btn) btn.addEventListener('click', openSettings);
+  if (btn) btn.addEventListener('click', SettingsDrawer.open);
 }
 
 function showErrorState(msg) {
@@ -414,42 +363,69 @@ document.getElementById('refresh-btn').addEventListener('click', loadPresentatio
 // Settings drawer
 // ---------------------------------------------------------------------------
 
-var overlay = document.getElementById('settings-overlay');
-var drawer  = document.getElementById('settings-drawer');
+var CF_SCRIPT_SECTION_HTML =
+  '<div class="bs-field">' +
+    '<label>URL do Apps Script</label>' +
+    '<input id="settings-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">' +
+  '</div>' +
+  '<p class="bs-hint">Implante o Code.gs como Web App e cole a URL aqui. Necessario para carregar suas apresentacoes.</p>' +
+  '<button class="bs-save-btn" id="settings-save-btn">Salvar</button>' +
+  '<p class="bs-drawer-save-msg" id="settings-save-msg"></p>';
 
-function openSettings() {
-  document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
-  document.getElementById('settings-save-msg').textContent = '';
-  overlay.hidden = false;
-  drawer.hidden = false;
-  requestAnimationFrame(function() {
-    overlay.classList.add('open');
-    drawer.classList.add('open');
-  });
-  renderThemeGrid();
-}
+var CF_THEME_SECTION_HTML =
+  '<p class="bs-hint" style="margin-bottom:0.75rem">Aplicado a todas as apresentacoes ao clicar em Apresentar.</p>' +
+  '<div id="settings-theme-grid" class="cf-theme-grid"></div>' +
+  '<div style="margin-top:1.25rem">' +
+    '<button class="bs-toggle-btn" id="show-theme-gen-btn">+ Criar tema com IA</button>' +
+    '<div id="theme-gen-form" hidden style="margin-top:1rem">' +
+      '<div class="bs-field">' +
+        '<label>Descreva o tema</label>' +
+        '<textarea id="theme-desc-input" class="bs-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano..."></textarea>' +
+      '</div>' +
+      '<p class="bs-form-error" id="theme-gen-error"></p>' +
+      '<button class="bs-save-btn" id="theme-gen-btn">Gerar com Gemini</button>' +
+      '<div id="theme-gen-preview" hidden style="margin-top:1rem;padding:0.75rem;border-radius:8px;border:1px solid rgba(20,184,166,.3)">' +
+        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem">Pre-visualizacao</p>' +
+        '<div id="theme-preview-swatches" style="display:flex;gap:6px;margin-bottom:0.75rem"></div>' +
+        '<p id="theme-preview-name" style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:0.75rem"></p>' +
+        '<button class="bs-save-btn" id="theme-save-btn">Salvar tema</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 
-function closeSettings() {
-  overlay.classList.remove('open');
-  drawer.classList.remove('open');
-  setTimeout(function() {
-    overlay.hidden = true;
-    drawer.hidden = true;
-  }, 300);
-}
-
-document.getElementById('settings-btn').addEventListener('click', openSettings);
-document.getElementById('settings-close').addEventListener('click', closeSettings);
-overlay.addEventListener('click', closeSettings);
-
-document.getElementById('settings-save-btn').addEventListener('click', function() {
-  var url = document.getElementById('settings-script-url').value.trim();
-  localStorage.setItem('bs_cf_script_url', url);
-  document.getElementById('settings-save-msg').textContent = t('save_ok');
-  setTimeout(function() {
-    document.getElementById('settings-save-msg').textContent = '';
-  }, 3000);
-  loadPresentations();
+SettingsDrawer.init({
+  sections: [
+    {
+      id: 'cf-script',
+      title: 'Apps Script (ClassForge)',
+      content: CF_SCRIPT_SECTION_HTML,
+      onOpen: function() {
+        document.getElementById('settings-script-url').value = localStorage.getItem('bs_cf_script_url') || '';
+        document.getElementById('settings-save-msg').textContent = '';
+      },
+      onInit: function() {
+        document.getElementById('settings-save-btn').addEventListener('click', function() {
+          var url = document.getElementById('settings-script-url').value.trim();
+          localStorage.setItem('bs_cf_script_url', url);
+          document.getElementById('settings-save-msg').textContent = t('save_ok');
+          setTimeout(function() { document.getElementById('settings-save-msg').textContent = ''; }, 3000);
+          loadPresentations();
+        });
+      }
+    },
+    {
+      id: 'cf-theme',
+      title: 'Tema de apresentacao',
+      content: CF_THEME_SECTION_HTML,
+      onOpen: function() { renderThemeGrid(); },
+      onInit: function() {
+        document.getElementById('show-theme-gen-btn').addEventListener('click', function() {
+          document.getElementById('theme-gen-form').hidden = !document.getElementById('theme-gen-form').hidden;
+        });
+        _initThemeGen();
+      }
+    }
+  ]
 });
 
 // ---------------------------------------------------------------------------
@@ -546,9 +522,9 @@ function renderThemeGrid() {
   });
 }
 
-document.getElementById('show-theme-gen-btn').addEventListener('click', function() { document.getElementById('theme-gen-form').hidden = !document.getElementById('theme-gen-form').hidden; });
-
 var pendingTheme = null;
+
+function _initThemeGen() {
 document.getElementById('theme-gen-btn').addEventListener('click', async function() {
   var desc    = document.getElementById('theme-desc-input').value.trim();
   var errEl   = document.getElementById('theme-gen-error');
@@ -598,6 +574,7 @@ document.getElementById('theme-save-btn').addEventListener('click', function() {
   pendingTheme = null;
   renderThemeGrid();
 });
+} // end _initThemeGen
 
 // ---------------------------------------------------------------------------
 // Start
