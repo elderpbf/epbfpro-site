@@ -14,7 +14,7 @@
 <script src="../../js/api-client.js?v=1.1"></script>
 <script src="../../js/utils.js?v=1.2"></script>
 <script src="../../js/question-renderer.js?v=1.7"></script>
-<script src="../embed-classpulse.js?v=1.8"></script>
+<script src="../../js/classpulse-question.js?v=1.0"></script>
 <script src="../presenter-toolbar.js"></script>
 </head>
 <body>
@@ -382,13 +382,13 @@ function buildEmbedSlide(sectionData) {
   h2.textContent = sectionData.title || '';
   section.appendChild(h2);
   const embed = sectionData.embed || {};
-  const div = document.createElement('div');
-  div.className = 'cf-classpulse-embed';
+  const div = document.createElement('classpulse-question');
+  div.setAttribute('mode', 'embed');
   if (embed.slug) {
-    div.dataset.slug = embed.slug;
+    div.setAttribute('slug', embed.slug);
   } else {
-    div.dataset.session = embed.session || '';
-    div.dataset.questionId = embed.question_id || '';
+    if (embed.session) div.setAttribute('session', embed.session);
+    if (embed.question_id) div.setAttribute('question-id', embed.question_id);
   }
   section.appendChild(div);
   return section;
@@ -550,7 +550,6 @@ async function showPresentation(lesson, isDemo, opts) {
       plugins: [RevealHighlight, RevealNotes, RevealMarkdown]
     });
     revealInited = true;
-    if (window.ClassPulseEmbed) window.ClassPulseEmbed.scan();
     if (logoHideOn && logoHideOn.length) {
       Reveal.on('slidechanged', ({ indexh }) => {
         document.getElementById('cf-logo').hidden = logoHideOn.includes(indexh);
@@ -559,7 +558,6 @@ async function showPresentation(lesson, isDemo, opts) {
   } else {
     Reveal.sync();
     Reveal.slide(0);
-    if (window.ClassPulseEmbed) window.ClassPulseEmbed.scan();
   }
 }
 

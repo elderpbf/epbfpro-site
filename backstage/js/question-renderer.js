@@ -83,6 +83,7 @@ QR._renderWordCloud = function(question, container) {
   var freq = {};
   textAnswers.forEach(function(ans) {
     var val = typeof ans === 'string' ? ans : (ans && ans.value ? String(ans.value) : '');
+    val = val.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     val.toLowerCase().trim().split(/\s+/).filter(Boolean).forEach(function(w) {
       freq[w] = (freq[w] || 0) + 1;
     });
@@ -95,13 +96,129 @@ QR._renderWordCloud = function(question, container) {
   var max = Math.max.apply(null, words.map(function(w) { return freq[w]; }));
   words.sort(function(a, b) { return freq[b] - freq[a]; });
   words = words.slice(0, 30);
+  
+  var colors = ['#14b8a6','#6366f1','#3b82f6','#7c3aed','#c026d3','#16a34a','#0284c7'];
+
   var html = '<div class="qr-wordcloud">';
-  words.forEach(function(w) {
+  words.forEach(function(w, i) {
     var sz = (0.9 + (freq[w] / max) * 2.1).toFixed(2);
-    html += '<span class="qr-word" style="font-size:' + sz + 'em">' + escHtml(w) + '</span>';
+    var color = colors[i % colors.length];
+    html += '<span class="qr-word" style="font-size:' + sz + 'em; color:' + color + '">' + escHtml(w) + '</span>';
   });
   html += '</div>';
   container.innerHTML = html;
+};
+
+// ── INTERNAL: Text Feed ───────────────────────────────────────
+QR._renderTextFeed = function(question, container, opts) {
+  var textAnswers = question.text_answers || [];
+  if (!textAnswers.length) {
+    container.innerHTML = '<div class="qr-feed-empty">Aguardando respostas...</div>';
+    return;
+  }
+  var html = '<div class="qr-text-feed">';
+  textAnswers.forEach(function(ans) {
+    html += '<div class="qr-feed-card">';
+    html += '<div class="qr-feed-name">' + escHtml(ans.name || 'Anonimo') + '</div>';
+    html += '<div class="qr-feed-text">' + escHtml(ans.value || '') + '</div>';
+    if (typeof opts.onRemoveAnswer === 'function') {
+      html += '<button class="qr-feed-remove" data-id="' + escHtml(ans.id) + '">\u00D7</button>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+  
+  if (typeof opts.onRemoveAnswer === 'function') {
+    container.querySelectorAll('.qr-feed-remove').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        opts.onRemoveAnswer(btn.dataset.id, btn.closest('.qr-feed-card'));
+      });
+    });
+  }
+};
+
+// ── INTERNAL: Rating Results ──────────────────────────────────
+QR._renderRatingResults = function(question, container, opts) {
+  var qOpts = question.options || {};
+  var min = qOpts.min !== undefined ? qOpts.min : 1;
+  var max = qOpts.max !== undefined ? qOpts.max : 5;
+  var textAnswers = question.text_answers || [];
+  var countsObj = {};
+  for (var i = min; i <= max; i++) countsObj[i] = 0;
+  
+  var sum = 0, total = 0;
+  textAnswers.forEach(function(ans) {
+    var val = parseInt(ans.value, 10);
+    if (!isNaN(val) && val >= min && val <= max) { countsObj[val]++; sum += val; total++; }
+  });
+  var avg = total > 0 ? (sum / total).toFixed(1) : '0.0';
+  
+  var labels = [], countsArr = [];
+  for (var k = min; k <= max; k++) {
+    labels.push(String(k));
+    countsArr.push(countsObj[k]);
+  }
+  
+  var html = '<div class="qr-rating-summary">';
+  html += '<div class="qr-rating-avg">' + avg + '</div>';
+  html += '<div class="qr-rating-total">' + total + ' resposta' + (total !== 1 ? 's' : '') + '</div>';
+  html += '</div><div class="qr-rating-bars"></div>';
+  container.innerHTML = html;
+  
+  var subOpts = { showResults: true };
+  for (var p in opts) if (opts.hasOwnProperty(p)) subOpts[p] = opts[p];
+  QR._renderBarChart(labels, countsArr, container.querySelector('.qr-rating-bars'), subOpts);
+};
+
+// ── INTERNAL: Numeric Results ─────────────────────────────────
+QR._renderNumericResults = function(question, container, opts) {
+  var textAnswers = question.text_answers || [];
+  var vals = [];
+  textAnswers.forEach(function(ans) {
+    var val = parseFloat(ans.value);
+    if (!isNaN(val)) vals.push(val);
+  });
+  var total = vals.length;
+  if (!total) {
+    container.innerHTML = '<div class="qr-feed-empty">Aguardando respostas...</div>';
+    return;
+  }
+  
+  var sum = vals.reduce(function(a, b) { return a + b; }, 0);
+  var avg = (sum / total).toFixed(1);
+  var dataMin = Math.min.apply(null, vals);
+  var dataMax = Math.max.apply(null, vals);
+  
+  var html = '<div class="qr-numeric-summary">';
+  html += '<div>Media: <strong>' + avg + '</strong></div>';
+  html += '<div>Min: <strong>' + dataMin + '</strong> | Max: <strong>' + dataMax + '</strong></div>';
+  html += '<div>Total: <strong>' + total + '</strong></div>';
+  html += '</div><div class="qr-numeric-bars"></div>';
+  container.innerHTML = html;
+  
+  var labels = [], countsArr = [];
+  if (dataMin === dataMax) {
+    labels.push(String(dataMin));
+    countsArr.push(total);
+  } else {
+    var buckets = 5, range = dataMax - dataMin, step = range / buckets;
+    if (step === 0) step = 1;
+    var bucketCounts = [0, 0, 0, 0, 0];
+    vals.forEach(function(val) {
+      var b = Math.floor((val - dataMin) / step);
+      if (b >= buckets) b = buckets - 1;
+      bucketCounts[b]++;
+    });
+    for (var j = 0; j < buckets; j++) {
+      var rMin = dataMin + j * step, rMax = rMin + step;
+      labels.push(rMin.toFixed(1) + ' - ' + rMax.toFixed(1));
+      countsArr.push(bucketCounts[j]);
+    }
+  }
+  var subOpts = { showResults: true };
+  for (var prop in opts) if (opts.hasOwnProperty(prop)) subOpts[prop] = opts[prop];
+  QR._renderBarChart(labels, countsArr, container.querySelector('.qr-numeric-bars'), subOpts);
 };
 
 // ── INTERNAL: Button grid ─────────────────────────────────────
@@ -128,6 +245,88 @@ QR._renderButtonGrid = function(options, container, opts) {
   });
 };
 
+// ── INTERNAL: Open Input ──────────────────────────────────────
+QR._renderOpenInput = function(question, container, opts) {
+  opts = opts || {};
+  var cfg = QR.getTypeConfig('open');
+  var maxChars = cfg.maxChars || 500;
+  var html = '<div class="qr-open-form">';
+  html += '<textarea class="qr-open-textarea" maxlength="' + maxChars + '" placeholder="Sua resposta..."></textarea>';
+  html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+  html += '<span class="qr-char-counter">0 / ' + maxChars + '</span>';
+  html += '<button class="qr-submit-btn">Enviar</button></div></div>';
+  container.innerHTML = html;
+  
+  var ta = container.querySelector('.qr-open-textarea');
+  var counter = container.querySelector('.qr-char-counter');
+  var btn = container.querySelector('.qr-submit-btn');
+  
+  ta.addEventListener('input', function() { counter.textContent = ta.value.length + ' / ' + maxChars; });
+  btn.addEventListener('click', function() {
+    if (ta.value.trim() && typeof opts.onSubmit === 'function') opts.onSubmit(ta.value.trim());
+  });
+};
+
+// ── INTERNAL: Wordcloud Input ─────────────────────────────────
+QR._renderWordcloudInput = function(question, container, opts) {
+  opts = opts || {};
+  var cfg = QR.getTypeConfig('wordcloud');
+  var maxWords = cfg.maxWords || 3;
+  var html = '<div class="qr-wc-form">';
+  html += '<input type="text" class="qr-wc-input" maxlength="50" placeholder="Suas palavras (separadas por espaco)">';
+  html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+  html += '<span class="qr-wc-hint">Max ' + maxWords + ' palavras</span>';
+  html += '<button class="qr-submit-btn">Enviar</button></div></div>';
+  container.innerHTML = html;
+  
+  var input = container.querySelector('.qr-wc-input');
+  var btn = container.querySelector('.qr-submit-btn');
+  
+  input.addEventListener('input', function() {
+    var words = input.value.trim().split(/\s+/).filter(Boolean);
+    if (words.length > maxWords) input.value = words.slice(0, maxWords).join(' ') + ' ';
+  });
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') btn.click(); });
+  btn.addEventListener('click', function() {
+    if (input.value.trim() && typeof opts.onSubmit === 'function') opts.onSubmit(input.value.trim());
+  });
+};
+
+// ── INTERNAL: Rating Input ────────────────────────────────────
+QR._renderRatingInput = function(question, container, opts) {
+  opts = opts || {};
+  var qOpts = question.options || {};
+  var min = qOpts.min !== undefined ? qOpts.min : 1;
+  var max = qOpts.max !== undefined ? qOpts.max : 5;
+  var html = '<div class="qr-rating-row">';
+  for (var i = min; i <= max; i++) html += '<button class="qr-rating-btn" data-val="' + i + '">' + i + '</button>';
+  html += '</div>';
+  container.innerHTML = html;
+  container.querySelectorAll('.qr-rating-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (typeof opts.onSubmit === 'function') opts.onSubmit(btn.dataset.val);
+    });
+  });
+};
+
+// ── INTERNAL: Numeric Input ───────────────────────────────────
+QR._renderNumericInput = function(question, container, opts) {
+  opts = opts || {};
+  var qOpts = question.options || {};
+  var minAttr = qOpts.min !== undefined ? ' min="' + qOpts.min + '"' : '';
+  var maxAttr = qOpts.max !== undefined ? ' max="' + qOpts.max + '"' : '';
+  var html = '<div class="qr-numeric-form">';
+  html += '<input type="number" class="qr-numeric-input"' + minAttr + maxAttr + ' placeholder="Digite um numero">';
+  html += '<button class="qr-submit-btn" style="margin-left: 10px;">Enviar</button></div>';
+  container.innerHTML = html;
+  var input = container.querySelector('.qr-numeric-input');
+  var btn = container.querySelector('.qr-submit-btn');
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') btn.click(); });
+  btn.addEventListener('click', function() {
+    if (input.value.trim() !== '' && typeof opts.onSubmit === 'function') opts.onSubmit(input.value.trim());
+  });
+};
+
 // ── PUBLIC: renderInput ───────────────────────────────────────
 // Renders student-facing input UI for the given question type.
 // opts: { mode, onSelect(index, btn) }
@@ -142,11 +341,16 @@ QR.renderInput = function(question, container, opts) {
       QR._renderButtonGrid(question.options || [], container, opts);
       break;
     case 'open':
+      QR._renderOpenInput(question, container, opts);
+      break;
     case 'wordcloud':
+      QR._renderWordcloudInput(question, container, opts);
+      break;
     case 'rating':
+      QR._renderRatingInput(question, container, opts);
+      break;
     case 'numeric':
-      // Handled by the page-level renderer; QR.renderInput is a no-op for these types.
-      container.innerHTML = '';
+      QR._renderNumericInput(question, container, opts);
       break;
     default:
       container.innerHTML = '';
@@ -184,6 +388,15 @@ QR.renderResults = function(question, counts, container, opts) {
       break;
     case 'wordcloud':
       QR._renderWordCloud(question, container);
+      break;
+    case 'open':
+      QR._renderTextFeed(question, container, opts);
+      break;
+    case 'rating':
+      QR._renderRatingResults(question, container, opts);
+      break;
+    case 'numeric':
+      QR._renderNumericResults(question, container, opts);
       break;
     default:
       if (typeof showToastError === 'function') {
