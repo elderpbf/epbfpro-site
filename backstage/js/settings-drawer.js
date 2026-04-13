@@ -44,10 +44,8 @@ window.SettingsDrawer = (function() {
 
   function _debugSectionHtml() {
     return (
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">' +
-        '<span style="font-size:.88rem;color:var(--text-primary)">Painel de debug</span>' +
-        '<button class="bs-toggle-btn" id="sd-debug-toggle">Desativado</button>' +
-      '</div>' +
+      '<p style="font-size:.88rem;color:var(--text-primary);margin-bottom:.5rem">Painel de debug</p>' +
+      '<button class="bs-toggle-btn" id="sd-debug-toggle" style="margin-bottom:.5rem">Desativado</button>' +
       '<p class="bs-hint">Exibe pill flutuante com logs em todas as paginas do Backstage.</p>'
     );
   }
