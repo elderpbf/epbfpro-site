@@ -93,7 +93,7 @@
     }
 
     async _startSlugResolution() {
-      this._renderIdleState('Aguardando sessão vinculada...');
+      this._renderIdleState('Nenhuma sessão vinculada');
       const check = async () => {
         try {
           const res = await callWorker({ action: 'get_linked_session', slug: this._slug, _silent: true });

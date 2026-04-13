@@ -303,6 +303,8 @@
     const row = e.detail;
     document.getElementById('cpq-q-text').textContent = row.text;
     document.getElementById('results-footer').style.display = 'block';
+    document.getElementById('answer-sending-msg').style.display = 'none';
+    document.getElementById('answer-error').textContent = '';
 
     const myAnswer = localStorage.getItem('cl_ans_' + row.id);
     if (myAnswer !== null) cpqEl.setAttribute('my-answer', myAnswer);
