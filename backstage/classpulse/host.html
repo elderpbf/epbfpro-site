@@ -103,8 +103,8 @@
   .close-options label.disabled input { pointer-events: none; }
 
   .hi-results { margin-top: 0.6rem; background: rgba(0,0,0,0.1); border-radius: 6px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
-  .hi-bar { display: flex; align-items: center; font-size: 0.72rem; gap: 0.5rem; }
-  .hi-bar-label { flex: 1; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 0.3rem; }
+  .hi-bar { display: flex; align-items: center; font-size: 0.72rem; gap: 0.5rem; overflow: hidden; }
+  .hi-bar-label { flex: 1; min-width: 0; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 0.3rem; }
   .hi-bar-badge { font-weight: 700; background: var(--surface); border: 1px solid var(--border); padding: 0.1rem 0.3rem; border-radius: 4px; color: var(--primary); }
   .hi-bar-badge.correct { background: var(--success); color: #fff; border-color: var(--success); }
   .hi-bar-pct { font-weight: 600; color: var(--text-primary); width: 32px; text-align: right; }
