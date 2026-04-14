@@ -88,6 +88,14 @@
 .qr-host .qr-bar-track { height: 7px; background: rgba(20,184,166,.12); }
 .qr-host .qr-bar-count { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
 
+.qr-host .qr-feed-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text-secondary); font-size: 0.82rem; font-family: inherit;
+  padding: 8px 12px; cursor: pointer; width: 100%; text-align: left;
+  transition: color 0.2s, border-color 0.2s;
+}
+.qr-host .qr-feed-toggle:hover { color: var(--primary); border-color: var(--primary); }
+
 /* ── STUDENT MODE overrides ──────────────────────────────── */
 
 .qr-student .qr-bar {
