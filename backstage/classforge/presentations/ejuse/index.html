@@ -192,6 +192,7 @@
      ENGINE
      ===================================================== -->
 <link rel="stylesheet" href="../../presenter-toolbar.css">
+<link rel="stylesheet" href="../../../css/settings-drawer.css?v=1.0">
 <script src="../../../js/debug.js?v=2.4"></script>
 <script src="../../../js/api-client.js?v=1.1"></script>
 <script src="../../../js/utils.js?v=1.2"></script>
@@ -199,10 +200,37 @@
 <script src="../../../js/classpulse-question.min.js?v=1.2"></script>
 <script src="../../presenter-toolbar.js"></script>
 <script src="../../panels/panels-theme.js"></script>
+<script src="../../../js/settings-drawer.js?v=1.0"></script>
 <script type="module">
   import Panels from '../../panels/panels.js';
   Panels.init({ logoHideOn: [0, 10], presenterUrl: '../../panels/presenter.html' });
   PanelsTheme.init({ slug: 'ejuse' });
+
+  // Settings drawer with Panels theme section
+  var presets = PanelsTheme.getPresets();
+  var current = PanelsTheme.getCurrent();
+  var themeOpts = presets.map(function(p) {
+    return '<option value="' + p.name + '"' + (p.name === current ? ' selected' : '') + '>' + p.label + '</option>';
+  }).join('');
+  var themeContent =
+    '<label style="font-size:.85rem;color:var(--text-primary,#e2e8f0);display:block;margin-bottom:.4rem">Tema</label>' +
+    '<select id="sd-panels-theme" class="bs-select" style="margin-bottom:.5rem">' + themeOpts + '</select>';
+
+  SettingsDrawer.init({
+    sections: [{
+      id: 'sd-panels-theme-section',
+      title: 'Aparencia',
+      content: themeContent,
+      expanded: true,
+      onInit: function() {
+        document.getElementById('sd-panels-theme').addEventListener('change', function() {
+          PanelsTheme.apply(this.value);
+        });
+      }
+    }]
+  });
+
+  PresenterToolbar.addItem({ label: '\u2699', onClick: SettingsDrawer.open, title: 'Configuracoes' });
 
   // Show logo after init
   const logo = document.getElementById('pn-logo');
