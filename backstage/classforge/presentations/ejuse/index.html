@@ -198,9 +198,11 @@
 <script src="../../../js/question-renderer.js?v=1.7"></script>
 <script src="../../../js/classpulse-question.min.js?v=1.2"></script>
 <script src="../../presenter-toolbar.js"></script>
+<script src="../../panels/panels-theme.js"></script>
 <script type="module">
   import Panels from '../../panels/panels.js';
   Panels.init({ logoHideOn: [0, 10], presenterUrl: '../../panels/presenter.html' });
+  PanelsTheme.init({ slug: 'ejuse' });
 
   // Show logo after init
   const logo = document.getElementById('pn-logo');
