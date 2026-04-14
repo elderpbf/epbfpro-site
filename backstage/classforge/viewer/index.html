@@ -378,9 +378,11 @@ function buildEmbedSlide(sectionData) {
   section.className = 'cf-layout-embed';
   if (sectionData.css_class) section.classList.add(sectionData.css_class);
   if (sectionData.notes) section.dataset.notes = sectionData.notes;
-  const h2 = document.createElement('h2');
-  h2.textContent = sectionData.title || '';
-  section.appendChild(h2);
+  if (sectionData.title) {
+    const h2 = document.createElement('h2');
+    h2.textContent = sectionData.title;
+    section.appendChild(h2);
+  }
   const embed = sectionData.embed || {};
   const div = document.createElement('classpulse-question');
   div.setAttribute('mode', 'embed');
