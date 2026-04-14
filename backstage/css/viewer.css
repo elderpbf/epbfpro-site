@@ -201,11 +201,13 @@
 
 .reveal .cf-layout-embed {
   display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-start;
-  padding-top: 2rem;
+  align-items: center; justify-content: center;
+  height: 100%;
 }
 .reveal .cf-layout-embed h2 { margin-bottom: 1.5rem; }
 .reveal .cf-layout-embed classpulse-question { width: 100%; max-width: min(900px, 90%); }
+.reveal .cf-layout-embed .question-area { margin-bottom: 16px; }
+.reveal .cf-layout-embed .question-text-display { margin-bottom: 16px; }
 
 .reveal .cf-layout-embed .cpq-container {
   --surface: rgba(255,255,255,0.08);
