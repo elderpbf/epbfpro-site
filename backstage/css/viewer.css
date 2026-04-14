@@ -206,9 +206,8 @@
 }
 .reveal .cf-layout-embed h2 { margin-bottom: 1.5rem; }
 .reveal .cf-layout-embed classpulse-question { width: 100%; max-width: min(900px, 90%); }
-.reveal .cf-layout-embed .question-area { margin-bottom: 16px; }
-.reveal .cf-layout-embed .question-text-display { margin-bottom: 16px; }
 
+/* CSS variable bridge: map Reveal theme to QR variables */
 .reveal .cf-layout-embed .cpq-container {
   --surface: rgba(255,255,255,0.08);
   --border: rgba(255,255,255,0.15);
@@ -223,6 +222,27 @@
   --status-closed-bg: rgba(255,255,255,0.1);
   --status-closed-text: rgba(255,255,255,0.7);
 }
+
+/* Embed header: compact spacing for slide context */
+.reveal .cf-layout-embed .question-area { margin-bottom: 10px; }
+.reveal .cf-layout-embed .question-status { margin-bottom: 8px; }
+.reveal .cf-layout-embed .status-badge { font-size: 0.6rem; padding: 3px 8px; }
+.reveal .cf-layout-embed .answer-count { font-size: 0.75rem; }
+.reveal .cf-layout-embed .question-text-display { font-size: clamp(1rem, 2vw, 1.6rem); margin-bottom: 12px; }
+
+/* Embed bars: override Reveal's font cascade with sufficient specificity */
+.reveal .cf-layout-embed .qr-display .qr-bar { margin-bottom: clamp(6px, 1vh, 12px); padding: clamp(6px, 0.8vh, 10px) clamp(8px, 1.5vw, 14px); gap: clamp(8px, 1vw, 12px); grid-template-columns: clamp(28px, 3.5vw, 38px) 1fr clamp(36px, 5vw, 50px); }
+.reveal .cf-layout-embed .qr-display .qr-bar-letter { font-size: clamp(0.7rem, 0.9vw, 0.85rem); padding: clamp(4px, 0.6vh, 6px) 0; }
+.reveal .cf-layout-embed .qr-display .qr-bar-text { font-size: clamp(0.8rem, 1.3vw, 1.2rem); }
+.reveal .cf-layout-embed .qr-display .qr-bar-pct { font-size: clamp(0.72rem, 0.9vw, 1rem); }
+.reveal .cf-layout-embed .qr-display .qr-bar-track { height: clamp(6px, 0.8vh, 10px); }
+.reveal .cf-layout-embed .qr-display .qr-bar-count { font-size: clamp(0.72rem, 0.9vw, 1rem); }
+
+/* Embed text feed: compact for slide context */
+.reveal .cf-layout-embed .qr-display .qr-text-feed { gap: 8px; }
+.reveal .cf-layout-embed .qr-display .qr-feed-card { padding: 8px 12px; }
+.reveal .cf-layout-embed .qr-display .qr-feed-name { font-size: 0.65rem; }
+.reveal .cf-layout-embed .qr-display .qr-feed-text { font-size: clamp(0.8rem, 1.3vw, 1.1rem); }
 
 .cf-session-badge {
   position: fixed;
