@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../../css/question-types.css?v=1.5">
+<link rel="stylesheet" href="../../../css/question-types.css?v=1.6">
 <link rel="stylesheet" href="../../panels/panels.css">
 <style>
   /* EJUSE brand overrides */
@@ -48,8 +48,16 @@
     --background: var(--pn-bg);
     --surface: var(--pn-primary);
     --text-primary: var(--pn-text);
+    --text-secondary: rgba(232,237,242,0.65);
+    --text-light: rgba(232,237,242,0.4);
     --primary: var(--pn-accent);
+    --primary-dark: #a88d3a;
     --border: rgba(200,168,75,0.25);
+    --success: #10b981;
+    --status-live-bg: #065f46;
+    --status-live-text: #6ee7b7;
+    --status-closed-bg: rgba(255,255,255,0.1);
+    --status-closed-text: rgba(232,237,242,0.7);
   }
 
   /* Hide logo on cover panel (index 0) via panels.js logoHideOn */
@@ -170,7 +178,6 @@
 <!-- 9: Live poll embed -->
 <section class="panel panel-statement" data-notes="Ponto de parada para enquete ao vivo. Lance a questão no ClassPulse antes de avançar para este painel.">
   <div style="width:100%;max-width:700px;text-align:center">
-    <h2 style="font-size:clamp(1.2rem,2.5vw,1.8rem);margin-bottom:1.5rem">Enquete ao vivo</h2>
     <classpulse-question mode="embed" slug="ejuse"></classpulse-question>
   </div>
 </section>
@@ -189,7 +196,7 @@
 <script src="../../../js/api-client.js?v=1.1"></script>
 <script src="../../../js/utils.js?v=1.2"></script>
 <script src="../../../js/question-renderer.js?v=1.7"></script>
-<script src="../../../js/classpulse-question.js?v=1.0"></script>
+<script src="../../../js/classpulse-question.js?v=1.1"></script>
 <script src="../../presenter-toolbar.js"></script>
 <script type="module">
   import Panels from '../../panels/panels.js';

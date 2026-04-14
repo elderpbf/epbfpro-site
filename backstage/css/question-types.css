@@ -203,6 +203,16 @@
 .qr-submit-btn { padding: 12px 24px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
 .qr-submit-btn:hover { opacity: 0.85; }
 
+/* ── DISPLAY/EMBED HEADER (question area, status badge) ─── */
+
+.question-area { margin-bottom: 32px; flex-shrink: 0; }
+.question-status { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.status-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; }
+.status-badge.live   { background: var(--status-live-bg); color: var(--status-live-text); }
+.status-badge.closed { background: var(--status-closed-bg); color: var(--status-closed-text); }
+.answer-count { font-size: 0.82rem; color: var(--text-light); }
+.question-text-display { font-size: clamp(1.3rem, 2.5vw, 2.8rem); font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 32px; text-align: justify; }
+
 /* ── DISPLAY MODE overrides ──────────────────────────────── */
 
 .qr-display .qr-bar {

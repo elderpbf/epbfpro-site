@@ -7,14 +7,14 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
 <link rel="stylesheet" id="reveal-theme" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
-<link rel="stylesheet" href="../../css/question-types.css?v=1.5">
+<link rel="stylesheet" href="../../css/question-types.css?v=1.6">
 <link rel="stylesheet" href="../../css/viewer.css?v=1.6">
 <link rel="stylesheet" href="../presenter-toolbar.css">
 <script src="../../js/debug.js?v=2.4"></script>
 <script src="../../js/api-client.js?v=1.1"></script>
 <script src="../../js/utils.js?v=1.2"></script>
 <script src="../../js/question-renderer.js?v=1.7"></script>
-<script src="../../js/classpulse-question.js?v=1.0"></script>
+<script src="../../js/classpulse-question.js?v=1.1"></script>
 <script src="../presenter-toolbar.js"></script>
 </head>
 <body>
@@ -718,26 +718,6 @@ function getDemoContent() {
 
   if (presId) {
     const scriptUrl = scriptParam || localStorage.getItem('bs_cf_script_url');
-    if (scriptUrl) {
-      if (scriptParam) localStorage.setItem('bs_cf_script_url', scriptParam);
-      showLoading();
-      try {
-        const lesson = await fetchLesson(scriptUrl, presId);
-        await showPresentation(lesson, false);
-      } catch (err) {
-        showError(err.message);
-      }
-      return;
-    }
-  }
-
-  showSetup(presId || '');
-})();
-
-</script>
-</body>
-</html>
-rl');
     if (scriptUrl) {
       if (scriptParam) localStorage.setItem('bs_cf_script_url', scriptParam);
       showLoading();

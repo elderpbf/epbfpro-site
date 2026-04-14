@@ -222,13 +222,6 @@
   --status-closed-text: rgba(255,255,255,0.7);
 }
 
-.reveal .cf-layout-embed .qr-display .qr-bar { margin-bottom: clamp(10px, 1.5vh, 18px) !important; padding: clamp(8px, 1.2vh, 12px) clamp(12px, 2vw, 16px) !important; gap: clamp(10px, 1.5vw, 14px) !important; grid-template-columns: clamp(34px, 4vw, 44px) 1fr clamp(45px, 6vw, 60px) !important; }
-.reveal .cf-layout-embed .qr-display .qr-bar-letter { font-size: clamp(0.78rem, 1vw, 1rem) !important; padding: clamp(6px, 0.8vh, 8px) 0 !important; }
-.reveal .cf-layout-embed .qr-display .qr-bar-text { font-size: clamp(0.95rem, 1.6vw, 1.6rem) !important; }
-.reveal .cf-layout-embed .qr-display .qr-bar-pct { font-size: clamp(0.82rem, 1.1vw, 1.25rem) !important; }
-.reveal .cf-layout-embed .qr-display .qr-bar-track { height: clamp(10px, 1.2vh, 16px) !important; }
-.reveal .cf-layout-embed .qr-display .qr-bar-count { font-size: clamp(0.82rem, 1.1vw, 1.25rem) !important; }
-
 .cf-session-badge {
   position: fixed;
   bottom: 12px; left: 12px;

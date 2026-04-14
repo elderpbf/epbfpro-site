@@ -235,7 +235,6 @@
         this.appendChild(textWrapper);
         
         const showResults = q.status === 'active' || q.show_results === true;
-        container.className = 'qr-results';
         QR.renderResults(q, counts, container, { mode: 'display', showResults, revealAnswer: isRevealed, correctAnswer: q.correct_answer });
         this.appendChild(container);
       } 
