@@ -201,11 +201,49 @@
 
 .reveal .cf-layout-embed {
   display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-start;
-  padding-top: 2rem;
+  align-items: center; justify-content: center;
+  height: 100%;
 }
 .reveal .cf-layout-embed h2 { margin-bottom: 1.5rem; }
-.reveal .cf-layout-embed .cf-classpulse-embed { width: 100%; max-width: 700px; }
+.reveal .cf-layout-embed classpulse-question { width: 100%; max-width: min(900px, 90%); }
+
+/* CSS variable bridge: map Reveal theme to QR variables */
+.reveal .cf-layout-embed .cpq-container {
+  --surface: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.15);
+  --text-primary: inherit;
+  --text-secondary: rgba(255,255,255,0.65);
+  --primary: #14b8a6;
+  --primary-dark: #0d9488;
+  --text-light: rgba(255,255,255,0.4);
+  --success: #10b981;
+  --status-live-bg: #065f46;
+  --status-live-text: #6ee7b7;
+  --status-closed-bg: rgba(255,255,255,0.1);
+  --status-closed-text: rgba(255,255,255,0.7);
+}
+
+/* Embed header: px values so Reveal's CSS transform scales them correctly.
+   rem/vw bypass the transform and render tiny. px participates in scaling. */
+.reveal .cf-layout-embed .question-area { margin-bottom: 14px; }
+.reveal .cf-layout-embed .question-status { margin-bottom: 10px; }
+.reveal .cf-layout-embed .status-badge { font-size: 8px; padding: 4px 10px; }
+.reveal .cf-layout-embed .answer-count { font-size: 11px; }
+.reveal .cf-layout-embed .question-text-display { font-size: 24px; margin-bottom: 18px; text-align: left; }
+
+/* Embed bars: px units for Reveal transform compatibility */
+.reveal .cf-layout-embed .qr-display .qr-bar { margin-bottom: 10px; padding: 8px 12px; gap: 10px; grid-template-columns: 32px 1fr 44px; }
+.reveal .cf-layout-embed .qr-display .qr-bar-letter { font-size: 10px; padding: 5px 0; }
+.reveal .cf-layout-embed .qr-display .qr-bar-text { font-size: 15px; }
+.reveal .cf-layout-embed .qr-display .qr-bar-pct { font-size: 12px; }
+.reveal .cf-layout-embed .qr-display .qr-bar-track { height: 8px; }
+.reveal .cf-layout-embed .qr-display .qr-bar-count { font-size: 12px; }
+
+/* Embed text feed */
+.reveal .cf-layout-embed .qr-display .qr-text-feed { gap: 10px; }
+.reveal .cf-layout-embed .qr-display .qr-feed-card { padding: 10px 14px; }
+.reveal .cf-layout-embed .qr-display .qr-feed-name { font-size: 9px; }
+.reveal .cf-layout-embed .qr-display .qr-feed-text { font-size: 14px; }
 
 .cf-session-badge {
   position: fixed;
