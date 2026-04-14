@@ -15,6 +15,7 @@
       this._lastAnsCountsStr = '';
       this._lastData = null;
       this._session = null;
+      this._feedExpanded = false;
     }
 
     connectedCallback() {
@@ -264,13 +265,34 @@
       else if (this._mode === 'host') {
         const counts = q.answer_counts || new Array((q.options || []).length).fill(0);
         container.className = 'qr-host';
-        QR.renderResults(q, counts, container, {
+        const removeOpts = {
           mode: 'host',
           showResults: true,
-          revealAnswer: false, 
+          revealAnswer: false,
           correctAnswer: q.correct_answer,
           onRemoveAnswer: (id, el) => { this.dispatchEvent(new CustomEvent('cpq-remove-answer', { detail: { id, el } })); }
-        });
+        };
+
+        if (['open', 'wordcloud'].includes(q.type)) {
+          const total = (q.text_answers || []).length;
+          const self = this;
+          const toggle = document.createElement('button');
+          toggle.className = 'qr-feed-toggle';
+          const arrow = self._feedExpanded ? '\u25BC' : '\u25B6';
+          toggle.textContent = arrow + ' Ver respostas (' + total + ')';
+          const feedBox = document.createElement('div');
+          if (!self._feedExpanded) feedBox.hidden = true;
+          toggle.addEventListener('click', function() {
+            self._feedExpanded = !self._feedExpanded;
+            feedBox.hidden = !self._feedExpanded;
+            toggle.textContent = (self._feedExpanded ? '\u25BC' : '\u25B6') + ' Ver respostas (' + total + ')';
+          });
+          QR.renderResults(q, counts, feedBox, removeOpts);
+          container.appendChild(toggle);
+          container.appendChild(feedBox);
+        } else {
+          QR.renderResults(q, counts, container, removeOpts);
+        }
         this.appendChild(container);
       }
     }
