@@ -656,15 +656,23 @@ function renderSessions() {
 }
 
 async function doLinkPresentation(session, slug) {
-  await callWorker({ action: 'link_presentation', auth_token: AUTH_TOKEN, code: session.code, slug: slug });
-  session.presentation_slug = slug;
-  renderSessions();
+  try {
+    await callWorker({ action: 'link_presentation', auth_token: AUTH_TOKEN, code: session.code, slug: slug });
+    session.presentation_slug = slug;
+    renderSessions();
+  } catch (e) {
+    showToastError(e.message);
+  }
 }
 
 async function doUnlinkPresentation(session) {
-  await callWorker({ action: 'unlink_presentation', auth_token: AUTH_TOKEN, code: session.code });
-  session.presentation_slug = null;
-  renderSessions();
+  try {
+    await callWorker({ action: 'unlink_presentation', auth_token: AUTH_TOKEN, code: session.code });
+    session.presentation_slug = null;
+    renderSessions();
+  } catch (e) {
+    showToastError(e.message);
+  }
 }
 
 document.getElementById('session-title').addEventListener('keydown', function(e) {
