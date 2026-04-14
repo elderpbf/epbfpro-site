@@ -34,8 +34,6 @@
   cursor: pointer;
 }
 
-.cf-toolbar-item:last-child { margin-left: auto; }
-
 .cf-toolbar-item:hover {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;

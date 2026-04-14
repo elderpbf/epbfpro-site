@@ -10,14 +10,12 @@
 <link rel="stylesheet" href="../../css/question-types.css?v=1.6">
 <link rel="stylesheet" href="../../css/viewer.css?v=1.9">
 <link rel="stylesheet" href="../presenter-toolbar.css?v=1.1">
-<link rel="stylesheet" href="../../css/settings-drawer.css?v=1.0">
 <script src="../../js/debug.js?v=2.4"></script>
 <script src="../../js/api-client.js?v=1.1"></script>
 <script src="../../js/utils.js?v=1.2"></script>
 <script src="../../js/question-renderer.js?v=1.7"></script>
 <script src="../../js/classpulse-question.min.js?v=1.2"></script>
 <script src="../presenter-toolbar.js?v=1.1"></script>
-<script src="../../js/settings-drawer.js?v=1.0"></script>
 </head>
 <body>
 
@@ -566,37 +564,6 @@ async function showPresentation(lesson, isDemo, opts) {
 }
 
 // ---------------------------------------------------------------------------
-// Settings drawer (Reveal theme section)
-// ---------------------------------------------------------------------------
-
-function initPresentationSettings() {
-  const currentTheme = resolveTheme() || 'black';
-  const opts = THEMES.map(t =>
-    '<option value="' + t + '"' + (t === currentTheme ? ' selected' : '') + '>' + t + '</option>'
-  ).join('');
-  const content =
-    '<label style="font-size:.85rem;color:var(--text-primary,#e2e8f0);display:block;margin-bottom:.4rem">Tema Reveal</label>' +
-    '<select id="sd-reveal-theme" class="bs-select" style="margin-bottom:.5rem">' + opts + '</select>';
-
-  SettingsDrawer.init({
-    sections: [{
-      id: 'sd-reveal-theme-section',
-      title: 'Aparencia',
-      content: content,
-      expanded: true,
-      onInit: function() {
-        document.getElementById('sd-reveal-theme').addEventListener('change', function() {
-          setTheme(this.value);
-          localStorage.setItem('bs_reveal_theme', this.value);
-        });
-      }
-    }]
-  });
-
-  PresenterToolbar.addItem({ label: '\u2699', onClick: SettingsDrawer.open, title: 'Configuracoes' });
-}
-
-// ---------------------------------------------------------------------------
 // Event listeners
 // ---------------------------------------------------------------------------
 
@@ -724,7 +691,7 @@ function getDemoContent() {
 
   if (isDemo) {
     await showPresentation(getDemoContent(), true);
-    initPresentationSettings();
+
     return;
   }
 
@@ -737,7 +704,7 @@ function getDemoContent() {
         logoConfig: lesson.logo_config,
         customCss: lesson.custom_css
       });
-      initPresentationSettings();
+  
       callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
         if (data && data.session) {
           PresenterToolbar.addItem({
@@ -761,7 +728,7 @@ function getDemoContent() {
       try {
         const lesson = await fetchLesson(scriptUrl, presId);
         await showPresentation(lesson, false);
-        initPresentationSettings();
+    
       } catch (err) {
         showError(err.message);
       }
