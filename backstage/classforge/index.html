@@ -23,30 +23,6 @@
 
 <div id="screen-app" class="bs-app">
 
-  <header class="bs-topbar">
-    <div class="bs-topbar-inner">
-      <a href="/backstage/" class="bs-topbar-logo" aria-label="Voltar ao Backstage">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
-      </a>
-      <div class="bs-topbar-wordmark">
-        <span class="bs-topbar-brand">Backstage</span>
-        <span class="bs-topbar-name">ClassForge</span>
-      </div>
-      <div class="bs-topbar-spacer"></div>
-      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
-        <span id="themeIcon"></span>
-      </button>
-      <button class="bs-icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
-      <button class="bs-logout-btn" id="logout-btn">Sair</button>
-    </div>
-  </header>
-
   <main class="bs-main">
 
       <div class="cf-toolbar">
@@ -75,12 +51,13 @@
 
 
 
-<script src="../js/utils.js?v=1.2"></script>
+<script src="../js/utils.js?v=1.3"></script>
 <script src="../js/api-client.js?v=1.1"></script>
 <script src="../js/ai-client.js?v=1.1"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/auth.js?v=1.1"></script>
-<script src="../js/settings-drawer.js?v=1.0"></script>
+<script src="../js/settings-drawer.js?v=1.1"></script>
+<script src="../js/backstage-topbar.js?v=1.0"></script>
 <script>
 'use strict';
 
@@ -134,14 +111,6 @@ document.querySelectorAll('[data-key]').forEach(function(el) {
   if (T[key]) el.textContent = T[key];
 });
 
-
-// ---------------------------------------------------------------------------
-// Theme
-// ---------------------------------------------------------------------------
-ThemeManager.init({ storageKey: 'bs_theme' });
-ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
-
-document.getElementById('logout-btn').addEventListener('click', BS_AUTH.logout);
 
 // ---------------------------------------------------------------------------
 // ClassForge: Presentation grid
@@ -394,7 +363,9 @@ var CF_THEME_SECTION_HTML =
     '</div>' +
   '</div>';
 
-SettingsDrawer.init({
+Topbar.init({
+  title: 'ClassForge',
+  backLink: '/backstage/',
   sections: [
     {
       id: 'cf-script',

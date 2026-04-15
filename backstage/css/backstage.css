@@ -176,6 +176,13 @@
   text-decoration: none;
 }
 
+.bs-topbar-back {
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
 .bs-topbar-logo img {
   height: 36px;
   background: linear-gradient(135deg, var(--primary), var(--secondary));

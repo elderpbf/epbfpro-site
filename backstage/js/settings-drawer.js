@@ -11,11 +11,6 @@ window.SettingsDrawer = (function() {
 
   // ── Helpers ──────────────────────────────────────────────
 
-  async function _hashPw(pw) {
-    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-    return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-  }
-
   function _esc(s) {
     var d = document.createElement('div');
     d.textContent = s;
@@ -119,8 +114,8 @@ window.SettingsDrawer = (function() {
 
       btn.disabled = true;
       try {
-        var curHash = await _hashPw(cur);
-        var newHash = await _hashPw(newPw);
+        var curHash = await hashPw(cur);
+        var newHash = await hashPw(newPw);
         await callWorker({ action: 'change_password', auth_token: curHash, new_hash: newHash });
         localStorage.setItem(window.BS_AUTH ? BS_AUTH.PW_KEY : 'bs_pw_hash', newHash);
         document.getElementById('sd-pw-current').value = '';
