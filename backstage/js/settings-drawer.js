@@ -41,7 +41,7 @@ window.SettingsDrawer = (function() {
     return (
       '<p style="font-size:.88rem;color:var(--text-primary);margin-bottom:.5rem">Painel de debug</p>' +
       '<button class="bs-toggle-btn" id="sd-debug-toggle" style="margin-bottom:.5rem">Desativado</button>' +
-      '<p class="bs-hint">Exibe pill flutuante com logs em todas as paginas do Backstage.</p>'
+      '<p class="bs-hint">Exibe pill flutuante com logs em todas as páginas do Backstage.</p>'
     );
   }
 
@@ -110,7 +110,7 @@ window.SettingsDrawer = (function() {
       err.style.color = '';
 
       if (newPw.length < 6) { err.textContent = 'A senha deve ter pelo menos 6 caracteres.'; return; }
-      if (newPw !== confirm) { err.textContent = 'As senhas nao coincidem.'; return; }
+      if (newPw !== confirm) { err.textContent = 'As senhas não coincidem.'; return; }
 
       btn.disabled = true;
       try {
@@ -154,10 +154,10 @@ window.SettingsDrawer = (function() {
     _drawer.id = 'settings-drawer';
     _drawer.className = 'bs-drawer';
     _drawer.hidden = true;
-    _drawer.setAttribute('aria-label', 'Configuracoes');
+    _drawer.setAttribute('aria-label', 'Configurações');
     _drawer.innerHTML =
       '<h2>' +
-        '<span>Configuracoes</span>' +
+        '<span>Configurações</span>' +
         '<button class="bs-drawer-close" id="sd-close" aria-label="Fechar">&times;</button>' +
       '</h2>' +
       sectionsHtml;
@@ -244,7 +244,7 @@ window.SettingsDrawer = (function() {
 
     // Built-in: password (only if auth module is loaded or we're on the portal page)
     if (typeof callWorker === 'function') {
-      html += _buildSection('sd-security', 'Seguranca', _pwSectionHtml(), false);
+      html += _buildSection('sd-security', 'Segurança', _pwSectionHtml(), false);
     }
 
     _injectDrawer(html);

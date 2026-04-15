@@ -338,12 +338,12 @@ var CF_SCRIPT_SECTION_HTML =
     '<label>URL do Apps Script</label>' +
     '<input id="settings-script-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">' +
   '</div>' +
-  '<p class="bs-hint">Implante o Code.gs como Web App e cole a URL aqui. Necessario para carregar suas apresentacoes.</p>' +
+  '<p class="bs-hint">Implante o Code.gs como Web App e cole a URL aqui. Necessário para carregar suas apresentações.</p>' +
   '<button class="bs-save-btn" id="settings-save-btn">Salvar</button>' +
   '<p class="bs-drawer-save-msg" id="settings-save-msg"></p>';
 
 var CF_THEME_SECTION_HTML =
-  '<p class="bs-hint" style="margin-bottom:0.75rem">Aplicado a todas as apresentacoes ao clicar em Apresentar.</p>' +
+  '<p class="bs-hint" style="margin-bottom:0.75rem">Aplicado a todas as apresentações ao clicar em Apresentar.</p>' +
   '<div id="settings-theme-grid" class="cf-theme-grid"></div>' +
   '<div style="margin-top:1.25rem">' +
     '<button class="bs-toggle-btn" id="show-theme-gen-btn">+ Criar tema com IA</button>' +
@@ -355,7 +355,7 @@ var CF_THEME_SECTION_HTML =
       '<p class="bs-form-error" id="theme-gen-error"></p>' +
       '<button class="bs-save-btn" id="theme-gen-btn">Gerar com Gemini</button>' +
       '<div id="theme-gen-preview" hidden style="margin-top:1rem;padding:0.75rem;border-radius:8px;border:1px solid rgba(20,184,166,.3)">' +
-        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem">Pre-visualizacao</p>' +
+        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem">Pré-visualização</p>' +
         '<div id="theme-preview-swatches" style="display:flex;gap:6px;margin-bottom:0.75rem"></div>' +
         '<p id="theme-preview-name" style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:0.75rem"></p>' +
         '<button class="bs-save-btn" id="theme-save-btn">Salvar tema</button>' +
@@ -387,7 +387,7 @@ Topbar.init({
     },
     {
       id: 'cf-theme',
-      title: 'Tema de apresentacao',
+      title: 'Tema de apresentação',
       content: CF_THEME_SECTION_HTML,
       onOpen: function() { renderThemeGrid(); },
       onInit: function() {
