@@ -24,6 +24,7 @@ window.Topbar = (function() {
   var _header = null;
   var _hideTimer = null;
   var _visible = false;
+  var _mouseOverBar = false;
 
   function _show() {
     if (!_header) return;
@@ -33,7 +34,7 @@ window.Topbar = (function() {
   }
 
   function _hide() {
-    if (!_header) return;
+    if (!_header || _mouseOverBar) return;
     _header.classList.remove('bs-topbar--visible');
     _visible = false;
   }
@@ -44,6 +45,7 @@ window.Topbar = (function() {
   }
 
   function _onMouseMove(e) {
+    if (_mouseOverBar) return;
     if (e.clientY <= TRIGGER_ZONE) {
       _show();
       _scheduleHide();
@@ -88,18 +90,19 @@ window.Topbar = (function() {
       _inner.appendChild(back);
     }
 
-    // Logo + wordmark (portal only)
+    // Logo (always present)
+    var logo = document.createElement('a');
+    logo.href = backLink || 'https://pensoia.com';
+    logo.className = 'bs-topbar-logo';
+    logo.setAttribute('aria-label', 'PensoIA');
+
+    var img = document.createElement('img');
+    img.src = '/images/logo.png';
+    img.alt = 'PensoIA';
+    logo.appendChild(img);
+
+    // Wordmark (portal only)
     if (!isPresentation) {
-      var logo = document.createElement('a');
-      logo.href = backLink || 'https://pensoia.com';
-      logo.className = 'bs-topbar-logo';
-      logo.setAttribute('aria-label', 'PensoIA');
-
-      var img = document.createElement('img');
-      img.src = '/images/logo.png';
-      img.alt = 'PensoIA';
-      logo.appendChild(img);
-
       var wordmark = document.createElement('div');
       wordmark.className = 'bs-topbar-wordmark';
       var brand = document.createElement('span');
@@ -111,8 +114,8 @@ window.Topbar = (function() {
       name.textContent = subtitle || title;
       wordmark.appendChild(name);
       logo.appendChild(wordmark);
-      _inner.appendChild(logo);
     }
+    _inner.appendChild(logo);
 
     // Spacer
     var spacer = document.createElement('div');
@@ -157,6 +160,11 @@ window.Topbar = (function() {
     // Insert into DOM
     container.insertBefore(header, container.firstChild);
 
+    // Prevent click-through to presentation engines
+    if (isPresentation) {
+      header.addEventListener('click', function(e) { e.stopPropagation(); });
+    }
+
     // Wire theme
     ThemeManager.init({ storageKey: 'bs_theme' });
     ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
@@ -170,8 +178,14 @@ window.Topbar = (function() {
       _hide();
       document.addEventListener('mousemove', _onMouseMove);
       document.addEventListener('keydown', _onKeyDown);
-      header.addEventListener('mouseenter', function() { clearTimeout(_hideTimer); });
-      header.addEventListener('mouseleave', _scheduleHide);
+      header.addEventListener('mouseenter', function() {
+        _mouseOverBar = true;
+        clearTimeout(_hideTimer);
+      });
+      header.addEventListener('mouseleave', function() {
+        _mouseOverBar = false;
+        _scheduleHide();
+      });
     }
   }
 
