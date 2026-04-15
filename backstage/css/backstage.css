@@ -232,7 +232,11 @@
   font-weight: 500;
   color: var(--text-secondary);
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+}
+
+.bs-topbar-wordmark-link {
+  display: flex; align-items: center;
+  text-decoration: none;
 }
 
 .bs-topbar-name {

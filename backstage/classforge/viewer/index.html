@@ -73,7 +73,7 @@ import RevealHighlight from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/hig
 import RevealNotes from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.esm.js';
 import RevealMarkdown from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/markdown/markdown.esm.js';
 
-Topbar.init({ mode: 'presentation', title: 'ClassForge' });
+Topbar.init({ mode: 'presentation', title: 'ClassForge', backLink: '/backstage/classforge/' });
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -502,7 +502,7 @@ async function showPresentation(lesson, isDemo, opts) {
     container.appendChild(buildSlide(s));
   }
 
-  Topbar.setSubtitle(lesson.title || 'Untitled');
+  Topbar.setSubtitle((lesson.title || 'Untitled') + ' (Reveal)');
   ThemeRegistry.initTheme(ThemeRegistry.resolveTheme(lesson.theme));
   showOnly('reveal-container');
 

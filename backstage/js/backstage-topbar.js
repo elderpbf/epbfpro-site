@@ -90,30 +90,33 @@ window.Topbar = (function() {
       _inner.appendChild(back);
     }
 
-    // Logo (always present)
+    // Logo image (always links to pensoia.com)
     var logo = document.createElement('a');
-    logo.href = backLink || 'https://pensoia.com';
+    logo.href = 'https://pensoia.com';
     logo.className = 'bs-topbar-logo';
     logo.setAttribute('aria-label', 'PensoIA');
-
     var img = document.createElement('img');
     img.src = '/images/logo.png';
     img.alt = 'PensoIA';
     logo.appendChild(img);
+    _inner.appendChild(logo);
 
-    // Wordmark
+    // Wordmark (links to backLink or pensoia.com)
+    var wordmarkLink = document.createElement('a');
+    wordmarkLink.href = backLink || 'https://pensoia.com';
+    wordmarkLink.className = 'bs-topbar-wordmark-link';
     var wordmark = document.createElement('div');
     wordmark.className = 'bs-topbar-wordmark';
     var brand = document.createElement('span');
     brand.className = 'bs-topbar-brand';
-    brand.textContent = subtitle ? title : 'PensoIA';
+    brand.textContent = isPresentation ? title : (subtitle ? title : 'PensoIA');
     wordmark.appendChild(brand);
     var name = document.createElement('span');
     name.className = 'bs-topbar-name';
     name.textContent = subtitle || title;
     wordmark.appendChild(name);
-    logo.appendChild(wordmark);
-    _inner.appendChild(logo);
+    wordmarkLink.appendChild(wordmark);
+    _inner.appendChild(wordmarkLink);
 
     // Spacer
     var spacer = document.createElement('div');
