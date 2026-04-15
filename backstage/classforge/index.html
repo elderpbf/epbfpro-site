@@ -420,6 +420,12 @@ function _renderThemes() {
 var pendingTheme = null;
 
 function _initThemeGen() {
+document.getElementById('theme-desc-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('theme-gen-btn').click();
+  }
+});
 document.getElementById('theme-gen-btn').addEventListener('click', async function() {
   var desc    = document.getElementById('theme-desc-input').value.trim();
   var errEl   = document.getElementById('theme-gen-error');

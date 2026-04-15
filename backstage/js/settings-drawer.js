@@ -100,6 +100,15 @@ window.SettingsDrawer = (function() {
       if (!form.hidden) document.getElementById('sd-pw-current').focus();
     });
 
+    document.querySelectorAll('#sd-pw-current, #sd-pw-new, #sd-pw-confirm').forEach(function(input) {
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.getElementById('sd-pw-save').click();
+        }
+      });
+    });
+
     document.getElementById('sd-pw-save').addEventListener('click', async function() {
       var btn     = this;
       var cur     = document.getElementById('sd-pw-current').value;
