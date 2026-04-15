@@ -12,13 +12,13 @@
 <link rel="stylesheet" href="../../css/theme.css?v=1.2">
 <link rel="stylesheet" href="../../css/backstage.css?v=1.6">
 <link rel="stylesheet" href="../../css/settings-drawer.css?v=1.0">
-<link rel="stylesheet" href="../../css/classforge.css?v=1.6">
+<link rel="stylesheet" href="../../css/classforge.css?v=1.7">
 <script src="../../js/debug.js?v=2.4"></script>
 <script src="../../js/api-client.js?v=1.1"></script>
 <script src="../../js/utils.js?v=1.3"></script>
 <script src="../../js/ai-client.js?v=1.1"></script>
-<script src="../../js/theme-registry.js?v=1.0"></script>
-<script src="../../js/presentation-settings.js?v=1.0"></script>
+<script src="../../js/theme-registry.js?v=2.0"></script>
+<script src="../../js/presentation-settings.js?v=2.0"></script>
 <script src="../../js/question-renderer.js?v=1.7"></script>
 <script src="../../js/classpulse-question.min.js?v=1.2"></script>
 <script src="../../js/theme-manager.js?v=1.0"></script>
@@ -82,7 +82,7 @@ Topbar.init({
   backLink: '/backstage/classforge/',
   sections: PresentationSettings.buildSections({
     engine: 'reveal',
-    onThemeChange: function(name) { ThemeRegistry.initTheme(name); }
+    onThemeChange: function(name) { ThemeRegistry.initTheme(name, 'reveal'); }
   })
 });
 
@@ -514,7 +514,7 @@ async function showPresentation(lesson, isDemo, opts) {
   }
 
   Topbar.setSubtitle((lesson.title || 'Untitled') + ' (Reveal)');
-  ThemeRegistry.initTheme(ThemeRegistry.resolveTheme(lesson.theme));
+  ThemeRegistry.initTheme(ThemeRegistry.resolveTheme(lesson.theme), 'reveal');
   showOnly('reveal-container');
 
   if (!revealInited) {

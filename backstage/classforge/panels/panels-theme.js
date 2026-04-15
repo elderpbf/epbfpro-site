@@ -107,9 +107,18 @@ window.PanelsTheme = (function() {
     }
   }
 
+  function applyVars(varsObj) {
+    var root = document.documentElement;
+    var keys = Object.keys(varsObj);
+    for (var i = 0; i < keys.length; i++) {
+      root.style.setProperty(keys[i], varsObj[keys[i]]);
+    }
+  }
+
   return {
     init: init,
     apply: apply,
+    applyVars: applyVars,
     getPresets: getPresets,
     getCurrent: getCurrent
   };

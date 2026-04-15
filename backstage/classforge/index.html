@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../css/theme.css?v=1.2">
 <link rel="stylesheet" href="../css/backstage.css?v=1.3">
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
-<link rel="stylesheet" href="../css/classforge.css?v=1.5">
+<link rel="stylesheet" href="../css/classforge.css?v=1.7">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.3">
 <script src="../js/debug.js?v=2.4"></script>
 </head>
@@ -54,7 +54,7 @@
 <script src="../js/utils.js?v=1.3"></script>
 <script src="../js/api-client.js?v=1.1"></script>
 <script src="../js/ai-client.js?v=1.1"></script>
-<script src="../js/theme-registry.js?v=1.0"></script>
+<script src="../js/theme-registry.js?v=2.0"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/auth.js?v=1.1"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
@@ -346,23 +346,7 @@ var CF_SCRIPT_SECTION_HTML =
 var CF_THEME_SECTION_HTML =
   '<p class="bs-hint" style="margin-bottom:0.75rem">Aplicado a todas as apresentações ao clicar em Apresentar.</p>' +
   '<div id="settings-theme-grid" class="cf-theme-grid"></div>' +
-  '<div style="margin-top:1.25rem">' +
-    '<button class="bs-toggle-btn" id="show-theme-gen-btn">+ Criar tema com IA</button>' +
-    '<div id="theme-gen-form" hidden style="margin-top:1rem">' +
-      '<div class="bs-field">' +
-        '<label>Descreva o tema</label>' +
-        '<textarea id="theme-desc-input" class="bs-textarea" placeholder="Ex: Tema escuro e elegante com tons de azul oceano..."></textarea>' +
-      '</div>' +
-      '<p class="bs-form-error" id="theme-gen-error"></p>' +
-      '<button class="bs-save-btn" id="theme-gen-btn">Gerar com Gemini</button>' +
-      '<div id="theme-gen-preview" hidden style="margin-top:1rem;padding:0.75rem;border-radius:8px;border:1px solid rgba(20,184,166,.3)">' +
-        '<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem">Pré-visualização</p>' +
-        '<div id="theme-preview-swatches" style="display:flex;gap:6px;margin-bottom:0.75rem"></div>' +
-        '<p id="theme-preview-name" style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:0.75rem"></p>' +
-        '<button class="bs-save-btn" id="theme-save-btn">Salvar tema</button>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
+  '<div id="cf-theme-creator" style="margin-top:1.25rem"></div>';
 
 Topbar.init({
   title: 'ClassForge',
@@ -390,13 +374,8 @@ Topbar.init({
       id: 'cf-theme',
       title: 'Tema de apresentação',
       content: CF_THEME_SECTION_HTML,
-      onOpen: function() { _renderThemes(); },
-      onInit: function() {
-        document.getElementById('show-theme-gen-btn').addEventListener('click', function() {
-          document.getElementById('theme-gen-form').hidden = !document.getElementById('theme-gen-form').hidden;
-        });
-        _initThemeGen();
-      }
+      onOpen: function() { _cfRenderGrid(); },
+      onInit: function() { _cfRenderCreator(); }
     }
   ]
 });
@@ -405,64 +384,37 @@ Topbar.init({
 // Theme management (delegates to ThemeRegistry)
 // ---------------------------------------------------------------------------
 
-var _themeGridOpts = {
-  onSelect: function(name) {
-    ThemeRegistry.setActiveTheme(name);
-    _renderThemes();
-    showToast('Tema "' + name.replace('custom:', '') + '" selecionado.');
-  }
-};
-
-function _renderThemes() {
-  ThemeRegistry.renderThemeGrid(document.getElementById('settings-theme-grid'), _themeGridOpts);
+function _cfRenderGrid() {
+  ThemeRegistry.renderThemeGrid(document.getElementById('settings-theme-grid'), {
+    onSelect: function(name) {
+      ThemeRegistry.setActiveTheme(name);
+      _cfRenderGrid();
+      showToast('Tema "' + name + '" selecionado.');
+    },
+    onEdit: function(name) {
+      ThemeRegistry.renderCreator(document.getElementById('cf-theme-creator'), {
+        prefix: 'cf-',
+        editingName: name,
+        onSave: function(theme) {
+          ThemeRegistry.setActiveTheme(theme.name);
+          _cfRenderGrid();
+          _cfRenderCreator();
+        }
+      });
+    }
+  });
 }
 
-var pendingTheme = null;
-
-function _initThemeGen() {
-document.getElementById('theme-gen-btn').addEventListener('click', async function() {
-  var desc    = document.getElementById('theme-desc-input').value.trim();
-  var errEl   = document.getElementById('theme-gen-error');
-  var preview = document.getElementById('theme-gen-preview');
-  errEl.textContent = ''; preview.hidden = true; pendingTheme = null;
-
-  if (!desc) { errEl.textContent = 'Descreva o tema antes de gerar.'; return; }
-
-  var btn = this; btn.textContent = 'Gerando...'; btn.disabled = true;
-  try {
-    var theme = await ThemeRegistry.generateTheme(desc);
-    if (!theme) {
-      showToastError('IA indisponível ou resposta inválida. Tente novamente.');
-      return;
+function _cfRenderCreator() {
+  ThemeRegistry.renderCreator(document.getElementById('cf-theme-creator'), {
+    prefix: 'cf-',
+    onSave: function(theme) {
+      ThemeRegistry.setActiveTheme(theme.name);
+      _cfRenderGrid();
+      _cfRenderCreator();
     }
-    pendingTheme = theme;
-    var swatchContainer = document.getElementById('theme-preview-swatches');
-    swatchContainer.innerHTML = '';
-    [theme.overrides['--r-background-color'], theme.overrides['--r-main-color'], theme.overrides['--r-heading-color'], theme.overrides['--r-link-color']].filter(Boolean).forEach(function(c) {
-      var s = document.createElement('div');
-      s.style.cssText = 'width:28px;height:28px;border-radius:6px;background:'+c+';border:1px solid rgba(0,0,0,.2)';
-      swatchContainer.appendChild(s);
-    });
-    document.getElementById('theme-preview-name').textContent = theme.name;
-    preview.hidden = false;
-  } catch (err) {
-    dbg('error', 'ai_theme: ' + err.message);
-    showToastError('Erro ao gerar tema. Tente novamente.');
-  } finally {
-    btn.textContent = t('settings_theme_gen_submit'); btn.disabled = false;
-  }
-});
-
-document.getElementById('theme-save-btn').addEventListener('click', function() {
-  if (!pendingTheme) return;
-  ThemeRegistry.createCustomTheme(pendingTheme);
-  ThemeRegistry.setActiveTheme('custom:' + pendingTheme.name);
-  document.getElementById('theme-gen-preview').hidden = true;
-  document.getElementById('theme-desc-input').value = '';
-  pendingTheme = null;
-  _renderThemes();
-});
-} // end _initThemeGen
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Start
