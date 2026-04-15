@@ -159,9 +159,7 @@ window.Topbar = (function() {
 
     // Wire theme
     ThemeManager.init({ storageKey: 'bs_theme' });
-    if (!isPresentation) {
-      ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
-    }
+    ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
 
     // Wire settings drawer
     SettingsDrawer.init({ sections: sections });
@@ -192,7 +190,7 @@ window.Topbar = (function() {
     } else {
       el = document.createElement('button');
     }
-    el.className = 'bs-icon-btn';
+    el.className = item.icon ? 'bs-icon-btn' : 'bs-topbar-item';
     if (item.id) el.id = item.id;
     if (item.title) el.title = item.title;
     if (item.icon) el.innerHTML = item.icon;

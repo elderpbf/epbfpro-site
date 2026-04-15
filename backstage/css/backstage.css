@@ -164,6 +164,7 @@
 .bs-topbar--presentation {
   position: fixed;
   left: 0; right: 0;
+  z-index: 9900;
   transform: translateY(-100%);
   opacity: 0;
   transition: transform 0.2s ease, opacity 0.2s ease;
@@ -172,6 +173,25 @@
 .bs-topbar--presentation.bs-topbar--visible {
   transform: translateY(0);
   opacity: 1;
+}
+
+.bs-topbar-item {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: 'Inter', system-ui, sans-serif;
+  text-decoration: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  background: rgba(20,184,166,.1);
+  border: 1px solid rgba(20,184,166,.2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.bs-topbar-item:hover {
+  background: rgba(20,184,166,.2);
+  color: var(--text-primary);
 }
 
 .bs-topbar-inner {
