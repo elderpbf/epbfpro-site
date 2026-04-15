@@ -9,14 +9,17 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
 <link rel="stylesheet" href="../../css/question-types.css?v=1.6">
 <link rel="stylesheet" href="../../css/viewer.css?v=1.9">
-<link rel="stylesheet" href="../presenter-toolbar.css?v=1.1">
+<link rel="stylesheet" href="../../css/backstage.css?v=1.5">
+<link rel="stylesheet" href="../../css/settings-drawer.css?v=1.0">
 <script src="../../js/debug.js?v=2.4"></script>
 <script src="../../js/api-client.js?v=1.1"></script>
 <script src="../../js/utils.js?v=1.3"></script>
 <script src="../../js/theme-registry.js?v=1.0"></script>
 <script src="../../js/question-renderer.js?v=1.7"></script>
 <script src="../../js/classpulse-question.min.js?v=1.2"></script>
-<script src="../presenter-toolbar.js?v=1.1"></script>
+<script src="../../js/theme-manager.js?v=1.0"></script>
+<script src="../../js/settings-drawer.js?v=1.1"></script>
+<script src="../../js/backstage-topbar.js?v=1.0"></script>
 </head>
 <body>
 
@@ -68,6 +71,8 @@ import Reveal from 'https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.esm.js'
 import RevealHighlight from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/highlight.esm.js';
 import RevealNotes from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.esm.js';
 import RevealMarkdown from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/markdown/markdown.esm.js';
+
+Topbar.init({ mode: 'presentation' });
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -668,7 +673,7 @@ function getDemoContent() {
   
       callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
         if (data && data.session) {
-          PresenterToolbar.addItem({
+          Topbar.addItem({
             label: 'ClassPulse: ' + data.session.code,
             href:  '/backstage/classpulse/host.html?code=' + encodeURIComponent(data.session.code),
             title: 'Abrir host ClassPulse'
