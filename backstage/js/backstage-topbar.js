@@ -101,20 +101,18 @@ window.Topbar = (function() {
     img.alt = 'PensoIA';
     logo.appendChild(img);
 
-    // Wordmark (portal only)
-    if (!isPresentation) {
-      var wordmark = document.createElement('div');
-      wordmark.className = 'bs-topbar-wordmark';
-      var brand = document.createElement('span');
-      brand.className = 'bs-topbar-brand';
-      brand.textContent = subtitle ? title : 'PensoIA';
-      wordmark.appendChild(brand);
-      var name = document.createElement('span');
-      name.className = 'bs-topbar-name';
-      name.textContent = subtitle || title;
-      wordmark.appendChild(name);
-      logo.appendChild(wordmark);
-    }
+    // Wordmark
+    var wordmark = document.createElement('div');
+    wordmark.className = 'bs-topbar-wordmark';
+    var brand = document.createElement('span');
+    brand.className = 'bs-topbar-brand';
+    brand.textContent = subtitle ? title : 'PensoIA';
+    wordmark.appendChild(brand);
+    var name = document.createElement('span');
+    name.className = 'bs-topbar-name';
+    name.textContent = subtitle || title;
+    wordmark.appendChild(name);
+    logo.appendChild(wordmark);
     _inner.appendChild(logo);
 
     // Spacer
@@ -171,6 +169,14 @@ window.Topbar = (function() {
 
     // Wire settings drawer
     SettingsDrawer.init({ sections: sections });
+
+    // Prevent click-through on drawer/overlay in presentation mode
+    if (isPresentation) {
+      var overlay = document.getElementById('settings-overlay');
+      var drawer = document.getElementById('settings-drawer');
+      if (overlay) overlay.addEventListener('click', function(e) { e.stopPropagation(); });
+      if (drawer) drawer.addEventListener('click', function(e) { e.stopPropagation(); });
+    }
 
     // Presentation auto-hide
     if (isPresentation) {
