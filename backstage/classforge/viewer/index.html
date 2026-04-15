@@ -502,6 +502,7 @@ async function showPresentation(lesson, isDemo, opts) {
     container.appendChild(buildSlide(s));
   }
 
+  Topbar.setSubtitle(lesson.title || 'Untitled');
   ThemeRegistry.initTheme(ThemeRegistry.resolveTheme(lesson.theme));
   showOnly('reveal-container');
 

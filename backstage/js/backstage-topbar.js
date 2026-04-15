@@ -220,6 +220,11 @@ window.Topbar = (function() {
     return el;
   }
 
-  return { init: init, addItem: addItem };
+  function setSubtitle(text) {
+    var el = document.querySelector('.bs-topbar-name');
+    if (el) el.textContent = text;
+  }
+
+  return { init: init, addItem: addItem, setSubtitle: setSubtitle };
 
 })();
