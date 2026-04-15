@@ -167,20 +167,6 @@ window.SettingsDrawer = (function() {
     document.getElementById('sd-close').addEventListener('click', close);
     _overlay.addEventListener('click', close);
 
-    // Enter key submits nearest save button within the same section
-    _drawer.addEventListener('keydown', function(e) {
-      if (e.key !== 'Enter') return;
-      var tag = e.target.tagName;
-      if (tag === 'TEXTAREA' && !e.shiftKey) { /* allow Shift+Enter for newlines */ }
-      else if (tag !== 'INPUT' && tag !== 'TEXTAREA') return;
-      if (tag === 'TEXTAREA' && e.shiftKey) return;
-      e.preventDefault();
-      var section = e.target.closest('.sd-section-body');
-      if (!section) return;
-      var btn = section.querySelector('.bs-save-btn');
-      if (btn) btn.click();
-    });
-
     // Bind section toggles
     _drawer.querySelectorAll('.sd-section-header').forEach(function(header) {
       header.addEventListener('click', function() {
