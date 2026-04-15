@@ -55,16 +55,23 @@
     if (!bar) return;
     bar.innerHTML = '';
     items.forEach(function(item) {
-      var a       = document.createElement('a');
-      a.className = 'cf-toolbar-item';
-      a.href      = item.href;
-      a.textContent = item.label;
-      if (item.title) a.title = item.title;
-      a.target = '_blank';
-      a.rel    = 'noopener';
-      a.addEventListener('mouseenter', function() { clearTimeout(hideTimer); });
-      a.addEventListener('mouseleave', scheduleHide);
-      bar.appendChild(a);
+      var el;
+      if (item.onClick) {
+        el = document.createElement('button');
+        el.type = 'button';
+        el.addEventListener('click', item.onClick);
+      } else {
+        el = document.createElement('a');
+        el.href   = item.href;
+        el.target = '_blank';
+        el.rel    = 'noopener';
+      }
+      el.className = 'cf-toolbar-item';
+      el.textContent = item.label;
+      if (item.title) el.title = item.title;
+      el.addEventListener('mouseenter', function() { clearTimeout(hideTimer); });
+      el.addEventListener('mouseleave', scheduleHide);
+      bar.appendChild(el);
     });
   }
 
