@@ -6,7 +6,7 @@ var AIClient = (function() {
   function generate(params) {
     var action = params.action || 'ai_question';
     return callWorker(Object.assign(
-      { action: action, auth_token: AUTH_TOKEN },
+      { action: action },
       params
     )).catch(function(e) {
       if (e.data && e.data.rate_limited) return null;
