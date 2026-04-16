@@ -672,13 +672,14 @@ function captureThumb(slug, title) {
       if (typeof html2canvas === 'undefined') { P('html2canvas not loaded', 'error'); PE(); return; }
       var target = document.querySelector('.reveal .slides');
       if (!target) { P('.reveal .slides not found', 'error'); PE(); return; }
-      P('Target found: ' + target.offsetWidth + 'x' + target.offsetHeight, 'info');
-      var canvas = await html2canvas(target, { scale: 0.5, useCORS: true, logging: false });
+      var bgColor = getComputedStyle(document.querySelector('.reveal-viewport')).backgroundColor || '#191919';
+      P('Target found: ' + target.offsetWidth + 'x' + target.offsetHeight + ', bg=' + bgColor, 'info');
+      var canvas = await html2canvas(target, { scale: 1, useCORS: true, logging: false, backgroundColor: bgColor });
       P('Canvas captured: ' + canvas.width + 'x' + canvas.height, 'info');
       var resized = document.createElement('canvas');
-      resized.width = 400; resized.height = 225;
+      resized.width = 800; resized.height = 450;
       var ctx = resized.getContext('2d');
-      ctx.drawImage(canvas, 0, 0, 400, 225);
+      ctx.drawImage(canvas, 0, 0, 800, 450);
       var dataUrl = resized.toDataURL('image/png');
       var base64 = dataUrl.split(',')[1];
       P('Base64 length: ' + base64.length, 'info');
