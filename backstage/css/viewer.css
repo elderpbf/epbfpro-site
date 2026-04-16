@@ -129,6 +129,12 @@
   border: none;
 }
 
+/* Default layout: compact typography so content fits 1200x700 viewport */
+.reveal .slides section > h2 { font-size: 1.4em; margin: 0 0 0.5rem; }
+.reveal .slides section > ul { font-size: 0.85em; line-height: 1.5; margin: 0.3rem 0; }
+.reveal .slides section > hr { margin: 0.4rem 0; }
+.reveal .slides section > .cf-callout { font-size: 0.8em; padding: 0.5rem 0.8rem; margin: 0.4rem 0; }
+
 /* Bullet nesting */
 .reveal ul ul,
 .reveal ul ul ul { margin-left: 1.5rem; }

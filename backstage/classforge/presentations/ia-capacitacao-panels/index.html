@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../panels/panels.css">
 <style>
-  /* IA Blue brand overrides */
+  /* IA Blue defaults (overridden by theme engine via PanelsTheme) */
   :root {
     --pn-primary:  #5271FE;
     --pn-bg:       #ffffff;
@@ -19,9 +19,9 @@
     --pn-font:     'Roboto', system-ui, sans-serif;
   }
 
-  /* Cover: gradient + circuit overlay */
+  /* Cover: theme-responsive gradient + circuit overlay */
   .panel-cover {
-    background: linear-gradient(135deg, #1A34AB 0%, #5271FE 100%);
+    background: linear-gradient(135deg, var(--pn-heading), var(--pn-accent));
     position: relative;
     overflow: hidden;
   }
@@ -38,7 +38,7 @@
   .panel-cover .pn-subtitle {
     position: relative;
     z-index: 1;
-    color: #ffffff;
+    color: var(--pn-bg);
   }
   .panel-cover .brain-icon {
     width: 80px;
@@ -49,12 +49,12 @@
     filter: brightness(0) invert(1);
   }
 
-  /* Topic grid cards with gradient */
+  /* Topic grid cards: theme-responsive gradient */
   .ia-topic-card {
-    background: linear-gradient(135deg, #1A34AB 0%, #5271FE 100%);
+    background: linear-gradient(135deg, var(--pn-heading), var(--pn-accent));
     border-radius: 12px;
     padding: 1.5rem;
-    color: #ffffff;
+    color: var(--pn-bg);
   }
   .ia-topic-card strong {
     font-size: 1.1rem;
@@ -74,20 +74,28 @@
     border-radius: 6px;
   }
 
-  /* Taxonomy: CSS nested circles */
+  /* Taxonomy: CSS nested circles (theme-responsive) */
+  .taxonomy-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 1.5rem;
+  }
   .taxonomy-diagram {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    padding: 2rem 0;
   }
   .taxonomy-ring {
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 2px solid rgba(82, 113, 254, 0.3);
+    border: 2px solid;
+    border-color: var(--pn-accent);
+    opacity: 0.85;
     position: relative;
   }
   .taxonomy-ring .ring-label {
@@ -102,35 +110,36 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-  .ring-ai     { width: 420px; height: 420px; background: rgba(82,113,254,0.04); }
-  .ring-ml     { width: 340px; height: 340px; background: rgba(82,113,254,0.06); }
-  .ring-dl     { width: 260px; height: 260px; background: rgba(82,113,254,0.08); }
-  .ring-tf     { width: 190px; height: 190px; background: rgba(82,113,254,0.12); }
-  .ring-gpt    { width: 120px; height: 120px; background: rgba(82,113,254,0.18); }
-  .ring-core   {
-    width: 60px; height: 60px;
-    background: linear-gradient(135deg, #1A34AB, #5271FE);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 0.55rem;
-    font-weight: 800;
-    text-align: center;
-    line-height: 1.1;
+  .ring-ai  { width: 380px; height: 380px; border-color: var(--pn-accent); opacity: 0.3; }
+  .ring-ml  { width: 300px; height: 300px; opacity: 0.4; }
+  .ring-dl  { width: 230px; height: 230px; opacity: 0.55; }
+  .ring-tf  { width: 165px; height: 165px; opacity: 0.7; }
+  .ring-gpt {
+    width: 100px; height: 100px;
+    background: linear-gradient(135deg, var(--pn-heading), var(--pn-accent));
     border: none;
+    opacity: 1;
+    color: var(--pn-bg);
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+  .taxonomy-note {
+    font-size: 0.95rem;
+    color: var(--pn-text);
+    opacity: 0.7;
+    font-style: italic;
+    text-align: center;
   }
 
-  /* Sidebar-content panels (slides 4, 5) */
+  /* Sidebar-content panels (slides 4, 5): theme-responsive */
   .ia-sidebar-panel {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 300px 1fr;
     min-height: 100vh;
     min-height: 100dvh;
   }
   .ia-sidebar {
-    background: linear-gradient(180deg, #1A34AB 0%, #5271FE 100%);
+    background: linear-gradient(180deg, var(--pn-heading), var(--pn-accent));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -138,11 +147,12 @@
   }
   .ia-sidebar img {
     width: 100%;
-    max-width: 220px;
+    max-width: 250px;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   }
   .ia-content {
+    background: var(--pn-bg);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -150,7 +160,7 @@
   }
   .ia-content h2 {
     color: var(--pn-heading);
-    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
     font-weight: 800;
     margin-bottom: 1.5rem;
   }
@@ -159,11 +169,11 @@
     padding: 0;
   }
   .ia-content li {
-    padding: 0.6rem 0;
-    padding-left: 1.2rem;
+    padding: 0.7rem 0;
+    padding-left: 1.4rem;
     position: relative;
-    font-size: 1.05rem;
-    line-height: 1.5;
+    font-size: 1.15rem;
+    line-height: 1.6;
     color: var(--pn-text);
   }
   .ia-content li::before {
@@ -172,15 +182,15 @@
     left: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--pn-accent);
   }
 
-  /* Section header */
+  /* Section header: theme-responsive */
   .ia-section-header {
-    background: var(--pn-primary);
+    background: var(--pn-accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -189,15 +199,18 @@
   .ia-section-header h2 {
     font-size: clamp(1.8rem, 4vw, 3rem);
     font-weight: 800;
-    color: #ffffff;
-    border-bottom: 4px solid rgba(255,255,255,0.4);
+    color: var(--pn-bg);
+    border-bottom: 4px solid;
+    border-color: var(--pn-bg);
+    opacity: 0.9;
     padding-bottom: 0.5rem;
   }
 
   .accent-bar {
     display: inline-block;
     width: 60px; height: 4px;
-    background: rgba(255,255,255,0.6);
+    background: var(--pn-bg);
+    opacity: 0.6;
     margin-bottom: 1.2rem;
     border-radius: 2px;
   }
@@ -217,7 +230,7 @@
 <section class="panel ia-section-header" data-notes="Transicao: como a IA chegou ao ponto atual. Tres pilares convergiram.">
   <div>
     <div class="accent-bar"></div>
-    <h2>Como a IA Chegou</h2>
+    <h2>Como a IA Chegou ao Direito</h2>
   </div>
 </section>
 
@@ -231,10 +244,12 @@
       <p>Explosao de dados digitais: processos, decisoes, documentos. Volume que humanos nao conseguem processar.</p>
     </div>
     <div class="pn-topic-card ia-topic-card">
+      <img src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/gpu.gif" alt="NVIDIA RTX 4080 SUPER GPU">
       <strong>Poder Computacional (GPUs)</strong>
       <p>Processadores graficos adaptados para calculos massivamente paralelos. Treinamento viavel em horas, nao anos.</p>
     </div>
     <div class="pn-topic-card ia-topic-card">
+      <img src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/algoritmos.gif" alt="Algoritmos e IA">
       <strong>Algoritmos Avancados</strong>
       <p>Mecanismo de atencao (2017) permite que modelos aprendam contexto. Base dos Transformers e do GPT.</p>
     </div>
@@ -242,24 +257,24 @@
 </section>
 
 <!-- 3: Taxonomy - CSS nested circles -->
-<section class="panel panel-statement" data-notes="Diagrama de circulos concentricos: AI > ML > DL > Transformers > GPT > AGI. AGI ainda nao existe. Tudo que usamos e IA estreita.">
-  <div class="taxonomy-diagram">
-    <div class="taxonomy-ring ring-ai">
-      <span class="ring-label">Inteligencia Artificial</span>
-      <div class="taxonomy-ring ring-ml">
-        <span class="ring-label">Machine Learning</span>
-        <div class="taxonomy-ring ring-dl">
-          <span class="ring-label">Deep Learning</span>
-          <div class="taxonomy-ring ring-tf">
-            <span class="ring-label">Transformers</span>
-            <div class="taxonomy-ring ring-gpt">
-              <span class="ring-label">GPT</span>
-              <div class="ring-core">AGI<br>?</div>
+<section class="panel panel-statement" data-notes="Diagrama de circulos concentricos: AI > ML > DL > Transformers > GPT. AGI ainda nao existe. Tudo que usamos e IA estreita, especializada.">
+  <div class="taxonomy-wrapper">
+    <div class="taxonomy-diagram">
+      <div class="taxonomy-ring ring-ai">
+        <span class="ring-label">Inteligencia Artificial</span>
+        <div class="taxonomy-ring ring-ml">
+          <span class="ring-label">Machine Learning</span>
+          <div class="taxonomy-ring ring-dl">
+            <span class="ring-label">Deep Learning</span>
+            <div class="taxonomy-ring ring-tf">
+              <span class="ring-label">Transformers</span>
+              <div class="taxonomy-ring ring-gpt">GPT</div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    <p class="taxonomy-note">AGI (Inteligencia Artificial Geral) ainda nao existe. Tudo que usamos hoje e IA estreita.</p>
   </div>
 </section>
 
