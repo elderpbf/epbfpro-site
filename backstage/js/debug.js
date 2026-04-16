@@ -59,9 +59,7 @@
         var hdr = document.getElementById('bsdp-probe-header');
         if (hdr) { hdr.textContent = header; hdr.style.display = ''; }
       }
-      if (activeTab !== 'probe') switchTab('probe');
-      else renderTab('probe');
-      openPanel();
+      renderTab('probe');
       updateBadges();
     }
   }
@@ -206,6 +204,11 @@
 
     document.body.appendChild(pill);
 
+    // Prevent clicks on debug panel from reaching presentation engines (Panels, Reveal)
+    pill.addEventListener('click', function(e) { e.stopPropagation(); });
+    pill.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    pill.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
+
     // toggle
     document.getElementById('bsdp-toggle').addEventListener('click', function () {
       document.getElementById('bsdp-panel').classList.toggle('open');
@@ -307,7 +310,7 @@
   function updateBadges() {
     var logErrs   = logEntries.filter(function (e) { return e.level === 'error'; }).length;
     var errCount  = errEntries.length;
-    var probeErrs = probeEntries.filter(function (e) { return e.level === 'error'; }).length;
+    var probeErrs = probeEntries.length;
     setBadge('bsdp-badge-log',    logErrs);
     setBadge('bsdp-badge-errors', errCount);
     setBadge('bsdp-badge-probe',  probeErrs);
