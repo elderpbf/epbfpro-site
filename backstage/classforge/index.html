@@ -54,7 +54,7 @@
 <script src="../js/utils.js?v=1.3"></script>
 <script src="../js/api-client.js?v=1.1"></script>
 <script src="../js/ai-client.js?v=1.1"></script>
-<script src="../js/theme-registry.js?v=2.1"></script>
+<script src="../js/theme-registry.js?v=2.2"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/auth.js?v=1.1"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
@@ -132,43 +132,6 @@ function thumbGrad(index) {
 
 function initial(title) {
   return (title || '?').trim().charAt(0).toUpperCase();
-}
-
-function buildDemoCard() {
-  var card = document.createElement('div');
-  card.className = 'cf-card';
-  var thumb = document.createElement('div');
-  thumb.className = 'cf-card-thumb';
-  thumb.style.background = 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)';
-  thumb.innerHTML =
-    '<span style="font-size:2.5rem">P</span>' +
-    '<span class="cf-card-badge">' + t('card_demo_badge') + '</span>';
-  card.appendChild(thumb);
-  var body = document.createElement('div');
-  body.className = 'cf-card-body';
-  var title = document.createElement('h3');
-  title.className = 'cf-card-title';
-  title.textContent = t('card_demo_title');
-  body.appendChild(title);
-  var meta = document.createElement('p');
-  meta.className = 'cf-card-meta';
-  meta.textContent = t('card_demo_meta');
-  body.appendChild(meta);
-  var actions = document.createElement('div');
-  actions.className = 'cf-card-actions';
-  var present = document.createElement('a');
-  present.className = 'cf-btn-present';
-  present.href = 'viewer/?demo=1';
-  present.textContent = t('card_present');
-  actions.appendChild(present);
-  var edit = document.createElement('span');
-  edit.className = 'cf-btn-edit cf-disabled';
-  edit.textContent = t('card_edit');
-  edit.title = 'Demonstração - sem edição';
-  actions.appendChild(edit);
-  body.appendChild(actions);
-  card.appendChild(body);
-  return card;
 }
 
 var ENGINE_LABELS = { 'reveal': 'Reveal', 'panels': 'Panels', 'reveal-legacy': 'Legacy' };
@@ -264,7 +227,6 @@ var grid = document.getElementById('cf-grid');
 
 function renderCards(presentations) {
   grid.innerHTML = '';
-  grid.appendChild(buildDemoCard());
   if (!presentations) return;
   if (presentations.length === 0) {
     grid.appendChild(buildStateBlock('<p>' + t('state_empty_msg') + '</p>'));
@@ -277,13 +239,11 @@ function renderCards(presentations) {
 
 function showSkeletons() {
   grid.innerHTML = '';
-  grid.appendChild(buildDemoCard());
   for (var i = 0; i < 3; i++) grid.appendChild(buildSkeletonCard());
 }
 
 function showNoScriptState() {
   grid.innerHTML = '';
-  grid.appendChild(buildDemoCard());
   grid.appendChild(buildStateBlock(
     '<p>' + t('state_no_script_msg') + '</p>' +
     '<button class="cf-inline-btn" id="state-settings-btn">' + t('state_no_script_btn') + '</button>'

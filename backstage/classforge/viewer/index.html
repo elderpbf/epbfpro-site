@@ -17,7 +17,7 @@
 <script src="../../js/api-client.js?v=1.1"></script>
 <script src="../../js/utils.js?v=1.3"></script>
 <script src="../../js/ai-client.js?v=1.1"></script>
-<script src="../../js/theme-registry.js?v=2.1"></script>
+<script src="../../js/theme-registry.js?v=2.2"></script>
 <script src="../../js/presentation-settings.js?v=2.0"></script>
 <script src="../../js/question-renderer.js?v=1.7"></script>
 <script src="../../js/classpulse-question.min.js?v=1.2"></script>
@@ -502,7 +502,7 @@ function initCustomCss(css) {
 
 let revealInited = false;
 
-async function showPresentation(lesson, isDemo, opts) {
+async function showPresentation(lesson, opts) {
   const logoHideOn = opts && opts.logoConfig ? initLogo(opts.logoConfig) : null;
   if (opts && opts.customCss) initCustomCss(opts.customCss);
 
@@ -564,7 +564,7 @@ document.getElementById('load-btn').addEventListener('click', async () => {
   showLoading();
   try {
     const lesson = await fetchLesson(scriptUrl, presId);
-    await showPresentation(lesson, false);
+    await showPresentation(lesson);
   } catch (err) {
     showError(err.message);
   }
@@ -572,92 +572,10 @@ document.getElementById('load-btn').addEventListener('click', async () => {
 
 document.getElementById('demo-btn').addEventListener('click', () => {
   const base = location.href.split('?')[0].split('#')[0];
-  location.href = base + '?demo=1';
+  location.href = base + '?slug=ia-capacitacao';
 });
 
 document.getElementById('back-btn').addEventListener('click', () => { location.href = '../'; });
-
-// ---------------------------------------------------------------------------
-// Demo content
-// ---------------------------------------------------------------------------
-
-function getDemoContent() {
-  return {
-    "id": "demo",
-    "title": "Why Ducks Are Cool",
-    "subtitle": "A Totally Serious Academic Presentation",
-    "theme": "dracula",
-    "warnings": [],
-    "sections": [
-      {
-        "index": 1,
-        "title": "Introduction to Duck Appreciation",
-        "content": [
-          { "type": "bullet", "text": "Ducks are found on every continent except Antarctica", "level": 0 },
-          { "type": "bullet", "text": "Over 120 species worldwide", "level": 1 },
-          { "type": "bullet", "text": "From the tiny Cotton Pygmy Goose to the massive Muscovy", "level": 1 },
-          { "type": "divider" },
-          { "type": "callout", "text": "Fun fact: a group of ducks on water is called a paddling, on land it's a waddle." },
-          { "type": "image", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Anas_platyrhynchos_male_female_quadrat.jpg/1280px-Anas_platyrhynchos_male_female_quadrat.jpg", "alt": "Mallard duck pair" }
-        ],
-        "notes": "Open with something fun. Ask the audience: who has fed ducks at a park?",
-        "layout": "default"
-      },
-      {
-        "index": 2,
-        "title": "Waterproof Engineering",
-        "content": [
-          { "type": "bullet", "text": "Duck feathers are coated in natural oil from the uropygial gland", "level": 0 },
-          { "type": "bullet", "text": "The oil makes feathers hydrophobic", "level": 1 },
-          { "type": "bullet", "text": "Water literally rolls off their backs", "level": 1 },
-          { "type": "quote", "text": "Like water off a duck's back - now you know where that idiom comes from." },
-          { "type": "bullet", "text": "Their down layer traps air for insulation", "level": 0 },
-          { "type": "bullet", "text": "Ducks can swim in near-freezing water without hypothermia", "level": 1 }
-        ],
-        "layout": "default"
-      },
-      {
-        "index": 3,
-        "title": "The Quack Myth",
-        "content": [
-          { "type": "callout", "text": "MYTH: A duck's quack does not echo." },
-          { "type": "bullet", "text": "This has been thoroughly debunked", "level": 0 },
-          { "type": "bullet", "text": "Tested by acoustics researchers at the University of Salford in 2003", "level": 1 },
-          { "type": "bullet", "text": "The echo is just hard to hear because the quack fades gradually", "level": 1 },
-          { "type": "divider" },
-          { "type": "bullet", "text": "Not all ducks quack - only female Mallards do the classic quack", "level": 0 },
-          { "type": "bullet", "text": "Males make a softer rasping sound", "level": 1 }
-        ],
-        "layout": "default"
-      },
-      {
-        "index": 4,
-        "title": "Navigation: The Magnetic Compass",
-        "content": [
-          { "type": "bullet", "text": "Migratory ducks navigate using Earth's magnetic field", "level": 0 },
-          { "type": "bullet", "text": "They have magnetite crystals in their bills", "level": 1 },
-          { "type": "bullet", "text": "This gives them a built-in compass", "level": 1 },
-          { "type": "bullet", "text": "The Northern Pintail migrates from Alaska to Hawaii - 2,000 miles over open ocean", "level": 0 },
-          { "type": "callout", "text": "Imagine flying 2,000 miles over open water with no landmarks. Ducks do it every year." }
-        ],
-        "layout": "default"
-      },
-      {
-        "index": 5,
-        "title": "Why Ducks Matter",
-        "content": [
-          { "type": "bullet", "text": "Indicator species for wetland health", "level": 0 },
-          { "type": "bullet", "text": "Seed dispersal across water ecosystems", "level": 0 },
-          { "type": "bullet", "text": "Pest control - ducks eat mosquito larvae, snails, slugs", "level": 0 },
-          { "type": "bullet", "text": "Bio-inspiration for engineering and materials science", "level": 0 },
-          { "type": "divider" },
-          { "type": "quote", "text": "Ducks are not just charming pond visitors. They are engineers, navigators, and ecological linchpins. Next time you see one, look a little closer." }
-        ],
-        "layout": "default"
-      }
-    ]
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Thumbnail capture
@@ -712,22 +630,15 @@ function captureThumb(slug, title) {
 
 (async function main() {
   const params = new URLSearchParams(location.search);
-  const isDemo = params.get('demo') === '1';
   const presId = params.get('id');
   const scriptParam = params.get('script');
-
-  if (isDemo) {
-    await showPresentation(getDemoContent(), true);
-
-    return;
-  }
 
   const slug = params.get('slug');
   if (slug) {
     showLoading();
     try {
       const lesson = await fetchSlugPresentation(slug);
-      await showPresentation(lesson, false, {
+      await showPresentation(lesson, {
         logoConfig: lesson.logo_config,
         customCss: lesson.custom_css
       });
@@ -755,8 +666,8 @@ function captureThumb(slug, title) {
       showLoading();
       try {
         const lesson = await fetchLesson(scriptUrl, presId);
-        await showPresentation(lesson, false);
-    
+        await showPresentation(lesson);
+
       } catch (err) {
         showError(err.message);
       }

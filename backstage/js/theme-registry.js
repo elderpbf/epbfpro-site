@@ -62,7 +62,8 @@ window.ThemeRegistry = (function() {
     { name: 'Original',  colors: { bg: '#0e1e30', text: '#e8edf2', heading: '#ffffff', accent: '#c8a84b' }, fonts: { heading: 'Inter', body: 'Inter', code: 'Fira Code' }, sizes: { scale: 'normal' } },
     { name: 'Claro',     colors: { bg: '#f8fafc', text: '#1e293b', heading: '#0f172a', accent: '#f59e0b' }, fonts: { heading: 'Inter', body: 'Inter', code: 'Fira Code' }, sizes: { scale: 'normal' } },
     { name: 'Oceano',    colors: { bg: '#0c1a2e', text: '#e0f2fe', heading: '#ffffff', accent: '#22d3ee' }, fonts: { heading: 'Montserrat', body: 'Nunito', code: 'Fira Code' }, sizes: { scale: 'normal' } },
-    { name: 'Neutro',    colors: { bg: '#1e1e1e', text: '#d4d4d8', heading: '#fafafa', accent: '#a1a1aa' }, fonts: { heading: 'Inter', body: 'Inter', code: 'Fira Code' }, sizes: { scale: 'normal' } }
+    { name: 'Neutro',    colors: { bg: '#1e1e1e', text: '#d4d4d8', heading: '#fafafa', accent: '#a1a1aa' }, fonts: { heading: 'Inter', body: 'Inter', code: 'Fira Code' }, sizes: { scale: 'normal' } },
+    { name: 'IA Blue',   colors: { bg: '#ffffff', text: '#333333', heading: '#5271FE', accent: '#5271FE' }, fonts: { heading: 'Roboto', body: 'Roboto', code: 'Fira Code' }, sizes: { scale: 'normal' } }
   ];
 
   // ── Storage ───────────────────────────────────────────────
