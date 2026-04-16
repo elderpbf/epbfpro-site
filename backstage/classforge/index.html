@@ -318,7 +318,7 @@ async function loadPresentations() {
   // D1 presentations first
   if (d1Result.status === 'fulfilled' && d1Result.value && d1Result.value.presentations) {
     d1Result.value.presentations.forEach(function(p) {
-      merged.push({ engine: p.engine || 'panels', slug: p.slug, id: p.slug, title: p.title, updated_at: (p.updated_at || '').slice(0, 10) });
+      merged.push({ engine: p.engine || 'panels', slug: p.slug, id: p.slug, title: p.title, updated_at: (p.updated_at || '').slice(0, 10), thumbnail: p.thumbnail || '' });
     });
   }
 
