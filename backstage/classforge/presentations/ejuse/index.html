@@ -224,6 +224,8 @@
 
   Panels.init({ logoHideOn: [0, 10], presenterUrl: '../../panels/presenter.html' });
   PanelsTheme.init({ slug: 'ejuse' });
+  var _savedPnTheme = localStorage.getItem('bs_pn_theme_ejuse');
+  if (_savedPnTheme) ThemeRegistry.applyTheme(_savedPnTheme, 'panels');
 
   // Show logo after init
   const logo = document.getElementById('pn-logo');
