@@ -346,7 +346,7 @@ var CF_SCRIPT_SECTION_HTML =
 var CF_THEME_SECTION_HTML =
   '<p class="bs-hint" style="margin-bottom:0.75rem">Aplicado a todas as apresentações ao clicar em Apresentar.</p>' +
   '<div id="settings-theme-grid" class="cf-theme-grid"></div>' +
-  '<div id="cf-theme-creator" style="margin-top:1.25rem"></div>';
+  '<div id="cf-theme-creator" style="margin-top:1.25rem" hidden></div>';
 
 Topbar.init({
   title: 'ClassForge',
@@ -374,8 +374,12 @@ Topbar.init({
       id: 'cf-theme',
       title: 'Tema de apresentação',
       content: CF_THEME_SECTION_HTML,
-      onOpen: function() { _cfRenderGrid(); },
-      onInit: function() { _cfRenderCreator(); }
+      onOpen: function() {
+        _cfRenderGrid();
+        var c = document.getElementById('cf-theme-creator');
+        if (c) c.hidden = true;
+      },
+      onInit: function() {}
     }
   ]
 });
@@ -383,6 +387,16 @@ Topbar.init({
 // ---------------------------------------------------------------------------
 // Theme management (delegates to ThemeRegistry)
 // ---------------------------------------------------------------------------
+
+function _cfShowCreator() {
+  var el = document.getElementById('cf-theme-creator');
+  if (el) el.hidden = false;
+}
+
+function _cfHideCreator() {
+  var el = document.getElementById('cf-theme-creator');
+  if (el) el.hidden = true;
+}
 
 function _cfRenderGrid() {
   ThemeRegistry.renderThemeGrid(document.getElementById('settings-theme-grid'), {
@@ -392,26 +406,27 @@ function _cfRenderGrid() {
       showToast('Tema "' + name + '" selecionado.');
     },
     onEdit: function(name) {
+      _cfShowCreator();
       ThemeRegistry.renderCreator(document.getElementById('cf-theme-creator'), {
         prefix: 'cf-',
         editingName: name,
         onSave: function(theme) {
           ThemeRegistry.setActiveTheme(theme.name);
           _cfRenderGrid();
-          _cfRenderCreator();
+          _cfHideCreator();
         }
       });
-    }
-  });
-}
-
-function _cfRenderCreator() {
-  ThemeRegistry.renderCreator(document.getElementById('cf-theme-creator'), {
-    prefix: 'cf-',
-    onSave: function(theme) {
-      ThemeRegistry.setActiveTheme(theme.name);
-      _cfRenderGrid();
-      _cfRenderCreator();
+    },
+    onCreate: function() {
+      _cfShowCreator();
+      ThemeRegistry.renderCreator(document.getElementById('cf-theme-creator'), {
+        prefix: 'cf-',
+        onSave: function(theme) {
+          ThemeRegistry.setActiveTheme(theme.name);
+          _cfRenderGrid();
+          _cfHideCreator();
+        }
+      });
     }
   });
 }

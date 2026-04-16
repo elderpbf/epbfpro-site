@@ -225,6 +225,19 @@ window.ThemeRegistry = (function() {
         });
       })(themes[i]);
     }
+
+    // "+" card for creating new themes
+    var addCard = document.createElement('div');
+    addCard.className = 'cf-theme-card cf-theme-card-add';
+    addCard.innerHTML =
+      '<div class="cf-theme-card-preview" style="background:var(--surface,#2a2a2a);display:flex;align-items:center;justify-content:center">' +
+        '<span style="font-size:2rem;color:var(--text-secondary,#888)">+</span>' +
+      '</div>' +
+      '<div class="cf-theme-card-label" style="background:var(--surface,#2a2a2a);color:var(--text-secondary,#888)">Novo tema</div>';
+    addCard.addEventListener('click', function() {
+      if (opts.onCreate) opts.onCreate();
+    });
+    container.appendChild(addCard);
   }
 
   // ── Rendering: Creator ────────────────────────────────────

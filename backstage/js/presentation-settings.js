@@ -5,7 +5,7 @@
 // Builds SettingsDrawer sections for presentation contexts.
 // Engine-agnostic: delegates to ThemeRegistry for grid + creator.
 // Assumed globals: ThemeRegistry, PanelsTheme (for panels engine)
-// Usage: PresentationSettings.buildSections({ engine, onThemeChange })
+// Usage: PresentationSettings.buildSections({ engine, onThemeChange, slug? })
 // ============================================================
 
 window.PresentationSettings = (function() {
@@ -15,31 +15,52 @@ window.PresentationSettings = (function() {
     var gridId = prefix + 'grid';
     var creatorId = prefix + 'creator';
 
+    function _showCreator() {
+      var el = document.getElementById(creatorId);
+      if (el) el.hidden = false;
+    }
+
+    function _hideCreator() {
+      var el = document.getElementById(creatorId);
+      if (el) el.hidden = true;
+    }
+
+    function _onThemeApplied(name) {
+      ThemeRegistry.setActiveTheme(name);
+      ThemeRegistry.applyTheme(name, engine);
+      // Sync Panels per-slug persistence
+      if (engine === 'panels' && opts.slug && typeof PanelsTheme !== 'undefined') {
+        try { localStorage.setItem('bs_pn_theme_' + opts.slug, name); } catch (e) {}
+      }
+      if (opts.onThemeChange) opts.onThemeChange(name);
+    }
+
     function renderGrid() {
       var container = document.getElementById(gridId);
       if (!container) return;
       ThemeRegistry.renderThemeGrid(container, {
         onSelect: function(name) {
-          ThemeRegistry.setActiveTheme(name);
-          ThemeRegistry.applyTheme(name, engine);
-          if (opts.onThemeChange) opts.onThemeChange(name);
+          _onThemeApplied(name);
           renderGrid();
           if (typeof showToast === 'function') {
             showToast('Tema "' + name + '" selecionado.');
           }
         },
         onEdit: function(name) {
+          _showCreator();
           ThemeRegistry.renderCreator(document.getElementById(creatorId), {
             prefix: prefix,
             editingName: name,
             onSave: function(theme) {
-              ThemeRegistry.setActiveTheme(theme.name);
-              ThemeRegistry.applyTheme(theme.name, engine);
-              if (opts.onThemeChange) opts.onThemeChange(theme.name);
+              _onThemeApplied(theme.name);
               renderGrid();
-              renderCreator();
+              _hideCreator();
             }
           });
+        },
+        onCreate: function() {
+          _showCreator();
+          renderCreator();
         }
       });
     }
@@ -50,11 +71,9 @@ window.PresentationSettings = (function() {
       ThemeRegistry.renderCreator(container, {
         prefix: prefix,
         onSave: function(theme) {
-          ThemeRegistry.setActiveTheme(theme.name);
-          ThemeRegistry.applyTheme(theme.name, engine);
-          if (opts.onThemeChange) opts.onThemeChange(theme.name);
+          _onThemeApplied(theme.name);
           renderGrid();
-          renderCreator();
+          _hideCreator();
         }
       });
     }
@@ -65,9 +84,12 @@ window.PresentationSettings = (function() {
       content:
         '<p class="bs-hint" style="margin-bottom:0.75rem">Selecione ou crie um tema para a apresentação.</p>' +
         '<div id="' + gridId + '" class="cf-theme-grid"></div>' +
-        '<div id="' + creatorId + '" style="margin-top:1.25rem"></div>',
-      onOpen: renderGrid,
-      onInit: renderCreator
+        '<div id="' + creatorId + '" style="margin-top:1.25rem" hidden></div>',
+      onOpen: function() {
+        renderGrid();
+        _hideCreator();
+      },
+      onInit: function() {}
     };
   }
 
