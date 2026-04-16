@@ -9,13 +9,21 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
 <link rel="stylesheet" href="../../css/question-types.css?v=1.6">
 <link rel="stylesheet" href="../../css/viewer.css?v=1.9">
-<link rel="stylesheet" href="../presenter-toolbar.css?v=1.1">
+<link rel="stylesheet" href="../../css/theme.css?v=1.2">
+<link rel="stylesheet" href="../../css/backstage.css?v=1.6">
+<link rel="stylesheet" href="../../css/settings-drawer.css?v=1.0">
+<link rel="stylesheet" href="../../css/classforge.css?v=1.7">
 <script src="../../js/debug.js?v=2.4"></script>
 <script src="../../js/api-client.js?v=1.1"></script>
-<script src="../../js/utils.js?v=1.2"></script>
+<script src="../../js/utils.js?v=1.3"></script>
+<script src="../../js/ai-client.js?v=1.1"></script>
+<script src="../../js/theme-registry.js?v=2.0"></script>
+<script src="../../js/presentation-settings.js?v=2.0"></script>
 <script src="../../js/question-renderer.js?v=1.7"></script>
 <script src="../../js/classpulse-question.min.js?v=1.2"></script>
-<script src="../presenter-toolbar.js?v=1.1"></script>
+<script src="../../js/theme-manager.js?v=1.0"></script>
+<script src="../../js/settings-drawer.js?v=1.1"></script>
+<script src="../../js/backstage-topbar.js?v=1.1"></script>
 </head>
 <body>
 
@@ -68,11 +76,19 @@ import RevealHighlight from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/hig
 import RevealNotes from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.esm.js';
 import RevealMarkdown from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/markdown/markdown.esm.js';
 
+Topbar.init({
+  mode: 'presentation',
+  title: 'ClassForge',
+  backLink: '/backstage/classforge/',
+  sections: PresentationSettings.buildSections({
+    engine: 'reveal',
+    onThemeChange: function(name) { ThemeRegistry.initTheme(name, 'reveal'); }
+  })
+});
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const THEMES = ['black','white','league','beige','night','serif','simple','solarized','moon','dracula','sky','blood'];
 
 const ALL_SCREENS = ['setup-screen','loading-screen','error-screen','reveal-container'];
 
@@ -82,44 +98,6 @@ const ALL_SCREENS = ['setup-screen','loading-screen','error-screen','reveal-cont
 
 function safeUrl(url) {
   return (typeof url === 'string' && /^https?:\/\//.test(url)) ? url : '#';
-}
-
-// ---------------------------------------------------------------------------
-// Theme
-// ---------------------------------------------------------------------------
-
-function themeUrl(name) {
-  return 'https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/' + name + '.css';
-}
-
-function setTheme(name) {
-  if (!THEMES.includes(name)) name = 'black';
-  document.getElementById('reveal-theme').href = themeUrl(name);
-}
-
-function applyCustomTheme(themeName) {
-  const customs = JSON.parse(localStorage.getItem('bs_custom_themes') || '[]');
-  const theme = customs.find(t => t.name === themeName);
-  if (!theme) { setTheme('black'); return; }
-  setTheme(theme.base || 'black');
-  let el = document.getElementById('cf-theme-overrides');
-  if (!el) {
-    el = document.createElement('style');
-    el.id = 'cf-theme-overrides';
-    document.head.appendChild(el);
-  }
-  const css = Object.entries(theme.overrides || {}).map(([k,v]) => k+':'+v).join(';');
-  el.textContent = '.reveal{' + css + '}';
-}
-
-function initTheme(name) {
-  if (name && name.startsWith('custom:')) applyCustomTheme(name.slice(7));
-  else setTheme(name || 'black');
-}
-
-function resolveTheme(lessonTheme) {
-  const params = new URLSearchParams(location.search);
-  return params.get('theme') || localStorage.getItem('bs_reveal_theme') || lessonTheme || 'black';
 }
 
 // ---------------------------------------------------------------------------
@@ -535,7 +513,8 @@ async function showPresentation(lesson, isDemo, opts) {
     container.appendChild(buildSlide(s));
   }
 
-  initTheme(resolveTheme(lesson.theme));
+  Topbar.setSubtitle((lesson.title || 'Untitled') + ' (Reveal)');
+  ThemeRegistry.initTheme(ThemeRegistry.resolveTheme(lesson.theme), 'reveal');
   showOnly('reveal-container');
 
   if (!revealInited) {
@@ -707,7 +686,7 @@ function getDemoContent() {
   
       callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
         if (data && data.session) {
-          PresenterToolbar.addItem({
+          Topbar.addItem({
             label: 'ClassPulse: ' + data.session.code,
             href:  '/backstage/classpulse/host.html?code=' + encodeURIComponent(data.session.code),
             title: 'Abrir host ClassPulse'

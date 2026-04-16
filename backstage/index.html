@@ -47,28 +47,6 @@
      ===================================================== -->
 <div id="screen-app" class="bs-app" hidden>
 
-  <header class="bs-topbar">
-    <div class="bs-topbar-inner">
-      <a href="https://pensoia.com" class="bs-topbar-logo" aria-label="PensoIA">
-        <img src="../images/logo.png" alt="PensoIA">
-        <div class="bs-topbar-wordmark">
-          <span class="bs-topbar-brand">PensoIA</span>
-          <span class="bs-topbar-name">Backstage</span>
-        </div>
-      </a>
-      <div class="bs-topbar-spacer"></div>
-      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema" aria-pressed="false">
-        <span id="themeIcon"></span>
-      </button>
-      <button class="bs-icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
-      <button class="bs-logout-btn" id="logout-btn" data-key="logout_btn">Sair</button>
-    </div>
-  </header>
-
   <main class="bs-main">
 
     <!-- Dashboard view -->
@@ -109,10 +87,12 @@
 <!-- =====================================================
      SCRIPT
      ===================================================== -->
-<script src="js/utils.js?v=1.2"></script>
+<script src="js/utils.js?v=1.3"></script>
 <script src="js/api-client.js?v=1.1"></script>
 <script src="js/theme-manager.js?v=1.0"></script>
-<script src="js/settings-drawer.js?v=1.0"></script>
+<script src="js/auth.js?v=1.1"></script>
+<script src="js/settings-drawer.js?v=1.1"></script>
+<script src="js/backstage-topbar.js?v=1.1"></script>
 <script>
 'use strict';
 
@@ -188,20 +168,10 @@ function migrateOldKeys() {
 migrateOldKeys();
 
 // ---------------------------------------------------------------------------
-// Theme toggle
+// Topbar
 // ---------------------------------------------------------------------------
 
-ThemeManager.init({ storageKey: 'bs_theme' });
-ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
-
-// ---------------------------------------------------------------------------
-// Crypto helpers
-// ---------------------------------------------------------------------------
-
-async function hashPw(pw) {
-  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-}
+Topbar.init({ title: 'Backstage' });
 
 // ---------------------------------------------------------------------------
 // Screen management
@@ -271,14 +241,7 @@ document.getElementById('login-pw').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') document.getElementById('login-btn').click();
 });
 
-document.getElementById('logout-btn').addEventListener('click', function() {
-  localStorage.removeItem(PW_KEY);
-  sessionStorage.removeItem(AUTH_KEY);
-  document.getElementById('login-pw').value = '';
-  document.getElementById('login-error').textContent = '';
-  showScreen('screen-login');
-  document.getElementById('login-pw').focus();
-});
+// Logout is handled by Topbar via BS_AUTH.logout()
 
 // ---------------------------------------------------------------------------
 // App views
@@ -292,7 +255,6 @@ function showApp() {
 // Start
 // ---------------------------------------------------------------------------
 init();
-SettingsDrawer.init();
 </script>
 </body>
 </html>

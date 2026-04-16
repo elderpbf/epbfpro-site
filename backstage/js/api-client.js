@@ -4,6 +4,9 @@ var WORKER_URL = 'https://backstage-api.pensoia.workers.dev';
 
 async function callWorker(params) {
   var action = params.action || '?';
+  if (!params.auth_token) {
+    params.auth_token = localStorage.getItem('bs_pw_hash') || '';
+  }
   var payload = encodeURIComponent(JSON.stringify(params));
   
   if (typeof dbg !== 'undefined') dbg('info', '→ ' + action);

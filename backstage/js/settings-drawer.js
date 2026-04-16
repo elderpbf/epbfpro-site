@@ -11,11 +11,6 @@ window.SettingsDrawer = (function() {
 
   // ── Helpers ──────────────────────────────────────────────
 
-  async function _hashPw(pw) {
-    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-    return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-  }
-
   function _esc(s) {
     var d = document.createElement('div');
     d.textContent = s;
@@ -46,7 +41,7 @@ window.SettingsDrawer = (function() {
     return (
       '<p style="font-size:.88rem;color:var(--text-primary);margin-bottom:.5rem">Painel de debug</p>' +
       '<button class="bs-toggle-btn" id="sd-debug-toggle" style="margin-bottom:.5rem">Desativado</button>' +
-      '<p class="bs-hint">Exibe pill flutuante com logs em todas as paginas do Backstage.</p>'
+      '<p class="bs-hint">Exibe pill flutuante com logs em todas as páginas do Backstage.</p>'
     );
   }
 
@@ -115,12 +110,12 @@ window.SettingsDrawer = (function() {
       err.style.color = '';
 
       if (newPw.length < 6) { err.textContent = 'A senha deve ter pelo menos 6 caracteres.'; return; }
-      if (newPw !== confirm) { err.textContent = 'As senhas nao coincidem.'; return; }
+      if (newPw !== confirm) { err.textContent = 'As senhas não coincidem.'; return; }
 
       btn.disabled = true;
       try {
-        var curHash = await _hashPw(cur);
-        var newHash = await _hashPw(newPw);
+        var curHash = await hashPw(cur);
+        var newHash = await hashPw(newPw);
         await callWorker({ action: 'change_password', auth_token: curHash, new_hash: newHash });
         localStorage.setItem(window.BS_AUTH ? BS_AUTH.PW_KEY : 'bs_pw_hash', newHash);
         document.getElementById('sd-pw-current').value = '';
@@ -159,10 +154,10 @@ window.SettingsDrawer = (function() {
     _drawer.id = 'settings-drawer';
     _drawer.className = 'bs-drawer';
     _drawer.hidden = true;
-    _drawer.setAttribute('aria-label', 'Configuracoes');
+    _drawer.setAttribute('aria-label', 'Configurações');
     _drawer.innerHTML =
       '<h2>' +
-        '<span>Configuracoes</span>' +
+        '<span>Configurações</span>' +
         '<button class="bs-drawer-close" id="sd-close" aria-label="Fechar">&times;</button>' +
       '</h2>' +
       sectionsHtml;
@@ -249,7 +244,7 @@ window.SettingsDrawer = (function() {
 
     // Built-in: password (only if auth module is loaded or we're on the portal page)
     if (typeof callWorker === 'function') {
-      html += _buildSection('sd-security', 'Seguranca', _pwSectionHtml(), false);
+      html += _buildSection('sd-security', 'Segurança', _pwSectionHtml(), false);
     }
 
     _injectDrawer(html);

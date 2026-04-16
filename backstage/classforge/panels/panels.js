@@ -178,6 +178,7 @@ const Panels = (() => {
   }
 
   function onClickNav(e) {
+    if (e.target.closest('.bs-topbar, .bs-drawer, .bs-overlay, #bs-debug')) return;
     if (overviewOpen) return;
     const x = e.clientX;
     const half = window.innerWidth / 2;

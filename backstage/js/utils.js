@@ -59,4 +59,23 @@ function showToastError(msg) {
 
 if (typeof window !== 'undefined') window.alert = function(msg) { showToastError(String(msg)); };
 
-if (typeof module !== 'undefined') module.exports = { escHtml, parseCSV, parseCSVLine, LETTERS, stripOptPrefix };
+async function hashPw(pw) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+// Global: Enter on input/textarea submits nearest submit button within the same form container.
+// Shift+Enter preserved for textareas. Covers all pages, present and future.
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  var tag = e.target.tagName;
+  if (tag === 'TEXTAREA' && e.shiftKey) return;
+  if (tag !== 'INPUT' && tag !== 'TEXTAREA') return;
+  e.preventDefault();
+  var parent = e.target.closest('.bs-field, .sd-section-body, .bs-auth-card, .host-card, .cp-create-session, form');
+  if (!parent) return;
+  var btn = parent.querySelector('.bs-save-btn, .bs-auth-btn, .host-btn-primary, .cp-btn-primary, button[type="submit"]');
+  if (btn && !btn.disabled) btn.click();
+});
+
+if (typeof module !== 'undefined') module.exports = { escHtml, parseCSV, parseCSVLine, LETTERS, stripOptPrefix, hashPw };
