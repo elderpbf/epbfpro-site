@@ -50,21 +50,27 @@
     bsLog(String(msg), type || 'log');
   }
 
-  function bsProbe(msg, level) {
+  function bsProbe(msg, level, header) {
     probeEntries.push({ ts: ts(), level: level || 'log', msg: String(msg) });
     if (probeEntries.length > 300) probeEntries.shift();
-    if (!probeVisible) {
-      probeVisible = true;
-      if (mounted) {
-        var btn = document.getElementById('bsdp-tab-probe');
-        if (btn) btn.style.display = '';
-      }
-    }
+    probeVisible = true;
     if (mounted) {
+      if (header) {
+        var hdr = document.getElementById('bsdp-probe-header');
+        if (hdr) { hdr.textContent = header; hdr.style.display = ''; }
+      }
       if (activeTab !== 'probe') switchTab('probe');
       else renderTab('probe');
       openPanel();
       updateBadges();
+    }
+  }
+
+  function bsProbeEnd() {
+    probeVisible = false;
+    if (mounted) {
+      var hdr = document.getElementById('bsdp-probe-header');
+      if (hdr) { hdr.textContent = ''; hdr.style.display = 'none'; }
     }
   }
 
@@ -80,9 +86,10 @@
     enabled = false;
   };
 
-  window.bsLog   = bsLog;
-  window.dbg     = dbg;
-  window.bsProbe = bsProbe;
+  window.bsLog      = bsLog;
+  window.dbg        = dbg;
+  window.bsProbe    = bsProbe;
+  window.bsProbeEnd = bsProbeEnd;
 
   // ── Auto-capture ───────────────────────────────────────────────────────────
 
@@ -114,14 +121,14 @@
   // ── Styles ─────────────────────────────────────────────────────────────────
   var css = [
     // container + toggle button
-    '#bsdp{position:fixed;bottom:1rem;right:1rem;z-index:99999;font-family:monospace;font-size:11px;display:flex;flex-direction:column;align-items:flex-end;gap:4px}',
-    '#bsdp-toggle{background:#0f2020;color:#2dd4bf;border:1px solid #0d4040;border-radius:4px;padding:3px 9px;cursor:pointer;opacity:.8;font-family:monospace;font-size:11px;display:flex;align-items:center;gap:5px}',
+    '#bsdp{position:fixed;bottom:1rem;right:1rem;z-index:99999;font-family:monospace;font-size:11px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;pointer-events:none}',
+    '#bsdp-toggle{background:#0f2020;color:#2dd4bf;border:1px solid #0d4040;border-radius:4px;padding:3px 9px;cursor:pointer;opacity:.8;font-family:monospace;font-size:11px;display:flex;align-items:center;gap:5px;pointer-events:auto}',
     '#bsdp-toggle:hover{opacity:1;border-color:#0d9488}',
     '#bsdp-main-badge{background:#fc8181;color:#000;border-radius:8px;padding:0 4px;font-size:9px;font-weight:700;display:none;line-height:1.4}',
     '#bsdp-main-badge.vis{display:inline}',
 
     // panel
-    '#bsdp-panel{display:none;background:#0f1e1e;border:1px solid #0d4040;border-radius:8px;width:430px;max-height:320px;flex-direction:column;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.6)}',
+    '#bsdp-panel{display:none;background:#0f1e1e;border:1px solid #0d4040;border-radius:8px;width:430px;max-height:320px;flex-direction:column;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.6);pointer-events:auto}',
     '#bsdp-panel.open{display:flex}',
 
     // tab bar
@@ -134,8 +141,6 @@
     '#bsdp-tab-probe.active{color:#06b6d4;border-bottom-color:#06b6d4}',
     '.bsdp-tab-badge{background:#fc8181;color:#000;border-radius:8px;padding:0 3px;font-size:9px;font-weight:700;line-height:1.4;display:none}',
     '.bsdp-tab-badge.vis{display:inline}',
-    '.bsdp-tab-x{color:#4a8080;cursor:pointer;font-size:14px;line-height:1;padding:0 1px;margin-left:1px}',
-    '.bsdp-tab-x:hover{color:#fc8181}',
 
     // toolbar
     '#bsdp-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:3px 8px;border-bottom:1px solid #0d2c2c;flex-shrink:0;background:#0a1818}',
@@ -156,8 +161,8 @@
     '.bsdp-entry.info  .bsdp-msg{color:#a0c4c4}',
     '.bsdp-entry.poll  .bsdp-msg{color:#2a6060}',
 
-    // probe empty state
-    '#bsdp-empty-probe{color:#2a5050;font-size:10px;padding:14px 10px;text-align:center;display:none}',
+    // probe empty/idle state
+    '#bsdp-empty-probe{color:#2a5050;font-size:10px;padding:14px 10px;text-align:center}',
   ].join('');
 
   // ── DOM ────────────────────────────────────────────────────────────────────
@@ -182,9 +187,8 @@
           '<button class="bsdp-tab" id="bsdp-tab-errors" data-tab="errors">' +
             'Errors<span class="bsdp-tab-badge" id="bsdp-badge-errors"></span>' +
           '</button>' +
-          '<button class="bsdp-tab" id="bsdp-tab-probe" data-tab="probe" style="display:none">' +
+          '<button class="bsdp-tab" id="bsdp-tab-probe" data-tab="probe">' +
             'Probe<span class="bsdp-tab-badge" id="bsdp-badge-probe"></span>' +
-            '<span class="bsdp-tab-x" id="bsdp-probe-x" title="Dismiss probe">&times;</span>' +
           '</button>' +
         '</div>' +
         '<div id="bsdp-toolbar">' +
@@ -194,7 +198,8 @@
         '<div class="bsdp-content active" id="bsdp-content-log"></div>' +
         '<div class="bsdp-content" id="bsdp-content-errors"></div>' +
         '<div class="bsdp-content" id="bsdp-content-probe">' +
-          '<div id="bsdp-empty-probe">No probe output</div>' +
+          '<div id="bsdp-probe-header" style="display:none;padding:4px 8px;background:#0a2828;border-bottom:1px solid #0d4040;color:#06b6d4;font-size:10px;font-weight:bold;position:sticky;top:0"></div>' +
+          '<div id="bsdp-empty-probe">Idle - no probe running</div>' +
         '</div>' +
       '</div>' +
       '<button id="bsdp-toggle">DBG<span id="bsdp-main-badge"></span></button>';
@@ -208,8 +213,6 @@
 
     // tab clicks
     document.getElementById('bsdp-tabs').addEventListener('click', function (e) {
-      // probe dismiss X
-      if (e.target.id === 'bsdp-probe-x') { e.stopPropagation(); dismissProbe(); return; }
       var btn = e.target.closest('.bsdp-tab');
       if (btn && btn.dataset.tab) switchTab(btn.dataset.tab);
     });
@@ -234,14 +237,9 @@
     document.getElementById('bsdp-clear').addEventListener('click', function () {
       if (activeTab === 'log')    { logEntries   = []; renderTab('log'); }
       if (activeTab === 'errors') { errEntries   = []; renderTab('errors'); }
-      if (activeTab === 'probe')  { dismissProbe(); return; }
+      if (activeTab === 'probe')  { probeEntries = []; renderTab('probe'); bsProbeEnd(); }
       updateBadges();
     });
-
-    // restore probe tab visibility if there's already content
-    if (probeVisible) {
-      document.getElementById('bsdp-tab-probe').style.display = '';
-    }
 
     renderAll();
   }
@@ -266,15 +264,6 @@
     if (panel) panel.classList.add('open');
   }
 
-  function dismissProbe() {
-    probeEntries = [];
-    probeVisible = false;
-    var btn = document.getElementById('bsdp-tab-probe');
-    if (btn) btn.style.display = 'none';
-    switchTab('log');
-    renderTab('probe');
-    updateBadges();
-  }
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
