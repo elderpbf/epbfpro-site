@@ -191,8 +191,17 @@ function buildCard(pres, index) {
   card.className = 'cf-card';
   var thumb = document.createElement('div');
   thumb.className = 'cf-card-thumb';
-  thumb.style.background = thumbGrad(index);
-  thumb.textContent = initial(pres.title);
+  if (pres.thumbnail) {
+    var img = document.createElement('img');
+    img.src = pres.thumbnail + '?t=' + Date.now();
+    img.alt = pres.title || '';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    img.onerror = function() { this.remove(); thumb.style.background = thumbGrad(index); thumb.textContent = initial(pres.title); };
+    thumb.appendChild(img);
+  } else {
+    thumb.style.background = thumbGrad(index);
+    thumb.textContent = initial(pres.title);
+  }
   if (engine !== 'reveal-legacy') {
     var badge = document.createElement('span');
     badge.className = 'cf-card-badge cf-card-badge--engine';

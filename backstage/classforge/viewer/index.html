@@ -24,6 +24,7 @@
 <script src="../../js/theme-manager.js?v=1.0"></script>
 <script src="../../js/settings-drawer.js?v=1.1"></script>
 <script src="../../js/backstage-topbar.js?v=1.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -659,6 +660,31 @@ function getDemoContent() {
 }
 
 // ---------------------------------------------------------------------------
+// Thumbnail capture
+// ---------------------------------------------------------------------------
+
+function captureThumb(slug, title) {
+  setTimeout(async function() {
+    try {
+      var target = document.querySelector('.reveal .slides');
+      if (!target) return;
+      var canvas = await html2canvas(target, { scale: 0.5, useCORS: true, logging: false });
+      var resized = document.createElement('canvas');
+      resized.width = 400; resized.height = 225;
+      var ctx = resized.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, 400, 225);
+      var dataUrl = resized.toDataURL('image/png');
+      var base64 = dataUrl.split(',')[1];
+      await callWorker({ action: 'upload_image', slug: slug, filename: 'thumbnail.png', data_base64: base64, content_type: 'image/png' });
+      var thumbUrl = 'https://backstage-api.pensoia.workers.dev/r2/classforge/' + slug + '/thumbnail.png';
+      await callWorker({ action: 'register_presentation', slug: slug, title: title, engine: 'reveal', thumbnail: thumbUrl });
+    } catch (err) {
+      if (typeof dbg === 'function') dbg('warn', 'thumbnail capture failed: ' + err.message);
+    }
+  }, 1500);
+}
+
+// ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 
@@ -683,7 +709,8 @@ function getDemoContent() {
         logoConfig: lesson.logo_config,
         customCss: lesson.custom_css
       });
-  
+      captureThumb(slug, lesson.title || 'Untitled');
+
       callWorker({ action: 'get_linked_session', slug: slug, _silent: true }).then(function(data) {
         if (data && data.session) {
           Topbar.addItem({
