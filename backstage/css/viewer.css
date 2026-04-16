@@ -98,6 +98,13 @@
    REVEAL.JS OVERRIDES
    ========================================================= */
 
+/* Layer 1: Global slide overflow safety.
+   Hard boundary -- nothing ever bleeds out of a slide. */
+.reveal .slides > section,
+.reveal .slides > section > section {
+  overflow: hidden;
+}
+
 /* Callout box */
 .reveal .cf-callout {
   border-left: 4px solid rgba(79,142,247,.8);
@@ -147,24 +154,52 @@
    LAYOUT CLASSES (Phase 4B)
    ========================================================= */
 
+/* Layer 2: Layout flex isolation.
+   Explicit overrides defeat Reveal section defaults + global .reveal img rules. */
 .reveal .cf-layout-image-left,
 .reveal .cf-layout-image-right {
-  display: flex; align-items: center;
-  gap: 2rem; height: 100%; box-sizing: border-box;
-  overflow: hidden; padding: 1rem 0;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2rem;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 1rem 0;
 }
 
-.reveal .cf-layout-image-left .cf-slide-image { flex: 0 0 40%; max-height: 70vh; object-fit: contain; border-radius: 8px; margin: 0; }
-.reveal .cf-layout-image-right .cf-slide-image { flex: 0 0 40%; max-height: 70vh; object-fit: contain; border-radius: 8px; margin: 0; order: 2; }
+/* Override global .reveal img within image layouts */
+.reveal .cf-layout-image-left .cf-slide-image,
+.reveal .cf-layout-image-right .cf-slide-image {
+  flex: 0 0 40%;
+  max-width: 40%;
+  max-height: 80%;
+  object-fit: contain;
+  border-radius: 8px;
+  margin: 0;
+  display: block;
+}
+.reveal .cf-layout-image-right .cf-slide-image { order: 2; }
 
+/* Layer 3: Text body containment.
+   Constrained layouts clip excess content instead of overflowing. */
 .reveal .cf-layout-image-left .cf-slide-body,
-.reveal .cf-layout-image-right .cf-slide-body { flex: 1; text-align: left; }
+.reveal .cf-layout-image-right .cf-slide-body {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  max-height: 90%;
+}
 
 .reveal .cf-layout-image-left .cf-slide-body h2,
 .reveal .cf-layout-image-right .cf-slide-body h2 { font-size: 1.4em; margin: 0 0 0.6rem; }
 
 .reveal .cf-layout-image-left .cf-slide-body ul,
 .reveal .cf-layout-image-right .cf-slide-body ul { font-size: 0.85em; line-height: 1.6; }
+
+/* Two-column text containment */
+.reveal .cf-layout-two-column .cf-two-col-grid > div { overflow: hidden; }
 
 .reveal .cf-layout-full-bleed { position: relative; }
 .reveal .cf-layout-full-bleed .cf-slide-body { position: relative; z-index: 1; background: rgba(0,0,0,.55); padding: 1.5rem 2rem; border-radius: 8px; }
