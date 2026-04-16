@@ -19,10 +19,12 @@
     --pn-font:     'Roboto', system-ui, sans-serif;
   }
 
+  /* All panels get theme background by default */
+  .panel { background: var(--pn-bg); }
+
   /* Cover: theme-responsive gradient + circuit overlay */
   .panel-cover {
     background: linear-gradient(135deg, var(--pn-heading), var(--pn-accent));
-    position: relative;
     overflow: hidden;
   }
   .panel-cover .circuit-overlay {
@@ -348,7 +350,9 @@
   });
 
   Panels.init({ presenterUrl: '../../panels/presenter.html' });
-  setTimeout(async function() {
+
+  // Thumbnail capture (on-demand, not auto)
+  window._captureThumbnail = async function() {
     var P = typeof bsProbe === 'function' ? bsProbe : function() {};
     var PE = typeof bsProbeEnd === 'function' ? bsProbeEnd : function() {};
     async function wPost(params) {
@@ -366,29 +370,29 @@
       if (!target) { P('.panel not found', 'error'); PE(); return; }
       var bgStyle = getComputedStyle(target);
       var bgColor = bgStyle.backgroundColor;
-      if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)') bgColor = '#1A34AB';
-      P('Target found: ' + target.offsetWidth + 'x' + target.offsetHeight + ', bg=' + bgColor, 'info');
+      if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)') bgColor = '#5271FE';
+      P('Target: ' + target.offsetWidth + 'x' + target.offsetHeight + ', bg=' + bgColor, 'info');
       var canvas = await html2canvas(target, { scale: 1, useCORS: true, logging: false, backgroundColor: bgColor });
-      P('Canvas captured: ' + canvas.width + 'x' + canvas.height, 'info');
       var resized = document.createElement('canvas');
       resized.width = 800; resized.height = 450;
       var ctx = resized.getContext('2d');
       ctx.drawImage(canvas, 0, 0, 800, 450);
       var dataUrl = resized.toDataURL('image/jpeg', 0.85);
       var base64 = dataUrl.split(',')[1];
-      P('Base64 length: ' + base64.length, 'info');
       var auth = localStorage.getItem('bs_pw_hash') || '';
       var uploadRes = await wPost({ action: 'upload_image', auth_token: auth, slug: 'ia-capacitacao-panels', filename: 'thumbnail.jpg', data_base64: base64, content_type: 'image/jpeg' });
-      P('Upload result: ' + JSON.stringify(uploadRes), uploadRes && uploadRes.ok ? 'ok' : 'error');
+      P('Upload: ' + (uploadRes && uploadRes.ok ? 'OK' : 'FAIL'), uploadRes && uploadRes.ok ? 'ok' : 'error');
       var thumbUrl = 'https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao-panels/thumbnail.jpg';
-      var regRes = await wPost({ action: 'register_presentation', auth_token: auth, slug: 'ia-capacitacao-panels', title: 'Inteligencia Artificial (Panels)', engine: 'panels', thumbnail: thumbUrl });
-      P('Register result: ' + JSON.stringify(regRes), regRes && regRes.ok ? 'ok' : 'error');
+      await wPost({ action: 'register_presentation', auth_token: auth, slug: 'ia-capacitacao-panels', title: 'Inteligencia Artificial (Panels)', engine: 'panels', thumbnail: thumbUrl });
+      if (typeof showToast === 'function') showToast('Thumbnail atualizado.');
       PE();
     } catch (err) {
       P('FAILED: ' + err.message, 'error');
+      if (typeof showToastError === 'function') showToastError('Erro ao capturar thumbnail.');
       PE();
     }
-  }, 1500);
+  };
+
   PanelsTheme.init({ slug: 'ia-capacitacao-panels' });
   var _savedPnTheme = localStorage.getItem('bs_pn_theme_ia-capacitacao-panels');
   if (_savedPnTheme) ThemeRegistry.applyTheme(_savedPnTheme, 'panels');

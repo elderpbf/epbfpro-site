@@ -25,6 +25,12 @@ window.PresentationSettings = (function() {
       if (el) el.hidden = true;
     }
 
+    function _triggerThumbCapture() {
+      if (typeof window._captureThumbnail === 'function') {
+        setTimeout(window._captureThumbnail, 500);
+      }
+    }
+
     function _onThemeApplied(name) {
       if (opts.slug) {
         try { localStorage.setItem('bs_theme_' + opts.slug, name); } catch (e) {}
@@ -57,6 +63,7 @@ window.PresentationSettings = (function() {
             editingName: name,
             onSave: function(theme) {
               _onThemeApplied(theme.name);
+              _triggerThumbCapture();
               renderGrid();
               _hideCreator();
             }
@@ -76,13 +83,16 @@ window.PresentationSettings = (function() {
         prefix: prefix,
         onSave: function(theme) {
           _onThemeApplied(theme.name);
+          _triggerThumbCapture();
           renderGrid();
           _hideCreator();
         }
       });
     }
 
-    return {
+    var thumbBtnId = prefix + 'thumb-btn';
+
+    var themeSection = {
       id: 'ps-theme-' + engine,
       title: 'Tema',
       content:
@@ -95,12 +105,35 @@ window.PresentationSettings = (function() {
       },
       onInit: function() {}
     };
+
+    var thumbSection = {
+      id: 'ps-thumb-' + engine,
+      title: 'Thumbnail',
+      content:
+        '<p class="bs-hint" style="margin-bottom:0.75rem">Captura o primeiro slide como imagem para o card na galeria.</p>' +
+        '<button class="bs-save-btn" id="' + thumbBtnId + '">Atualizar Thumbnail</button>',
+      onOpen: function() {},
+      onInit: function() {
+        var btn = document.getElementById(thumbBtnId);
+        if (btn) btn.addEventListener('click', function() {
+          btn.disabled = true;
+          btn.textContent = 'Capturando...';
+          _triggerThumbCapture();
+          setTimeout(function() {
+            btn.disabled = false;
+            btn.textContent = 'Atualizar Thumbnail';
+          }, 3000);
+        });
+      }
+    };
+
+    return [themeSection, thumbSection];
   }
 
   function buildSections(opts) {
     opts = opts || {};
     var engine = opts.engine || 'reveal';
-    return [_buildSection(engine, opts)];
+    return _buildSection(engine, opts);
   }
 
   return { buildSections: buildSections };
