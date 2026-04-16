@@ -101,6 +101,15 @@ window.ThemeRegistry = (function() {
       list[i] = _migrateTheme(list[i]);
       if (JSON.stringify(list[i]) !== before) migrated = true;
     }
+    // Inject any new DEFAULT_THEMES missing from stored list
+    var names = {};
+    for (var j = 0; j < list.length; j++) names[list[j].name] = true;
+    for (var k = 0; k < DEFAULT_THEMES.length; k++) {
+      if (!names[DEFAULT_THEMES[k].name]) {
+        list.push(JSON.parse(JSON.stringify(DEFAULT_THEMES[k])));
+        migrated = true;
+      }
+    }
     if (migrated) saveThemes(list);
     return list;
   }

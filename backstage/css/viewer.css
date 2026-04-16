@@ -151,10 +151,11 @@
 .reveal .cf-layout-image-right {
   display: flex; align-items: center;
   gap: 2rem; height: 100%; box-sizing: border-box;
+  overflow: hidden; padding: 1rem 0;
 }
 
-.reveal .cf-layout-image-left .cf-slide-image { flex: 0 0 45%; max-height: 80vh; object-fit: contain; border-radius: 8px; margin: 0; }
-.reveal .cf-layout-image-right .cf-slide-image { flex: 0 0 45%; max-height: 80vh; object-fit: contain; border-radius: 8px; margin: 0; order: 2; }
+.reveal .cf-layout-image-left .cf-slide-image { flex: 0 0 40%; max-height: 70vh; object-fit: contain; border-radius: 8px; margin: 0; }
+.reveal .cf-layout-image-right .cf-slide-image { flex: 0 0 40%; max-height: 70vh; object-fit: contain; border-radius: 8px; margin: 0; order: 2; }
 
 .reveal .cf-layout-image-left .cf-slide-body,
 .reveal .cf-layout-image-right .cf-slide-body { flex: 1; text-align: left; }

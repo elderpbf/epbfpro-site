@@ -316,7 +316,7 @@
 <script src="../../panels/panels-theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1/dist/html2canvas.min.js"></script>
 <script src="../../../js/theme-registry.js?v=2.2"></script>
-<script src="../../../js/presentation-settings.js?v=2.0"></script>
+<script src="../../../js/presentation-settings.js?v=2.1"></script>
 <script type="module">
   import Panels from '../../panels/panels.js';
 
@@ -327,7 +327,7 @@
     backLink: '/backstage/classforge/',
     sections: PresentationSettings.buildSections({
       engine: 'panels',
-      slug: 'ia-capacitacao',
+      slug: 'ia-capacitacao-panels',
       onThemeChange: function() {}
     })
   });
@@ -345,7 +345,7 @@
       return resp.json();
     }
     try {
-      P('Starting capture for slug=ia-capacitacao', 'info', 'Thumbnail capture');
+      P('Starting capture for slug=ia-capacitacao-panels', 'info', 'Thumbnail capture');
       if (typeof html2canvas === 'undefined') { P('html2canvas not loaded', 'error'); PE(); return; }
       var target = document.querySelector('.panel');
       if (!target) { P('.panel not found', 'error'); PE(); return; }
@@ -363,9 +363,9 @@
       var base64 = dataUrl.split(',')[1];
       P('Base64 length: ' + base64.length, 'info');
       var auth = localStorage.getItem('bs_pw_hash') || '';
-      var uploadRes = await wPost({ action: 'upload_image', auth_token: auth, slug: 'ia-capacitacao', filename: 'thumbnail.jpg', data_base64: base64, content_type: 'image/jpeg' });
+      var uploadRes = await wPost({ action: 'upload_image', auth_token: auth, slug: 'ia-capacitacao-panels', filename: 'thumbnail.jpg', data_base64: base64, content_type: 'image/jpeg' });
       P('Upload result: ' + JSON.stringify(uploadRes), uploadRes && uploadRes.ok ? 'ok' : 'error');
-      var thumbUrl = 'https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/thumbnail.jpg';
+      var thumbUrl = 'https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao-panels/thumbnail.jpg';
       var regRes = await wPost({ action: 'register_presentation', auth_token: auth, slug: 'ia-capacitacao-panels', title: 'Inteligencia Artificial (Panels)', engine: 'panels', thumbnail: thumbUrl });
       P('Register result: ' + JSON.stringify(regRes), regRes && regRes.ok ? 'ok' : 'error');
       PE();
@@ -374,8 +374,8 @@
       PE();
     }
   }, 1500);
-  PanelsTheme.init({ slug: 'ia-capacitacao' });
-  var _savedPnTheme = localStorage.getItem('bs_pn_theme_ia-capacitacao');
+  PanelsTheme.init({ slug: 'ia-capacitacao-panels' });
+  var _savedPnTheme = localStorage.getItem('bs_pn_theme_ia-capacitacao-panels');
   if (_savedPnTheme) ThemeRegistry.applyTheme(_savedPnTheme, 'panels');
 </script>
 

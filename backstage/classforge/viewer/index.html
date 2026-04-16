@@ -8,7 +8,7 @@
 <link rel="stylesheet" id="reveal-theme" href="">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
 <link rel="stylesheet" href="../../css/question-types.css?v=1.6">
-<link rel="stylesheet" href="../../css/viewer.css?v=1.9">
+<link rel="stylesheet" href="../../css/viewer.css?v=2.0">
 <link rel="stylesheet" href="../../css/theme.css?v=1.2">
 <link rel="stylesheet" href="../../css/backstage.css?v=1.6">
 <link rel="stylesheet" href="../../css/settings-drawer.css?v=1.0">
@@ -18,7 +18,7 @@
 <script src="../../js/utils.js?v=1.3"></script>
 <script src="../../js/ai-client.js?v=1.1"></script>
 <script src="../../js/theme-registry.js?v=2.2"></script>
-<script src="../../js/presentation-settings.js?v=2.0"></script>
+<script src="../../js/presentation-settings.js?v=2.1"></script>
 <script src="../../js/question-renderer.js?v=1.7"></script>
 <script src="../../js/classpulse-question.min.js?v=1.2"></script>
 <script src="../../js/theme-manager.js?v=1.0"></script>
@@ -77,12 +77,15 @@ import RevealHighlight from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/hig
 import RevealNotes from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.esm.js';
 import RevealMarkdown from 'https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/markdown/markdown.esm.js';
 
+var _viewerSlug = new URLSearchParams(location.search).get('slug') || '';
+
 Topbar.init({
   mode: 'presentation',
   title: 'ClassForge',
   backLink: '/backstage/classforge/',
   sections: PresentationSettings.buildSections({
     engine: 'reveal',
+    slug: _viewerSlug,
     onThemeChange: function(name) { ThemeRegistry.initTheme(name, 'reveal'); }
   })
 });
@@ -515,7 +518,8 @@ async function showPresentation(lesson, opts) {
   }
 
   Topbar.setSubtitle((lesson.title || 'Untitled') + ' (Reveal)');
-  ThemeRegistry.initTheme(ThemeRegistry.resolveTheme(lesson.theme), 'reveal');
+  var _slugTheme = _viewerSlug && localStorage.getItem('bs_theme_' + _viewerSlug);
+  ThemeRegistry.initTheme(_slugTheme || ThemeRegistry.resolveTheme(lesson.theme), 'reveal');
   showOnly('reveal-container');
 
   if (!revealInited) {

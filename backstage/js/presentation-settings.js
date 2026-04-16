@@ -26,7 +26,11 @@ window.PresentationSettings = (function() {
     }
 
     function _onThemeApplied(name) {
-      ThemeRegistry.setActiveTheme(name);
+      if (opts.slug) {
+        try { localStorage.setItem('bs_theme_' + opts.slug, name); } catch (e) {}
+      } else {
+        ThemeRegistry.setActiveTheme(name);
+      }
       ThemeRegistry.applyTheme(name, engine);
       // Sync Panels per-slug persistence
       if (engine === 'panels' && opts.slug && typeof PanelsTheme !== 'undefined') {
