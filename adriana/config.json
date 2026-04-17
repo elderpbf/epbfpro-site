@@ -1,6 +1,6 @@
 {
   "banner_visible": false,
   "banner_text": "EM AJU!",
-  "flower_shower": false,
+  "flower_shower": true,
   "resumo_glow": true
 }
