@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>TypeDrill - Backstage</title>
+
+<link rel="icon" type="image/x-icon" href="../../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png">
+
+<link rel="stylesheet" href="../css/theme.css?v=1.2">
+<link rel="stylesheet" href="../css/backstage.css?v=1.3">
+<link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
+<link rel="stylesheet" href="../css/shared-components.css?v=1.3">
+<link rel="stylesheet" href="css/typedrill.css?v=1.0">
+<script src="../js/debug.js?v=2.5"></script>
+</head>
+<body>
+
+<div class="theme-transition" id="themeTransition" aria-hidden="true"></div>
+
+<div id="screen-app" class="bs-app">
+
+  <main class="bs-main">
+
+    <!-- Mobile gate: shown only on coarse-pointer viewports -->
+    <div id="mobile-gate" class="td-mobile-gate" hidden>
+      <h2>Abra no desktop</h2>
+      <p>TypeDrill precisa de um teclado físico. Abra esta página num computador.</p>
+    </div>
+
+    <!-- Mode picker + session live together on one page -->
+    <div id="view-session">
+
+      <!-- Charset bar: toggles + focus chips -->
+      <section class="td-charset" aria-label="conjunto de caracteres">
+        <div class="td-charset-toggles">
+          <button type="button" class="td-toggle" data-charset="letras" aria-pressed="true">Letras</button>
+          <button type="button" class="td-toggle" data-charset="numeros" aria-pressed="false">Números</button>
+          <button type="button" class="td-toggle" data-charset="simbolos" aria-pressed="true">Símbolos</button>
+          <button type="button" class="td-toggle" data-charset="pontuacao" aria-pressed="false">Pontuação</button>
+        </div>
+        <div class="td-focus">
+          <label for="focus-input">foco</label>
+          <div class="td-focus-chips" id="focus-chips"></div>
+          <input id="focus-input" type="text" autocomplete="off" placeholder="adicionar caractere">
+        </div>
+      </section>
+
+      <!-- Source row: always visible -->
+      <section class="td-sources" aria-label="fontes de treino">
+        <div class="td-source-row" id="source-row"></div>
+        <div class="td-source-options" id="source-options" hidden></div>
+      </section>
+
+      <!-- Target area + input -->
+      <section class="td-practice" aria-label="área de prática">
+        <div id="target" class="td-target" aria-live="polite"></div>
+        <input id="input" class="td-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      </section>
+
+      <!-- Stats row -->
+      <section class="td-stats" aria-label="estatísticas">
+        <div class="td-stat"><span class="td-stat-label">tempo</span><span class="td-stat-value" id="stat-time">0s</span></div>
+        <div class="td-stat"><span class="td-stat-label">sessão</span><span class="td-stat-value" id="stat-session-cpm">0 cpm</span></div>
+        <div class="td-stat"><span class="td-stat-label">linha</span><span class="td-stat-value" id="stat-line-cpm">0 cpm</span></div>
+        <div class="td-stat"><span class="td-stat-label">erros</span><span class="td-stat-value" id="stat-err">0</span></div>
+        <div class="td-stat"><span class="td-stat-label">acerto</span><span class="td-stat-value" id="stat-acc">100%</span></div>
+        <button type="button" class="td-progress-btn" id="progress-btn">progresso</button>
+      </section>
+
+      <!-- Line / level progress + actions -->
+      <section class="td-progress-row" aria-label="progresso da linha">
+        <span class="td-line-indicator">linha <span id="h-line">1 / 1</span></span>
+        <div class="td-actions">
+          <button type="button" id="btn-prev">anterior</button>
+          <button type="button" id="btn-reset">reiniciar</button>
+          <button type="button" id="btn-next">próxima</button>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="../js/utils.js?v=1.3"></script>
+<script src="../js/theme-manager.js?v=1.0"></script>
+<script src="../js/auth.js?v=1.1"></script>
+<script src="../js/backstage-topbar.js?v=1.1"></script>
+<script type="module" src="js/app.js?v=1.0"></script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+/* TypeDrill layout. Colors and shadows come from Backstage theme.css. */
+
+.td-mobile-gate {
+  max-width: 420px;
+  margin: 48px auto;
+  padding: 24px;
+  background: var(--bg-primary);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+@media (pointer: coarse) {
+  #mobile-gate { display: block; }
+  #view-session { display: none; }
+}
+
+#view-session {
+  display: grid;
+  gap: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.td-charset,
+.td-sources,
+.td-practice,
+.td-stats,
+.td-progress-row {
+  background: var(--bg-primary);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.td-charset-toggles {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.td-toggle {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 0.5px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.td-toggle[aria-pressed="true"] {
+  background: var(--bg-info);
+  color: var(--text-info);
+  border-color: var(--border-info);
+}
+
+.td-focus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.td-focus-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.td-source-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.td-source-options {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--border);
+}
+
+.td-target {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  line-height: 1.7;
+  padding: 14px 18px;
+  min-height: 64px;
+  letter-spacing: 0.5px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-primary);
+}
+
+.ok-char   { color: var(--text-success); background: var(--bg-success); }
+.bad-char  { color: var(--text-danger);  background: var(--bg-danger); text-decoration: underline; }
+.cur-char  { background: var(--bg-info); border-bottom: 2px solid var(--text-info); }
+.pending   { color: var(--text-tertiary); }
+
+.td-input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.td-stats {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.td-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 80px;
+}
+
+.td-stat-label { font-size: 12px; color: var(--text-secondary); }
+.td-stat-value { font-size: 18px; font-weight: 500; color: var(--text-primary); }
+
+.td-progress-btn {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 0.5px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.td-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.td-line-indicator { font-size: 13px; color: var(--text-secondary); }
+
+.td-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.td-actions button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 0.5px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+}
