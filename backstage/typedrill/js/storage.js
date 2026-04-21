@@ -5,10 +5,19 @@ export const KEYS = {
 };
 
 export function readJSON(key) {
-  console.debug('stub: storage.readJSON', key);
-  return null;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn('storage.readJSON failed for', key, e);
+    return null;
+  }
 }
 
 export function writeJSON(key, obj) {
-  console.debug('stub: storage.writeJSON', key, obj);
+  try {
+    localStorage.setItem(key, JSON.stringify(obj));
+  } catch (e) {
+    console.warn('storage.writeJSON failed for', key, e);
+  }
 }
