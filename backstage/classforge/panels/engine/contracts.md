@@ -287,25 +287,48 @@ A presentation directory contains a `manifest.json` that the runtime loads first
   "id": "smoke-test",
   "title": "Smoke Test",
   "theme": "default",
+  "course": "capacitacao-ia-geral",
+  "author": "ClassForge",
+  "language": "pt-BR",
+  "description": "Phase 1 bedrock smoke test",
   "panels": [
-    { "src": "panel-01.html" },
-    { "src": "panel-02.html" }
+    "panel-01.html",
+    { "src": "panel-02.html", "id": "intro", "title": "Second Panel" }
   ]
 }
 ```
 
 Fields:
 
-- `id` -- required string. Stable identifier for the presentation.
+- `id` -- required string. Stable presentation identifier.
 - `title` -- optional string. Display name.
-- `theme` -- optional string. Must match a registered theme id when theme activation lands
+- `theme` -- optional string. Must match a registered theme id once theme activation lands
   in Phase 2/3. Currently consumed as provenance only.
+- `course` -- optional string. Course identifier (e.g. `capacitacao-ia-geral`). Advisory;
+  consumed by external tooling (TOC, catalog).
+- `author` -- optional string. Instructor or author name.
+- `language` -- optional string. BCP-47 tag (e.g. `pt-BR`).
+- `description` -- optional string. Short subtitle.
 - `panels` -- required array with `length >= 1`. Each entry is either a string URL or an
-  object. The runtime resolves the URL in this order: `entry.src`, then `entry.url`, then
-  `entry.path`. Unrecognized shapes throw `Invalid panel entry: ...`.
+  object. The runtime resolves the URL in order `entry.src`, then `entry.url`, then
+  `entry.path`. Unrecognized shapes throw `Invalid panel entry: ...` at activation time.
+- Per-panel optional fields on object entries: `id` (stable manifest-level id, distinct
+  from the panel HTML's own `meta.id`, used for deep-linking); `title` (overrides panel's
+  own title for TOC display; advisory in Phase 2).
 
-Additional fields MAY be present; the runtime ignores unknown keys. Presentation-wide
-metadata (author, course, language) is reserved for Phase 2G.
+### Reserved manifest fields
+
+- Per-panel `skip` -- Reserved -- Phase 3. Will let authoring skip draft panels.
+- Per-panel `theme` -- Reserved -- Phase 2C/3. Will override presentation theme for a
+  single panel once theme switching lands.
+- Per-panel `minutes` -- Reserved -- Phase 3. Pacing metadata at manifest level; currently
+  lives in panel `meta.minutes`.
+- Presentation-level `tags` -- Reserved -- Phase 3.
+- Presentation-level `sections` -- Reserved -- Phase 3.
+
+The runtime runs a soft `validateManifest` check at load time and emits `console.warn` on
+unknown keys, missing `id`, or empty `panels`. Warnings never prevent activation.
+Additional unknown keys are tolerated but surfaced so authoring typos are easy to spot.
 
 ---
 
@@ -337,4 +360,4 @@ existing payload shape, changing the mount/unmount/onEvent signatures, or changi
 registry validation rules. A major version bump is accompanied by a migration note in
 `ClassForge/manifest/ARCHITECTURE.md` and a corresponding revision of this document.
 
-Document revision: Phase 1 bedrock (2026-04-21).
+Document revision: Phase 1 bedrock (2026-04-21); Phase 2G schema lock (2026-04-21).

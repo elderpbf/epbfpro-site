@@ -13,6 +13,39 @@
 //   panel-entered, panel-exited, navigation
 //   (theme-changed and session-updated are reserved for Phase 2.)
 
+const MANIFEST_KNOWN_KEYS = new Set(['id', 'title', 'theme', 'course', 'author', 'language', 'description', 'panels']);
+const PANEL_KNOWN_KEYS    = new Set(['src', 'url', 'path', 'id', 'title']);
+
+export function validateManifest(data) {
+  if (data === null || data === undefined || typeof data !== 'object' || Array.isArray(data)) {
+    console.warn('[panels-runtime] manifest is not an object');
+    return;
+  }
+  if (typeof data.id !== 'string' || !data.id) {
+    console.warn('[panels-runtime] manifest missing required field: id');
+  }
+  if (!Array.isArray(data.panels) || data.panels.length === 0) {
+    console.warn('[panels-runtime] manifest missing required field: panels (non-empty array)');
+  }
+  for (const key of Object.keys(data)) {
+    if (!MANIFEST_KNOWN_KEYS.has(key)) {
+      console.warn(`[panels-runtime] manifest has unknown key: ${key}`);
+    }
+  }
+  if (Array.isArray(data.panels)) {
+    for (let i = 0; i < data.panels.length; i++) {
+      const entry = data.panels[i];
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        for (const key of Object.keys(entry)) {
+          if (!PANEL_KNOWN_KEYS.has(key)) {
+            console.warn(`[panels-runtime] panels[${i}] has unknown key: ${key}`);
+          }
+        }
+      }
+    }
+  }
+}
+
 export function createRuntime(options = {}) {
   const {
     manifest,
@@ -27,6 +60,7 @@ export function createRuntime(options = {}) {
   if (!loadPanel) throw new Error('createRuntime: loadPanel is required');
 
   let manifestData = manifest && typeof manifest === 'object' && !Array.isArray(manifest) ? manifest : null;
+  if (manifestData) validateManifest(manifestData);
   let currentIndex = -1;
   let activeModules = [];
   let activeLayout = null;
@@ -58,6 +92,7 @@ export function createRuntime(options = {}) {
     const res = await fetch(manifest);
     if (!res.ok) throw new Error(`Failed to load manifest from ${manifest}: HTTP ${res.status}`);
     manifestData = await res.json();
+    validateManifest(manifestData);
     return manifestData;
   }
 

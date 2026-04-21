@@ -2,8 +2,12 @@
   "id": "smoke-test",
   "title": "Smoke Test",
   "theme": "default",
+  "course": "smoke-test",
+  "author": "ClassForge",
+  "language": "pt-BR",
+  "description": "Phase 1 bedrock smoke test",
   "panels": [
-    { "src": "panel-01.html" },
-    { "src": "panel-02.html" }
+    "panel-01.html",
+    "panel-02.html"
   ]
 }
