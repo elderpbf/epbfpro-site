@@ -72,5 +72,9 @@ export const LAYOUT = {
   '<': { hand: 'right', finger: 'middle', anchor: 'k' },
   '>': { hand: 'right', finger: 'ring',   anchor: 'l' },
   ':': { hand: 'right', finger: 'pinky',  anchor: 'ç' },
-  '?': { hand: 'right', finger: 'pinky',  anchor: 'ç' }
+  '?': { hand: 'right', finger: 'pinky',  anchor: 'ç' },
+
+  // Apostrophe / quote (ABNT2 right-pinky column)
+  "'": { hand: 'right', finger: 'pinky',  anchor: 'ç' },
+  '"': { hand: 'right', finger: 'pinky',  anchor: 'ç' }
 };

@@ -18,7 +18,20 @@ const DEFAULT_STATE_JSON = JSON.stringify({
     wordsPerLesson: 30,
     repeatWord: 1,
     dailyGoalMin: 30,
-    whitespaceDisplay: 'bullet'
+    whitespaceDisplay: 'bullet',
+    charset: {
+      letras: true,
+      numeros: false,
+      simbolos: true,
+      pontuacao: false,
+      focus: []
+    },
+    sources: {
+      symbols: {},
+      common: {},
+      custom: {}
+    },
+    activeSource: 'common'
   }
 });
 
@@ -35,6 +48,16 @@ function ensureLoaded() {
   if (state) return;
   const stored = readJSON(KEYS.skill);
   state = (stored && stored.version === 1) ? stored : defaultState();
+  if (!state.settings) state.settings = defaultState().settings;
+  if (!state.settings.charset) {
+    state.settings.charset = { letras: true, numeros: false, simbolos: true, pontuacao: false, focus: [] };
+  }
+  if (!state.settings.sources) {
+    state.settings.sources = { symbols: {}, common: {}, custom: {} };
+  }
+  if (!state.settings.activeSource) {
+    state.settings.activeSource = 'common';
+  }
   ensureBeforeUnload();
 }
 
@@ -90,5 +113,12 @@ export function set(obj) {
 
 export function reset() {
   state = defaultState();
+  flush();
+}
+
+export function resetProgress() {
+  ensureLoaded();
+  state.charStats = {};
+  state.sessions = [];
   flush();
 }

@@ -1,11 +1,7 @@
 // Source: Palavras comuns pt-BR (top-1000).
 
 import { WORDS } from '../data/pt-br-1000.js';
-
-const LETTERS = 'abcdefghijklmnopqrstuvwxyzáàâãéèêíìîóòôõúùûüçñ';
-const DIGITS = '0123456789';
-const SYMBOLS = '@#$%&*()+=<>|~^¨_';
-const PUNCT = '.,;:?!\'"-/\\';
+import { buildAllowedChars } from '../charset.js';
 
 export function generate(charset, stats, opts) {
   const o = opts || {};
@@ -35,16 +31,6 @@ export function generate(charset, stats, opts) {
     lines.push(lineWords.join(' '));
   }
   return lines;
-}
-
-function buildAllowedChars(charset) {
-  const s = new Set([' ']);
-  const c = charset || { letras: true };
-  if (c.letras)    for (const ch of LETTERS) s.add(ch);
-  if (c.numeros)   for (const ch of DIGITS) s.add(ch);
-  if (c.simbolos)  for (const ch of SYMBOLS) s.add(ch);
-  if (c.pontuacao) for (const ch of PUNCT) s.add(ch);
-  return s;
 }
 
 function filterByFocus(words, charset) {
