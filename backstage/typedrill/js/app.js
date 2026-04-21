@@ -20,12 +20,25 @@ import { WORDS } from './data/pt-br-1000.js';
 import { LAYOUT } from './data/abnt2-layout.js';
 import { SYMBOLS } from './data/abnt2-symbols.js';
 
+// Shell-level event wiring: paste block + body-click focus restore.
+function wireShell() {
+  const input = document.getElementById('input');
+  input.addEventListener('paste', e => e.preventDefault());
+  document.body.addEventListener('click', (e) => {
+    if (e.target.closest('button, input, textarea, select, a, [contenteditable]')) return;
+    input.focus();
+  });
+}
+
 // Auth guard (provided by ../js/auth.js, loaded before this module).
 window.BS_AUTH.guard();
 window.BS_AUTH.clearPasswordInputs();
 
 // Topbar (provided by ../js/backstage-topbar.js).
 window.Topbar.init({ title: 'TypeDrill', backLink: '../' });
+
+// Shell-level DOM wiring (paste block, focus restore).
+wireShell();
 
 // Dev inspection handle. Not used by app logic.
 window.__TD__ = {
