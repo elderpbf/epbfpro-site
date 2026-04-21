@@ -1,0 +1,13 @@
+/* tools/hello-world-tool/hello-world.css */
+
+.pn-hello {
+  font-family: var(--pn-font-heading);
+  font-size: var(--pn-size-h2);
+  color: var(--pn-heading);
+  text-shadow: var(--pn-glow-size) var(--pn-glow-color);
+  padding: 48px;
+  border: 1px solid var(--pn-border);
+  border-radius: var(--pn-radius-lg);
+  background: var(--pn-surface-1);
+  box-shadow: var(--pn-shadow-soft);
+}

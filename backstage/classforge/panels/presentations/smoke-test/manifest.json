@@ -1,0 +1,9 @@
+{
+  "id": "smoke-test",
+  "title": "Smoke Test",
+  "theme": "default",
+  "panels": [
+    { "src": "panel-01.html" },
+    { "src": "panel-02.html" }
+  ]
+}

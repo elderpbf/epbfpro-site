@@ -1,0 +1,53 @@
+/* engine/tokens.css
+ *
+ * Single source of truth for visual values in Panels v2. Modules read
+ * these CSS custom properties; they do not hardcode colors, fonts, sizes,
+ * or effects. Themes override a subset via registerTheme({ tokens: {...} }).
+ *
+ * Token categories (28 vars total): color, surface, typography, shape,
+ * effect, motion. Initial values seeded from the Backstage theme-registry
+ * default (IA Blue). Tokens are append-only; removing a token is a
+ * breaking change and must be versioned at the engine level.
+ */
+
+:root {
+  /* color */
+  --pn-bg: #0a0a0a;
+  --pn-text: #eaeaea;
+  --pn-heading: #ffffff;
+  --pn-accent: #5271FE;
+  --pn-muted: #888888;
+  --pn-border: rgba(255, 255, 255, 0.1);
+
+  /* surface */
+  --pn-surface-1: rgba(255, 255, 255, 0.04);
+  --pn-surface-2: rgba(255, 255, 255, 0.08);
+  --pn-surface-overlay: rgba(0, 0, 0, 0.5);
+
+  /* typography */
+  --pn-font-body: 'Roboto', system-ui, sans-serif;
+  --pn-font-heading: 'Roboto', system-ui, sans-serif;
+  --pn-font-mono: 'Roboto Mono', monospace;
+  --pn-size-base: 16px;
+  --pn-size-lead: 20px;
+  --pn-size-h1: 48px;
+  --pn-size-h2: 36px;
+  --pn-size-h3: 24px;
+
+  /* shape */
+  --pn-radius-sm: 4px;
+  --pn-radius-md: 8px;
+  --pn-radius-lg: 16px;
+
+  /* effect */
+  --pn-glow-color: var(--pn-accent);
+  --pn-glow-size: 0 0 24px;
+  --pn-shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --pn-shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* motion */
+  --pn-duration-fast: 150ms;
+  --pn-duration-normal: 300ms;
+  --pn-duration-slow: 600ms;
+  --pn-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -1,0 +1,29 @@
+/* layouts/cover/cover.css */
+
+.pn-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 48px;
+  text-align: center;
+  background: var(--pn-bg);
+  color: var(--pn-text);
+  font-family: var(--pn-font-body);
+}
+
+.pn-cover__title {
+  margin: 0 0 16px;
+  font-family: var(--pn-font-heading);
+  font-size: var(--pn-size-h1);
+  color: var(--pn-heading);
+  text-shadow: var(--pn-glow-size) var(--pn-glow-color);
+}
+
+.pn-cover__subtitle {
+  margin: 0;
+  font-size: var(--pn-size-lead);
+  color: var(--pn-muted);
+  max-width: 720px;
+}
