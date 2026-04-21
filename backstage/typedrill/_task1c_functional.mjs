@@ -65,7 +65,7 @@ const assert = (cond, msg) => {
 const engine = await import('./js/engine.js');
 const skill = await import('./js/skill.js');
 
-// --- Test 1: wrong char rejected, errors incremented ---
+// --- Test 1: wrong char LANDS (realistic mode), errors incremented ---
 skill.reset();
 let keystrokes = [];
 let lineCompletes = 0;
@@ -81,20 +81,23 @@ engine.attach({
 engine.setTarget('hello');
 
 input.type('X');
-assert(input.value === '', 'wrong char truncated: value is empty');
+assert(input.value === 'X', 'realistic: wrong char lands (value === "X")');
 let s = skill.get();
 assert(s.charStats.h?.errors === 1, 'charStats.h.errors === 1 after wrong');
 assert(s.charStats.h?.attempts === 1, 'charStats.h.attempts === 1 after wrong');
 assert(keystrokes[0]?.wasCorrect === false, 'onKeystroke wasCorrect:false');
 
-// --- Test 2: correct char advances ---
+// --- Test 2: correct char at next position ---
+skill.reset();
 keystrokes = [];
+input.value = '';
+engine.setTarget('hello');
 input.type('h');
-assert(input.value === 'h', 'correct char retained');
+assert(input.value === 'h', 'correct char lands');
 s = skill.get();
-assert(s.charStats.h.attempts === 2, 'charStats.h.attempts === 2 after correct');
-assert(s.charStats.h.errors === 1, 'charStats.h.errors still 1');
-assert(keystrokes[0]?.wasCorrect === true, 'onKeystroke wasCorrect:true');
+assert(s.charStats.h.attempts === 1, 'charStats.h.attempts === 1');
+assert(!s.charStats.h.errors, 'no errors for correct char');
+assert(keystrokes[keystrokes.length - 1]?.wasCorrect === true, 'onKeystroke wasCorrect:true');
 
 // --- Test 3: % with LEFT Shift triggers wrong-hand ---
 skill.reset();
@@ -146,7 +149,22 @@ let afterBS = skill.get().charStats.a?.attempts;
 assert(beforeBS === afterBS, 'backspace does not increment attempts');
 assert(input.value === '', 'backspace cleared value');
 
-// --- Test 7: detach removes listeners ---
+// --- Test 7: wrong char + backspace + correct char completes line (realistic flow) ---
+skill.reset();
+keystrokes = []; wrongShifts = []; lineCompletes = 0;
+input.value = '';
+engine.setTarget('hi');
+input.type('X');
+assert(input.value === 'X', 'wrong X lands');
+assert(lineCompletes === 0, 'line not complete while wrong char present');
+input.backspace();
+assert(input.value === '', 'backspace removes wrong char');
+input.type('h');
+input.type('i');
+assert(input.value === 'hi', 'correct sequence fully landed');
+assert(lineCompletes === 1, 'line completes after clean retype');
+
+// --- Test 8: detach removes listeners ---
 engine.detach();
 keystrokes = [];
 input.type('z');

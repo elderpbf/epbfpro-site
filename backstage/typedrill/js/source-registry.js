@@ -32,8 +32,8 @@ register({
   id: 'common',
   label: 'Palavras',
   generate: common.generate,
-  renderOptions: null,
-  defaults: {}
+  renderOptions: common.renderOptions,
+  defaults: { wordsPerLesson: 30, repeatWord: 1 }
 });
 
 register({

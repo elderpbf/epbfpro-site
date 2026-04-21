@@ -48,20 +48,10 @@ window.Topbar.init({
 function buildTypeDrillSection() {
   const s = skill.get();
   const targetWpm = s.targetWpm || 35;
-  const wordsPerLesson = (s.settings && s.settings.wordsPerLesson) || 30;
-  const repeatWord = (s.settings && s.settings.repeatWord) || 1;
   const content =
     '<div class="bs-field">' +
       '<label for="td-target-wpm">Meta de cpm</label>' +
       '<input id="td-target-wpm" type="number" min="10" max="200" value="' + targetWpm + '">' +
-    '</div>' +
-    '<div class="bs-field">' +
-      '<label for="td-words-per-lesson">Palavras por lição</label>' +
-      '<input id="td-words-per-lesson" type="number" min="5" max="200" value="' + wordsPerLesson + '">' +
-    '</div>' +
-    '<div class="bs-field">' +
-      '<label for="td-repeat-word">Repetir palavra</label>' +
-      '<input id="td-repeat-word" type="number" min="1" max="10" value="' + repeatWord + '">' +
     '</div>' +
     '<button id="td-reset-progress" class="bs-toggle-btn" type="button">Apagar progresso</button>';
   return { id: 'typedrill', title: 'TypeDrill', content, onInit: wireSettings };
@@ -69,8 +59,6 @@ function buildTypeDrillSection() {
 
 function wireSettings() {
   const tWpm = document.getElementById('td-target-wpm');
-  const wpl = document.getElementById('td-words-per-lesson');
-  const rep = document.getElementById('td-repeat-word');
   const reset = document.getElementById('td-reset-progress');
 
   if (tWpm) tWpm.addEventListener('change', () => {
@@ -79,22 +67,9 @@ function wireSettings() {
     skill.set(st);
     session.regenerate();
   });
-  if (wpl) wpl.addEventListener('change', () => {
-    const st = skill.get();
-    st.settings.wordsPerLesson = Math.max(5, Math.min(200, Number(wpl.value) || 30));
-    skill.set(st);
-    session.regenerate();
-  });
-  if (rep) rep.addEventListener('change', () => {
-    const st = skill.get();
-    st.settings.repeatWord = Math.max(1, Math.min(10, Number(rep.value) || 1));
-    skill.set(st);
-    session.regenerate();
-  });
   if (reset) reset.addEventListener('click', () => {
     if (confirm('Apagar todo o progresso registrado?')) {
       skill.resetProgress();
-      charset.init();
       session.regenerate();
     }
   });
@@ -117,6 +92,8 @@ function repaint() {
   renderer.paint(targetEl, line, inputEl.value, skill.get().settings);
 }
 
+let bandCollapsed = true;
+
 function renderSourceRow() {
   sourceRowEl.innerHTML = '';
   for (const entry of registry.list()) {
@@ -126,8 +103,18 @@ function renderSourceRow() {
     card.textContent = entry.label;
     card.setAttribute('data-source-id', entry.id);
     card.setAttribute('aria-pressed', entry.id === session.getActiveSource() ? 'true' : 'false');
-    card.addEventListener('click', () => session.setActiveSource(entry.id));
+    card.addEventListener('click', () => onSourceCardClick(entry.id));
     sourceRowEl.appendChild(card);
+  }
+}
+
+function onSourceCardClick(id) {
+  if (session.getActiveSource() === id) {
+    bandCollapsed = !bandCollapsed;
+    optionsBandEl.hidden = bandCollapsed;
+  } else {
+    bandCollapsed = false;
+    session.setActiveSource(id);
   }
 }
 
@@ -141,20 +128,20 @@ function syncSourceRow(activeId) {
 function renderOptionsBand() {
   const id = session.getActiveSource();
   const entry = registry.get(id);
-  optionsBandEl.hidden = false;
   optionsBandEl.innerHTML = '';
   if (!entry || typeof entry.renderOptions !== 'function') {
     const empty = document.createElement('p');
     empty.className = 'td-source-options-empty';
     empty.textContent = 'sem opções para esta fonte';
     optionsBandEl.appendChild(empty);
-    return;
+  } else {
+    entry.renderOptions(
+      optionsBandEl,
+      session.getOptions(id),
+      (patch) => session.setOptions(id, patch)
+    );
   }
-  entry.renderOptions(
-    optionsBandEl,
-    session.getOptions(id),
-    (patch) => session.setOptions(id, patch)
-  );
+  optionsBandEl.hidden = bandCollapsed;
 }
 
 let lastSourceId = null;
@@ -176,10 +163,35 @@ engine.attach({
   onKeystroke: (ev) => {
     if (ev) stats.recordChar(ev.wasCorrect !== false);
     repaint();
+    paintStats();
   },
   onLineComplete: () => session.nextLine(),
   onWrongShift: () => {}
 });
+
+function paintStats() {
+  const t = stats.tick();
+  const timeEl = document.getElementById('stat-time');
+  const sCpmEl = document.getElementById('stat-session-cpm');
+  const lCpmEl = document.getElementById('stat-line-cpm');
+  const errEl = document.getElementById('stat-err');
+  const accEl = document.getElementById('stat-acc');
+  if (timeEl) timeEl.textContent = formatElapsed(t.sessionElapsedMs);
+  if (sCpmEl) sCpmEl.textContent = t.sessionCpm + ' cpm';
+  if (lCpmEl) lCpmEl.textContent = t.lineCpm + ' cpm';
+  if (errEl) errEl.textContent = String(t.sessionErrors);
+  if (accEl) accEl.textContent = t.acc + '%';
+}
+
+function formatElapsed(ms) {
+  const total = Math.floor((ms || 0) / 1000);
+  if (total < 60) return total + 's';
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return m + 'm ' + s + 's';
+}
+
+setInterval(paintStats, 250);
 
 renderSourceRow();
 session.init();

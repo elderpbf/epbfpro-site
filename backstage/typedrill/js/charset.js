@@ -109,6 +109,8 @@ function syncToggles() {
 }
 
 export function init() {
+  // Legacy bootstrap: wires the top-level charset bar if present (test harnesses).
+  // Production builds render charset controls inline via renderCharsetControls.
   readState();
   syncToggles();
   renderChips();
@@ -138,4 +140,95 @@ export function init() {
       }
     });
   }
+}
+
+export function renderCharsetControls(container) {
+  const cs = readState();
+  const keys = ['letras', 'numeros', 'simbolos', 'pontuacao'];
+  const labels = { letras: 'Letras', numeros: 'Números', simbolos: 'Símbolos', pontuacao: 'Pontuação' };
+
+  const row = document.createElement('div');
+  row.className = 'td-charset-toggles';
+  const btns = {};
+  for (const k of keys) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'td-toggle';
+    btn.setAttribute('data-charset', k);
+    btn.setAttribute('aria-pressed', cs[k] ? 'true' : 'false');
+    btn.textContent = labels[k];
+    btn.addEventListener('click', () => {
+      const current = readState();
+      const next = !current[k];
+      writeState({ [k]: next });
+      btn.setAttribute('aria-pressed', next ? 'true' : 'false');
+    });
+    btns[k] = btn;
+    row.appendChild(btn);
+  }
+  container.appendChild(row);
+
+  const focusRow = document.createElement('div');
+  focusRow.className = 'td-focus';
+  const labelEl = document.createElement('label');
+  labelEl.textContent = 'foco';
+  focusRow.appendChild(labelEl);
+
+  const chipsWrap = document.createElement('div');
+  chipsWrap.className = 'td-focus-chips';
+  focusRow.appendChild(chipsWrap);
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'td-focus-input';
+  input.autocomplete = 'off';
+  input.placeholder = 'adicionar caractere';
+  focusRow.appendChild(input);
+
+  function buildChip(ch) {
+    const chip = document.createElement('span');
+    chip.className = 'td-focus-chip';
+    chip.textContent = ch;
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'td-focus-chip-x';
+    x.setAttribute('aria-label', 'remover');
+    x.textContent = '×';
+    x.addEventListener('click', () => {
+      removeFocus(ch);
+      if (chip.parentNode) chip.parentNode.removeChild(chip);
+    });
+    chip.appendChild(x);
+    return chip;
+  }
+
+  function renderChipsInline() {
+    chipsWrap.innerHTML = '';
+    const current = readState();
+    for (const ch of (current.focus || [])) {
+      chipsWrap.appendChild(buildChip(ch));
+    }
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (e.preventDefault) e.preventDefault();
+      const v = (input.value || '').trim();
+      if (v) {
+        addFocus(v[0]);
+        renderChipsInline();
+      }
+      input.value = '';
+    } else if (e.key === 'Backspace' && (input.value || '') === '') {
+      const current = readState();
+      const focus = current.focus || [];
+      if (focus.length) {
+        removeFocus(focus[focus.length - 1]);
+        renderChipsInline();
+      }
+    }
+  });
+
+  renderChipsInline();
+  container.appendChild(focusRow);
 }

@@ -65,7 +65,7 @@ function onInput(e) {
   const expectedChar = target[cursor - 1];
 
   if (lastChar !== expectedChar) {
-    input.value = value.slice(0, cursor - 1);
+    // Realistic mode: wrong char lands; user must backspace to correct.
     if (expectedChar !== undefined) recordAttempt(expectedChar, false);
     emit('onKeystroke', { expected: expectedChar, wasCorrect: false, typed: lastChar });
     return;

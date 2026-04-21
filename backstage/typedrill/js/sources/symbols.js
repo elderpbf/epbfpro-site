@@ -19,6 +19,18 @@ export function generate(charset, stats, opts) {
   const o = opts || {};
   if (!charset || !charset.simbolos) return [];
   const symbolChar = o.symbolChar || '%';
+
+  // "Todos" mode: one line per symbol, in SYMBOLS order.
+  if (symbolChar === '*all*') {
+    const lines = [];
+    for (const s of SYMBOLS) {
+      const subOpts = { ...o, symbolChar: s.char, linesPerBatch: 1 };
+      const r = generate(charset, stats, subOpts);
+      if (r.length > 0) lines.push(r[0]);
+    }
+    return lines;
+  }
+
   if (!VALID_CHARS.includes(symbolChar)) return [];
   const level = Number.isInteger(o.level) ? o.level : 1;
   const entry = SYMBOLS.find(s => s.char === symbolChar);
@@ -135,6 +147,11 @@ export function renderOptions(container, options, onChange) {
   const labelSym = document.createElement('label');
   labelSym.textContent = ' símbolo ';
   const selSym = document.createElement('select');
+  const allOpt = document.createElement('option');
+  allOpt.value = '*all*';
+  allOpt.textContent = 'Todos';
+  if (symbolChar === '*all*') allOpt.selected = true;
+  selSym.appendChild(allOpt);
   for (const ch of VALID_CHARS) {
     const opt = document.createElement('option');
     opt.value = ch;
@@ -145,6 +162,21 @@ export function renderOptions(container, options, onChange) {
   selSym.addEventListener('change', () => onChange({ symbolChar: selSym.value }));
   labelSym.appendChild(selSym);
   wrap.appendChild(labelSym);
+
+  const labelWpl = document.createElement('label');
+  labelWpl.className = 'td-opt-field';
+  labelWpl.textContent = ' grupos por linha ';
+  const inputWpl = document.createElement('input');
+  inputWpl.type = 'number';
+  inputWpl.min = '3';
+  inputWpl.max = '20';
+  inputWpl.value = String(opts.wordsPerLesson || 6);
+  inputWpl.className = 'td-opt-input';
+  inputWpl.addEventListener('change', () => {
+    onChange({ wordsPerLesson: Math.max(3, Math.min(20, Number(inputWpl.value) || 6)) });
+  });
+  labelWpl.appendChild(inputWpl);
+  wrap.appendChild(labelWpl);
 
   container.appendChild(wrap);
 }

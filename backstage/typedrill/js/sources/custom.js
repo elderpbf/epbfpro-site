@@ -2,7 +2,7 @@
 // Filters pasted text by active charset, applies optional transforms
 // (strip-punct / lowercase / shuffle), groups into wordsPerLesson lines.
 
-import { buildAllowedChars } from '../charset.js';
+import { buildAllowedChars, renderCharsetControls } from '../charset.js';
 
 const STRIP_CHARS = new Set(['.', ',', ';', ':', '!', '?', '"', '(', ')', '[', ']']);
 
@@ -27,12 +27,13 @@ export function generate(charset, stats, opts) {
   let words = text.split(' ').filter(Boolean);
 
   const allowed = buildAllowedChars(charset);
-  words = words.filter(function (w) {
+  words = words.map(function (w) {
+    let out = '';
     for (const ch of w) {
-      if (!allowed.has(ch.toLowerCase())) return false;
+      if (allowed.has(ch.toLowerCase())) out += ch;
     }
-    return true;
-  });
+    return out;
+  }).filter(function (w) { return w.length > 0; });
 
   if (o.shuffleWords && words.length > 1) {
     const rng = typeof o.seed === 'number' ? mulberry32(o.seed) : Math.random;
@@ -65,6 +66,11 @@ function mulberry32(seed) {
 export function renderOptions(container, options, onChange) {
   const opts = options || {};
 
+  const charsetSection = document.createElement('div');
+  charsetSection.className = 'td-source-options-section';
+  renderCharsetControls(charsetSection);
+  container.appendChild(charsetSection);
+
   const wrap = document.createElement('div');
   wrap.className = 'td-source-options-form';
 
@@ -73,7 +79,7 @@ export function renderOptions(container, options, onChange) {
   textareaLabel.textContent = 'texto para praticar';
   const textarea = document.createElement('textarea');
   textarea.className = 'td-custom-text';
-  textarea.rows = 4;
+  textarea.rows = 6;
   textarea.placeholder = 'cole um trecho aqui';
   textarea.value = opts.text || '';
   let debounceTimer = null;
@@ -90,6 +96,21 @@ export function renderOptions(container, options, onChange) {
   togglesRow.appendChild(makeCheckbox('lowercase', 'minúsculas', opts, onChange));
   togglesRow.appendChild(makeCheckbox('shuffleWords', 'embaralhar', opts, onChange));
   wrap.appendChild(togglesRow);
+
+  const wplLabel = document.createElement('label');
+  wplLabel.className = 'td-opt-field';
+  wplLabel.textContent = 'palavras por lição ';
+  const wplInput = document.createElement('input');
+  wplInput.type = 'number';
+  wplInput.min = '5';
+  wplInput.max = '200';
+  wplInput.value = String(opts.wordsPerLesson || 30);
+  wplInput.className = 'td-opt-input';
+  wplInput.addEventListener('change', () => {
+    onChange({ wordsPerLesson: Math.max(5, Math.min(200, Number(wplInput.value) || 30)) });
+  });
+  wplLabel.appendChild(wplInput);
+  wrap.appendChild(wplLabel);
 
   container.appendChild(wrap);
 }
