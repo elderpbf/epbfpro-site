@@ -5,29 +5,38 @@
  * or effects. Themes override a subset via registerTheme({ tokens: {...} }).
  *
  * Token categories (28 vars total): color, surface, typography, shape,
- * effect, motion. Initial values seeded from the Backstage theme-registry
- * default (IA Blue). Tokens are append-only; removing a token is a
- * breaking change and must be versioned at the engine level.
+ * effect, motion. Tokens are append-only; removing a token is a breaking
+ * change and must be versioned at the engine level.
+ *
+ * Default theme: IA Blue (white bg, blue accent). Backstage mapping:
+ * `colors.bg -> --pn-bg`, `colors.text -> --pn-text`,
+ * `colors.heading -> --pn-heading`, `colors.accent -> --pn-accent`,
+ * `fonts.body -> --pn-font-body`, `fonts.heading -> --pn-font-heading`,
+ * `fonts.code -> --pn-font-mono`, sizes via SCALE_PRESETS (advisory;
+ * Panels v2 uses absolute size tokens). Engine-only tokens (--pn-muted,
+ * --pn-border, --pn-surface-*, --pn-radius-*, --pn-glow-*, --pn-shadow-*,
+ * --pn-duration-*, --pn-ease) have no Backstage source and use engine
+ * defaults.
  */
 
 :root {
   /* color */
-  --pn-bg: #0a0a0a;
-  --pn-text: #eaeaea;
-  --pn-heading: #ffffff;
+  --pn-bg: #ffffff;
+  --pn-text: #333333;
+  --pn-heading: #5271FE;
   --pn-accent: #5271FE;
   --pn-muted: #888888;
-  --pn-border: rgba(255, 255, 255, 0.1);
+  --pn-border: rgba(0, 0, 0, 0.1);
 
   /* surface */
-  --pn-surface-1: rgba(255, 255, 255, 0.04);
-  --pn-surface-2: rgba(255, 255, 255, 0.08);
+  --pn-surface-1: rgba(0, 0, 0, 0.04);
+  --pn-surface-2: rgba(0, 0, 0, 0.08);
   --pn-surface-overlay: rgba(0, 0, 0, 0.5);
 
   /* typography */
   --pn-font-body: 'Roboto', system-ui, sans-serif;
   --pn-font-heading: 'Roboto', system-ui, sans-serif;
-  --pn-font-mono: 'Roboto Mono', monospace;
+  --pn-font-mono: 'Fira Code', monospace;
   --pn-size-base: 16px;
   --pn-size-lead: 20px;
   --pn-size-h1: 48px;
@@ -42,8 +51,8 @@
   /* effect */
   --pn-glow-color: var(--pn-accent);
   --pn-glow-size: 0 0 24px;
-  --pn-shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.2);
-  --pn-shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --pn-shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --pn-shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.16);
 
   /* motion */
   --pn-duration-fast: 150ms;

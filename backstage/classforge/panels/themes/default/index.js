@@ -9,5 +9,6 @@ import { registerTheme } from '../../engine/registry.js';
 registerTheme({
   id: 'default',
   kind: 'theme',
+  backstageSource: 'IA Blue',
   tokens: {},
 });
