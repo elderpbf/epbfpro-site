@@ -1,90 +1,85 @@
 # PensoIA Website
 
-Professional website for PensoIA - AI and Prompt Engineering consultancy for legal professionals.
+Source for the PensoIA marketing site -- live at **https://pensoia.com**.
+
+PensoIA is a consultancy in AI and prompt engineering for legal professionals in Brazil.
 
 ## Features
 
-- ✅ Fully responsive design
-- ✅ Green-turquoise color scheme
-- ✅ PT-BR default with EN toggle
-- ✅ Language preference saved in browser
-- ✅ Smooth animations
-- ✅ Clean, professional layout
-- ✅ SEO-friendly structure
+- ✅ Single-page, fully responsive
+- ✅ Bilingual (PT-BR default, EN toggle) -- preference persisted
+- ✅ Dark / light mode toggle -- preference persisted
+- ✅ Green-turquoise brand palette, themed PNG icons via CSS filters
+- ✅ Complete favicon set + PWA webmanifest
+- ✅ Brand switcher (PensoIA / EPBF) -- single flag in `js/brand.js`
+- ✅ Vanilla HTML/CSS/JS, MVC-style separation
 
 ## Project Structure
 
 ```
-pensoia-site/
-├── index.html          # Main page
+Site/
+├── index.html              # Main page
 ├── css/
-│   └── style.css      # All styles (green-turquoise theme)
+│   └── style.css           # All styles (theme, components, dark mode)
 ├── js/
-│   ├── translations.js # PT-BR and EN translations
-│   └── main.js        # Language toggle + animations
-└── images/
-    ├── logo.png       # PensoIA logo
-    └── profile.jpg    # Professional photo
+│   ├── main.js             # Controllers (Theme, Language)
+│   ├── translations.js     # PT-BR / EN strings
+│   └── brand.js            # Brand flag (pensoia | epbf)
+├── images/
+│   ├── logo.png, profile.jpg
+│   └── icons/              # Themed black PNGs
+├── favicon*.{ico,png}, apple-touch-icon.png, android-chrome-*.png
+├── site.webmanifest        # PWA manifest
+├── OneSignalSDKWorker.js   # Push notifications (belongs to Adriana-Updates)
+├── backstage/              # Separate project (Backstage) -- see its MANIFEST
+├── adriana/                # Separate project (Adriana-Updates) -- see its MANIFEST
+├── go/                     # Student-facing part of Backstage
+└── MANIFEST.md             # Planning, tasks, architecture, decisions
 ```
 
-## How to Upload to Hostinger
+## Deployment
 
-1. **Login to Hostinger**
-   - Go to your Hostinger panel
-   - Navigate to File Manager
+This repo is a **Hostinger deploy target**, not a library. Pushes trigger webhooks that deploy the tree directly to the web host:
 
-2. **Upload Files**
-   - Upload all files maintaining the folder structure:
-     - `index.html` → root directory (public_html)
-     - `css/` folder → root directory
-     - `js/` folder → root directory
-     - `images/` folder → root directory
+- `dev` branch → **staging.pensoia.com**
+- `master` branch → **pensoia.com**
 
-3. **Alternative: FTP Upload**
-   - Use FileZilla or any FTP client
-   - Connect to your Hostinger FTP
-   - Upload all files/folders
+**Cache busting:** always increment `?v=X.X` on CSS/JS references in `index.html` before pushing, so the Hostinger CDN serves the new file.
 
 ## How to Customize
 
-### Change Contact Email
-Edit `index.html` line 90:
-```html
-<a href="mailto:YOUR-EMAIL@pensoia.com.br">
+### Switch brand (PensoIA ↔ EPBF)
+Edit `js/brand.js`:
+```js
+const ACTIVE_BRAND = 'pensoia'; // or 'epbf'
 ```
 
-And update translations in `js/translations.js` (lines 24 and 50).
+### Change content
+Edit `js/translations.js` -- both PT-BR and EN strings live there.
 
-### Change Colors
-Edit `css/style.css` (lines 9-18) to modify the color palette:
-```css
---primary: #14b8a6;        /* Main turquoise */
---primary-dark: #0d9488;   /* Darker turquoise */
---primary-light: #5eead4;  /* Light turquoise */
---secondary: #047857;      /* Dark green */
---accent: #99f6e4;         /* Light accent */
-```
+### Change colors
+Edit the CSS variables at the top of `css/style.css` (`--primary`, `--primary-dark`, `--secondary`, etc.).
 
-### Update Content
-Edit `js/translations.js` to change any text on the site in both PT-BR and EN.
+### Change contact email
+Update the `mailto:` link in `index.html` and the email strings in `js/translations.js`.
 
 ## Testing Locally
 
-1. Open `index.html` in any browser
-2. Click the language toggle (🌐 EN/PT) to test translations
-3. Test on mobile by resizing browser window
+1. Open `index.html` directly in any browser, or serve the folder with any static server.
+2. Test the language toggle, theme toggle, and responsive layout (resize the window).
 
 ## Browser Support
 
-- Chrome/Edge (latest)
+- Chrome / Edge (latest)
 - Firefox (latest)
-- Safari (latest)
-- Mobile browsers (iOS Safari, Chrome Mobile)
+- Safari (latest, macOS and iOS)
+- Chrome Mobile
 
 ## License
 
-© 2024 PensoIA. All rights reserved.
+© 2026 PensoIA / EPBF Soluções em Tecnologia Ltda. All rights reserved.
 
 ---
-**Live Site:** https://pensoia.com
-**Last Updated:** 2026-02-05
+**Live Site:** https://pensoia.com · **Staging:** https://staging.pensoia.com
+**Planning & architecture:** see [MANIFEST.md](./MANIFEST.md)
+**Last Updated:** 2026-04-18
