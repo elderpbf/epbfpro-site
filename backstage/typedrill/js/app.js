@@ -113,7 +113,7 @@ function onSourceCardClick(id) {
     bandCollapsed = !bandCollapsed;
     optionsBandEl.hidden = bandCollapsed;
   } else {
-    bandCollapsed = false;
+    bandCollapsed = true;
     session.setActiveSource(id);
   }
 }
