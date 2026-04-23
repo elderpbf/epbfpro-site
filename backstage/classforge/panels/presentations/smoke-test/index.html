@@ -7,6 +7,13 @@
   <link rel="stylesheet" href="../../layouts/cover/cover.css">
   <link rel="stylesheet" href="../../layouts/tool-fullbleed/tool-fullbleed.css">
   <link rel="stylesheet" href="../../tools/hello-world-tool/hello-world.css">
+  <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
+  <link rel="stylesheet" href="/backstage/css/backstage.css?v=1.6">
+  <link rel="stylesheet" href="/backstage/css/settings-drawer.css?v=1.0">
+  <script src="/backstage/js/debug.js?v=2.5"></script>
+  <script src="/backstage/js/theme-manager.js?v=1.0"></script>
+  <script src="/backstage/js/settings-drawer.js?v=1.1"></script>
+  <script src="/backstage/js/backstage-topbar.js?v=1.1"></script>
   <style>
     html, body { margin: 0; padding: 0; min-height: 100vh; background: var(--pn-bg); color: var(--pn-text); font-family: var(--pn-font-body); }
     #pn-host { min-height: 100vh; }
@@ -27,6 +34,8 @@
 
     import { createRuntime, defaultLoadPanel } from '../../engine/runtime.js';
     import { registry } from '../../engine/registry.js';
+    import { attachTopbar } from '../../engine/topbar-integration.js';
+    import { attachProbe } from '../../engine/probe-integration.js';
 
     const host = document.getElementById('pn-host');
     const runtime = createRuntime({
@@ -36,6 +45,9 @@
       loadPanel: defaultLoadPanel,
     });
     window.__panelsRuntime = runtime;
+
+    attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/' });
+    attachProbe(runtime);
 
     runtime.start().catch(err => {
       console.error('[smoke-test] failed to start', err);
