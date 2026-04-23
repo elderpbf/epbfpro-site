@@ -97,21 +97,6 @@ export function renderOptions(container, options, onChange) {
   togglesRow.appendChild(makeCheckbox('shuffleWords', 'embaralhar', opts, onChange));
   wrap.appendChild(togglesRow);
 
-  const wplLabel = document.createElement('label');
-  wplLabel.className = 'td-opt-field';
-  wplLabel.textContent = 'palavras por lição ';
-  const wplInput = document.createElement('input');
-  wplInput.type = 'number';
-  wplInput.min = '5';
-  wplInput.max = '200';
-  wplInput.value = String(opts.wordsPerLesson || 30);
-  wplInput.className = 'td-opt-input';
-  wplInput.addEventListener('change', () => {
-    onChange({ wordsPerLesson: Math.max(5, Math.min(200, Number(wplInput.value) || 30)) });
-  });
-  wplLabel.appendChild(wplInput);
-  wrap.appendChild(wplLabel);
-
   container.appendChild(wrap);
 }
 
