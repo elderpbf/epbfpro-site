@@ -20,14 +20,15 @@ if grep -q 'stripPunct' js/sources/custom.js; then pass "stripPunct toggle prese
 if grep -q 'lowercase' js/sources/custom.js; then pass "lowercase toggle preserved"; else die "lowercase missing"; fi
 if grep -q 'shuffleWords' js/sources/custom.js; then pass "shuffleWords toggle preserved"; else die "shuffleWords missing"; fi
 
-# generate() fallback chain preserved (defaults still flow through)
-if grep -q 'o.wordsPerLesson || fromStats || 30' js/sources/custom.js; then pass "generate() wpl fallback intact"; else die "generate() wpl fallback changed"; fi
+# generate() hardcodes wordsPerLesson to 30 (ignores stale per-source overrides)
+if grep -qE '^\s*const wordsPerLesson = 30;' js/sources/custom.js; then pass "generate() wordsPerLesson hardcoded to 30"; else die "generate() wordsPerLesson not hardcoded"; fi
+if ! grep -qF 'o.wordsPerLesson' js/sources/custom.js; then pass "generate() ignores o.wordsPerLesson"; else die "generate() still reads o.wordsPerLesson"; fi
 
 # Palavras (common.js) still has its wpl input -- unchanged
 if grep -q 'wplInput' js/sources/common.js; then pass "common.js still has wplInput"; else die "common.js wplInput unexpectedly removed"; fi
 
 # Cache-bust
-if grep -q 'js/app.js?v=2.4' index.html; then pass "app.js bumped to v=2.4"; else die "app.js not v=2.4"; fi
+if grep -q 'js/app.js?v=2.5' index.html; then pass "app.js bumped to v=2.5"; else die "app.js not v=2.5"; fi
 if grep -q 'css/typedrill.css?v=1.8' index.html; then pass "typedrill.css still v=1.8 (untouched)"; else die "typedrill.css version changed unexpectedly"; fi
 
 # Syntax

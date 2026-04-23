@@ -11,8 +11,7 @@ export function generate(charset, stats, opts) {
   const rawText = typeof o.text === 'string' ? o.text : '';
   if (!rawText.trim()) return [];
 
-  const fromStats = stats && stats.settings && stats.settings.wordsPerLesson;
-  const wordsPerLesson = Math.max(1, o.wordsPerLesson || fromStats || 30);
+  const wordsPerLesson = 30;
 
   let text = rawText.replace(/\s+/g, ' ').trim();
   if (o.lowercase) text = text.toLocaleLowerCase('pt-BR');

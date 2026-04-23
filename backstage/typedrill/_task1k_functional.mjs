@@ -25,7 +25,8 @@ const r1 = generate(
   { text: 'O rato roeu a roupa do rei de Roma hoje cedo demais' }
 );
 assert(r1.length > 0, 'paragraph produces at least one line');
-assert(r1[0].split(' ').length === 5, 'first line has 5 words (from stats.settings.wordsPerLesson)');
+// 1X: custom.js hardcodes wordsPerLesson=30; 12-word paste fits in one line.
+assert(r1.length === 1 && r1[0].split(' ').length === 12, '12-word paste fits in one 30-chunk (wpl hardcoded; stats.settings ignored)');
 
 // --- Test 2: stripPunct removes .,;:!?"()[] ---
 const r2 = generate(
@@ -63,13 +64,13 @@ const tokens6 = r6.join(' ').split(' ').filter(Boolean);
 assert(!tokens6.includes('42'), '42 dropped under letras-only charset');
 assert(tokens6.includes('Numero') && tokens6.includes('hoje'), 'letter-only tokens retained');
 
-// --- Test 7: wordsPerLesson default from stats.settings ---
+// --- Test 7: stats.settings.wordsPerLesson is ignored (1X hardcode) ---
 const r7 = generate(
   { letras: true },
   { settings: { wordsPerLesson: 3 } },
   { text: 'a b c d e f g h i j' }
 );
-assert(r7[0].split(' ').length === 3, 'wordsPerLesson default pulled from stats.settings.wordsPerLesson');
+assert(r7.length === 1 && r7[0].split(' ').length === 10, 'stats.settings.wordsPerLesson ignored; 10-word paste fits in one 30-chunk');
 
 // --- Test 8: missing charset defaults to letras:true (safe) ---
 const r8 = generate(null, {}, { text: 'o rato' });

@@ -52,6 +52,12 @@ const sizes = lines200.map(l => l.split(' ').length);
 const expected = [30, 30, 30, 30, 30, 30, 20];
 assert(JSON.stringify(sizes) === JSON.stringify(expected), `chunk sizes = [30,30,30,30,30,30,20] (got ${JSON.stringify(sizes)})`);
 
+// --- Assertion 2b: stale persisted o.wordsPerLesson=200 is ignored (still 30-word chunks) ---
+const linesStale = custom.generate({ letras: true }, { settings: { wordsPerLesson: 200 } }, { text: words200, wordsPerLesson: 200 });
+assert(linesStale.length === 7, `stale wpl=200 still yields 7 lines (got ${linesStale.length})`);
+const staleSizes = linesStale.map(l => l.split(' ').length);
+assert(JSON.stringify(staleSizes) === JSON.stringify(expected), `stale wpl=200 ignored -> [30,30,30,30,30,30,20] (got ${JSON.stringify(staleSizes)})`);
+
 // --- Assertion 3: 1P regression -- strip-not-drop with pontuacao:false ---
 const r1p = custom.generate({ letras: true, pontuacao: false }, {}, { text: 'Olá, mundo!' });
 assert(r1p.length === 1 && r1p[0] === 'Olá mundo', `1P regression: ['Olá mundo'] (got ${JSON.stringify(r1p)})`);
