@@ -28,11 +28,11 @@ if ! grep -qF 'o.wordsPerLesson' js/sources/custom.js; then pass "generate() ign
 if grep -q 'wplInput' js/sources/common.js; then pass "common.js still has wplInput"; else die "common.js wplInput unexpectedly removed"; fi
 
 # Cache-bust
-if grep -q 'js/app.js?v=2.6' index.html; then pass "app.js bumped to v=2.6"; else die "app.js not v=2.6"; fi
+if grep -q 'js/app.js?v=2.7' index.html; then pass "app.js bumped to v=2.7"; else die "app.js not v=2.7"; fi
 # Backspace repaint signal wired
 if grep -qF "emit('onKeystroke', { isDelete: true })" js/engine.js; then pass "engine emits isDelete on backspace"; else die "engine missing isDelete emit"; fi
 if grep -qF '!ev.isDelete' js/app.js; then pass "app.js skips stats on isDelete"; else die "app.js stats not gated by isDelete"; fi
-if grep -q 'css/typedrill.css?v=1.8' index.html; then pass "typedrill.css still v=1.8 (untouched)"; else die "typedrill.css version changed unexpectedly"; fi
+if grep -q 'css/typedrill.css?v=1.9' index.html; then pass "typedrill.css bumped to v=1.9"; else die "typedrill.css not v=1.9"; fi
 
 # Syntax
 for f in js/sources/custom.js js/sources/common.js; do

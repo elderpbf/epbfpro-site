@@ -207,6 +207,9 @@
 }
 
 .td-source-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 18px;
   border-radius: 10px;
   border: 1px solid var(--border);
@@ -222,6 +225,22 @@
   background: rgba(20,184,166,.15);
   color: var(--primary);
   border-color: var(--primary);
+}
+
+.td-source-card-chevron {
+  display: none;
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.75;
+  transition: transform 150ms ease;
+}
+
+.td-source-card[aria-pressed="true"] .td-source-card-chevron {
+  display: inline-block;
+}
+
+.td-source-card[aria-expanded="true"] .td-source-card-chevron {
+  transform: rotate(180deg);
 }
 
 .td-source-options {

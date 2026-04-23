@@ -100,18 +100,31 @@ function renderSourceRow() {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'td-source-card';
-    card.textContent = entry.label;
     card.setAttribute('data-source-id', entry.id);
     card.setAttribute('aria-pressed', entry.id === session.getActiveSource() ? 'true' : 'false');
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'td-source-card-label';
+    labelSpan.textContent = entry.label;
+    card.appendChild(labelSpan);
+
+    const chevron = document.createElement('span');
+    chevron.className = 'td-source-card-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.textContent = '▾';
+    card.appendChild(chevron);
+
     card.addEventListener('click', () => onSourceCardClick(entry.id));
     sourceRowEl.appendChild(card);
   }
+  syncExpandedState();
 }
 
 function onSourceCardClick(id) {
   if (session.getActiveSource() === id) {
     bandCollapsed = !bandCollapsed;
     optionsBandEl.hidden = bandCollapsed;
+    syncExpandedState();
   } else {
     bandCollapsed = true;
     session.setActiveSource(id);
@@ -122,6 +135,15 @@ function syncSourceRow(activeId) {
   const row = sourceRowEl.querySelectorAll('.td-source-card');
   for (const el of row) {
     el.setAttribute('aria-pressed', el.getAttribute('data-source-id') === activeId ? 'true' : 'false');
+  }
+  syncExpandedState();
+}
+
+function syncExpandedState() {
+  const row = sourceRowEl.querySelectorAll('.td-source-card');
+  for (const el of row) {
+    const isActive = el.getAttribute('aria-pressed') === 'true';
+    el.setAttribute('aria-expanded', isActive && !bandCollapsed ? 'true' : 'false');
   }
 }
 
