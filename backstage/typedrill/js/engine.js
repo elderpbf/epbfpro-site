@@ -53,7 +53,11 @@ function onKeyDown(e) {
 
 function onInput(e) {
   if (!state) return;
-  if (e && e.inputType && e.inputType.startsWith('delete')) return;
+  if (e && e.inputType && e.inputType.startsWith('delete')) {
+    // Delete shrinks input.value; signal app.js to repaint. No attempt recorded.
+    emit('onKeystroke', { isDelete: true });
+    return;
+  }
 
   const { input, target } = state;
   const value = input.value;

@@ -161,7 +161,7 @@ session.subscribe((snap) => {
 engine.attach({
   inputEl,
   onKeystroke: (ev) => {
-    if (ev) stats.recordChar(ev.wasCorrect !== false);
+    if (ev && !ev.isDelete) stats.recordChar(ev.wasCorrect !== false);
     repaint();
     paintStats();
   },

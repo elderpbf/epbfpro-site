@@ -157,8 +157,11 @@ engine.setTarget('hi');
 input.type('X');
 assert(input.value === 'X', 'wrong X lands');
 assert(lineCompletes === 0, 'line not complete while wrong char present');
+const bsMarker = keystrokes.length;
 input.backspace();
 assert(input.value === '', 'backspace removes wrong char');
+assert(keystrokes.length === bsMarker + 1 && keystrokes[bsMarker]?.isDelete === true,
+  'backspace emits onKeystroke{isDelete:true} (triggers repaint)');
 input.type('h');
 input.type('i');
 assert(input.value === 'hi', 'correct sequence fully landed');
