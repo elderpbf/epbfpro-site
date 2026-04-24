@@ -51,9 +51,22 @@ export function generate(charset, stats, opts) {
 }
 
 function level1Lines(entry, wordsPerLesson, linesPerBatch) {
-  const group = entry.anchor + entry.baseKey + entry.anchor + entry.char;
-  const line = Array(wordsPerLesson).fill(group).join(' ');
-  return Array(linesPerBatch).fill(line);
+  // Rotate 3 finger-return variants so the line doesn't feel like a copy drill.
+  // Same fingers and same keys, different stroke order. Line 0 still starts
+  // with the canonical anchor+base+anchor+char so earlier assertions hold.
+  const a = entry.anchor;
+  const b = entry.baseKey;
+  const c = entry.char;
+  const variants = [a + b + a + c, a + c + a + b, c + a + b + a];
+  const lines = [];
+  for (let l = 0; l < linesPerBatch; l++) {
+    const groups = [];
+    for (let i = 0; i < wordsPerLesson; i++) {
+      groups.push(variants[(i + l) % variants.length]);
+    }
+    lines.push(groups.join(' '));
+  }
+  return lines;
 }
 
 function level2Lines(entry, wordsPerLesson, linesPerBatch) {

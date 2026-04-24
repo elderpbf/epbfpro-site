@@ -51,6 +51,14 @@ class FakeInput {
   }
   backspace() {
     if (!this.value) return;
+    let cancelled = false;
+    this._fire('keydown', {
+      key: 'Backspace',
+      location: 0,
+      getModifierState: () => false,
+      preventDefault: () => { cancelled = true; }
+    });
+    if (cancelled) return;
     this.value = this.value.slice(0, -1);
     this._fire('input', { inputType: 'deleteContentBackward' });
   }
@@ -138,7 +146,7 @@ input.type('i');
 assert(input.value === 'hi', 'full line retained');
 assert(lineCompletes === 1, 'lineComplete fired once on exact match');
 
-// --- Test 6: backspace does not count as attempt ---
+// --- Test 6: backspace on correct char is BLOCKED (1Y) ---
 skill.reset();
 input.value = '';
 engine.setTarget('ab');
@@ -147,7 +155,7 @@ let beforeBS = skill.get().charStats.a?.attempts;
 input.backspace();
 let afterBS = skill.get().charStats.a?.attempts;
 assert(beforeBS === afterBS, 'backspace does not increment attempts');
-assert(input.value === '', 'backspace cleared value');
+assert(input.value === 'a', 'backspace BLOCKED on correct char (value retained)');
 
 // --- Test 7: wrong char + backspace + correct char completes line (realistic flow) ---
 skill.reset();
@@ -166,6 +174,24 @@ input.type('h');
 input.type('i');
 assert(input.value === 'hi', 'correct sequence fully landed');
 assert(lineCompletes === 1, 'line completes after clean retype');
+
+// --- Test 9 (1Y): backspace blocked mid-sequence when last char was correct ---
+skill.reset();
+keystrokes = [];
+input.value = '';
+engine.setTarget('hello');
+input.type('h'); input.type('e'); input.type('l');
+const bs9Before = input.value;
+input.backspace();
+assert(input.value === bs9Before, `backspace blocked after 'hel' (got '${input.value}')`);
+// Mistype next char, then backspace should work on the wrong one.
+input.type('X');
+assert(input.value === 'helX', 'wrong X lands');
+input.backspace();
+assert(input.value === 'hel', 'backspace deletes wrong X');
+// Backspace after cleanup should again be blocked on the correct 'l'.
+input.backspace();
+assert(input.value === 'hel', 'backspace blocked again on correct l');
 
 // --- Test 8: detach removes listeners ---
 engine.detach();

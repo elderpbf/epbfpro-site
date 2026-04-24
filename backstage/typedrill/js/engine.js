@@ -46,6 +46,15 @@ function onKeyDown(e) {
     state.lastShiftSide = e.location === 1 ? 'left' : (e.location === 2 ? 'right' : null);
     return;
   }
+  if (e.key === 'Backspace') {
+    // Block backspace when the last-typed char was correct; only wrong chars are deletable.
+    const value = state.input.value;
+    const pos = value.length - 1;
+    if (pos >= 0 && value[pos] === state.target[pos]) {
+      if (e.preventDefault) e.preventDefault();
+    }
+    return;
+  }
   if (e.getModifierState && !e.getModifierState('Shift')) {
     state.lastShiftSide = null;
   }
