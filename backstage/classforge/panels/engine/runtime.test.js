@@ -157,4 +157,80 @@ function makeRegistry({ tools = {}, elements = {}, layouts = {} } = {}) {
   console.log('PASS  test 4: lifecycle events broadcast');
 }
 
+// Test 5: setActiveTheme emits theme-changed and forwards to active layout and modules
+{
+  const layout = makeFakeLayout('L');
+  const layoutEvents = [];
+  layout.onEvent = (evt) => layoutEvents.push({ type: evt.type, detail: evt.detail });
+  const tool = makeFakeModule('tool', 't1');
+  const toolEvents = [];
+  tool.onEvent = (evt) => toolEvents.push({ type: evt.type, detail: evt.detail });
+  const registry = makeRegistry({ tools: { t1: tool }, layouts: { L: layout } });
+  const runtime = createRuntime({
+    manifest: { panels: [{ src: 'a' }] },
+    host: { innerHTML: '' }, registry,
+    loadPanel: async u => ({ meta: { id: u, layout: 'L', tools: [{ id: 't1', slot: 'main' }], elements: [] }, body: null }),
+  });
+  const busEvents = [];
+  runtime.eventBus.addEventListener('theme-changed', e => busEvents.push(e.detail));
+  await runtime.start();
+
+  assert.equal(runtime.currentTheme, null, 'currentTheme is null before setActiveTheme');
+  runtime.setActiveTheme('black');
+  assert.equal(runtime.currentTheme, 'black', 'currentTheme reflects setActiveTheme');
+  assert.deepEqual(busEvents, [{ themeId: 'black' }], 'eventBus received theme-changed');
+  assert.deepEqual(layoutEvents.slice(-1), [{ type: 'theme-changed', detail: { themeId: 'black' } }], 'layout.onEvent received theme-changed');
+  assert.deepEqual(toolEvents.slice(-1), [{ type: 'theme-changed', detail: { themeId: 'black' } }], 'tool.onEvent received theme-changed');
+  console.log('PASS  test 5: setActiveTheme emits theme-changed and forwards');
+}
+
+// Test 6: setActiveTheme with empty or non-string does not emit; currentTheme stays null
+{
+  const layout = makeFakeLayout('L');
+  const registry = makeRegistry({ layouts: { L: layout } });
+  const errors = [];
+  const runtime = createRuntime({
+    manifest: { panels: [{ src: 'a' }] },
+    host: { innerHTML: '' }, registry,
+    loadPanel: async u => ({ meta: { id: u, layout: 'L', tools: [], elements: [] }, body: null }),
+    onError: (err) => errors.push(err),
+  });
+  const busEvents = [];
+  runtime.eventBus.addEventListener('theme-changed', e => busEvents.push(e.detail));
+  await runtime.start();
+
+  runtime.setActiveTheme('');
+  assert.equal(runtime.currentTheme, null, 'currentTheme stays null after empty string');
+  assert.equal(busEvents.length, 0, 'no theme-changed emitted for empty string');
+  assert.equal(errors.length, 1, 'onError called once');
+  assert.match(errors[0].message, /themeId must be a non-empty string/, 'error message describes validation');
+
+  runtime.setActiveTheme(null);
+  assert.equal(runtime.currentTheme, null, 'currentTheme stays null after null');
+  assert.equal(busEvents.length, 0, 'still no theme-changed emitted');
+  assert.equal(errors.length, 2, 'onError called twice total');
+
+  runtime.setActiveTheme(42);
+  assert.equal(runtime.currentTheme, null, 'currentTheme stays null after number');
+  assert.equal(busEvents.length, 0, 'still no theme-changed emitted');
+  assert.equal(errors.length, 3, 'onError called three times total');
+
+  console.log('PASS  test 6: setActiveTheme validates themeId');
+}
+
+// Test 7: currentTheme is null before any setActiveTheme call
+{
+  const layout = makeFakeLayout('L');
+  const registry = makeRegistry({ layouts: { L: layout } });
+  const runtime = createRuntime({
+    manifest: { panels: [{ src: 'a' }] },
+    host: { innerHTML: '' }, registry,
+    loadPanel: async u => ({ meta: { id: u, layout: 'L', tools: [], elements: [] }, body: null }),
+  });
+  assert.equal(runtime.currentTheme, null, 'currentTheme is null immediately after createRuntime');
+  await runtime.start();
+  assert.equal(runtime.currentTheme, null, 'currentTheme remains null after start without setActiveTheme');
+  console.log('PASS  test 7: currentTheme is null before any setActiveTheme call');
+}
+
 console.log('\nAll runtime tests passed.');

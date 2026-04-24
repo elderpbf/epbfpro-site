@@ -10,8 +10,8 @@
 //   defaultLoadPanel(panelUrl)   -- browser-only loader using fetch + DOMParser
 //
 // Lifecycle events broadcast on eventBus and forwarded to active modules' onEvent:
-//   panel-entered, panel-exited, navigation
-//   (theme-changed and session-updated are reserved for Phase 2.)
+//   panel-entered, panel-exited, navigation, theme-changed
+//   (session-updated is reserved for Phase 2/3.)
 
 const MANIFEST_KNOWN_KEYS = new Set(['id', 'title', 'theme', 'course', 'author', 'language', 'description', 'panels']);
 const PANEL_KNOWN_KEYS    = new Set(['src', 'url', 'path', 'id', 'title']);
@@ -65,6 +65,7 @@ export function createRuntime(options = {}) {
   let activeModules = [];
   let activeLayout = null;
   let activeMeta = null;
+  let activeThemeId = null;
 
   function reportError(err) {
     if (typeof onError === 'function') onError(err);
@@ -82,6 +83,15 @@ export function createRuntime(options = {}) {
         try { entry.module.onEvent(evt); } catch (e) { reportError(e); }
       }
     }
+  }
+
+  function setActiveTheme(themeId) {
+    if (typeof themeId !== 'string' || !themeId) {
+      reportError(new Error('setActiveTheme: themeId must be a non-empty string'));
+      return;
+    }
+    activeThemeId = themeId;
+    emit('theme-changed', { themeId });
   }
 
   async function loadManifest() {
@@ -295,11 +305,13 @@ export function createRuntime(options = {}) {
 
   return {
     start, next, prev, goto, dispose,
+    setActiveTheme,
     eventBus,
     get currentIndex() { return currentIndex; },
     get panelCount() { return manifestData ? manifestData.panels.length : 0; },
     get manifest() { return manifestData; },
     get currentMeta() { return activeMeta; },
+    get currentTheme() { return activeThemeId; },
   };
 }
 

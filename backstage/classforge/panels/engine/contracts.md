@@ -145,11 +145,13 @@ Returned object:
   prev(),                          // async boolean; retreats one panel or returns false
   goto(index),                     // async boolean; jumps to index or returns false
   dispose(),                       // detaches keyboard listeners
+  setActiveTheme(themeId),         // emits theme-changed; stores as currentTheme
   eventBus,                        // the EventTarget events are dispatched on
   get currentIndex,                // integer; -1 before start or after a failed activation
   get panelCount,                  // integer; 0 before the manifest has loaded
   get manifest,                    // the loaded manifest object, or null before load
   get currentMeta,                 // the active panel meta object, or null when none active
+  get currentTheme,                // the active theme id, or null before setActiveTheme is called
 }
 ```
 
@@ -210,13 +212,14 @@ instances with `detail`. Each event is also forwarded synchronously to the activ
 `onEvent`, then to every active tool and element's `onEvent`, in mount order. Listener
 throws are caught and routed to `onError`.
 
-Active events (Phase 1):
+Active events:
 
 | Event           | When                                  | Detail                         |
 | --------------- | ------------------------------------- | ------------------------------ |
 | `panel-exited`  | Before teardown of the outgoing panel | `{ panelId }`                  |
 | `panel-entered` | After mount of tools and elements     | `{ panelId, layout }`          |
 | `navigation`    | After a successful `next/prev/goto`   | `{ from, to, direction }`      |
+| `theme-changed` | After `setActiveTheme` is called      | `{ themeId }`                  |
 
 Ordering guarantees:
 
@@ -334,12 +337,9 @@ Additional unknown keys are tolerated but surfaced so authoring typos are easy t
 
 ## Reserved Future Events
 
-The following event types and mechanisms are NOT implemented in Phase 1. Modules MUST NOT
-rely on them. They are listed here so that future authors recognize the names when they land.
+The following event types are NOT yet implemented. Modules MUST NOT rely on them. They
+are listed here so that future authors recognize the names when they land.
 
-- `theme-changed` -- Reserved -- Phase 2/3. Will fire when the active theme changes and
-  carry `{ themeId }`. Theme activation token-override application on the root element is
-  also Reserved -- Phase 2/3.
 - `session-updated` -- Reserved -- Phase 2/3. Will fire when a ClassPulse session bound via
   the `classpulse-slot` element changes state and carry `{ slug, code, status }`.
 
@@ -360,4 +360,4 @@ existing payload shape, changing the mount/unmount/onEvent signatures, or changi
 registry validation rules. A major version bump is accompanied by a migration note in
 `ClassForge/manifest/ARCHITECTURE.md` and a corresponding revision of this document.
 
-Document revision: Phase 1 bedrock (2026-04-21); Phase 2G schema lock (2026-04-21).
+Document revision: Phase 1 bedrock (2026-04-21); Phase 2G schema lock (2026-04-21); Phase 2C theme-changed graduation (2026-04-23).
