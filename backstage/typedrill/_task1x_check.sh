@@ -32,7 +32,7 @@ if grep -q 'js/app.js?v=2.7' index.html; then pass "app.js bumped to v=2.7"; els
 # Backspace repaint signal wired
 if grep -qF "emit('onKeystroke', { isDelete: true })" js/engine.js; then pass "engine emits isDelete on backspace"; else die "engine missing isDelete emit"; fi
 if grep -qF '!ev.isDelete' js/app.js; then pass "app.js skips stats on isDelete"; else die "app.js stats not gated by isDelete"; fi
-if grep -q 'css/typedrill.css?v=1.9' index.html; then pass "typedrill.css bumped to v=1.9"; else die "typedrill.css not v=1.9"; fi
+if grep -q 'css/typedrill.css?v=2.0' index.html; then pass "typedrill.css bumped to v=2.0"; else die "typedrill.css not v=2.0"; fi
 
 # Syntax
 for f in js/sources/custom.js js/sources/common.js; do

@@ -229,9 +229,9 @@
 
 .td-source-card-chevron {
   display: none;
-  font-size: 11px;
+  font-size: 15px;
+  font-weight: 700;
   line-height: 1;
-  opacity: 0.75;
   transition: transform 150ms ease;
 }
 
