@@ -20,7 +20,7 @@ window.Topbar = (function() {
   // ── Auto-hide (presentation mode only) ────────────────────
 
   var TRIGGER_ZONE = 80;
-  var HIDE_DELAY = 2000;
+  var HIDE_DELAY = 1500;
   var _header = null;
   var _hideTimer = null;
   var _visible = false;

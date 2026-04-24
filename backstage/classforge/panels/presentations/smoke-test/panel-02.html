@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel 02 -- Hello</title>
+  <link rel="stylesheet" href="../../engine/tokens.css">
+  <link rel="stylesheet" href="../../layouts/tool-fullbleed/tool-fullbleed.css">
+  <link rel="stylesheet" href="../../tools/hello-world-tool/hello-world.css">
+</head>
+<body>
+  <script type="application/json" id="panel-meta">
+    {
+      "id": "panel-02",
+      "layout": "tool-fullbleed",
+      "title": "Hello",
+      "tools": [{ "id": "hello-world-tool", "slot": "tool", "config": { "greeting": "Hello from Panels v2" } }],
+      "elements": []
+    }
+  </script>
+  <div data-panel-body></div>
+</body>
+</html>
