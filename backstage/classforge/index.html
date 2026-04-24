@@ -134,7 +134,7 @@ function initial(title) {
   return (title || '?').trim().charAt(0).toUpperCase();
 }
 
-var ENGINE_LABELS = { 'reveal': 'Reveal', 'panels': 'Panels', 'reveal-legacy': 'Legacy' };
+var ENGINE_LABELS = { 'reveal': 'Reveal', 'panels': 'Panels', 'panels-legacy': 'Panels (legacy)', 'reveal-legacy': 'Legacy' };
 
 function getPresentHref(engine, slug, id, scriptUrl) {
   if (engine === 'reveal-legacy') {
@@ -143,7 +143,8 @@ function getPresentHref(engine, slug, id, scriptUrl) {
     return url;
   }
   if (engine === 'reveal') return 'viewer/?slug=' + encodeURIComponent(slug || '');
-  if (engine === 'panels') return 'presentations/' + encodeURIComponent(slug || '') + '/';
+  if (engine === 'panels-legacy') return 'presentations/' + encodeURIComponent(slug || '') + '/';
+  if (engine === 'panels') return 'panels/presentations/' + encodeURIComponent(slug || '') + '/';
   return '#';
 }
 
@@ -278,7 +279,7 @@ async function loadPresentations() {
   // D1 presentations first
   if (d1Result.status === 'fulfilled' && d1Result.value && d1Result.value.presentations) {
     d1Result.value.presentations.forEach(function(p) {
-      merged.push({ engine: p.engine || 'panels', slug: p.slug, id: p.slug, title: p.title, updated_at: (p.updated_at || '').slice(0, 10), thumbnail: p.thumbnail || '' });
+      merged.push({ engine: p.engine || 'panels-legacy', slug: p.slug, id: p.slug, title: p.title, updated_at: (p.updated_at || '').slice(0, 10), thumbnail: p.thumbnail || '' });
     });
   }
 
