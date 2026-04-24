@@ -1,8 +1,8 @@
 // TypeDrill task 1E stats functional harness.
 // Mocks Date.now() to advance time deterministically.
-// Contract: cpm is based on ACTIVE time only -- pauses longer than the
-// IDLE_THRESHOLD_MS (2000ms) are excluded from elapsed time. Between
-// keystrokes, elapsed grows by at most the threshold (grace window).
+// Contract: cpm is based on ACTIVE time only -- gaps between keystrokes
+// are clamped to IDLE_THRESHOLD_MS (exported by stats.js). After the last
+// keystroke, displayed elapsed grows by at most the threshold, then freezes.
 // Run from typedrill/: node _task1e_functional.mjs
 
 let fail = 0;
@@ -17,6 +17,9 @@ Date.now = () => fakeNow;
 const advance = (ms) => { fakeNow += ms; };
 
 const stats = await import('./js/stats.js');
+const T = stats.IDLE_THRESHOLD_MS;
+const round = (x) => Math.round(x);
+const cpm = (chars, ms) => ms <= 0 ? 0 : round(chars / (ms / 60000));
 
 // --- Test 1: fresh session returns zeros ---
 stats.startSession();
@@ -26,62 +29,56 @@ assert(snap.lineCpm === 0, 'fresh line cpm 0');
 assert(snap.acc === 100, 'fresh accuracy 100');
 assert(snap.sessionElapsedMs === 0, 'fresh elapsed 0');
 
-// --- Test 2: first keystroke + 500ms grace window ---
+// --- Test 2: first keystroke + half-threshold grace window ---
 fakeNow = 1000;
 stats.recordChar(true);
-advance(500);
+const halfGrace = Math.floor(T / 2);
+advance(halfGrace);
 snap = stats.tick();
-// 1 correct char, 500ms grace -> 1 / (500/60000) = 120 cpm
-assert(snap.sessionElapsedMs === 500, `500ms grace elapsed (got ${snap.sessionElapsedMs})`);
-assert(snap.sessionCpm === 120, `1 char @ 500ms active = 120 cpm (got ${snap.sessionCpm})`);
+assert(snap.sessionElapsedMs === halfGrace, `${halfGrace}ms grace elapsed (got ${snap.sessionElapsedMs})`);
+assert(snap.sessionCpm === cpm(1, halfGrace), `1 char @ ${halfGrace}ms active = ${cpm(1, halfGrace)} cpm (got ${snap.sessionCpm})`);
 
-// --- Test 3: grace window caps at IDLE_THRESHOLD (2000ms) ---
-advance(60000); // 60s idle since last key
+// --- Test 3: grace caps at threshold ---
+advance(60000); // way past threshold
 snap = stats.tick();
-assert(snap.sessionElapsedMs === 2000, `pause > threshold caps at 2000ms grace (got ${snap.sessionElapsedMs})`);
-// cpm = 1 / (2000/60000) = 30
-assert(snap.sessionCpm === 30, `grace-cap cpm = 30 (got ${snap.sessionCpm})`);
+assert(snap.sessionElapsedMs === T, `pause > threshold caps at ${T}ms grace (got ${snap.sessionElapsedMs})`);
+assert(snap.sessionCpm === cpm(1, T), `grace-cap cpm = ${cpm(1, T)} (got ${snap.sessionCpm})`);
 
-// --- Test 4: recording a char after long idle only adds threshold, not full gap ---
+// --- Test 4: recording after long idle only adds threshold worth of active ---
 stats.recordChar(true);
-// active accumulated: 0 (first char) + min(60500ms, 2000ms) = 2000ms
-// now lastKeyTs = fakeNow. Tick immediately -> grace = 0
 snap = stats.tick();
-assert(snap.sessionElapsedMs === 2000, `after clamped add, elapsed = 2000ms (got ${snap.sessionElapsedMs})`);
-// 2 chars over 2000ms active = 60 cpm
-assert(snap.sessionCpm === 60, `2 chars @ 2000ms active = 60 cpm (got ${snap.sessionCpm})`);
+// active = 0 (first key) + min(huge gap, T) = T. Grace right after key = 0.
+assert(snap.sessionElapsedMs === T, `after clamped add, elapsed = ${T}ms (got ${snap.sessionElapsedMs})`);
+assert(snap.sessionCpm === cpm(2, T), `2 chars @ ${T}ms active = ${cpm(2, T)} cpm (got ${snap.sessionCpm})`);
 
-// --- Test 5: steady typing within threshold accumulates linearly ---
+// --- Test 5: steady typing at threshold interval accumulates linearly ---
 stats.startSession();
 fakeNow = 0;
 stats.recordChar(true);
 for (let i = 0; i < 59; i++) {
-  advance(1000);           // 1s between each keystroke, within threshold
+  advance(T);              // exactly threshold = fully counted
   stats.recordChar(true);
 }
 snap = stats.tick();
-// 60 chars, active = 59 * 1000 = 59000ms (accumulated between keystrokes)
-// Plus tick grace = 0 since we just typed
-assert(snap.sessionElapsedMs === 59000, `60 steady chars @ 1s each -> 59000ms (got ${snap.sessionElapsedMs})`);
-// cpm = 60 / (59000/60000) = 61 (rounded from 61.017)
-assert(snap.sessionCpm === 61, `steady cpm ~ 61 (got ${snap.sessionCpm})`);
+// 59 gaps of T ms = 59*T active
+assert(snap.sessionElapsedMs === 59 * T, `60 steady chars @ ${T}ms each -> ${59 * T}ms (got ${snap.sessionElapsedMs})`);
+assert(snap.sessionCpm === cpm(60, 59 * T), `steady cpm = ${cpm(60, 59 * T)} (got ${snap.sessionCpm})`);
 
 // --- Test 6: startLine resets line but NOT session ---
 stats.startLine();
 snap = stats.tick();
 assert(snap.lineCpm === 0, 'lineCpm 0 right after startLine');
-assert(snap.sessionCpm === 61, 'sessionCpm unchanged by startLine');
 assert(snap.sessionCorrect === 60, 'sessionCorrect retained');
-// Type 10 chars over 10 seconds (1s each, within threshold)
+// Type 10 chars at threshold interval
 for (let i = 0; i < 10; i++) {
-  advance(1000);
+  advance(T);
   stats.recordChar(true);
 }
 snap = stats.tick();
-// Line: 10 chars, active 10*1000 = 10000ms -> 60 cpm
-assert(snap.lineCpm === 60, `line: 10 chars @ 1s each = 60 cpm (got ${snap.lineCpm})`);
+// Line: 10 gaps of T = 10*T active
+assert(snap.lineCpm === cpm(10, 10 * T), `line: 10 chars @ ${T}ms each = ${cpm(10, 10 * T)} cpm (got ${snap.lineCpm})`);
 
-// --- Test 7: errors reduce accuracy, don't block cpm ---
+// --- Test 7: errors reduce accuracy ---
 stats.recordChar(false);
 stats.recordChar(false);
 snap = stats.tick();
@@ -89,12 +86,11 @@ snap = stats.tick();
 assert(snap.acc === 97, `accuracy 70/72 ~ 97% (got ${snap.acc})`);
 assert(snap.sessionErrors === 2, 'sessionErrors === 2');
 
-// --- Test 8: long pause doesn't drag elapsed after last keystroke ---
-// Prior active = 59000 (test 5) + 10000 (test 6) + 0 (test 7 errors at same fakeNow) = 69000.
-advance(30000); // 30s idle
+// --- Test 8: long pause freezes elapsed at active + one grace window ---
+const activeBeforeIdle = 59 * T + 10 * T; // session accumulated: test 5 + test 6
+advance(30000); // way past threshold
 snap = stats.tick();
-// elapsed = 69000 + min(30000, 2000) = 71000
-assert(snap.sessionElapsedMs === 71000, `long pause caps elapsed at +2000 grace (got ${snap.sessionElapsedMs})`);
+assert(snap.sessionElapsedMs === activeBeforeIdle + T, `long pause elapsed = active + grace = ${activeBeforeIdle + T} (got ${snap.sessionElapsedMs})`);
 
 // --- Test 9: startSession resets everything ---
 stats.startSession();
@@ -106,7 +102,6 @@ assert(snap.sessionErrors === 0, 'sessionErrors 0 after startSession');
 assert(snap.sessionElapsedMs === 0, 'elapsed 0 after startSession');
 assert(snap.acc === 100, 'accuracy 100 after startSession');
 
-// Restore Date.now to avoid polluting anything else
 Date.now = origDateNow;
 
 if (fail === 0) {

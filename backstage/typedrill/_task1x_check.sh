@@ -28,7 +28,7 @@ if ! grep -qF 'o.wordsPerLesson' js/sources/custom.js; then pass "generate() ign
 if grep -q 'wplInput' js/sources/common.js; then pass "common.js still has wplInput"; else die "common.js wplInput unexpectedly removed"; fi
 
 # Cache-bust
-if grep -q 'js/app.js?v=2.9' index.html; then pass "app.js bumped to v=2.9"; else die "app.js not v=2.9"; fi
+if grep -q 'js/app.js?v=3.0' index.html; then pass "app.js bumped to v=3.0"; else die "app.js not v=3.0"; fi
 # Backspace repaint signal wired
 if grep -qF "emit('onKeystroke', { isDelete: true })" js/engine.js; then pass "engine emits isDelete on backspace"; else die "engine missing isDelete emit"; fi
 if grep -qF '!ev.isDelete' js/app.js; then pass "app.js skips stats on isDelete"; else die "app.js stats not gated by isDelete"; fi

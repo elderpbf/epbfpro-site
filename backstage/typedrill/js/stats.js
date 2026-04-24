@@ -2,7 +2,7 @@
 // Idle-pause: any gap between keystrokes longer than IDLE_THRESHOLD_MS is excluded
 // from elapsed time, so pausing for a sip of water doesn't drag cpm down.
 
-const IDLE_THRESHOLD_MS = 2000;
+export const IDLE_THRESHOLD_MS = 500;
 
 let sessionActiveMs = 0;
 let lineActiveMs = 0;
