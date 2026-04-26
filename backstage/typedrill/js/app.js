@@ -166,6 +166,24 @@ function renderOptionsBand() {
   optionsBandEl.hidden = bandCollapsed;
 }
 
+const lineIndicatorEl = document.getElementById('h-line');
+const btnPrevEl = document.getElementById('btn-prev');
+const btnResetEl = document.getElementById('btn-reset');
+const btnNextEl = document.getElementById('btn-next');
+
+function syncLineIndicator(snap) {
+  if (lineIndicatorEl) {
+    const total = snap.lineCount > 0 ? snap.lineCount : 1;
+    const current = snap.lineCount > 0 ? snap.lineIdx + 1 : 1;
+    lineIndicatorEl.textContent = current + ' / ' + total;
+  }
+  if (btnPrevEl) btnPrevEl.disabled = snap.lineIdx <= 0;
+}
+
+if (btnPrevEl) btnPrevEl.addEventListener('click', () => { session.prevLine(); inputEl.focus(); });
+if (btnResetEl) btnResetEl.addEventListener('click', () => { session.restartLine(); inputEl.focus(); });
+if (btnNextEl) btnNextEl.addEventListener('click', () => { session.nextLine(); inputEl.focus(); });
+
 let lastSourceId = null;
 session.subscribe((snap) => {
   if (snap.activeId !== lastSourceId) {
@@ -177,6 +195,7 @@ session.subscribe((snap) => {
   inputEl.value = '';
   engine.setTarget(snap.line);
   stats.startLine();
+  syncLineIndicator(snap);
   repaint();
 });
 

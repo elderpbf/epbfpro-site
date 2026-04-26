@@ -410,7 +410,7 @@
   margin: 0;
 }
 
-.td-progress-row {
+.td-drawer-body .td-progress-row {
   display: grid;
   grid-template-columns: 28px 40px 1fr 64px;
   align-items: center;
@@ -418,6 +418,12 @@
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .td-progress-char {
