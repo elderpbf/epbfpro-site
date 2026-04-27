@@ -47,12 +47,24 @@
     import { attachSettings } from '../../engine/settings-integration.js';
     import { attachThumbnail } from '../../engine/thumbnail-integration.js';
 
+    // Phase 3AA retention toggle. Default: 'hidden' so this test deck
+    // exercises the cache. Override via URL: ?retention=none|hidden|lru
+    // and ?retention-max=N (LRU only, default 4).
+    const params = new URLSearchParams(window.location.search);
+    const rp = params.get('retention');
+    const retentionMode = rp === 'none' ? 'none' : (rp === 'lru' ? 'lru' : 'hidden');
+    const rmax = parseInt(params.get('retention-max') || '', 10);
+    const retentionMaxSize = Number.isFinite(rmax) && rmax > 0 ? rmax : 4;
+    console.log('[embed-surface-test] retention:', retentionMode, retentionMode === 'lru' ? `(max ${retentionMaxSize})` : '');
+
     const host = document.getElementById('pn-host');
     const runtime = createRuntime({
       manifest: 'manifest.json',
       host,
       registry,
       loadPanel: defaultLoadPanel,
+      retentionMode,
+      retentionMaxSize,
     });
     window.__panelsRuntime = runtime;
 
