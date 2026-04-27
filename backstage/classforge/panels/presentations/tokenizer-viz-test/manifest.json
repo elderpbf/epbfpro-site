@@ -1,9 +1,0 @@
-{
-  "id": "tokenizer-viz-test",
-  "title": "Tokenizer Viz Test",
-  "theme": "default",
-  "course": "panels-v2-tools",
-  "language": "pt-BR",
-  "description": "Phase 3A bedrock test for tokenizer-viz.",
-  "panels": ["panel-01.html"]
-}

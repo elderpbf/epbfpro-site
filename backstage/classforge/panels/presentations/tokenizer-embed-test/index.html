@@ -2,10 +2,10 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Tokenizer Viz Test</title>
+  <title>Tokenizer Embed Test</title>
   <link rel="stylesheet" href="../../engine/tokens.css">
   <link rel="stylesheet" href="../../layouts/tool-fullbleed/tool-fullbleed.css">
-  <link rel="stylesheet" href="../../tools/tokenizer-viz/tokenizer-viz.css">
+  <link rel="stylesheet" href="../../tools/tokenizer-embed/tokenizer-embed.css">
   <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="/backstage/css/backstage.css?v=1.6">
   <link rel="stylesheet" href="/backstage/css/settings-drawer.css?v=1.0">
@@ -32,7 +32,7 @@
   <script type="module">
     import '../../themes/default/index.js';
     import '../../layouts/tool-fullbleed/index.js';
-    import '../../tools/tokenizer-viz/index.js';
+    import '../../tools/tokenizer-embed/index.js';
 
     import { createRuntime, defaultLoadPanel } from '../../engine/runtime.js';
     import { registry } from '../../engine/registry.js';
@@ -51,10 +51,10 @@
     window.__panelsRuntime = runtime;
 
     const sections = [
-      ...attachSettings(runtime, { slug: 'tokenizer-viz-test' }),
+      ...attachSettings(runtime, { slug: 'tokenizer-embed-test' }),
       ...attachThumbnail(runtime, {
-        slug: 'tokenizer-viz-test',
-        title: 'Tokenizer Viz Test',
+        slug: 'tokenizer-embed-test',
+        title: 'Tokenizer Embed Test',
         engine: 'panels',
         targetSelector: '#pn-host',
       }),
@@ -63,7 +63,7 @@
     attachProbe(runtime);
 
     runtime.start().catch(err => {
-      console.error('[tokenizer-viz-test] failed to start', err);
+      console.error('[tokenizer-embed-test] failed to start', err);
       host.innerHTML = `<div class="pn-diagnostic"><h2>Boot failed</h2><pre>${String(err)}</pre></div>`;
     });
   </script>
