@@ -1,24 +1,76 @@
 /* tools/tokenizer-embed/tokenizer-embed.css
  *
  * Full-bleed iframe wrapping tiktokenizer.vercel.app. Background uses
- * --pn-bg for the brief flash before the iframe paints. Class names
- * are namespaced under tok-embed-.
+ * --pn-bg for the brief flash before the iframe paints. A small floating
+ * zoom control (- / % / +) overlays the bottom-right corner; it scales
+ * the iframe via --tok-embed-zoom (set inline by the tool). The Backstage
+ * topbar is outside this module and is not affected by the scale.
+ * Class names are namespaced under tok-embed-.
  */
 
 .tok-embed-root {
+  position: relative;
   display: flex;
   width: 100%;
   height: 100%;
   min-height: 80vh;
   background: var(--pn-bg);
+  overflow: hidden;
 }
 
 .tok-embed-frame {
   flex: 1;
-  width: 100%;
-  height: 100%;
-  min-height: 80vh;
   border: 0;
   display: block;
   background: var(--pn-bg);
+  transform-origin: 0 0;
+  transform: scale(var(--tok-embed-zoom, 1));
+  width:  calc(100% / var(--tok-embed-zoom, 1));
+  height: calc(100% / var(--tok-embed-zoom, 1));
+  min-height: calc(80vh / var(--tok-embed-zoom, 1));
+}
+
+.tok-embed-zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--pn-surface-2);
+  border: 1px solid var(--pn-border);
+  border-radius: var(--pn-radius-md);
+  box-shadow: var(--pn-shadow-soft);
+  font-family: var(--pn-font-body);
+  overflow: hidden;
+}
+
+.tok-embed-zoom__btn,
+.tok-embed-zoom__label {
+  background: transparent;
+  border: 0;
+  color: var(--pn-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--pn-size-base);
+  line-height: 1;
+  padding: 8px 12px;
+  min-width: 36px;
+}
+
+.tok-embed-zoom__label {
+  font-family: var(--pn-font-mono);
+  font-size: 13px;
+  min-width: 56px;
+  border-left: 1px solid var(--pn-border);
+  border-right: 1px solid var(--pn-border);
+}
+
+.tok-embed-zoom__btn:hover,
+.tok-embed-zoom__label:hover,
+.tok-embed-zoom__btn:focus-visible,
+.tok-embed-zoom__label:focus-visible {
+  background: var(--pn-accent);
+  color: var(--pn-bg);
+  outline: none;
 }
