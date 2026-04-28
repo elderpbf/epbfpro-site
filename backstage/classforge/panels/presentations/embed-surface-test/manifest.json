@@ -5,5 +5,5 @@
   "course": "panels-v2-tools",
   "language": "pt-BR",
   "description": "Phase 3AA: probe Google Slides iframe, HTML5 video, animated GIF, and custom JS animation as panel embed surfaces.",
-  "panels": ["panel-01.html", "panel-02.html", "panel-03.html", "panel-04.html", "panel-05.html", "panel-06.html", "panel-07.html"]
+  "panels": ["panel-01.html", "panel-02.html", "panel-03.html", "panel-04.html", "panel-05.html", "panel-07.html"]
 }
