@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel 07 - Três Pilares da IA Moderna</title>
+  <link rel="stylesheet" href="../../engine/tokens.css">
+  <link rel="stylesheet" href="../../layouts/content/content.css">
+</head>
+<body>
+  <script type="application/json" id="panel-meta">
+    {
+      "id": "panel-07",
+      "layout": "content",
+      "title": "Tres Pilares da IA Moderna",
+      "tools": [],
+      "elements": []
+    }
+  </script>
+  <div data-panel-body>
+    <style>
+      .pillars-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+      @media (max-width: 900px) { .pillars-grid { grid-template-columns: 1fr; } }
+      .pillars-card { background: var(--pn-surface-1); border: 1px solid var(--pn-border); border-radius: var(--pn-radius-md); box-shadow: var(--pn-shadow-soft); overflow: hidden; }
+      .pillars-card__img { width: 100%; height: 140px; object-fit: cover; display: block; }
+      .pillars-card__inner { padding: 16px; }
+      .pillars-card__label { font-weight: 700; font-size: 15px; margin: 0 0 8px; color: var(--pn-heading); }
+      .pillars-card__body { font-size: 14px; margin: 0; line-height: 1.5; }
+    </style>
+    <h1 class="pn-content__title">Três Pilares da IA Moderna</h1>
+    <span class="pn-content__subtitle">Painel convertido de slide existente</span>
+    <div class="pillars-grid">
+      <div class="pillars-card">
+        <img class="pillars-card__img" src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/bigdata.png" alt="Big Data">
+        <div class="pillars-card__inner">
+          <p class="pillars-card__label">Dados Massivos (Big Data)</p>
+          <p class="pillars-card__body">Explosão de dados digitais: processos, decisões, documentos. Volume que humanos não conseguem processar.</p>
+        </div>
+      </div>
+      <div class="pillars-card">
+        <img class="pillars-card__img" src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/gpu.gif" alt="GPU">
+        <div class="pillars-card__inner">
+          <p class="pillars-card__label">Poder Computacional (GPUs)</p>
+          <p class="pillars-card__body">Processadores gráficos adaptados para cálculos massivamente paralelos. Treinamento viável em horas, não anos.</p>
+        </div>
+      </div>
+      <div class="pillars-card">
+        <img class="pillars-card__img" src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/algoritmos.gif" alt="Algoritmos">
+        <div class="pillars-card__inner">
+          <p class="pillars-card__label">Algoritmos Avançados</p>
+          <p class="pillars-card__body">Mecanismo de atenção (2017) permite que modelos aprendam contexto. Base dos Transformers e do GPT.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
