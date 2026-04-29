@@ -58,8 +58,12 @@ function buildToolIcon(tool) {
   if (tool.kind === 'popup' && tool.url) {
     try {
       const u = new URL(tool.url);
+      // Google's S2 favicon service handles favicon discovery server-side
+      // (sites use varied paths: /favicon.ico, /favicon.svg, manifest icons).
+      // claude.ai and gemini.google.com 404 on /favicon.ico; S2 returns the
+      // right asset for any domain.
       const img = document.createElement('img');
-      img.src = u.origin + '/favicon.ico';
+      img.src = `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=64`;
       img.alt = '';
       img.addEventListener('error', () => { span.classList.add('is-empty'); span.innerHTML = ''; });
       span.appendChild(img);
@@ -333,7 +337,8 @@ export function attachSidebar(runtime, options = {}) {
     toolsTitle.className = 'pn-menu-section__title';
     toolsTitle.textContent = 'Ferramentas';
     toolsSection.appendChild(toolsTitle);
-    toolsSection.appendChild(buildToolGrid(tools, launchTool));
+    const toolsGrid = buildToolGrid(tools, launchTool);
+    toolsSection.appendChild(toolsGrid);
     body.appendChild(toolsSection);
 
     const panelsSection = document.createElement('section');
@@ -344,24 +349,32 @@ export function attachSidebar(runtime, options = {}) {
     panelsSection.appendChild(panelsTitle);
     const panelGrid = buildPanelGrid(runtime, jumpToPanel);
     panelsSection.appendChild(panelGrid);
-    const empty = document.createElement('p');
-    empty.className = 'pn-menu-empty';
-    empty.textContent = 'Nenhum painel corresponde';
-    empty.hidden = true;
-    panelsSection.appendChild(empty);
     body.appendChild(panelsSection);
 
-    function applyFilter(query) {
-      const q = query.trim().toLowerCase();
-      const cards = panelGrid.querySelectorAll('.pn-menu-card');
+    const empty = document.createElement('p');
+    empty.className = 'pn-menu-empty';
+    empty.textContent = 'Nenhum item corresponde';
+    empty.hidden = true;
+    body.appendChild(empty);
+
+    function filterGrid(grid, q) {
       let visible = 0;
-      cards.forEach(card => {
+      grid.querySelectorAll('.pn-menu-card').forEach(card => {
         const title = (card.querySelector('.pn-menu-card__title')?.textContent || '').toLowerCase();
         const match = q === '' || title.includes(q);
         card.hidden = !match;
         if (match) visible++;
       });
-      empty.hidden = visible !== 0;
+      return visible;
+    }
+
+    function applyFilter(query) {
+      const q = query.trim().toLowerCase();
+      const toolsVisible = filterGrid(toolsGrid, q);
+      const panelsVisible = filterGrid(panelGrid, q);
+      toolsSection.hidden = toolsVisible === 0 && q !== '';
+      panelsSection.hidden = panelsVisible === 0 && q !== '';
+      empty.hidden = (toolsVisible + panelsVisible) !== 0 || q === '';
     }
 
     searchInput.addEventListener('input', e => applyFilter(e.target.value));
