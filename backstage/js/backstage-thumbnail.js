@@ -60,6 +60,25 @@ window.BackstageThumbnail = (function() {
     return bg;
   }
 
+  // True when the target subtree contains any iframe whose document is opaque
+  // to JS (cross-origin, sandboxed, or not yet loaded). html2canvas cannot
+  // capture pixels inside such iframes and, with useCORS:true, will spend ~15s
+  // per opaque iframe waiting for image timeouts before giving up. Pre-detect
+  // and skip straight to screen-share so the user never sits through that.
+  function _hasOpaqueIframe(target) {
+    try {
+      var iframes = target.getElementsByTagName('iframe');
+      for (var i = 0; i < iframes.length; i++) {
+        try {
+          if (iframes[i].contentDocument === null) return true;
+        } catch (e) {
+          return true; // SecurityError reading contentDocument = cross-origin
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+
   // True when the canvas has essentially zero pixel-color variance, which is
   // what html2canvas produces for cross-origin iframes (Slides, embedded video):
   // it cannot read the iframe's pixels, so the area paints as the fallback bg
@@ -146,34 +165,63 @@ window.BackstageThumbnail = (function() {
       opts.fallbackBg || '#ffffff'
     );
     _probe('Target: ' + target.offsetWidth + 'x' + target.offsetHeight + ', bg=' + bg, 'info');
+    var preIframe = _hasOpaqueIframe(target);
+    if (preIframe) {
+      _probe('Cross-origin iframe detected; skipping html2canvas, going straight to screen share.', 'info');
+    }
     try {
-      var canvas = await html2canvas(target, {
-        scale: 1,
-        useCORS: true,
-        logging: false,
-        backgroundColor: bg,
-      });
-      if (_isBlankCapture(canvas)) {
-        _probe('html2canvas returned a uniform image (likely a cross-origin iframe). Falling back to screen share.', 'warn');
+      var canvas;
+      if (preIframe) {
         if (typeof window.showToast === 'function') {
-          window.showToast('Captura padrão em branco. Solicitando compartilhamento de tela.');
+          window.showToast('Painel com iframe. Solicitando compartilhamento de tela.');
         }
         try {
           canvas = await _captureViaScreen();
           _probe('Screen-share capture: OK (' + canvas.width + 'x' + canvas.height + ')', 'ok');
         } catch (err) {
-          var msg = err && err.message ? err.message : String(err);
-          var name = err && err.name ? err.name : '';
-          _probe('Screen-share failed: ' + msg, 'error');
+          var msg0 = err && err.message ? err.message : String(err);
+          var name0 = err && err.name ? err.name : '';
+          _probe('Screen-share failed: ' + msg0, 'error');
           if (typeof window.showToastError === 'function') {
             window.showToastError(
-              name === 'NotAllowedError'
+              name0 === 'NotAllowedError'
                 ? 'Compartilhamento negado. Clique de novo se quiser tentar.'
                 : 'Captura via tela falhou.'
             );
           }
           _probeEnd();
           return;
+        }
+      } else {
+        canvas = await html2canvas(target, {
+          scale: 1,
+          useCORS: true,
+          logging: false,
+          backgroundColor: bg,
+          imageTimeout: 2500,
+        });
+        if (_isBlankCapture(canvas)) {
+          _probe('html2canvas returned a uniform image. Falling back to screen share.', 'warn');
+          if (typeof window.showToast === 'function') {
+            window.showToast('Captura padrão em branco. Solicitando compartilhamento de tela.');
+          }
+          try {
+            canvas = await _captureViaScreen();
+            _probe('Screen-share capture: OK (' + canvas.width + 'x' + canvas.height + ')', 'ok');
+          } catch (err) {
+            var msg1 = err && err.message ? err.message : String(err);
+            var name1 = err && err.name ? err.name : '';
+            _probe('Screen-share failed: ' + msg1, 'error');
+            if (typeof window.showToastError === 'function') {
+              window.showToastError(
+                name1 === 'NotAllowedError'
+                  ? 'Compartilhamento negado. Clique de novo se quiser tentar.'
+                  : 'Captura via tela falhou.'
+              );
+            }
+            _probeEnd();
+            return;
+          }
         }
       }
       var resized = document.createElement('canvas');
