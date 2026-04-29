@@ -203,7 +203,7 @@ export function createRuntime(options = {}) {
     if (retentionMode !== 'none' && panelCache.has(targetIndex)) {
       suspendActive();
       const cached = panelCache.get(targetIndex);
-      cached.subHost.style.display = '';
+      if (cached.subHost) cached.subHost.style.display = '';
       activeSubHost = cached.subHost;
       activeMeta = cached.meta;
       activeLayout = cached.layout;
@@ -228,9 +228,11 @@ export function createRuntime(options = {}) {
     }
 
     // Each panel gets its own sub-host inside the page-level host so retention
-    // can hide siblings without disturbing them.
+    // can hide siblings without disturbing them. Skipped when no DOM is
+    // available (node test runs) so the runtime can still be exercised against
+    // fake host objects.
     let subHost = null;
-    if (host) {
+    if (host && typeof document !== 'undefined') {
       subHost = document.createElement('div');
       subHost.setAttribute('data-pn-panel-host', '');
       subHost.setAttribute('data-panel-index', String(targetIndex));
