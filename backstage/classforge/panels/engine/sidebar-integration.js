@@ -26,12 +26,49 @@
 
 import { registry } from './registry.js';
 
+// Inline single-color SVG glyphs that follow currentColor for theme switching.
+// Inlined (not fetched) so the sidebar stays self-contained and theme changes
+// reflect instantly without a stylesheet swap.
+const LOCAL_ICONS = {
+  tokenizer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M12 5v14"/></svg>',
+  menu:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+};
+
 const DEFAULT_TOOLS = [
   { id: 'claude',    label: 'Claude',    kind: 'popup', url: 'https://claude.ai' },
   { id: 'chatgpt',   label: 'ChatGPT',   kind: 'popup', url: 'https://chatgpt.com' },
   { id: 'gemini',    label: 'Gemini',    kind: 'popup', url: 'https://gemini.google.com' },
-  { id: 'tokenizer', label: 'Tokenizer', kind: 'popup', url: 'https://tiktokenizer.vercel.app' },
+  { id: 'tokenizer', label: 'Tokenizer', kind: 'popup', url: 'https://tiktokenizer.vercel.app', icon: 'tokenizer' },
 ];
+
+function buildToolIcon(tool) {
+  const span = document.createElement('span');
+  span.className = 'pn-sidebar__tool-icon';
+  if (tool.icon && LOCAL_ICONS[tool.icon]) {
+    span.innerHTML = LOCAL_ICONS[tool.icon];
+    return span;
+  }
+  if (tool.icon && (tool.icon.startsWith('http') || tool.icon.startsWith('/'))) {
+    const img = document.createElement('img');
+    img.src = tool.icon;
+    img.alt = '';
+    span.appendChild(img);
+    return span;
+  }
+  if (tool.kind === 'popup' && tool.url) {
+    try {
+      const u = new URL(tool.url);
+      const img = document.createElement('img');
+      img.src = u.origin + '/favicon.ico';
+      img.alt = '';
+      img.addEventListener('error', () => { span.classList.add('is-empty'); span.innerHTML = ''; });
+      span.appendChild(img);
+      return span;
+    } catch (_) { /* fall through */ }
+  }
+  span.classList.add('is-empty');
+  return span;
+}
 
 function openPopup(url) {
   const w = Math.max(800, Math.floor((window.outerWidth || window.innerWidth) - 80));
@@ -118,9 +155,7 @@ function buildToolList(tools, onLaunch) {
     btn.className = 'pn-sidebar__tool';
     btn.dataset.toolId = tool.id;
 
-    const dot = document.createElement('span');
-    dot.className = 'pn-sidebar__tool-dot';
-    btn.appendChild(dot);
+    btn.appendChild(buildToolIcon(tool));
 
     const lab = document.createElement('span');
     lab.className = 'pn-sidebar__tool-label';
@@ -142,6 +177,10 @@ function buildToolGrid(tools, onLaunch) {
     card.type = 'button';
     card.className = 'pn-menu-card';
     card.dataset.toolId = tool.id;
+
+    const icon = buildToolIcon(tool);
+    icon.classList.add('pn-menu-card__icon');
+    card.appendChild(icon);
 
     const idx = document.createElement('span');
     idx.className = 'pn-menu-card__index';
@@ -233,7 +272,13 @@ export function attachSidebar(runtime, options = {}) {
   const menuBtn = document.createElement('button');
   menuBtn.type = 'button';
   menuBtn.className = 'pn-sidebar__menu-btn';
-  menuBtn.textContent = 'Ir para o menu';
+  const menuBtnIcon = document.createElement('span');
+  menuBtnIcon.className = 'pn-sidebar__menu-btn-icon';
+  menuBtnIcon.innerHTML = LOCAL_ICONS.menu;
+  menuBtn.appendChild(menuBtnIcon);
+  const menuBtnLabel = document.createElement('span');
+  menuBtnLabel.textContent = 'Ir para o menu';
+  menuBtn.appendChild(menuBtnLabel);
   menuBtn.addEventListener('click', () => enterMenu());
   footer.appendChild(menuBtn);
   sidebar.appendChild(footer);
