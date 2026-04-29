@@ -317,6 +317,16 @@ export function attachSidebar(runtime, options = {}) {
   function renderMenu() {
     body.innerHTML = '';
 
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'pn-menu-search';
+    const searchInput = document.createElement('input');
+    searchInput.type = 'search';
+    searchInput.placeholder = 'Buscar painel...';
+    searchInput.className = 'pn-menu-search__input';
+    searchInput.setAttribute('aria-label', 'Buscar painel por titulo');
+    searchWrap.appendChild(searchInput);
+    body.appendChild(searchWrap);
+
     const toolsSection = document.createElement('section');
     toolsSection.className = 'pn-menu-section';
     const toolsTitle = document.createElement('h2');
@@ -332,8 +342,41 @@ export function attachSidebar(runtime, options = {}) {
     panelsTitle.className = 'pn-menu-section__title';
     panelsTitle.textContent = 'Paineis da apresentacao';
     panelsSection.appendChild(panelsTitle);
-    panelsSection.appendChild(buildPanelGrid(runtime, jumpToPanel));
+    const panelGrid = buildPanelGrid(runtime, jumpToPanel);
+    panelsSection.appendChild(panelGrid);
+    const empty = document.createElement('p');
+    empty.className = 'pn-menu-empty';
+    empty.textContent = 'Nenhum painel corresponde';
+    empty.hidden = true;
+    panelsSection.appendChild(empty);
     body.appendChild(panelsSection);
+
+    function applyFilter(query) {
+      const q = query.trim().toLowerCase();
+      const cards = panelGrid.querySelectorAll('.pn-menu-card');
+      let visible = 0;
+      cards.forEach(card => {
+        const title = (card.querySelector('.pn-menu-card__title')?.textContent || '').toLowerCase();
+        const match = q === '' || title.includes(q);
+        card.hidden = !match;
+        if (match) visible++;
+      });
+      empty.hidden = visible !== 0;
+    }
+
+    searchInput.addEventListener('input', e => applyFilter(e.target.value));
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const firstVisible = panelGrid.querySelector('.pn-menu-card:not([hidden])');
+        if (firstVisible) {
+          const idx = parseInt(firstVisible.dataset.panelIndex, 10);
+          if (Number.isInteger(idx)) jumpToPanel(idx);
+        }
+      }
+    });
+
+    requestAnimationFrame(() => searchInput.focus());
   }
 
   let menuOpen = false;
