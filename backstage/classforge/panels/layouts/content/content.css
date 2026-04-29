@@ -1,0 +1,24 @@
+/* layouts/content/content.css
+ * Chrome for the content layout: background, padding, title typography.
+ * Panel-specific visuals use namespaced classes inside the panel body.
+ */
+
+.pn-content {
+  min-height: 100vh;
+  background: var(--pn-bg);
+  color: var(--pn-text);
+  font-family: var(--pn-font-body);
+  padding: clamp(2rem, 4vw, 4rem) clamp(2rem, 5vw, 5rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(1rem, 2vw, 1.75rem);
+}
+
+.pn-content__title {
+  color: var(--pn-heading);
+  margin: 0;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.15;
+}

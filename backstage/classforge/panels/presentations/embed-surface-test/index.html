@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Embed Surface Test</title>
+  <link rel="stylesheet" href="../../engine/tokens.css">
+  <link rel="stylesheet" href="../../layouts/embed-fullbleed/embed-fullbleed.css">
+  <link rel="stylesheet" href="../../layouts/tool-fullbleed/tool-fullbleed.css">
+  <link rel="stylesheet" href="../../tools/slides-embed/slides-embed.css">
+  <link rel="stylesheet" href="../../tools/video-embed/video-embed.css">
+  <link rel="stylesheet" href="../../tools/gif-embed/gif-embed.css">
+  <link rel="stylesheet" href="../../tools/js-anim-embed/js-anim-embed.css">
+  <link rel="stylesheet" href="../../tools/tokenizer-embed/tokenizer-embed.css">
+  <link rel="stylesheet" href="../../tools/classpulse-display-embed/classpulse-display-embed.css">
+  <link rel="stylesheet" href="../../tools/popup-launcher/popup-launcher.css">
+  <link rel="stylesheet" href="../../tools/terminal-embed/terminal-embed.css">
+  <link rel="stylesheet" href="../../layouts/content/content.css">
+  <link rel="stylesheet" href="../../engine/sidebar.css?v=1.0">
+  <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
+  <link rel="stylesheet" href="/backstage/css/backstage.css?v=1.6">
+  <link rel="stylesheet" href="/backstage/css/settings-drawer.css?v=1.0">
+  <link rel="stylesheet" href="/backstage/css/classforge.css?v=1.7">
+  <script src="/backstage/js/debug.js?v=2.5"></script>
+  <script src="/backstage/js/theme-manager.js?v=1.0"></script>
+  <script src="/backstage/js/settings-drawer.js?v=1.1"></script>
+  <script src="/backstage/js/backstage-topbar.js?v=1.2"></script>
+  <script src="/backstage/js/theme-registry.js?v=2.2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1/dist/html2canvas.min.js"></script>
+  <script src="/backstage/js/backstage-thumbnail.js?v=1.4"></script>
+  <style>
+    html, body { margin: 0; padding: 0; min-height: 100vh; background: var(--pn-bg); color: var(--pn-text); font-family: var(--pn-font-body); }
+    #pn-host { min-height: 100vh; }
+    .pn-diagnostic { padding: 32px; }
+    .pn-diagnostic h2 { color: var(--pn-heading); margin: 0 0 12px; }
+    .pn-diagnostic pre { padding: 12px; background: var(--pn-surface-1); border-radius: var(--pn-radius-md); white-space: pre-wrap; overflow: auto; margin: 0 0 16px; }
+    .pn-diagnostic button { padding: 8px 16px; border-radius: var(--pn-radius-md); border: 1px solid var(--pn-border); background: var(--pn-surface-2); color: var(--pn-text); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="pn-host"></div>
+
+  <script type="module">
+    import '../../themes/default/index.js';
+    import '../../layouts/embed-fullbleed/index.js';
+    import '../../layouts/tool-fullbleed/index.js';
+    import '../../tools/slides-embed/index.js';
+    import '../../tools/video-embed/index.js';
+    import '../../tools/gif-embed/index.js';
+    import '../../tools/js-anim-embed/index.js';
+    import '../../tools/tokenizer-embed/index.js';
+    import '../../tools/classpulse-display-embed/index.js';
+    import '../../tools/popup-launcher/index.js';
+    import '../../tools/terminal-embed/index.js';
+    import '../../layouts/content/index.js';
+
+    import { createRuntime, defaultLoadPanel } from '../../engine/runtime.js';
+    import { registry } from '../../engine/registry.js';
+    import { attachTopbar } from '../../engine/topbar-integration.js';
+    import { attachProbe } from '../../engine/probe-integration.js';
+    import { attachSettings } from '../../engine/settings-integration.js';
+    import { attachThumbnail } from '../../engine/thumbnail-integration.js';
+    import { attachSidebar } from '../../engine/sidebar-integration.js';
+
+    // Phase 3AA retention toggle. Default: 'hidden' so this test deck
+    // exercises the cache. Override via URL: ?retention=none|hidden|lru
+    // and ?retention-max=N (LRU only, default 4).
+    const params = new URLSearchParams(window.location.search);
+    const rp = params.get('retention');
+    const retentionMode = rp === 'none' ? 'none' : (rp === 'lru' ? 'lru' : 'hidden');
+    const rmax = parseInt(params.get('retention-max') || '', 10);
+    const retentionMaxSize = Number.isFinite(rmax) && rmax > 0 ? rmax : 4;
+    console.log('[embed-surface-test] retention:', retentionMode, retentionMode === 'lru' ? `(max ${retentionMaxSize})` : '');
+
+    const host = document.getElementById('pn-host');
+    const runtime = createRuntime({
+      manifest: 'manifest.json',
+      host,
+      registry,
+      loadPanel: defaultLoadPanel,
+      retentionMode,
+      retentionMaxSize,
+    });
+    window.__panelsRuntime = runtime;
+
+    const sections = [
+      ...attachSettings(runtime, { slug: 'embed-surface-test' }),
+      ...attachThumbnail(runtime, {
+        slug: 'embed-surface-test',
+        title: 'Embed Surface Test',
+        engine: 'panels',
+        targetSelector: '#pn-host',
+      }),
+    ];
+    attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/', sections });
+    attachProbe(runtime);
+    attachSidebar(runtime);
+
+    runtime.start().catch(err => {
+      console.error('[embed-surface-test] failed to start', err);
+      host.innerHTML = `<div class="pn-diagnostic"><h2>Boot failed</h2><pre>${String(err)}</pre></div>`;
+    });
+  </script>
+</body>
+</html>

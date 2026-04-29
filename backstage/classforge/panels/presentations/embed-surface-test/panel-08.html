@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel 08 - Painel criado do zero por IA</title>
+  <link rel="stylesheet" href="../../engine/tokens.css">
+  <link rel="stylesheet" href="../../layouts/content/content.css">
+</head>
+<body>
+  <script type="application/json" id="panel-meta">
+    {
+      "id": "panel-08",
+      "layout": "content",
+      "title": "Painel criado do zero por IA",
+      "tools": [],
+      "elements": []
+    }
+  </script>
+  <div data-panel-body>
+    <style>
+      .emb-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(1.5rem, 3vw, 2.5rem);
+        align-items: center;
+      }
+      @media (max-width: 900px) {
+        .emb-layout { grid-template-columns: 1fr; }
+      }
+      .emb-prose {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(0.75rem, 1.5vw, 1.25rem);
+      }
+      .emb-prose p {
+        margin: 0;
+        line-height: 1.7;
+        font-size: clamp(1rem, 1.5vw, 1.25rem);
+      }
+      .emb-image {
+        width: 100%;
+        max-height: 60vh;
+        object-fit: contain;
+        border-radius: var(--pn-radius-md);
+        box-shadow: var(--pn-shadow-soft);
+      }
+      .emb-callout {
+        padding: clamp(1rem, 1.6vw, 1.4rem) clamp(1.2rem, 2vw, 1.75rem);
+        background: var(--pn-surface-2);
+        border-left: 4px solid var(--pn-accent);
+        border-radius: var(--pn-radius-md);
+        font-size: clamp(0.95rem, 1.3vw, 1.1rem);
+        line-height: 1.6;
+      }
+    </style>
+    <h1 class="pn-content__title">O que são embeddings?</h1>
+    <div class="emb-layout">
+      <div class="emb-prose">
+        <p>Um embedding é a representação numérica do significado de um texto. Cada palavra ou trecho vira um ponto em um espaço de muitas dimensões.</p>
+        <p>Significados parecidos ficam próximos. "Sentença" fica perto de "decisão" e "acórdão". "Recurso" fica perto de "apelação" e "agravo". É a base da busca semântica em jurisprudência.</p>
+      </div>
+      <img class="emb-image" src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/embeddings.jpg" alt="Espaço vetorial 3D mostrando embeddings de palavras">
+    </div>
+    <p class="emb-callout">Aplicação prática: busca por similaridade encontra documentos relacionados mesmo sem usar as mesmas palavras.</p>
+  </div>
+</body>
+</html>

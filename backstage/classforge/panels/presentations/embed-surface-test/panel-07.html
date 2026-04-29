@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel 07 - Painel convertido de slide existente</title>
+  <link rel="stylesheet" href="../../engine/tokens.css">
+  <link rel="stylesheet" href="../../layouts/content/content.css">
+</head>
+<body>
+  <script type="application/json" id="panel-meta">
+    {
+      "id": "panel-07",
+      "layout": "content",
+      "title": "Painel convertido de slide existente",
+      "tools": [],
+      "elements": []
+    }
+  </script>
+  <div data-panel-body>
+    <style>
+      /* Verbatim port from classforge/panels/panels.css (legacy MVP) plus
+         the IA Capacitacao inline overrides at ia-capacitacao-panels/index.html
+         lines 54-77. Kept inline so this panel does not depend on the legacy
+         stylesheet being loaded by the deck. */
+      .pn-topic-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.2rem;
+      }
+      .pn-topic-card {
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 10px;
+        padding: 1.2rem 1.4rem;
+      }
+      .pn-topic-card strong {
+        display: block;
+        font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+        color: var(--pn-accent);
+        margin-bottom: 0.4rem;
+      }
+      .pn-topic-card p {
+        font-size: clamp(0.8rem, 1.3vw, 0.95rem);
+        opacity: 0.8;
+        line-height: 1.5;
+      }
+      .ia-topic-card {
+        background: linear-gradient(135deg, var(--pn-heading), var(--pn-accent));
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: var(--pn-bg);
+      }
+      .ia-topic-card strong {
+        font-size: 1.1rem;
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--pn-bg);
+      }
+      .ia-topic-card p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        line-height: 1.4;
+      }
+      .ia-topic-card img {
+        width: 100%;
+        max-height: 120px;
+        object-fit: contain;
+        margin-bottom: 0.75rem;
+        border-radius: 6px;
+      }
+      .pillars-title {
+        font-size: clamp(1.4rem, 3vw, 2rem);
+        color: var(--pn-heading);
+        margin: 0 0 1.5rem;
+        text-align: center;
+      }
+    </style>
+    <h2 class="pillars-title">Três Pilares da IA Moderna</h2>
+    <div class="pn-topic-grid">
+      <div class="pn-topic-card ia-topic-card">
+        <img src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/bigdata.png" alt="Big Data wordcloud">
+        <strong>Dados Massivos (Big Data)</strong>
+        <p>Explosão de dados digitais: processos, decisões, documentos. Volume que humanos não conseguem processar.</p>
+      </div>
+      <div class="pn-topic-card ia-topic-card">
+        <img src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/gpu.gif" alt="NVIDIA RTX 4080 SUPER GPU">
+        <strong>Poder Computacional (GPUs)</strong>
+        <p>Processadores gráficos adaptados para cálculos massivamente paralelos. Treinamento viável em horas, não anos.</p>
+      </div>
+      <div class="pn-topic-card ia-topic-card">
+        <img src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/algoritmos.gif" alt="Algoritmos e IA">
+        <strong>Algoritmos Avançados</strong>
+        <p>Mecanismo de atenção (2017) permite que modelos aprendam contexto. Base dos Transformers e do GPT.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

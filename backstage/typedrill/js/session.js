@@ -90,6 +90,20 @@ export function nextLine() {
   }
 }
 
+export function prevLine() {
+  if (lineIdx > 0) {
+    lineIdx--;
+    notify();
+  }
+}
+
+export function restartLine() {
+  notify();
+}
+
+export function getLineIdx() { return lineIdx; }
+export function getLineCount() { return lines.length; }
+
 export function subscribe(fn) {
   subscribers.add(fn);
   return () => subscribers.delete(fn);

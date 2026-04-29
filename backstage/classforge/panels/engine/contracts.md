@@ -348,6 +348,19 @@ arrival of new event types in a future engine version does not break them.
 
 ---
 
+## Integration Adapters
+
+Thin ES modules that wire the Panels v2 runtime to Backstage shell globals. Each adapter is independently optional; presentations import only what they need. All adapters that produce settings-drawer sections return a `sections[]` array that the caller concatenates and forwards through `attachTopbar({ sections })` -- the topbar module forwards the array to `SettingsDrawer.init`.
+
+- `engine/topbar-integration.js` -- `attachTopbar(runtime, { title, backLink, sections })` -- binds `window.Topbar` in presentation mode, subscribes to `panel-entered` for subtitle updates. No sections produced.
+- `engine/settings-integration.js` -- `attachSettings(runtime, { slug })` -- returns `[themeSection]`. Depends on `window.ThemeRegistry`. Writes the 7 Panels v2 content tokens directly on `document.documentElement.style` and persists per-slug under `bs_pn_theme_<slug>`.
+- `engine/probe-integration.js` -- `attachProbe(runtime)` -- forwards `panel-entered`, `panel-exited`, and `navigation` events to `window.bsProbe()` when debug is enabled. No sections produced.
+- `engine/thumbnail-integration.js` -- `attachThumbnail(runtime, { slug, title, engine, targetSelector?, fallbackBg? })` -- returns `[thumbnailSection]`. Depends on `window.BackstageThumbnail` from `/backstage/js/backstage-thumbnail.js`. The section renders an "Atualizar Thumbnail" button that captures `targetSelector` (default `#pn-host`) via html2canvas, uploads the resized JPEG to R2, and registers the presentation in D1 under the provided `engine` string. Required options: `slug`, `title`, `engine`. Missing options or missing `BackstageThumbnail` global returns `[]` with a `console.warn`.
+
+Adapters do NOT reserve or emit new runtime events. Lifecycle events (`panel-entered`, `panel-exited`, `navigation`, `theme-changed`) remain the responsibility of `runtime.js`; adapters only observe them.
+
+---
+
 ## Versioning Note
 
 The engine evolves additively within a major version. Safe additive changes include: new
@@ -360,4 +373,4 @@ existing payload shape, changing the mount/unmount/onEvent signatures, or changi
 registry validation rules. A major version bump is accompanied by a migration note in
 `ClassForge/manifest/ARCHITECTURE.md` and a corresponding revision of this document.
 
-Document revision: Phase 1 bedrock (2026-04-21); Phase 2G schema lock (2026-04-21); Phase 2C theme-changed graduation (2026-04-23).
+Document revision: Phase 1 bedrock (2026-04-21); Phase 2G schema lock (2026-04-21); Phase 2C theme-changed graduation (2026-04-23); Phase 2H thumbnail adapter (2026-04-24).

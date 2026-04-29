@@ -4,6 +4,7 @@
 import * as symbols from './sources/symbols.js';
 import * as common from './sources/common.js';
 import * as custom from './sources/custom.js';
+import * as weakness from './sources/weakness.js';
 
 const registry = new Map();
 
@@ -42,4 +43,12 @@ register({
   generate: custom.generate,
   renderOptions: custom.renderOptions,
   defaults: { text: '', stripPunct: false, lowercase: false, shuffleWords: false }
+});
+
+register({
+  id: 'weakness',
+  label: 'Fraqueza',
+  generate: weakness.generate,
+  renderOptions: weakness.renderOptions,
+  defaults: { mode: 'drill', wordsPerLesson: 12 }
 });

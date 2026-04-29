@@ -29,7 +29,8 @@ const DEFAULT_STATE_JSON = JSON.stringify({
     sources: {
       symbols: {},
       common: {},
-      custom: {}
+      custom: {},
+      weakness: {}
     },
     activeSource: 'common'
   }

@@ -1,0 +1,13 @@
+.gif-embed-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--pn-bg);
+  overflow: hidden;
+}
+
+.gif-embed-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

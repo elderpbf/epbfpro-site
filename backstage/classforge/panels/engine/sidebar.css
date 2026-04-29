@@ -1,0 +1,299 @@
+/* engine/sidebar.css
+ *
+ * Left-edge auto-hide sidebar for Panels v2: tool launcher list plus a
+ * "Ir para o menu" button that expands to a full-viewport panel grid.
+ *
+ * Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
+ * so it tracks the topbar's light/dark switch. Body content (cards) layers
+ * --pn-* tokens for accent. Class namespace: pn-sidebar-* and pn-menu-*.
+ */
+
+/* ----- reveal zone (always present, invisible) ----- */
+.pn-sidebar-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 100vh;
+  z-index: 940;
+  background: transparent;
+}
+
+/* ----- collapsed sidebar ----- */
+.pn-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--surface, #1a1f26);
+  color: var(--text-primary, #e5e7eb);
+  border-right: 1px solid var(--border, #0f766e);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+  transform: translateX(-100%);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), width 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.pn-sidebar.is-open {
+  transform: translateX(0);
+}
+
+.pn-sidebar.is-menu {
+  width: 100vw;
+}
+
+.pn-sidebar__header {
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pn-sidebar__title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #d1d5db);
+  margin: 0;
+}
+
+.pn-sidebar__close {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary, #e5e7eb);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.pn-sidebar.is-menu .pn-sidebar__close { display: inline-flex; }
+.pn-sidebar__close:hover {
+  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
+}
+
+.pn-sidebar__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pn-sidebar.is-menu .pn-sidebar__body {
+  padding: 24px 48px 48px;
+  gap: 32px;
+}
+
+/* ----- tool list (collapsed mode) ----- */
+.pn-sidebar__section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #d1d5db);
+  padding: 8px 20px 4px;
+  margin: 0;
+  opacity: 0.75;
+}
+
+.pn-sidebar__tools {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pn-sidebar__tool {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.pn-sidebar__tool:hover {
+  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
+}
+
+.pn-sidebar__tool-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary, #14b8a6);
+  flex-shrink: 0;
+}
+
+.pn-sidebar__tool-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ----- footer button ----- */
+.pn-sidebar__footer {
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  padding: 12px 16px;
+}
+
+.pn-sidebar.is-menu .pn-sidebar__footer { display: none; }
+
+.pn-sidebar__menu-btn {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  background: var(--primary, #14b8a6);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pn-sidebar__menu-btn:hover {
+  background: var(--primary-dark, #0d9488);
+}
+
+/* ----- menu (full-page) ----- */
+.pn-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pn-menu-section__title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary, #e5e7eb);
+}
+
+.pn-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.pn-menu-card {
+  background: var(--background, #0f1419);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.pn-menu-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary, #14b8a6);
+}
+
+.pn-menu-card__index {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #9ca3af);
+}
+
+.pn-menu-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary, #e5e7eb);
+}
+
+.pn-menu-card__hint {
+  font-size: 12px;
+  color: var(--text-secondary, #9ca3af);
+  margin: 0;
+}
+
+.pn-menu-card.is-active {
+  border-color: var(--primary, #14b8a6);
+  box-shadow: 0 0 0 2px var(--primary-light, #5eead4);
+}
+
+/* ----- modal overlay (for tools that mount inline rather than popup) ----- */
+.pn-sidebar-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.pn-sidebar-modal__frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 1400px;
+  max-height: 900px;
+  background: var(--surface, #1a1f26);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.pn-sidebar-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+}
+
+.pn-sidebar-modal__close {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary, #e5e7eb);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.pn-sidebar-modal__body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}

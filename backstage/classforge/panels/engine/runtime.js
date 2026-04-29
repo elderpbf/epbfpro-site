@@ -67,6 +67,20 @@ export function createRuntime(options = {}) {
   let activeMeta = null;
   let activeThemeId = null;
 
+  // Retention: 'none' (default) tears down each panel on exit. 'hidden' keeps
+  // every visited panel alive in DOM, just hidden, so iframe state (e.g., a
+  // Slides deck pinned at slide N) survives navigation. 'lru' is the same but
+  // evicts the oldest panel once the cache exceeds retentionMaxSize.
+  // Tools/layouts here use module-level singletons, so retention modes never
+  // call .unmount() on cached panels -- eviction simply removes the sub-host
+  // from the DOM and lets GC reclaim the detached subtree.
+  const retentionMode = (options.retentionMode === 'hidden' || options.retentionMode === 'lru')
+    ? options.retentionMode : 'none';
+  const retentionMaxSize = (typeof options.retentionMaxSize === 'number' && options.retentionMaxSize > 0)
+    ? Math.floor(options.retentionMaxSize) : 4;
+  const panelCache = new Map();
+  let activeSubHost = null;
+
   function reportError(err) {
     if (typeof onError === 'function') onError(err);
     else if (typeof console !== 'undefined') console.error('[panels-runtime]', err);
@@ -123,10 +137,43 @@ export function createRuntime(options = {}) {
       try { activeLayout.unmount(); } catch (e) { reportError(e); }
       activeLayout = null;
     }
+    activeSubHost = null;
     activeMeta = null;
   }
 
-  function mountModuleInto(declaration, kind, slots) {
+  // Retention path: hide the active panel without unmounting. Used when we
+  // need the iframe (or any other stateful DOM) to keep its state for a
+  // future cache hit.
+  function suspendActive() {
+    if (!activeMeta) return;
+    emit('panel-exited', { panelId: activeMeta.id });
+    if (activeSubHost) activeSubHost.style.display = 'none';
+    activeMeta = null;
+    activeLayout = null;
+    activeModules = [];
+    activeSubHost = null;
+  }
+
+  function evictCacheEntry(entry) {
+    if (entry && entry.subHost && entry.subHost.parentNode) {
+      entry.subHost.parentNode.removeChild(entry.subHost);
+    }
+  }
+
+  function rememberInCache(index, entry) {
+    if (panelCache.has(index)) panelCache.delete(index);
+    panelCache.set(index, entry);
+    if (retentionMode === 'lru') {
+      while (panelCache.size > retentionMaxSize) {
+        const oldestKey = panelCache.keys().next().value;
+        const oldestEntry = panelCache.get(oldestKey);
+        panelCache.delete(oldestKey);
+        evictCacheEntry(oldestEntry);
+      }
+    }
+  }
+
+  function mountModuleInto(declaration, kind, slots, targetArray) {
     const lookup = kind === 'tool' ? registry.getTool : registry.getElement;
     const module = lookup.call(registry, declaration.id);
     if (!module) {
@@ -141,7 +188,7 @@ export function createRuntime(options = {}) {
     }
     try {
       module.mount(slotEl, declaration.config ?? {});
-      activeModules.push({ module, container: slotEl, kind });
+      (targetArray || activeModules).push({ module, container: slotEl, kind });
     } catch (e) {
       reportError(e);
     }
@@ -151,8 +198,46 @@ export function createRuntime(options = {}) {
     if (!manifestData || targetIndex < 0 || targetIndex >= manifestData.panels.length) return false;
     const previousIndex = currentIndex;
 
-    tearDownActive();
-    if (host) host.innerHTML = '';
+    // Retention cache hit: panel was visited before, its sub-host is still in
+    // the DOM (just hidden). Reveal it instead of remounting.
+    if (retentionMode !== 'none' && panelCache.has(targetIndex)) {
+      suspendActive();
+      const cached = panelCache.get(targetIndex);
+      cached.subHost.style.display = '';
+      activeSubHost = cached.subHost;
+      activeMeta = cached.meta;
+      activeLayout = cached.layout;
+      activeModules = cached.modules;
+      currentIndex = targetIndex;
+      if (retentionMode === 'lru') {
+        // Promote to most-recent so it doesn't get evicted next.
+        panelCache.delete(targetIndex);
+        panelCache.set(targetIndex, cached);
+      }
+      emit('panel-entered', { panelId: cached.meta.id, layout: cached.meta.layout, restored: true });
+      return true;
+    }
+
+    // Cache miss: load + mount. retention=none tears down fully; retention
+    // modes only suspend (so the previous panel stays alive in the cache).
+    if (retentionMode === 'none') {
+      tearDownActive();
+      if (host) host.innerHTML = '';
+    } else {
+      suspendActive();
+    }
+
+    // Each panel gets its own sub-host inside the page-level host so retention
+    // can hide siblings without disturbing them.
+    let subHost = null;
+    if (host) {
+      subHost = document.createElement('div');
+      subHost.setAttribute('data-pn-panel-host', '');
+      subHost.setAttribute('data-panel-index', String(targetIndex));
+      subHost.style.minHeight = '100vh';
+      host.appendChild(subHost);
+    }
+    const mountTarget = subHost || host;
 
     const entry = manifestData.panels[targetIndex];
     const panelUrl = resolvePanelUrl(entry);
@@ -161,12 +246,14 @@ export function createRuntime(options = {}) {
     try {
       panel = await loadPanel(panelUrl);
     } catch (err) {
+      if (subHost && subHost.parentNode) subHost.remove();
       renderDiagnostic(panelUrl, err, previousIndex);
       currentIndex = -1;
       return false;
     }
 
     if (!panel || !panel.meta) {
+      if (subHost && subHost.parentNode) subHost.remove();
       renderDiagnostic(panelUrl, new Error('Panel missing meta'), previousIndex);
       currentIndex = -1;
       return false;
@@ -174,35 +261,48 @@ export function createRuntime(options = {}) {
 
     const layout = registry.getLayout(panel.meta.layout);
     if (!layout) {
+      if (subHost && subHost.parentNode) subHost.remove();
       renderDiagnostic(panelUrl, new Error(`Unknown layout: ${panel.meta.layout}`), previousIndex);
       currentIndex = -1;
       return false;
     }
 
-    activeMeta = panel.meta;
-    activeLayout = layout;
-
     let layoutHandle;
     try {
-      layoutHandle = layout.mount(host, { meta: panel.meta, body: panel.body });
+      layoutHandle = layout.mount(mountTarget, { meta: panel.meta, body: panel.body });
     } catch (e) {
+      if (subHost && subHost.parentNode) subHost.remove();
       reportError(e);
-      activeMeta = null;
-      activeLayout = null;
       renderDiagnostic(panelUrl, e, previousIndex);
       currentIndex = -1;
       return false;
     }
     const slots = (layoutHandle && layoutHandle.slots) ? layoutHandle.slots : {};
 
+    const builtModules = [];
     for (const decl of panel.meta.tools ?? []) {
-      mountModuleInto(decl, 'tool', slots);
+      mountModuleInto(decl, 'tool', slots, builtModules);
     }
     for (const decl of panel.meta.elements ?? []) {
-      mountModuleInto(decl, 'element', slots);
+      mountModuleInto(decl, 'element', slots, builtModules);
     }
 
+    activeMeta = panel.meta;
+    activeLayout = layout;
+    activeModules = builtModules;
+    activeSubHost = subHost;
     currentIndex = targetIndex;
+
+    if (retentionMode !== 'none') {
+      rememberInCache(targetIndex, {
+        subHost,
+        layout,
+        layoutHandle,
+        modules: builtModules,
+        meta: panel.meta,
+      });
+    }
+
     emit('panel-entered', { panelId: panel.meta.id, layout: panel.meta.layout });
     return true;
   }
@@ -301,7 +401,14 @@ export function createRuntime(options = {}) {
     detachKeyboard = () => document.removeEventListener('keydown', handler);
   }
 
-  function dispose() { detachKeyboard(); }
+  function dispose() {
+    detachKeyboard();
+    if (retentionMode !== 'none') {
+      for (const cachedEntry of panelCache.values()) evictCacheEntry(cachedEntry);
+      panelCache.clear();
+    }
+    tearDownActive();
+  }
 
   return {
     start, next, prev, goto, dispose,
@@ -312,6 +419,8 @@ export function createRuntime(options = {}) {
     get manifest() { return manifestData; },
     get currentMeta() { return activeMeta; },
     get currentTheme() { return activeThemeId; },
+    get retentionMode() { return retentionMode; },
+    get cachedPanelIndices() { return Array.from(panelCache.keys()); },
   };
 }
 
