@@ -101,4 +101,21 @@ function captureWarnings(fn) {
   console.log('PASS  test 5: unknown per-panel key triggers exactly one warning');
 }
 
+// Test 6: sidebar top-level key is accepted without warning (Phase 4A schema extension)
+{
+  const warnings = captureWarnings(() => {
+    validateManifest({
+      id: 'demo',
+      panels: ['panel-01.html'],
+      sidebar: {
+        tools: [
+          { id: 'claude', label: 'Claude', kind: 'popup', url: 'https://claude.ai' },
+        ],
+      },
+    });
+  });
+  assert.equal(warnings.length, 0, 'manifest with sidebar.tools emits zero warnings');
+  console.log('PASS  test 6: sidebar.tools key accepted without warning');
+}
+
 console.log('\nAll manifest tests passed.');

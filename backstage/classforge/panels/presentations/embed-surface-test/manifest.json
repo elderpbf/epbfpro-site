@@ -5,5 +5,18 @@
   "course": "panels-v2-tools",
   "language": "pt-BR",
   "description": "Phase 3AA: probe Google Slides iframe, HTML5 video, animated GIF, and custom JS animation as panel embed surfaces.",
-  "panels": ["panel-01.html", "panel-02.html", "panel-03.html", "panel-04.html", "panel-05.html", "panel-06.html", "panel-07.html", "panel-08.html", "panel-09.html", "panel-10.html", "panel-11.html", "panel-12.html"]
+  "panels": [
+    { "src": "panel-01.html", "title": "Slides Embed (full deck)" },
+    { "src": "panel-02.html", "title": "Video Embed" },
+    { "src": "panel-03.html", "title": "GIF Embed" },
+    { "src": "panel-04.html", "title": "JS Animation Embed" },
+    { "src": "panel-05.html", "title": "Tokenizer Embed (tiktokenizer.vercel.app)" },
+    { "src": "panel-06.html", "title": "Single-slide deck (copied + linked from source)" },
+    { "src": "panel-07.html", "title": "Painel convertido de slide existente" },
+    { "src": "panel-08.html", "title": "Painel criado do zero por IA" },
+    { "src": "panel-09.html", "title": "Slide direto via published URL + slide=id.g" },
+    { "src": "panel-10.html", "title": "Display ao vivo da sessao ClassPulse" },
+    { "src": "panel-11.html", "title": "Ferramenta Claude AI (popup)" },
+    { "src": "panel-12.html", "title": "Terminal embarcado (xterm.js, demo scripted)" }
+  ]
 }

@@ -210,7 +210,10 @@ function buildPanelGrid(runtime, onJump) {
 }
 
 export function attachSidebar(runtime, options = {}) {
-  const tools = Array.isArray(options.tools) && options.tools.length > 0 ? options.tools : DEFAULT_TOOLS;
+  const manifestTools = runtime?.manifest?.sidebar?.tools;
+  const tools = Array.isArray(options.tools) && options.tools.length > 0
+    ? options.tools
+    : (Array.isArray(manifestTools) && manifestTools.length > 0 ? manifestTools : DEFAULT_TOOLS);
 
   const zone = document.createElement('div');
   zone.className = 'pn-sidebar-zone';
