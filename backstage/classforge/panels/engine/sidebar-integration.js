@@ -31,21 +31,6 @@ const DEFAULT_TOOLS = [
   { id: 'chatgpt',   label: 'ChatGPT',   kind: 'popup', url: 'https://chatgpt.com' },
   { id: 'gemini',    label: 'Gemini',    kind: 'popup', url: 'https://gemini.google.com' },
   { id: 'tokenizer', label: 'Tokenizer', kind: 'popup', url: 'https://tiktokenizer.vercel.app' },
-  { id: 'terminal',  label: 'Terminal',  kind: 'modal', tool: 'terminal-embed', label2: 'Terminal (xterm.js)', config: {
-    mode: 'scripted',
-    scenes: [
-      ['o', 'classforge-terminal v0.1'],
-      ['p', '$ '],
-      ['t', 'echo "ola da classforge"'],
-      ['o', 'ola da classforge'],
-      ['p', '$ '],
-      ['w', 400],
-      ['t', 'ls -la'],
-      ['o', 'total 0'],
-      ['o', 'drwxr-xr-x  panels demo'],
-      ['p', '$ '],
-    ],
-  } },
 ];
 
 function openPopup(url) {
