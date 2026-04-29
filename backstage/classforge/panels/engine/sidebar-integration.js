@@ -1,14 +1,18 @@
 // engine/sidebar-integration.js
 //
 // Left-edge auto-hide sidebar for Panels v2. Two modes:
-//   collapsed -- 280px wide. Lists tool launchers (Claude, ChatGPT, Gemini,
-//                Tokenizer, Terminal) plus a "Ir para o menu" button.
+//   collapsed -- 280px wide. Header carries the deck title + an editable
+//                "N / total" panel counter. Body splits into collapsible
+//                groups (Ferramentas open by default, Paineis collapsed)
+//                whose state persists in localStorage per manifest.id.
 //   menu      -- expands to 100vw. Renders a full-page panel grid plus the
 //                tools section (separated). Click a panel card to jump to it.
+//                Closed via the topbar "Fechar menu" button (registered
+//                lazily through the topbar handle), not an in-body X.
 //
 // Reveal: hovering the 12px reveal zone on the left edge slides the
 // sidebar in. Pointer-leaving the sidebar (with a 600ms grace) slides it
-// back out. The full-page menu stays open until the close button is hit.
+// back out. The full-page menu stays open until explicitly dismissed.
 //
 // Tool kinds:
 //   'popup'  -- opens config.url in a sized popup window over the deck
@@ -21,8 +25,8 @@
 // theme of its own.
 //
 // Usage:
-//   import { attachSidebar } from '../../engine/sidebar-integration.js';
-//   attachSidebar(runtime, { tools: [...] });   // tools optional; defaults below
+//   const topbar = attachTopbar(runtime, { ... });
+//   attachSidebar(runtime, { topbar });        // tools optional; defaults below
 
 import { registry } from './registry.js';
 
@@ -173,6 +177,36 @@ function buildToolList(tools, onLaunch) {
   return ul;
 }
 
+function buildPanelList(runtime, onJump) {
+  const ul = document.createElement('ul');
+  ul.className = 'pn-sidebar__panel-list';
+  const manifest = runtime.manifest;
+  if (!manifest || !Array.isArray(manifest.panels)) return ul;
+  manifest.panels.forEach((entry, i) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pn-sidebar__panel';
+    btn.dataset.panelIndex = String(i);
+    if (i === runtime.currentIndex) btn.classList.add('is-active');
+
+    const idx = document.createElement('span');
+    idx.className = 'pn-sidebar__panel-index';
+    idx.textContent = String(i + 1);
+    btn.appendChild(idx);
+
+    const lab = document.createElement('span');
+    lab.className = 'pn-sidebar__panel-label';
+    lab.textContent = (entry && entry.title) || (entry && entry.id) || (typeof entry === 'string' ? entry : 'Panel ' + (i + 1));
+    btn.appendChild(lab);
+
+    btn.addEventListener('click', () => onJump(i));
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+  return ul;
+}
+
 function buildToolGrid(tools, onLaunch) {
   const grid = document.createElement('div');
   grid.className = 'pn-menu-grid';
@@ -242,6 +276,11 @@ export function attachSidebar(runtime, options = {}) {
   const tools = Array.isArray(options.tools) && options.tools.length > 0
     ? options.tools
     : (Array.isArray(manifestTools) && manifestTools.length > 0 ? manifestTools : DEFAULT_TOOLS);
+  const topbar = options.topbar || null;
+
+  const slug = (runtime.manifest && runtime.manifest.id) || 'default';
+  const TOOLS_OPEN_KEY = 'bs_pn_sidebar_' + slug + '_tools_open';
+  const PANELS_OPEN_KEY = 'bs_pn_sidebar_' + slug + '_panels_open';
 
   const zone = document.createElement('div');
   zone.className = 'pn-sidebar-zone';
@@ -250,27 +289,63 @@ export function attachSidebar(runtime, options = {}) {
   sidebar.className = 'pn-sidebar';
   sidebar.setAttribute('aria-label', 'Barra lateral de ferramentas');
 
+  // ----- header: deck title + editable counter -----
   const header = document.createElement('div');
   header.className = 'pn-sidebar__header';
+
   const headTitle = document.createElement('h2');
   headTitle.className = 'pn-sidebar__title';
-  headTitle.textContent = 'Ferramentas';
+  headTitle.textContent = (runtime.manifest && runtime.manifest.title) || 'ClassForge';
   header.appendChild(headTitle);
 
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.className = 'pn-sidebar__close';
-  close.setAttribute('aria-label', 'Fechar menu');
-  close.textContent = 'X';
-  close.addEventListener('click', () => exitMenu());
-  header.appendChild(close);
+  const counter = document.createElement('div');
+  counter.className = 'pn-sidebar__counter';
+  const counterInput = document.createElement('input');
+  counterInput.type = 'number';
+  counterInput.className = 'pn-sidebar__counter-input';
+  counterInput.min = '1';
+  counterInput.setAttribute('aria-label', 'Numero do painel atual');
+  counter.appendChild(counterInput);
+  const counterTotal = document.createElement('span');
+  counterTotal.className = 'pn-sidebar__counter-total';
+  counter.appendChild(counterTotal);
+  header.appendChild(counter);
 
   sidebar.appendChild(header);
 
+  function commitCounter() {
+    const v = parseInt(counterInput.value, 10);
+    if (Number.isInteger(v) && v >= 1 && v <= runtime.panelCount && v - 1 !== runtime.currentIndex) {
+      runtime.goto(v - 1);
+    } else {
+      // Snap back to current if invalid
+      counterInput.value = String(runtime.currentIndex + 1);
+    }
+  }
+  counterInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitCounter();
+      counterInput.blur();
+    } else if (e.key === 'Escape') {
+      counterInput.value = String(runtime.currentIndex + 1);
+      counterInput.blur();
+    }
+  });
+  counterInput.addEventListener('blur', commitCounter);
+
+  function refreshCounter() {
+    counterInput.max = String(runtime.panelCount);
+    counterInput.value = String(runtime.currentIndex + 1);
+    counterTotal.textContent = ' / ' + runtime.panelCount;
+  }
+
+  // ----- body -----
   const body = document.createElement('div');
   body.className = 'pn-sidebar__body';
   sidebar.appendChild(body);
 
+  // ----- footer -----
   const footer = document.createElement('div');
   footer.className = 'pn-sidebar__footer';
   const menuBtn = document.createElement('button');
@@ -309,13 +384,39 @@ export function attachSidebar(runtime, options = {}) {
     hide();
   }
 
+  function makeGroup({ title, openKey, defaultOpen, children }) {
+    const det = document.createElement('details');
+    det.className = 'pn-sidebar__group';
+    const stored = localStorage.getItem(openKey);
+    const isOpen = stored === null ? defaultOpen : stored === 'true';
+    if (isOpen) det.open = true;
+
+    const sum = document.createElement('summary');
+    sum.className = 'pn-sidebar__group-summary';
+    sum.textContent = title;
+    det.appendChild(sum);
+    det.appendChild(children);
+
+    det.addEventListener('toggle', () => {
+      try { localStorage.setItem(openKey, det.open ? 'true' : 'false'); } catch (_) {}
+    });
+    return det;
+  }
+
   function renderCollapsed() {
     body.innerHTML = '';
-    const label = document.createElement('p');
-    label.className = 'pn-sidebar__section-label';
-    label.textContent = 'Ferramentas';
-    body.appendChild(label);
-    body.appendChild(buildToolList(tools, launchTool));
+    body.appendChild(makeGroup({
+      title: 'Ferramentas',
+      openKey: TOOLS_OPEN_KEY,
+      defaultOpen: true,
+      children: buildToolList(tools, launchTool),
+    }));
+    body.appendChild(makeGroup({
+      title: 'Paineis',
+      openKey: PANELS_OPEN_KEY,
+      defaultOpen: false,
+      children: buildPanelList(runtime, jumpToPanel),
+    }));
   }
 
   function renderMenu() {
@@ -412,6 +513,7 @@ export function attachSidebar(runtime, options = {}) {
   function enterMenu() {
     menuOpen = true;
     sidebar.classList.add('is-menu', 'is-open');
+    if (topbar && typeof topbar.setMenuMode === 'function') topbar.setMenuMode(true);
     renderMenu();
   }
 
@@ -419,7 +521,15 @@ export function attachSidebar(runtime, options = {}) {
     if (!menuOpen) return;
     menuOpen = false;
     sidebar.classList.remove('is-menu');
+    if (topbar && typeof topbar.setMenuMode === 'function') topbar.setMenuMode(false);
     renderCollapsed();
+  }
+
+  // Wire the topbar's "Fechar menu" button once. This needs the runtime sidebar
+  // to be fully constructed (so exitMenu/hide are in scope), so it cannot be
+  // done inside attachTopbar.
+  if (topbar && typeof topbar.registerCloseMenuButton === 'function') {
+    topbar.registerCloseMenuButton(() => { exitMenu(); hide(); });
   }
 
   zone.addEventListener('mouseenter', show);
@@ -438,10 +548,24 @@ export function attachSidebar(runtime, options = {}) {
   });
 
   runtime.eventBus.addEventListener('panel-entered', () => {
-    if (menuOpen) renderMenu();
+    refreshCounter();
+    if (menuOpen) {
+      // Re-render the full menu so the active card highlight updates.
+      renderMenu();
+    } else {
+      // Surgical update for the collapsed-mode panel list.
+      const list = body.querySelector('.pn-sidebar__panel-list');
+      if (list) {
+        list.querySelectorAll('.pn-sidebar__panel').forEach(btn => {
+          const idx = parseInt(btn.dataset.panelIndex, 10);
+          btn.classList.toggle('is-active', idx === runtime.currentIndex);
+        });
+      }
+    }
   });
 
   renderCollapsed();
+  refreshCounter();
 
   return {
     show, hide, enterMenu, exitMenu,
