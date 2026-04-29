@@ -154,23 +154,24 @@ window.BackstageThumbnail = (function() {
         backgroundColor: bg,
       });
       if (_isBlankCapture(canvas)) {
-        _probe('html2canvas returned a uniform image (likely a cross-origin iframe).', 'warn');
-        var ok = window.confirm(
-          'A captura padrão ficou em branco (provavelmente um iframe). ' +
-          'Capturar via compartilhamento de tela? ' +
-          'O navegador pedirá permissão; selecione esta aba e clique em Compartilhar.'
-        );
-        if (!ok) {
-          _probe('User declined screen-share fallback. Aborting.', 'info');
-          _probeEnd();
-          return;
+        _probe('html2canvas returned a uniform image (likely a cross-origin iframe). Falling back to screen share.', 'warn');
+        if (typeof window.showToast === 'function') {
+          window.showToast('Captura padrão em branco. Solicitando compartilhamento de tela.');
         }
         try {
           canvas = await _captureViaScreen();
           _probe('Screen-share capture: OK (' + canvas.width + 'x' + canvas.height + ')', 'ok');
         } catch (err) {
-          _probe('Screen-share failed: ' + (err && err.message ? err.message : String(err)), 'error');
-          if (typeof window.showToastError === 'function') window.showToastError('Captura via tela falhou.');
+          var msg = err && err.message ? err.message : String(err);
+          var name = err && err.name ? err.name : '';
+          _probe('Screen-share failed: ' + msg, 'error');
+          if (typeof window.showToastError === 'function') {
+            window.showToastError(
+              name === 'NotAllowedError'
+                ? 'Compartilhamento negado. Clique de novo se quiser tentar.'
+                : 'Captura via tela falhou.'
+            );
+          }
           _probeEnd();
           return;
         }

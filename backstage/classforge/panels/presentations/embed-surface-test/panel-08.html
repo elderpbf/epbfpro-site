@@ -21,7 +21,7 @@
       .emb-layout {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 32px;
+        gap: clamp(1.5rem, 3vw, 2.5rem);
         align-items: center;
       }
       @media (max-width: 900px) {
@@ -30,26 +30,26 @@
       .emb-prose {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: clamp(0.75rem, 1.5vw, 1.25rem);
       }
       .emb-prose p {
         margin: 0;
         line-height: 1.7;
-        font-size: 16px;
+        font-size: clamp(1rem, 1.5vw, 1.25rem);
       }
       .emb-image {
         width: 100%;
-        max-height: 380px;
+        max-height: 60vh;
         object-fit: contain;
         border-radius: var(--pn-radius-md);
         box-shadow: var(--pn-shadow-soft);
       }
       .emb-callout {
-        padding: 16px;
+        padding: clamp(1rem, 1.6vw, 1.4rem) clamp(1.2rem, 2vw, 1.75rem);
         background: var(--pn-surface-2);
-        border-left: 3px solid var(--pn-accent);
+        border-left: 4px solid var(--pn-accent);
         border-radius: var(--pn-radius-md);
-        font-size: 14px;
+        font-size: clamp(0.95rem, 1.3vw, 1.1rem);
         line-height: 1.6;
       }
     </style>
