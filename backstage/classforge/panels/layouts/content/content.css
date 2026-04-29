@@ -20,14 +20,3 @@
   font-size: 32px;
   font-weight: 700;
 }
-
-.pn-content__subtitle {
-  display: inline-block;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: var(--pn-radius-sm, 6px);
-  background: var(--pn-surface-2);
-  color: var(--pn-text);
-  border: 1px solid var(--pn-border);
-  align-self: flex-start;
-}

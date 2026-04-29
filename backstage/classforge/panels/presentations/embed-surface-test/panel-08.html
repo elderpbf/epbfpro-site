@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Panel 08 - O que são embeddings?</title>
+  <title>Panel 08 - Painel criado do zero por IA</title>
   <link rel="stylesheet" href="../../engine/tokens.css">
   <link rel="stylesheet" href="../../layouts/content/content.css">
 </head>
@@ -11,55 +11,57 @@
     {
       "id": "panel-08",
       "layout": "content",
-      "title": "O que sao embeddings?",
+      "title": "Painel criado do zero por IA",
       "tools": [],
       "elements": []
     }
   </script>
   <div data-panel-body>
     <style>
-      .emb-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
-      @media (max-width: 900px) { .emb-layout { grid-template-columns: 1fr; } }
-      .emb-prose { display: flex; flex-direction: column; gap: 16px; }
-      .emb-prose p { margin: 0; line-height: 1.7; font-size: 16px; }
-      .emb-svg { width: 100%; height: auto; }
-      .emb-axis { stroke: var(--pn-border); stroke-width: 1; opacity: 0.3; }
-      .emb-cluster { stroke: var(--pn-accent); stroke-dasharray: 4 4; fill: none; opacity: 0.4; }
-      .emb-dot { fill: var(--pn-accent); }
-      .emb-label { fill: var(--pn-text); font-size: 13px; font-family: inherit; }
-      .emb-callout { padding: 16px; background: var(--pn-surface-2); border-left: 3px solid var(--pn-accent); border-radius: var(--pn-radius-md); font-size: 14px; line-height: 1.6; grid-column: 1 / -1; }
+      .emb-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        align-items: center;
+      }
+      @media (max-width: 900px) {
+        .emb-layout { grid-template-columns: 1fr; }
+      }
+      .emb-prose {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .emb-prose p {
+        margin: 0;
+        line-height: 1.7;
+        font-size: 16px;
+      }
+      .emb-image {
+        width: 100%;
+        max-height: 380px;
+        object-fit: contain;
+        border-radius: var(--pn-radius-md);
+        box-shadow: var(--pn-shadow-soft);
+      }
+      .emb-callout {
+        padding: 16px;
+        background: var(--pn-surface-2);
+        border-left: 3px solid var(--pn-accent);
+        border-radius: var(--pn-radius-md);
+        font-size: 14px;
+        line-height: 1.6;
+      }
     </style>
     <h1 class="pn-content__title">O que são embeddings?</h1>
-    <span class="pn-content__subtitle">Painel criado do zero por IA</span>
     <div class="emb-layout">
       <div class="emb-prose">
         <p>Um embedding é a representação numérica do significado de um texto. Cada palavra ou trecho vira um ponto em um espaço de muitas dimensões.</p>
         <p>Significados parecidos ficam próximos. "Sentença" fica perto de "decisão" e "acórdão". "Recurso" fica perto de "apelação" e "agravo". É a base da busca semântica em jurisprudência.</p>
       </div>
-      <svg class="emb-svg" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
-        <line class="emb-axis" x1="0" y1="400" x2="600" y2="0"/>
-        <line class="emb-axis" x1="0" y1="0" x2="600" y2="400"/>
-        <circle class="emb-cluster" cx="180" cy="140" r="80"/>
-        <circle class="emb-dot" cx="165" cy="118" r="6"/>
-        <text class="emb-label" x="177" y="122">sentença</text>
-        <circle class="emb-dot" cx="200" cy="150" r="6"/>
-        <text class="emb-label" x="212" y="154">decisão</text>
-        <circle class="emb-dot" cx="155" cy="168" r="6"/>
-        <text class="emb-label" x="167" y="172">acórdão</text>
-        <circle class="emb-dot" cx="198" cy="122" r="6"/>
-        <text class="emb-label" x="210" y="126">despacho</text>
-        <circle class="emb-cluster" cx="440" cy="300" r="80"/>
-        <circle class="emb-dot" cx="425" cy="278" r="6"/>
-        <text class="emb-label" x="437" y="282">recurso</text>
-        <circle class="emb-dot" cx="458" cy="310" r="6"/>
-        <text class="emb-label" x="470" y="314">apelação</text>
-        <circle class="emb-dot" cx="415" cy="320" r="6"/>
-        <text class="emb-label" x="427" y="324">agravo</text>
-        <circle class="emb-dot" cx="452" cy="286" r="6"/>
-        <text class="emb-label" x="464" y="290">embargos</text>
-      </svg>
-      <p class="emb-callout">Aplicação prática: busca por similaridade encontra documentos relacionados mesmo sem usar as mesmas palavras.</p>
+      <img class="emb-image" src="https://backstage-api.pensoia.workers.dev/r2/classforge/ia-capacitacao/embeddings.jpg" alt="Espaço vetorial 3D mostrando embeddings de palavras">
     </div>
+    <p class="emb-callout">Aplicação prática: busca por similaridade encontra documentos relacionados mesmo sem usar as mesmas palavras.</p>
   </div>
 </body>
 </html>

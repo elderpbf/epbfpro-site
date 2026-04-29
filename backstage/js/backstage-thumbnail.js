@@ -60,6 +60,64 @@ window.BackstageThumbnail = (function() {
     return bg;
   }
 
+  // True when the canvas has essentially zero pixel-color variance, which is
+  // what html2canvas produces for cross-origin iframes (Slides, embedded video):
+  // it cannot read the iframe's pixels, so the area paints as the fallback bg
+  // and the entire central region comes back uniform. Real panels (even mostly
+  // monochrome ones with text or an image) have far more variance than the
+  // threshold below.
+  function _isBlankCapture(canvas) {
+    try {
+      var ctx = canvas.getContext('2d');
+      var w = canvas.width, h = canvas.height;
+      var sx = Math.floor(w * 0.2), sy = Math.floor(h * 0.2);
+      var sw = Math.floor(w * 0.6), sh = Math.floor(h * 0.6);
+      if (sw < 4 || sh < 4) return false;
+      var data = ctx.getImageData(sx, sy, sw, sh).data;
+      var r0 = data[0], g0 = data[1], b0 = data[2];
+      var maxDiff = 0;
+      for (var i = 0; i < data.length; i += 400) {
+        var d = Math.abs(data[i] - r0) + Math.abs(data[i+1] - g0) + Math.abs(data[i+2] - b0);
+        if (d > maxDiff) maxDiff = d;
+      }
+      return maxDiff < 12;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  // Browser-native screen capture fallback. Used when html2canvas yields a
+  // blank canvas (cross-origin iframe). The user is prompted to share the
+  // current tab; we grab a single frame and stop the stream.
+  async function _captureViaScreen() {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
+      throw new Error('getDisplayMedia not supported in this browser');
+    }
+    var stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { displaySurface: 'browser' },
+      preferCurrentTab: true,
+      audio: false,
+    });
+    try {
+      var video = document.createElement('video');
+      video.srcObject = stream;
+      video.muted = true;
+      video.playsInline = true;
+      await new Promise(function(resolve, reject) {
+        video.onloadedmetadata = function() { video.play().then(resolve, reject); };
+        video.onerror = reject;
+      });
+      await new Promise(requestAnimationFrame);
+      var canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1920;
+      canvas.height = video.videoHeight || 1080;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    } finally {
+      stream.getTracks().forEach(function(t) { t.stop(); });
+    }
+  }
+
   async function capture(opts) {
     opts = opts || {};
     for (var i = 0; i < REQUIRED.length; i++) {
@@ -95,6 +153,28 @@ window.BackstageThumbnail = (function() {
         logging: false,
         backgroundColor: bg,
       });
+      if (_isBlankCapture(canvas)) {
+        _probe('html2canvas returned a uniform image (likely a cross-origin iframe).', 'warn');
+        var ok = window.confirm(
+          'A captura padrão ficou em branco (provavelmente um iframe). ' +
+          'Capturar via compartilhamento de tela? ' +
+          'O navegador pedirá permissão; selecione esta aba e clique em Compartilhar.'
+        );
+        if (!ok) {
+          _probe('User declined screen-share fallback. Aborting.', 'info');
+          _probeEnd();
+          return;
+        }
+        try {
+          canvas = await _captureViaScreen();
+          _probe('Screen-share capture: OK (' + canvas.width + 'x' + canvas.height + ')', 'ok');
+        } catch (err) {
+          _probe('Screen-share failed: ' + (err && err.message ? err.message : String(err)), 'error');
+          if (typeof window.showToastError === 'function') window.showToastError('Captura via tela falhou.');
+          _probeEnd();
+          return;
+        }
+      }
       var resized = document.createElement('canvas');
       resized.width = 800;
       resized.height = 450;
