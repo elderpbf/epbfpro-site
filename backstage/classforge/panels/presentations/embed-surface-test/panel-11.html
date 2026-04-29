@@ -2,22 +2,25 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Panel 11 - Claude AI (ferramenta)</title>
+  <title>Panel 11 - Ferramenta Claude AI (popup launcher)</title>
   <link rel="stylesheet" href="../../engine/tokens.css">
   <link rel="stylesheet" href="../../layouts/embed-fullbleed/embed-fullbleed.css">
-  <link rel="stylesheet" href="../../tools/slides-embed/slides-embed.css">
+  <link rel="stylesheet" href="../../tools/popup-launcher/popup-launcher.css">
 </head>
 <body>
   <script type="application/json" id="panel-meta">
     {
       "id": "panel-11",
       "layout": "embed-fullbleed",
-      "title": "Ferramenta Claude AI (claude.ai/new)",
+      "title": "Ferramenta Claude AI (popup)",
       "tools": [{
-        "id": "slides-embed",
+        "id": "popup-launcher",
         "slot": "tool",
         "config": {
-          "url": "https://claude.ai/new"
+          "url": "https://claude.ai/new",
+          "label": "Claude AI",
+          "description": "Assistente da Anthropic. Útil para gerar exemplos, explicar conceitos e revisar texto ao vivo durante a aula. Abre em janela sobre o painel; feche para voltar.",
+          "buttonText": "Abrir Claude em janela sobre o painel"
         }
       }],
       "elements": []
