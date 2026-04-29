@@ -1,12 +1,34 @@
 /* engine/sidebar.css
  *
- * Left-edge auto-hide sidebar for Panels v2: tool launcher list plus a
- * "Ir para o menu" button that expands to a full-viewport panel grid.
+ * Left-edge auto-hide sidebar for Panels v2: collapsible groups (Ferramentas
+ * + Painéis) plus a bottom bar carrying the deck title, an editable N/total
+ * panel counter, and a hamburger glyph that toggles the full-viewport menu.
+ *
+ * The sidebar coordinates with the topbar via two classes it adds to the
+ * global .bs-topbar element:
+ *   .pn-sidebar-suppressed -- sidebar is open in collapsed mode; suppress
+ *      the topbar's top-edge auto-reveal so it does not cover sidebar/menu
+ *      content. (Topbar is still reachable via the gallery / direct URL.)
+ *   .pn-menu-pinned -- menu mode is active; force topbar visible so the
+ *      "Fechar menu" action is always reachable.
  *
  * Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
  * so it tracks the topbar's light/dark switch. Body content (cards) layers
  * --pn-* tokens for accent. Class namespace: pn-sidebar-* and pn-menu-*.
  */
+
+/* ----- topbar coordination overrides ----- */
+.bs-topbar.pn-sidebar-suppressed.bs-topbar--visible {
+  transform: translateY(-100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.bs-topbar.pn-menu-pinned {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
 
 /* ----- reveal zone (always present, invisible) ----- */
 .pn-sidebar-zone {
@@ -47,68 +69,6 @@
   width: 100vw;
 }
 
-.pn-sidebar__header {
-  padding: 18px 20px 12px;
-  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.pn-sidebar__title {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-secondary, #d1d5db);
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pn-sidebar__counter {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0;
-  font-size: 13px;
-  color: var(--text-secondary, #9ca3af);
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-
-.pn-sidebar__counter-input {
-  width: 2.5em;
-  padding: 2px 4px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--text-primary, #e5e7eb);
-  font: inherit;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  -moz-appearance: textfield;
-}
-
-.pn-sidebar__counter-input::-webkit-outer-spin-button,
-.pn-sidebar__counter-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.pn-sidebar__counter-input:focus {
-  outline: none;
-  border-color: var(--primary, #14b8a6);
-  background: var(--background, rgba(0, 0, 0, 0.2));
-}
-
-.pn-sidebar__counter-total {
-  margin-left: 2px;
-}
-
 .pn-sidebar__body {
   flex: 1;
   overflow-y: auto;
@@ -119,7 +79,9 @@
 }
 
 .pn-sidebar.is-menu .pn-sidebar__body {
-  padding: 24px 48px 48px;
+  /* Top padding clears the pinned topbar (~64px tall) so menu cards near
+     the top edge are not covered by it. */
+  padding: 84px 48px 24px;
   gap: 32px;
 }
 
@@ -279,46 +241,99 @@
   white-space: nowrap;
 }
 
-.pn-sidebar__menu-btn-icon {
-  width: 16px;
-  height: 16px;
+/* ----- bottom bar (replaces footer; lives at bottom of sidebar in both modes) ----- */
+.pn-sidebar__bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  background: var(--surface, #1a1f26);
+}
+
+.pn-sidebar__menu-toggle {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary, #e5e7eb);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: currentColor;
+  flex-shrink: 0;
+  padding: 0;
 }
 
-.pn-sidebar__menu-btn-icon svg {
-  width: 100%;
-  height: 100%;
+.pn-sidebar__menu-toggle:hover {
+  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
+  border-color: var(--primary, #14b8a6);
 }
 
-/* ----- footer button ----- */
-.pn-sidebar__footer {
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  padding: 12px 16px;
+.pn-sidebar__menu-toggle svg {
+  width: 18px;
+  height: 18px;
 }
 
-.pn-sidebar.is-menu .pn-sidebar__footer { display: none; }
-
-.pn-sidebar__menu-btn {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-  background: var(--primary, #14b8a6);
-  color: #ffffff;
-  font: inherit;
+.pn-sidebar__bottom-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  font-family: inherit;
 }
 
-.pn-sidebar__menu-btn:hover {
-  background: var(--primary-dark, #0d9488);
+.pn-sidebar__bottom-title:hover {
+  color: var(--primary, #14b8a6);
+}
+
+.pn-sidebar__counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.pn-sidebar__counter-input {
+  width: 2.5em;
+  padding: 2px 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.pn-sidebar__counter-input::-webkit-outer-spin-button,
+.pn-sidebar__counter-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pn-sidebar__counter-input:focus {
+  outline: none;
+  border-color: var(--primary, #14b8a6);
+  background: var(--background, rgba(0, 0, 0, 0.2));
+}
+
+.pn-sidebar__counter-total {
+  margin-left: 2px;
 }
 
 /* ----- menu (full-page) ----- */

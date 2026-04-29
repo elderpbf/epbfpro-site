@@ -48,16 +48,19 @@ export function attachTopbar(runtime, options = {}) {
   }
 
   function setMenuMode(active) {
+    const tb = (typeof document !== 'undefined') ? document.querySelector('.bs-topbar') : null;
     if (active) {
       priorSubtitleText = computeSubtitle();
       window.Topbar.setSubtitle('Menu');
       if (closeMenuBtn) closeMenuBtn.style.display = '';
+      if (tb) tb.classList.add('pn-menu-pinned');
     } else {
       if (closeMenuBtn) closeMenuBtn.style.display = 'none';
       if (priorSubtitleText !== null) {
         window.Topbar.setSubtitle(priorSubtitleText);
         priorSubtitleText = null;
       }
+      if (tb) tb.classList.remove('pn-menu-pinned');
     }
   }
 

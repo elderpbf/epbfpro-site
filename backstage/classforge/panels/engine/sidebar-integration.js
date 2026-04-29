@@ -287,16 +287,32 @@ export function attachSidebar(runtime, options = {}) {
 
   const sidebar = document.createElement('aside');
   sidebar.className = 'pn-sidebar';
-  sidebar.setAttribute('aria-label', 'Barra lateral de ferramentas');
+  sidebar.setAttribute('aria-label', 'Barra lateral de ferramentas e painéis');
 
-  // ----- header: deck title + editable counter -----
-  const header = document.createElement('div');
-  header.className = 'pn-sidebar__header';
+  // ----- body (groups in collapsed mode, full menu in menu mode) -----
+  const body = document.createElement('div');
+  body.className = 'pn-sidebar__body';
+  sidebar.appendChild(body);
 
-  const headTitle = document.createElement('h2');
-  headTitle.className = 'pn-sidebar__title';
-  headTitle.textContent = (runtime.manifest && runtime.manifest.title) || 'ClassForge';
-  header.appendChild(headTitle);
+  // ----- bottom bar (replaces the old footer button + sidebar header) -----
+  // The bottom bar lives at the bottom of the sidebar so it never collides
+  // with the topbar's top-edge reveal zone. It carries the deck title, an
+  // editable N/total counter, and a menu-toggle button (hamburger glyph).
+  const bottomBar = document.createElement('div');
+  bottomBar.className = 'pn-sidebar__bottom-bar';
+
+  const menuToggle = document.createElement('button');
+  menuToggle.type = 'button';
+  menuToggle.className = 'pn-sidebar__menu-toggle';
+  menuToggle.setAttribute('aria-label', 'Abrir menu de painéis');
+  menuToggle.innerHTML = LOCAL_ICONS.menu;
+  bottomBar.appendChild(menuToggle);
+
+  const bottomTitle = document.createElement('button');
+  bottomTitle.type = 'button';
+  bottomTitle.className = 'pn-sidebar__bottom-title';
+  bottomTitle.textContent = (runtime.manifest && runtime.manifest.title) || 'ClassForge';
+  bottomBar.appendChild(bottomTitle);
 
   const counter = document.createElement('div');
   counter.className = 'pn-sidebar__counter';
@@ -304,21 +320,23 @@ export function attachSidebar(runtime, options = {}) {
   counterInput.type = 'number';
   counterInput.className = 'pn-sidebar__counter-input';
   counterInput.min = '1';
-  counterInput.setAttribute('aria-label', 'Numero do painel atual');
+  counterInput.setAttribute('aria-label', 'Número do painel atual');
   counter.appendChild(counterInput);
   const counterTotal = document.createElement('span');
   counterTotal.className = 'pn-sidebar__counter-total';
   counter.appendChild(counterTotal);
-  header.appendChild(counter);
+  bottomBar.appendChild(counter);
 
-  sidebar.appendChild(header);
+  sidebar.appendChild(bottomBar);
+
+  document.body.appendChild(zone);
+  document.body.appendChild(sidebar);
 
   function commitCounter() {
     const v = parseInt(counterInput.value, 10);
     if (Number.isInteger(v) && v >= 1 && v <= runtime.panelCount && v - 1 !== runtime.currentIndex) {
       runtime.goto(v - 1);
     } else {
-      // Snap back to current if invalid
       counterInput.value = String(runtime.currentIndex + 1);
     }
   }
@@ -340,30 +358,11 @@ export function attachSidebar(runtime, options = {}) {
     counterTotal.textContent = ' / ' + runtime.panelCount;
   }
 
-  // ----- body -----
-  const body = document.createElement('div');
-  body.className = 'pn-sidebar__body';
-  sidebar.appendChild(body);
-
-  // ----- footer -----
-  const footer = document.createElement('div');
-  footer.className = 'pn-sidebar__footer';
-  const menuBtn = document.createElement('button');
-  menuBtn.type = 'button';
-  menuBtn.className = 'pn-sidebar__menu-btn';
-  const menuBtnIcon = document.createElement('span');
-  menuBtnIcon.className = 'pn-sidebar__menu-btn-icon';
-  menuBtnIcon.innerHTML = LOCAL_ICONS.menu;
-  menuBtn.appendChild(menuBtnIcon);
-  const menuBtnLabel = document.createElement('span');
-  menuBtnLabel.textContent = 'Ir para o menu';
-  menuBtn.appendChild(menuBtnLabel);
-  menuBtn.addEventListener('click', () => enterMenu());
-  footer.appendChild(menuBtn);
-  sidebar.appendChild(footer);
-
-  document.body.appendChild(zone);
-  document.body.appendChild(sidebar);
+  function toggleMenu() {
+    if (menuOpen) { exitMenu(); hide(); } else { enterMenu(); }
+  }
+  menuToggle.addEventListener('click', toggleMenu);
+  bottomTitle.addEventListener('click', toggleMenu);
 
   function launchTool(tool) {
     if (tool.kind === 'modal' && tool.tool) {
@@ -412,7 +411,7 @@ export function attachSidebar(runtime, options = {}) {
       children: buildToolList(tools, launchTool),
     }));
     body.appendChild(makeGroup({
-      title: 'Paineis',
+      title: 'Painéis',
       openKey: PANELS_OPEN_KEY,
       defaultOpen: false,
       children: buildPanelList(runtime, jumpToPanel),
@@ -428,7 +427,7 @@ export function attachSidebar(runtime, options = {}) {
     searchInput.type = 'search';
     searchInput.placeholder = 'Buscar painel...';
     searchInput.className = 'pn-menu-search__input';
-    searchInput.setAttribute('aria-label', 'Buscar painel por titulo');
+    searchInput.setAttribute('aria-label', 'Buscar painel por título');
     searchWrap.appendChild(searchInput);
     body.appendChild(searchWrap);
 
@@ -446,7 +445,7 @@ export function attachSidebar(runtime, options = {}) {
     panelsSection.className = 'pn-menu-section';
     const panelsTitle = document.createElement('h2');
     panelsTitle.className = 'pn-menu-section__title';
-    panelsTitle.textContent = 'Paineis da apresentacao';
+    panelsTitle.textContent = 'Painéis da apresentação';
     panelsSection.appendChild(panelsTitle);
     const panelGrid = buildPanelGrid(runtime, jumpToPanel);
     panelsSection.appendChild(panelGrid);
@@ -496,9 +495,21 @@ export function attachSidebar(runtime, options = {}) {
   let menuOpen = false;
   let hideTimer = null;
 
+  function getTopbarEl() {
+    return document.querySelector('.bs-topbar');
+  }
+
   function show() {
     if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
     sidebar.classList.add('is-open');
+    // While sidebar is open in collapsed mode, suppress the topbar's
+    // top-edge auto-reveal so it does not cover sidebar/menu content.
+    // Menu mode pins the topbar visible (handled by topbar.setMenuMode),
+    // so we do not suppress in that case.
+    if (!menuOpen) {
+      const tb = getTopbarEl();
+      if (tb) tb.classList.add('pn-sidebar-suppressed');
+    }
   }
 
   function hide() {
@@ -506,6 +517,8 @@ export function attachSidebar(runtime, options = {}) {
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
       sidebar.classList.remove('is-open');
+      const tb = getTopbarEl();
+      if (tb) tb.classList.remove('pn-sidebar-suppressed');
       hideTimer = null;
     }, 600);
   }
@@ -513,6 +526,10 @@ export function attachSidebar(runtime, options = {}) {
   function enterMenu() {
     menuOpen = true;
     sidebar.classList.add('is-menu', 'is-open');
+    // Pinning the topbar (via setMenuMode) takes precedence over the
+    // sidebar suppression class, so we drop the suppression here.
+    const tb = getTopbarEl();
+    if (tb) tb.classList.remove('pn-sidebar-suppressed');
     if (topbar && typeof topbar.setMenuMode === 'function') topbar.setMenuMode(true);
     renderMenu();
   }
@@ -522,6 +539,11 @@ export function attachSidebar(runtime, options = {}) {
     menuOpen = false;
     sidebar.classList.remove('is-menu');
     if (topbar && typeof topbar.setMenuMode === 'function') topbar.setMenuMode(false);
+    // If the sidebar is still open after the menu closes, re-apply suppression.
+    if (sidebar.classList.contains('is-open')) {
+      const tb = getTopbarEl();
+      if (tb) tb.classList.add('pn-sidebar-suppressed');
+    }
     renderCollapsed();
   }
 
