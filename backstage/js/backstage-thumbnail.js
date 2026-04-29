@@ -105,9 +105,33 @@ window.BackstageThumbnail = (function() {
     }
   }
 
+  // Backstage chrome that should be invisible in the captured frame -- the
+  // user clicked Atualizar Thumbnail from the settings drawer, so it is open
+  // when the share starts and would otherwise be baked into the screenshot.
+  var SCREEN_SHARE_HIDE = ['.bs-topbar', '#settings-drawer', '#settings-overlay'];
+
+  function _hideElements(selectors) {
+    var hidden = [];
+    for (var i = 0; i < selectors.length; i++) {
+      var els = document.querySelectorAll(selectors[i]);
+      for (var j = 0; j < els.length; j++) {
+        var el = els[j];
+        hidden.push({ el: el, prev: el.style.visibility });
+        el.style.visibility = 'hidden';
+      }
+    }
+    return hidden;
+  }
+
+  function _restoreElements(hidden) {
+    for (var i = 0; i < hidden.length; i++) hidden[i].el.style.visibility = hidden[i].prev;
+  }
+
   // Browser-native screen capture fallback. Used when html2canvas yields a
-  // blank canvas (cross-origin iframe). The user is prompted to share the
-  // current tab; we grab a single frame and stop the stream.
+  // blank canvas (cross-origin iframe) or when we pre-detect an opaque iframe.
+  // The user is prompted to share the current tab; we grab a single frame
+  // and stop the stream. Backstage chrome is hidden for the frame so the
+  // captured image is just the panel, not the open drawer + topbar.
   async function _captureViaScreen() {
     if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
       throw new Error('getDisplayMedia not supported in this browser');
@@ -127,11 +151,19 @@ window.BackstageThumbnail = (function() {
         video.onerror = reject;
       });
       await new Promise(requestAnimationFrame);
-      var canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 1920;
-      canvas.height = video.videoHeight || 1080;
-      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-      return canvas;
+      var hidden = _hideElements(SCREEN_SHARE_HIDE);
+      try {
+        // Give the compositor a few frames so the hidden state is reflected
+        // in the live tab-capture stream before we grab a frame.
+        await new Promise(function(r) { setTimeout(r, 120); });
+        var canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 1920;
+        canvas.height = video.videoHeight || 1080;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        return canvas;
+      } finally {
+        _restoreElements(hidden);
+      }
     } finally {
       stream.getTracks().forEach(function(t) { t.stop(); });
     }
