@@ -58,13 +58,16 @@
     import { attachTopbar } from '../../engine/topbar-integration.js';
     import { attachProbe } from '../../engine/probe-integration.js';
     import { attachSettings } from '../../engine/settings-integration.js';
-    import { attachThumbnail } from '../../engine/thumbnail-integration.js';
+    import { attachThumbnail, attachThumbnailAuto } from '../../engine/thumbnail-integration.js';
     import { attachSidebar } from '../../engine/sidebar-integration.js';
+
+    // URL param handling
+    const params = new URLSearchParams(window.location.search);
+    const presenterMode = params.get('presenter') === 'mirror';
 
     // Phase 3AA retention toggle. Default: 'hidden' so this test deck
     // exercises the cache. Override via URL: ?retention=none|hidden|lru
     // and ?retention-max=N (LRU only, default 4).
-    const params = new URLSearchParams(window.location.search);
     const rp = params.get('retention');
     const retentionMode = rp === 'none' ? 'none' : (rp === 'lru' ? 'lru' : 'hidden');
     const rmax = parseInt(params.get('retention-max') || '', 10);
@@ -82,20 +85,36 @@
     });
     window.__panelsRuntime = runtime;
 
-    const sections = [
-      ...attachSettings(runtime, { slug: 'embed-surface-test' }),
-      ...attachThumbnail(runtime, {
-        slug: 'embed-surface-test',
-        title: 'Embed Surface Test',
-        engine: 'panels',
-        targetSelector: '#pn-host',
-      }),
-    ];
-    const topbar = attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/', sections });
-    attachProbe(runtime);
-    attachSidebar(runtime, { topbar });
+    if (!presenterMode) {
+      const sections = [
+        ...attachSettings(runtime, { slug: 'embed-surface-test' }),
+        ...attachThumbnail(runtime, {
+          slug: 'embed-surface-test',
+          title: 'Embed Surface Test',
+          engine: 'panels',
+          targetSelector: '#pn-host',
+        }),
+      ];
+      const topbar = attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/', sections });
+      attachProbe(runtime);
+      attachSidebar(runtime, { topbar });
+      attachThumbnailAuto(runtime, { slug: 'embed-surface-test' });
+    }
 
-    runtime.start().catch(err => {
+    runtime.start().then(() => {
+      // BroadcastChannel: broadcast panel changes to any open presenter view.
+      // Placed after start() so runtime.manifest is populated.
+      const bcSlug = (runtime.manifest && runtime.manifest.id) || 'embed-surface-test';
+      const bc = new BroadcastChannel('panels-presenter-' + bcSlug);
+      runtime.on('panel-entered', ({ meta, index }) => bc.postMessage({ type: 'panel', index, meta }));
+
+      // Jump to requested panel index if provided via URL (?panel=N).
+      const panelParam = params.get('panel');
+      if (panelParam !== null) {
+        const idx = parseInt(panelParam, 10);
+        if (Number.isInteger(idx) && idx >= 0) runtime.goto(idx);
+      }
+    }).catch(err => {
       console.error('[embed-surface-test] failed to start', err);
       host.innerHTML = `<div class="pn-diagnostic"><h2>Boot failed</h2><pre>${String(err)}</pre></div>`;
     });

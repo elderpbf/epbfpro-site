@@ -15,10 +15,12 @@
 // back out. The full-page menu stays open until explicitly dismissed.
 //
 // Tool kinds:
-//   'popup'  -- opens config.url in a sized popup window over the deck
-//               (uses the same mechanics as tools/popup-launcher).
-//   'modal'  -- mounts a registered tool (config.tool) inside a modal
-//               overlay; close button unmounts it.
+//   'popup'  -- opens config.url in a popup window that mirrors the deck's
+//               exact screen footprint (window.innerWidth x window.innerHeight
+//               at screenLeft, screenTop).
+//   'panel'  -- mounts a registered tool (config.tool) as a transient overlay
+//               panel via runtime.pushTransientPanel(). A "Voltar" button and
+//               Esc key dismiss the tool and restore the underlying panel.
 //
 // Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
 // so it tracks the topbar's data-theme switch. The sidebar does not own a
@@ -30,20 +32,22 @@
 
 import { registry } from './registry.js';
 import { findHostedSession } from './classpulse-discovery.js';
+import { getThumbnailUrl } from './thumbnail-integration.js';
 
 // Inline single-color SVG glyphs that follow currentColor for theme switching.
 // Inlined (not fetched) so the sidebar stays self-contained and theme changes
 // reflect instantly without a stylesheet swap.
 const LOCAL_ICONS = {
-  tokenizer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M12 5v14"/></svg>',
-  menu:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  tokenizer:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M12 5v14"/></svg>',
+  menu:           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  'presenter-view': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="16" cy="8" r="2"/><path d="M2 12h8"/></svg>',
 };
 
 const DEFAULT_TOOLS = [
   { id: 'claude',    label: 'Claude',    kind: 'popup', url: 'https://claude.ai' },
   { id: 'chatgpt',   label: 'ChatGPT',   kind: 'popup', url: 'https://chatgpt.com' },
   { id: 'gemini',    label: 'Gemini',    kind: 'popup', url: 'https://gemini.google.com' },
-  { id: 'tokenizer', label: 'Tokenizer', kind: 'popup', url: 'https://tiktokenizer.vercel.app', icon: 'tokenizer' },
+  { id: 'tokenizer', label: 'Tokenizer', kind: 'panel', tool: 'tokenizer-embed', icon: 'tokenizer' },
 ];
 
 function buildToolIcon(tool) {
@@ -80,10 +84,11 @@ function buildToolIcon(tool) {
 }
 
 function openPopup(url) {
-  const w = Math.max(800, Math.floor((window.outerWidth || window.innerWidth) - 80));
-  const h = Math.max(600, Math.floor((window.outerHeight || window.innerHeight) - 80));
-  const left = (typeof window.screenX === 'number' ? window.screenX : 0) + 40;
-  const top = (typeof window.screenY === 'number' ? window.screenY : 0) + 40;
+  // Mirror the deck window's exact footprint: same size, same screen position.
+  const w    = window.innerWidth;
+  const h    = window.innerHeight;
+  const left = window.screenLeft;
+  const top  = window.screenTop;
   const features = [
     'popup=yes',
     'width=' + w, 'height=' + h, 'left=' + left, 'top=' + top,
@@ -94,64 +99,33 @@ function openPopup(url) {
   return popup;
 }
 
-let activeModal = null;
 
-function openModal(tool, label) {
-  closeModal();
-  const mod = registry.getTool(tool.tool);
-  if (!mod) {
-    console.warn('[panels-sidebar] unknown tool: ' + tool.tool);
-    return;
+async function openPresenterView(slug) {
+  const url = '/backstage/classforge/panels/presenter-view.html?slug=' + encodeURIComponent(slug);
+  const fallbackOpen = () => window.open(url, '_blank', 'width=1200,height=800,resizable=yes');
+
+  // Try Window Management API for multi-monitor placement.
+  if (window.screen && window.screen.isExtended && typeof window.getScreenDetails === 'function') {
+    try {
+      const details = await window.getScreenDetails();
+      const secondary = details.screens.find(s => !s.isPrimary) || null;
+      if (secondary) {
+        const features = [
+          'left='   + secondary.availLeft,
+          'top='    + secondary.availTop,
+          'width='  + secondary.availWidth,
+          'height=' + secondary.availHeight,
+          'resizable=yes',
+        ].join(',');
+        const w = window.open(url, '_blank', features);
+        if (w) { w.focus(); return; }
+      }
+    } catch (_) {
+      // API threw (permission denied or unsupported) -- fall through.
+    }
   }
 
-  const overlay = document.createElement('div');
-  overlay.className = 'pn-sidebar-modal';
-
-  const frame = document.createElement('div');
-  frame.className = 'pn-sidebar-modal__frame';
-
-  const header = document.createElement('div');
-  header.className = 'pn-sidebar-modal__header';
-  const titleEl = document.createElement('span');
-  titleEl.textContent = label || tool.label || tool.tool;
-  header.appendChild(titleEl);
-
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.className = 'pn-sidebar-modal__close';
-  close.setAttribute('aria-label', 'Fechar');
-  close.textContent = 'X';
-  close.addEventListener('click', closeModal);
-  header.appendChild(close);
-
-  const body = document.createElement('div');
-  body.className = 'pn-sidebar-modal__body';
-
-  frame.appendChild(header);
-  frame.appendChild(body);
-  overlay.appendChild(frame);
-  document.body.appendChild(overlay);
-
-  try {
-    mod.mount(body, tool.config || {});
-  } catch (e) {
-    console.error('[panels-sidebar] mount failed for ' + tool.tool, e);
-  }
-
-  activeModal = { overlay, module: mod };
-
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal();
-  });
-}
-
-function closeModal() {
-  if (!activeModal) return;
-  try { activeModal.module.unmount(); } catch (_) {}
-  if (activeModal.overlay && activeModal.overlay.parentNode) {
-    activeModal.overlay.remove();
-  }
-  activeModal = null;
+  fallbackOpen();
 }
 
 function buildToolList(tools, onLaunch) {
@@ -249,12 +223,21 @@ function buildPanelGrid(runtime, onJump) {
   grid.className = 'pn-menu-grid';
   const manifest = runtime.manifest;
   if (!manifest || !Array.isArray(manifest.panels)) return grid;
+  const slug = (manifest && manifest.id) || 'default';
   manifest.panels.forEach((entry, i) => {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'pn-menu-card';
     if (i === runtime.currentIndex) card.classList.add('is-active');
     card.dataset.panelIndex = String(i);
+
+    // Thumbnail image -- lazy-loaded, shown above the panel title.
+    const thumb = document.createElement('img');
+    thumb.className = 'pn-menu-card__thumb';
+    thumb.loading = 'lazy';
+    thumb.alt = '';
+    thumb.hidden = true;
+    card.appendChild(thumb);
 
     const idx = document.createElement('span');
     idx.className = 'pn-menu-card__index';
@@ -263,8 +246,20 @@ function buildPanelGrid(runtime, onJump) {
 
     const title = document.createElement('h3');
     title.className = 'pn-menu-card__title';
-    title.textContent = (entry && entry.title) || (entry && entry.id) || (typeof entry === 'string' ? entry : 'Panel ' + (i + 1));
+    const panelTitle = (entry && entry.title) || (entry && entry.id) || (typeof entry === 'string' ? entry : 'Panel ' + (i + 1));
+    title.textContent = panelTitle;
     card.appendChild(title);
+
+    // Resolve panel id: prefer entry.id, else derive from index.
+    const panelId = (entry && entry.id) ? entry.id : ('panel-' + String(i + 1).padStart(2, '0'));
+    // Per-panel slugs follow the same convention used in thumbnail-integration.js.
+    const panelSlug = slug + '--' + panelId;
+    getThumbnailUrl(panelSlug, panelId).then(url => {
+      if (url) {
+        thumb.src = url;
+        thumb.hidden = false;
+      }
+    }).catch(() => { /* no thumbnail available */ });
 
     card.addEventListener('click', () => onJump(i));
     grid.appendChild(card);
@@ -381,11 +376,21 @@ export function attachSidebar(runtime, options = {}) {
   menuToggle.addEventListener('click', toggleMenu);
 
   function launchTool(tool) {
-    if (tool.kind === 'modal' && tool.tool) {
+    if (tool.kind === 'panel' && tool.tool) {
       exitMenu();
       hide();
-      openModal(tool, tool.label2 || tool.label);
+      runtime.pushTransientPanel({
+        layout: 'full',
+        tools: [{ id: tool.tool, slot: 'default', config: tool.config || {} }],
+        meta: { title: tool.label || tool.tool },
+      });
+    } else if (tool.kind === 'popup' && tool.url) {
+      const popup = openPopup(tool.url);
+      if (!popup) {
+        alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
+      }
     } else if (tool.url) {
+      // Fallback: any tool with a URL opens as a popup.
       const popup = openPopup(tool.url);
       if (!popup) {
         alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
@@ -432,6 +437,31 @@ export function attachSidebar(runtime, options = {}) {
       defaultOpen: false,
       children: buildPanelList(runtime, jumpToPanel),
     }));
+
+    // Presenter view action -- dedicated chrome button below the groups.
+    const pvWrap = document.createElement('div');
+    pvWrap.className = 'pn-sidebar__presenter-action';
+    const pvBtn = document.createElement('button');
+    pvBtn.type = 'button';
+    pvBtn.className = 'pn-sidebar__tool pn-sidebar__tool--presenter';
+
+    const pvIcon = document.createElement('span');
+    pvIcon.className = 'pn-sidebar__tool-icon';
+    pvIcon.innerHTML = LOCAL_ICONS['presenter-view'];
+    pvBtn.appendChild(pvIcon);
+
+    const pvLabel = document.createElement('span');
+    pvLabel.className = 'pn-sidebar__tool-label';
+    pvLabel.textContent = 'Vista do apresentador';
+    pvBtn.appendChild(pvLabel);
+
+    pvBtn.addEventListener('click', () => {
+      const pvSlug = (runtime.manifest && runtime.manifest.id) || 'unknown';
+      openPresenterView(pvSlug);
+    });
+
+    pvWrap.appendChild(pvBtn);
+    body.appendChild(pvWrap);
   }
 
   function renderMenu() {
@@ -580,7 +610,6 @@ export function attachSidebar(runtime, options = {}) {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (activeModal) { closeModal(); return; }
       if (menuOpen) { exitMenu(); hide(); }
     }
   });
@@ -647,7 +676,6 @@ export function attachSidebar(runtime, options = {}) {
     show, hide, enterMenu, exitMenu,
     destroy() {
       if (cpPollTimer) clearTimeout(cpPollTimer);
-      closeModal();
       if (zone.parentNode) zone.remove();
       if (sidebar.parentNode) sidebar.remove();
     },

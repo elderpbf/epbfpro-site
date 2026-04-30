@@ -67,6 +67,12 @@ export function createRuntime(options = {}) {
   let activeMeta = null;
   let activeThemeId = null;
 
+  // Transient panel stack (Task 4C). Each frame holds a snapshot of the
+  // 4-tuple (activeSubHost, activeMeta, activeLayout, activeModules) plus
+  // the transient sub-host element and the Esc key handler so they can be
+  // removed cleanly on pop. Frames are never inserted into panelCache.
+  const _transientStack = [];
+
   // Retention: 'none' (default) tears down each panel on exit. 'hidden' keeps
   // every visited panel alive in DOM, just hidden, so iframe state (e.g., a
   // Slides deck pinned at slide N) survives navigation. 'lru' is the same but
@@ -343,6 +349,7 @@ export function createRuntime(options = {}) {
   }
 
   async function next() {
+    if (_transientStack.length > 0) popTransient();
     if (!manifestData || currentIndex >= manifestData.panels.length - 1) return false;
     const from = currentIndex;
     const to = currentIndex + 1;
@@ -352,6 +359,7 @@ export function createRuntime(options = {}) {
   }
 
   async function prev() {
+    if (_transientStack.length > 0) popTransient();
     if (!manifestData || currentIndex <= 0) return false;
     const from = currentIndex;
     const to = currentIndex - 1;
@@ -361,6 +369,7 @@ export function createRuntime(options = {}) {
   }
 
   async function goto(index) {
+    if (_transientStack.length > 0) popTransient();
     if (!manifestData || index < 0 || index >= manifestData.panels.length) return false;
     if (index === currentIndex) return false;
     const from = currentIndex;
@@ -405,6 +414,8 @@ export function createRuntime(options = {}) {
 
   function dispose() {
     detachKeyboard();
+    // Pop any open transients before full teardown.
+    while (_transientStack.length > 0) popTransient();
     if (retentionMode !== 'none') {
       for (const cachedEntry of panelCache.values()) evictCacheEntry(cachedEntry);
       panelCache.clear();
@@ -412,9 +423,133 @@ export function createRuntime(options = {}) {
     tearDownActive();
   }
 
+  // ---------------------------------------------------------------------------
+  // Transient panel stack (Task 4C)
+  // ---------------------------------------------------------------------------
+
+  // Push a transient overlay panel onto the active sub-host. The underlying
+  // panel is hidden (not unmounted) and restored on pop.
+  //
+  // options:
+  //   layout   -- layoutId string (required)
+  //   tools    -- array of tool declarations { id, slot?, config? }
+  //   elements -- array of element declarations { id, slot?, config? }
+  //   meta     -- optional meta object forwarded to layout.mount
+  function pushTransientPanel({ layout: layoutId, tools = [], elements = [], meta = {} } = {}) {
+    if (!host || typeof document === 'undefined') return;
+
+    const layout = registry.getLayout(layoutId);
+    if (!layout) {
+      reportError(new Error(`pushTransientPanel: unknown layout "${layoutId}"`));
+      return;
+    }
+
+    // Snapshot the current active 4-tuple.
+    const snapshot = {
+      subHost:  activeSubHost,
+      meta:     activeMeta,
+      layout:   activeLayout,
+      modules:  activeModules,
+    };
+
+    // Hide (not destroy) the current panel.
+    if (activeSubHost) activeSubHost.style.display = 'none';
+
+    // Create a fresh transient sub-host as a sibling of the existing hosts.
+    const transientHost = document.createElement('div');
+    transientHost.setAttribute('data-pn-panel-host', '');
+    transientHost.setAttribute('data-transient', '');
+    transientHost.style.minHeight = '100vh';
+    transientHost.style.position = 'relative';
+    host.appendChild(transientHost);
+
+    // Mount layout + modules into the transient host.
+    let layoutHandle;
+    try {
+      layoutHandle = layout.mount(transientHost, { meta, body: null });
+    } catch (e) {
+      reportError(e);
+      transientHost.remove();
+      if (snapshot.subHost) snapshot.subHost.style.display = '';
+      return;
+    }
+    const slots = (layoutHandle && layoutHandle.slots) ? layoutHandle.slots : {};
+
+    const transientModules = [];
+    for (const decl of tools) {
+      mountModuleInto(decl, 'tool', slots, transientModules);
+    }
+    for (const decl of elements) {
+      mountModuleInto(decl, 'element', slots, transientModules);
+    }
+
+    // Render the Voltar chrome button inside the transient host.
+    const backBtn = document.createElement('button');
+    backBtn.type = 'button';
+    backBtn.className = 'pn-sidebar-transient-back';
+    backBtn.textContent = 'Voltar';
+    transientHost.appendChild(backBtn);
+
+    // Esc key handler -- pop this transient on Escape.
+    const escHandler = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); popTransient(); }
+    };
+    document.addEventListener('keydown', escHandler);
+    backBtn.addEventListener('click', () => popTransient());
+
+    // Update active 4-tuple to point at the transient.
+    activeSubHost = transientHost;
+    activeMeta    = meta;
+    activeLayout  = layout;
+    activeModules = transientModules;
+
+    _transientStack.push({
+      snapshot,
+      transientHost,
+      transientModules,
+      layout,
+      layoutHandle,
+      escHandler,
+    });
+  }
+
+  // Pop the top-most transient frame and restore the underlying panel.
+  function popTransient() {
+    if (_transientStack.length === 0) return;
+    const frame = _transientStack.pop();
+
+    // Unmount transient modules in reverse order.
+    for (let i = frame.transientModules.length - 1; i >= 0; i--) {
+      try { frame.transientModules[i].module.unmount(); } catch (e) { reportError(e); }
+    }
+
+    // Unmount transient layout.
+    if (frame.layoutHandle && typeof frame.layout.unmount === 'function') {
+      try { frame.layout.unmount(frame.transientHost); } catch (e) { reportError(e); }
+    }
+
+    // Remove transient sub-host from DOM.
+    if (frame.transientHost && frame.transientHost.parentNode) {
+      frame.transientHost.parentNode.removeChild(frame.transientHost);
+    }
+
+    // Remove Esc listener.
+    document.removeEventListener('keydown', frame.escHandler);
+
+    // Restore active 4-tuple.
+    const s = frame.snapshot;
+    activeSubHost = s.subHost;
+    activeMeta    = s.meta;
+    activeLayout  = s.layout;
+    activeModules = s.modules;
+
+    if (activeSubHost) activeSubHost.style.display = '';
+  }
+
   return {
     start, next, prev, goto, dispose,
     setActiveTheme,
+    pushTransientPanel, popTransient,
     eventBus,
     get currentIndex() { return currentIndex; },
     get panelCount() { return manifestData ? manifestData.panels.length : 0; },
@@ -423,6 +558,7 @@ export function createRuntime(options = {}) {
     get currentTheme() { return activeThemeId; },
     get retentionMode() { return retentionMode; },
     get cachedPanelIndices() { return Array.from(panelCache.keys()); },
+    get _isTransientActive() { return _transientStack.length > 0; },
   };
 }
 

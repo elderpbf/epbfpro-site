@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vista do apresentador</title>
+  <link rel="stylesheet" href="presenter-view.css">
+</head>
+<body>
+
+  <div id="pv-topbar">
+    <span id="pv-topbar-title">Vista do apresentador</span>
+    <span id="pv-counter">Painel 1 / ?</span>
+    <button type="button" id="pv-close">Fechar</button>
+  </div>
+
+  <div id="pv-main">
+    <div id="pv-mirror-pane">
+      <iframe id="pv-mirror" src="about:blank" title="Espelho do painel atual" allowfullscreen></iframe>
+    </div>
+
+    <div id="pv-notes-pane">
+      <div id="pv-notes-header">
+        <div id="pv-notes-label">Notas do apresentador</div>
+        <div id="pv-notes-panel-title"></div>
+      </div>
+      <div id="pv-notes-body">
+        <p class="pv-notes-empty">(sem notas)</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="presenter-view.js"></script>
+</body>
+</html>
