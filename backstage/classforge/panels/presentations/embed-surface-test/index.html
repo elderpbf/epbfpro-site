@@ -106,7 +106,13 @@
       // Placed after start() so runtime.manifest is populated.
       const bcSlug = (runtime.manifest && runtime.manifest.id) || 'embed-surface-test';
       const bc = new BroadcastChannel('panels-presenter-' + bcSlug);
-      runtime.on('panel-entered', ({ meta, index }) => bc.postMessage({ type: 'panel', index, meta }));
+      runtime.eventBus.addEventListener('panel-entered', () => {
+        bc.postMessage({
+          type: 'panel',
+          index: runtime.currentIndex,
+          meta: runtime.currentMeta,
+        });
+      });
 
       // Jump to requested panel index if provided via URL (?panel=N).
       const panelParam = params.get('panel');
