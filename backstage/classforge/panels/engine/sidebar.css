@@ -315,17 +315,6 @@
   display: none;
 }
 
-.pn-sidebar.is-menu .pn-sidebar__cp-badge-name {
-  display: inline;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary, #e5e7eb);
-  max-width: 240px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .pn-sidebar__cp-badge-label {
   font-size: 11px;
   font-weight: 700;
