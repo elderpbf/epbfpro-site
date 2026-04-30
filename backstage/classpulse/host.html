@@ -196,7 +196,6 @@
         <div class="host-bar-actions">
           <button class="host-btn host-btn-ghost" id="qr-btn">QR</button>
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener">Display</a>
-          <button class="host-btn host-btn-ghost" id="reopen-session-btn" style="display:none">Reabrir sessão</button>
           <button class="host-btn host-btn-danger" id="close-session-btn">Encerrar sessão</button>
         </div>
       </div>
@@ -320,7 +319,10 @@
         <div style="font-size:2rem;margin-bottom:1rem">✓</div>
         <div style="font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Sessão encerrada</div>
         <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem" id="closed-session-name"></div>
-        <a href="/backstage/classpulse/" class="host-btn host-btn-primary">Voltar ao ClassPulse</a>
+        <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
+          <button class="host-btn host-btn-ghost" id="reopen-from-closed-btn">Iniciar</button>
+          <a href="/backstage/classpulse/" class="host-btn host-btn-primary">Voltar ao ClassPulse</a>
+        </div>
       </div>
     </div>
 
@@ -556,14 +558,19 @@ document.getElementById('close-session-btn').addEventListener('click', async fun
   }
 });
 
-document.getElementById('reopen-session-btn').addEventListener('click', async function() {
+document.getElementById('reopen-from-closed-btn').addEventListener('click', async function() {
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Iniciando...';
   try {
     await callWorker({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: sessionCode });
-    document.getElementById('reopen-session-btn').style.display = 'none';
-    document.getElementById('close-session-btn').style.display = '';
-    showAlert('success', 'Sessão reaberta.');
+    document.getElementById('cpq').setAttribute('session', sessionCode);
+    showScreen('screen-session');
+    clearAlert();
   } catch (e) {
-    showAlert('error', 'Erro: ' + e.message);
+    showToastError(e.message);
+    btn.disabled = false;
+    btn.textContent = 'Iniciar';
   }
 });
 

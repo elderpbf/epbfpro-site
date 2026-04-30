@@ -322,6 +322,10 @@ export function attachSidebar(runtime, options = {}) {
   const cpDot = document.createElement('span');
   cpDot.className = 'pn-sidebar__cp-badge-dot';
   cpBadge.appendChild(cpDot);
+  const cpLiveLabel = document.createElement('span');
+  cpLiveLabel.className = 'pn-sidebar__cp-badge-label';
+  cpLiveLabel.textContent = 'Live';
+  cpBadge.appendChild(cpLiveLabel);
   bottomBar.appendChild(cpBadge);
 
   const counter = document.createElement('div');
@@ -427,8 +431,40 @@ export function attachSidebar(runtime, options = {}) {
     }));
   }
 
+  function buildCpBar() {
+    const bar = document.createElement('div');
+    bar.className = 'pn-menu-cp-bar';
+    if (cpSession) {
+      const dot = document.createElement('span');
+      dot.className = 'pn-menu-cp-bar__dot';
+      bar.appendChild(dot);
+      const name = document.createElement('a');
+      name.className = 'pn-menu-cp-bar__name';
+      name.href = '/go/host.html?code=' + encodeURIComponent(cpSession.code);
+      name.target = '_blank';
+      name.rel = 'noopener';
+      name.textContent = cpSession.title || ('Sessão ' + cpSession.code);
+      bar.appendChild(name);
+      const badge = document.createElement('span');
+      badge.className = 'pn-menu-cp-bar__badge';
+      badge.textContent = 'Live';
+      bar.appendChild(badge);
+    } else {
+      const link = document.createElement('a');
+      link.className = 'pn-menu-cp-bar__link';
+      link.href = '/backstage/classpulse/';
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = 'Ver sessões ClassPulse →';
+      bar.appendChild(link);
+    }
+    return bar;
+  }
+
   function renderMenu() {
     body.innerHTML = '';
+
+    body.appendChild(buildCpBar());
 
     const searchWrap = document.createElement('div');
     searchWrap.className = 'pn-menu-search';
@@ -630,11 +666,7 @@ export function attachSidebar(runtime, options = {}) {
 
   cpBadge.addEventListener('click', () => {
     if (!cpSession) return;
-    const url = '/go/host.html?code=' + encodeURIComponent(cpSession.code);
-    const popup = openPopup(url);
-    if (!popup) {
-      alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
-    }
+    window.open('/go/host.html?code=' + encodeURIComponent(cpSession.code), '_blank');
   });
 
   return {

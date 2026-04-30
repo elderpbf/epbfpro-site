@@ -308,6 +308,13 @@
   background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
 }
 
+.pn-sidebar__cp-badge-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ef4444;
+}
+
 .pn-sidebar__cp-badge-dot {
   width: 8px;
   height: 8px;
@@ -358,6 +365,66 @@
 
 .pn-sidebar__counter-total {
   margin-left: 2px;
+}
+
+/* ----- full menu: ClassPulse live session bar ----- */
+.pn-menu-cp-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.pn-menu-cp-bar__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pn-cp-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.pn-menu-cp-bar__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pn-menu-cp-bar__name:hover {
+  color: var(--primary, #14b8a6);
+}
+
+.pn-menu-cp-bar__badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.pn-menu-cp-bar__link {
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  text-decoration: none;
+}
+
+.pn-menu-cp-bar__link:hover {
+  color: var(--primary, #14b8a6);
 }
 
 /* ----- menu (full-page) ----- */
