@@ -311,11 +311,24 @@
   background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
 }
 
-.pn-sidebar__cp-badge-name {
+.pn-sidebar__cp-badge-name,
+.pn-sidebar__cp-badge-label {
   display: none;
 }
 
-.pn-sidebar__cp-badge-label {
+.pn-sidebar.is-menu .pn-sidebar__cp-badge-name {
+  display: inline;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pn-sidebar.is-menu .pn-sidebar__cp-badge-label {
+  display: inline;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
