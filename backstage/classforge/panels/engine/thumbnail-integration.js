@@ -56,6 +56,20 @@ const _urlCache = new Map();
 
 // ---- helpers ------------------------------------------------------------------
 
+const IFRAME_TOOL_IDS = new Set([
+  'slides-embed', 'video-embed', 'gif-embed', 'js-anim-embed',
+  'tokenizer-embed', 'classpulse-display-embed', 'popup-launcher', 'terminal-embed',
+]);
+
+function isIframePanel(meta) {
+  if (!meta) return false;
+  // embed-fullbleed or tool-fullbleed with an iframe-based tool = skip
+  if (Array.isArray(meta.tools) && meta.tools.some(t => IFRAME_TOOL_IDS.has(t.id))) return true;
+  // Also skip by layout name as a fallback
+  if (meta.layout === 'embed-fullbleed') return true;
+  return false;
+}
+
 function _isSlidesPanel(meta) {
   return Array.isArray(meta && meta.tools) && meta.tools.some(t => t.id === 'slides-embed');
 }
@@ -169,6 +183,7 @@ export function attachThumbnailAuto(runtime, { slug } = {}) {
 
     const meta = runtime.currentMeta;
     if (_shouldSkipCapture(meta)) return;
+    if (isIframePanel(meta)) return; // no auto-capture for iframe panels, no permission prompt
 
     const panelId = (meta && meta.id) ? meta.id : ('panel-' + (runtime.currentIndex + 1));
     const key = slug + ':' + panelId;

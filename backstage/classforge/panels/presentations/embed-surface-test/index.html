@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="../../tools/popup-launcher/popup-launcher.css">
   <link rel="stylesheet" href="../../tools/terminal-embed/terminal-embed.css">
   <link rel="stylesheet" href="../../layouts/content/content.css">
-  <link rel="stylesheet" href="../../engine/sidebar.css?v=1.8">
+  <link rel="stylesheet" href="../../engine/sidebar.css?v=1.9">
   <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="/backstage/css/backstage.css?v=1.6">
   <link rel="stylesheet" href="/backstage/css/settings-drawer.css?v=1.0">
@@ -111,8 +111,21 @@
           type: 'panel',
           index: runtime.currentIndex,
           meta: runtime.currentMeta,
+          origin: 'deck',
         });
       });
+
+      // Only listen for navigate commands in the main deck window, not in the mirror iframe.
+      if (!presenterMode) {
+        bc.addEventListener('message', e => {
+          const msg = e.data;
+          if (!msg || msg.origin !== 'presenter') return;
+          if (msg.type === 'navigate') {
+            if (msg.direction === 'next') runtime.next();
+            else if (msg.direction === 'prev') runtime.prev();
+          }
+        });
+      }
 
       // Jump to requested panel index if provided via URL (?panel=N).
       const panelParam = params.get('panel');

@@ -1,6 +1,8 @@
 // engine/sidebar-integration.js
+// TODO: rename file (sidebar-integration.js -> side-menu-integration.js) and CSS classes
+//       (pn-sidebar__* -> pn-side-menu__*) -- deferred to avoid import churn during active phase work.
 //
-// Left-edge auto-hide sidebar for Panels v2. Two modes:
+// Left-edge auto-hide side menu for Panels v2. Two modes:
 //   collapsed -- 280px wide. Header carries the deck title + an editable
 //                "N / total" panel counter. Body splits into collapsible
 //                groups (Ferramentas open by default, Paineis collapsed)
@@ -11,7 +13,7 @@
 //                lazily through the topbar handle), not an in-body X.
 //
 // Reveal: hovering the 12px reveal zone on the left edge slides the
-// sidebar in. Pointer-leaving the sidebar (with a 600ms grace) slides it
+// side menu in. Pointer-leaving the side menu (with a 600ms grace) slides it
 // back out. The full-page menu stays open until explicitly dismissed.
 //
 // Tool kinds:
@@ -23,7 +25,7 @@
 //               Esc key dismiss the tool and restore the underlying panel.
 //
 // Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
-// so it tracks the topbar's data-theme switch. The sidebar does not own a
+// so it tracks the topbar's data-theme switch. The side menu does not own a
 // theme of its own.
 //
 // Usage:
@@ -35,7 +37,7 @@ import { findHostedSession } from './classpulse-discovery.js';
 import { getThumbnailUrl } from './thumbnail-integration.js';
 
 // Inline single-color SVG glyphs that follow currentColor for theme switching.
-// Inlined (not fetched) so the sidebar stays self-contained and theme changes
+// Inlined (not fetched) so the side menu stays self-contained and theme changes
 // reflect instantly without a stylesheet swap.
 const LOCAL_ICONS = {
   tokenizer:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M12 5v14"/></svg>',
@@ -83,6 +85,27 @@ function buildToolIcon(tool) {
   return span;
 }
 
+function buildMenuData(runtime, tools) {
+  const manifest = runtime.manifest;
+  const slug = (manifest && manifest.id) || 'default';
+  const panelList = (manifest && Array.isArray(manifest.panels)) ? manifest.panels : [];
+  return {
+    slug,
+    tools,  // existing tool objects unchanged
+    actions: [
+      { id: 'presenter-view', label: 'Vista do apresentador', icon: 'presenter-view' },
+    ],
+    panels: panelList.map((entry, i) => ({
+      index: i,
+      id: (entry && entry.id) ? entry.id
+         : ('panel-' + String(i + 1).padStart(2, '0')),
+      title: (entry && entry.title) || (entry && entry.id)
+             || (typeof entry === 'string' ? entry : 'Panel ' + (i + 1)),
+      isActive: i === runtime.currentIndex,
+    })),
+  };
+}
+
 function openPopup(url) {
   // Mirror the deck window's exact footprint: same size, same screen position.
   const w    = window.innerWidth;
@@ -128,144 +151,6 @@ async function openPresenterView(slug) {
   fallbackOpen();
 }
 
-function buildToolList(tools, onLaunch) {
-  const ul = document.createElement('ul');
-  ul.className = 'pn-sidebar__tools';
-  for (const tool of tools) {
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'pn-sidebar__tool';
-    btn.dataset.toolId = tool.id;
-
-    btn.appendChild(buildToolIcon(tool));
-
-    const lab = document.createElement('span');
-    lab.className = 'pn-sidebar__tool-label';
-    lab.textContent = tool.label;
-    btn.appendChild(lab);
-
-    btn.addEventListener('click', () => onLaunch(tool));
-    li.appendChild(btn);
-    ul.appendChild(li);
-  }
-  return ul;
-}
-
-function buildPanelList(runtime, onJump) {
-  const ul = document.createElement('ul');
-  ul.className = 'pn-sidebar__panel-list';
-  const manifest = runtime.manifest;
-  if (!manifest || !Array.isArray(manifest.panels)) return ul;
-  manifest.panels.forEach((entry, i) => {
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'pn-sidebar__panel';
-    btn.dataset.panelIndex = String(i);
-    if (i === runtime.currentIndex) btn.classList.add('is-active');
-
-    const idx = document.createElement('span');
-    idx.className = 'pn-sidebar__panel-index';
-    idx.textContent = String(i + 1);
-    btn.appendChild(idx);
-
-    const lab = document.createElement('span');
-    lab.className = 'pn-sidebar__panel-label';
-    lab.textContent = (entry && entry.title) || (entry && entry.id) || (typeof entry === 'string' ? entry : 'Panel ' + (i + 1));
-    btn.appendChild(lab);
-
-    btn.addEventListener('click', () => onJump(i));
-    li.appendChild(btn);
-    ul.appendChild(li);
-  });
-  return ul;
-}
-
-function buildToolGrid(tools, onLaunch) {
-  const grid = document.createElement('div');
-  grid.className = 'pn-menu-grid';
-  for (const tool of tools) {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'pn-menu-card';
-    card.dataset.toolId = tool.id;
-
-    const icon = buildToolIcon(tool);
-    icon.classList.add('pn-menu-card__icon');
-    card.appendChild(icon);
-
-    const idx = document.createElement('span');
-    idx.className = 'pn-menu-card__index';
-    idx.textContent = tool.kind === 'popup' ? 'Web' : 'In-app';
-    card.appendChild(idx);
-
-    const title = document.createElement('h3');
-    title.className = 'pn-menu-card__title';
-    title.textContent = tool.label;
-    card.appendChild(title);
-
-    if (tool.url) {
-      const hint = document.createElement('p');
-      hint.className = 'pn-menu-card__hint';
-      hint.textContent = tool.url;
-      card.appendChild(hint);
-    }
-
-    card.addEventListener('click', () => onLaunch(tool));
-    grid.appendChild(card);
-  }
-  return grid;
-}
-
-function buildPanelGrid(runtime, onJump) {
-  const grid = document.createElement('div');
-  grid.className = 'pn-menu-grid';
-  const manifest = runtime.manifest;
-  if (!manifest || !Array.isArray(manifest.panels)) return grid;
-  const slug = (manifest && manifest.id) || 'default';
-  manifest.panels.forEach((entry, i) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'pn-menu-card';
-    if (i === runtime.currentIndex) card.classList.add('is-active');
-    card.dataset.panelIndex = String(i);
-
-    // Thumbnail image -- lazy-loaded, shown above the panel title.
-    const thumb = document.createElement('img');
-    thumb.className = 'pn-menu-card__thumb';
-    thumb.loading = 'lazy';
-    thumb.alt = '';
-    thumb.hidden = true;
-    card.appendChild(thumb);
-
-    const idx = document.createElement('span');
-    idx.className = 'pn-menu-card__index';
-    idx.textContent = (i + 1) + ' / ' + manifest.panels.length;
-    card.appendChild(idx);
-
-    const title = document.createElement('h3');
-    title.className = 'pn-menu-card__title';
-    const panelTitle = (entry && entry.title) || (entry && entry.id) || (typeof entry === 'string' ? entry : 'Panel ' + (i + 1));
-    title.textContent = panelTitle;
-    card.appendChild(title);
-
-    // Resolve panel id: prefer entry.id, else derive from index.
-    const panelId = (entry && entry.id) ? entry.id : ('panel-' + String(i + 1).padStart(2, '0'));
-    // Per-panel slugs follow the same convention used in thumbnail-integration.js.
-    const panelSlug = slug + '--' + panelId;
-    getThumbnailUrl(panelSlug, panelId).then(url => {
-      if (url) {
-        thumb.src = url;
-        thumb.hidden = false;
-      }
-    }).catch(() => { /* no thumbnail available */ });
-
-    card.addEventListener('click', () => onJump(i));
-    grid.appendChild(card);
-  });
-  return grid;
-}
 
 export function attachSidebar(runtime, options = {}) {
   const manifestTools = runtime?.manifest?.sidebar?.tools;
@@ -283,15 +168,15 @@ export function attachSidebar(runtime, options = {}) {
 
   const sidebar = document.createElement('aside');
   sidebar.className = 'pn-sidebar';
-  sidebar.setAttribute('aria-label', 'Barra lateral de ferramentas e painéis');
+  sidebar.setAttribute('aria-label', 'Menu lateral de ferramentas e painéis');
 
   // ----- body (groups in collapsed mode, full menu in menu mode) -----
   const body = document.createElement('div');
   body.className = 'pn-sidebar__body';
   sidebar.appendChild(body);
 
-  // ----- bottom bar (replaces the old footer button + sidebar header) -----
-  // The bottom bar lives at the bottom of the sidebar so it never collides
+  // ----- bottom bar (replaces the old footer button + side menu header) -----
+  // The bottom bar lives at the bottom of the side menu so it never collides
   // with the topbar's top-edge reveal zone. It carries the deck title, an
   // editable N/total counter, and a menu-toggle button (hamburger glyph).
   const bottomBar = document.createElement('div');
@@ -404,6 +289,13 @@ export function attachSidebar(runtime, options = {}) {
     hide();
   }
 
+  function handleAction(action) {
+    if (action.id === 'presenter-view') {
+      const pvSlug = (runtime.manifest && runtime.manifest.id) || 'unknown';
+      openPresenterView(pvSlug);
+    }
+  }
+
   function makeGroup({ title, openKey, defaultOpen, children }) {
     const det = document.createElement('details');
     det.className = 'pn-sidebar__group';
@@ -425,75 +317,219 @@ export function attachSidebar(runtime, options = {}) {
 
   function renderCollapsed() {
     body.innerHTML = '';
-    body.appendChild(makeGroup({
-      title: 'Ferramentas',
-      openKey: TOOLS_OPEN_KEY,
-      defaultOpen: true,
-      children: buildToolList(tools, launchTool),
-    }));
-    body.appendChild(makeGroup({
-      title: 'Painéis',
-      openKey: PANELS_OPEN_KEY,
-      defaultOpen: false,
-      children: buildPanelList(runtime, jumpToPanel),
-    }));
+    const data = buildMenuData(runtime, tools);
 
-    // Presenter view action -- dedicated chrome button below the groups.
-    const pvWrap = document.createElement('div');
-    pvWrap.className = 'pn-sidebar__presenter-action';
-    const pvBtn = document.createElement('button');
-    pvBtn.type = 'button';
-    pvBtn.className = 'pn-sidebar__tool pn-sidebar__tool--presenter';
+    // --- Search ---
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'pn-menu-search pn-menu-search--side';
+    const searchInput = document.createElement('input');
+    searchInput.type = 'search';
+    searchInput.placeholder = 'Buscar...';
+    searchInput.className = 'pn-menu-search__input';
+    searchInput.setAttribute('aria-label', 'Buscar item por título');
+    searchWrap.appendChild(searchInput);
+    body.appendChild(searchWrap);
 
-    const pvIcon = document.createElement('span');
-    pvIcon.className = 'pn-sidebar__tool-icon';
-    pvIcon.innerHTML = LOCAL_ICONS['presenter-view'];
-    pvBtn.appendChild(pvIcon);
+    // --- Tools group ---
+    const toolsList = document.createElement('ul');
+    toolsList.className = 'pn-sidebar__tools';
+    for (const tool of data.tools) {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pn-sidebar__tool';
+      btn.dataset.toolId = tool.id;
+      btn.appendChild(buildToolIcon(tool));
+      const lab = document.createElement('span');
+      lab.className = 'pn-sidebar__tool-label';
+      lab.textContent = tool.label;
+      btn.appendChild(lab);
+      btn.addEventListener('click', () => launchTool(tool));
+      li.appendChild(btn);
+      toolsList.appendChild(li);
+    }
+    const toolsGroup = makeGroup({ title: 'Ferramentas', openKey: TOOLS_OPEN_KEY, defaultOpen: true, children: toolsList });
+    body.appendChild(toolsGroup);
 
-    const pvLabel = document.createElement('span');
-    pvLabel.className = 'pn-sidebar__tool-label';
-    pvLabel.textContent = 'Vista do apresentador';
-    pvBtn.appendChild(pvLabel);
+    // --- Panels group ---
+    const panelsList = document.createElement('ul');
+    panelsList.className = 'pn-sidebar__panel-list';
+    for (const panel of data.panels) {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pn-sidebar__panel';
+      btn.dataset.panelIndex = String(panel.index);
+      if (panel.isActive) btn.classList.add('is-active');
+      const idx = document.createElement('span');
+      idx.className = 'pn-sidebar__panel-index';
+      idx.textContent = String(panel.index + 1);
+      btn.appendChild(idx);
+      const lab = document.createElement('span');
+      lab.className = 'pn-sidebar__panel-label';
+      lab.textContent = panel.title;
+      btn.appendChild(lab);
+      btn.addEventListener('click', () => jumpToPanel(panel.index));
+      li.appendChild(btn);
+      panelsList.appendChild(li);
+    }
+    const panelsGroup = makeGroup({ title: 'Painéis', openKey: PANELS_OPEN_KEY, defaultOpen: false, children: panelsList });
+    body.appendChild(panelsGroup);
 
-    pvBtn.addEventListener('click', () => {
-      const pvSlug = (runtime.manifest && runtime.manifest.id) || 'unknown';
-      openPresenterView(pvSlug);
-    });
+    // --- Actions (presenter view + any future actions) ---
+    const actionsWrap = document.createElement('div');
+    actionsWrap.className = 'pn-sidebar__presenter-action';
+    for (const action of data.actions) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pn-sidebar__tool pn-sidebar__tool--action';
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'pn-sidebar__tool-icon';
+      if (LOCAL_ICONS[action.icon]) iconSpan.innerHTML = LOCAL_ICONS[action.icon];
+      btn.appendChild(iconSpan);
+      const labSpan = document.createElement('span');
+      labSpan.className = 'pn-sidebar__tool-label';
+      labSpan.textContent = action.label;
+      btn.appendChild(labSpan);
+      btn.addEventListener('click', () => handleAction(action));
+      actionsWrap.appendChild(btn);
+    }
+    body.appendChild(actionsWrap);
 
-    pvWrap.appendChild(pvBtn);
-    body.appendChild(pvWrap);
+    // --- Search filter (applies to tools group + panels group) ---
+    function applyCollapsedFilter(query) {
+      const q = query.trim().toLowerCase();
+      toolsList.querySelectorAll('.pn-sidebar__tool').forEach(btn => {
+        const text = (btn.querySelector('.pn-sidebar__tool-label')?.textContent || '').toLowerCase();
+        btn.parentElement.hidden = q !== '' && !text.includes(q);
+      });
+      panelsList.querySelectorAll('.pn-sidebar__panel').forEach(btn => {
+        const text = (btn.querySelector('.pn-sidebar__panel-label')?.textContent || '').toLowerCase();
+        btn.parentElement.hidden = q !== '' && !text.includes(q);
+      });
+    }
+    searchInput.addEventListener('input', e => applyCollapsedFilter(e.target.value));
   }
 
   function renderMenu() {
     body.innerHTML = '';
+    const data = buildMenuData(runtime, tools);
 
+    // Search
     const searchWrap = document.createElement('div');
     searchWrap.className = 'pn-menu-search';
     const searchInput = document.createElement('input');
     searchInput.type = 'search';
-    searchInput.placeholder = 'Buscar painel...';
+    searchInput.placeholder = 'Buscar...';
     searchInput.className = 'pn-menu-search__input';
-    searchInput.setAttribute('aria-label', 'Buscar painel por título');
+    searchInput.setAttribute('aria-label', 'Buscar item por título');
     searchWrap.appendChild(searchInput);
     body.appendChild(searchWrap);
 
+    // Tools section (tools + actions combined)
     const toolsSection = document.createElement('section');
     toolsSection.className = 'pn-menu-section';
     const toolsTitle = document.createElement('h2');
     toolsTitle.className = 'pn-menu-section__title';
     toolsTitle.textContent = 'Ferramentas';
     toolsSection.appendChild(toolsTitle);
-    const toolsGrid = buildToolGrid(tools, launchTool);
+    const toolsGrid = document.createElement('div');
+    toolsGrid.className = 'pn-menu-grid';
+
+    for (const tool of data.tools) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'pn-menu-card';
+      card.dataset.toolId = tool.id;
+      const icon = buildToolIcon(tool);
+      icon.classList.add('pn-menu-card__icon');
+      card.appendChild(icon);
+      const badge = document.createElement('span');
+      badge.className = 'pn-menu-card__index';
+      badge.textContent = tool.kind === 'popup' ? 'Web' : 'In-app';
+      card.appendChild(badge);
+      const title = document.createElement('h3');
+      title.className = 'pn-menu-card__title';
+      title.textContent = tool.label;
+      card.appendChild(title);
+      if (tool.url) {
+        const hint = document.createElement('p');
+        hint.className = 'pn-menu-card__hint';
+        hint.textContent = tool.url;
+        card.appendChild(hint);
+      }
+      card.addEventListener('click', () => launchTool(tool));
+      toolsGrid.appendChild(card);
+    }
+
+    // Actions cards (presenter-view etc.)
+    for (const action of data.actions) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'pn-menu-card';
+      card.dataset.actionId = action.id;
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'pn-sidebar__tool-icon pn-menu-card__icon';
+      if (LOCAL_ICONS[action.icon]) iconSpan.innerHTML = LOCAL_ICONS[action.icon];
+      card.appendChild(iconSpan);
+      const badge = document.createElement('span');
+      badge.className = 'pn-menu-card__index';
+      badge.textContent = 'Vista';
+      card.appendChild(badge);
+      const title = document.createElement('h3');
+      title.className = 'pn-menu-card__title';
+      title.textContent = action.label;
+      card.appendChild(title);
+      card.addEventListener('click', () => handleAction(action));
+      toolsGrid.appendChild(card);
+    }
+
     toolsSection.appendChild(toolsGrid);
     body.appendChild(toolsSection);
 
+    // Panels section
     const panelsSection = document.createElement('section');
     panelsSection.className = 'pn-menu-section';
     const panelsTitle = document.createElement('h2');
     panelsTitle.className = 'pn-menu-section__title';
     panelsTitle.textContent = 'Painéis da apresentação';
     panelsSection.appendChild(panelsTitle);
-    const panelGrid = buildPanelGrid(runtime, jumpToPanel);
+    const panelGrid = document.createElement('div');
+    panelGrid.className = 'pn-menu-grid';
+
+    for (const panel of data.panels) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'pn-menu-card';
+      if (panel.isActive) card.classList.add('is-active');
+      card.dataset.panelIndex = String(panel.index);
+
+      const thumb = document.createElement('img');
+      thumb.className = 'pn-menu-card__thumb';
+      thumb.loading = 'lazy';
+      thumb.alt = '';
+      thumb.hidden = true;
+      card.appendChild(thumb);
+
+      const badge = document.createElement('span');
+      badge.className = 'pn-menu-card__index';
+      badge.textContent = (panel.index + 1) + ' / ' + data.panels.length;
+      card.appendChild(badge);
+
+      const title = document.createElement('h3');
+      title.className = 'pn-menu-card__title';
+      title.textContent = panel.title;
+      card.appendChild(title);
+
+      const panelSlug = data.slug + '--' + panel.id;
+      getThumbnailUrl(panelSlug, panel.id).then(url => {
+        if (url) { thumb.src = url; thumb.hidden = false; }
+      }).catch(() => {});
+
+      card.addEventListener('click', () => jumpToPanel(panel.index));
+      panelGrid.appendChild(card);
+    }
+
     panelsSection.appendChild(panelGrid);
     body.appendChild(panelsSection);
 
@@ -506,8 +542,9 @@ export function attachSidebar(runtime, options = {}) {
     function filterGrid(grid, q) {
       let visible = 0;
       grid.querySelectorAll('.pn-menu-card').forEach(card => {
-        const title = (card.querySelector('.pn-menu-card__title')?.textContent || '').toLowerCase();
-        const match = q === '' || title.includes(q);
+        const titleEl = card.querySelector('.pn-menu-card__title');
+        const text = (titleEl?.textContent || '').toLowerCase();
+        const match = q === '' || text.includes(q);
         card.hidden = !match;
         if (match) visible++;
       });
@@ -548,8 +585,8 @@ export function attachSidebar(runtime, options = {}) {
   function show() {
     if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
     sidebar.classList.add('is-open');
-    // While sidebar is open in collapsed mode, suppress the topbar's
-    // top-edge auto-reveal so it does not cover sidebar/menu content.
+    // While the side menu is open in collapsed mode, suppress the topbar's
+    // top-edge auto-reveal so it does not cover side menu/menu content.
     // Menu mode pins the topbar visible (handled by topbar.setMenuMode),
     // so we do not suppress in that case.
     if (!menuOpen) {
@@ -573,7 +610,7 @@ export function attachSidebar(runtime, options = {}) {
     menuOpen = true;
     sidebar.classList.add('is-menu', 'is-open');
     // Pinning the topbar (via setMenuMode) takes precedence over the
-    // sidebar suppression class, so we drop the suppression here.
+    // side menu suppression class, so we drop the suppression here.
     const tb = getTopbarEl();
     if (tb) tb.classList.remove('pn-sidebar-suppressed');
     if (topbar && typeof topbar.setMenuMode === 'function') topbar.setMenuMode(true);
@@ -585,7 +622,7 @@ export function attachSidebar(runtime, options = {}) {
     menuOpen = false;
     sidebar.classList.remove('is-menu');
     if (topbar && typeof topbar.setMenuMode === 'function') topbar.setMenuMode(false);
-    // If the sidebar is still open after the menu closes, re-apply suppression.
+    // If the side menu is still open after the menu closes, re-apply suppression.
     if (sidebar.classList.contains('is-open')) {
       const tb = getTopbarEl();
       if (tb) tb.classList.add('pn-sidebar-suppressed');
@@ -593,7 +630,7 @@ export function attachSidebar(runtime, options = {}) {
     renderCollapsed();
   }
 
-  // Wire the topbar's "Fechar menu" button once. This needs the runtime sidebar
+  // Wire the topbar's "Fechar menu" button once. This needs the runtime side menu
   // to be fully constructed (so exitMenu/hide are in scope), so it cannot be
   // done inside attachTopbar.
   if (topbar && typeof topbar.registerCloseMenuButton === 'function') {

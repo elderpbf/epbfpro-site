@@ -1,13 +1,15 @@
-/* engine/sidebar.css
- *
- * Left-edge auto-hide sidebar for Panels v2: collapsible groups (Ferramentas
+/* engine/sidebar.css */
+/* TODO: rename file (sidebar.css -> side-menu.css) and class prefix (pn-sidebar__ -> pn-side-menu__)
+   Deferred to avoid import churn during active phase work. */
+/*
+ * Left-edge auto-hide side menu for Panels v2: collapsible groups (Ferramentas
  * + Painéis) plus a bottom bar carrying the deck title, an editable N/total
  * panel counter, and a hamburger glyph that toggles the full-viewport menu.
  *
- * The sidebar coordinates with the topbar via two classes it adds to the
+ * The side menu coordinates with the topbar via two classes it adds to the
  * global .bs-topbar element:
- *   .pn-sidebar-suppressed -- sidebar is open in collapsed mode; suppress
- *      the topbar's top-edge auto-reveal so it does not cover sidebar/menu
+ *   .pn-sidebar-suppressed -- side menu is open in collapsed mode; suppress
+ *      the topbar's top-edge auto-reveal so it does not cover side menu/menu
  *      content. (Topbar is still reachable via the gallery / direct URL.)
  *   .pn-menu-pinned -- menu mode is active; force topbar visible so the
  *      "Fechar menu" action is always reachable.
@@ -41,7 +43,7 @@
   background: transparent;
 }
 
-/* ----- collapsed sidebar ----- */
+/* ----- collapsed side menu ----- */
 .pn-sidebar {
   position: fixed;
   top: 0;
@@ -241,7 +243,7 @@
   white-space: nowrap;
 }
 
-/* ----- bottom bar (replaces footer; lives at bottom of sidebar in both modes) ----- */
+/* ----- bottom bar (replaces footer; lives at bottom of side menu in both modes) ----- */
 .pn-sidebar__bottom-bar {
   display: flex;
   align-items: center;
@@ -409,6 +411,12 @@
   outline: none;
   border-color: var(--primary, #14b8a6);
   box-shadow: 0 0 0 2px var(--primary-light, rgba(94, 234, 212, 0.3));
+}
+
+.pn-menu-search--side .pn-menu-search__input {
+  font-size: 12px;
+  padding: 4px 8px;
+  height: 28px;
 }
 
 .pn-menu-empty {

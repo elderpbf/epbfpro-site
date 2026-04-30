@@ -136,9 +136,24 @@
 
   const bc = new BroadcastChannel('panels-presenter-' + slug);
 
+  function broadcast(direction) {
+    bc.postMessage({ type: 'navigate', direction, origin: 'presenter' });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); broadcast('next'); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); broadcast('prev'); }
+  });
+
+  document.getElementById('pv-prev')?.addEventListener('click', () => broadcast('prev'));
+  document.getElementById('pv-next')?.addEventListener('click', () => broadcast('next'));
+
   bc.addEventListener('message', (e) => {
     const msg = e.data;
     if (!msg || typeof msg !== 'object') return;
+
+    if (msg.origin === 'presenter') return; // ignore our own navigate echoes
 
     if (msg.type === 'panel') {
       const idx  = typeof msg.index === 'number' ? msg.index : 0;
