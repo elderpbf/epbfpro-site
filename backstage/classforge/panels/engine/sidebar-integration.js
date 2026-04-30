@@ -29,6 +29,7 @@
 //   attachSidebar(runtime, { topbar });        // tools optional; defaults below
 
 import { registry } from './registry.js';
+import { findHostedSession } from './classpulse-discovery.js';
 
 // Inline single-color SVG glyphs that follow currentColor for theme switching.
 // Inlined (not fetched) so the sidebar stays self-contained and theme changes
@@ -308,11 +309,20 @@ export function attachSidebar(runtime, options = {}) {
   menuToggle.innerHTML = LOCAL_ICONS.menu;
   bottomBar.appendChild(menuToggle);
 
-  const bottomTitle = document.createElement('button');
-  bottomTitle.type = 'button';
+  const bottomTitle = document.createElement('span');
   bottomTitle.className = 'pn-sidebar__bottom-title';
   bottomTitle.textContent = (runtime.manifest && runtime.manifest.title) || 'ClassForge';
   bottomBar.appendChild(bottomTitle);
+
+  const cpBadge = document.createElement('button');
+  cpBadge.type = 'button';
+  cpBadge.className = 'pn-sidebar__cp-badge';
+  cpBadge.setAttribute('aria-label', 'Abrir ClassPulse Host');
+  cpBadge.hidden = true;
+  const cpDot = document.createElement('span');
+  cpDot.className = 'pn-sidebar__cp-badge-dot';
+  cpBadge.appendChild(cpDot);
+  bottomBar.appendChild(cpBadge);
 
   const counter = document.createElement('div');
   counter.className = 'pn-sidebar__counter';
@@ -362,7 +372,6 @@ export function attachSidebar(runtime, options = {}) {
     if (menuOpen) { exitMenu(); hide(); } else { enterMenu(); }
   }
   menuToggle.addEventListener('click', toggleMenu);
-  bottomTitle.addEventListener('click', toggleMenu);
 
   function launchTool(tool) {
     if (tool.kind === 'modal' && tool.tool) {
@@ -589,9 +598,49 @@ export function attachSidebar(runtime, options = {}) {
   renderCollapsed();
   refreshCounter();
 
+  // ClassPulse live-session badge polling
+  let cpSession = null;
+  let cpPollTimer = null;
+  const cpSlug = (runtime.manifest && runtime.manifest.id) || null;
+
+  function updateCpBadge(session) {
+    cpSession = session;
+    cpBadge.hidden = !session;
+    if (session) {
+      cpBadge.title = 'Sessão ClassPulse ativa: ' + session.code
+        + (session.title ? ' – ' + session.title : '')
+        + '\nClique para abrir o host';
+    }
+  }
+
+  function scheduleCpPoll(delay) {
+    if (cpPollTimer) clearTimeout(cpPollTimer);
+    cpPollTimer = setTimeout(() => {
+      findHostedSession(cpSlug).then(session => {
+        updateCpBadge(session);
+        scheduleCpPoll(session ? 10000 : 30000);
+      }).catch(() => { scheduleCpPoll(30000); });
+    }, delay);
+  }
+
+  findHostedSession(cpSlug).then(session => {
+    updateCpBadge(session);
+    scheduleCpPoll(session ? 10000 : 30000);
+  }).catch(() => { scheduleCpPoll(30000); });
+
+  cpBadge.addEventListener('click', () => {
+    if (!cpSession) return;
+    const url = '/go/host.html?code=' + encodeURIComponent(cpSession.code);
+    const popup = openPopup(url);
+    if (!popup) {
+      alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
+    }
+  });
+
   return {
     show, hide, enterMenu, exitMenu,
     destroy() {
+      if (cpPollTimer) clearTimeout(cpPollTimer);
       closeModal();
       if (zone.parentNode) zone.remove();
       if (sidebar.parentNode) sidebar.remove();

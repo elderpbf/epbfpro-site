@@ -285,16 +285,40 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary, #e5e7eb);
-  background: transparent;
-  border: none;
   padding: 0;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
 }
 
-.pn-sidebar__bottom-title:hover {
-  color: var(--primary, #14b8a6);
+.pn-sidebar.is-menu .pn-sidebar__counter {
+  display: none;
+}
+
+/* ----- ClassPulse live-session badge ----- */
+.pn-sidebar__cp-badge {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.pn-sidebar__cp-badge:hover {
+  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
+}
+
+.pn-sidebar__cp-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pn-cp-pulse 2s ease-in-out infinite;
+}
+
+@keyframes pn-cp-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
 }
 
 .pn-sidebar__counter {
