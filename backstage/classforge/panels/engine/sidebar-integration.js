@@ -319,6 +319,9 @@ export function attachSidebar(runtime, options = {}) {
   cpBadge.className = 'pn-sidebar__cp-badge';
   cpBadge.setAttribute('aria-label', 'Abrir ClassPulse Host');
   cpBadge.hidden = true;
+  const cpName = document.createElement('span');
+  cpName.className = 'pn-sidebar__cp-badge-name';
+  cpBadge.appendChild(cpName);
   const cpDot = document.createElement('span');
   cpDot.className = 'pn-sidebar__cp-badge-dot';
   cpBadge.appendChild(cpDot);
@@ -431,40 +434,8 @@ export function attachSidebar(runtime, options = {}) {
     }));
   }
 
-  function buildCpBar() {
-    const bar = document.createElement('div');
-    bar.className = 'pn-menu-cp-bar';
-    if (cpSession) {
-      const dot = document.createElement('span');
-      dot.className = 'pn-menu-cp-bar__dot';
-      bar.appendChild(dot);
-      const name = document.createElement('a');
-      name.className = 'pn-menu-cp-bar__name';
-      name.href = '/go/host.html?code=' + encodeURIComponent(cpSession.code);
-      name.target = '_blank';
-      name.rel = 'noopener';
-      name.textContent = cpSession.title || ('Sessão ' + cpSession.code);
-      bar.appendChild(name);
-      const badge = document.createElement('span');
-      badge.className = 'pn-menu-cp-bar__badge';
-      badge.textContent = 'Live';
-      bar.appendChild(badge);
-    } else {
-      const link = document.createElement('a');
-      link.className = 'pn-menu-cp-bar__link';
-      link.href = '/backstage/classpulse/';
-      link.target = '_blank';
-      link.rel = 'noopener';
-      link.textContent = 'Ver sessões ClassPulse →';
-      bar.appendChild(link);
-    }
-    return bar;
-  }
-
   function renderMenu() {
     body.innerHTML = '';
-
-    body.appendChild(buildCpBar());
 
     const searchWrap = document.createElement('div');
     searchWrap.className = 'pn-menu-search';
@@ -643,9 +614,12 @@ export function attachSidebar(runtime, options = {}) {
     cpSession = session;
     cpBadge.hidden = !session;
     if (session) {
+      cpName.textContent = 'Sessão ' + (session.title || session.code);
       cpBadge.title = 'Sessão ClassPulse ativa: ' + session.code
         + (session.title ? ' – ' + session.title : '')
         + '\nClique para abrir o host';
+    } else {
+      cpName.textContent = '';
     }
   }
 

@@ -17,6 +17,24 @@
 <link rel="stylesheet" href="../css/shared-components.css?v=1.3">
 <link rel="stylesheet" href="../css/question-types.css?v=1.6">
 <script src="../js/debug.js?v=2.5"></script>
+<style>
+  .cp-session-card.is-clickable { cursor: pointer; transition: border-color .15s, background .15s; }
+  .cp-session-card.is-clickable:hover { border-color: rgba(20,184,166,.4); background: rgba(20,184,166,.04); }
+  .cp-live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ef4444; flex-shrink: 0;
+    animation: cp-live-pulse 2s ease-in-out infinite;
+  }
+  .cp-live-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    color: #ef4444; text-transform: uppercase;
+  }
+  .cp-live-indicator { display: inline-flex; align-items: center; gap: 5px; }
+  @keyframes cp-live-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.75); }
+  }
+</style>
 </head>
 <body>
 
@@ -501,7 +519,10 @@ function renderSessions() {
 
   sessions.forEach(function(s) {
     var card = document.createElement('div');
-    card.className = 'cp-session-card';
+    card.className = 'cp-session-card is-clickable';
+    card.addEventListener('click', function() {
+      location.href = 'host.html?code=' + encodeURIComponent(s.code);
+    });
 
     var codeEl = document.createElement('div');
     codeEl.className = 'cp-session-code';
@@ -518,13 +539,21 @@ function renderSessions() {
     info.appendChild(title);
     info.appendChild(meta);
 
-    var status = document.createElement('span');
-    status.className = 'cp-session-status ' + (s.status || 'open');
-    status.textContent = s.status === 'closed' ? 'Encerrada' : 'Aberta';
+    var liveIndicator = null;
+    if (s.status === 'open') {
+      liveIndicator = document.createElement('span');
+      liveIndicator.className = 'cp-live-indicator';
+      liveIndicator.title = 'Sessão sendo hospedada';
+      var dot = document.createElement('span'); dot.className = 'cp-live-dot';
+      var label = document.createElement('span'); label.className = 'cp-live-label'; label.textContent = 'Live';
+      liveIndicator.appendChild(dot);
+      liveIndicator.appendChild(label);
+    }
 
-    // Presentation link badge or picker
+    // Presentation link badge or picker (interactions stop propagation so they don't navigate)
     var presLink = document.createElement('div');
     presLink.className = 'cp-pres-link';
+    presLink.addEventListener('click', function(e) { e.stopPropagation(); });
     if (s.presentation_slug) {
       var linked = presentations.find(function(p) { return p.slug === s.presentation_slug; });
       var presTitle = linked ? linked.title : s.presentation_slug;
@@ -538,18 +567,19 @@ function renderSessions() {
       presBadge.className = 'cp-pres-badge';
       presBadge.title = presTitle + ' (' + engineLabel + ')';
       presBadge.textContent = presTitle + ' (' + engineLabel + ')';
-      presBadge.addEventListener('click', function() { window.open(presHref, '_blank'); });
+      presBadge.addEventListener('click', function(e) { e.stopPropagation(); window.open(presHref, '_blank'); });
       presLink.appendChild(presBadge);
 
       var unlinkBtn = document.createElement('button');
       unlinkBtn.className = 'cp-pres-unlink';
       unlinkBtn.title = 'Desvincular apresentação';
       unlinkBtn.textContent = '×';
-      unlinkBtn.addEventListener('click', async function() {
-        try { await doUnlinkPresentation(s); } catch (e) { showToastError(e.message); }
+      unlinkBtn.addEventListener('click', async function(e) {
+        e.stopPropagation();
+        try { await doUnlinkPresentation(s); } catch (err) { showToastError(err.message); }
       });
       presLink.appendChild(unlinkBtn);
-    } else if (s.status !== 'closed' && presentations.length > 0) {
+    } else if (presentations.length > 0) {
       var picker = document.createElement('select');
       picker.className = 'cp-pres-picker';
       var placeholder = document.createElement('option');
@@ -564,61 +594,29 @@ function renderSessions() {
         opt.textContent = p.title + ' (' + engineLabel + ')';
         picker.appendChild(opt);
       });
-      picker.addEventListener('change', async function() {
-        try { await doLinkPresentation(s, picker.value); } catch (e) { showToastError(e.message); }
+      picker.addEventListener('change', async function(e) {
+        e.stopPropagation();
+        try { await doLinkPresentation(s, picker.value); } catch (err) { showToastError(err.message); }
       });
       presLink.appendChild(picker);
     }
 
     var actions = document.createElement('div');
     actions.className = 'cp-session-actions';
+    actions.addEventListener('click', function(e) { e.stopPropagation(); });
 
     var statsBtn = document.createElement('button');
     statsBtn.className = 'cp-btn-ghost cp-stats-btn';
     statsBtn.textContent = 'Estatísticas';
-    statsBtn.addEventListener('click', function() {
+    statsBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
       openStats(s);
     });
     actions.appendChild(statsBtn);
 
-    if (s.status !== 'closed') {
-      var hostBtn = document.createElement('a');
-      hostBtn.className = 'cp-btn-ghost';
-      hostBtn.href = 'host.html?code=' + encodeURIComponent(s.code);
-      hostBtn.textContent = 'Host';
-      actions.appendChild(hostBtn);
-
-      var closeBtn = document.createElement('button');
-      closeBtn.className = 'cp-btn-danger';
-      closeBtn.textContent = 'Encerrar';
-      closeBtn.style.cssText = 'font-size:0.78rem;padding:0.4rem 0.8rem';
-      closeBtn.addEventListener('click', async function() {
-        if (!confirm('Encerrar sessão ' + s.code + '?')) return;
-        try {
-          await callWorker({ action: 'close_session', auth_token: AUTH_TOKEN, code: s.code });
-          s.status = 'closed';
-          renderSessions();
-        } catch (e) { showToastError(e.message); }
-      });
-      actions.appendChild(closeBtn);
-    } else {
-      var reopenBtn = document.createElement('button');
-      reopenBtn.className = 'cp-btn-ghost';
-      reopenBtn.textContent = 'Reabrir';
-      reopenBtn.style.cssText = 'font-size:0.78rem;padding:0.4rem 0.8rem';
-      reopenBtn.addEventListener('click', async function() {
-        try {
-          await callWorker({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: s.code });
-          s.status = 'open';
-          renderSessions();
-        } catch (e) { showToastError(e.message); }
-      });
-      actions.appendChild(reopenBtn);
-    }
-
     card.appendChild(codeEl);
     card.appendChild(info);
-    card.appendChild(status);
+    if (liveIndicator) card.appendChild(liveIndicator);
     card.appendChild(presLink);
     card.appendChild(actions);
     list.appendChild(card);
@@ -663,9 +661,7 @@ document.getElementById('create-session-btn').addEventListener('click', async fu
   try {
     var data = await callWorker({ action: 'create_session', auth_token: AUTH_TOKEN, title: title });
     document.getElementById('session-title').value = '';
-    // Prepend new session
-    sessions.unshift({ code: data.code, title: title, status: 'open', created_at: new Date().toISOString() });
-    renderSessions();
+    location.href = 'host.html?code=' + encodeURIComponent(data.code);
   } catch (e) {
     showToastError(e.message);
   } finally {
