@@ -143,6 +143,10 @@
 
   const bc = new BroadcastChannel('panels-presenter-' + slug);
 
+  // Request the deck's current state so the counter + notes populate
+  // immediately on connection, without waiting for the first arrow press.
+  bc.postMessage({ type: 'request-state', origin: 'presenter' });
+
   function broadcast(direction) {
     bc.postMessage({ type: 'navigate', direction, origin: 'presenter' });
   }

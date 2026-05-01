@@ -7,15 +7,26 @@ import { registerTool } from '../../engine/registry.js';
 
 const API_URL = 'https://backstage-api.pensoia.workers.dev';
 
-let active = null;
-
 // Font-size controls. Bubbles + input inherit wrap.style.fontSize so the
 // shrink/grow buttons scale all chat content. Toolbar font-size is fixed
 // in CSS so the buttons themselves don't grow.
-const FONT_KEY  = 'bs_ai_chat_font_size';
+//
+// FONT_KEY_VERSION: bump the suffix to force a re-default if the size needs
+// to change again. Old keys listed in OLD_FONT_KEYS are cleared once on load
+// so previously-stored values can't override the new default.
+const FONT_KEY_VERSION = 'bs_ai_chat_font_size_v2';
+const OLD_FONT_KEYS = ['bs_ai_chat_font_size'];
+try {
+  for (const oldKey of OLD_FONT_KEYS) {
+    if (localStorage.getItem(oldKey) !== null) localStorage.removeItem(oldKey);
+  }
+} catch (_) {}
+
 const FONT_MIN  = 16;
 const FONT_MAX  = 40;
 const FONT_STEP = 2;
+
+let mountedWrap = null;
 
 registerTool({
   id: 'ai-chat',
@@ -24,13 +35,13 @@ registerTool({
     const wrap = document.createElement('div');
     wrap.className = 'pn-ai-chat';
 
-    // Read persisted size or default to 24px.
-    let fontSize = parseInt(localStorage.getItem(FONT_KEY), 10);
-    if (!Number.isFinite(fontSize) || fontSize < FONT_MIN || fontSize > FONT_MAX) fontSize = 24;
+    // Read persisted size or default to 28px.
+    let fontSize = parseInt(localStorage.getItem(FONT_KEY_VERSION), 10);
+    if (!Number.isFinite(fontSize) || fontSize < FONT_MIN || fontSize > FONT_MAX) fontSize = 28;
 
     function applyFontSize() {
       wrap.style.fontSize = fontSize + 'px';
-      try { localStorage.setItem(FONT_KEY, String(fontSize)); } catch (_) {}
+      try { localStorage.setItem(FONT_KEY_VERSION, String(fontSize)); } catch (_) {}
     }
 
     const toolbar = document.createElement('div');
@@ -135,7 +146,11 @@ registerTool({
     });
 
     requestAnimationFrame(() => input.focus());
-    active = wrap;
-    return { unmount() { if (wrap.parentNode) wrap.remove(); active = null; } };
+    mountedWrap = wrap;
+  },
+  unmount() {
+    if (!mountedWrap) return;
+    if (typeof mountedWrap.remove === 'function') mountedWrap.remove();
+    mountedWrap = null;
   },
 });

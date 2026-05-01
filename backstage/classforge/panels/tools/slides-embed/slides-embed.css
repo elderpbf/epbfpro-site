@@ -15,3 +15,60 @@
   height: max(100vh, calc(100vw * 9 / 16));
   border: 0;
 }
+
+/* Slide picker pill: hidden until the bottom hover zone is entered. Mirrors
+   the side-menu reveal pattern: a thin reveal strip + a pill that slides up
+   on mouseenter and slides back down after a short grace on mouseleave. */
+.pn-slides-pill-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16px;
+  z-index: 5;
+}
+
+.pn-slides-pill {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translate(-50%, calc(100% + 16px));
+  transition: transform 200ms ease;
+  background: var(--pn-surface-1, rgba(0,0,0,0.85));
+  color: var(--pn-text, #fff);
+  border: 1px solid var(--pn-border, rgba(255,255,255,0.2));
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 6;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.pn-slides-pill.is-visible {
+  transform: translate(-50%, 0);
+}
+
+.pn-slides-pill__input {
+  width: 4em;
+  padding: 4px 8px;
+  border: 1px solid var(--pn-border, rgba(255,255,255,0.3));
+  border-radius: 6px;
+  background: var(--pn-bg, rgba(255,255,255,0.1));
+  color: inherit;
+  font-size: 14px;
+}
+
+.pn-slides-pill__go {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--pn-accent, #3b82f6);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}

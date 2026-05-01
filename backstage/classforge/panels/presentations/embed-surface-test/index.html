@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="../../engine/tokens.css">
   <link rel="stylesheet" href="../../layouts/embed-fullbleed/embed-fullbleed.css">
   <link rel="stylesheet" href="../../layouts/tool-fullbleed/tool-fullbleed.css">
-  <link rel="stylesheet" href="../../tools/slides-embed/slides-embed.css">
+  <link rel="stylesheet" href="../../tools/slides-embed/slides-embed.css?v=1.1">
   <link rel="stylesheet" href="../../tools/video-embed/video-embed.css">
   <link rel="stylesheet" href="../../tools/gif-embed/gif-embed.css">
   <link rel="stylesheet" href="../../tools/js-anim-embed/js-anim-embed.css">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../../tools/classpulse-display-embed/classpulse-display-embed.css">
   <link rel="stylesheet" href="../../tools/popup-launcher/popup-launcher.css">
   <link rel="stylesheet" href="../../tools/terminal-embed/terminal-embed.css">
-  <link rel="stylesheet" href="../../tools/ai-chat/ai-chat.css?v=1.1">
+  <link rel="stylesheet" href="../../tools/ai-chat/ai-chat.css?v=1.3">
   <link rel="stylesheet" href="../../layouts/content/content.css">
   <link rel="stylesheet" href="../../engine/sidebar.css?v=2.1">
   <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
@@ -52,13 +52,12 @@
     import '../../tools/classpulse-display-embed/index.js';
     import '../../tools/popup-launcher/index.js';
     import '../../tools/terminal-embed/index.js';
-    import '../../tools/ai-chat/index.js';
+    import '../../tools/ai-chat/index.js?v=1.1';
     import '../../layouts/content/index.js';
 
     import { createRuntime, defaultLoadPanel } from '../../engine/runtime.js';
     import { registry } from '../../engine/registry.js';
     import { attachTopbar } from '../../engine/topbar-integration.js';
-    import { attachProbe } from '../../engine/probe-integration.js';
     import { attachSettings } from '../../engine/settings-integration.js';
     import { attachThumbnail } from '../../engine/thumbnail-integration.js';
     import { attachSidebar } from '../../engine/sidebar-integration.js';
@@ -99,7 +98,6 @@
         }),
       ];
       const topbar = attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/', sections });
-      attachProbe(runtime);
       attachSidebar(runtime, { topbar });
     }
 
@@ -133,11 +131,21 @@
             if (msg.index !== runtime.currentIndex) runtime.goto(msg.index);
           }
         } else {
-          // Main deck: respond to navigate commands from presenter window.
+          // Main deck: respond to navigate commands from presenter window AND state requests.
           if (msg.origin !== 'presenter') return;
           if (msg.type === 'navigate') {
             if (msg.direction === 'next') runtime.next();
             else if (msg.direction === 'prev') runtime.prev();
+          } else if (msg.type === 'request-state') {
+            // Presenter view just connected; broadcast our current state so its
+            // counter / notes / mirror sync immediately.
+            bc.postMessage({
+              type: 'panel',
+              index: runtime.currentIndex,
+              meta: runtime.currentMeta,
+              total: runtime.panelCount,
+              origin: 'deck',
+            });
           }
         }
       });
