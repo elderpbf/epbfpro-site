@@ -111,13 +111,6 @@ export function attachPanelPills(host, options) {
   const pillRefs = pills.map(p => buildPill(p));
   for (const ref of pillRefs) bar.appendChild(ref.el);
 
-  // Give select pills a reference to barEl for dropdown positioning.
-  // barEl is the bar element itself (built above); pass it after all pills
-  // are appended so the bar exists.
-  for (const ref of pillRefs) {
-    if (typeof ref.setBarEl === 'function') ref.setBarEl(bar);
-  }
-
   host.appendChild(zone);
   host.appendChild(bar);
 
@@ -131,6 +124,13 @@ export function attachPanelPills(host, options) {
   // try/catch. The .is-visible class is also toggled as a fallback for
   // browsers without Popover API support.
   let hideTimer = null;
+  // Hide-lock counter: while > 0, the bar refuses to hide on mouseleave.
+  // Incremented when a child pill opens a dropdown (top-layer dialog), so
+  // moving the cursor from the pill bar toward the dropdown does not
+  // collapse the bar underneath it. Decremented on dropdown close. Each
+  // open MUST be paired with exactly one close (slide-pick, Esc, click-
+  // outside, programmatic close all flow through buildSelectPill's close()).
+  let hideLocks = 0;
   function showBar() {
     bar.classList.add('is-visible');
     if (supportsPopover) {
@@ -148,13 +148,36 @@ export function attachPanelPills(host, options) {
     showBar();
   }
   function hide() {
+    if (hideLocks > 0) return;
     if (bar.querySelector('input:focus')) return;
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
+      if (hideLocks > 0) { hideTimer = null; return; }
       if (bar.querySelector('input:focus')) { hideTimer = null; return; }
       hideBar();
       hideTimer = null;
     }, HIDE_GRACE_MS);
+  }
+  function lockHide() {
+    hideLocks++;
+    // Cancel any pending hide timer so the bar doesn't disappear after a
+    // dropdown opens (e.g. user moved cursor off the bar before clicking).
+    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+    // Force the bar visible: covers the keyboard-driven case where the
+    // dropdown is opened while the bar is hidden.
+    showBar();
+  }
+  function unlockHide() {
+    if (hideLocks > 0) hideLocks--;
+  }
+
+  // Give select pills a reference to barEl for dropdown positioning, plus
+  // a barApi exposing the lock helpers so child dropdowns can suppress the
+  // bar's mouseleave-hides-bar behavior while they're open. Done here (after
+  // lockHide/unlockHide exist) instead of right after pillRefs are built.
+  const barApi = { lockHide, unlockHide };
+  for (const ref of pillRefs) {
+    if (typeof ref.setBarEl === 'function') ref.setBarEl(bar, barApi);
   }
 
   zone.addEventListener('mouseenter', show);
@@ -483,7 +506,17 @@ function buildSelectPill(d) {
       setValue(items[idx].value);
     }
 
+    let closed = false;
     function close() {
+      // Idempotent: cancel + click-outside + Esc handlers can all race and
+      // call this. The unlock side MUST run exactly once per open.
+      if (closed) return;
+      closed = true;
+      // Unlock BEFORE removing the dialog so the bar's hide logic, if it
+      // runs synchronously, sees the up-to-date counter.
+      if (_barApi && typeof _barApi.unlockHide === 'function') {
+        _barApi.unlockHide();
+      }
       if (dialog.open) dialog.close();
       if (dialog.parentNode) dialog.remove();
       openDropdown = null;
@@ -526,6 +559,12 @@ function buildSelectPill(d) {
     document.body.appendChild(dialog);
     positionDialog();
     dialog.showModal();
+    // Lock the pill bar visible for as long as this dropdown is open. The
+    // matching unlock lives in close() (above), which is the single funnel
+    // for slide-pick, Esc, click-outside, and programmatic close paths.
+    if (_barApi && typeof _barApi.lockHide === 'function') {
+      _barApi.lockHide();
+    }
     requestAnimationFrame(() => search.focus());
 
     openDropdown = { close };
@@ -540,7 +579,12 @@ function buildSelectPill(d) {
 
   // Pill bar must be accessible; label click is wired after attachPanelPills
   // returns barEl. We capture barEl via a closure set from outside.
+  // _barApi exposes lockHide/unlockHide so the dropdown can keep the pill
+  // bar visible while it's open (the user moves the cursor away from the
+  // bar to reach the dropdown -- without the lock, mouseleave would hide
+  // the bar underneath).
   let _barEl = null;
+  let _barApi = null;
 
   minus.addEventListener('click', () => {
     if (items.length === 0) return;
@@ -566,7 +610,10 @@ function buildSelectPill(d) {
   return {
     el: wrap,
     setValue,
-    setBarEl(el) { _barEl = el; },
+    setBarEl(el, api) {
+      _barEl = el;
+      if (api) _barApi = api;
+    },
     destroy() { closeDropdown(); },
   };
 }

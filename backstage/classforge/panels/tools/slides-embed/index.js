@@ -26,7 +26,7 @@
 // header for the full pill catalog.
 
 import { registerTool } from '../../engine/registry.js';
-import { attachPanelPills } from '../../engine/panel-pills.js?v=1.7';
+import { attachPanelPills } from '../../engine/panel-pills.js?v=1.8';
 
 const DEFAULT_URL = 'https://docs.google.com/presentation/d/e/REPLACE_WITH_PUBLISHED_ID/embed?start=false&loop=false&delayms=60000';
 

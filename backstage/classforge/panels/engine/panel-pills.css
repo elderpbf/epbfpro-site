@@ -58,8 +58,13 @@
 .pn-panel-pills__pill {
   display: inline-flex;
   align-items: stretch;
-  background: var(--pn-surface-2);
-  border: 1px solid var(--pn-border);
+  /* MUST be opaque -- the pill bar floats over arbitrary panel content
+     (cross-origin iframes, images, video). --pn-surface-2 is a translucent
+     overlay token; --pn-bg is the panel background and is solid in every
+     theme. --pn-border resolves to a translucent rgba in IA Blue, so we
+     hardcode an opaque fallback here. */
+  background: var(--pn-bg, #ffffff);
+  border: 1px solid rgba(0, 0, 0, 0.16);
   border-radius: var(--pn-radius-md);
   box-shadow: var(--pn-shadow-soft);
   font-family: var(--pn-font-body);

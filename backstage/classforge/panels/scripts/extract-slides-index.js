@@ -61,15 +61,23 @@ try {
 // ---------------------------------------------------------------------------
 
 const fields = 'slides(objectId,pageElements(shape(placeholder(type),text(textElements(textRun(content))))))';
-const cmd = `gws slides:v1 presentations get ${presentationId} --fields="${fields}"`;
+
+// gws CLI surface (current): query params and path params are passed via
+// --params=<JSON>. The presentationId is a path param; `fields` is a query
+// param. The CLI accepts both inside the same JSON blob.
+const params = JSON.stringify({ presentationId, fields });
+const cmd = `gws slides:v1 presentations get --params=${JSON.stringify(params)}`;
 
 let rawJson;
 try {
   rawJson = execSync(cmd, { encoding: 'utf8' });
 } catch (err) {
   console.error('Error: gws CLI failed with non-zero exit.');
+  if (err.stdout) {
+    console.error(err.stdout.toString());
+  }
   if (err.stderr) {
-    console.error(err.stderr);
+    console.error(err.stderr.toString());
   }
   process.exit(1);
 }
