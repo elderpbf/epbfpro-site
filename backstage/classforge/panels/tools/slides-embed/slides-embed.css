@@ -25,11 +25,8 @@
    ======================================================================== */
 
 .pn-slides-dropdown {
-  position: absolute;
-  left: 50%;
-  bottom: 64px;
-  transform: translateX(-50%);
-  width: min(640px, calc(100vw - 48px));
+  position: fixed;
+  /* left, bottom, width are set in JS via getBoundingClientRect() */
   max-height: min(60vh, 480px);
   background: var(--pn-surface-2, #1f1f24);
   color: var(--pn-text, #fff);
@@ -39,8 +36,12 @@
   font-family: var(--pn-font-body);
   display: flex;
   flex-direction: column;
-  z-index: 100;
+  /* No z-index needed: <dialog> renders in the browser top-layer, which always
+     wins over iframe compositor layers regardless of stacking context. */
   overflow: hidden;
+  /* Reset browser <dialog> defaults */
+  margin: 0;
+  padding: 0;
 }
 
 .pn-slides-dropdown__search {

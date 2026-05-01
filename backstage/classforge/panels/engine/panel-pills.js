@@ -103,6 +103,7 @@ export function attachPanelPills(host, options) {
   });
 
   return {
+    barEl: bar,
     destroy() {
       if (hideTimer) clearTimeout(hideTimer);
       if (zone.parentNode) zone.remove();

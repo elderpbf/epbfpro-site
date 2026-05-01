@@ -85,11 +85,10 @@ function resolveSlides(cfg) {
   return null;
 }
 
-function buildDropdown(host, slides, currentIndex, onPick) {
-  const overlay = document.createElement('div');
-  overlay.className = 'pn-slides-dropdown';
-  overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-label', 'Selecionar slide');
+function buildDropdown(pillBarEl, slides, currentIndex, onPick) {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'pn-slides-dropdown';
+  dialog.setAttribute('aria-label', 'Selecionar slide');
 
   const search = document.createElement('input');
   search.type = 'text';
@@ -97,11 +96,11 @@ function buildDropdown(host, slides, currentIndex, onPick) {
   search.placeholder = 'Buscar slide por número ou título...';
   search.spellcheck = false;
   search.autocomplete = 'off';
-  overlay.appendChild(search);
+  dialog.appendChild(search);
 
   const list = document.createElement('ul');
   list.className = 'pn-slides-dropdown__list';
-  overlay.appendChild(list);
+  dialog.appendChild(list);
 
   // Build all items up front; filter by toggling .is-hidden.
   const items = slides.map((s, i) => {
@@ -173,22 +172,39 @@ function buildDropdown(host, slides, currentIndex, onPick) {
     else if (e.key === 'Escape')    { e.preventDefault(); close(); }
   });
 
-  // Click outside closes (ignore clicks inside the overlay)
-  function onDocClick(e) { if (!overlay.contains(e.target)) close(); }
+  // Intercept native Esc (which would close the dialog without our cleanup)
+  dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
+
+  // Click outside the dialog box closes it (mousedown on the dialog element
+  // itself, i.e. outside the content area, means a click in the backdrop).
+  dialog.addEventListener('mousedown', e => {
+    if (e.target === dialog) close();
+  });
 
   function close() {
-    document.removeEventListener('mousedown', onDocClick, true);
-    if (overlay.parentNode) overlay.remove();
+    if (dialog.open) dialog.close();
+    if (dialog.parentNode) dialog.remove();
     dropdownHandle = null;
   }
 
+  // Position: fixed, bottom of dropdown aligns to top of pill bar.
+  function positionDialog() {
+    const rect = pillBarEl.getBoundingClientRect();
+    const dialogWidth = Math.min(640, window.innerWidth - 48);
+    let left = rect.left + (rect.width / 2) - (dialogWidth / 2);
+    left = Math.max(24, Math.min(left, window.innerWidth - dialogWidth - 24));
+    dialog.style.left = left + 'px';
+    dialog.style.bottom = (window.innerHeight - rect.top) + 'px';
+    dialog.style.width = dialogWidth + 'px';
+  }
+
   setHighlight(currentIndex);
-  host.appendChild(overlay);
-  // Defer doc-click bind so the opening click doesn't immediately close it
-  setTimeout(() => document.addEventListener('mousedown', onDocClick, true), 0);
+  document.body.appendChild(dialog);
+  positionDialog();
+  dialog.show();
   requestAnimationFrame(() => search.focus());
 
-  return { close, overlay };
+  return { close, overlay: dialog };
 }
 
 registerTool({
@@ -233,7 +249,11 @@ registerTool({
 
     function openDropdown() {
       if (dropdownHandle) { dropdownHandle.close(); return; }
-      dropdownHandle = buildDropdown(container, slides, current - 1, (zeroIdx) => {
+      // pillHandle.barEl is the pill bar DOM element; used for fixed positioning.
+      // attachPanelPills runs synchronously so pillHandle is set before any user
+      // interaction can fire openDropdown.
+      const anchorEl = pillHandle ? pillHandle.barEl : container;
+      dropdownHandle = buildDropdown(anchorEl, slides, current - 1, (zeroIdx) => {
         if (dropdownHandle) dropdownHandle.close();
         navigate(zeroIdx + 1);
       });
