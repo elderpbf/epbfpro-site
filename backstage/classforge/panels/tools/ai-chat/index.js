@@ -10,7 +10,7 @@
 // was being covered by the Backstage topbar reveal zone.
 
 import { registerTool } from '../../engine/registry.js';
-import { attachPanelPills } from '../../engine/panel-pills.js';
+import { attachPanelPills } from '../../engine/panel-pills.js?v=1.2';
 
 const API_URL = 'https://backstage-api.pensoia.workers.dev';
 
