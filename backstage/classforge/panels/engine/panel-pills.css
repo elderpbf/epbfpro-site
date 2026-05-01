@@ -140,11 +140,19 @@
 
 .pn-pill-select-dropdown {
   position: fixed;
+  /* Reset UA <dialog> inset shorthand (top/right/bottom/left: 0) so our
+     inline JS positioning (style.left / style.bottom / style.width) wins.
+     Without this, showModal() leaves top: 0 in effect, stretching the
+     dialog from window top to our bottom anchor and clamping it via
+     max-height -- which lands it at the top of the viewport. */
+  inset: auto;
   /* left, bottom, width are set in JS via getBoundingClientRect() */
   max-height: min(60vh, 480px);
-  background: var(--pn-surface-2, #1f1f24);
-  color: var(--pn-text, #fff);
-  border: 1px solid var(--pn-border, rgba(255,255,255,0.16));
+  /* MUST be opaque -- the dropdown floats over arbitrary content (iframes).
+     --pn-surface-2 is a translucent overlay; --pn-bg is the panel background. */
+  background: var(--pn-bg, #ffffff);
+  color: var(--pn-text, #333);
+  border: 1px solid var(--pn-border, rgba(0,0,0,0.16));
   border-radius: var(--pn-radius-md, 12px);
   box-shadow: 0 12px 32px rgba(0,0,0,0.45), var(--pn-shadow-soft);
   font-family: var(--pn-font-body);
@@ -166,10 +174,12 @@
 
 .pn-pill-select-search {
   width: 100%;
-  background: var(--pn-surface-2, #222);
+  /* Inherit the dropdown's opaque background; surface-2 over an iframe-backed
+     dropdown would still show through. */
+  background: transparent;
   color: inherit;
   border: 0;
-  border-bottom: 1px solid var(--pn-border, rgba(255,255,255,0.16));
+  border-bottom: 1px solid var(--pn-border, rgba(0,0,0,0.16));
   font-family: inherit;
   font-size: 15px;
   padding: 14px 18px;
@@ -206,11 +216,15 @@
 }
 
 .pn-pill-select-item:hover {
-  background: var(--pn-surface-2, rgba(255,255,255,0.06));
+  /* Hover overlay sits on top of the now-opaque dropdown background, so the
+     translucent surface token reads as a subtle tint -- desired effect. */
+  background: var(--pn-surface-2, rgba(0,0,0,0.06));
 }
 
 .pn-pill-select-item.is-active {
-  background: var(--pn-surface-2, rgba(255,255,255,0.06));
+  /* Rely on the accent border-left for the active state; no row background.
+     Previously we used --pn-surface-2 here, which is translucent and gave a
+     muddy double-layer with hover. */
   border-left-color: var(--pn-accent, #3b82f6);
 }
 

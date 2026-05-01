@@ -26,7 +26,7 @@
 // header for the full pill catalog.
 
 import { registerTool } from '../../engine/registry.js';
-import { attachPanelPills } from '../../engine/panel-pills.js?v=1.5';
+import { attachPanelPills } from '../../engine/panel-pills.js?v=1.6';
 
 const DEFAULT_URL = 'https://docs.google.com/presentation/d/e/REPLACE_WITH_PUBLISHED_ID/embed?start=false&loop=false&delayms=60000';
 
@@ -63,10 +63,13 @@ function withSlide(originalUrl, newSlideId) {
 // Resolve the slides list from panel config or deck manifest.
 // Returns { slides: [{id, title?}], hasTitles: boolean } or null if none.
 //
-// Special case: if the panel URL is pinned to a specific slide via a
-// `slide=id.gXXX` param AND the panel has no panel-level slides config,
-// the embed is showing exactly one slide -- there is nothing to pick.
-// In that case we skip the deck-level fallback and return null.
+// Deck-level fallback rules:
+//   - Only /pubembed URLs share slide IDs with runtime.manifest.slides
+//     (the published-deck form). /embed URLs (e.g. panel-06's single-slide
+//     copy) point to arbitrary other decks and must NOT inherit the deck
+//     index, otherwise we'd offer a picker pointing at the wrong slides.
+//   - Pinned /pubembed URLs (?slide=id.gXXX) show exactly one slide and
+//     are also exempt -- no picker.
 function resolveSlides(cfg, url) {
   if (Array.isArray(cfg.slides) && cfg.slides.length > 0) {
     const hasTitles = cfg.slides.every(s => s && typeof s.title === 'string');
@@ -75,8 +78,13 @@ function resolveSlides(cfg, url) {
   if (Array.isArray(cfg.slideIds) && cfg.slideIds.length > 0) {
     return { slides: cfg.slideIds.map(id => ({ id })), hasTitles: false };
   }
-  // If the URL is pinned to a specific slide, skip deck-level fallback.
-  if (typeof url === 'string' && url.includes('slide=id.')) return null;
+  // Deck-level fallback only applies to /pubembed URLs from the SAME deck as
+  // runtime.manifest.slides. /embed URLs (panel-06's single-slide copy) point
+  // to arbitrary other decks and must not inherit. Pinned /pubembed?slide=id.
+  // URLs are also exempt because they show exactly one slide.
+  if (typeof url !== 'string' || !url.includes('/pubembed') || url.includes('slide=id.')) {
+    return null;
+  }
   const deckSlides = window.__panelsRuntime?.manifest?.slides;
   if (Array.isArray(deckSlides) && deckSlides.length > 0) {
     const hasTitles = deckSlides.every(s => s && typeof s.title === 'string');

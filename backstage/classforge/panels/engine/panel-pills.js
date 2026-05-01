@@ -469,7 +469,10 @@ function buildSelectPill(d) {
       if (e.target === dialog) close();
     });
 
-    // Position: fixed, bottom of dropdown aligns to top of pill bar
+    // Position: fixed, bottom of dropdown aligns to top of pill bar.
+    // Belt-and-braces: explicitly null out top/right at the inline level so
+    // even if a UA stylesheet's specificity beats our class rule's `inset:auto`,
+    // our inline reset still wins.
     function positionDialog() {
       const rect = barEl.getBoundingClientRect();
       const dialogWidth = Math.min(640, window.innerWidth - 48);
@@ -478,6 +481,8 @@ function buildSelectPill(d) {
       dialog.style.left = left + 'px';
       dialog.style.bottom = (window.innerHeight - rect.top) + 'px';
       dialog.style.width = dialogWidth + 'px';
+      dialog.style.top = 'auto';
+      dialog.style.right = 'auto';
     }
 
     setHighlight(currentIdx);
