@@ -40,6 +40,18 @@ function normalize(s) {
   return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+// Parse a `slide=id.gXXX` from a URL (query or hash) and return the matching
+// 1-based index in the slides array, or 1 if not found.
+function detectInitialSlide(url, slides) {
+  const m = url.match(/[?&#]slide=([^&#]+)/);
+  if (!m) return 1;
+  const id = decodeURIComponent(m[1]);
+  for (let i = 0; i < slides.length; i++) {
+    if (slides[i].id === id) return i + 1;
+  }
+  return 1;
+}
+
 // Replace the existing slide=... param (whether in query string or hash) with
 // the new slide ID. Published URLs (/pubembed) carry it as a query param;
 // /embed URLs carry it as a hash fragment.
@@ -208,7 +220,7 @@ registerTool({
     const { slides, hasTitles } = resolved;
     const total = slides.length;
     const mode = cfg.slidePicker || (hasTitles ? 'search' : 'stepper');
-    let current = 1;
+    let current = detectInitialSlide(url, slides);
 
     if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
 

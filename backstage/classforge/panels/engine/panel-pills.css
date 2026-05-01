@@ -73,6 +73,28 @@
   outline: none;
 }
 
+/* Icon-only buttons (used by 'actions' pill kind) */
+.pn-panel-pills__btn--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  min-width: 40px;
+}
+
+.pn-panel-pills__btn--icon svg {
+  display: block;
+}
+
+.pn-panel-pills__btn--icon + .pn-panel-pills__btn--icon {
+  border-left: 1px solid var(--pn-border);
+}
+
+.pn-panel-pills__btn--icon.is-active {
+  background: var(--pn-accent);
+  color: var(--pn-bg);
+}
+
 /* Editable label: <input> in place of the button. Used by slide picker. */
 .pn-panel-pills__input {
   background: transparent;

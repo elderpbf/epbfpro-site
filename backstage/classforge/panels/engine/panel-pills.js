@@ -17,24 +17,38 @@
 //                 symbolMinus, symbolPlus,
 //                 ariaLabelMinus, ariaLabelPlus, ariaLabelLabel }
 //
-//     Visuals:
-//       - default symbols are '−' and '+' (used by zoom and font-size pills)
-//       - override with symbolMinus/symbolPlus (e.g. '←' / '→' for slide nav)
+//     Visuals: default symbols '−'/'+'; override with symbolMinus/symbolPlus.
 //
 //     Behavior:
-//       - editable=false (default): label is a button. Click resets to
-//         resetTo if provided, else calls onLabelClick if provided
-//         (used by slide picker to open a searchable dropdown), else no-op.
+//       - editable=false: label is a button. Click resets to resetTo if set,
+//         else calls onLabelClick if provided, else no-op.
 //       - editable=true: label is an <input>. Click focuses + selects raw
-//         value. Type a number, Enter applies (clamped to [min,max]),
-//         Esc reverts. Bar stays visible while input has focus.
+//         value. Type number, Enter applies, Esc reverts.
+//
+// -----------------------------------------------------------------------------
+//
+//   actions -- a row of icon buttons. No value, no stepper. Each button
+//              fires its own onClick, can show toggle state.
+//     Required: { kind: 'actions', buttons: [{ icon, onClick }, ...] }
+//     Per-button options:
+//       - icon          -- HTML/SVG markup string for the default icon
+//       - iconActive    -- alt icon when isActive() returns true
+//       - ariaLabel     -- aria-label for screen readers
+//       - ariaLabelActive -- alt aria-label when active
+//       - isActive()    -- returns boolean; toggles .is-active class
+//       - onClick(ctx)  -- ctx.refresh() re-evaluates isActive
+//
+//     Returned handle exposes refresh(index?) to re-evaluate toggles after
+//     external state changes (e.g. video plays naturally without click).
 //
 // -----------------------------------------------------------------------------
 // CURRENT CONSUMERS (2026-05-01)
 // -----------------------------------------------------------------------------
 //   tools/tokenizer-embed   -- stepper, zoom (75-250%, resetTo 1.0)
 //   tools/ai-chat           -- stepper, font size (16-40px)
-//   tools/slides-embed      -- stepper, slide nav (1..N, ← →, editable)
+//   tools/slides-embed      -- stepper, slide nav (1..N, ← →, editable/search)
+//   tools/video-embed       -- actions, [restart, play/pause, loop]
+//   tools/gif-embed         -- actions, [restart, play/pause]
 //
 // =============================================================================
 
@@ -99,12 +113,20 @@ export function attachPanelPills(host, options) {
       if (!ref) return;
       if (patch && typeof patch.value === 'number') ref.setValue(patch.value);
     },
+    refresh(index) {
+      if (index === undefined) {
+        for (const r of pillRefs) if (typeof r.refresh === 'function') r.refresh();
+      } else {
+        const r = pillRefs[index];
+        if (r && typeof r.refresh === 'function') r.refresh();
+      }
+    },
   };
 }
 
 function buildPill(descriptor) {
   if (descriptor && descriptor.kind === 'stepper') return buildStepperPill(descriptor);
-  // Future: 'toggle', 'select', 'button', etc.
+  if (descriptor && descriptor.kind === 'actions') return buildActionsPill(descriptor);
   return { el: document.createElement('span'), setValue() {} };
 }
 
@@ -213,4 +235,40 @@ function buildStepperPill(d) {
   wrap.appendChild(plus);
   refresh();
   return { el: wrap, setValue };
+}
+
+function buildActionsPill(d) {
+  const wrap = document.createElement('div');
+  wrap.className = 'pn-panel-pills__pill';
+
+  const buttons = (Array.isArray(d.buttons) ? d.buttons : []).map(b => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pn-panel-pills__btn pn-panel-pills__btn--icon';
+    btn.innerHTML = b.icon || '';
+    if (b.ariaLabel) btn.setAttribute('aria-label', b.ariaLabel);
+
+    function refresh() {
+      if (typeof b.isActive !== 'function') return;
+      const active = !!b.isActive();
+      btn.classList.toggle('is-active', active);
+      if (b.iconActive) btn.innerHTML = active ? b.iconActive : (b.icon || '');
+      if (b.ariaLabelActive) btn.setAttribute('aria-label', active ? b.ariaLabelActive : (b.ariaLabel || ''));
+    }
+
+    btn.addEventListener('click', () => {
+      if (typeof b.onClick === 'function') b.onClick({ refresh });
+      refresh();
+    });
+
+    refresh();
+    wrap.appendChild(btn);
+    return { btn, refresh };
+  });
+
+  return {
+    el: wrap,
+    setValue() { /* no-op for actions */ },
+    refresh() { for (const b of buttons) b.refresh(); },
+  };
 }
