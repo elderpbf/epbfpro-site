@@ -90,9 +90,22 @@ export function attachPanelPills(host, options) {
   const zone = document.createElement('div');
   zone.className = 'pn-panel-pills-zone';
 
-  // Pill bar (collapsed by default)
+  // Pill bar (collapsed by default).
+  //
+  // Uses the Popover API (popover="manual" + showPopover/hidePopover) so the
+  // bar renders in the browser top-layer. This is the same special layer
+  // <dialog>.showModal() lives in: it always paints above cross-origin
+  // iframe compositor layers (e.g. Google Slides), regardless of stacking
+  // context or z-index. Manual mode means only explicit hidePopover() closes
+  // it -- click-outside / esc do not auto-dismiss -- so pill interactions
+  // (dropdowns, button clicks) don't accidentally close the bar.
   const bar = document.createElement('div');
   bar.className = 'pn-panel-pills';
+  // Feature-detect: Popover API requires Chrome/Edge 114+, Firefox 125+,
+  // Safari 17+. Fall back to .is-visible class on older browsers.
+  const supportsPopover = typeof HTMLElement !== 'undefined'
+    && 'popover' in HTMLElement.prototype;
+  if (supportsPopover) bar.setAttribute('popover', 'manual');
 
   // Build one pill per descriptor
   const pillRefs = pills.map(p => buildPill(p));
@@ -110,17 +123,36 @@ export function attachPanelPills(host, options) {
 
   // Show / hide. Hide is suppressed while any pill input has focus so users
   // can finish typing (Enter applies, Esc reverts, then the bar may hide).
+  //
+  // Show/hide uses showPopover()/hidePopover() when available so the bar
+  // lives in the top-layer (above iframes). showPopover throws
+  // InvalidStateError if called on an already-shown popover (and
+  // hidePopover throws on an already-hidden one), so both are wrapped in
+  // try/catch. The .is-visible class is also toggled as a fallback for
+  // browsers without Popover API support.
   let hideTimer = null;
+  function showBar() {
+    bar.classList.add('is-visible');
+    if (supportsPopover) {
+      try { bar.showPopover(); } catch (e) { /* already shown */ }
+    }
+  }
+  function hideBar() {
+    bar.classList.remove('is-visible');
+    if (supportsPopover) {
+      try { bar.hidePopover(); } catch (e) { /* already hidden */ }
+    }
+  }
   function show() {
     if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
-    bar.classList.add('is-visible');
+    showBar();
   }
   function hide() {
     if (bar.querySelector('input:focus')) return;
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
       if (bar.querySelector('input:focus')) { hideTimer = null; return; }
-      bar.classList.remove('is-visible');
+      hideBar();
       hideTimer = null;
     }, HIDE_GRACE_MS);
   }
@@ -142,6 +174,11 @@ export function attachPanelPills(host, options) {
       if (hideTimer) clearTimeout(hideTimer);
       for (const ref of pillRefs) {
         if (typeof ref.destroy === 'function') ref.destroy();
+      }
+      // Close the popover before detach so the browser cleanly removes the
+      // top-layer entry. hidePopover throws if it's not currently open.
+      if (supportsPopover) {
+        try { bar.hidePopover(); } catch (e) { /* not open */ }
       }
       if (zone.parentNode) zone.remove();
       if (bar.parentNode) bar.remove();

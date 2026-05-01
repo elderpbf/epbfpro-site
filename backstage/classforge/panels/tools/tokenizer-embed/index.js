@@ -12,7 +12,7 @@
 // tool's container and is unaffected. Zoom level persists via localStorage.
 
 import { registerTool } from '../../engine/registry.js';
-import { attachPanelPills } from '../../engine/panel-pills.js?v=1.6';
+import { attachPanelPills } from '../../engine/panel-pills.js?v=1.7';
 
 const DEFAULT_URL = 'https://tiktokenizer.vercel.app/';
 const ZOOM_KEY = 'tok-embed:zoom';

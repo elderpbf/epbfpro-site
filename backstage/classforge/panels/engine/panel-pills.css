@@ -14,22 +14,45 @@
   z-index: 9;
 }
 
+/* Pill bar.
+ *
+ * Uses the Popover API (popover="manual" in JS) so the element renders in
+ * the browser top-layer -- the same layer <dialog>.showModal() lives in,
+ * which always wins over cross-origin iframe compositor layers (e.g. the
+ * Google Slides iframe). z-index alone cannot beat a sibling iframe's
+ * compositor under Chrome's site-isolation model.
+ *
+ * The UA stylesheet for [popover] sets `position: fixed; inset: 0; margin:
+ * auto; padding: 0.25em; border: solid; background: Canvas;` -- we have to
+ * neutralize all of that and re-anchor the bar to the viewport bottom.
+ *
+ * Coordinate model: bar is now viewport-relative (position: fixed) instead
+ * of panel-relative. Hover semantics stay the same because the
+ * .pn-panel-pills-zone trigger is still a normal-flow child of the panel.
+ */
 .pn-panel-pills {
-  position: absolute;
+  position: fixed;
+  inset: auto;              /* neutralize UA inset:0 */
   left: 50%;
   bottom: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;  /* the inner pill carries its own bg */
   transform: translate(-50%, calc(100% + 32px));
   transition: transform 200ms ease;
   display: inline-flex;
   align-items: stretch;
   gap: 12px;
-  z-index: 10;
-  pointer-events: none;
 }
 
+/* Open state: :popover-open is the browser-native open-state selector for
+ * popovers. .is-visible is kept as a fallback for browsers without the
+ * Popover API (the JS toggles both). pointer-events is implicit:
+ * display:none when closed (per UA), interactive when open. */
+.pn-panel-pills:popover-open,
 .pn-panel-pills.is-visible {
   transform: translate(-50%, 0);
-  pointer-events: auto;
 }
 
 .pn-panel-pills__pill {

@@ -26,7 +26,7 @@
 // header for the full pill catalog.
 
 import { registerTool } from '../../engine/registry.js';
-import { attachPanelPills } from '../../engine/panel-pills.js?v=1.6';
+import { attachPanelPills } from '../../engine/panel-pills.js?v=1.7';
 
 const DEFAULT_URL = 'https://docs.google.com/presentation/d/e/REPLACE_WITH_PUBLISHED_ID/embed?start=false&loop=false&delayms=60000';
 
@@ -63,13 +63,15 @@ function withSlide(originalUrl, newSlideId) {
 // Resolve the slides list from panel config or deck manifest.
 // Returns { slides: [{id, title?}], hasTitles: boolean } or null if none.
 //
-// Deck-level fallback rules:
+// Deck-level fallback rule:
 //   - Only /pubembed URLs share slide IDs with runtime.manifest.slides
 //     (the published-deck form). /embed URLs (e.g. panel-06's single-slide
 //     copy) point to arbitrary other decks and must NOT inherit the deck
 //     index, otherwise we'd offer a picker pointing at the wrong slides.
-//   - Pinned /pubembed URLs (?slide=id.gXXX) show exactly one slide and
-//     are also exempt -- no picker.
+//   - Pinned /pubembed URLs (?slide=id.gXXX) DO inherit: the slide IDs
+//     still come from the same deck as manifest.slides, so the picker
+//     remains correct -- the URL just opens the deck on a specific slide.
+//     This restores the picker on panel-09 (which uses ?slide=id.).
 function resolveSlides(cfg, url) {
   if (Array.isArray(cfg.slides) && cfg.slides.length > 0) {
     const hasTitles = cfg.slides.every(s => s && typeof s.title === 'string');
@@ -80,9 +82,8 @@ function resolveSlides(cfg, url) {
   }
   // Deck-level fallback only applies to /pubembed URLs from the SAME deck as
   // runtime.manifest.slides. /embed URLs (panel-06's single-slide copy) point
-  // to arbitrary other decks and must not inherit. Pinned /pubembed?slide=id.
-  // URLs are also exempt because they show exactly one slide.
-  if (typeof url !== 'string' || !url.includes('/pubembed') || url.includes('slide=id.')) {
+  // to arbitrary other decks and must not inherit.
+  if (typeof url !== 'string' || !url.includes('/pubembed')) {
     return null;
   }
   const deckSlides = window.__panelsRuntime?.manifest?.slides;
