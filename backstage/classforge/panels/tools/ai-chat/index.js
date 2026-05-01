@@ -2,15 +2,18 @@
 //
 // Embedded chat tool. Calls the Backstage Worker's ai_chat action.
 // UI uses Panels --pn-* theme tokens. Generic AI-assistant framing.
+//
+// Font-size control is provided by engine/panel-pills.js as a bottom-edge
+// stepper pill. Hovering the bottom 16px reveals the pill; the - / px / +
+// buttons scale all chat content (bubbles + input inherit wrap.style
+// fontSize). The previous top-right A-/A+ toolbar was removed because it
+// was being covered by the Backstage topbar reveal zone.
 
 import { registerTool } from '../../engine/registry.js';
+import { attachPanelPills } from '../../engine/panel-pills.js';
 
 const API_URL = 'https://backstage-api.pensoia.workers.dev';
 
-// Font-size controls. Bubbles + input inherit wrap.style.fontSize so the
-// shrink/grow buttons scale all chat content. Toolbar font-size is fixed
-// in CSS so the buttons themselves don't grow.
-//
 // FONT_KEY_VERSION: bump the suffix to force a re-default if the size needs
 // to change again. Old keys listed in OLD_FONT_KEYS are cleared once on load
 // so previously-stored values can't override the new default.
@@ -27,6 +30,7 @@ const FONT_MAX  = 40;
 const FONT_STEP = 2;
 
 let mountedWrap = null;
+let pillHandle = null;
 
 registerTool({
   id: 'ai-chat',
@@ -43,30 +47,6 @@ registerTool({
       wrap.style.fontSize = fontSize + 'px';
       try { localStorage.setItem(FONT_KEY_VERSION, String(fontSize)); } catch (_) {}
     }
-
-    const toolbar = document.createElement('div');
-    toolbar.className = 'pn-ai-chat__toolbar';
-    const shrink = document.createElement('button');
-    shrink.type = 'button';
-    shrink.className = 'pn-ai-chat__font-btn';
-    shrink.textContent = 'A−';
-    shrink.setAttribute('aria-label', 'Diminuir fonte');
-    shrink.addEventListener('click', () => {
-      fontSize = Math.max(FONT_MIN, fontSize - FONT_STEP);
-      applyFontSize();
-    });
-    const grow = document.createElement('button');
-    grow.type = 'button';
-    grow.className = 'pn-ai-chat__font-btn';
-    grow.textContent = 'A+';
-    grow.setAttribute('aria-label', 'Aumentar fonte');
-    grow.addEventListener('click', () => {
-      fontSize = Math.min(FONT_MAX, fontSize + FONT_STEP);
-      applyFontSize();
-    });
-    toolbar.appendChild(shrink);
-    toolbar.appendChild(grow);
-    wrap.appendChild(toolbar);
     applyFontSize();
 
     const messagesEl = document.createElement('div');
@@ -88,6 +68,26 @@ registerTool({
     wrap.appendChild(form);
 
     slot.appendChild(wrap);
+
+    // wrap MUST be positioned (relative or absolute) for the pill to anchor.
+    if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+
+    pillHandle = attachPanelPills(wrap, {
+      pills: [{
+        kind: 'stepper',
+        value: fontSize,
+        min: FONT_MIN,
+        max: FONT_MAX,
+        step: FONT_STEP,
+        format: (v) => v + 'px',
+        onChange: (v) => {
+          fontSize = v;
+          applyFontSize();
+        },
+        ariaLabelMinus: 'Diminuir fonte',
+        ariaLabelPlus:  'Aumentar fonte',
+      }],
+    });
 
     const messages = [];
 
@@ -149,6 +149,7 @@ registerTool({
     mountedWrap = wrap;
   },
   unmount() {
+    if (pillHandle) { pillHandle.destroy(); pillHandle = null; }
     if (!mountedWrap) return;
     if (typeof mountedWrap.remove === 'function') mountedWrap.remove();
     mountedWrap = null;

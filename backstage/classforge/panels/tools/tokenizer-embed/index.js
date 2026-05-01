@@ -6,12 +6,13 @@
 // no encoder, no composition; consumers wanting programmatic token data
 // will need a different tool (deferred until 3B/3C scope is revisited).
 //
-// A small floating zoom control (- / % / +) overlays the bottom-right of
-// the iframe and scales only the iframe content via CSS transform. The
-// Backstage topbar lives outside the tool's container and is unaffected.
-// Zoom level persists across reloads via localStorage.
+// Bottom-edge zoom pill (- / % / +) provided by engine/panel-pills.js.
+// Hover the bottom 16px of the tool to reveal it. Scales only the iframe
+// content via CSS transform; the Backstage topbar lives outside the
+// tool's container and is unaffected. Zoom level persists via localStorage.
 
 import { registerTool } from '../../engine/registry.js';
+import { attachPanelPills } from '../../engine/panel-pills.js';
 
 const DEFAULT_URL = 'https://tiktokenizer.vercel.app/';
 const ZOOM_KEY = 'tok-embed:zoom';
@@ -20,6 +21,7 @@ const ZOOM_MAX = 2.5;
 const ZOOM_STEP = 0.1;
 
 let mounted = null;
+let pillHandle = null;
 
 function loadZoom() {
   try {
@@ -38,42 +40,6 @@ function clampZoom(v) {
   if (n < ZOOM_MIN) return ZOOM_MIN;
   if (n > ZOOM_MAX) return ZOOM_MAX;
   return n;
-}
-
-function buildZoomControls(host, getZoom, onChange) {
-  const wrap = document.createElement('div');
-  wrap.className = 'tok-embed-zoom';
-
-  const minus = document.createElement('button');
-  minus.type = 'button';
-  minus.className = 'tok-embed-zoom__btn';
-  minus.setAttribute('aria-label', 'Diminuir zoom');
-  minus.textContent = '−';
-
-  const reset = document.createElement('button');
-  reset.type = 'button';
-  reset.className = 'tok-embed-zoom__label';
-  reset.setAttribute('aria-label', 'Resetar zoom');
-
-  const plus = document.createElement('button');
-  plus.type = 'button';
-  plus.className = 'tok-embed-zoom__btn';
-  plus.setAttribute('aria-label', 'Aumentar zoom');
-  plus.textContent = '+';
-
-  function refresh() { reset.textContent = Math.round(getZoom() * 100) + '%'; }
-
-  minus.addEventListener('click', () => onChange(clampZoom(getZoom() - ZOOM_STEP)));
-  plus.addEventListener('click',  () => onChange(clampZoom(getZoom() + ZOOM_STEP)));
-  reset.addEventListener('click', () => onChange(1.0));
-
-  wrap.appendChild(minus);
-  wrap.appendChild(reset);
-  wrap.appendChild(plus);
-  host.appendChild(wrap);
-
-  refresh();
-  return { refresh };
 }
 
 registerTool({
@@ -101,15 +67,29 @@ registerTool({
       zoom = clampZoom(v);
       saveZoom(zoom);
       root.style.setProperty('--tok-embed-zoom', String(zoom));
-      controls.refresh();
     }
 
-    const controls = buildZoomControls(root, () => zoom, applyZoom);
+    pillHandle = attachPanelPills(root, {
+      pills: [{
+        kind: 'stepper',
+        value: zoom,
+        min: ZOOM_MIN,
+        max: ZOOM_MAX,
+        step: ZOOM_STEP,
+        format: (v) => Math.round(v * 100) + '%',
+        onChange: (v) => applyZoom(v),
+        resetTo: 1.0,
+        ariaLabelMinus: 'Diminuir zoom',
+        ariaLabelPlus:  'Aumentar zoom',
+        ariaLabelLabel: 'Resetar zoom',
+      }],
+    });
 
     container.appendChild(root);
     mounted = root;
   },
   unmount() {
+    if (pillHandle) { pillHandle.destroy(); pillHandle = null; }
     if (!mounted) return;
     if (typeof mounted.remove === 'function') mounted.remove();
     mounted = null;
