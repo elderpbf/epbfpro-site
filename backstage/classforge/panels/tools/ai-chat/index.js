@@ -69,10 +69,14 @@ registerTool({
 
     slot.appendChild(wrap);
 
-    // wrap MUST be positioned (relative or absolute) for the pill to anchor.
-    if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+    // Anchor pills to the slot not wrap: tool-fullbleed slot padding (48px)
+    // would otherwise push the pill 64px above the viewport bottom. Anchoring
+    // to the slot puts bottom: 8px relative to the slot boundary (viewport
+    // bottom) and ensures the hidden pill slides below the viewport so it
+    // cannot re-trigger show on hover.
+    if (getComputedStyle(slot).position === 'static') slot.style.position = 'relative';
 
-    pillHandle = attachPanelPills(wrap, {
+    pillHandle = attachPanelPills(slot, {
       pills: [{
         kind: 'stepper',
         value: fontSize,

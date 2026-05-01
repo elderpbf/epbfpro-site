@@ -69,7 +69,11 @@ registerTool({
       root.style.setProperty('--tok-embed-zoom', String(zoom));
     }
 
-    pillHandle = attachPanelPills(root, {
+    // Anchor pills to the slot (container) not the inner root so bottom
+    // positioning is relative to the slot boundary (viewport bottom), not the
+    // root element which sits 48px inside the tool-fullbleed slot padding.
+    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    pillHandle = attachPanelPills(container, {
       pills: [{
         kind: 'stepper',
         value: zoom,

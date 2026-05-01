@@ -17,7 +17,7 @@
 .pn-panel-pills {
   position: absolute;
   left: 50%;
-  bottom: 16px;
+  bottom: 8px;
   transform: translate(-50%, calc(100% + 32px));
   transition: transform 200ms ease;
   display: inline-flex;
