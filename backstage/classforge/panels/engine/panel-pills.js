@@ -452,7 +452,7 @@ function buildSelectPill(d) {
       openDropdown = null;
     }
 
-    search.addEventListener('input', () => applyFilter(search.value));
+    search.addEventListener('input', () => applyFilter(search.value.trim()));
     search.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown')   { e.preventDefault(); moveHighlight(+1); }
       else if (e.key === 'ArrowUp')   { e.preventDefault(); moveHighlight(-1); }
@@ -460,11 +460,12 @@ function buildSelectPill(d) {
       else if (e.key === 'Escape')    { e.preventDefault(); close(); }
     });
 
-    // Intercept native Esc (which would close the dialog without our cleanup)
+    // showModal() fires 'cancel' natively on Esc -- run our full cleanup.
     dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
 
-    // Click outside the dialog content closes it
-    dialog.addEventListener('mousedown', e => {
+    // showModal() adds a transparent backdrop that covers the page.
+    // Clicks on the backdrop bubble up with e.target === dialog.
+    dialog.addEventListener('click', e => {
       if (e.target === dialog) close();
     });
 
@@ -482,7 +483,7 @@ function buildSelectPill(d) {
     setHighlight(currentIdx);
     document.body.appendChild(dialog);
     positionDialog();
-    dialog.show();
+    dialog.showModal();
     requestAnimationFrame(() => search.focus());
 
     openDropdown = { close };

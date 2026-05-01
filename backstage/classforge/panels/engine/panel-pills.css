@@ -158,6 +158,12 @@
   padding: 0;
 }
 
+/* Transparent backdrop: keeps the deck visible behind the dropdown while
+   the modal still blocks interaction with the rest of the page. */
+.pn-pill-select-dropdown::backdrop {
+  background: transparent;
+}
+
 .pn-pill-select-search {
   width: 100%;
   background: var(--pn-surface-2, #222);

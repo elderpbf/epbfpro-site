@@ -26,7 +26,7 @@
 // header for the full pill catalog.
 
 import { registerTool } from '../../engine/registry.js';
-import { attachPanelPills } from '../../engine/panel-pills.js?v=1.4';
+import { attachPanelPills } from '../../engine/panel-pills.js?v=1.5';
 
 const DEFAULT_URL = 'https://docs.google.com/presentation/d/e/REPLACE_WITH_PUBLISHED_ID/embed?start=false&loop=false&delayms=60000';
 
@@ -62,7 +62,12 @@ function withSlide(originalUrl, newSlideId) {
 
 // Resolve the slides list from panel config or deck manifest.
 // Returns { slides: [{id, title?}], hasTitles: boolean } or null if none.
-function resolveSlides(cfg) {
+//
+// Special case: if the panel URL is pinned to a specific slide via a
+// `slide=id.gXXX` param AND the panel has no panel-level slides config,
+// the embed is showing exactly one slide -- there is nothing to pick.
+// In that case we skip the deck-level fallback and return null.
+function resolveSlides(cfg, url) {
   if (Array.isArray(cfg.slides) && cfg.slides.length > 0) {
     const hasTitles = cfg.slides.every(s => s && typeof s.title === 'string');
     return { slides: cfg.slides, hasTitles };
@@ -70,6 +75,8 @@ function resolveSlides(cfg) {
   if (Array.isArray(cfg.slideIds) && cfg.slideIds.length > 0) {
     return { slides: cfg.slideIds.map(id => ({ id })), hasTitles: false };
   }
+  // If the URL is pinned to a specific slide, skip deck-level fallback.
+  if (typeof url === 'string' && url.includes('slide=id.')) return null;
   const deckSlides = window.__panelsRuntime?.manifest?.slides;
   if (Array.isArray(deckSlides) && deckSlides.length > 0) {
     const hasTitles = deckSlides.every(s => s && typeof s.title === 'string');
@@ -101,7 +108,7 @@ registerTool({
     container.appendChild(root);
     mounted = root;
 
-    const resolved = resolveSlides(cfg);
+    const resolved = resolveSlides(cfg, url);
     if (cfg.slidePicker === 'off' || !resolved) return;
 
     const { slides, hasTitles } = resolved;
