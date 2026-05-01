@@ -23,7 +23,8 @@
 //
 //     Behavior:
 //       - editable=false (default): label is a button. Click resets to
-//         resetTo if provided, else no-op. Used by tokenizer (zoom reset).
+//         resetTo if provided, else calls onLabelClick if provided
+//         (used by slide picker to open a searchable dropdown), else no-op.
 //       - editable=true: label is an <input>. Click focuses + selects raw
 //         value. Type a number, Enter applies (clamped to [min,max]),
 //         Esc reverts. Bar stays visible while input has focus.
@@ -199,6 +200,10 @@ function buildStepperPill(d) {
     });
   } else {
     label.addEventListener('click', () => {
+      if (typeof d.onLabelClick === 'function') {
+        d.onLabelClick(value);
+        return;
+      }
       if (reset !== null) setValue(reset);
     });
   }

@@ -6,17 +6,447 @@
   "language": "pt-BR",
   "description": "Phase 3AA: probe Google Slides iframe, HTML5 video, animated GIF, and custom JS animation as panel embed surfaces.",
   "panels": [
-    { "src": "panel-01.html", "title": "Slides Embed (full deck)" },
-    { "src": "panel-02.html", "title": "Video Embed" },
-    { "src": "panel-03.html", "title": "GIF Embed" },
-    { "src": "panel-04.html", "title": "JS Animation Embed" },
-    { "src": "panel-05.html", "title": "Tokenizer Embed (tiktokenizer.vercel.app)" },
-    { "src": "panel-06.html", "title": "Single-slide deck (copied + linked from source)" },
-    { "src": "panel-07.html", "title": "Painel convertido de slide existente" },
-    { "src": "panel-08.html", "title": "Painel criado do zero por IA" },
-    { "src": "panel-09.html", "title": "Slide direto via published URL + slide=id.g" },
-    { "src": "panel-10.html", "title": "Display ao vivo da sessao ClassPulse" },
-    { "src": "panel-11.html", "title": "Ferramenta Claude AI (popup)" },
-    { "src": "panel-12.html", "title": "Terminal embarcado (xterm.js, demo scripted)" }
+    {
+      "src": "panel-01.html",
+      "title": "Slides Embed (full deck)"
+    },
+    {
+      "src": "panel-02.html",
+      "title": "Video Embed"
+    },
+    {
+      "src": "panel-03.html",
+      "title": "GIF Embed"
+    },
+    {
+      "src": "panel-04.html",
+      "title": "JS Animation Embed"
+    },
+    {
+      "src": "panel-05.html",
+      "title": "Tokenizer Embed (tiktokenizer.vercel.app)"
+    },
+    {
+      "src": "panel-06.html",
+      "title": "Single-slide deck (copied + linked from source)"
+    },
+    {
+      "src": "panel-07.html",
+      "title": "Painel convertido de slide existente"
+    },
+    {
+      "src": "panel-08.html",
+      "title": "Painel criado do zero por IA"
+    },
+    {
+      "src": "panel-09.html",
+      "title": "Slide direto via published URL + slide=id.g"
+    },
+    {
+      "src": "panel-10.html",
+      "title": "Display ao vivo da sessao ClassPulse"
+    },
+    {
+      "src": "panel-11.html",
+      "title": "Ferramenta Claude AI (popup)"
+    },
+    {
+      "src": "panel-12.html",
+      "title": "Terminal embarcado (xterm.js, demo scripted)"
+    }
+  ],
+  "slides": [
+    {
+      "id": "id.g37501627965_0_251",
+      "title": "INTELIGÊNCIA ARTIFICIAL"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_6",
+      "title": "CONHECENDO A TURMA"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_16",
+      "title": "Slide 3"
+    },
+    {
+      "id": "id.g37267e69549_5_357",
+      "title": "MEDOS E INCERTEZAS FRENTE AO DESCONHECIDO"
+    },
+    {
+      "id": "id.g37267e69549_5_401",
+      "title": "A PRENSA"
+    },
+    {
+      "id": "id.g372bb4ee17f_25_354",
+      "title": "IA permite saltos de desenvolvimento social e profissional. IA não acabará com tudo, mudará tudo. É uma ferramenta poderosa que exige domínio, não submissão."
+    },
+    {
+      "id": "id.g3b7ed108406_1_1",
+      "title": "A IA NÃO SUBSTITUI A ATUAÇÃO HUMANA"
+    },
+    {
+      "id": "id.g3b7ed108406_1_104",
+      "title": "BENEFÍCIOS DA IA"
+    },
+    {
+      "id": "id.g3b7ed108406_1_206",
+      "title": "Poder Computacional (GPUs)"
+    },
+    {
+      "id": "id.g3b7ed108406_1_314",
+      "title": "Slide 10"
+    },
+    {
+      "id": "id.g3b7ed108406_1_323",
+      "title": "Slide 11"
+    },
+    {
+      "id": "id.g3b7ed108406_1_330",
+      "title": "100 MFLOPS"
+    },
+    {
+      "id": "id.g3b7ed108406_1_339",
+      "title": "100 GFLOPS"
+    },
+    {
+      "id": "id.g3b7ed108406_1_347",
+      "title": "Slide 14"
+    },
+    {
+      "id": "id.g3b7ed108406_1_354",
+      "title": "Fonte: Branch Education. How do Graphics Cards Work? Exploring GPU Architecture. YouTube."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_145",
+      "title": "Um pré-treino pode gastar energia equivalente ao consumo anual de milhares de residências."
+    },
+    {
+      "id": "id.g37354d9a830_2_247",
+      "title": "OS 4 CONCEITOS BÁSICOS"
+    },
+    {
+      "id": "id.g37354d9a830_2_183",
+      "title": "PRIMEIRO CONCEITO BÁSICO"
+    },
+    {
+      "id": "id.g3727fdaba63_2_103",
+      "title": "Inteligência Artificial"
+    },
+    {
+      "id": "id.g3b7ed108406_1_722",
+      "title": "Não é pensamento, é probabilidade; Treinada para Ser Útil, Verdadeira e Segura; Embaralhador Estatístico; Simulador de documentos da internet."
+    },
+    {
+      "id": "id.g3727fdaba63_2_117",
+      "title": "COMO A LLM APRENDE"
+    },
+    {
+      "id": "id.g37290a888ea_1_236",
+      "title": "PRÉ-TREINO"
+    },
+    {
+      "id": "id.g37290a888ea_1_258",
+      "title": "PÓS-TREINO"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_254",
+      "title": "MÉTODOS DE FINE TUNING"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_366",
+      "title": "Versão: X.Y | Novo Pré-treino.Novo Pós-treino Novo pré-treino: dados, corte temporal, arquitetura, limites de conversas, novas modalidades… Novo pós-treino: system prompt (personalidade), políticas… Pode haver mudança no tom, cautela, verbosidade, humor… Necessidade de validar os resultados dos prompts já existentes, adaptando-os ao novo estilo. GPT 5: troca da personalidade destacou a dependência na ferramenta"
+    },
+    {
+      "id": "id.g363ab4fecf5_2_100",
+      "title": "IA NÃO É GOOGLE"
+    },
+    {
+      "id": "id.g363ab4fecf5_4_0",
+      "title": "Previsão Estatística vs. Fatos Reais"
+    },
+    {
+      "id": "id.g363ec712483_0_61",
+      "title": "DEMONSTRAÇÃO Informação sobre música pouco replicada"
+    },
+    {
+      "id": "id.g3639f3fba03_0_6",
+      "title": "PRINCIPAIS FERRAMENTAS"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_473",
+      "title": "LLMs podem banir contas ao processar material sensível. Gatilhos: abuso sexual infantil, sexualização de menores, violência gráfica, ameaças, terrorismo. Evite colar trechos ou imagens explícitas. Se ocorrer bloqueio: preencher o formulário de contestação explicando função judicial; reversão não é garantida. Prática segura: não utilizar conta pessoal e manter backups offline redundantes."
+    },
+    {
+      "id": "id.g3d0177da493_0_239",
+      "title": "Resolução 615/2025 CNJ: transparência, supervisão humana, vedação de decisão automatizada; LGPD: nunca enviar dados sensíveis para ferramentas que usam dados para ferramentas; Responsabilidade: quem assina é o Juiz, não a LLM; Conta institucional > conta pessoal; Toda citação gerada por IA deve ser conferida na fonte"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_874",
+      "title": "É um \"canivete suíço\" Solução de problemas variados Faz fotos e vídeos Função de agente para tarefas online Bom para uso diário Opção de desativar dados para treinamento"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_574",
+      "title": "Agora pode usar dados para treinamento Melhor escrita jurídica Modo agêntico revolucionário Claude code - nov 2025"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_773",
+      "title": "Alta capacidade multimodal Melhor integrado com ferramentas Google Resposta rápida e fluida Limite ampliado de uso Usar com o histórico desativado (Res. 615 CNJ)"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_675",
+      "title": "Especializado em análise de documentos Organização e busca eficiente Auxilia na criação de notas Ideal para pesquisa e estudo Não utiliza dados para treinamento"
+    },
+    {
+      "id": "id.g3b8d35ecc43_0_30",
+      "title": "Melhor ferramenta de pesquisa com IA. Disponibilidade de versão gratuita funcional. Foco central em referências e citações verificáveis. Navegação e síntese de informações da web em tempo real."
+    },
+    {
+      "id": "id.g3b8d35ecc43_0_44",
+      "title": "FERRAMENTAS TERCEIRIZADAS"
+    },
+    {
+      "id": "id.g3b8d35ecc43_0_63",
+      "title": "Gemini integrado: assistente direto dentro dos apps que você já usa. Google Drive: Busca inteligente em toda a base de arquivos. NotebookLM: Análise de tendências de acordos em grandes volumes de processos. Gmail: Redação assistida de correspondência com clientes."
+    },
+    {
+      "id": "id.g37679c0df86_1_1140",
+      "title": "HORA DE TREINAR"
+    },
+    {
+      "id": "id.g372bb4ee17f_27_22",
+      "title": "PRÓXIMO CONCEITO BÁSICO"
+    },
+    {
+      "id": "id.g363ab4fecf5_4_91",
+      "title": "São a menor unidade de dados da IA. O modelo cria seu dicionário de tokens. Tudo custa tokens A cada nova mensagem, o sistema envia toda a conversa anterior junto. Entender isso é crucial para não esbarrar nos limites de uso. Por isso não se deve agradecer ao final, nem usar a mesma janela para várias tarefas."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_995",
+      "title": "Tem ainda os tokens de comando internos para estruturar o diálogo. Iniciar ou terminar uma conversa; Marcar quem está falando; Etc… Tokens para marcar negrito, itálico… Estruturas de formatação"
+    },
+    {
+      "id": "id.g363ab4fecf5_4_174",
+      "title": "NÍVEIS DE ACESSO E CUSTO"
+    },
+    {
+      "id": "id.g37679c0df86_1_1039",
+      "title": "HORA DE TREINAR"
+    },
+    {
+      "id": "id.g372bb4ee17f_27_79",
+      "title": "OS 4 CONCEITOS BÁSICOS"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_1099",
+      "title": "São a base das LLMs. Criadas no pré-treino e refinadas no pós. No treinamento, a LLM analisa o contexto de bilhões de frases para que tokens similares fiquem próximos. Captura o significado e as nuances de cada token com base em seu uso. A máquina \"entende\" a linguagem de forma intuitiva, sem precisar de regras manuais."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_1202",
+      "title": "Ao iniciar um novo chat, os embeddings voltam ao estado pós-treino. Durante a conversa, suas mensagens distorcem temporariamente os embeddings. Aproximando os conceitos que serão utilizados naquela interação. É como consultar livros em uma biblioteca: você escolhe, combina e usa os volumes que precisa, e no fim, tudo volta para onde estava."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_1211",
+      "title": "ATTENTION IS ALL YOU NEED"
+    },
+    {
+      "id": "id.g3b7ed108406_1_948",
+      "title": "Mole: topeira mol sinal espião"
+    },
+    {
+      "id": "id.g3b7ed108406_1_957",
+      "title": "Fonte: 3Blue1Brown. Attention in transformers, step-by-step. Deep Learning Chapter 6. YouTube."
+    },
+    {
+      "id": "id.g3b7ed108406_1_965",
+      "title": "JUNTANDO TUDO"
+    },
+    {
+      "id": "id.g3b7ed108406_1_999",
+      "title": "Fonte: 3Blue1Brown. Large Language Models explained briefly. YouTube."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_1294",
+      "title": "FRAQUEZAS DA IA"
+    },
+    {
+      "id": "id.g37679c0df86_1_938",
+      "title": "HORA DE TREINAR"
+    },
+    {
+      "id": "id.g372bb4ee17f_25_410",
+      "title": "OS 4 CONCEITOS BÁSICOS"
+    },
+    {
+      "id": "id.g363ab4fecf5_4_334",
+      "title": "É o espaço de colaboração entre a LLM o usuário. Conhecimento fixo parametrizado X Conhecimento contextual Com os dados certos na janela de contexto, a LLM responde com mais precisão e foco. Ao pedir um resumo inicial ou que a LLM “raciocine” antes de responder, você reitera o que é importante, melhorando a resposta."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_1402",
+      "title": "PAPERS"
+    },
+    {
+      "id": "id.g37679c0df86_1_499",
+      "title": "PAPER: LOST IN THE MIDDLE"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_1503",
+      "title": "PAPER: SUPPRESSING PINK ELEPHANTS"
+    },
+    {
+      "id": "id.g3d0177da493_0_256",
+      "title": "ENGENHARIA DE CONTEXTO"
+    },
+    {
+      "id": "id.g37679c0df86_1_384",
+      "title": "Não é só o que você escreve. É tudo que o modelo recebe. Suas instruções (prompt) Arquivos anexados (PDFs, imagens) Histórico da conversa Instruções do sistema (que você não vê) Resultados de busca (RAG)"
+    },
+    {
+      "id": "id.g3c7799d9962_0_8",
+      "title": "COLAPSO DE CONTEXTO"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_1609",
+      "title": "OCR (Reconhecimento Óptico de Caracteres)"
+    },
+    {
+      "id": "id.g363ab4fecf5_4_512",
+      "title": "COMPARAÇÃO"
+    },
+    {
+      "id": "id.g3c2815c1f88_0_0",
+      "title": "BUSCA INTELIGENTE (RAG)"
+    },
+    {
+      "id": "id.g3b7ed108406_1_1205",
+      "title": "👩‍💻 USUÁRIO"
+    },
+    {
+      "id": "id.g3d0177da493_0_267",
+      "title": "MODELOS DE RACIOCÍNIO"
+    },
+    {
+      "id": "id.g3b7ed108406_1_1249",
+      "title": "👩‍💻 USUÁRIO"
+    },
+    {
+      "id": "id.g3c2815c1f88_0_10",
+      "title": "MODELOS AGÊNTICOS"
+    },
+    {
+      "id": "id.g3d0177da493_0_458",
+      "title": "DIRETIVAS"
+    },
+    {
+      "id": "id.g37679c0df86_1_837",
+      "title": "HORA DE TREINAR"
+    },
+    {
+      "id": "id.g363ab4fecf5_4_467",
+      "title": "RESUMINDO"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2115",
+      "title": "ENGENHARIA DE PROMPT"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2125",
+      "title": "CONCEITO"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2139",
+      "title": "Prompt Estruturado"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_1993",
+      "title": "Fornecer contexto relevante"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2013",
+      "title": "O PROMPT NA PRÁTICA"
+    },
+    {
+      "id": "id.g37354d9a830_2_318",
+      "title": "FRAMEWORKS DE PROMPTS"
+    },
+    {
+      "id": "id.g372bb4ee17f_25_130",
+      "title": "Framework é um modelo mental para organizar as seções do prompt. Quanto mais complexa a tarefa maior vantagem A LLM não entende frameworks como obrigatórias: Você pode até ditar o prompt; O que importa é ter clareza no pretendido. Ajuda a estruturar o raciocínio seu e da LLM; Facilita ajustes quando a resposta não for adequada."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2158",
+      "title": "COMPONENTES DO FRAMEWORK"
+    },
+    {
+      "id": "id.g3d0177da493_0_301",
+      "title": "Quem é, onde atua, o que vai receber do usuário Estabelecer o contexto, direciona a LLM para ONDE nos embeddings ela deve focar, ativando os vetores mais relevantes à situação. Exemplo: \"Você é um assessor de magistrado em vara cível federal, especializado em ações de usucapião. O usuário enviará a petição inicial e a certidão de matrícula do imóvel em PDF.\" Pode incluir pressões, prazos, ambiente institucional, rotinas e entradas esperadas."
+    },
+    {
+      "id": "id.g3d0177da493_0_321",
+      "title": "O QUE deve ser executado. Exemplo: \"Analise a petição inicial e identifique: os requisitos legais de usucapião preenchidos, os que estão ausentes ou insuficientemente demonstrados, sugestão fundamentada de diligências para suprir cada lacuna.\" 📢 Melhor usar verbo no imperativo: \"analise\", \"resuma\", \"escreva\". 🎯 Deve ser clara, mensurável e focada no resultado."
+    },
+    {
+      "id": "id.g3d0177da493_0_331",
+      "title": "DIRETRIZES E LIMITAÇÕES a serem observadas. Reduzem possíveis erros na resposta. Exemplo: \"Utilize linguagem formal e objetiva. Limite a resposta a 2 páginas. Não invente fatos ou dados que não estejam nos documentos recebidos. Não utilize termos em latim\" 📝 Inclua regras de forma, linguagem, tom e limites de conteúdo."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2375",
+      "title": "O PROMPT NA PRÁTICA"
+    },
+    {
+      "id": "id.g3d0177da493_0_351",
+      "title": "E - ESTRUTURA"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2386",
+      "title": "<HIERARQUIA>"
+    },
+    {
+      "id": "id.g3b7ed108406_1_1818",
+      "title": "<TAGS>"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2273",
+      "title": "O PROMPT NA PRÁTICA"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2808",
+      "title": "MARKDOWNS"
+    },
+    {
+      "id": "id.g37679c0df86_1_736",
+      "title": "HORA DE TREINAR"
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2493",
+      "title": "Projetos, Gems, Gpts. facilitam tarefas repetitivas. São ferramentas que guardam instruções, contexto e arquivos. Cada novo uso não inicia do zero. Onde ajudam: criação de peças, correção de minutas, buscas em precedentes, rotinas administrativas… Benefícios: padronização, rastreabilidade, economia de tempo, redução de erros."
+    },
+    {
+      "id": "id.g37541709e50_1_30",
+      "title": "DEMONSTRAÇÃO Um prompt completo"
+    },
+    {
+      "id": "id.g37354d9a830_2_361",
+      "title": "LLMs não têm conhecimento implícito das suas intenções. Seja Claro Rascunhe e REITERE O prompt não é o fim da linha."
+    },
+    {
+      "id": "id.g3881d07e9c6_0_2596",
+      "title": "COMO EVITAR ALUCINAÇÕES"
+    },
+    {
+      "id": "id.g37319c0eeed_0_366",
+      "title": "SEQUESTRO DE LLM"
+    },
+    {
+      "id": "id.g37319c0eeed_0_355",
+      "title": "Notícias falsas são repetidas por diversas fontes, criando uma aparência de legitimidade. Com o tempo, essas versões modificadas entram em novos treinamentos de modelos, perpetuando a desinformação. Sem autoria clara, torna-se quase impossível identificar a origem, dificultando a verificação forense. Diferenças: Sequestro = forçar o modelo a quebrar regras Lavagem = mexe nos dados utilizados no treinamento do modelo para fins maliciosos"
+    },
+    {
+      "id": "id.g3b7ed108406_1_2151",
+      "title": "Proposta de criação de Prompt"
+    },
+    {
+      "id": "id.g372bb4ee17f_25_372",
+      "title": "\"Quando uma nova tecnologia passa por cima de você, se você não faz parte do rolo compressor, você faz parte da estrada.\" Stewart Brand (escritor estadunidense)"
+    }
   ]
 }

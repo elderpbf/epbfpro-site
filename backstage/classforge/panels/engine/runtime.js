@@ -13,7 +13,7 @@
 //   panel-entered, panel-exited, navigation, theme-changed
 //   (session-updated is reserved for Phase 2/3.)
 
-const MANIFEST_KNOWN_KEYS = new Set(['id', 'title', 'theme', 'course', 'author', 'language', 'description', 'panels', 'sidebar']);
+const MANIFEST_KNOWN_KEYS = new Set(['id', 'title', 'theme', 'course', 'author', 'language', 'description', 'panels', 'sidebar', 'slides']);
 const PANEL_KNOWN_KEYS    = new Set(['src', 'url', 'path', 'id', 'title']);
 
 export function validateManifest(data) {
