@@ -42,17 +42,44 @@
 //     external state changes (e.g. video plays naturally without click).
 //
 // -----------------------------------------------------------------------------
+//
+//   select -- "← [current label] →" pill that opens a searchable dropdown.
+//     Required: { kind: 'select', items: [{value, label}], onChange }
+//     Optional: { value, format(item), placeholder,
+//                 symbolMinus, symbolPlus }
+//
+//     items: [{ value, label, searchKeys? }]
+//       - value       -- opaque identifier passed to onChange
+//       - label       -- display text shown in the pill and dropdown
+//       - searchKeys  -- extra strings added to the search index (optional)
+//
+//     Behavior:
+//       - Clicking the center label opens a searchable dropdown above the bar.
+//       - Clicking ← / → steps to prev / next item.
+//       - Dropdown filters by label (accent-insensitive substring).
+//       - Arrow keys (↑↓) navigate filtered list; Enter picks; Esc closes.
+//       - Click outside the dropdown closes it.
+//
+//     Returned handle exposes setValue(value) to update the selected item
+//     externally (e.g. when the iframe navigates on its own).
+//
+// -----------------------------------------------------------------------------
 // CURRENT CONSUMERS (2026-05-01)
 // -----------------------------------------------------------------------------
 //   tools/tokenizer-embed   -- stepper, zoom (75-250%, resetTo 1.0)
 //   tools/ai-chat           -- stepper, font size (16-40px)
-//   tools/slides-embed      -- stepper, slide nav (1..N, ← →, editable/search)
+//   tools/slides-embed      -- select, slide picker (← N. Title →)
 //   tools/video-embed       -- actions, [restart, play/pause, loop]
 //   tools/gif-embed         -- actions, [restart, play/pause]
 //
 // =============================================================================
 
 const HIDE_GRACE_MS = 600;
+
+// Strip diacritics for accent-insensitive matching (used by select pill).
+function normalize(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
 
 export function attachPanelPills(host, options) {
   const opts = options || {};
@@ -70,6 +97,13 @@ export function attachPanelPills(host, options) {
   // Build one pill per descriptor
   const pillRefs = pills.map(p => buildPill(p));
   for (const ref of pillRefs) bar.appendChild(ref.el);
+
+  // Give select pills a reference to barEl for dropdown positioning.
+  // barEl is the bar element itself (built above); pass it after all pills
+  // are appended so the bar exists.
+  for (const ref of pillRefs) {
+    if (typeof ref.setBarEl === 'function') ref.setBarEl(bar);
+  }
 
   host.appendChild(zone);
   host.appendChild(bar);
@@ -106,13 +140,16 @@ export function attachPanelPills(host, options) {
     barEl: bar,
     destroy() {
       if (hideTimer) clearTimeout(hideTimer);
+      for (const ref of pillRefs) {
+        if (typeof ref.destroy === 'function') ref.destroy();
+      }
       if (zone.parentNode) zone.remove();
       if (bar.parentNode) bar.remove();
     },
     update(index, patch) {
       const ref = pillRefs[index];
       if (!ref) return;
-      if (patch && typeof patch.value === 'number') ref.setValue(patch.value);
+      if (patch && patch.value !== undefined) ref.setValue(patch.value);
     },
     refresh(index) {
       if (index === undefined) {
@@ -128,6 +165,7 @@ export function attachPanelPills(host, options) {
 function buildPill(descriptor) {
   if (descriptor && descriptor.kind === 'stepper') return buildStepperPill(descriptor);
   if (descriptor && descriptor.kind === 'actions') return buildActionsPill(descriptor);
+  if (descriptor && descriptor.kind === 'select')  return buildSelectPill(descriptor);
   return { el: document.createElement('span'), setValue() {} };
 }
 
@@ -271,5 +309,221 @@ function buildActionsPill(d) {
     el: wrap,
     setValue() { /* no-op for actions */ },
     refresh() { for (const b of buttons) b.refresh(); },
+  };
+}
+
+function buildSelectPill(d) {
+  const items      = Array.isArray(d.items) ? d.items : [];
+  const fmt        = typeof d.format === 'function' ? d.format : (item) => item.label;
+  const symMinus   = d.symbolMinus || '←';
+  const symPlus    = d.symbolPlus  || '→';
+  const placeholder = d.placeholder || 'Buscar...';
+
+  // Find current item index by value
+  let currentIdx = Math.max(0, items.findIndex(it => it.value === d.value));
+
+  // Build search index: label + optional searchKeys
+  const searchIndex = items.map(it => {
+    const base = normalize(it.label || '');
+    const extra = Array.isArray(it.searchKeys) ? it.searchKeys.map(normalize).join(' ') : '';
+    return extra ? base + ' ' + extra : base;
+  });
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pn-panel-pills__pill';
+
+  const minus = document.createElement('button');
+  minus.type = 'button';
+  minus.className = 'pn-panel-pills__btn';
+  minus.textContent = symMinus;
+  minus.setAttribute('aria-label', 'Item anterior');
+
+  const labelBtn = document.createElement('button');
+  labelBtn.type = 'button';
+  labelBtn.className = 'pn-panel-pills__label';
+  labelBtn.setAttribute('aria-label', 'Abrir lista');
+
+  const plus = document.createElement('button');
+  plus.type = 'button';
+  plus.className = 'pn-panel-pills__btn';
+  plus.textContent = symPlus;
+  plus.setAttribute('aria-label', 'Próximo item');
+
+  function refreshLabel() {
+    const item = items[currentIdx];
+    labelBtn.textContent = item ? fmt(item) : '';
+  }
+
+  let openDropdown = null;
+
+  function closeDropdown() {
+    if (openDropdown) {
+      openDropdown.close();
+      openDropdown = null;
+    }
+  }
+
+  function openSelectDropdown(barEl) {
+    if (openDropdown) { closeDropdown(); return; }
+
+    const dialog = document.createElement('dialog');
+    dialog.className = 'pn-pill-select-dropdown';
+    dialog.setAttribute('aria-label', 'Selecionar item');
+
+    const search = document.createElement('input');
+    search.type = 'text';
+    search.className = 'pn-pill-select-search';
+    search.placeholder = placeholder;
+    search.spellcheck = false;
+    search.autocomplete = 'off';
+    dialog.appendChild(search);
+
+    const list = document.createElement('ul');
+    list.className = 'pn-pill-select-list';
+    dialog.appendChild(list);
+
+    // Build list items (two-span layout: key + text)
+    const listItems = items.map((item, i) => {
+      const li = document.createElement('li');
+      li.className = 'pn-pill-select-item';
+      li.setAttribute('data-index', String(i));
+      li.tabIndex = -1;
+
+      const keySpan = document.createElement('span');
+      keySpan.className = 'pn-pill-select-item__key';
+      keySpan.textContent = (i + 1) + '.';
+      li.appendChild(keySpan);
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'pn-pill-select-item__text';
+      textSpan.textContent = item.label || '';
+      li.appendChild(textSpan);
+
+      li.addEventListener('click', () => pickItem(i));
+      list.appendChild(li);
+      return { el: li, index: i };
+    });
+
+    let highlighted = currentIdx;
+    let visibleIndices = listItems.map(it => it.index);
+
+    function setHighlight(idx) {
+      if (idx == null) return;
+      listItems.forEach(it => it.el.classList.toggle('is-active', it.index === idx));
+      const item = listItems[idx];
+      if (item && !item.el.classList.contains('is-hidden')) {
+        item.el.scrollIntoView({ block: 'nearest' });
+      }
+      highlighted = idx;
+    }
+
+    function applyFilter(query) {
+      const q = normalize(query);
+      visibleIndices = [];
+      for (const it of listItems) {
+        const match = !q || searchIndex[it.index].includes(q);
+        it.el.classList.toggle('is-hidden', !match);
+        if (match) visibleIndices.push(it.index);
+      }
+      if (visibleIndices.length === 0) { highlighted = null; return; }
+      if (highlighted == null || !visibleIndices.includes(highlighted)) {
+        setHighlight(visibleIndices[0]);
+      } else {
+        setHighlight(highlighted);
+      }
+    }
+
+    function moveHighlight(delta) {
+      if (visibleIndices.length === 0) return;
+      let pos = visibleIndices.indexOf(highlighted);
+      if (pos === -1) pos = 0;
+      pos = (pos + delta + visibleIndices.length) % visibleIndices.length;
+      setHighlight(visibleIndices[pos]);
+    }
+
+    function pickItem(idx) {
+      closeDropdown();
+      setValue(items[idx].value);
+    }
+
+    function close() {
+      if (dialog.open) dialog.close();
+      if (dialog.parentNode) dialog.remove();
+      openDropdown = null;
+    }
+
+    search.addEventListener('input', () => applyFilter(search.value));
+    search.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown')   { e.preventDefault(); moveHighlight(+1); }
+      else if (e.key === 'ArrowUp')   { e.preventDefault(); moveHighlight(-1); }
+      else if (e.key === 'Enter')     { e.preventDefault(); if (highlighted != null) pickItem(highlighted); }
+      else if (e.key === 'Escape')    { e.preventDefault(); close(); }
+    });
+
+    // Intercept native Esc (which would close the dialog without our cleanup)
+    dialog.addEventListener('cancel', e => { e.preventDefault(); close(); });
+
+    // Click outside the dialog content closes it
+    dialog.addEventListener('mousedown', e => {
+      if (e.target === dialog) close();
+    });
+
+    // Position: fixed, bottom of dropdown aligns to top of pill bar
+    function positionDialog() {
+      const rect = barEl.getBoundingClientRect();
+      const dialogWidth = Math.min(640, window.innerWidth - 48);
+      let left = rect.left + (rect.width / 2) - (dialogWidth / 2);
+      left = Math.max(24, Math.min(left, window.innerWidth - dialogWidth - 24));
+      dialog.style.left = left + 'px';
+      dialog.style.bottom = (window.innerHeight - rect.top) + 'px';
+      dialog.style.width = dialogWidth + 'px';
+    }
+
+    setHighlight(currentIdx);
+    document.body.appendChild(dialog);
+    positionDialog();
+    dialog.show();
+    requestAnimationFrame(() => search.focus());
+
+    openDropdown = { close };
+  }
+
+  function setValue(value) {
+    const idx = items.findIndex(it => it.value === value);
+    if (idx !== -1) currentIdx = idx;
+    refreshLabel();
+    if (typeof d.onChange === 'function') d.onChange(value);
+  }
+
+  // Pill bar must be accessible; label click is wired after attachPanelPills
+  // returns barEl. We capture barEl via a closure set from outside.
+  let _barEl = null;
+
+  minus.addEventListener('click', () => {
+    if (items.length === 0) return;
+    const nextIdx = (currentIdx - 1 + items.length) % items.length;
+    setValue(items[nextIdx].value);
+  });
+
+  plus.addEventListener('click', () => {
+    if (items.length === 0) return;
+    const nextIdx = (currentIdx + 1) % items.length;
+    setValue(items[nextIdx].value);
+  });
+
+  labelBtn.addEventListener('click', () => {
+    openSelectDropdown(_barEl || wrap.closest('.pn-panel-pills') || document.body);
+  });
+
+  wrap.appendChild(minus);
+  wrap.appendChild(labelBtn);
+  wrap.appendChild(plus);
+  refreshLabel();
+
+  return {
+    el: wrap,
+    setValue,
+    setBarEl(el) { _barEl = el; },
+    destroy() { closeDropdown(); },
   };
 }
