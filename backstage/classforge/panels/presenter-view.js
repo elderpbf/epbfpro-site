@@ -91,7 +91,14 @@
     return '/backstage/classforge/panels/presentations/' + slug + '/?panel=' + index + '&presenter=mirror';
   }
 
-  function updateMirror(index) {
+  // Initial-load only. Once the mirror iframe is loaded, the embedded deck
+  // listens for { type: 'panel', origin: 'deck' } broadcasts and calls
+  // runtime.goto internally, so we never reload the iframe again -- avoids
+  // flicker and preserves iframe state (Slides decks, video position, etc.).
+  let mirrorInitialized = false;
+  function initMirror(index) {
+    if (mirrorInitialized) return;
+    mirrorInitialized = true;
     mirrorPane.classList.add('is-loading');
     mirrorFrame.onload = () => mirrorPane.classList.remove('is-loading');
     mirrorFrame.src = buildMirrorSrc(index);
@@ -160,7 +167,9 @@
       const meta = msg.meta || null;
       currentIndex = idx;
       if (meta && typeof meta.total === 'number') totalPanels = meta.total;
-      updateMirror(idx);
+      // Notes + counter only -- the mirror's own deck instance receives the
+      // same broadcast and calls runtime.goto internally. We never touch the
+      // iframe.src after the initial load.
       updateNotes(meta, idx);
       updateCounter(idx, totalPanels);
     }
@@ -172,7 +181,7 @@
   // ------------------------------------------------------------------
   if (slug) {
     titleEl.textContent = slug;
-    updateMirror(initPanel);
+    initMirror(initPanel);
     updateCounter(initPanel, null);
     // Show empty notes until the first broadcast arrives.
     notesBody.innerHTML = '<p class="pv-notes-empty">(sem notas)</p>';

@@ -193,6 +193,13 @@
   font-weight: 500;
 }
 
+/* External-link affordance (P11): row variant. */
+.pn-sidebar__tool-ext {
+  margin-left: auto;
+  opacity: 0.6;
+  font-size: 14px;
+}
+
 /* ----- panel list (collapsed mode) ----- */
 .pn-sidebar__panel-list {
   list-style: none;
@@ -447,6 +454,7 @@
 }
 
 .pn-menu-card {
+  position: relative;
   background: var(--background, #0f1419);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
   border-radius: 12px;
@@ -459,6 +467,15 @@
   color: inherit;
   font: inherit;
   transition: transform 120ms ease, border-color 120ms ease;
+}
+
+/* External-link affordance (P11): big-card variant. */
+.pn-menu-card__ext {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0.7;
+  font-size: 18px;
 }
 
 .pn-menu-card:hover {
@@ -518,29 +535,6 @@
 .pn-menu-card.is-active {
   border-color: var(--primary, #14b8a6);
   box-shadow: 0 0 0 2px var(--primary-light, #5eead4);
-}
-
-/* ----- panel-card thumbnail (Task 4E) ----- */
-.pn-menu-card__thumb {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  border-radius: 8px 8px 0 0;
-  display: block;
-  margin: -16px -16px 0;   /* bleed to card edges; cancel card padding on three sides */
-  width: calc(100% + 32px);
-}
-
-/* ----- presenter view action (Task 4G) ----- */
-.pn-sidebar__presenter-action {
-  padding: 8px 0 4px;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.05));
-  margin-top: 4px;
-}
-
-/* In menu mode the presenter action block is hidden (menu has its own layout). */
-.pn-sidebar.is-menu .pn-sidebar__presenter-action {
-  display: none;
 }
 
 /* ----- transient panel back button (Task 4C) ----- */

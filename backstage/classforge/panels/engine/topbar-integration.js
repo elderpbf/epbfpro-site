@@ -6,8 +6,9 @@
 // 1-based position over total panel count.
 //
 // Returns a handle so callers (notably attachSidebar) can swap the topbar
-// into "menu mode" -- subtitle becomes "Menu" and a "Fechar menu" button
-// appears in the topbar action area, replacing the previous in-body X close.
+// into "menu mode" -- subtitle becomes "Menu". The "Fechar menu" topbar
+// button was removed in P8: the side menu's hamburger toggle is the single
+// way to dismiss the full menu.
 //
 // Dependencies (globals, loaded via classic <script> tags):
 //   window.Topbar          (from /backstage/js/backstage-topbar.js)
@@ -26,7 +27,6 @@ export function attachTopbar(runtime, options = {}) {
 
   window.Topbar.init({ mode: 'presentation', title, backLink, sections });
 
-  let closeMenuBtn = null;
   let priorSubtitleText = null;
 
   function computeSubtitle() {
@@ -52,10 +52,8 @@ export function attachTopbar(runtime, options = {}) {
     if (active) {
       priorSubtitleText = computeSubtitle();
       window.Topbar.setSubtitle('Menu');
-      if (closeMenuBtn) closeMenuBtn.style.display = '';
       if (tb) tb.classList.add('pn-menu-pinned');
     } else {
-      if (closeMenuBtn) closeMenuBtn.style.display = 'none';
       if (priorSubtitleText !== null) {
         window.Topbar.setSubtitle(priorSubtitleText);
         priorSubtitleText = null;
@@ -64,16 +62,9 @@ export function attachTopbar(runtime, options = {}) {
     }
   }
 
-  function registerCloseMenuButton(onClick) {
-    if (closeMenuBtn) return;
-    if (typeof window.Topbar.addItem !== 'function') return;
-    closeMenuBtn = window.Topbar.addItem({
-      id: 'pn-close-menu',
-      label: 'Fechar menu',
-      onClick,
-    });
-    if (closeMenuBtn) closeMenuBtn.style.display = 'none';
-  }
+  // Kept as a no-op so any caller still wired up doesn't error. The "Fechar
+  // menu" button was removed in P8 -- the hamburger toggle owns dismissal now.
+  function registerCloseMenuButton(_onClick) { /* no-op */ }
 
   runtime.eventBus.addEventListener('panel-entered', refreshSubtitle);
 

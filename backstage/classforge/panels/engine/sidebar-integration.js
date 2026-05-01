@@ -9,20 +9,19 @@
 //                whose state persists in localStorage per manifest.id.
 //   menu      -- expands to 100vw. Renders a full-page panel grid plus the
 //                tools section (separated). Click a panel card to jump to it.
-//                Closed via the topbar "Fechar menu" button (registered
-//                lazily through the topbar handle), not an in-body X.
+//                Closed via the in-body hamburger toggle.
 //
 // Reveal: hovering the 12px reveal zone on the left edge slides the
 // side menu in. Pointer-leaving the side menu (with a 600ms grace) slides it
 // back out. The full-page menu stays open until explicitly dismissed.
 //
 // Tool kinds:
-//   'popup'  -- opens config.url in a popup window that mirrors the deck's
-//               exact screen footprint (window.innerWidth x window.innerHeight
-//               at screenLeft, screenTop).
+//   'popup'  -- opens config.url in a new browser tab (window.open '_blank').
 //   'panel'  -- mounts a registered tool (config.tool) as a transient overlay
 //               panel via runtime.pushTransientPanel(). A "Voltar" button and
 //               Esc key dismiss the tool and restore the underlying panel.
+//   'action' -- runs a built-in action (currently 'presenter-view' only).
+//               Treated like a popup for the external-link affordance.
 //
 // Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
 // so it tracks the topbar's data-theme switch. The side menu does not own a
@@ -34,22 +33,36 @@
 
 import { registry } from './registry.js';
 import { findHostedSession } from './classpulse-discovery.js';
-import { getThumbnailUrl } from './thumbnail-integration.js';
 
 // Inline single-color SVG glyphs that follow currentColor for theme switching.
 // Inlined (not fetched) so the side menu stays self-contained and theme changes
 // reflect instantly without a stylesheet swap.
 const LOCAL_ICONS = {
-  tokenizer:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M12 5v14"/></svg>',
-  menu:           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  tokenizer:        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M12 5v14"/></svg>',
+  menu:             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   'presenter-view': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="16" cy="8" r="2"/><path d="M2 12h8"/></svg>',
+  'ai-chat':        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  // Panel-card icons (resolved by panel-meta layout/tool, see resolvePanelIcon).
+  'slides':         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 10h18M9 14h6"/></svg>',
+  'video':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>',
+  'gif':            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><text x="12" y="16" text-anchor="middle" fill="currentColor" stroke="none" font-size="8" font-weight="700">GIF</text></svg>',
+  'js-anim':        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2 5 5 1-3.5 3.5L17 18l-5-2.5L7 18l1.5-5.5L5 9l5-1z"/></svg>',
+  'classpulse':     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" opacity="0.5"/><circle cx="12" cy="12" r="11" opacity="0.25"/></svg>',
+  'terminal':       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 5-4 5M13 17h6"/></svg>',
+  'content':        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14M5 9h14M5 14h10M5 19h6"/></svg>',
+  'cover':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>',
+  'checkpoint':     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 12 9 17 20 6"/></svg>',
+  'comparison':     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1"/><rect x="13" y="4" width="8" height="16" rx="1"/></svg>',
+  'panel':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
 };
 
 const DEFAULT_TOOLS = [
-  { id: 'claude',    label: 'Claude',    kind: 'popup', url: 'https://claude.ai' },
-  { id: 'chatgpt',   label: 'ChatGPT',   kind: 'popup', url: 'https://chatgpt.com' },
-  { id: 'gemini',    label: 'Gemini',    kind: 'popup', url: 'https://gemini.google.com' },
-  { id: 'tokenizer', label: 'Tokenizer', kind: 'panel', tool: 'tokenizer-embed', icon: 'tokenizer' },
+  { id: 'claude',         label: 'Claude',         kind: 'popup', url: 'https://claude.ai' },
+  { id: 'chatgpt',        label: 'ChatGPT',        kind: 'popup', url: 'https://chatgpt.com' },
+  { id: 'gemini',         label: 'Gemini',         kind: 'popup', url: 'https://gemini.google.com' },
+  { id: 'tokenizer',      label: 'Tiktokenizer',   kind: 'panel', tool: 'tokenizer-embed', icon: 'tokenizer' },
+  { id: 'ai-chat',        label: 'Chat IA',        kind: 'panel', tool: 'ai-chat',         icon: 'ai-chat' },
+  { id: 'presenter-view', label: 'Apresentador',   kind: 'action', icon: 'presenter-view' },
 ];
 
 function buildToolIcon(tool) {
@@ -85,6 +98,38 @@ function buildToolIcon(tool) {
   return span;
 }
 
+// Resolve a panel-card icon. The manifest entry alone doesn't carry layout/tool
+// info, so callers normally pass a hydrated `{ meta }` after fetching the panel
+// HTML. Falls back to a generic 'panel' glyph when meta is missing.
+function resolvePanelIcon(panel) {
+  const layout = panel.layout || (panel.meta && panel.meta.layout);
+  const toolId = panel.toolId || (panel.meta && panel.meta.tools && panel.meta.tools[0] && panel.meta.tools[0].id);
+
+  // Tool-based mapping takes priority (more specific).
+  if (toolId === 'slides-embed')             return { kind: 'svg', svg: LOCAL_ICONS.slides };
+  if (toolId === 'video-embed')              return { kind: 'svg', svg: LOCAL_ICONS.video };
+  if (toolId === 'gif-embed')                return { kind: 'svg', svg: LOCAL_ICONS.gif };
+  if (toolId === 'js-anim-embed')            return { kind: 'svg', svg: LOCAL_ICONS['js-anim'] };
+  if (toolId === 'tokenizer-embed')          return { kind: 'svg', svg: LOCAL_ICONS.tokenizer };
+  if (toolId === 'classpulse-display-embed') return { kind: 'svg', svg: LOCAL_ICONS.classpulse };
+  if (toolId === 'terminal-embed')           return { kind: 'svg', svg: LOCAL_ICONS.terminal };
+  if (toolId === 'ai-chat')                  return { kind: 'svg', svg: LOCAL_ICONS['ai-chat'] };
+  if (toolId === 'popup-launcher') {
+    const url = panel.popupUrl || (panel.meta && panel.meta.tools && panel.meta.tools[0] && panel.meta.tools[0].config && panel.meta.tools[0].config.url);
+    if (url) {
+      try { return { kind: 'favicon', url: 'https://www.google.com/s2/favicons?domain=' + new URL(url).hostname + '&sz=64' }; } catch(_) {}
+    }
+    return { kind: 'svg', svg: LOCAL_ICONS.panel };
+  }
+
+  // Layout fallback.
+  if (layout === 'content')           return { kind: 'svg', svg: LOCAL_ICONS.content };
+  if (layout === 'cover')             return { kind: 'svg', svg: LOCAL_ICONS.cover };
+  if (layout === 'checkpoint')        return { kind: 'svg', svg: LOCAL_ICONS.checkpoint };
+  if (layout === 'comparison-split')  return { kind: 'svg', svg: LOCAL_ICONS.comparison };
+  return { kind: 'svg', svg: LOCAL_ICONS.panel };
+}
+
 function buildMenuData(runtime, tools) {
   const manifest = runtime.manifest;
   const slug = (manifest && manifest.id) || 'default';
@@ -92,63 +137,28 @@ function buildMenuData(runtime, tools) {
   return {
     slug,
     tools,  // existing tool objects unchanged
-    actions: [
-      { id: 'presenter-view', label: 'Vista do apresentador', icon: 'presenter-view' },
-    ],
     panels: panelList.map((entry, i) => ({
       index: i,
       id: (entry && entry.id) ? entry.id
          : ('panel-' + String(i + 1).padStart(2, '0')),
       title: (entry && entry.title) || (entry && entry.id)
              || (typeof entry === 'string' ? entry : 'Panel ' + (i + 1)),
+      // src is needed to lazy-load panel meta for icon resolution.
+      src: (entry && typeof entry === 'object') ? (entry.src || entry.url || entry.path) : (typeof entry === 'string' ? entry : null),
       isActive: i === runtime.currentIndex,
     })),
   };
 }
 
 function openPopup(url) {
-  // Mirror the deck window's exact footprint: same size, same screen position.
-  const w    = window.innerWidth;
-  const h    = window.innerHeight;
-  const left = window.screenLeft;
-  const top  = window.screenTop;
-  const features = [
-    'popup=yes',
-    'width=' + w, 'height=' + h, 'left=' + left, 'top=' + top,
-    'toolbar=no', 'menubar=no', 'location=yes', 'resizable=yes', 'scrollbars=yes',
-  ].join(',');
-  const popup = window.open(url, '_blank', features);
+  const popup = window.open(url, '_blank');
   if (popup && typeof popup.focus === 'function') popup.focus();
   return popup;
 }
 
-
 async function openPresenterView(slug) {
   const url = '/backstage/classforge/panels/presenter-view.html?slug=' + encodeURIComponent(slug);
-  const fallbackOpen = () => window.open(url, '_blank', 'width=1200,height=800,resizable=yes');
-
-  // Try Window Management API for multi-monitor placement.
-  if (window.screen && window.screen.isExtended && typeof window.getScreenDetails === 'function') {
-    try {
-      const details = await window.getScreenDetails();
-      const secondary = details.screens.find(s => !s.isPrimary) || null;
-      if (secondary) {
-        const features = [
-          'left='   + secondary.availLeft,
-          'top='    + secondary.availTop,
-          'width='  + secondary.availWidth,
-          'height=' + secondary.availHeight,
-          'resizable=yes',
-        ].join(',');
-        const w = window.open(url, '_blank', features);
-        if (w) { w.focus(); return; }
-      }
-    } catch (_) {
-      // API threw (permission denied or unsupported) -- fall through.
-    }
-  }
-
-  fallbackOpen();
+  window.open(url, '_blank');
 }
 
 
@@ -261,12 +271,17 @@ export function attachSidebar(runtime, options = {}) {
   menuToggle.addEventListener('click', toggleMenu);
 
   function launchTool(tool) {
+    if (tool.kind === 'action' && tool.id === 'presenter-view') {
+      const pvSlug = (runtime.manifest && runtime.manifest.id) || 'unknown';
+      openPresenterView(pvSlug);
+      return;
+    }
     if (tool.kind === 'panel' && tool.tool) {
       exitMenu();
       hide();
       runtime.pushTransientPanel({
-        layout: 'full',
-        tools: [{ id: tool.tool, slot: 'default', config: tool.config || {} }],
+        layout: 'tool-fullbleed',
+        tools: [{ id: tool.tool, slot: 'tool', config: tool.config || {} }],
         meta: { title: tool.label || tool.tool },
       });
     } else if (tool.kind === 'popup' && tool.url) {
@@ -287,13 +302,6 @@ export function attachSidebar(runtime, options = {}) {
     runtime.goto(idx);
     exitMenu();
     hide();
-  }
-
-  function handleAction(action) {
-    if (action.id === 'presenter-view') {
-      const pvSlug = (runtime.manifest && runtime.manifest.id) || 'unknown';
-      openPresenterView(pvSlug);
-    }
   }
 
   function makeGroup({ title, openKey, defaultOpen, children }) {
@@ -344,6 +352,15 @@ export function attachSidebar(runtime, options = {}) {
       lab.className = 'pn-sidebar__tool-label';
       lab.textContent = tool.label;
       btn.appendChild(lab);
+      // External-link affordance for tools that open in a new tab/window.
+      if (tool.kind === 'popup' || tool.kind === 'action') {
+        const ext = document.createElement('span');
+        ext.className = 'pn-sidebar__tool-ext';
+        ext.textContent = '↗';
+        ext.setAttribute('aria-hidden', 'true');
+        btn.appendChild(ext);
+        btn.title = 'Abre em nova aba';
+      }
       btn.addEventListener('click', () => launchTool(tool));
       li.appendChild(btn);
       toolsList.appendChild(li);
@@ -376,26 +393,6 @@ export function attachSidebar(runtime, options = {}) {
     const panelsGroup = makeGroup({ title: 'Painéis', openKey: PANELS_OPEN_KEY, defaultOpen: false, children: panelsList });
     body.appendChild(panelsGroup);
 
-    // --- Actions (presenter view + any future actions) ---
-    const actionsWrap = document.createElement('div');
-    actionsWrap.className = 'pn-sidebar__presenter-action';
-    for (const action of data.actions) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'pn-sidebar__tool pn-sidebar__tool--action';
-      const iconSpan = document.createElement('span');
-      iconSpan.className = 'pn-sidebar__tool-icon';
-      if (LOCAL_ICONS[action.icon]) iconSpan.innerHTML = LOCAL_ICONS[action.icon];
-      btn.appendChild(iconSpan);
-      const labSpan = document.createElement('span');
-      labSpan.className = 'pn-sidebar__tool-label';
-      labSpan.textContent = action.label;
-      btn.appendChild(labSpan);
-      btn.addEventListener('click', () => handleAction(action));
-      actionsWrap.appendChild(btn);
-    }
-    body.appendChild(actionsWrap);
-
     // --- Search filter (applies to tools group + panels group) ---
     function applyCollapsedFilter(query) {
       const q = query.trim().toLowerCase();
@@ -426,7 +423,7 @@ export function attachSidebar(runtime, options = {}) {
     searchWrap.appendChild(searchInput);
     body.appendChild(searchWrap);
 
-    // Tools section (tools + actions combined)
+    // Tools section
     const toolsSection = document.createElement('section');
     toolsSection.className = 'pn-menu-section';
     const toolsTitle = document.createElement('h2');
@@ -446,7 +443,9 @@ export function attachSidebar(runtime, options = {}) {
       card.appendChild(icon);
       const badge = document.createElement('span');
       badge.className = 'pn-menu-card__index';
-      badge.textContent = tool.kind === 'popup' ? 'Web' : 'In-app';
+      if (tool.kind === 'popup')      badge.textContent = 'Web';
+      else if (tool.kind === 'action') badge.textContent = 'Vista';
+      else                             badge.textContent = 'In-app';
       card.appendChild(badge);
       const title = document.createElement('h3');
       title.className = 'pn-menu-card__title';
@@ -458,29 +457,16 @@ export function attachSidebar(runtime, options = {}) {
         hint.textContent = tool.url;
         card.appendChild(hint);
       }
+      // External-link affordance for tools that open in a new tab/window.
+      if (tool.kind === 'popup' || tool.kind === 'action') {
+        card.title = 'Abre em nova aba';
+        const ext = document.createElement('span');
+        ext.className = 'pn-menu-card__ext';
+        ext.textContent = '↗';
+        ext.setAttribute('aria-hidden', 'true');
+        card.appendChild(ext);
+      }
       card.addEventListener('click', () => launchTool(tool));
-      toolsGrid.appendChild(card);
-    }
-
-    // Actions cards (presenter-view etc.)
-    for (const action of data.actions) {
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'pn-menu-card';
-      card.dataset.actionId = action.id;
-      const iconSpan = document.createElement('span');
-      iconSpan.className = 'pn-sidebar__tool-icon pn-menu-card__icon';
-      if (LOCAL_ICONS[action.icon]) iconSpan.innerHTML = LOCAL_ICONS[action.icon];
-      card.appendChild(iconSpan);
-      const badge = document.createElement('span');
-      badge.className = 'pn-menu-card__index';
-      badge.textContent = 'Vista';
-      card.appendChild(badge);
-      const title = document.createElement('h3');
-      title.className = 'pn-menu-card__title';
-      title.textContent = action.label;
-      card.appendChild(title);
-      card.addEventListener('click', () => handleAction(action));
       toolsGrid.appendChild(card);
     }
 
@@ -497,6 +483,17 @@ export function attachSidebar(runtime, options = {}) {
     const panelGrid = document.createElement('div');
     panelGrid.className = 'pn-menu-grid';
 
+    // Resolve a panel src to an absolute URL relative to this document.
+    // Manifest entries use deck-relative paths like "panel-01.html".
+    function resolvePanelUrl(src) {
+      if (!src) return null;
+      try {
+        return new URL(src, window.location.href).toString();
+      } catch (_) {
+        return null;
+      }
+    }
+
     for (const panel of data.panels) {
       const card = document.createElement('button');
       card.type = 'button';
@@ -504,12 +501,11 @@ export function attachSidebar(runtime, options = {}) {
       if (panel.isActive) card.classList.add('is-active');
       card.dataset.panelIndex = String(panel.index);
 
-      const thumb = document.createElement('img');
-      thumb.className = 'pn-menu-card__thumb';
-      thumb.loading = 'lazy';
-      thumb.alt = '';
-      thumb.hidden = true;
-      card.appendChild(thumb);
+      // Generic placeholder icon while panel meta loads.
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'pn-menu-card__icon';
+      iconSpan.innerHTML = LOCAL_ICONS.panel;
+      card.appendChild(iconSpan);
 
       const badge = document.createElement('span');
       badge.className = 'pn-menu-card__index';
@@ -521,10 +517,29 @@ export function attachSidebar(runtime, options = {}) {
       title.textContent = panel.title;
       card.appendChild(title);
 
-      const panelSlug = data.slug + '--' + panel.id;
-      getThumbnailUrl(panelSlug, panel.id).then(url => {
-        if (url) { thumb.src = url; thumb.hidden = false; }
-      }).catch(() => {});
+      // Lazily fetch panel HTML, parse panel-meta, and update the icon based
+      // on the layout/tool. Failures fall back to the generic placeholder.
+      const panelUrl = resolvePanelUrl(panel.src);
+      if (panelUrl) {
+        fetch(panelUrl).then(r => r.text()).then(html => {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const metaScript = doc.getElementById('panel-meta');
+          if (!metaScript) return;
+          let meta;
+          try { meta = JSON.parse(metaScript.textContent); }
+          catch (_) { return; }
+          const icon = resolvePanelIcon({ meta });
+          if (icon.kind === 'svg') {
+            iconSpan.innerHTML = icon.svg;
+          } else if (icon.kind === 'favicon') {
+            iconSpan.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = icon.url;
+            img.alt = '';
+            iconSpan.appendChild(img);
+          }
+        }).catch(() => {});
+      }
 
       card.addEventListener('click', () => jumpToPanel(panel.index));
       panelGrid.appendChild(card);
@@ -628,13 +643,6 @@ export function attachSidebar(runtime, options = {}) {
       if (tb) tb.classList.add('pn-sidebar-suppressed');
     }
     renderCollapsed();
-  }
-
-  // Wire the topbar's "Fechar menu" button once. This needs the runtime side menu
-  // to be fully constructed (so exitMenu/hide are in scope), so it cannot be
-  // done inside attachTopbar.
-  if (topbar && typeof topbar.registerCloseMenuButton === 'function') {
-    topbar.registerCloseMenuButton(() => { exitMenu(); hide(); });
   }
 
   zone.addEventListener('mouseenter', show);
