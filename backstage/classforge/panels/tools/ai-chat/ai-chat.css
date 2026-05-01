@@ -63,7 +63,7 @@
   background: var(--pn-surface-1);
   color: var(--pn-text);
   font-family: inherit;
-  /* font-size inherits from .pn-ai-chat (set inline by JS). */
+  font-size: inherit;
   resize: none;
 }
 
@@ -80,7 +80,7 @@
   color: white;
   font-weight: 600;
   cursor: pointer;
-  font-size: 16px;
+  font-size: inherit;
 }
 
 .pn-ai-chat__send:disabled {
