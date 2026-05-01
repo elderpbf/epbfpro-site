@@ -537,28 +537,5 @@
   box-shadow: 0 0 0 2px var(--primary-light, #5eead4);
 }
 
-/* ----- transient panel back button (Task 4C) ----- */
-/* Owned by the runtime; rendered inside the transient sub-host so it floats
- * above whatever layout/tool is mounted there. Themed via Backstage tokens. */
-.pn-sidebar-transient-back {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 10;
-  background: var(--surface, #1a1f26);
-  color: var(--text-primary, #e5e7eb);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-  border-radius: 6px;
-  padding: 6px 14px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  line-height: 1.4;
-  transition: background 120ms ease, border-color 120ms ease;
-}
-
-.pn-sidebar-transient-back:hover {
-  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
-  border-color: var(--primary, #14b8a6);
-}
+/* (transient-back button removed in N1: covered by topbar reveal zone and
+ * redundant since Esc/arrows/menu dismiss the transient.) */

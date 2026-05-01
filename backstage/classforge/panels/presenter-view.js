@@ -165,8 +165,8 @@
     if (msg.type === 'panel') {
       const idx  = typeof msg.index === 'number' ? msg.index : 0;
       const meta = msg.meta || null;
+      if (typeof msg.total === 'number') totalPanels = msg.total;
       currentIndex = idx;
-      if (meta && typeof meta.total === 'number') totalPanels = meta.total;
       // Notes + counter only -- the mirror's own deck instance receives the
       // same broadcast and calls runtime.goto internally. We never touch the
       // iframe.src after the initial load.

@@ -9,12 +9,54 @@ const API_URL = 'https://backstage-api.pensoia.workers.dev';
 
 let active = null;
 
+// Font-size controls. Bubbles + input inherit wrap.style.fontSize so the
+// shrink/grow buttons scale all chat content. Toolbar font-size is fixed
+// in CSS so the buttons themselves don't grow.
+const FONT_KEY  = 'bs_ai_chat_font_size';
+const FONT_MIN  = 16;
+const FONT_MAX  = 40;
+const FONT_STEP = 2;
+
 registerTool({
   id: 'ai-chat',
   kind: 'tool',
   mount(slot, ctx) {
     const wrap = document.createElement('div');
     wrap.className = 'pn-ai-chat';
+
+    // Read persisted size or default to 24px.
+    let fontSize = parseInt(localStorage.getItem(FONT_KEY), 10);
+    if (!Number.isFinite(fontSize) || fontSize < FONT_MIN || fontSize > FONT_MAX) fontSize = 24;
+
+    function applyFontSize() {
+      wrap.style.fontSize = fontSize + 'px';
+      try { localStorage.setItem(FONT_KEY, String(fontSize)); } catch (_) {}
+    }
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'pn-ai-chat__toolbar';
+    const shrink = document.createElement('button');
+    shrink.type = 'button';
+    shrink.className = 'pn-ai-chat__font-btn';
+    shrink.textContent = 'A−';
+    shrink.setAttribute('aria-label', 'Diminuir fonte');
+    shrink.addEventListener('click', () => {
+      fontSize = Math.max(FONT_MIN, fontSize - FONT_STEP);
+      applyFontSize();
+    });
+    const grow = document.createElement('button');
+    grow.type = 'button';
+    grow.className = 'pn-ai-chat__font-btn';
+    grow.textContent = 'A+';
+    grow.setAttribute('aria-label', 'Aumentar fonte');
+    grow.addEventListener('click', () => {
+      fontSize = Math.min(FONT_MAX, fontSize + FONT_STEP);
+      applyFontSize();
+    });
+    toolbar.appendChild(shrink);
+    toolbar.appendChild(grow);
+    wrap.appendChild(toolbar);
+    applyFontSize();
 
     const messagesEl = document.createElement('div');
     messagesEl.className = 'pn-ai-chat__messages';

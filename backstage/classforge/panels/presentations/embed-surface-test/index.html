@@ -14,9 +14,9 @@
   <link rel="stylesheet" href="../../tools/classpulse-display-embed/classpulse-display-embed.css">
   <link rel="stylesheet" href="../../tools/popup-launcher/popup-launcher.css">
   <link rel="stylesheet" href="../../tools/terminal-embed/terminal-embed.css">
-  <link rel="stylesheet" href="../../tools/ai-chat/ai-chat.css?v=1.0">
+  <link rel="stylesheet" href="../../tools/ai-chat/ai-chat.css?v=1.1">
   <link rel="stylesheet" href="../../layouts/content/content.css">
-  <link rel="stylesheet" href="../../engine/sidebar.css?v=2.0">
+  <link rel="stylesheet" href="../../engine/sidebar.css?v=2.1">
   <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="/backstage/css/backstage.css?v=1.6">
   <link rel="stylesheet" href="/backstage/css/settings-drawer.css?v=1.0">
@@ -62,6 +62,7 @@
     import { attachSettings } from '../../engine/settings-integration.js';
     import { attachThumbnail } from '../../engine/thumbnail-integration.js';
     import { attachSidebar } from '../../engine/sidebar-integration.js';
+    import { attachFocusReclaim } from '../../engine/focus-reclaim.js';
 
     // URL param handling
     const params = new URLSearchParams(window.location.search);
@@ -116,6 +117,7 @@
           type: 'panel',
           index: runtime.currentIndex,
           meta: runtime.currentMeta,
+          total: runtime.panelCount,
           origin: myOrigin,
         });
       });
@@ -140,25 +142,12 @@
         }
       });
 
-      // Reclaim focus from iframes so arrow keys always reach our keydown
-      // handler. Mirror mode is excluded -- it should not steal focus from
-      // itself (the parent presenter window owns navigation there).
-      if (!presenterMode) {
-        // After any click that might have focused an iframe (e.g. Slides),
-        // reclaim the parent window so the runtime's keyboard handler keeps
-        // receiving arrow keys.
-        document.addEventListener('mousedown', (e) => {
-          if (e.target && e.target.tagName === 'IFRAME') {
-            setTimeout(() => window.focus(), 80);
-          }
-        }, true);
-        // Periodic safety net: if an iframe is the active element, reclaim.
-        setInterval(() => {
-          if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
-            window.focus();
-          }
-        }, 600);
-      }
+      // Reclaim focus from iframes so arrow keys keep reaching us.
+      // Main deck reclaims to itself. Mirror reclaims to its parent window
+      // (the presenter view) so the presenter's keydown handler fires.
+      attachFocusReclaim({
+        targetWindow: presenterMode ? window.parent : window,
+      });
 
       // Jump to requested panel index if provided via URL (?panel=N).
       const panelParam = params.get('panel');

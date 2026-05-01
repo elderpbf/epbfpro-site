@@ -26,7 +26,8 @@
   border-radius: var(--pn-radius-md, 12px);
   white-space: pre-wrap;
   line-height: 1.5;
-  font-size: 16px;
+  /* font-size inherits from .pn-ai-chat (set inline by JS) so the shrink/grow
+     toolbar scales bubble text. */
 }
 
 .pn-ai-chat__bubble--user {
@@ -62,7 +63,7 @@
   background: var(--pn-surface-1);
   color: var(--pn-text);
   font-family: inherit;
-  font-size: 16px;
+  /* font-size inherits from .pn-ai-chat (set inline by JS). */
   resize: none;
 }
 
@@ -85,4 +86,27 @@
 .pn-ai-chat__send:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.pn-ai-chat__toolbar {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.pn-ai-chat__font-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--pn-border);
+  border-radius: var(--pn-radius-md, 8px);
+  background: var(--pn-surface-1);
+  color: var(--pn-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pn-ai-chat__font-btn:hover {
+  background: var(--pn-surface-2, var(--pn-surface-1));
 }

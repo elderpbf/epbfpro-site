@@ -359,7 +359,10 @@ export function createRuntime(options = {}) {
   }
 
   async function prev() {
-    if (_transientStack.length > 0) popTransient();
+    if (_transientStack.length > 0) {
+      popTransient();
+      return false;  // dismiss only; do not also navigate to previous panel
+    }
     if (!manifestData || currentIndex <= 0) return false;
     const from = currentIndex;
     const to = currentIndex - 1;
@@ -452,6 +455,13 @@ export function createRuntime(options = {}) {
       modules:  activeModules,
     };
 
+    // Emit panel-exited for the underlying panel before we cover it with a
+    // transient overlay. Tagged transient:true so listeners (e.g. side menu
+    // highlight) can ignore the swap.
+    if (activeMeta) {
+      emit('panel-exited', { panelId: activeMeta.id, transient: true });
+    }
+
     // Hide (not destroy) the current panel.
     if (activeSubHost) activeSubHost.style.display = 'none';
 
@@ -483,19 +493,11 @@ export function createRuntime(options = {}) {
       mountModuleInto(decl, 'element', slots, transientModules);
     }
 
-    // Render the Voltar chrome button inside the transient host.
-    const backBtn = document.createElement('button');
-    backBtn.type = 'button';
-    backBtn.className = 'pn-sidebar-transient-back';
-    backBtn.textContent = 'Voltar';
-    transientHost.appendChild(backBtn);
-
     // Esc key handler -- pop this transient on Escape.
     const escHandler = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); popTransient(); }
     };
     document.addEventListener('keydown', escHandler);
-    backBtn.addEventListener('click', () => popTransient());
 
     // Update active 4-tuple to point at the transient.
     activeSubHost = transientHost;
@@ -511,12 +513,26 @@ export function createRuntime(options = {}) {
       layoutHandle,
       escHandler,
     });
+
+    // Notify listeners (topbar subtitle, etc.) that a transient is now active.
+    // Tagged transient:true so the side menu's panel-highlight listener can
+    // skip it.
+    emit('panel-entered', {
+      panelId: meta.id || ('transient-' + layoutId),
+      layout:  meta.layout || layoutId,
+      transient: true,
+    });
   }
 
   // Pop the top-most transient frame and restore the underlying panel.
   function popTransient() {
     if (_transientStack.length === 0) return;
     const frame = _transientStack.pop();
+
+    // Emit panel-exited for the transient that's about to go away.
+    if (activeMeta) {
+      emit('panel-exited', { panelId: activeMeta.id, transient: true });
+    }
 
     // Unmount transient modules in reverse order.
     for (let i = frame.transientModules.length - 1; i >= 0; i--) {
@@ -544,6 +560,16 @@ export function createRuntime(options = {}) {
     activeModules = s.modules;
 
     if (activeSubHost) activeSubHost.style.display = '';
+
+    // Emit a restored panel-entered for the underlying panel so the topbar
+    // re-renders the original title.
+    if (activeMeta) {
+      emit('panel-entered', {
+        panelId: activeMeta.id,
+        layout:  activeMeta.layout,
+        restored: true,
+      });
+    }
   }
 
   return {

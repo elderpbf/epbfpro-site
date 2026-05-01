@@ -56,17 +56,22 @@ html, body {
   white-space: nowrap;
 }
 
-#pv-close {
+#pv-close,
+#pv-prev,
+#pv-next {
   padding: 4px 12px;
   border-radius: var(--pv-radius);
   border: 1px solid var(--pv-border);
   background: var(--pv-surface-2);
   color: var(--pv-text);
   font-size: 13px;
+  font-family: inherit;
   cursor: pointer;
   transition: background 0.15s;
 }
-#pv-close:hover { background: #3a3a45; }
+#pv-close:hover,
+#pv-prev:hover,
+#pv-next:hover { background: #3a3a45; }
 
 /* ---- main columns ---- */
 #pv-main {

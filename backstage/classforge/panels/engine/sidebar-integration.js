@@ -659,7 +659,24 @@ export function attachSidebar(runtime, options = {}) {
     }
   });
 
-  runtime.eventBus.addEventListener('panel-entered', () => {
+  let firstPanelEntered = true;
+  runtime.eventBus.addEventListener('panel-entered', (e) => {
+    // Skip transient panels (tool overlays) so the underlying panel's
+    // active highlight + counter stay correct while the tool is open.
+    if (e.detail && e.detail.transient) return;
+
+    // First non-transient panel-entered: do a full re-render so the panel
+    // list (which was empty when renderCollapsed first ran -- runtime.start
+    // hadn't loaded the manifest yet) gets populated.
+    if (firstPanelEntered) {
+      firstPanelEntered = false;
+      if (!menuOpen) {
+        renderCollapsed();
+        refreshCounter();
+        return;
+      }
+    }
+
     refreshCounter();
     if (menuOpen) {
       // Re-render the full menu so the active card highlight updates.
