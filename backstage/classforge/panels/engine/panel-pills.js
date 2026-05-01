@@ -565,7 +565,13 @@ function buildSelectPill(d) {
     if (_barApi && typeof _barApi.lockHide === 'function') {
       _barApi.lockHide();
     }
-    requestAnimationFrame(() => search.focus());
+    requestAnimationFrame(() => {
+      const activeItem = listItems[currentIdx];
+      if (activeItem && !activeItem.el.classList.contains('is-hidden')) {
+        activeItem.el.scrollIntoView({ block: 'center' });
+      }
+      search.focus();
+    });
 
     openDropdown = { close };
   }

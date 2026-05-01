@@ -17,7 +17,7 @@
 // 2-button design (restart only) is correct for cross-origin GIF sources.
 
 import { registerTool } from '../../engine/registry.js';
-import { attachPanelPills } from '../../engine/panel-pills.js?v=1.8';
+import { attachPanelPills } from '../../engine/panel-pills.js?v=1.9';
 import { ICON_RESTART } from '../../engine/pill-icons.js';
 
 let mounted = null;
