@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../panels/panels.css">
+<link rel="stylesheet" href="../../html-slides/styles.css">
 <style>
   /* IA Blue defaults (overridden by theme engine via PanelsTheme) */
   :root {
@@ -330,13 +330,13 @@
 <script src="../../../js/theme-manager.js?v=1.0"></script>
 <script src="../../../js/settings-drawer.js?v=1.1"></script>
 <script src="../../../js/backstage-topbar.js?v=1.2"></script>
-<script src="../../panels/panels-theme.js"></script>
+<script src="../../html-slides/theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1/dist/html2canvas.min.js"></script>
 <script src="../../../js/theme-registry.js?v=2.2"></script>
 <script src="../../../js/presentation-settings.js?v=2.1"></script>
 <script src="../../../js/backstage-thumbnail.js?v=1.0"></script>
 <script type="module">
-  import Panels from '../../panels/panels.js';
+  import Panels from '../../html-slides/engine.js';
 
   Topbar.init({
     mode: 'presentation',
@@ -350,14 +350,14 @@
     })
   });
 
-  Panels.init({ presenterUrl: '../../panels/presenter.html' });
+  Panels.init({ presenterUrl: '../../html-slides/presenter.html' });
 
   // Thumbnail capture (on-demand, not auto)
   window._captureThumbnail = function() {
     return window.BackstageThumbnail.capture({
       slug: 'ia-capacitacao-panels',
       title: 'Inteligencia Artificial (Panels)',
-      engine: 'panels-legacy',
+      engine: 'html-slides',
       targetSelector: '.panel',
       fallbackBg: '#5271FE',
     });

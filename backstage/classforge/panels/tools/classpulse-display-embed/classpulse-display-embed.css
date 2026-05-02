@@ -14,24 +14,6 @@
   display: block;
 }
 
-.cp-display-embed__msg {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 2rem;
-  font-family: var(--pn-font-body);
-  font-size: clamp(1.1rem, 2vw, 1.5rem);
-  line-height: 1.5;
-  color: var(--pn-muted, #888);
-  background: var(--pn-bg);
-}
-
-.cp-display-embed__msg--empty {
-  color: var(--pn-text);
-}
 
 .cp-display-embed__badge {
   position: absolute;

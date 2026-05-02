@@ -5,10 +5,9 @@
 // `sections` option, which forwards them to SettingsDrawer.init.
 //
 // Does NOT reuse window.PresentationSettings.buildSections; that shared helper
-// routes through the legacy _toPanelsVars 6-var writer (panels-theme.js) and
-// is retained only for legacy Panels MVP presentations. Panels v2 builds its
-// own section here so the full v2 token set is applied without redundant
-// legacy writes. See manifest/FUTURE.md for the legacy removal gate.
+// routes through the 6-var writer (html-slides/theme.js) and is retained only
+// for the HTML Slides panel type. Panels v2 builds its own section here so
+// the full v2 token set is applied without redundant writes.
 //
 // Dependencies (globals, loaded via classic <script> tags):
 //   window.ThemeRegistry  (from /backstage/js/theme-registry.js)

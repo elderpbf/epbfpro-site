@@ -39,6 +39,14 @@
   padding: 0;
   border: 0;
   background: transparent;  /* the inner pill carries its own bg */
+  /* UA stylesheet for [popover] sets overflow:hidden and width:fit-content,
+     which clips the right edge when a multi-pill bar grows wider than the
+     popover's first-layout size (e.g. a long slide title pushing the pin
+     pill past the implicit boundary). Force overflow:visible and a
+     content-driven width so siblings render in full. */
+  overflow: visible;
+  width: max-content;
+  max-width: calc(100vw - 24px);
   transform: translate(-50%, calc(100% + 32px));
   transition: transform 200ms ease;
   display: inline-flex;
@@ -69,6 +77,10 @@
   box-shadow: var(--pn-shadow-soft);
   font-family: var(--pn-font-body);
   overflow: hidden;
+  /* Sibling pills must render at their natural size; without this, flex
+     shrink kicks in when the bar's content is being measured under the
+     popover's clipped width and the second pill ends up squeezed. */
+  flex-shrink: 0;
 }
 
 .pn-panel-pills__btn,
@@ -88,6 +100,19 @@
   font-family: var(--pn-font-mono);
   font-size: 13px;
   min-width: 56px;
+  /* Wrap long titles up to 3 lines (the pill grows vertically). Beyond
+     3 lines, the line-clamp adds an ellipsis on the third row; the
+     dropdown still shows the full title and hovering surfaces it via
+     the title attribute. */
+  max-width: min(60vw, 720px);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
   border-left: 1px solid var(--pn-border);
   border-right: 1px solid var(--pn-border);
 }

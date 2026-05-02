@@ -1,0 +1,70 @@
+/* engine/logo.css */
+/*
+ * Persistent deck logo overlay (engine/logo-integration.js) plus the settings-
+ * drawer library UI for managing uploaded logos.
+ *
+ * The overlay sits at z-index 50: above default panel content (auto / 0),
+ * below the side menu (940+) and the topbar (9900+) so chrome reveals cover
+ * it. pointer-events:none keeps it transparent to interaction.
+ */
+
+/* ----- viewport overlay ----- */
+.pn-logo-overlay {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 50;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+.pn-logo-overlay img {
+  display: block;
+  height: 100%;
+  width: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ----- settings drawer library ----- */
+.pn-logo-section .bs-field { margin-bottom: 0.75rem; }
+.pn-logo-section .bs-form-error { color: var(--danger, #c0392b); margin: 0 0 0.5rem; min-height: 1.1em; font-size: 0.85rem; }
+
+.pn-logo-toggle-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0; margin: 0.25rem 0 0.75rem;
+  cursor: pointer;
+}
+
+.pn-logo-library {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+.pn-logo-library__item {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.pn-logo-library__item--active {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.pn-logo-library__thumb {
+  max-width: 64px; max-height: 48px;
+  object-fit: contain;
+  background: repeating-conic-gradient(rgba(0,0,0,.06) 0 25%, transparent 0 50%) 50% / 12px 12px;
+  border-radius: 4px;
+}
+.pn-logo-library__name {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pn-logo-library__actions { display: flex; gap: 0.35rem; }
+.pn-logo-library__actions .bs-toggle-btn { padding: 0.25rem 0.6rem; font-size: 0.78rem; }

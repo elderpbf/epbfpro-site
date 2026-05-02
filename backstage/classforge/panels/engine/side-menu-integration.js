@@ -1,6 +1,4 @@
-// engine/sidebar-integration.js
-// TODO: rename file (sidebar-integration.js -> side-menu-integration.js) and CSS classes
-//       (pn-sidebar__* -> pn-side-menu__*) -- deferred to avoid import churn during active phase work.
+// engine/side-menu-integration.js
 //
 // Left-edge auto-hide side menu for Panels v2. Two modes:
 //   collapsed -- 280px wide. Header carries the deck title + an editable
@@ -15,13 +13,24 @@
 // side menu in. Pointer-leaving the side menu (with a 600ms grace) slides it
 // back out. The full-page menu stays open until explicitly dismissed.
 //
-// Tool kinds:
-//   'popup'  -- opens config.url in a new browser tab (window.open '_blank').
-//   'panel'  -- mounts a registered tool (config.tool) as a transient overlay
-//               panel via runtime.pushTransientPanel(). A "Voltar" button and
-//               Esc key dismiss the tool and restore the underlying panel.
-//   'action' -- runs a built-in action (currently 'presenter-view' only).
+// Tool kinds (entries in DEFAULT_TOOLS or runtime.manifest.sidebar.tools):
+//   'popup'  -- opens entry.url in a new browser tab (window.open '_blank').
+//   'panel'  -- mounts registered tool entry.tool as a transient overlay via
+//               runtime.pushTransientPanel(), using entry.layout (default
+//               'tool-fullbleed'; use 'embed-fullbleed' for full-viewport
+//               media without padding). Esc dismisses, restoring the
+//               underlying deck panel. The tool runs the same code as when
+//               it's declared in a deck panel's panel-meta -- side menu and
+//               deck panel are equivalent invocations of the same tool. See
+//               manifest/ARCHITECTURE.md "Concepts" section.
+//   'action' -- runs a built-in side-menu action (currently 'presenter-view').
 //               Treated like a popup for the external-link affordance.
+//
+// Reactive entries: any popup/panel entry may declare a 'liveState' source
+// (e.g. 'classpulse-session') and supply url/config/hidden/badge as either
+// scalars or (state) => scalar callbacks. The launcher subscribes to the
+// declared sources and re-applies tile state on each transition. See
+// engine/classpulse-discovery.js for the only state source today.
 //
 // Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
 // so it tracks the topbar's data-theme switch. The side menu does not own a
@@ -29,10 +38,10 @@
 //
 // Usage:
 //   const topbar = attachTopbar(runtime, { ... });
-//   attachSidebar(runtime, { topbar });        // tools optional; defaults below
+//   attachSideMenu(runtime, { topbar });        // tools optional; defaults below
 
 import { registry } from './registry.js';
-import { findHostedSession } from './classpulse-discovery.js';
+import { subscribeHostedSession } from './classpulse-discovery.js';
 
 // Inline single-color SVG glyphs that follow currentColor for theme switching.
 // Inlined (not fetched) so the side menu stays self-contained and theme changes
@@ -63,11 +72,24 @@ const DEFAULT_TOOLS = [
   { id: 'tokenizer',      label: 'Tiktokenizer',   kind: 'panel', tool: 'tokenizer-embed', icon: 'tokenizer' },
   { id: 'ai-chat',        label: 'Chat IA',        kind: 'panel', tool: 'ai-chat',         icon: 'ai-chat' },
   { id: 'presenter-view', label: 'Apresentador',   kind: 'action', icon: 'presenter-view' },
+  {
+    id: 'classpulse', label: 'ClassPulse', kind: 'popup', icon: 'classpulse',
+    liveState: 'classpulse-session',
+    url:   (s) => s ? '/go/host.html?code=' + encodeURIComponent(s.code) : '/backstage/classpulse/index.html',
+    badge: (s) => s ? 'dot' : null,
+  },
+  {
+    id: 'classpulse-display', label: 'Display ao vivo', kind: 'panel',
+    tool: 'classpulse-display-embed', layout: 'embed-fullbleed', icon: 'classpulse',
+    liveState: 'classpulse-session',
+    hidden: (s) => !s,
+    config: (s) => ({ slug: s ? s.presentation_slug : null }),
+  },
 ];
 
 function buildToolIcon(tool) {
   const span = document.createElement('span');
-  span.className = 'pn-sidebar__tool-icon';
+  span.className = 'pn-side-menu__tool-icon';
   if (tool.icon && LOCAL_ICONS[tool.icon]) {
     span.innerHTML = LOCAL_ICONS[tool.icon];
     return span;
@@ -156,33 +178,43 @@ function openPopup(url) {
   return popup;
 }
 
-async function openPresenterView(slug) {
-  const url = '/backstage/classforge/panels/presenter-view.html?slug=' + encodeURIComponent(slug);
+async function openPresenterView(slug, panelIndex) {
+  const idx = Number.isInteger(panelIndex) && panelIndex >= 0 ? panelIndex : 0;
+  const url = '/backstage/classforge/panels/presenter-view.html?slug=' + encodeURIComponent(slug)
+    + '&panel=' + idx;
   window.open(url, '_blank');
 }
 
 
-export function attachSidebar(runtime, options = {}) {
+export function attachSideMenu(runtime, options = {}) {
   const manifestTools = runtime?.manifest?.sidebar?.tools;
-  const tools = Array.isArray(options.tools) && options.tools.length > 0
+  const rawTools = Array.isArray(options.tools) && options.tools.length > 0
     ? options.tools
     : (Array.isArray(manifestTools) && manifestTools.length > 0 ? manifestTools : DEFAULT_TOOLS);
+  // In presenter (mirror) mode, hide the 'presenter-view' action -- opening
+  // another presenter view from inside one cascades and is never desired.
+  const tools = options.presenterMode
+    ? rawTools.filter(t => !(t.kind === 'action' && t.id === 'presenter-view'))
+    : rawTools;
   const topbar = options.topbar || null;
 
   const slug = (runtime.manifest && runtime.manifest.id) || 'default';
-  const TOOLS_OPEN_KEY = 'bs_pn_sidebar_' + slug + '_tools_open';
-  const PANELS_OPEN_KEY = 'bs_pn_sidebar_' + slug + '_panels_open';
+  const TOOLS_OPEN_KEY = 'bs_pn_side_menu_' + slug + '_tools_open';
+  const PANELS_OPEN_KEY = 'bs_pn_side_menu_' + slug + '_panels_open';
+
+  const liveStates = {};
+  const _unsubscribers = [];
 
   const zone = document.createElement('div');
-  zone.className = 'pn-sidebar-zone';
+  zone.className = 'pn-side-menu-zone';
 
   const sidebar = document.createElement('aside');
-  sidebar.className = 'pn-sidebar';
+  sidebar.className = 'pn-side-menu';
   sidebar.setAttribute('aria-label', 'Menu lateral de ferramentas e painéis');
 
   // ----- body (groups in collapsed mode, full menu in menu mode) -----
   const body = document.createElement('div');
-  body.className = 'pn-sidebar__body';
+  body.className = 'pn-side-menu__body';
   sidebar.appendChild(body);
 
   // ----- bottom bar (replaces the old footer button + side menu header) -----
@@ -190,47 +222,30 @@ export function attachSidebar(runtime, options = {}) {
   // with the topbar's top-edge reveal zone. It carries the deck title, an
   // editable N/total counter, and a menu-toggle button (hamburger glyph).
   const bottomBar = document.createElement('div');
-  bottomBar.className = 'pn-sidebar__bottom-bar';
+  bottomBar.className = 'pn-side-menu__bottom-bar';
 
   const menuToggle = document.createElement('button');
   menuToggle.type = 'button';
-  menuToggle.className = 'pn-sidebar__menu-toggle';
+  menuToggle.className = 'pn-side-menu__menu-toggle';
   menuToggle.setAttribute('aria-label', 'Abrir menu de painéis');
   menuToggle.innerHTML = LOCAL_ICONS.menu;
   bottomBar.appendChild(menuToggle);
 
   const bottomTitle = document.createElement('span');
-  bottomTitle.className = 'pn-sidebar__bottom-title';
+  bottomTitle.className = 'pn-side-menu__bottom-title';
   bottomTitle.textContent = (runtime.manifest && runtime.manifest.title) || 'ClassForge';
   bottomBar.appendChild(bottomTitle);
 
-  const cpBadge = document.createElement('button');
-  cpBadge.type = 'button';
-  cpBadge.className = 'pn-sidebar__cp-badge';
-  cpBadge.setAttribute('aria-label', 'Abrir ClassPulse Host');
-  cpBadge.hidden = true;
-  const cpName = document.createElement('span');
-  cpName.className = 'pn-sidebar__cp-badge-name';
-  cpBadge.appendChild(cpName);
-  const cpDot = document.createElement('span');
-  cpDot.className = 'pn-sidebar__cp-badge-dot';
-  cpBadge.appendChild(cpDot);
-  const cpLiveLabel = document.createElement('span');
-  cpLiveLabel.className = 'pn-sidebar__cp-badge-label';
-  cpLiveLabel.textContent = 'Live';
-  cpBadge.appendChild(cpLiveLabel);
-  bottomBar.appendChild(cpBadge);
-
   const counter = document.createElement('div');
-  counter.className = 'pn-sidebar__counter';
+  counter.className = 'pn-side-menu__counter';
   const counterInput = document.createElement('input');
   counterInput.type = 'number';
-  counterInput.className = 'pn-sidebar__counter-input';
+  counterInput.className = 'pn-side-menu__counter-input';
   counterInput.min = '1';
   counterInput.setAttribute('aria-label', 'Número do painel atual');
   counter.appendChild(counterInput);
   const counterTotal = document.createElement('span');
-  counterTotal.className = 'pn-sidebar__counter-total';
+  counterTotal.className = 'pn-side-menu__counter-total';
   counter.appendChild(counterTotal);
   bottomBar.appendChild(counter);
 
@@ -273,27 +288,76 @@ export function attachSidebar(runtime, options = {}) {
   function launchTool(tool) {
     if (tool.kind === 'action' && tool.id === 'presenter-view') {
       const pvSlug = (runtime.manifest && runtime.manifest.id) || 'unknown';
-      openPresenterView(pvSlug);
+      openPresenterView(pvSlug, runtime.currentIndex);
       return;
     }
     if (tool.kind === 'panel' && tool.tool) {
       exitMenu();
       hide();
-      runtime.pushTransientPanel({
-        layout: 'tool-fullbleed',
-        tools: [{ id: tool.tool, slot: 'tool', config: tool.config || {} }],
+      const config = tool.__resolvedConfig !== undefined ? tool.__resolvedConfig : (tool.config || {});
+      const spec = {
+        layout: tool.layout || 'tool-fullbleed',
+        tools: [{ id: tool.tool, slot: 'tool', config }],
         meta: { title: tool.label || tool.tool },
-      });
-    } else if (tool.kind === 'popup' && tool.url) {
-      const popup = openPopup(tool.url);
-      if (!popup) {
-        alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
+      };
+      if (typeof options.onPanelLaunch === 'function') {
+        try { options.onPanelLaunch(spec); } catch (_) {}
+      }
+      runtime.pushTransientPanel(spec);
+    } else if (tool.kind === 'popup') {
+      const url = tool.__resolvedUrl !== undefined ? tool.__resolvedUrl : tool.url;
+      if (url) {
+        const popup = openPopup(url);
+        if (!popup) {
+          alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
+        }
       }
     } else if (tool.url) {
       // Fallback: any tool with a URL opens as a popup.
       const popup = openPopup(tool.url);
       if (!popup) {
         alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
+      }
+    }
+  }
+
+  function applyTileState() {
+    for (const tool of tools) {
+      if (!tool.liveState) continue;
+      const state = liveStates[tool.liveState] !== undefined ? liveStates[tool.liveState] : null;
+
+      tool.__resolvedUrl    = typeof tool.url    === 'function' ? tool.url(state)    : tool.url;
+      tool.__resolvedConfig = typeof tool.config === 'function' ? tool.config(state) : tool.config;
+
+      const hidden = typeof tool.hidden === 'function' ? tool.hidden(state) : tool.hidden;
+      const badge  = typeof tool.badge  === 'function' ? tool.badge(state)  : tool.badge;
+
+      // Collapsed-mode: tool button lives in a <li> inside .pn-side-menu__tools
+      const collapsedBtn = body.querySelector(`.pn-side-menu__tool[data-tool-id="${CSS.escape(tool.id)}"]`);
+      if (collapsedBtn) {
+        const li = collapsedBtn.parentElement;
+        if (li) { li.hidden = !!hidden; li.dataset.stateHidden = hidden ? 'true' : 'false'; }
+        // Dot lives on the icon so the ↗ affordance stays in its fixed position.
+        const iconSpan = collapsedBtn.querySelector('.pn-side-menu__tool-icon');
+        const dotHost = iconSpan || collapsedBtn;
+        let dot = dotHost.querySelector('.pn-side-menu__tool-dot');
+        if (badge === 'dot') {
+          if (!dot) { dot = document.createElement('span'); dot.className = 'pn-side-menu__tool-dot'; dotHost.appendChild(dot); }
+        } else if (dot) { dot.remove(); }
+      }
+
+      // Menu-mode: tool is a .pn-menu-card[data-tool-id]
+      const menuCard = body.querySelector(`.pn-menu-card[data-tool-id="${CSS.escape(tool.id)}"]`);
+      if (menuCard) {
+        menuCard.hidden = !!hidden;
+        menuCard.dataset.stateHidden = hidden ? 'true' : 'false';
+        // Dot lives on the icon so it doesn't obscure the ↗ affordance.
+        const iconSpan = menuCard.querySelector('.pn-menu-card__icon');
+        const dotHost = iconSpan || menuCard;
+        let dot = dotHost.querySelector('.pn-menu-card__dot');
+        if (badge === 'dot') {
+          if (!dot) { dot = document.createElement('span'); dot.className = 'pn-menu-card__dot'; dotHost.appendChild(dot); }
+        } else if (dot) { dot.remove(); }
       }
     }
   }
@@ -306,13 +370,13 @@ export function attachSidebar(runtime, options = {}) {
 
   function makeGroup({ title, openKey, defaultOpen, children }) {
     const det = document.createElement('details');
-    det.className = 'pn-sidebar__group';
+    det.className = 'pn-side-menu__group';
     const stored = localStorage.getItem(openKey);
     const isOpen = stored === null ? defaultOpen : stored === 'true';
     if (isOpen) det.open = true;
 
     const sum = document.createElement('summary');
-    sum.className = 'pn-sidebar__group-summary';
+    sum.className = 'pn-side-menu__group-summary';
     sum.textContent = title;
     det.appendChild(sum);
     det.appendChild(children);
@@ -340,22 +404,22 @@ export function attachSidebar(runtime, options = {}) {
 
     // --- Tools group ---
     const toolsList = document.createElement('ul');
-    toolsList.className = 'pn-sidebar__tools';
+    toolsList.className = 'pn-side-menu__tools';
     for (const tool of data.tools) {
       const li = document.createElement('li');
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'pn-sidebar__tool';
+      btn.className = 'pn-side-menu__tool';
       btn.dataset.toolId = tool.id;
       btn.appendChild(buildToolIcon(tool));
       const lab = document.createElement('span');
-      lab.className = 'pn-sidebar__tool-label';
+      lab.className = 'pn-side-menu__tool-label';
       lab.textContent = tool.label;
       btn.appendChild(lab);
       // External-link affordance for tools that open in a new tab/window.
       if (tool.kind === 'popup' || tool.kind === 'action') {
         const ext = document.createElement('span');
-        ext.className = 'pn-sidebar__tool-ext';
+        ext.className = 'pn-side-menu__tool-ext';
         ext.textContent = '↗';
         ext.setAttribute('aria-hidden', 'true');
         btn.appendChild(ext);
@@ -370,20 +434,20 @@ export function attachSidebar(runtime, options = {}) {
 
     // --- Panels group ---
     const panelsList = document.createElement('ul');
-    panelsList.className = 'pn-sidebar__panel-list';
+    panelsList.className = 'pn-side-menu__panel-list';
     for (const panel of data.panels) {
       const li = document.createElement('li');
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'pn-sidebar__panel';
+      btn.className = 'pn-side-menu__panel';
       btn.dataset.panelIndex = String(panel.index);
       if (panel.isActive) btn.classList.add('is-active');
       const idx = document.createElement('span');
-      idx.className = 'pn-sidebar__panel-index';
+      idx.className = 'pn-side-menu__panel-index';
       idx.textContent = String(panel.index + 1);
       btn.appendChild(idx);
       const lab = document.createElement('span');
-      lab.className = 'pn-sidebar__panel-label';
+      lab.className = 'pn-side-menu__panel-label';
       lab.textContent = panel.title;
       btn.appendChild(lab);
       btn.addEventListener('click', () => jumpToPanel(panel.index));
@@ -396,12 +460,13 @@ export function attachSidebar(runtime, options = {}) {
     // --- Search filter (applies to tools group + panels group) ---
     function applyCollapsedFilter(query) {
       const q = query.trim().toLowerCase();
-      toolsList.querySelectorAll('.pn-sidebar__tool').forEach(btn => {
-        const text = (btn.querySelector('.pn-sidebar__tool-label')?.textContent || '').toLowerCase();
+      toolsList.querySelectorAll('.pn-side-menu__tool').forEach(btn => {
+        if (btn.parentElement.dataset.stateHidden === 'true') return;
+        const text = (btn.querySelector('.pn-side-menu__tool-label')?.textContent || '').toLowerCase();
         btn.parentElement.hidden = q !== '' && !text.includes(q);
       });
-      panelsList.querySelectorAll('.pn-sidebar__panel').forEach(btn => {
-        const text = (btn.querySelector('.pn-sidebar__panel-label')?.textContent || '').toLowerCase();
+      panelsList.querySelectorAll('.pn-side-menu__panel').forEach(btn => {
+        const text = (btn.querySelector('.pn-side-menu__panel-label')?.textContent || '').toLowerCase();
         btn.parentElement.hidden = q !== '' && !text.includes(q);
       });
     }
@@ -451,7 +516,10 @@ export function attachSidebar(runtime, options = {}) {
       title.className = 'pn-menu-card__title';
       title.textContent = tool.label;
       card.appendChild(title);
-      if (tool.url) {
+      // Hint text only for static URLs. Reactive (function) URLs change with
+      // state and aren't useful as a fixed hint -- showing one would render
+      // the function's source as text.
+      if (typeof tool.url === 'string') {
         const hint = document.createElement('p');
         hint.className = 'pn-menu-card__hint';
         hint.textContent = tool.url;
@@ -557,6 +625,7 @@ export function attachSidebar(runtime, options = {}) {
     function filterGrid(grid, q) {
       let visible = 0;
       grid.querySelectorAll('.pn-menu-card').forEach(card => {
+        if (card.dataset.stateHidden === 'true') return;
         const titleEl = card.querySelector('.pn-menu-card__title');
         const text = (titleEl?.textContent || '').toLowerCase();
         const match = q === '' || text.includes(q);
@@ -606,7 +675,7 @@ export function attachSidebar(runtime, options = {}) {
     // so we do not suppress in that case.
     if (!menuOpen) {
       const tb = getTopbarEl();
-      if (tb) tb.classList.add('pn-sidebar-suppressed');
+      if (tb) tb.classList.add('pn-side-menu-suppressed');
     }
   }
 
@@ -616,7 +685,7 @@ export function attachSidebar(runtime, options = {}) {
     hideTimer = setTimeout(() => {
       sidebar.classList.remove('is-open');
       const tb = getTopbarEl();
-      if (tb) tb.classList.remove('pn-sidebar-suppressed');
+      if (tb) tb.classList.remove('pn-side-menu-suppressed');
       hideTimer = null;
     }, 600);
   }
@@ -627,9 +696,10 @@ export function attachSidebar(runtime, options = {}) {
     // Pinning the topbar (via setMenuMode) takes precedence over the
     // side menu suppression class, so we drop the suppression here.
     const tb = getTopbarEl();
-    if (tb) tb.classList.remove('pn-sidebar-suppressed');
+    if (tb) tb.classList.remove('pn-side-menu-suppressed');
     if (topbar && typeof topbar.setMenuMode === 'function') topbar.setMenuMode(true);
     renderMenu();
+    applyTileState();
   }
 
   function exitMenu() {
@@ -640,9 +710,10 @@ export function attachSidebar(runtime, options = {}) {
     // If the side menu is still open after the menu closes, re-apply suppression.
     if (sidebar.classList.contains('is-open')) {
       const tb = getTopbarEl();
-      if (tb) tb.classList.add('pn-sidebar-suppressed');
+      if (tb) tb.classList.add('pn-side-menu-suppressed');
     }
     renderCollapsed();
+    applyTileState();
   }
 
   zone.addEventListener('mouseenter', show);
@@ -673,6 +744,7 @@ export function attachSidebar(runtime, options = {}) {
       if (!menuOpen) {
         renderCollapsed();
         refreshCounter();
+        applyTileState();
         return;
       }
     }
@@ -681,11 +753,12 @@ export function attachSidebar(runtime, options = {}) {
     if (menuOpen) {
       // Re-render the full menu so the active card highlight updates.
       renderMenu();
+      applyTileState();
     } else {
       // Surgical update for the collapsed-mode panel list.
-      const list = body.querySelector('.pn-sidebar__panel-list');
+      const list = body.querySelector('.pn-side-menu__panel-list');
       if (list) {
-        list.querySelectorAll('.pn-sidebar__panel').forEach(btn => {
+        list.querySelectorAll('.pn-side-menu__panel').forEach(btn => {
           const idx = parseInt(btn.dataset.panelIndex, 10);
           btn.classList.toggle('is-active', idx === runtime.currentIndex);
         });
@@ -693,51 +766,24 @@ export function attachSidebar(runtime, options = {}) {
     }
   });
 
+  // Subscribe to each unique liveState source declared by tools. Callbacks fire
+  // immediately with the current cached state, then on each state transition.
+  const _liveStateKeys = [...new Set(tools.filter(t => t.liveState).map(t => t.liveState))];
+  for (const key of _liveStateKeys) {
+    _unsubscribers.push(subscribeHostedSession(slug, (session) => {
+      liveStates[key] = session;
+      applyTileState();
+    }));
+  }
+
   renderCollapsed();
   refreshCounter();
-
-  // ClassPulse live-session badge polling
-  let cpSession = null;
-  let cpPollTimer = null;
-  const cpSlug = (runtime.manifest && runtime.manifest.id) || null;
-
-  function updateCpBadge(session) {
-    cpSession = session;
-    cpBadge.hidden = !session;
-    if (session) {
-      cpName.textContent = 'Sessão ' + (session.title || session.code);
-      cpBadge.title = 'Sessão ClassPulse ativa: ' + session.code
-        + (session.title ? ' – ' + session.title : '')
-        + '\nClique para abrir o host';
-    } else {
-      cpName.textContent = '';
-    }
-  }
-
-  function scheduleCpPoll(delay) {
-    if (cpPollTimer) clearTimeout(cpPollTimer);
-    cpPollTimer = setTimeout(() => {
-      findHostedSession(cpSlug).then(session => {
-        updateCpBadge(session);
-        scheduleCpPoll(session ? 10000 : 30000);
-      }).catch(() => { scheduleCpPoll(30000); });
-    }, delay);
-  }
-
-  findHostedSession(cpSlug).then(session => {
-    updateCpBadge(session);
-    scheduleCpPoll(session ? 10000 : 30000);
-  }).catch(() => { scheduleCpPoll(30000); });
-
-  cpBadge.addEventListener('click', () => {
-    if (!cpSession) return;
-    window.open('/go/host.html?code=' + encodeURIComponent(cpSession.code), '_blank');
-  });
+  applyTileState();
 
   return {
     show, hide, enterMenu, exitMenu,
     destroy() {
-      if (cpPollTimer) clearTimeout(cpPollTimer);
+      _unsubscribers.forEach(fn => fn());
       if (zone.parentNode) zone.remove();
       if (sidebar.parentNode) sidebar.remove();
     },

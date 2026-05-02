@@ -1,6 +1,4 @@
-/* engine/sidebar.css */
-/* TODO: rename file (sidebar.css -> side-menu.css) and class prefix (pn-sidebar__ -> pn-side-menu__)
-   Deferred to avoid import churn during active phase work. */
+/* engine/side-menu.css */
 /*
  * Left-edge auto-hide side menu for Panels v2: collapsible groups (Ferramentas
  * + Painéis) plus a bottom bar carrying the deck title, an editable N/total
@@ -8,7 +6,7 @@
  *
  * The side menu coordinates with the topbar via two classes it adds to the
  * global .bs-topbar element:
- *   .pn-sidebar-suppressed -- side menu is open in collapsed mode; suppress
+ *   .pn-side-menu-suppressed -- side menu is open in collapsed mode; suppress
  *      the topbar's top-edge auto-reveal so it does not cover side menu/menu
  *      content. (Topbar is still reachable via the gallery / direct URL.)
  *   .pn-menu-pinned -- menu mode is active; force topbar visible so the
@@ -16,11 +14,11 @@
  *
  * Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
  * so it tracks the topbar's light/dark switch. Body content (cards) layers
- * --pn-* tokens for accent. Class namespace: pn-sidebar-* and pn-menu-*.
+ * --pn-* tokens for accent. Class namespace: pn-side-menu-* and pn-menu-*.
  */
 
 /* ----- topbar coordination overrides ----- */
-.bs-topbar.pn-sidebar-suppressed.bs-topbar--visible {
+.bs-topbar.pn-side-menu-suppressed.bs-topbar--visible {
   transform: translateY(-100%) !important;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -33,7 +31,7 @@
 }
 
 /* ----- reveal zone (always present, invisible) ----- */
-.pn-sidebar-zone {
+.pn-side-menu-zone {
   position: fixed;
   top: 0;
   left: 0;
@@ -44,7 +42,7 @@
 }
 
 /* ----- collapsed side menu ----- */
-.pn-sidebar {
+.pn-side-menu {
   position: fixed;
   top: 0;
   left: 0;
@@ -63,15 +61,15 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-.pn-sidebar.is-open {
+.pn-side-menu.is-open {
   transform: translateX(0);
 }
 
-.pn-sidebar.is-menu {
+.pn-side-menu.is-menu {
   width: 100vw;
 }
 
-.pn-sidebar__body {
+.pn-side-menu__body {
   flex: 1;
   overflow-y: auto;
   padding: 12px 0;
@@ -80,7 +78,7 @@
   gap: 4px;
 }
 
-.pn-sidebar.is-menu .pn-sidebar__body {
+.pn-side-menu.is-menu .pn-side-menu__body {
   /* Top padding clears the pinned topbar (~64px tall) so menu cards near
      the top edge are not covered by it. */
   padding: 84px 48px 24px;
@@ -88,15 +86,15 @@
 }
 
 /* ----- collapsibles (collapsed mode) ----- */
-.pn-sidebar__group {
+.pn-side-menu__group {
   border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.05));
 }
 
-.pn-sidebar__group:last-of-type {
+.pn-side-menu__group:last-of-type {
   border-bottom: none;
 }
 
-.pn-sidebar__group-summary {
+.pn-side-menu__group-summary {
   cursor: pointer;
   list-style: none;
   padding: 12px 20px;
@@ -111,10 +109,10 @@
   user-select: none;
 }
 
-.pn-sidebar__group-summary::-webkit-details-marker { display: none; }
-.pn-sidebar__group-summary::marker { content: ''; }
+.pn-side-menu__group-summary::-webkit-details-marker { display: none; }
+.pn-side-menu__group-summary::marker { content: ''; }
 
-.pn-sidebar__group-summary::before {
+.pn-side-menu__group-summary::before {
   content: '';
   width: 0;
   height: 0;
@@ -125,16 +123,16 @@
   flex-shrink: 0;
 }
 
-.pn-sidebar__group[open] > .pn-sidebar__group-summary::before {
+.pn-side-menu__group[open] > .pn-side-menu__group-summary::before {
   transform: rotate(90deg);
 }
 
-.pn-sidebar__group-summary:hover {
+.pn-side-menu__group-summary:hover {
   background: var(--option-hover-bg, rgba(20, 184, 166, 0.08));
 }
 
 /* ----- tool list (collapsed mode) ----- */
-.pn-sidebar__tools {
+.pn-side-menu__tools {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -142,7 +140,7 @@
   flex-direction: column;
 }
 
-.pn-sidebar__tool {
+.pn-side-menu__tool {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -156,11 +154,11 @@
   width: 100%;
 }
 
-.pn-sidebar__tool:hover {
+.pn-side-menu__tool:hover {
   background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
 }
 
-.pn-sidebar__tool-icon {
+.pn-side-menu__tool-icon {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
@@ -170,44 +168,44 @@
   color: var(--text-primary, #e5e7eb);
 }
 
-.pn-sidebar__tool-icon svg,
-.pn-sidebar__tool-icon img {
+.pn-side-menu__tool-icon svg,
+.pn-side-menu__tool-icon img {
   width: 100%;
   height: 100%;
 }
 
-.pn-sidebar__tool-icon img {
+.pn-side-menu__tool-icon img {
   object-fit: contain;
   border-radius: 3px;
 }
 
-.pn-sidebar__tool-icon.is-empty {
+.pn-side-menu__tool-icon.is-empty {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--primary, #14b8a6);
 }
 
-.pn-sidebar__tool-label {
+.pn-side-menu__tool-label {
   font-size: 14px;
   font-weight: 500;
 }
 
 /* External-link affordance (P11): row variant. */
-.pn-sidebar__tool-ext {
+.pn-side-menu__tool-ext {
   margin-left: auto;
   opacity: 0.6;
   font-size: 14px;
 }
 
 /* ----- panel list (collapsed mode) ----- */
-.pn-sidebar__panel-list {
+.pn-side-menu__panel-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.pn-sidebar__panel {
+.pn-side-menu__panel {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -222,15 +220,15 @@
   width: 100%;
 }
 
-.pn-sidebar__panel:hover {
+.pn-side-menu__panel:hover {
   background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
 }
 
-.pn-sidebar__panel.is-active {
+.pn-side-menu__panel.is-active {
   color: var(--primary, #14b8a6);
 }
 
-.pn-sidebar__panel-index {
+.pn-side-menu__panel-index {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
@@ -238,11 +236,11 @@
   min-width: 1.5em;
 }
 
-.pn-sidebar__panel.is-active .pn-sidebar__panel-index {
+.pn-side-menu__panel.is-active .pn-side-menu__panel-index {
   color: var(--primary, #14b8a6);
 }
 
-.pn-sidebar__panel-label {
+.pn-side-menu__panel-label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -251,7 +249,7 @@
 }
 
 /* ----- bottom bar (replaces footer; lives at bottom of side menu in both modes) ----- */
-.pn-sidebar__bottom-bar {
+.pn-side-menu__bottom-bar {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -260,7 +258,7 @@
   background: var(--surface, #1a1f26);
 }
 
-.pn-sidebar__menu-toggle {
+.pn-side-menu__menu-toggle {
   background: transparent;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
   color: var(--text-primary, #e5e7eb);
@@ -275,17 +273,17 @@
   padding: 0;
 }
 
-.pn-sidebar__menu-toggle:hover {
+.pn-side-menu__menu-toggle:hover {
   background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
   border-color: var(--primary, #14b8a6);
 }
 
-.pn-sidebar__menu-toggle svg {
+.pn-side-menu__menu-toggle svg {
   width: 18px;
   height: 18px;
 }
 
-.pn-sidebar__bottom-title {
+.pn-side-menu__bottom-title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -297,68 +295,40 @@
   padding: 0;
 }
 
-.pn-sidebar.is-menu .pn-sidebar__counter {
+.pn-side-menu.is-menu .pn-side-menu__counter {
   display: none;
 }
 
-/* ----- ClassPulse live-session badge ----- */
-.pn-sidebar__cp-badge {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 4px;
-  flex-shrink: 0;
-  max-width: 100%;
-  min-width: 0;
+/* ----- Reactive tile dot badge (on icon, top-right corner) ----- */
+
+/* Icon spans need position:relative so the dot can anchor absolutely */
+.pn-side-menu__tool-icon {
+  position: relative;
 }
 
-.pn-sidebar__cp-badge:hover {
-  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
+.pn-menu-card__icon {
+  position: relative;
 }
 
-.pn-sidebar__cp-badge-name,
-.pn-sidebar__cp-badge-label {
-  display: none;
-}
-
-.pn-sidebar.is-menu .pn-sidebar__cp-badge-name {
-  display: inline;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary, #e5e7eb);
-  max-width: 240px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pn-sidebar.is-menu .pn-sidebar__cp-badge-label {
-  display: inline;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #ef4444;
-}
-
-.pn-sidebar__cp-badge-dot {
+.pn-side-menu__tool-dot,
+.pn-menu-card__dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #ef4444;
-  flex-shrink: 0;
-  animation: pn-cp-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+  animation: pn-tile-dot-pulse 2s ease-in-out infinite;
 }
 
-@keyframes pn-cp-pulse {
+@keyframes pn-tile-dot-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.75); }
 }
 
-.pn-sidebar__counter {
+.pn-side-menu__counter {
   display: inline-flex;
   align-items: baseline;
   gap: 0;
@@ -368,7 +338,7 @@
   flex-shrink: 0;
 }
 
-.pn-sidebar__counter-input {
+.pn-side-menu__counter-input {
   width: 2.5em;
   padding: 2px 4px;
   background: transparent;
@@ -381,19 +351,19 @@
   -moz-appearance: textfield;
 }
 
-.pn-sidebar__counter-input::-webkit-outer-spin-button,
-.pn-sidebar__counter-input::-webkit-inner-spin-button {
+.pn-side-menu__counter-input::-webkit-outer-spin-button,
+.pn-side-menu__counter-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.pn-sidebar__counter-input:focus {
+.pn-side-menu__counter-input:focus {
   outline: none;
   border-color: var(--primary, #14b8a6);
   background: var(--background, rgba(0, 0, 0, 0.2));
 }
 
-.pn-sidebar__counter-total {
+.pn-side-menu__counter-total {
   margin-left: 2px;
 }
 

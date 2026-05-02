@@ -6,6 +6,10 @@
 // - Updates the mirror iframe and notes panel on { type: 'panel' } messages.
 // - Inline Markdown subset renderer (~30 lines): double-newline -> <p>,
 //   **bold** -> <strong>, *italic* -> <em>, `code` -> <code>.
+// - Draggable splitter between mirror and notes panes (persisted per slug).
+// - Aspect-ratio toolbar (16:9 / 16:10 / 4:3 / Tela cheia / Personalizado),
+//   persisted per slug; auto-switches to full frame for presenter-asymmetric
+//   panels (those whose tools mounted via presenterMount).
 
 (function () {
   'use strict';
@@ -19,8 +23,11 @@
   // ------------------------------------------------------------------
   const titleEl        = document.getElementById('pv-topbar-title');
   const counterEl      = document.getElementById('pv-counter');
+  const mainEl         = document.getElementById('pv-main');
   const mirrorPane     = document.getElementById('pv-mirror-pane');
   const mirrorFrame    = document.getElementById('pv-mirror');
+  const splitter       = document.getElementById('pv-splitter');
+  const aspectToolbar  = document.getElementById('pv-aspect');
   const notesPanelTitle = document.getElementById('pv-notes-panel-title');
   const notesBody      = document.getElementById('pv-notes-body');
   const closeBtn       = document.getElementById('pv-close');
@@ -31,7 +38,6 @@
   function renderMarkdown(text) {
     if (!text || !text.trim()) return null;
 
-    // Escape HTML entities first to prevent injection.
     function escHtml(s) {
       return s
         .replace(/&/g, '&amp;')
@@ -39,7 +45,6 @@
         .replace(/>/g, '&gt;');
     }
 
-    // Split on double newlines to form paragraphs.
     const rawParas = text.split(/\n{2,}/);
     const fragment = document.createDocumentFragment();
 
@@ -48,30 +53,21 @@
       if (!line) return;
 
       const p = document.createElement('p');
-      // Process inline spans: `code`, **bold**, *italic*.
-      // Order matters: code first (its content is literal), then bold, then italic.
-      const parts = [];
       let rest = escHtml(line);
 
-      // Replace `code` spans with a placeholder, then bold/italic, then restore.
       const codeChunks = [];
       rest = rest.replace(/`([^`]+)`/g, (_, inner) => {
         codeChunks.push(inner);
         return '\x00CODE' + (codeChunks.length - 1) + '\x00';
       });
 
-      // **bold**
       rest = rest.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-      // *italic* (single star, not already consumed by bold)
       rest = rest.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
-      // Restore code chunks.
       rest = rest.replace(/\x00CODE(\d+)\x00/g, (_, i) => {
         return '<code>' + codeChunks[parseInt(i, 10)] + '</code>';
       });
 
-      // Single newlines within a paragraph become a space.
       rest = rest.replace(/\n/g, ' ');
 
       p.innerHTML = rest;
@@ -85,8 +81,134 @@
   // State
   // ------------------------------------------------------------------
   let currentIndex = initPanel;
-  let totalPanels  = null; // will be set when first message arrives
+  let totalPanels  = null;
+  let isAsymmetricPanel = false;
 
+  // ------------------------------------------------------------------
+  // Splitter (persisted per slug)
+  // ------------------------------------------------------------------
+  const SPLIT_KEY = 'bs_pv_split_' + slug;
+  const storedSplit = parseFloat(localStorage.getItem(SPLIT_KEY));
+  if (Number.isFinite(storedSplit) && storedSplit >= 20 && storedSplit <= 80) {
+    mirrorPane.style.flexBasis = storedSplit + '%';
+  }
+
+  // Pointer events + setPointerCapture so the drag continues even when the
+  // pointer crosses the iframe (which would otherwise capture mousemove and
+  // break the drag). The body.pv-dragging class also disables iframe
+  // pointer-events as a belt-and-suspenders fallback.
+  let isDragging = false;
+
+  function endDrag(pointerId) {
+    if (!isDragging) return;
+    isDragging = false;
+    if (pointerId !== undefined && splitter.hasPointerCapture(pointerId)) {
+      splitter.releasePointerCapture(pointerId);
+    }
+    splitter.classList.remove('is-dragging');
+    document.body.classList.remove('pv-dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const match = mirrorPane.style.flexBasis.match(/([\d.]+)%/);
+    if (match) localStorage.setItem(SPLIT_KEY, match[1]);
+  }
+
+  splitter.addEventListener('pointerdown', (e) => {
+    isDragging = true;
+    splitter.setPointerCapture(e.pointerId);
+    splitter.classList.add('is-dragging');
+    document.body.classList.add('pv-dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  splitter.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    const rect = mainEl.getBoundingClientRect();
+    const pct = ((e.clientX - rect.left) / rect.width) * 100;
+    const clamped = Math.max(20, Math.min(80, pct));
+    mirrorPane.style.flexBasis = clamped + '%';
+  });
+  splitter.addEventListener('pointerup', (e) => endDrag(e.pointerId));
+  splitter.addEventListener('pointercancel', (e) => endDrag(e.pointerId));
+
+  // ------------------------------------------------------------------
+  // Aspect-ratio toolbar (persisted per slug; full-frame override for
+  // presenter-asymmetric panels)
+  // ------------------------------------------------------------------
+  const ASPECT_KEY = 'bs_pv_aspect_' + slug;
+  const ASPECT_PRESETS = {
+    '16:9':  { w: 16, h: 9 },
+    '16:10': { w: 16, h: 10 },
+    '4:3':   { w: 4,  h: 3 },
+  };
+
+  let storedRatio = localStorage.getItem(ASPECT_KEY) || '16:9';
+
+  function parseRatio(ratio) {
+    if (ASPECT_PRESETS[ratio]) return ASPECT_PRESETS[ratio];
+    if (typeof ratio === 'string' && ratio.startsWith('custom:')) {
+      const parts = ratio.slice(7).split(':');
+      const w = parseFloat(parts[0]);
+      const h = parseFloat(parts[1]);
+      if (w > 0 && h > 0) return { w, h };
+    }
+    return null;
+  }
+
+  function applyAspect() {
+    const effective = isAsymmetricPanel ? 'full' : storedRatio;
+    if (effective === 'full') {
+      mirrorPane.classList.add('is-full');
+      mirrorPane.style.removeProperty('--pv-aspect-w');
+      mirrorPane.style.removeProperty('--pv-aspect-h');
+    } else {
+      const preset = parseRatio(effective) || ASPECT_PRESETS['16:9'];
+      mirrorPane.classList.remove('is-full');
+      mirrorPane.style.setProperty('--pv-aspect-w', preset.w);
+      mirrorPane.style.setProperty('--pv-aspect-h', preset.h);
+    }
+    updateAspectButtons();
+  }
+
+  function updateAspectButtons() {
+    const buttons = aspectToolbar.querySelectorAll('button');
+    const visible = isAsymmetricPanel ? 'full'
+      : (storedRatio.startsWith('custom:') ? 'custom' : storedRatio);
+    buttons.forEach(btn => {
+      const ratio = btn.dataset.ratio;
+      btn.classList.toggle('is-active', ratio === visible);
+      btn.disabled = isAsymmetricPanel && ratio !== 'full';
+    });
+  }
+
+  aspectToolbar.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || btn.disabled) return;
+    const ratio = btn.dataset.ratio;
+    if (ratio === 'custom') {
+      const input = prompt('Digite a proporção (ex: 21:9):', '21:9');
+      if (input === null) return;
+      const parts = input.split(':');
+      const w = parseFloat(parts[0]);
+      const h = parseFloat(parts[1]);
+      if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+        alert('Proporção inválida. Use o formato W:H (por exemplo, 21:9).');
+        return;
+      }
+      storedRatio = 'custom:' + w + ':' + h;
+    } else {
+      storedRatio = ratio;
+    }
+    localStorage.setItem(ASPECT_KEY, storedRatio);
+    applyAspect();
+  });
+
+  applyAspect();
+
+  // ------------------------------------------------------------------
+  // Mirror initial load
+  // ------------------------------------------------------------------
   function buildMirrorSrc(index) {
     return '/backstage/classforge/panels/presentations/' + slug + '/?panel=' + index + '&presenter=mirror';
   }
@@ -143,8 +265,6 @@
 
   const bc = new BroadcastChannel('panels-presenter-' + slug);
 
-  // Request the deck's current state so the counter + notes populate
-  // immediately on connection, without waiting for the first arrow press.
   bc.postMessage({ type: 'request-state', origin: 'presenter' });
 
   function broadcast(direction) {
@@ -171,13 +291,16 @@
       const meta = msg.meta || null;
       if (typeof msg.total === 'number') totalPanels = msg.total;
       currentIndex = idx;
-      // Notes + counter only -- the mirror's own deck instance receives the
-      // same broadcast and calls runtime.goto internally. We never touch the
-      // iframe.src after the initial load.
+
+      const newAsymmetric = !!msg.presenterAsymmetric;
+      if (newAsymmetric !== isAsymmetricPanel) {
+        isAsymmetricPanel = newAsymmetric;
+        applyAspect();
+      }
+
       updateNotes(meta, idx);
       updateCounter(idx, totalPanels);
     }
-    // { type: 'theme' } intentionally ignored in v1.
   });
 
   // ------------------------------------------------------------------
@@ -187,14 +310,10 @@
     titleEl.textContent = slug;
     initMirror(initPanel);
     updateCounter(initPanel, null);
-    // Show empty notes until the first broadcast arrives.
     notesBody.innerHTML = '<p class="pv-notes-empty">(sem notas)</p>';
     notesPanelTitle.textContent = 'Painel ' + (initPanel + 1);
   }
 
-  // ------------------------------------------------------------------
-  // Close button
-  // ------------------------------------------------------------------
   closeBtn.addEventListener('click', () => window.close());
 
 })();
