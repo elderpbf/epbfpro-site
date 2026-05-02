@@ -120,6 +120,20 @@
       // Side menu inside the mirror iframe: presenter can launch tools from
       // here, and the launch syncs to the audience deck via BC.
       attachSideMenu(runtime, { topbar: null, presenterMode: true, onPanelLaunch: broadcastTransientPush });
+
+      // The audience deck applies the Backstage theme via attachTopbar ->
+      // ThemeManager (data-theme attribute on documentElement). In presenter
+      // mode we skip the topbar, so the side menu chrome would read default
+      // (light) tokens. Apply the saved theme manually and stay in sync via
+      // the cross-window storage event.
+      const applyBsTheme = () => {
+        const theme = localStorage.getItem('bs_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      };
+      applyBsTheme();
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'bs_theme') applyBsTheme();
+      });
     }
 
     // Detect locally-triggered transient pops (Esc, or popTransient from
