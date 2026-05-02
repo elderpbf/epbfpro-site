@@ -1,6 +1,4 @@
-// engine/sidebar-integration.js
-// TODO: rename file (sidebar-integration.js -> side-menu-integration.js) and CSS classes
-//       (pn-sidebar__* -> pn-side-menu__*) -- deferred to avoid import churn during active phase work.
+// engine/side-menu-integration.js
 //
 // Left-edge auto-hide side menu for Panels v2. Two modes:
 //   collapsed -- 280px wide. Header carries the deck title + an editable
@@ -40,7 +38,7 @@
 //
 // Usage:
 //   const topbar = attachTopbar(runtime, { ... });
-//   attachSidebar(runtime, { topbar });        // tools optional; defaults below
+//   attachSideMenu(runtime, { topbar });        // tools optional; defaults below
 
 import { registry } from './registry.js';
 import { subscribeHostedSession } from './classpulse-discovery.js';
@@ -91,7 +89,7 @@ const DEFAULT_TOOLS = [
 
 function buildToolIcon(tool) {
   const span = document.createElement('span');
-  span.className = 'pn-sidebar__tool-icon';
+  span.className = 'pn-side-menu__tool-icon';
   if (tool.icon && LOCAL_ICONS[tool.icon]) {
     span.innerHTML = LOCAL_ICONS[tool.icon];
     return span;
@@ -186,7 +184,7 @@ async function openPresenterView(slug) {
 }
 
 
-export function attachSidebar(runtime, options = {}) {
+export function attachSideMenu(runtime, options = {}) {
   const manifestTools = runtime?.manifest?.sidebar?.tools;
   const tools = Array.isArray(options.tools) && options.tools.length > 0
     ? options.tools
@@ -194,22 +192,22 @@ export function attachSidebar(runtime, options = {}) {
   const topbar = options.topbar || null;
 
   const slug = (runtime.manifest && runtime.manifest.id) || 'default';
-  const TOOLS_OPEN_KEY = 'bs_pn_sidebar_' + slug + '_tools_open';
-  const PANELS_OPEN_KEY = 'bs_pn_sidebar_' + slug + '_panels_open';
+  const TOOLS_OPEN_KEY = 'bs_pn_side_menu_' + slug + '_tools_open';
+  const PANELS_OPEN_KEY = 'bs_pn_side_menu_' + slug + '_panels_open';
 
   const liveStates = {};
   const _unsubscribers = [];
 
   const zone = document.createElement('div');
-  zone.className = 'pn-sidebar-zone';
+  zone.className = 'pn-side-menu-zone';
 
   const sidebar = document.createElement('aside');
-  sidebar.className = 'pn-sidebar';
+  sidebar.className = 'pn-side-menu';
   sidebar.setAttribute('aria-label', 'Menu lateral de ferramentas e painéis');
 
   // ----- body (groups in collapsed mode, full menu in menu mode) -----
   const body = document.createElement('div');
-  body.className = 'pn-sidebar__body';
+  body.className = 'pn-side-menu__body';
   sidebar.appendChild(body);
 
   // ----- bottom bar (replaces the old footer button + side menu header) -----
@@ -217,30 +215,30 @@ export function attachSidebar(runtime, options = {}) {
   // with the topbar's top-edge reveal zone. It carries the deck title, an
   // editable N/total counter, and a menu-toggle button (hamburger glyph).
   const bottomBar = document.createElement('div');
-  bottomBar.className = 'pn-sidebar__bottom-bar';
+  bottomBar.className = 'pn-side-menu__bottom-bar';
 
   const menuToggle = document.createElement('button');
   menuToggle.type = 'button';
-  menuToggle.className = 'pn-sidebar__menu-toggle';
+  menuToggle.className = 'pn-side-menu__menu-toggle';
   menuToggle.setAttribute('aria-label', 'Abrir menu de painéis');
   menuToggle.innerHTML = LOCAL_ICONS.menu;
   bottomBar.appendChild(menuToggle);
 
   const bottomTitle = document.createElement('span');
-  bottomTitle.className = 'pn-sidebar__bottom-title';
+  bottomTitle.className = 'pn-side-menu__bottom-title';
   bottomTitle.textContent = (runtime.manifest && runtime.manifest.title) || 'ClassForge';
   bottomBar.appendChild(bottomTitle);
 
   const counter = document.createElement('div');
-  counter.className = 'pn-sidebar__counter';
+  counter.className = 'pn-side-menu__counter';
   const counterInput = document.createElement('input');
   counterInput.type = 'number';
-  counterInput.className = 'pn-sidebar__counter-input';
+  counterInput.className = 'pn-side-menu__counter-input';
   counterInput.min = '1';
   counterInput.setAttribute('aria-label', 'Número do painel atual');
   counter.appendChild(counterInput);
   const counterTotal = document.createElement('span');
-  counterTotal.className = 'pn-sidebar__counter-total';
+  counterTotal.className = 'pn-side-menu__counter-total';
   counter.appendChild(counterTotal);
   bottomBar.appendChild(counter);
 
@@ -323,17 +321,17 @@ export function attachSidebar(runtime, options = {}) {
       const hidden = typeof tool.hidden === 'function' ? tool.hidden(state) : tool.hidden;
       const badge  = typeof tool.badge  === 'function' ? tool.badge(state)  : tool.badge;
 
-      // Collapsed-mode: tool button lives in a <li> inside .pn-sidebar__tools
-      const collapsedBtn = body.querySelector(`.pn-sidebar__tool[data-tool-id="${CSS.escape(tool.id)}"]`);
+      // Collapsed-mode: tool button lives in a <li> inside .pn-side-menu__tools
+      const collapsedBtn = body.querySelector(`.pn-side-menu__tool[data-tool-id="${CSS.escape(tool.id)}"]`);
       if (collapsedBtn) {
         const li = collapsedBtn.parentElement;
         if (li) { li.hidden = !!hidden; li.dataset.stateHidden = hidden ? 'true' : 'false'; }
         // Dot lives on the icon so the ↗ affordance stays in its fixed position.
-        const iconSpan = collapsedBtn.querySelector('.pn-sidebar__tool-icon');
+        const iconSpan = collapsedBtn.querySelector('.pn-side-menu__tool-icon');
         const dotHost = iconSpan || collapsedBtn;
-        let dot = dotHost.querySelector('.pn-sidebar__tool-dot');
+        let dot = dotHost.querySelector('.pn-side-menu__tool-dot');
         if (badge === 'dot') {
-          if (!dot) { dot = document.createElement('span'); dot.className = 'pn-sidebar__tool-dot'; dotHost.appendChild(dot); }
+          if (!dot) { dot = document.createElement('span'); dot.className = 'pn-side-menu__tool-dot'; dotHost.appendChild(dot); }
         } else if (dot) { dot.remove(); }
       }
 
@@ -361,13 +359,13 @@ export function attachSidebar(runtime, options = {}) {
 
   function makeGroup({ title, openKey, defaultOpen, children }) {
     const det = document.createElement('details');
-    det.className = 'pn-sidebar__group';
+    det.className = 'pn-side-menu__group';
     const stored = localStorage.getItem(openKey);
     const isOpen = stored === null ? defaultOpen : stored === 'true';
     if (isOpen) det.open = true;
 
     const sum = document.createElement('summary');
-    sum.className = 'pn-sidebar__group-summary';
+    sum.className = 'pn-side-menu__group-summary';
     sum.textContent = title;
     det.appendChild(sum);
     det.appendChild(children);
@@ -395,22 +393,22 @@ export function attachSidebar(runtime, options = {}) {
 
     // --- Tools group ---
     const toolsList = document.createElement('ul');
-    toolsList.className = 'pn-sidebar__tools';
+    toolsList.className = 'pn-side-menu__tools';
     for (const tool of data.tools) {
       const li = document.createElement('li');
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'pn-sidebar__tool';
+      btn.className = 'pn-side-menu__tool';
       btn.dataset.toolId = tool.id;
       btn.appendChild(buildToolIcon(tool));
       const lab = document.createElement('span');
-      lab.className = 'pn-sidebar__tool-label';
+      lab.className = 'pn-side-menu__tool-label';
       lab.textContent = tool.label;
       btn.appendChild(lab);
       // External-link affordance for tools that open in a new tab/window.
       if (tool.kind === 'popup' || tool.kind === 'action') {
         const ext = document.createElement('span');
-        ext.className = 'pn-sidebar__tool-ext';
+        ext.className = 'pn-side-menu__tool-ext';
         ext.textContent = '↗';
         ext.setAttribute('aria-hidden', 'true');
         btn.appendChild(ext);
@@ -425,20 +423,20 @@ export function attachSidebar(runtime, options = {}) {
 
     // --- Panels group ---
     const panelsList = document.createElement('ul');
-    panelsList.className = 'pn-sidebar__panel-list';
+    panelsList.className = 'pn-side-menu__panel-list';
     for (const panel of data.panels) {
       const li = document.createElement('li');
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'pn-sidebar__panel';
+      btn.className = 'pn-side-menu__panel';
       btn.dataset.panelIndex = String(panel.index);
       if (panel.isActive) btn.classList.add('is-active');
       const idx = document.createElement('span');
-      idx.className = 'pn-sidebar__panel-index';
+      idx.className = 'pn-side-menu__panel-index';
       idx.textContent = String(panel.index + 1);
       btn.appendChild(idx);
       const lab = document.createElement('span');
-      lab.className = 'pn-sidebar__panel-label';
+      lab.className = 'pn-side-menu__panel-label';
       lab.textContent = panel.title;
       btn.appendChild(lab);
       btn.addEventListener('click', () => jumpToPanel(panel.index));
@@ -451,13 +449,13 @@ export function attachSidebar(runtime, options = {}) {
     // --- Search filter (applies to tools group + panels group) ---
     function applyCollapsedFilter(query) {
       const q = query.trim().toLowerCase();
-      toolsList.querySelectorAll('.pn-sidebar__tool').forEach(btn => {
+      toolsList.querySelectorAll('.pn-side-menu__tool').forEach(btn => {
         if (btn.parentElement.dataset.stateHidden === 'true') return;
-        const text = (btn.querySelector('.pn-sidebar__tool-label')?.textContent || '').toLowerCase();
+        const text = (btn.querySelector('.pn-side-menu__tool-label')?.textContent || '').toLowerCase();
         btn.parentElement.hidden = q !== '' && !text.includes(q);
       });
-      panelsList.querySelectorAll('.pn-sidebar__panel').forEach(btn => {
-        const text = (btn.querySelector('.pn-sidebar__panel-label')?.textContent || '').toLowerCase();
+      panelsList.querySelectorAll('.pn-side-menu__panel').forEach(btn => {
+        const text = (btn.querySelector('.pn-side-menu__panel-label')?.textContent || '').toLowerCase();
         btn.parentElement.hidden = q !== '' && !text.includes(q);
       });
     }
@@ -663,7 +661,7 @@ export function attachSidebar(runtime, options = {}) {
     // so we do not suppress in that case.
     if (!menuOpen) {
       const tb = getTopbarEl();
-      if (tb) tb.classList.add('pn-sidebar-suppressed');
+      if (tb) tb.classList.add('pn-side-menu-suppressed');
     }
   }
 
@@ -673,7 +671,7 @@ export function attachSidebar(runtime, options = {}) {
     hideTimer = setTimeout(() => {
       sidebar.classList.remove('is-open');
       const tb = getTopbarEl();
-      if (tb) tb.classList.remove('pn-sidebar-suppressed');
+      if (tb) tb.classList.remove('pn-side-menu-suppressed');
       hideTimer = null;
     }, 600);
   }
@@ -684,7 +682,7 @@ export function attachSidebar(runtime, options = {}) {
     // Pinning the topbar (via setMenuMode) takes precedence over the
     // side menu suppression class, so we drop the suppression here.
     const tb = getTopbarEl();
-    if (tb) tb.classList.remove('pn-sidebar-suppressed');
+    if (tb) tb.classList.remove('pn-side-menu-suppressed');
     if (topbar && typeof topbar.setMenuMode === 'function') topbar.setMenuMode(true);
     renderMenu();
     applyTileState();
@@ -698,7 +696,7 @@ export function attachSidebar(runtime, options = {}) {
     // If the side menu is still open after the menu closes, re-apply suppression.
     if (sidebar.classList.contains('is-open')) {
       const tb = getTopbarEl();
-      if (tb) tb.classList.add('pn-sidebar-suppressed');
+      if (tb) tb.classList.add('pn-side-menu-suppressed');
     }
     renderCollapsed();
     applyTileState();
@@ -744,9 +742,9 @@ export function attachSidebar(runtime, options = {}) {
       applyTileState();
     } else {
       // Surgical update for the collapsed-mode panel list.
-      const list = body.querySelector('.pn-sidebar__panel-list');
+      const list = body.querySelector('.pn-side-menu__panel-list');
       if (list) {
-        list.querySelectorAll('.pn-sidebar__panel').forEach(btn => {
+        list.querySelectorAll('.pn-side-menu__panel').forEach(btn => {
           const idx = parseInt(btn.dataset.panelIndex, 10);
           btn.classList.toggle('is-active', idx === runtime.currentIndex);
         });

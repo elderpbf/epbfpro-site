@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="../../tools/terminal-embed/terminal-embed.css">
   <link rel="stylesheet" href="../../tools/ai-chat/ai-chat.css?v=1.5">
   <link rel="stylesheet" href="../../layouts/content/content.css">
-  <link rel="stylesheet" href="../../engine/sidebar.css?v=2.1">
+  <link rel="stylesheet" href="../../engine/side-menu.css?v=2.2">
   <link rel="stylesheet" href="../../engine/panel-pills.css?v=1.8">
   <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="/backstage/css/backstage.css?v=1.6">
@@ -61,7 +61,7 @@
     import { attachTopbar } from '../../engine/topbar-integration.js';
     import { attachSettings } from '../../engine/settings-integration.js';
     import { attachThumbnail } from '../../engine/thumbnail-integration.js';
-    import { attachSidebar } from '../../engine/sidebar-integration.js';
+    import { attachSideMenu } from '../../engine/side-menu-integration.js';
     import { attachFocusReclaim } from '../../engine/focus-reclaim.js';
 
     // URL param handling
@@ -99,7 +99,7 @@
         }),
       ];
       const topbar = attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/', sections });
-      attachSidebar(runtime, { topbar });
+      attachSideMenu(runtime, { topbar });
     }
 
     runtime.start().then(() => {

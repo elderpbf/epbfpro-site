@@ -1,6 +1,6 @@
 // engine/classpulse-discovery.js
 // Shared helper for locating an active ClassPulse session.
-// Used by tools/classpulse-display-embed and engine/sidebar-integration.
+// Used by tools/classpulse-display-embed and engine/side-menu-integration.
 
 const WORKER_URL = 'https://backstage-api.pensoia.workers.dev';
 

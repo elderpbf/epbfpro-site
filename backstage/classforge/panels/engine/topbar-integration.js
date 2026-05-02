@@ -5,7 +5,7 @@
 // updates the Topbar subtitle with the active panel's title (or id) plus the
 // 1-based position over total panel count.
 //
-// Returns a handle so callers (notably attachSidebar) can swap the topbar
+// Returns a handle so callers (notably attachSideMenu) can swap the topbar
 // into "menu mode" -- subtitle becomes "Menu". The "Fechar menu" topbar
 // button was removed in P8: the side menu's hamburger toggle is the single
 // way to dismiss the full menu.
@@ -18,7 +18,7 @@
 // Example usage (inside a presentation's module script):
 //
 //   const topbar = attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/' });
-//   attachSidebar(runtime, { topbar });
+//   attachSideMenu(runtime, { topbar });
 
 export function attachTopbar(runtime, options = {}) {
   const title = options.title ?? 'ClassForge';
