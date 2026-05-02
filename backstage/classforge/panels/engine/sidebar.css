@@ -301,59 +301,30 @@
   display: none;
 }
 
-/* ----- ClassPulse live-session badge ----- */
-.pn-sidebar__cp-badge {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 4px;
-  flex-shrink: 0;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.pn-sidebar__cp-badge:hover {
-  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
-}
-
-.pn-sidebar__cp-badge-name,
-.pn-sidebar__cp-badge-label {
-  display: none;
-}
-
-.pn-sidebar.is-menu .pn-sidebar__cp-badge-name {
-  display: inline;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary, #e5e7eb);
-  max-width: 240px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pn-sidebar.is-menu .pn-sidebar__cp-badge-label {
-  display: inline;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #ef4444;
-}
-
-.pn-sidebar__cp-badge-dot {
+/* ----- Reactive tile dot badge (collapsed sidebar + menu card) ----- */
+.pn-sidebar__tool-dot,
+.pn-menu-card__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #ef4444;
   flex-shrink: 0;
-  animation: pn-cp-pulse 2s ease-in-out infinite;
+  animation: pn-tile-dot-pulse 2s ease-in-out infinite;
 }
 
-@keyframes pn-cp-pulse {
+/* Collapsed list: dot sits at the right edge of the tool row */
+.pn-sidebar__tool-dot {
+  margin-left: auto;
+}
+
+/* Menu card: dot is absolutely positioned at top-right of the card */
+.pn-menu-card__dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+@keyframes pn-tile-dot-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.75); }
 }
