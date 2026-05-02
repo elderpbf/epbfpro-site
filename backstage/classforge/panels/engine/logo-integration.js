@@ -7,13 +7,19 @@
 //
 // Storage:
 //   bs_pn_logo_library  -- global. Array of { id, name, dataUrl, width, height }.
-//   bs_pn_logo_<slug>   -- per-deck. { enabled, logoId, offset, size }.
+//   bs_pn_logo_<slug>   -- per-deck. { enabled, logoId, offsetTop, offsetLeft, size }.
+//
+// Uploaded images are downscaled via canvas (max 512px on longest side, PNG
+// to preserve transparency) before being stored, so a typical logo lands well
+// under 100 KB even when the source is multi-megabyte. The ~5 MB origin
+// budget then comfortably holds a couple dozen logos.
 //
 // The overlay element is appended to document.body once (lazy) and reused
 // across panel navigations and transient overlays.
 //
 // Settings UI: returns one section [{ id, title, content, onInit, onOpen }]
-// with a file input, library list, "Mostrar logo" toggle, offset, and size.
+// with a file input, library list, "Mostrar logo" toggle, top + left offsets,
+// and size.
 //
 // Example usage (inside a presentation module script):
 //
@@ -29,7 +35,9 @@ const LIBRARY_KEY = 'bs_pn_logo_library';
 const SLUG_KEY_PREFIX = 'bs_pn_logo_';
 const OVERLAY_ID = 'pn-logo-overlay';
 
-const DEFAULTS = { enabled: false, logoId: null, offset: 24, size: 80 };
+const MAX_DIMENSION = 512;
+
+const DEFAULTS = { enabled: false, logoId: null, offsetTop: 24, offsetLeft: 24, size: 80 };
 
 function readJson(key, fallback) {
   try {
@@ -42,7 +50,15 @@ function readJson(key, fallback) {
   }
 }
 
-function writeJson(key, value) {
+// Library writes can hit the localStorage quota for large data URLs; let
+// the QuotaExceededError propagate so the caller can surface a message.
+function writeJsonStrict(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+// Per-slug state writes are tiny (a handful of numbers) and cannot fill
+// origin storage on their own; swallow IO errors so the UI stays responsive.
+function writeJsonSafe(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
 }
 
@@ -52,7 +68,7 @@ function getLibrary() {
 }
 
 function setLibrary(lib) {
-  writeJson(LIBRARY_KEY, lib);
+  writeJsonStrict(LIBRARY_KEY, lib);
 }
 
 function addToLibrary(entry) {
@@ -71,12 +87,20 @@ function removeFromLibrary(id) {
 function slugKey(slug) { return SLUG_KEY_PREFIX + slug; }
 
 function getSlugState(slug) {
-  const stored = readJson(slugKey(slug), {});
-  return { ...DEFAULTS, ...(stored || {}) };
+  const stored = readJson(slugKey(slug), {}) || {};
+  const out = { ...DEFAULTS, ...stored };
+  // Migrate legacy single `offset` to per-axis fields.
+  if (typeof stored.offset === 'number') {
+    if (typeof stored.offsetTop !== 'number') out.offsetTop = stored.offset;
+    if (typeof stored.offsetLeft !== 'number') out.offsetLeft = stored.offset;
+  }
+  return out;
 }
 
 function setSlugState(slug, state) {
-  writeJson(slugKey(slug), state);
+  const { offset, ...clean } = state;
+  void offset;
+  writeJsonSafe(slugKey(slug), clean);
 }
 
 function findLogo(id) {
@@ -110,10 +134,37 @@ function renderOverlay(slug) {
     return;
   }
   overlay.style.display = '';
-  overlay.style.top = state.offset + 'px';
-  overlay.style.left = state.offset + 'px';
+  overlay.style.top = state.offsetTop + 'px';
+  overlay.style.left = state.offsetLeft + 'px';
   overlay.style.height = state.size + 'px';
   if (img.getAttribute('src') !== logo.dataUrl) img.src = logo.dataUrl;
+}
+
+function decodeImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const probe = new Image();
+    probe.onload = () => resolve(probe);
+    probe.onerror = () => reject(new Error('image decode failed'));
+    probe.src = dataUrl;
+  });
+}
+
+// Downscale via canvas to keep stored data URLs small. PNG output preserves
+// transparency for logos with alpha channels.
+function downscaleImage(image, maxDim) {
+  const srcW = image.naturalWidth || image.width || 0;
+  const srcH = image.naturalHeight || image.height || 0;
+  const longest = Math.max(srcW, srcH);
+  if (!longest) throw new Error('image has zero dimension');
+  const scale = longest > maxDim ? maxDim / longest : 1;
+  const w = Math.max(1, Math.round(srcW * scale));
+  const h = Math.max(1, Math.round(srcH * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0, w, h);
+  return { dataUrl: canvas.toDataURL('image/png'), width: w, height: h };
 }
 
 function readImageFile(file) {
@@ -122,18 +173,11 @@ function readImageFile(file) {
     reader.onerror = () => reject(reader.error || new Error('read failed'));
     reader.onload = () => {
       const dataUrl = String(reader.result || '');
-      if (!dataUrl.startsWith('data:image/')) {
-        reject(new Error('not an image'));
-        return;
-      }
-      const probe = new Image();
-      probe.onload = () => resolve({
-        dataUrl,
-        width: probe.naturalWidth || 0,
-        height: probe.naturalHeight || 0,
-      });
-      probe.onerror = () => reject(new Error('image decode failed'));
-      probe.src = dataUrl;
+      if (!dataUrl.startsWith('data:image/')) { reject(new Error('not an image')); return; }
+      decodeImage(dataUrl).then((img) => {
+        try { resolve(downscaleImage(img, MAX_DIMENSION)); }
+        catch (e) { reject(e); }
+      }, reject);
     };
     reader.readAsDataURL(file);
   });
@@ -147,12 +191,13 @@ function escHtml(s) {
 
 function buildLogoSection(slug) {
   const ids = {
-    file:     'pn-logo-file',
-    library:  'pn-logo-library',
-    toggle:   'pn-logo-toggle',
-    offset:   'pn-logo-offset',
-    size:     'pn-logo-size',
-    error:    'pn-logo-error',
+    file:       'pn-logo-file',
+    library:    'pn-logo-library',
+    toggle:     'pn-logo-toggle',
+    offsetTop:  'pn-logo-offset-top',
+    offsetLeft: 'pn-logo-offset-left',
+    size:       'pn-logo-size',
+    error:      'pn-logo-error',
   };
 
   const content =
@@ -169,8 +214,12 @@ function buildLogoSection(slug) {
         '<span>Mostrar logo</span>' +
       '</label>' +
       '<div class="bs-field">' +
-        '<label for="' + ids.offset + '">Distância da borda (px)</label>' +
-        '<input type="number" id="' + ids.offset + '" min="0" max="200" step="1">' +
+        '<label for="' + ids.offsetTop + '">Distância do topo (px)</label>' +
+        '<input type="number" id="' + ids.offsetTop + '" min="0" max="200" step="1">' +
+      '</div>' +
+      '<div class="bs-field">' +
+        '<label for="' + ids.offsetLeft + '">Distância da esquerda (px)</label>' +
+        '<input type="number" id="' + ids.offsetLeft + '" min="0" max="200" step="1">' +
       '</div>' +
       '<div class="bs-field">' +
         '<label for="' + ids.size + '">Altura do logo (px)</label>' +
@@ -207,10 +256,12 @@ function buildLogoSection(slug) {
   function syncControls() {
     const state = getSlugState(slug);
     const toggle = document.getElementById(ids.toggle);
-    const offset = document.getElementById(ids.offset);
+    const offsetTop = document.getElementById(ids.offsetTop);
+    const offsetLeft = document.getElementById(ids.offsetLeft);
     const size = document.getElementById(ids.size);
     if (toggle) toggle.checked = !!state.enabled;
-    if (offset) offset.value = String(state.offset);
+    if (offsetTop) offsetTop.value = String(state.offsetTop);
+    if (offsetLeft) offsetLeft.value = String(state.offsetLeft);
     if (size) size.value = String(state.size);
   }
 
@@ -232,6 +283,7 @@ function buildLogoSection(slug) {
         addToLibrary({ id, name, dataUrl, width, height });
       } catch (e) {
         if (err) err.textContent = 'Falha ao salvar (origem cheia?). Remova um logo antes de adicionar outro.';
+        console.warn('[logo-integration] addToLibrary failed', e);
         return;
       }
       update({ enabled: true, logoId: id });
@@ -241,11 +293,19 @@ function buildLogoSection(slug) {
     });
   }
 
+  function bindNumberInput(input, key, min, max) {
+    if (!input) return;
+    input.addEventListener('input', () => {
+      const n = parseInt(input.value, 10);
+      if (!Number.isFinite(n)) return;
+      const clamped = Math.max(min, Math.min(max, n));
+      update({ [key]: clamped });
+    });
+  }
+
   function bind() {
     const file = document.getElementById(ids.file);
     const toggle = document.getElementById(ids.toggle);
-    const offset = document.getElementById(ids.offset);
-    const size = document.getElementById(ids.size);
     const list = document.getElementById(ids.library);
 
     if (file) {
@@ -258,22 +318,10 @@ function buildLogoSection(slug) {
     if (toggle) {
       toggle.addEventListener('change', () => update({ enabled: !!toggle.checked }));
     }
-    if (offset) {
-      offset.addEventListener('input', () => {
-        const n = parseInt(offset.value, 10);
-        if (!Number.isFinite(n)) return;
-        const clamped = Math.max(0, Math.min(200, n));
-        update({ offset: clamped });
-      });
-    }
-    if (size) {
-      size.addEventListener('input', () => {
-        const n = parseInt(size.value, 10);
-        if (!Number.isFinite(n)) return;
-        const clamped = Math.max(20, Math.min(300, n));
-        update({ size: clamped });
-      });
-    }
+    bindNumberInput(document.getElementById(ids.offsetTop), 'offsetTop', 0, 200);
+    bindNumberInput(document.getElementById(ids.offsetLeft), 'offsetLeft', 0, 200);
+    bindNumberInput(document.getElementById(ids.size), 'size', 20, 300);
+
     if (list) {
       list.addEventListener('click', (e) => {
         const btn = e.target.closest('button[data-action]');
