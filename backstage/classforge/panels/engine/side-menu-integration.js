@@ -505,7 +505,10 @@ export function attachSideMenu(runtime, options = {}) {
       title.className = 'pn-menu-card__title';
       title.textContent = tool.label;
       card.appendChild(title);
-      if (tool.url) {
+      // Hint text only for static URLs. Reactive (function) URLs change with
+      // state and aren't useful as a fixed hint -- showing one would render
+      // the function's source as text.
+      if (typeof tool.url === 'string') {
         const hint = document.createElement('p');
         hint.className = 'pn-menu-card__hint';
         hint.textContent = tool.url;
