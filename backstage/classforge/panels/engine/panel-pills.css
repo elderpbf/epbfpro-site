@@ -39,6 +39,14 @@
   padding: 0;
   border: 0;
   background: transparent;  /* the inner pill carries its own bg */
+  /* UA stylesheet for [popover] sets overflow:hidden and width:fit-content,
+     which clips the right edge when a multi-pill bar grows wider than the
+     popover's first-layout size (e.g. a long slide title pushing the pin
+     pill past the implicit boundary). Force overflow:visible and a
+     content-driven width so siblings render in full. */
+  overflow: visible;
+  width: max-content;
+  max-width: calc(100vw - 24px);
   transform: translate(-50%, calc(100% + 32px));
   transition: transform 200ms ease;
   display: inline-flex;
@@ -69,6 +77,10 @@
   box-shadow: var(--pn-shadow-soft);
   font-family: var(--pn-font-body);
   overflow: hidden;
+  /* Sibling pills must render at their natural size; without this, flex
+     shrink kicks in when the bar's content is being measured under the
+     popover's clipped width and the second pill ends up squeezed. */
+  flex-shrink: 0;
 }
 
 .pn-panel-pills__btn,

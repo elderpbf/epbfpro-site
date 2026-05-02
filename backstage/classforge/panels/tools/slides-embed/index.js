@@ -22,12 +22,6 @@
 //     - Override per-panel via config.slidePicker = 'search' | 'stepper'.
 //       Force-disable both with config.slidePicker = 'off'.
 //
-// Click-to-advance:
-//   A transparent overlay covers the iframe (excluding the bottom 24 px so
-//   the pill bar's hover zone stays reachable) and translates clicks into
-//   pill `next` actions. Without this, clicking the iframe advances Google
-//   Slides internally but our pill counter stays stuck on slide 1.
-//
 // Pin:
 //   The pin pill toggles per-panel persistence of the current slide index
 //   under `bs_pn_slides_<deck>_<panelId>`. When pinned, mounting restores
@@ -179,30 +173,6 @@ registerTool({
     if (restored) frame.src = withSlide(url, slides[current - 1].id);
 
     if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
-
-    // Click-catcher: forwards iframe-area clicks to the pill's `next`. Sits
-    // above the iframe (z-index 1) but below the pill hover zone (z-index 9)
-    // so the bottom-edge reveal still works. Bottom inset matches the zone
-    // height so a click on the bottom 24 px reaches the zone, not us.
-    const clickzone = document.createElement('div');
-    clickzone.className = 'slides-embed-clickzone';
-    clickzone.setAttribute('aria-label', 'Avançar slide');
-    root.appendChild(clickzone);
-    clickzone.addEventListener('click', () => advance());
-
-    function advanceTo(nextNum) {
-      if (!pillHandle) return;
-      if (mode === 'search' && hasTitles) {
-        pillHandle.update(0, { value: slides[nextNum - 1].id });
-      } else {
-        pillHandle.update(0, { value: nextNum });
-      }
-    }
-
-    function advance() {
-      if (current >= total) return;
-      advanceTo(current + 1);
-    }
 
     function persistIfPinned() {
       if (pinned) writePinState(key, { pinned: true, slideIndex: current });
