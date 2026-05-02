@@ -1,28 +1,31 @@
 // engine/thumbnail-integration.js
 //
-// Panels v2 adapter for the shared BackstageThumbnail module. Returns a
-// one-element sections[] for the settings drawer with an "Atualizar
-// Thumbnail" button that captures the current panel (#pn-host by default)
-// and registers it under the Panels v2 engine.
+// Panels v2 adapter for the shared BackstageThumbnail module.
 //
-// Consumers concatenate the result with attachSettings before passing to
-// attachTopbar's `sections` option:
+// Exports:
 //
-//   const sections = [
-//     ...attachSettings(runtime, { slug }),
-//     ...attachThumbnail(runtime, { slug, title, engine, targetSelector }),
-//   ];
-//   attachTopbar(runtime, { title, backLink, sections });
+//   attachThumbnail(runtime, opts)
+//     Returns a one-element sections[] for the settings drawer with an
+//     "Atualizar Thumbnail" button that captures the current panel via
+//     BackstageThumbnail.capture. Existing callers pass:
+//       { slug, title, engine, targetSelector?, fallbackBg? }
 //
 // Dependencies (globals, loaded via classic <script> tags):
 //   window.BackstageThumbnail  (from /backstage/js/backstage-thumbnail.js)
 //   window.html2canvas         (transitive; required by BackstageThumbnail)
+//
+// BackstageThumbnail.capture API (from backstage-thumbnail.js):
+//   capture({ slug, title, engine, targetSelector, backgroundSelector?, fallbackBg? })
+//   Captures the element at targetSelector, resizes to 800x450 JPEG, uploads
+//   to R2, and registers in D1 under the given slug. Auth via localStorage bs_pw_hash.
+
+const TARGET_SELECTOR = '#pn-host';
 
 const REQUIRED = ['slug', 'title', 'engine'];
 
 function buildThumbnailSection(opts) {
   const btnId = 'pn-thumbnail-btn';
-  const targetSelector = opts.targetSelector || '#pn-host';
+  const targetSelector = opts.targetSelector || TARGET_SELECTOR;
   const fallbackBg = opts.fallbackBg || '#ffffff';
 
   return {

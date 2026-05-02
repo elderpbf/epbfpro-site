@@ -139,6 +139,17 @@
   .host-screen { display: none; }
   .host-screen.active { display: block; }
 
+  /* Live indicator in session bar */
+  .host-live-indicator { display: inline-flex; align-items: center; gap: 5px; margin-left: 0.5rem; }
+  .host-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: host-live-pulse 2s ease-in-out infinite; }
+  .host-live-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #ef4444; text-transform: uppercase; }
+  @keyframes host-live-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
+
+  .host-not-hosted-note { background: rgba(20,184,166,.08); border: 1px solid rgba(20,184,166,.2); border-radius: 10px; padding: 1rem 1.25rem; color: var(--text-secondary); font-size: 0.88rem; text-align: center; margin-bottom: 1.25rem; }
+
+  /* Hide history action buttons when not hosting (cannot relaunch/edit without an active host) */
+  body:not(.is-hosted) .hi-actions { display: none; }
+
   /* QR modal */
   .qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }
   .qr-modal.open { display: flex; }
@@ -173,32 +184,31 @@
 
     <div class="host-alert host-alert-success" id="alert-success"></div>
 
-    <!-- ── SCREEN: session picker ────────────────────────── -->
-    <div class="host-screen active" id="screen-picker">
-      <div class="host-card picker-card">
-        <div class="host-card-title">Sessões abertas</div>
-        <div id="picker-list"><div class="picker-empty">Carregando...</div></div>
-        <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:1.25rem">
-          <a href="/backstage/classpulse/" style="color:var(--primary)">+ Criar nova sessão</a>
-        </p>
-      </div>
-    </div>
-
-    <!-- ── SCREEN: active session ───────────────────────── -->
-    <div class="host-screen" id="screen-session">
+    <!-- ── SCREEN: session ───────────────────────────────── -->
+    <div class="host-screen active" id="screen-session">
 
       <!-- Session bar -->
       <div class="host-session-bar">
         <div>
-          <div class="host-code" id="session-code-display"></div>
+          <div class="host-code">
+            <span id="session-code-display"></span>
+            <span class="host-live-indicator" id="host-live-indicator" hidden>
+              <span class="host-live-dot"></span><span class="host-live-label">Live</span>
+            </span>
+          </div>
           <div class="host-session-name" id="session-name-display"></div>
         </div>
         <div class="host-bar-actions">
-          <button class="host-btn host-btn-ghost" id="qr-btn">QR</button>
-          <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener">Display</a>
-          <button class="host-btn host-btn-ghost" id="reopen-session-btn" style="display:none">Reabrir sessão</button>
-          <button class="host-btn host-btn-danger" id="close-session-btn">Encerrar sessão</button>
+          <button class="host-btn host-btn-ghost" id="qr-btn" hidden>QR</button>
+          <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener" hidden>Display</a>
+          <button class="host-btn host-btn-primary" id="start-host-btn" hidden>Iniciar</button>
+          <button class="host-btn host-btn-danger" id="stop-host-btn" hidden>Encerrar</button>
         </div>
+      </div>
+
+      <!-- Note shown when session is not being hosted -->
+      <div class="host-not-hosted-note" id="not-hosted-note" hidden>
+        Sessão não está sendo hospedada. Clique em <strong>Iniciar</strong> para começar.
       </div>
 
       <!-- Presentation link row -->
@@ -222,7 +232,7 @@
       </div>
 
       <!-- Launch question form -->
-      <div class="host-card">
+      <div class="host-card" id="launch-q-card">
         <div class="host-card-title">Lançar pergunta</div>
 
         <!-- Banco de questões collapsible -->
@@ -314,16 +324,6 @@
 
     </div>
 
-    <!-- ── SCREEN: session closed ───────────────────────── -->
-    <div class="host-screen" id="screen-closed">
-      <div class="host-card" style="text-align:center;padding:2.5rem">
-        <div style="font-size:2rem;margin-bottom:1rem">✓</div>
-        <div style="font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Sessão encerrada</div>
-        <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem" id="closed-session-name"></div>
-        <a href="/backstage/classpulse/" class="host-btn host-btn-primary">Voltar ao ClassPulse</a>
-      </div>
-    </div>
-
   </div>
 </div>
 
@@ -404,13 +404,16 @@ function clearAlert() {
 
 
 // ---------------------------------------------------------------------------
-// Session picker
+// Session loader
 // ---------------------------------------------------------------------------
 
 var urlCode = new URLSearchParams(location.search).get('code');
 
-async function loadPicker() {
-  var listEl = document.getElementById('picker-list');
+if (!urlCode) {
+  location.href = '/backstage/classpulse/';
+}
+
+async function loadSession() {
   try {
     var results = await Promise.allSettled([
       callWorker({ action: 'list_sessions' }),
@@ -418,35 +421,16 @@ async function loadPicker() {
     ]);
     var data = results[0].status === 'fulfilled' ? results[0].value : { sessions: [] };
     _presentations = (results[1].status === 'fulfilled' ? results[1].value.presentations : null) || [];
-    var open = (data.sessions || []).filter(function(s) { return s.status === 'open'; });
 
-    // Auto-select if code in URL
-    if (urlCode) {
-      var match = open.find(function(s) { return s.code === urlCode.toUpperCase(); });
-      if (match) { selectSession(match); return; }
-      // Code not found or closed - show picker with a note
-    }
-
-    if (!open.length) {
-      listEl.innerHTML = '<div class="picker-empty">Nenhuma sessão aberta.<br>Crie uma sessão no ClassPulse.</div>';
+    var match = (data.sessions || []).find(function(s) { return s.code === urlCode.toUpperCase(); });
+    if (!match) {
+      showToastError('Sessão ' + urlCode + ' não encontrada.');
+      setTimeout(function() { location.href = '/backstage/classpulse/'; }, 2000);
       return;
     }
-
-    listEl.innerHTML = '';
-    open.forEach(function(s) {
-      var row = document.createElement('div');
-      row.className = 'picker-session-row';
-      row.innerHTML =
-        '<div>' +
-          '<div class="picker-code">' + escHtml(s.code) + '</div>' +
-          '<div class="picker-meta">' + escHtml(s.title || '') + (s.created_at ? ' &middot; ' + new Date(s.created_at).toLocaleDateString('pt-BR') : '') + '</div>' +
-        '</div>' +
-        '<span class="picker-arrow">→</span>';
-      row.addEventListener('click', function() { selectSession(s); });
-      listEl.appendChild(row);
-    });
+    selectSession(match);
   } catch (e) {
-    listEl.innerHTML = '<div class="picker-empty" style="color:#ef4444">Erro ao carregar sessões: ' + escHtml(e.message) + '</div>';
+    showToastError('Erro ao carregar sessão: ' + e.message);
   }
 }
 
@@ -461,10 +445,26 @@ function selectSession(s) {
   document.getElementById('qr-img').src =
     'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent('https://pensoia.com/go?code=' + s.code);
 
-  showScreen('screen-session');
   clearAlert();
   renderPresentationLink();
+  applyHostedUI(s.status === 'open');
+  // Always poll session state so history renders even when not hosted
   document.getElementById('cpq').setAttribute('session', s.code);
+}
+
+function applyHostedUI(isHosted) {
+  document.body.classList.toggle('is-hosted', isHosted);
+  document.getElementById('host-live-indicator').hidden = !isHosted;
+  document.getElementById('not-hosted-note').hidden = isHosted;
+  document.getElementById('qr-btn').hidden = !isHosted;
+  document.getElementById('display-link').hidden = !isHosted;
+  document.getElementById('start-host-btn').hidden = isHosted;
+  document.getElementById('stop-host-btn').hidden = !isHosted;
+  document.getElementById('launch-q-card').style.display = isHosted ? '' : 'none';
+  if (!isHosted) {
+    document.getElementById('active-q-panel').style.display = 'none';
+    activeQId = null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -531,39 +531,69 @@ async function doUnlinkPresentation() {
   }
 }
 
-// Start the picker on load
-loadPicker();
+// Boot
+if (urlCode) loadSession();
 
 // ---------------------------------------------------------------------------
-// Session actions
+// Hosting actions (Iniciar / Encerrar)
 // ---------------------------------------------------------------------------
 
-document.getElementById('close-session-btn').addEventListener('click', async function() {
-  if (!confirm('Encerrar a sessão? Os alunos verão a mensagem de sessão encerrada.')) return;
+async function doStartHost(force) {
+  try {
+    await callWorker({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: sessionCode });
+    _currentSession.status = 'open';
+    applyHostedUI(true);
+    clearAlert();
+  } catch (e) {
+    if (!force && e.data && e.data.active_code) {
+      var name = e.data.active_title || e.data.active_code;
+      var msg = 'A sessão "' + name + '" já está aberta. Deseja encerrá-la para iniciar esta?';
+      if (confirm(msg)) {
+        try {
+          await callWorker({ action: 'close_session', auth_token: AUTH_TOKEN, code: e.data.active_code });
+          await doStartHost(true);
+          return;
+        } catch (e2) {
+          showToastError('Erro ao encerrar a sessão ativa: ' + e2.message);
+          return;
+        }
+      }
+      return;
+    }
+    showToastError(e.message);
+  }
+}
+
+document.getElementById('start-host-btn').addEventListener('click', async function() {
   var btn = this;
   btn.disabled = true;
-  btn.textContent = 'Encerrando sessão...';
+  btn.textContent = 'Iniciando...';
   try {
-    await callWorker({ action: 'close_session', auth_token: AUTH_TOKEN, code: sessionCode });
-    document.getElementById('cpq').removeAttribute('session');
-    document.getElementById('closed-session-name').textContent = 'Sessão ' + sessionCode;
-    showScreen('screen-closed');
-  } catch (e) {
-    showAlert('error', 'Erro: ' + e.message);
+    await doStartHost(false);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Encerrar sessão';
+    btn.textContent = 'Iniciar';
   }
 });
 
-document.getElementById('reopen-session-btn').addEventListener('click', async function() {
+document.getElementById('stop-host-btn').addEventListener('click', async function() {
+  if (!confirm('Encerrar a sessão? Os alunos não poderão mais responder.')) return;
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Encerrando...';
   try {
-    await callWorker({ action: 'reopen_session', auth_token: AUTH_TOKEN, code: sessionCode });
-    document.getElementById('reopen-session-btn').style.display = 'none';
-    document.getElementById('close-session-btn').style.display = '';
-    showAlert('success', 'Sessão reaberta.');
+    if (activeQId) {
+      try { await callWorker({ action: 'close_question', auth_token: AUTH_TOKEN, id: activeQId, session_code: sessionCode, show_results: false, reveal_answer: false }); } catch (_) {}
+    }
+    await callWorker({ action: 'close_session', auth_token: AUTH_TOKEN, code: sessionCode });
+    _currentSession.status = 'closed';
+    applyHostedUI(false);
+    clearAlert();
   } catch (e) {
-    showAlert('error', 'Erro: ' + e.message);
+    showToastError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Encerrar';
   }
 });
 

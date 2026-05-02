@@ -1,12 +1,36 @@
-/* engine/sidebar.css
+/* engine/sidebar.css */
+/* TODO: rename file (sidebar.css -> side-menu.css) and class prefix (pn-sidebar__ -> pn-side-menu__)
+   Deferred to avoid import churn during active phase work. */
+/*
+ * Left-edge auto-hide side menu for Panels v2: collapsible groups (Ferramentas
+ * + Painéis) plus a bottom bar carrying the deck title, an editable N/total
+ * panel counter, and a hamburger glyph that toggles the full-viewport menu.
  *
- * Left-edge auto-hide sidebar for Panels v2: tool launcher list plus a
- * "Ir para o menu" button that expands to a full-viewport panel grid.
+ * The side menu coordinates with the topbar via two classes it adds to the
+ * global .bs-topbar element:
+ *   .pn-sidebar-suppressed -- side menu is open in collapsed mode; suppress
+ *      the topbar's top-edge auto-reveal so it does not cover side menu/menu
+ *      content. (Topbar is still reachable via the gallery / direct URL.)
+ *   .pn-menu-pinned -- menu mode is active; force topbar visible so the
+ *      "Fechar menu" action is always reachable.
  *
  * Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
  * so it tracks the topbar's light/dark switch. Body content (cards) layers
  * --pn-* tokens for accent. Class namespace: pn-sidebar-* and pn-menu-*.
  */
+
+/* ----- topbar coordination overrides ----- */
+.bs-topbar.pn-sidebar-suppressed.bs-topbar--visible {
+  transform: translateY(-100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.bs-topbar.pn-menu-pinned {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
 
 /* ----- reveal zone (always present, invisible) ----- */
 .pn-sidebar-zone {
@@ -19,7 +43,7 @@
   background: transparent;
 }
 
-/* ----- collapsed sidebar ----- */
+/* ----- collapsed side menu ----- */
 .pn-sidebar {
   position: fixed;
   top: 0;
@@ -47,44 +71,6 @@
   width: 100vw;
 }
 
-.pn-sidebar__header {
-  padding: 18px 20px 12px;
-  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.pn-sidebar__title {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-secondary, #d1d5db);
-  margin: 0;
-}
-
-.pn-sidebar__close {
-  background: transparent;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-  color: var(--text-primary, #e5e7eb);
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  line-height: 1;
-}
-
-.pn-sidebar.is-menu .pn-sidebar__close { display: inline-flex; }
-.pn-sidebar__close:hover {
-  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
-}
-
 .pn-sidebar__body {
   flex: 1;
   overflow-y: auto;
@@ -95,22 +81,59 @@
 }
 
 .pn-sidebar.is-menu .pn-sidebar__body {
-  padding: 24px 48px 48px;
+  /* Top padding clears the pinned topbar (~64px tall) so menu cards near
+     the top edge are not covered by it. */
+  padding: 84px 48px 24px;
   gap: 32px;
 }
 
-/* ----- tool list (collapsed mode) ----- */
-.pn-sidebar__section-label {
+/* ----- collapsibles (collapsed mode) ----- */
+.pn-sidebar__group {
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.05));
+}
+
+.pn-sidebar__group:last-of-type {
+  border-bottom: none;
+}
+
+.pn-sidebar__group-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 20px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-secondary, #d1d5db);
-  padding: 8px 20px 4px;
-  margin: 0;
-  opacity: 0.75;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
 }
 
+.pn-sidebar__group-summary::-webkit-details-marker { display: none; }
+.pn-sidebar__group-summary::marker { content: ''; }
+
+.pn-sidebar__group-summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 150ms ease;
+  flex-shrink: 0;
+}
+
+.pn-sidebar__group[open] > .pn-sidebar__group-summary::before {
+  transform: rotate(90deg);
+}
+
+.pn-sidebar__group-summary:hover {
+  background: var(--option-hover-bg, rgba(20, 184, 166, 0.08));
+}
+
+/* ----- tool list (collapsed mode) ----- */
 .pn-sidebar__tools {
   list-style: none;
   margin: 0;
@@ -137,12 +160,32 @@
   background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
 }
 
-.pn-sidebar__tool-dot {
+.pn-sidebar__tool-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary, #e5e7eb);
+}
+
+.pn-sidebar__tool-icon svg,
+.pn-sidebar__tool-icon img {
+  width: 100%;
+  height: 100%;
+}
+
+.pn-sidebar__tool-icon img {
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+.pn-sidebar__tool-icon.is-empty {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--primary, #14b8a6);
-  flex-shrink: 0;
 }
 
 .pn-sidebar__tool-label {
@@ -150,35 +193,247 @@
   font-weight: 500;
 }
 
-/* ----- footer button ----- */
-.pn-sidebar__footer {
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  padding: 12px 16px;
+/* External-link affordance (P11): row variant. */
+.pn-sidebar__tool-ext {
+  margin-left: auto;
+  opacity: 0.6;
+  font-size: 14px;
 }
 
-.pn-sidebar.is-menu .pn-sidebar__footer { display: none; }
+/* ----- panel list (collapsed mode) ----- */
+.pn-sidebar__panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
-.pn-sidebar__menu-btn {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-  background: var(--primary, #14b8a6);
-  color: #ffffff;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
+.pn-sidebar__panel {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 12px;
+  padding: 8px 20px 8px 36px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
 }
 
-.pn-sidebar__menu-btn:hover {
-  background: var(--primary-dark, #0d9488);
+.pn-sidebar__panel:hover {
+  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
+}
+
+.pn-sidebar__panel.is-active {
+  color: var(--primary, #14b8a6);
+}
+
+.pn-sidebar__panel-index {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-secondary, #9ca3af);
+  min-width: 1.5em;
+}
+
+.pn-sidebar__panel.is-active .pn-sidebar__panel-index {
+  color: var(--primary, #14b8a6);
+}
+
+.pn-sidebar__panel-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ----- bottom bar (replaces footer; lives at bottom of side menu in both modes) ----- */
+.pn-sidebar__bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  background: var(--surface, #1a1f26);
+}
+
+.pn-sidebar__menu-toggle {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary, #e5e7eb);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.pn-sidebar__menu-toggle:hover {
+  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
+  border-color: var(--primary, #14b8a6);
+}
+
+.pn-sidebar__menu-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pn-sidebar__bottom-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+  padding: 0;
+}
+
+.pn-sidebar.is-menu .pn-sidebar__counter {
+  display: none;
+}
+
+/* ----- ClassPulse live-session badge ----- */
+.pn-sidebar__cp-badge {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.pn-sidebar__cp-badge:hover {
+  background: var(--option-hover-bg, rgba(20, 184, 166, 0.15));
+}
+
+.pn-sidebar__cp-badge-name,
+.pn-sidebar__cp-badge-label {
+  display: none;
+}
+
+.pn-sidebar.is-menu .pn-sidebar__cp-badge-name {
+  display: inline;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pn-sidebar.is-menu .pn-sidebar__cp-badge-label {
+  display: inline;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ef4444;
+}
+
+.pn-sidebar__cp-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+  animation: pn-cp-pulse 2s ease-in-out infinite;
+}
+
+@keyframes pn-cp-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+.pn-sidebar__counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.pn-sidebar__counter-input {
+  width: 2.5em;
+  padding: 2px 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.pn-sidebar__counter-input::-webkit-outer-spin-button,
+.pn-sidebar__counter-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pn-sidebar__counter-input:focus {
+  outline: none;
+  border-color: var(--primary, #14b8a6);
+  background: var(--background, rgba(0, 0, 0, 0.2));
+}
+
+.pn-sidebar__counter-total {
+  margin-left: 2px;
 }
 
 /* ----- menu (full-page) ----- */
+.pn-menu-search {
+  margin-bottom: 8px;
+}
+
+.pn-menu-search__input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--surface, #1a1f26);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  color: var(--text-primary, #e5e7eb);
+  font: inherit;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.pn-menu-search__input:focus {
+  outline: none;
+  border-color: var(--primary, #14b8a6);
+  box-shadow: 0 0 0 2px var(--primary-light, rgba(94, 234, 212, 0.3));
+}
+
+.pn-menu-search--side .pn-menu-search__input {
+  font-size: 12px;
+  padding: 4px 8px;
+  height: 28px;
+}
+
+.pn-menu-empty {
+  font-size: 14px;
+  color: var(--text-secondary, #9ca3af);
+  text-align: center;
+  padding: 32px 16px;
+  margin: 0;
+}
+
 .pn-menu-section {
   display: flex;
   flex-direction: column;
@@ -199,6 +454,7 @@
 }
 
 .pn-menu-card {
+  position: relative;
   background: var(--background, #0f1419);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
   border-radius: 12px;
@@ -213,9 +469,46 @@
   transition: transform 120ms ease, border-color 120ms ease;
 }
 
+/* External-link affordance (P11): big-card variant. */
+.pn-menu-card__ext {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0.7;
+  font-size: 18px;
+}
+
 .pn-menu-card:hover {
   transform: translateY(-2px);
   border-color: var(--primary, #14b8a6);
+}
+
+.pn-menu-card__icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary, #e5e7eb);
+  margin-bottom: 4px;
+}
+
+.pn-menu-card__icon svg,
+.pn-menu-card__icon img {
+  width: 100%;
+  height: 100%;
+}
+
+.pn-menu-card__icon img {
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.pn-menu-card__icon.is-empty {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary, #14b8a6);
 }
 
 .pn-menu-card__index {
@@ -244,56 +537,5 @@
   box-shadow: 0 0 0 2px var(--primary-light, #5eead4);
 }
 
-/* ----- modal overlay (for tools that mount inline rather than popup) ----- */
-.pn-sidebar-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  z-index: 1100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-}
-
-.pn-sidebar-modal__frame {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  max-width: 1400px;
-  max-height: 900px;
-  background: var(--surface, #1a1f26);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.pn-sidebar-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  font-weight: 600;
-  color: var(--text-primary, #e5e7eb);
-}
-
-.pn-sidebar-modal__close {
-  background: transparent;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-  color: var(--text-primary, #e5e7eb);
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-}
-
-.pn-sidebar-modal__body {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-}
+/* (transient-back button removed in N1: covered by topbar reveal zone and
+ * redundant since Esc/arrows/menu dismiss the transient.) */

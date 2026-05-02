@@ -14,4 +14,5 @@
   width: max(100vw, calc(100vh * 16 / 9));
   height: max(100vh, calc(100vw * 9 / 16));
   border: 0;
+  z-index: 0;
 }

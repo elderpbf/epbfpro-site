@@ -8,28 +8,9 @@
 // shell + auto-discovery.
 
 import { registerTool } from '../../engine/registry.js';
-
-const WORKER_URL = 'https://backstage-api.pensoia.workers.dev';
+import { findHostedSession } from '../../engine/classpulse-discovery.js';
 
 let mountedRoot = null;
-
-async function findHostedSession(preferSlug) {
-  const res = await fetch(WORKER_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'list_sessions' }),
-  });
-  const data = await res.json();
-  const sessions = (data && data.sessions) || [];
-  const open = sessions.filter(s => s.status === 'open');
-  if (open.length === 0) return null;
-  if (preferSlug) {
-    const match = open.find(s => s.presentation_slug === preferSlug);
-    if (match) return match;
-  }
-  open.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-  return open[0];
-}
 
 function renderEmpty(root, message) {
   root.innerHTML = '';

@@ -1,0 +1,45 @@
+/* layouts/checkpoint/checkpoint.css */
+
+.pn-checkpoint {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--pn-bg);
+  padding: 48px;
+  box-sizing: border-box;
+  gap: 24px;
+}
+
+.pn-checkpoint__title {
+  font-size: clamp(24px, 3vw, 40px);
+  font-weight: 700;
+  color: var(--pn-heading);
+  margin: 0;
+  font-family: var(--pn-font-heading);
+}
+
+.pn-checkpoint__cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+.pn-checkpoint__slot {
+  overflow: hidden;
+  border-radius: var(--pn-radius-lg, 12px);
+  border: 1px solid var(--pn-border);
+  min-height: 400px;
+}
+
+@media (max-width: 900px) {
+  .pn-checkpoint {
+    padding: 24px;
+  }
+
+  .pn-checkpoint__cols {
+    grid-template-columns: 1fr;
+  }
+}
