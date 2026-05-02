@@ -4,13 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vista do apresentador</title>
-  <link rel="stylesheet" href="presenter-view.css?v=1.1">
+  <link rel="stylesheet" href="presenter-view.css?v=2.0">
 </head>
 <body>
 
   <div id="pv-topbar">
     <span id="pv-topbar-title">Vista do apresentador</span>
     <span id="pv-counter">Painel 1 / ?</span>
+    <div id="pv-aspect" role="group" aria-label="Proporção do espelho">
+      <button type="button" data-ratio="16:9">16:9</button>
+      <button type="button" data-ratio="16:10">16:10</button>
+      <button type="button" data-ratio="4:3">4:3</button>
+      <button type="button" data-ratio="full">Tela cheia</button>
+      <button type="button" data-ratio="custom">Personalizado</button>
+    </div>
     <button type="button" id="pv-prev">&#8592; Anterior</button>
     <button type="button" id="pv-next">Próximo &#8594;</button>
     <button type="button" id="pv-close">Fechar</button>
@@ -20,6 +27,8 @@
     <div id="pv-mirror-pane">
       <iframe id="pv-mirror" src="about:blank" title="Espelho do painel atual" allowfullscreen></iframe>
     </div>
+
+    <div id="pv-splitter" role="separator" aria-orientation="vertical" aria-label="Redimensionar"></div>
 
     <div id="pv-notes-pane">
       <div id="pv-notes-header">
@@ -32,6 +41,6 @@
     </div>
   </div>
 
-  <script src="presenter-view.js"></script>
+  <script src="presenter-view.js?v=2.0"></script>
 </body>
 </html>

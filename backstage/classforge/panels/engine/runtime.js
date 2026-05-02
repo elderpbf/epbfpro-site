@@ -583,6 +583,9 @@ export function createRuntime(options = {}) {
     eventBus,
     get currentIndex() { return currentIndex; },
     get isPresenterMirror() { return isPresenterMirror; },
+    get hasPresenterAsymmetricTool() {
+      return activeModules.some(entry => entry.kind === 'tool' && typeof entry.module.presenterMount === 'function');
+    },
     get panelCount() { return manifestData ? manifestData.panels.length : 0; },
     get manifest() { return manifestData; },
     get currentMeta() { return activeMeta; },

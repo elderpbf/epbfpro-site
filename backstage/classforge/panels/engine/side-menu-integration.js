@@ -178,8 +178,10 @@ function openPopup(url) {
   return popup;
 }
 
-async function openPresenterView(slug) {
-  const url = '/backstage/classforge/panels/presenter-view.html?slug=' + encodeURIComponent(slug);
+async function openPresenterView(slug, panelIndex) {
+  const idx = Number.isInteger(panelIndex) && panelIndex >= 0 ? panelIndex : 0;
+  const url = '/backstage/classforge/panels/presenter-view.html?slug=' + encodeURIComponent(slug)
+    + '&panel=' + idx;
   window.open(url, '_blank');
 }
 
@@ -281,7 +283,7 @@ export function attachSideMenu(runtime, options = {}) {
   function launchTool(tool) {
     if (tool.kind === 'action' && tool.id === 'presenter-view') {
       const pvSlug = (runtime.manifest && runtime.manifest.id) || 'unknown';
-      openPresenterView(pvSlug);
+      openPresenterView(pvSlug, runtime.currentIndex);
       return;
     }
     if (tool.kind === 'panel' && tool.tool) {
