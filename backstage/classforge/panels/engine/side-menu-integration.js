@@ -188,9 +188,14 @@ async function openPresenterView(slug, panelIndex) {
 
 export function attachSideMenu(runtime, options = {}) {
   const manifestTools = runtime?.manifest?.sidebar?.tools;
-  const tools = Array.isArray(options.tools) && options.tools.length > 0
+  const rawTools = Array.isArray(options.tools) && options.tools.length > 0
     ? options.tools
     : (Array.isArray(manifestTools) && manifestTools.length > 0 ? manifestTools : DEFAULT_TOOLS);
+  // In presenter (mirror) mode, hide the 'presenter-view' action -- opening
+  // another presenter view from inside one cascades and is never desired.
+  const tools = options.presenterMode
+    ? rawTools.filter(t => !(t.kind === 'action' && t.id === 'presenter-view'))
+    : rawTools;
   const topbar = options.topbar || null;
 
   const slug = (runtime.manifest && runtime.manifest.id) || 'default';
@@ -290,11 +295,15 @@ export function attachSideMenu(runtime, options = {}) {
       exitMenu();
       hide();
       const config = tool.__resolvedConfig !== undefined ? tool.__resolvedConfig : (tool.config || {});
-      runtime.pushTransientPanel({
+      const spec = {
         layout: tool.layout || 'tool-fullbleed',
         tools: [{ id: tool.tool, slot: 'tool', config }],
         meta: { title: tool.label || tool.tool },
-      });
+      };
+      if (typeof options.onPanelLaunch === 'function') {
+        try { options.onPanelLaunch(spec); } catch (_) {}
+      }
+      runtime.pushTransientPanel(spec);
     } else if (tool.kind === 'popup') {
       const url = tool.__resolvedUrl !== undefined ? tool.__resolvedUrl : tool.url;
       if (url) {

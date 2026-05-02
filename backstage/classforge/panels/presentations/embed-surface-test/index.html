@@ -88,6 +88,22 @@
     });
     window.__panelsRuntime = runtime;
 
+    // BroadcastChannel: shared between the main deck (origin='deck') and the
+    // presenter mirror (origin='mirror'). Created before attachSideMenu so the
+    // onPanelLaunch hook can broadcast tool launches synchronously.
+    const bc = new BroadcastChannel('panels-presenter-embed-surface-test');
+    const myOrigin = presenterMode ? 'mirror' : 'deck';
+    let syncing = false;  // suppresses re-broadcast while applying a remote op
+
+    function broadcastTransientPush(spec) {
+      if (syncing) return;
+      bc.postMessage({ type: 'transient-push', spec, origin: myOrigin });
+    }
+    function broadcastTransientPop() {
+      if (syncing) return;
+      bc.postMessage({ type: 'transient-pop', origin: myOrigin });
+    }
+
     if (!presenterMode) {
       const sections = [
         ...attachSettings(runtime, { slug: 'embed-surface-test' }),
@@ -99,18 +115,24 @@
         }),
       ];
       const topbar = attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/', sections });
-      attachSideMenu(runtime, { topbar });
+      attachSideMenu(runtime, { topbar, presenterMode: false, onPanelLaunch: broadcastTransientPush });
+    } else {
+      // Side menu inside the mirror iframe: presenter can launch tools from
+      // here, and the launch syncs to the audience deck via BC.
+      attachSideMenu(runtime, { topbar: null, presenterMode: true, onPanelLaunch: broadcastTransientPush });
     }
 
+    // Detect locally-triggered transient pops (Esc, or popTransient from
+    // next/prev) by watching for panel-entered with restored:true while the
+    // transient stack is now empty. retentionMode='none' here, so restored=true
+    // can only come from popTransient.
+    runtime.eventBus.addEventListener('panel-entered', (e) => {
+      if (e.detail && e.detail.restored && !runtime._isTransientActive) {
+        broadcastTransientPop();
+      }
+    });
+
     runtime.start().then(() => {
-      // BroadcastChannel: broadcast panel changes to any open presenter view.
-      // Placed after start() so runtime.manifest is populated.
-      // - Main deck (presenterMode=false) tags broadcasts as origin='deck'.
-      // - Mirror (presenterMode=true) tags broadcasts as origin='mirror' so the
-      //   main deck doesn't react to its own echo.
-      const bcSlug = (runtime.manifest && runtime.manifest.id) || 'embed-surface-test';
-      const bc = new BroadcastChannel('panels-presenter-' + bcSlug);
-      const myOrigin = presenterMode ? 'mirror' : 'deck';
       runtime.eventBus.addEventListener('panel-entered', () => {
         bc.postMessage({
           type: 'panel',
@@ -125,6 +147,19 @@
       bc.addEventListener('message', e => {
         const msg = e.data;
         if (!msg) return;
+        if (msg.origin === myOrigin) return;
+
+        // Bidirectional transient sync (works between deck and mirror).
+        if (msg.type === 'transient-push' && msg.spec) {
+          syncing = true;
+          try { runtime.pushTransientPanel(msg.spec); } finally { syncing = false; }
+          return;
+        }
+        if (msg.type === 'transient-pop') {
+          syncing = true;
+          try { runtime.popTransient(); } finally { syncing = false; }
+          return;
+        }
 
         if (presenterMode) {
           // Mirror mode: track main deck's panel changes by calling goto on
