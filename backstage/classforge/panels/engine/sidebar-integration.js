@@ -15,13 +15,24 @@
 // side menu in. Pointer-leaving the side menu (with a 600ms grace) slides it
 // back out. The full-page menu stays open until explicitly dismissed.
 //
-// Tool kinds:
-//   'popup'  -- opens config.url in a new browser tab (window.open '_blank').
-//   'panel'  -- mounts a registered tool (config.tool) as a transient overlay
-//               panel via runtime.pushTransientPanel(). A "Voltar" button and
-//               Esc key dismiss the tool and restore the underlying panel.
-//   'action' -- runs a built-in action (currently 'presenter-view' only).
+// Tool kinds (entries in DEFAULT_TOOLS or runtime.manifest.sidebar.tools):
+//   'popup'  -- opens entry.url in a new browser tab (window.open '_blank').
+//   'panel'  -- mounts registered tool entry.tool as a transient overlay via
+//               runtime.pushTransientPanel(), using entry.layout (default
+//               'tool-fullbleed'; use 'embed-fullbleed' for full-viewport
+//               media without padding). Esc dismisses, restoring the
+//               underlying deck panel. The tool runs the same code as when
+//               it's declared in a deck panel's panel-meta -- side menu and
+//               deck panel are equivalent invocations of the same tool. See
+//               manifest/ARCHITECTURE.md "Concepts" section.
+//   'action' -- runs a built-in side-menu action (currently 'presenter-view').
 //               Treated like a popup for the external-link affordance.
+//
+// Reactive entries: any popup/panel entry may declare a 'liveState' source
+// (e.g. 'classpulse-session') and supply url/config/hidden/badge as either
+// scalars or (state) => scalar callbacks. The launcher subscribes to the
+// declared sources and re-applies tile state on each transition. See
+// engine/classpulse-discovery.js for the only state source today.
 //
 // Theme: chrome reads Backstage tokens (--surface, --text-primary, --border)
 // so it tracks the topbar's data-theme switch. The side menu does not own a
@@ -70,10 +81,11 @@ const DEFAULT_TOOLS = [
     badge: (s) => s ? 'dot' : null,
   },
   {
-    id: 'classpulse-display', label: 'Display ao vivo', kind: 'popup', icon: 'classpulse',
+    id: 'classpulse-display', label: 'Display ao vivo', kind: 'panel',
+    tool: 'classpulse-display-embed', layout: 'embed-fullbleed', icon: 'classpulse',
     liveState: 'classpulse-session',
     hidden: (s) => !s,
-    url: (s) => s ? '/go/display.html?code=' + encodeURIComponent(s.code) : null,
+    config: (s) => ({ slug: s ? s.presentation_slug : null }),
   },
 ];
 
@@ -279,7 +291,7 @@ export function attachSidebar(runtime, options = {}) {
       hide();
       const config = tool.__resolvedConfig !== undefined ? tool.__resolvedConfig : (tool.config || {});
       runtime.pushTransientPanel({
-        layout: 'tool-fullbleed',
+        layout: tool.layout || 'tool-fullbleed',
         tools: [{ id: tool.tool, slot: 'tool', config }],
         meta: { title: tool.label || tool.tool },
       });
