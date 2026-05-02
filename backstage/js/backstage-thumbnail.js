@@ -9,7 +9,7 @@
 //
 // Consumers:
 //   classforge/viewer/index.html                      (engine: 'reveal')
-//   classforge/presentations/ia-capacitacao-panels/   (engine: 'panels-legacy')
+//   classforge/presentations/ia-capacitacao-panels/   (engine: 'html-slides')
 //   classforge/panels/engine/thumbnail-integration.js (Panels v2)
 //
 // Dependencies (window globals):
