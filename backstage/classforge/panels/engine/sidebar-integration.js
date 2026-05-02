@@ -64,17 +64,16 @@ const DEFAULT_TOOLS = [
   { id: 'ai-chat',        label: 'Chat IA',        kind: 'panel', tool: 'ai-chat',         icon: 'ai-chat' },
   { id: 'presenter-view', label: 'Apresentador',   kind: 'action', icon: 'presenter-view' },
   {
-    id: 'classpulse', label: 'Sessão', kind: 'popup', icon: 'classpulse',
+    id: 'classpulse', label: 'ClassPulse', kind: 'popup', icon: 'classpulse',
     liveState: 'classpulse-session',
     url:   (s) => s ? '/go/host.html?code=' + encodeURIComponent(s.code) : '/backstage/classpulse/index.html',
     badge: (s) => s ? 'dot' : null,
   },
   {
-    id: 'classpulse-display', label: 'Painel ao vivo', kind: 'panel',
-    tool: 'classpulse-display-embed', icon: 'classpulse',
+    id: 'classpulse-display', label: 'Display ao vivo', kind: 'popup', icon: 'classpulse',
     liveState: 'classpulse-session',
     hidden: (s) => !s,
-    config: (s) => ({ slug: s ? s.presentation_slug : null }),
+    url: (s) => s ? '/go/display.html?code=' + encodeURIComponent(s.code) : null,
   },
 ];
 
@@ -317,9 +316,12 @@ export function attachSidebar(runtime, options = {}) {
       if (collapsedBtn) {
         const li = collapsedBtn.parentElement;
         if (li) { li.hidden = !!hidden; li.dataset.stateHidden = hidden ? 'true' : 'false'; }
-        let dot = collapsedBtn.querySelector('.pn-sidebar__tool-dot');
+        // Dot lives on the icon so the ↗ affordance stays in its fixed position.
+        const iconSpan = collapsedBtn.querySelector('.pn-sidebar__tool-icon');
+        const dotHost = iconSpan || collapsedBtn;
+        let dot = dotHost.querySelector('.pn-sidebar__tool-dot');
         if (badge === 'dot') {
-          if (!dot) { dot = document.createElement('span'); dot.className = 'pn-sidebar__tool-dot'; collapsedBtn.appendChild(dot); }
+          if (!dot) { dot = document.createElement('span'); dot.className = 'pn-sidebar__tool-dot'; dotHost.appendChild(dot); }
         } else if (dot) { dot.remove(); }
       }
 
@@ -328,9 +330,12 @@ export function attachSidebar(runtime, options = {}) {
       if (menuCard) {
         menuCard.hidden = !!hidden;
         menuCard.dataset.stateHidden = hidden ? 'true' : 'false';
-        let dot = menuCard.querySelector('.pn-menu-card__dot');
+        // Dot lives on the icon so it doesn't obscure the ↗ affordance.
+        const iconSpan = menuCard.querySelector('.pn-menu-card__icon');
+        const dotHost = iconSpan || menuCard;
+        let dot = dotHost.querySelector('.pn-menu-card__dot');
         if (badge === 'dot') {
-          if (!dot) { dot = document.createElement('span'); dot.className = 'pn-menu-card__dot'; menuCard.appendChild(dot); }
+          if (!dot) { dot = document.createElement('span'); dot.className = 'pn-menu-card__dot'; dotHost.appendChild(dot); }
         } else if (dot) { dot.remove(); }
       }
     }

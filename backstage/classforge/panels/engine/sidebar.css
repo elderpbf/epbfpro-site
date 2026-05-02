@@ -301,27 +301,28 @@
   display: none;
 }
 
-/* ----- Reactive tile dot badge (collapsed sidebar + menu card) ----- */
+/* ----- Reactive tile dot badge (on icon, top-right corner) ----- */
+
+/* Icon spans need position:relative so the dot can anchor absolutely */
+.pn-sidebar__tool-icon {
+  position: relative;
+}
+
+.pn-menu-card__icon {
+  position: relative;
+}
+
 .pn-sidebar__tool-dot,
 .pn-menu-card__dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #ef4444;
-  flex-shrink: 0;
+  pointer-events: none;
   animation: pn-tile-dot-pulse 2s ease-in-out infinite;
-}
-
-/* Collapsed list: dot sits at the right edge of the tool row */
-.pn-sidebar__tool-dot {
-  margin-left: auto;
-}
-
-/* Menu card: dot is absolutely positioned at top-right of the card */
-.pn-menu-card__dot {
-  position: absolute;
-  top: 10px;
-  right: 10px;
 }
 
 @keyframes pn-tile-dot-pulse {
