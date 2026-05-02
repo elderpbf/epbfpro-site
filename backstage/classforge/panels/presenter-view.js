@@ -93,30 +93,44 @@
     mirrorPane.style.flexBasis = storedSplit + '%';
   }
 
+  // Pointer events + setPointerCapture so the drag continues even when the
+  // pointer crosses the iframe (which would otherwise capture mousemove and
+  // break the drag). The body.pv-dragging class also disables iframe
+  // pointer-events as a belt-and-suspenders fallback.
   let isDragging = false;
-  splitter.addEventListener('mousedown', (e) => {
+
+  function endDrag(pointerId) {
+    if (!isDragging) return;
+    isDragging = false;
+    if (pointerId !== undefined && splitter.hasPointerCapture(pointerId)) {
+      splitter.releasePointerCapture(pointerId);
+    }
+    splitter.classList.remove('is-dragging');
+    document.body.classList.remove('pv-dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const match = mirrorPane.style.flexBasis.match(/([\d.]+)%/);
+    if (match) localStorage.setItem(SPLIT_KEY, match[1]);
+  }
+
+  splitter.addEventListener('pointerdown', (e) => {
     isDragging = true;
+    splitter.setPointerCapture(e.pointerId);
     splitter.classList.add('is-dragging');
+    document.body.classList.add('pv-dragging');
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     e.preventDefault();
   });
-  window.addEventListener('mousemove', (e) => {
+  splitter.addEventListener('pointermove', (e) => {
     if (!isDragging) return;
     const rect = mainEl.getBoundingClientRect();
     const pct = ((e.clientX - rect.left) / rect.width) * 100;
     const clamped = Math.max(20, Math.min(80, pct));
     mirrorPane.style.flexBasis = clamped + '%';
   });
-  window.addEventListener('mouseup', () => {
-    if (!isDragging) return;
-    isDragging = false;
-    splitter.classList.remove('is-dragging');
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    const match = mirrorPane.style.flexBasis.match(/([\d.]+)%/);
-    if (match) localStorage.setItem(SPLIT_KEY, match[1]);
-  });
+  splitter.addEventListener('pointerup', (e) => endDrag(e.pointerId));
+  splitter.addEventListener('pointercancel', (e) => endDrag(e.pointerId));
 
   // ------------------------------------------------------------------
   // Aspect-ratio toolbar (persisted per slug; full-frame override for

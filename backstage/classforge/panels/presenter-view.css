@@ -147,11 +147,18 @@ html, body {
   background: var(--pv-border);
   cursor: col-resize;
   transition: background 0.15s;
+  touch-action: none;
 }
 #pv-splitter:hover,
 #pv-splitter.is-dragging {
   background: var(--pv-accent);
 }
+
+/* While the splitter is being dragged, iframes (the mirror; or any iframe
+   inside the notes pane) would otherwise capture pointer events and break
+   the drag. Disable their hit-testing so all pointer events flow to the
+   splitter. */
+body.pv-dragging iframe { pointer-events: none; }
 
 /* ---- notes pane (right, fills remaining) ---- */
 #pv-notes-pane {
