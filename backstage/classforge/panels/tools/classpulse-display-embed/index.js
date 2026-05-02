@@ -36,6 +36,44 @@ function renderSession(root, session) {
   root.appendChild(badge);
 }
 
+function renderSessionHost(root, session) {
+  root.innerHTML = '';
+  const iframe = document.createElement('iframe');
+  iframe.className = 'cp-display-embed__iframe';
+  iframe.src = '/go/host.html?code=' + encodeURIComponent(session.code);
+  iframe.setAttribute('frameborder', '0');
+  iframe.setAttribute('allow', 'fullscreen');
+  iframe.setAttribute('title', 'ClassPulse Host ' + session.code);
+  root.appendChild(iframe);
+
+  const badge = document.createElement('div');
+  badge.className = 'cp-display-embed__badge';
+  badge.textContent = 'Sessão ' + session.code + (session.title ? ' - ' + session.title : '') + ' [Host]';
+  root.appendChild(badge);
+}
+
+function discoverAndRender(root, config, renderFn) {
+  const loading = document.createElement('div');
+  loading.className = 'cp-display-embed__msg';
+  loading.textContent = 'Procurando sessão hospedada...';
+  root.appendChild(loading);
+
+  const preferSlug = config && typeof config.slug === 'string' ? config.slug : null;
+
+  findHostedSession(preferSlug).then(session => {
+    if (mountedRoot !== root) return;
+    if (!session) {
+      renderEmpty(root, 'Nenhuma sessão hospedada.<br>Abra uma sessão no ClassPulse e recarregue o painel.');
+      return;
+    }
+    renderFn(root, session);
+  }).catch(err => {
+    if (mountedRoot !== root) return;
+    const msg = (err && err.message) ? err.message : String(err);
+    renderEmpty(root, 'Erro ao buscar sessão: ' + msg);
+  });
+}
+
 registerTool({
   id: 'classpulse-display-embed',
   kind: 'tool',
@@ -44,26 +82,14 @@ registerTool({
     root.className = 'cp-display-embed';
     container.appendChild(root);
     mountedRoot = root;
-
-    const loading = document.createElement('div');
-    loading.className = 'cp-display-embed__msg';
-    loading.textContent = 'Procurando sessão hospedada...';
-    root.appendChild(loading);
-
-    const preferSlug = config && typeof config.slug === 'string' ? config.slug : null;
-
-    findHostedSession(preferSlug).then(session => {
-      if (mountedRoot !== root) return;
-      if (!session) {
-        renderEmpty(root, 'Nenhuma sessão hospedada.<br>Abra uma sessão no ClassPulse e recarregue o painel.');
-        return;
-      }
-      renderSession(root, session);
-    }).catch(err => {
-      if (mountedRoot !== root) return;
-      const msg = (err && err.message) ? err.message : String(err);
-      renderEmpty(root, 'Erro ao buscar sessão: ' + msg);
-    });
+    discoverAndRender(root, config, renderSession);
+  },
+  presenterMount(container, config) {
+    const root = document.createElement('div');
+    root.className = 'cp-display-embed';
+    container.appendChild(root);
+    mountedRoot = root;
+    discoverAndRender(root, config, renderSessionHost);
   },
   unmount() {
     if (mountedRoot && mountedRoot.parentNode) mountedRoot.remove();

@@ -23,6 +23,7 @@ Every tool, element, and layout is a plain object registered with the registry. 
   id: 'hello-world-tool',   // required, non-empty string, unique within its kind
   kind: 'tool',             // optional but must match the registrar if present
   mount(container, config) { /* ... */ },
+  presenterMount(container, config) { /* optional -- tools only */ },
   unmount() { /* ... */ },
   onEvent(evt) { /* optional */ },
 }
@@ -33,6 +34,13 @@ Signatures:
 - `mount(container, config)` -- tools and elements only. `container` is the DOM element the
   layout exposed as a slot. `config` is the plain object declared on the panel-meta entry
   (`declaration.config ?? {}`). Return value is ignored for tools and elements.
+- `presenterMount(container, config)` -- tools only, optional. When declared, the runtime
+  calls this instead of `mount` when the deck is running as the presenter mirror
+  (`?presenter=mirror` URL param, exposed as `runtime.isPresenterMirror`). Same `container`
+  and `config` semantics as `mount`. The same `unmount()` handles teardown for both paths.
+  Tools that omit `presenterMount` behave identically in audience and presenter windows.
+  Use this for audience/presenter asymmetry -- for example, showing the ClassPulse host UI
+  to the presenter while the audience sees the display UI.
 - `mount(host, { meta, body })` -- layouts only. `host` is the runtime host element. `meta`
   is the panel meta object parsed from the panel HTML. `body` is the `[data-panel-body]`
   Element (or `null`, depending on the loader). The layout MUST return an object of the
@@ -152,6 +160,7 @@ Returned object:
   get manifest,                    // the loaded manifest object, or null before load
   get currentMeta,                 // the active panel meta object, or null when none active
   get currentTheme,                // the active theme id, or null before setActiveTheme is called
+  get isPresenterMirror,           // boolean; true when ?presenter=mirror is in the URL
 }
 ```
 
@@ -373,4 +382,4 @@ existing payload shape, changing the mount/unmount/onEvent signatures, or changi
 registry validation rules. A major version bump is accompanied by a migration note in
 `ClassForge/manifest/ARCHITECTURE.md` and a corresponding revision of this document.
 
-Document revision: Phase 1 bedrock (2026-04-21); Phase 2G schema lock (2026-04-21); Phase 2C theme-changed graduation (2026-04-23); Phase 2H thumbnail adapter (2026-04-24).
+Document revision: Phase 1 bedrock (2026-04-21); Phase 2G schema lock (2026-04-21); Phase 2C theme-changed graduation (2026-04-23); Phase 2H thumbnail adapter (2026-04-24); Phase 8 presenterMount + isPresenterMirror (2026-05-02).

@@ -67,6 +67,9 @@ export function createRuntime(options = {}) {
   let activeMeta = null;
   let activeThemeId = null;
 
+  const isPresenterMirror = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('presenter') === 'mirror';
+
   // Transient panel stack (Task 4C). Each frame holds a snapshot of the
   // 4-tuple (activeSubHost, activeMeta, activeLayout, activeModules) plus
   // the transient sub-host element and the Esc key handler so they can be
@@ -193,7 +196,8 @@ export function createRuntime(options = {}) {
       return;
     }
     try {
-      module.mount(slotEl, declaration.config ?? {});
+      const usePresenter = kind === 'tool' && isPresenterMirror && typeof module.presenterMount === 'function';
+      (usePresenter ? module.presenterMount : module.mount).call(module, slotEl, declaration.config ?? {});
       (targetArray || activeModules).push({ module, container: slotEl, kind });
     } catch (e) {
       reportError(e);
@@ -578,6 +582,7 @@ export function createRuntime(options = {}) {
     pushTransientPanel, popTransient,
     eventBus,
     get currentIndex() { return currentIndex; },
+    get isPresenterMirror() { return isPresenterMirror; },
     get panelCount() { return manifestData ? manifestData.panels.length : 0; },
     get manifest() { return manifestData; },
     get currentMeta() { return activeMeta; },
