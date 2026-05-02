@@ -16,3 +16,19 @@
   border: 0;
   z-index: 0;
 }
+
+/* Click-catcher overlay: forwards iframe-area clicks to the pill's `next`
+ * so clicking the slide and using the pill stay in sync. Bottom inset
+ * matches the pill zone height (24px) so hover at the bottom edge still
+ * reveals the bar. Sits at z-index 1 (above iframe at z 0, below the pill
+ * zone at z 9). pointer-events stays auto so it actually catches clicks. */
+.slides-embed-clickzone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  z-index: 1;
+  cursor: pointer;
+  background: transparent;
+}

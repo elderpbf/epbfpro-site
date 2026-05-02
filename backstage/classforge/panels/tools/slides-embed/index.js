@@ -22,11 +22,25 @@
 //     - Override per-panel via config.slidePicker = 'search' | 'stepper'.
 //       Force-disable both with config.slidePicker = 'off'.
 //
+// Click-to-advance:
+//   A transparent overlay covers the iframe (excluding the bottom 24 px so
+//   the pill bar's hover zone stays reachable) and translates clicks into
+//   pill `next` actions. Without this, clicking the iframe advances Google
+//   Slides internally but our pill counter stays stuck on slide 1.
+//
+// Pin:
+//   The pin pill toggles per-panel persistence of the current slide index
+//   under `bs_pn_slides_<deck>_<panelId>`. When pinned, mounting restores
+//   the saved slide; when unpinned, mounting starts at slide 1 (or the
+//   `?slide=` URL hint, if present). The pin state itself persists, so
+//   once pinned a deck stays pinned across sessions.
+//
 // The pill itself is provided by engine/panel-pills.js. See that file's
 // header for the full pill catalog.
 
 import { registerTool } from '../../engine/registry.js';
 import { attachPanelPills } from '../../engine/panel-pills.js?v=1.9';
+import { ICON_PIN } from '../../engine/pill-icons.js';
 
 const DEFAULT_URL = 'https://docs.google.com/presentation/d/e/REPLACE_WITH_PUBLISHED_ID/embed?start=false&loop=false&delayms=60000';
 
@@ -94,6 +108,36 @@ function resolveSlides(cfg, url) {
   return null;
 }
 
+// Per-panel persistence key. Uses the active deck slug + the active panel
+// meta id when available so each Slides panel in each deck gets its own
+// memory. Falls back to a URL-derived key if the runtime hasn't published
+// those yet (shouldn't happen post-mount but worth guarding).
+function persistKey(url) {
+  const rt = (typeof window !== 'undefined') ? window.__panelsRuntime : null;
+  const slug = rt?.manifest?.id;
+  const panelId = rt?.currentMeta?.id;
+  if (slug && panelId) return 'bs_pn_slides_' + slug + '_' + panelId;
+  return 'bs_pn_slides_url_' + url;
+}
+
+function readPinState(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return { pinned: false, slideIndex: null };
+    const parsed = JSON.parse(raw) || {};
+    return {
+      pinned: !!parsed.pinned,
+      slideIndex: Number.isInteger(parsed.slideIndex) ? parsed.slideIndex : null,
+    };
+  } catch (_) {
+    return { pinned: false, slideIndex: null };
+  }
+}
+
+function writePinState(key, state) {
+  try { localStorage.setItem(key, JSON.stringify(state)); } catch (_) {}
+}
+
 registerTool({
   id: 'slides-embed',
   kind: 'tool',
@@ -123,9 +167,62 @@ registerTool({
     const { slides, hasTitles } = resolved;
     const total = slides.length;
     const mode = cfg.slidePicker || (hasTitles ? 'search' : 'stepper');
-    let current = detectInitialSlide(url, slides);
+
+    // Restore pinned state. If pinned and the saved index is in range, use
+    // it; otherwise fall back to the URL-derived initial slide.
+    const key = persistKey(url);
+    const saved = readPinState(key);
+    let pinned = saved.pinned;
+    const restored = pinned && saved.slideIndex && saved.slideIndex >= 1 && saved.slideIndex <= total
+      ? saved.slideIndex : null;
+    let current = restored || detectInitialSlide(url, slides);
+    if (restored) frame.src = withSlide(url, slides[current - 1].id);
 
     if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+
+    // Click-catcher: forwards iframe-area clicks to the pill's `next`. Sits
+    // above the iframe (z-index 1) but below the pill hover zone (z-index 9)
+    // so the bottom-edge reveal still works. Bottom inset matches the zone
+    // height so a click on the bottom 24 px reaches the zone, not us.
+    const clickzone = document.createElement('div');
+    clickzone.className = 'slides-embed-clickzone';
+    clickzone.setAttribute('aria-label', 'Avançar slide');
+    root.appendChild(clickzone);
+    clickzone.addEventListener('click', () => advance());
+
+    function advanceTo(nextNum) {
+      if (!pillHandle) return;
+      if (mode === 'search' && hasTitles) {
+        pillHandle.update(0, { value: slides[nextNum - 1].id });
+      } else {
+        pillHandle.update(0, { value: nextNum });
+      }
+    }
+
+    function advance() {
+      if (current >= total) return;
+      advanceTo(current + 1);
+    }
+
+    function persistIfPinned() {
+      if (pinned) writePinState(key, { pinned: true, slideIndex: current });
+    }
+
+    const pinPill = {
+      kind: 'actions',
+      buttons: [{
+        icon: ICON_PIN,
+        ariaLabel: 'Lembrar último slide',
+        ariaLabelActive: 'Slide fixado (clique para esquecer)',
+        isActive: () => pinned,
+        onClick: ({ refresh }) => {
+          pinned = !pinned;
+          if (pinned) writePinState(key, { pinned: true, slideIndex: current });
+          else writePinState(key, { pinned: false });
+          refresh();
+        },
+      }],
+    };
 
     if (mode === 'search' && hasTitles) {
       // Select pill: searchable dropdown via the generic 'select' pill kind.
@@ -136,48 +233,56 @@ registerTool({
       }));
 
       pillHandle = attachPanelPills(container, {
-        pills: [{
-          kind: 'select',
-          items: selectItems,
-          value: slides[current - 1].id,
-          format: (item) => {
-            const idx = selectItems.indexOf(item);
-            const num = idx !== -1 ? idx + 1 : '';
-            return num + '. ' + item.label;
+        pills: [
+          {
+            kind: 'select',
+            items: selectItems,
+            value: slides[current - 1].id,
+            format: (item) => {
+              const idx = selectItems.indexOf(item);
+              const num = idx !== -1 ? idx + 1 : '';
+              return num + '. ' + item.label;
+            },
+            placeholder: 'Buscar slide por número ou título...',
+            symbolMinus: '←',
+            symbolPlus:  '→',
+            onChange: (slideId) => {
+              const idx = slides.findIndex(s => s.id === slideId);
+              if (idx !== -1) {
+                current = idx + 1;
+                frame.src = withSlide(url, slideId);
+                persistIfPinned();
+              }
+            },
           },
-          placeholder: 'Buscar slide por número ou título...',
-          symbolMinus: '←',
-          symbolPlus:  '→',
-          onChange: (slideId) => {
-            const idx = slides.findIndex(s => s.id === slideId);
-            if (idx !== -1) {
-              current = idx + 1;
-              frame.src = withSlide(url, slideId);
-            }
-          },
-        }],
+          pinPill,
+        ],
       });
     } else {
       // Stepper pill: editable input for jump-by-number when no titles.
       pillHandle = attachPanelPills(container, {
-        pills: [{
-          kind: 'stepper',
-          value: current,
-          min: 1,
-          max: total,
-          step: 1,
-          format: (v) => 'Slide ' + v + ' de ' + total,
-          editable: true,
-          symbolMinus: '←',
-          symbolPlus:  '→',
-          ariaLabelMinus: 'Slide anterior',
-          ariaLabelPlus:  'Próximo slide',
-          ariaLabelLabel: 'Número do slide',
-          onChange: (v) => {
-            current = v;
-            frame.src = withSlide(url, slides[v - 1].id);
+        pills: [
+          {
+            kind: 'stepper',
+            value: current,
+            min: 1,
+            max: total,
+            step: 1,
+            format: (v) => 'Slide ' + v + ' de ' + total,
+            editable: true,
+            symbolMinus: '←',
+            symbolPlus:  '→',
+            ariaLabelMinus: 'Slide anterior',
+            ariaLabelPlus:  'Próximo slide',
+            ariaLabelLabel: 'Número do slide',
+            onChange: (v) => {
+              current = v;
+              frame.src = withSlide(url, slides[v - 1].id);
+              persistIfPinned();
+            },
           },
-        }],
+          pinPill,
+        ],
       });
     }
   },
