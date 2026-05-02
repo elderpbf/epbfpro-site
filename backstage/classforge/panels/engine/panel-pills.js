@@ -411,7 +411,11 @@ function buildSelectPill(d) {
 
   function refreshLabel() {
     const item = items[currentIdx];
-    labelBtn.textContent = item ? fmt(item) : '';
+    const text = item ? fmt(item) : '';
+    labelBtn.textContent = text;
+    // Hover tooltip surfaces the full title when the label is truncated by
+    // the bar's max-width.
+    labelBtn.title = text;
   }
 
   let openDropdown = null;

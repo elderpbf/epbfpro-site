@@ -100,6 +100,13 @@
   font-family: var(--pn-font-mono);
   font-size: 13px;
   min-width: 56px;
+  /* Truncate long titles so a multi-pill bar stays within the viewport.
+     The dropdown shows the full title on click; hovering the label shows
+     it via the title attribute. */
+  max-width: min(60vw, 720px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border-left: 1px solid var(--pn-border);
   border-right: 1px solid var(--pn-border);
 }
