@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="../../layouts/content/content.css">
   <link rel="stylesheet" href="../../engine/side-menu.css?v=2.2">
   <link rel="stylesheet" href="../../engine/panel-pills.css?v=1.8">
+  <link rel="stylesheet" href="../../engine/logo.css?v=1.0">
   <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
   <link rel="stylesheet" href="/backstage/css/backstage.css?v=1.6">
   <link rel="stylesheet" href="/backstage/css/settings-drawer.css?v=1.0">
@@ -61,6 +62,7 @@
     import { attachTopbar } from '../../engine/topbar-integration.js';
     import { attachSettings } from '../../engine/settings-integration.js';
     import { attachThumbnail } from '../../engine/thumbnail-integration.js';
+    import { attachLogo } from '../../engine/logo-integration.js?v=1.0';
     import { attachSideMenu } from '../../engine/side-menu-integration.js?v=1.1';
     import { attachFocusReclaim } from '../../engine/focus-reclaim.js';
 
@@ -113,6 +115,7 @@
           engine: 'panels',
           targetSelector: '#pn-host',
         }),
+        ...attachLogo(runtime, { slug: 'embed-surface-test' }),
       ];
       const topbar = attachTopbar(runtime, { title: 'ClassForge', backLink: '/backstage/classforge/', sections });
       attachSideMenu(runtime, { topbar, presenterMode: false, onPanelLaunch: broadcastTransientPush });
@@ -120,6 +123,10 @@
       // Side menu inside the mirror iframe: presenter can launch tools from
       // here, and the launch syncs to the audience deck via BC.
       attachSideMenu(runtime, { topbar: null, presenterMode: true, onPanelLaunch: broadcastTransientPush });
+      // Mirror renders its own logo overlay; section is discarded since the
+      // mirror has no settings drawer. State stays in sync via the storage
+      // event subscribed inside attachLogo.
+      attachLogo(runtime, { slug: 'embed-surface-test' });
 
       // The audience deck applies the Backstage theme via attachTopbar ->
       // ThemeManager (data-theme attribute on documentElement). In presenter

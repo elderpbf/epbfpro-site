@@ -1,0 +1,320 @@
+// engine/logo-integration.js
+//
+// Persistent logo overlay for Panels v2 decks. A single fixed <div> at top-left
+// of the viewport renders the deck's selected logo over panel content but
+// below chrome (topbar at z >= 9900, side menu at z >= 940). Topbar and side
+// menu reveals naturally cover the logo.
+//
+// Storage:
+//   bs_pn_logo_library  -- global. Array of { id, name, dataUrl, width, height }.
+//   bs_pn_logo_<slug>   -- per-deck. { enabled, logoId, offset, size }.
+//
+// The overlay element is appended to document.body once (lazy) and reused
+// across panel navigations and transient overlays.
+//
+// Settings UI: returns one section [{ id, title, content, onInit, onOpen }]
+// with a file input, library list, "Mostrar logo" toggle, offset, and size.
+//
+// Example usage (inside a presentation module script):
+//
+//   import { attachLogo } from '../../engine/logo-integration.js';
+//   const sections = [
+//     ...attachSettings(runtime, { slug }),
+//     ...attachThumbnail(runtime, { slug, ... }),
+//     ...attachLogo(runtime, { slug }),
+//   ];
+//   attachTopbar(runtime, { sections });
+
+const LIBRARY_KEY = 'bs_pn_logo_library';
+const SLUG_KEY_PREFIX = 'bs_pn_logo_';
+const OVERLAY_ID = 'pn-logo-overlay';
+
+const DEFAULTS = { enabled: false, logoId: null, offset: 24, size: 80 };
+
+function readJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return parsed == null ? fallback : parsed;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function writeJson(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+}
+
+function getLibrary() {
+  const lib = readJson(LIBRARY_KEY, []);
+  return Array.isArray(lib) ? lib : [];
+}
+
+function setLibrary(lib) {
+  writeJson(LIBRARY_KEY, lib);
+}
+
+function addToLibrary(entry) {
+  const lib = getLibrary();
+  lib.push(entry);
+  setLibrary(lib);
+  return lib;
+}
+
+function removeFromLibrary(id) {
+  const lib = getLibrary().filter((e) => e.id !== id);
+  setLibrary(lib);
+  return lib;
+}
+
+function slugKey(slug) { return SLUG_KEY_PREFIX + slug; }
+
+function getSlugState(slug) {
+  const stored = readJson(slugKey(slug), {});
+  return { ...DEFAULTS, ...(stored || {}) };
+}
+
+function setSlugState(slug, state) {
+  writeJson(slugKey(slug), state);
+}
+
+function findLogo(id) {
+  if (!id) return null;
+  return getLibrary().find((e) => e.id === id) || null;
+}
+
+function ensureOverlay() {
+  let el = document.getElementById(OVERLAY_ID);
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = OVERLAY_ID;
+  el.className = 'pn-logo-overlay';
+  el.setAttribute('aria-hidden', 'true');
+  const img = document.createElement('img');
+  img.alt = '';
+  img.draggable = false;
+  el.appendChild(img);
+  document.body.appendChild(el);
+  return el;
+}
+
+function renderOverlay(slug) {
+  const state = getSlugState(slug);
+  const overlay = ensureOverlay();
+  const img = overlay.querySelector('img');
+  const logo = state.enabled ? findLogo(state.logoId) : null;
+  if (!logo) {
+    overlay.style.display = 'none';
+    img.removeAttribute('src');
+    return;
+  }
+  overlay.style.display = '';
+  overlay.style.top = state.offset + 'px';
+  overlay.style.left = state.offset + 'px';
+  overlay.style.height = state.size + 'px';
+  if (img.getAttribute('src') !== logo.dataUrl) img.src = logo.dataUrl;
+}
+
+function readImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error || new Error('read failed'));
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      if (!dataUrl.startsWith('data:image/')) {
+        reject(new Error('not an image'));
+        return;
+      }
+      const probe = new Image();
+      probe.onload = () => resolve({
+        dataUrl,
+        width: probe.naturalWidth || 0,
+        height: probe.naturalHeight || 0,
+      });
+      probe.onerror = () => reject(new Error('image decode failed'));
+      probe.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function buildLogoSection(slug) {
+  const ids = {
+    file:     'pn-logo-file',
+    library:  'pn-logo-library',
+    toggle:   'pn-logo-toggle',
+    offset:   'pn-logo-offset',
+    size:     'pn-logo-size',
+    error:    'pn-logo-error',
+  };
+
+  const content =
+    '<p class="bs-hint" style="margin-bottom:0.75rem">Logo persistente no canto superior esquerdo de todos os painéis.</p>' +
+    '<div class="pn-logo-section">' +
+      '<div class="bs-field">' +
+        '<label for="' + ids.file + '">Adicionar à biblioteca</label>' +
+        '<input type="file" id="' + ids.file + '" accept="image/*">' +
+      '</div>' +
+      '<p class="bs-form-error" id="' + ids.error + '"></p>' +
+      '<div class="pn-logo-library" id="' + ids.library + '"></div>' +
+      '<label class="pn-logo-toggle-row">' +
+        '<input type="checkbox" id="' + ids.toggle + '">' +
+        '<span>Mostrar logo</span>' +
+      '</label>' +
+      '<div class="bs-field">' +
+        '<label for="' + ids.offset + '">Distância da borda (px)</label>' +
+        '<input type="number" id="' + ids.offset + '" min="0" max="200" step="1">' +
+      '</div>' +
+      '<div class="bs-field">' +
+        '<label for="' + ids.size + '">Altura do logo (px)</label>' +
+        '<input type="number" id="' + ids.size + '" min="20" max="300" step="1">' +
+      '</div>' +
+    '</div>';
+
+  function renderLibrary() {
+    const list = document.getElementById(ids.library);
+    if (!list) return;
+    const lib = getLibrary();
+    const state = getSlugState(slug);
+    if (lib.length === 0) {
+      list.innerHTML = '<p class="bs-hint" style="margin:0.5rem 0">Biblioteca vazia. Faça upload de uma imagem para começar.</p>';
+      return;
+    }
+    list.innerHTML = lib.map((e) => {
+      const active = e.id === state.logoId ? ' pn-logo-library__item--active' : '';
+      return (
+        '<div class="pn-logo-library__item' + active + '" data-logo-id="' + escHtml(e.id) + '">' +
+          '<img class="pn-logo-library__thumb" src="' + escHtml(e.dataUrl) + '" alt="">' +
+          '<div class="pn-logo-library__name" title="' + escHtml(e.name) + '">' + escHtml(e.name) + '</div>' +
+          '<div class="pn-logo-library__actions">' +
+            '<button class="bs-toggle-btn pn-logo-use" type="button" data-action="use">' +
+              (e.id === state.logoId ? 'Em uso' : 'Usar') +
+            '</button>' +
+            '<button class="bs-toggle-btn pn-logo-delete" type="button" data-action="delete">Excluir</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function syncControls() {
+    const state = getSlugState(slug);
+    const toggle = document.getElementById(ids.toggle);
+    const offset = document.getElementById(ids.offset);
+    const size = document.getElementById(ids.size);
+    if (toggle) toggle.checked = !!state.enabled;
+    if (offset) offset.value = String(state.offset);
+    if (size) size.value = String(state.size);
+  }
+
+  function update(patch) {
+    const next = { ...getSlugState(slug), ...patch };
+    setSlugState(slug, next);
+    renderOverlay(slug);
+    renderLibrary();
+  }
+
+  function handleFile(file) {
+    const err = document.getElementById(ids.error);
+    if (err) err.textContent = '';
+    if (!file) return;
+    readImageFile(file).then(({ dataUrl, width, height }) => {
+      const id = 'logo-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      const name = (file.name || 'logo').replace(/\.[^.]+$/, '') || 'logo';
+      try {
+        addToLibrary({ id, name, dataUrl, width, height });
+      } catch (e) {
+        if (err) err.textContent = 'Falha ao salvar (origem cheia?). Remova um logo antes de adicionar outro.';
+        return;
+      }
+      update({ enabled: true, logoId: id });
+    }).catch((e) => {
+      if (err) err.textContent = 'Não foi possível ler a imagem.';
+      console.warn('[logo-integration] readImageFile failed', e);
+    });
+  }
+
+  function bind() {
+    const file = document.getElementById(ids.file);
+    const toggle = document.getElementById(ids.toggle);
+    const offset = document.getElementById(ids.offset);
+    const size = document.getElementById(ids.size);
+    const list = document.getElementById(ids.library);
+
+    if (file) {
+      file.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        handleFile(f);
+        file.value = '';
+      });
+    }
+    if (toggle) {
+      toggle.addEventListener('change', () => update({ enabled: !!toggle.checked }));
+    }
+    if (offset) {
+      offset.addEventListener('input', () => {
+        const n = parseInt(offset.value, 10);
+        if (!Number.isFinite(n)) return;
+        const clamped = Math.max(0, Math.min(200, n));
+        update({ offset: clamped });
+      });
+    }
+    if (size) {
+      size.addEventListener('input', () => {
+        const n = parseInt(size.value, 10);
+        if (!Number.isFinite(n)) return;
+        const clamped = Math.max(20, Math.min(300, n));
+        update({ size: clamped });
+      });
+    }
+    if (list) {
+      list.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const item = btn.closest('[data-logo-id]');
+        if (!item) return;
+        const id = item.getAttribute('data-logo-id');
+        const action = btn.getAttribute('data-action');
+        if (action === 'use') {
+          update({ enabled: true, logoId: id });
+        } else if (action === 'delete') {
+          removeFromLibrary(id);
+          const state = getSlugState(slug);
+          if (state.logoId === id) update({ logoId: null, enabled: false });
+          else { renderOverlay(slug); renderLibrary(); }
+        }
+      });
+    }
+  }
+
+  return {
+    id: 'pn-logo',
+    title: 'Logo',
+    content,
+    onInit: () => { bind(); syncControls(); renderLibrary(); },
+    onOpen: () => { syncControls(); renderLibrary(); },
+  };
+}
+
+export function attachLogo(runtime, options = {}) {
+  const slug = options.slug || 'default';
+  if (typeof window === 'undefined' || typeof document === 'undefined') return [];
+  renderOverlay(slug);
+
+  // Cross-window sync: when the main deck mutates the library or the per-slug
+  // state, the presenter mirror (separate document, same origin) re-renders
+  // its own overlay. The storage event also fires for any other tab on the
+  // same origin, which is fine -- they all converge on the same state.
+  window.addEventListener('storage', (e) => {
+    if (e.key === LIBRARY_KEY || e.key === slugKey(slug)) renderOverlay(slug);
+  });
+
+  return [buildLogoSection(slug)];
+}
