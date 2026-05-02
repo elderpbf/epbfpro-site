@@ -14,41 +14,6 @@
   display: block;
 }
 
-.cp-display-embed__msg {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 2rem;
-  font-family: var(--pn-font-body);
-  font-size: clamp(1.1rem, 2vw, 1.5rem);
-  line-height: 1.5;
-  color: var(--pn-muted, #888);
-  background: var(--pn-bg);
-}
-
-.cp-display-embed__msg--empty {
-  color: var(--pn-text);
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.cp-display-embed__open-btn {
-  display: inline-block;
-  padding: 0.6em 1.4em;
-  background: var(--pn-accent, #5271FE);
-  color: #fff;
-  border-radius: var(--pn-radius-md, 8px);
-  font-family: var(--pn-font-body);
-  font-size: 0.95rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: opacity 0.15s, transform 0.1s;
-}
-.cp-display-embed__open-btn:hover { opacity: 0.85; }
-.cp-display-embed__open-btn:active { transform: translateY(1px); }
 
 .cp-display-embed__badge {
   position: absolute;

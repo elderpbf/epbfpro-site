@@ -46,7 +46,9 @@ function _notifyAll(session) {
 
 function _schedulePoll(session) {
   if (_subscribers.size === 0) return;
-  _pollTimer = setTimeout(_runPoll, session ? 10000 : 30000);
+  // 10s either way. The no-session interval used to be 30s, but that made
+  // panels feel sluggish to pick up a freshly-opened session.
+  _pollTimer = setTimeout(_runPoll, 10000);
 }
 
 async function _runPoll() {
