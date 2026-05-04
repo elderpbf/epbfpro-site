@@ -37,7 +37,9 @@ const OVERLAY_ID = 'pn-logo-overlay';
 
 const MAX_DIMENSION = 512;
 
-const DEFAULTS = { enabled: false, logoId: null, offsetTop: 24, offsetLeft: 24, size: 80 };
+// opacity is stored as 0-100 (slider value) and applied via CSS as
+// state.opacity / 100. Default 100 = fully visible.
+const DEFAULTS = { enabled: false, logoId: null, offsetTop: 24, offsetLeft: 24, size: 80, opacity: 100 };
 
 function readJson(key, fallback) {
   try {
@@ -137,6 +139,7 @@ function renderOverlay(slug) {
   overlay.style.top = state.offsetTop + 'px';
   overlay.style.left = state.offsetLeft + 'px';
   overlay.style.height = state.size + 'px';
+  overlay.style.opacity = String((Number(state.opacity) || 0) / 100);
   if (img.getAttribute('src') !== logo.dataUrl) img.src = logo.dataUrl;
 }
 
@@ -191,13 +194,18 @@ function escHtml(s) {
 
 function buildLogoSection(slug) {
   const ids = {
-    file:       'pn-logo-file',
-    library:    'pn-logo-library',
-    toggle:     'pn-logo-toggle',
-    offsetTop:  'pn-logo-offset-top',
-    offsetLeft: 'pn-logo-offset-left',
-    size:       'pn-logo-size',
-    error:      'pn-logo-error',
+    file:          'pn-logo-file',
+    library:       'pn-logo-library',
+    toggle:        'pn-logo-toggle',
+    offsetTop:     'pn-logo-offset-top',
+    offsetTopVal:  'pn-logo-offset-top-val',
+    offsetLeft:    'pn-logo-offset-left',
+    offsetLeftVal: 'pn-logo-offset-left-val',
+    size:          'pn-logo-size',
+    sizeVal:       'pn-logo-size-val',
+    opacity:       'pn-logo-opacity',
+    opacityVal:    'pn-logo-opacity-val',
+    error:         'pn-logo-error',
   };
 
   const content =
@@ -214,16 +222,20 @@ function buildLogoSection(slug) {
         '<span>Mostrar logo</span>' +
       '</label>' +
       '<div class="bs-field">' +
-        '<label for="' + ids.offsetTop + '">Distância do topo (px)</label>' +
-        '<input type="number" id="' + ids.offsetTop + '" min="0" max="200" step="1">' +
+        '<label for="' + ids.offsetTop + '">Distância do topo: <output id="' + ids.offsetTopVal + '">24</output> px</label>' +
+        '<input type="range" id="' + ids.offsetTop + '" min="0" max="200" step="1">' +
       '</div>' +
       '<div class="bs-field">' +
-        '<label for="' + ids.offsetLeft + '">Distância da esquerda (px)</label>' +
-        '<input type="number" id="' + ids.offsetLeft + '" min="0" max="200" step="1">' +
+        '<label for="' + ids.offsetLeft + '">Distância da esquerda: <output id="' + ids.offsetLeftVal + '">24</output> px</label>' +
+        '<input type="range" id="' + ids.offsetLeft + '" min="0" max="200" step="1">' +
       '</div>' +
       '<div class="bs-field">' +
-        '<label for="' + ids.size + '">Altura do logo (px)</label>' +
-        '<input type="number" id="' + ids.size + '" min="20" max="300" step="1">' +
+        '<label for="' + ids.size + '">Altura do logo: <output id="' + ids.sizeVal + '">80</output> px</label>' +
+        '<input type="range" id="' + ids.size + '" min="20" max="300" step="1">' +
+      '</div>' +
+      '<div class="bs-field">' +
+        '<label for="' + ids.opacity + '">Opacidade: <output id="' + ids.opacityVal + '">100</output>%</label>' +
+        '<input type="range" id="' + ids.opacity + '" min="0" max="100" step="1">' +
       '</div>' +
     '</div>';
 
@@ -255,14 +267,24 @@ function buildLogoSection(slug) {
 
   function syncControls() {
     const state = getSlugState(slug);
-    const toggle = document.getElementById(ids.toggle);
-    const offsetTop = document.getElementById(ids.offsetTop);
-    const offsetLeft = document.getElementById(ids.offsetLeft);
-    const size = document.getElementById(ids.size);
+    const toggle        = document.getElementById(ids.toggle);
+    const offsetTop     = document.getElementById(ids.offsetTop);
+    const offsetTopVal  = document.getElementById(ids.offsetTopVal);
+    const offsetLeft    = document.getElementById(ids.offsetLeft);
+    const offsetLeftVal = document.getElementById(ids.offsetLeftVal);
+    const size          = document.getElementById(ids.size);
+    const sizeVal       = document.getElementById(ids.sizeVal);
+    const opacity       = document.getElementById(ids.opacity);
+    const opacityVal    = document.getElementById(ids.opacityVal);
     if (toggle) toggle.checked = !!state.enabled;
-    if (offsetTop) offsetTop.value = String(state.offsetTop);
-    if (offsetLeft) offsetLeft.value = String(state.offsetLeft);
-    if (size) size.value = String(state.size);
+    if (offsetTop)     offsetTop.value     = String(state.offsetTop);
+    if (offsetTopVal)  offsetTopVal.textContent  = String(state.offsetTop);
+    if (offsetLeft)    offsetLeft.value    = String(state.offsetLeft);
+    if (offsetLeftVal) offsetLeftVal.textContent = String(state.offsetLeft);
+    if (size)          size.value          = String(state.size);
+    if (sizeVal)       sizeVal.textContent       = String(state.size);
+    if (opacity)       opacity.value       = String(state.opacity);
+    if (opacityVal)    opacityVal.textContent    = String(state.opacity);
   }
 
   function update(patch) {
@@ -293,12 +315,13 @@ function buildLogoSection(slug) {
     });
   }
 
-  function bindNumberInput(input, key, min, max) {
+  function bindRangeInput(input, valueEl, key, min, max) {
     if (!input) return;
     input.addEventListener('input', () => {
       const n = parseInt(input.value, 10);
       if (!Number.isFinite(n)) return;
       const clamped = Math.max(min, Math.min(max, n));
+      if (valueEl) valueEl.textContent = String(clamped);
       update({ [key]: clamped });
     });
   }
@@ -318,9 +341,10 @@ function buildLogoSection(slug) {
     if (toggle) {
       toggle.addEventListener('change', () => update({ enabled: !!toggle.checked }));
     }
-    bindNumberInput(document.getElementById(ids.offsetTop), 'offsetTop', 0, 200);
-    bindNumberInput(document.getElementById(ids.offsetLeft), 'offsetLeft', 0, 200);
-    bindNumberInput(document.getElementById(ids.size), 'size', 20, 300);
+    bindRangeInput(document.getElementById(ids.offsetTop),  document.getElementById(ids.offsetTopVal),  'offsetTop', 0, 200);
+    bindRangeInput(document.getElementById(ids.offsetLeft), document.getElementById(ids.offsetLeftVal), 'offsetLeft', 0, 200);
+    bindRangeInput(document.getElementById(ids.size),       document.getElementById(ids.sizeVal),       'size', 20, 300);
+    bindRangeInput(document.getElementById(ids.opacity),    document.getElementById(ids.opacityVal),    'opacity', 0, 100);
 
     if (list) {
       list.addEventListener('click', (e) => {
