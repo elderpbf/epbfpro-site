@@ -209,15 +209,17 @@
         }
       });
 
-      // Reclaim focus from iframes ONLY in presenter-mirror mode (so the
-      // presenter's keydown handler keeps firing). On the main deck we
-      // intentionally let cross-origin iframes (Google Slides) hold focus
-      // after a click: USB presenter / arrow keys advance the slide;
-      // clicking outside the iframe (topbar, pill bar, panel margins)
-      // releases focus and restores arrow-key panel navigation.
-      if (presenterMode) {
-        attachFocusReclaim({ targetWindow: window.parent });
-      }
+      // Reclaim focus from iframes so arrow keys keep reaching us.
+      // Main deck reclaims to itself. Mirror reclaims to its parent window
+      // (the presenter view) so the presenter's keydown handler fires.
+      //
+      // The mouse click on the iframe still lands BEFORE focus is reclaimed
+      // (~80 ms grace period), so Google Slides advances on click; what gets
+      // reclaimed is keyboard focus, so arrow keys continue to drive panel
+      // navigation and the BroadcastChannel sync to the mirror keeps working.
+      attachFocusReclaim({
+        targetWindow: presenterMode ? window.parent : window,
+      });
 
       // Jump to requested panel index if provided via URL (?panel=N).
       const panelParam = params.get('panel');
