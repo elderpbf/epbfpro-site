@@ -33,8 +33,8 @@
 // header for the full pill catalog.
 
 import { registerTool } from '../../engine/registry.js';
-import { attachPanelPills } from '../../engine/panel-pills.js?v=2.0';
-import { ICON_PIN } from '../../engine/pill-icons.js';
+import { attachPanelPills } from '../../engine/panel-pills.js?v=2.1';
+import { ICON_PIN, ICON_KEYBOARD } from '../../engine/pill-icons.js';
 
 const DEFAULT_URL = 'https://docs.google.com/presentation/d/e/REPLACE_WITH_PUBLISHED_ID/embed?start=false&loop=false&delayms=60000';
 
@@ -155,8 +155,23 @@ registerTool({
     container.appendChild(root);
     mounted = root;
 
+    // Focus-release pill: pure click target. Clicking it lands focus on a
+    // parent-document button, blurring the cross-origin Slides iframe so
+    // arrow keys go back to panel navigation. Defined here so it can be
+    // appended even when the slide picker is disabled.
+    const focusReleasePill = {
+      kind: 'click-surface',
+      icon: ICON_KEYBOARD,
+      ariaLabel: 'Soltar foco do slide',
+    };
+
     const resolved = resolveSlides(cfg, url);
-    if (cfg.slidePicker === 'off' || !resolved) return;
+    if (cfg.slidePicker === 'off' || !resolved) {
+      // No picker available, but we still want the focus-release affordance.
+      if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+      pillHandle = attachPanelPills(container, { pills: [focusReleasePill] });
+      return;
+    }
 
     const { slides, hasTitles } = resolved;
     const total = slides.length;
@@ -226,6 +241,7 @@ registerTool({
             },
           },
           pinPill,
+          focusReleasePill,
         ],
       });
     } else {
@@ -252,6 +268,7 @@ registerTool({
             },
           },
           pinPill,
+          focusReleasePill,
         ],
       });
     }

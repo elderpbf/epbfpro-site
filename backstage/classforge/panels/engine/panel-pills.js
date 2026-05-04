@@ -43,6 +43,17 @@
 //
 // -----------------------------------------------------------------------------
 //
+//   click-surface -- single icon button with NO functional behavior. Used
+//                    purely as a click target so the user can land a click on
+//                    the parent document (e.g. to release keyboard focus from
+//                    a cross-origin iframe like Google Slides). The pill bar
+//                    already lives in the browser top-layer, so the click
+//                    reliably reaches us instead of the iframe behind it.
+//     Required: { kind: 'click-surface', icon }
+//     Optional: { ariaLabel }
+//
+// -----------------------------------------------------------------------------
+//
 //   select -- "← [current label] →" pill that opens a searchable dropdown.
 //     Required: { kind: 'select', items: [{value, label}], onChange }
 //     Optional: { value, format(item), placeholder,
@@ -226,7 +237,24 @@ function buildPill(descriptor) {
   if (descriptor && descriptor.kind === 'stepper') return buildStepperPill(descriptor);
   if (descriptor && descriptor.kind === 'actions') return buildActionsPill(descriptor);
   if (descriptor && descriptor.kind === 'select')  return buildSelectPill(descriptor);
+  if (descriptor && descriptor.kind === 'click-surface') return buildClickSurfacePill(descriptor);
   return { el: document.createElement('span'), setValue() {} };
+}
+
+function buildClickSurfacePill(d) {
+  const wrap = document.createElement('div');
+  wrap.className = 'pn-panel-pills__pill';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pn-panel-pills__btn pn-panel-pills__btn--icon';
+  btn.innerHTML = d.icon || '';
+  if (d.ariaLabel) btn.setAttribute('aria-label', d.ariaLabel);
+  // Intentionally no click handler. The browser's default behaviour of
+  // moving focus to the clicked button is exactly what we want.
+
+  wrap.appendChild(btn);
+  return { el: wrap, setValue() {}, refresh() {} };
 }
 
 function buildStepperPill(d) {
