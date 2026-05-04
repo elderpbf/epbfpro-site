@@ -45,14 +45,6 @@
     {
       "src": "panel-10.html",
       "title": "Display ao vivo da sessao ClassPulse"
-    },
-    {
-      "src": "panel-11.html",
-      "title": "Ferramenta Claude AI (popup)"
-    },
-    {
-      "src": "panel-12.html",
-      "title": "Terminal embarcado (xterm.js, demo scripted)"
     }
   ],
   "slides": [

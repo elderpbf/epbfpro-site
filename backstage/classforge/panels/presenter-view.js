@@ -298,8 +298,13 @@
         applyAspect();
       }
 
-      updateNotes(meta, idx);
-      updateCounter(idx, totalPanels);
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        setTimeout(() => { updateNotes(meta, idx); updateCounter(idx, totalPanels); }, 0);
+      } else {
+        updateNotes(meta, idx);
+        updateCounter(idx, totalPanels);
+      }
     }
   });
 

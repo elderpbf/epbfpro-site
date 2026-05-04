@@ -71,18 +71,26 @@ registerTool({
       raf = requestAnimationFrame(tick);
     }
 
-    const onResize = () => resize();
-    window.addEventListener('resize', onResize);
-
-    resize();
-    raf = requestAnimationFrame(tick);
+    let roStarted = false;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          resize();
+          if (!roStarted) {
+            roStarted = true;
+            raf = requestAnimationFrame(tick);
+          }
+        }
+      }
+    });
+    ro.observe(root);
 
     mounted = {
       root,
       stop() {
         stopped = true;
         if (raf) cancelAnimationFrame(raf);
-        window.removeEventListener('resize', onResize);
+        ro.disconnect();
       },
     };
   },

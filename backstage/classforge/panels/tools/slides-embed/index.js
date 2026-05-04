@@ -132,6 +132,14 @@ function writePinState(key, state) {
   try { localStorage.setItem(key, JSON.stringify(state)); } catch (_) {}
 }
 
+function fitKey(url) {
+  const rt = (typeof window !== 'undefined') ? window.__panelsRuntime : null;
+  const slug = rt?.manifest?.id;
+  const panelId = rt?.currentMeta?.id;
+  if (slug && panelId) return 'bs_pn_fit_' + slug + '_' + panelId;
+  return 'bs_pn_fit_url_' + url;
+}
+
 registerTool({
   id: 'slides-embed',
   kind: 'tool',
@@ -155,6 +163,35 @@ registerTool({
     container.appendChild(root);
     mounted = root;
 
+    // Aspect strip: Preenchimento / Ajuste / Tela cheia (hover-reveal, top-right)
+    const _MODES = ['fill', 'fit', 'fullscreen'];
+    const _LABELS = { fill: 'Preenchimento', fit: 'Ajuste', fullscreen: 'Tela cheia' };
+    const _fKey = fitKey(url);
+    let _mode = (_fKey ? (localStorage.getItem(_fKey) || 'fill') : 'fill');
+    const _strip = document.createElement('div');
+    _strip.className = 'slides-embed-aspect-strip';
+    const _stripBtns = _MODES.map(m => {
+      const btn = document.createElement('button');
+      btn.dataset.mode = m;
+      btn.textContent = _LABELS[m];
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        _mode = m;
+        if (_fKey) try { localStorage.setItem(_fKey, m); } catch (_e) {}
+        _applyMode(m);
+      });
+      _strip.appendChild(btn);
+      return btn;
+    });
+    root.appendChild(_strip);
+
+    function _applyMode(m) {
+      root.classList.toggle('is-fit', m === 'fit');
+      root.classList.toggle('is-fullscreen', m === 'fullscreen');
+      _stripBtns.forEach(b => b.classList.toggle('is-active', b.dataset.mode === m));
+    }
+    _applyMode(_mode);
+
     const resolved = resolveSlides(cfg, url);
     if (cfg.slidePicker === 'off' || !resolved) return;
 
@@ -177,6 +214,28 @@ registerTool({
     function persistIfPinned() {
       if (pinned) writePinState(key, { pinned: true, slideIndex: current });
     }
+
+    // Left-edge click zone: ~80px overlay for mouse-only backward slide nav.
+    // The cross-origin Slides iframe steals keyboard focus, making engine
+    // arrow-key nav unavailable for going back within a deck; clicking the
+    // left edge is a reliable alternative without focus management overhead.
+    const _leftZone = document.createElement('div');
+    _leftZone.className = 'slides-embed-left-zone';
+    const _chevron = document.createElement('span');
+    _chevron.className = 'slides-embed-left-chevron';
+    _chevron.setAttribute('aria-hidden', 'true');
+    _chevron.textContent = '‹';
+    _leftZone.appendChild(_chevron);
+    root.appendChild(_leftZone);
+
+    _leftZone.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (current > 1) {
+        current--;
+        frame.src = withSlide(url, slides[current - 1].id);
+        persistIfPinned();
+      }
+    });
 
     const pinPill = {
       kind: 'actions',
