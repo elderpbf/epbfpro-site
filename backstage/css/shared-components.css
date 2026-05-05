@@ -73,6 +73,22 @@
   border: 1px solid transparent;
 }
 
+/* Question bank action buttons (host.html) */
+.qb-edit-btn {
+  flex-shrink: 0; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 600;
+  background: transparent; border: 1.5px solid rgba(20,184,166,.35); border-radius: 5px;
+  color: var(--primary); cursor: pointer; transition: background .15s;
+}
+.qb-edit-btn:hover { background: rgba(20,184,166,.1); }
+
+.qb-launch-btn {
+  flex-shrink: 0; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 600;
+  background: var(--primary); border: none; border-radius: 5px;
+  color: #fff; cursor: pointer; transition: opacity .15s;
+}
+.qb-launch-btn:hover { opacity: .85; }
+.qb-launch-btn:disabled { opacity: .45; cursor: not-allowed; }
+
 /* Success toast */
 .bs-toast {
   position: fixed; bottom: 3.5rem; right: 1rem; z-index: 99998;

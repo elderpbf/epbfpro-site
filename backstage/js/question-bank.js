@@ -82,15 +82,35 @@ var QuestionBank = (function () {
           item.appendChild(typeBadge);
 
           var textSpan = document.createElement('span');
+          textSpan.style.flex = '1';
           var full = q.question || '';
           textSpan.textContent = full.length > 80 ? full.slice(0, 80) + '…' : full;
           textSpan.title = full;
           item.appendChild(textSpan);
 
-          item.addEventListener('click', function (e) {
-            if (e.target.tagName === 'BUTTON') return;
-            opts.onSelect(q);
-          });
+          if (opts.onSelect) {
+            var editBtn = document.createElement('button');
+            editBtn.className = 'qb-edit-btn';
+            editBtn.textContent = 'Editar';
+            editBtn.title = 'Editar questão';
+            editBtn.addEventListener('click', function (e) {
+              e.stopPropagation();
+              opts.onSelect(q);
+            });
+            item.appendChild(editBtn);
+          }
+
+          if (opts.onLaunch) {
+            var launchBtn = document.createElement('button');
+            launchBtn.className = 'qb-launch-btn';
+            launchBtn.textContent = 'Lançar';
+            launchBtn.title = 'Lançar questão';
+            launchBtn.addEventListener('click', function (e) {
+              e.stopPropagation();
+              opts.onLaunch(q, launchBtn);
+            });
+            item.appendChild(launchBtn);
+          }
 
           if (opts.canDelete) {
             var delBtn = document.createElement('button');
@@ -187,9 +207,11 @@ var QuestionBank = (function () {
   }
 
   function bindEvents() {
-    opts.setSelect.addEventListener('change', function () {
-      loadQuestions(this.value);
-    });
+    if (opts.setSelect) {
+      opts.setSelect.addEventListener('change', function () {
+        loadQuestions(this.value);
+      });
+    }
     opts.generateBtn.addEventListener('click', generate);
     opts.improveBtn.addEventListener('click', improve);
   }
