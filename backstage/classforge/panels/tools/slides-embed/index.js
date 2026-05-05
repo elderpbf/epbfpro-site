@@ -279,4 +279,15 @@ registerTool({
     if (typeof mounted.remove === 'function') mounted.remove();
     mounted = null;
   },
+  onDuplicate(meta) {
+    const toolConfig = meta && meta.tools && meta.tools[0] && meta.tools[0].config;
+    const url = (toolConfig && toolConfig.url) || DEFAULT_URL;
+    const newId = window.prompt('Qual o novo slide ID? (ex: id.g1A2b3C4d)\n\nDeixe vazio para clonar o mesmo slide.', '');
+    if (newId === null) return null; // cancelled
+    const newMeta = JSON.parse(JSON.stringify(meta));
+    if (newId.trim()) {
+      newMeta.tools[0].config = { ...newMeta.tools[0].config, url: withSlide(url, newId.trim()) };
+    }
+    return newMeta;
+  },
 });
