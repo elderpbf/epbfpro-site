@@ -154,7 +154,10 @@
 
             <div class="cp-questions-header">
               <span class="cp-questions-label">Questões</span>
-              <button class="cp-btn-primary" id="new-question-btn" style="font-size:0.82rem;padding:0.4rem 0.9rem">+ Nova questão</button>
+              <div>
+                <button class="cp-btn-ghost" id="bulk-question-btn" style="font-size:0.82rem;padding:0.4rem 0.9rem; margin-right: 0.5rem;">+ Gerar em Lote</button>
+                <button class="cp-btn-primary" id="new-question-btn" style="font-size:0.82rem;padding:0.4rem 0.9rem">+ Nova questão</button>
+              </div>
             </div>
 
             <div class="cp-question-list" id="question-list"></div>
@@ -447,6 +450,65 @@
       <button class="cp-btn-ghost" id="q-modal-cancel">Cancelar</button>
       <button class="cp-btn-primary" id="q-save-btn">Salvar</button>
     </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     BULK GENERATION MODAL (14A)
+     ============================================================ -->
+<div class="q-modal" id="bulk-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="bulk-modal-title">
+  <div class="q-modal-card" style="max-width: 600px;">
+    <div class="q-modal-header">
+      <h3 class="q-modal-title" id="bulk-modal-title">Gerar Questões em Lote</h3>
+      <button class="q-modal-close" id="bulk-modal-close" aria-label="Fechar">&times;</button>
+    </div>
+    
+    <!-- STEP 1: CONFIGURATION -->
+    <div class="q-modal-body" id="bulk-step-config">
+      <div style="display:flex; gap:1rem; margin-bottom:0.75rem">
+        <div class="bs-field" style="flex:2;">
+          <label>Tipo de questão</label>
+          <select id="bulk-q-type" style="width:100%;padding:0.55rem 0.8rem;background:var(--background);border:1.5px solid rgba(20,184,166,.25);border-radius:8px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none">
+            <option value="mc">Múltipla Escolha</option>
+            <option value="tf">Verdadeiro / Falso</option>
+            <option value="poll">Enquete</option>
+            <option value="open">Texto Aberto</option>
+            <option value="wordcloud">Nuvem de Palavras</option>
+          </select>
+        </div>
+        <div class="bs-field" style="flex:1;">
+          <label>Quantidade</label>
+          <input type="number" id="bulk-q-count" min="2" max="20" value="5" style="width:100%;padding:0.55rem 0.8rem;background:var(--background);border:1.5px solid rgba(20,184,166,.25);border-radius:8px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none">
+        </div>
+      </div>
+
+      <div class="bs-field">
+        <label>Tema ou Instrução</label>
+        <textarea class="bs-textarea" id="bulk-q-prompt" placeholder="Ex: Biologia celular, focando em mitocôndrias" style="min-height:80px"></textarea>
+      </div>
+
+      <p class="cp-form-error" id="bulk-config-error" style="margin-top:0.5rem"></p>
+    </div>
+
+    <div class="q-modal-footer" id="bulk-footer-config">
+      <button class="cp-btn-ghost" id="bulk-cancel-config-btn">Cancelar</button>
+      <button class="cp-btn-primary" id="bulk-generate-btn">Gerar Questões</button>
+    </div>
+
+    <!-- STEP 2: REVIEW -->
+    <div class="q-modal-body" id="bulk-step-review" style="display:none; flex-direction:column; max-height:60vh;">
+      <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">Revise as questões geradas. Desmarque as que não quiser salvar.</p>
+      <div id="bulk-review-list" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:1rem; padding-right:0.5rem;">
+        <!-- Injected via JS -->
+      </div>
+      <p class="cp-form-error" id="bulk-review-error" style="margin-top:0.5rem"></p>
+    </div>
+
+    <div class="q-modal-footer" id="bulk-footer-review" style="display:none;">
+      <button class="cp-btn-ghost" id="bulk-cancel-review-btn">Descartar Tudo</button>
+      <button class="cp-btn-primary" id="bulk-save-btn">Salvar Questões</button>
+    </div>
+
   </div>
 </div>
 
@@ -964,6 +1026,156 @@ document.addEventListener('keydown', function(e) {
 });
 document.getElementById('new-question-btn').addEventListener('click', function() {
   if (!activeSet) return; openModal(null);
+});
+
+// ---------------------------------------------------------------------------
+// Bulk Generation Logic
+// ---------------------------------------------------------------------------
+
+var bulkQuestions = [];
+
+function openBulkModal() {
+  document.getElementById('bulk-modal-title').textContent = 'Gerar Lote · ' + activeSet;
+  document.getElementById('bulk-q-prompt').value = '';
+  document.getElementById('bulk-config-error').textContent = '';
+  document.getElementById('bulk-review-error').textContent = '';
+  document.getElementById('bulk-step-config').style.display = 'block';
+  document.getElementById('bulk-footer-config').style.display = 'flex';
+  document.getElementById('bulk-step-review').style.display = 'none';
+  document.getElementById('bulk-footer-review').style.display = 'none';
+  document.getElementById('bulk-modal').style.display = 'flex';
+  document.getElementById('bulk-q-prompt').focus();
+}
+
+function closeBulkModal() {
+  document.getElementById('bulk-modal').style.display = 'none';
+  bulkQuestions = [];
+}
+
+document.getElementById('bulk-question-btn').addEventListener('click', function() {
+  if (!activeSet) return; openBulkModal();
+});
+document.getElementById('bulk-modal-close').addEventListener('click', closeBulkModal);
+document.getElementById('bulk-cancel-config-btn').addEventListener('click', closeBulkModal);
+document.getElementById('bulk-cancel-review-btn').addEventListener('click', closeBulkModal);
+document.getElementById('bulk-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeBulkModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('bulk-modal').style.display === 'flex') closeBulkModal();
+});
+
+document.getElementById('bulk-generate-btn').addEventListener('click', async function() {
+  var type = document.getElementById('bulk-q-type').value;
+  var count = parseInt(document.getElementById('bulk-q-count').value) || 5;
+  var prompt = document.getElementById('bulk-q-prompt').value.trim();
+  var err = document.getElementById('bulk-config-error');
+  if (!prompt) { err.textContent = 'Escreva um tema ou instrução.'; return; }
+  
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Gerando...';
+  err.textContent = '';
+  
+  try {
+    var result = await AIClient.generate({ prompt: prompt, type: type, count: count, action: 'ai_question' });
+    if (!result || !result.ai || !Array.isArray(result.ai)) throw new Error('Falha ao gerar questões');
+    bulkQuestions = result.ai.map(function(q) { return {
+      question: q.question,
+      type: q.type || type,
+      options: q.options || [],
+      correct_answer: typeof q.correct === 'number' ? String(q.correct) : ''
+    }; });
+    showBulkReview();
+  } catch (e) {
+    err.textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Gerar Questões';
+  }
+});
+
+function showBulkReview() {
+  document.getElementById('bulk-step-config').style.display = 'none';
+  document.getElementById('bulk-footer-config').style.display = 'none';
+  document.getElementById('bulk-step-review').style.display = 'flex';
+  document.getElementById('bulk-footer-review').style.display = 'flex';
+  
+  var list = document.getElementById('bulk-review-list');
+  list.innerHTML = '';
+  bulkQuestions.forEach(function(q, i) {
+    var div = document.createElement('div');
+    div.style.border = '1px solid rgba(20,184,166,.25)';
+    div.style.borderRadius = '8px';
+    div.style.padding = '0.75rem';
+    div.style.display = 'flex';
+    div.style.gap = '0.5rem';
+    div.style.alignItems = 'flex-start';
+    div.style.background = 'var(--surface)';
+    
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = true;
+    cb.style.marginTop = '0.2rem';
+    cb.dataset.index = i;
+    
+    var textDiv = document.createElement('div');
+    textDiv.style.flex = '1';
+    textDiv.style.fontSize = '0.85rem';
+    
+    var title = document.createElement('div');
+    title.style.fontWeight = '600';
+    title.textContent = q.question;
+    title.style.color = 'var(--text-primary)';
+    textDiv.appendChild(title);
+    
+    if (q.options && q.options.length > 0) {
+      var opts = document.createElement('ul');
+      opts.style.margin = '0.4rem 0 0 1rem';
+      opts.style.padding = '0';
+      opts.style.color = 'var(--text-secondary)';
+      q.options.forEach(function(opt, optIdx) {
+        var li = document.createElement('li');
+        var isCorrect = String(optIdx) === q.correct_answer;
+        li.textContent = opt;
+        if (isCorrect) {
+          li.style.color = 'var(--primary)';
+          li.style.fontWeight = '600';
+          li.textContent += ' (Correta)';
+        }
+        opts.appendChild(li);
+      });
+      textDiv.appendChild(opts);
+    }
+    
+    div.appendChild(cb);
+    div.appendChild(textDiv);
+    list.appendChild(div);
+  });
+}
+
+document.getElementById('bulk-save-btn').addEventListener('click', async function() {
+  var list = document.getElementById('bulk-review-list');
+  var checkboxes = list.querySelectorAll('input[type="checkbox"]:checked');
+  if (checkboxes.length === 0) {
+    document.getElementById('bulk-review-error').textContent = 'Selecione pelo menos uma questão para salvar.';
+    return;
+  }
+  
+  var selectedQuestions = Array.from(checkboxes).map(function(cb) { return bulkQuestions[cb.dataset.index]; });
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  
+  try {
+    await callWorker({ action: 'add_questions_bulk', auth_token: AUTH_TOKEN, list_name: activeSet, questions: selectedQuestions });
+    sets = sets.map(function(s) { if (s.list_name === activeSet) { delete s._ephemeral; } return s; });
+    closeBulkModal();
+    showToast(selectedQuestions.length + ' questões salvas!');
+    await loadSets();
+    await selectSet(activeSet);
+  } catch(e) {
+    document.getElementById('bulk-review-error').textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar Questões';
+  }
 });
 
 // ---------------------------------------------------------------------------
