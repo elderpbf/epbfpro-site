@@ -208,17 +208,16 @@ pensoia-header[mode="display"] .ph-logo {
 
 /* Display mode modal: fullscreen, two-column, readable from 20m away.
    Row 1: label spans full width (centered).
-   Row 2-3 left: QR code (tall). Row 2 right: URL. Row 3 right: session code.
-   HTML/JS unchanged — pure CSS grid placement. Student modal stays flex column. */
+   Row 2 left: square QR code. Row 2 right: URL + code stacked via .ph-modal-info flex wrapper.
+   Student modal stays flex column (no grid). */
 
 pensoia-header[mode="display"] .ph-modal-card {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 1fr 1fr;
+  grid-template-rows: auto 1fr;
   grid-template-areas:
     "label label"
-    "qr    url"
-    "qr    code";
+    "qr    info";
   align-items: center;
   justify-items: center;
   width: min(96vw, 1300px);
@@ -234,8 +233,8 @@ pensoia-header[mode="display"] .ph-modal-card::after {
   content: '';
   position: absolute;
   left: 50%;
-  top: 14%;
-  bottom: 6%;
+  top: 20%;
+  bottom: 8%;
   width: 1px;
   background: var(--border);
   transform: translateX(-50%);
@@ -257,20 +256,29 @@ pensoia-header[mode="display"] .ph-modal-label {
   color: var(--text-primary);
 }
 
-/* QR: spans both content rows, fills the left column — 50% larger than before */
+/* QR: square, fills the left column */
 pensoia-header[mode="display"] .ph-modal-qr {
   grid-area: qr;
   align-self: center;
   justify-self: center;
-  width: clamp(390px, 60vmin, 700px);
-  height: clamp(390px, 60vmin, 700px);
+  width: min(clamp(300px, 55vmin, 640px), 100%);
+  height: auto;
+  aspect-ratio: 1 / 1;
 }
 
-/* URL + code: same size, centered in right column */
+/* Info wrapper: vertically centers URL + code as a pair in the right column */
+pensoia-header[mode="display"] .ph-modal-info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1.5vmin, 16px);
+}
+
 pensoia-header[mode="display"] .ph-modal-url {
-  grid-area: url;
-  align-self: end;
-  justify-self: center;
+  align-self: auto;
+  justify-self: auto;
   text-align: center;
   font-size: clamp(3.2rem, 8vmin, 8rem);
   font-weight: 700;
@@ -278,9 +286,8 @@ pensoia-header[mode="display"] .ph-modal-url {
 }
 
 pensoia-header[mode="display"] .ph-modal-code {
-  grid-area: code;
-  align-self: start;
-  justify-self: center;
+  align-self: auto;
+  justify-self: auto;
   text-align: center;
   font-size: clamp(6rem, 16vmin, 14rem);
   letter-spacing: 0.35em;
@@ -402,6 +409,13 @@ pensoia-header .ph-modal-qr {
   background: #fff;
   padding: 10px;
   box-sizing: border-box;
+}
+
+pensoia-header .ph-modal-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1vmin, 14px);
 }
 
 pensoia-header .ph-modal-code {

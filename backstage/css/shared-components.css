@@ -73,6 +73,23 @@
   border: 1px solid transparent;
 }
 
+/* Question bank action buttons (host.html) */
+.qb-edit-btn {
+  flex-shrink: 0; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 600;
+  background: transparent; border: 1.5px solid rgba(20,184,166,.35); border-radius: 5px;
+  color: var(--primary); cursor: pointer; transition: background .15s;
+  margin-right: 0.4rem;
+}
+.qb-edit-btn:hover { background: rgba(20,184,166,.1); }
+
+.qb-launch-btn {
+  flex-shrink: 0; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 600;
+  background: var(--primary); border: none; border-radius: 5px;
+  color: #fff; cursor: pointer; transition: opacity .15s;
+}
+.qb-launch-btn:hover { opacity: .85; }
+.qb-launch-btn:disabled { opacity: .45; cursor: not-allowed; }
+
 /* Success toast */
 .bs-toast {
   position: fixed; bottom: 3.5rem; right: 1rem; z-index: 99998;
@@ -92,3 +109,85 @@
   pointer-events: none; max-width: 320px;
 }
 .bs-toast-error.show { opacity: 1; transform: translateY(0); }
+
+/* =========================================================
+   Question Modal (13C)
+   ========================================================= */
+.q-modal {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+  padding: 1rem;
+}
+.q-modal-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,.4);
+  display: flex; flex-direction: column;
+}
+.q-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 1.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.q-modal-title {
+  font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0;
+}
+.q-modal-close {
+  background: none; border: none; color: var(--text-secondary);
+  font-size: 1.4rem; cursor: pointer; line-height: 1; padding: 0 0.2rem;
+  transition: color .15s;
+}
+.q-modal-close:hover { color: var(--text-primary); }
+.q-modal-body { padding: 1.1rem 1.4rem; flex: 1; }
+.q-modal-footer {
+  display: flex; gap: 0.6rem; justify-content: flex-end;
+  padding: 0.85rem 1.4rem 1.1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* =========================================================
+   Bank page layout additions (13B)
+   ========================================================= */
+.cp-set-sidebar { display: flex; flex-direction: column; }
+
+.cp-set-list-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.cp-conjunto-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap;
+}
+.cp-conjunto-title {
+  font-size: 1.1rem; font-weight: 700; color: var(--text-primary);
+  margin: 0; flex: 1; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.cp-conjunto-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+.cp-questions-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.75rem; padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.cp-questions-label {
+  font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-secondary);
+}
+
+.cp-inline-input {
+  background: var(--background); border: 1.5px solid rgba(20,184,166,.35);
+  border-radius: 7px; color: var(--text-primary); font-size: 0.88rem;
+  padding: 0.45rem 0.75rem; outline: none; transition: border-color .15s;
+}
+.cp-inline-input:focus { border-color: var(--primary); }
+
+.cp-set-new-row {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.4rem 0.6rem; background: rgba(20,184,166,.05);
+  border-bottom: 1px solid var(--border);
+}
+.cp-set-new-row .cp-inline-input { font-size: 0.82rem; padding: 0.3rem 0.55rem; }
+

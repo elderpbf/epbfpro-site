@@ -103,8 +103,10 @@
           '<button class="ph-modal-close" type="button" aria-label="Fechar">\u00d7</button>' +
           '<div class="ph-modal-label">Para entrar na sess\u00e3o</div>' +
           '<img class="ph-modal-qr" alt="QR Code">' +
-          '<div class="ph-modal-code"></div>' +
-          '<div class="ph-modal-url"></div>' +
+          '<div class="ph-modal-info">' +
+            '<div class="ph-modal-code"></div>' +
+            '<div class="ph-modal-url"></div>' +
+          '</div>' +
         '</div>' +
       '</div>'
     );
