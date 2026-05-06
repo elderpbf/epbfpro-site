@@ -110,103 +110,53 @@
          PANEL: QUESTION BANKS
          ============================================================ -->
     <div class="cp-panel" id="panel-banks">
-
       <div class="cp-banks-layout">
 
-        <!-- Set list sidebar -->
-        <div>
+        <!-- Sidebar -->
+        <div class="cp-set-sidebar">
           <div class="cp-set-list" id="set-list-container">
-            <div class="cp-set-list-header">Conjuntos</div>
-            <div id="set-list-items">
-              <div class="cp-empty" style="padding:1.5rem 1rem">
-                <div class="cp-empty-icon">📦</div>
-                <p>Nenhum conjunto.<br>Crie questões ao lado.</p>
-              </div>
+            <div class="cp-set-list-header">
+              <span>Conjuntos</span>
+              <button class="cp-btn-ghost" id="new-set-btn" style="font-size:0.78rem;padding:0.3rem 0.7rem">+ Novo</button>
             </div>
+            <div id="set-list-items"></div>
           </div>
         </div>
 
-        <!-- Form + question list -->
+        <!-- Main panel -->
         <div class="cp-question-area">
 
-          <div class="cp-question-form">
-            <h3>Nova questão</h3>
-
-            <div class="cp-set-select-row">
-              <div class="bs-field">
-                <label>Conjunto</label>
-                <input type="text" id="q-set-name" placeholder="Nome do conjunto (ex: Semana 3)" autocomplete="off" list="set-suggestions">
-                <datalist id="set-suggestions"></datalist>
-              </div>
+          <!-- Empty state: zero conjuntos -->
+          <div id="bank-empty-state" hidden>
+            <div class="cp-empty" style="padding:3rem 1rem">
+              <div class="cp-empty-icon">📦</div>
+              <p>Crie seu primeiro conjunto para começar.</p>
+              <button class="cp-btn-primary" id="create-first-set-btn" style="margin-top:1rem">Criar conjunto</button>
             </div>
-
-            <div class="bs-field" style="margin-bottom:0.75rem">
-              <label>Tipo de questão</label>
-              <select id="q-type-bank" style="width:100%;padding:0.55rem 0.8rem;background:var(--background);border:1.5px solid rgba(20,184,166,.25);border-radius:8px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none">
-                <option value="mc">Múltipla Escolha</option>
-                <option value="tf">Verdadeiro / Falso</option>
-                <option value="poll">Enquete</option>
-                <option value="open">Texto Aberto</option>
-                <option value="wordcloud">Nuvem de Palavras</option>
-                <option value="rating">Avaliação</option>
-                <option value="numeric">Numérico</option>
-              </select>
-            </div>
-
-            <div class="bs-field">
-              <label>Pergunta ou instrução para IA</label>
-              <textarea class="bs-textarea" id="q-text" placeholder="Escreva a pergunta diretamente, ou descreva o que você quer para o botão Gerar." style="min-height:72px"></textarea>
-            </div>
-
-            <div id="q-options">
-              <div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem">Opções <span style="font-weight:400;text-transform:none;letter-spacing:0;opacity:.7">— marque a correta</span></div>
-              <div class="cp-option-row" id="opt-row-a">
-                <div class="cp-option-letter">A</div>
-                <input type="text" id="q-opt-a" placeholder="Opção A" autocomplete="off">
-                <input type="radio" name="correct" value="a" id="q-correct-a" title="Correta">
-              </div>
-              <div class="cp-option-row" id="opt-row-b">
-                <div class="cp-option-letter">B</div>
-                <input type="text" id="q-opt-b" placeholder="Opção B" autocomplete="off">
-                <input type="radio" name="correct" value="b" id="q-correct-b" title="Correta">
-              </div>
-              <div class="cp-option-row" id="opt-row-c">
-                <div class="cp-option-letter">C</div>
-                <input type="text" id="q-opt-c" placeholder="Opção C" autocomplete="off">
-                <input type="radio" name="correct" value="c" id="q-correct-c" title="Correta">
-              </div>
-              <div class="cp-option-row" id="opt-row-d">
-                <div class="cp-option-letter">D</div>
-                <input type="text" id="q-opt-d" placeholder="Opção D" autocomplete="off">
-                <input type="radio" name="correct" value="d" id="q-correct-d" title="Correta">
-              </div>
-            </div>
-
-            <p class="cp-form-error" id="q-error"></p>
-            <p class="cp-form-msg" id="q-msg"></p>
-
-            <div class="cp-form-actions">
-              <button class="cp-btn-ghost" id="q-generate-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                Gerar
-              </button>
-              <button class="cp-btn-ghost" id="q-improve-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-                Melhorar
-              </button>
-              <button class="cp-btn-primary" id="q-save-btn" style="flex:1">Salvar</button>
-            </div>
-            <p id="q-cancel-edit-wrap" style="margin:0.5rem 0 0;display:none">
-              <a href="#" id="q-cancel-edit-btn" style="font-size:0.8rem;color:var(--text-secondary);text-decoration:underline">Cancelar edição</a>
-            </p>
           </div>
 
-          <!-- Question list for selected set -->
+          <!-- Conjunto header + question list -->
           <div id="question-list-wrap" hidden>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem">
-              <h3 style="font-size:0.9rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.06em" id="question-list-title">Questões</h3>
-              <button class="cp-btn-danger" id="delete-set-btn" style="font-size:0.78rem; padding:0.4rem 0.8rem">Excluir conjunto</button>
+            <div class="cp-conjunto-header">
+              <h2 class="cp-conjunto-title" id="question-list-title"></h2>
+              <div class="cp-conjunto-actions">
+                <button class="cp-btn-ghost" id="rename-set-btn" style="font-size:0.8rem;padding:0.35rem 0.75rem">Editar nome</button>
+                <button class="cp-btn-danger" id="delete-set-btn" style="font-size:0.8rem;padding:0.35rem 0.75rem">Excluir conjunto</button>
+              </div>
             </div>
+            <!-- Inline rename row (hidden by default) -->
+            <div id="rename-row" style="display:none;align-items:center;gap:0.5rem;margin-bottom:1rem">
+              <input type="text" id="rename-input" class="cp-inline-input" autocomplete="off" style="flex:1">
+              <button class="cp-btn-primary" id="rename-save-btn" style="font-size:0.8rem;padding:0.35rem 0.8rem">Salvar</button>
+              <button class="cp-btn-ghost" id="rename-cancel-btn" style="font-size:0.8rem;padding:0.35rem 0.75rem">Cancelar</button>
+              <p class="cp-form-error" id="rename-error" style="margin:0;font-size:0.78rem"></p>
+            </div>
+
+            <div class="cp-questions-header">
+              <span class="cp-questions-label">Questões</span>
+              <button class="cp-btn-primary" id="new-question-btn" style="font-size:0.82rem;padding:0.4rem 0.9rem">+ Nova questão</button>
+            </div>
+
             <div class="cp-question-list" id="question-list"></div>
           </div>
 
@@ -425,6 +375,79 @@
     </div>
 
   </main>
+</div>
+
+<!-- ============================================================
+     QUESTION MODAL (13C)
+     ============================================================ -->
+<div class="q-modal" id="q-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="q-modal-title">
+  <div class="q-modal-card">
+    <div class="q-modal-header">
+      <h3 class="q-modal-title" id="q-modal-title">Nova questão</h3>
+      <button class="q-modal-close" id="q-modal-close" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="q-modal-body">
+      <div class="bs-field" style="margin-bottom:0.75rem">
+        <label>Tipo de questão</label>
+        <select id="q-type-bank" style="width:100%;padding:0.55rem 0.8rem;background:var(--background);border:1.5px solid rgba(20,184,166,.25);border-radius:8px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none">
+          <option value="mc">Múltipla Escolha</option>
+          <option value="tf">Verdadeiro / Falso</option>
+          <option value="poll">Enquete</option>
+          <option value="open">Texto Aberto</option>
+          <option value="wordcloud">Nuvem de Palavras</option>
+          <option value="rating">Avaliação</option>
+          <option value="numeric">Numérico</option>
+        </select>
+      </div>
+
+      <div class="bs-field">
+        <label>Pergunta ou instrução para IA</label>
+        <textarea class="bs-textarea" id="q-text" placeholder="Escreva a pergunta diretamente, ou descreva o que você quer para o botão Gerar." style="min-height:80px"></textarea>
+      </div>
+
+      <div class="cp-form-actions" style="margin-bottom:0.75rem">
+        <button class="cp-btn-ghost" id="q-generate-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Gerar
+        </button>
+        <button class="cp-btn-ghost" id="q-improve-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+          Melhorar
+        </button>
+      </div>
+
+      <div id="q-options">
+        <div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem">Opções <span style="font-weight:400;text-transform:none;letter-spacing:0;opacity:.7">— marque a correta</span></div>
+        <div class="cp-option-row" id="opt-row-a">
+          <div class="cp-option-letter">A</div>
+          <input type="text" id="q-opt-a" placeholder="Opção A" autocomplete="off">
+          <input type="radio" name="correct" value="a" id="q-correct-a" title="Correta">
+        </div>
+        <div class="cp-option-row" id="opt-row-b">
+          <div class="cp-option-letter">B</div>
+          <input type="text" id="q-opt-b" placeholder="Opção B" autocomplete="off">
+          <input type="radio" name="correct" value="b" id="q-correct-b" title="Correta">
+        </div>
+        <div class="cp-option-row" id="opt-row-c">
+          <div class="cp-option-letter">C</div>
+          <input type="text" id="q-opt-c" placeholder="Opção C" autocomplete="off">
+          <input type="radio" name="correct" value="c" id="q-correct-c" title="Correta">
+        </div>
+        <div class="cp-option-row" id="opt-row-d">
+          <div class="cp-option-letter">D</div>
+          <input type="text" id="q-opt-d" placeholder="Opção D" autocomplete="off">
+          <input type="radio" name="correct" value="d" id="q-correct-d" title="Correta">
+        </div>
+      </div>
+
+      <p class="cp-form-error" id="q-error" style="margin-top:0.5rem"></p>
+      <p class="cp-form-msg" id="q-msg" style="margin-top:0.25rem"></p>
+    </div>
+    <div class="q-modal-footer">
+      <button class="cp-btn-ghost" id="q-modal-cancel">Cancelar</button>
+      <button class="cp-btn-primary" id="q-save-btn">Salvar</button>
+    </div>
+  </div>
 </div>
 
 <script src="../js/utils.js?v=1.3"></script>
@@ -757,98 +780,112 @@ async function loadSets() {
     sets = [];
   }
   renderSets();
-  updateSetSuggestions();
+  if (sets.length > 0 && !activeSet) {
+    selectSet(sets[0].list_name);
+  } else if (sets.length === 0) {
+    activeSet = null;
+  }
 }
 
 function renderSets() {
   var container = document.getElementById('set-list-items');
+  var bankEmpty = document.getElementById('bank-empty-state');
+  var qWrap = document.getElementById('question-list-wrap');
   container.innerHTML = '';
 
-  if (sets.length === 0) {
-    container.innerHTML = '<div class="cp-empty" style="padding:1.5rem 1rem"><div class="cp-empty-icon">📦</div><p>Nenhum conjunto.<br>Crie questões ao lado.</p></div>';
-    activeSet = null;
-    document.getElementById('question-list-wrap').hidden = true;
+  var hasInput = sets.some(function(s) { return s._inputRow; });
+  var realSets = sets.filter(function(s) { return !s._inputRow; });
+  if (realSets.length === 0 && !hasInput) {
+    bankEmpty.hidden = false;
+    qWrap.hidden = true;
     return;
   }
+  bankEmpty.hidden = true;
 
   sets.forEach(function(s) {
+    if (s._inputRow) {
+      var row = document.createElement('div');
+      row.className = 'cp-set-new-row';
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'cp-inline-input';
+      inp.placeholder = 'Nome do conjunto'; inp.autocomplete = 'off'; inp.style.flex = '1';
+      var okBtn = document.createElement('button');
+      okBtn.className = 'cp-btn-primary'; okBtn.textContent = '\u2713';
+      okBtn.style.cssText = 'font-size:0.9rem;padding:0.25rem 0.5rem';
+      var xBtn = document.createElement('button');
+      xBtn.className = 'cp-btn-ghost'; xBtn.textContent = '\u00d7';
+      xBtn.style.cssText = 'font-size:0.9rem;padding:0.25rem 0.5rem';
+      var errP = document.createElement('p');
+      errP.className = 'cp-form-error'; errP.style.cssText = 'margin:0;font-size:0.75rem';
+      row.appendChild(inp); row.appendChild(okBtn); row.appendChild(xBtn); row.appendChild(errP);
+      container.appendChild(row);
+      function cancelNew() { sets = sets.filter(function(x) { return !x._inputRow; }); renderSets(); }
+      function submitNew() {
+        var val = inp.value.trim();
+        if (!val) { cancelNew(); return; }
+        if (sets.some(function(x) { return !x._inputRow && x.list_name === val; })) {
+          errP.textContent = 'J\u00e1 existe um conjunto com esse nome.'; return;
+        }
+        sets = sets.filter(function(x) { return !x._inputRow; });
+        sets.unshift({ list_name: val, count: 0, _ephemeral: true });
+        activeSet = val; renderSets();
+        document.getElementById('question-list-wrap').hidden = false;
+        document.getElementById('question-list-title').textContent = val;
+        questions = []; renderQuestions();
+      }
+      okBtn.addEventListener('click', submitNew);
+      xBtn.addEventListener('click', cancelNew);
+      inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') submitNew();
+        if (e.key === 'Escape') cancelNew();
+      });
+      setTimeout(function() { inp.focus(); }, 30);
+      return;
+    }
     var item = document.createElement('div');
     item.className = 'cp-set-item' + (activeSet === s.list_name ? ' active' : '');
-
     var nameEl = document.createElement('div');
-    nameEl.className = 'cp-set-name';
-    nameEl.textContent = s.list_name;
-
+    nameEl.className = 'cp-set-name'; nameEl.textContent = s.list_name;
     var countEl = document.createElement('div');
-    countEl.className = 'cp-set-count';
-    countEl.textContent = s.count;
-
-    var delBtn = document.createElement('button');
-    delBtn.className = 'cp-set-delete-btn';
-    delBtn.textContent = '\u00d7';
-    delBtn.title = 'Excluir conjunto';
-    delBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      confirmDeleteSet(s.list_name);
-    });
-
-    item.appendChild(nameEl);
-    item.appendChild(countEl);
-    item.appendChild(delBtn);
-    container.appendChild(item);
-
-    item.addEventListener('click', function() {
-      selectSet(s.list_name);
-    });
+    countEl.className = 'cp-set-count'; countEl.textContent = s._ephemeral ? '0' : s.count;
+    item.appendChild(nameEl); item.appendChild(countEl); container.appendChild(item);
+    item.addEventListener('click', function() { selectSet(s.list_name); });
   });
 }
 
-function updateSetSuggestions() {
-  var dl = document.getElementById('set-suggestions');
-  dl.innerHTML = '';
-  sets.forEach(function(s) {
-    var opt = document.createElement('option');
-    opt.value = s.list_name;
-    dl.appendChild(opt);
-  });
+function startNewSetFlow() {
+  if (sets.some(function(s) { return s._inputRow; })) return;
+  sets = [{ _inputRow: true }].concat(sets.filter(function(s) { return !s._inputRow; }));
+  renderSets();
 }
 
 async function selectSet(name) {
-  activeSet = name;
-  renderSets();
-
-  document.getElementById('q-set-name').value = name;
+  activeSet = name; renderSets();
   document.getElementById('question-list-wrap').hidden = false;
   document.getElementById('question-list-title').textContent = name;
+  document.getElementById('rename-row').style.display = 'none';
+  document.getElementById('rename-error').textContent = '';
   document.getElementById('question-list').innerHTML = '<div class="cp-empty"><p>Carregando...</p></div>';
-
   try {
     var data = await callWorker({ action: 'get_questions', list_name: name });
     questions = data.questions || [];
-  } catch (err) {
-    questions = [];
-  }
+  } catch (err) { questions = []; }
   renderQuestions();
 }
 
 function renderQuestions() {
   var list = document.getElementById('question-list');
   list.innerHTML = '';
-
   if (questions.length === 0) {
-    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">❓</div><p>Nenhuma questão neste conjunto.</p></div>';
+    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">❓</div><p>Nenhuma questão neste conjunto. Clique em + Nova questão para adicionar.</p></div>';
     return;
   }
-
   questions.forEach(function(q) {
     var card = document.createElement('div');
     card.className = 'cp-question-card';
-
     var qText = document.createElement('div');
-    qText.className = 'cp-question-text';
-    qText.textContent = q.question;
+    qText.className = 'cp-question-text'; qText.textContent = q.question;
     card.appendChild(qText);
-
     var opts = document.createElement('div');
     opts.className = 'cp-question-options';
     var qOpts = typeof q.options === 'string' ? JSON.parse(q.options || '[]') : (q.options || []);
@@ -860,42 +897,77 @@ function renderQuestions() {
       opts.appendChild(opt);
     });
     card.appendChild(opts);
-
     var footer = document.createElement('div');
     footer.className = 'cp-question-footer';
     var typeBadge = document.createElement('span');
     typeBadge.className = 'cp-question-set-tag';
     typeBadge.style.cssText = 'margin-right:auto;background:rgba(20,184,166,.1);color:var(--primary)';
     typeBadge.textContent = q.type || 'mc';
-    var tag = document.createElement('span');
-    tag.className = 'cp-question-set-tag';
-    tag.textContent = q.list_name;
     var editBtn = document.createElement('button');
     editBtn.className = 'cp-btn-ghost';
     editBtn.style.cssText = 'font-size:0.75rem;padding:0.3rem 0.7rem';
     editBtn.textContent = 'Editar';
-    editBtn.addEventListener('click', function() {
-      startEdit(q);
-    });
+    editBtn.addEventListener('click', function(e) { e.stopPropagation(); openModal(q); });
     var delBtn = document.createElement('button');
     delBtn.className = 'cp-btn-danger';
     delBtn.style.cssText = 'font-size:0.75rem;padding:0.3rem 0.7rem';
     delBtn.textContent = 'Excluir';
-    delBtn.addEventListener('click', function() {
-      deleteQuestion(q.question);
-    });
-    footer.appendChild(typeBadge);
-    footer.appendChild(tag);
-    footer.appendChild(editBtn);
-    footer.appendChild(delBtn);
-    card.appendChild(footer);
-
-    list.appendChild(card);
+    delBtn.addEventListener('click', function() { deleteQuestion(q.question); });
+    footer.appendChild(typeBadge); footer.appendChild(editBtn); footer.appendChild(delBtn);
+    card.appendChild(footer); list.appendChild(card);
   });
 }
 
 // ---------------------------------------------------------------------------
-// Question type selector (bank)
+// Modal (13C)
+// ---------------------------------------------------------------------------
+
+function openModal(qToEdit) {
+  editingQuestion = qToEdit ? qToEdit.question : null;
+  clearQuestionForm();
+  if (qToEdit) {
+    document.getElementById('q-modal-title').textContent = 'Editar questão · ' + activeSet;
+    document.getElementById('q-save-btn').textContent = 'Atualizar questão';
+    var bankType = qToEdit.type || 'mc';
+    document.getElementById('q-type-bank').value = bankType;
+    applyBankTypeUI(bankType);
+    document.getElementById('q-text').value = qToEdit.question || '';
+    var prefillOpts = typeof qToEdit.options === 'string' ? JSON.parse(qToEdit.options || '[]') : (qToEdit.options || []);
+    ['a','b','c','d'].forEach(function(l, i) { document.getElementById('q-opt-' + l).value = prefillOpts[i] || ''; });
+    if (bankType === 'mc' && qToEdit.correct_answer !== null && qToEdit.correct_answer !== undefined) {
+      var idx = parseInt(qToEdit.correct_answer);
+      var radio = document.querySelector('input[name="correct"][value="' + ['a','b','c','d'][idx] + '"]');
+      if (radio) { radio.checked = true; updateCorrectHighlight(); }
+    }
+  } else {
+    document.getElementById('q-modal-title').textContent = 'Nova questão · ' + activeSet;
+    document.getElementById('q-save-btn').textContent = 'Salvar';
+  }
+  document.getElementById('q-error').textContent = '';
+  document.getElementById('q-msg').textContent = '';
+  document.getElementById('q-modal').style.display = 'flex';
+  document.getElementById('q-text').focus();
+}
+
+function closeModal() {
+  document.getElementById('q-modal').style.display = 'none';
+  editingQuestion = null;
+}
+
+document.getElementById('q-modal-close').addEventListener('click', closeModal);
+document.getElementById('q-modal-cancel').addEventListener('click', closeModal);
+document.getElementById('q-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('q-modal').style.display === 'flex') closeModal();
+});
+document.getElementById('new-question-btn').addEventListener('click', function() {
+  if (!activeSet) return; openModal(null);
+});
+
+// ---------------------------------------------------------------------------
+// Question type selector
 // ---------------------------------------------------------------------------
 
 function applyBankTypeUI(bankType) {
@@ -924,24 +996,17 @@ document.getElementById('q-type-bank').addEventListener('change', function() {
   applyBankTypeUI(this.value);
 });
 
-// Save question
+// Save handler
 document.getElementById('q-save-btn').addEventListener('click', async function() {
-  var setName  = document.getElementById('q-set-name').value.trim();
   var text     = document.getElementById('q-text').value.trim();
   var bankType = document.getElementById('q-type-bank').value;
   var err      = document.getElementById('q-error');
   var msg      = document.getElementById('q-msg');
-
-  err.textContent = '';
-  msg.textContent = '';
-
-  if (!setName) { err.textContent = 'Informe o nome do conjunto.'; return; }
-  if (!text)    { err.textContent = 'A pergunta não pode estar vazia.'; return; }
-
+  err.textContent = ''; msg.textContent = '';
+  if (!text) { err.textContent = 'A pergunta não pode estar vazia.'; return; }
   var bankOpts, bankCorrect;
   if (bankType === 'tf') {
-    bankOpts = ['Verdadeiro', 'Falso'];
-    bankCorrect = null;
+    bankOpts = ['Verdadeiro', 'Falso']; bankCorrect = null;
   } else if (bankType === 'mc' || bankType === 'poll') {
     bankOpts = ['a','b','c','d'].map(function(l) { return document.getElementById('q-opt-' + l).value.trim(); }).filter(Boolean);
     if (bankOpts.length < 2) { err.textContent = 'Informe pelo menos 2 opções.'; return; }
@@ -949,60 +1014,31 @@ document.getElementById('q-save-btn').addEventListener('click', async function()
       var correct = document.querySelector('input[name="correct"]:checked');
       if (!correct) { err.textContent = 'Selecione a opção correta.'; return; }
       bankCorrect = String(['a','b','c','d'].indexOf(correct.value));
-    } else {
-      bankCorrect = null;
-    }
-  } else {
-    bankOpts = [];
-    bankCorrect = null;
-  }
-
+    } else { bankCorrect = null; }
+  } else { bankOpts = []; bankCorrect = null; }
   var btn = this;
   var isEditing = !!editingQuestion;
-  btn.disabled = true;
-  btn.textContent = 'Salvando...';
-
+  btn.disabled = true; btn.textContent = 'Salvando...';
   try {
     if (isEditing) {
-      await callWorker({
-        action: 'update_question',
-        auth_token: AUTH_TOKEN,
-        list_name: setName,
-        original_question: editingQuestion,
-        question: text,
-        type: bankType,
-        options: JSON.stringify(bankOpts),
-        correct_answer: bankCorrect
-      });
-      msg.textContent = 'Questão atualizada!';
-      editingQuestion = null;
-      document.getElementById('q-cancel-edit-wrap').style.display = 'none';
+      await callWorker({ action: 'update_question', auth_token: AUTH_TOKEN,
+        list_name: activeSet, original_question: editingQuestion,
+        question: text, type: bankType, options: JSON.stringify(bankOpts), correct_answer: bankCorrect });
     } else {
-      await callWorker({
-        action: 'add_question',
-        auth_token: AUTH_TOKEN,
-        list_name: setName,
-        question: text,
-        type: bankType,
-        options: JSON.stringify(bankOpts),
-        correct_answer: bankCorrect
-      });
-      msg.textContent = 'Questão salva!';
+      await callWorker({ action: 'add_question', auth_token: AUTH_TOKEN,
+        list_name: activeSet, question: text, type: bankType,
+        options: JSON.stringify(bankOpts), correct_answer: bankCorrect });
     }
-    clearQuestionForm();
+    sets = sets.map(function(s) { if (s.list_name === activeSet) { delete s._ephemeral; } return s; });
+    closeModal();
+    showToast(isEditing ? 'Questão atualizada!' : 'Questão salva!');
     await loadSets();
-    if (activeSet === setName) {
-      await selectSet(setName);
-    } else {
-      activeSet = setName;
-      await selectSet(setName);
-    }
-    setTimeout(function() { msg.textContent = ''; }, 3000);
+    await selectSet(activeSet);
   } catch (e) {
-    showToastError(e.message);
+    err.textContent = e.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = editingQuestion ? 'Atualizar questão' : 'Salvar';
+    btn.textContent = isEditing ? 'Atualizar questão' : 'Salvar';
   }
 });
 
@@ -1015,7 +1051,6 @@ function clearQuestionForm() {
   updateCorrectHighlight();
 }
 
-// Highlight correct option row
 function updateCorrectHighlight() {
   ['a','b','c','d'].forEach(function(l) {
     var row = document.getElementById('opt-row-' + l);
@@ -1028,20 +1063,15 @@ document.querySelectorAll('input[name="correct"]').forEach(function(r) {
   r.addEventListener('change', updateCorrectHighlight);
 });
 
-// Delete one question
 async function deleteQuestion(questionText) {
   if (!activeSet) return;
   if (!confirm('Excluir esta questão?')) return;
   try {
     await callWorker({ action: 'delete_question', auth_token: AUTH_TOKEN, list_name: activeSet, question: questionText });
-    await selectSet(activeSet);
-    await loadSets();
-  } catch (e) {
-    showToastError(e.message);
-  }
+    await selectSet(activeSet); await loadSets();
+  } catch (e) { showToastError(e.message); }
 }
 
-// Delete entire set
 document.getElementById('delete-set-btn').addEventListener('click', function() {
   if (activeSet) confirmDeleteSet(activeSet);
 });
@@ -1053,46 +1083,61 @@ async function confirmDeleteSet(name) {
     activeSet = null;
     document.getElementById('question-list-wrap').hidden = true;
     await loadSets();
-  } catch (e) {
-    showToastError(e.message);
-  }
+  } catch (e) { showToastError(e.message); }
 }
 
-
 // ---------------------------------------------------------------------------
-// Edit mode for bank questions
+// 13D -- Inline rename
 // ---------------------------------------------------------------------------
 
-function startEdit(q) {
-  editingQuestion = q.question;
-  document.getElementById('q-text').value = q.question || '';
-  var bankType = q.type || 'mc';
-  document.getElementById('q-type-bank').value = bankType;
-  applyBankTypeUI(bankType);
-  document.querySelectorAll('input[name="correct"]').forEach(function(r) { r.checked = false; });
-  var prefillOpts = typeof q.options === 'string' ? JSON.parse(q.options || '[]') : (q.options || []);
-  ['a','b','c','d'].forEach(function(l, i) { document.getElementById('q-opt-' + l).value = prefillOpts[i] || ''; });
-  if (bankType === 'mc' && q.correct_answer !== null && q.correct_answer !== undefined) {
-    var idx = parseInt(q.correct_answer);
-    var radio = document.querySelector('input[name="correct"][value="' + ['a','b','c','d'][idx] + '"]');
-    if (radio) { radio.checked = true; updateCorrectHighlight(); }
-  }
-  document.getElementById('q-save-btn').textContent = 'Atualizar questão';
-  document.getElementById('q-cancel-edit-wrap').style.display = '';
-  document.querySelector('.cp-question-form').scrollIntoView({ behavior: 'smooth' });
-  document.getElementById('q-text').focus();
-}
+document.getElementById('rename-set-btn').addEventListener('click', function() {
+  var row = document.getElementById('rename-row');
+  row.style.display = 'flex';
+  var inp = document.getElementById('rename-input');
+  inp.value = activeSet;
+  document.getElementById('rename-error').textContent = '';
+  inp.focus(); inp.select();
+});
 
-document.getElementById('q-cancel-edit-btn').addEventListener('click', function(e) {
-  e.preventDefault();
-  editingQuestion = null;
-  clearQuestionForm();
-  document.getElementById('q-save-btn').textContent = 'Salvar';
-  document.getElementById('q-cancel-edit-wrap').style.display = 'none';
+document.getElementById('rename-cancel-btn').addEventListener('click', function() {
+  document.getElementById('rename-row').style.display = 'none';
+  document.getElementById('rename-error').textContent = '';
+});
+
+document.getElementById('rename-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('rename-save-btn').click();
+  if (e.key === 'Escape') document.getElementById('rename-cancel-btn').click();
+});
+
+document.getElementById('rename-save-btn').addEventListener('click', async function() {
+  var newName = document.getElementById('rename-input').value.trim();
+  var errEl = document.getElementById('rename-error');
+  errEl.textContent = '';
+  if (!newName) { errEl.textContent = 'O nome não pode estar vazio.'; return; }
+  if (newName === activeSet) { document.getElementById('rename-cancel-btn').click(); return; }
+  var btn = this; btn.disabled = true;
+  try {
+    var res = await callWorker({ action: 'update_question_set', auth_token: AUTH_TOKEN, original_name: activeSet, new_name: newName });
+    if (res.error) { errEl.textContent = res.error; return; }
+    var oldName = activeSet;
+    activeSet = newName;
+    sets = sets.map(function(s) { return s.list_name === oldName ? Object.assign({}, s, { list_name: newName }) : s; });
+    document.getElementById('question-list-title').textContent = newName;
+    document.getElementById('rename-row').style.display = 'none';
+    renderSets(); showToast('Conjunto renomeado.');
+  } catch (e) { errEl.textContent = e.message; }
+  finally { btn.disabled = false; }
 });
 
 // ---------------------------------------------------------------------------
-// AI generate / improve (question-bank.js wires these buttons)
+// 13E -- Inline creation
+// ---------------------------------------------------------------------------
+
+document.getElementById('new-set-btn').addEventListener('click', startNewSetFlow);
+document.getElementById('create-first-set-btn').addEventListener('click', startNewSetFlow);
+
+// ---------------------------------------------------------------------------
+// AI generate / improve
 // ---------------------------------------------------------------------------
 
 QuestionBank.init({
@@ -1126,6 +1171,8 @@ QuestionBank.init({
     };
   }
 });
+
+
 
 // ---------------------------------------------------------------------------
 // GLOBAL STATS

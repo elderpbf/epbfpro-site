@@ -230,10 +230,6 @@
     const panelTitle = (meta && (meta.title || meta.id)) || ('Painel ' + (index + 1));
     notesPanelTitle.textContent = panelTitle;
 
-    // If a focused element lives inside notesBody (e.g. the 10C notes textarea),
-    // clearing innerHTML would destroy it and steal focus. Skip the rebuild.
-    if (notesBody.contains(document.activeElement)) return;
-
     notesBody.innerHTML = '';
     const notes = meta && meta.notes;
     if (notes && notes.trim()) {
@@ -302,8 +298,13 @@
         applyAspect();
       }
 
-      updateNotes(meta, idx);
-      updateCounter(idx, totalPanels);
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        setTimeout(() => { updateNotes(meta, idx); updateCounter(idx, totalPanels); }, 0);
+      } else {
+        updateNotes(meta, idx);
+        updateCounter(idx, totalPanels);
+      }
     }
   });
 

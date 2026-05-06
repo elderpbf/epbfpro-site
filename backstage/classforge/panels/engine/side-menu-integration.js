@@ -42,8 +42,6 @@
 
 import { registry } from './registry.js';
 import { subscribeHostedSession } from './classpulse-discovery.js';
-import { isOn as isAuthorModeOn, setOn as setAuthorModeOn, subscribe as subscribeAuthorMode } from './author-mode.js';
-import { subscribeSaveStatus, saveManifest } from './author-save.js';
 
 // Inline single-color SVG glyphs that follow currentColor for theme switching.
 // Inlined (not fetched) so the side menu stays self-contained and theme changes
@@ -188,14 +186,6 @@ async function openPresenterView(slug, panelIndex) {
 }
 
 
-// Replace the panel-meta JSON block in panel HTML (preserves doctype + all other markup).
-function _replacePanelMeta(html, newMeta) {
-  return html.replace(
-    /(<script[^>]+id="panel-meta"[^>]*>)([\s\S]*?)(<\/script>)/,
-    (_, open, _old, close) => open + '\n' + JSON.stringify(newMeta, null, 2) + '\n' + close
-  );
-}
-
 export function attachSideMenu(runtime, options = {}) {
   const manifestTools = runtime?.manifest?.sidebar?.tools;
   const rawTools = Array.isArray(options.tools) && options.tools.length > 0
@@ -260,40 +250,6 @@ export function attachSideMenu(runtime, options = {}) {
   bottomBar.appendChild(counter);
 
   sidebar.appendChild(bottomBar);
-
-  // ----- author bar (toggle + save status; non-presenter only) -----
-  let authorBar = null;
-  let authorStatusEl = null;
-
-  if (!options.presenterMode) {
-    authorBar = document.createElement('div');
-    authorBar.className = 'pn-author-bar';
-
-    const toggleLabel = document.createElement('label');
-    toggleLabel.className = 'pn-author-bar__toggle-label';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    toggleInput.className = 'pn-author-bar__toggle-input';
-    toggleInput.checked = isAuthorModeOn();
-    toggleInput.setAttribute('aria-label', 'Modo Autor');
-    const toggleTrack = document.createElement('span');
-    toggleTrack.className = 'pn-author-bar__toggle-track';
-    const toggleText = document.createElement('span');
-    toggleText.className = 'pn-author-bar__toggle-text';
-    toggleText.textContent = 'Modo Autor';
-    toggleInput.addEventListener('change', () => setAuthorModeOn(toggleInput.checked));
-    toggleLabel.appendChild(toggleInput);
-    toggleLabel.appendChild(toggleTrack);
-    toggleLabel.appendChild(toggleText);
-
-    authorStatusEl = document.createElement('div');
-    authorStatusEl.className = 'pn-author-status';
-    authorStatusEl.hidden = true;
-
-    authorBar.appendChild(toggleLabel);
-    authorBar.appendChild(authorStatusEl);
-    sidebar.appendChild(authorBar);
-  }
 
   document.body.appendChild(zone);
   document.body.appendChild(sidebar);
@@ -496,15 +452,6 @@ export function attachSideMenu(runtime, options = {}) {
       btn.appendChild(lab);
       btn.addEventListener('click', () => jumpToPanel(panel.index));
       li.appendChild(btn);
-      if (!options.presenterMode && isAuthorModeOn()) {
-        const plusBtn = document.createElement('button');
-        plusBtn.type = 'button';
-        plusBtn.className = 'pn-author-plus';
-        plusBtn.setAttribute('aria-label', 'Duplicar painel ' + (panel.index + 1));
-        plusBtn.textContent = '+';
-        plusBtn.addEventListener('click', (e) => { e.stopPropagation(); duplicatePanelAction(panel.index); });
-        li.appendChild(plusBtn);
-      }
       panelsList.appendChild(li);
     }
     const panelsGroup = makeGroup({ title: 'Painéis', openKey: PANELS_OPEN_KEY, defaultOpen: false, children: panelsList });
@@ -827,102 +774,6 @@ export function attachSideMenu(runtime, options = {}) {
       liveStates[key] = session;
       applyTileState();
     }));
-  }
-
-  // Author mode toggle sync + save status (non-presenter only)
-  if (!options.presenterMode) {
-    _unsubscribers.push(subscribeAuthorMode(on => {
-      if (authorBar) {
-        const inp = authorBar.querySelector('.pn-author-bar__toggle-input');
-        if (inp) inp.checked = on;
-      }
-      if (!menuOpen) { renderCollapsed(); applyTileState(); }
-    }));
-
-    _unsubscribers.push(subscribeSaveStatus(({ status, sha, error }) => {
-      if (!authorStatusEl) return;
-      if (status === 'idle') { authorStatusEl.hidden = true; return; }
-      authorStatusEl.hidden = false;
-      authorStatusEl.innerHTML = '';
-      if (status === 'saving') {
-        const s = document.createElement('span');
-        s.className = 'pn-author-status__msg';
-        s.textContent = 'Salvando...';
-        authorStatusEl.appendChild(s);
-      } else if (status === 'saved') {
-        const s = document.createElement('span');
-        s.className = 'pn-author-status__msg pn-author-status--ok';
-        s.textContent = 'Salvo' + (sha ? ' (' + sha.slice(0, 7) + ')' : '');
-        authorStatusEl.appendChild(s);
-      } else if (status === 'error') {
-        const s = document.createElement('span');
-        s.className = 'pn-author-status__msg pn-author-status--err';
-        s.textContent = 'Erro ao salvar';
-        authorStatusEl.appendChild(s);
-        // Retry is a no-op for now (10B MVP); payload lost after error. User must redo action.
-      }
-    }));
-  }
-
-  // Duplicate a panel: fetch HTML, apply onDuplicate hook, splice into manifest, async save.
-  async function duplicatePanelAction(panelIndex) {
-    const panels = runtime.manifest.panels;
-    if (!panels || panelIndex < 0 || panelIndex >= panels.length) return;
-    const sourceEntry = panels[panelIndex];
-    const src = (typeof sourceEntry === 'object' ? sourceEntry.src : sourceEntry) || '';
-    if (!src) return;
-
-    let html;
-    try {
-      const panelUrl = new URL(src, window.location.href).toString();
-      html = await fetch(panelUrl).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); });
-    } catch (err) {
-      console.error('[side-menu] duplicatePanelAction: fetch failed', err);
-      return;
-    }
-
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const metaScript = doc.getElementById('panel-meta');
-    if (!metaScript) return;
-    let meta;
-    try { meta = JSON.parse(metaScript.textContent); } catch (_) { return; }
-
-    // Apply tool-level onDuplicate hook if present.
-    const toolId = meta.tools && meta.tools[0] && meta.tools[0].id;
-    const toolReg = toolId ? registry.getTool(toolId) : null;
-    let newMeta;
-    if (toolReg && typeof toolReg.onDuplicate === 'function') {
-      const result = toolReg.onDuplicate(meta);
-      if (result === null) return; // user cancelled
-      newMeta = result;
-    } else {
-      newMeta = JSON.parse(JSON.stringify(meta));
-    }
-
-    // Assign new ID and filename.
-    const nums = panels.map(p => {
-      const s = typeof p === 'object' ? p.src : p;
-      const m = s && s.match(/panel-(\d+)\.html/);
-      return m ? parseInt(m[1], 10) : 0;
-    }).filter(Boolean);
-    const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : panels.length + 1;
-    const newSrc = 'panel-' + String(nextNum).padStart(2, '0') + '.html';
-    const newId = 'panel-' + String(nextNum).padStart(2, '0');
-    newMeta.id = newId;
-
-    const newHtml = _replacePanelMeta(html, newMeta);
-
-    // Optimistic insert after the source panel.
-    const newEntry = { src: newSrc, title: newMeta.title || newId };
-    runtime.manifest.panels.splice(panelIndex + 1, 0, newEntry);
-
-    if (!menuOpen) { renderCollapsed(); refreshCounter(); applyTileState(); }
-    else { renderMenu(); applyTileState(); }
-
-    // Async commit.
-    const deckSlug = (runtime.manifest && runtime.manifest.id) || 'default';
-    const manifestJson = JSON.stringify(runtime.manifest, null, 2);
-    saveManifest(deckSlug, manifestJson, [{ src: newSrc, html: newHtml }]).catch(() => {});
   }
 
   renderCollapsed();
