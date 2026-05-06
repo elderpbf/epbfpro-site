@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../css/theme.css?v=1.1">
 <link rel="stylesheet" href="../css/backstage.css?v=1.4">
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
-<link rel="stylesheet" href="../css/classpulse.css?v=1.9">
-<link rel="stylesheet" href="../css/shared-components.css?v=1.4">
+<link rel="stylesheet" href="../css/classpulse.css?v=1.10">
+<link rel="stylesheet" href="../css/shared-components.css?v=1.5">
 <link rel="stylesheet" href="../css/question-types.css?v=1.6">
 <script src="../js/debug.js?v=2.5"></script>
 <style>
@@ -1008,6 +1008,7 @@ async function launchFromBank(q, btn) {
     clearAlert();
   } catch (e) {
     showAlert('error', 'Erro ao lançar: ' + e.message);
+  } finally {
     btn.disabled = false;
     btn.textContent = 'Lançar';
   }
