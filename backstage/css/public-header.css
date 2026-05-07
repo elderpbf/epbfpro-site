@@ -43,7 +43,7 @@ pensoia-header .ph-right {
 }
 
 pensoia-header .ph-logo {
-  font-size: clamp(0.72rem, 1.1vw, 0.9rem);
+  font-size: clamp(0.88rem, 1.3vw, 1.1rem);
   font-weight: 700;
   letter-spacing: 0.14em;
   color: var(--primary);
