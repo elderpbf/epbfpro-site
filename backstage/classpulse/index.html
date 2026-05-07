@@ -144,7 +144,7 @@
 
           <!-- Search bar -->
           <div class="cp-search-bar" id="bank-search-bar">
-            <input type="text" id="bank-search-input" class="cp-inline-input" placeholder="Search questions across all sets..." autocomplete="off" style="flex:1">
+            <input type="text" id="bank-search-input" class="cp-inline-input" placeholder="Buscar questões em todos os conjuntos..." autocomplete="off" style="flex:1">
             <button class="cp-btn-ghost" id="bank-search-clear" style="display:none;font-size:0.85rem;padding:0.3rem 0.6rem">✕</button>
           </div>
 
@@ -1782,22 +1782,22 @@ async function doSearch(query) {
   var wrap = document.getElementById('search-results-wrap');
   wrap.hidden = false;
   var list = document.getElementById('search-results-list');
-  list.innerHTML = '<div class="cp-empty"><p>Searching...</p></div>';
+  list.innerHTML = '<div class="cp-empty"><p>Buscando...</p></div>';
   try {
     var data = await callWorker({ action: 'search_questions', auth_token: AUTH_TOKEN, q: query });
     renderSearchResults(data.questions || [], query);
   } catch (e) {
-    list.innerHTML = '<div class="cp-empty"><p>Error: ' + escHtml(e.message) + '</p></div>';
+    list.innerHTML = '<div class="cp-empty"><p>Erro: ' + escHtml(e.message) + '</p></div>';
   }
 }
 
 function renderSearchResults(results, query) {
   document.getElementById('search-results-count').textContent =
-    results.length + ' result' + (results.length === 1 ? '' : 's') + ' for “' + escHtml(query) + '”';
+    results.length + ' resultado' + (results.length === 1 ? '' : 's') + ' para “' + escHtml(query) + '”';
   var list = document.getElementById('search-results-list');
   list.innerHTML = '';
   if (results.length === 0) {
-    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">🔍</div><p>No questions found.</p></div>';
+    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">🔍</div><p>Nenhuma questão encontrada.</p></div>';
     return;
   }
   results.forEach(function(q) {
@@ -1822,7 +1822,7 @@ function renderSearchResults(results, query) {
     var gotoBtn = document.createElement('button');
     gotoBtn.className = 'cp-btn-ghost';
     gotoBtn.style.cssText = 'font-size:0.75rem;padding:0.3rem 0.7rem';
-    gotoBtn.textContent = 'Go to set';
+    gotoBtn.textContent = 'Ir ao conjunto';
     gotoBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       clearSearch();
