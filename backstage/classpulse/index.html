@@ -558,6 +558,8 @@
 <script src="../js/auth.js?v=1.1"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/backstage-topbar.js?v=1.2"></script>
+<script src="../js/classpulse-bank-edit.js?v=1.0"></script>
+<script src="../js/classpulse-bank-search.js?v=1.0"></script>
 <script>
 'use strict';
 
@@ -871,11 +873,6 @@ var sets = [];
 var activeSet = null;
 var questions = [];
 var editingQuestion = null;
-var editingBank = false;
-var selectedIds = new Set();
-var dragSrcId = null;
-var searchQuery = '';
-var searchDebounceTimer = null;
 
 async function loadSets() {
   try {
@@ -933,7 +930,7 @@ function renderSets() {
         }
         sets = sets.filter(function(x) { return !x._inputRow; });
         sets.unshift({ list_name: val, count: 0, _ephemeral: true });
-        exitEditMode();
+        BankEditMode.exitEditMode();
         activeSet = val; renderSets();
         document.getElementById('question-list-wrap').hidden = false;
         document.getElementById('question-list-title').textContent = val;
@@ -955,7 +952,7 @@ function renderSets() {
     var countEl = document.createElement('div');
     countEl.className = 'cp-set-count'; countEl.textContent = s._ephemeral ? '0' : s.count;
     item.appendChild(nameEl); item.appendChild(countEl); container.appendChild(item);
-    item.addEventListener('click', function() { exitEditMode(); selectSet(s.list_name); });
+    item.addEventListener('click', function() { BankEditMode.exitEditMode(); selectSet(s.list_name); });
   });
 }
 
@@ -982,9 +979,8 @@ async function selectSet(name) {
 function renderQuestions() {
   var list = document.getElementById('question-list');
   list.innerHTML = '';
-  if (editingBank) list.classList.add('is-editing');
-  else list.classList.remove('is-editing');
-  renderMoveBar();
+  BankEditMode.syncListClass(list);
+  BankEditMode.renderMoveBar();
   if (questions.length === 0) {
     list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">❓</div><p>Nenhuma questão neste conjunto. Clique em + Nova questão para adicionar.</p></div>';
     return;
@@ -994,21 +990,6 @@ function renderQuestions() {
     card.className = 'cp-question-card';
     card.draggable = true;
     card.dataset.id = q.id;
-
-    var handle = document.createElement('span');
-    handle.className = 'cp-drag-handle';
-    handle.title = 'Arrastar para reordenar';
-    handle.textContent = '⠇';
-
-    var cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.className = 'cp-select-cb';
-    cb.checked = selectedIds.has(q.id);
-    cb.addEventListener('change', function() {
-      if (cb.checked) selectedIds.add(q.id);
-      else selectedIds.delete(q.id);
-      renderMoveBar();
-    });
 
     var body = document.createElement('div');
     body.className = 'cp-q-body';
@@ -1048,46 +1029,8 @@ function renderQuestions() {
     footer.appendChild(typeBadge); footer.appendChild(editBtn); footer.appendChild(delBtn);
     body.appendChild(footer);
 
-    card.appendChild(handle);
-    card.appendChild(cb);
+    BankEditMode.decorateCard(card, q, list);
     card.appendChild(body);
-
-    card.addEventListener('dragstart', function(e) {
-      if (!editingBank) { e.preventDefault(); return; }
-      dragSrcId = q.id;
-      setTimeout(function() { card.classList.add('is-dragging'); }, 0);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    card.addEventListener('dragend', function() {
-      card.classList.remove('is-dragging');
-      list.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-    });
-    card.addEventListener('dragover', function(e) {
-      if (!editingBank || dragSrcId === q.id) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      list.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-      card.classList.add('drag-over');
-    });
-    card.addEventListener('dragleave', function(e) {
-      if (!card.contains(e.relatedTarget)) card.classList.remove('drag-over');
-    });
-    card.addEventListener('drop', function(e) {
-      if (!editingBank || dragSrcId === q.id) return;
-      e.preventDefault();
-      card.classList.remove('drag-over');
-      var srcIdx = questions.findIndex(function(x) { return x.id === dragSrcId; });
-      var tgtIdx = questions.findIndex(function(x) { return x.id === q.id; });
-      if (srcIdx === -1 || tgtIdx === -1) return;
-      var moved = questions.splice(srcIdx, 1)[0];
-      questions.splice(tgtIdx, 0, moved);
-      dragSrcId = null;
-      renderQuestions();
-      var orderedIds = questions.map(function(x) { return x.id; });
-      callWorker({ action: 'reorder_questions', auth_token: AUTH_TOKEN, list_name: activeSet, ordered_ids: orderedIds })
-        .catch(function(err) { showToastError('Erro ao salvar ordem: ' + err.message); selectSet(activeSet); });
-    });
-
     list.appendChild(card);
   });
 }
@@ -1396,94 +1339,6 @@ async function deleteQuestion(questionText) {
   } catch (e) { showToastError(e.message); }
 }
 
-// ---------------------------------------------------------------------------
-// 15 -- Edit-bank mode (drag-reorder + multi-select move)
-// ---------------------------------------------------------------------------
-
-function exitEditMode() {
-  editingBank = false;
-  selectedIds.clear();
-  dragSrcId = null;
-  var list = document.getElementById('question-list');
-  if (list) list.classList.remove('is-editing');
-  var btn = document.getElementById('edit-bank-btn');
-  if (btn) btn.textContent = 'Editar banco';
-  var bar = document.getElementById('cp-move-bar');
-  if (bar) bar.style.display = 'none';
-}
-
-function renderMoveBar() {
-  var bar = document.getElementById('cp-move-bar');
-  if (!bar) return;
-  var count = selectedIds.size;
-  if (count === 0 || !editingBank) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  document.getElementById('cp-move-count').textContent = 'Mover ' + count + ' selecionada' + (count === 1 ? '' : 's') + ':';
-  var dest = document.getElementById('cp-move-dest');
-  dest.innerHTML = '';
-  sets.filter(function(s) { return !s._inputRow && !s._ephemeral && s.list_name !== activeSet; }).forEach(function(s) {
-    var opt = document.createElement('option');
-    opt.value = s.list_name; opt.textContent = s.list_name;
-    dest.appendChild(opt);
-  });
-}
-
-document.getElementById('edit-bank-btn').addEventListener('click', function() {
-  if (!activeSet) return;
-  if (editingBank) {
-    exitEditMode();
-    renderQuestions();
-  } else {
-    editingBank = true;
-    document.getElementById('question-list').classList.add('is-editing');
-    this.textContent = 'Concluir';
-    renderMoveBar();
-  }
-});
-
-document.getElementById('cp-move-btn').addEventListener('click', async function() {
-  var destName = document.getElementById('cp-move-dest').value;
-  if (!destName || selectedIds.size === 0) return;
-  var btn = this;
-  btn.disabled = true; btn.textContent = 'Movendo...';
-  var ids = Array.from(selectedIds);
-  var toMove = questions.filter(function(q) { return ids.indexOf(q.id) !== -1; });
-  try {
-    for (var i = 0; i < toMove.length; i++) {
-      var q = toMove[i];
-      await callWorker({
-        action: 'update_question', auth_token: AUTH_TOKEN,
-        list_name: activeSet, original_question: q.question,
-        question: q.question, type: q.type,
-        options: typeof q.options === 'string' ? q.options : JSON.stringify(q.options || []),
-        correct_answer: q.correct_answer != null ? q.correct_answer : '',
-        new_list_name: destName
-      });
-    }
-    selectedIds.clear();
-    showToast(toMove.length + ' questão(ões) movida(s) para "' + escHtml(destName) + '".');
-    await loadSets();
-    await selectSet(activeSet);
-  } catch (e) {
-    showToastError(e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Mover';
-  }
-});
-
-document.getElementById('cp-move-cancel-btn').addEventListener('click', function() {
-  selectedIds.clear();
-  renderMoveBar();
-  renderQuestions();
-});
-
-document.addEventListener('keydown', function(e) {
-  if (e.key !== 'Escape') return;
-  if (document.getElementById('q-modal').style.display === 'flex') return;
-  if (document.getElementById('bulk-modal').style.display === 'flex') return;
-  if (editingBank) { exitEditMode(); renderQuestions(); }
-});
-
 document.getElementById('delete-set-btn').addEventListener('click', function() {
   if (activeSet) confirmDeleteSet(activeSet);
 });
@@ -1758,93 +1613,35 @@ document.querySelectorAll('.cp-settings-title').forEach(function(title) {
 document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
 
 // ---------------------------------------------------------------------------
-// Question Bank Search
+// Module init
 // ---------------------------------------------------------------------------
 
-function clearSearch() {
-  searchQuery = '';
-  clearTimeout(searchDebounceTimer);
-  document.getElementById('bank-search-input').value = '';
-  document.getElementById('bank-search-clear').style.display = 'none';
-  document.getElementById('search-results-wrap').hidden = true;
-  var realSets = sets.filter(function(s) { return !s._inputRow; });
-  if (activeSet) {
-    document.getElementById('question-list-wrap').hidden = false;
-  } else if (realSets.length === 0) {
-    document.getElementById('bank-empty-state').hidden = false;
-  }
-}
-
-async function doSearch(query) {
-  searchQuery = query;
-  document.getElementById('bank-empty-state').hidden = true;
-  document.getElementById('question-list-wrap').hidden = true;
-  var wrap = document.getElementById('search-results-wrap');
-  wrap.hidden = false;
-  var list = document.getElementById('search-results-list');
-  list.innerHTML = '<div class="cp-empty"><p>Buscando...</p></div>';
-  try {
-    var data = await callWorker({ action: 'search_questions', auth_token: AUTH_TOKEN, q: query });
-    renderSearchResults(data.questions || [], query);
-  } catch (e) {
-    list.innerHTML = '<div class="cp-empty"><p>Erro: ' + escHtml(e.message) + '</p></div>';
-  }
-}
-
-function renderSearchResults(results, query) {
-  document.getElementById('search-results-count').textContent =
-    results.length + ' resultado' + (results.length === 1 ? '' : 's') + ' para “' + escHtml(query) + '”';
-  var list = document.getElementById('search-results-list');
-  list.innerHTML = '';
-  if (results.length === 0) {
-    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">🔍</div><p>Nenhuma questão encontrada.</p></div>';
-    return;
-  }
-  results.forEach(function(q) {
-    var card = document.createElement('div');
-    card.className = 'cp-question-card cp-search-result';
-
-    var setBadge = document.createElement('div');
-    setBadge.className = 'cp-search-result-set';
-    setBadge.textContent = q.list_name;
-    card.appendChild(setBadge);
-
-    var qText = document.createElement('div');
-    qText.className = 'cp-question-text'; qText.textContent = q.question;
-    card.appendChild(qText);
-
-    var footer = document.createElement('div');
-    footer.className = 'cp-question-footer';
-    var typeBadge = document.createElement('span');
-    typeBadge.className = 'cp-question-set-tag';
-    typeBadge.style.cssText = 'margin-right:auto;background:rgba(20,184,166,.1);color:var(--primary)';
-    typeBadge.textContent = q.type || 'mc';
-    var gotoBtn = document.createElement('button');
-    gotoBtn.className = 'cp-btn-ghost';
-    gotoBtn.style.cssText = 'font-size:0.75rem;padding:0.3rem 0.7rem';
-    gotoBtn.textContent = 'Ir ao conjunto';
-    gotoBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      clearSearch();
-      selectSet(q.list_name);
-    });
-    footer.appendChild(typeBadge); footer.appendChild(gotoBtn);
-    card.appendChild(footer);
-
-    card.addEventListener('click', function() { clearSearch(); selectSet(q.list_name); });
-    list.appendChild(card);
-  });
-}
-
-document.getElementById('bank-search-input').addEventListener('input', function() {
-  var val = this.value;
-  document.getElementById('bank-search-clear').style.display = val.length > 0 ? '' : 'none';
-  clearTimeout(searchDebounceTimer);
-  if (val.trim().length < 2) { if (searchQuery) clearSearch(); return; }
-  searchDebounceTimer = setTimeout(function() { doSearch(val.trim()); }, 300);
+BankEditMode.init({
+  getQuestions:       function() { return questions; },
+  getActiveSet:       function() { return activeSet; },
+  getSets:            function() { return sets; },
+  getAuthToken:       function() { return AUTH_TOKEN; },
+  callWorker:         callWorker,
+  showToast:          showToast,
+  showToastError:     showToastError,
+  escHtml:            escHtml,
+  onRenderQuestions:  function() { renderQuestions(); },
+  onRefresh:          async function() { await loadSets(); await selectSet(activeSet); }
 });
 
-document.getElementById('bank-search-clear').addEventListener('click', clearSearch);
+BankSearch.init({
+  getAuthToken:  function() { return AUTH_TOKEN; },
+  callWorker:    callWorker,
+  escHtml:       escHtml,
+  onNavigate:    function(listName) { selectSet(listName); },
+  onClearSearch: function() {
+    if (activeSet) {
+      document.getElementById('question-list-wrap').hidden = false;
+    } else if (sets.filter(function(s) { return !s._inputRow; }).length === 0) {
+      document.getElementById('bank-empty-state').hidden = false;
+    }
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Boot
