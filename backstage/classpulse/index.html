@@ -45,6 +45,11 @@
   .cp-q-body { flex:1; min-width:0; display:flex; flex-direction:column; }
   .cp-move-bar { display:none; align-items:center; gap:0.6rem; padding:0.55rem 0.75rem; background:rgba(20,184,166,.1); border:1px solid rgba(20,184,166,.3); border-radius:10px; margin-bottom:0.75rem; font-size:0.85rem; color:var(--text-primary); flex-wrap:wrap; }
   .cp-move-bar select { padding:0.3rem 0.5rem; border-radius:6px; border:1px solid rgba(20,184,166,.35); background:var(--surface); color:var(--text-primary); font-size:0.82rem; cursor:pointer; }
+  /* Search */
+  .cp-search-bar { display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; }
+  .cp-search-result-set { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--primary); margin-bottom:0.3rem; opacity:0.8; }
+  .cp-question-card.cp-search-result { cursor:pointer; }
+  .cp-question-card.cp-search-result:hover { border-color:rgba(20,184,166,.4); background:rgba(20,184,166,.03); }
 </style>
 </head>
 <body>
@@ -136,6 +141,20 @@
 
         <!-- Main panel -->
         <div class="cp-question-area">
+
+          <!-- Search bar -->
+          <div class="cp-search-bar" id="bank-search-bar">
+            <input type="text" id="bank-search-input" class="cp-inline-input" placeholder="Buscar questões em todos os conjuntos..." autocomplete="off" style="flex:1">
+            <button class="cp-btn-ghost" id="bank-search-clear" style="display:none;font-size:0.85rem;padding:0.3rem 0.6rem">✕</button>
+          </div>
+
+          <!-- Search results -->
+          <div id="search-results-wrap" hidden>
+            <div class="cp-questions-header">
+              <span class="cp-questions-label" id="search-results-count"></span>
+            </div>
+            <div class="cp-question-list" id="search-results-list"></div>
+          </div>
 
           <!-- Empty state: zero conjuntos -->
           <div id="bank-empty-state" hidden>
@@ -855,6 +874,8 @@ var editingQuestion = null;
 var editingBank = false;
 var selectedIds = new Set();
 var dragSrcId = null;
+var searchQuery = '';
+var searchDebounceTimer = null;
 
 async function loadSets() {
   try {
@@ -1735,6 +1756,95 @@ document.querySelectorAll('.cp-settings-title').forEach(function(title) {
 });
 
 document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+
+// ---------------------------------------------------------------------------
+// Question Bank Search
+// ---------------------------------------------------------------------------
+
+function clearSearch() {
+  searchQuery = '';
+  clearTimeout(searchDebounceTimer);
+  document.getElementById('bank-search-input').value = '';
+  document.getElementById('bank-search-clear').style.display = 'none';
+  document.getElementById('search-results-wrap').hidden = true;
+  var realSets = sets.filter(function(s) { return !s._inputRow; });
+  if (activeSet) {
+    document.getElementById('question-list-wrap').hidden = false;
+  } else if (realSets.length === 0) {
+    document.getElementById('bank-empty-state').hidden = false;
+  }
+}
+
+async function doSearch(query) {
+  searchQuery = query;
+  document.getElementById('bank-empty-state').hidden = true;
+  document.getElementById('question-list-wrap').hidden = true;
+  var wrap = document.getElementById('search-results-wrap');
+  wrap.hidden = false;
+  var list = document.getElementById('search-results-list');
+  list.innerHTML = '<div class="cp-empty"><p>Buscando...</p></div>';
+  try {
+    var data = await callWorker({ action: 'search_questions', auth_token: AUTH_TOKEN, q: query });
+    renderSearchResults(data.questions || [], query);
+  } catch (e) {
+    list.innerHTML = '<div class="cp-empty"><p>Erro: ' + escHtml(e.message) + '</p></div>';
+  }
+}
+
+function renderSearchResults(results, query) {
+  document.getElementById('search-results-count').textContent =
+    results.length + ' resultado' + (results.length === 1 ? '' : 's') + ' para “' + escHtml(query) + '”';
+  var list = document.getElementById('search-results-list');
+  list.innerHTML = '';
+  if (results.length === 0) {
+    list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">🔍</div><p>Nenhuma questão encontrada.</p></div>';
+    return;
+  }
+  results.forEach(function(q) {
+    var card = document.createElement('div');
+    card.className = 'cp-question-card cp-search-result';
+
+    var setBadge = document.createElement('div');
+    setBadge.className = 'cp-search-result-set';
+    setBadge.textContent = q.list_name;
+    card.appendChild(setBadge);
+
+    var qText = document.createElement('div');
+    qText.className = 'cp-question-text'; qText.textContent = q.question;
+    card.appendChild(qText);
+
+    var footer = document.createElement('div');
+    footer.className = 'cp-question-footer';
+    var typeBadge = document.createElement('span');
+    typeBadge.className = 'cp-question-set-tag';
+    typeBadge.style.cssText = 'margin-right:auto;background:rgba(20,184,166,.1);color:var(--primary)';
+    typeBadge.textContent = q.type || 'mc';
+    var gotoBtn = document.createElement('button');
+    gotoBtn.className = 'cp-btn-ghost';
+    gotoBtn.style.cssText = 'font-size:0.75rem;padding:0.3rem 0.7rem';
+    gotoBtn.textContent = 'Ir ao conjunto';
+    gotoBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      clearSearch();
+      selectSet(q.list_name);
+    });
+    footer.appendChild(typeBadge); footer.appendChild(gotoBtn);
+    card.appendChild(footer);
+
+    card.addEventListener('click', function() { clearSearch(); selectSet(q.list_name); });
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('bank-search-input').addEventListener('input', function() {
+  var val = this.value;
+  document.getElementById('bank-search-clear').style.display = val.length > 0 ? '' : 'none';
+  clearTimeout(searchDebounceTimer);
+  if (val.trim().length < 2) { if (searchQuery) clearSearch(); return; }
+  searchDebounceTimer = setTimeout(function() { doSearch(val.trim()); }, 300);
+});
+
+document.getElementById('bank-search-clear').addEventListener('click', clearSearch);
 
 // ---------------------------------------------------------------------------
 // Boot
