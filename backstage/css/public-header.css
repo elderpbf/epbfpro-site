@@ -47,7 +47,6 @@ pensoia-header .ph-logo {
   font-size: clamp(0.72rem, 1.1vw, 0.9rem);
   font-weight: 700;
   letter-spacing: 0.14em;
-  text-transform: uppercase;
   color: var(--primary);
   flex-shrink: 0;
 }
