@@ -26,7 +26,6 @@ pensoia-header .ph-bar {
   align-items: center;
   gap: clamp(8px, 1.6vw, 18px);
   padding: clamp(8px, 1.4vh, 14px) clamp(14px, 2.4vw, 28px);
-  border-bottom: 1px solid var(--border);
   background: var(--background);
 }
 
