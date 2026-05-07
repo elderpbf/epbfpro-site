@@ -68,7 +68,7 @@
 </head>
 <body>
 
-<pensoia-header mode="student" theme-storage-key="bs_theme_public" exitable></pensoia-header>
+<pensoia-header mode="student" theme-storage-key="bs_theme_public"></pensoia-header>
 
 <div class="container">
 
@@ -231,6 +231,7 @@
     document.getElementById('session-screen').style.display = 'block';
     headerEl.setAttribute('session-title', currentSession.title);
     headerEl.setAttribute('code', currentSession.code);
+    headerEl.setAttribute('exitable', '');
     showState('waiting');
     
     document.getElementById('cpq').setAttribute('session', currentSession.code);
@@ -249,6 +250,7 @@
     document.getElementById('join-error').textContent = '';
     headerEl.removeAttribute('code');
     headerEl.removeAttribute('session-title');
+    headerEl.removeAttribute('exitable');
   }
 
   // ── STATE MANAGEMENT ─────────────────────────────────────────────────────
