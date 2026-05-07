@@ -34,6 +34,17 @@
     0%, 100% { opacity: 1; transform: scale(1); }
     50%      { opacity: 0.4; transform: scale(0.75); }
   }
+  /* Edit-bank mode */
+  .cp-drag-handle { display:none; cursor:grab; color:var(--text-secondary); padding:0 0.4rem 0 0; font-size:1.1rem; align-items:center; user-select:none; flex-shrink:0; }
+  #question-list.is-editing .cp-drag-handle { display:flex; }
+  .cp-select-cb { display:none; margin-right:0.25rem; flex-shrink:0; cursor:pointer; width:16px; height:16px; accent-color:var(--primary); align-self:flex-start; margin-top:0.15rem; }
+  #question-list.is-editing .cp-select-cb { display:block; }
+  .cp-question-card.is-dragging { opacity:0.45; }
+  .cp-question-card.drag-over { outline:2px solid var(--primary); outline-offset:2px; }
+  #question-list.is-editing .cp-question-card { display:flex; flex-direction:row; align-items:flex-start; gap:0.35rem; cursor:default; }
+  .cp-q-body { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .cp-move-bar { display:none; align-items:center; gap:0.6rem; padding:0.55rem 0.75rem; background:rgba(20,184,166,.1); border:1px solid rgba(20,184,166,.3); border-radius:10px; margin-bottom:0.75rem; font-size:0.85rem; color:var(--text-primary); flex-wrap:wrap; }
+  .cp-move-bar select { padding:0.3rem 0.5rem; border-radius:6px; border:1px solid rgba(20,184,166,.35); background:var(--surface); color:var(--text-primary); font-size:0.82rem; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -140,6 +151,7 @@
             <div class="cp-conjunto-header">
               <h2 class="cp-conjunto-title" id="question-list-title"></h2>
               <div class="cp-conjunto-actions">
+                <button class="cp-btn-ghost" id="edit-bank-btn" style="font-size:0.8rem;padding:0.35rem 0.75rem">Editar banco</button>
                 <button class="cp-btn-ghost" id="rename-set-btn" style="font-size:0.8rem;padding:0.35rem 0.75rem">Editar nome</button>
                 <button class="cp-btn-danger" id="delete-set-btn" style="font-size:0.8rem;padding:0.35rem 0.75rem">Excluir conjunto</button>
               </div>
@@ -160,6 +172,13 @@
               </div>
             </div>
 
+            <div class="cp-move-bar" id="cp-move-bar">
+              <span id="cp-move-count"></span>
+              <span style="color:var(--text-secondary)">Mover para:</span>
+              <select id="cp-move-dest"></select>
+              <button class="cp-btn-primary" id="cp-move-btn" style="font-size:0.8rem;padding:0.3rem 0.7rem">Mover</button>
+              <button class="cp-btn-ghost" id="cp-move-cancel-btn" style="font-size:0.8rem;padding:0.3rem 0.7rem">Cancelar</button>
+            </div>
             <div class="cp-question-list" id="question-list"></div>
           </div>
 
@@ -833,6 +852,9 @@ var sets = [];
 var activeSet = null;
 var questions = [];
 var editingQuestion = null;
+var editingBank = false;
+var selectedIds = new Set();
+var dragSrcId = null;
 
 async function loadSets() {
   try {
@@ -890,6 +912,7 @@ function renderSets() {
         }
         sets = sets.filter(function(x) { return !x._inputRow; });
         sets.unshift({ list_name: val, count: 0, _ephemeral: true });
+        exitEditMode();
         activeSet = val; renderSets();
         document.getElementById('question-list-wrap').hidden = false;
         document.getElementById('question-list-title').textContent = val;
@@ -911,7 +934,7 @@ function renderSets() {
     var countEl = document.createElement('div');
     countEl.className = 'cp-set-count'; countEl.textContent = s._ephemeral ? '0' : s.count;
     item.appendChild(nameEl); item.appendChild(countEl); container.appendChild(item);
-    item.addEventListener('click', function() { selectSet(s.list_name); });
+    item.addEventListener('click', function() { exitEditMode(); selectSet(s.list_name); });
   });
 }
 
@@ -938,6 +961,9 @@ async function selectSet(name) {
 function renderQuestions() {
   var list = document.getElementById('question-list');
   list.innerHTML = '';
+  if (editingBank) list.classList.add('is-editing');
+  else list.classList.remove('is-editing');
+  renderMoveBar();
   if (questions.length === 0) {
     list.innerHTML = '<div class="cp-empty"><div class="cp-empty-icon">❓</div><p>Nenhuma questão neste conjunto. Clique em + Nova questão para adicionar.</p></div>';
     return;
@@ -945,9 +971,31 @@ function renderQuestions() {
   questions.forEach(function(q) {
     var card = document.createElement('div');
     card.className = 'cp-question-card';
+    card.draggable = true;
+    card.dataset.id = q.id;
+
+    var handle = document.createElement('span');
+    handle.className = 'cp-drag-handle';
+    handle.title = 'Arrastar para reordenar';
+    handle.textContent = '⠇';
+
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'cp-select-cb';
+    cb.checked = selectedIds.has(q.id);
+    cb.addEventListener('change', function() {
+      if (cb.checked) selectedIds.add(q.id);
+      else selectedIds.delete(q.id);
+      renderMoveBar();
+    });
+
+    var body = document.createElement('div');
+    body.className = 'cp-q-body';
+
     var qText = document.createElement('div');
     qText.className = 'cp-question-text'; qText.textContent = q.question;
-    card.appendChild(qText);
+    body.appendChild(qText);
+
     var opts = document.createElement('div');
     opts.className = 'cp-question-options';
     var qOpts = typeof q.options === 'string' ? JSON.parse(q.options || '[]') : (q.options || []);
@@ -958,7 +1006,8 @@ function renderQuestions() {
       opt.innerHTML = '<span class="opt-letter">' + LETTERS[i] + '</span> ' + escHtml(optText);
       opts.appendChild(opt);
     });
-    card.appendChild(opts);
+    body.appendChild(opts);
+
     var footer = document.createElement('div');
     footer.className = 'cp-question-footer';
     var typeBadge = document.createElement('span');
@@ -976,7 +1025,49 @@ function renderQuestions() {
     delBtn.textContent = 'Excluir';
     delBtn.addEventListener('click', function() { deleteQuestion(q.question); });
     footer.appendChild(typeBadge); footer.appendChild(editBtn); footer.appendChild(delBtn);
-    card.appendChild(footer); list.appendChild(card);
+    body.appendChild(footer);
+
+    card.appendChild(handle);
+    card.appendChild(cb);
+    card.appendChild(body);
+
+    card.addEventListener('dragstart', function(e) {
+      if (!editingBank) { e.preventDefault(); return; }
+      dragSrcId = q.id;
+      setTimeout(function() { card.classList.add('is-dragging'); }, 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', function() {
+      card.classList.remove('is-dragging');
+      list.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+    });
+    card.addEventListener('dragover', function(e) {
+      if (!editingBank || dragSrcId === q.id) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      list.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+      card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', function(e) {
+      if (!card.contains(e.relatedTarget)) card.classList.remove('drag-over');
+    });
+    card.addEventListener('drop', function(e) {
+      if (!editingBank || dragSrcId === q.id) return;
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      var srcIdx = questions.findIndex(function(x) { return x.id === dragSrcId; });
+      var tgtIdx = questions.findIndex(function(x) { return x.id === q.id; });
+      if (srcIdx === -1 || tgtIdx === -1) return;
+      var moved = questions.splice(srcIdx, 1)[0];
+      questions.splice(tgtIdx, 0, moved);
+      dragSrcId = null;
+      renderQuestions();
+      var orderedIds = questions.map(function(x) { return x.id; });
+      callWorker({ action: 'reorder_questions', auth_token: AUTH_TOKEN, list_name: activeSet, ordered_ids: orderedIds })
+        .catch(function(err) { showToastError('Erro ao salvar ordem: ' + err.message); selectSet(activeSet); });
+    });
+
+    list.appendChild(card);
   });
 }
 
@@ -1283,6 +1374,94 @@ async function deleteQuestion(questionText) {
     await selectSet(activeSet); await loadSets();
   } catch (e) { showToastError(e.message); }
 }
+
+// ---------------------------------------------------------------------------
+// 15 -- Edit-bank mode (drag-reorder + multi-select move)
+// ---------------------------------------------------------------------------
+
+function exitEditMode() {
+  editingBank = false;
+  selectedIds.clear();
+  dragSrcId = null;
+  var list = document.getElementById('question-list');
+  if (list) list.classList.remove('is-editing');
+  var btn = document.getElementById('edit-bank-btn');
+  if (btn) btn.textContent = 'Editar banco';
+  var bar = document.getElementById('cp-move-bar');
+  if (bar) bar.style.display = 'none';
+}
+
+function renderMoveBar() {
+  var bar = document.getElementById('cp-move-bar');
+  if (!bar) return;
+  var count = selectedIds.size;
+  if (count === 0 || !editingBank) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('cp-move-count').textContent = 'Mover ' + count + ' selecionada' + (count === 1 ? '' : 's') + ':';
+  var dest = document.getElementById('cp-move-dest');
+  dest.innerHTML = '';
+  sets.filter(function(s) { return !s._inputRow && !s._ephemeral && s.list_name !== activeSet; }).forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s.list_name; opt.textContent = s.list_name;
+    dest.appendChild(opt);
+  });
+}
+
+document.getElementById('edit-bank-btn').addEventListener('click', function() {
+  if (!activeSet) return;
+  if (editingBank) {
+    exitEditMode();
+    renderQuestions();
+  } else {
+    editingBank = true;
+    document.getElementById('question-list').classList.add('is-editing');
+    this.textContent = 'Concluir';
+    renderMoveBar();
+  }
+});
+
+document.getElementById('cp-move-btn').addEventListener('click', async function() {
+  var destName = document.getElementById('cp-move-dest').value;
+  if (!destName || selectedIds.size === 0) return;
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Movendo...';
+  var ids = Array.from(selectedIds);
+  var toMove = questions.filter(function(q) { return ids.indexOf(q.id) !== -1; });
+  try {
+    for (var i = 0; i < toMove.length; i++) {
+      var q = toMove[i];
+      await callWorker({
+        action: 'update_question', auth_token: AUTH_TOKEN,
+        list_name: activeSet, original_question: q.question,
+        question: q.question, type: q.type,
+        options: typeof q.options === 'string' ? q.options : JSON.stringify(q.options || []),
+        correct_answer: q.correct_answer != null ? q.correct_answer : '',
+        new_list_name: destName
+      });
+    }
+    selectedIds.clear();
+    showToast(toMove.length + ' questão(ões) movida(s) para "' + escHtml(destName) + '".');
+    await loadSets();
+    await selectSet(activeSet);
+  } catch (e) {
+    showToastError(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Mover';
+  }
+});
+
+document.getElementById('cp-move-cancel-btn').addEventListener('click', function() {
+  selectedIds.clear();
+  renderMoveBar();
+  renderQuestions();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('q-modal').style.display === 'flex') return;
+  if (document.getElementById('bulk-modal').style.display === 'flex') return;
+  if (editingBank) { exitEditMode(); renderQuestions(); }
+});
 
 document.getElementById('delete-set-btn').addEventListener('click', function() {
   if (activeSet) confirmDeleteSet(activeSet);
