@@ -2,69 +2,79 @@
   'use strict';
 
   function attach(opts) {
-    var checkboxEl    = opts.checkboxEl;
+    var buttonEl      = opts.buttonEl;
     var getActiveQId  = opts.getActiveQId;
     var getSessionCode = opts.getSessionCode;
     var authToken     = opts.authToken;
     var callWorkerFn  = opts.callWorker;
+    var labels        = opts.labels || {
+      visible: 'Esconder resultados no projetor',
+      hidden:  'Mostrar resultados no projetor'
+    };
     var onError       = typeof opts.onError === 'function' ? opts.onError : function() {};
 
-    // Internal state mirrors checkbox: hidden === checkbox.checked
-    var hidden = false;
-    checkboxEl.checked = false;
+    // Default state matches Worker's default (show_results='true' at launch).
+    var visible = true;
 
-    function onChange() {
-      var qId = getActiveQId();
-      if (!qId) {
-        checkboxEl.checked = hidden;
-        return;
+    function applyState() {
+      if (visible) {
+        buttonEl.textContent = labels.visible;
+        buttonEl.classList.add('host-btn-primary');
+        buttonEl.classList.remove('host-btn-ghost');
+        buttonEl.setAttribute('aria-pressed', 'true');
+      } else {
+        buttonEl.textContent = labels.hidden;
+        buttonEl.classList.add('host-btn-ghost');
+        buttonEl.classList.remove('host-btn-primary');
+        buttonEl.setAttribute('aria-pressed', 'false');
       }
-      var nextHidden = checkboxEl.checked;
-      checkboxEl.disabled = true;
+    }
+
+    applyState();
+
+    function onClick() {
+      var qId = getActiveQId();
+      if (!qId) return;
+      var nextVisible = !visible;
+      buttonEl.disabled = true;
       callWorkerFn({
         action: 'set_question_visibility',
         auth_token: authToken,
         id: qId,
         session_code: getSessionCode(),
-        show_results: !nextHidden
+        show_results: nextVisible
       })
         .then(function(res) {
           if (res && res.ok) {
-            hidden = nextHidden;
+            visible = nextVisible;
+            applyState();
           } else {
-            checkboxEl.checked = hidden;
             onError((res && res.error) || 'Erro ao atualizar visibilidade.');
           }
         })
         .catch(function(err) {
-          checkboxEl.checked = hidden;
           onError(err && err.message ? err.message : String(err));
         })
         .finally(function() {
-          checkboxEl.disabled = false;
+          buttonEl.disabled = false;
         });
     }
 
-    checkboxEl.addEventListener('change', onChange);
+    buttonEl.addEventListener('click', onClick);
 
     function reset() {
-      hidden = false;
-      checkboxEl.checked = false;
-      checkboxEl.disabled = false;
+      visible = true;
+      applyState();
+      buttonEl.disabled = false;
     }
 
     function syncFromQuestion(q) {
-      if (q && q.show_results === false) {
-        hidden = true;
-        checkboxEl.checked = true;
-      } else {
-        hidden = false;
-        checkboxEl.checked = false;
-      }
+      visible = !(q && q.show_results === false);
+      applyState();
     }
 
     function destroy() {
-      checkboxEl.removeEventListener('change', onChange);
+      buttonEl.removeEventListener('click', onClick);
     }
 
     return { reset: reset, syncFromQuestion: syncFromQuestion, destroy: destroy };
