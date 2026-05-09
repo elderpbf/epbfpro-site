@@ -8,26 +8,23 @@
     var authToken     = opts.authToken;
     var callWorkerFn  = opts.callWorker;
     var labels        = opts.labels || {
-      visible: 'Esconder resultados no projetor',
-      hidden:  'Mostrar resultados no projetor'
+      visible: 'Esconder resultados',
+      hidden:  'Mostrar resultados'
     };
     var onError       = typeof opts.onError === 'function' ? opts.onError : function() {};
+
+    // Build switch + label structure inside the button.
+    buttonEl.innerHTML =
+      '<span class="cp-toggle-switch" aria-hidden="true"><span class="cp-toggle-knob"></span></span>' +
+      '<span class="cp-toggle-label"></span>';
+    var labelEl = buttonEl.querySelector('.cp-toggle-label');
 
     // Default state matches Worker's default (show_results='true' at launch).
     var visible = true;
 
     function applyState() {
-      if (visible) {
-        buttonEl.textContent = labels.visible;
-        buttonEl.classList.add('host-btn-primary');
-        buttonEl.classList.remove('host-btn-ghost');
-        buttonEl.setAttribute('aria-pressed', 'true');
-      } else {
-        buttonEl.textContent = labels.hidden;
-        buttonEl.classList.add('host-btn-ghost');
-        buttonEl.classList.remove('host-btn-primary');
-        buttonEl.setAttribute('aria-pressed', 'false');
-      }
+      buttonEl.setAttribute('aria-pressed', visible ? 'true' : 'false');
+      labelEl.textContent = visible ? labels.visible : labels.hidden;
     }
 
     applyState();
