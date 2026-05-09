@@ -183,12 +183,12 @@
 .qr-host .qr-numeric-summary div { font-size: 0.85rem; }
 .qr-host .qr-numeric-summary strong { font-size: 1rem; display: inline; margin-left: 4px; }
 
-.qr-display .qr-rating-summary { margin-bottom: 40px; }
-.qr-display .qr-rating-avg { font-size: 5rem; }
-.qr-display .qr-rating-total { font-size: 1.4rem; }
-.qr-display .qr-numeric-summary { margin-bottom: 40px; }
-.qr-display .qr-numeric-summary div { font-size: 1.2rem; }
-.qr-display .qr-numeric-summary strong { font-size: 1.6rem; margin-top: 8px; }
+.qr-display .qr-rating-summary { margin-bottom: clamp(14px, 2vh, 24px); padding-bottom: clamp(8px, 1vh, 14px); gap: clamp(8px, 1.2vw, 16px); }
+.qr-display .qr-rating-avg { font-size: clamp(2rem, 4.5vw, 3.6rem); }
+.qr-display .qr-rating-total { font-size: clamp(0.9rem, 1.3vw, 1.25rem); }
+.qr-display .qr-numeric-summary { margin-bottom: clamp(14px, 2vh, 24px); padding-bottom: clamp(8px, 1vh, 14px); }
+.qr-display .qr-numeric-summary div { font-size: clamp(0.85rem, 1.2vw, 1.1rem); }
+.qr-display .qr-numeric-summary strong { font-size: clamp(1rem, 1.5vw, 1.4rem); margin-top: clamp(3px, 0.4vh, 6px); }
 
 /* ── INPUTS (STUDENT MODE) ───────────────────────────────── */
 .qr-open-form, .qr-wc-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }

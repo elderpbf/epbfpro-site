@@ -141,7 +141,7 @@
     optionsPanel: 'rating',
     canReveal: false,
     canShowResults: true,
-    aiGenSupported: false,
+    aiGenSupported: true,
     usesTextAnswers: true,
     setupForm: function(els) {
       if (!els.ratingMin.value) els.ratingMin.value = 1;
@@ -171,7 +171,7 @@
     optionsPanel: 'numeric',
     canReveal: false,
     canShowResults: true,
-    aiGenSupported: false,
+    aiGenSupported: true,
     usesTextAnswers: true,
     setupForm: function() {},
     readForm: function(els) {
