@@ -703,10 +703,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: -0.25rem 0 1rem;
+  margin: -0.25rem 0 1.5rem;
 }
 
-#items-filter:empty { display: none; }
+#items-filter:empty,
+#releases-filter:empty { display: none; }
 
 .ct-tf-chip {
   display: inline-flex;
@@ -774,3 +775,39 @@
 }
 
 .ct-toggle-text { line-height: 22px; }
+
+/* ----- Release row icon ----- */
+
+.ct-rel-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 184, 166, 0.08);
+  border-radius: 8px;
+  margin-right: 2px;
+}
+
+/* ----- Danger zone (delete client) ----- */
+
+.ct-danger-zone {
+  margin-top: 1.25rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px dashed var(--error, #dc2626);
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.ct-danger-zone-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--error, #dc2626);
+  margin-bottom: 0.5rem;
+}
+
+.ct-danger-zone .ct-helper-text { margin-top: 0.5rem; }

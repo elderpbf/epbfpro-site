@@ -10,10 +10,11 @@ window.CT_ADMIN = (function() {
   var _types = []; // [{slug, label, icon, sort_order}]
   var _tags  = []; // [{id, label, item_count}]
   var _selectedTypeFilter = null; // null = "Todos"
-  var _relItems = [];
-  var _relReleased = []; // [{item_id, position}]
+  var _relAllItems = [];           // items pulled from ct_list_items
+  var _relReleased = [];           // ordered array of released item IDs
   var _relClientSlug = null;
   var _relTurmaSlug = null;
+  var _selectedReleaseFilter = null;
 
   // ---- Helpers ----
 
@@ -156,6 +157,13 @@ window.CT_ADMIN = (function() {
 
   function _openClientForm(client) {
     var isEdit = !!client;
+    var deleteBlock = isEdit
+      ? '<div class="ct-danger-zone">' +
+          '<div class="ct-danger-zone-label">Zona de perigo</div>' +
+          '<button class="ct-btn ct-btn-danger" id="cf-delete" type="button">Excluir cliente permanentemente</button>' +
+          '<p class="ct-helper-text">Apaga o cliente, todas as turmas dele e as liberações de cada turma. Os itens da biblioteca não são afetados. Essa ação não pode ser desfeita.</p>' +
+        '</div>'
+      : '';
     var html = '<div class="ct-modal">' +
       '<div class="ct-modal-title">' + (isEdit ? 'Editar cliente' : 'Novo cliente') + '</div>' +
       '<div class="ct-field"><label>Nome interno</label>' +
@@ -164,6 +172,7 @@ window.CT_ADMIN = (function() {
       '<div class="ct-field"><label>Nome para alunos (opcional)</label>' +
         '<input type="text" id="cf-display" value="' + _esc(isEdit ? (client.display_name || '') : '') + '" placeholder="Igual ao nome interno se vazio">' +
       '</div>' +
+      deleteBlock +
       '<div class="ct-modal-actions">' +
         '<button class="ct-btn" id="cf-cancel">Cancelar</button>' +
         '<button class="ct-btn ct-btn-primary" id="cf-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
@@ -171,6 +180,26 @@ window.CT_ADMIN = (function() {
     '</div>';
     var bd = _openModal(html, { disableBackdropClose: true });
     bd.querySelector('#cf-cancel').addEventListener('click', _closeModal);
+    if (isEdit) {
+      bd.querySelector('#cf-delete').addEventListener('click', function() {
+        var confirmText = 'Para confirmar, digite o nome interno do cliente:\n\n"' + client.name + '"';
+        var typed = prompt(confirmText, '');
+        if (typed === null) return;
+        if (typed.trim() !== client.name) { _toast('Nome não confere. Exclusão cancelada.'); return; }
+        callWorker({ action: 'ct_delete_client', slug: client.slug }).then(function() {
+          _closeModal();
+          _toast('Cliente excluído.');
+          if (_selectedClientSlug === client.slug) {
+            _selectedClientSlug = null;
+            _turmas = [];
+            _renderTurmas();
+            document.getElementById('turmas-pane-title').textContent = 'Turmas';
+            document.getElementById('btn-new-turma').style.display = 'none';
+          }
+          _loadClients();
+        }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+      });
+    }
     bd.querySelector('#cf-save').addEventListener('click', function() {
       var name = bd.querySelector('#cf-name').value.trim();
       var display = bd.querySelector('#cf-display').value.trim();
@@ -868,35 +897,74 @@ window.CT_ADMIN = (function() {
         turma_slug: turmaSlug,
         token: turma.token
       }).then(function(vd) {
-        _relItems = allItems;
+        _relAllItems = allItems;
         _relReleased = (vd.items || []).map(function(i) { return i.id; });
-        _renderReleases(allItems, vd.items || []);
+        _renderReleases();
       }).catch(function() {
-        _relItems = allItems;
+        _relAllItems = allItems;
         _relReleased = [];
-        _renderReleases(allItems, []);
+        _renderReleases();
       });
     }).catch(function() {
       el.innerHTML = '<div class="ct-empty">Erro ao carregar dados.</div>';
     });
   }
 
-  function _renderReleases(allItems, releasedItems) {
+  function _renderReleasesFilter() {
+    var fc = document.getElementById('releases-filter');
+    if (!fc) return;
+    if (!_relAllItems.length) { fc.innerHTML = ''; return; }
+    CT_TYPE_FILTER.render({
+      container:    fc,
+      types:        _types,
+      items:        _relAllItems,
+      selectedSlug: _selectedReleaseFilter,
+      onChange: function(slug) {
+        _selectedReleaseFilter = slug;
+        _renderReleasesRows();
+      }
+    });
+  }
+
+  function _renderReleases() {
+    _renderReleasesFilter();
+    _renderReleasesRows();
+  }
+
+  function _renderReleasesRows() {
     var el = document.getElementById('releases-list');
-    if (!allItems.length) {
+    if (!_relAllItems.length) {
       el.innerHTML = '<div class="ct-empty">Nenhum item na biblioteca.</div>';
       return;
     }
-    var relIds = releasedItems.map(function(i) { return i.id; });
-    // Build ordered list: released items first (in position order), then unreleased
-    var rows = releasedItems.map(function(i) { return { id: i.id, title: i.title, released: true }; });
-    allItems.forEach(function(i) {
-      if (relIds.indexOf(i.id) === -1) rows.push({ id: i.id, title: i.title, released: false });
+    var byId = {};
+    _relAllItems.forEach(function(i) { byId[i.id] = i; });
+
+    // Released first (in current local order), then unreleased.
+    var rows = [];
+    _relReleased.forEach(function(id) {
+      var src = byId[id];
+      if (src) rows.push({ id: id, title: src.title, type: src.type, released: true });
     });
+    _relAllItems.forEach(function(i) {
+      if (_relReleased.indexOf(i.id) === -1) rows.push({ id: i.id, title: i.title, type: i.type, released: false });
+    });
+
+    if (_selectedReleaseFilter) {
+      rows = rows.filter(function(r) { return r.type === _selectedReleaseFilter; });
+    }
+
+    if (!rows.length) {
+      el.innerHTML = '<div class="ct-empty">Nenhum item neste filtro.</div>';
+      return;
+    }
+
     el.innerHTML = rows.map(function(r) {
+      var meta = _typeMeta(r.type);
       var cls = r.released ? ' released' : '';
       return '<div class="ct-rel-row' + cls + '" data-id="' + r.id + '" draggable="' + r.released + '">' +
         '<span class="ct-drag-handle" aria-hidden="true">&#8942;&#8942;</span>' +
+        '<span class="ct-rel-icon" title="' + _esc(meta.label) + '">' + _esc(meta.icon) + '</span>' +
         '<span class="ct-rel-title">' + _esc(r.title) + '</span>' +
         '<label class="ct-toggle">' +
           '<input type="checkbox" ' + (r.released ? 'checked' : '') + ' data-id="' + r.id + '">' +
@@ -905,21 +973,45 @@ window.CT_ADMIN = (function() {
       '</div>';
     }).join('');
 
-    // Wire toggles
+    // Optimistic toggle: no _loadReleases reload — just flip the row,
+    // sync local state, fire-and-forget the worker call.
     el.querySelectorAll('.ct-toggle input').forEach(function(cb) {
       cb.addEventListener('change', function() {
         var itemId = parseInt(cb.dataset.id);
-        var action = cb.checked ? 'ct_release_item' : 'ct_unrelease_item';
-        callWorker({ action: action, client_slug: _relClientSlug, turma_slug: _relTurmaSlug, item_id: itemId }).then(function() {
-          _loadReleases(_relClientSlug, _relTurmaSlug);
+        var willRelease = cb.checked;
+        var row = cb.closest('.ct-rel-row');
+        row.classList.toggle('released', willRelease);
+        row.setAttribute('draggable', willRelease ? 'true' : 'false');
+
+        if (willRelease) {
+          if (_relReleased.indexOf(itemId) === -1) _relReleased.push(itemId);
+        } else {
+          var idx = _relReleased.indexOf(itemId);
+          if (idx !== -1) _relReleased.splice(idx, 1);
+        }
+
+        var action = willRelease ? 'ct_release_item' : 'ct_unrelease_item';
+        callWorker({
+          action: action,
+          client_slug: _relClientSlug,
+          turma_slug: _relTurmaSlug,
+          item_id: itemId
         }).catch(function(err) {
-          cb.checked = !cb.checked;
+          // Revert on failure
+          cb.checked = !willRelease;
+          row.classList.toggle('released', !willRelease);
+          row.setAttribute('draggable', !willRelease ? 'true' : 'false');
+          if (!willRelease) {
+            if (_relReleased.indexOf(itemId) === -1) _relReleased.push(itemId);
+          } else {
+            var i = _relReleased.indexOf(itemId);
+            if (i !== -1) _relReleased.splice(i, 1);
+          }
           _toast('Erro: ' + (err.message || err));
         });
       });
     });
 
-    // Wire drag-and-drop on released items
     _wireDragDrop(el);
   }
 
@@ -942,6 +1034,7 @@ window.CT_ADMIN = (function() {
 
   function _saveRelOrder(container) {
     var ids = Array.from(container.querySelectorAll('.ct-rel-row.released')).map(function(r) { return parseInt(r.dataset.id); });
+    _relReleased = ids; // keep local order in sync with DOM
     callWorker({ action: 'ct_reorder_releases', client_slug: _relClientSlug, turma_slug: _relTurmaSlug, item_ids: ids }).then(function() {
       _toast('Ordem salva.');
     }).catch(function(err) { _toast('Erro ao salvar ordem: ' + (err.message || err)); });
