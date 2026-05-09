@@ -7,6 +7,8 @@ window.CT_ADMIN = (function() {
   var _selectedClientSlug = null;
   var _turmas = [];
   var _items = [];
+  var _types = []; // [{slug, label, icon, sort_order}]
+  var _tags  = []; // [{id, label, item_count}]
   var _relItems = [];
   var _relReleased = []; // [{item_id, position}]
   var _relClientSlug = null;
@@ -33,6 +35,32 @@ window.CT_ADMIN = (function() {
 
   function _baseUrl() {
     return location.protocol + '//' + location.host;
+  }
+
+  // ---- Type / tag helpers ----
+
+  var TYPE_ICON_FALLBACK = {
+    prompt: '💬',     // 💬
+    exemplo: '✨',           // ✨
+    exercicio: '📝',  // 📝
+    dica: '💡',        // 💡
+    leitura: '📖',     // 📖
+    video: '🎬',       // 🎬
+    link: '🔗'         // 🔗
+  };
+
+  function _typeMeta(slug) {
+    var t = _types.find(function(x) { return x.slug === slug; });
+    if (t) return { label: t.label, icon: t.icon || TYPE_ICON_FALLBACK[slug] || '📄' };
+    return { label: slug || 'item', icon: TYPE_ICON_FALLBACK[slug] || '📄' };
+  }
+
+  function _renderTypeOptions(selectedSlug) {
+    var opts = _types.map(function(t) {
+      var sel = t.slug === selectedSlug ? ' selected' : '';
+      return '<option value="' + _esc(t.slug) + '"' + sel + '>' + _esc(t.label) + '</option>';
+    }).join('');
+    return opts + '<option value="__new__">+ Criar novo tipo...</option>';
   }
 
   function _turmaUrl(clientSlug, turmaSlug, token) {
@@ -236,15 +264,20 @@ window.CT_ADMIN = (function() {
       return;
     }
     el.innerHTML = _items.map(function(item) {
-      var icon = item.type === 'prompt' ? '💬' : '📄';
+      var meta = _typeMeta(item.type);
+      var tagsHtml = (item.tags && item.tags.length)
+        ? '<span class="ct-item-tags">' + item.tags.map(function(t) {
+            return '<span class="ct-tag-chip ct-tag-chip-mini">' + _esc(t.label) + '</span>';
+          }).join('') + '</span>'
+        : '';
       return '<div class="ct-item-row" onclick="CT_ADMIN.openItem(' + item.id + ')">' +
-        '<span class="ct-item-type-icon">' + icon + '</span>' +
+        '<span class="ct-item-type-icon">' + meta.icon + '</span>' +
         '<div class="ct-item-info">' +
           '<div class="ct-item-title">' + _esc(item.title) + '</div>' +
-          '<div class="ct-item-sub">' + _esc(item.type) +
-            (item.tags ? ' · ' + _esc(item.tags) : '') +
+          '<div class="ct-item-sub">' + _esc(meta.label) +
             ' · ' + new Date(item.updated_at * 1000).toLocaleDateString('pt-BR') +
           '</div>' +
+          tagsHtml +
         '</div>' +
         '<button class="ct-btn ct-btn-sm ct-btn-danger" onclick="event.stopPropagation();CT_ADMIN.deleteItem(' + item.id + ')">Excluir</button>' +
       '</div>';
@@ -253,6 +286,8 @@ window.CT_ADMIN = (function() {
 
   function _openItemEditor(item) {
     var isEdit = !!item;
+    var initialType = isEdit ? item.type : (_types[0] && _types[0].slug) || 'prompt';
+    var initialTagIds = (isEdit && Array.isArray(item.tags)) ? item.tags.map(function(t) { return t.id; }) : [];
     var html = '<div class="ct-editor">' +
       '<div class="ct-editor-header">' +
         '<span class="ct-editor-title">' + (isEdit ? 'Editar item' : 'Novo item') + '</span>' +
@@ -260,18 +295,16 @@ window.CT_ADMIN = (function() {
       '</div>' +
       '<div class="ct-editor-body">' +
         '<div class="ct-field"><label>Título</label>' +
-          '<input type="text" id="ie-title" value="' + _esc(isEdit ? item.title : '') + '" placeholder="Título do prompt">' +
+          '<input type="text" id="ie-title" value="' + _esc(isEdit ? item.title : '') + '" placeholder="Título do item">' +
         '</div>' +
         '<div class="ct-field"><label>Tipo</label>' +
-          '<select id="ie-type">' +
-            '<option value="prompt"' + ((!isEdit || item.type === 'prompt') ? ' selected' : '') + '>Prompt</option>' +
-          '</select>' +
+          '<select id="ie-type">' + _renderTypeOptions(initialType) + '</select>' +
         '</div>' +
         '<div class="ct-field"><label>Resumo (opcional)</label>' +
           '<input type="text" id="ie-summary" value="' + _esc(isEdit ? (item.summary || '') : '') + '" placeholder="Uma linha descrevendo o item">' +
         '</div>' +
-        '<div class="ct-field"><label>Tags (separadas por vírgula, opcional)</label>' +
-          '<input type="text" id="ie-tags" value="' + _esc(isEdit ? (item.tags || '') : '') + '" placeholder="prompting, contexto">' +
+        '<div class="ct-field"><label>Tags</label>' +
+          '<div class="ct-tag-picker" id="ie-tag-picker"></div>' +
         '</div>' +
         '<div class="ct-field"><label>Corpo em Markdown</label>' +
           '<textarea id="ie-body" rows="10" placeholder="Cole ou escreva o conteúdo. Pode pedir à IA para formatá-lo em Markdown.">' + _esc(isEdit ? (item.body_md || '') : '') + '</textarea>' +
@@ -290,10 +323,30 @@ window.CT_ADMIN = (function() {
       '</div>' +
     '</div>';
     var bd = _openModal(html);
+    var selectedTagIds = new Set(initialTagIds);
+
     // Defeat the global utils.js Enter-submit handler so Enter creates newlines in the body textarea.
     bd.querySelector('#ie-body').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') e.stopPropagation();
     });
+
+    // Type select: trigger create-new flow when "+ Criar novo tipo..." is picked.
+    var typeSel = bd.querySelector('#ie-type');
+    var lastTypeValue = initialType;
+    typeSel.addEventListener('change', function() {
+      if (typeSel.value !== '__new__') { lastTypeValue = typeSel.value; return; }
+      _openTypeCreateForm(function(newSlug) {
+        if (newSlug) {
+          typeSel.innerHTML = _renderTypeOptions(newSlug);
+          lastTypeValue = newSlug;
+        } else {
+          typeSel.value = lastTypeValue;
+        }
+      });
+    });
+
+    _renderTagPicker(bd.querySelector('#ie-tag-picker'), selectedTagIds);
+
     bd.querySelector('#ie-close').addEventListener('click', _closeModal);
     bd.querySelector('#ie-cancel').addEventListener('click', _closeModal);
     bd.querySelector('#ie-ai-btn').addEventListener('click', async function() {
@@ -339,20 +392,185 @@ window.CT_ADMIN = (function() {
     });
     bd.querySelector('#ie-save').addEventListener('click', function() {
       var title = bd.querySelector('#ie-title').value.trim();
-      var type = bd.querySelector('#ie-type').value;
+      var type = typeSel.value;
+      if (type === '__new__') { _toast('Selecione um tipo.'); return; }
       var summary = bd.querySelector('#ie-summary').value.trim();
-      var tags = bd.querySelector('#ie-tags').value.trim();
       var body_md = bd.querySelector('#ie-body').value;
       if (!title) { _toast('Título obrigatório.'); return; }
       var action = isEdit ? 'ct_update_item' : 'ct_create_item';
-      var params = { action: action, type: type, title: title, summary: summary || null, body_md: body_md, tags: tags || null };
+      var params = {
+        action: action,
+        type: type,
+        title: title,
+        summary: summary || null,
+        body_md: body_md,
+        tag_ids: Array.from(selectedTagIds)
+      };
       if (isEdit) params.id = item.id;
       callWorker(params).then(function() {
         _closeModal();
         _toast(isEdit ? 'Item atualizado.' : 'Item criado.');
         _loadItems();
+        _loadTags();
       }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
     });
+  }
+
+  // ---- Tag picker (chip selector + free-text add) ----
+
+  function _renderTagPicker(container, selectedTagIds) {
+    function render() {
+      var chips = _tags.map(function(t) {
+        var active = selectedTagIds.has(t.id);
+        return '<button type="button" class="ct-tag-chip' + (active ? ' active' : '') +
+          '" data-id="' + t.id + '">' + _esc(t.label) + '</button>';
+      }).join('');
+      container.innerHTML =
+        '<div class="ct-tag-chip-row">' + chips + '</div>' +
+        '<div class="ct-tag-add">' +
+          '<input type="text" class="ct-tag-add-input" placeholder="+ Nova tag (Enter para adicionar)">' +
+        '</div>';
+
+      container.querySelectorAll('.ct-tag-chip').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = parseInt(btn.dataset.id);
+          if (selectedTagIds.has(id)) selectedTagIds.delete(id);
+          else selectedTagIds.add(id);
+          btn.classList.toggle('active');
+        });
+      });
+
+      var input = container.querySelector('.ct-tag-add-input');
+      input.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        e.stopPropagation();
+        var label = input.value.trim();
+        if (!label) return;
+        callWorker({ action: 'ct_create_tag', label: label }).then(function(res) {
+          if (res.tag) {
+            var existing = _tags.find(function(x) { return x.id === res.tag.id; });
+            if (!existing) _tags.push({ id: res.tag.id, label: res.tag.label, item_count: 0 });
+            _tags.sort(function(a, b) { return a.label.localeCompare(b.label); });
+            selectedTagIds.add(res.tag.id);
+            input.value = '';
+            render();
+            container.querySelector('.ct-tag-add-input').focus();
+          }
+        }).catch(function(err) { _toast('Erro ao criar tag: ' + (err.message || err)); });
+      });
+    }
+    render();
+  }
+
+  // ---- Inline "+ Criar novo tipo" form ----
+
+  function _openTypeCreateForm(callback) {
+    var html = '<div class="ct-modal" style="max-width:380px">' +
+      '<div class="ct-modal-title">Novo tipo</div>' +
+      '<div class="ct-field"><label>Nome</label>' +
+        '<input type="text" id="tc-label" placeholder="Ex: Atividade">' +
+      '</div>' +
+      '<div class="ct-field"><label>Identificador (slug, opcional)</label>' +
+        '<input type="text" id="tc-slug" placeholder="auto-gerado se vazio">' +
+      '</div>' +
+      '<div class="ct-field"><label>Ícone (emoji, opcional)</label>' +
+        '<input type="text" id="tc-icon" placeholder="📌" maxlength="4">' +
+      '</div>' +
+      '<div class="ct-modal-actions">' +
+        '<button class="ct-btn" id="tc-cancel">Cancelar</button>' +
+        '<button class="ct-btn ct-btn-primary" id="tc-save">Criar</button>' +
+      '</div>' +
+    '</div>';
+    var bd = _openModal(html);
+    function close(slug) {
+      bd.parentNode.removeChild(bd);
+      if (callback) callback(slug);
+    }
+    bd.querySelector('#tc-cancel').addEventListener('click', function() { close(null); });
+    bd.querySelector('#tc-save').addEventListener('click', function() {
+      var label = bd.querySelector('#tc-label').value.trim();
+      var slug = bd.querySelector('#tc-slug').value.trim() || _slugify(label);
+      var icon = bd.querySelector('#tc-icon').value.trim();
+      if (!label || !slug) { _toast('Nome obrigatório.'); return; }
+      callWorker({ action: 'ct_create_type', slug: slug, label: label, icon: icon || null }).then(function() {
+        return _loadTypes();
+      }).then(function() {
+        _toast('Tipo criado.');
+        close(slug);
+      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    });
+  }
+
+  // ---- Tag manager modal (rename / delete tags globally) ----
+
+  function _openTagManager() {
+    var html = '<div class="ct-modal" style="max-width:520px">' +
+      '<div class="ct-modal-title">Gerenciar tags</div>' +
+      '<div class="ct-tag-manager-list" id="tm-list"></div>' +
+      '<div class="ct-modal-actions">' +
+        '<button class="ct-btn ct-btn-primary" id="tm-close">Fechar</button>' +
+      '</div>' +
+    '</div>';
+    var bd = _openModal(html);
+    function render() {
+      var listEl = bd.querySelector('#tm-list');
+      if (!_tags.length) {
+        listEl.innerHTML = '<div class="ct-empty">Nenhuma tag cadastrada.</div>';
+        return;
+      }
+      listEl.innerHTML = _tags.map(function(t) {
+        return '<div class="ct-tag-row" data-id="' + t.id + '">' +
+          '<span class="ct-tag-row-label">' + _esc(t.label) + '</span>' +
+          '<span class="ct-tag-row-count">' + (t.item_count || 0) + '</span>' +
+          '<button class="ct-btn ct-btn-sm" data-action="rename">Renomear</button>' +
+          '<button class="ct-btn ct-btn-sm ct-btn-danger" data-action="delete">Excluir</button>' +
+        '</div>';
+      }).join('');
+      listEl.querySelectorAll('.ct-tag-row').forEach(function(row) {
+        var id = parseInt(row.dataset.id);
+        var tag = _tags.find(function(t) { return t.id === id; });
+        row.querySelector('[data-action="rename"]').addEventListener('click', function() {
+          var n = prompt('Novo nome para "' + tag.label + '":', tag.label);
+          if (n === null) return;
+          n = n.trim();
+          if (!n || n === tag.label) return;
+          callWorker({ action: 'ct_rename_tag', id: id, label: n }).then(function() {
+            return _loadTags();
+          }).then(function() {
+            render();
+            _toast('Tag renomeada.');
+            _loadItems();
+          }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+        });
+        row.querySelector('[data-action="delete"]').addEventListener('click', function() {
+          if (!confirm('Excluir a tag "' + tag.label + '"? Ela será removida de todos os itens.')) return;
+          callWorker({ action: 'ct_delete_tag', id: id }).then(function() {
+            return _loadTags();
+          }).then(function() {
+            render();
+            _toast('Tag excluída.');
+            _loadItems();
+          }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+        });
+      });
+    }
+    render();
+    bd.querySelector('#tm-close').addEventListener('click', _closeModal);
+  }
+
+  // ---- Loaders for types/tags ----
+
+  function _loadTypes() {
+    return callWorker({ action: 'ct_list_types' }).then(function(data) {
+      _types = data.types || [];
+    }).catch(function() {});
+  }
+
+  function _loadTags() {
+    return callWorker({ action: 'ct_list_tags' }).then(function(data) {
+      _tags = data.tags || [];
+    }).catch(function() {});
   }
 
   function _renderMarkdown(md, container) {
@@ -536,8 +754,14 @@ window.CT_ADMIN = (function() {
       document.getElementById('btn-new-client').addEventListener('click', function() { _openClientForm(null); });
       document.getElementById('btn-new-turma').addEventListener('click', function() { _openTurmaForm(null); });
       document.getElementById('btn-new-item').addEventListener('click', function() { _openItemEditor(null); });
+      var manageTagsBtn = document.getElementById('btn-manage-tags');
+      if (manageTagsBtn) manageTagsBtn.addEventListener('click', _openTagManager);
       _loadClients();
+      _loadTypes();
+      _loadTags();
     },
+
+    openTagManager: _openTagManager,
 
     editClient: function(slug) {
       var client = _clients.find(function(c) { return c.slug === slug; });

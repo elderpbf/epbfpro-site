@@ -276,6 +276,125 @@
   margin-top: 6px;
 }
 
+/* ----- Tag chip picker ----- */
+
+.ct-tag-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ct-tag-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ct-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  font-family: inherit;
+}
+
+.ct-tag-chip:hover {
+  border-color: rgba(20,184,166,.5);
+  color: var(--text-primary);
+}
+
+.ct-tag-chip.active {
+  background: rgba(20,184,166,.13);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.ct-tag-chip-mini {
+  pointer-events: none;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  margin-right: 4px;
+}
+
+.ct-tag-add {
+  display: flex;
+}
+
+.ct-tag-add-input {
+  flex: 1;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.ct-tag-add-input:focus {
+  border-color: var(--primary);
+  border-style: solid;
+}
+
+/* ----- Tag manager modal ----- */
+
+.ct-tag-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-bottom: 0.5rem;
+}
+
+.ct-tag-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.ct-tag-row-label {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ct-tag-row-count {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  background: var(--background);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+/* ----- Items list: tags row ----- */
+
+.ct-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 .ct-modal-actions {
   display: flex;
   justify-content: flex-end;
