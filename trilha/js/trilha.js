@@ -41,6 +41,15 @@
       var titleEl = document.getElementById('tr-turma-title');
       if (titleEl) titleEl.textContent = data.turma.display_name || data.turma.name || _turmaSlug;
 
+      var eyebrowEl = document.getElementById('tr-hero-eyebrow');
+      if (eyebrowEl && data.client) {
+        eyebrowEl.textContent = data.client.display_name || data.client.name || '';
+      }
+
+      // Update browser title with turma name for nicer tab labels.
+      var turmaTitle = data.turma.display_name || data.turma.name;
+      if (turmaTitle) document.title = turmaTitle + ' · PensoIA';
+
       _renderItems(data.items || []);
 
     } catch (err) {
@@ -73,30 +82,100 @@
       var summary = item.summary
         ? '<div class="tr-item-summary">' + _esc(item.summary) + '</div>'
         : '';
+      var tagsHtml = (item.tags && item.tags.length)
+        ? '<div class="tr-item-tags">' + item.tags.map(function(label) {
+            return '<span class="tr-tag-mini">' + _esc(label) + '</span>';
+          }).join('') + '</div>'
+        : '';
 
       row.innerHTML =
         '<div class="tr-item-header" role="button" tabindex="0" aria-expanded="false">' +
-          '<span class="tr-item-icon">' + _typeIcon(item.type) + '</span>' +
+          '<span class="tr-item-icon">' + _esc(item.type === 'prompt' ? '💬' : '') + '</span>' +
           '<div class="tr-item-meta">' +
             '<div class="tr-item-title">' + _esc(item.title) + '</div>' +
             summary +
+            tagsHtml +
           '</div>' +
+          '<button class="tr-copy-btn" type="button" title="Copiar conteúdo" aria-label="Copiar conteúdo">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<rect x="9" y="9" width="13" height="13" rx="2"></rect>' +
+              '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>' +
+            '</svg>' +
+            '<span class="tr-copy-btn-label">Copiar</span>' +
+          '</button>' +
           '<span class="tr-item-chevron">&#8250;</span>' +
         '</div>' +
         '<div class="tr-item-body" hidden></div>';
 
+      // Type icon: render emoji from item type or fallback.
+      row.querySelector('.tr-item-icon').textContent = _typeIcon(item.type);
+
       var headerEl = row.querySelector('.tr-item-header');
       var bodyEl   = row.querySelector('.tr-item-body');
+      var copyBtn  = row.querySelector('.tr-copy-btn');
 
-      headerEl.addEventListener('click', function() { _toggleItem(row, item, headerEl, bodyEl); });
+      headerEl.addEventListener('click', function(e) {
+        if (e.target.closest('.tr-copy-btn')) return; // copy click handled separately
+        _toggleItem(row, item, headerEl, bodyEl);
+      });
       headerEl.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
+          if (e.target.closest('.tr-copy-btn')) return;
           e.preventDefault();
           _toggleItem(row, item, headerEl, bodyEl);
         }
       });
 
+      copyBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        _copyItemBody(item, copyBtn);
+      });
+
       listEl.appendChild(row);
+    });
+  }
+
+  async function _copyItemBody(item, btn) {
+    var labelEl = btn.querySelector('.tr-copy-btn-label');
+    var prevLabel = labelEl ? labelEl.textContent : '';
+    btn.disabled = true;
+    if (labelEl) labelEl.textContent = '...';
+    try {
+      var data = await callWorker({
+        action:      'ct_get_item_public',
+        client_slug: _clientSlug,
+        turma_slug:  _turmaSlug,
+        token:       _token,
+        item_id:     item.id,
+        _silent: true
+      });
+      var md = (data && data.item && data.item.body_md) || '';
+      await _copyToClipboard(md);
+      if (labelEl) labelEl.textContent = 'Copiado!';
+    } catch (e) {
+      if (labelEl) labelEl.textContent = 'Erro';
+    } finally {
+      setTimeout(function() {
+        if (labelEl) labelEl.textContent = prevLabel;
+        btn.disabled = false;
+      }, 1600);
+    }
+  }
+
+  function _copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function(resolve) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+      resolve();
     });
   }
 
@@ -146,8 +225,18 @@
     }
   }
 
+  var TYPE_EMOJI = {
+    prompt:    '💬',
+    exemplo:   '✨',
+    exercicio: '📝',
+    dica:      '💡',
+    leitura:   '📖',
+    video:     '🎬',
+    link:      '🔗'
+  };
+
   function _typeIcon(type) {
-    return type === 'prompt' ? '&#128172;' : '&#128196;';
+    return TYPE_EMOJI[type] || '📄';
   }
 
   function _esc(s) {

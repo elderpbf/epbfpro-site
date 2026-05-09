@@ -276,25 +276,24 @@
   margin-top: 6px;
 }
 
-/* ----- Tag chip picker ----- */
+/* ----- Tag chip picker (single-row, inline "+ tag") ----- */
 
 .ct-tag-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: block;
 }
 
 .ct-tag-chip-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
 }
 
 .ct-tag-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  padding: 4px 11px;
   font-size: 0.78rem;
   font-weight: 500;
   border-radius: 999px;
@@ -322,32 +321,71 @@
   pointer-events: none;
   padding: 2px 8px;
   font-size: 0.7rem;
-  margin-right: 4px;
 }
 
-.ct-tag-add {
-  display: flex;
+.ct-tag-add-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1.5px dashed var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.ct-tag-add-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .ct-tag-add-input {
-  flex: 1;
-  padding: 0.4rem 0.7rem;
-  font-size: 0.82rem;
-  border: 1.5px dashed var(--border);
-  border-radius: 8px;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  font-size: 0.78rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--primary);
+  background: var(--surface);
   color: var(--text-primary);
   font-family: inherit;
   outline: none;
-  transition: border-color 0.12s;
+  width: 140px;
+  height: auto;
+  box-sizing: border-box;
 }
 
-.ct-tag-add-input:focus {
-  border-color: var(--primary);
-  border-style: solid;
+.ct-helper-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0 0;
 }
 
 /* ----- Tag manager modal ----- */
+
+.ct-tag-manager-create {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 0.85rem;
+}
+
+.ct-tag-manager-create input {
+  flex: 1;
+  padding: 0.4rem 0.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.ct-tag-manager-create input:focus { border-color: var(--primary); }
 
 .ct-tag-manager-list {
   display: flex;

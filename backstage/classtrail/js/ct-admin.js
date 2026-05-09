@@ -285,31 +285,146 @@ window.CT_ADMIN = (function() {
   }
 
   function _openItemEditor(item) {
-    var isEdit = !!item;
-    var initialType = isEdit ? item.type : (_types[0] && _types[0].slug) || 'prompt';
-    var initialTagIds = (isEdit && Array.isArray(item.tags)) ? item.tags.map(function(t) { return t.id; }) : [];
+    if (item) { _openItemEditorFull(item, null); return; }
+    _openItemContentFirst();
+  }
+
+  // ---- Step 1: content-first screen (new items only) ----
+
+  function _openItemContentFirst() {
     var html = '<div class="ct-editor">' +
       '<div class="ct-editor-header">' +
-        '<span class="ct-editor-title">' + (isEdit ? 'Editar item' : 'Novo item') + '</span>' +
+        '<span class="ct-editor-title">Novo item · 1 de 2</span>' +
+        '<button class="ct-btn ct-btn-sm" id="cf-close">Fechar</button>' +
+      '</div>' +
+      '<div class="ct-editor-body">' +
+        '<div class="ct-field">' +
+          '<label>Cole ou escreva seu conteúdo</label>' +
+          '<textarea id="cf-raw" rows="14" placeholder="Cole aqui o texto do prompt, exemplo, exercício, dica..."></textarea>' +
+        '</div>' +
+        '<p class="ct-helper-text">No próximo passo você revisa título, tipo, tags e marcação antes de salvar.</p>' +
+      '</div>' +
+      '<div class="ct-editor-footer">' +
+        '<div class="ct-modal-actions">' +
+          '<button class="ct-btn" id="cf-cancel">Cancelar</button>' +
+          '<button class="ct-btn" id="cf-manual" type="button">Continuar manualmente</button>' +
+          '<button class="ct-btn ct-btn-primary" id="cf-ai" type="button">&#9889; Formatar com IA</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+    var bd = _openModal(html);
+    bd.querySelector('#cf-raw').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') e.stopPropagation();
+    });
+    bd.querySelector('#cf-close').addEventListener('click', _closeModal);
+    bd.querySelector('#cf-cancel').addEventListener('click', _closeModal);
+
+    bd.querySelector('#cf-manual').addEventListener('click', function() {
+      var raw = bd.querySelector('#cf-raw').value;
+      _closeModal();
+      _openItemEditorFull(null, { body_md: raw });
+    });
+
+    bd.querySelector('#cf-ai').addEventListener('click', async function() {
+      var raw = bd.querySelector('#cf-raw').value.trim();
+      if (!raw) { _toast('Cole ou digite seu conteúdo primeiro.'); return; }
+      var btn = this;
+      var prev = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '&#9889; Gerando...';
+      try {
+        var systemPrompt = CT_AI_SPEC.buildSystemPrompt(_types, _tags);
+        var res = await AIClient.generate({
+          action: 'ai_chat',
+          system: systemPrompt,
+          messages: [{ role: 'user', content: raw }],
+          temperature: 0.3,
+          max_tokens: CT_AI_SPEC.MAX_TOKENS
+        });
+        if (!res || !res.text) { _toast('IA não retornou conteúdo. Tente continuar manualmente.'); return; }
+        var parsed = CT_AI_SPEC.parseModelJson(res.text);
+        if (!parsed || !parsed.body_md) {
+          _toast('IA retornou em formato inesperado. Tente continuar manualmente.');
+          return;
+        }
+        if (CT_AI_SPEC.looksTruncated(raw, parsed.body_md)) {
+          if (!confirm('A IA parece ter encurtado o texto significativamente. Usar mesmo assim?\n\nClique em Cancelar para tentar de novo ou continuar manualmente.')) return;
+        }
+        _closeModal();
+        var tagIds = await _tagsByLabels(parsed.tag_labels || []);
+        _openItemEditorFull(null, {
+          title:    parsed.title    || '',
+          summary:  parsed.summary  || '',
+          type:     parsed.type     || (_types[0] && _types[0].slug),
+          body_md:  parsed.body_md  || raw,
+          tag_ids:  tagIds
+        });
+      } catch (e) {
+        _toast('Erro: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = prev;
+      }
+    });
+  }
+
+  // Resolve a list of tag labels to existing tag IDs, creating any
+  // missing ones. Used by the AI flow to match suggested tags.
+  async function _tagsByLabels(labels) {
+    var ids = [];
+    for (var i = 0; i < labels.length; i++) {
+      var label = (labels[i] || '').trim();
+      if (!label) continue;
+      var existing = _tags.find(function(t) { return t.label.toLowerCase() === label.toLowerCase(); });
+      if (existing) { ids.push(existing.id); continue; }
+      try {
+        var res = await callWorker({ action: 'ct_create_tag', label: label });
+        if (res && res.tag) {
+          if (!_tags.find(function(t) { return t.id === res.tag.id; })) {
+            _tags.push({ id: res.tag.id, label: res.tag.label, item_count: 0 });
+          }
+          ids.push(res.tag.id);
+        }
+      } catch (e) {}
+    }
+    return ids;
+  }
+
+  // ---- Step 2: full editor form (also handles edit mode) ----
+
+  function _openItemEditorFull(item, prefill) {
+    var isEdit = !!item;
+    var src = prefill || item || {};
+    var initialType = src.type || (isEdit ? item.type : null) || (_types[0] && _types[0].slug) || 'prompt';
+    var initialTitle   = src.title   != null ? src.title   : '';
+    var initialSummary = src.summary != null ? src.summary : '';
+    var initialBody    = src.body_md != null ? src.body_md : '';
+    var initialTagIds = Array.isArray(src.tag_ids)
+      ? src.tag_ids
+      : (isEdit && Array.isArray(item.tags) ? item.tags.map(function(t) { return t.id; }) : []);
+
+    var html = '<div class="ct-editor">' +
+      '<div class="ct-editor-header">' +
+        '<span class="ct-editor-title">' + (isEdit ? 'Editar item' : 'Novo item · 2 de 2') + '</span>' +
         '<button class="ct-btn ct-btn-sm" id="ie-close">Fechar</button>' +
       '</div>' +
       '<div class="ct-editor-body">' +
         '<div class="ct-field"><label>Título</label>' +
-          '<input type="text" id="ie-title" value="' + _esc(isEdit ? item.title : '') + '" placeholder="Título do item">' +
+          '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="Título do item">' +
         '</div>' +
         '<div class="ct-field"><label>Tipo</label>' +
           '<select id="ie-type">' + _renderTypeOptions(initialType) + '</select>' +
         '</div>' +
-        '<div class="ct-field"><label>Resumo (opcional)</label>' +
-          '<input type="text" id="ie-summary" value="' + _esc(isEdit ? (item.summary || '') : '') + '" placeholder="Uma linha descrevendo o item">' +
+        '<div class="ct-field"><label>Resumo</label>' +
+          '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="Uma linha descrevendo o item">' +
         '</div>' +
         '<div class="ct-field"><label>Tags</label>' +
           '<div class="ct-tag-picker" id="ie-tag-picker"></div>' +
         '</div>' +
         '<div class="ct-field"><label>Corpo em Markdown</label>' +
-          '<textarea id="ie-body" rows="10" placeholder="Cole ou escreva o conteúdo. Pode pedir à IA para formatá-lo em Markdown.">' + _esc(isEdit ? (item.body_md || '') : '') + '</textarea>' +
+          '<textarea id="ie-body" rows="10" placeholder="Conteúdo do item em Markdown...">' + _esc(initialBody) + '</textarea>' +
           '<div class="ct-editor-toolbar">' +
-            '<button class="ct-btn ct-btn-sm" id="ie-ai-btn" type="button">&#9889; Formatar com IA</button>' +
+            '<button class="ct-btn ct-btn-sm" id="ie-ai-btn" type="button">&#9889; Reformatar com IA</button>' +
             '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" type="button">Visualizar preview</button>' +
           '</div>' +
           '<div class="ct-preview-area" id="ie-preview" style="display:none"></div>' +
@@ -325,12 +440,10 @@ window.CT_ADMIN = (function() {
     var bd = _openModal(html);
     var selectedTagIds = new Set(initialTagIds);
 
-    // Defeat the global utils.js Enter-submit handler so Enter creates newlines in the body textarea.
     bd.querySelector('#ie-body').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') e.stopPropagation();
     });
 
-    // Type select: trigger create-new flow when "+ Criar novo tipo..." is picked.
     var typeSel = bd.querySelector('#ie-type');
     var lastTypeValue = initialType;
     typeSel.addEventListener('change', function() {
@@ -349,35 +462,42 @@ window.CT_ADMIN = (function() {
 
     bd.querySelector('#ie-close').addEventListener('click', _closeModal);
     bd.querySelector('#ie-cancel').addEventListener('click', _closeModal);
+
     bd.querySelector('#ie-ai-btn').addEventListener('click', async function() {
       var ta = bd.querySelector('#ie-body');
       var raw = ta.value.trim();
-      if (!raw) { _toast('Cole ou digite o texto antes de pedir à IA.'); return; }
+      if (!raw) { _toast('Escreva ou cole conteúdo antes de reformatar.'); return; }
       var btn = this;
       var prev = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = '&#9203; Formatando...';
+      btn.innerHTML = '&#9889; Reformatando...';
       try {
         var res = await AIClient.generate({
           action: 'ai_chat',
-          system: 'Você é um especialista em formatação Markdown para material didático. Converta o texto recebido em Markdown bem estruturado. Use cabeçalhos (##, ###), listas, negrito (**), itálico (*), blocos de código com ``` e citações (>) quando apropriado. Preserve fielmente o significado do conteúdo, sem inventar nem resumir. Retorne APENAS o Markdown final, sem explicações nem comentários.',
+          system: CT_AI_SPEC.buildFormatOnlyPrompt(),
           messages: [{ role: 'user', content: raw }],
-          temperature: 0.3,
-          max_tokens: 3000
+          temperature: 0.2,
+          max_tokens: CT_AI_SPEC.MAX_TOKENS
         });
-        if (!res || !res.text) { _toast('IA não retornou conteúdo. Tente novamente.'); return; }
-        ta.value = res.text.trim();
-        // Refresh preview if open.
+        if (!res || !res.text) { _toast('IA não retornou conteúdo.'); return; }
+        var newBody = res.text.trim();
+        // Strip code fences if model wrapped output.
+        newBody = newBody.replace(/^```(?:markdown|md)?\s*/i, '').replace(/\s*```$/, '');
+        if (CT_AI_SPEC.looksTruncated(raw, newBody)) {
+          if (!confirm('A IA parece ter encurtado o texto. Aplicar mesmo assim?')) return;
+        }
+        ta.value = newBody;
         var pre = bd.querySelector('#ie-preview');
-        if (pre && pre.style.display !== 'none') _renderMarkdown(ta.value, pre);
-        _toast('Markdown gerado.');
+        if (pre && pre.style.display !== 'none') _renderMarkdown(newBody, pre);
+        _toast('Markdown reformatado.');
       } catch (e) {
-        _toast('Erro ao chamar IA: ' + (e.message || e));
+        _toast('Erro: ' + (e.message || e));
       } finally {
         btn.disabled = false;
         btn.innerHTML = prev;
       }
     });
+
     bd.querySelector('#ie-preview-btn').addEventListener('click', function() {
       var pre = bd.querySelector('#ie-preview');
       var body = bd.querySelector('#ie-body').value;
@@ -390,6 +510,7 @@ window.CT_ADMIN = (function() {
         this.textContent = 'Visualizar preview';
       }
     });
+
     bd.querySelector('#ie-save').addEventListener('click', function() {
       var title = bd.querySelector('#ie-title').value.trim();
       var type = typeSel.value;
@@ -416,7 +537,7 @@ window.CT_ADMIN = (function() {
     });
   }
 
-  // ---- Tag picker (chip selector + free-text add) ----
+  // ---- Tag picker (single-row chips + inline "+ tag" button) ----
 
   function _renderTagPicker(container, selectedTagIds) {
     function render() {
@@ -426,9 +547,8 @@ window.CT_ADMIN = (function() {
           '" data-id="' + t.id + '">' + _esc(t.label) + '</button>';
       }).join('');
       container.innerHTML =
-        '<div class="ct-tag-chip-row">' + chips + '</div>' +
-        '<div class="ct-tag-add">' +
-          '<input type="text" class="ct-tag-add-input" placeholder="+ Nova tag (Enter para adicionar)">' +
+        '<div class="ct-tag-chip-row">' + chips +
+          '<button type="button" class="ct-tag-add-chip">+ tag</button>' +
         '</div>';
 
       container.querySelectorAll('.ct-tag-chip').forEach(function(btn) {
@@ -440,24 +560,36 @@ window.CT_ADMIN = (function() {
         });
       });
 
-      var input = container.querySelector('.ct-tag-add-input');
-      input.addEventListener('keydown', function(e) {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        e.stopPropagation();
-        var label = input.value.trim();
-        if (!label) return;
-        callWorker({ action: 'ct_create_tag', label: label }).then(function(res) {
-          if (res.tag) {
-            var existing = _tags.find(function(x) { return x.id === res.tag.id; });
-            if (!existing) _tags.push({ id: res.tag.id, label: res.tag.label, item_count: 0 });
-            _tags.sort(function(a, b) { return a.label.localeCompare(b.label); });
-            selectedTagIds.add(res.tag.id);
-            input.value = '';
+      var addBtn = container.querySelector('.ct-tag-add-chip');
+      addBtn.addEventListener('click', function() {
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'ct-tag-add-input';
+        input.placeholder = 'nome da tag';
+        addBtn.replaceWith(input);
+        input.focus();
+        function commit() {
+          var label = input.value.trim();
+          if (!label) { render(); return; }
+          callWorker({ action: 'ct_create_tag', label: label }).then(function(res) {
+            if (res && res.tag) {
+              if (!_tags.find(function(x) { return x.id === res.tag.id; })) {
+                _tags.push({ id: res.tag.id, label: res.tag.label, item_count: 0 });
+                _tags.sort(function(a, b) { return a.label.localeCompare(b.label, 'pt-BR'); });
+              }
+              selectedTagIds.add(res.tag.id);
+            }
             render();
-            container.querySelector('.ct-tag-add-input').focus();
-          }
-        }).catch(function(err) { _toast('Erro ao criar tag: ' + (err.message || err)); });
+          }).catch(function(err) {
+            _toast('Erro: ' + (err.message || err));
+            render();
+          });
+        }
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commit(); }
+          else if (e.key === 'Escape') { render(); }
+        });
+        input.addEventListener('blur', commit);
       });
     }
     render();
@@ -507,12 +639,31 @@ window.CT_ADMIN = (function() {
   function _openTagManager() {
     var html = '<div class="ct-modal" style="max-width:520px">' +
       '<div class="ct-modal-title">Gerenciar tags</div>' +
+      '<div class="ct-tag-manager-create">' +
+        '<input type="text" id="tm-new" placeholder="Nome da nova tag">' +
+        '<button class="ct-btn ct-btn-primary ct-btn-sm" id="tm-add" type="button">Adicionar</button>' +
+      '</div>' +
       '<div class="ct-tag-manager-list" id="tm-list"></div>' +
       '<div class="ct-modal-actions">' +
         '<button class="ct-btn ct-btn-primary" id="tm-close">Fechar</button>' +
       '</div>' +
     '</div>';
     var bd = _openModal(html);
+    var newInput = bd.querySelector('#tm-new');
+    newInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); bd.querySelector('#tm-add').click(); }
+    });
+    bd.querySelector('#tm-add').addEventListener('click', function() {
+      var label = newInput.value.trim();
+      if (!label) return;
+      callWorker({ action: 'ct_create_tag', label: label }).then(function() {
+        return _loadTags();
+      }).then(function() {
+        newInput.value = '';
+        render();
+        _toast('Tag adicionada.');
+      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    });
     function render() {
       var listEl = bd.querySelector('#tm-list');
       if (!_tags.length) {

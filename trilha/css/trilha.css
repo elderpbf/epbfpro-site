@@ -271,6 +271,58 @@ pensoia-header .ph-bar {
   -webkit-box-orient: vertical;
 }
 
+.tr-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 9px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.tr-copy-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(20, 184, 166, 0.06);
+}
+
+.tr-copy-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tr-copy-btn svg { flex-shrink: 0; }
+
+@media (max-width: 600px) {
+  .tr-copy-btn-label { display: none; }
+  .tr-copy-btn { padding: 6px 8px; }
+}
+
+.tr-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tr-tag-mini {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--primary);
+}
+
 .tr-item-chevron {
   font-size: 1.4rem;
   color: var(--text-secondary);
