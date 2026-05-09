@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ClassTrail</title>
+
+<link rel="icon" type="image/x-icon" href="../favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+
+<link rel="stylesheet" href="../backstage/css/theme.css?v=1.1">
+<link rel="stylesheet" href="css/trilha.css?v=1.0">
+</head>
+<body>
+
+<header class="tr-topbar">
+  <span class="tr-topbar-brand">PensoIA</span>
+  <button class="tr-theme-btn" id="theme-btn" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
+</header>
+
+<div class="tr-page">
+
+  <div id="tr-loading">
+    <div class="tr-spinner"></div>
+    Carregando...
+  </div>
+
+  <div id="tr-error">
+    <div class="tr-error-icon">&#128274;</div>
+    <p class="tr-error-msg"></p>
+  </div>
+
+  <div id="tr-main">
+    <div class="tr-header">
+      <div class="tr-header-label">ClassTrail</div>
+      <h1 class="tr-turma-title" id="tr-turma-title"></h1>
+    </div>
+
+    <div class="tr-section-label">Conteúdo disponível</div>
+    <div id="tr-items-list"></div>
+  </div>
+
+</div>
+
+<script src="../backstage/js/theme-manager.js?v=1.0"></script>
+<script src="../backstage/js/api-client.js?v=1.1"></script>
+<script src="../backstage/js/ct-renderer.js?v=1.0"></script>
+<script src="js/trilha.js?v=1.0"></script>
+
+</body>
+</html>

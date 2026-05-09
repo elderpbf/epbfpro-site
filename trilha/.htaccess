@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /trilha/
+
+# Rewrite /trilha/<client>/<turma>[/] to index.html, preserving ?k=token
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-z0-9_-]+)/([a-z0-9_-]+)/?$ index.html?c=$1&t=$2 [QSA,L]
