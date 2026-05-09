@@ -115,10 +115,7 @@ window.CT_ADMIN = (function() {
     var html = '<div class="ct-modal">' +
       '<div class="ct-modal-title">' + (isEdit ? 'Editar cliente' : 'Novo cliente') + '</div>' +
       '<div class="ct-field"><label>Nome interno</label>' +
-        '<input type="text" id="cf-name" value="' + _esc(isEdit ? client.name : '') + '" placeholder="Ex: PCV Advogados Associados">' +
-      '</div>' +
-      '<div class="ct-field"><label>Slug (URL)</label>' +
-        '<input type="text" id="cf-slug" value="' + _esc(isEdit ? client.slug : '') + '" placeholder="pcv" ' + (isEdit ? 'readonly' : '') + '>' +
+        '<input type="text" id="cf-name" value="' + _esc(isEdit ? client.name : '') + '" placeholder="Ex: Acme Ltda">' +
       '</div>' +
       '<div class="ct-field"><label>Nome para alunos (opcional)</label>' +
         '<input type="text" id="cf-display" value="' + _esc(isEdit ? (client.display_name || '') : '') + '" placeholder="Igual ao nome interno se vazio">' +
@@ -129,21 +126,16 @@ window.CT_ADMIN = (function() {
       '</div>' +
     '</div>';
     var bd = _openModal(html);
-    if (!isEdit) {
-      bd.querySelector('#cf-name').addEventListener('input', function(e) {
-        var s = bd.querySelector('#cf-slug');
-        if (!s._manual) s.value = _slugify(e.target.value);
-      });
-      bd.querySelector('#cf-slug').addEventListener('input', function() { this._manual = true; });
-    }
     bd.querySelector('#cf-cancel').addEventListener('click', _closeModal);
     bd.querySelector('#cf-save').addEventListener('click', function() {
       var name = bd.querySelector('#cf-name').value.trim();
-      var slug = bd.querySelector('#cf-slug').value.trim();
       var display = bd.querySelector('#cf-display').value.trim();
-      if (!name || !slug) { _toast('Nome e slug são obrigatórios.'); return; }
+      if (!name) { _toast('Nome obrigatório.'); return; }
       var action = isEdit ? 'ct_update_client' : 'ct_create_client';
-      var params = { action: action, slug: slug, name: name, display_name: display || null };
+      var params = { action: action, name: name, display_name: display || null };
+      if (isEdit) params.slug = client.slug;
+      else params.slug = _slugify(name);
+      if (!params.slug) { _toast('Nome inválido para gerar slug.'); return; }
       callWorker(params).then(function() {
         _closeModal();
         _toast(isEdit ? 'Cliente atualizado.' : 'Cliente criado.');
@@ -195,10 +187,7 @@ window.CT_ADMIN = (function() {
     var html = '<div class="ct-modal">' +
       '<div class="ct-modal-title">' + (isEdit ? 'Editar turma' : 'Nova turma') + '</div>' +
       '<div class="ct-field"><label>Nome interno</label>' +
-        '<input type="text" id="tf-name" value="' + _esc(isEdit ? turma.name : '') + '" placeholder="Ex: Manhã 2026">' +
-      '</div>' +
-      '<div class="ct-field"><label>Slug (URL)</label>' +
-        '<input type="text" id="tf-slug" value="' + _esc(isEdit ? turma.slug : '') + '" placeholder="manha-2026" ' + (isEdit ? 'readonly' : '') + '>' +
+        '<input type="text" id="tf-name" value="' + _esc(isEdit ? turma.name : '') + '" placeholder="Ex: Turma A">' +
       '</div>' +
       '<div class="ct-field"><label>Nome para alunos (opcional)</label>' +
         '<input type="text" id="tf-display" value="' + _esc(isEdit ? (turma.display_name || '') : '') + '" placeholder="Igual ao nome interno se vazio">' +
@@ -209,21 +198,16 @@ window.CT_ADMIN = (function() {
       '</div>' +
     '</div>';
     var bd = _openModal(html);
-    if (!isEdit) {
-      bd.querySelector('#tf-name').addEventListener('input', function(e) {
-        var s = bd.querySelector('#tf-slug');
-        if (!s._manual) s.value = _slugify(e.target.value);
-      });
-      bd.querySelector('#tf-slug').addEventListener('input', function() { this._manual = true; });
-    }
     bd.querySelector('#tf-cancel').addEventListener('click', _closeModal);
     bd.querySelector('#tf-save').addEventListener('click', function() {
       var name = bd.querySelector('#tf-name').value.trim();
-      var slug = bd.querySelector('#tf-slug').value.trim();
       var display = bd.querySelector('#tf-display').value.trim();
-      if (!name || !slug) { _toast('Nome e slug são obrigatórios.'); return; }
+      if (!name) { _toast('Nome obrigatório.'); return; }
       var action = isEdit ? 'ct_update_turma' : 'ct_create_turma';
-      var params = { action: action, client_slug: _selectedClientSlug, slug: slug, name: name, display_name: display || null };
+      var params = { action: action, client_slug: _selectedClientSlug, name: name, display_name: display || null };
+      if (isEdit) params.slug = turma.slug;
+      else params.slug = _slugify(name);
+      if (!params.slug) { _toast('Nome inválido para gerar slug.'); return; }
       callWorker(params).then(function() {
         _closeModal();
         _toast(isEdit ? 'Turma atualizada.' : 'Turma criada.');
