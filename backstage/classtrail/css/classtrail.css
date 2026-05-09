@@ -269,6 +269,13 @@
 
 .ct-field textarea { resize: vertical; min-height: 80px; }
 
+.ct-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
 .ct-modal-actions {
   display: flex;
   justify-content: flex-end;

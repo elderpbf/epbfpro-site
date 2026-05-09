@@ -274,8 +274,11 @@ window.CT_ADMIN = (function() {
           '<input type="text" id="ie-tags" value="' + _esc(isEdit ? (item.tags || '') : '') + '" placeholder="prompting, contexto">' +
         '</div>' +
         '<div class="ct-field"><label>Corpo em Markdown</label>' +
-          '<textarea id="ie-body" rows="10" placeholder="Escreva o conteúdo em Markdown...">' + _esc(isEdit ? (item.body_md || '') : '') + '</textarea>' +
-          '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" style="margin-top:6px">Visualizar preview</button>' +
+          '<textarea id="ie-body" rows="10" placeholder="Cole ou escreva o conteúdo. Pode pedir à IA para formatá-lo em Markdown.">' + _esc(isEdit ? (item.body_md || '') : '') + '</textarea>' +
+          '<div class="ct-editor-toolbar">' +
+            '<button class="ct-btn ct-btn-sm" id="ie-ai-btn" type="button">&#9889; Formatar com IA</button>' +
+            '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" type="button">Visualizar preview</button>' +
+          '</div>' +
           '<div class="ct-preview-area" id="ie-preview" style="display:none"></div>' +
         '</div>' +
       '</div>' +
@@ -293,6 +296,35 @@ window.CT_ADMIN = (function() {
     });
     bd.querySelector('#ie-close').addEventListener('click', _closeModal);
     bd.querySelector('#ie-cancel').addEventListener('click', _closeModal);
+    bd.querySelector('#ie-ai-btn').addEventListener('click', async function() {
+      var ta = bd.querySelector('#ie-body');
+      var raw = ta.value.trim();
+      if (!raw) { _toast('Cole ou digite o texto antes de pedir à IA.'); return; }
+      var btn = this;
+      var prev = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '&#9203; Formatando...';
+      try {
+        var res = await AIClient.generate({
+          action: 'ai_chat',
+          system: 'Você é um especialista em formatação Markdown para material didático. Converta o texto recebido em Markdown bem estruturado. Use cabeçalhos (##, ###), listas, negrito (**), itálico (*), blocos de código com ``` e citações (>) quando apropriado. Preserve fielmente o significado do conteúdo, sem inventar nem resumir. Retorne APENAS o Markdown final, sem explicações nem comentários.',
+          messages: [{ role: 'user', content: raw }],
+          temperature: 0.3,
+          max_tokens: 3000
+        });
+        if (!res || !res.text) { _toast('IA não retornou conteúdo. Tente novamente.'); return; }
+        ta.value = res.text.trim();
+        // Refresh preview if open.
+        var pre = bd.querySelector('#ie-preview');
+        if (pre && pre.style.display !== 'none') _renderMarkdown(ta.value, pre);
+        _toast('Markdown gerado.');
+      } catch (e) {
+        _toast('Erro ao chamar IA: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = prev;
+      }
+    });
     bd.querySelector('#ie-preview-btn').addEventListener('click', function() {
       var pre = bd.querySelector('#ie-preview');
       var body = bd.querySelector('#ie-body').value;
