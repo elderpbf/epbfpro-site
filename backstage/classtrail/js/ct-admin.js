@@ -58,7 +58,8 @@ window.CT_ADMIN = (function() {
   function _renderTypeOptions(selectedSlug) {
     var opts = _types.map(function(t) {
       var sel = t.slug === selectedSlug ? ' selected' : '';
-      return '<option value="' + _esc(t.slug) + '"' + sel + '>' + _esc(t.label) + '</option>';
+      var icon = t.icon ? t.icon + ' ' : '';
+      return '<option value="' + _esc(t.slug) + '"' + sel + '>' + _esc(icon + t.label) + '</option>';
     }).join('');
     return opts + '<option value="__new__">+ Criar novo tipo...</option>';
   }
@@ -347,7 +348,9 @@ window.CT_ADMIN = (function() {
           _toast('IA retornou em formato inesperado. Tente continuar manualmente.');
           return;
         }
-        if (CT_AI_SPEC.looksTruncated(raw, parsed.body_md)) {
+        // Guard: if AI labeled this as a prompt, always use the raw input as body.
+        parsed = CT_AI_SPEC.enforcePromptVerbatim(parsed, raw);
+        if (parsed.type !== 'prompt' && CT_AI_SPEC.looksTruncated(raw, parsed.body_md)) {
           if (!confirm('A IA parece ter encurtado o texto significativamente. Usar mesmo assim?\n\nClique em Cancelar para tentar de novo ou continuar manualmente.')) return;
         }
         _closeModal();
@@ -424,7 +427,6 @@ window.CT_ADMIN = (function() {
         '<div class="ct-field"><label>Corpo em Markdown</label>' +
           '<textarea id="ie-body" rows="10" placeholder="Conteúdo do item em Markdown...">' + _esc(initialBody) + '</textarea>' +
           '<div class="ct-editor-toolbar">' +
-            '<button class="ct-btn ct-btn-sm" id="ie-ai-btn" type="button">&#9889; Reformatar com IA</button>' +
             '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" type="button">Visualizar preview</button>' +
           '</div>' +
           '<div class="ct-preview-area" id="ie-preview" style="display:none"></div>' +
@@ -462,41 +464,6 @@ window.CT_ADMIN = (function() {
 
     bd.querySelector('#ie-close').addEventListener('click', _closeModal);
     bd.querySelector('#ie-cancel').addEventListener('click', _closeModal);
-
-    bd.querySelector('#ie-ai-btn').addEventListener('click', async function() {
-      var ta = bd.querySelector('#ie-body');
-      var raw = ta.value.trim();
-      if (!raw) { _toast('Escreva ou cole conteúdo antes de reformatar.'); return; }
-      var btn = this;
-      var prev = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '&#9889; Reformatando...';
-      try {
-        var res = await AIClient.generate({
-          action: 'ai_chat',
-          system: CT_AI_SPEC.buildFormatOnlyPrompt(),
-          messages: [{ role: 'user', content: raw }],
-          temperature: 0.2,
-          max_tokens: CT_AI_SPEC.MAX_TOKENS
-        });
-        if (!res || !res.text) { _toast('IA não retornou conteúdo.'); return; }
-        var newBody = res.text.trim();
-        // Strip code fences if model wrapped output.
-        newBody = newBody.replace(/^```(?:markdown|md)?\s*/i, '').replace(/\s*```$/, '');
-        if (CT_AI_SPEC.looksTruncated(raw, newBody)) {
-          if (!confirm('A IA parece ter encurtado o texto. Aplicar mesmo assim?')) return;
-        }
-        ta.value = newBody;
-        var pre = bd.querySelector('#ie-preview');
-        if (pre && pre.style.display !== 'none') _renderMarkdown(newBody, pre);
-        _toast('Markdown reformatado.');
-      } catch (e) {
-        _toast('Erro: ' + (e.message || e));
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = prev;
-      }
-    });
 
     bd.querySelector('#ie-preview-btn').addEventListener('click', function() {
       var pre = bd.querySelector('#ie-preview');

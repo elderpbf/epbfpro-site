@@ -90,7 +90,7 @@
 
       row.innerHTML =
         '<div class="tr-item-header" role="button" tabindex="0" aria-expanded="false">' +
-          '<span class="tr-item-icon">' + _esc(item.type === 'prompt' ? '💬' : '') + '</span>' +
+          '<span class="tr-item-icon"></span>' +
           '<div class="tr-item-meta">' +
             '<div class="tr-item-title">' + _esc(item.title) + '</div>' +
             summary +
@@ -107,8 +107,9 @@
         '</div>' +
         '<div class="tr-item-body" hidden></div>';
 
-      // Type icon: render emoji from item type or fallback.
-      row.querySelector('.tr-item-icon').textContent = _typeIcon(item.type);
+      // Icon comes from the worker (joined with ct_types). Falls back to a
+      // generic page glyph if the type was deleted or has no icon set.
+      row.querySelector('.tr-item-icon').textContent = item.type_icon || '📄';
 
       var headerEl = row.querySelector('.tr-item-header');
       var bodyEl   = row.querySelector('.tr-item-body');
@@ -223,20 +224,6 @@
         ? 'Link inválido ou expirado. Verifique o endereço com seu professor(a).'
         : 'Erro ao carregar o conteúdo. Tente novamente em instantes.';
     }
-  }
-
-  var TYPE_EMOJI = {
-    prompt:    '💬',
-    exemplo:   '✨',
-    exercicio: '📝',
-    dica:      '💡',
-    leitura:   '📖',
-    video:     '🎬',
-    link:      '🔗'
-  };
-
-  function _typeIcon(type) {
-    return TYPE_EMOJI[type] || '📄';
   }
 
   function _esc(s) {

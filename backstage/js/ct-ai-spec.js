@@ -8,7 +8,7 @@ window.CT_AI_SPEC = (function() {
 
   // Markdown elements the renderer styles. The system prompt instructs
   // the model to use ONLY these so every item looks consistent on the
-  // student page.
+  // student page. Emojis are PRESERVED, not stripped.
   var MARKDOWN_RULES =
     'Use APENAS estes elementos de Markdown:\n' +
     '- ## Titulo de secao  (secoes principais; max 4 por item)\n' +
@@ -17,16 +17,26 @@ window.CT_AI_SPEC = (function() {
     '- *italico*           (enfase suave)\n' +
     '- - item              (lista nao-ordenada)\n' +
     '- 1. item             (lista ordenada / passos)\n' +
-    '- ```bloco```         (prompts, codigo, exemplos verbatim — sempre em bloco proprio)\n' +
+    '- ```bloco```         (codigo, exemplos verbatim)\n' +
     '- `inline`            (termo tecnico curto)\n' +
     '- > citacao           (avisos/observacoes)\n' +
     '- [texto](url)        (links externos)\n' +
     '\n' +
-    'PROIBIDO: # H1 (reservado para o titulo do item), HTML cru, tabelas, imagens, emojis dentro do texto.\n';
+    'PROIBIDO: HTML cru, tabelas, imagens.\n' +
+    '\n' +
+    'EMOJIS — REGRA CRITICA:\n' +
+    'PRESERVE todos os emojis do input. Eles ajudam a leitura e dao\n' +
+    'identidade visual ao item. Se o input usa emojis para marcar\n' +
+    'secoes (ex: 🔁 ✅ 🖥️ 🍎 ⚠️ 💡), MOVA o emoji para dentro do\n' +
+    'cabecalho que ele introduz. Exemplo:\n' +
+    '  Input:  "🖥️ NO WINDOWS\\n1. Abra o VLC..."\n' +
+    '  Output: "## 🖥️ No Windows\\n1. Abra o VLC..."\n' +
+    'NAO invente emojis novos onde nao havia. NAO remova emojis existentes.\n';
 
   function buildSystemPrompt(types, tags) {
     var typeList = types.map(function(t) {
-      return '- ' + t.slug + ': ' + t.label;
+      var icon = t.icon ? t.icon + ' ' : '';
+      return '- ' + t.slug + ': ' + icon + t.label;
     }).join('\n');
     var tagList = tags.length
       ? tags.map(function(t) { return '"' + t.label + '"'; }).join(', ')
@@ -47,28 +57,28 @@ window.CT_AI_SPEC = (function() {
       '  "body_md":    "..."        // texto formatado em Markdown (regras abaixo)\n' +
       '}\n\n' +
 
-      'REGRAS PARA body_md:\n' + MARKDOWN_RULES + '\n' +
+      'REGRA ESPECIAL — TIPO PROMPT:\n' +
+      'Se o conteudo do input for um prompt para uma IA (instrucoes dirigidas\n' +
+      'a um modelo de linguagem como ChatGPT, Claude, Gemini etc), ENTAO:\n' +
+      '  - type: "prompt"\n' +
+      '  - body_md: copie o input EXATAMENTE como veio, caractere por caractere.\n' +
+      '    Sem reformatar, sem mexer em asteriscos, sem trocar quebras de linha,\n' +
+      '    sem adicionar ## headers. O texto do prompt e instrucao para a IA;\n' +
+      '    qualquer caractere que parece markdown e parte do prompt, nao formatacao.\n' +
+      '  - title, summary e tag_labels: voce ainda gera normalmente.\n' +
+      'Sinais de que e um prompt: o texto fala "voce e...", "atue como...",\n' +
+      '"sua tarefa e...", "responda em formato...", instrui um modelo a fazer algo.\n\n' +
+
+      'REGRAS PARA body_md (todos os outros tipos):\n' + MARKDOWN_RULES + '\n' +
 
       'REGRA CRITICA DE PRESERVACAO:\n' +
       'NAO RESUMA. NAO ENCURTE. NAO OMITA paragrafos ou trechos.\n' +
       'Mantenha 100% do conteudo informacional do input. Voce APENAS adiciona\n' +
-      'marcacao Markdown para clareza visual. Se o input tem N paragrafos,\n' +
-      'a saida deve ter pelo menos N paragrafos cobrindo o mesmo material.\n\n' +
+      'marcacao Markdown para clareza visual (exceto para type=prompt, onde\n' +
+      'o body fica intocado). Se o input tem N paragrafos, a saida deve ter\n' +
+      'pelo menos N paragrafos cobrindo o mesmo material.\n\n' +
 
       'RETORNE APENAS o JSON. Nada antes, nada depois, sem cercas de codigo.'
-    );
-  }
-
-  // Stricter prompt for "format only" (manual flow keeps existing fields and
-  // just polishes the body). Used by the "Formatar com IA" button on the
-  // body textarea after manual editing has begun.
-  function buildFormatOnlyPrompt() {
-    return (
-      'Voce reformata texto bruto em Markdown limpo, mantendo TODO o conteudo.\n\n' +
-      'REGRA CRITICA: NAO RESUMA. NAO ENCURTE. NAO OMITA paragrafos.\n' +
-      'Mantenha 100% do conteudo informacional. Apenas adicione marcacao.\n\n' +
-      MARKDOWN_RULES + '\n' +
-      'Retorne APENAS o Markdown final, sem explicacoes nem cercas.'
     );
   }
 
@@ -77,9 +87,7 @@ window.CT_AI_SPEC = (function() {
   function parseModelJson(text) {
     if (!text) return null;
     var s = text.trim();
-    // Strip markdown code fences if present.
     s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    // Find the first { and last } as a fallback.
     var first = s.indexOf('{');
     var last  = s.lastIndexOf('}');
     if (first === -1 || last === -1 || last < first) return null;
@@ -96,11 +104,22 @@ window.CT_AI_SPEC = (function() {
     return b < a * 0.55;                // output under 55% of input by length
   }
 
+  // Client-side belt-and-suspenders: if AI labelled the item as a prompt,
+  // ALWAYS use the original raw input as body_md. The AI may forget the
+  // verbatim rule even when the system prompt says so.
+  function enforcePromptVerbatim(parsed, rawInput) {
+    if (!parsed) return parsed;
+    if (parsed.type === 'prompt') {
+      parsed.body_md = rawInput;
+    }
+    return parsed;
+  }
+
   return {
     buildSystemPrompt:     buildSystemPrompt,
-    buildFormatOnlyPrompt: buildFormatOnlyPrompt,
     parseModelJson:        parseModelJson,
     looksTruncated:        looksTruncated,
+    enforcePromptVerbatim: enforcePromptVerbatim,
     MAX_TOKENS:            8000
   };
 
