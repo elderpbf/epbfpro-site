@@ -17,64 +17,14 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ----- Top brand bar ----- */
+/* ----- Reused <pensoia-header>: hide QR + zoom (trilha has no session code) ----- */
 
-.tr-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--surface);
+pensoia-header .ph-code-btn,
+pensoia-header .ph-zoom { display: none !important; }
+
+pensoia-header .ph-bar {
   border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  height: 56px;
-  backdrop-filter: blur(8px);
 }
-
-.tr-topbar-brand {
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
-.tr-topbar-brand::before {
-  content: '';
-  width: 22px;
-  height: 22px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark, #0d9488));
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.35);
-}
-
-.tr-theme-btn {
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: 9px;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  transition: border-color 0.18s, color 0.18s, background 0.18s;
-}
-
-.tr-theme-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: rgba(20, 184, 166, 0.06);
-}
-
-.tr-theme-btn svg { width: 16px; height: 16px; }
 
 /* ----- Page layout ----- */
 
@@ -113,7 +63,6 @@ html, body {
 /* ----- Error state ----- */
 
 #tr-error {
-  display: none;
   text-align: center;
   padding: 5rem 1rem;
 }
@@ -134,7 +83,7 @@ html, body {
 
 /* ----- Main content ----- */
 
-#tr-main { display: none; animation: tr-fade-in 0.4s ease both; }
+#tr-main { animation: tr-fade-in 0.4s ease both; }
 
 @keyframes tr-fade-in {
   from { opacity: 0; transform: translateY(8px); }

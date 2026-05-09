@@ -17,19 +17,11 @@
   }
 
   function init() {
-    ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });
-
-    var themeBtn = document.getElementById('theme-btn');
-    if (themeBtn) {
-      themeBtn.innerHTML = ThemeManager.SVG_SUN + ThemeManager.SVG_MOON;
-      ThemeManager.init({ toggleEl: themeBtn });
-    }
-
+    // Theme is initialized in <head> (initPublic) and wired by <pensoia-header>.
     if (!_clientSlug || !_turmaSlug || !_token) {
       _showError('link_invalid');
       return;
     }
-
     _loadTurma();
   }
 
@@ -43,8 +35,8 @@
         _silent: true
       });
 
-      document.getElementById('tr-loading').style.display = 'none';
-      document.getElementById('tr-main').style.display = 'block';
+      document.getElementById('tr-loading').hidden = true;
+      document.getElementById('tr-main').hidden = false;
 
       var titleEl = document.getElementById('tr-turma-title');
       if (titleEl) titleEl.textContent = data.turma.display_name || data.turma.name || _turmaSlug;
@@ -143,9 +135,9 @@
   }
 
   function _showError(code) {
-    document.getElementById('tr-loading').style.display = 'none';
+    document.getElementById('tr-loading').hidden = true;
     var errorEl = document.getElementById('tr-error');
-    errorEl.style.display = 'block';
+    errorEl.hidden = false;
     var msgEl = errorEl.querySelector('.tr-error-msg');
     if (msgEl) {
       msgEl.textContent = code === 'link_invalid'

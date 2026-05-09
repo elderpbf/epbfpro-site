@@ -6,19 +6,25 @@
 <meta name="robots" content="noindex, nofollow">
 <title>ClassTrail</title>
 
-<link rel="icon" type="image/x-icon" href="../favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
-<link rel="stylesheet" href="../backstage/css/theme.css?v=1.1">
-<link rel="stylesheet" href="css/trilha.css?v=1.1">
+<link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
+<link rel="stylesheet" href="/backstage/css/shared-components.css?v=1.5">
+<link rel="stylesheet" href="/backstage/css/public-header.css?v=1.6">
+<link rel="stylesheet" href="/trilha/css/trilha.css?v=1.2">
+
+<script src="/backstage/js/debug.js?v=2.5"></script>
+<script src="/backstage/js/theme-manager.js?v=1.1"></script>
+<script>
+  // Apply saved theme before paint so there's no flash.
+  ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });
+</script>
 </head>
 <body>
 
-<header class="tr-topbar">
-  <span class="tr-topbar-brand">PensoIA</span>
-  <button class="tr-theme-btn" id="theme-btn" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
-</header>
+<pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
 
 <div class="tr-page">
 
@@ -27,12 +33,12 @@
     Carregando sua trilha...
   </div>
 
-  <div id="tr-error">
+  <div id="tr-error" hidden>
     <div class="tr-error-icon">&#128274;</div>
     <p class="tr-error-msg"></p>
   </div>
 
-  <main id="tr-main">
+  <main id="tr-main" hidden>
     <section class="tr-hero">
       <span class="tr-hero-eyebrow">ClassTrail</span>
       <h1 class="tr-turma-title" id="tr-turma-title"></h1>
@@ -52,10 +58,10 @@
 
 </div>
 
-<script src="../backstage/js/theme-manager.js?v=1.0"></script>
-<script src="../backstage/js/api-client.js?v=1.1"></script>
-<script src="../backstage/js/ct-renderer.js?v=1.0"></script>
-<script src="js/trilha.js?v=1.1"></script>
+<script src="/backstage/js/api-client.js?v=1.1"></script>
+<script src="/backstage/js/pensoia-header.js?v=1.0"></script>
+<script src="/backstage/js/ct-renderer.js?v=1.0"></script>
+<script src="/trilha/js/trilha.js?v=1.2"></script>
 
 </body>
 </html>
