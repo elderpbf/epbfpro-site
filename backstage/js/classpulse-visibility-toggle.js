@@ -2,60 +2,69 @@
   'use strict';
 
   function attach(opts) {
-    var buttonEl      = opts.buttonEl;
+    var checkboxEl    = opts.checkboxEl;
     var getActiveQId  = opts.getActiveQId;
     var getSessionCode = opts.getSessionCode;
     var authToken     = opts.authToken;
     var callWorkerFn  = opts.callWorker;
-    var labels        = opts.labels || { show: 'Mostrar resultados no projetor', hide: 'Esconder resultados no projetor' };
     var onError       = typeof opts.onError === 'function' ? opts.onError : function() {};
 
-    var barsVisible = false;
+    // Internal state mirrors checkbox: hidden === checkbox.checked
+    var hidden = false;
+    checkboxEl.checked = false;
 
-    buttonEl.textContent = labels.show;
-
-    function onClick() {
+    function onChange() {
       var qId = getActiveQId();
-      if (!qId) return;
-      buttonEl.disabled = true;
-      var next = !barsVisible;
-      callWorkerFn({ action: 'set_question_visibility', auth_token: authToken, id: qId, session_code: getSessionCode(), show_results: next })
+      if (!qId) {
+        checkboxEl.checked = hidden;
+        return;
+      }
+      var nextHidden = checkboxEl.checked;
+      checkboxEl.disabled = true;
+      callWorkerFn({
+        action: 'set_question_visibility',
+        auth_token: authToken,
+        id: qId,
+        session_code: getSessionCode(),
+        show_results: !nextHidden
+      })
         .then(function(res) {
           if (res && res.ok) {
-            barsVisible = next;
-            buttonEl.textContent = barsVisible ? labels.hide : labels.show;
+            hidden = nextHidden;
           } else {
+            checkboxEl.checked = hidden;
             onError((res && res.error) || 'Erro ao atualizar visibilidade.');
           }
         })
         .catch(function(err) {
+          checkboxEl.checked = hidden;
           onError(err && err.message ? err.message : String(err));
         })
         .finally(function() {
-          buttonEl.disabled = false;
+          checkboxEl.disabled = false;
         });
     }
 
-    buttonEl.addEventListener('click', onClick);
+    checkboxEl.addEventListener('change', onChange);
 
     function reset() {
-      barsVisible = false;
-      buttonEl.textContent = labels.show;
-      buttonEl.disabled = false;
+      hidden = false;
+      checkboxEl.checked = false;
+      checkboxEl.disabled = false;
     }
 
     function syncFromQuestion(q) {
-      if (q && q.show_results === true) {
-        barsVisible = true;
-        buttonEl.textContent = labels.hide;
+      if (q && q.show_results === false) {
+        hidden = true;
+        checkboxEl.checked = true;
       } else {
-        barsVisible = false;
-        buttonEl.textContent = labels.show;
+        hidden = false;
+        checkboxEl.checked = false;
       }
     }
 
     function destroy() {
-      buttonEl.removeEventListener('click', onClick);
+      checkboxEl.removeEventListener('change', onChange);
     }
 
     return { reset: reset, syncFromQuestion: syncFromQuestion, destroy: destroy };

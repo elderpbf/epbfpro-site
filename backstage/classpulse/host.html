@@ -225,8 +225,8 @@
             <div class="close-options">
               <label><input type="checkbox" id="chk-show-results" checked> Mostrar resultados</label>
               <label><input type="checkbox" id="chk-reveal-answer"> Revelar resposta correta</label>
+              <label><input type="checkbox" id="chk-hide-live"> Esconder resultados</label>
             </div>
-            <button class="host-btn host-btn-ghost" id="toggle-bars-btn">Mostrar resultados no projetor</button>
             <button class="host-btn host-btn-danger" id="close-question-btn">Encerrar pergunta</button>
           </div>
         </div>
@@ -374,7 +374,7 @@
 <script src="../js/question-renderer.js?v=2.3"></script>
 <script src="../js/classpulse-question-types.js?v=1.1"></script>
 <script src="../js/classpulse-question.min.js?v=1.7"></script>
-<script src="../js/classpulse-visibility-toggle.js?v=1.0"></script>
+<script src="../js/classpulse-visibility-toggle.js?v=1.1"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
 <script src="../js/question-bank.js?v=1.9"></script>
@@ -409,7 +409,7 @@ var _presentations = [];
 var _currentSession = null;
 
 var visToggle = CPVisibilityToggle.attach({
-  buttonEl:       document.getElementById('toggle-bars-btn'),
+  checkboxEl:     document.getElementById('chk-hide-live'),
   getActiveQId:   function() { return activeQId; },
   getSessionCode: function() { return sessionCode; },
   authToken:      AUTH_TOKEN,
