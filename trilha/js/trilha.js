@@ -6,6 +6,8 @@
   var _clientSlug = _params.get('c');
   var _turmaSlug  = _params.get('t');
   var _token      = _params.get('k');
+  var _allItems   = [];
+  var _selectedTypeFilter = null;
 
   // Fallback: parse /trilha/<client>/<turma> directly (no .htaccess rewrite)
   if (!_clientSlug || !_turmaSlug) {
@@ -59,9 +61,43 @@
   }
 
   function _renderItems(items) {
+    _allItems = items;
+    _renderFilterStrip();
+    _renderItemList();
+  }
+
+  function _renderFilterStrip() {
+    var fc = document.getElementById('tr-items-filter');
+    if (!fc) return;
+    if (!_allItems.length) { fc.innerHTML = ''; return; }
+    // Build a synthetic types array from the items themselves (we don't
+    // load ct_list_types on the public page). Each item carries its
+    // type slug + icon + label from the worker.
+    var seen = {};
+    var types = [];
+    _allItems.forEach(function(it) {
+      if (seen[it.type]) return;
+      seen[it.type] = true;
+      types.push({ slug: it.type, label: it.type_label || it.type, icon: it.type_icon || '' });
+    });
+    CT_TYPE_FILTER.render({
+      container:    fc,
+      types:        types,
+      items:        _allItems,
+      selectedSlug: _selectedTypeFilter,
+      onChange: function(slug) {
+        _selectedTypeFilter = slug;
+        _renderItemList();
+      }
+    });
+  }
+
+  function _renderItemList() {
     var listEl = document.getElementById('tr-items-list');
     var countEl = document.getElementById('tr-section-count');
     if (!listEl) return;
+
+    var items = CT_TYPE_FILTER.apply(_allItems, _selectedTypeFilter);
 
     if (countEl) {
       countEl.textContent = items.length === 0
@@ -70,7 +106,7 @@
     }
 
     if (!items.length) {
-      listEl.innerHTML = '<div class="tr-empty">Nenhum conteúdo disponível no momento. Volte mais tarde.</div>';
+      listEl.innerHTML = '<div class="tr-empty">' + (_allItems.length ? 'Nenhum item neste filtro.' : 'Nenhum conteúdo disponível no momento. Volte mais tarde.') + '</div>';
       return;
     }
 

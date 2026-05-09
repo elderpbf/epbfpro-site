@@ -9,6 +9,7 @@ window.CT_ADMIN = (function() {
   var _items = [];
   var _types = []; // [{slug, label, icon, sort_order}]
   var _tags  = []; // [{id, label, item_count}]
+  var _selectedTypeFilter = null; // null = "Todos"
   var _relItems = [];
   var _relReleased = []; // [{item_id, position}]
   var _relClientSlug = null;
@@ -70,13 +71,27 @@ window.CT_ADMIN = (function() {
 
   // ---- Modal helpers ----
 
-  function _openModal(html) {
+  function _openModal(html, opts) {
+    opts = opts || {};
     var bd = document.createElement('div');
     bd.className = 'ct-modal-backdrop';
     bd.innerHTML = html;
-    bd.addEventListener('click', function(e) {
-      if (e.target === bd) bd.parentNode.removeChild(bd);
-    });
+
+    if (!opts.disableBackdropClose) {
+      bd.addEventListener('click', function(e) {
+        if (e.target === bd) bd.parentNode.removeChild(bd);
+      });
+    }
+
+    // ESC always closes (universal expectation).
+    var escHandler = function(e) {
+      if (e.key === 'Escape') {
+        if (bd.parentNode) bd.parentNode.removeChild(bd);
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
     document.body.appendChild(bd);
     var firstInput = bd.querySelector('input,textarea,select');
     if (firstInput) setTimeout(function() { firstInput.focus(); }, 60);
@@ -154,7 +169,7 @@ window.CT_ADMIN = (function() {
         '<button class="ct-btn ct-btn-primary" id="cf-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
       '</div>' +
     '</div>';
-    var bd = _openModal(html);
+    var bd = _openModal(html, { disableBackdropClose: true });
     bd.querySelector('#cf-cancel').addEventListener('click', _closeModal);
     bd.querySelector('#cf-save').addEventListener('click', function() {
       var name = bd.querySelector('#cf-name').value.trim();
@@ -226,7 +241,7 @@ window.CT_ADMIN = (function() {
         '<button class="ct-btn ct-btn-primary" id="tf-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
       '</div>' +
     '</div>';
-    var bd = _openModal(html);
+    var bd = _openModal(html, { disableBackdropClose: true });
     bd.querySelector('#tf-cancel').addEventListener('click', _closeModal);
     bd.querySelector('#tf-save').addEventListener('click', function() {
       var name = bd.querySelector('#tf-name').value.trim();
@@ -247,10 +262,13 @@ window.CT_ADMIN = (function() {
 
   // ---- Items ----
 
-  function _loadItems() {
+  function _loadItems(opts) {
+    opts = opts || {};
     var el = document.getElementById('items-list');
-    el.innerHTML = '<div class="ct-empty">Carregando...</div>';
-    callWorker({ action: 'ct_list_items' }).then(function(data) {
+    if (!opts.silent || !_items.length) {
+      el.innerHTML = '<div class="ct-empty">Carregando...</div>';
+    }
+    return callWorker({ action: 'ct_list_items' }).then(function(data) {
       _items = data.items || [];
       _renderItems();
     }).catch(function() {
@@ -259,12 +277,18 @@ window.CT_ADMIN = (function() {
   }
 
   function _renderItems() {
+    _renderItemsFilter();
     var el = document.getElementById('items-list');
     if (!_items.length) {
       el.innerHTML = '<div class="ct-empty">Nenhum item na biblioteca.</div>';
       return;
     }
-    el.innerHTML = _items.map(function(item) {
+    var filtered = CT_TYPE_FILTER.apply(_items, _selectedTypeFilter);
+    if (!filtered.length) {
+      el.innerHTML = '<div class="ct-empty">Nenhum item neste filtro.</div>';
+      return;
+    }
+    el.innerHTML = filtered.map(function(item) {
       var meta = _typeMeta(item.type);
       var tagsHtml = (item.tags && item.tags.length)
         ? '<span class="ct-item-tags">' + item.tags.map(function(t) {
@@ -285,6 +309,22 @@ window.CT_ADMIN = (function() {
     }).join('');
   }
 
+  function _renderItemsFilter() {
+    var fc = document.getElementById('items-filter');
+    if (!fc) return;
+    if (!_items.length) { fc.innerHTML = ''; return; }
+    CT_TYPE_FILTER.render({
+      container:    fc,
+      types:        _types,
+      items:        _items,
+      selectedSlug: _selectedTypeFilter,
+      onChange: function(slug) {
+        _selectedTypeFilter = slug;
+        _renderItems();
+      }
+    });
+  }
+
   function _openItemEditor(item) {
     if (item) { _openItemEditorFull(item, null); return; }
     _openItemContentFirst();
@@ -303,7 +343,16 @@ window.CT_ADMIN = (function() {
           '<label>Cole ou escreva seu conteúdo</label>' +
           '<textarea id="cf-raw" rows="14" placeholder="Cole aqui o texto do prompt, exemplo, exercício, dica..."></textarea>' +
         '</div>' +
-        '<p class="ct-helper-text">No próximo passo você revisa título, tipo, tags e marcação antes de salvar.</p>' +
+        '<div class="ct-emoji-toggle-row">' +
+          '<label class="ct-toggle-label">' +
+            '<span class="ct-toggle">' +
+              '<input type="checkbox" id="cf-emoji-toggle" checked>' +
+              '<span class="ct-toggle-slider"></span>' +
+            '</span>' +
+            '<span class="ct-toggle-text">Adicionar emojis quando ajudar</span>' +
+          '</label>' +
+          '<p class="ct-helper-text">* Se o conteúdo for um prompt para IA, ele será mantido exatamente como está, sem alterações.</p>' +
+        '</div>' +
       '</div>' +
       '<div class="ct-editor-footer">' +
         '<div class="ct-modal-actions">' +
@@ -313,7 +362,7 @@ window.CT_ADMIN = (function() {
         '</div>' +
       '</div>' +
     '</div>';
-    var bd = _openModal(html);
+    var bd = _openModal(html, { disableBackdropClose: true });
     bd.querySelector('#cf-raw').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') e.stopPropagation();
     });
@@ -323,18 +372,19 @@ window.CT_ADMIN = (function() {
     bd.querySelector('#cf-manual').addEventListener('click', function() {
       var raw = bd.querySelector('#cf-raw').value;
       _closeModal();
-      _openItemEditorFull(null, { body_md: raw });
+      _openItemEditorFull(null, { body_md: raw }, null);
     });
 
     bd.querySelector('#cf-ai').addEventListener('click', async function() {
       var raw = bd.querySelector('#cf-raw').value.trim();
       if (!raw) { _toast('Cole ou digite seu conteúdo primeiro.'); return; }
+      var addEmojis = bd.querySelector('#cf-emoji-toggle').checked;
       var btn = this;
       var prev = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '&#9889; Gerando...';
       try {
-        var systemPrompt = CT_AI_SPEC.buildSystemPrompt(_types, _tags);
+        var systemPrompt = CT_AI_SPEC.buildSystemPrompt(_types, _tags, { addEmojis: addEmojis });
         var res = await AIClient.generate({
           action: 'ai_chat',
           system: systemPrompt,
@@ -348,7 +398,6 @@ window.CT_ADMIN = (function() {
           _toast('IA retornou em formato inesperado. Tente continuar manualmente.');
           return;
         }
-        // Guard: if AI labeled this as a prompt, always use the raw input as body.
         parsed = CT_AI_SPEC.enforcePromptVerbatim(parsed, raw);
         if (parsed.type !== 'prompt' && CT_AI_SPEC.looksTruncated(raw, parsed.body_md)) {
           if (!confirm('A IA parece ter encurtado o texto significativamente. Usar mesmo assim?\n\nClique em Cancelar para tentar de novo ou continuar manualmente.')) return;
@@ -361,6 +410,10 @@ window.CT_ADMIN = (function() {
           type:     parsed.type     || (_types[0] && _types[0].slug),
           body_md:  parsed.body_md  || raw,
           tag_ids:  tagIds
+        }, {
+          rawInput:    raw,
+          firstOutput: parsed,
+          addEmojis:   addEmojis
         });
       } catch (e) {
         _toast('Erro: ' + (e.message || e));
@@ -395,7 +448,7 @@ window.CT_ADMIN = (function() {
 
   // ---- Step 2: full editor form (also handles edit mode) ----
 
-  function _openItemEditorFull(item, prefill) {
+  function _openItemEditorFull(item, prefill, aiContext) {
     var isEdit = !!item;
     var src = prefill || item || {};
     var initialType = src.type || (isEdit ? item.type : null) || (_types[0] && _types[0].slug) || 'prompt';
@@ -405,6 +458,10 @@ window.CT_ADMIN = (function() {
     var initialTagIds = Array.isArray(src.tag_ids)
       ? src.tag_ids
       : (isEdit && Array.isArray(item.tags) ? item.tags.map(function(t) { return t.id; }) : []);
+
+    var refazerBtn = aiContext
+      ? '<button class="ct-btn" id="ie-refazer-btn" type="button">&#9889; Refazer com IA</button>'
+      : '';
 
     var html = '<div class="ct-editor">' +
       '<div class="ct-editor-header">' +
@@ -435,11 +492,12 @@ window.CT_ADMIN = (function() {
       '<div class="ct-editor-footer">' +
         '<div class="ct-modal-actions">' +
           '<button class="ct-btn" id="ie-cancel">Cancelar</button>' +
+          refazerBtn +
           '<button class="ct-btn ct-btn-primary" id="ie-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
         '</div>' +
       '</div>' +
     '</div>';
-    var bd = _openModal(html);
+    var bd = _openModal(html, { disableBackdropClose: true });
     var selectedTagIds = new Set(initialTagIds);
 
     bd.querySelector('#ie-body').addEventListener('keydown', function(e) {
@@ -464,6 +522,70 @@ window.CT_ADMIN = (function() {
 
     bd.querySelector('#ie-close').addEventListener('click', _closeModal);
     bd.querySelector('#ie-cancel').addEventListener('click', _closeModal);
+
+    if (aiContext) {
+      bd.querySelector('#ie-refazer-btn').addEventListener('click', async function() {
+        var btn = this;
+        var prev = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '&#9889; Refazendo...';
+        try {
+          // Snapshot current form state, then map tag_ids back to labels
+          // for the AI (it works in label space).
+          var currentTagIds = Array.from(selectedTagIds);
+          var currentTagLabels = currentTagIds.map(function(id) {
+            var t = _tags.find(function(x) { return x.id === id; });
+            return t ? t.label : null;
+          }).filter(Boolean);
+
+          var current = {
+            title:      bd.querySelector('#ie-title').value.trim(),
+            summary:    bd.querySelector('#ie-summary').value.trim(),
+            type:       bd.querySelector('#ie-type').value,
+            body_md:    bd.querySelector('#ie-body').value,
+            tag_labels: currentTagLabels
+          };
+          var diff = CT_AI_SPEC.computeEditDiff(aiContext.firstOutput, current);
+          var systemPrompt = CT_AI_SPEC.buildRefineSystemPrompt({ addEmojis: aiContext.addEmojis });
+          var userMsg = CT_AI_SPEC.buildRefineUserMessage(aiContext.rawInput, aiContext.firstOutput, diff);
+
+          var res = await AIClient.generate({
+            action:      'ai_chat',
+            system:      systemPrompt,
+            messages:    [{ role: 'user', content: userMsg }],
+            temperature: 0.3,
+            max_tokens:  CT_AI_SPEC.MAX_TOKENS
+          });
+          if (!res || !res.text) { _toast('IA não retornou conteúdo.'); return; }
+          var parsed = CT_AI_SPEC.parseModelJson(res.text);
+          if (!parsed || !parsed.body_md) { _toast('IA retornou formato inesperado.'); return; }
+          parsed = CT_AI_SPEC.enforcePromptVerbatim(parsed, aiContext.rawInput);
+
+          // Update the firstOutput reference so subsequent refazer
+          // calls compare against the latest AI version.
+          aiContext.firstOutput = parsed;
+
+          // Repopulate the form with the new AI version. Tags need
+          // resolving back to IDs (creating any new ones).
+          bd.querySelector('#ie-title').value   = parsed.title   || '';
+          bd.querySelector('#ie-summary').value = parsed.summary || '';
+          if (parsed.type) bd.querySelector('#ie-type').value = parsed.type;
+          bd.querySelector('#ie-body').value    = parsed.body_md || '';
+          var newTagIds = await _tagsByLabels(parsed.tag_labels || []);
+          selectedTagIds.clear();
+          newTagIds.forEach(function(id) { selectedTagIds.add(id); });
+          _renderTagPicker(bd.querySelector('#ie-tag-picker'), selectedTagIds);
+          var pre = bd.querySelector('#ie-preview');
+          if (pre && pre.style.display !== 'none') _renderMarkdown(parsed.body_md || '', pre);
+          _toast('Item refeito.');
+        } catch (e) {
+          _toast('Erro: ' + (e.message || e));
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = prev;
+        }
+      });
+    }
 
     bd.querySelector('#ie-preview-btn').addEventListener('click', function() {
       var pre = bd.querySelector('#ie-preview');
@@ -498,7 +620,7 @@ window.CT_ADMIN = (function() {
       callWorker(params).then(function() {
         _closeModal();
         _toast(isEdit ? 'Item atualizado.' : 'Item criado.');
-        _loadItems();
+        _loadItems({ silent: true });
         _loadTags();
       }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
     });
@@ -581,9 +703,9 @@ window.CT_ADMIN = (function() {
         '<button class="ct-btn ct-btn-primary" id="tc-save">Criar</button>' +
       '</div>' +
     '</div>';
-    var bd = _openModal(html);
+    var bd = _openModal(html, { disableBackdropClose: true });
     function close(slug) {
-      bd.parentNode.removeChild(bd);
+      if (bd.parentNode) bd.parentNode.removeChild(bd);
       if (callback) callback(slug);
     }
     bd.querySelector('#tc-cancel').addEventListener('click', function() { close(null); });
@@ -615,7 +737,7 @@ window.CT_ADMIN = (function() {
         '<button class="ct-btn ct-btn-primary" id="tm-close">Fechar</button>' +
       '</div>' +
     '</div>';
-    var bd = _openModal(html);
+    var bd = _openModal(html, { disableBackdropClose: true });
     var newInput = bd.querySelector('#tm-new');
     newInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); bd.querySelector('#tm-add').click(); }

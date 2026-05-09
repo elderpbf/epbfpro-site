@@ -478,8 +478,15 @@
 .ct-item-row:hover { border-color: rgba(20,184,166,.4); }
 
 .ct-item-type-icon {
-  font-size: 1.1rem;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
+  border-radius: 11px;
+  background: rgba(20, 184, 166, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.55rem;
 }
 
 .ct-item-info { flex: 1; min-width: 0; }
@@ -689,3 +696,81 @@
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ----- Type filter chips (shared with student page) ----- */
+
+.ct-tf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -0.25rem 0 1rem;
+}
+
+#items-filter:empty { display: none; }
+
+.ct-tf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.ct-tf-chip:hover {
+  border-color: rgba(20,184,166,.5);
+}
+
+.ct-tf-chip.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.ct-tf-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.ct-tf-count {
+  font-size: 0.74rem;
+  opacity: 0.75;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.ct-tf-chip.active .ct-tf-count {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ----- Emoji toggle row (passo 1) ----- */
+
+.ct-emoji-toggle-row {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: rgba(20, 184, 166, 0.04);
+  border: 1px solid rgba(20, 184, 166, 0.15);
+  border-radius: 10px;
+}
+
+.ct-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.ct-toggle-text { line-height: 22px; }
