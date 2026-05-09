@@ -170,7 +170,7 @@ window.CT_ADMIN = (function() {
         '<div class="ct-card-name">' + _esc(t.display_name || t.name) + archived + '</div>' +
         '<div class="ct-card-meta">' + _esc(t.client_slug) + ' / ' + _esc(t.slug) + '</div>' +
         '<div class="ct-url-row">' +
-          '<span class="ct-url-text" title="' + _esc(url) + '">' + _esc(url) + '</span>' +
+          '<a class="ct-url-text" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(url) + '">' + _esc(url) + '</a>' +
           '<button class="ct-btn ct-btn-sm" onclick="CT_ADMIN.copyTurmaUrl(\'' + _esc(url) + '\')">Copiar</button>' +
         '</div>' +
         '<div class="ct-card-actions">' +
@@ -258,31 +258,39 @@ window.CT_ADMIN = (function() {
         '<span class="ct-editor-title">' + (isEdit ? 'Editar item' : 'Novo item') + '</span>' +
         '<button class="ct-btn ct-btn-sm" id="ie-close">Fechar</button>' +
       '</div>' +
-      '<div class="ct-field"><label>Título</label>' +
-        '<input type="text" id="ie-title" value="' + _esc(isEdit ? item.title : '') + '" placeholder="Título do prompt">' +
+      '<div class="ct-editor-body">' +
+        '<div class="ct-field"><label>Título</label>' +
+          '<input type="text" id="ie-title" value="' + _esc(isEdit ? item.title : '') + '" placeholder="Título do prompt">' +
+        '</div>' +
+        '<div class="ct-field"><label>Tipo</label>' +
+          '<select id="ie-type">' +
+            '<option value="prompt"' + ((!isEdit || item.type === 'prompt') ? ' selected' : '') + '>Prompt</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="ct-field"><label>Resumo (opcional)</label>' +
+          '<input type="text" id="ie-summary" value="' + _esc(isEdit ? (item.summary || '') : '') + '" placeholder="Uma linha descrevendo o item">' +
+        '</div>' +
+        '<div class="ct-field"><label>Tags (separadas por vírgula, opcional)</label>' +
+          '<input type="text" id="ie-tags" value="' + _esc(isEdit ? (item.tags || '') : '') + '" placeholder="prompting, contexto">' +
+        '</div>' +
+        '<div class="ct-field"><label>Corpo em Markdown</label>' +
+          '<textarea id="ie-body" rows="10" placeholder="Escreva o conteúdo em Markdown...">' + _esc(isEdit ? (item.body_md || '') : '') + '</textarea>' +
+          '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" style="margin-top:6px">Visualizar preview</button>' +
+          '<div class="ct-preview-area" id="ie-preview" style="display:none"></div>' +
+        '</div>' +
       '</div>' +
-      '<div class="ct-field"><label>Tipo</label>' +
-        '<select id="ie-type">' +
-          '<option value="prompt"' + ((!isEdit || item.type === 'prompt') ? ' selected' : '') + '>Prompt</option>' +
-        '</select>' +
-      '</div>' +
-      '<div class="ct-field"><label>Resumo (opcional)</label>' +
-        '<input type="text" id="ie-summary" value="' + _esc(isEdit ? (item.summary || '') : '') + '" placeholder="Uma linha descrevendo o item">' +
-      '</div>' +
-      '<div class="ct-field"><label>Tags (separadas por vírgula, opcional)</label>' +
-        '<input type="text" id="ie-tags" value="' + _esc(isEdit ? (item.tags || '') : '') + '" placeholder="prompting, contexto">' +
-      '</div>' +
-      '<div class="ct-field"><label>Corpo em Markdown</label>' +
-        '<textarea id="ie-body" rows="10" placeholder="Escreva o conteúdo em Markdown...">' + _esc(isEdit ? (item.body_md || '') : '') + '</textarea>' +
-        '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" style="margin-top:6px">Visualizar preview</button>' +
-        '<div class="ct-preview-area" id="ie-preview" style="display:none"></div>' +
-      '</div>' +
-      '<div class="ct-modal-actions">' +
-        '<button class="ct-btn" id="ie-cancel">Cancelar</button>' +
-        '<button class="ct-btn ct-btn-primary" id="ie-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
+      '<div class="ct-editor-footer">' +
+        '<div class="ct-modal-actions">' +
+          '<button class="ct-btn" id="ie-cancel">Cancelar</button>' +
+          '<button class="ct-btn ct-btn-primary" id="ie-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
     var bd = _openModal(html);
+    // Defeat the global utils.js Enter-submit handler so Enter creates newlines in the body textarea.
+    bd.querySelector('#ie-body').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') e.stopPropagation();
+    });
     bd.querySelector('#ie-close').addEventListener('click', _closeModal);
     bd.querySelector('#ie-cancel').addEventListener('click', _closeModal);
     bd.querySelector('#ie-preview-btn').addEventListener('click', function() {
@@ -359,25 +367,24 @@ window.CT_ADMIN = (function() {
     el.innerHTML = '<div class="ct-empty">Carregando...</div>';
     Promise.all([
       callWorker({ action: 'ct_list_items' }),
-      callWorker({ action: 'ct_get_turma_view', client_slug: clientSlug, turma_slug: turmaSlug, token: '__admin__' }).catch(function() { return { ok: false, items: [] }; })
+      callWorker({ action: 'ct_list_turmas', client_slug: clientSlug })
     ]).then(function(results) {
       var allItems = (results[0].items || []);
-
-      // ct_get_turma_view needs token -- but admin needs to see ALL released items.
-      // Instead, fetch release state via admin action.
-      return callWorker({ action: 'ct_list_turmas', client_slug: clientSlug }).then(function(td) {
-        var turma = (td.turmas || []).find(function(t) { return t.slug === turmaSlug; });
-        if (!turma) { el.innerHTML = '<div class="ct-empty">Turma não encontrada.</div>'; return; }
-        // Now fetch view with real token
-        callWorker({ action: 'ct_get_turma_view', client_slug: clientSlug, turma_slug: turmaSlug, token: turma.token }).then(function(vd) {
-          _relItems = allItems;
-          _relReleased = (vd.items || []).map(function(i) { return i.id; });
-          _renderReleases(allItems, vd.items || []);
-        }).catch(function() {
-          _relItems = allItems;
-          _relReleased = [];
-          _renderReleases(allItems, []);
-        });
+      var turma = (results[1].turmas || []).find(function(t) { return t.slug === turmaSlug; });
+      if (!turma) { el.innerHTML = '<div class="ct-empty">Turma não encontrada.</div>'; return; }
+      return callWorker({
+        action: 'ct_get_turma_view',
+        client_slug: clientSlug,
+        turma_slug: turmaSlug,
+        token: turma.token
+      }).then(function(vd) {
+        _relItems = allItems;
+        _relReleased = (vd.items || []).map(function(i) { return i.id; });
+        _renderReleases(allItems, vd.items || []);
+      }).catch(function() {
+        _relItems = allItems;
+        _relReleased = [];
+        _renderReleases(allItems, []);
       });
     }).catch(function() {
       el.innerHTML = '<div class="ct-empty">Erro ao carregar dados.</div>';

@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
 
 <link rel="stylesheet" href="../backstage/css/theme.css?v=1.1">
-<link rel="stylesheet" href="css/trilha.css?v=1.0">
+<link rel="stylesheet" href="css/trilha.css?v=1.1">
 </head>
 <body>
 
@@ -24,7 +24,7 @@
 
   <div id="tr-loading">
     <div class="tr-spinner"></div>
-    Carregando...
+    Carregando sua trilha...
   </div>
 
   <div id="tr-error">
@@ -32,22 +32,30 @@
     <p class="tr-error-msg"></p>
   </div>
 
-  <div id="tr-main">
-    <div class="tr-header">
-      <div class="tr-header-label">ClassTrail</div>
+  <main id="tr-main">
+    <section class="tr-hero">
+      <span class="tr-hero-eyebrow">ClassTrail</span>
       <h1 class="tr-turma-title" id="tr-turma-title"></h1>
-    </div>
+      <p class="tr-hero-sub" id="tr-hero-sub">Conteúdo selecionado pelo seu professor para esta turma.</p>
+    </section>
 
-    <div class="tr-section-label">Conteúdo disponível</div>
+    <div class="tr-section-header">
+      <span class="tr-section-label">Conteúdo disponível</span>
+      <span class="tr-section-count" id="tr-section-count"></span>
+    </div>
     <div id="tr-items-list"></div>
-  </div>
+
+    <footer class="tr-footer">
+      Feito com PensoIA &middot; <a href="https://pensoia.com" target="_blank" rel="noopener">pensoia.com</a>
+    </footer>
+  </main>
 
 </div>
 
 <script src="../backstage/js/theme-manager.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.1"></script>
 <script src="../backstage/js/ct-renderer.js?v=1.0"></script>
-<script src="js/trilha.js?v=1.0"></script>
+<script src="js/trilha.js?v=1.1"></script>
 
 </body>
 </html>

@@ -59,10 +59,17 @@
 
   function _renderItems(items) {
     var listEl = document.getElementById('tr-items-list');
+    var countEl = document.getElementById('tr-section-count');
     if (!listEl) return;
 
+    if (countEl) {
+      countEl.textContent = items.length === 0
+        ? ''
+        : (items.length === 1 ? '1 item' : items.length + ' itens');
+    }
+
     if (!items.length) {
-      listEl.innerHTML = '<div class="tr-empty">Nenhum conteúdo disponível no momento.</div>';
+      listEl.innerHTML = '<div class="tr-empty">Nenhum conteúdo disponível no momento. Volte mais tarde.</div>';
       return;
     }
 

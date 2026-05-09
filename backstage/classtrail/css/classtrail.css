@@ -179,13 +179,18 @@
 
 .ct-url-text {
   flex: 1;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-family: monospace;
-  color: var(--text-secondary);
+  color: var(--primary);
+  text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: block;
+  min-width: 0;
 }
+
+.ct-url-text:hover { text-decoration: underline; }
 
 /* ----- Empty state ----- */
 
@@ -350,16 +355,38 @@
   border: 1px solid var(--border);
   width: 100%;
   max-width: 760px;
-  padding: 1.5rem;
+  max-height: calc(100vh - 4rem);
+  padding: 0;
   box-shadow: 0 12px 48px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .ct-editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.2rem;
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
+
+.ct-editor-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ct-editor-footer {
+  padding: 0.9rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.ct-editor-footer .ct-modal-actions { margin-top: 0; }
 
 .ct-editor-title {
   font-size: 1.05rem;
@@ -373,7 +400,8 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--background);
-  min-height: 80px;
+  max-height: 320px;
+  overflow-y: auto;
   font-size: 0.88rem;
   line-height: 1.6;
   color: var(--text-primary);
