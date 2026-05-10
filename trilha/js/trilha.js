@@ -70,7 +70,7 @@
     if (client.icon_path && avatarEl && iconEl) {
       var src = client.icon_path.match(/^https?:\/\//)
         ? client.icon_path
-        : '/r2/' + client.icon_path;
+        : WORKER_URL + '/r2/' + client.icon_path;
       iconEl.src = src;
       iconEl.alt = client.display_name || '';
       avatarEl.hidden = false;

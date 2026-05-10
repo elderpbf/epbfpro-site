@@ -129,7 +129,7 @@ window.CT_ADMIN = (function() {
       var archived = c.status === 'archived' ? ' <span class="ct-badge archived">Arquivado</span>' : '';
       var iconHtml = '';
       if (c.icon_path) {
-        var iconSrc = c.icon_path.startsWith('http') ? c.icon_path : '/r2/' + c.icon_path;
+        var iconSrc = c.icon_path.startsWith('http') ? c.icon_path : WORKER_URL + '/r2/' + c.icon_path;
         iconHtml = '<img class="ct-icon-preview" src="' + _esc(iconSrc) + '" alt="" style="width:28px;height:28px;margin-right:6px;vertical-align:middle;">';
       }
       return '<div class="ct-card' + sel + '" data-slug="' + _esc(c.slug) + '">' +
@@ -169,7 +169,7 @@ window.CT_ADMIN = (function() {
     var currentIconPath = isEdit ? (client.icon_path || '') : '';
     var iconPreviewHtml = '';
     if (currentIconPath) {
-      var previewSrc = currentIconPath.startsWith('http') ? currentIconPath : '/r2/' + currentIconPath;
+      var previewSrc = currentIconPath.startsWith('http') ? currentIconPath : WORKER_URL + '/r2/' + currentIconPath;
       iconPreviewHtml = '<div class="ct-icon-preview-row">' +
         '<img id="cf-icon-preview-img" class="ct-icon-preview" src="' + _esc(previewSrc) + '" alt="Ícone atual">' +
         '<span class="ct-helper-text">Ícone atual</span>' +
