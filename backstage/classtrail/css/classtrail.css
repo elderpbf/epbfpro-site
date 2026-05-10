@@ -757,6 +757,18 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* ----- GDoc inline import row (inside new-item step 1) ----- */
+
+.ct-gdoc-row {
+  margin-bottom: 0.75rem;
+}
+
+.ct-gdoc-inline {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
 /* ----- Emoji toggle row (passo 1) ----- */
 
 .ct-emoji-toggle-row {

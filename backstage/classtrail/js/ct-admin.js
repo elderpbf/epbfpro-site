@@ -723,28 +723,20 @@ window.CT_ADMIN = (function() {
       }).join('');
 
     var html = '<div class="ct-modal ct-gdoc-modal">' +
-      '<div class="ct-modal-title">Importar do Google Docs</div>' +
+      '<div class="ct-modal-title">Importar apostila do curso</div>' +
       '<div class="ct-field"><label>URL do documento</label>' +
         '<input type="text" id="gd-url" placeholder="https://docs.google.com/document/d/...">' +
         '<p class="ct-helper-text">O documento deve estar compartilhado como "Qualquer pessoa com o link pode visualizar".</p>' +
       '</div>' +
-      '<div class="ct-field"><label>Modo</label>' +
-        '<div class="ct-icon-mode-row">' +
-          '<label><input type="radio" name="gd-mode" value="single" id="gd-mode-single" checked> Item único</label>' +
-          '<label><input type="radio" name="gd-mode" value="set" id="gd-mode-set"> Apostila completa, várias seções</label>' +
-        '</div>' +
+      '<div class="ct-field"><label>Marcador de seção</label>' +
+        '<select id="gd-marker">' +
+          '<option value="h2" selected>Título 2 (h2)</option>' +
+          '<option value="h1">Título 1 (h1)</option>' +
+          '<option value="hr">Linha horizontal (---)</option>' +
+        '</select>' +
       '</div>' +
-      '<div id="gd-set-options" style="display:none">' +
-        '<div class="ct-field"><label>Marcador de seção</label>' +
-          '<select id="gd-marker">' +
-            '<option value="h2" selected>Título 2 (h2)</option>' +
-            '<option value="h1">Título 1 (h1)</option>' +
-            '<option value="hr">Linha horizontal (---)</option>' +
-          '</select>' +
-        '</div>' +
-        '<div class="ct-field"><label>Cliente (obrigatório para apostila)</label>' +
-          '<select id="gd-client">' + clientOptions + '</select>' +
-        '</div>' +
+      '<div class="ct-field"><label>Cliente (obrigatório)</label>' +
+        '<select id="gd-client">' + clientOptions + '</select>' +
       '</div>' +
       '<div class="ct-modal-actions">' +
         '<button class="ct-btn" id="gd-cancel">Cancelar</button>' +
@@ -754,56 +746,27 @@ window.CT_ADMIN = (function() {
 
     var bd = _openModal(html, { disableBackdropClose: true });
 
-    var modeSingle = bd.querySelector('#gd-mode-single');
-    var modeSet = bd.querySelector('#gd-mode-set');
-    var setOptions = bd.querySelector('#gd-set-options');
-
-    modeSingle.addEventListener('change', function() { setOptions.style.display = 'none'; });
-    modeSet.addEventListener('change', function() { setOptions.style.display = ''; });
-
     bd.querySelector('#gd-cancel').addEventListener('click', _closeModal);
 
     bd.querySelector('#gd-import').addEventListener('click', function() {
       var url = bd.querySelector('#gd-url').value.trim();
       if (!url) { _toast('Informe a URL do documento.'); return; }
-      var mode = bd.querySelector('input[name="gd-mode"]:checked').value;
+      var clientSlug = bd.querySelector('#gd-client').value;
+      var marker = bd.querySelector('#gd-marker').value;
+      if (!clientSlug) { _toast('Selecione o cliente para a apostila.'); return; }
       var btn = bd.querySelector('#gd-import');
       btn.disabled = true;
       btn.textContent = 'Importando...';
-
-      if (mode === 'single') {
-        callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'single' }).then(function(res) {
-          _closeModal();
-          if (res && res.preview) {
-            // Prefill new item editor with ingested content
-            _openItemEditorFull(null, {
-              title:   res.preview.title || '',
-              body_md: res.preview.body_md || ''
-            }, null);
-            _toast('Documento importado. Revise e salve o item.');
-          } else {
-            _toast('Importação concluída.');
-          }
-        }).catch(function(err) {
-          btn.disabled = false;
-          btn.textContent = 'Importar';
-          _toast('Erro: ' + (err.message || err));
-        });
-      } else {
-        var clientSlug = bd.querySelector('#gd-client').value;
-        var marker = bd.querySelector('#gd-marker').value;
-        if (!clientSlug) { btn.disabled = false; btn.textContent = 'Importar'; _toast('Selecione o cliente para a apostila.'); return; }
-        callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'set', client_slug: clientSlug, marker: marker }).then(function(res) {
-          _closeModal();
-          var n = (res && res.items_created) ? res.items_created : (res && res.count) ? res.count : '?';
-          _toast('Apostila importada, ' + n + ' seções criadas.');
-          _loadItems({ silent: true });
-        }).catch(function(err) {
-          btn.disabled = false;
-          btn.textContent = 'Importar';
-          _toast('Erro: ' + (err.message || err));
-        });
-      }
+      callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'set', client_slug: clientSlug, marker: marker }).then(function(res) {
+        _closeModal();
+        var n = (res && res.items_created) ? res.items_created : (res && res.count) ? res.count : '?';
+        _toast('Apostila importada, ' + n + ' seções criadas.');
+        _loadItems({ silent: true });
+      }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Importar';
+        _toast('Erro: ' + (err.message || err));
+      });
     });
   }
 
@@ -825,7 +788,15 @@ window.CT_ADMIN = (function() {
       '<div class="ct-editor-body">' +
         '<div class="ct-field">' +
           '<label>Cole ou escreva seu conteúdo</label>' +
-          '<textarea id="cf-raw" rows="14" placeholder="Cole aqui o texto do prompt, exemplo, exercício, dica..."></textarea>' +
+          '<textarea id="cf-raw" rows="10" placeholder="Cole aqui o texto do prompt, exemplo, exercício, dica..."></textarea>' +
+        '</div>' +
+        '<div class="ct-gdoc-row">' +
+          '<span class="ct-helper-text">ou importe de um Google Docs:</span>' +
+          '<div class="ct-gdoc-inline">' +
+            '<input type="text" id="cf-gdoc-url" placeholder="URL do Google Docs..." style="flex:1;min-width:0">' +
+            '<button class="ct-btn ct-btn-sm" id="cf-gdoc-load" type="button">Carregar</button>' +
+          '</div>' +
+          '<p class="ct-helper-text" id="cf-gdoc-hint">O documento deve estar compartilhado como "Qualquer pessoa com o link pode visualizar".</p>' +
         '</div>' +
         '<div class="ct-emoji-toggle-row">' +
           '<label class="ct-toggle-label">' +
@@ -852,6 +823,31 @@ window.CT_ADMIN = (function() {
     });
     bd.querySelector('#cf-close').addEventListener('click', _closeModal);
     bd.querySelector('#cf-cancel').addEventListener('click', _closeModal);
+
+    // GDoc single-item loader: fetches body_md and pastes it into the raw textarea
+    bd.querySelector('#cf-gdoc-load').addEventListener('click', function() {
+      var url = bd.querySelector('#cf-gdoc-url').value.trim();
+      if (!url) { _toast('Informe a URL do Google Docs.'); return; }
+      var btn = bd.querySelector('#cf-gdoc-load');
+      btn.disabled = true;
+      btn.textContent = 'Carregando...';
+      callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'single' }).then(function(res) {
+        btn.disabled = false;
+        btn.textContent = 'Carregar';
+        if (res && res.preview && res.preview.body_md) {
+          var rawEl = bd.querySelector('#cf-raw');
+          rawEl.value = res.preview.body_md;
+          rawEl.focus();
+          _toast('Conteúdo importado. Revise e formate com IA.');
+        } else {
+          _toast('Documento importado, mas sem conteúdo reconhecível.');
+        }
+      }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Carregar';
+        _toast('Erro ao importar: ' + (err.message || err));
+      });
+    });
 
     bd.querySelector('#cf-manual').addEventListener('click', function() {
       var raw = bd.querySelector('#cf-raw').value;
@@ -1813,6 +1809,7 @@ window.CT_ADMIN = (function() {
           callWorker({ action: 'ct_list_clients' }).then(function(d) {
             _clients = d.clients || [];
             _populateRelClientSelect();
+            _restoreReleasesSelectors();
           });
         }
       });
@@ -1821,6 +1818,41 @@ window.CT_ADMIN = (function() {
 
   // ---- Releases selectors wiring ----
 
+  var LS_REL_CLIENT = 'ct_admin_releases_last_client';
+  var LS_REL_TURMA  = 'ct_admin_releases_last_turma';
+
+  function _restoreReleasesSelectors() {
+    var clientSel = document.getElementById('rel-client-select');
+    var turmaSel  = document.getElementById('rel-turma-select');
+    var savedClient = localStorage.getItem(LS_REL_CLIENT);
+    var savedTurma  = localStorage.getItem(LS_REL_TURMA);
+    if (!savedClient) return;
+
+    // Verify the client still exists in the list
+    var clientOpt = clientSel.querySelector('option[value="' + savedClient + '"]');
+    if (!clientOpt) return;
+
+    clientSel.value = savedClient;
+
+    // Load turmas for that client, then restore turma selection
+    _loadRelTurmas(savedClient);
+
+    // _loadRelTurmas is async; we wait by patching the turma select observer once
+    var attempts = 0;
+    function tryRestoreTurma() {
+      attempts++;
+      var turmaOpt = turmaSel.querySelector('option[value="' + savedTurma + '"]');
+      if (turmaOpt) {
+        turmaSel.value = savedTurma;
+        _loadReleases(savedClient, savedTurma);
+      } else if (attempts < 20) {
+        setTimeout(tryRestoreTurma, 150);
+      }
+      // If turma no longer exists after 20 tries, fall back to blank state
+    }
+    if (savedTurma) setTimeout(tryRestoreTurma, 150);
+  }
+
   function _initReleasesSelectors() {
     var clientSel = document.getElementById('rel-client-select');
     var turmaSel = document.getElementById('rel-turma-select');
@@ -1828,10 +1860,22 @@ window.CT_ADMIN = (function() {
       turmaSel.innerHTML = '<option value="">Selecione a turma...</option>';
       turmaSel.disabled = true;
       document.getElementById('releases-list').innerHTML = '<div class="ct-empty">Selecione uma turma.</div>';
-      if (clientSel.value) _loadRelTurmas(clientSel.value);
+      if (clientSel.value) {
+        localStorage.setItem(LS_REL_CLIENT, clientSel.value);
+        localStorage.removeItem(LS_REL_TURMA);
+        _loadRelTurmas(clientSel.value);
+      } else {
+        localStorage.removeItem(LS_REL_CLIENT);
+        localStorage.removeItem(LS_REL_TURMA);
+      }
     });
     turmaSel.addEventListener('change', function() {
-      if (clientSel.value && turmaSel.value) _loadReleases(clientSel.value, turmaSel.value);
+      if (clientSel.value && turmaSel.value) {
+        localStorage.setItem(LS_REL_TURMA, turmaSel.value);
+        _loadReleases(clientSel.value, turmaSel.value);
+      } else {
+        localStorage.removeItem(LS_REL_TURMA);
+      }
     });
   }
 
