@@ -1080,3 +1080,34 @@
 .ct-turma-chip.ok:hover {
   border-color: var(--success, #16a34a);
 }
+
+/* ----- Apostila panel ----- */
+
+.ct-apostila-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ct-apostila-row {
+  cursor: default;
+}
+
+.ct-apostila-row:hover {
+  border-color: rgba(20, 184, 166, 0.4);
+}
+
+.ct-apostila-pos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(20, 184, 166, 0.1);
+  border: 1.5px solid rgba(20, 184, 166, 0.3);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary);
+}

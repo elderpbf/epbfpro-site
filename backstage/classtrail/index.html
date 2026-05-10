@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.5">
 <link rel="stylesheet" href="../css/ct-renderer.css?v=1.0">
-<link rel="stylesheet" href="css/classtrail.css?v=2.0">
+<link rel="stylesheet" href="css/classtrail.css?v=2.1">
 <script src="../js/debug.js?v=2.5"></script>
 </head>
 <body>
@@ -29,6 +29,7 @@
     <div class="ct-tabs">
       <button class="ct-tab active" data-tab="clients">Clientes</button>
       <button class="ct-tab" data-tab="items">Itens</button>
+      <button class="ct-tab" data-tab="apostila">Apostila</button>
       <button class="ct-tab" data-tab="releases">Liberações</button>
     </div>
 
@@ -64,11 +65,22 @@
       <div class="ct-toolbar">
         <h2>Biblioteca de Itens</h2>
         <button class="ct-btn ct-btn-primary" id="btn-new-item">+ Novo item</button>
-        <button class="ct-btn" id="btn-import-gdoc" type="button">+ Importar apostila</button>
         <button class="ct-btn" id="btn-manage-tags" type="button">Gerenciar tags</button>
       </div>
       <div id="items-filter"></div>
       <div class="ct-items-grid" id="items-list">
+        <div class="ct-empty">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- ===== APOSTILA ===== -->
+    <div class="ct-panel" id="panel-apostila">
+      <div class="ct-toolbar">
+        <h2 id="apostila-set-label">Apostila do curso</h2>
+        <button class="ct-btn ct-btn-primary" id="btn-import-gdoc" type="button">+ Importar apostila</button>
+        <button class="ct-btn ct-btn-danger" id="btn-delete-set" type="button" style="display:none">Excluir apostila</button>
+      </div>
+      <div class="ct-apostila-list" id="apostila-list">
         <div class="ct-empty">Carregando...</div>
       </div>
     </div>
@@ -105,7 +117,7 @@
 <script src="../js/auth.js?v=1.1"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/backstage-topbar.js?v=1.2"></script>
-<script src="js/ct-admin.js?v=2.4"></script>
+<script src="js/ct-admin.js?v=2.5"></script>
 <script>
 'use strict';
 BS_AUTH.guard();

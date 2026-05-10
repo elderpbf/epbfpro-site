@@ -18,6 +18,8 @@ window.CT_ADMIN = (function() {
   var _relReleasedMeta = {};       // {item_id: {aula_number}} for the current turma
   var _selectedReleaseFilter = null;
   var _cpSessions = [];            // [{id, name}] from cp_list_sessions
+  var _apostilaSet  = null;        // current ct_item_sets row or null
+  var _apostilaItems = [];         // items in set_position order
 
   // ---- Helpers ----
 
@@ -687,13 +689,15 @@ window.CT_ADMIN = (function() {
   }
 
   function _renderItems() {
-    _renderItemsFilter();
+    // Exclude apostila items (set_id != null) from the main Items grid
+    var libraryItems = _items.filter(function(it) { return !it.set_id; });
+    _renderItemsFilter(libraryItems);
     var el = document.getElementById('items-list');
-    if (!_items.length) {
+    if (!libraryItems.length) {
       el.innerHTML = '<div class="ct-empty">Nenhum item na biblioteca.</div>';
       return;
     }
-    var filtered = CT_TYPE_FILTER.apply(_items, _selectedTypeFilter);
+    var filtered = CT_TYPE_FILTER.apply(libraryItems, _selectedTypeFilter);
     if (!filtered.length) {
       el.innerHTML = '<div class="ct-empty">Nenhum item neste filtro.</div>';
       return;
@@ -722,14 +726,15 @@ window.CT_ADMIN = (function() {
     }).join('');
   }
 
-  function _renderItemsFilter() {
+  function _renderItemsFilter(itemsSubset) {
     var fc = document.getElementById('items-filter');
     if (!fc) return;
-    if (!_items.length) { fc.innerHTML = ''; return; }
+    var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id; });
+    if (!items.length) { fc.innerHTML = ''; return; }
     CT_TYPE_FILTER.render({
       container:    fc,
       types:        _types,
-      items:        _items,
+      items:        items,
       selectedSlug: _selectedTypeFilter,
       onChange: function(slug) {
         _selectedTypeFilter = slug;
@@ -740,7 +745,7 @@ window.CT_ADMIN = (function() {
 
   // ---- GDoc ingest button + modal ----
 
-  function _openGdocIngestModal() {
+  function _openGdocIngestModal(onSuccess) {
     var html = '<div class="ct-modal ct-gdoc-modal">' +
       '<div class="ct-modal-title">Importar apostila do curso</div>' +
       '<p class="ct-helper-text" style="margin:0 0 12px">A apostila é compartilhada entre todos os clientes. Após importar, todas as turmas terão acesso ao mesmo material.</p>' +
@@ -776,13 +781,113 @@ window.CT_ADMIN = (function() {
         _closeModal();
         var n = (res && res.items_created) ? res.items_created : (res && res.count) ? res.count : (res && res.items) ? res.items.length : '?';
         _toast('Apostila importada, ' + n + ' seções criadas.');
-        _loadItems({ silent: true });
+        if (typeof onSuccess === 'function') onSuccess();
+        else _loadItems({ silent: true });
       }).catch(function(err) {
         btn.disabled = false;
         btn.textContent = 'Importar';
         _toast('Erro: ' + (err.message || err));
       });
     });
+  }
+
+  // ---- Apostila tab ----
+
+  function _loadApostila() {
+    var el = document.getElementById('apostila-list');
+    if (!el) return;
+    el.innerHTML = '<div class="ct-empty">Carregando...</div>';
+    callWorker({ action: 'ct_list_sets' }).then(function(data) {
+      var sets = data.sets || [];
+      if (!sets.length) {
+        _apostilaSet = null;
+        _apostilaItems = [];
+        _renderApostila();
+        return;
+      }
+      var first = sets[0];
+      return callWorker({ action: 'ct_get_set', id: first.id }).then(function(res) {
+        _apostilaSet = res.set || null;
+        _apostilaItems = (res.items || []).slice().sort(function(a, b) {
+          return (a.set_position || 0) - (b.set_position || 0);
+        });
+        _renderApostila();
+      });
+    }).catch(function() {
+      el.innerHTML = '<div class="ct-empty">Erro ao carregar a apostila.</div>';
+    });
+  }
+
+  function _renderApostila() {
+    var labelEl = document.getElementById('apostila-set-label');
+    var deleteBtn = document.getElementById('btn-delete-set');
+    var el = document.getElementById('apostila-list');
+    if (!el) return;
+
+    if (!_apostilaSet) {
+      if (labelEl) labelEl.textContent = 'Apostila do curso';
+      if (deleteBtn) deleteBtn.style.display = 'none';
+      el.innerHTML = '<div class="ct-empty">Nenhuma apostila importada ainda. Use o botão acima para importar a partir de um Google Docs.</div>';
+      return;
+    }
+
+    if (labelEl) labelEl.textContent = _apostilaSet.category_label || 'Apostila do curso';
+    if (deleteBtn) deleteBtn.style.display = '';
+
+    if (!_apostilaItems.length) {
+      el.innerHTML = '<div class="ct-empty">A apostila não contém seções.</div>';
+      return;
+    }
+
+    el.innerHTML = _apostilaItems.map(function(item) {
+      var bodyLen = item.body_md ? item.body_md.length : 0;
+      var chars = bodyLen > 0 ? bodyLen + ' car.' : 'sem conteúdo';
+      return '<div class="ct-item-row ct-apostila-row" data-id="' + item.id + '">' +
+        '<span class="ct-apostila-pos">' + (item.set_position || '') + '</span>' +
+        '<div class="ct-item-info">' +
+          '<div class="ct-item-title">' + _esc(item.title) + '</div>' +
+          '<div class="ct-item-sub">' + _esc(chars) + '</div>' +
+        '</div>' +
+        '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.openItem(' + item.id + ')">Editar</button>' +
+        '<button class="ct-btn ct-btn-sm ct-btn-danger" onclick="event.stopPropagation();CT_ADMIN.deleteApostilaItem(' + item.id + ')">Excluir</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _deleteApostilaItem(id) {
+    if (!confirm('Excluir esta seção da apostila? Ela será removida de todas as turmas onde está liberada.')) return;
+    var idNum = Number(id);
+    var idx = _apostilaItems.findIndex(function(it) { return Number(it.id) === idNum; });
+    var snapshot = idx >= 0 ? _apostilaItems[idx] : null;
+    if (idx >= 0) {
+      _apostilaItems.splice(idx, 1);
+      _renderApostila();
+    }
+    callWorker({ action: 'ct_delete_item', id: id, _silent: true }).then(function() {
+      _toast('Seção excluída.');
+      // Keep _items in sync as well
+      var libIdx = _items.findIndex(function(it) { return Number(it.id) === idNum; });
+      if (libIdx >= 0) _items.splice(libIdx, 1);
+    }).catch(function(err) {
+      if (snapshot && idx >= 0) {
+        _apostilaItems.splice(idx, 0, snapshot);
+        _renderApostila();
+      }
+      _toast('Erro: ' + (err.message || err));
+    });
+  }
+
+  function _deleteApostilaSet() {
+    if (!_apostilaSet) return;
+    if (!confirm('Excluir a apostila completa? Os itens permanecem na biblioteca, mas perdem a associação ao conjunto.')) return;
+    callWorker({ action: 'ct_delete_set', id: _apostilaSet.id }).then(function() {
+      _apostilaSet = null;
+      _apostilaItems = [];
+      // Clear set_id from _items cache so the items tab stays correct
+      _items.forEach(function(it) { if (it.set_id) { it.set_id = null; it.set_position = null; } });
+      _renderApostila();
+      _toast('Apostila excluída.');
+    }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
   }
 
   // ---- Item editor (open) ----
@@ -1820,6 +1925,7 @@ window.CT_ADMIN = (function() {
         var panel = document.getElementById('panel-' + id);
         if (panel) panel.classList.add('active');
         if (id === 'items') _loadItems();
+        if (id === 'apostila') _loadApostila();
         if (id === 'releases') {
           callWorker({ action: 'ct_list_clients' }).then(function(d) {
             _clients = d.clients || [];
@@ -1906,7 +2012,14 @@ window.CT_ADMIN = (function() {
       var manageTagsBtn = document.getElementById('btn-manage-tags');
       if (manageTagsBtn) manageTagsBtn.addEventListener('click', _openTagManager);
       var importGdocBtn = document.getElementById('btn-import-gdoc');
-      if (importGdocBtn) importGdocBtn.addEventListener('click', _openGdocIngestModal);
+      if (importGdocBtn) importGdocBtn.addEventListener('click', function() {
+        _openGdocIngestModal(function() {
+          _loadApostila();
+          _loadItems({ silent: true });
+        });
+      });
+      var deleteSetBtn = document.getElementById('btn-delete-set');
+      if (deleteSetBtn) deleteSetBtn.addEventListener('click', _deleteApostilaSet);
       _loadClients();
       _loadTypes();
       _loadTags();
@@ -1971,21 +2084,25 @@ window.CT_ADMIN = (function() {
       // round-tripping ct_list_items. Worker DELETE still runs in the
       // background; if it fails, we restore and toast the error.
       var idNum = Number(id);
-      var idx = _allItems.findIndex(function(it) { return Number(it.id) === idNum; });
-      var snapshot = idx >= 0 ? _allItems[idx] : null;
+      var idx = _items.findIndex(function(it) { return Number(it.id) === idNum; });
+      var snapshot = idx >= 0 ? _items[idx] : null;
       if (idx >= 0) {
-        _allItems.splice(idx, 1);
+        _items.splice(idx, 1);
         _renderItems();
       }
       callWorker({ action: 'ct_delete_item', id: id, _silent: true }).then(function() {
         _toast('Item excluído.');
       }).catch(function(err) {
         if (snapshot && idx >= 0) {
-          _allItems.splice(idx, 0, snapshot);
+          _items.splice(idx, 0, snapshot);
           _renderItems();
         }
         _toast('Erro: ' + (err.message || err));
       });
+    },
+
+    deleteApostilaItem: function(id) {
+      _deleteApostilaItem(id);
     }
   };
 })();
