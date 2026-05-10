@@ -741,13 +741,9 @@ window.CT_ADMIN = (function() {
   // ---- GDoc ingest button + modal ----
 
   function _openGdocIngestModal() {
-    var clientOptions = '<option value="">Selecione o cliente...</option>' +
-      _clients.map(function(c) {
-        return '<option value="' + _esc(c.slug) + '">' + _esc(c.display_name || c.name) + '</option>';
-      }).join('');
-
     var html = '<div class="ct-modal ct-gdoc-modal">' +
       '<div class="ct-modal-title">Importar apostila do curso</div>' +
+      '<p class="ct-helper-text" style="margin:0 0 12px">A apostila é compartilhada entre todos os clientes. Após importar, todas as turmas terão acesso ao mesmo material.</p>' +
       '<div class="ct-field"><label>URL do documento</label>' +
         '<input type="text" id="gd-url" placeholder="https://docs.google.com/document/d/...">' +
         '<p class="ct-helper-text">O documento deve estar compartilhado como "Qualquer pessoa com o link pode visualizar".</p>' +
@@ -758,9 +754,6 @@ window.CT_ADMIN = (function() {
           '<option value="h1">Título 1 (h1)</option>' +
           '<option value="hr">Linha horizontal (---)</option>' +
         '</select>' +
-      '</div>' +
-      '<div class="ct-field"><label>Cliente (obrigatório)</label>' +
-        '<select id="gd-client">' + clientOptions + '</select>' +
       '</div>' +
       '<div class="ct-modal-actions">' +
         '<button class="ct-btn" id="gd-cancel">Cancelar</button>' +
@@ -775,15 +768,13 @@ window.CT_ADMIN = (function() {
     bd.querySelector('#gd-import').addEventListener('click', function() {
       var url = bd.querySelector('#gd-url').value.trim();
       if (!url) { _toast('Informe a URL do documento.'); return; }
-      var clientSlug = bd.querySelector('#gd-client').value;
       var marker = bd.querySelector('#gd-marker').value;
-      if (!clientSlug) { _toast('Selecione o cliente para a apostila.'); return; }
       var btn = bd.querySelector('#gd-import');
       btn.disabled = true;
       btn.textContent = 'Importando...';
-      callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'set', client_slug: clientSlug, marker: marker }).then(function(res) {
+      callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'set', marker: marker }).then(function(res) {
         _closeModal();
-        var n = (res && res.items_created) ? res.items_created : (res && res.count) ? res.count : '?';
+        var n = (res && res.items_created) ? res.items_created : (res && res.count) ? res.count : (res && res.items) ? res.items.length : '?';
         _toast('Apostila importada, ' + n + ' seções criadas.');
         _loadItems({ silent: true });
       }).catch(function(err) {
