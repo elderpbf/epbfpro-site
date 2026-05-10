@@ -68,6 +68,11 @@ window.CT_ADMIN = (function() {
       var icon = t.icon ? t.icon + ' ' : '';
       return '<option value="' + _esc(t.slug) + '"' + sel + '>' + _esc(icon + t.label) + '</option>';
     }).join('');
+    // Preserve unregistered types so opening an item with type='material' (etc.)
+    // doesn't silently downgrade to the first registered type on save.
+    if (selectedSlug && !_types.find(function(t) { return t.slug === selectedSlug; })) {
+      opts = '<option value="' + _esc(selectedSlug) + '" selected>' + _esc(selectedSlug) + ' (não registrado)</option>' + opts;
+    }
     return opts + '<option value="__new__">+ Criar novo tipo...</option>';
   }
 
@@ -571,10 +576,6 @@ window.CT_ADMIN = (function() {
           '<input type="text" class="aula-title" value="' + _esc(a.title || '') + '" placeholder="Título da aula">' +
         '</div>' +
         '<div class="ct-field">' +
-          '<label>Tópicos (separados por vírgula)</label>' +
-          '<input type="text" class="aula-topics" value="' + _esc(_topicsToStr(a.topics_json)) + '" placeholder="Ex: Introdução, IA generativa, LLMs">' +
-        '</div>' +
-        '<div class="ct-field">' +
           '<label>Agendada para</label>' +
           '<input type="date" class="aula-scheduled" value="' + _esc(a.scheduled_for || '') + '">' +
         '</div>' +
@@ -602,19 +603,6 @@ window.CT_ADMIN = (function() {
     '</div>';
   }
 
-  function _topicsToStr(topicsJson) {
-    if (!topicsJson) return '';
-    try {
-      var arr = typeof topicsJson === 'string' ? JSON.parse(topicsJson) : topicsJson;
-      return Array.isArray(arr) ? arr.join(', ') : String(topicsJson);
-    } catch (e) { return String(topicsJson); }
-  }
-
-  function _strToTopics(str) {
-    if (!str || !str.trim()) return [];
-    return str.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-  }
-
   function _wireAulaRowEvents(bd, container, aulas, clientSlug, turmaSlug, tarefaOptions) {
     container.querySelectorAll('.ct-aula-row').forEach(function(row, idx) {
       var aula = aulas[idx];
@@ -623,12 +611,13 @@ window.CT_ADMIN = (function() {
       var deleteBtn = row.querySelector('.aula-delete-btn');
 
       saveBtn.addEventListener('click', function() {
+        // topics_json is intentionally omitted; the Worker preserves the existing value
+        // when the param is absent. Topics auto-fill from apostila releases now.
         var payload = {
           client_slug: clientSlug,
           turma_slug: turmaSlug,
           aula_number: aula.aula_number,
           title: row.querySelector('.aula-title').value.trim(),
-          topics_json: JSON.stringify(_strToTopics(row.querySelector('.aula-topics').value)),
           scheduled_for: row.querySelector('.aula-scheduled').value || null,
           happened_on: row.querySelector('.aula-happened').value || null,
           rescheduled_from: row.querySelector('.aula-rescheduled-from').value || null,
