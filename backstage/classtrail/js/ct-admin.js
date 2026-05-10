@@ -14,7 +14,10 @@ window.CT_ADMIN = (function() {
   var _relReleased = [];           // ordered array of released item IDs
   var _relClientSlug = null;
   var _relTurmaSlug = null;
+  var _relAulas = [];              // aulas for current turma in releases view
+  var _relReleasedMeta = {};       // {item_id: {aula_number}} for the current turma
   var _selectedReleaseFilter = null;
+  var _cpSessions = [];            // [{id, name}] from cp_list_sessions
 
   // ---- Helpers ----
 
@@ -42,13 +45,13 @@ window.CT_ADMIN = (function() {
   // ---- Type / tag helpers ----
 
   var TYPE_ICON_FALLBACK = {
-    prompt: '💬',     // 💬
-    exemplo: '✨',           // ✨
-    exercicio: '📝',  // 📝
-    dica: '💡',        // 💡
-    leitura: '📖',     // 📖
-    video: '🎬',       // 🎬
-    link: '🔗'         // 🔗
+    prompt: '💬',
+    exemplo: '✨',
+    exercicio: '📝',
+    dica: '💡',
+    leitura: '📖',
+    video: '🎬',
+    link: '🔗'
   };
 
   function _typeMeta(slug) {
@@ -84,7 +87,6 @@ window.CT_ADMIN = (function() {
       });
     }
 
-    // ESC always closes (universal expectation).
     var escHandler = function(e) {
       if (e.key === 'Escape') {
         if (bd.parentNode) bd.parentNode.removeChild(bd);
@@ -111,7 +113,7 @@ window.CT_ADMIN = (function() {
       _clients = data.clients || [];
       _renderClients();
       _populateRelClientSelect();
-    }).catch(function(err) {
+    }).catch(function() {
       document.getElementById('clients-list').innerHTML = '<div class="ct-empty">Erro ao carregar clientes.</div>';
     });
   }
@@ -125,8 +127,13 @@ window.CT_ADMIN = (function() {
     el.innerHTML = _clients.map(function(c) {
       var sel = c.slug === _selectedClientSlug ? ' selected' : '';
       var archived = c.status === 'archived' ? ' <span class="ct-badge archived">Arquivado</span>' : '';
+      var iconHtml = '';
+      if (c.icon_path) {
+        var iconSrc = c.icon_path.startsWith('http') ? c.icon_path : '/r2/' + c.icon_path;
+        iconHtml = '<img class="ct-icon-preview" src="' + _esc(iconSrc) + '" alt="" style="width:28px;height:28px;margin-right:6px;vertical-align:middle;">';
+      }
       return '<div class="ct-card' + sel + '" data-slug="' + _esc(c.slug) + '">' +
-        '<div class="ct-card-name">' + _esc(c.display_name || c.name) + archived + '</div>' +
+        '<div class="ct-card-name">' + iconHtml + _esc(c.display_name || c.name) + archived + '</div>' +
         '<div class="ct-card-meta">' + _esc(c.slug) + '</div>' +
         '<div class="ct-card-actions">' +
           '<button class="ct-btn ct-btn-sm" onclick="CT_ADMIN.editClient(\'' + _esc(c.slug) + '\')">Editar</button>' +
@@ -136,7 +143,7 @@ window.CT_ADMIN = (function() {
     }).join('');
     el.querySelectorAll('.ct-card').forEach(function(card) {
       card.addEventListener('click', function(e) {
-        if (e.target.tagName === 'BUTTON') return;
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'IMG') return;
         _selectClient(card.dataset.slug);
       });
     });
@@ -155,8 +162,24 @@ window.CT_ADMIN = (function() {
     _loadTurmas(slug);
   }
 
+  // ---- Client form with icon picker ----
+
   function _openClientForm(client) {
     var isEdit = !!client;
+    var currentIconPath = isEdit ? (client.icon_path || '') : '';
+    var iconPreviewHtml = '';
+    if (currentIconPath) {
+      var previewSrc = currentIconPath.startsWith('http') ? currentIconPath : '/r2/' + currentIconPath;
+      iconPreviewHtml = '<div class="ct-icon-preview-row">' +
+        '<img id="cf-icon-preview-img" class="ct-icon-preview" src="' + _esc(previewSrc) + '" alt="Ícone atual">' +
+        '<span class="ct-helper-text">Ícone atual</span>' +
+        '</div>';
+    } else {
+      iconPreviewHtml = '<div class="ct-icon-preview-row" id="cf-icon-preview-row" style="display:none">' +
+        '<img id="cf-icon-preview-img" class="ct-icon-preview" src="" alt="Prévia">' +
+        '<span class="ct-helper-text">Prévia</span>' +
+        '</div>';
+    }
     var deleteBlock = isEdit
       ? '<div class="ct-danger-zone">' +
           '<div class="ct-danger-zone-label">Zona de perigo</div>' +
@@ -164,13 +187,27 @@ window.CT_ADMIN = (function() {
           '<p class="ct-helper-text">Apaga o cliente, todas as turmas dele e as liberações de cada turma. Os itens da biblioteca não são afetados. Essa ação não pode ser desfeita.</p>' +
         '</div>'
       : '';
-    var html = '<div class="ct-modal">' +
+    var html = '<div class="ct-modal" style="max-width:500px">' +
       '<div class="ct-modal-title">' + (isEdit ? 'Editar cliente' : 'Novo cliente') + '</div>' +
       '<div class="ct-field"><label>Nome interno</label>' +
         '<input type="text" id="cf-name" value="' + _esc(isEdit ? client.name : '') + '" placeholder="Ex: Acme Ltda">' +
       '</div>' +
       '<div class="ct-field"><label>Nome para alunos (opcional)</label>' +
         '<input type="text" id="cf-display" value="' + _esc(isEdit ? (client.display_name || '') : '') + '" placeholder="Igual ao nome interno se vazio">' +
+      '</div>' +
+      '<div class="ct-field"><label>Ícone</label>' +
+        iconPreviewHtml +
+        '<div class="ct-icon-mode-row">' +
+          '<label><input type="radio" name="cf-icon-mode" value="url" id="cf-icon-mode-url"> URL externa</label>' +
+          '<label><input type="radio" name="cf-icon-mode" value="upload" id="cf-icon-mode-upload" checked> Upload de imagem</label>' +
+        '</div>' +
+        '<div id="cf-icon-url-wrap" style="display:none">' +
+          '<input type="text" id="cf-icon-url" placeholder="https://..." value="">' +
+        '</div>' +
+        '<div id="cf-icon-file-wrap">' +
+          '<input type="file" id="cf-icon-file" accept=".png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml">' +
+          '<div class="ct-file-error" id="cf-icon-file-error" style="display:none"></div>' +
+        '</div>' +
       '</div>' +
       deleteBlock +
       '<div class="ct-modal-actions">' +
@@ -179,7 +216,49 @@ window.CT_ADMIN = (function() {
       '</div>' +
     '</div>';
     var bd = _openModal(html, { disableBackdropClose: true });
+
+    // Icon mode toggle
+    var modeUrl = bd.querySelector('#cf-icon-mode-url');
+    var modeUpload = bd.querySelector('#cf-icon-mode-upload');
+    var urlWrap = bd.querySelector('#cf-icon-url-wrap');
+    var fileWrap = bd.querySelector('#cf-icon-file-wrap');
+    modeUrl.addEventListener('change', function() {
+      urlWrap.style.display = '';
+      fileWrap.style.display = 'none';
+    });
+    modeUpload.addEventListener('change', function() {
+      urlWrap.style.display = 'none';
+      fileWrap.style.display = '';
+    });
+
+    // File validation and preview
+    var fileErrEl = bd.querySelector('#cf-icon-file-error');
+    var previewImg = bd.querySelector('#cf-icon-preview-img');
+    var previewRow = bd.querySelector('#cf-icon-preview-row') || bd.querySelector('.ct-icon-preview-row');
+    bd.querySelector('#cf-icon-file').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      fileErrEl.style.display = 'none';
+      fileErrEl.textContent = '';
+      if (!file) return;
+      if (file.size > 1024 * 1024) {
+        fileErrEl.textContent = 'O arquivo excede 1 MB. Escolha uma imagem menor.';
+        fileErrEl.style.display = '';
+        e.target.value = '';
+        return;
+      }
+      // Show preview
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        if (previewImg) {
+          previewImg.src = ev.target.result;
+          if (previewRow) previewRow.style.display = '';
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
     bd.querySelector('#cf-cancel').addEventListener('click', _closeModal);
+
     if (isEdit) {
       bd.querySelector('#cf-delete').addEventListener('click', function() {
         var confirmText = 'Para confirmar, digite o nome interno do cliente:\n\n"' + client.name + '"';
@@ -200,6 +279,7 @@ window.CT_ADMIN = (function() {
         }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
       });
     }
+
     bd.querySelector('#cf-save').addEventListener('click', function() {
       var name = bd.querySelector('#cf-name').value.trim();
       var display = bd.querySelector('#cf-display').value.trim();
@@ -209,11 +289,41 @@ window.CT_ADMIN = (function() {
       if (isEdit) params.slug = client.slug;
       else params.slug = _slugify(name);
       if (!params.slug) { _toast('Nome inválido para gerar slug.'); return; }
+
+      var slug = params.slug;
+      var iconMode = bd.querySelector('input[name="cf-icon-mode"]:checked').value;
+      var iconUrl = bd.querySelector('#cf-icon-url').value.trim();
+      var iconFile = bd.querySelector('#cf-icon-file').files[0];
+
       callWorker(params).then(function() {
+        // After client saved, handle icon if provided
+        if (iconMode === 'url' && iconUrl) {
+          return callWorker({ action: 'ct_set_client_icon', slug: slug, mode: 'url', value: iconUrl });
+        } else if (iconMode === 'upload' && iconFile) {
+          return _readFileAsBase64(iconFile).then(function(b64) {
+            return callWorker({ action: 'ct_set_client_icon', slug: slug, mode: 'upload', value: b64, filename: iconFile.name });
+          });
+        }
+        return Promise.resolve();
+      }).then(function() {
         _closeModal();
         _toast(isEdit ? 'Cliente atualizado.' : 'Cliente criado.');
         _loadClients();
       }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    });
+  }
+
+  function _readFileAsBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        // Strip the data:...;base64, prefix
+        var result = e.target.result;
+        var b64 = result.split(',')[1] || result;
+        resolve(b64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
   }
 
@@ -257,35 +367,282 @@ window.CT_ADMIN = (function() {
 
   function _openTurmaForm(turma) {
     var isEdit = !!turma;
-    var html = '<div class="ct-modal">' +
-      '<div class="ct-modal-title">' + (isEdit ? 'Editar turma' : 'Nova turma') + '</div>' +
-      '<div class="ct-field"><label>Nome interno</label>' +
-        '<input type="text" id="tf-name" value="' + _esc(isEdit ? turma.name : '') + '" placeholder="Ex: Turma A">' +
+    // Load ClassPulse sessions (may already be cached)
+    var sessionsPromise = _cpSessions.length
+      ? Promise.resolve()
+      : callWorker({ action: 'cp_list_sessions' }).then(function(d) { _cpSessions = d.sessions || []; }).catch(function() {});
+
+    sessionsPromise.then(function() {
+      var cpOptions = '<option value="">(nenhuma)</option>' +
+        _cpSessions.map(function(s) {
+          var sel = (isEdit && turma.classpulse_session_id === s.id) ? ' selected' : '';
+          return '<option value="' + _esc(s.id) + '"' + sel + '>' + _esc(s.name) + '</option>';
+        }).join('');
+
+      var html = '<div class="ct-modal" style="max-width:600px;max-height:90vh;overflow-y:auto">' +
+        '<div class="ct-modal-title">' + (isEdit ? 'Editar turma' : 'Nova turma') + '</div>' +
+        '<div class="ct-field"><label>Nome interno</label>' +
+          '<input type="text" id="tf-name" value="' + _esc(isEdit ? turma.name : '') + '" placeholder="Ex: Turma A">' +
+        '</div>' +
+        '<div class="ct-field"><label>Nome para alunos (opcional)</label>' +
+          '<input type="text" id="tf-display" value="' + _esc(isEdit ? (turma.display_name || '') : '') + '" placeholder="Igual ao nome interno se vazio">' +
+        '</div>' +
+        '<div class="ct-field"><label>WhatsApp do grupo (URL, opcional)</label>' +
+          '<input type="text" id="tf-whatsapp" value="' + _esc(isEdit ? (turma.whatsapp_url || '') : '') + '" placeholder="https://chat.whatsapp.com/...">' +
+        '</div>' +
+        '<div class="ct-field"><label>Sessão ClassPulse</label>' +
+          '<select id="tf-classpulse">' + cpOptions + '</select>' +
+        '</div>' +
+        (isEdit ? _renderAulasSection(turma) : '') +
+        '<div class="ct-modal-actions">' +
+          '<button class="ct-btn" id="tf-cancel">Cancelar</button>' +
+          '<button class="ct-btn ct-btn-primary" id="tf-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
+        '</div>' +
+      '</div>';
+
+      var bd = _openModal(html, { disableBackdropClose: true });
+
+      // Load aulas for existing turma
+      if (isEdit) {
+        _loadAulasIntoForm(bd, turma.client_slug, turma.slug);
+      }
+
+      bd.querySelector('#tf-cancel').addEventListener('click', _closeModal);
+      bd.querySelector('#tf-save').addEventListener('click', function() {
+        var name = bd.querySelector('#tf-name').value.trim();
+        var display = bd.querySelector('#tf-display').value.trim();
+        var whatsapp = bd.querySelector('#tf-whatsapp').value.trim();
+        var cpSession = bd.querySelector('#tf-classpulse').value;
+        if (!name) { _toast('Nome obrigatório.'); return; }
+        var action = isEdit ? 'ct_update_turma' : 'ct_create_turma';
+        var params = { action: action, client_slug: _selectedClientSlug, name: name, display_name: display || null };
+        if (isEdit) params.slug = turma.slug;
+        else params.slug = _slugify(name);
+        if (!params.slug) { _toast('Nome inválido para gerar slug.'); return; }
+        callWorker(params).then(function() {
+          // Update meta fields if edit
+          var metaChanged = isEdit && (
+            whatsapp !== (turma.whatsapp_url || '') ||
+            cpSession !== (turma.classpulse_session_id || '')
+          );
+          var metaPromise = Promise.resolve();
+          if (isEdit && metaChanged) {
+            metaPromise = callWorker({
+              action: 'ct_update_turma_meta',
+              client_slug: _selectedClientSlug,
+              slug: turma.slug,
+              whatsapp_url: whatsapp || null,
+              classpulse_session_id: cpSession || null
+            });
+          } else if (!isEdit && (whatsapp || cpSession)) {
+            // On create, slug is the slugified name; update meta after create
+            metaPromise = callWorker({
+              action: 'ct_update_turma_meta',
+              client_slug: _selectedClientSlug,
+              slug: params.slug,
+              whatsapp_url: whatsapp || null,
+              classpulse_session_id: cpSession || null
+            });
+          }
+          return metaPromise;
+        }).then(function() {
+          _closeModal();
+          _toast(isEdit ? 'Turma atualizada.' : 'Turma criada.');
+          _loadTurmas(_selectedClientSlug);
+        }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+      });
+    });
+  }
+
+  // ---- Aulas section (inside turma edit) ----
+
+  function _renderAulasSection(turma) {
+    return '<div class="ct-aulas-section" id="tf-aulas-section">' +
+      '<div class="ct-aulas-header">' +
+        '<span class="ct-aulas-title">Aulas desta turma</span>' +
+        '<button type="button" class="ct-btn ct-btn-sm ct-btn-primary" id="tf-add-aula">+ Nova aula</button>' +
       '</div>' +
-      '<div class="ct-field"><label>Nome para alunos (opcional)</label>' +
-        '<input type="text" id="tf-display" value="' + _esc(isEdit ? (turma.display_name || '') : '') + '" placeholder="Igual ao nome interno se vazio">' +
+      '<div id="tf-aulas-list"><div class="ct-empty">Carregando aulas...</div></div>' +
+    '</div>';
+  }
+
+  function _loadAulasIntoForm(bd, clientSlug, turmaSlug) {
+    callWorker({ action: 'ct_list_aulas', client_slug: clientSlug, turma_slug: turmaSlug }).then(function(d) {
+      var aulas = d.aulas || [];
+      _renderAulaRows(bd, aulas, clientSlug, turmaSlug);
+    }).catch(function() {
+      var el = bd.querySelector('#tf-aulas-list');
+      if (el) el.innerHTML = '<div class="ct-empty">Erro ao carregar aulas.</div>';
+    });
+  }
+
+  function _renderAulaRows(bd, aulas, clientSlug, turmaSlug) {
+    var container = bd.querySelector('#tf-aulas-list');
+    if (!container) return;
+
+    // Load items for tarefa dropdown
+    callWorker({ action: 'ct_list_items' }).then(function(d) {
+      var allItems = d.items || [];
+
+      // Build turma-released items for tarefa picker -- use the already-loaded releases
+      // We'll just offer all items for simplicity (admin-facing only)
+      var tarefaOptions = '<option value="">(nenhuma)</option>' +
+        allItems.map(function(it) {
+          return '<option value="' + _esc(it.id) + '">' + _esc(it.title) + '</option>';
+        }).join('');
+
+      function render(list) {
+        if (!list.length) {
+          container.innerHTML = '<div class="ct-empty">Nenhuma aula. Clique em "+ Nova aula" para adicionar.</div>';
+        } else {
+          container.innerHTML = list.map(function(a) {
+            return _buildAulaRowHtml(a, tarefaOptions);
+          }).join('');
+          _wireAulaRowEvents(bd, container, list, clientSlug, turmaSlug, tarefaOptions);
+        }
+      }
+
+      render(aulas);
+
+      var addBtn = bd.querySelector('#tf-add-aula');
+      if (addBtn) {
+        addBtn.addEventListener('click', function() {
+          // Determine next aula_number
+          var nums = aulas.map(function(a) { return a.aula_number || 0; });
+          var nextNum = nums.length ? Math.max.apply(null, nums) + 1 : 1;
+          var newAula = {
+            id: null,
+            aula_number: nextNum,
+            title: '',
+            topics_json: null,
+            scheduled_for: null,
+            happened_on: null,
+            rescheduled_from: null,
+            rescheduled_note: null,
+            tarefa_item_id: null,
+            _isNew: true
+          };
+          aulas.push(newAula);
+          render(aulas);
+          // Scroll to bottom of modal
+          var modal = bd.querySelector('.ct-modal');
+          if (modal) modal.scrollTop = modal.scrollHeight;
+        });
+      }
+    });
+  }
+
+  function _buildAulaRowHtml(a, tarefaOptions) {
+    var selectedTarefa = tarefaOptions.replace(
+      'value="' + _esc(a.tarefa_item_id) + '"',
+      'value="' + _esc(a.tarefa_item_id) + '" selected'
+    );
+    return '<div class="ct-aula-row" data-aula-id="' + _esc(a.id || '') + '" data-is-new="' + (a._isNew ? '1' : '0') + '">' +
+      '<div class="ct-aula-num-label">Aula ' + _esc(a.aula_number) + '</div>' +
+      '<div class="ct-aula-row-grid">' +
+        '<div class="ct-field">' +
+          '<label>Título</label>' +
+          '<input type="text" class="aula-title" value="' + _esc(a.title || '') + '" placeholder="Título da aula">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Tópicos (separados por vírgula)</label>' +
+          '<input type="text" class="aula-topics" value="' + _esc(_topicsToStr(a.topics_json)) + '" placeholder="Ex: Introdução, IA generativa, LLMs">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Agendada para</label>' +
+          '<input type="date" class="aula-scheduled" value="' + _esc(a.scheduled_for || '') + '">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Ocorreu em</label>' +
+          '<input type="date" class="aula-happened" value="' + _esc(a.happened_on || '') + '">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Remarcada de (data original)</label>' +
+          '<input type="date" class="aula-rescheduled-from" value="' + _esc(a.rescheduled_from || '') + '">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Nota de remarcação (opcional)</label>' +
+          '<input type="text" class="aula-rescheduled-note" value="' + _esc(a.rescheduled_note || '') + '" placeholder="Ex: Feriado nacional">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Tarefa (item)</label>' +
+          '<select class="aula-tarefa">' + selectedTarefa + '</select>' +
+        '</div>' +
       '</div>' +
-      '<div class="ct-modal-actions">' +
-        '<button class="ct-btn" id="tf-cancel">Cancelar</button>' +
-        '<button class="ct-btn ct-btn-primary" id="tf-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
+      '<div class="ct-aula-actions">' +
+        '<button type="button" class="ct-btn ct-btn-sm ct-btn-danger aula-delete-btn">Excluir</button>' +
+        '<button type="button" class="ct-btn ct-btn-sm ct-btn-primary aula-save-btn">Salvar aula</button>' +
       '</div>' +
     '</div>';
-    var bd = _openModal(html, { disableBackdropClose: true });
-    bd.querySelector('#tf-cancel').addEventListener('click', _closeModal);
-    bd.querySelector('#tf-save').addEventListener('click', function() {
-      var name = bd.querySelector('#tf-name').value.trim();
-      var display = bd.querySelector('#tf-display').value.trim();
-      if (!name) { _toast('Nome obrigatório.'); return; }
-      var action = isEdit ? 'ct_update_turma' : 'ct_create_turma';
-      var params = { action: action, client_slug: _selectedClientSlug, name: name, display_name: display || null };
-      if (isEdit) params.slug = turma.slug;
-      else params.slug = _slugify(name);
-      if (!params.slug) { _toast('Nome inválido para gerar slug.'); return; }
-      callWorker(params).then(function() {
-        _closeModal();
-        _toast(isEdit ? 'Turma atualizada.' : 'Turma criada.');
-        _loadTurmas(_selectedClientSlug);
-      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+  }
+
+  function _topicsToStr(topicsJson) {
+    if (!topicsJson) return '';
+    try {
+      var arr = typeof topicsJson === 'string' ? JSON.parse(topicsJson) : topicsJson;
+      return Array.isArray(arr) ? arr.join(', ') : String(topicsJson);
+    } catch (e) { return String(topicsJson); }
+  }
+
+  function _strToTopics(str) {
+    if (!str || !str.trim()) return [];
+    return str.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function _wireAulaRowEvents(bd, container, aulas, clientSlug, turmaSlug, tarefaOptions) {
+    container.querySelectorAll('.ct-aula-row').forEach(function(row, idx) {
+      var aula = aulas[idx];
+
+      var saveBtn = row.querySelector('.aula-save-btn');
+      var deleteBtn = row.querySelector('.aula-delete-btn');
+
+      saveBtn.addEventListener('click', function() {
+        var payload = {
+          client_slug: clientSlug,
+          turma_slug: turmaSlug,
+          aula_number: aula.aula_number,
+          title: row.querySelector('.aula-title').value.trim(),
+          topics_json: JSON.stringify(_strToTopics(row.querySelector('.aula-topics').value)),
+          scheduled_for: row.querySelector('.aula-scheduled').value || null,
+          happened_on: row.querySelector('.aula-happened').value || null,
+          rescheduled_from: row.querySelector('.aula-rescheduled-from').value || null,
+          rescheduled_note: row.querySelector('.aula-rescheduled-note').value.trim() || null,
+          tarefa_item_id: row.querySelector('.aula-tarefa').value || null
+        };
+        var isNew = row.dataset.isNew === '1' || aula._isNew;
+        if (isNew) {
+          callWorker(Object.assign({ action: 'ct_create_aula' }, payload)).then(function(res) {
+            var created = res.aula || res;
+            if (created && created.id) {
+              aula.id = created.id;
+              aula._isNew = false;
+              row.dataset.aulaId = created.id;
+              row.dataset.isNew = '0';
+            }
+            _toast('Aula criada.');
+          }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+        } else {
+          callWorker(Object.assign({ action: 'ct_update_aula', id: aula.id }, payload)).then(function() {
+            _toast('Aula salva.');
+          }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+        }
+      });
+
+      deleteBtn.addEventListener('click', function() {
+        var isNew = row.dataset.isNew === '1' || aula._isNew;
+        if (isNew) {
+          // Not yet saved, just remove from DOM and local array
+          aulas.splice(idx, 1);
+          _renderAulaRows(bd, aulas, clientSlug, turmaSlug);
+          return;
+        }
+        if (!confirm('Excluir aula ' + aula.aula_number + '? Os itens liberados para ela perderão a associação.')) return;
+        callWorker({ action: 'ct_delete_aula', id: aula.id }).then(function() {
+          aulas.splice(idx, 1);
+          _renderAulaRows(bd, aulas, clientSlug, turmaSlug);
+          _toast('Aula excluída.');
+        }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+      });
     });
   }
 
@@ -324,10 +681,13 @@ window.CT_ADMIN = (function() {
             return '<span class="ct-tag-chip ct-tag-chip-mini">' + _esc(t.label) + '</span>';
           }).join('') + '</span>'
         : '';
+      var setBadge = item.set_id
+        ? '<span class="ct-set-badge" title="Item faz parte da apostila importada; edições manuais podem ser sobrescritas em sincronizações futuras.">Apostila do curso</span>'
+        : '';
       return '<div class="ct-item-row" onclick="CT_ADMIN.openItem(' + item.id + ')">' +
         '<span class="ct-item-type-icon">' + meta.icon + '</span>' +
         '<div class="ct-item-info">' +
-          '<div class="ct-item-title">' + _esc(item.title) + '</div>' +
+          '<div class="ct-item-title">' + _esc(item.title) + setBadge + '</div>' +
           '<div class="ct-item-sub">' + _esc(meta.label) +
             ' · ' + new Date(item.updated_at * 1000).toLocaleDateString('pt-BR') +
           '</div>' +
@@ -353,6 +713,101 @@ window.CT_ADMIN = (function() {
       }
     });
   }
+
+  // ---- GDoc ingest button + modal ----
+
+  function _openGdocIngestModal() {
+    var clientOptions = '<option value="">Selecione o cliente...</option>' +
+      _clients.map(function(c) {
+        return '<option value="' + _esc(c.slug) + '">' + _esc(c.display_name || c.name) + '</option>';
+      }).join('');
+
+    var html = '<div class="ct-modal ct-gdoc-modal">' +
+      '<div class="ct-modal-title">Importar do Google Docs</div>' +
+      '<div class="ct-field"><label>URL do documento</label>' +
+        '<input type="text" id="gd-url" placeholder="https://docs.google.com/document/d/...">' +
+        '<p class="ct-helper-text">O documento deve estar compartilhado como "Qualquer pessoa com o link pode visualizar".</p>' +
+      '</div>' +
+      '<div class="ct-field"><label>Modo</label>' +
+        '<div class="ct-icon-mode-row">' +
+          '<label><input type="radio" name="gd-mode" value="single" id="gd-mode-single" checked> Item único</label>' +
+          '<label><input type="radio" name="gd-mode" value="set" id="gd-mode-set"> Apostila completa, várias seções</label>' +
+        '</div>' +
+      '</div>' +
+      '<div id="gd-set-options" style="display:none">' +
+        '<div class="ct-field"><label>Marcador de seção</label>' +
+          '<select id="gd-marker">' +
+            '<option value="h2" selected>Título 2 (h2)</option>' +
+            '<option value="h1">Título 1 (h1)</option>' +
+            '<option value="hr">Linha horizontal (---)</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="ct-field"><label>Cliente (obrigatório para apostila)</label>' +
+          '<select id="gd-client">' + clientOptions + '</select>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ct-modal-actions">' +
+        '<button class="ct-btn" id="gd-cancel">Cancelar</button>' +
+        '<button class="ct-btn ct-btn-primary" id="gd-import">Importar</button>' +
+      '</div>' +
+    '</div>';
+
+    var bd = _openModal(html, { disableBackdropClose: true });
+
+    var modeSingle = bd.querySelector('#gd-mode-single');
+    var modeSet = bd.querySelector('#gd-mode-set');
+    var setOptions = bd.querySelector('#gd-set-options');
+
+    modeSingle.addEventListener('change', function() { setOptions.style.display = 'none'; });
+    modeSet.addEventListener('change', function() { setOptions.style.display = ''; });
+
+    bd.querySelector('#gd-cancel').addEventListener('click', _closeModal);
+
+    bd.querySelector('#gd-import').addEventListener('click', function() {
+      var url = bd.querySelector('#gd-url').value.trim();
+      if (!url) { _toast('Informe a URL do documento.'); return; }
+      var mode = bd.querySelector('input[name="gd-mode"]:checked').value;
+      var btn = bd.querySelector('#gd-import');
+      btn.disabled = true;
+      btn.textContent = 'Importando...';
+
+      if (mode === 'single') {
+        callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'single' }).then(function(res) {
+          _closeModal();
+          if (res && res.preview) {
+            // Prefill new item editor with ingested content
+            _openItemEditorFull(null, {
+              title:   res.preview.title || '',
+              body_md: res.preview.body_md || ''
+            }, null);
+            _toast('Documento importado. Revise e salve o item.');
+          } else {
+            _toast('Importação concluída.');
+          }
+        }).catch(function(err) {
+          btn.disabled = false;
+          btn.textContent = 'Importar';
+          _toast('Erro: ' + (err.message || err));
+        });
+      } else {
+        var clientSlug = bd.querySelector('#gd-client').value;
+        var marker = bd.querySelector('#gd-marker').value;
+        if (!clientSlug) { btn.disabled = false; btn.textContent = 'Importar'; _toast('Selecione o cliente para a apostila.'); return; }
+        callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'set', client_slug: clientSlug, marker: marker }).then(function(res) {
+          _closeModal();
+          var n = (res && res.items_created) ? res.items_created : (res && res.count) ? res.count : '?';
+          _toast('Apostila importada, ' + n + ' seções criadas.');
+          _loadItems({ silent: true });
+        }).catch(function(err) {
+          btn.disabled = false;
+          btn.textContent = 'Importar';
+          _toast('Erro: ' + (err.message || err));
+        });
+      }
+    });
+  }
+
+  // ---- Item editor (open) ----
 
   function _openItemEditor(item) {
     if (item) { _openItemEditorFull(item, null); return; }
@@ -454,7 +909,7 @@ window.CT_ADMIN = (function() {
   }
 
   // Resolve a list of tag labels to existing tag IDs, creating any
-  // missing ones. Used by the AI flow to match suggested tags.
+  // missing ones.
   async function _tagsByLabels(labels) {
     var ids = [];
     for (var i = 0; i < labels.length; i++) {
@@ -484,6 +939,7 @@ window.CT_ADMIN = (function() {
     var initialTitle   = src.title   != null ? src.title   : '';
     var initialSummary = src.summary != null ? src.summary : '';
     var initialBody    = src.body_md != null ? src.body_md : '';
+    var initialMeta    = (isEdit && item.meta_json) ? (typeof item.meta_json === 'string' ? JSON.parse(item.meta_json) : item.meta_json) : {};
     var initialTagIds = Array.isArray(src.tag_ids)
       ? src.tag_ids
       : (isEdit && Array.isArray(item.tags) ? item.tags.map(function(t) { return t.id; }) : []);
@@ -510,13 +966,7 @@ window.CT_ADMIN = (function() {
         '<div class="ct-field"><label>Tags</label>' +
           '<div class="ct-tag-picker" id="ie-tag-picker"></div>' +
         '</div>' +
-        '<div class="ct-field"><label>Corpo em Markdown</label>' +
-          '<textarea id="ie-body" rows="10" placeholder="Conteúdo do item em Markdown...">' + _esc(initialBody) + '</textarea>' +
-          '<div class="ct-editor-toolbar">' +
-            '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" type="button">Visualizar preview</button>' +
-          '</div>' +
-          '<div class="ct-preview-area" id="ie-preview" style="display:none"></div>' +
-        '</div>' +
+        '<div id="ie-type-block"></div>' +
       '</div>' +
       '<div class="ct-editor-footer">' +
         '<div class="ct-modal-actions">' +
@@ -526,25 +976,43 @@ window.CT_ADMIN = (function() {
         '</div>' +
       '</div>' +
     '</div>';
+
     var bd = _openModal(html, { disableBackdropClose: true });
     var selectedTagIds = new Set(initialTagIds);
 
-    bd.querySelector('#ie-body').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') e.stopPropagation();
-    });
+    // Pending file for asset upload (set by type-specific blocks)
+    var _pendingAssetFile = null;
+    var _pendingAssetField = null; // 'attachment_url' or 'pdf_url'
 
     var typeSel = bd.querySelector('#ie-type');
     var lastTypeValue = initialType;
-    typeSel.addEventListener('change', function() {
-      if (typeSel.value !== '__new__') { lastTypeValue = typeSel.value; return; }
-      _openTypeCreateForm(function(newSlug) {
-        if (newSlug) {
-          typeSel.innerHTML = _renderTypeOptions(newSlug);
-          lastTypeValue = newSlug;
-        } else {
-          typeSel.value = lastTypeValue;
-        }
+
+    function renderTypeBlock(typeSlug) {
+      var block = bd.querySelector('#ie-type-block');
+      block.innerHTML = _buildTypeBlock(typeSlug, initialBody, initialMeta, isEdit ? item : null);
+      _wireTypeBlockEvents(block, typeSlug, function(file, field) {
+        _pendingAssetFile = file;
+        _pendingAssetField = field;
       });
+    }
+
+    renderTypeBlock(initialType);
+
+    typeSel.addEventListener('change', function() {
+      if (typeSel.value === '__new__') {
+        _openTypeCreateForm(function(newSlug) {
+          if (newSlug) {
+            typeSel.innerHTML = _renderTypeOptions(newSlug);
+            lastTypeValue = newSlug;
+            renderTypeBlock(newSlug);
+          } else {
+            typeSel.value = lastTypeValue;
+          }
+        });
+        return;
+      }
+      lastTypeValue = typeSel.value;
+      renderTypeBlock(typeSel.value);
     });
 
     _renderTagPicker(bd.querySelector('#ie-tag-picker'), selectedTagIds);
@@ -559,19 +1027,18 @@ window.CT_ADMIN = (function() {
         btn.disabled = true;
         btn.innerHTML = '&#9889; Refazendo...';
         try {
-          // Snapshot current form state, then map tag_ids back to labels
-          // for the AI (it works in label space).
           var currentTagIds = Array.from(selectedTagIds);
           var currentTagLabels = currentTagIds.map(function(id) {
             var t = _tags.find(function(x) { return x.id === id; });
             return t ? t.label : null;
           }).filter(Boolean);
 
+          var bodyEl = bd.querySelector('#ie-body');
           var current = {
             title:      bd.querySelector('#ie-title').value.trim(),
             summary:    bd.querySelector('#ie-summary').value.trim(),
             type:       bd.querySelector('#ie-type').value,
-            body_md:    bd.querySelector('#ie-body').value,
+            body_md:    bodyEl ? bodyEl.value : '',
             tag_labels: currentTagLabels
           };
           var diff = CT_AI_SPEC.computeEditDiff(aiContext.firstOutput, current);
@@ -590,16 +1057,12 @@ window.CT_ADMIN = (function() {
           if (!parsed || !parsed.body_md) { _toast('IA retornou formato inesperado.'); return; }
           parsed = CT_AI_SPEC.enforcePromptVerbatim(parsed, aiContext.rawInput);
 
-          // Update the firstOutput reference so subsequent refazer
-          // calls compare against the latest AI version.
           aiContext.firstOutput = parsed;
 
-          // Repopulate the form with the new AI version. Tags need
-          // resolving back to IDs (creating any new ones).
           bd.querySelector('#ie-title').value   = parsed.title   || '';
           bd.querySelector('#ie-summary').value = parsed.summary || '';
           if (parsed.type) bd.querySelector('#ie-type').value = parsed.type;
-          bd.querySelector('#ie-body').value    = parsed.body_md || '';
+          if (bodyEl) bodyEl.value = parsed.body_md || '';
           var newTagIds = await _tagsByLabels(parsed.tag_labels || []);
           selectedTagIds.clear();
           newTagIds.forEach(function(id) { selectedTagIds.add(id); });
@@ -616,26 +1079,18 @@ window.CT_ADMIN = (function() {
       });
     }
 
-    bd.querySelector('#ie-preview-btn').addEventListener('click', function() {
-      var pre = bd.querySelector('#ie-preview');
-      var body = bd.querySelector('#ie-body').value;
-      if (pre.style.display === 'none') {
-        pre.style.display = '';
-        _renderMarkdown(body, pre);
-        this.textContent = 'Fechar preview';
-      } else {
-        pre.style.display = 'none';
-        this.textContent = 'Visualizar preview';
-      }
-    });
-
-    bd.querySelector('#ie-save').addEventListener('click', function() {
+    bd.querySelector('#ie-save').addEventListener('click', async function() {
       var title = bd.querySelector('#ie-title').value.trim();
       var type = typeSel.value;
       if (type === '__new__') { _toast('Selecione um tipo.'); return; }
       var summary = bd.querySelector('#ie-summary').value.trim();
-      var body_md = bd.querySelector('#ie-body').value;
       if (!title) { _toast('Título obrigatório.'); return; }
+
+      // Collect type-specific fields
+      var typeData = _collectTypeData(bd, type);
+      var body_md = typeData.body_md;
+      var meta_json = typeData.meta_json;
+
       var action = isEdit ? 'ct_update_item' : 'ct_create_item';
       var params = {
         action: action,
@@ -643,16 +1098,254 @@ window.CT_ADMIN = (function() {
         title: title,
         summary: summary || null,
         body_md: body_md,
+        meta_json: meta_json ? JSON.stringify(meta_json) : null,
         tag_ids: Array.from(selectedTagIds)
       };
       if (isEdit) params.id = item.id;
-      callWorker(params).then(function() {
+
+      try {
+        var saveRes = await callWorker(params);
+        var savedId = isEdit ? item.id : (saveRes && saveRes.id ? saveRes.id : saveRes && saveRes.item ? saveRes.item.id : null);
+
+        // Handle pending asset upload
+        if (_pendingAssetFile && savedId) {
+          var progressEl = bd.querySelector('.ct-upload-progress');
+          if (progressEl) progressEl.textContent = 'Enviando arquivo...';
+          var b64 = await _readFileAsBase64(_pendingAssetFile);
+          var uploadRes = await callWorker({
+            action: 'ct_upload_asset',
+            item_id: savedId,
+            filename: _pendingAssetFile.name,
+            content_b64: b64
+          });
+          var assetUrl = uploadRes && uploadRes.url;
+          if (assetUrl && _pendingAssetField) {
+            var updatedMeta = Object.assign({}, meta_json || {});
+            updatedMeta[_pendingAssetField] = assetUrl;
+            await callWorker({
+              action: 'ct_update_item',
+              id: savedId,
+              meta_json: JSON.stringify(updatedMeta)
+            });
+          }
+          if (progressEl) progressEl.textContent = '';
+          var filenameEl = bd.querySelector('.ct-upload-filename');
+          if (filenameEl) filenameEl.textContent = _pendingAssetFile.name;
+        }
+
         _closeModal();
         _toast(isEdit ? 'Item atualizado.' : 'Item criado.');
         _loadItems({ silent: true });
         _loadTags();
-      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+      } catch (err) {
+        _toast('Erro: ' + (err.message || err));
+      }
     });
+  }
+
+  // ---- Type-specific editor blocks ----
+
+  function _buildTypeBlock(typeSlug, body_md, meta, existingItem) {
+    var m = meta || {};
+    var hasBody = '<div class="ct-field"><label>Corpo em Markdown</label>' +
+      '<textarea id="ie-body" rows="10" placeholder="Conteúdo do item em Markdown...">' + _esc(body_md || '') + '</textarea>' +
+      '<div class="ct-editor-toolbar">' +
+        '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" type="button">Visualizar preview</button>' +
+      '</div>' +
+      '<div class="ct-preview-area" id="ie-preview" style="display:none"></div>' +
+    '</div>';
+
+    if (typeSlug === 'prompt') {
+      return '<div class="ct-type-block">' + hasBody + '</div>';
+    }
+
+    if (typeSlug === 'guide') {
+      var hasPlatformTabs = !!(m.platform_tabs);
+      return '<div class="ct-type-block">' +
+        hasBody +
+        '<div class="ct-field">' +
+          '<label class="ct-toggle-label" style="font-size:0.82rem;text-transform:none;letter-spacing:normal">' +
+            '<span class="ct-toggle">' +
+              '<input type="checkbox" id="ie-platform-toggle"' + (hasPlatformTabs ? ' checked' : '') + '>' +
+              '<span class="ct-toggle-slider"></span>' +
+            '</span>' +
+            '<span> Plataformas separadas (Windows, Mac, Linux)</span>' +
+          '</label>' +
+        '</div>' +
+        '<div id="ie-platform-tabs-wrap" style="display:' + (hasPlatformTabs ? '' : 'none') + '">' +
+          '<div class="ct-platform-tabs">' +
+            '<div class="ct-field"><label>Windows</label>' +
+              '<textarea id="ie-pt-windows" rows="5">' + _esc((m.platform_tabs && m.platform_tabs.windows) || '') + '</textarea>' +
+            '</div>' +
+            '<div class="ct-field"><label>Mac</label>' +
+              '<textarea id="ie-pt-mac" rows="5">' + _esc((m.platform_tabs && m.platform_tabs.mac) || '') + '</textarea>' +
+            '</div>' +
+            '<div class="ct-field"><label>Linux</label>' +
+              '<textarea id="ie-pt-linux" rows="5">' + _esc((m.platform_tabs && m.platform_tabs.linux) || '') + '</textarea>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    if (typeSlug === 'material') {
+      return '<div class="ct-type-block">' +
+        hasBody +
+        '<div class="ct-field"><label>Arquivo anexo (PNG, JPG, PDF, opcional)</label>' +
+          '<div class="ct-upload-row">' +
+            '<input type="file" id="ie-material-file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf">' +
+            '<span class="ct-upload-progress"></span>' +
+          '</div>' +
+          (m.attachment_url ? '<div class="ct-upload-filename">Arquivo atual: <a href="' + _esc(m.attachment_url) + '" target="_blank" rel="noopener">visualizar</a></div>' : '') +
+        '</div>' +
+      '</div>';
+    }
+
+    if (typeSlug === 'paper') {
+      return '<div class="ct-type-block">' +
+        '<div class="ct-field"><label>Autores</label>' +
+          '<input type="text" id="ie-paper-authors" value="' + _esc(m.authors || '') + '" placeholder="Ex: Silva, J.; Santos, M.">' +
+        '</div>' +
+        '<div class="ct-field"><label>Ano</label>' +
+          '<input type="number" id="ie-paper-year" value="' + _esc(m.year || '') + '" placeholder="2024" min="1900" max="2099">' +
+        '</div>' +
+        '<div class="ct-field"><label>Resumo (abstract)</label>' +
+          '<textarea id="ie-paper-abstract" rows="4" placeholder="Resumo do artigo...">' + _esc(m.abstract || '') + '</textarea>' +
+        '</div>' +
+        '<div class="ct-field"><label>PDF do artigo</label>' +
+          '<div class="ct-upload-row">' +
+            '<input type="file" id="ie-paper-pdf" accept=".pdf,application/pdf">' +
+            '<span class="ct-upload-progress"></span>' +
+          '</div>' +
+          (m.pdf_url ? '<div class="ct-upload-filename">PDF atual: <a href="' + _esc(m.pdf_url) + '" target="_blank" rel="noopener">visualizar</a></div>' : '') +
+        '</div>' +
+        '<div class="ct-field"><label>Conteúdo complementar (Markdown, opcional)</label>' +
+          '<textarea id="ie-body" rows="6" placeholder="Notas, contexto ou resumo expandido...">' + _esc(body_md || '') + '</textarea>' +
+        '</div>' +
+      '</div>';
+    }
+
+    if (typeSlug === 'model_info') {
+      return '<div class="ct-type-block">' +
+        '<div class="ct-field"><label>Provedor</label>' +
+          '<input type="text" id="ie-mi-provider" value="' + _esc(m.provider || '') + '" placeholder="Ex: Anthropic">' +
+        '</div>' +
+        '<div class="ct-field"><label>ID do modelo</label>' +
+          '<input type="text" id="ie-mi-model-id" value="' + _esc(m.model_id || '') + '" placeholder="Ex: claude-opus-4-5">' +
+        '</div>' +
+        '<div class="ct-field"><label>Janela de contexto (tokens)</label>' +
+          '<input type="number" id="ie-mi-context" value="' + _esc(m.context_window || '') + '" placeholder="200000">' +
+        '</div>' +
+        '<div class="ct-field"><label>Pontos fortes (um por linha)</label>' +
+          '<textarea id="ie-mi-strengths" rows="4" placeholder="Raciocínio avançado&#10;Geração de código&#10;Multilíngue">' + _esc(Array.isArray(m.strengths) ? m.strengths.join('\n') : (m.strengths || '')) + '</textarea>' +
+        '</div>' +
+        '<div class="ct-field"><label>URL da documentação</label>' +
+          '<input type="text" id="ie-mi-doc-url" value="' + _esc(m.doc_url || '') + '" placeholder="https://...">' +
+        '</div>' +
+      '</div>';
+    }
+
+    // Fallback: generic body editor (handles unknown types the same way as prompt)
+    return '<div class="ct-type-block">' + hasBody + '</div>';
+  }
+
+  function _wireTypeBlockEvents(block, typeSlug, onFileSelected) {
+    // Preview button (prompt + guide + material fallback)
+    var previewBtn = block.querySelector('#ie-preview-btn');
+    if (previewBtn) {
+      previewBtn.addEventListener('click', function() {
+        var pre = block.querySelector('#ie-preview');
+        var bodyEl = block.querySelector('#ie-body');
+        if (!pre || !bodyEl) return;
+        if (pre.style.display === 'none') {
+          pre.style.display = '';
+          _renderMarkdown(bodyEl.value, pre);
+          previewBtn.textContent = 'Fechar preview';
+        } else {
+          pre.style.display = 'none';
+          previewBtn.textContent = 'Visualizar preview';
+        }
+      });
+    }
+
+    // Textarea Enter key fix
+    block.querySelectorAll('textarea').forEach(function(ta) {
+      ta.addEventListener('keydown', function(e) { if (e.key === 'Enter') e.stopPropagation(); });
+    });
+
+    // Platform tabs toggle (guide)
+    var platformToggle = block.querySelector('#ie-platform-toggle');
+    if (platformToggle) {
+      platformToggle.addEventListener('change', function() {
+        var wrap = block.querySelector('#ie-platform-tabs-wrap');
+        if (wrap) wrap.style.display = platformToggle.checked ? '' : 'none';
+      });
+    }
+
+    // File input (material)
+    var materialFile = block.querySelector('#ie-material-file');
+    if (materialFile) {
+      materialFile.addEventListener('change', function() {
+        var f = materialFile.files[0];
+        if (f) onFileSelected(f, 'attachment_url');
+      });
+    }
+
+    // File input (paper)
+    var paperPdf = block.querySelector('#ie-paper-pdf');
+    if (paperPdf) {
+      paperPdf.addEventListener('change', function() {
+        var f = paperPdf.files[0];
+        if (f) onFileSelected(f, 'pdf_url');
+      });
+    }
+  }
+
+  function _collectTypeData(bd, typeSlug) {
+    var body_md = '';
+    var meta_json = null;
+
+    var bodyEl = bd.querySelector('#ie-body');
+    if (bodyEl) body_md = bodyEl.value;
+
+    if (typeSlug === 'prompt') {
+      // body_md is all we need; no meta
+    } else if (typeSlug === 'guide') {
+      var platformToggle = bd.querySelector('#ie-platform-toggle');
+      if (platformToggle && platformToggle.checked) {
+        meta_json = {
+          platform_tabs: {
+            windows: (bd.querySelector('#ie-pt-windows') || {}).value || '',
+            mac:     (bd.querySelector('#ie-pt-mac') || {}).value || '',
+            linux:   (bd.querySelector('#ie-pt-linux') || {}).value || ''
+          }
+        };
+      }
+    } else if (typeSlug === 'material') {
+      // attachment_url set after upload; preserve existing if present
+      meta_json = {};
+    } else if (typeSlug === 'paper') {
+      meta_json = {
+        authors:  (bd.querySelector('#ie-paper-authors') || {}).value || null,
+        year:     (bd.querySelector('#ie-paper-year') || {}).value || null,
+        abstract: (bd.querySelector('#ie-paper-abstract') || {}).value || null
+      };
+    } else if (typeSlug === 'model_info') {
+      var strengthsEl = bd.querySelector('#ie-mi-strengths');
+      var strengthsArr = strengthsEl
+        ? strengthsEl.value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean)
+        : [];
+      meta_json = {
+        provider:       (bd.querySelector('#ie-mi-provider') || {}).value || null,
+        model_id:       (bd.querySelector('#ie-mi-model-id') || {}).value || null,
+        context_window: (bd.querySelector('#ie-mi-context') || {}).value || null,
+        strengths:      strengthsArr,
+        doc_url:        (bd.querySelector('#ie-mi-doc-url') || {}).value || null
+      };
+      body_md = ''; // model_info has no body_md
+    }
+
+    return { body_md: body_md, meta_json: meta_json };
   }
 
   // ---- Tag picker (single-row chips + inline "+ tag" button) ----
@@ -882,13 +1575,17 @@ window.CT_ADMIN = (function() {
   function _loadReleases(clientSlug, turmaSlug) {
     _relClientSlug = clientSlug;
     _relTurmaSlug = turmaSlug;
+    _relAulas = [];
+    _relReleasedMeta = {};
     var el = document.getElementById('releases-list');
     el.innerHTML = '<div class="ct-empty">Carregando...</div>';
     Promise.all([
       callWorker({ action: 'ct_list_items' }),
-      callWorker({ action: 'ct_list_turmas', client_slug: clientSlug })
+      callWorker({ action: 'ct_list_turmas', client_slug: clientSlug }),
+      callWorker({ action: 'ct_list_aulas', client_slug: clientSlug, turma_slug: turmaSlug })
     ]).then(function(results) {
       var allItems = (results[0].items || []);
+      _relAulas = results[2].aulas || [];
       var turma = (results[1].turmas || []).find(function(t) { return t.slug === turmaSlug; });
       if (!turma) { el.innerHTML = '<div class="ct-empty">Turma não encontrada.</div>'; return; }
       return callWorker({
@@ -899,6 +1596,11 @@ window.CT_ADMIN = (function() {
       }).then(function(vd) {
         _relAllItems = allItems;
         _relReleased = (vd.items || []).map(function(i) { return i.id; });
+        // Build release meta map: {item_id: {aula_number}}
+        _relReleasedMeta = {};
+        (vd.items || []).forEach(function(i) {
+          _relReleasedMeta[i.id] = { aula_number: i.aula_number || null };
+        });
         _renderReleases();
       }).catch(function() {
         _relAllItems = allItems;
@@ -931,6 +1633,15 @@ window.CT_ADMIN = (function() {
     _renderReleasesRows();
   }
 
+  function _buildAulaSelectOptions(currentAulaNumber) {
+    var opts = '<option value="">(sem aula)</option>';
+    opts += _relAulas.map(function(a) {
+      var sel = (currentAulaNumber !== null && currentAulaNumber !== undefined && String(currentAulaNumber) === String(a.aula_number)) ? ' selected' : '';
+      return '<option value="' + _esc(a.aula_number) + '"' + sel + '>Aula ' + _esc(a.aula_number) + (a.title ? ' — ' + _esc(a.title) : '') + '</option>';
+    }).join('');
+    return opts;
+  }
+
   function _renderReleasesRows() {
     var el = document.getElementById('releases-list');
     if (!_relAllItems.length) {
@@ -940,14 +1651,16 @@ window.CT_ADMIN = (function() {
     var byId = {};
     _relAllItems.forEach(function(i) { byId[i.id] = i; });
 
-    // Released first (in current local order), then unreleased.
     var rows = [];
     _relReleased.forEach(function(id) {
       var src = byId[id];
-      if (src) rows.push({ id: id, title: src.title, type: src.type, released: true });
+      if (src) {
+        var meta = _relReleasedMeta[id] || {};
+        rows.push({ id: id, title: src.title, type: src.type, released: true, aula_number: meta.aula_number || null });
+      }
     });
     _relAllItems.forEach(function(i) {
-      if (_relReleased.indexOf(i.id) === -1) rows.push({ id: i.id, title: i.title, type: i.type, released: false });
+      if (_relReleased.indexOf(i.id) === -1) rows.push({ id: i.id, title: i.title, type: i.type, released: false, aula_number: null });
     });
 
     if (_selectedReleaseFilter) {
@@ -962,10 +1675,16 @@ window.CT_ADMIN = (function() {
     el.innerHTML = rows.map(function(r) {
       var meta = _typeMeta(r.type);
       var cls = r.released ? ' released' : '';
+      var aulaSelect = r.released && _relAulas.length
+        ? '<select class="ct-rel-aula-select" data-id="' + r.id + '" title="Associar a uma aula">' +
+            _buildAulaSelectOptions(r.aula_number) +
+          '</select>'
+        : '';
       return '<div class="ct-rel-row' + cls + '" data-id="' + r.id + '" draggable="' + r.released + '">' +
         '<span class="ct-drag-handle" aria-hidden="true">&#8942;&#8942;</span>' +
         '<span class="ct-rel-icon" title="' + _esc(meta.label) + '">' + _esc(meta.icon) + '</span>' +
         '<span class="ct-rel-title">' + _esc(r.title) + '</span>' +
+        aulaSelect +
         '<label class="ct-toggle">' +
           '<input type="checkbox" ' + (r.released ? 'checked' : '') + ' data-id="' + r.id + '">' +
           '<span class="ct-toggle-slider"></span>' +
@@ -973,8 +1692,7 @@ window.CT_ADMIN = (function() {
       '</div>';
     }).join('');
 
-    // Optimistic toggle: no _loadReleases reload — just flip the row,
-    // sync local state, fire-and-forget the worker call.
+    // Wire toggle
     el.querySelectorAll('.ct-toggle input').forEach(function(cb) {
       cb.addEventListener('change', function() {
         var itemId = parseInt(cb.dataset.id);
@@ -988,6 +1706,7 @@ window.CT_ADMIN = (function() {
         } else {
           var idx = _relReleased.indexOf(itemId);
           if (idx !== -1) _relReleased.splice(idx, 1);
+          delete _relReleasedMeta[itemId];
         }
 
         var action = willRelease ? 'ct_release_item' : 'ct_unrelease_item';
@@ -996,8 +1715,22 @@ window.CT_ADMIN = (function() {
           client_slug: _relClientSlug,
           turma_slug: _relTurmaSlug,
           item_id: itemId
+        }).then(function() {
+          if (willRelease && _relAulas.length) {
+            // Show aula select on the row after toggling on
+            var aulaCell = row.querySelector('.ct-rel-aula-select');
+            if (!aulaCell) {
+              var sel = document.createElement('select');
+              sel.className = 'ct-rel-aula-select';
+              sel.dataset.id = itemId;
+              sel.title = 'Associar a uma aula';
+              sel.innerHTML = _buildAulaSelectOptions(null);
+              var toggle = row.querySelector('.ct-toggle');
+              row.insertBefore(sel, toggle);
+              _wireAulaSelect(sel, itemId);
+            }
+          }
         }).catch(function(err) {
-          // Revert on failure
           cb.checked = !willRelease;
           row.classList.toggle('released', !willRelease);
           row.setAttribute('draggable', !willRelease ? 'true' : 'false');
@@ -1012,7 +1745,31 @@ window.CT_ADMIN = (function() {
       });
     });
 
+    // Wire aula selects
+    el.querySelectorAll('.ct-rel-aula-select').forEach(function(sel) {
+      _wireAulaSelect(sel, parseInt(sel.dataset.id));
+    });
+
     _wireDragDrop(el);
+  }
+
+  function _wireAulaSelect(sel, itemId) {
+    sel.addEventListener('change', function() {
+      var val = sel.value;
+      var aulaNum = val ? parseInt(val) : null;
+      // Optimistic local update
+      if (!_relReleasedMeta[itemId]) _relReleasedMeta[itemId] = {};
+      _relReleasedMeta[itemId].aula_number = aulaNum;
+      callWorker({
+        action: 'ct_set_release_aula',
+        client_slug: _relClientSlug,
+        turma_slug: _relTurmaSlug,
+        item_id: itemId,
+        aula_number: aulaNum
+      }).catch(function(err) {
+        _toast('Erro ao salvar aula: ' + (err.message || err));
+      });
+    });
   }
 
   function _wireDragDrop(container) {
@@ -1034,7 +1791,7 @@ window.CT_ADMIN = (function() {
 
   function _saveRelOrder(container) {
     var ids = Array.from(container.querySelectorAll('.ct-rel-row.released')).map(function(r) { return parseInt(r.dataset.id); });
-    _relReleased = ids; // keep local order in sync with DOM
+    _relReleased = ids;
     callWorker({ action: 'ct_reorder_releases', client_slug: _relClientSlug, turma_slug: _relTurmaSlug, item_ids: ids }).then(function() {
       _toast('Ordem salva.');
     }).catch(function(err) { _toast('Erro ao salvar ordem: ' + (err.message || err)); });
@@ -1089,6 +1846,8 @@ window.CT_ADMIN = (function() {
       document.getElementById('btn-new-item').addEventListener('click', function() { _openItemEditor(null); });
       var manageTagsBtn = document.getElementById('btn-manage-tags');
       if (manageTagsBtn) manageTagsBtn.addEventListener('click', _openTagManager);
+      var importGdocBtn = document.getElementById('btn-import-gdoc');
+      if (importGdocBtn) importGdocBtn.addEventListener('click', _openGdocIngestModal);
       _loadClients();
       _loadTypes();
       _loadTags();

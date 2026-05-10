@@ -816,3 +816,198 @@
 }
 
 .ct-danger-zone .ct-helper-text { margin-top: 0.5rem; }
+
+/* ----- Client icon picker ----- */
+
+.ct-icon-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ct-icon-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.ct-icon-mode-row {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 0.65rem;
+}
+
+.ct-icon-mode-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+}
+
+.ct-file-error {
+  font-size: 0.78rem;
+  color: var(--error);
+  margin-top: 4px;
+}
+
+/* ----- Aulas section inside turma form ----- */
+
+.ct-aulas-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.ct-aulas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.ct-aulas-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.ct-aula-row {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 8px;
+}
+
+.ct-aula-row-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 0.9rem;
+}
+
+.ct-aula-row-grid .ct-field { margin-bottom: 0; }
+
+.ct-aula-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+}
+
+.ct-aula-num-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.5rem;
+}
+
+/* ----- GDoc ingest modal ----- */
+
+.ct-gdoc-modal {
+  max-width: 520px;
+}
+
+/* ----- Set badge on item rows ----- */
+
+.ct-set-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  margin-left: 6px;
+  cursor: default;
+  vertical-align: middle;
+}
+
+.ct-set-badge[title] { cursor: help; }
+
+/* ----- Aula picker in release row ----- */
+
+.ct-rel-aula-select {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+  max-width: 140px;
+}
+
+.ct-rel-aula-select:focus { border-color: var(--primary); }
+
+/* ----- Type-specific editor blocks ----- */
+
+.ct-type-block {
+  margin-top: 0.5rem;
+  padding: 0.9rem;
+  background: rgba(20, 184, 166, 0.04);
+  border: 1px solid rgba(20, 184, 166, 0.15);
+  border-radius: 10px;
+}
+
+.ct-platform-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.ct-platform-tabs .ct-field { margin-bottom: 0; }
+
+/* ----- File upload inline UI ----- */
+
+.ct-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.ct-upload-filename {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.ct-upload-progress {
+  font-size: 0.78rem;
+  color: var(--primary);
+}
+
+/* ----- Turma edit pane (full-width sub-view) ----- */
+
+.ct-turma-edit-view {
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.ct-turma-edit-back {
+  margin-bottom: 1rem;
+}

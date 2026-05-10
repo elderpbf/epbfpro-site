@@ -1,8 +1,13 @@
 /* =========================================================
-   ClassTrail — Public Student Page (trilha)
-   tr- prefix. Designed for delight: hero, cards, motion.
-   Theme vars from theme.css.
+   ClassTrail — Public Student Page (trilha)  v2.0
+   tr- prefix for layout; ct- prefix for shared structural.
+   ALL colors from theme.css tokens. No hardcoded hex.
    ========================================================= */
+
+/* ----- Status color aliases (layout tokens only, not palette) ----- */
+/* These map semantic status states to the theme palette.             */
+/* The hand is forced because theme.css has no --warning/--info.     */
+/* We define ct-band-* as layout-scoped variables on the band itself. */
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -17,13 +22,38 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ----- Reused <pensoia-header>: hide QR + zoom (trilha has no session code) ----- */
+/* ----- Light/dark toggle button (top-right, no topbar) ----- */
 
-pensoia-header .ph-code-btn,
-pensoia-header .ph-zoom { display: none !important; }
+.tr-theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px -2px var(--shadow);
+}
 
-pensoia-header .ph-bar {
-  border-bottom: 1px solid var(--border);
+.tr-theme-toggle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 3px 12px -3px var(--shadow);
+}
+
+.tr-theme-toggle-icon {
+  display: block;
+  line-height: 1;
 }
 
 /* ----- Page layout ----- */
@@ -93,15 +123,12 @@ pensoia-header .ph-bar {
 /* ----- Hero ----- */
 
 .tr-hero {
-  margin: 2.5rem 0 3rem;
+  margin: 2.5rem 0 1.5rem;
   padding: 2rem 2rem 2.25rem;
   border-radius: 20px;
-  background:
-    radial-gradient(circle at 12% 18%, rgba(20, 184, 166, 0.18), transparent 55%),
-    radial-gradient(circle at 92% 105%, rgba(20, 184, 166, 0.12), transparent 50%),
-    var(--surface);
+  background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: 0 10px 40px -18px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 10px 40px -18px var(--shadow);
   position: relative;
   overflow: hidden;
 }
@@ -116,78 +143,451 @@ pensoia-header .ph-bar {
   background: linear-gradient(90deg, var(--primary), transparent);
 }
 
-.tr-hero-eyebrow {
-  display: inline-flex;
+.tr-hero-identity {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--primary);
-  margin-bottom: 0.85rem;
-  padding: 4px 10px;
-  background: rgba(20, 184, 166, 0.1);
-  border-radius: 999px;
+  gap: 1.25rem;
 }
 
-.tr-hero-eyebrow::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  background: var(--primary);
+.tr-client-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+  overflow: hidden;
+  border: 2.5px solid var(--border);
+  background: var(--background);
 }
 
-.tr-turma-title {
+.tr-client-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tr-hero-text {
+  min-width: 0;
+}
+
+.tr-client-name {
   font-size: 2rem;
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.02em;
   line-height: 1.15;
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.35rem;
 }
 
-.tr-hero-sub {
+.tr-turma-name {
   font-size: 0.95rem;
   color: var(--text-secondary);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.45;
+  font-weight: 500;
 }
 
-/* ----- Section header ----- */
+/* ----- Action band ----- */
 
-.tr-section-header {
+.tr-action-band {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0 0.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+  padding: 0 0.1rem;
 }
 
-.tr-section-label {
+.tr-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+
+.tr-action-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  box-shadow: 0 3px 10px -4px var(--shadow);
+}
+
+.tr-action-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ----- Tab nav ----- */
+
+.tr-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tr-tabs::-webkit-scrollbar { display: none; }
+
+.tr-tab-btn {
+  flex-shrink: 0;
+  padding: 0.65rem 1.1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+
+.tr-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.tr-tab-btn.active {
+  color: var(--primary-dark);
+  border-bottom-color: var(--primary);
+}
+
+/* ----- Tab panels ----- */
+
+.tr-tab-content { min-height: 20rem; }
+
+/* ----- Aula cards (Design 5 + theme-color left band) ----- */
+
+#tr-aulas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tr-aula-card {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.18s ease;
+  min-height: 96px;
+}
+
+.tr-aula-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px -10px var(--shadow);
+}
+
+/* Left band */
+
+.tr-aula-band {
+  width: 96px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0.75rem 0.5rem;
+  color: #ffffff;
+  text-align: center;
+}
+
+/* Status-based band colors using theme tokens */
+.tr-aula-card--done       .tr-aula-band { background: var(--success); }
+.tr-aula-card--upcoming   .tr-aula-band { background: var(--primary); }
+.tr-aula-card--rescheduled .tr-aula-band { background: var(--primary-dark); }
+.tr-aula-card--undefined  .tr-aula-band { background: var(--text-secondary); }
+
+/* Dark mode band text stays white; verify contrast via alpha */
+[data-theme="dark"] .tr-aula-card--done       .tr-aula-band { background: var(--success); }
+[data-theme="dark"] .tr-aula-card--upcoming   .tr-aula-band { background: var(--primary); }
+[data-theme="dark"] .tr-aula-card--rescheduled .tr-aula-band { background: var(--secondary); }
+[data-theme="dark"] .tr-aula-card--undefined  .tr-aula-band { background: var(--accent); color: var(--text-primary); }
+
+.tr-band-num {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.tr-band-date {
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.3;
+  opacity: 0.95;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Right side body */
+
+.tr-aula-body {
+  flex: 1;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.tr-aula-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.tr-aula-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tr-aula-topic {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(13, 148, 136, 0.1);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .tr-aula-topic {
+  background: rgba(94, 234, 212, 0.12);
+  color: var(--text-secondary);
+}
+
+/* Tarefa pot */
+
+.tr-aula-tarefa {
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  font-size: 0.8rem;
+  color: var(--primary-dark);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tr-aula-tarefa:hover {
+  background: rgba(13, 148, 136, 0.15);
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .tr-aula-tarefa {
+  background: rgba(20, 184, 166, 0.12);
+  border-color: rgba(20, 184, 166, 0.25);
+  color: var(--primary-light);
+}
+
+.tr-tarefa-label {
+  font-weight: 700;
+}
+
+/* ----- Lesson view ----- */
+
+.tr-lesson-header {
+  margin-bottom: 1.5rem;
+}
+
+.tr-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  text-decoration: none;
+  margin-bottom: 0.75rem;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.tr-back-link:hover { color: var(--primary); }
+
+.tr-lesson-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0 0 0.25rem;
+  line-height: 1.25;
+}
+
+.tr-lesson-date {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.tr-lesson-block-header {
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
 }
 
-.tr-section-count {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  font-weight: 500;
+#tr-apostila-desta-aula {
+  margin-bottom: 1.5rem;
 }
 
-/* ----- Item list ----- */
-
-#tr-items-list {
+#tr-lesson-items {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
+
+#tr-apostila-desta-aula-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Tarefa highlight */
+.tr-highlight {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 14px;
+  animation: tr-highlight-pulse 0.4s ease;
+}
+
+@keyframes tr-highlight-pulse {
+  0%   { outline-width: 4px; }
+  100% { outline-width: 2px; }
+}
+
+/* ----- Apostila do curso tab ----- */
+
+.tr-apostila-caption {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.tr-apostila-group {
+  margin-bottom: 1.25rem;
+}
+
+.tr-apostila-group-header {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
+.tr-apostila-row {
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.tr-apostila-row:hover {
+  background: rgba(13, 148, 136, 0.07);
+  color: var(--primary-dark);
+}
+
+/* ----- Outros materiais filter ----- */
+
+#tr-outros-filter {
+  margin-bottom: 1.5rem;
+}
+
+#tr-outros-filter:empty { display: none; }
+
+#tr-outros-filter .ct-tf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#tr-outros-filter .ct-tf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+#tr-outros-filter .ct-tf-chip:hover {
+  border-color: var(--primary-dark);
+  color: var(--text-primary);
+}
+
+#tr-outros-filter .ct-tf-chip.active {
+  background: var(--primary-dark);
+  color: #fff;
+  border-color: var(--primary-dark);
+}
+
+[data-theme="dark"] #tr-outros-filter .ct-tf-chip {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] #tr-outros-filter .ct-tf-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #0f1419;
+}
+
+#tr-outros-filter .ct-tf-icon { font-size: 1rem; line-height: 1; }
+#tr-outros-filter .ct-tf-count {
+  font-size: 0.74rem;
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.35);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+#tr-outros-filter .ct-tf-chip.active .ct-tf-count { background: rgba(255,255,255,0.22); }
+
+#tr-outros-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ----- Empty state ----- */
 
 .tr-empty {
   padding: 3rem 1rem;
@@ -199,11 +599,10 @@ pensoia-header .ph-bar {
   border-radius: 14px;
 }
 
-/* ----- Item card (two-tone) -----
-   White card with a colored zone on the left carrying the type icon and
-   label. All types share the same teal treatment; only icon + label vary.
-   Body slides down below the header on open; copy/action button is
-   rendered by CTRenderer at the bottom of the body. */
+/* ====================================================================
+   Item card (two-tone — preserved from Phase 2, kept intact)
+   White card + --primary teal zone on the left; type via icon+label.
+   ==================================================================== */
 
 .tr-item {
   background: var(--surface);
@@ -339,16 +738,10 @@ pensoia-header .ph-bar {
 
 .tr-item-body {
   padding: 1.5rem 1.75rem 1.75rem;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--text-primary);
   border-top: 1px solid var(--border);
   animation: tr-slide-down 0.22s ease both;
-}
-
-[data-theme="dark"] .tr-item-body {
-  background: var(--surface);
-  color: var(--text-primary);
-  border-top-color: var(--border);
 }
 
 @keyframes tr-slide-down {
@@ -454,7 +847,7 @@ pensoia-header .ph-bar {
 
 .tr-item-body .ctr-prompt-body strong { color: var(--text-primary); font-weight: 700; }
 
-/* ----- Prompt verbatim block (item.type === 'prompt') ----- */
+/* ----- Prompt verbatim block ----- */
 
 .tr-item-body .ctr-prompt-verbatim {
   font-size: 0.92rem;
@@ -505,14 +898,14 @@ pensoia-header .ph-bar {
 }
 
 .tr-item-body .ctr-copy-btn:hover {
-  background: var(--primary-dark, #0d9488);
+  background: var(--primary-dark);
   transform: translateY(-1px);
   box-shadow: 0 5px 16px -4px rgba(20, 184, 166, 0.6);
 }
 
 .tr-item-body .ctr-copy-btn:active { transform: translateY(0); }
 
-/* ----- Footer note ----- */
+/* ----- Footer ----- */
 
 .tr-footer {
   margin-top: 3.5rem;
@@ -529,91 +922,56 @@ pensoia-header .ph-bar {
   font-weight: 600;
 }
 
-/* ----- Responsive ----- */
+/* ====================================================================
+   MOBILE RESPONSIVE  (below 700px: left band becomes top band)
+   ==================================================================== */
 
-@media (max-width: 600px) {
+@media (max-width: 700px) {
+
   .tr-page { padding: 0 1rem 3rem; }
+
   .tr-hero {
     padding: 1.5rem 1.25rem 1.75rem;
-    margin: 1.5rem 0 2rem;
+    margin: 1.5rem 0 1rem;
     border-radius: 16px;
   }
-  .tr-turma-title { font-size: 1.5rem; }
-  .tr-item-zone { width: 76px; padding: 0.5rem 0.3rem; }
-  .tr-item-icon { font-size: 1.4rem; }
+
+  .tr-client-name  { font-size: 1.5rem; }
+  .tr-client-avatar { width: 52px; height: 52px; }
+
+  /* Aula card: band becomes a top horizontal strip */
+  .tr-aula-card {
+    flex-direction: column;
+  }
+
+  .tr-aula-band {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.65rem;
+    padding: 0.55rem 1rem;
+    min-height: 44px;
+    max-height: 56px;
+  }
+
+  .tr-band-num  { font-size: 0.82rem; }
+  .tr-band-date { font-size: 0.72rem; }
+
+  /* Item card mobile */
+  .tr-item-zone  { width: 76px; padding: 0.5rem 0.3rem; }
+  .tr-item-icon  { font-size: 1.4rem; }
   .tr-item-type-label { font-size: 0.6rem; }
-  .tr-item-meta { padding: 0.85rem 0.95rem; }
+  .tr-item-meta  { padding: 0.85rem 0.95rem; }
   .tr-item-title { font-size: 0.95rem; }
-  .tr-item-body { padding: 1rem 1.1rem 1.2rem; }
+  .tr-item-body  { padding: 1rem 1.1rem 1.2rem; }
   .tr-item-actions { padding: 0 0.7rem 0 0.3rem; }
+
+  .tr-tabs { gap: 0; }
+  .tr-tab-btn { padding: 0.6rem 0.85rem; font-size: 0.8rem; }
+
 }
 
-/* ----- Type filter chips on student page ----- */
-
-#tr-items-filter {
-  margin-bottom: 1.75rem;
-}
-
-#tr-items-filter:empty { display: none; }
-
-#tr-items-filter .ct-tf {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-#tr-items-filter .ct-tf-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 13px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: 999px;
-  border: 1.5px solid rgba(19, 78, 74, 0.25);
-  background: rgba(255, 255, 255, 0.55);
-  color: #0a3a36;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-
-#tr-items-filter .ct-tf-chip:hover {
-  border-color: var(--primary-dark);
-  background: rgba(255, 255, 255, 0.9);
-}
-
-#tr-items-filter .ct-tf-chip.active {
-  background: var(--primary-dark);
-  color: #fff;
-  border-color: var(--primary-dark);
-}
-
-#tr-items-filter .ct-tf-icon {
-  font-size: 1rem;
-  line-height: 1;
-}
-
-#tr-items-filter .ct-tf-count {
-  font-size: 0.74rem;
-  opacity: 0.8;
-  background: rgba(255, 255, 255, 0.45);
-  padding: 1px 7px;
-  border-radius: 999px;
-}
-
-#tr-items-filter .ct-tf-chip.active .ct-tf-count {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-[data-theme="dark"] #tr-items-filter .ct-tf-chip {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] #tr-items-filter .ct-tf-chip.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #0f1419;
+@media (max-width: 360px) {
+  .tr-client-name { font-size: 1.25rem; }
+  .tr-tab-btn { padding: 0.55rem 0.65rem; font-size: 0.75rem; }
 }

@@ -1,0 +1,232 @@
+/* =========================================================
+   ClassTrail renderer styles for the type-dispatched
+   item branches added in Phase 3 (guide, material, paper,
+   model_info, google_doc).
+
+   Loaded by both admin (classtrail/index.html) and public
+   (trilha/index.html) so CTRenderer-emitted markup looks
+   consistent across surfaces.
+
+   Reuses Backstage theme tokens only. No raw color values.
+   ========================================================= */
+
+/* Tabs (used by guide platform_tabs) */
+.ctr-tab-nav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.ctr-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.ctr-tab-btn:hover {
+  background: var(--option-hover-bg);
+  color: var(--text-primary);
+}
+.ctr-tab-btn.ctr-tab-active {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--primary);
+  margin-bottom: -1px;
+}
+.ctr-tab-panel {
+  padding-top: 8px;
+}
+.ctr-hidden {
+  display: none !important;
+}
+
+/* Affordance row (top-right action buttons on cards) */
+.ctr-affordance-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-height: 0;
+}
+.ctr-affordance-row:empty {
+  display: none;
+}
+.ctr-affordance-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ctr-affordance-btn:hover {
+  background: var(--option-hover-bg);
+  border-color: var(--primary);
+}
+
+/* Material attachment */
+.ctr-attachment-img {
+  margin-top: 12px;
+}
+.ctr-attachment-img img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+.ctr-attachment-link {
+  margin-top: 12px;
+}
+.ctr-dl-link {
+  display: inline-block;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  color: var(--primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+}
+.ctr-dl-link:hover {
+  background: var(--option-hover-bg);
+  border-color: var(--primary);
+}
+
+/* Paper layout */
+.ctr-paper-meta {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 4px 0 12px;
+  font-style: italic;
+}
+.ctr-paper-abstract {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--option-hover-bg);
+  border-left: 3px solid var(--primary);
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+.ctr-pdf-embed {
+  width: 100%;
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.ctr-pdf-object {
+  width: 100%;
+  height: 600px;
+  display: block;
+  background: var(--background);
+}
+.ctr-paper-supplement {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+/* Model info card */
+.ctr-model-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.ctr-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.ctr-badge-provider {
+  background: var(--option-hover-bg);
+  color: var(--text-primary);
+  border-color: var(--primary);
+}
+.ctr-badge-model {
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: 'Inter', monospace;
+}
+.ctr-model-context {
+  margin: 0 0 10px;
+}
+.ctr-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  background: var(--option-hover-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.ctr-pill-context {
+  font-weight: 500;
+}
+.ctr-model-strengths {
+  margin: 0 0 14px;
+}
+.ctr-strengths-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-primary);
+}
+.ctr-strengths-list li {
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+.ctr-model-doc {
+  margin-top: 10px;
+}
+.ctr-doc-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--surface);
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.ctr-doc-link-btn:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+/* Mobile fits */
+@media (max-width: 700px) {
+  .ctr-pdf-object {
+    height: 380px;
+  }
+  .ctr-affordance-row {
+    flex-wrap: wrap;
+  }
+  .ctr-paper-abstract {
+    padding: 10px 12px;
+  }
+}
