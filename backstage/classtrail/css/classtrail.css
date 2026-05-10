@@ -849,8 +849,23 @@
 
 .ct-icon-mode-row {
   display: flex;
-  gap: 1.25rem;
+  flex-direction: column;
+  gap: 0.45rem;
   margin-bottom: 0.65rem;
+}
+.ct-icon-mode-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+/* Client card avatar (left pane on Clientes tab) */
+.ct-card .ct-icon-preview {
+  width: 36px;
+  height: 36px;
+  margin-right: 0.55rem;
+  vertical-align: middle;
 }
 
 .ct-icon-mode-row label {

@@ -130,7 +130,7 @@ window.CT_ADMIN = (function() {
       var iconHtml = '';
       if (c.icon_path) {
         var iconSrc = c.icon_path.startsWith('http') ? c.icon_path : WORKER_URL + '/r2/' + c.icon_path;
-        iconHtml = '<img class="ct-icon-preview" src="' + _esc(iconSrc) + '" alt="" style="width:28px;height:28px;margin-right:6px;vertical-align:middle;">';
+        iconHtml = '<img class="ct-icon-preview" src="' + _esc(iconSrc) + '" alt="">';
       }
       return '<div class="ct-card' + sel + '" data-slug="' + _esc(c.slug) + '">' +
         '<div class="ct-card-name">' + iconHtml + _esc(c.display_name || c.name) + archived + '</div>' +
