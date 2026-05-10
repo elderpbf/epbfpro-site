@@ -829,13 +829,15 @@ window.CT_ADMIN = (function() {
     }
 
     el.innerHTML = _apostilaItems.map(function(item) {
-      var bodyLen = item.body_md ? item.body_md.length : 0;
-      var chars = bodyLen > 0 ? bodyLen + ' car.' : 'sem conteúdo';
+      // Worker's ct_get_set query doesn't return body_md (would inflate the
+      // payload), so we display the summary on the sub-line instead. Falls
+      // back to a placeholder for legacy items that have neither.
+      var subText = item.summary && item.summary.trim() ? item.summary : 'sem resumo';
       return '<div class="ct-item-row ct-apostila-row" data-id="' + item.id + '">' +
         '<span class="ct-apostila-pos">' + (item.set_position || '') + '</span>' +
         '<div class="ct-item-info">' +
           '<div class="ct-item-title">' + _esc(item.title) + '</div>' +
-          '<div class="ct-item-sub">' + _esc(chars) + '</div>' +
+          '<div class="ct-item-sub">' + _esc(subText) + '</div>' +
         '</div>' +
         '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.openItem(' + item.id + ')">Editar</button>' +
         '<button class="ct-btn ct-btn-sm ct-btn-danger" onclick="event.stopPropagation();CT_ADMIN.deleteApostilaItem(' + item.id + ')">Excluir</button>' +
@@ -1759,7 +1761,6 @@ window.CT_ADMIN = (function() {
 
   function _renderReleasesAulaList() {
     var el = document.getElementById('releases-list');
-    var apostilaIds = new Set(_apostilaItems.map(function(i) { return i.id; }));
 
     var html = '';
     if (!_relAulas.length) {
@@ -1776,7 +1777,7 @@ window.CT_ADMIN = (function() {
       }).length;
 
       var outrosCount = _relAllItems.filter(function(i) {
-        return !apostilaIds.has(i.id) &&
+        return !i.set_id &&
                _relReleased.indexOf(i.id) !== -1 &&
                String((_relReleasedMeta[i.id] || {}).aula_number) === String(n);
       }).length;
@@ -1804,7 +1805,7 @@ window.CT_ADMIN = (function() {
     });
 
     var outrosSolo = _relAllItems.filter(function(i) {
-      return !apostilaIds.has(i.id) &&
+      return !i.set_id &&
              _relReleased.indexOf(i.id) !== -1 &&
              !(_relReleasedMeta[i.id] || {}).aula_number;
     }).length;
@@ -1852,8 +1853,9 @@ window.CT_ADMIN = (function() {
     var aula = _relAulas.find(function(a) { return String(a.id) === outer.dataset.aulaId; });
     if (!aula) return;
 
-    var apostilaIds    = new Set(_apostilaItems.map(function(i) { return i.id; }));
-    var standaloneItems = _relAllItems.filter(function(i) { return !apostilaIds.has(i.id); });
+    // set_id is the canonical apostila marker (Worker now returns it). Filtering
+    // on _apostilaItems.id alone failed when the apostila set hadn't loaded yet.
+    var standaloneItems = _relAllItems.filter(function(i) { return !i.set_id; });
 
     function isBound(id) {
       return _relReleased.indexOf(id) !== -1 &&
@@ -1935,11 +1937,11 @@ window.CT_ADMIN = (function() {
   }
 
   function _renderOutrosComposer(container) {
-    var apostilaIds = new Set(_apostilaItems.map(function(i) { return i.id; }));
-    // Eligible for Outros: standalone items that are unreleased OR currently in Outros (no aula).
-    // Items bound to an aula are managed via that aula's composer, not here.
+    // Eligible for Outros: standalone items (set_id IS NULL) that are
+    // unreleased OR currently in Outros (no aula). Items bound to an aula are
+    // managed via that aula's composer, not here.
     var standaloneItems = _relAllItems.filter(function(i) {
-      if (apostilaIds.has(i.id)) return false;
+      if (i.set_id) return false;
       var wasReleased = _relReleased.indexOf(i.id) !== -1;
       if (!wasReleased) return true;
       return !(_relReleasedMeta[i.id] || {}).aula_number;
