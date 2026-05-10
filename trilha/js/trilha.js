@@ -21,25 +21,10 @@
   var _data             = null; // full worker response
   var _outrosTypeFilter = null;
 
-  // ── Theme toggle ─────────────────────────────────────────────────────────
-  function _initThemeToggle() {
-    var btn  = document.getElementById('tr-theme-toggle');
-    var icon = document.getElementById('tr-theme-icon');
-    if (!btn) return;
-    function _syncIcon() {
-      var dark = document.getElementById('html-root').getAttribute('data-theme') === 'dark';
-      icon.textContent = dark ? '☾' : '☀';
-    }
-    _syncIcon();
-    btn.addEventListener('click', function() {
-      ThemeManager.toggle({ storageKey: 'trilha_theme' });
-      _syncIcon();
-    });
-  }
-
   // ── Entry ────────────────────────────────────────────────────────────────
+  // Theme is initialized in <head> (initPublic) and the toggle is wired by
+  // <pensoia-header> via ThemeManager.init() when the custom element upgrades.
   function init() {
-    _initThemeToggle();
     if (!_clientSlug || !_turmaSlug || !_token) { _showError('link_invalid'); return; }
     _loadTurma();
     window.addEventListener('hashchange', _onHashChange);
