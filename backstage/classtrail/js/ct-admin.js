@@ -349,12 +349,23 @@ window.CT_ADMIN = (function() {
     el.innerHTML = _turmas.map(function(t) {
       var url = _turmaUrl(t.client_slug, t.slug, t.token);
       var archived = t.status === 'archived' ? ' <span class="ct-badge archived">Arquivada</span>' : '';
+      var aulaCount = t.aula_count || 0;
+      var aulaLabel = aulaCount === 0 ? 'Nenhuma aula ainda' : 'Aulas: ' + aulaCount;
+      var wpOk = !!(t.whatsapp_url);
+      var wpLabel = wpOk ? 'WhatsApp ✓' : 'WhatsApp não definido';
+      var cpOk = !!(t.classpulse_session_id);
+      var cpLabel = cpOk ? 'ClassPulse ✓' : 'ClassPulse não definido';
       return '<div class="ct-card" data-id="' + t.id + '">' +
         '<div class="ct-card-name">' + _esc(t.display_name || t.name) + archived + '</div>' +
         '<div class="ct-card-meta">' + _esc(t.client_slug) + ' / ' + _esc(t.slug) + '</div>' +
         '<div class="ct-url-row">' +
           '<a class="ct-url-text" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(url) + '">' + _esc(url) + '</a>' +
           '<button class="ct-btn ct-btn-sm" onclick="CT_ADMIN.copyTurmaUrl(\'' + _esc(url) + '\')">Copiar</button>' +
+        '</div>' +
+        '<div class="ct-turma-chips">' +
+          '<button class="ct-turma-chip' + (aulaCount > 0 ? ' ok' : '') + '" onclick="CT_ADMIN.editTurmaTo(' + t.id + ',\'aulas\')">' + _esc(aulaLabel) + '</button>' +
+          '<button class="ct-turma-chip' + (wpOk ? ' ok' : '') + '" onclick="CT_ADMIN.editTurmaTo(' + t.id + ',\'whatsapp\')">' + _esc(wpLabel) + '</button>' +
+          '<button class="ct-turma-chip' + (cpOk ? ' ok' : '') + '" onclick="CT_ADMIN.editTurmaTo(' + t.id + ',\'classpulse\')">' + _esc(cpLabel) + '</button>' +
         '</div>' +
         '<div class="ct-card-actions">' +
           '<button class="ct-btn ct-btn-sm" onclick="CT_ADMIN.editTurma(' + t.id + ')">Editar</button>' +
@@ -365,7 +376,7 @@ window.CT_ADMIN = (function() {
     }).join('');
   }
 
-  function _openTurmaForm(turma) {
+  function _openTurmaForm(turma, scrollTo) {
     var isEdit = !!turma;
     // Load ClassPulse sessions (may already be cached)
     var sessionsPromise = _cpSessions.length
@@ -402,10 +413,23 @@ window.CT_ADMIN = (function() {
 
       var bd = _openModal(html, { disableBackdropClose: true });
 
+      // Scroll to a specific section after modal opens
+      function _scrollModalTo(targetId) {
+        var modal = bd.querySelector('.ct-modal');
+        var el = bd.querySelector('#' + targetId);
+        if (modal && el) {
+          setTimeout(function() { el.scrollIntoView({ block: 'nearest' }); modal.scrollTop = el.offsetTop - 16; }, 80);
+        }
+      }
+
       // Load aulas for existing turma
       if (isEdit) {
         _loadAulasIntoForm(bd, turma.client_slug, turma.slug);
+        if (scrollTo === 'aulas') { setTimeout(function() { _scrollModalTo('tf-aulas-section'); }, 200); }
       }
+
+      if (scrollTo === 'whatsapp') { setTimeout(function() { _scrollModalTo('tf-whatsapp'); bd.querySelector('#tf-whatsapp').focus(); }, 80); }
+      else if (scrollTo === 'classpulse') { setTimeout(function() { _scrollModalTo('tf-classpulse'); bd.querySelector('#tf-classpulse').focus(); }, 80); }
 
       bd.querySelector('#tf-cancel').addEventListener('click', _closeModal);
       bd.querySelector('#tf-save').addEventListener('click', function() {
@@ -1915,6 +1939,11 @@ window.CT_ADMIN = (function() {
     editTurma: function(id) {
       var turma = _turmas.find(function(t) { return t.id === id; });
       if (turma) _openTurmaForm(turma);
+    },
+
+    editTurmaTo: function(id, scrollTo) {
+      var turma = _turmas.find(function(t) { return t.id === id; });
+      if (turma) _openTurmaForm(turma, scrollTo);
     },
 
     archiveTurma: function(clientSlug, turmaSlug) {

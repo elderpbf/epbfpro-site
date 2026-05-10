@@ -1023,3 +1023,45 @@
 .ct-turma-edit-back {
   margin-bottom: 1rem;
 }
+
+/* ----- Turma status chips row (admin card) ----- */
+
+.ct-turma-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.ct-turma-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  white-space: nowrap;
+}
+
+.ct-turma-chip:hover {
+  border-color: rgba(20,184,166,.5);
+  color: var(--text-primary);
+}
+
+.ct-turma-chip.ok {
+  color: var(--success, #16a34a);
+  border-color: var(--success-bg, rgba(22,163,74,.25));
+  background: var(--success-bg, rgba(22,163,74,.07));
+}
+
+.ct-turma-chip.ok:hover {
+  border-color: var(--success, #16a34a);
+}
