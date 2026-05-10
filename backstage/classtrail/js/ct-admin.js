@@ -1967,10 +1967,25 @@ window.CT_ADMIN = (function() {
 
     deleteItem: function(id) {
       if (!confirm('Excluir este item? Ele será removido de todas as turmas onde está liberado.')) return;
-      callWorker({ action: 'ct_delete_item', id: id }).then(function() {
+      // Optimistic delete: remove from local cache and re-render without
+      // round-tripping ct_list_items. Worker DELETE still runs in the
+      // background; if it fails, we restore and toast the error.
+      var idNum = Number(id);
+      var idx = _allItems.findIndex(function(it) { return Number(it.id) === idNum; });
+      var snapshot = idx >= 0 ? _allItems[idx] : null;
+      if (idx >= 0) {
+        _allItems.splice(idx, 1);
+        _renderItems();
+      }
+      callWorker({ action: 'ct_delete_item', id: id, _silent: true }).then(function() {
         _toast('Item excluído.');
-        _loadItems();
-      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+      }).catch(function(err) {
+        if (snapshot && idx >= 0) {
+          _allItems.splice(idx, 0, snapshot);
+          _renderItems();
+        }
+        _toast('Erro: ' + (err.message || err));
+      });
     }
   };
 })();
