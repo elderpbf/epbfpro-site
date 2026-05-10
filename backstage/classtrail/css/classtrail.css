@@ -1111,3 +1111,202 @@
   font-weight: 700;
   color: var(--primary);
 }
+
+/* ----- Liberações: aula-centric composer ----- */
+
+.ct-rel-aula-outer {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  background: var(--surface);
+}
+
+.ct-rel-aula-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.95rem;
+  cursor: pointer;
+  gap: 0.75rem;
+  user-select: none;
+  transition: background 0.12s;
+}
+
+.ct-rel-aula-header:hover { background: rgba(20,184,166,.05); }
+.ct-rel-aula-header.open  { background: rgba(20,184,166,.06); border-bottom: 1px solid var(--border); }
+
+.ct-rel-aula-info {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.ct-rel-aula-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  flex-shrink: 0;
+  background: rgba(20,184,166,.1);
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+.ct-rel-outros-label {
+  color: var(--text-secondary);
+  background: rgba(0,0,0,.05);
+}
+
+.ct-rel-aula-title {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ct-rel-aula-date {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.ct-rel-date-ocorreu  { background: var(--success-bg, rgba(22,163,74,.1)); color: var(--success, #16a34a); }
+.ct-rel-date-agendada { background: rgba(59,130,246,.1); color: #3b82f6; }
+.ct-rel-date-remarcada { background: rgba(245,158,11,.1); color: #d97706; }
+.ct-rel-date-adefinir { background: var(--background); color: var(--text-secondary); border: 1px solid var(--border); }
+
+.ct-rel-aula-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.ct-rel-aula-counts { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.ct-rel-count {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(20,184,166,.1);
+  color: var(--primary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ct-rel-count-empty {
+  background: var(--background);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.ct-rel-aula-chevron {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ct-rel-aula-header.open .ct-rel-aula-chevron { transform: rotate(90deg); }
+
+.ct-rel-aula-composer-body {
+  padding: 1rem 1rem 0.75rem;
+}
+
+.ct-comp-section { margin-bottom: 1rem; }
+
+.ct-comp-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 0.45rem;
+}
+
+.ct-comp-search {
+  width: 100%;
+  padding: 0.38rem 0.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+  margin-bottom: 0.35rem;
+  transition: border-color 0.12s;
+}
+
+.ct-comp-search:focus { border-color: var(--primary); }
+
+.ct-comp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ct-comp-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+  transition: background 0.1s;
+}
+
+.ct-comp-item:hover { background: rgba(20,184,166,.06); }
+
+.ct-comp-item input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 3px;
+  accent-color: var(--primary);
+}
+
+.ct-comp-tarefa {
+  width: 100%;
+  padding: 0.42rem 0.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.ct-comp-tarefa:focus { border-color: var(--primary); }
+
+.ct-comp-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.25rem;
+}
+
+.ct-comp-empty {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 0.4rem 0.45rem;
+}
