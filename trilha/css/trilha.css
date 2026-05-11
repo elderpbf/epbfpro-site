@@ -195,22 +195,23 @@ html, body {
   padding: 0.65rem 1.1rem;
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 4px solid transparent;
   margin-bottom: -2px;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, font-weight 0.15s;
   font-family: inherit;
 }
 
 .tr-tab-btn:hover { color: var(--text-primary); }
 
 .tr-tab-btn.active {
-  color: var(--primary-dark);
+  color: var(--primary);
   border-bottom-color: var(--primary);
+  font-weight: 700;
 }
 
 /* ----- Tab panels ----- */
