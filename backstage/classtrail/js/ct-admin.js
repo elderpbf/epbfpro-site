@@ -762,15 +762,16 @@ window.CT_ADMIN = (function() {
     if (!el) return;
     el.innerHTML = '<div class="ct-empty">Carregando...</div>';
     callWorker({ action: 'ct_list_sets' }).then(function(data) {
-      var sets = data.sets || [];
+      var sets = (data.sets || []).filter(function(s) { return (s.item_count || 0) > 0; });
       if (!sets.length) {
         _apostilaSet = null;
         _apostilaItems = [];
         _renderApostila();
         return;
       }
-      var first = sets[0];
-      return callWorker({ action: 'ct_get_set', id: first.id }).then(function(res) {
+      // Pick newest set with items (matches student view's apostila_set selection)
+      var current = sets[sets.length - 1];
+      return callWorker({ action: 'ct_get_set', id: current.id }).then(function(res) {
         _apostilaSet = res.set || null;
         _apostilaItems = (res.items || []).slice().sort(function(a, b) {
           return (a.set_position || 0) - (b.set_position || 0);
@@ -1640,9 +1641,11 @@ window.CT_ADMIN = (function() {
     var el = document.getElementById('releases-list');
     el.innerHTML = '<div class="ct-empty">Carregando...</div>';
     var loadApostila = callWorker({ action: 'ct_list_sets' }).then(function(data) {
-      var sets = data.sets || [];
+      var sets = (data.sets || []).filter(function(s) { return (s.item_count || 0) > 0; });
       if (!sets.length) return;
-      return callWorker({ action: 'ct_get_set', id: sets[0].id }).then(function(res) {
+      // Pick newest set with items (matches student view's apostila_set selection)
+      var current = sets[sets.length - 1];
+      return callWorker({ action: 'ct_get_set', id: current.id }).then(function(res) {
         _apostilaSet = res.set || null;
         _apostilaItems = (res.items || []).slice().sort(function(a, b) {
           return (a.set_position || 0) - (b.set_position || 0);
