@@ -606,6 +606,69 @@
 
 .ct-releases-selector select:focus { border-color: var(--primary); }
 
+/* ----- Turma picker (replaces the cliente/turma dropdowns) ----- */
+
+.ct-turma-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1.25rem;
+  padding: 0.1rem 0.05rem;
+}
+
+.ct-turma-picker .ct-empty {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 0.4rem 0;
+}
+
+.ct-turma-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s, box-shadow 0.18s;
+  outline: none;
+  white-space: nowrap;
+}
+
+.ct-turma-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  box-shadow: 0 3px 10px -4px var(--shadow);
+}
+
+.ct-turma-pill.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 14px -4px rgba(20, 184, 166, 0.45);
+}
+
+.ct-turma-pill.active:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: #fff;
+}
+
+.ct-turma-pill-client {
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.ct-turma-pill-sep {
+  opacity: 0.45;
+  font-weight: 400;
+}
+
 .ct-releases-list { display: flex; flex-direction: column; gap: 4px; }
 
 .ct-rel-row {

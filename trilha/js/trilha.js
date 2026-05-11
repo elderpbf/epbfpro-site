@@ -157,7 +157,9 @@
   // ── Tabs ─────────────────────────────────────────────────────────────
   function _renderTabs() {
     var items = _data.items || [];
-    var outros = items.filter(function(it) { return it.aula_number == null && it.set_id == null; });
+    var outros = items.filter(function(it) {
+      return it.aula_number == null && it.set_id == null && it.type !== 'tarefa';
+    });
     var apostilaSet = _data.apostila_set;
     var apostilaCount = apostilaSet ? items.filter(function(it) { return it.set_id === apostilaSet.id; }).length : 0;
 
@@ -259,7 +261,10 @@
     var status = _aulaStatus(aula);
     var dateText = _aulaDateText(aula);
     var topics = _parseTopics(aula.topics_json);
-    var hasTarefa = !!aula.tarefa_item_id;
+    var items = _data.items || [];
+    var tarefaCount = items.filter(function(it) {
+      return it.aula_number === aula.aula_number && it.type === 'tarefa';
+    }).length;
     var statusBadge = status === 'done' ? '✓' : (status === 'upcoming' ? String(aula.aula_number) : '·');
 
     var row = document.createElement('div');
@@ -272,7 +277,9 @@
         }).join('') + '</div>'
       : '';
 
-    var tarefaPill = hasTarefa ? '<span class="tarefa-pill">⚑ Tarefa</span>' : '';
+    var tarefaPill = '';
+    if (tarefaCount === 1)      tarefaPill = '<span class="tarefa-pill">⚑ Tarefa</span>';
+    else if (tarefaCount >= 2)  tarefaPill = '<span class="tarefa-pill">⚑ Tarefas (' + tarefaCount + ')</span>';
     var paddedNum = String(aula.aula_number);
     if (paddedNum.length < 2) paddedNum = '0' + paddedNum;
 
@@ -331,21 +338,20 @@
 
     var aulaItems = items.filter(function(it) { return it.aula_number === aula.aula_number; });
 
-    var tarefaItem = aula.tarefa_item_id
-      ? items.find(function(it) { return it.id === aula.tarefa_item_id; })
-      : null;
-    var tarefaId = tarefaItem ? tarefaItem.id : null;
+    var tarefaItems = aulaItems
+      .filter(function(it) { return it.type === 'tarefa'; })
+      .sort(function(a, b) { return (a.position || 0) - (b.position || 0); });
 
     var apostilaItems = aulaItems
       .filter(function(it) {
-        return apostilaSetId !== null && it.set_id === apostilaSetId && it.id !== tarefaId;
+        return apostilaSetId !== null && it.set_id === apostilaSetId && it.type !== 'tarefa';
       })
       .sort(function(a, b) { return (a.set_position || 0) - (b.set_position || 0); });
 
     var outrosItems = aulaItems
       .filter(function(it) {
         if (apostilaSetId !== null && it.set_id === apostilaSetId) return false;
-        if (it.id === tarefaId) return false;
+        if (it.type === 'tarefa') return false;
         return true;
       })
       .sort(function(a, b) { return (a.position || 0) - (b.position || 0); });
@@ -353,8 +359,8 @@
     var body = document.createElement('div');
     body.className = 'body';
 
-    if (tarefaItem) {
-      body.appendChild(_buildSection('Tarefa', [tarefaItem], { isTarefa: true }));
+    if (tarefaItems.length) {
+      body.appendChild(_buildSection(tarefaItems.length === 1 ? 'Tarefa' : 'Tarefas', tarefaItems, { isTarefa: true }));
     }
     if (apostilaItems.length) {
       body.appendChild(_buildSection('Apostila desta aula', apostilaItems, { isApostila: true }));
@@ -362,7 +368,7 @@
     if (outrosItems.length) {
       body.appendChild(_buildSection('Outros materiais', outrosItems));
     }
-    if (!tarefaItem && !apostilaItems.length && !outrosItems.length) {
+    if (!tarefaItems.length && !apostilaItems.length && !outrosItems.length) {
       body.innerHTML = '<div class="tr-empty">Nenhum conteúdo disponível nesta aula ainda.</div>';
     }
     return body;
@@ -574,7 +580,7 @@
     if (!listEl) return;
 
     var items = (_data.items || []).filter(function(it) {
-      return it.aula_number == null && it.set_id == null;
+      return it.aula_number == null && it.set_id == null && it.type !== 'tarefa';
     });
 
     if (!items.length) {

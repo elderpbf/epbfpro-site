@@ -119,7 +119,6 @@ window.CT_ADMIN = (function() {
     callWorker({ action: 'ct_list_clients' }).then(function(data) {
       _clients = data.clients || [];
       _renderClients();
-      _populateRelClientSelect();
     }).catch(function() {
       document.getElementById('clients-list').innerHTML = '<div class="ct-empty">Erro ao carregar clientes.</div>';
     });
@@ -511,63 +510,44 @@ window.CT_ADMIN = (function() {
     var container = bd.querySelector('#tf-aulas-list');
     if (!container) return;
 
-    // Load items for tarefa dropdown
-    callWorker({ action: 'ct_list_items' }).then(function(d) {
-      var allItems = d.items || [];
-
-      // Build turma-released items for tarefa picker -- use the already-loaded releases
-      // We'll just offer all items for simplicity (admin-facing only)
-      var tarefaOptions = '<option value="">(nenhuma)</option>' +
-        allItems.map(function(it) {
-          return '<option value="' + _esc(it.id) + '">' + _esc(it.title) + '</option>';
-        }).join('');
-
-      function render(list) {
-        if (!list.length) {
-          container.innerHTML = '<div class="ct-empty">Nenhuma aula. Clique em "+ Nova aula" para adicionar.</div>';
-        } else {
-          container.innerHTML = list.map(function(a) {
-            return _buildAulaRowHtml(a, tarefaOptions);
-          }).join('');
-          _wireAulaRowEvents(bd, container, list, clientSlug, turmaSlug, tarefaOptions);
-        }
+    function render(list) {
+      if (!list.length) {
+        container.innerHTML = '<div class="ct-empty">Nenhuma aula. Clique em "+ Nova aula" para adicionar.</div>';
+      } else {
+        container.innerHTML = list.map(_buildAulaRowHtml).join('');
+        _wireAulaRowEvents(bd, container, list, clientSlug, turmaSlug);
       }
+    }
 
-      render(aulas);
+    render(aulas);
 
-      var addBtn = bd.querySelector('#tf-add-aula');
-      if (addBtn) {
-        addBtn.addEventListener('click', function() {
-          // Determine next aula_number
-          var nums = aulas.map(function(a) { return a.aula_number || 0; });
-          var nextNum = nums.length ? Math.max.apply(null, nums) + 1 : 1;
-          var newAula = {
-            id: null,
-            aula_number: nextNum,
-            title: '',
-            topics_json: null,
-            scheduled_for: null,
-            happened_on: null,
-            rescheduled_from: null,
-            rescheduled_note: null,
-            tarefa_item_id: null,
-            _isNew: true
-          };
-          aulas.push(newAula);
-          render(aulas);
-          // Scroll to bottom of modal
-          var modal = bd.querySelector('.ct-modal');
-          if (modal) modal.scrollTop = modal.scrollHeight;
-        });
-      }
-    });
+    var addBtn = bd.querySelector('#tf-add-aula');
+    if (addBtn) {
+      addBtn.addEventListener('click', function() {
+        var nums = aulas.map(function(a) { return a.aula_number || 0; });
+        var nextNum = nums.length ? Math.max.apply(null, nums) + 1 : 1;
+        var newAula = {
+          id: null,
+          aula_number: nextNum,
+          title: '',
+          topics_json: null,
+          scheduled_for: null,
+          happened_on: null,
+          rescheduled_from: null,
+          rescheduled_note: null,
+          _isNew: true
+        };
+        aulas.push(newAula);
+        render(aulas);
+        var modal = bd.querySelector('.ct-modal');
+        if (modal) modal.scrollTop = modal.scrollHeight;
+      });
+    }
   }
 
-  function _buildAulaRowHtml(a, tarefaOptions) {
-    var selectedTarefa = tarefaOptions.replace(
-      'value="' + _esc(a.tarefa_item_id) + '"',
-      'value="' + _esc(a.tarefa_item_id) + '" selected'
-    );
+  function _buildAulaRowHtml(a) {
+    // Tarefa is no longer a field on the aula itself; tarefas are managed in
+    // the Liberações composer as items of type='tarefa' released to the aula.
     return '<div class="ct-aula-row" data-aula-id="' + _esc(a.id || '') + '" data-is-new="' + (a._isNew ? '1' : '0') + '">' +
       '<div class="ct-aula-num-label">Aula ' + _esc(a.aula_number) + '</div>' +
       '<div class="ct-aula-row-grid">' +
@@ -591,10 +571,6 @@ window.CT_ADMIN = (function() {
           '<label>Nota de remarcação (opcional)</label>' +
           '<input type="text" class="aula-rescheduled-note" value="' + _esc(a.rescheduled_note || '') + '" placeholder="Ex: Feriado nacional">' +
         '</div>' +
-        '<div class="ct-field">' +
-          '<label>Tarefa (item)</label>' +
-          '<select class="aula-tarefa">' + selectedTarefa + '</select>' +
-        '</div>' +
       '</div>' +
       '<div class="ct-aula-actions">' +
         '<button type="button" class="ct-btn ct-btn-sm ct-btn-danger aula-delete-btn">Excluir</button>' +
@@ -603,7 +579,7 @@ window.CT_ADMIN = (function() {
     '</div>';
   }
 
-  function _wireAulaRowEvents(bd, container, aulas, clientSlug, turmaSlug, tarefaOptions) {
+  function _wireAulaRowEvents(bd, container, aulas, clientSlug, turmaSlug) {
     container.querySelectorAll('.ct-aula-row').forEach(function(row, idx) {
       var aula = aulas[idx];
 
@@ -621,8 +597,7 @@ window.CT_ADMIN = (function() {
           scheduled_for: row.querySelector('.aula-scheduled').value || null,
           happened_on: row.querySelector('.aula-happened').value || null,
           rescheduled_from: row.querySelector('.aula-rescheduled-from').value || null,
-          rescheduled_note: row.querySelector('.aula-rescheduled-note').value.trim() || null,
-          tarefa_item_id: row.querySelector('.aula-tarefa').value || null
+          rescheduled_note: row.querySelector('.aula-rescheduled-note').value.trim() || null
         };
         var isNew = row.dataset.isNew === '1' || aula._isNew;
         if (isNew) {
@@ -1655,30 +1630,6 @@ window.CT_ADMIN = (function() {
 
   // ---- Releases ----
 
-  function _populateRelClientSelect() {
-    var sel = document.getElementById('rel-client-select');
-    var prev = sel.value;
-    sel.innerHTML = '<option value="">Selecione o cliente...</option>' +
-      _clients.filter(function(c) { return c.status !== 'archived'; }).map(function(c) {
-        return '<option value="' + _esc(c.slug) + '">' + _esc(c.display_name || c.name) + '</option>';
-      }).join('');
-    if (prev) sel.value = prev;
-  }
-
-  function _loadRelTurmas(clientSlug) {
-    var sel = document.getElementById('rel-turma-select');
-    sel.innerHTML = '<option value="">Carregando...</option>';
-    sel.disabled = true;
-    callWorker({ action: 'ct_list_turmas', client_slug: clientSlug }).then(function(data) {
-      var turmas = (data.turmas || []).filter(function(t) { return t.status !== 'archived'; });
-      sel.innerHTML = '<option value="">Selecione a turma...</option>' +
-        turmas.map(function(t) {
-          return '<option value="' + _esc(t.slug) + '">' + _esc(t.display_name || t.name) + '</option>';
-        }).join('');
-      sel.disabled = false;
-    });
-  }
-
   function _loadReleases(clientSlug, turmaSlug) {
     _relClientSlug = clientSlug;
     _relTurmaSlug = turmaSlug;
@@ -1776,14 +1727,21 @@ window.CT_ADMIN = (function() {
                String((_relReleasedMeta[i.id] || {}).aula_number) === String(n);
       }).length;
 
+      var tarefaCount = _relAllItems.filter(function(i) {
+        return !i.set_id && i.type === 'tarefa' &&
+               _relReleased.indexOf(i.id) !== -1 &&
+               String((_relReleasedMeta[i.id] || {}).aula_number) === String(n);
+      }).length;
+
       var outrosCount = _relAllItems.filter(function(i) {
-        return !i.set_id &&
+        return !i.set_id && i.type !== 'apostila' && i.type !== 'tarefa' &&
                _relReleased.indexOf(i.id) !== -1 &&
                String((_relReleasedMeta[i.id] || {}).aula_number) === String(n);
       }).length;
 
       var counts = '';
       if (apostilaCount) counts += '<span class="ct-rel-count">📖 ' + apostilaCount + '</span>';
+      if (tarefaCount)   counts += '<span class="ct-rel-count">⚑ ' + tarefaCount + '</span>';
       if (outrosCount)   counts += '<span class="ct-rel-count">📄 ' + outrosCount + '</span>';
       if (!counts)       counts  = '<span class="ct-rel-count ct-rel-count-empty">vazio</span>';
 
@@ -1805,7 +1763,7 @@ window.CT_ADMIN = (function() {
     });
 
     var outrosSolo = _relAllItems.filter(function(i) {
-      return !i.set_id &&
+      return !i.set_id && i.type !== 'apostila' && i.type !== 'tarefa' &&
              _relReleased.indexOf(i.id) !== -1 &&
              !(_relReleasedMeta[i.id] || {}).aula_number;
     }).length;
@@ -1853,11 +1811,13 @@ window.CT_ADMIN = (function() {
     var aula = _relAulas.find(function(a) { return String(a.id) === outer.dataset.aulaId; });
     if (!aula) return;
 
-    // Apostila items must never appear in the Outros picker. set_id is the
-    // canonical marker (Worker returns it); type === 'apostila' is a belt-and-
-    // suspenders catch for any row where set_id was somehow not populated.
-    var standaloneItems = _relAllItems.filter(function(i) {
-      return !i.set_id && i.type !== 'apostila';
+    // Three parallel pools sourced from the library: apostila (via set_id),
+    // tarefa (type='tarefa'), and outros (everything else standalone).
+    var tarefaItems = _relAllItems.filter(function(i) {
+      return !i.set_id && i.type === 'tarefa';
+    });
+    var outrosItems = _relAllItems.filter(function(i) {
+      return !i.set_id && i.type !== 'apostila' && i.type !== 'tarefa';
     });
 
     function isBound(id) {
@@ -1874,8 +1834,17 @@ window.CT_ADMIN = (function() {
         }).join('')
       : '<div class="ct-comp-empty">Nenhuma apostila importada.</div>';
 
-    var outrosHtml = standaloneItems.length
-      ? standaloneItems.map(function(i) {
+    var tarefaHtml = tarefaItems.length
+      ? tarefaItems.map(function(i) {
+          return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
+            '<input type="checkbox" class="ct-comp-tarefa-cb" value="' + i.id + '"' + (isBound(i.id) ? ' checked' : '') + '>' +
+            '<span>⚑ ' + _esc(i.title) + '</span>' +
+          '</label>';
+        }).join('')
+      : '<div class="ct-comp-empty">Nenhuma tarefa cadastrada na biblioteca. Crie um item de tipo \'tarefa\' na aba Itens.</div>';
+
+    var outrosHtml = outrosItems.length
+      ? outrosItems.map(function(i) {
           var m = _typeMeta(i.type);
           return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
             '<input type="checkbox" class="ct-comp-outros-cb" value="' + i.id + '"' + (isBound(i.id) ? ' checked' : '') + '>' +
@@ -1891,55 +1860,31 @@ window.CT_ADMIN = (function() {
           '<div class="ct-comp-list">' + apostilaHtml + '</div>' +
         '</div>' +
         '<div class="ct-comp-section">' +
+          '<div class="ct-comp-section-label">Tarefas</div>' +
+          '<div class="ct-comp-list ct-comp-tarefa-list">' + tarefaHtml + '</div>' +
+        '</div>' +
+        '<div class="ct-comp-section">' +
           '<div class="ct-comp-section-label">Outros itens</div>' +
           '<input type="text" class="ct-comp-search" placeholder="Buscar...">' +
           '<div class="ct-comp-list ct-comp-outros-list">' + outrosHtml + '</div>' +
-        '</div>' +
-        '<div class="ct-comp-section">' +
-          '<div class="ct-comp-section-label">Tarefa</div>' +
-          '<select class="ct-comp-tarefa"></select>' +
         '</div>' +
         '<div class="ct-comp-actions">' +
           '<button class="ct-btn ct-btn-primary ct-comp-save">Salvar</button>' +
         '</div>' +
       '</div>';
 
-    var allSrc = _apostilaItems.concat(standaloneItems);
-
-    function rebuildTarefa() {
-      var ids = [];
-      container.querySelectorAll('.ct-comp-apostila-cb:checked,.ct-comp-outros-cb:checked').forEach(function(cb) {
-        ids.push(parseInt(cb.value));
+    var searchEl = container.querySelector('.ct-comp-search');
+    if (searchEl) {
+      searchEl.addEventListener('input', function() {
+        var q = this.value.toLowerCase().trim();
+        container.querySelectorAll('.ct-comp-outros-list .ct-comp-item').forEach(function(row) {
+          row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
+        });
       });
-      var currentTarefaId = aula.tarefa_item_id ? parseInt(aula.tarefa_item_id) : null;
-      var opts = '<option value="">(nenhuma)</option>';
-      ids.forEach(function(id) {
-        var it = allSrc.find(function(x) { return x.id === id; });
-        if (!it) return;
-        // Only type='tarefa' items are eligible. Legacy currently-selected
-        // tarefa stays visible so re-saving doesn't silently clear it.
-        if (it.type !== 'tarefa' && id !== currentTarefaId) return;
-        var sel = String(currentTarefaId) === String(id) ? ' selected' : '';
-        opts += '<option value="' + id + '"' + sel + '>' + _esc(it.title) + '</option>';
-      });
-      container.querySelector('.ct-comp-tarefa').innerHTML = opts;
     }
 
-    rebuildTarefa();
-
-    container.querySelector('.ct-comp-search').addEventListener('input', function() {
-      var q = this.value.toLowerCase().trim();
-      container.querySelectorAll('.ct-comp-outros-list .ct-comp-item').forEach(function(row) {
-        row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
-      });
-    });
-
-    container.querySelectorAll('.ct-comp-apostila-cb,.ct-comp-outros-cb').forEach(function(cb) {
-      cb.addEventListener('change', rebuildTarefa);
-    });
-
     container.querySelector('.ct-comp-save').addEventListener('click', function() {
-      _saveAulaComposer(container, aula, aulaNum, standaloneItems);
+      _saveAulaComposer(container, aula, aulaNum, tarefaItems, outrosItems);
     });
   }
 
@@ -1950,7 +1895,7 @@ window.CT_ADMIN = (function() {
     // somehow not populated. Items bound to an aula are managed via that aula's
     // composer, not here.
     var standaloneItems = _relAllItems.filter(function(i) {
-      if (i.set_id || i.type === 'apostila') return false;
+      if (i.set_id || i.type === 'apostila' || i.type === 'tarefa') return false;
       var wasReleased = _relReleased.indexOf(i.id) !== -1;
       if (!wasReleased) return true;
       return !(_relReleasedMeta[i.id] || {}).aula_number;
@@ -1991,17 +1936,17 @@ window.CT_ADMIN = (function() {
     });
   }
 
-  function _saveAulaComposer(container, aula, aulaNum, standaloneItems) {
+  function _saveAulaComposer(container, aula, aulaNum, tarefaItems, outrosItems) {
     var btn = container.querySelector('.ct-comp-save');
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
     var nowApostila = new Set();
     container.querySelectorAll('.ct-comp-apostila-cb:checked').forEach(function(cb) { nowApostila.add(parseInt(cb.value)); });
+    var nowTarefa = new Set();
+    container.querySelectorAll('.ct-comp-tarefa-cb:checked').forEach(function(cb) { nowTarefa.add(parseInt(cb.value)); });
     var nowOutros = new Set();
     container.querySelectorAll('.ct-comp-outros-cb:checked').forEach(function(cb) { nowOutros.add(parseInt(cb.value)); });
-    var tarefaId = container.querySelector('.ct-comp-tarefa').value || null;
-    if (tarefaId) tarefaId = parseInt(tarefaId);
 
     var toRelease = [], toSetAula = [], toDropAula = [];
 
@@ -2017,9 +1962,8 @@ window.CT_ADMIN = (function() {
     }
 
     _apostilaItems.forEach(function(i) { classify(i.id, nowApostila.has(i.id)); });
-    standaloneItems.forEach(function(i) { classify(i.id, nowOutros.has(i.id)); });
-
-    var tarefaChanged = String(aula.tarefa_item_id || '') !== String(tarefaId || '');
+    tarefaItems.forEach(function(i)    { classify(i.id, nowTarefa.has(i.id)); });
+    outrosItems.forEach(function(i)    { classify(i.id, nowOutros.has(i.id)); });
 
     Promise.all(toRelease.map(function(id) {
       return callWorker({ action: 'ct_release_item', client_slug: _relClientSlug, turma_slug: _relTurmaSlug, item_id: id });
@@ -2030,15 +1974,11 @@ window.CT_ADMIN = (function() {
       }).concat(toDropAula.map(function(id) {
         return callWorker({ action: 'ct_set_release_aula', client_slug: _relClientSlug, turma_slug: _relTurmaSlug, item_id: id, aula_number_or_null: null });
       }));
-      if (tarefaChanged) {
-        calls.push(callWorker({ action: 'ct_update_aula', id: aula.id, tarefa_item_id: tarefaId || null }));
-      }
       return Promise.all(calls);
     }).then(function() {
       toRelease.forEach(function(id) { _relReleased.push(id); _relReleasedMeta[id] = { aula_number: aulaNum }; });
       toSetAula.forEach(function(id) { (_relReleasedMeta[id] || (_relReleasedMeta[id] = {})).aula_number = aulaNum; });
       toDropAula.forEach(function(id) { if (_relReleasedMeta[id]) _relReleasedMeta[id].aula_number = null; });
-      if (tarefaChanged) aula.tarefa_item_id = tarefaId;
       _toast('Salvo.');
       _renderReleasesAulaList();
     }).catch(function(err) {
@@ -2098,77 +2038,91 @@ window.CT_ADMIN = (function() {
         if (panel) panel.classList.add('active');
         if (id === 'items') _loadItems();
         if (id === 'apostila') _loadApostila();
-        if (id === 'releases') {
-          callWorker({ action: 'ct_list_clients' }).then(function(d) {
-            _clients = d.clients || [];
-            _populateRelClientSelect();
-            _restoreReleasesSelectors();
-          });
-        }
+        if (id === 'releases') _initTurmaPicker();
       });
     });
   }
 
-  // ---- Releases selectors wiring ----
+  // ---- Releases turma picker (flat pill bar, replaces the cliente/turma dropdowns) ----
 
   var LS_REL_CLIENT = 'ct_admin_releases_last_client';
   var LS_REL_TURMA  = 'ct_admin_releases_last_turma';
 
-  function _restoreReleasesSelectors() {
-    var clientSel = document.getElementById('rel-client-select');
-    var turmaSel  = document.getElementById('rel-turma-select');
-    var savedClient = localStorage.getItem(LS_REL_CLIENT);
-    var savedTurma  = localStorage.getItem(LS_REL_TURMA);
-    if (!savedClient) return;
+  function _initTurmaPicker() {
+    var pickerEl = document.getElementById('rel-turma-picker');
+    if (!pickerEl) return;
+    pickerEl.innerHTML = '<div class="ct-empty">Carregando turmas...</div>';
 
-    // Verify the client still exists in the list
-    var clientOpt = clientSel.querySelector('option[value="' + savedClient + '"]');
-    if (!clientOpt) return;
+    callWorker({ action: 'ct_list_clients' }).then(function(data) {
+      var clients = (data.clients || []).filter(function(c) { return c.status !== 'archived'; });
+      if (!clients.length) {
+        pickerEl.innerHTML = '<div class="ct-empty">Nenhum cliente cadastrado.</div>';
+        return null;
+      }
+      return Promise.all(clients.map(function(c) {
+        return callWorker({ action: 'ct_list_turmas', client_slug: c.slug }).then(function(td) {
+          return {
+            client: c,
+            turmas: (td.turmas || []).filter(function(t) { return t.status !== 'archived'; })
+          };
+        });
+      }));
+    }).then(function(groups) {
+      if (!groups) return;
 
-    clientSel.value = savedClient;
+      var entries = [];
+      groups.forEach(function(g) {
+        g.turmas.forEach(function(t) {
+          entries.push({
+            clientSlug: g.client.slug,
+            clientName: g.client.display_name || g.client.name,
+            turmaSlug:  t.slug,
+            turmaName:  t.display_name || t.name
+          });
+        });
+      });
 
-    // Load turmas for that client, then restore turma selection
-    _loadRelTurmas(savedClient);
+      entries.sort(function(a, b) {
+        var cmp = a.clientName.localeCompare(b.clientName, 'pt-BR', { sensitivity: 'base' });
+        if (cmp !== 0) return cmp;
+        return a.turmaName.localeCompare(b.turmaName, 'pt-BR', { sensitivity: 'base' });
+      });
 
-    // _loadRelTurmas is async; we wait by patching the turma select observer once
-    var attempts = 0;
-    function tryRestoreTurma() {
-      attempts++;
-      var turmaOpt = turmaSel.querySelector('option[value="' + savedTurma + '"]');
-      if (turmaOpt) {
-        turmaSel.value = savedTurma;
+      if (!entries.length) {
+        pickerEl.innerHTML = '<div class="ct-empty">Nenhuma turma cadastrada. Crie uma turma na aba Clientes.</div>';
+        return;
+      }
+
+      var savedClient = localStorage.getItem(LS_REL_CLIENT);
+      var savedTurma  = localStorage.getItem(LS_REL_TURMA);
+
+      pickerEl.innerHTML = entries.map(function(e) {
+        var isActive = e.clientSlug === savedClient && e.turmaSlug === savedTurma;
+        return '<button type="button" class="ct-turma-pill' + (isActive ? ' active' : '') + '"' +
+          ' data-client="' + _esc(e.clientSlug) + '" data-turma="' + _esc(e.turmaSlug) + '">' +
+          '<span class="ct-turma-pill-client">' + _esc(e.clientName) + '</span>' +
+          '<span class="ct-turma-pill-sep">·</span>' +
+          '<span>' + _esc(e.turmaName) + '</span>' +
+        '</button>';
+      }).join('');
+
+      pickerEl.querySelectorAll('.ct-turma-pill').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var c = btn.dataset.client, t = btn.dataset.turma;
+          pickerEl.querySelectorAll('.ct-turma-pill').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          localStorage.setItem(LS_REL_CLIENT, c);
+          localStorage.setItem(LS_REL_TURMA, t);
+          _loadReleases(c, t);
+        });
+      });
+
+      // Auto-load the saved selection if it survived
+      if (pickerEl.querySelector('.ct-turma-pill.active')) {
         _loadReleases(savedClient, savedTurma);
-      } else if (attempts < 20) {
-        setTimeout(tryRestoreTurma, 150);
       }
-      // If turma no longer exists after 20 tries, fall back to blank state
-    }
-    if (savedTurma) setTimeout(tryRestoreTurma, 150);
-  }
-
-  function _initReleasesSelectors() {
-    var clientSel = document.getElementById('rel-client-select');
-    var turmaSel = document.getElementById('rel-turma-select');
-    clientSel.addEventListener('change', function() {
-      turmaSel.innerHTML = '<option value="">Selecione a turma...</option>';
-      turmaSel.disabled = true;
-      document.getElementById('releases-list').innerHTML = '<div class="ct-empty">Selecione uma turma.</div>';
-      if (clientSel.value) {
-        localStorage.setItem(LS_REL_CLIENT, clientSel.value);
-        localStorage.removeItem(LS_REL_TURMA);
-        _loadRelTurmas(clientSel.value);
-      } else {
-        localStorage.removeItem(LS_REL_CLIENT);
-        localStorage.removeItem(LS_REL_TURMA);
-      }
-    });
-    turmaSel.addEventListener('change', function() {
-      if (clientSel.value && turmaSel.value) {
-        localStorage.setItem(LS_REL_TURMA, turmaSel.value);
-        _loadReleases(clientSel.value, turmaSel.value);
-      } else {
-        localStorage.removeItem(LS_REL_TURMA);
-      }
+    }).catch(function() {
+      pickerEl.innerHTML = '<div class="ct-empty">Erro ao carregar turmas.</div>';
     });
   }
 
@@ -2177,7 +2131,6 @@ window.CT_ADMIN = (function() {
   return {
     init: function() {
       _initTabs();
-      _initReleasesSelectors();
       document.getElementById('btn-new-client').addEventListener('click', function() { _openClientForm(null); });
       document.getElementById('btn-new-turma').addEventListener('click', function() { _openTurmaForm(null); });
       document.getElementById('btn-new-item').addEventListener('click', function() { _openItemEditor(null); });
