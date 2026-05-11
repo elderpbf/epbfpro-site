@@ -1373,3 +1373,420 @@
   color: var(--text-secondary);
   padding: 0.4rem 0.45rem;
 }
+
+/* =========================================================
+   Phase 5 -- Tarefas tab
+   Mirrors trilha.css --task token for visual continuity.
+   ========================================================= */
+
+:root {
+  --task: var(--primary-dark);
+  --task-bg: rgba(20, 184, 166, 0.08);
+}
+
+.ct-tarefa-section-meta {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0.4rem 0 1rem;
+}
+
+.ct-tarefa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.ct-tarefa-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--task);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.ct-tarefa-row:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.ct-tarefa-row.expanded {
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  border-color: var(--task);
+}
+
+.ct-tarefa-head {
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+}
+
+.ct-tarefa-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--task-bg);
+  color: var(--task);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.ct-tarefa-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.ct-tarefa-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ct-tarefa-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.ct-tarefa-sub .ct-tarefa-dot {
+  color: var(--text-muted, var(--text-secondary));
+  opacity: 0.6;
+}
+
+.ct-tarefa-anon-badge {
+  background: var(--background);
+  color: var(--text-secondary);
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.ct-tarefa-count {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.ct-tarefa-count.zero {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ct-tarefa-reuse {
+  font-style: italic;
+}
+
+.ct-tarefa-reuse.solo { color: var(--text-secondary); }
+.ct-tarefa-reuse.multi { color: var(--primary-dark); font-style: normal; }
+
+.ct-tarefa-chev {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  transition: transform 0.15s;
+}
+
+.ct-tarefa-row.expanded .ct-tarefa-chev {
+  transform: rotate(180deg);
+}
+
+.ct-tarefa-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  background: var(--background);
+}
+
+.ct-tarefa-row.expanded .ct-tarefa-body {
+  display: block;
+}
+
+.ct-tarefa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+@media (max-width: 1000px) {
+  .ct-tarefa-grid { grid-template-columns: 1fr; }
+}
+
+.ct-tarefa-pane {
+  padding: 1.2rem;
+}
+
+.ct-tarefa-pane + .ct-tarefa-pane {
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 1000px) {
+  .ct-tarefa-pane + .ct-tarefa-pane {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
+
+.ct-tarefa-pane-title {
+  margin: 0 0 0.85rem 0;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.ct-tarefa-field-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ct-tarefa-field-chip {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ct-tarefa-field-chip:hover:not(.disabled) {
+  border-color: var(--primary);
+}
+
+.ct-tarefa-field-chip.active {
+  border-color: var(--primary);
+  background: var(--task-bg);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.ct-tarefa-field-chip.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ct-tarefa-field-future {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--text-secondary);
+  color: var(--surface);
+  padding: 0.05rem 0.32rem;
+  border-radius: 3px;
+  margin-left: 0.4rem;
+  font-weight: 600;
+}
+
+.ct-tarefa-anon-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ct-tarefa-anon-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ct-tarefa-anon-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--border);
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.ct-tarefa-anon-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: left 0.15s;
+}
+
+.ct-tarefa-anon-toggle input:checked + .ct-tarefa-anon-track {
+  background: var(--primary);
+}
+
+.ct-tarefa-anon-toggle input:checked + .ct-tarefa-anon-track::after {
+  left: 18px;
+}
+
+.ct-tarefa-anon-label {
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.ct-tarefa-editor-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--border);
+}
+
+.ct-tarefa-editor-actions .ct-tf-delete {
+  margin-left: auto;
+}
+
+/* Respostas pane */
+
+.ct-resp-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.ct-resp-search {
+  flex: 1;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  background: var(--surface);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.ct-resp-search:focus { border-color: var(--primary); }
+
+.ct-resp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.ct-resp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+}
+
+.ct-resp-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+  font-size: 0.78rem;
+}
+
+.ct-resp-who {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ct-resp-who.anon {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ct-resp-when {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+}
+
+.ct-resp-body {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  background: var(--background);
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  border-left: 3px solid var(--task);
+  max-height: 110px;
+  overflow: hidden;
+  position: relative;
+  word-break: break-word;
+}
+
+.ct-resp-card.expanded .ct-resp-body {
+  max-height: none;
+}
+
+.ct-resp-card:not(.expanded) .ct-resp-body::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  background: linear-gradient(transparent, var(--background));
+  pointer-events: none;
+}
+
+.ct-resp-actions {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  justify-content: flex-end;
+}
+
+.ct-resp-empty {
+  text-align: center;
+  padding: 1.6rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+/* Delete-confirm modal */
+
+.ct-tarefa-delete-modal { max-width: 480px; }
+
+.ct-tarefa-delete-title-quote {
+  background: var(--background);
+  border-left: 3px solid var(--task);
+  padding: 0.5rem 0.75rem;
+  font-style: italic;
+  color: var(--text-primary);
+  border-radius: 4px;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.ct-tf-del-input {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text-primary);
+  outline: none;
+  margin-bottom: 0.85rem;
+  box-sizing: border-box;
+}
+
+.ct-tf-del-input:focus { border-color: var(--primary); }
+

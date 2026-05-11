@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.5">
 <link rel="stylesheet" href="../css/ct-renderer.css?v=1.0">
-<link rel="stylesheet" href="css/classtrail.css?v=2.3">
+<link rel="stylesheet" href="css/classtrail.css?v=2.4">
 <script src="../js/debug.js?v=2.5"></script>
 </head>
 <body>
@@ -30,6 +30,7 @@
       <button class="ct-tab active" data-tab="clients">Clientes</button>
       <button class="ct-tab" data-tab="items">Itens</button>
       <button class="ct-tab" data-tab="apostila">Conteúdo</button>
+      <button class="ct-tab" data-tab="tarefas">Tarefas</button>
       <button class="ct-tab" data-tab="releases">Liberações</button>
     </div>
 
@@ -85,6 +86,21 @@
       </div>
     </div>
 
+    <!-- ===== TAREFAS ===== -->
+    <div class="ct-panel" id="panel-tarefas">
+      <div class="ct-toolbar">
+        <h2>Tarefas por Turma</h2>
+        <button class="ct-btn ct-btn-primary" id="btn-new-tarefa" type="button">+ Nova tarefa</button>
+      </div>
+      <div class="ct-turma-picker" id="tarefas-turma-picker">
+        <div class="ct-empty">Carregando turmas...</div>
+      </div>
+      <div class="ct-tarefa-section-meta" id="tarefas-section-meta"></div>
+      <div class="ct-tarefa-list" id="tarefas-list">
+        <div class="ct-empty">Selecione uma turma acima para ver suas tarefas.</div>
+      </div>
+    </div>
+
     <!-- ===== LIBERAÇÕES ===== -->
     <div class="ct-panel" id="panel-releases">
       <div class="ct-toolbar">
@@ -108,11 +124,13 @@
 <script src="../js/ai-client.js?v=1.0"></script>
 <script src="../js/ct-ai-spec.js?v=1.2"></script>
 <script src="../js/ct-type-filter.js?v=1.0"></script>
+<script src="../js/ct-renderer.js?v=1.0"></script>
+<script src="../js/ct-tarefa-fields.js?v=1.0"></script>
 <script src="../js/theme-manager.js?v=1.2"></script>
 <script src="../js/auth.js?v=1.1"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/backstage-topbar.js?v=1.2"></script>
-<script src="js/ct-admin.js?v=4.2"></script>
+<script src="js/ct-admin.js?v=5.0"></script>
 <script>
 'use strict';
 BS_AUTH.guard();

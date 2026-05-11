@@ -33,8 +33,20 @@
       '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
       '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
     check:
-      '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+      '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
+    send:
+      '<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/>' +
+      '<polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
   };
+
+  function _tarefaSubmittedKey(itemId) {
+    return 'ct_tarefa_submitted_' + itemId + '_' + _turmaSlug;
+  }
+
+  function _hasSubmittedTarefa(itemId) {
+    try { return localStorage.getItem(_tarefaSubmittedKey(itemId)) != null; }
+    catch (_) { return false; }
+  }
 
   var WA_ICON =
     '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">' +
@@ -521,6 +533,12 @@
 
   function _getItemAction(item) {
     var meta = _getMeta(item);
+    if (item.type === 'tarefa') {
+      if (_hasSubmittedTarefa(item.id)) {
+        return { kind: 'submitted', label: 'Resposta enviada', icon: 'check' };
+      }
+      return { kind: 'submit', label: 'Enviar resposta', icon: 'send', item: item };
+    }
     if (meta.pdf_url) return { kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' };
     if (meta.attachment_url) {
       var isImg = /\.(png|jpe?g|webp|gif)$/i.test(meta.attachment_url);
@@ -553,17 +571,40 @@
       btn = document.createElement('button');
       btn.type = 'button';
     }
-    btn.className = 'item-action' + (opts && opts.isTarefa ? ' item-action--task' : '');
+    var cls = 'item-action' + (opts && opts.isTarefa ? ' item-action--task' : '');
+    if (action.kind === 'submitted') cls += ' item-action--submitted is-done';
+    btn.className = cls;
     btn.innerHTML = (ICONS[action.icon] || ICONS.copy) + '<span>' + _esc(action.label) + '</span>';
+    if (action.kind === 'submitted') btn.disabled = true;
 
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (action.kind === 'copy') {
         e.preventDefault();
         _copyToClipboard(action.text, btn);
+      } else if (action.kind === 'submit') {
+        e.preventDefault();
+        _openTarefaSubmit(action.item, sub, opts);
       }
     });
     actionsEl.appendChild(btn);
+  }
+
+  function _openTarefaSubmit(item, sub, opts) {
+    if (!window.CTTarefaSubmitModal) {
+      console.error('CTTarefaSubmitModal not loaded');
+      return;
+    }
+    CTTarefaSubmitModal.open({
+      item: item,
+      clientSlug: _clientSlug,
+      turmaSlug: _turmaSlug,
+      token: _token,
+      onSubmitted: function() {
+        // Refresh the action button to show the submitted state
+        _injectActionButton(sub, item, opts || {});
+      }
+    });
   }
 
   function _copyToClipboard(text, btn) {

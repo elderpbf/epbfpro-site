@@ -653,8 +653,9 @@ window.CT_ADMIN = (function() {
   }
 
   function _renderItems() {
-    // Exclude apostila items (set_id != null) from the main Items grid
-    var libraryItems = _items.filter(function(it) { return !it.set_id; });
+    // Hide apostila items (set_id != null) and tarefa items (managed in the Tarefas tab)
+    // from the main Items grid.
+    var libraryItems = _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa'; });
     _renderItemsFilter(libraryItems);
     var el = document.getElementById('items-list');
     if (!libraryItems.length) {
@@ -693,7 +694,7 @@ window.CT_ADMIN = (function() {
   function _renderItemsFilter(itemsSubset) {
     var fc = document.getElementById('items-filter');
     if (!fc) return;
-    var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id; });
+    var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa'; });
     if (!items.length) { fc.innerHTML = ''; return; }
     CT_TYPE_FILTER.render({
       container:    fc,
@@ -2041,25 +2042,33 @@ window.CT_ADMIN = (function() {
         if (panel) panel.classList.add('active');
         if (id === 'items') _loadItems();
         if (id === 'apostila') _loadApostila();
+        if (id === 'tarefas') _initTarefasPicker();
         if (id === 'releases') _initTurmaPicker();
       });
     });
   }
 
-  // ---- Releases turma picker (flat pill bar, replaces the cliente/turma dropdowns) ----
+  // ---- Shared flat pill bar turma picker (Liberações + Tarefas tabs) ----
 
   var LS_REL_CLIENT = 'ct_admin_releases_last_client';
   var LS_REL_TURMA  = 'ct_admin_releases_last_turma';
 
-  function _initTurmaPicker() {
-    var pickerEl = document.getElementById('rel-turma-picker');
-    if (!pickerEl) return;
-    pickerEl.innerHTML = '<div class="ct-empty">Carregando turmas...</div>';
+  // Generic renderer: fetches clients + turmas, draws alphabetical pill bar,
+  // persists selection per storage key, calls onSelect on click.
+  // opts = { onSelect: (clientSlug, turmaSlug) => void,
+  //          storageKey: { client: string, turma: string },
+  //          autoRestore: bool }
+  function _renderTurmaPickerInto(container, opts) {
+    if (!container) return;
+    opts = opts || {};
+    var lsClient = opts.storageKey && opts.storageKey.client;
+    var lsTurma  = opts.storageKey && opts.storageKey.turma;
+    container.innerHTML = '<div class="ct-empty">Carregando turmas...</div>';
 
     callWorker({ action: 'ct_list_clients' }).then(function(data) {
       var clients = (data.clients || []).filter(function(c) { return c.status !== 'archived'; });
       if (!clients.length) {
-        pickerEl.innerHTML = '<div class="ct-empty">Nenhum cliente cadastrado.</div>';
+        container.innerHTML = '<div class="ct-empty">Nenhum cliente cadastrado.</div>';
         return null;
       }
       return Promise.all(clients.map(function(c) {
@@ -2092,14 +2101,14 @@ window.CT_ADMIN = (function() {
       });
 
       if (!entries.length) {
-        pickerEl.innerHTML = '<div class="ct-empty">Nenhuma turma cadastrada. Crie uma turma na aba Clientes.</div>';
+        container.innerHTML = '<div class="ct-empty">Nenhuma turma cadastrada. Crie uma turma na aba Clientes.</div>';
         return;
       }
 
-      var savedClient = localStorage.getItem(LS_REL_CLIENT);
-      var savedTurma  = localStorage.getItem(LS_REL_TURMA);
+      var savedClient = lsClient ? localStorage.getItem(lsClient) : null;
+      var savedTurma  = lsTurma  ? localStorage.getItem(lsTurma)  : null;
 
-      pickerEl.innerHTML = entries.map(function(e) {
+      container.innerHTML = entries.map(function(e) {
         var isActive = e.clientSlug === savedClient && e.turmaSlug === savedTurma;
         return '<button type="button" class="ct-turma-pill' + (isActive ? ' active' : '') + '"' +
           ' data-client="' + _esc(e.clientSlug) + '" data-turma="' + _esc(e.turmaSlug) + '">' +
@@ -2109,23 +2118,614 @@ window.CT_ADMIN = (function() {
         '</button>';
       }).join('');
 
-      pickerEl.querySelectorAll('.ct-turma-pill').forEach(function(btn) {
+      container.querySelectorAll('.ct-turma-pill').forEach(function(btn) {
         btn.addEventListener('click', function() {
           var c = btn.dataset.client, t = btn.dataset.turma;
-          pickerEl.querySelectorAll('.ct-turma-pill').forEach(function(b) { b.classList.remove('active'); });
+          container.querySelectorAll('.ct-turma-pill').forEach(function(b) { b.classList.remove('active'); });
           btn.classList.add('active');
-          localStorage.setItem(LS_REL_CLIENT, c);
-          localStorage.setItem(LS_REL_TURMA, t);
-          _loadReleases(c, t);
+          if (lsClient) localStorage.setItem(lsClient, c);
+          if (lsTurma)  localStorage.setItem(lsTurma, t);
+          if (opts.onSelect) opts.onSelect(c, t);
         });
       });
 
-      // Auto-load the saved selection if it survived
-      if (pickerEl.querySelector('.ct-turma-pill.active')) {
-        _loadReleases(savedClient, savedTurma);
+      if (opts.autoRestore && container.querySelector('.ct-turma-pill.active') && opts.onSelect) {
+        opts.onSelect(savedClient, savedTurma);
       }
     }).catch(function() {
-      pickerEl.innerHTML = '<div class="ct-empty">Erro ao carregar turmas.</div>';
+      container.innerHTML = '<div class="ct-empty">Erro ao carregar turmas.</div>';
+    });
+  }
+
+  function _initTurmaPicker() {
+    _renderTurmaPickerInto(document.getElementById('rel-turma-picker'), {
+      onSelect: function(c, t) { _loadReleases(c, t); },
+      storageKey: { client: LS_REL_CLIENT, turma: LS_REL_TURMA },
+      autoRestore: true
+    });
+  }
+
+  // ==========================================================================
+  // Phase 5: Tarefas tab (authoring + respostas)
+  // ==========================================================================
+
+  var LS_TAR_CLIENT = 'ct_admin_tarefas_last_client';
+  var LS_TAR_TURMA  = 'ct_admin_tarefas_last_turma';
+  var _tarClient = null;
+  var _tarTurma = null;
+  var _tarItems = [];
+  var _tarItemTurmas = {};
+  var _tarSubmissions = {};
+
+  function _initTarefasPicker() {
+    _renderTurmaPickerInto(document.getElementById('tarefas-turma-picker'), {
+      onSelect: function(c, t) { _loadTarefasFor(c, t); },
+      storageKey: { client: LS_TAR_CLIENT, turma: LS_TAR_TURMA },
+      autoRestore: true
+    });
+  }
+
+  function _loadTarefasFor(clientSlug, turmaSlug) {
+    _tarClient = clientSlug;
+    _tarTurma = turmaSlug;
+    var listEl = document.getElementById('tarefas-list');
+    var metaEl = document.getElementById('tarefas-section-meta');
+    if (!listEl || !clientSlug || !turmaSlug) return;
+    listEl.innerHTML = '<div class="ct-empty">Carregando tarefas...</div>';
+    if (metaEl) metaEl.innerHTML = '';
+    _tarSubmissions = {};
+
+    callWorker({ action: 'ct_list_turmas', client_slug: clientSlug }).then(function(td) {
+      var turma = (td.turmas || []).find(function(t) { return t.slug === turmaSlug; });
+      if (!turma) throw new Error('turma não encontrada');
+      return Promise.all([
+        callWorker({ action: 'ct_list_items', type: 'tarefa' }),
+        callWorker({
+          action: 'ct_get_turma_view',
+          client_slug: clientSlug,
+          turma_slug: turmaSlug,
+          token: turma.token
+        })
+      ]);
+    }).then(function(results) {
+      var allTarefas = (results[0].items || []).filter(function(i) { return i.type === 'tarefa'; });
+      var view = results[1];
+      var releaseMap = {};
+      (view.items || []).forEach(function(i) {
+        if (i.type === 'tarefa') releaseMap[i.id] = i.aula_number == null ? null : i.aula_number;
+      });
+      _tarItems = allTarefas
+        .filter(function(i) { return Object.prototype.hasOwnProperty.call(releaseMap, i.id); })
+        .map(function(i) { i._aula_number = releaseMap[i.id]; return i; });
+      _tarItems.sort(function(a, b) {
+        var av = a._aula_number == null ? 9999 : a._aula_number;
+        var bv = b._aula_number == null ? 9999 : b._aula_number;
+        if (av !== bv) return av - bv;
+        return (a.title || '').localeCompare(b.title || '', 'pt-BR');
+      });
+      _renderTarefasList();
+    }).catch(function(err) {
+      listEl.innerHTML = '<div class="ct-empty">Erro ao carregar tarefas: ' + _esc(err.message || err) + '</div>';
+    });
+  }
+
+  function _renderTarefasList() {
+    var listEl = document.getElementById('tarefas-list');
+    var metaEl = document.getElementById('tarefas-section-meta');
+    if (!_tarItems.length) {
+      listEl.innerHTML = '<div class="ct-empty">Nenhuma tarefa liberada para esta turma. Crie uma com "+ Nova tarefa" ou libere uma existente em Liberações.</div>';
+      if (metaEl) metaEl.innerHTML = '';
+      return;
+    }
+    if (metaEl) {
+      metaEl.innerHTML = _tarItems.length + ' tarefa' + (_tarItems.length > 1 ? 's' : '') +
+        ' liberada' + (_tarItems.length > 1 ? 's' : '') + ' para esta turma.';
+    }
+    listEl.innerHTML = _tarItems.map(_buildTarefaRowHtml).join('');
+    listEl.querySelectorAll('.ct-tarefa-row').forEach(function(row) {
+      var id = parseInt(row.dataset.itemId, 10);
+      var head = row.querySelector('.ct-tarefa-head');
+      head.addEventListener('click', function(e) {
+        if (e.target.closest('button, a, input, textarea')) return;
+        _toggleTarefaRow(row, id);
+      });
+    });
+    _tarItems.forEach(function(item) {
+      _fetchItemTurmas(item.id);
+      _prefetchSubmissionCount(item.id);
+    });
+  }
+
+  function _buildTarefaRowHtml(item) {
+    var meta = _parseMeta(item.meta_json);
+    var anonOk = !!meta.allow_anonymous;
+    var aulaLabel = (item._aula_number != null) ? 'Aula ' + item._aula_number : 'Sem aula';
+    var subCount = (_tarSubmissions[item.id] && _tarSubmissions[item.id].length) || 0;
+    var countCls = subCount === 0 ? 'ct-tarefa-count zero' : 'ct-tarefa-count';
+    return '<article class="ct-tarefa-row" data-item-id="' + item.id + '">' +
+      '<div class="ct-tarefa-head">' +
+        '<div class="ct-tarefa-icon">📋</div>' +
+        '<div class="ct-tarefa-title-wrap">' +
+          '<h3 class="ct-tarefa-title">' + _esc(item.title) + '</h3>' +
+          '<div class="ct-tarefa-sub">' +
+            '<span>' + _esc(aulaLabel) + '</span>' +
+            '<span class="ct-tarefa-dot">·</span>' +
+            '<span class="' + countCls + '" data-item="' + item.id + '">' +
+              subCount + ' resposta' + (subCount === 1 ? '' : 's') +
+            '</span>' +
+            '<span class="ct-tarefa-dot">·</span>' +
+            '<span class="ct-tarefa-anon-badge">' + (anonOk ? 'Anônimo permitido' : 'Identificação obrigatória') + '</span>' +
+            '<span class="ct-tarefa-dot">·</span>' +
+            '<span class="ct-tarefa-reuse" data-item="' + item.id + '">…</span>' +
+          '</div>' +
+        '</div>' +
+        '<span class="ct-tarefa-chev">▾</span>' +
+      '</div>' +
+      '<div class="ct-tarefa-body"></div>' +
+    '</article>';
+  }
+
+  function _fetchItemTurmas(itemId) {
+    if (_tarItemTurmas[itemId]) { _updateReuseLabel(itemId); return; }
+    callWorker({ action: 'ct_list_item_turmas', item_id: itemId }).then(function(res) {
+      _tarItemTurmas[itemId] = res.turmas || [];
+      _updateReuseLabel(itemId);
+    }).catch(function() {
+      _tarItemTurmas[itemId] = [];
+      _updateReuseLabel(itemId);
+    });
+  }
+
+  function _updateReuseLabel(itemId) {
+    var el = document.querySelector('.ct-tarefa-reuse[data-item="' + itemId + '"]');
+    if (!el) return;
+    var entries = (_tarItemTurmas[itemId] || []).filter(function(e) {
+      return !(e.client_slug === _tarClient && e.turma_slug === _tarTurma) && e.turma_status !== 'archived';
+    });
+    if (!entries.length) {
+      el.textContent = 'Exclusiva desta turma';
+      el.className = 'ct-tarefa-reuse solo';
+    } else {
+      var labels = entries.map(function(e) {
+        return e.client_display_name + ' · ' + e.turma_display_name;
+      }).join(', ');
+      el.textContent = 'Também em ' + labels;
+      el.className = 'ct-tarefa-reuse multi';
+      el.title = labels;
+    }
+    el.dataset.item = itemId;
+  }
+
+  function _prefetchSubmissionCount(itemId) {
+    callWorker({
+      action: 'ct_list_submissions',
+      item_id: itemId,
+      client_slug: _tarClient,
+      turma_slug: _tarTurma
+    }).then(function(res) {
+      _tarSubmissions[itemId] = res.submissions || [];
+      _updateSubmissionCount(itemId);
+    }).catch(function() {});
+  }
+
+  function _updateSubmissionCount(itemId) {
+    var el = document.querySelector('.ct-tarefa-count[data-item="' + itemId + '"]');
+    if (!el) return;
+    var cnt = (_tarSubmissions[itemId] || []).length;
+    el.textContent = cnt + ' resposta' + (cnt === 1 ? '' : 's');
+    el.classList.toggle('zero', cnt === 0);
+  }
+
+  function _toggleTarefaRow(row, itemId) {
+    var alreadyExpanded = row.classList.contains('expanded');
+    document.querySelectorAll('.ct-tarefa-row.expanded').forEach(function(r) {
+      r.classList.remove('expanded');
+      var body = r.querySelector('.ct-tarefa-body');
+      if (body) body.innerHTML = '';
+    });
+    if (alreadyExpanded) return;
+
+    row.classList.add('expanded');
+    var body = row.querySelector('.ct-tarefa-body');
+    body.innerHTML =
+      '<div class="ct-tarefa-grid">' +
+        '<div class="ct-tarefa-pane ct-tarefa-pane-editor" data-item="' + itemId + '">' +
+          '<div class="ct-empty">Carregando...</div>' +
+        '</div>' +
+        '<div class="ct-tarefa-pane ct-tarefa-pane-resp" data-item="' + itemId + '">' +
+          '<div class="ct-empty">Carregando respostas...</div>' +
+        '</div>' +
+      '</div>';
+
+    callWorker({ action: 'ct_get_item', id: itemId }).then(function(res) {
+      _renderTarefaEditor(body.querySelector('.ct-tarefa-pane-editor'), res.item);
+    }).catch(function() {
+      var pane = body.querySelector('.ct-tarefa-pane-editor');
+      if (pane) pane.innerHTML = '<div class="ct-empty">Erro ao carregar conteúdo.</div>';
+    });
+
+    _loadSubmissions(itemId);
+  }
+
+  function _renderTarefaEditor(container, item) {
+    var meta = _parseMeta(item.meta_json);
+    var fieldType = meta.field_type || 'text';
+    var allowAnon = !!meta.allow_anonymous;
+    var fields = CTTarefaFields.list();
+
+    var chipHtml = fields.map(function(f) {
+      var cls = 'ct-tarefa-field-chip' +
+        (f.slug === fieldType ? ' active' : '') +
+        (f.disabled ? ' disabled' : '');
+      var future = f.disabled ? '<span class="ct-tarefa-field-future">futuro</span>' : '';
+      return '<button type="button" class="' + cls + '" data-slug="' + f.slug + '"' +
+        (f.disabled ? ' disabled' : '') + '>' + _esc(f.label) + future + '</button>';
+    }).join('');
+
+    container.innerHTML =
+      '<h4 class="ct-tarefa-pane-title">Conteúdo da tarefa</h4>' +
+      '<div class="ct-field">' +
+        '<label>Título</label>' +
+        '<input type="text" class="ct-tf-title" value="' + _esc(item.title) + '">' +
+      '</div>' +
+      '<div class="ct-field">' +
+        '<label>Instruções (markdown)</label>' +
+        '<textarea class="ct-tf-body" rows="8">' + _esc(item.body_md || '') + '</textarea>' +
+        '<p class="ct-helper-text">O aluno vê este texto acima do campo de resposta.</p>' +
+      '</div>' +
+      '<div class="ct-field">' +
+        '<label>Tipo do campo de resposta</label>' +
+        '<div class="ct-tarefa-field-chips">' + chipHtml + '</div>' +
+        '<p class="ct-helper-text">Phase 5: só "Texto livre". Outros tipos chegam em fases futuras.</p>' +
+      '</div>' +
+      '<label class="ct-tarefa-anon-toggle">' +
+        '<input type="checkbox" class="ct-tf-anon"' + (allowAnon ? ' checked' : '') + '>' +
+        '<span class="ct-tarefa-anon-track"></span>' +
+        '<span class="ct-tarefa-anon-label">Permitir envio anônimo</span>' +
+        '<span class="ct-helper-text">Quando desligado, o aluno precisa informar o nome.</span>' +
+      '</label>' +
+      '<div class="ct-tarefa-editor-actions">' +
+        '<button class="ct-btn ct-btn-primary ct-tf-save">Salvar alterações</button>' +
+        '<button class="ct-btn ct-tf-cancel">Cancelar</button>' +
+        '<button class="ct-btn ct-btn-danger ct-tf-delete">Excluir tarefa</button>' +
+      '</div>';
+
+    container.querySelectorAll('.ct-tarefa-field-chip:not(.disabled)').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        container.querySelectorAll('.ct-tarefa-field-chip').forEach(function(b) {
+          if (!b.disabled) b.classList.remove('active');
+        });
+        btn.classList.add('active');
+      });
+    });
+
+    container.querySelector('.ct-tf-save').addEventListener('click', function() {
+      _saveTarefa(container, item);
+    });
+    container.querySelector('.ct-tf-cancel').addEventListener('click', function() {
+      var row = container.closest('.ct-tarefa-row');
+      if (!row) return;
+      row.classList.remove('expanded');
+      var body = row.querySelector('.ct-tarefa-body');
+      if (body) body.innerHTML = '';
+    });
+    container.querySelector('.ct-tf-delete').addEventListener('click', function() {
+      _deleteTarefaWithConfirm(item);
+    });
+  }
+
+  function _saveTarefa(container, item) {
+    var title = container.querySelector('.ct-tf-title').value.trim();
+    var body  = container.querySelector('.ct-tf-body').value;
+    var anon  = container.querySelector('.ct-tf-anon').checked;
+    var slugBtn = container.querySelector('.ct-tarefa-field-chip.active');
+    var fieldType = slugBtn ? slugBtn.dataset.slug : 'text';
+    if (!title) { _toast('Título obrigatório.'); return; }
+    var meta = _parseMeta(item.meta_json);
+    meta.allow_anonymous = anon;
+    meta.field_type = fieldType;
+    callWorker({
+      action: 'ct_update_item',
+      id: item.id,
+      title: title,
+      body_md: body,
+      meta_json: JSON.stringify(meta)
+    }).then(function() {
+      _toast('Tarefa atualizada.');
+      item.title = title;
+      item.body_md = body;
+      item.meta_json = JSON.stringify(meta);
+      var libItem = _tarItems.find(function(i) { return i.id === item.id; });
+      if (libItem) {
+        libItem.title = title;
+        libItem.meta_json = item.meta_json;
+      }
+      var row = container.closest('.ct-tarefa-row');
+      if (row) {
+        var titleEl = row.querySelector('.ct-tarefa-title');
+        if (titleEl) titleEl.textContent = title;
+        var anonEl = row.querySelector('.ct-tarefa-anon-badge');
+        if (anonEl) anonEl.textContent = anon ? 'Anônimo permitido' : 'Identificação obrigatória';
+      }
+    }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+  }
+
+  function _deleteTarefaWithConfirm(item) {
+    var html =
+      '<div class="ct-modal ct-tarefa-delete-modal">' +
+        '<div class="ct-modal-title">Excluir tarefa?</div>' +
+        '<p>Esta ação remove a tarefa da biblioteca e <strong>apaga todas as respostas</strong> recebidas, em qualquer turma. Não pode ser desfeita.</p>' +
+        '<p>Para confirmar, digite o título exato da tarefa:</p>' +
+        '<p class="ct-tarefa-delete-title-quote">' + _esc(item.title) + '</p>' +
+        '<input type="text" class="ct-tf-del-input" placeholder="Digite o título exato">' +
+        '<div class="ct-modal-actions">' +
+          '<button class="ct-btn ct-tf-del-cancel">Cancelar</button>' +
+          '<button class="ct-btn ct-btn-danger ct-tf-del-confirm" disabled>Excluir tarefa</button>' +
+        '</div>' +
+      '</div>';
+    var bd = _openModal(html);
+    var input = bd.querySelector('.ct-tf-del-input');
+    var btn = bd.querySelector('.ct-tf-del-confirm');
+    input.addEventListener('input', function() {
+      btn.disabled = (input.value !== item.title);
+    });
+    bd.querySelector('.ct-tf-del-cancel').addEventListener('click', _closeModal);
+    btn.addEventListener('click', function() {
+      if (input.value !== item.title) return;
+      callWorker({ action: 'ct_delete_item', id: item.id }).then(function() {
+        _closeModal();
+        _toast('Tarefa excluída.');
+        _loadTarefasFor(_tarClient, _tarTurma);
+      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    });
+  }
+
+  function _loadSubmissions(itemId) {
+    callWorker({
+      action: 'ct_list_submissions',
+      item_id: itemId,
+      client_slug: _tarClient,
+      turma_slug: _tarTurma
+    }).then(function(res) {
+      _tarSubmissions[itemId] = res.submissions || [];
+      _renderSubmissions(itemId);
+      _updateSubmissionCount(itemId);
+    }).catch(function() {
+      var pane = document.querySelector('.ct-tarefa-pane-resp[data-item="' + itemId + '"]');
+      if (pane) pane.innerHTML = '<div class="ct-empty">Erro ao carregar respostas.</div>';
+    });
+  }
+
+  function _renderSubmissions(itemId) {
+    var pane = document.querySelector('.ct-tarefa-pane-resp[data-item="' + itemId + '"]');
+    if (!pane) return;
+    var subs = _tarSubmissions[itemId] || [];
+    var count = subs.length;
+    pane.innerHTML =
+      '<h4 class="ct-tarefa-pane-title">Respostas (' + count + ')</h4>' +
+      '<div class="ct-resp-toolbar">' +
+        '<input type="text" class="ct-resp-search" placeholder="Buscar por nome ou conteúdo...">' +
+        '<button class="ct-btn ct-btn-sm ct-resp-export"' + (count === 0 ? ' disabled' : '') + '>Exportar CSV</button>' +
+      '</div>' +
+      '<div class="ct-resp-list">' +
+        (count === 0
+          ? '<div class="ct-resp-empty">Nenhuma resposta ainda. As respostas dos alunos aparecem aqui assim que enviadas pelo /trilha.</div>'
+          : subs.map(_renderSubmissionCard).join('')
+        ) +
+      '</div>';
+
+    pane.querySelectorAll('.ct-resp-card-delete').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var sid = parseInt(btn.dataset.sid, 10);
+        _deleteSubmissionWithConfirm(sid, itemId);
+      });
+    });
+    pane.querySelectorAll('.ct-resp-card-copy').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var sid = parseInt(btn.dataset.sid, 10);
+        var s = (_tarSubmissions[itemId] || []).find(function(x) { return x.id === sid; });
+        if (!s) return;
+        var v = CTTarefaFields.get(s.answer_type || 'text').toCsvValue(s.answer_json);
+        _copyTextSmall(v, btn);
+      });
+    });
+    pane.querySelectorAll('.ct-resp-card-expand').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var card = btn.closest('.ct-resp-card');
+        if (!card) return;
+        card.classList.toggle('expanded');
+        btn.textContent = card.classList.contains('expanded') ? 'Recolher' : 'Ver completa';
+      });
+    });
+
+    var search = pane.querySelector('.ct-resp-search');
+    if (search) {
+      search.addEventListener('input', function() {
+        var q = (search.value || '').toLowerCase().trim();
+        pane.querySelectorAll('.ct-resp-card').forEach(function(card) {
+          var hay = (card.dataset.search || '').toLowerCase();
+          card.style.display = (!q || hay.indexOf(q) !== -1) ? '' : 'none';
+        });
+      });
+    }
+
+    var exportBtn = pane.querySelector('.ct-resp-export');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function() {
+        var item = _tarItems.find(function(i) { return i.id === itemId; });
+        _exportSubmissionsCsv(item, subs);
+      });
+    }
+  }
+
+  function _renderSubmissionCard(s) {
+    var field = CTTarefaFields.get(s.answer_type || 'text');
+    var who = s.student_name ? _esc(s.student_name) : '<em>Anônimo</em>';
+    var whoCls = s.student_name ? 'ct-resp-who' : 'ct-resp-who anon';
+    var when = _formatTs(s.submitted_at);
+    var content = field.renderStored(s.answer_json);
+    var rawText = field.toCsvValue(s.answer_json);
+    var searchHay = (s.student_name || '') + ' ' + rawText;
+    return '<div class="ct-resp-card" data-search="' + _esc(searchHay) + '">' +
+      '<div class="ct-resp-meta">' +
+        '<span class="' + whoCls + '">' + who + '</span>' +
+        '<span class="ct-resp-when">' + when + '</span>' +
+      '</div>' +
+      '<div class="ct-resp-body">' + content + '</div>' +
+      '<div class="ct-resp-actions">' +
+        '<button class="ct-btn ct-btn-sm ct-resp-card-expand">Ver completa</button>' +
+        '<button class="ct-btn ct-btn-sm ct-resp-card-copy" data-sid="' + s.id + '">Copiar</button>' +
+        '<button class="ct-btn ct-btn-sm ct-btn-danger ct-resp-card-delete" data-sid="' + s.id + '">Apagar</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function _deleteSubmissionWithConfirm(submissionId, itemId) {
+    if (!confirm('Apagar esta resposta? Não pode ser desfeito.')) return;
+    callWorker({ action: 'ct_delete_submission', id: submissionId }).then(function() {
+      _toast('Resposta apagada.');
+      _loadSubmissions(itemId);
+    }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+  }
+
+  function _formatTs(unix) {
+    if (!unix) return '';
+    var d = new Date(unix * 1000);
+    return d.toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function _exportSubmissionsCsv(item, subs) {
+    if (!item || !subs || !subs.length) return;
+    var rows = [['Aluno', 'Data', 'Tipo', 'Resposta']];
+    subs.forEach(function(s) {
+      var field = CTTarefaFields.get(s.answer_type || 'text');
+      rows.push([
+        s.student_name || 'Anônimo',
+        _formatTs(s.submitted_at),
+        s.answer_type || 'text',
+        field.toCsvValue(s.answer_json)
+      ]);
+    });
+    var csv = rows.map(function(r) { return r.map(_csvCell).join(','); }).join('\r\n');
+    var blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var slug = (item.title || 'tarefa').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    a.href = url;
+    a.download = 'tarefa-' + (slug || 'tarefa') + '-respostas.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
+  }
+
+  function _csvCell(v) {
+    if (v == null) return '';
+    var s = String(v);
+    if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function _copyTextSmall(text, btn) {
+    function flash() {
+      var orig = btn.textContent;
+      btn.textContent = 'Copiado';
+      setTimeout(function() { btn.textContent = orig; }, 1500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(flash).catch(function() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (_) {}
+        document.body.removeChild(ta);
+        flash();
+      });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+      flash();
+    }
+  }
+
+  function _parseMeta(metaJson) {
+    if (!metaJson) return {};
+    if (typeof metaJson !== 'string') return metaJson || {};
+    try { return JSON.parse(metaJson) || {}; } catch (_) { return {}; }
+  }
+
+  function _openNewTarefaModal() {
+    if (!_tarClient || !_tarTurma) {
+      _toast('Selecione uma turma antes de criar uma tarefa.');
+      return;
+    }
+    var html =
+      '<div class="ct-modal">' +
+        '<div class="ct-modal-title">Nova tarefa</div>' +
+        '<div class="ct-field"><label>Título</label>' +
+          '<input type="text" id="nt-title" placeholder="Ex.: Análise de cláusula contratual abusiva">' +
+        '</div>' +
+        '<div class="ct-field"><label>Aula (opcional)</label>' +
+          '<input type="number" id="nt-aula" placeholder="Número da aula, em branco se não aplicável">' +
+        '</div>' +
+        '<div class="ct-field"><label>Instruções (markdown)</label>' +
+          '<textarea id="nt-body" rows="6" placeholder="O que o aluno deve fazer..."></textarea>' +
+        '</div>' +
+        '<label class="ct-tarefa-anon-toggle">' +
+          '<input type="checkbox" id="nt-anon">' +
+          '<span class="ct-tarefa-anon-track"></span>' +
+          '<span class="ct-tarefa-anon-label">Permitir envio anônimo</span>' +
+        '</label>' +
+        '<div class="ct-modal-actions">' +
+          '<button class="ct-btn" id="nt-cancel">Cancelar</button>' +
+          '<button class="ct-btn ct-btn-primary" id="nt-save">Criar e liberar</button>' +
+        '</div>' +
+      '</div>';
+    var bd = _openModal(html);
+    bd.querySelector('#nt-cancel').addEventListener('click', _closeModal);
+    bd.querySelector('#nt-save').addEventListener('click', function() {
+      var title = bd.querySelector('#nt-title').value.trim();
+      var body  = bd.querySelector('#nt-body').value;
+      var aula  = bd.querySelector('#nt-aula').value.trim();
+      var anon  = bd.querySelector('#nt-anon').checked;
+      if (!title) { _toast('Título obrigatório.'); return; }
+      var meta = { allow_anonymous: anon, field_type: 'text' };
+      callWorker({
+        action: 'ct_create_item',
+        type: 'tarefa',
+        title: title,
+        body_md: body,
+        meta_json: JSON.stringify(meta)
+      }).then(function(res) {
+        var item = res.item;
+        return callWorker({
+          action: 'ct_release_item',
+          client_slug: _tarClient,
+          turma_slug: _tarTurma,
+          item_id: item.id
+        }).then(function() {
+          if (aula) {
+            return callWorker({
+              action: 'ct_set_release_aula',
+              client_slug: _tarClient,
+              turma_slug: _tarTurma,
+              item_id: item.id,
+              aula_number_or_null: parseInt(aula, 10)
+            });
+          }
+        });
+      }).then(function() {
+        _closeModal();
+        _toast('Tarefa criada e liberada.');
+        _loadTarefasFor(_tarClient, _tarTurma);
+      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
     });
   }
 
@@ -2137,6 +2737,8 @@ window.CT_ADMIN = (function() {
       document.getElementById('btn-new-client').addEventListener('click', function() { _openClientForm(null); });
       document.getElementById('btn-new-turma').addEventListener('click', function() { _openTurmaForm(null); });
       document.getElementById('btn-new-item').addEventListener('click', function() { _openItemEditor(null); });
+      var newTarefaBtn = document.getElementById('btn-new-tarefa');
+      if (newTarefaBtn) newTarefaBtn.addEventListener('click', _openNewTarefaModal);
       var manageTagsBtn = document.getElementById('btn-manage-tags');
       if (manageTagsBtn) manageTagsBtn.addEventListener('click', _openTagManager);
       var importGdocBtn = document.getElementById('btn-import-gdoc');
