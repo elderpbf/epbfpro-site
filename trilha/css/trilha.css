@@ -690,19 +690,24 @@ html, body {
 }
 
 /* =====================================================================
-   Outros filter chips (ct-type-filter module)
+   Type-filter chips (ct-type-filter module)
+   Shared by the standalone Outros tab (#tr-outros-filter) and the
+   per-aula Outros materiais section (.tr-type-filter inside a lesson).
    ===================================================================== */
 
 #tr-outros-filter { margin-bottom: 1.25rem; }
-#tr-outros-filter:empty { display: none; }
+.tr-type-filter:empty { display: none; }
+/* When the filter sits inside a lesson section, sit between the section
+   label and the sub-list with a small breathing margin. */
+.section > .tr-type-filter { margin: 0.4rem 0 0.75rem; }
 
-#tr-outros-filter .ct-tf {
+.tr-type-filter .ct-tf {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-#tr-outros-filter .ct-tf-chip {
+.tr-type-filter .ct-tf-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -718,32 +723,32 @@ html, body {
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 
-#tr-outros-filter .ct-tf-chip:hover {
+.tr-type-filter .ct-tf-chip:hover {
   border-color: var(--primary-dark);
   color: var(--text-primary);
 }
 
-#tr-outros-filter .ct-tf-chip.active {
+.tr-type-filter .ct-tf-chip.active {
   background: var(--primary-dark);
   color: #fff;
   border-color: var(--primary-dark);
 }
 
-[data-theme="dark"] #tr-outros-filter .ct-tf-chip.active {
+[data-theme="dark"] .tr-type-filter .ct-tf-chip.active {
   background: var(--primary);
   border-color: var(--primary);
   color: #0f1419;
 }
 
-#tr-outros-filter .ct-tf-icon { font-size: 1rem; line-height: 1; }
-#tr-outros-filter .ct-tf-count {
+.tr-type-filter .ct-tf-icon { font-size: 1rem; line-height: 1; }
+.tr-type-filter .ct-tf-count {
   font-size: 0.74rem;
   opacity: 0.8;
   background: rgba(255, 255, 255, 0.35);
   padding: 1px 7px;
   border-radius: 999px;
 }
-#tr-outros-filter .ct-tf-chip.active .ct-tf-count { background: rgba(255, 255, 255, 0.22); }
+.tr-type-filter .ct-tf-chip.active .ct-tf-count { background: rgba(255, 255, 255, 0.22); }
 
 /* =====================================================================
    Empty state + footer
