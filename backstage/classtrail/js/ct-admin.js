@@ -653,9 +653,8 @@ window.CT_ADMIN = (function() {
   }
 
   function _renderItems() {
-    // Hide apostila items (set_id != null) and tarefa items (managed in the Tarefas tab)
-    // from the main Items grid.
-    var libraryItems = _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa'; });
+    // Hide apostila items (set_id != null), tarefa, and conteudo items from the main Items grid.
+    var libraryItems = _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo'; });
     _renderItemsFilter(libraryItems);
     var el = document.getElementById('items-list');
     if (!libraryItems.length) {
@@ -694,7 +693,7 @@ window.CT_ADMIN = (function() {
   function _renderItemsFilter(itemsSubset) {
     var fc = document.getElementById('items-filter');
     if (!fc) return;
-    var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa'; });
+    var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo'; });
     if (!items.length) { fc.innerHTML = ''; return; }
     CT_TYPE_FILTER.render({
       container:    fc,
