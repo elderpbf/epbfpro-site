@@ -1,13 +1,25 @@
 /* =========================================================
-   ClassTrail — Public Student Page (trilha)  v2.0
-   tr- prefix for layout; ct- prefix for shared structural.
-   ALL colors from theme.css tokens. No hardcoded hex.
+   ClassTrail — Public Student Page (trilha) v3.0
+   Timeline + inline-expand redesign.
+   tr- prefix for layout; .tl/.card/.sub are shared modules
+   reusable across timeline rows, apostila tab, and outros tab.
+   Colors from theme.css; --task is local since theme.css has
+   no orange.
    ========================================================= */
 
-/* ----- Status color aliases (layout tokens only, not palette) ----- */
-/* These map semantic status states to the theme palette.             */
-/* The hand is forced because theme.css has no --warning/--info.     */
-/* We define ct-band-* as layout-scoped variables on the band itself. */
+/* ----- Local-only orange token for Tarefa accent ----- */
+:root {
+  --task:        #d97706;
+  --task-dark:   #92400e;
+  --task-bg:     rgba(217, 119, 6, 0.12);
+  --task-border: rgba(217, 119, 6, 0.34);
+}
+[data-theme="dark"] {
+  --task:        #f59e0b;
+  --task-dark:   #fbbf24;
+  --task-bg:     rgba(245, 158, 11, 0.16);
+  --task-border: rgba(245, 158, 11, 0.42);
+}
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -16,44 +28,10 @@ html, body {
   padding: 0;
   background: var(--background);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* ----- Light/dark toggle button (top-right, no topbar) ----- */
-
-.tr-theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 100;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 8px -2px var(--shadow);
-}
-
-.tr-theme-toggle:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 3px 12px -3px var(--shadow);
-}
-
-.tr-theme-toggle-icon {
-  display: block;
-  line-height: 1;
 }
 
 /* ----- Page layout ----- */
@@ -86,9 +64,7 @@ html, body {
   flex-shrink: 0;
 }
 
-@keyframes tr-spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes tr-spin { to { transform: rotate(360deg); } }
 
 /* ----- Error state ----- */
 
@@ -156,7 +132,10 @@ html, body {
   border-radius: 50%;
   overflow: hidden;
   border: 2.5px solid var(--border);
-  background: var(--background);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tr-client-avatar img {
@@ -165,8 +144,16 @@ html, body {
   object-fit: cover;
 }
 
-.tr-hero-text {
-  min-width: 0;
+.tr-hero-text { min-width: 0; }
+
+.tr-hero-eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+  margin-bottom: 0.35rem;
 }
 
 .tr-client-name {
@@ -186,48 +173,11 @@ html, body {
   font-weight: 500;
 }
 
-/* ----- Action band ----- */
-
-.tr-action-band {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1.75rem;
-  padding: 0 0.1rem;
-}
-
-.tr-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
-  border-radius: 10px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
-  cursor: pointer;
-}
-
-.tr-action-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary-dark);
-  box-shadow: 0 3px 10px -4px var(--shadow);
-}
-
-.tr-action-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-/* ----- Tab nav ----- */
+/* ----- Tab nav (split: left + right) ----- */
 
 .tr-tabs {
   display: flex;
+  align-items: stretch;
   gap: 0;
   border-bottom: 2px solid var(--border);
   margin-bottom: 1.5rem;
@@ -236,6 +186,9 @@ html, body {
 }
 
 .tr-tabs::-webkit-scrollbar { display: none; }
+
+.tr-tabs-left, .tr-tabs-right { display: flex; }
+.tr-tabs-right { margin-left: auto; }
 
 .tr-tab-btn {
   flex-shrink: 0;
@@ -253,9 +206,7 @@ html, body {
   font-family: inherit;
 }
 
-.tr-tab-btn:hover {
-  color: var(--text-primary);
-}
+.tr-tab-btn:hover { color: var(--text-primary); }
 
 .tr-tab-btn.active {
   color: var(--primary-dark);
@@ -265,265 +216,483 @@ html, body {
 /* ----- Tab panels ----- */
 
 .tr-tab-content { min-height: 20rem; }
+.tr-panel { animation: tr-fade-in 0.25s ease both; }
 
-/* ----- Aula cards (Design 5 + theme-color left band) ----- */
+/* =====================================================================
+   SHARED MODULE 1 — Timeline rail (.tl)
+   Used by the Aulas tab. .tl::before is the vertical line; .tl-dot
+   marks each row's status. .tl-row.is-open grows the dot + adds halo.
+   ===================================================================== */
 
-#tr-aulas-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.tl {
+  position: relative;
+  padding-left: 36px;
 }
 
-.tr-aula-card {
+.tl::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: rgba(17, 94, 89, 0.15);
+}
+
+[data-theme="dark"] .tl::before {
+  background: rgba(94, 234, 212, 0.18);
+}
+
+.tl-row {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.tl-row:last-child { margin-bottom: 0; }
+
+.tl-dot {
+  position: absolute;
+  left: -32px;
+  top: 30px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 3px solid var(--primary);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  z-index: 2;
+  transition: all 0.22s ease;
+}
+
+.tl-dot--done { background: var(--success); border-color: var(--success); color: #fff; }
+.tl-dot--und  { background: var(--surface); border-color: var(--text-secondary); color: var(--text-secondary); }
+
+.tl-row.is-open .tl-dot {
+  width: 30px;
+  height: 30px;
+  top: 27px;
+  left: -35px;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow:
+    0 0 0 4px rgba(20, 184, 166, 0.18),
+    0 0 0 9px rgba(20, 184, 166, 0.10);
+}
+
+.tl-row.is-open .tl-dot.tl-dot--done {
+  background: var(--success);
+  border-color: var(--success);
+  box-shadow:
+    0 0 0 4px rgba(16, 185, 129, 0.20),
+    0 0 0 9px rgba(16, 185, 129, 0.10);
+}
+
+/* =====================================================================
+   SHARED MODULE 2 — .card
+   Used as: aula card (in timeline), apostila section card (in apostila
+   tab), and outros item card (in outros tab). Same structure, different
+   content in .zone.
+   ===================================================================== */
+
+.card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
-  cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.18s ease;
-  min-height: 96px;
 }
 
-.tr-aula-card:hover {
+.card:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 22px -10px var(--shadow);
 }
 
-/* Left band */
+.card.open {
+  transform: none;
+  box-shadow: 0 14px 36px -16px rgba(20, 184, 166, 0.32);
+}
 
-.tr-aula-band {
+.card-header {
+  display: flex;
+  align-items: stretch;
+  min-height: 96px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.card-header:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: 13px;
+}
+
+.zone {
   width: 96px;
   flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0.75rem 0.5rem;
-  color: #ffffff;
-  text-align: center;
+  gap: 3px;
+  padding: 0.6rem 0.4rem;
 }
 
-/* Status-based band colors using theme tokens */
-.tr-aula-card--done       .tr-aula-band { background: var(--success); }
-.tr-aula-card--upcoming   .tr-aula-band { background: var(--primary); }
-.tr-aula-card--rescheduled .tr-aula-band { background: var(--primary-dark); }
-.tr-aula-card--undefined  .tr-aula-band { background: var(--text-secondary); }
+.zone--done     { background: var(--success); }
+.zone--und      { background: var(--text-secondary); }
+.zone--apostila { background: var(--primary-dark); }
 
-/* Dark mode band text stays white; verify contrast via alpha */
-[data-theme="dark"] .tr-aula-card--done       .tr-aula-band { background: var(--success); }
-[data-theme="dark"] .tr-aula-card--upcoming   .tr-aula-band { background: var(--primary); }
-[data-theme="dark"] .tr-aula-card--rescheduled .tr-aula-band { background: var(--secondary); }
-[data-theme="dark"] .tr-aula-card--undefined  .tr-aula-band { background: var(--accent); color: var(--text-primary); }
-
-.tr-band-num {
-  font-size: 0.85rem;
+.zone-num {
+  font-size: 2rem;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.zone-icon {
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.zone-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.95;
+  text-align: center;
   line-height: 1.2;
 }
 
-.tr-band-date {
-  font-size: 0.65rem;
-  font-weight: 600;
-  line-height: 1.3;
-  opacity: 0.95;
-  word-break: break-word;
-  hyphens: auto;
-}
-
-/* Right side body */
-
-.tr-aula-body {
+.meta {
   flex: 1;
-  padding: 0.9rem 1.1rem;
+  padding: 0.9rem 1.15rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  gap: 0.4rem;
   min-width: 0;
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.45rem;
 }
 
-.tr-aula-title {
-  font-size: 1rem;
+.meta-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.date-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--primary-dark);
+}
+
+.tarefa-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--task-bg);
+  color: var(--task-dark);
+  border: 1px solid var(--task-border);
+}
+
+.title {
+  font-size: 1.02rem;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.01em;
   line-height: 1.3;
 }
 
-.tr-aula-topics {
+.summary {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.topics {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
 
-.tr-aula-topic {
-  display: inline-block;
+.topic-chip {
   font-size: 0.7rem;
   font-weight: 600;
   padding: 2px 9px;
   border-radius: 999px;
-  background: rgba(13, 148, 136, 0.1);
+  background: rgba(13, 148, 136, 0.10);
   color: var(--text-secondary);
 }
 
-[data-theme="dark"] .tr-aula-topic {
+[data-theme="dark"] .topic-chip {
   background: rgba(94, 234, 212, 0.12);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem 0 0.4rem;
+  flex-shrink: 0;
+}
+
+.chevron {
+  font-size: 1.4rem;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  transform: rotate(0deg);
+  transition: transform 0.22s ease, opacity 0.15s;
+  line-height: 1;
+}
+
+.card.open .chevron { transform: rotate(90deg); opacity: 1; }
+
+/* =====================================================================
+   Aula expanded body — the section container for Tarefa / Apostila desta
+   aula / Outros materiais. Appears below .card-header when card.open.
+   ===================================================================== */
+
+.body {
+  border-top: 1px solid var(--border);
+  padding: 1.1rem 1.25rem 1.35rem;
+  background: linear-gradient(180deg, rgba(20, 184, 166, 0.03), transparent 70%);
+  animation: tr-slide-down 0.22s ease both;
+}
+
+@keyframes tr-slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.section { margin-bottom: 1.1rem; }
+.section:last-child { margin-bottom: 0; }
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.55rem;
+}
+
+/* =====================================================================
+   SHARED MODULE 3 — .sub
+   The compact card used inside .body for Tarefa, Apostila desta aula,
+   and Outros materiais da aula. Same structure across all three.
+   Click expands inline below with content + right-side action button.
+   ===================================================================== */
+
+.sub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sub {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 76px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.15s, border-radius 0.18s;
+}
+
+.sub:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px -6px var(--shadow);
+}
+
+.sub-zone {
+  width: 56px;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.sub-zone--apostila { background: var(--primary-dark); }
+.sub-zone--tarefa   { background: var(--task); }
+
+.sub-meta {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sub-type {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
   color: var(--text-secondary);
 }
 
-/* Tarefa pot */
+.sub--tarefa .sub-type { color: var(--task-dark); }
 
-.tr-aula-tarefa {
-  margin-top: 0.35rem;
-  padding: 0.45rem 0.75rem;
-  border-radius: 8px;
-  background: rgba(13, 148, 136, 0.08);
-  border: 1px solid rgba(13, 148, 136, 0.2);
-  font-size: 0.8rem;
-  color: var(--primary-dark);
-  cursor: pointer;
-  align-self: flex-start;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.tr-aula-tarefa:hover {
-  background: rgba(13, 148, 136, 0.15);
-  border-color: var(--primary);
-}
-
-[data-theme="dark"] .tr-aula-tarefa {
-  background: rgba(20, 184, 166, 0.12);
-  border-color: rgba(20, 184, 166, 0.25);
-  color: var(--primary-light);
-}
-
-.tr-tarefa-label {
+.sub-title {
+  font-size: 0.92rem;
   font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
 }
 
-/* ----- Lesson view ----- */
-
-.tr-lesson-header {
-  margin-bottom: 1.5rem;
+.sub-summary {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 2px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
-.tr-back-link {
+.sub--tarefa {
+  border-color: var(--task-border);
+  background: var(--task-bg);
+}
+
+.sub--tarefa:hover { border-color: var(--task); }
+
+/* Right-side actions slot — empty when closed; populated with the
+   type-dispatched action button when sub is open. */
+.sub-actions {
+  display: flex;
+  align-items: center;
+  padding: 0 0.85rem 0 0.4rem;
+  flex-shrink: 0;
+}
+
+.sub-actions:empty { padding: 0; }
+
+.sub.is-expanded { border-radius: 10px 10px 0 0; }
+
+.sub-expanded {
+  margin: -1px 0 0;
+  padding: 1rem 1.1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  animation: tr-slide-down 0.22s ease both;
+}
+
+.sub--tarefa.is-expanded {
+  border-bottom-color: var(--task-border);
+}
+
+.sub--tarefa.is-expanded + .sub-expanded {
+  border-color: var(--task-border);
+}
+
+/* =====================================================================
+   SHARED MODULE 4 — .item-action
+   Reusable action button (Copiar / Baixar / Acessar) shown on the right
+   side of an open sub, populated by trilha.js's _getItemAction() dispatch.
+   ===================================================================== */
+
+.item-action {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--primary-dark);
-  text-decoration: none;
-  margin-bottom: 0.75rem;
-  padding: 4px 0;
-  transition: color 0.15s;
-}
-
-.tr-back-link:hover { color: var(--primary); }
-
-.tr-lesson-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-  margin: 0 0 0.25rem;
-  line-height: 1.25;
-}
-
-.tr-lesson-date {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-.tr-lesson-block-header {
+  gap: 6px;
+  padding: 0.4rem 0.85rem;
+  font-family: inherit;
   font-size: 0.78rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
-  margin-bottom: 0.85rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
-}
-
-#tr-apostila-desta-aula {
-  margin-bottom: 1.5rem;
-}
-
-#tr-lesson-items {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-#tr-apostila-desta-aula-items {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Tarefa highlight */
-.tr-highlight {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-  border-radius: 14px;
-  animation: tr-highlight-pulse 0.4s ease;
-}
-
-@keyframes tr-highlight-pulse {
-  0%   { outline-width: 4px; }
-  100% { outline-width: 2px; }
-}
-
-/* ----- Apostila do curso tab ----- */
-
-.tr-apostila-caption {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  margin-bottom: 1.25rem;
-  line-height: 1.5;
-}
-
-.tr-apostila-group {
-  margin-bottom: 1.25rem;
-}
-
-.tr-apostila-group-header {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--primary-dark);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0.5rem;
-}
-
-.tr-apostila-row {
-  padding: 0.55rem 0.85rem;
   border-radius: 8px;
-  font-size: 0.9rem;
-  color: var(--text-primary);
+  border: none;
+  background: var(--primary);
+  color: #fff;
   cursor: pointer;
-  transition: background 0.12s;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.18s;
+  box-shadow: 0 3px 12px -4px rgba(20, 184, 166, 0.45);
 }
 
-.tr-apostila-row:hover {
-  background: rgba(13, 148, 136, 0.07);
-  color: var(--primary-dark);
+.item-action:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px -4px rgba(20, 184, 166, 0.55);
 }
 
-/* ----- Outros materiais filter ----- */
+.item-action:active { transform: translateY(0); }
 
-#tr-outros-filter {
-  margin-bottom: 1.5rem;
+.item-action svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
+.item-action--task {
+  background: var(--task);
+  box-shadow: 0 3px 12px -4px rgba(217, 119, 6, 0.5);
+}
+
+.item-action--task:hover {
+  background: var(--task-dark);
+  box-shadow: 0 5px 16px -4px rgba(217, 119, 6, 0.6);
+}
+
+.item-action.is-done {
+  background: var(--success);
+  box-shadow: 0 3px 12px -4px rgba(16, 185, 129, 0.5);
+}
+
+/* =====================================================================
+   Card list (used by Apostila do curso tab + Outros materiais tab)
+   ===================================================================== */
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* =====================================================================
+   Outros filter chips (ct-type-filter module)
+   ===================================================================== */
+
+#tr-outros-filter { margin-bottom: 1.25rem; }
 #tr-outros-filter:empty { display: none; }
 
 #tr-outros-filter .ct-tf {
@@ -559,12 +728,6 @@ html, body {
   border-color: var(--primary-dark);
 }
 
-[data-theme="dark"] #tr-outros-filter .ct-tf-chip {
-  border-color: var(--border);
-  background: var(--surface);
-  color: var(--text-secondary);
-}
-
 [data-theme="dark"] #tr-outros-filter .ct-tf-chip.active {
   background: var(--primary);
   border-color: var(--primary);
@@ -579,15 +742,11 @@ html, body {
   padding: 1px 7px;
   border-radius: 999px;
 }
-#tr-outros-filter .ct-tf-chip.active .ct-tf-count { background: rgba(255,255,255,0.22); }
+#tr-outros-filter .ct-tf-chip.active .ct-tf-count { background: rgba(255, 255, 255, 0.22); }
 
-#tr-outros-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ----- Empty state ----- */
+/* =====================================================================
+   Empty state + footer
+   ===================================================================== */
 
 .tr-empty {
   padding: 3rem 1rem;
@@ -598,314 +757,6 @@ html, body {
   border: 1px dashed var(--border);
   border-radius: 14px;
 }
-
-/* ====================================================================
-   Item card (two-tone — preserved from Phase 2, kept intact)
-   White card + --primary teal zone on the left; type via icon+label.
-   ==================================================================== */
-
-.tr-item {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: transform 0.15s ease, box-shadow 0.18s ease;
-}
-
-.tr-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px -10px rgba(13, 148, 136, 0.3);
-}
-
-.tr-item.tr-item-open {
-  transform: none;
-  box-shadow: 0 10px 30px -12px rgba(13, 148, 136, 0.28);
-}
-
-.tr-item-header {
-  display: flex;
-  align-items: stretch;
-  min-height: 84px;
-  cursor: pointer;
-  user-select: none;
-  outline: none;
-}
-
-.tr-item-header:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
-  border-radius: 13px;
-}
-
-.tr-item-zone {
-  width: 96px;
-  flex-shrink: 0;
-  background: var(--primary);
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 0.6rem 0.4rem;
-}
-
-.tr-item-icon {
-  font-size: 1.7rem;
-  line-height: 1;
-}
-
-.tr-item-type-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-align: center;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.tr-item-meta {
-  flex: 1;
-  padding: 0.95rem 1.15rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-}
-
-.tr-item-title {
-  font-size: 1.02rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  margin-bottom: 4px;
-}
-
-.tr-item-summary {
-  font-size: 0.83rem;
-  color: var(--text-secondary);
-  line-height: 1.45;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.tr-item-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
-}
-
-.tr-tag-mini {
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: rgba(13, 148, 136, 0.1);
-  color: var(--text-secondary);
-}
-
-[data-theme="dark"] .tr-tag-mini {
-  background: rgba(94, 234, 212, 0.12);
-  color: var(--text-secondary);
-}
-
-.tr-item-actions {
-  display: flex;
-  align-items: center;
-  padding: 0 1rem 0 0.4rem;
-  flex-shrink: 0;
-}
-
-.tr-item-chevron {
-  font-size: 1.4rem;
-  color: var(--text-secondary);
-  opacity: 0.55;
-  transform: rotate(0deg);
-  transition: transform 0.22s ease, opacity 0.15s;
-  line-height: 1;
-}
-
-.tr-item-open .tr-item-chevron {
-  transform: rotate(90deg);
-  opacity: 1;
-}
-
-.tr-item-body {
-  padding: 1.5rem 1.75rem 1.75rem;
-  background: var(--surface);
-  color: var(--text-primary);
-  border-top: 1px solid var(--border);
-  animation: tr-slide-down 0.22s ease both;
-}
-
-@keyframes tr-slide-down {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.tr-item-loading {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  padding: 0.5rem 0;
-}
-
-.tr-item-error {
-  color: var(--error);
-  font-size: 0.9rem;
-  padding: 0.5rem 0;
-}
-
-/* ----- Markdown content (CTRenderer output) ----- */
-
-.tr-item-body .ctr-prompt-body {
-  font-size: 0.95rem;
-  line-height: 1.75;
-  color: var(--text-primary);
-}
-
-.tr-item-body .ctr-prompt-body > *:first-child { margin-top: 0; }
-.tr-item-body .ctr-prompt-body > *:last-child  { margin-bottom: 0; }
-
-.tr-item-body .ctr-prompt-body h1,
-.tr-item-body .ctr-prompt-body h2,
-.tr-item-body .ctr-prompt-body h3,
-.tr-item-body .ctr-prompt-body h4 {
-  margin: 1.4em 0 0.5em;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-  font-weight: 700;
-}
-
-.tr-item-body .ctr-prompt-body h1 { font-size: 1.35rem; }
-.tr-item-body .ctr-prompt-body h2 { font-size: 1.15rem; }
-.tr-item-body .ctr-prompt-body h3 { font-size: 1rem; }
-
-.tr-item-body .ctr-prompt-body p {
-  margin: 0 0 0.85em;
-  text-align: justify;
-  hyphens: auto;
-}
-
-.tr-item-body .ctr-prompt-body ul,
-.tr-item-body .ctr-prompt-body ol {
-  margin: 0.5em 0 1em;
-  padding-left: 1.4em;
-}
-
-.tr-item-body .ctr-prompt-body li { margin-bottom: 0.35em; }
-
-.tr-item-body .ctr-prompt-body a {
-  color: var(--primary);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(20, 184, 166, 0.35);
-  transition: border-color 0.15s;
-}
-
-.tr-item-body .ctr-prompt-body a:hover {
-  border-bottom-color: var(--primary);
-}
-
-.tr-item-body .ctr-prompt-body code {
-  background: rgba(20, 184, 166, 0.12);
-  color: var(--text-primary);
-  padding: 2px 6px;
-  border-radius: 5px;
-  font-size: 0.86em;
-  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-}
-
-.tr-item-body .ctr-prompt-body pre {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 1rem 1.1rem;
-  border-radius: 10px;
-  overflow-x: auto;
-  margin: 1em 0;
-  line-height: 1.55;
-}
-
-.tr-item-body .ctr-prompt-body pre code {
-  background: none;
-  padding: 0;
-  font-size: 0.86em;
-}
-
-.tr-item-body .ctr-prompt-body blockquote {
-  margin: 1em 0;
-  padding: 0.6em 1em;
-  border-left: 3px solid var(--primary);
-  background: rgba(20, 184, 166, 0.05);
-  color: var(--text-secondary);
-  border-radius: 0 8px 8px 0;
-}
-
-.tr-item-body .ctr-prompt-body strong { color: var(--text-primary); font-weight: 700; }
-
-/* ----- Prompt verbatim block ----- */
-
-.tr-item-body .ctr-prompt-verbatim {
-  font-size: 0.92rem;
-  line-height: 1.65;
-  color: var(--text-primary);
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  background: rgba(20, 184, 166, 0.05);
-  border: 1px solid rgba(20, 184, 166, 0.18);
-  border-radius: 10px;
-  padding: 1rem 1.15rem;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-[data-theme="dark"] .tr-item-body .ctr-prompt-verbatim {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-/* ----- Copy button ----- */
-
-.tr-item-body .ctr-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 1.25rem;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 9px;
-  border: none;
-  background: var(--primary);
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s, box-shadow 0.18s;
-  box-shadow: 0 3px 12px -4px rgba(20, 184, 166, 0.5);
-}
-
-.tr-item-body .ctr-copy-btn::before {
-  content: '';
-  width: 14px;
-  height: 14px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2'/%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-}
-
-.tr-item-body .ctr-copy-btn:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 5px 16px -4px rgba(20, 184, 166, 0.6);
-}
-
-.tr-item-body .ctr-copy-btn:active { transform: translateY(0); }
-
-/* ----- Footer ----- */
 
 .tr-footer {
   margin-top: 3.5rem;
@@ -922,12 +773,159 @@ html, body {
   font-weight: 600;
 }
 
-/* ====================================================================
-   MOBILE RESPONSIVE  (below 700px: left band becomes top band)
-   ==================================================================== */
+/* =====================================================================
+   CTRenderer body styles inside .sub-expanded
+   (markdown rendering for prompt/guide/material/paper/etc.)
+   ===================================================================== */
+
+.sub-expanded .ctr-prompt-body {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.sub-expanded .ctr-prompt-body > *:first-child { margin-top: 0; }
+.sub-expanded .ctr-prompt-body > *:last-child  { margin-bottom: 0; }
+
+.sub-expanded .ctr-prompt-body h1,
+.sub-expanded .ctr-prompt-body h2,
+.sub-expanded .ctr-prompt-body h3,
+.sub-expanded .ctr-prompt-body h4 {
+  margin: 1.4em 0 0.5em;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+.sub-expanded .ctr-prompt-body h1 { font-size: 1.25rem; }
+.sub-expanded .ctr-prompt-body h2 { font-size: 1.1rem; }
+.sub-expanded .ctr-prompt-body h3 { font-size: 1rem; }
+
+.sub-expanded .ctr-prompt-body p {
+  margin: 0 0 0.85em;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.sub-expanded .ctr-prompt-body ul,
+.sub-expanded .ctr-prompt-body ol {
+  margin: 0.5em 0 1em;
+  padding-left: 1.4em;
+}
+
+.sub-expanded .ctr-prompt-body li { margin-bottom: 0.35em; }
+
+.sub-expanded .ctr-prompt-body a {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(20, 184, 166, 0.35);
+  transition: border-color 0.15s;
+}
+
+.sub-expanded .ctr-prompt-body a:hover { border-bottom-color: var(--primary); }
+
+.sub-expanded .ctr-prompt-body code {
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--text-primary);
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 0.86em;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.sub-expanded .ctr-prompt-body pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 1em 0;
+  line-height: 1.55;
+}
+
+.sub-expanded .ctr-prompt-body pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.86em;
+}
+
+.sub-expanded .ctr-prompt-body blockquote {
+  margin: 1em 0;
+  padding: 0.6em 1em;
+  border-left: 3px solid var(--primary);
+  background: rgba(20, 184, 166, 0.05);
+  color: var(--text-secondary);
+  border-radius: 0 8px 8px 0;
+}
+
+.sub-expanded .ctr-prompt-body strong { color: var(--text-primary); font-weight: 700; }
+
+/* Prompt verbatim block */
+.sub-expanded .ctr-prompt-verbatim {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  background: rgba(20, 184, 166, 0.05);
+  border: 1px solid rgba(20, 184, 166, 0.18);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+[data-theme="dark"] .sub-expanded .ctr-prompt-verbatim {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* CTRenderer's built-in copy and affordance buttons are suppressed when
+   trilha.js renders items with opts.preview = true. The action is rendered
+   in .sub-actions instead. Keep these styles as a safety net. */
+.sub-expanded .ctr-copy-btn,
+.sub-expanded .ctr-affordance-row { display: none; }
+
+/* model_info supplementary content stays intact */
+.sub-expanded .ctr-model-badges {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 0.65rem;
+}
+.sub-expanded .ctr-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--primary-dark);
+}
+.sub-expanded .ctr-pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.08);
+  color: var(--text-secondary);
+}
+.sub-expanded .ctr-strengths-list {
+  margin: 0.6rem 0 0.5rem;
+  padding-left: 1.2em;
+}
+
+/* paper PDF embed */
+.sub-expanded .ctr-pdf-embed {
+  margin: 1rem 0;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+}
+.sub-expanded .ctr-pdf-object { width: 100%; height: 100%; border: 0; }
+
+/* =====================================================================
+   MOBILE
+   ===================================================================== */
 
 @media (max-width: 700px) {
-
   .tr-page { padding: 0 1rem 3rem; }
 
   .tr-hero {
@@ -937,38 +935,19 @@ html, body {
   }
 
   .tr-client-name  { font-size: 1.5rem; }
-  .tr-client-avatar { width: 52px; height: 52px; }
+  .tr-client-avatar { width: 56px; height: 56px; }
 
-  /* Aula card: band becomes a top horizontal strip */
-  .tr-aula-card {
-    flex-direction: column;
-  }
+  .tl { padding-left: 30px; }
+  .tl::before { left: 9px; }
+  .tl-dot { left: -28px; width: 22px; height: 22px; }
+  .tl-row.is-open .tl-dot { left: -31px; width: 28px; height: 28px; }
 
-  .tr-aula-band {
-    width: 100%;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 0.65rem;
-    padding: 0.55rem 1rem;
-    min-height: 44px;
-    max-height: 56px;
-  }
+  /* Sub-action button shrinks on mobile */
+  .item-action span { display: none; }
+  .item-action { padding: 0.4rem 0.6rem; }
+  .item-action svg { width: 15px; height: 15px; }
 
-  .tr-band-num  { font-size: 0.82rem; }
-  .tr-band-date { font-size: 0.72rem; }
-
-  /* Item card mobile */
-  .tr-item-zone  { width: 76px; padding: 0.5rem 0.3rem; }
-  .tr-item-icon  { font-size: 1.4rem; }
-  .tr-item-type-label { font-size: 0.6rem; }
-  .tr-item-meta  { padding: 0.85rem 0.95rem; }
-  .tr-item-title { font-size: 0.95rem; }
-  .tr-item-body  { padding: 1rem 1.1rem 1.2rem; }
-  .tr-item-actions { padding: 0 0.7rem 0 0.3rem; }
-
-  .tr-tabs { gap: 0; }
   .tr-tab-btn { padding: 0.6rem 0.85rem; font-size: 0.8rem; }
-
 }
 
 @media (max-width: 360px) {

@@ -61,6 +61,46 @@ pensoia-header .ph-title {
   text-align: center;
 }
 
+/* ---------- action button (generic pill, used for trilha WhatsApp/ClassPulse) ---------- */
+
+pensoia-header .ph-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: clamp(6px, 1vh, 9px) clamp(10px, 1.4vw, 14px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: clamp(0.82rem, 1.2vw, 0.95rem);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+pensoia-header .ph-action-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+pensoia-header .ph-action-btn:active {
+  transform: scale(0.97);
+}
+
+pensoia-header .ph-action-btn svg {
+  width: 1.05em;
+  height: 1.05em;
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  pensoia-header .ph-action-btn span { display: none; }
+  pensoia-header .ph-action-btn { padding: 8px 10px; }
+}
+
 /* ---------- code button (QR glyph + code text) ---------- */
 
 pensoia-header .ph-code-btn {

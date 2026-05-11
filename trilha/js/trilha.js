@@ -2,28 +2,54 @@
 
 (function() {
 
-  // ── URL parsing ──────────────────────────────────────────────────────────
-  var _params      = new URLSearchParams(window.location.search);
-  var _clientSlug  = _params.get('c');
-  var _turmaSlug   = _params.get('t');
-  var _token       = _params.get('k');
+  // ── URL parsing ─────────────────────────────────────────────────────
+  var _params = new URLSearchParams(window.location.search);
+  var _clientSlug = _params.get('c');
+  var _turmaSlug = _params.get('t');
+  var _token = _params.get('k');
 
-  // Fallback: parse /trilha/<client>/<turma> from pathname
   if (!_clientSlug || !_turmaSlug) {
     var _parts = window.location.pathname.replace(/^\/trilha\/?/, '').replace(/\/$/, '').split('/');
     if (_parts.length >= 2 && _parts[0]) {
       _clientSlug = _parts[0];
-      _turmaSlug  = _parts[1] || null;
+      _turmaSlug = _parts[1] || null;
     }
   }
 
-  // ── State ────────────────────────────────────────────────────────────────
-  var _data             = null; // full worker response
+  // ── State ────────────────────────────────────────────────────────────
+  var _data = null;
   var _outrosTypeFilter = null;
+  var _rendered = { aulas: false, apostila: false, outros: false };
 
-  // ── Entry ────────────────────────────────────────────────────────────────
-  // Theme is initialized in <head> (initPublic) and the toggle is wired by
-  // <pensoia-header> via ThemeManager.init() when the custom element upgrades.
+  // ── Icons (lucide-style) ─────────────────────────────────────────────
+  var ICONS = {
+    copy:
+      '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/>' +
+      '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    external:
+      '<svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' +
+      '<polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+    download:
+      '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+      '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+    check:
+      '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+  };
+
+  var WA_ICON =
+    '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+
+  var QR_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">' +
+    '<rect x="3" y="3" width="7" height="7" rx="1"/>' +
+    '<rect x="14" y="3" width="7" height="7" rx="1"/>' +
+    '<rect x="3" y="14" width="7" height="7" rx="1"/>' +
+    '<path d="M14 14h3v3h-3z"/><path d="M20 14h1v1"/><path d="M14 20h1v1"/><path d="M20 20h1v1"/>' +
+    '<path d="M17 17h1"/><path d="M20 17h1"/><path d="M17 20h1"/>' +
+    '</svg>';
+
+  // ── Entry ────────────────────────────────────────────────────────────
   function init() {
     if (!_clientSlug || !_turmaSlug || !_token) { _showError('link_invalid'); return; }
     _loadTurma();
@@ -33,39 +59,36 @@
   async function _loadTurma() {
     try {
       _data = await callWorker({
-        action:      'ct_get_turma_view',
+        action: 'ct_get_turma_view',
         client_slug: _clientSlug,
-        turma_slug:  _turmaSlug,
-        token:       _token,
+        turma_slug: _turmaSlug,
+        token: _token,
         _silent: true
       });
-
       document.getElementById('tr-loading').hidden = true;
-      document.getElementById('tr-main').hidden    = false;
-
+      document.getElementById('tr-main').hidden = false;
       _renderHero();
-      _renderActionBand();
+      _renderHeaderActions();
       _renderTabs();
-      _onHashChange(); // honour any initial hash (e.g. bookmark to #aula-2)
-
+      _onHashChange();
     } catch (err) {
-      var code = (err.data && err.data.error) ? err.data.error : 'error';
-      _showError(code === 'not_found' || code === 'unauthorized' ? 'link_invalid' : 'error');
+      var code = (err && err.data && err.data.error) ? err.data.error : 'error';
+      _showError(code === 'not_found' || code === 'forbidden' || code === 'unauthorized' ? 'link_invalid' : 'error');
     }
   }
 
-  // ── Hero ─────────────────────────────────────────────────────────────────
+  // ── Hero ─────────────────────────────────────────────────────────────
   function _renderHero() {
     var client = _data.client || {};
-    var turma  = _data.turma  || {};
+    var turma = _data.turma || {};
 
-    var nameEl   = document.getElementById('tr-client-name');
-    var turmaEl  = document.getElementById('tr-turma-name');
+    var nameEl = document.getElementById('tr-client-name');
+    var turmaEl = document.getElementById('tr-turma-name');
     var avatarEl = document.getElementById('tr-client-avatar');
-    var iconEl   = document.getElementById('tr-client-icon');
+    var iconEl = document.getElementById('tr-client-icon');
 
-    if (nameEl)  nameEl.textContent  = client.display_name || '';
-    if (turmaEl) turmaEl.textContent = turma.display_name  || turma.name || _turmaSlug;
+    if (nameEl) nameEl.textContent = client.display_name || '';
+    if (turmaEl) turmaEl.textContent = turma.display_name || turma.name || _turmaSlug;
 
     if (client.icon_path && avatarEl && iconEl) {
       var src = client.icon_path.match(/^https?:\/\//)
@@ -73,131 +96,141 @@
         : WORKER_URL + '/r2/' + client.icon_path;
       iconEl.src = src;
       iconEl.alt = client.display_name || '';
-      avatarEl.hidden = false;
+      iconEl.hidden = false;
+      avatarEl.style.background = 'var(--background)';
+    } else if (avatarEl) {
+      var name = client.display_name || '';
+      var initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(function(w) { return w[0]; }).join('').toUpperCase();
+      avatarEl.innerHTML = initials
+        ? '<span style="color:#fff;font-weight:800;font-size:1.6rem;">' + _esc(initials) + '</span>'
+        : '';
     }
 
     var titleBase = turma.display_name || turma.name;
     if (titleBase) document.title = titleBase + ' · PensoIA';
   }
 
-  // ── Action band ──────────────────────────────────────────────────────────
-  function _renderActionBand() {
+  // ── Header action buttons (injected into pensoia-header .ph-right) ──
+  function _renderHeaderActions() {
     var turma = _data.turma || {};
+    var hasWa = !!turma.whatsapp_url;
+    var hasCp = !!turma.classpulse_session_id;
+    if (!hasWa && !hasCp) return;
 
-    var waBtn = document.getElementById('tr-btn-whatsapp');
-    if (waBtn && turma.whatsapp_url) {
-      waBtn.href   = turma.whatsapp_url;
-      waBtn.hidden = false;
-    }
+    function tryInject(attempt) {
+      attempt = attempt || 0;
+      var header = document.querySelector('pensoia-header');
+      var phRight = header && header.querySelector('.ph-right');
+      if (!phRight) {
+        if (attempt < 20) setTimeout(function() { tryInject(attempt + 1); }, 100);
+        return;
+      }
+      if (header.dataset.trActionsInjected) return;
+      header.dataset.trActionsInjected = '1';
 
-    var cpBtn = document.getElementById('tr-btn-classpulse');
-    if (cpBtn && turma.classpulse_session_id) {
-      // ClassPulse student join URL: /go/index.html?code=<session_code>
-      // Auto-fills the code input and focuses name field.
-      cpBtn.href   = 'https://pensoia.com/go/?code=' + encodeURIComponent(turma.classpulse_session_id);
-      cpBtn.hidden = false;
+      var frag = document.createDocumentFragment();
+      if (hasWa) {
+        var wa = document.createElement('a');
+        wa.className = 'ph-action-btn';
+        wa.href = turma.whatsapp_url;
+        wa.target = '_blank';
+        wa.rel = 'noopener';
+        wa.title = 'Grupo no WhatsApp';
+        wa.innerHTML = WA_ICON + '<span>Grupo no WhatsApp</span>';
+        frag.appendChild(wa);
+      }
+      if (hasCp) {
+        var cp = document.createElement('a');
+        cp.className = 'ph-action-btn';
+        cp.href = 'https://pensoia.com/go/?code=' + encodeURIComponent(turma.classpulse_session_id);
+        cp.target = '_blank';
+        cp.rel = 'noopener';
+        cp.title = 'Perguntas ao vivo';
+        cp.innerHTML = QR_ICON + '<span>Perguntas ao vivo</span>';
+        frag.appendChild(cp);
+      }
+      phRight.insertBefore(frag, phRight.firstChild);
     }
-
-    // If neither button is visible, hide the whole band.
-    var band = document.getElementById('tr-action-band');
-    if (band && waBtn && cpBtn && waBtn.hidden && cpBtn.hidden) {
-      band.hidden = true;
-    }
+    tryInject();
   }
 
-  // ── Tabs ─────────────────────────────────────────────────────────────────
+  // ── Tabs ─────────────────────────────────────────────────────────────
   function _renderTabs() {
-    // Count "Outros materiais" items (no aula, no set)
-    var items   = _data.items || [];
-    var outros  = items.filter(function(it) { return it.aula_number == null && it.set_id == null; });
-    var tabOtros = document.getElementById('tr-tab-outros');
-    if (tabOtros) tabOtros.textContent = 'Outros materiais (' + outros.length + ')';
+    var items = _data.items || [];
+    var outros = items.filter(function(it) { return it.aula_number == null && it.set_id == null; });
+    var apostilaSet = _data.apostila_set;
+    var apostilaCount = apostilaSet ? items.filter(function(it) { return it.set_id === apostilaSet.id; }).length : 0;
+
+    var outrosBtn = document.getElementById('tr-tab-outros');
+    var apostilaBtn = document.getElementById('tr-tab-apostila');
+
+    if (outrosBtn) {
+      if (outros.length) outrosBtn.textContent = 'Outros materiais (' + outros.length + ')';
+      outrosBtn.hidden = !outros.length;
+    }
+    if (apostilaBtn) {
+      apostilaBtn.hidden = !apostilaCount;
+    }
 
     document.getElementById('tr-tabs').querySelectorAll('.tr-tab-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var tab = btn.dataset.tab;
-        var hash = tab === 'aulas' ? '#aulas' : '#' + tab;
-        window.location.hash = hash;
+        window.location.hash = '#' + tab;
       });
     });
   }
 
-  // ── Hash routing ─────────────────────────────────────────────────────────
+  // ── Hash routing ─────────────────────────────────────────────────────
   function _onHashChange() {
-    var hash = window.location.hash || '#aulas';
-
-    var lessonMatch = hash.match(/^#aula-(\d+)(?:@(.+))?$/);
-    if (lessonMatch) {
-      var aulaNum  = parseInt(lessonMatch[1], 10);
-      var scrollTo = lessonMatch[2] || null;
-      _showLesson(aulaNum, scrollTo);
-      return;
-    }
-
-    if (hash === '#apostila') { _showTab('apostila'); _renderApostila(); return; }
-    if (hash === '#outros')   { _showTab('outros');   _renderOutros();   return; }
-    // default: #aulas
-    _showTab('aulas');
-    _renderAulas();
+    var hash = (window.location.hash || '#aulas').replace(/^#/, '');
+    if (hash !== 'aulas' && hash !== 'apostila' && hash !== 'outros') hash = 'aulas';
+    _showTab(hash);
   }
 
   function _showTab(name) {
-    // Hide lesson panel and all tab panels
-    ['aulas', 'apostila', 'outros', 'lesson'].forEach(function(p) {
+    ['aulas', 'apostila', 'outros'].forEach(function(p) {
       var el = document.getElementById('tr-panel-' + p);
-      if (el) el.hidden = true;
+      if (el) el.hidden = (p !== name);
     });
-
-    var panel = document.getElementById('tr-panel-' + (name === 'lesson' ? 'lesson' : name));
-    if (panel) panel.hidden = false;
-
     document.querySelectorAll('.tr-tab-btn').forEach(function(btn) {
-      var active = btn.dataset.tab === (name === 'lesson' ? 'aulas' : name);
+      var active = btn.dataset.tab === name;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
+    if (name === 'aulas' && !_rendered.aulas) { _renderAulas(); _rendered.aulas = true; }
+    if (name === 'apostila' && !_rendered.apostila) { _renderApostilaTab(); _rendered.apostila = true; }
+    if (name === 'outros' && !_rendered.outros) { _renderOutrosTab(); _rendered.outros = true; }
   }
 
-  // ── Date helpers ─────────────────────────────────────────────────────────
+  // ── Date / status helpers ────────────────────────────────────────────
   function _fmtDate(iso) {
     if (!iso) return '';
-    var parts = iso.split('-');
-    if (parts.length < 3) return iso;
-    return parts[2].replace(/^0/, '') + '/' + parts[1];
+    var p = iso.split('-');
+    if (p.length < 3) return iso;
+    return p[2].replace(/^0/, '') + '/' + p[1].replace(/^0/, '');
   }
 
   function _aulaDateText(aula) {
-    var happened    = aula.happened_on;
-    var scheduled   = aula.scheduled_for;
-    var rescheduled = aula.rescheduled_from;
-
-    if (happened) return 'ocorreu em ' + _fmtDate(happened);
-
-    var today = new Date().toISOString().split('T')[0];
-
-    if (rescheduled && scheduled && scheduled > today) {
-      return 'remarcada (era ' + _fmtDate(rescheduled) + ', agora ' + _fmtDate(scheduled) + ')';
+    if (aula.happened_on) return 'ocorreu em ' + _fmtDate(aula.happened_on);
+    var today = new Date().toISOString().slice(0, 10);
+    if (aula.rescheduled_from && aula.scheduled_for && aula.scheduled_for > today) {
+      return 'remarcada (era ' + _fmtDate(aula.rescheduled_from) + ', agora ' + _fmtDate(aula.scheduled_for) + ')';
     }
-
-    if (scheduled) {
-      if (scheduled > today) return 'agendada para ' + _fmtDate(scheduled);
-      // past scheduled but no happened_on: treat as occurred
-      return _fmtDate(scheduled);
+    if (aula.scheduled_for) {
+      if (aula.scheduled_for > today) return 'agendada para ' + _fmtDate(aula.scheduled_for);
+      return _fmtDate(aula.scheduled_for);
     }
-
     return 'a definir';
   }
 
-  // Status for card left band: 'done' | 'rescheduled' | 'upcoming' | 'undefined'
   function _aulaStatus(aula) {
     if (aula.happened_on) return 'done';
-    var today = new Date().toISOString().split('T')[0];
-    if (aula.rescheduled_from && aula.scheduled_for && aula.scheduled_for > today) return 'rescheduled';
+    var today = new Date().toISOString().slice(0, 10);
     if (aula.scheduled_for && aula.scheduled_for > today) return 'upcoming';
-    return 'undefined';
+    if (aula.scheduled_for && aula.scheduled_for <= today) return 'done';
+    return 'und';
   }
 
-  // ── Topics parsing ────────────────────────────────────────────────────────
   function _parseTopics(raw) {
     if (!raw) return [];
     if (Array.isArray(raw)) return raw.map(function(t) { return String(t).trim(); }).filter(Boolean);
@@ -208,240 +241,339 @@
     return String(raw).split(',').map(function(t) { return t.trim(); }).filter(Boolean);
   }
 
-  // ── Aulas tab ─────────────────────────────────────────────────────────────
+  // ── Aulas tab (timeline) ─────────────────────────────────────────────
   function _renderAulas() {
-    var container = document.getElementById('tr-aulas-list');
-    if (!container || container.dataset.rendered) return;
-    container.dataset.rendered = '1';
+    var container = document.getElementById('tr-aulas-timeline');
+    if (!container) return;
 
     var aulas = (_data.aulas || []).slice().sort(function(a, b) { return a.aula_number - b.aula_number; });
-    var items = _data.items || [];
-
     if (!aulas.length) {
       container.innerHTML = '<div class="tr-empty">Nenhuma aula disponível ainda.</div>';
       return;
     }
-
     container.innerHTML = '';
-    aulas.forEach(function(aula) {
-      container.appendChild(_buildAulaCard(aula, items));
-    });
+    aulas.forEach(function(aula) { container.appendChild(_buildAulaRow(aula)); });
   }
 
-  function _buildAulaCard(aula, items) {
-    var status   = _aulaStatus(aula);
+  function _buildAulaRow(aula) {
+    var status = _aulaStatus(aula);
     var dateText = _aulaDateText(aula);
-    var topics   = _parseTopics(aula.topics_json);
+    var topics = _parseTopics(aula.topics_json);
+    var hasTarefa = !!aula.tarefa_item_id;
+    var statusBadge = status === 'done' ? '✓' : (status === 'upcoming' ? String(aula.aula_number) : '·');
 
-    // Tarefa item lookup
-    var tarefaItem = aula.tarefa_item_id
-      ? items.find(function(it) { return it.id === aula.tarefa_item_id; })
-      : null;
+    var row = document.createElement('div');
+    row.className = 'tl-row';
+    row.dataset.aula = aula.aula_number;
 
     var topicsHtml = topics.length
-      ? '<div class="tr-aula-topics">' + topics.map(function(t) {
-          return '<span class="tr-aula-topic">' + _esc(t) + '</span>';
+      ? '<div class="topics">' + topics.map(function(t) {
+          return '<span class="topic-chip">' + _esc(t) + '</span>';
         }).join('') + '</div>'
       : '';
 
-    var tarefaHtml = tarefaItem
-      ? '<div class="tr-aula-tarefa" role="button" tabindex="0" data-aula="' + aula.aula_number + '" data-item="' + _esc(String(tarefaItem.id)) + '">' +
-          '<span class="tr-tarefa-label">Tarefa</span> ' +
-          _esc(tarefaItem.title) +
-        '</div>'
-      : '';
+    var tarefaPill = hasTarefa ? '<span class="tarefa-pill">⚑ Tarefa</span>' : '';
+    var paddedNum = String(aula.aula_number);
+    if (paddedNum.length < 2) paddedNum = '0' + paddedNum;
 
-    var card = document.createElement('div');
-    card.className = 'tr-aula-card tr-aula-card--' + status;
-    card.dataset.aula = aula.aula_number;
-
-    card.innerHTML =
-      '<div class="tr-aula-band">' +
-        '<span class="tr-band-num">Aula ' + aula.aula_number + '</span>' +
-        '<span class="tr-band-date">' + _esc(dateText) + '</span>' +
-      '</div>' +
-      '<div class="tr-aula-body">' +
-        '<div class="tr-aula-title">' + _esc(aula.title) + '</div>' +
-        topicsHtml +
-        tarefaHtml +
+    row.innerHTML =
+      '<div class="tl-dot tl-dot--' + status + '">' + _esc(statusBadge) + '</div>' +
+      '<div class="card" data-aula="' + aula.aula_number + '">' +
+        '<div class="card-header" role="button" tabindex="0" aria-expanded="false">' +
+          '<div class="zone zone--' + status + '">' +
+            '<span class="zone-num">' + paddedNum + '</span>' +
+            '<span class="zone-label">Aula</span>' +
+          '</div>' +
+          '<div class="meta">' +
+            '<div class="meta-row">' +
+              '<span class="date-pill">' + _esc(dateText) + '</span>' +
+              tarefaPill +
+            '</div>' +
+            '<div class="title">' + _esc(aula.title || ('Aula ' + aula.aula_number)) + '</div>' +
+            topicsHtml +
+          '</div>' +
+          '<div class="actions"><span class="chevron">›</span></div>' +
+        '</div>' +
       '</div>';
 
-    // Click on tarefa pot: drill in AND highlight tarefa
-    if (tarefaItem) {
-      var tarefaEl = card.querySelector('.tr-aula-tarefa');
-      tarefaEl.addEventListener('click', function(e) {
-        e.stopPropagation();
-        window.location.hash = '#aula-' + aula.aula_number + '@tarefa-' + tarefaItem.id;
-      });
-      tarefaEl.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tarefaEl.click(); }
-      });
-    }
-
-    // Click anywhere else: drill in
-    card.addEventListener('click', function(e) {
-      if (e.target.closest('.tr-aula-tarefa')) return;
-      window.location.hash = '#aula-' + aula.aula_number;
+    var headerEl = row.querySelector('.card-header');
+    headerEl.addEventListener('click', function() { _toggleAula(row, aula); });
+    headerEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _toggleAula(row, aula); }
     });
-
-    return card;
+    return row;
   }
 
-  // ── Lesson view ───────────────────────────────────────────────────────────
-  function _showLesson(aulaNum, scrollTarget) {
-    _showTab('lesson');
+  function _toggleAula(row, aula) {
+    var card = row.querySelector('.card');
+    var headerEl = row.querySelector('.card-header');
+    var isOpen = card.classList.contains('open');
 
-    var lessonPanel = document.getElementById('tr-panel-lesson');
-    if (!lessonPanel) return;
-
-    // Clear previous content so re-navigation rerenders
-    lessonPanel.querySelector('#tr-lesson-title').textContent   = '';
-    lessonPanel.querySelector('#tr-lesson-date').textContent    = '';
-    lessonPanel.querySelector('#tr-apostila-desta-aula').hidden = true;
-    lessonPanel.querySelector('#tr-apostila-desta-aula-items').innerHTML = '';
-    lessonPanel.querySelector('#tr-lesson-items').innerHTML     = '';
-
-    var aulas = _data.aulas || [];
-    var aula  = aulas.find(function(a) { return a.aula_number === aulaNum; });
-    if (!aula) {
-      lessonPanel.querySelector('#tr-lesson-title').textContent = 'Aula ' + aulaNum;
+    if (isOpen) {
+      card.classList.remove('open');
+      row.classList.remove('is-open');
+      headerEl.setAttribute('aria-expanded', 'false');
+      var body = card.querySelector('.body');
+      if (body) body.remove();
       return;
     }
 
-    lessonPanel.querySelector('#tr-lesson-title').textContent = 'Aula ' + aula.aula_number + ': ' + aula.title;
-    lessonPanel.querySelector('#tr-lesson-date').textContent  = _aulaDateText(aula);
+    card.classList.add('open');
+    row.classList.add('is-open');
+    headerEl.setAttribute('aria-expanded', 'true');
+    card.appendChild(_buildAulaBody(aula));
+  }
 
-    var items       = _data.items || [];
+  function _buildAulaBody(aula) {
+    var items = _data.items || [];
     var apostilaSet = _data.apostila_set;
-
-    // Apostila desta aula: items in the apostila set for this aula, sorted by set_position
-    var apostilaItems = apostilaSet
-      ? items.filter(function(it) {
-          return it.set_id === apostilaSet.id && it.aula_number === aulaNum;
-        }).sort(function(a, b) { return (a.set_position || 0) - (b.set_position || 0); })
-      : [];
-
-    if (apostilaItems.length) {
-      var apostilaBlock = lessonPanel.querySelector('#tr-apostila-desta-aula');
-      var apostilaList  = lessonPanel.querySelector('#tr-apostila-desta-aula-items');
-      apostilaBlock.hidden = false;
-      apostilaItems.forEach(function(item) {
-        var row = _buildItemRow(item);
-        row.dataset.itemId = item.id;
-        apostilaList.appendChild(row);
-      });
-    }
-
-    // Other lesson items: aula_number matches AND not in the apostila set
     var apostilaSetId = apostilaSet ? apostilaSet.id : null;
-    var lessonItems = items.filter(function(it) {
-      if (it.aula_number !== aulaNum) return false;
-      if (apostilaSetId !== null && it.set_id === apostilaSetId) return false;
-      return true;
-    }).sort(function(a, b) { return (a.position || 0) - (b.position || 0); });
 
-    var lessonList = lessonPanel.querySelector('#tr-lesson-items');
-    if (lessonItems.length) {
-      lessonItems.forEach(function(item) {
-        var row = _buildItemRow(item);
-        row.dataset.itemId = item.id;
-        // Mark tarefa for highlight
-        if (aula.tarefa_item_id && item.id === aula.tarefa_item_id) {
-          row.dataset.isTarefa = '1';
-        }
-        lessonList.appendChild(row);
-      });
-    } else if (!apostilaItems.length) {
-      lessonList.innerHTML = '<div class="tr-empty">Nenhum conteúdo disponível nesta aula ainda.</div>';
+    var aulaItems = items.filter(function(it) { return it.aula_number === aula.aula_number; });
+
+    var tarefaItem = aula.tarefa_item_id
+      ? items.find(function(it) { return it.id === aula.tarefa_item_id; })
+      : null;
+    var tarefaId = tarefaItem ? tarefaItem.id : null;
+
+    var apostilaItems = aulaItems
+      .filter(function(it) {
+        return apostilaSetId !== null && it.set_id === apostilaSetId && it.id !== tarefaId;
+      })
+      .sort(function(a, b) { return (a.set_position || 0) - (b.set_position || 0); });
+
+    var outrosItems = aulaItems
+      .filter(function(it) {
+        if (apostilaSetId !== null && it.set_id === apostilaSetId) return false;
+        if (it.id === tarefaId) return false;
+        return true;
+      })
+      .sort(function(a, b) { return (a.position || 0) - (b.position || 0); });
+
+    var body = document.createElement('div');
+    body.className = 'body';
+
+    if (tarefaItem) {
+      body.appendChild(_buildSection('Tarefa', [tarefaItem], { isTarefa: true }));
     }
+    if (apostilaItems.length) {
+      body.appendChild(_buildSection('Apostila desta aula', apostilaItems, { isApostila: true }));
+    }
+    if (outrosItems.length) {
+      body.appendChild(_buildSection('Outros materiais', outrosItems));
+    }
+    if (!tarefaItem && !apostilaItems.length && !outrosItems.length) {
+      body.innerHTML = '<div class="tr-empty">Nenhum conteúdo disponível nesta aula ainda.</div>';
+    }
+    return body;
+  }
 
-    // Scroll / highlight target
-    // Accepts "tarefa-<id>" (from aula card tarefa pot) or "apostila-<id>" (from apostila tab)
-    if (scrollTarget) {
-      var itemIdMatch = scrollTarget.match(/^(?:tarefa|apostila)-(.+)$/);
-      if (itemIdMatch) {
-        var scrollItemId = itemIdMatch[1];
-        setTimeout(function() {
-          var el = Array.from(document.querySelectorAll('[data-item-id]')).find(function(n) {
-            return n.dataset.itemId === String(scrollItemId);
-          });
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.classList.add('tr-highlight');
-            setTimeout(function() { el.classList.remove('tr-highlight'); }, 2500);
-          }
-        }, 80);
-      }
+  function _buildSection(label, items, opts) {
+    opts = opts || {};
+    var section = document.createElement('div');
+    section.className = 'section';
+    section.innerHTML = '<div class="section-label">' + _esc(label) + '</div>';
+    var list = document.createElement('div');
+    list.className = 'sub-list';
+    items.forEach(function(item) { list.appendChild(_buildSub(item, opts)); });
+    section.appendChild(list);
+    return section;
+  }
+
+  function _buildSub(item, opts) {
+    opts = opts || {};
+    var sub = document.createElement('div');
+    sub.className = 'sub' + (opts.isTarefa ? ' sub--tarefa' : '');
+    sub.dataset.itemId = item.id;
+
+    var zoneClass = 'sub-zone';
+    if (opts.isTarefa) zoneClass += ' sub-zone--tarefa';
+    else if (opts.isApostila) zoneClass += ' sub-zone--apostila';
+
+    var icon = opts.isTarefa ? '⚑' : (item.type_icon || '📄');
+    var typeLabel = opts.isTarefa ? 'Tarefa' : (item.type_label || item.type || '');
+
+    sub.innerHTML =
+      '<div class="' + zoneClass + '">' + _esc(icon) + '</div>' +
+      '<div class="sub-meta">' +
+        '<span class="sub-type">' + _esc(typeLabel) + '</span>' +
+        '<span class="sub-title">' + _esc(item.title) + '</span>' +
+        (item.summary ? '<span class="sub-summary">' + _esc(item.summary) + '</span>' : '') +
+      '</div>' +
+      '<div class="sub-actions"></div>';
+
+    sub.addEventListener('click', function(e) {
+      if (e.target.closest('.item-action')) return;
+      // When open, clicks on the action-area padding (not the button) are dead space
+      if (sub.classList.contains('is-expanded') && e.target.closest('.sub-actions')) return;
+      _toggleSub(sub, item, opts);
+    });
+    return sub;
+  }
+
+  async function _toggleSub(sub, item, opts) {
+    opts = opts || {};
+    var alreadyExpanded = sub.classList.contains('is-expanded');
+
+    var list = sub.parentNode;
+    list.querySelectorAll('.sub-expanded').forEach(function(el) { el.remove(); });
+    list.querySelectorAll('.sub.is-expanded').forEach(function(el) {
+      el.classList.remove('is-expanded');
+      var a = el.querySelector('.sub-actions');
+      if (a) a.innerHTML = '';
+    });
+
+    if (alreadyExpanded) return;
+
+    sub.classList.add('is-expanded');
+    var exp = document.createElement('div');
+    exp.className = 'sub-expanded';
+    exp.innerHTML = '<div class="ctr-loading">Carregando...</div>';
+    sub.parentNode.insertBefore(exp, sub.nextSibling);
+
+    try {
+      var data = await callWorker({
+        action: 'ct_get_item_public',
+        client_slug: _clientSlug,
+        turma_slug: _turmaSlug,
+        token: _token,
+        item_id: item.id,
+        _silent: true
+      });
+      exp.innerHTML = '';
+      CTRenderer.render(data.item, exp, { preview: true });
+      _injectActionButton(sub, data.item, opts);
+    } catch (e) {
+      exp.innerHTML = '<div class="tr-empty">Erro ao carregar conteúdo.</div>';
     }
   }
 
-  // ── Apostila do curso tab ─────────────────────────────────────────────────
-  function _renderApostila() {
-    var container = document.getElementById('tr-apostila-content');
-    if (!container || container.dataset.rendered) return;
-    container.dataset.rendered = '1';
+  // ── Item action dispatch ─────────────────────────────────────────────
+  function _getMeta(item) {
+    if (!item || !item.meta_json) return {};
+    if (typeof item.meta_json === 'string') {
+      try { return JSON.parse(item.meta_json) || {}; } catch (_) { return {}; }
+    }
+    return item.meta_json || {};
+  }
+
+  function _getItemAction(item) {
+    var meta = _getMeta(item);
+    if (meta.pdf_url) return { kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' };
+    if (meta.attachment_url) {
+      var isImg = /\.(png|jpe?g|webp|gif)$/i.test(meta.attachment_url);
+      return {
+        kind: 'open',
+        label: isImg ? 'Ver imagem' : 'Baixar',
+        url: meta.attachment_url,
+        icon: isImg ? 'external' : 'download'
+      };
+    }
+    if (meta.doc_url) return { kind: 'open', label: 'Documentação', url: meta.doc_url, icon: 'external' };
+    if (item.body_md) return { kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' };
+    return null;
+  }
+
+  function _injectActionButton(sub, item, opts) {
+    var actionsEl = sub.querySelector('.sub-actions');
+    if (!actionsEl) return;
+    actionsEl.innerHTML = '';
+    var action = _getItemAction(item);
+    if (!action) return;
+
+    var btn;
+    if (action.kind === 'open') {
+      btn = document.createElement('a');
+      btn.href = action.url;
+      btn.target = '_blank';
+      btn.rel = 'noopener';
+    } else {
+      btn = document.createElement('button');
+      btn.type = 'button';
+    }
+    btn.className = 'item-action' + (opts && opts.isTarefa ? ' item-action--task' : '');
+    btn.innerHTML = (ICONS[action.icon] || ICONS.copy) + '<span>' + _esc(action.label) + '</span>';
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (action.kind === 'copy') {
+        e.preventDefault();
+        _copyToClipboard(action.text, btn);
+      }
+    });
+    actionsEl.appendChild(btn);
+  }
+
+  function _copyToClipboard(text, btn) {
+    function flash() {
+      var orig = btn.innerHTML;
+      btn.classList.add('is-done');
+      btn.innerHTML = ICONS.check + '<span>Copiado</span>';
+      setTimeout(function() {
+        btn.classList.remove('is-done');
+        btn.innerHTML = orig;
+      }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(flash).catch(function() { _copyFallback(text); flash(); });
+    } else {
+      _copyFallback(text);
+      flash();
+    }
+  }
+
+  function _copyFallback(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+
+  // ── Apostila do curso tab ─────────────────────────────────────────────
+  function _renderApostilaTab() {
+    var container = document.getElementById('tr-apostila-list');
+    if (!container) return;
 
     var apostilaSet = _data.apostila_set;
     if (!apostilaSet) {
       container.innerHTML = '<div class="tr-empty">Nenhuma apostila disponível ainda.</div>';
       return;
     }
+    var items = _data.items || [];
+    var aulas = _data.aulas || [];
+    var sections = items
+      .filter(function(it) { return it.set_id === apostilaSet.id; })
+      .sort(function(a, b) { return (a.set_position || 0) - (b.set_position || 0); });
 
-    var items  = _data.items || [];
-    var aulas  = (_data.aulas || []).slice().sort(function(a, b) { return a.aula_number - b.aula_number; });
-
-    var setItems = items.filter(function(it) { return it.set_id === apostilaSet.id; });
-
-    // Group by aula, only aulas with at least one section
-    var rendered = false;
-    aulas.forEach(function(aula) {
-      var aulaItems = setItems.filter(function(it) { return it.aula_number === aula.aula_number; })
-        .sort(function(a, b) { return (a.set_position || 0) - (b.set_position || 0); });
-      if (!aulaItems.length) return;
-
-      rendered = true;
-      var group = document.createElement('div');
-      group.className = 'tr-apostila-group';
-
-      var header = document.createElement('div');
-      header.className = 'tr-apostila-group-header';
-      header.textContent = 'Aula ' + aula.aula_number + ': ' + aula.title + ', ' + _aulaDateText(aula);
-      group.appendChild(header);
-
-      aulaItems.forEach(function(item) {
-        var row = document.createElement('div');
-        row.className = 'tr-apostila-row';
-        row.textContent = item.title;
-        row.setAttribute('role', 'button');
-        row.tabIndex = 0;
-        row.dataset.aula   = aula.aula_number;
-        row.dataset.itemId = item.id;
-        row.addEventListener('click', function() {
-          // Navigate to lesson view, scroll to this apostila item
-          window.location.hash = '#aula-' + aula.aula_number + '@apostila-' + item.id;
-        });
-        row.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); row.click(); }
-        });
-        group.appendChild(row);
-      });
-
-      container.appendChild(group);
-    });
-
-    if (!rendered) {
-      container.innerHTML = '<div class="tr-empty">Nenhum conteúdo compilado disponível ainda.</div>';
+    if (!sections.length) {
+      container.innerHTML = '<div class="tr-empty">Nenhuma seção compilada ainda.</div>';
+      return;
     }
+
+    container.innerHTML = '';
+    sections.forEach(function(item) {
+      var aulaForItem = item.aula_number ? aulas.find(function(a) { return a.aula_number === item.aula_number; }) : null;
+      var paddedAula = '';
+      if (item.aula_number != null) {
+        paddedAula = String(item.aula_number);
+        if (paddedAula.length < 2) paddedAula = '0' + paddedAula;
+      }
+      var eyebrow = paddedAula
+        ? 'Aula ' + paddedAula + (aulaForItem && aulaForItem.title ? ' · ' + aulaForItem.title : '')
+        : '';
+      container.appendChild(_buildFlatCard(item, { eyebrow: eyebrow, isApostila: true }));
+    });
   }
 
-  // ── Outros materiais tab ──────────────────────────────────────────────────
-  function _renderOutros() {
+  // ── Outros materiais tab ──────────────────────────────────────────────
+  function _renderOutrosTab() {
     var filterEl = document.getElementById('tr-outros-filter');
-    var listEl   = document.getElementById('tr-outros-list');
-    if (!listEl || listEl.dataset.rendered) return;
-    listEl.dataset.rendered = '1';
+    var listEl = document.getElementById('tr-outros-list');
+    if (!listEl) return;
 
-    var items  = (_data.items || []).filter(function(it) {
+    var items = (_data.items || []).filter(function(it) {
       return it.aula_number == null && it.set_id == null;
     });
 
@@ -450,8 +582,7 @@
       return;
     }
 
-    // Build types from items (same pattern as old trilha.js)
-    var seen  = {};
+    var seen = {};
     var types = [];
     items.forEach(function(it) {
       if (seen[it.type]) return;
@@ -459,127 +590,147 @@
       types.push({ slug: it.type, label: it.type_label || it.type, icon: it.type_icon || '' });
     });
 
-    CT_TYPE_FILTER.render({
-      container:    filterEl,
-      types:        types,
-      items:        items,
-      selectedSlug: _outrosTypeFilter,
-      onChange: function(slug) {
-        _outrosTypeFilter = slug;
-        _renderOutrosList(items, listEl, types);
+    function renderList() {
+      var filtered = window.CT_TYPE_FILTER ? CT_TYPE_FILTER.apply(items, _outrosTypeFilter) : items;
+      listEl.innerHTML = '';
+      if (!filtered.length) {
+        listEl.innerHTML = '<div class="tr-empty">Nenhum item neste filtro.</div>';
+        return;
       }
-    });
-
-    _renderOutrosList(items, listEl, types);
-  }
-
-  function _renderOutrosList(items, listEl, types) {
-    var filtered = CT_TYPE_FILTER.apply(items, _outrosTypeFilter);
-    listEl.innerHTML = '';
-    if (!filtered.length) {
-      listEl.innerHTML = '<div class="tr-empty">Nenhum item neste filtro.</div>';
-      return;
+      filtered.forEach(function(item) { listEl.appendChild(_buildFlatCard(item)); });
     }
-    filtered.forEach(function(item) {
-      listEl.appendChild(_buildItemRow(item));
-    });
-    // Re-render filter to update active + counts
-    var filterEl = document.getElementById('tr-outros-filter');
-    var seen  = {};
-    var typeArr = [];
-    items.forEach(function(it) {
-      if (seen[it.type]) return;
-      seen[it.type] = true;
-      typeArr.push({ slug: it.type, label: it.type_label || it.type, icon: it.type_icon || '' });
-    });
-    CT_TYPE_FILTER.render({
-      container:    filterEl,
-      types:        typeArr,
-      items:        items,
-      selectedSlug: _outrosTypeFilter,
-      onChange: function(slug) {
-        _outrosTypeFilter = slug;
-        _renderOutrosList(items, listEl, typeArr);
-      }
-    });
+
+    function rerenderFilter() {
+      if (!window.CT_TYPE_FILTER) return;
+      CT_TYPE_FILTER.render({
+        container: filterEl,
+        types: types,
+        items: items,
+        selectedSlug: _outrosTypeFilter,
+        onChange: function(slug) {
+          _outrosTypeFilter = slug;
+          rerenderFilter();
+          renderList();
+        }
+      });
+    }
+
+    rerenderFilter();
+    renderList();
   }
 
-  // ── Item row (used in lesson + outros) ────────────────────────────────────
-  function _buildItemRow(item) {
-    var row = document.createElement('div');
-    row.className = 'tr-item';
-    row.dataset.itemId = item.id;
+  // ── Flat card (Apostila tab + Outros tab) ────────────────────────────
+  function _buildFlatCard(item, opts) {
+    opts = opts || {};
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.itemId = item.id;
 
-    var summary = item.summary
-      ? '<div class="tr-item-summary">' + _esc(item.summary) + '</div>'
-      : '';
+    var icon = item.type_icon || '📄';
+    var typeLabel = item.type_label || item.type || '';
+    var zoneClass = 'zone' + (opts.isApostila ? ' zone--apostila' : '');
+
+    var eyebrowHtml = opts.eyebrow ? '<span class="meta-eyebrow">' + _esc(opts.eyebrow) + '</span>' : '';
+    var summaryHtml = item.summary ? '<div class="summary">' + _esc(item.summary) + '</div>' : '';
     var tagsHtml = (item.tags && item.tags.length)
-      ? '<div class="tr-item-tags">' + item.tags.map(function(label) {
-          return '<span class="tr-tag-mini">' + _esc(label) + '</span>';
+      ? '<div class="topics">' + item.tags.map(function(t) {
+          return '<span class="topic-chip">' + _esc(t) + '</span>';
         }).join('') + '</div>'
       : '';
 
-    row.innerHTML =
-      '<div class="tr-item-header" role="button" tabindex="0" aria-expanded="false">' +
-        '<div class="tr-item-zone">' +
-          '<span class="tr-item-icon"></span>' +
-          '<div class="tr-item-type-label"></div>' +
+    card.innerHTML =
+      '<div class="card-header" role="button" tabindex="0" aria-expanded="false">' +
+        '<div class="' + zoneClass + '">' +
+          '<span class="zone-icon">' + _esc(icon) + '</span>' +
+          '<span class="zone-label">' + _esc(typeLabel) + '</span>' +
         '</div>' +
-        '<div class="tr-item-meta">' +
-          '<div class="tr-item-title">' + _esc(item.title) + '</div>' +
-          summary +
+        '<div class="meta">' +
+          eyebrowHtml +
+          '<div class="title">' + _esc(item.title) + '</div>' +
+          summaryHtml +
           tagsHtml +
         '</div>' +
-        '<div class="tr-item-actions">' +
-          '<span class="tr-item-chevron">&#8250;</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="tr-item-body" hidden></div>';
+        '<div class="actions"><span class="chevron">›</span></div>' +
+      '</div>';
 
-    row.querySelector('.tr-item-icon').textContent      = item.type_icon  || '📄';
-    row.querySelector('.tr-item-type-label').textContent = item.type_label || item.type || '';
-
-    var headerEl = row.querySelector('.tr-item-header');
-    var bodyEl   = row.querySelector('.tr-item-body');
-
-    headerEl.addEventListener('click', function() { _toggleItem(row, item, headerEl, bodyEl); });
+    var headerEl = card.querySelector('.card-header');
+    headerEl.addEventListener('click', function() { _toggleFlatCard(card, item); });
     headerEl.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _toggleItem(row, item, headerEl, bodyEl); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _toggleFlatCard(card, item); }
     });
-
-    return row;
+    return card;
   }
 
-  async function _toggleItem(row, item, headerEl, bodyEl) {
-    var expanded = headerEl.getAttribute('aria-expanded') === 'true';
-    if (expanded) {
+  async function _toggleFlatCard(card, item) {
+    var headerEl = card.querySelector('.card-header');
+    var isOpen = card.classList.contains('open');
+    var existing = card.querySelector('.body');
+
+    if (isOpen) {
+      card.classList.remove('open');
       headerEl.setAttribute('aria-expanded', 'false');
-      bodyEl.hidden = true;
-      row.classList.remove('tr-item-open');
+      if (existing) existing.remove();
       return;
     }
+    card.classList.add('open');
     headerEl.setAttribute('aria-expanded', 'true');
-    bodyEl.hidden = false;
-    row.classList.add('tr-item-open');
-    if (bodyEl.dataset.loaded) return;
-    bodyEl.innerHTML = '<div class="tr-item-loading">Carregando...</div>';
+
+    var body = document.createElement('div');
+    body.className = 'body';
+    body.innerHTML = '<div class="ctr-loading">Carregando...</div>';
+    card.appendChild(body);
+
     try {
       var data = await callWorker({
-        action:      'ct_get_item_public',
+        action: 'ct_get_item_public',
         client_slug: _clientSlug,
-        turma_slug:  _turmaSlug,
-        token:       _token,
-        item_id:     item.id,
+        turma_slug: _turmaSlug,
+        token: _token,
+        item_id: item.id,
         _silent: true
       });
-      bodyEl.dataset.loaded = '1';
-      CTRenderer.render(data.item, bodyEl, {});
+      body.innerHTML = '';
+      var contentWrap = document.createElement('div');
+      body.appendChild(contentWrap);
+      CTRenderer.render(data.item, contentWrap, { preview: true });
+      _appendFlatActionRow(body, data.item);
     } catch (e) {
-      bodyEl.innerHTML = '<div class="tr-item-error">Erro ao carregar conteúdo.</div>';
+      body.innerHTML = '<div class="tr-empty">Erro ao carregar conteúdo.</div>';
     }
   }
 
-  // ── Error state ───────────────────────────────────────────────────────────
+  function _appendFlatActionRow(body, item) {
+    var action = _getItemAction(item);
+    if (!action) return;
+
+    var row = document.createElement('div');
+    row.style.marginTop = '1.1rem';
+    row.style.textAlign = 'right';
+
+    var btn;
+    if (action.kind === 'open') {
+      btn = document.createElement('a');
+      btn.href = action.url;
+      btn.target = '_blank';
+      btn.rel = 'noopener';
+    } else {
+      btn = document.createElement('button');
+      btn.type = 'button';
+    }
+    btn.className = 'item-action';
+    btn.innerHTML = (ICONS[action.icon] || ICONS.copy) + '<span>' + _esc(action.label) + '</span>';
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (action.kind === 'copy') {
+        e.preventDefault();
+        _copyToClipboard(action.text, btn);
+      }
+    });
+    row.appendChild(btn);
+    body.appendChild(row);
+  }
+
+  // ── Error state ───────────────────────────────────────────────────────
   function _showError(code) {
     document.getElementById('tr-loading').hidden = true;
     var errorEl = document.getElementById('tr-error');
@@ -592,9 +743,9 @@
     }
   }
 
-  // ── Utilities ─────────────────────────────────────────────────────────────
+  // ── Utilities ─────────────────────────────────────────────────────────
   function _esc(s) {
-    if (!s) return '';
+    if (s == null) return '';
     return String(s)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

@@ -1853,9 +1853,12 @@ window.CT_ADMIN = (function() {
     var aula = _relAulas.find(function(a) { return String(a.id) === outer.dataset.aulaId; });
     if (!aula) return;
 
-    // set_id is the canonical apostila marker (Worker now returns it). Filtering
-    // on _apostilaItems.id alone failed when the apostila set hadn't loaded yet.
-    var standaloneItems = _relAllItems.filter(function(i) { return !i.set_id; });
+    // Apostila items must never appear in the Outros picker. set_id is the
+    // canonical marker (Worker returns it); type === 'apostila' is a belt-and-
+    // suspenders catch for any row where set_id was somehow not populated.
+    var standaloneItems = _relAllItems.filter(function(i) {
+      return !i.set_id && i.type !== 'apostila';
+    });
 
     function isBound(id) {
       return _relReleased.indexOf(id) !== -1 &&
@@ -1937,11 +1940,13 @@ window.CT_ADMIN = (function() {
   }
 
   function _renderOutrosComposer(container) {
-    // Eligible for Outros: standalone items (set_id IS NULL) that are
-    // unreleased OR currently in Outros (no aula). Items bound to an aula are
-    // managed via that aula's composer, not here.
+    // Eligible for Outros: standalone items (set_id IS NULL, type !== 'apostila')
+    // that are unreleased OR currently in Outros (no aula). Apostila items live
+    // on the Apostila tab only and must not surface here even if set_id was
+    // somehow not populated. Items bound to an aula are managed via that aula's
+    // composer, not here.
     var standaloneItems = _relAllItems.filter(function(i) {
-      if (i.set_id) return false;
+      if (i.set_id || i.type === 'apostila') return false;
       var wasReleased = _relReleased.indexOf(i.id) !== -1;
       if (!wasReleased) return true;
       return !(_relReleasedMeta[i.id] || {}).aula_number;
