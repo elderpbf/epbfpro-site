@@ -254,7 +254,8 @@ html, body {
 .tl-dot {
   position: absolute;
   left: -32px;
-  top: 30px;
+  /* Vertically centered with the .card-header (min-height 96px). */
+  top: 36px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -276,7 +277,8 @@ html, body {
 .tl-row.is-open .tl-dot {
   width: 30px;
   height: 30px;
-  top: 27px;
+  /* Stays centered when dot grows to 30px (48 - 15). */
+  top: 33px;
   left: -35px;
   background: var(--primary);
   border-color: var(--primary);
@@ -1204,63 +1206,15 @@ body.tr-modal-open { overflow: hidden; }
 }
 
 /* =====================================================================
-   View mode toggle (em testes) + Focus mode
-   Three modes selectable via #tr-viewmode pills, persisted in
-   localStorage as `trilha_view_mode`:
-     - off          (default; current production behaviour)
-     - focus        (single-open + collapsed rail + trimmed bands)
-     - focus-wide   (focus + page padding 0 + hero/tabs hidden +
-                    edge-to-edge open card)
+   Focus mode (mobile only)
+   On viewports <=700px, opening an aula switches to a single-open
+   accordion: rail, sibling rows, and the row dot collapse so the open
+   aula uses the full content width. Desktop keeps the default multi-open
+   timeline behaviour. CSS state is driven entirely by `.tl-row.is-open`
+   inside `@media (max-width: 700px)`; JS in trilha.js enforces the
+   single-open invariant via _toggleAula on mobile.
    ===================================================================== */
 
-.tr-viewmode {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin: -0.5rem 0 1.25rem;
-}
-
-.tr-viewmode-label {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  margin-right: 4px;
-}
-
-.tr-viewmode-btn {
-  padding: 4px 11px;
-  font-size: 0.74rem;
-  font-weight: 600;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-
-.tr-viewmode-btn:hover {
-  color: var(--text-primary);
-  border-color: var(--primary-dark);
-}
-
-.tr-viewmode-btn.active {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
-  color: #fff;
-}
-
-[data-theme="dark"] .tr-viewmode-btn.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #0f1419;
-}
-
-/* Back-pill: hidden by default, surfaced by focus modes when an aula is open. */
 .tr-back-pill {
   display: none;
   padding: 6px 12px 6px 10px;
@@ -1282,95 +1236,26 @@ body.tr-modal-open { overflow: hidden; }
   border-color: var(--primary-light);
 }
 
-/* ----- FOCUS MODE COMMON (focus + focus-wide) ----- */
+@media (max-width: 700px) {
+  .tr-page:has(.tl-row.is-open) .tl { padding-left: 0; }
+  .tr-page:has(.tl-row.is-open) .tl::before { opacity: 0; }
+  .tr-page:has(.tl-row.is-open) .tl-row:not(.is-open) { display: none; }
+  .tr-page:has(.tl-row.is-open) .tl-row.is-open .tl-dot { display: none; }
+  .tr-page:has(.tl-row.is-open) .tr-back-pill { display: inline-flex; }
 
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tl,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tl {
-  padding-left: 0;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tl::before,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tl::before {
-  opacity: 0;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tl-row:not(.is-open),
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tl-row:not(.is-open) {
-  display: none;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tl-row.is-open .tl-dot,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tl-row.is-open .tl-dot {
-  display: none;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tr-back-pill,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-back-pill {
-  display: inline-flex;
-}
-
-/* Slim side band (96 -> 34) and slim sub-zone (56 -> 26) */
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .zone,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .zone {
-  width: 34px;
-  padding: 0.55rem 0.15rem;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .zone-num,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .zone-num {
-  font-size: 1.15rem;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .zone-label,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .zone-label {
-  display: none;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .meta,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .meta {
-  padding: 0.7rem 0.8rem;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .body,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .body {
-  padding: 0.9rem 0.75rem;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .sub-zone,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .sub-zone {
-  width: 26px;
-  font-size: 0.9rem;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .sub-meta,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .sub-meta {
-  padding: 0.55rem 0.7rem;
-}
-
-body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .sub-expanded,
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .sub-expanded {
-  padding: 0.85rem 0.75rem;
-}
-
-/* ----- FOCUS-WIDE EXTRAS: drop padding, hide chrome, square card ----- */
-
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) {
-  padding: 0;
-}
-
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-hero { display: none; }
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-tabs { display: none; }
-
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-viewmode {
-  margin: 0.6rem 0.85rem 0.85rem;
-}
-
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-back-pill {
-  margin: 0 0.85rem 0.85rem;
-}
-
-body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open {
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
+  /* Slim the zone (96 -> 34) and sub-zone (56 -> 26) bands. */
+  .tr-page:has(.tl-row.is-open) .card.open .zone {
+    width: 34px;
+    padding: 0.55rem 0.15rem;
+  }
+  .tr-page:has(.tl-row.is-open) .card.open .zone-num { font-size: 1.15rem; }
+  .tr-page:has(.tl-row.is-open) .card.open .zone-label { display: none; }
+  .tr-page:has(.tl-row.is-open) .card.open .meta { padding: 0.7rem 0.8rem; }
+  .tr-page:has(.tl-row.is-open) .card.open .body { padding: 0.9rem 0.75rem; }
+  .tr-page:has(.tl-row.is-open) .card.open .sub-zone {
+    width: 26px;
+    font-size: 0.9rem;
+  }
+  .tr-page:has(.tl-row.is-open) .card.open .sub-meta { padding: 0.55rem 0.7rem; }
+  .tr-page:has(.tl-row.is-open) .card.open .sub-expanded { padding: 0.85rem 0.75rem; }
 }

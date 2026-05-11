@@ -21,55 +21,12 @@
   var _outrosTypeFilter = null;
   var _rendered = { aulas: false, apostila: false, outros: false };
 
-  // View mode (em testes): off | focus | focus-wide.
-  // Persisted in localStorage; applied as body[data-view-mode].
-  var VIEW_MODE_KEY = 'trilha_view_mode';
-  var VIEW_MODES = ['off', 'focus', 'focus-wide'];
-  var VIEW_MODE_LABELS = { off: 'Padrão', focus: 'Foco', 'focus-wide': 'Foco amplo' };
+  // Focus mode: mobile only. Single-open accordion + collapsed rail/siblings,
+  // styled in trilha.css under `@media (max-width: 700px)`. Desktop keeps the
+  // original multi-open behaviour.
+  var _mqMobile = window.matchMedia('(max-width: 700px)');
 
-  function _getViewMode() {
-    var m = document.body.getAttribute('data-view-mode') || 'off';
-    return VIEW_MODES.indexOf(m) >= 0 ? m : 'off';
-  }
-
-  function _applyInitialViewMode() {
-    var mode = 'off';
-    try { mode = localStorage.getItem(VIEW_MODE_KEY) || 'off'; } catch (_) {}
-    if (VIEW_MODES.indexOf(mode) < 0) mode = 'off';
-    document.body.setAttribute('data-view-mode', mode);
-  }
-
-  function _setViewMode(mode) {
-    if (VIEW_MODES.indexOf(mode) < 0) mode = 'off';
-    document.body.setAttribute('data-view-mode', mode);
-    try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch (_) {}
-    document.querySelectorAll('.tr-viewmode-btn').forEach(function (b) {
-      b.classList.toggle('active', b.dataset.mode === mode);
-    });
-    // When switching into a focus mode with multiple aulas open, keep the
-    // first and collapse the rest so the single-open invariant holds.
-    if (mode === 'focus' || mode === 'focus-wide') {
-      var openRows = document.querySelectorAll('.tl-row.is-open');
-      for (var i = 1; i < openRows.length; i++) _closeAulaRow(openRows[i]);
-    }
-  }
-
-  function _renderViewModeToggle() {
-    var el = document.getElementById('tr-viewmode');
-    if (!el) return;
-    var current = _getViewMode();
-    el.innerHTML =
-      '<span class="tr-viewmode-label">Visualização</span>' +
-      VIEW_MODES.map(function (m) {
-        return '<button type="button" class="tr-viewmode-btn' +
-          (m === current ? ' active' : '') +
-          '" data-mode="' + m + '">' + VIEW_MODE_LABELS[m] + '</button>';
-      }).join('');
-    el.querySelectorAll('.tr-viewmode-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () { _setViewMode(btn.dataset.mode); });
-    });
-    el.hidden = false;
-  }
+  function _isFocusMode() { return _mqMobile.matches; }
 
   function _wireBackPill() {
     var btn = document.getElementById('tr-back-pill');
@@ -90,6 +47,14 @@
     var body = card.querySelector('.body');
     if (body) body.remove();
   }
+
+  // If the viewport crosses into mobile while several aulas are open, collapse
+  // all but the first so the single-open invariant matches the CSS state.
+  _mqMobile.addEventListener('change', function (e) {
+    if (!e.matches) return;
+    var openRows = document.querySelectorAll('.tl-row.is-open');
+    for (var i = 1; i < openRows.length; i++) _closeAulaRow(openRows[i]);
+  });
 
   // ── Icons (lucide-style) ─────────────────────────────────────────────
   var ICONS = {
@@ -133,7 +98,6 @@
 
   // ── Entry ────────────────────────────────────────────────────────────
   function init() {
-    _applyInitialViewMode();
     if (!_clientSlug || !_turmaSlug || !_token) { _showError('link_invalid'); return; }
     _loadTurma();
     window.addEventListener('hashchange', _onHashChange);
@@ -153,7 +117,6 @@
       _renderHero();
       _renderHeaderActions();
       _renderTabs();
-      _renderViewModeToggle();
       _wireBackPill();
       _onHashChange();
     } catch (err) {
@@ -406,9 +369,9 @@
       return;
     }
 
-    // In focus modes, single-open accordion: close any other open aula first.
-    var mode = _getViewMode();
-    if (mode === 'focus' || mode === 'focus-wide') {
+    // On mobile, focus mode is the default: single-open accordion.
+    var mobile = _isFocusMode();
+    if (mobile) {
       document.querySelectorAll('.tl-row.is-open').forEach(function (other) {
         if (other !== row) _closeAulaRow(other);
       });
@@ -419,9 +382,7 @@
     headerEl.setAttribute('aria-expanded', 'true');
     card.appendChild(_buildAulaBody(aula));
 
-    if (mode === 'focus' || mode === 'focus-wide') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    if (mobile) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function _buildAulaBody(aula) {
