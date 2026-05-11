@@ -1202,3 +1202,175 @@ body.tr-modal-open { overflow: hidden; }
   .tr-modal-title { font-size: 1.05rem; }
   .tr-tarefa-instructions { max-height: 150px; }
 }
+
+/* =====================================================================
+   View mode toggle (em testes) + Focus mode
+   Three modes selectable via #tr-viewmode pills, persisted in
+   localStorage as `trilha_view_mode`:
+     - off          (default; current production behaviour)
+     - focus        (single-open + collapsed rail + trimmed bands)
+     - focus-wide   (focus + page padding 0 + hero/tabs hidden +
+                    edge-to-edge open card)
+   ===================================================================== */
+
+.tr-viewmode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: -0.5rem 0 1.25rem;
+}
+
+.tr-viewmode-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+.tr-viewmode-btn {
+  padding: 4px 11px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.tr-viewmode-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-dark);
+}
+
+.tr-viewmode-btn.active {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: #fff;
+}
+
+[data-theme="dark"] .tr-viewmode-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #0f1419;
+}
+
+/* Back-pill: hidden by default, surfaced by focus modes when an aula is open. */
+.tr-back-pill {
+  display: none;
+  padding: 6px 12px 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  margin: 0 0 14px;
+}
+
+.tr-back-pill:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-light);
+}
+
+/* ----- FOCUS MODE COMMON (focus + focus-wide) ----- */
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tl,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tl {
+  padding-left: 0;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tl::before,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tl::before {
+  opacity: 0;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tl-row:not(.is-open),
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tl-row:not(.is-open) {
+  display: none;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tl-row.is-open .tl-dot,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tl-row.is-open .tl-dot {
+  display: none;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .tr-back-pill,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-back-pill {
+  display: inline-flex;
+}
+
+/* Slim side band (96 -> 34) and slim sub-zone (56 -> 26) */
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .zone,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .zone {
+  width: 34px;
+  padding: 0.55rem 0.15rem;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .zone-num,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .zone-num {
+  font-size: 1.15rem;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .zone-label,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .zone-label {
+  display: none;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .meta,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .meta {
+  padding: 0.7rem 0.8rem;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .body,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .body {
+  padding: 0.9rem 0.75rem;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .sub-zone,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .sub-zone {
+  width: 26px;
+  font-size: 0.9rem;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .sub-meta,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .sub-meta {
+  padding: 0.55rem 0.7rem;
+}
+
+body[data-view-mode="focus"]      .tr-page:has(.tl-row.is-open) .card.open .sub-expanded,
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open .sub-expanded {
+  padding: 0.85rem 0.75rem;
+}
+
+/* ----- FOCUS-WIDE EXTRAS: drop padding, hide chrome, square card ----- */
+
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) {
+  padding: 0;
+}
+
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-hero { display: none; }
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-tabs { display: none; }
+
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-viewmode {
+  margin: 0.6rem 0.85rem 0.85rem;
+}
+
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .tr-back-pill {
+  margin: 0 0.85rem 0.85rem;
+}
+
+body[data-view-mode="focus-wide"] .tr-page:has(.tl-row.is-open) .card.open {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
