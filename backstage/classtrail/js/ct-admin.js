@@ -1911,11 +1911,15 @@ window.CT_ADMIN = (function() {
       container.querySelectorAll('.ct-comp-apostila-cb:checked,.ct-comp-outros-cb:checked').forEach(function(cb) {
         ids.push(parseInt(cb.value));
       });
+      var currentTarefaId = aula.tarefa_item_id ? parseInt(aula.tarefa_item_id) : null;
       var opts = '<option value="">(nenhuma)</option>';
       ids.forEach(function(id) {
         var it = allSrc.find(function(x) { return x.id === id; });
         if (!it) return;
-        var sel = String(aula.tarefa_item_id) === String(id) ? ' selected' : '';
+        // Only type='tarefa' items are eligible. Legacy currently-selected
+        // tarefa stays visible so re-saving doesn't silently clear it.
+        if (it.type !== 'tarefa' && id !== currentTarefaId) return;
+        var sel = String(currentTarefaId) === String(id) ? ' selected' : '';
         opts += '<option value="' + id + '"' + sel + '>' + _esc(it.title) + '</option>';
       });
       container.querySelector('.ct-comp-tarefa').innerHTML = opts;
