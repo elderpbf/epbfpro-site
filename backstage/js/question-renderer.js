@@ -146,20 +146,29 @@ QR._renderRatingResults = function(question, container, opts) {
   var textAnswers = question.text_answers || [];
   var countsObj = {};
   for (var i = min; i <= max; i++) countsObj[i] = 0;
-  
+
   var sum = 0, total = 0;
   textAnswers.forEach(function(ans) {
     var val = parseInt(ans.value, 10);
     if (!isNaN(val) && val >= min && val <= max) { countsObj[val]++; sum += val; total++; }
   });
+
+  if (opts.showResults === false) {
+    var html = '<div class="qr-rating-summary">';
+    html += '<div class="qr-rating-total">' + total + ' resposta' + (total !== 1 ? 's' : '') + '</div>';
+    html += '</div>';
+    container.innerHTML = html;
+    return;
+  }
+
   var avg = total > 0 ? (sum / total).toFixed(1) : '0.0';
-  
+
   var labels = [], countsArr = [];
   for (var k = min; k <= max; k++) {
     labels.push(String(k));
     countsArr.push(countsObj[k]);
   }
-  
+
   var html = '<div class="qr-rating-summary">';
   html += '<div class="qr-rating-avg">' + avg + '</div>';
   html += '<div class="qr-rating-total">' + total + ' resposta' + (total !== 1 ? 's' : '') + '</div>';
@@ -173,6 +182,14 @@ QR._renderRatingResults = function(question, container, opts) {
 
 // ── INTERNAL: Numeric Results ─────────────────────────────────
 QR._renderNumericResults = function(question, container, opts) {
+  if (opts.showResults === false) {
+    var total = (question.text_answers || []).length;
+    var html = '<div class="qr-numeric-summary">';
+    html += '<div>Total: <strong>' + total + '</strong></div>';
+    html += '</div>';
+    container.innerHTML = html;
+    return;
+  }
   var textAnswers = question.text_answers || [];
   var vals = [];
   textAnswers.forEach(function(ans) {
@@ -379,6 +396,7 @@ QR.renderDisplay = function(question, counts, container, opts) {
 QR.renderResults = function(question, counts, container, opts) {
   opts = opts || {};
   var type = question.type || 'mc';
+  var showResults = opts.showResults !== false;
 
   switch (type) {
     case 'mc':
@@ -387,9 +405,19 @@ QR.renderResults = function(question, counts, container, opts) {
       QR._renderBarChart(question.options || [], counts, container, opts);
       break;
     case 'wordcloud':
+      if (!showResults) {
+        var total = (question.text_answers || []).length;
+        container.innerHTML = '<div class="qr-feed-empty">' + total + ' resposta' + (total !== 1 ? 's' : '') + ' (resultados ocultos)</div>';
+        return;
+      }
       QR._renderWordCloud(question, container);
       break;
     case 'open':
+      if (!showResults) {
+        var total = (question.text_answers || []).length;
+        container.innerHTML = '<div class="qr-feed-empty">' + total + ' resposta' + (total !== 1 ? 's' : '') + ' (resultados ocultos)</div>';
+        return;
+      }
       QR._renderTextFeed(question, container, opts);
       break;
     case 'rating':

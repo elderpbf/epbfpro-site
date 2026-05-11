@@ -66,6 +66,13 @@ var ThemeManager = (function() {
       config.toggleEl.removeEventListener('click', toggleTheme);
       config.toggleEl.addEventListener('click', toggleTheme);
     }
+
+    // Render the icon now that iconEl is wired. initPublic may have run
+    // before init() (in <head>), so applyTheme had no iconEl reference
+    // and the toggle would render empty until the first click.
+    var current = document.documentElement.getAttribute('data-theme') || 'light';
+    if (config.iconEl) config.iconEl.innerHTML = current === 'dark' ? SVG_SUN : SVG_MOON;
+    if (config.toggleEl) config.toggleEl.setAttribute('aria-pressed', current === 'dark');
   }
 
   function initPublic(opts) {
