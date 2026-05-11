@@ -363,10 +363,10 @@
       body.appendChild(_buildSection(tarefaItems.length === 1 ? 'Tarefa' : 'Tarefas', tarefaItems, { isTarefa: true }));
     }
     if (apostilaItems.length) {
-      body.appendChild(_buildSection('Apostila desta aula', apostilaItems, { isApostila: true }));
+      body.appendChild(_buildSection('Conteúdo da aula', apostilaItems, { isApostila: true }));
     }
     if (outrosItems.length) {
-      body.appendChild(_buildSection('Outros materiais', outrosItems));
+      body.appendChild(_buildOutrosSection(outrosItems));
     }
     if (!tarefaItems.length && !apostilaItems.length && !outrosItems.length) {
       body.innerHTML = '<div class="tr-empty">Nenhum conteúdo disponível nesta aula ainda.</div>';
@@ -383,6 +383,62 @@
     list.className = 'sub-list';
     items.forEach(function(item) { list.appendChild(_buildSub(item, opts)); });
     section.appendChild(list);
+    return section;
+  }
+
+  // Outros materiais within an aula: same shape as a section, but with a
+  // type-filter chip strip mirroring the standalone Outros tab. Filter state
+  // is per-section (closure-scoped); collapsing and reopening the aula resets it.
+  function _buildOutrosSection(items) {
+    var section = document.createElement('div');
+    section.className = 'section';
+    section.innerHTML = '<div class="section-label">Outros materiais</div>';
+
+    var filterEl = document.createElement('div');
+    filterEl.className = 'tr-type-filter';
+    section.appendChild(filterEl);
+
+    var list = document.createElement('div');
+    list.className = 'sub-list';
+    section.appendChild(list);
+
+    var seen = {};
+    var types = [];
+    items.forEach(function(it) {
+      if (seen[it.type]) return;
+      seen[it.type] = true;
+      types.push({ slug: it.type, label: it.type_label || it.type, icon: it.type_icon || '' });
+    });
+
+    var selectedSlug = null;
+
+    function renderList() {
+      var filtered = window.CT_TYPE_FILTER ? CT_TYPE_FILTER.apply(items, selectedSlug) : items;
+      list.innerHTML = '';
+      filtered.forEach(function(item) { list.appendChild(_buildSub(item)); });
+    }
+
+    function rerenderFilter() {
+      if (!window.CT_TYPE_FILTER) return;
+      CT_TYPE_FILTER.render({
+        container: filterEl,
+        types: types,
+        items: items,
+        selectedSlug: selectedSlug,
+        onChange: function(slug) {
+          selectedSlug = slug;
+          rerenderFilter();
+          renderList();
+        }
+      });
+    }
+
+    if (types.length > 1 && window.CT_TYPE_FILTER) {
+      rerenderFilter();
+    } else {
+      filterEl.style.display = 'none';
+    }
+    renderList();
     return section;
   }
 
@@ -544,7 +600,7 @@
 
     var apostilaSet = _data.apostila_set;
     if (!apostilaSet) {
-      container.innerHTML = '<div class="tr-empty">Nenhuma apostila disponível ainda.</div>';
+      container.innerHTML = '<div class="tr-empty">Nenhum conteúdo disponível ainda.</div>';
       return;
     }
     var items = _data.items || [];

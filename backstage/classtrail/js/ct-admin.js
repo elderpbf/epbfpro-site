@@ -674,7 +674,7 @@ window.CT_ADMIN = (function() {
           }).join('') + '</span>'
         : '';
       var setBadge = item.set_id
-        ? '<span class="ct-set-badge" title="Item faz parte da apostila importada; edições manuais podem ser sobrescritas em sincronizações futuras.">Apostila do curso</span>'
+        ? '<span class="ct-set-badge" title="Item faz parte do conteúdo importado; edições manuais podem ser sobrescritas em sincronizações futuras.">Conteúdo do curso</span>'
         : '';
       return '<div class="ct-item-row" onclick="CT_ADMIN.openItem(' + item.id + ')">' +
         '<span class="ct-item-type-icon">' + meta.icon + '</span>' +
@@ -711,8 +711,8 @@ window.CT_ADMIN = (function() {
 
   function _openGdocIngestModal(onSuccess) {
     var html = '<div class="ct-modal ct-gdoc-modal">' +
-      '<div class="ct-modal-title">Importar apostila do curso</div>' +
-      '<p class="ct-helper-text" style="margin:0 0 12px">A apostila é compartilhada entre todos os clientes. Após importar, todas as turmas terão acesso ao mesmo material.</p>' +
+      '<div class="ct-modal-title">Importar conteúdo do curso</div>' +
+      '<p class="ct-helper-text" style="margin:0 0 12px">O conteúdo é compartilhado entre todos os clientes. Após importar, todas as turmas terão acesso ao mesmo material.</p>' +
       '<div class="ct-field"><label>URL do documento</label>' +
         '<input type="text" id="gd-url" placeholder="https://docs.google.com/document/d/...">' +
         '<p class="ct-helper-text">O documento deve estar compartilhado como "Qualquer pessoa com o link pode visualizar".</p>' +
@@ -744,7 +744,7 @@ window.CT_ADMIN = (function() {
       callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'set', marker: marker }).then(function(res) {
         _closeModal();
         var n = (res && res.items_created) ? res.items_created : (res && res.count) ? res.count : (res && res.items) ? res.items.length : '?';
-        _toast('Apostila importada, ' + n + ' seções criadas.');
+        _toast('Conteúdo importado, ' + n + ' seções criadas.');
         if (typeof onSuccess === 'function') onSuccess();
         else _loadItems({ silent: true });
       }).catch(function(err) {
@@ -779,7 +779,7 @@ window.CT_ADMIN = (function() {
         _renderApostila();
       });
     }).catch(function() {
-      el.innerHTML = '<div class="ct-empty">Erro ao carregar a apostila.</div>';
+      el.innerHTML = '<div class="ct-empty">Erro ao carregar o conteúdo.</div>';
     });
   }
 
@@ -790,17 +790,17 @@ window.CT_ADMIN = (function() {
     if (!el) return;
 
     if (!_apostilaSet) {
-      if (labelEl) labelEl.textContent = 'Apostila do curso';
+      if (labelEl) labelEl.textContent = 'Conteúdo do curso';
       if (deleteBtn) deleteBtn.style.display = 'none';
-      el.innerHTML = '<div class="ct-empty">Nenhuma apostila importada ainda. Use o botão acima para importar a partir de um Google Docs.</div>';
+      el.innerHTML = '<div class="ct-empty">Nenhum conteúdo importado ainda. Use o botão acima para importar a partir de um Google Docs.</div>';
       return;
     }
 
-    if (labelEl) labelEl.textContent = _apostilaSet.category_label || 'Apostila do curso';
+    if (labelEl) labelEl.textContent = _apostilaSet.category_label || 'Conteúdo do curso';
     if (deleteBtn) deleteBtn.style.display = '';
 
     if (!_apostilaItems.length) {
-      el.innerHTML = '<div class="ct-empty">A apostila não contém seções.</div>';
+      el.innerHTML = '<div class="ct-empty">O conteúdo não tem seções.</div>';
       return;
     }
 
@@ -822,7 +822,7 @@ window.CT_ADMIN = (function() {
   }
 
   function _deleteApostilaItem(id) {
-    if (!confirm('Excluir esta seção da apostila? Ela será removida de todas as turmas onde está liberada.')) return;
+    if (!confirm('Excluir esta seção do conteúdo? Ela será removida de todas as turmas onde está liberada.')) return;
     var idNum = Number(id);
     var idx = _apostilaItems.findIndex(function(it) { return Number(it.id) === idNum; });
     var snapshot = idx >= 0 ? _apostilaItems[idx] : null;
@@ -846,14 +846,14 @@ window.CT_ADMIN = (function() {
 
   function _deleteApostilaSet() {
     if (!_apostilaSet) return;
-    if (!confirm('Excluir a apostila completa? Os itens permanecem na biblioteca, mas perdem a associação ao conjunto.')) return;
+    if (!confirm('Excluir o conteúdo completo? Todas as seções serão removidas da biblioteca e de todas as turmas onde estão liberadas.')) return;
     callWorker({ action: 'ct_delete_set', id: _apostilaSet.id }).then(function() {
       _apostilaSet = null;
       _apostilaItems = [];
-      // Clear set_id from _items cache so the items tab stays correct
-      _items.forEach(function(it) { if (it.set_id) { it.set_id = null; it.set_position = null; } });
+      // Cascade delete on the server removes the items too; drop them from the local cache.
+      _items = _items.filter(function(it) { return !it.set_id; });
       _renderApostila();
-      _toast('Apostila excluída.');
+      _toast('Conteúdo excluído.');
     }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
   }
 
@@ -1737,7 +1737,7 @@ window.CT_ADMIN = (function() {
       }).length;
 
       var outrosCount = _relAllItems.filter(function(i) {
-        return !i.set_id && i.type !== 'apostila' && i.type !== 'tarefa' &&
+        return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' &&
                _relReleased.indexOf(i.id) !== -1 &&
                String((_relReleasedMeta[i.id] || {}).aula_number) === String(n);
       }).length;
@@ -1766,7 +1766,7 @@ window.CT_ADMIN = (function() {
     });
 
     var outrosSolo = _relAllItems.filter(function(i) {
-      return !i.set_id && i.type !== 'apostila' && i.type !== 'tarefa' &&
+      return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' &&
              _relReleased.indexOf(i.id) !== -1 &&
              !(_relReleasedMeta[i.id] || {}).aula_number;
     }).length;
@@ -1820,7 +1820,7 @@ window.CT_ADMIN = (function() {
       return !i.set_id && i.type === 'tarefa';
     });
     var outrosItems = _relAllItems.filter(function(i) {
-      return !i.set_id && i.type !== 'apostila' && i.type !== 'tarefa';
+      return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa';
     });
 
     function isBound(id) {
@@ -1835,7 +1835,7 @@ window.CT_ADMIN = (function() {
             '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) + '</span>' +
           '</label>';
         }).join('')
-      : '<div class="ct-comp-empty">Nenhuma apostila importada.</div>';
+      : '<div class="ct-comp-empty">Nenhum conteúdo importado.</div>';
 
     var tarefaHtml = tarefaItems.length
       ? tarefaItems.map(function(i) {
@@ -1859,7 +1859,7 @@ window.CT_ADMIN = (function() {
     container.innerHTML =
       '<div class="ct-rel-aula-composer-body">' +
         '<div class="ct-comp-section">' +
-          '<div class="ct-comp-section-label">Apostila do curso</div>' +
+          '<div class="ct-comp-section-label">Conteúdo do curso</div>' +
           '<div class="ct-comp-list">' + apostilaHtml + '</div>' +
         '</div>' +
         '<div class="ct-comp-section">' +
@@ -1898,7 +1898,7 @@ window.CT_ADMIN = (function() {
     // somehow not populated. Items bound to an aula are managed via that aula's
     // composer, not here.
     var standaloneItems = _relAllItems.filter(function(i) {
-      if (i.set_id || i.type === 'apostila' || i.type === 'tarefa') return false;
+      if (i.set_id || i.type === 'conteudo' || i.type === 'tarefa') return false;
       var wasReleased = _relReleased.indexOf(i.id) !== -1;
       if (!wasReleased) return true;
       return !(_relReleasedMeta[i.id] || {}).aula_number;
