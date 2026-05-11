@@ -21,6 +21,41 @@
   var _outrosTypeFilter = null;
   var _rendered = { aulas: false, apostila: false, outros: false };
 
+  // Focus mode: mobile only. Single-open accordion + collapsed rail/siblings,
+  // styled in trilha.css under `@media (max-width: 700px)`. Desktop keeps the
+  // original multi-open behaviour.
+  var _mqMobile = window.matchMedia('(max-width: 700px)');
+
+  function _isFocusMode() { return _mqMobile.matches; }
+
+  function _wireBackPill() {
+    var btn = document.getElementById('tr-back-pill');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.tl-row.is-open').forEach(_closeAulaRow);
+    });
+  }
+
+  function _closeAulaRow(row) {
+    if (!row) return;
+    var card = row.querySelector('.card');
+    if (!card) return;
+    var headerEl = row.querySelector('.card-header');
+    card.classList.remove('open');
+    row.classList.remove('is-open');
+    if (headerEl) headerEl.setAttribute('aria-expanded', 'false');
+    var body = card.querySelector('.body');
+    if (body) body.remove();
+  }
+
+  // If the viewport crosses into mobile while several aulas are open, collapse
+  // all but the first so the single-open invariant matches the CSS state.
+  _mqMobile.addEventListener('change', function (e) {
+    if (!e.matches) return;
+    var openRows = document.querySelectorAll('.tl-row.is-open');
+    for (var i = 1; i < openRows.length; i++) _closeAulaRow(openRows[i]);
+  });
+
   // ── Icons (lucide-style) ─────────────────────────────────────────────
   var ICONS = {
     copy:
@@ -82,6 +117,7 @@
       _renderHero();
       _renderHeaderActions();
       _renderTabs();
+      _wireBackPill();
       _onHashChange();
     } catch (err) {
       var code = (err && err.data && err.data.error) ? err.data.error : 'error';
@@ -329,18 +365,24 @@
     var isOpen = card.classList.contains('open');
 
     if (isOpen) {
-      card.classList.remove('open');
-      row.classList.remove('is-open');
-      headerEl.setAttribute('aria-expanded', 'false');
-      var body = card.querySelector('.body');
-      if (body) body.remove();
+      _closeAulaRow(row);
       return;
+    }
+
+    // On mobile, focus mode is the default: single-open accordion.
+    var mobile = _isFocusMode();
+    if (mobile) {
+      document.querySelectorAll('.tl-row.is-open').forEach(function (other) {
+        if (other !== row) _closeAulaRow(other);
+      });
     }
 
     card.classList.add('open');
     row.classList.add('is-open');
     headerEl.setAttribute('aria-expanded', 'true');
     card.appendChild(_buildAulaBody(aula));
+
+    if (mobile) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function _buildAulaBody(aula) {
