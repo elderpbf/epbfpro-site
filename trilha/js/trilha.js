@@ -16,6 +16,18 @@
     }
   }
 
+  // Admin flag: visiting with ?admin=1 sets a localStorage marker so future
+  // page loads on this device pass _admin: true to the Worker and are
+  // excluded from ct_access_log. ?admin=0 clears it.
+  if (_params.has('admin')) {
+    try {
+      if (_params.get('admin') === '1') localStorage.setItem('ct_is_admin', '1');
+      else                              localStorage.removeItem('ct_is_admin');
+    } catch (_) {}
+  }
+  var _isAdmin = false;
+  try { _isAdmin = localStorage.getItem('ct_is_admin') === '1'; } catch (_) {}
+
   // ── State ────────────────────────────────────────────────────────────
   var _data = null;
   var _outrosTypeFilter = null;
@@ -110,6 +122,7 @@
         client_slug: _clientSlug,
         turma_slug: _turmaSlug,
         token: _token,
+        _admin: _isAdmin,
         _silent: true
       });
       document.getElementById('tr-loading').hidden = true;

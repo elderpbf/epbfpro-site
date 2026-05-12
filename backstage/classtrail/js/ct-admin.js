@@ -2728,6 +2728,75 @@ window.CT_ADMIN = (function() {
     });
   }
 
+  // ---- Acessos (settings drawer section) ----
+
+  function _accessSectionHtml() {
+    return (
+      '<div class="ct-access-wrap">' +
+        '<div class="ct-access-summary" id="ct-access-summary">Carregando…</div>' +
+        '<div class="ct-access-recent-label">Últimos acessos</div>' +
+        '<div class="ct-access-recent" id="ct-access-recent"></div>' +
+        '<p class="bs-hint" style="margin-top:0.5rem">Visitas registradas pelo Worker em <code>ct_get_turma_view</code>. Admins (<code>?admin=1</code> em cada dispositivo) não são logados.</p>' +
+      '</div>'
+    );
+  }
+
+  function _fmtAccessTime(iso) {
+    if (!iso) return '';
+    // D1 CURRENT_TIMESTAMP returns 'YYYY-MM-DD HH:MM:SS' (UTC). Convert to local.
+    var d = new Date(iso.replace(' ', 'T') + 'Z');
+    if (isNaN(d.getTime())) return iso;
+    var now = new Date();
+    var sameDay = d.toDateString() === now.toDateString();
+    var hh = String(d.getHours()).padStart(2, '0');
+    var mm = String(d.getMinutes()).padStart(2, '0');
+    if (sameDay) return 'hoje ' + hh + ':' + mm;
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mo = String(d.getMonth() + 1).padStart(2, '0');
+    return dd + '/' + mo + ' ' + hh + ':' + mm;
+  }
+
+  function _renderAccessLog() {
+    var summary = document.getElementById('ct-access-summary');
+    var recent  = document.getElementById('ct-access-recent');
+    if (!summary || !recent) return;
+    summary.textContent = 'Carregando…';
+    recent.innerHTML = '';
+    callWorker({ action: 'ct_get_access_log', limit: 100 }).then(function(res) {
+      var counts = (res && res.counts) || [];
+      var rows   = (res && res.rows)   || [];
+      if (!counts.length) {
+        summary.textContent = 'Nenhum acesso registrado ainda.';
+        return;
+      }
+      summary.innerHTML = counts.map(function(c) {
+        return (
+          '<div class="ct-access-row">' +
+            '<div class="ct-access-turma">' +
+              '<span class="ct-access-client">' + _esc(c.client_name) + '</span>' +
+              ' · ' +
+              '<span class="ct-access-turma-name">' + _esc(c.turma_name) + '</span>' +
+            '</div>' +
+            '<div class="ct-access-meta">' +
+              '<span class="ct-access-hits">' + c.hits + ' ' + (c.hits === 1 ? 'visita' : 'visitas') + '</span>' +
+              '<span class="ct-access-last">último: ' + _esc(_fmtAccessTime(c.last_at)) + '</span>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+      recent.innerHTML = rows.map(function(r) {
+        return (
+          '<div class="ct-access-recent-row">' +
+            '<span class="ct-access-recent-time">' + _esc(_fmtAccessTime(r.accessed_at)) + '</span>' +
+            '<span class="ct-access-recent-turma">' + _esc(r.client_name) + ' · ' + _esc(r.turma_name) + '</span>' +
+          '</div>'
+        );
+      }).join('');
+    }).catch(function(err) {
+      summary.textContent = 'Erro ao carregar: ' + (err.message || err);
+    });
+  }
+
   // ---- Public API ----
 
   return {
@@ -2755,6 +2824,9 @@ window.CT_ADMIN = (function() {
     },
 
     openTagManager: _openTagManager,
+
+    accessSectionHtml: _accessSectionHtml,
+    renderAccessLog: _renderAccessLog,
 
     editClient: function(slug) {
       var client = _clients.find(function(c) { return c.slug === slug; });
