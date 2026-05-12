@@ -149,9 +149,10 @@ var QuestionBank = (function () {
     btn.textContent = 'Gerando...';
 
     var qType = state.type || 'mc';
-    AIClient.generate({ prompt: topic, type: qType })
+    var maxSel = (state.max_select !== undefined && state.max_select !== null) ? parseInt(state.max_select) : 1;
+    AIClient.generate({ prompt: topic, type: qType, max_select: maxSel })
       .then(function (result) {
-        if (result) opts.onSelect(normalizeAiResult(result, qType));
+        if (result) opts.onSelect(normalizeAiResult(result, qType, maxSel));
       })
       .catch(function (e) {
         errEl.textContent = 'Erro: ' + e.message;
@@ -178,9 +179,10 @@ var QuestionBank = (function () {
     btn.disabled = true;
     btn.textContent = 'Melhorando...';
 
-    AIClient.generate({ improve_from: state.text, type: qType })
+    var maxSel = (state.max_select !== undefined && state.max_select !== null) ? parseInt(state.max_select) : 1;
+    AIClient.generate({ improve_from: state.text, type: qType, max_select: maxSel })
       .then(function (result) {
-        if (result) opts.onSelect(normalizeAiResult(result, qType));
+        if (result) opts.onSelect(normalizeAiResult(result, qType, maxSel));
       })
       .catch(function (e) {
         errEl.textContent = 'Erro: ' + e.message;
@@ -216,16 +218,29 @@ var QuestionBank = (function () {
     if (opts.improveBtn)  opts.improveBtn.addEventListener('click', improve);
   }
 
-  // Worker returns { ok, ai: { question, type, options: [...], correct: 0 } }
-  // Normalize to { question, type, options (JSON string), correct_answer } for onSelect callbacks
-  function normalizeAiResult(result, requestedType) {
+  // Worker returns { ok, ai: { question, type, options: [...], correct: 0|[0,2]|null } }
+  // Normalize to { question, type, options (JSON string), correct_answer, correct_answers, max_select }
+  function normalizeAiResult(result, requestedType, maxSel) {
     var ai = result.ai || result;
     var optArr = ai.options || [];
+    var maxSelect = (maxSel !== undefined && maxSel !== null) ? parseInt(maxSel) : 1;
+    var isMulti = maxSelect !== 1;
+    var correctAnswers = [];
+    var correctAnswer = '';
+    if (Array.isArray(ai.correct)) {
+      correctAnswers = ai.correct.map(Number).filter(Number.isInteger);
+      correctAnswer = JSON.stringify(correctAnswers);
+    } else if (typeof ai.correct === 'number') {
+      correctAnswers = [ai.correct];
+      correctAnswer = isMulti ? JSON.stringify(correctAnswers) : String(ai.correct);
+    }
     return {
       question: ai.question || '',
       type: requestedType || ai.type || 'mc',
       options: JSON.stringify(optArr),
-      correct_answer: typeof ai.correct === 'number' ? String(ai.correct) : (ai.correct || '')
+      correct_answer: correctAnswer,
+      correct_answers: correctAnswers,
+      max_select: maxSelect
     };
   }
 

@@ -39,22 +39,25 @@ QR.getTypeConfig = function(type) {
 
 // ── INTERNAL: Bar chart ───────────────────────────────────────
 // Renders option bars into container. Used by renderResults for mc/tf/poll.
-// opts: { mode, showResults, revealAnswer, correctAnswer, myAnswerIndex }
+// opts: { mode, showResults, revealAnswer, correctAnswers, myAnswerIndices, voterCount }
 QR._renderBarChart = function(options, counts, container, opts) {
-  var mode          = opts.mode || 'student';
-  var showResults   = opts.showResults !== false;
-  var revealAnswer  = opts.revealAnswer === true;
-  var correctAnswer = opts.correctAnswer !== undefined ? opts.correctAnswer : null;
-  var myAnswerIndex = opts.myAnswerIndex !== undefined ? opts.myAnswerIndex : null;
+  var showResults    = opts.showResults !== false;
+  var revealAnswer   = opts.revealAnswer === true;
+  var correctAnswers = Array.isArray(opts.correctAnswers) ? opts.correctAnswers
+                     : (opts.correctAnswer !== undefined && opts.correctAnswer !== null ? [opts.correctAnswer] : []);
+  var myAnswerIndices = Array.isArray(opts.myAnswerIndices) ? opts.myAnswerIndices
+                      : (opts.myAnswerIndex !== undefined && opts.myAnswerIndex !== null ? [opts.myAnswerIndex] : []);
+  var voterCount = (opts.voterCount !== undefined && opts.voterCount > 0) ? opts.voterCount : null;
 
   var total = (counts || []).reduce(function(a, b) { return a + b; }, 0);
+  var denominator = voterCount !== null ? voterCount : total;
   var html  = '';
 
   (options || []).forEach(function(opt, i) {
     var count     = (counts && counts[i] !== undefined) ? counts[i] : 0;
-    var pct       = showResults && total > 0 ? Math.round(count / total * 100) : 0;
-    var isCorrect = revealAnswer && correctAnswer !== null && i === correctAnswer;
-    var isMine    = myAnswerIndex !== null && i === myAnswerIndex;
+    var pct       = showResults && denominator > 0 ? Math.round(count / denominator * 100) : 0;
+    var isCorrect = revealAnswer && correctAnswers.indexOf(i) !== -1;
+    var isMine    = myAnswerIndices.indexOf(i) !== -1;
     var fillClass = isCorrect ? 'correct' : (isMine ? 'mine' : '');
 
     html +=
@@ -240,11 +243,13 @@ QR._renderNumericResults = function(question, container, opts) {
 
 // ── INTERNAL: Button grid ─────────────────────────────────────
 // Renders clickable option buttons into container. Used by renderInput for mc/tf/poll.
-// opts: { onSelect(index, btn) }
+// opts: { onSelect(index, btn), multi, maxSelect, onSubmitIndices(indices) }
 QR._renderButtonGrid = function(options, container, opts) {
-  var onSelect = opts.onSelect || function() {};
-  var html = '';
+  var isMulti   = opts.multi === true;
+  var maxSelect = (opts.maxSelect !== undefined) ? parseInt(opts.maxSelect) : 1;
+  var onSelect  = opts.onSelect || function() {};
 
+  var html = '';
   (options || []).forEach(function(opt, i) {
     html +=
       '<button class="qr-option-btn" data-index="' + i + '">' +
@@ -253,12 +258,48 @@ QR._renderButtonGrid = function(options, container, opts) {
       '</button>';
   });
 
+  if (isMulti) {
+    var limitLabel = maxSelect === 0
+      ? 'Selecione todas que se aplicam'
+      : 'Selecione até ' + maxSelect + ' opç' + (maxSelect === 1 ? 'ão' : 'ões');
+    html += '<p class="qr-multi-hint">' + limitLabel + '</p>';
+    html += '<button class="qr-submit-btn" disabled>Enviar</button>';
+  }
+
   container.innerHTML = html;
+
+  if (!isMulti) {
+    container.querySelectorAll('.qr-option-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        onSelect(parseInt(btn.dataset.index), btn);
+      });
+    });
+    return;
+  }
+
+  // Multi-select logic
+  var selected = new Set();
+  var submitBtn = container.querySelector('.qr-submit-btn');
 
   container.querySelectorAll('.qr-option-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      onSelect(parseInt(btn.dataset.index), btn);
+      var idx = parseInt(btn.dataset.index);
+      if (selected.has(idx)) {
+        selected.delete(idx);
+        btn.classList.remove('is-selected');
+      } else {
+        var atMax = maxSelect !== 0 && selected.size >= maxSelect;
+        if (atMax) return; // blocked -- hint text already explains limit
+        selected.add(idx);
+        btn.classList.add('is-selected');
+      }
+      submitBtn.disabled = selected.size === 0;
     });
+  });
+
+  submitBtn.addEventListener('click', function() {
+    if (selected.size === 0) return;
+    if (typeof opts.onSubmitIndices === 'function') opts.onSubmitIndices(Array.from(selected));
   });
 };
 
@@ -346,15 +387,21 @@ QR._renderNumericInput = function(question, container, opts) {
 
 // ── PUBLIC: renderInput ───────────────────────────────────────
 // Renders student-facing input UI for the given question type.
-// opts: { mode, onSelect(index, btn) }
+// opts: { mode, onSelect(index, btn), onSubmitIndices(indices) }
 QR.renderInput = function(question, container, opts) {
   opts = opts || {};
   var type = question.type || 'mc';
+  var maxSel = (question.max_select !== undefined) ? parseInt(question.max_select) : 1;
 
   switch (type) {
     case 'mc':
+    case 'poll': {
+      var isMulti = maxSel !== 1;
+      var gridOpts = Object.assign({}, opts, { multi: isMulti, maxSelect: maxSel });
+      QR._renderButtonGrid(question.options || [], container, gridOpts);
+      break;
+    }
     case 'tf':
-    case 'poll':
       QR._renderButtonGrid(question.options || [], container, opts);
       break;
     case 'open':
@@ -392,17 +439,22 @@ QR.renderDisplay = function(question, counts, container, opts) {
 
 // ── PUBLIC: renderResults ─────────────────────────────────────
 // Renders results display for the given question type.
-// opts: { mode, showResults, revealAnswer, correctAnswer, myAnswerIndex }
+// opts: { mode, showResults, revealAnswer, correctAnswers, myAnswerIndices, voterCount }
 QR.renderResults = function(question, counts, container, opts) {
   opts = opts || {};
   var type = question.type || 'mc';
   var showResults = opts.showResults !== false;
 
+  // Merge question-level correct_answers and voter_count into opts if not already set
+  var mergedOpts = Object.assign({}, opts);
+  if (!mergedOpts.correctAnswers && question.correct_answers) mergedOpts.correctAnswers = question.correct_answers;
+  if (mergedOpts.voterCount === undefined && question.voter_count !== undefined) mergedOpts.voterCount = question.voter_count;
+
   switch (type) {
     case 'mc':
     case 'tf':
     case 'poll':
-      QR._renderBarChart(question.options || [], counts, container, opts);
+      QR._renderBarChart(question.options || [], counts, container, mergedOpts);
       break;
     case 'wordcloud':
       if (!showResults) {

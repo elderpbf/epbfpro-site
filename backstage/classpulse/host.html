@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.10">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.5">
-<link rel="stylesheet" href="../css/question-types.css?v=1.7">
+<link rel="stylesheet" href="../css/question-types.css?v=1.8">
 <script src="../js/debug.js?v=2.5"></script>
 <style>
   /* Host-specific styles */
@@ -314,11 +314,21 @@
             <input class="host-input" type="text" id="q-opt-d" placeholder="Opção D">
             <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct" value="d" id="q-correct-d"></label>
           </div>
+          <div style="margin-top:0.6rem;display:flex;align-items:center;gap:0.5rem">
+            <label class="host-label" style="margin:0;white-space:nowrap">Seleções por aluno</label>
+            <input type="number" class="host-input" id="q-mc-max-select" value="1" min="0" step="1" style="max-width:80px">
+            <span style="font-size:0.75rem;color:var(--text-secondary)">1 = única · 0 = todas</span>
+          </div>
         </div>
 
         <div id="q-opts-poll" style="display:none">
           <div id="poll-rows"></div>
           <button class="host-btn host-btn-ghost" id="poll-add-btn" type="button" style="font-size:0.82rem;margin-top:0.3rem">+ Adicionar opção</button>
+          <div style="margin-top:0.6rem;display:flex;align-items:center;gap:0.5rem">
+            <label class="host-label" style="margin:0;white-space:nowrap">Seleções por aluno</label>
+            <input type="number" class="host-input" id="q-poll-max-select" value="1" min="0" step="1" style="max-width:80px">
+            <span style="font-size:0.75rem;color:var(--text-secondary)">1 = única · 0 = todas</span>
+          </div>
         </div>
 
         <div id="q-opts-rating" style="display:none">
@@ -391,13 +401,13 @@
 
 <script src="../js/utils.js?v=1.3"></script>
 <script src="../js/api-client.js?v=1.1"></script>
-<script src="../js/question-renderer.js?v=2.3"></script>
-<script src="../js/classpulse-question-types.js?v=1.1"></script>
-<script src="../js/classpulse-question.min.js?v=1.7"></script>
+<script src="../js/question-renderer.js?v=2.4"></script>
+<script src="../js/classpulse-question-types.js?v=1.2"></script>
+<script src="../js/classpulse-question.min.js?v=1.8"></script>
 <script src="../js/classpulse-visibility-toggle.js?v=1.3"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
-<script src="../js/question-bank.js?v=1.9"></script>
+<script src="../js/question-bank.js?v=2.0"></script>
 <script src="../js/auth.js?v=1.1"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/backstage-topbar.js?v=1.2"></script>
@@ -708,8 +718,14 @@ var formEls = {
   ratingMax: document.getElementById('q-rating-max'),
   numericMin: document.getElementById('q-num-min'),
   numericMax: document.getElementById('q-num-max'),
+  mcMaxSelect:  document.getElementById('q-mc-max-select'),
+  pollMaxSelect: document.getElementById('q-poll-max-select'),
   initPollRows: initPollRows
 };
+
+document.getElementById('q-mc-max-select').addEventListener('change', function() {
+  CPQuestionTypes.get('mc').setupForm(formEls);
+});
 
 function applyTypeUI(qType) {
   var T = CPQuestionTypes.get(qType);
@@ -752,7 +768,8 @@ document.getElementById('launch-btn').addEventListener('click', async function()
     var res = await callWorker({
       action: 'launch_question', auth_token: AUTH_TOKEN,
       session_code: sessionCode, type: qType, text: text,
-      options: read.options, correct_answer: read.correct_answer
+      options: read.options, correct_answer: read.correct_answer,
+      max_select: read.max_select !== undefined ? read.max_select : 1
     });
     activeQId = res.id;
     visToggle.reset();
@@ -874,11 +891,13 @@ function renderHistory(closedQs) {
 
     var resultsHtml = '';
     if (q.options && q.answer_counts && q.options.length > 0) {
-      var total = q.answer_counts.reduce(function(a,b){ return a+b; }, 0);
+      var hTotal = q.answer_counts.reduce(function(a,b){ return a+b; }, 0);
+      var hDenom = (q.voter_count && q.voter_count > 0) ? q.voter_count : hTotal;
+      var hCorrect = Array.isArray(q.correct_answers) ? q.correct_answers : [];
       resultsHtml = '<div class="hi-results">';
       q.options.forEach(function(opt, i) {
-        var pct = total > 0 ? Math.round(q.answer_counts[i] / total * 100) : 0;
-        var isCorrect = q.correct_answer !== null && i === q.correct_answer;
+        var pct = hDenom > 0 ? Math.round(q.answer_counts[i] / hDenom * 100) : 0;
+        var isCorrect = q.reveal_answer && hCorrect.indexOf(i) !== -1;
         resultsHtml += '<div class="hi-bar">' +
                          '<div class="hi-bar-label">' +
                            '<span class="hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' + LETTERS[i] + (isCorrect ? ' \u2713' : '') + '</span>' +
@@ -930,7 +949,10 @@ async function relaunchFromHistory(btn, q) {
       type: q.type || 'mc',
       text: q.text,
       options: q.options,
-      correct_answer: q.correct_answer
+      correct_answer: q.correct_answers && q.correct_answers.length
+        ? (q.max_select !== 1 ? q.correct_answers : q.correct_answers[0])
+        : null,
+      max_select: q.max_select || 1
     });
     activeQId = res.id;
     clearAlert();
@@ -957,7 +979,12 @@ function editFromHistory(q) {
   var qType = q.type || 'mc';
   document.getElementById('q-type').value = qType;
   applyTypeUI(qType);
-  CPQuestionTypes.get(qType).restoreForm(formEls, q);
+  CPQuestionTypes.get(qType).restoreForm(formEls, {
+    options: q.options,
+    correct_answers: q.correct_answers || [],
+    correct_answer: q.correct_answers && q.correct_answers.length === 1 ? q.correct_answers[0] : null,
+    max_select: q.max_select || 1
+  });
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.getElementById('q-text').focus();
 }
@@ -1002,15 +1029,19 @@ QuestionBank.init({
   onSelect: function(q) { prefillForm(q); },
   onLaunch: function(q, btn) { launchFromBank(q, btn); },
   getFormState: function() {
+    var qType = document.getElementById('q-type').value;
+    var maxSelEl = qType === 'mc' ? document.getElementById('q-mc-max-select')
+                 : qType === 'poll' ? document.getElementById('q-poll-max-select') : null;
     return {
       text: document.getElementById('q-text').value.trim(),
-      type: document.getElementById('q-type').value,
+      type: qType,
       options: [
         document.getElementById('q-opt-a').value.trim(),
         document.getElementById('q-opt-b').value.trim(),
         document.getElementById('q-opt-c').value.trim(),
         document.getElementById('q-opt-d').value.trim()
-      ]
+      ],
+      max_select: maxSelEl ? parseInt(maxSelEl.value) : 1
     };
   }
 });
@@ -1020,15 +1051,17 @@ async function launchFromBank(q, btn) {
   btn.textContent = 'Lançando...';
   try {
     var opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+    var maxSel = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select) : 1;
     var ca = (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '')
-      ? parseInt(q.correct_answer) : null;
+      ? q.correct_answer : null;
     var res = await callWorker({
       action: 'launch_question', auth_token: AUTH_TOKEN,
       session_code: sessionCode,
       type: q.type || 'mc',
       text: q.question,
       options: opts,
-      correct_answer: ca
+      correct_answer: ca,
+      max_select: maxSel
     });
     activeQId = res.id;
     clearAlert();
@@ -1051,7 +1084,14 @@ function prefillForm(q) {
   } else {
     parsedOpts = q.options || [];
   }
-  CPQuestionTypes.get(qType).restoreForm(formEls, { options: parsedOpts, correct_answer: q.correct_answer });
+  var correctAnswers = Array.isArray(q.correct_answers) ? q.correct_answers
+    : (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '' ? [parseInt(q.correct_answer)] : []);
+  CPQuestionTypes.get(qType).restoreForm(formEls, {
+    options: parsedOpts,
+    correct_answers: correctAnswers,
+    correct_answer: q.correct_answer,
+    max_select: q.max_select !== undefined ? q.max_select : 1
+  });
 }
 
 

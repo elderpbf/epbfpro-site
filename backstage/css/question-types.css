@@ -209,7 +209,10 @@
 .qr-numeric-input:focus { border-color: var(--primary); }
 
 .qr-submit-btn { padding: 12px 24px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
-.qr-submit-btn:hover { opacity: 0.85; }
+.qr-submit-btn:hover:not(:disabled) { opacity: 0.85; }
+.qr-submit-btn:disabled { opacity: 0.4; cursor: default; }
+.qr-option-btn.is-selected { border-color: var(--primary); background: var(--option-selected-bg); font-weight: 600; }
+.qr-multi-hint { font-size: 0.82rem; color: var(--text-secondary); margin: 8px 0 4px; text-align: center; }
 
 /* ── DISPLAY/EMBED HEADER (question area, status badge) ─── */
 
