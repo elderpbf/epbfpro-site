@@ -1855,3 +1855,12 @@
 
 .ct-access-recent-time { color: var(--text-secondary); }
 .ct-access-recent-turma { color: var(--text-primary); font-weight: 500; }
+
+.ct-access-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.ct-access-actions .bs-toggle-btn { flex: 1; min-width: 140px; font-size: 0.78rem; }

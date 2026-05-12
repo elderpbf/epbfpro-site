@@ -2733,12 +2733,61 @@ window.CT_ADMIN = (function() {
   function _accessSectionHtml() {
     return (
       '<div class="ct-access-wrap">' +
+        '<div class="ct-access-actions">' +
+          '<button type="button" class="bs-toggle-btn" id="ct-access-admin-toggle">Carregando…</button>' +
+          '<button type="button" class="bs-toggle-btn" id="ct-access-clear">Limpar log</button>' +
+        '</div>' +
         '<div class="ct-access-summary" id="ct-access-summary">Carregando…</div>' +
         '<div class="ct-access-recent-label">Últimos acessos</div>' +
         '<div class="ct-access-recent" id="ct-access-recent"></div>' +
-        '<p class="bs-hint" style="margin-top:0.5rem">Visitas registradas pelo Worker em <code>ct_get_turma_view</code>. Admins (<code>?admin=1</code> em cada dispositivo) não são logados.</p>' +
+        '<p class="bs-hint" style="margin-top:0.5rem">Acessos públicos são logados pelo Worker. Marcar este dispositivo como admin (mesma origem, mesmo browser) faz as próximas visitas à <code>/trilha</code> ignorarem o log.</p>' +
       '</div>'
     );
+  }
+
+  function _syncAdminFlagBtn() {
+    var btn = document.getElementById('ct-access-admin-toggle');
+    if (!btn) return;
+    var on = false;
+    try { on = localStorage.getItem('ct_is_admin') === '1'; } catch (_) {}
+    btn.textContent = on ? '✓ Este dispositivo é admin (clique para remover)' : 'Marcar este dispositivo como admin';
+    btn.style.color = on ? 'var(--primary)' : '';
+    btn.style.borderColor = on ? 'var(--primary)' : '';
+  }
+
+  function _initAccessActions() {
+    var toggleBtn = document.getElementById('ct-access-admin-toggle');
+    var clearBtn  = document.getElementById('ct-access-clear');
+    if (toggleBtn && !toggleBtn.dataset.wired) {
+      toggleBtn.dataset.wired = '1';
+      toggleBtn.addEventListener('click', function() {
+        var on = false;
+        try { on = localStorage.getItem('ct_is_admin') === '1'; } catch (_) {}
+        try {
+          if (on) localStorage.removeItem('ct_is_admin');
+          else    localStorage.setItem('ct_is_admin', '1');
+        } catch (_) {}
+        _syncAdminFlagBtn();
+      });
+    }
+    if (clearBtn && !clearBtn.dataset.wired) {
+      clearBtn.dataset.wired = '1';
+      clearBtn.addEventListener('click', function() {
+        if (!confirm('Apagar todos os registros de acesso? Não há como desfazer.')) return;
+        clearBtn.disabled = true;
+        clearBtn.textContent = 'Apagando…';
+        callWorker({ action: 'ct_clear_access_log' }).then(function(res) {
+          var n = (res && res.deleted) || 0;
+          _toast('Log limpo (' + n + ' ' + (n === 1 ? 'registro' : 'registros') + ').');
+          _renderAccessLog();
+        }).catch(function(err) {
+          _toast('Erro: ' + (err.message || err));
+        }).then(function() {
+          clearBtn.disabled = false;
+          clearBtn.textContent = 'Limpar log';
+        });
+      });
+    }
   }
 
   function _fmtAccessTime(iso) {
@@ -2757,6 +2806,8 @@ window.CT_ADMIN = (function() {
   }
 
   function _renderAccessLog() {
+    _initAccessActions();
+    _syncAdminFlagBtn();
     var summary = document.getElementById('ct-access-summary');
     var recent  = document.getElementById('ct-access-recent');
     if (!summary || !recent) return;
