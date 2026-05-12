@@ -98,6 +98,10 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .ct-card-meta {
@@ -259,6 +263,15 @@
   box-sizing: border-box;
   outline: none;
   transition: border-color 0.12s;
+}
+
+.ct-field input[type="radio"],
+.ct-field input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
 }
 
 .ct-field input:focus,
@@ -927,8 +940,7 @@
 .ct-card .ct-icon-preview {
   width: 36px;
   height: 36px;
-  margin-right: 0.55rem;
-  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .ct-icon-mode-row label {

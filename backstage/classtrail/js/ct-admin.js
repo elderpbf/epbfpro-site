@@ -176,9 +176,14 @@ window.CT_ADMIN = (function() {
     var iconPreviewHtml = '';
     if (currentIconPath) {
       var previewSrc = currentIconPath.startsWith('http') ? currentIconPath : WORKER_URL + '/r2/' + currentIconPath;
-      iconPreviewHtml = '<div class="ct-icon-preview-row">' +
-        '<img id="cf-icon-preview-img" class="ct-icon-preview" src="' + _esc(previewSrc) + '" alt="Ícone atual">' +
-        '<span class="ct-helper-text">Ícone atual</span>' +
+      iconPreviewHtml =
+        '<div class="ct-icon-preview-row">' +
+          '<img class="ct-icon-preview" src="' + _esc(previewSrc) + '" alt="Ícone atual">' +
+          '<span class="ct-helper-text">Atual</span>' +
+        '</div>' +
+        '<div class="ct-icon-preview-row" id="cf-icon-preview-row" style="display:none">' +
+          '<img id="cf-icon-preview-img" class="ct-icon-preview" src="" alt="Prévia">' +
+          '<span class="ct-helper-text">Novo</span>' +
         '</div>';
     } else {
       iconPreviewHtml = '<div class="ct-icon-preview-row" id="cf-icon-preview-row" style="display:none">' +
