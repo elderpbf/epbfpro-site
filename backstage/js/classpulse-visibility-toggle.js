@@ -7,24 +7,17 @@
     var getSessionCode = opts.getSessionCode;
     var authToken     = opts.authToken;
     var callWorkerFn  = opts.callWorker;
-    var labels        = opts.labels || {
-      visible: 'Esconder resultados',
-      hidden:  'Mostrar resultados'
-    };
     var onError       = typeof opts.onError === 'function' ? opts.onError : function() {};
 
-    // Build switch + label structure inside the button.
     buttonEl.innerHTML =
       '<span class="cp-toggle-switch" aria-hidden="true"><span class="cp-toggle-knob"></span></span>' +
-      '<span class="cp-toggle-label"></span>';
-    var labelEl = buttonEl.querySelector('.cp-toggle-label');
+      '<span class="cp-toggle-label">Esconder resposta</span>';
 
-    // Default state matches Worker's default (show_results='true' at launch).
-    var visible = true;
+    // hidden=true → switch ON → results not shown to students.
+    var hidden = true;
 
     function applyState() {
-      buttonEl.setAttribute('aria-pressed', visible ? 'true' : 'false');
-      labelEl.textContent = visible ? labels.visible : labels.hidden;
+      buttonEl.setAttribute('aria-pressed', hidden ? 'true' : 'false');
     }
 
     applyState();
@@ -32,18 +25,18 @@
     function onClick() {
       var qId = getActiveQId();
       if (!qId) return;
-      var nextVisible = !visible;
+      var nextHidden = !hidden;
       buttonEl.disabled = true;
       callWorkerFn({
         action: 'set_question_visibility',
         auth_token: authToken,
         id: qId,
         session_code: getSessionCode(),
-        show_results: nextVisible
+        show_results: !nextHidden
       })
         .then(function(res) {
           if (res && res.ok) {
-            visible = nextVisible;
+            hidden = nextHidden;
             applyState();
           } else {
             onError((res && res.error) || 'Erro ao atualizar visibilidade.');
@@ -60,13 +53,13 @@
     buttonEl.addEventListener('click', onClick);
 
     function reset() {
-      visible = true;
+      hidden = true;
       applyState();
       buttonEl.disabled = false;
     }
 
     function syncFromQuestion(q) {
-      visible = !(q && q.show_results === false);
+      hidden = !(q && q.show_results === true);
       applyState();
     }
 
