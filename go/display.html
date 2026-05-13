@@ -43,6 +43,54 @@
     @media (max-height: 600px) {
       pensoia-header .ph-bar { padding: 4px 16px; }
     }
+
+    /* Pinned student Q&A on display */
+    .cp-qa-pinned-display {
+      margin: clamp(16px, 2vh, 32px) auto 0;
+      max-width: min(960px, 88vw);
+      padding: clamp(20px, 2.5vh, 36px) clamp(24px, 3vw, 48px);
+      background: rgba(20,184,166,0.06);
+      border: 2px solid rgba(20,184,166,0.4);
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(20,184,166,0.08);
+    }
+    .cp-qa-pinned-display .cp-qa-pinned-label {
+      font-size: clamp(0.78rem, 1.2vw, 0.95rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+    .cp-qa-pinned-display .cp-qa-pinned-meta {
+      font-size: clamp(0.85rem, 1.3vw, 1.05rem);
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .cp-qa-pinned-display .cp-qa-pinned-text {
+      font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.35;
+    }
+    .cp-qa-pinned-display .cp-qa-pinned-answer {
+      margin-top: 18px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 12px 12px 0;
+      font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+      line-height: 1.45;
+      color: var(--text-primary);
+    }
+    .cp-qa-pinned-display .cp-qa-pinned-answer-label {
+      font-size: clamp(0.7rem, 1vw, 0.82rem);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
   </style>
 </head>
 <body>
@@ -53,6 +101,16 @@
     <div class="center-state">
       <span class="state-icon">&#8987;</span>
       <span class="state-text">Carregando...</span>
+    </div>
+  </div>
+
+  <div id="qa-pinned-display" class="cp-qa-pinned-display" style="display:none">
+    <div class="cp-qa-pinned-label">Pergunta do aluno</div>
+    <div class="cp-qa-pinned-meta" id="qa-pinned-meta"></div>
+    <div class="cp-qa-pinned-text" id="qa-pinned-text"></div>
+    <div id="qa-pinned-answer-wrap" style="display:none">
+      <div class="cp-qa-pinned-answer-label" style="margin-top:18px">Resposta</div>
+      <div class="cp-qa-pinned-answer" id="qa-pinned-answer"></div>
     </div>
   </div>
 
@@ -117,10 +175,32 @@
     mainEl.appendChild(cpq);
 
     cpq.addEventListener('cpq-data', (e) => {
-      if (e.detail && e.detail.session) {
+      if (!e.detail) return;
+      if (e.detail.session) {
         headerEl.setAttribute('session-title', e.detail.session.title);
       }
+      renderPinned(e.detail);
     });
+  }
+
+  function renderPinned(data) {
+    const card = document.getElementById('qa-pinned-display');
+    if (!card) return;
+    const pinned = data.qa_enabled ? data.pinned_question : null;
+    if (!pinned || !pinned.text) {
+      card.style.display = 'none';
+      return;
+    }
+    document.getElementById('qa-pinned-meta').textContent = pinned.student_name || '';
+    document.getElementById('qa-pinned-text').textContent = pinned.text;
+    const ansWrap = document.getElementById('qa-pinned-answer-wrap');
+    if (pinned.answer) {
+      document.getElementById('qa-pinned-answer').textContent = pinned.answer;
+      ansWrap.style.display = '';
+    } else {
+      ansWrap.style.display = 'none';
+    }
+    card.style.display = '';
   }
 
   document.addEventListener('visibilitychange', () => { 
