@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- v2026.05.14c modo histórico -->
+<!-- v2026.05.14d modo histórico toggle (body.historic-mode) -->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Adriana, registro da recuperação</title>
+    <title>Adriana - Atualizações</title>
     <link rel="icon" type="image/png" href="media/favicon-adriana.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#c4a97d">
@@ -1154,8 +1154,16 @@
             opacity: 0;
             pointer-events: none;
         }
-        /* Aviso de modo histórico */
+        /* === Modo histórico ============================================
+           Para reabrir a página (voltar ao modo ativo): remova o atributo
+           class="historic-mode" do <body>. Os toggles abaixo desligam
+           automaticamente o aviso, mantêm o intro do Élder, reexibem os
+           botões de mensagem/notificações, reativam o auto-open da fase
+           atual e a copy "Resumo da situação atual" volta. O Sheet, o
+           admin e o backend permanecem intactos.
+           ============================================================== */
         .historico-aviso {
+            display: none;
             background: #faf3ec;
             border: 1px solid #e8d8c4;
             border-radius: 12px;
@@ -1181,9 +1189,14 @@
         [data-theme="dark"] .historico-aviso strong {
             color: #f0e3d0;
         }
+        body.historic-mode .historico-aviso { display: block; }
+        body.historic-mode .intro { display: none; }
+        body.historic-mode #notif-bar { display: none !important; }
+        body.historic-mode .msg-leave-btn { display: none !important; }
+        body.historic-mode #top-banner { display: none !important; }
     </style>
 </head>
-<body>
+<body class="historic-mode">
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
         <div class="pull-indicator" id="pull-indicator">Solte para recarregar</div>
@@ -1199,7 +1212,7 @@
             </picture>
         </div>
 
-        <div class="intro" style="display:none">
+        <div class="intro">
             Se você está aqui, é porque se preocupa com a Adriana, e isso significa muito para nós. Criei esta página para que você possa acompanhar a recuperação dela de perto, no seu tempo. — Élder
         </div>
 
@@ -1208,7 +1221,7 @@
             Esta página não recebe mais novas atualizações e permanece aqui como um registro carinhoso da jornada. Obrigado a todos pelo apoio. - Élder
         </div>
 
-        <div id="notif-bar" onclick="notifBarClick()" style="display:none">🔔 Receber notificações quando houver novidades</div>
+        <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
         <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt=""><img src="media/optimized/flowers/flowers.webp" alt="" onclick="testAnim2(this)"><img src="media/optimized/flowers/jasmine.webp" alt=""></div>
 
@@ -1222,7 +1235,7 @@
         <!-- Message board -->
         <div id="board-section">
             <div class="board-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Mural de carinho<img src="media/optimized/flowers/1.webp" alt=""></div>
-            <button class="msg-leave-btn" onclick="openMsgModal()" style="display:none">💌 Deixar uma mensagem</button>
+            <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
             <div class="board-cards" id="board-cards"></div>
             <div id="board-toggle-row" style="display:none;text-align:center;">
                 <button class="msg-leave-btn ghost" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
@@ -1561,13 +1574,39 @@
             }
         }
 
+        // ============================================================
+        // Histórico-mode helpers (read body.historic-mode class)
+        // ============================================================
+        function isHistoricMode() {
+            return document.body.classList.contains('historic-mode');
+        }
+        function summaryLabelText() {
+            return isHistoricMode() ? 'O caminho à frente' : 'Resumo da situação atual';
+        }
+        function displayPhaseName(fase) {
+            if (isHistoricMode() && fase.nome === 'Notícias recentes') {
+                return 'Em casa em Aracaju, quimioterapia oral e rins recuperados';
+            }
+            return fase.nome;
+        }
+        function displayPhaseResumo(fase) {
+            if (fase.resumo) return fase.resumo;
+            if (isHistoricMode() && fase.nome === 'Notícias recentes') {
+                return 'De volta para Aracaju depois de 45 dias em São Paulo. Quimioterapia oral por seis meses definida, acompanhamento conjunto SP e Aracaju. Fim de abril: rins 100% recuperados.';
+            }
+            return '';
+        }
+        if (isHistoricMode()) {
+            document.title = 'Adriana, registro da recuperação';
+        }
+
         let _resumoGlow = false;
         function renderSummary(resumo, updates) {
             const section = document.getElementById('summary-section');
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
                     <div class="summary-card">
-                        <div class="summary-label">O caminho à frente</div>
+                        <div class="summary-label">${summaryLabelText()}</div>
                         <p class="summary-empty">Nenhum resumo registrado.</p>
                     </div>`;
                 return;
@@ -1610,7 +1649,7 @@
             section.innerHTML = `
                 <div class="summary-card">
                     ${featuredPhoto ? `<div class="summary-photo-wrap" onclick="openLightbox()"><img src="${featuredPhoto.src}" alt=""></div>` : ''}
-                    <div class="summary-label">O caminho à frente</div>
+                    <div class="summary-label">${summaryLabelText()}</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
                 </div>`;
@@ -1682,9 +1721,14 @@
         }
 
         function renderPhaseBlock(fase, updates, curtidas, isOpen) {
-            const dateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(fase.data_fim)}`;
+            let dateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(fase.data_fim)}`;
             const grouped   = groupByDate(updates);
             const dates     = sortDateKeysDesc(Object.keys(grouped));
+            // Em modo histórico, fases fechadas estendem o data_fim até a última atualização real
+            // (cobre ungrouped-updates mergeados na fase mais recente).
+            if (!isOpen && isHistoricMode() && dates.length > 0) {
+                dateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(dates[0])}`;
+            }
             let daysHtml    = '';
             for (let i = 0; i < dates.length; i++) {
                 daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
@@ -1698,7 +1742,7 @@
                 <details class="phase-block phase-block--open" open>
                     <summary class="phase-summary phase-summary--slim">
                         <div class="phase-header-text">
-                            <span class="phase-title">${escapeHtml(fase.nome === 'Notícias recentes' ? 'Notícias' : fase.nome)}</span>
+                            <span class="phase-title">${escapeHtml(displayPhaseName(fase))}</span>
                             <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
                         </div>
                         ${photoHtml}
@@ -1712,8 +1756,8 @@
                     <summary class="phase-summary">
                         <div class="phase-header-text">
                             <span class="phase-date-range">${escapeHtml(dateRange)}</span>
-                            <span class="phase-title">${escapeHtml(fase.nome === 'Notícias recentes' ? 'Notícias' : fase.nome)}</span>
-                            <span class="phase-resumo">${escapeHtml(fase.resumo || (fase.nome === 'Notícias recentes' ? 'Em casa, em tratamento contínuo, indo bem.' : ''))}</span>
+                            <span class="phase-title">${escapeHtml(displayPhaseName(fase))}</span>
+                            <span class="phase-resumo">${escapeHtml(displayPhaseResumo(fase))}</span>
                         </div>
                         ${photoHtml}
                         <span class="phase-chevron">▾</span>
@@ -1746,10 +1790,12 @@
                 }
             }
 
-            // Histórico mode: no auto-open. mostRecent kept for ungrouped-merge below.
+            // Most recent phase by data_fim. In active mode this is the auto-open phase;
+            // in histórico mode no phase auto-opens (openPhase=null), but ungrouped updates
+            // still merge into the most recent phase to avoid data loss.
             const sortedFases     = [...fases].sort((a, b) => dateToISO(b.data_fim).localeCompare(dateToISO(a.data_fim)));
             const mostRecentPhase = sortedFases[0] || null;
-            const openPhase       = null;
+            const openPhase       = isHistoricMode() ? null : mostRecentPhase;
 
             // Merge ungrouped updates into the most recent phase
             if (mostRecentPhase && ungrouped.length > 0) {
