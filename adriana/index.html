@@ -1154,6 +1154,33 @@
             opacity: 0;
             pointer-events: none;
         }
+        /* Aviso de modo histórico */
+        .historico-aviso {
+            background: #faf3ec;
+            border: 1px solid #e8d8c4;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin: 18px 14px 6px;
+            color: #5a4a3a;
+            font-size: 0.92rem;
+            line-height: 1.55;
+            text-align: center;
+        }
+        .historico-aviso strong {
+            color: #4a3a2a;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            letter-spacing: 0.01em;
+        }
+        [data-theme="dark"] .historico-aviso {
+            background: rgba(60, 50, 40, 0.5);
+            border-color: rgba(255, 240, 220, 0.15);
+            color: #d6c9b8;
+        }
+        [data-theme="dark"] .historico-aviso strong {
+            color: #f0e3d0;
+        }
     </style>
 </head>
 <body>
@@ -1176,7 +1203,12 @@
             Se você está aqui, é porque se preocupa com a Adriana, e isso significa muito para nós. Criei esta página para que você possa acompanhar a recuperação dela de perto, no seu tempo. — Élder
         </div>
 
-        <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
+        <div class="historico-aviso">
+            <strong>Página em modo histórico</strong>
+            Adriana voltou para casa em abril, segue em tratamento e indo muito bem. Esta página não recebe mais novas atualizações e permanece aqui como um registro carinhoso da jornada.
+        </div>
+
+        <div id="notif-bar" onclick="notifBarClick()" style="display:none">🔔 Receber notificações quando houver novidades</div>
 
         <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt=""><img src="media/optimized/flowers/flowers.webp" alt="" onclick="testAnim2(this)"><img src="media/optimized/flowers/jasmine.webp" alt=""></div>
 
@@ -1190,7 +1222,7 @@
         <!-- Message board -->
         <div id="board-section">
             <div class="board-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Mural de carinho<img src="media/optimized/flowers/1.webp" alt=""></div>
-            <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
+            <button class="msg-leave-btn" onclick="openMsgModal()" style="display:none">💌 Deixar uma mensagem</button>
             <div class="board-cards" id="board-cards"></div>
             <div id="board-toggle-row" style="display:none;text-align:center;">
                 <button class="msg-leave-btn ghost" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
