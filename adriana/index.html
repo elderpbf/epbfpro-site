@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2026.05.14d modo histórico toggle (body.historic-mode) -->
+<!-- v2026.05.14e modo histórico toggle, fix gallery+ver-mais buttons -->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1192,7 +1192,9 @@
         body.historic-mode .historico-aviso { display: block; }
         body.historic-mode .intro { display: none; }
         body.historic-mode #notif-bar { display: none !important; }
-        body.historic-mode .msg-leave-btn { display: none !important; }
+        /* Esconde só o botão de "Deixar mensagem" (a classe .msg-leave-btn é
+           reusada pelo toggle "Ver mais mensagens" e pelo "Ver galeria de fotos"). */
+        body.historic-mode button[onclick="openMsgModal()"] { display: none !important; }
         body.historic-mode #top-banner { display: none !important; }
     </style>
 </head>
