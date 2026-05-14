@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2026.05.14 modo histórico -->
+<!-- v2026.05.14b modo histórico -->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1199,13 +1199,13 @@
             </picture>
         </div>
 
-        <div class="intro">
+        <div class="intro" style="display:none">
             Se você está aqui, é porque se preocupa com a Adriana, e isso significa muito para nós. Criei esta página para que você possa acompanhar a recuperação dela de perto, no seu tempo. — Élder
         </div>
 
         <div class="historico-aviso">
             <strong>Página em modo histórico</strong>
-            Adriana voltou para casa em abril, segue em tratamento e indo muito bem. Esta página não recebe mais novas atualizações e permanece aqui como um registro carinhoso da jornada.
+            Esta página não recebe mais novas atualizações e permanece aqui como um registro carinhoso da jornada. Obrigado a todos pelo apoio. - Élder
         </div>
 
         <div id="notif-bar" onclick="notifBarClick()" style="display:none">🔔 Receber notificações quando houver novidades</div>
@@ -1567,7 +1567,7 @@
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
                     <div class="summary-card">
-                        <div class="summary-label">Resumo da recuperação</div>
+                        <div class="summary-label">O caminho à frente</div>
                         <p class="summary-empty">Nenhum resumo registrado.</p>
                     </div>`;
                 return;
@@ -1610,7 +1610,7 @@
             section.innerHTML = `
                 <div class="summary-card">
                     ${featuredPhoto ? `<div class="summary-photo-wrap" onclick="openLightbox()"><img src="${featuredPhoto.src}" alt=""></div>` : ''}
-                    <div class="summary-label">Resumo da recuperação</div>
+                    <div class="summary-label">O caminho à frente</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
                 </div>`;
@@ -1698,7 +1698,7 @@
                 <details class="phase-block phase-block--open" open>
                     <summary class="phase-summary phase-summary--slim">
                         <div class="phase-header-text">
-                            <span class="phase-title">${escapeHtml(fase.nome)}</span>
+                            <span class="phase-title">${escapeHtml(fase.nome === 'Notícias recentes' ? 'Notícias' : fase.nome)}</span>
                             <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
                         </div>
                         ${photoHtml}
@@ -1712,7 +1712,7 @@
                     <summary class="phase-summary">
                         <div class="phase-header-text">
                             <span class="phase-date-range">${escapeHtml(dateRange)}</span>
-                            <span class="phase-title">${escapeHtml(fase.nome)}</span>
+                            <span class="phase-title">${escapeHtml(fase.nome === 'Notícias recentes' ? 'Notícias' : fase.nome)}</span>
                             <span class="phase-resumo">${escapeHtml(fase.resumo)}</span>
                         </div>
                         ${photoHtml}
