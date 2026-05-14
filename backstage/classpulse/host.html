@@ -23,9 +23,10 @@
   .host-session-bar {
     display: flex; align-items: center; justify-content: space-between; gap: 1rem;
     background: var(--surface); border: 1px solid rgba(20,184,166,.2);
-    border-radius: 12px; padding: 1rem 1.3rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+    border-radius: 10px; padding: 0.55rem 1rem; margin-bottom: 0.6rem; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 30;
   }
-  .host-code { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.2em; color: var(--primary); }
+  .host-code { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.2em; color: var(--primary); line-height: 1.1; }
   .host-session-name { font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.1rem; }
   .host-bar-actions { display: flex; gap: 0.6rem; }
 
@@ -617,7 +618,7 @@
 <script src="../js/classpulse-question-types.js?v=1.2"></script>
 <script src="../js/classpulse-question.min.js?v=1.8"></script>
 <script src="../js/classpulse-visibility-toggle.js?v=1.4"></script>
-<script src="../js/classpulse-qa.js?v=2.1"></script>
+<script src="../js/classpulse-qa.js?v=2.2"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
 <script src="../js/question-bank.js?v=2.0"></script>

@@ -21,6 +21,7 @@
     var _activeQuestionText = null;
     var _drafts = {};
     var _focusedRowId = null;
+    var _resolvedOpen = false;
     var _pollTimer = null;
     var _attached  = true;
 
@@ -88,6 +89,11 @@
         return;
       }
 
+      // Read current "Ver resolvidas" open state before we replace innerHTML, so the poll tick
+      // doesn't collapse the details on the user.
+      var prevDetails = feedEl.querySelector('details.cp-qa-resolved');
+      if (prevDetails) _resolvedOpen = prevDetails.open;
+
       var pending  = _questions.filter(function(q) { return q.status === 'pending'; });
       var resolved = _questions.filter(function(q) { return q.status !== 'pending'; });
 
@@ -99,7 +105,7 @@
       } else {
         pending.forEach(function(q) { html += renderRow(q, true); });
         if (resolved.length) {
-          html += '<details class="cp-qa-resolved"><summary>Ver resolvidas (' + resolved.length + ')</summary>';
+          html += '<details class="cp-qa-resolved"' + (_resolvedOpen ? ' open' : '') + '><summary>Ver resolvidas (' + resolved.length + ')</summary>';
           resolved.forEach(function(q) { html += renderRow(q, false); });
           html += '</details>';
         }
@@ -107,6 +113,13 @@
       feedEl.innerHTML = html;
       restoreDrafts();
       wireRowEvents();
+      wireResolvedToggle();
+    }
+
+    function wireResolvedToggle() {
+      var d = feedEl.querySelector('details.cp-qa-resolved');
+      if (!d) return;
+      d.addEventListener('toggle', function() { _resolvedOpen = d.open; });
     }
 
     function updateBadgeOnly() {
