@@ -16,7 +16,10 @@
     var _qaEnabled = false;
     var _busy      = false;
     var _questions = [];
-    var _pinnedId  = null;
+    var _activeStudentQuestionId = null;
+    var _activeQuestionId = null;
+    var _drafts = {};
+    var _focusedRowId = null;
     var _pollTimer = null;
     var _attached  = true;
 
@@ -47,7 +50,6 @@
       } else {
         stopPoll();
         _questions = [];
-        _pinnedId = null;
         render();
       }
     }
@@ -71,8 +73,6 @@
       }).then(function(res) {
         if (!res || !res.ok) return;
         _questions = res.questions || [];
-        var pinnedNow = _questions.find(function(q) { return q.pinned === 1 || q.pinned === '1' || q.pinned === true; });
-        _pinnedId = pinnedNow ? pinnedNow.id : null;
         render();
       }).catch(function(err) {
         onError(err && err.message ? err.message : String(err));
@@ -80,11 +80,17 @@
     }
 
     function render() {
+      // D2: skip full re-render while the user is typing in any answer textarea.
+      // Drafts are still hoisted (D1) so a later render will repopulate them.
+      if (_focusedRowId !== null) {
+        updateBadgeOnly();
+        return;
+      }
+
       var pending  = _questions.filter(function(q) { return q.status === 'pending'; });
       var resolved = _questions.filter(function(q) { return q.status !== 'pending'; });
 
-      badgeEl.textContent = pending.length ? String(pending.length) : '';
-      badgeEl.style.display = pending.length ? '' : 'none';
+      updateBadge(pending.length);
 
       var html = '';
       if (pending.length === 0 && resolved.length === 0) {
@@ -98,48 +104,93 @@
         }
       }
       feedEl.innerHTML = html;
-      wireRowButtons();
+      restoreDrafts();
+      wireRowEvents();
+    }
+
+    function updateBadgeOnly() {
+      var pending = _questions.filter(function(q) { return q.status === 'pending'; });
+      updateBadge(pending.length);
+    }
+
+    function updateBadge(count) {
+      if (!badgeEl) return;
+      badgeEl.textContent = count ? String(count) : '';
+      badgeEl.style.display = count ? '' : 'none';
     }
 
     function renderRow(q, showActions) {
-      var isPinned = q.pinned === 1 || q.pinned === '1' || q.pinned === true;
-      var rowClasses = 'cp-qa-row cp-qa-' + q.status + (isPinned ? ' cp-qa-pinned' : '');
+      var onDisplay = _activeStudentQuestionId === q.id;
+      var rowClasses = 'cp-qa-row cp-qa-' + q.status + (onDisplay ? ' cp-qa-pinned' : '');
       var html = '<div class="' + rowClasses + '" data-qa-row-id="' + escHtml(q.id) + '">'
         + '<div class="cp-qa-meta-row">'
         +   '<span class="cp-qa-meta">' + escHtml(q.student_name) + ' &middot; ' + formatTime(q.created_at) + '</span>'
-        +   (isPinned ? '<span class="cp-qa-pin-badge">No display</span>' : '')
+        +   (onDisplay ? '<span class="cp-qa-pin-badge">No display</span>' : '')
         + '</div>'
         + '<p class="cp-qa-text">' + escHtml(q.text) + '</p>';
 
-      if (q.status === 'answered' && q.answer) {
+      if (q.answer && q.status !== 'pending') {
         html += '<p class="cp-qa-answer-text"><strong>Resposta:</strong> ' + escHtml(q.answer) + '</p>';
       }
 
-      if (showActions) {
+      if (showActions && onDisplay) {
+        html += '<div class="cp-qa-actions"><div class="cp-qa-action-buttons">'
+          + '<button class="host-btn host-btn-danger cp-qa-btn-sm" data-qa-action="close-active" data-qa-id="' + escHtml(q.id) + '">Encerrar pergunta no display</button>'
+          + '</div></div>';
+      } else if (showActions) {
         html += '<div class="cp-qa-actions">'
-          + '<textarea class="cp-qa-answer-input" data-qa-answer-input="' + escHtml(q.id) + '" placeholder="Resposta (opcional)..." maxlength="500" rows="2"></textarea>'
+          + '<textarea class="cp-qa-answer-input" data-qa-answer-input="' + escHtml(q.id) + '" placeholder="Resposta direta (opcional, sem ir para o display)..." maxlength="500" rows="2"></textarea>'
           + '<div class="cp-qa-action-buttons">'
-          +   '<button class="host-btn host-btn-primary cp-qa-btn-sm" data-qa-action="answer" data-qa-id="' + escHtml(q.id) + '">Responder</button>'
-          +   '<button class="host-btn host-btn-ghost cp-qa-btn-sm" data-qa-action="' + (isPinned ? 'unpin' : 'pin') + '" data-qa-id="' + escHtml(q.id) + '">'
-          +     (isPinned ? 'Tirar do display' : 'Mostrar no display')
-          +   '</button>'
+          +   '<button class="host-btn host-btn-primary cp-qa-btn-sm" data-qa-action="promote" data-qa-id="' + escHtml(q.id) + '">Mostrar no display</button>'
+          +   '<button class="host-btn host-btn-ghost cp-qa-btn-sm" data-qa-action="answer" data-qa-id="' + escHtml(q.id) + '">Responder aqui</button>'
           +   '<button class="host-btn host-btn-danger cp-qa-btn-sm" data-qa-action="dismiss" data-qa-id="' + escHtml(q.id) + '">Ignorar</button>'
           + '</div>'
           + '</div>';
-      } else if (isPinned) {
+      } else if (q.status !== 'pending') {
         html += '<div class="cp-qa-actions"><div class="cp-qa-action-buttons">'
-          + '<button class="host-btn host-btn-ghost cp-qa-btn-sm" data-qa-action="unpin" data-qa-id="' + escHtml(q.id) + '">Tirar do display</button>'
+          + '<button class="host-btn host-btn-ghost cp-qa-btn-sm" data-qa-action="promote" data-qa-id="' + escHtml(q.id) + '">Mostrar no display</button>'
           + '</div></div>';
       }
       html += '</div>';
       return html;
     }
 
-    function wireRowButtons() {
-      var buttons = feedEl.querySelectorAll('[data-qa-action]');
-      for (var i = 0; i < buttons.length; i++) {
-        buttons[i].addEventListener('click', onActionClick);
+    function restoreDrafts() {
+      var inputs = feedEl.querySelectorAll('[data-qa-answer-input]');
+      for (var i = 0; i < inputs.length; i++) {
+        var rowId = inputs[i].dataset.qaAnswerInput;
+        if (_drafts[rowId]) inputs[i].value = _drafts[rowId];
       }
+    }
+
+    function wireRowEvents() {
+      var inputs = feedEl.querySelectorAll('[data-qa-answer-input]');
+      for (var i = 0; i < inputs.length; i++) {
+        inputs[i].addEventListener('input', onInputChange);
+        inputs[i].addEventListener('focus', onInputFocus);
+        inputs[i].addEventListener('blur', onInputBlur);
+      }
+      var buttons = feedEl.querySelectorAll('[data-qa-action]');
+      for (var j = 0; j < buttons.length; j++) {
+        buttons[j].addEventListener('click', onActionClick);
+      }
+    }
+
+    function onInputChange(ev) {
+      var rowId = ev.currentTarget.dataset.qaAnswerInput;
+      _drafts[rowId] = ev.currentTarget.value;
+    }
+
+    function onInputFocus(ev) {
+      _focusedRowId = ev.currentTarget.dataset.qaAnswerInput;
+    }
+
+    function onInputBlur(ev) {
+      var rowId = ev.currentTarget.dataset.qaAnswerInput;
+      _drafts[rowId] = ev.currentTarget.value;
+      if (_focusedRowId === rowId) _focusedRowId = null;
+      // re-poll so any deferred updates land
+      poll();
     }
 
     function onActionClick(ev) {
@@ -149,15 +200,15 @@
       if (!action || !id || _busy) return;
 
       if (action === 'answer') {
-        var input = feedEl.querySelector('[data-qa-answer-input="' + id + '"]');
-        var answerText = input ? input.value.trim() : '';
-        doUpdate(id, 'answered', answerText);
+        doUpdate(id, 'answered', _drafts[id] || '');
+        delete _drafts[id];
       } else if (action === 'dismiss') {
         doUpdate(id, 'dismissed', null);
-      } else if (action === 'pin') {
-        doPin(id);
-      } else if (action === 'unpin') {
-        doUnpin();
+        delete _drafts[id];
+      } else if (action === 'promote') {
+        doPromote(id);
+      } else if (action === 'close-active') {
+        doCloseActive();
       }
     }
 
@@ -175,29 +226,37 @@
       }).finally(function() { _busy = false; });
     }
 
-    function doPin(id) {
+    function doPromote(id) {
       _busy = true;
       callWorkerFn({
-        action: 'pin_student_question',
+        action: 'promote_student_question',
         auth_token: authToken,
         id: id, session_code: sessionCode
       }).then(function(res) {
-        if (!res || !res.ok) onError((res && res.error) || 'Falha ao fixar pergunta.');
+        if (!res || !res.ok) {
+          onError((res && res.error) || 'Falha ao promover pergunta.');
+        }
         poll();
+        if (typeof opts.onPromoted === 'function') opts.onPromoted();
       }).catch(function(err) {
         onError(err && err.message ? err.message : String(err));
       }).finally(function() { _busy = false; });
     }
 
-    function doUnpin() {
+    function doCloseActive() {
+      if (!_activeQuestionId) return;
       _busy = true;
       callWorkerFn({
-        action: 'unpin_student_question',
+        action: 'close_question',
         auth_token: authToken,
-        session_code: sessionCode
+        id: _activeQuestionId,
+        session_code: sessionCode,
+        show_results: false,
+        reveal_answer: false
       }).then(function(res) {
-        if (!res || !res.ok) onError((res && res.error) || 'Falha ao desafixar pergunta.');
+        if (!res || !res.ok) onError((res && res.error) || 'Falha ao encerrar pergunta.');
         poll();
+        if (typeof opts.onClosedActive === 'function') opts.onClosedActive();
       }).catch(function(err) {
         onError(err && err.message ? err.message : String(err));
       }).finally(function() { _busy = false; });
@@ -229,9 +288,23 @@
 
     return {
       syncFromState: function(state) {
-        if (!state || typeof state.qa_enabled === 'undefined') return;
-        var serverEnabled = !!state.qa_enabled;
-        if (serverEnabled !== _qaEnabled) setEnabled(serverEnabled);
+        if (!state) return;
+        if (typeof state.qa_enabled !== 'undefined') {
+          var serverEnabled = !!state.qa_enabled;
+          if (serverEnabled !== _qaEnabled) setEnabled(serverEnabled);
+        }
+        var prevActive = _activeStudentQuestionId;
+        var prevActiveQ = _activeQuestionId;
+        if (state.active_question && state.active_question.type === 'student_qa') {
+          _activeStudentQuestionId = state.active_question.student_question_id || null;
+          _activeQuestionId = state.active_question.id;
+        } else {
+          _activeStudentQuestionId = null;
+          _activeQuestionId = null;
+        }
+        if (prevActive !== _activeStudentQuestionId || prevActiveQ !== _activeQuestionId) {
+          render();
+        }
       },
       setSessionCode: function(code) {
         sessionCode = code;

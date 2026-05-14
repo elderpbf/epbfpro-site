@@ -44,52 +44,59 @@
       pensoia-header .ph-bar { padding: 4px 16px; }
     }
 
-    /* Pinned student Q&A on display */
-    .cp-qa-pinned-display {
-      margin: clamp(16px, 2vh, 32px) auto 0;
-      max-width: min(960px, 88vw);
-      padding: clamp(20px, 2.5vh, 36px) clamp(24px, 3vw, 48px);
-      background: rgba(20,184,166,0.06);
-      border: 2px solid rgba(20,184,166,0.4);
-      border-radius: 18px;
-      box-shadow: 0 4px 24px rgba(20,184,166,0.08);
+    /* Promoted student Q&A on display */
+    .cp-qa-student {
+      display: none;
+      margin: clamp(16px, 2vh, 32px) auto;
+      max-width: min(1040px, 90vw);
+      padding: clamp(24px, 3vh, 44px) clamp(28px, 3.5vw, 56px);
+      background: rgba(245,158,11,0.06);
+      border: 2px solid rgba(245,158,11,0.4);
+      border-radius: 20px;
+      box-shadow: 0 4px 28px rgba(245,158,11,0.10);
     }
-    .cp-qa-pinned-display .cp-qa-pinned-label {
-      font-size: clamp(0.78rem, 1.2vw, 0.95rem);
+    .cp-qa-student.is-active { display: block; }
+    .cp-qa-student .cp-qa-student-label {
+      font-size: clamp(0.82rem, 1.25vw, 1rem);
       font-weight: 700;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--primary);
-      margin-bottom: 8px;
-    }
-    .cp-qa-pinned-display .cp-qa-pinned-meta {
-      font-size: clamp(0.85rem, 1.3vw, 1.05rem);
-      color: var(--text-secondary);
+      color: #b45309;
       margin-bottom: 10px;
     }
-    .cp-qa-pinned-display .cp-qa-pinned-text {
-      font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+    .cp-qa-student .cp-qa-student-name {
+      font-size: clamp(0.9rem, 1.4vw, 1.15rem);
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+    }
+    .cp-qa-student .cp-qa-student-text {
+      font-size: clamp(1.6rem, 3vw, 2.6rem);
       font-weight: 600;
       color: var(--text-primary);
-      line-height: 1.35;
+      line-height: 1.3;
     }
-    .cp-qa-pinned-display .cp-qa-pinned-answer {
-      margin-top: 18px;
-      padding: 14px 20px;
-      background: var(--surface);
-      border-left: 4px solid var(--primary);
-      border-radius: 0 12px 12px 0;
-      font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+    .cp-qa-student .cp-qa-student-answer-wrap {
+      display: none;
+      margin-top: 22px;
+      padding: 16px 22px;
+      background: rgba(245,158,11,0.08);
+      border-left: 4px solid #b45309;
+      border-radius: 0 14px 14px 0;
+    }
+    .cp-qa-student .cp-qa-student-answer-wrap.is-visible { display: block; }
+    .cp-qa-student .cp-qa-student-answer-label {
+      font-size: clamp(0.72rem, 1vw, 0.85rem);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #b45309;
+      margin-bottom: 8px;
+    }
+    .cp-qa-student .cp-qa-student-answer {
+      font-size: clamp(1.1rem, 1.9vw, 1.5rem);
       line-height: 1.45;
       color: var(--text-primary);
-    }
-    .cp-qa-pinned-display .cp-qa-pinned-answer-label {
-      font-size: clamp(0.7rem, 1vw, 0.82rem);
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--primary);
-      margin-bottom: 6px;
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -104,13 +111,13 @@
     </div>
   </div>
 
-  <div id="qa-pinned-display" class="cp-qa-pinned-display" style="display:none">
-    <div class="cp-qa-pinned-label">Pergunta do aluno</div>
-    <div class="cp-qa-pinned-meta" id="qa-pinned-meta"></div>
-    <div class="cp-qa-pinned-text" id="qa-pinned-text"></div>
-    <div id="qa-pinned-answer-wrap" style="display:none">
-      <div class="cp-qa-pinned-answer-label" style="margin-top:18px">Resposta</div>
-      <div class="cp-qa-pinned-answer" id="qa-pinned-answer"></div>
+  <div id="qa-student-card" class="cp-qa-student">
+    <div class="cp-qa-student-label">Pergunta do aluno</div>
+    <div class="cp-qa-student-name" id="qa-student-name"></div>
+    <div class="cp-qa-student-text" id="qa-student-text"></div>
+    <div id="qa-student-answer-wrap" class="cp-qa-student-answer-wrap">
+      <div class="cp-qa-student-answer-label">Resposta</div>
+      <div class="cp-qa-student-answer" id="qa-student-answer"></div>
     </div>
   </div>
 
@@ -179,28 +186,32 @@
       if (e.detail.session) {
         headerEl.setAttribute('session-title', e.detail.session.title);
       }
-      renderPinned(e.detail);
+      renderStudentQA(e.detail, cpq);
     });
   }
 
-  function renderPinned(data) {
-    const card = document.getElementById('qa-pinned-display');
+  function renderStudentQA(data, cpq) {
+    const card = document.getElementById('qa-student-card');
     if (!card) return;
-    const pinned = data.qa_enabled ? data.pinned_question : null;
-    if (!pinned || !pinned.text) {
-      card.style.display = 'none';
+    const aq = data.active_question;
+    const isStudentQA = aq && aq.type === 'student_qa';
+    if (!isStudentQA) {
+      card.classList.remove('is-active');
+      if (cpq) cpq.style.display = '';
       return;
     }
-    document.getElementById('qa-pinned-meta').textContent = pinned.student_name || '';
-    document.getElementById('qa-pinned-text').textContent = pinned.text;
-    const ansWrap = document.getElementById('qa-pinned-answer-wrap');
-    if (pinned.answer) {
-      document.getElementById('qa-pinned-answer').textContent = pinned.answer;
-      ansWrap.style.display = '';
+    if (cpq) cpq.style.display = 'none';
+    document.getElementById('qa-student-name').textContent = aq.student_name || '';
+    document.getElementById('qa-student-text').textContent = aq.text || '';
+    const ansWrap = document.getElementById('qa-student-answer-wrap');
+    const ansText = (aq.student_answer || '').trim();
+    if (ansText) {
+      document.getElementById('qa-student-answer').textContent = aq.student_answer;
+      ansWrap.classList.add('is-visible');
     } else {
-      ansWrap.style.display = 'none';
+      ansWrap.classList.remove('is-visible');
     }
-    card.style.display = '';
+    card.classList.add('is-active');
   }
 
   document.addEventListener('visibilitychange', () => { 

@@ -65,25 +65,40 @@
     #join-screen    { display: block; }
     #session-screen { display: none; }
 
-    /* Student Q&A */
-    .cp-qa-section { margin-top: 28px; padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
-    .cp-qa-heading { font-size: 0.95rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; }
-    .cp-qa-subtitle { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px; }
-    .cp-qa-textarea { width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: inherit; background: var(--background); color: var(--text-primary); outline: none; resize: vertical; line-height: 1.4; box-sizing: border-box; }
-    .cp-qa-textarea:focus { border-color: var(--primary); }
-    .cp-qa-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
-    .cp-qa-charcount { font-size: 0.72rem; color: var(--text-light); }
-    .cp-qa-btn { padding: 9px 18px; background: var(--primary-dark); color: #fff; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
-    .cp-qa-btn:hover:not(:disabled) { opacity: 0.85; }
-    .cp-qa-btn:disabled { opacity: 0.4; cursor: default; }
-    .cp-qa-confirm { font-size: 0.85rem; color: var(--success); margin-top: 10px; text-align: center; }
-    .cp-qa-error { font-size: 0.85rem; color: var(--error); margin-top: 10px; text-align: center; min-height: 1.2em; }
-    .cp-qa-pinned-card { margin-top: 24px; padding: 16px; background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.25); border-radius: 12px; }
-    .cp-qa-pinned-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary-dark); margin-bottom: 6px; }
-    .cp-qa-pinned-meta { font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 6px; }
-    .cp-qa-pinned-text { font-size: 0.95rem; color: var(--text-primary); line-height: 1.5; }
-    .cp-qa-pinned-answer { margin-top: 10px; padding: 10px 12px; background: var(--surface); border-left: 3px solid var(--primary); border-radius: 0 8px 8px 0; font-size: 0.9rem; color: var(--text-primary); line-height: 1.5; }
-    .cp-qa-pinned-answer-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--primary-dark); margin-bottom: 4px; }
+    /* Student Q&A bottom bar */
+    .cp-qa-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 90; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 14px env(safe-area-inset-bottom, 10px); display: none; }
+    .cp-qa-bar.visible { display: block; }
+    .cp-qa-bar-collapsed { display: flex; align-items: center; gap: 10px; cursor: text; padding: 9px 12px; background: var(--background); border: 1px solid var(--border); border-radius: 999px; color: var(--text-light); font-size: 0.9rem; transition: border-color 0.15s; }
+    .cp-qa-bar-collapsed:hover { border-color: var(--primary); }
+    .cp-qa-bar-collapsed .cp-qa-bar-placeholder { flex: 1; }
+    .cp-qa-bar-collapsed .cp-qa-bar-send { width: 28px; height: 28px; border-radius: 50%; background: var(--primary-dark); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+    .cp-qa-bar.expanded .cp-qa-bar-collapsed { display: none; }
+    .cp-qa-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 80; display: none; }
+    .cp-qa-backdrop.visible { display: block; }
+    .cp-qa-editor { display: none; }
+    .cp-qa-bar.expanded .cp-qa-editor { display: block; }
+    .cp-qa-editor-textarea { width: 100%; min-height: 64px; max-height: 140px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; font-family: inherit; background: var(--background); color: var(--text-primary); outline: none; resize: none; line-height: 1.4; box-sizing: border-box; }
+    .cp-qa-editor-textarea:focus { border-color: var(--primary); }
+    .cp-qa-editor-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+    .cp-qa-editor-charcount { font-size: 0.72rem; color: var(--text-light); }
+    .cp-qa-editor-actions { display: flex; gap: 8px; }
+    .cp-qa-editor-btn { padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; font-family: inherit; cursor: pointer; border: 1px solid var(--border); background: var(--background); color: var(--text-primary); transition: opacity 0.15s; }
+    .cp-qa-editor-btn.primary { background: var(--primary-dark); color: #fff; border-color: var(--primary-dark); }
+    .cp-qa-editor-btn:hover:not(:disabled) { opacity: 0.85; }
+    .cp-qa-editor-btn:disabled { opacity: 0.4; cursor: default; }
+    .cp-qa-editor-error { font-size: 0.82rem; color: var(--error); margin-top: 8px; min-height: 0; display: none; }
+    .cp-qa-editor-error.visible { display: block; }
+    .cp-qa-toast { position: absolute; top: -36px; left: 14px; right: 14px; background: var(--success); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; }
+    .cp-qa-toast.visible { display: block; }
+
+    /* Student-Q&A active question card */
+    .cp-sqa-card { padding: 18px; background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.35); border-radius: 12px; }
+    .cp-sqa-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #b45309; margin-bottom: 8px; }
+    .cp-sqa-meta { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 14px; }
+    .cp-sqa-text { font-size: 1.15rem; font-weight: 600; color: var(--text-primary); line-height: 1.5; }
+    .cp-sqa-answer { margin-top: 18px; padding: 12px 14px; background: rgba(245,158,11,0.1); border-left: 3px solid rgba(245,158,11,0.6); border-radius: 0 8px 8px 0; }
+    .cp-sqa-answer-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #b45309; margin-bottom: 4px; }
+    .cp-sqa-answer-text { font-size: 0.95rem; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -145,31 +160,38 @@
       <div class="state-sub">Obrigado pela participação!</div>
     </div>
 
-    <!-- Pinned Q&A card (visible only when host pins one) -->
-    <div id="qa-pinned-card" class="cp-qa-pinned-card" style="display:none">
-      <div class="cp-qa-pinned-label">Em destaque</div>
-      <div class="cp-qa-pinned-meta" id="qa-pinned-meta"></div>
-      <div class="cp-qa-pinned-text" id="qa-pinned-text"></div>
-      <div id="qa-pinned-answer-wrap" style="display:none">
-        <div class="cp-qa-pinned-answer-label" style="margin-top:10px">Resposta</div>
-        <div class="cp-qa-pinned-answer" id="qa-pinned-answer"></div>
+    <!-- student_qa active question -->
+    <div id="state-student-qa" class="cp-sqa-card" style="display:none">
+      <div class="cp-sqa-label">Pergunta do aluno</div>
+      <div class="cp-sqa-meta" id="sqa-meta"></div>
+      <div class="cp-sqa-text" id="sqa-text"></div>
+      <div id="sqa-answer-wrap" class="cp-sqa-answer" style="display:none">
+        <div class="cp-sqa-answer-label">Resposta</div>
+        <div class="cp-sqa-answer-text" id="sqa-answer"></div>
       </div>
-    </div>
-
-    <!-- Student Q&A submit (visible only when host enables) -->
-    <div id="qa-section" class="cp-qa-section" style="display:none">
-      <div class="cp-qa-heading">Tem alguma dúvida?</div>
-      <div class="cp-qa-subtitle">Envie sua pergunta para o instrutor.</div>
-      <textarea id="qa-input" class="cp-qa-textarea" maxlength="200" placeholder="Digite sua pergunta..."></textarea>
-      <div class="cp-qa-footer">
-        <span id="qa-charcount" class="cp-qa-charcount">0/200</span>
-        <button id="qa-submit" class="cp-qa-btn">Enviar pergunta</button>
-      </div>
-      <div id="qa-confirm" class="cp-qa-confirm" style="display:none">Pergunta enviada.</div>
-      <div id="qa-error" class="cp-qa-error" style="display:none"></div>
     </div>
   </div>
 
+</div>
+
+<div id="qa-backdrop" class="cp-qa-backdrop"></div>
+<div id="qa-bar" class="cp-qa-bar">
+  <div id="qa-toast" class="cp-qa-toast">Pergunta enviada.</div>
+  <div id="qa-bar-collapsed" class="cp-qa-bar-collapsed">
+    <span class="cp-qa-bar-placeholder">Pergunta para o instrutor…</span>
+    <span class="cp-qa-bar-send" aria-hidden="true">➤</span>
+  </div>
+  <div class="cp-qa-editor">
+    <textarea id="qa-editor-input" class="cp-qa-editor-textarea" maxlength="200" placeholder="Pergunta para o instrutor…"></textarea>
+    <div class="cp-qa-editor-footer">
+      <span id="qa-editor-charcount" class="cp-qa-editor-charcount">0/200</span>
+      <div class="cp-qa-editor-actions">
+        <button id="qa-editor-cancel" class="cp-qa-editor-btn">Cancelar</button>
+        <button id="qa-editor-send" class="cp-qa-editor-btn primary">Enviar</button>
+      </div>
+    </div>
+    <div id="qa-editor-error" class="cp-qa-editor-error"></div>
+  </div>
 </div>
 <script src="../backstage/js/utils.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.1"></script>
@@ -287,8 +309,9 @@
     localStorage.removeItem('cl_session_bak');
 
     document.getElementById('cpq').removeAttribute('session');
-    document.getElementById('qa-section').style.display = 'none';
-    document.getElementById('qa-pinned-card').style.display = 'none';
+    collapseQaBar();
+    document.getElementById('qa-bar').classList.remove('visible');
+    document.getElementById('state-student-qa').style.display = 'none';
 
     document.getElementById('session-screen').style.display = 'none';
     document.getElementById('join-screen').style.display    = 'block';
@@ -302,7 +325,7 @@
   // ── STATE MANAGEMENT ─────────────────────────────────────────────────────
   function showState(state) {
     dbg('info', `state → ${state}`);
-    ['waiting','cpq','answered','closed'].forEach(s => {
+    ['waiting','cpq','answered','closed','student-qa'].forEach(s => {
       document.getElementById('state-' + s).style.display = (s === state) ? '' : 'none';
     });
   }
@@ -321,52 +344,95 @@
     const data = e.detail;
     if (!data.session || data.session.status === 'closed') {
       showState('closed');
-      document.getElementById('qa-section').style.display = 'none';
-      document.getElementById('qa-pinned-card').style.display = 'none';
+      document.getElementById('qa-bar').classList.remove('visible');
+      collapseQaBar();
       return;
     }
     pulseDot('dot-waiting');
     pulseDot('dot-answered');
     syncQa(data);
+    syncStudentQa(data);
   });
 
-  // ── STUDENT Q&A ──────────────────────────────────────────────────────────
-  function syncQa(data) {
-    const qaOn = !!data.qa_enabled;
-    document.getElementById('qa-section').style.display = qaOn ? '' : 'none';
-
-    const pinned = data.pinned_question;
-    const card = document.getElementById('qa-pinned-card');
-    if (qaOn && pinned && pinned.text) {
-      document.getElementById('qa-pinned-meta').textContent = pinned.student_name || '';
-      document.getElementById('qa-pinned-text').textContent = pinned.text;
-      const ansWrap = document.getElementById('qa-pinned-answer-wrap');
-      if (pinned.answer) {
-        document.getElementById('qa-pinned-answer').textContent = pinned.answer;
-        ansWrap.style.display = '';
+  function syncStudentQa(data) {
+    const aq = data.active_question;
+    if (aq && aq.type === 'student_qa') {
+      const meta = [aq.student_name || 'Anônimo', formatStudentQaTime(aq.student_time)].filter(Boolean).join(' · ');
+      document.getElementById('sqa-meta').textContent = meta;
+      document.getElementById('sqa-text').textContent = aq.text || '';
+      const ans = (aq.student_answer || '').trim();
+      const wrap = document.getElementById('sqa-answer-wrap');
+      if (ans) {
+        document.getElementById('sqa-answer').textContent = ans;
+        wrap.style.display = '';
       } else {
-        ansWrap.style.display = 'none';
+        wrap.style.display = 'none';
       }
-      card.style.display = '';
+      showState('student-qa');
     } else {
-      card.style.display = 'none';
+      const sqa = document.getElementById('state-student-qa');
+      if (sqa.style.display !== 'none') sqa.style.display = 'none';
     }
   }
 
-  document.getElementById('qa-input').addEventListener('input', function() {
-    document.getElementById('qa-charcount').textContent = this.value.length + '/200';
-  });
+  function formatStudentQaTime(ts) {
+    if (!ts) return '';
+    try {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  }
 
-  document.getElementById('qa-submit').addEventListener('click', async function() {
+  // ── STUDENT Q&A ──────────────────────────────────────────────────────────
+  function syncQa(data) {
+    const qaOn = !!data.qa_enabled && !!currentSession;
+    document.getElementById('qa-bar').classList.toggle('visible', qaOn);
+    if (!qaOn) collapseQaBar();
+  }
+
+  const qaBar       = document.getElementById('qa-bar');
+  const qaBackdrop  = document.getElementById('qa-backdrop');
+  const qaCollapsed = document.getElementById('qa-bar-collapsed');
+  const qaEditorIn  = document.getElementById('qa-editor-input');
+  const qaCharCount = document.getElementById('qa-editor-charcount');
+  const qaCancelBtn = document.getElementById('qa-editor-cancel');
+  const qaSendBtn   = document.getElementById('qa-editor-send');
+  const qaEdErr     = document.getElementById('qa-editor-error');
+  const qaToast     = document.getElementById('qa-toast');
+
+  function expandQaBar() {
+    qaBar.classList.add('expanded');
+    qaBackdrop.classList.add('visible');
+    qaEdErr.classList.remove('visible');
+    setTimeout(() => qaEditorIn.focus(), 30);
+  }
+  function collapseQaBar() {
+    qaBar.classList.remove('expanded');
+    qaBackdrop.classList.remove('visible');
+    qaEdErr.classList.remove('visible');
+  }
+  function showQaToast() {
+    qaToast.classList.add('visible');
+    setTimeout(() => qaToast.classList.remove('visible'), 2500);
+  }
+
+  qaCollapsed.addEventListener('click', expandQaBar);
+  qaBackdrop.addEventListener('click', collapseQaBar);
+  qaCancelBtn.addEventListener('click', collapseQaBar);
+  qaEditorIn.addEventListener('input', () => { qaCharCount.textContent = qaEditorIn.value.length + '/200'; });
+  qaEditorIn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitStudentQuestion(); }
+    else if (e.key === 'Escape') { collapseQaBar(); }
+  });
+  qaSendBtn.addEventListener('click', submitStudentQuestion);
+
+  async function submitStudentQuestion() {
     if (!currentSession) return;
-    const input = document.getElementById('qa-input');
-    const text  = input.value.trim();
-    const err   = document.getElementById('qa-error');
-    const conf  = document.getElementById('qa-confirm');
-    err.style.display = 'none';
-    conf.style.display = 'none';
+    const text = qaEditorIn.value.trim();
+    qaEdErr.classList.remove('visible');
     if (!text) return;
-    this.disabled = true;
+    qaSendBtn.disabled = true;
     try {
       const res = await callWorker({
         action: 'submit_student_question',
@@ -375,22 +441,21 @@
         text: text
       });
       if (res && res.ok) {
-        input.value = '';
-        document.getElementById('qa-charcount').textContent = '0/200';
-        conf.textContent = 'Pergunta enviada.';
-        conf.style.display = '';
-        setTimeout(() => { conf.style.display = 'none'; }, 3000);
+        qaEditorIn.value = '';
+        qaCharCount.textContent = '0/200';
+        collapseQaBar();
+        showQaToast();
       } else {
-        err.textContent = (res && res.error) || t.errSubmit;
-        err.style.display = '';
+        qaEdErr.textContent = (res && res.error) || t.errSubmit;
+        qaEdErr.classList.add('visible');
       }
     } catch (e2) {
-      err.textContent = t.errConnection;
-      err.style.display = '';
+      qaEdErr.textContent = t.errConnection;
+      qaEdErr.classList.add('visible');
     } finally {
-      this.disabled = false;
+      qaSendBtn.disabled = false;
     }
-  });
+  }
 
   cpqEl.addEventListener('cpq-idle', () => {
     showState('waiting');
