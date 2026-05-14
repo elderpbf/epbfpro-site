@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- v2026.04.09 -->
+<!-- v2026.05.14 modo histórico -->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Adriana - Atualizações</title>
+    <title>Adriana, registro da recuperação</title>
     <link rel="icon" type="image/png" href="media/favicon-adriana.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#c4a97d">
@@ -1186,10 +1186,10 @@
 <body>
     <button id="dark-toggle" onclick="toggleDark()">🌙</button>
     <div class="container">
-        <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
+        <div class="pull-indicator" id="pull-indicator">Solte para recarregar</div>
         <div id="top-banner" class="top-banner" style="display:none;">
             <img src="media/optimized/flowers/1.webp" class="banner-flower left" alt="">
-            <div class="banner-text" id="top-banner-text">ALTA DA UTI!</div>
+            <div class="banner-text" id="top-banner-text">EM CASA, INDO BEM</div>
             <img src="media/optimized/flowers/jasmine.webp" class="banner-flower right" alt="">
         </div>
         <div class="header">
@@ -1567,8 +1567,8 @@
             if (!resumo || !resumo.texto) {
                 section.innerHTML = `
                     <div class="summary-card">
-                        <div class="summary-label">Resumo da situação atual</div>
-                        <p class="summary-empty">Nenhum resumo disponível ainda.</p>
+                        <div class="summary-label">Resumo da recuperação</div>
+                        <p class="summary-empty">Nenhum resumo registrado.</p>
                     </div>`;
                 return;
             }
@@ -1610,7 +1610,7 @@
             section.innerHTML = `
                 <div class="summary-card">
                     ${featuredPhoto ? `<div class="summary-photo-wrap" onclick="openLightbox()"><img src="${featuredPhoto.src}" alt=""></div>` : ''}
-                    <div class="summary-label">Resumo da situação atual</div>
+                    <div class="summary-label">Resumo da recuperação</div>
                     <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
                     <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
                 </div>`;
@@ -1727,7 +1727,7 @@
             fases    = fases    || [];
             const section = document.getElementById('timeline-section');
             if (updates.length === 0) {
-                section.innerHTML = '<div class="empty-state">Nenhuma atualização ainda.</div>';
+                section.innerHTML = '<div class="empty-state">Nenhuma atualização registrada.</div>';
                 return;
             }
 
@@ -1816,9 +1816,9 @@
 
             document.addEventListener('touchend', () => {
                 if (indicator.classList.contains('visible')) {
-                    indicator.textContent = 'Atualizando...';
+                    indicator.textContent = 'Recarregando...';
                     fetchData().then(() => {
-                        indicator.textContent = 'Solte para atualizar';
+                        indicator.textContent = 'Solte para recarregar';
                         indicator.classList.remove('visible');
                     });
                 }
@@ -2019,7 +2019,7 @@
             const toggleRow = document.getElementById('board-toggle-row');
             const toggleBtn = document.getElementById('board-toggle-btn');
             if (msgs.length === 0) {
-                board.innerHTML = '<p style="color:#a89880;font-style:italic;font-size:0.85rem;width:100%;text-align:center;padding:8px 0">Seja o primeiro a deixar uma mensagem de carinho!</p>';
+                board.innerHTML = '<p style="color:#a89880;font-style:italic;font-size:0.85rem;width:100%;text-align:center;padding:8px 0">Sem mensagens registradas no mural.</p>';
                 toggleRow.style.display = 'none';
                 return;
             }
@@ -2316,7 +2316,7 @@ function buildCollage() {
     }
 
     if (photos.length === 0) {
-        canvas.innerHTML = '<p style="color:rgba(255,255,255,0.35);text-align:center;padding:80px 20px;font-family:Inter,sans-serif;">Nenhuma foto ainda.</p>';
+        canvas.innerHTML = '<p style="color:rgba(255,255,255,0.35);text-align:center;padding:80px 20px;font-family:Inter,sans-serif;">Nenhuma foto registrada.</p>';
         return;
     }
 
