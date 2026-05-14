@@ -400,6 +400,7 @@
             <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
           </div>
           <button class="host-btn host-btn-ghost host-pres-btn" id="pres-btn" type="button" hidden><span class="host-pres-dot" id="pres-dot"></span>Apresentação</button>
+          <button class="host-btn host-btn-ghost host-pres-btn" id="trail-btn" type="button" hidden><span class="host-pres-dot" id="trail-dot"></span>Trilha</button>
           <button class="host-btn host-btn-ghost" id="qr-btn" hidden>QR</button>
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener" hidden>Display</a>
           <button class="host-btn host-btn-ghost" id="qa-toggle-btn" type="button" aria-pressed="false" hidden>Ativar Q&amp;A</button>
@@ -637,6 +638,15 @@
   </div>
 </div>
 
+<!-- Trilha Modal -->
+<div class="qr-modal" id="trail-modal">
+  <div class="qr-box" style="max-width: 420px; text-align: left">
+    <h3 style="margin-bottom: 1rem">Turma vinculada à sessão</h3>
+    <div id="trail-modal-content" class="host-pres-modal-content"></div>
+    <button class="host-btn host-btn-ghost host-btn-full" id="trail-modal-close-btn" style="margin-top:1rem">Fechar</button>
+  </div>
+</div>
+
 <script src="../js/utils.js?v=1.3"></script>
 <script src="../js/api-client.js?v=1.1"></script>
 <script src="../js/question-renderer.js?v=2.5"></script>
@@ -676,6 +686,8 @@ var pollTimer      = null;
 var _historyMap    = {};
 var _presentations = [];
 var _currentSession = null;
+var _trailTurma     = null;
+var _trailAllTurmas = [];
 
 var visToggle = CPVisibilityToggle.attach({
   buttonEl:       document.getElementById('toggle-bars-btn'),
@@ -728,12 +740,17 @@ if (!urlCode) {
 
 async function loadSession() {
   try {
+    var code = urlCode.toUpperCase();
     var results = await Promise.allSettled([
       callWorker({ action: 'list_sessions' }),
-      callWorker({ action: 'list_presentations' })
+      callWorker({ action: 'list_presentations' }),
+      callWorker({ action: 'ct_lookup_turma_by_session', auth_token: AUTH_TOKEN, session_id: code }),
+      callWorker({ action: 'ct_list_all_turmas', auth_token: AUTH_TOKEN })
     ]);
     var data = results[0].status === 'fulfilled' ? results[0].value : { sessions: [] };
     _presentations = (results[1].status === 'fulfilled' ? results[1].value.presentations : null) || [];
+    _trailTurma     = (results[2].status === 'fulfilled' ? results[2].value.turma : null) || null;
+    _trailAllTurmas = (results[3].status === 'fulfilled' ? results[3].value.turmas : null) || [];
 
     var match = (data.sessions || []).find(function(s) { return s.code === urlCode.toUpperCase(); });
     if (!match) {
@@ -760,6 +777,7 @@ function selectSession(s) {
 
   clearAlert();
   renderPresentationLink();
+  renderTrailLink();
   applyHostedUI(s.status === 'open');
 
   if (!qaModule) {
@@ -889,6 +907,117 @@ document.getElementById('pres-modal-close-btn').addEventListener('click', functi
   document.getElementById('pres-modal').classList.remove('open');
 });
 document.getElementById('pres-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+
+// ---------------------------------------------------------------------------
+// Trail (ClassTrail turma) linking
+// ---------------------------------------------------------------------------
+
+function renderTrailLink() {
+  var btn     = document.getElementById('trail-btn');
+  var content = document.getElementById('trail-modal-content');
+  if (!btn || !content) return;
+
+  btn.hidden = false;
+  btn.classList.toggle('is-linked', !!_trailTurma);
+
+  if (_trailTurma) {
+    var t = _trailTurma;
+    var turmaName  = t.display_name || t.name || t.turma_slug;
+    var clientName = t.client_display_name || t.client_slug;
+    var trilhaUrl  = '/trilha/' + encodeURIComponent(t.client_slug) + '/' + encodeURIComponent(t.turma_slug) + (t.token ? '?k=' + encodeURIComponent(t.token) : '');
+    var adminUrl   = '/backstage/classtrail/';
+    content.innerHTML =
+      '<div class="host-pres-status">Vinculada a esta sessão</div>' +
+      '<div class="host-pres-title">' + escHtml(turmaName) + '</div>' +
+      '<div class="host-pres-engine">' + escHtml(clientName) + '</div>' +
+      '<a class="host-pres-link" href="' + escHtml(trilhaUrl) + '" target="_blank" rel="noopener">Abrir trilha pública ↗</a><br>' +
+      '<a class="host-pres-link" href="' + escHtml(adminUrl) + '" target="_blank" rel="noopener">Abrir ClassTrail (admin) ↗</a>' +
+      '<button class="host-btn host-btn-danger host-btn-full" id="trail-unlink-btn" style="margin-top:0.6rem">Desvincular turma</button>';
+    document.getElementById('trail-unlink-btn').addEventListener('click', doUnlinkTrail);
+  } else if (_trailAllTurmas.length > 0) {
+    var opts = '<option value="">Selecione uma turma…</option>';
+    _trailAllTurmas.forEach(function(t) {
+      var turmaName  = t.display_name || t.name || t.turma_slug;
+      var clientName = t.client_display_name || t.client_slug;
+      var label      = clientName + ' · ' + turmaName;
+      var inUse      = t.classpulse_session_id && t.classpulse_session_id !== sessionCode;
+      var suffix     = inUse ? ' (vinculada a ' + t.classpulse_session_id + ')' : '';
+      var disabled   = inUse ? ' disabled' : '';
+      var value      = t.client_slug + '|' + t.turma_slug;
+      opts += '<option value="' + escHtml(value) + '"' + disabled + '>' + escHtml(label + suffix) + '</option>';
+    });
+    content.innerHTML =
+      '<div class="host-pres-status">Nenhuma turma vinculada</div>' +
+      '<select id="trail-picker">' + opts + '</select>' +
+      '<button class="host-btn host-btn-primary host-btn-full" id="trail-link-btn">Vincular turma</button>';
+    document.getElementById('trail-link-btn').addEventListener('click', async function() {
+      var v = document.getElementById('trail-picker').value;
+      if (!v) return;
+      var parts = v.split('|');
+      await doLinkTrail(parts[0], parts[1]);
+    });
+  } else {
+    content.innerHTML = '<div class="host-pres-empty">Nenhuma turma cadastrada em ClassTrail.</div>';
+  }
+}
+
+async function doLinkTrail(clientSlug, turmaSlug) {
+  try {
+    await callWorker({
+      action: 'ct_update_turma_meta',
+      auth_token: AUTH_TOKEN,
+      client_slug: clientSlug,
+      slug: turmaSlug,
+      classpulse_session_id: sessionCode
+    });
+    var res = await callWorker({ action: 'ct_lookup_turma_by_session', auth_token: AUTH_TOKEN, session_id: sessionCode });
+    _trailTurma = res.turma || null;
+    // refresh the picker list so the just-linked turma reflects the new state next time
+    try {
+      var listRes = await callWorker({ action: 'ct_list_all_turmas', auth_token: AUTH_TOKEN });
+      _trailAllTurmas = listRes.turmas || [];
+    } catch (_) {}
+    renderTrailLink();
+    document.getElementById('trail-modal').classList.remove('open');
+    showToast('Turma vinculada.');
+  } catch (e) {
+    showToastError(e.message);
+  }
+}
+
+async function doUnlinkTrail() {
+  if (!_trailTurma) return;
+  try {
+    await callWorker({
+      action: 'ct_update_turma_meta',
+      auth_token: AUTH_TOKEN,
+      client_slug: _trailTurma.client_slug,
+      slug: _trailTurma.turma_slug,
+      classpulse_session_id: null
+    });
+    _trailTurma = null;
+    try {
+      var listRes = await callWorker({ action: 'ct_list_all_turmas', auth_token: AUTH_TOKEN });
+      _trailAllTurmas = listRes.turmas || [];
+    } catch (_) {}
+    renderTrailLink();
+    document.getElementById('trail-modal').classList.remove('open');
+    showToast('Turma desvinculada.');
+  } catch (e) {
+    showToastError(e.message);
+  }
+}
+
+// Open/close trail modal
+document.getElementById('trail-btn').addEventListener('click', function() {
+  document.getElementById('trail-modal').classList.add('open');
+});
+document.getElementById('trail-modal-close-btn').addEventListener('click', function() {
+  document.getElementById('trail-modal').classList.remove('open');
+});
+document.getElementById('trail-modal').addEventListener('click', function(e) {
   if (e.target === this) this.classList.remove('open');
 });
 
