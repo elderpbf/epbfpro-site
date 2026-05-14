@@ -1,5 +1,6 @@
 {
-  "mode": "retrospective",
-  "converted_on": "2026-05-13",
-  "note": "Pagina convertida de canal ativo de updates para retrospectiva estatica. Configuracoes antigas (banner_visible, banner_text, flower_shower, resumo_glow) ficaram obsoletas."
+  "banner_visible": true,
+  "banner_text": "ALTA DA UTI!!",
+  "flower_shower": true,
+  "resumo_glow": true
 }

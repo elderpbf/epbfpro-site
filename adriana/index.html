@@ -1,761 +1,2349 @@
 <!DOCTYPE html>
-<!-- v2026.05.13 retrospectiva estatica -->
+<!-- v2026.04.09 -->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Adriana, uma história de recuperação</title>
+    <title>Adriana - Atualizações</title>
     <link rel="icon" type="image/png" href="media/favicon-adriana.png">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#f6efe6">
+    <meta name="theme-color" content="#c4a97d">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Adriana">
     <link rel="apple-touch-icon" href="media/favicon-adriana.png">
-
+    <script>
+        (function() {
+            const s = localStorage.getItem('adriana_theme');
+            const dark = s === 'dark';
+            if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function(OneSignal) {
+            await OneSignal.init({
+                appId: '89faae5a-ef60-4165-aef4-1c274deea3b4',
+                autoPrompt: false
+            });
+        });
+    </script>
     <style>
         :root {
-            --bg: #faf6f0;
-            --bg-soft: #f3ece1;
-            --paper: #ffffff;
-            --ink: #3d3128;
-            --ink-soft: #6b5d50;
-            --ink-dim: #998a78;
-            --rose: #d9a8a3;
-            --rose-soft: #f4dedb;
-            --gold: #c4a97d;
-            --line: rgba(168, 138, 102, 0.18);
-            --shadow-soft: 0 1px 3px rgba(92, 74, 47, 0.05), 0 6px 24px rgba(92, 74, 47, 0.06);
-            --shadow-photo: 0 2px 8px rgba(92, 74, 47, 0.08), 0 18px 40px rgba(92, 74, 47, 0.10);
-            --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
-            --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --bg: #faf8f5;
+            --text: #3d3529;
+            --text-muted: #8a7b66;
+            --text-dim: #a89880;
+            --border: #e8e0d4;
+            --card-bg: #fff;
+            --heading: #5c4a2f;
+            --intro-text: #6b5d4a;
+            --accent: #c4a97d;
+            --accent-soft: rgba(196, 169, 125, 0.12);
+            --footer-text: #bfb49e;
+            --spinner-border: #e8e0d4;
+            --update-inner-border: #ede7dc;
+            --update-left: #ddd2c0;
+            --modal-bg: #faf8f5;
+            --modal-input-bg: #fff;
+            --modal-cancel-bg: #e8e0d4;
+            --modal-cancel-text: #5c4a2f;
+            --notif-prompt-bg: #fff8ec;
+            --notif-prompt-text: #7a5c2a;
+            --notif-prompt-border: #f0d9a8;
+            --notif-on-bg: #edf7f0;
+            --notif-on-text: #3a6b4a;
+            --notif-on-border: #b8dfc7;
+            --photo-glow: 0 0 10px 5px rgba(240, 212, 138, 0.6), 0 0 24px 12px rgba(232, 160, 180, 0.4), 0 0 40px 20px rgba(196, 168, 212, 0.3);
+            --card-shadow: 0 1px 3px rgba(92, 74, 47, 0.06);
+            --divider: linear-gradient(90deg, transparent, var(--border), transparent);
+        }
+        [data-theme="dark"] {
+            --bg: #181613;
+            --text: #e2d9ce;
+            --text-muted: #9a8b78;
+            --text-dim: #6e6050;
+            --border: #302a23;
+            --card-bg: #211e19;
+            --heading: #d4b67e;
+            --intro-text: #9a8272;
+            --accent: #c4a97d;
+            --accent-soft: rgba(196, 169, 125, 0.10);
+            --footer-text: #4a4235;
+            --spinner-border: #302a23;
+            --update-inner-border: #302a23;
+            --update-left: #4a3f2f;
+            --modal-bg: #1e1b17;
+            --modal-input-bg: #282420;
+            --modal-cancel-bg: #302a23;
+            --modal-cancel-text: #c4a97d;
+            --notif-prompt-bg: #2a2418;
+            --notif-prompt-text: #d4a95a;
+            --notif-prompt-border: #4a3820;
+            --notif-on-bg: #1a2e20;
+            --notif-on-text: #6bbb85;
+            --notif-on-border: #2a4e35;
+            --photo-glow: 0 0 12px 5px rgba(240, 212, 138, 0.35), 0 0 24px 12px rgba(232, 160, 180, 0.2), 0 0 40px 18px rgba(196, 168, 212, 0.15);
+            --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            --divider: linear-gradient(90deg, transparent, var(--border), transparent);
         }
 
-        *, *::before, *::after { box-sizing: border-box; }
-
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: var(--bg);
-            color: var(--ink);
-            font-family: var(--sans);
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            scroll-behavior: smooth;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-size: 17px;
-            line-height: 1.7;
-            font-weight: 400;
-            background:
-                radial-gradient(1200px 600px at 50% -200px, rgba(217, 168, 163, 0.18), transparent 60%),
-                radial-gradient(900px 500px at 100% 30%, rgba(196, 169, 125, 0.10), transparent 60%),
-                var(--bg);
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
             min-height: 100vh;
+            transition: background 0.2s, color 0.2s;
+            position: relative;
         }
 
-        /* ============ HERO ============ */
-        .hero {
+        /* Flower background scatter */
+        @media (max-width: 768px) { body::before { display: none; } }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background:
+                url('media/optimized/flowers/1.webp') 5% 8% / 45px no-repeat,
+                url('media/optimized/flowers/jasmine.webp') 92% 5% / 35px no-repeat,
+                url('media/optimized/flowers/shape.webp') 3% 35% / 28px no-repeat,
+                url('media/optimized/flowers/chrysanthemum.webp') 95% 30% / 40px no-repeat,
+                url('media/optimized/flowers/1.webp') 8% 60% / 32px no-repeat,
+                url('media/optimized/flowers/flowers.webp') 90% 55% / 38px no-repeat,
+                url('media/optimized/flowers/jasmine.webp') 6% 85% / 30px no-repeat,
+                url('media/optimized/flowers/1.webp') 93% 80% / 42px no-repeat,
+                url('media/optimized/flowers/shape.webp') 88% 95% / 25px no-repeat,
+                url('media/optimized/flowers/chrysanthemum.webp') 4% 95% / 35px no-repeat;
+            opacity: 0.08;
+        }
+        [data-theme="dark"] body::before {
+            filter: invert(1);
+            opacity: 0.05;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
             position: relative;
-            padding: 56px 22px 36px;
+        }
+
+        /* Header */
+        .header {
             text-align: center;
-            max-width: 720px;
-            margin: 0 auto;
+            padding: 12px 0 20px;
+            margin-bottom: 12px;
+        }
+        .header::after {
+            content: none;
         }
 
-        .hero-eyebrow {
-            font-family: var(--sans);
-            font-size: 0.78rem;
-            letter-spacing: 0.22em;
+        /* Flower dividers */
+        .flower-divider {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 28px 0;
+            margin: 20px 0;
+        }
+        .flower-divider::before,
+        .flower-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(232,160,180,0.35), rgba(196,168,212,0.35));
+        }
+        .flower-divider::after {
+            background: linear-gradient(90deg, rgba(196,168,212,0.35), rgba(232,160,180,0.35), transparent);
+        }
+        .flower-divider img {
+            width: 13px;
+            height: 13px;
+            opacity: 0.22;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .flower-divider img:nth-child(2) { cursor: pointer; }
+        .flower-divider img:nth-child(2):hover { opacity: 0.6; }
+        .flower-divider img:nth-child(1) { transform: rotate(-15deg); }
+        .flower-divider img:nth-child(2) { transform: rotate(10deg); width: 11px; height: 11px; }
+        .flower-divider img:nth-child(3) { transform: rotate(-5deg); }
+        [data-theme="dark"] .flower-divider img { filter: invert(1); opacity: 0.15; }
+        [data-theme="dark"] .flower-divider img:nth-child(2):hover { opacity: 0.4; }
+
+        .flower-grow {
+            position: fixed;
+            z-index: 10000;
+            pointer-events: none;
+            user-select: none;
+            will-change: transform, opacity, filter;
+            background-color: var(--accent);
+            -webkit-mask-size: contain;
+            -webkit-mask-position: center;
+            -webkit-mask-repeat: no-repeat;
+            mask-size: contain;
+            mask-position: center;
+            mask-repeat: no-repeat;
+        }
+        [data-theme="dark"] .flower-grow { background-color: var(--heading); }
+
+        @keyframes layeredBloom {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { opacity: 0.7; }
+            100% { transform: translate(-50%, -50%) scale(4) rotate(var(--rot)); opacity: 0; }
+        }
+
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0 12px;
+            margin: 36px 0 4px;
+            font-size: 0.82rem;
+            font-weight: 700;
             text-transform: uppercase;
-            color: var(--ink-dim);
-            margin-bottom: 18px;
+            letter-spacing: 0.09em;
+            color: var(--text-muted);
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(232,160,180,0.35), rgba(196,168,212,0.35));
+        }
+        .section-divider::after {
+            background: linear-gradient(90deg, rgba(196,168,212,0.35), rgba(232,160,180,0.35), transparent);
+        }
+        .section-divider img {
+            width: 10px;
+            height: 10px;
+            opacity: 0.22;
+            flex-shrink: 0;
+        }
+        .section-divider img:first-child { transform: rotate(-20deg); }
+        .section-divider img:last-child { transform: rotate(20deg) scaleX(-1); }
+        [data-theme="dark"] .section-divider img { filter: invert(1); opacity: 0.15; }
+
+        .header-photo {
+            width: 164px;
+            height: 164px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: none;
+            margin-bottom: 14px;
+            box-shadow: var(--photo-glow);
+        }
+        [data-theme="dark"] .header-photo {
+            filter: brightness(0.8);
         }
 
-        .hero-name {
-            font-family: var(--serif);
-            font-weight: 400;
-            font-size: clamp(3rem, 11vw, 5.4rem);
-            line-height: 1;
-            letter-spacing: -0.02em;
-            color: var(--ink);
-            margin: 0 0 22px;
+        .header p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
         }
 
-        .hero-lede {
-            font-family: var(--serif);
-            font-weight: 300;
-            font-style: italic;
-            font-size: clamp(1.05rem, 3.6vw, 1.25rem);
-            line-height: 1.55;
-            color: var(--ink-soft);
-            max-width: 32ch;
-            margin: 0 auto 36px;
+        .header .last-update {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 8px;
         }
 
-        .hero-photo-wrap {
+        .intro {
+            font-size: 0.9rem;
+            color: var(--intro-text);
+            text-align: center;
+            line-height: 1.6;
+            padding: 0 8px;
+            margin-bottom: 0;
             position: relative;
-            width: 100%;
-            max-width: 520px;
-            margin: 0 auto;
-            aspect-ratio: 4 / 5;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: var(--shadow-photo);
-            background: var(--bg-soft);
         }
 
-        .hero-photo-wrap img {
+        /* Summary card */
+        .summary-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 36px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #f0d48a, #e8a0b4, #c4a8d4);
+            border-radius: 12px 12px 0 0;
+        }
+        .summary-card::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            width: 100px;
+            height: 100px;
+            background: url('media/optimized/flowers/jasmine.webp') center/contain no-repeat;
+            opacity: 0.035;
+        }
+        [data-theme="dark"] .summary-card::after {
+            filter: invert(1);
+            opacity: 0.025;
+        }
+
+        /* === Resumo: glow com cores girando === */
+        @property --sv-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+        @keyframes sv-spin {
+            to { --sv-angle: 360deg; }
+        }
+        .summary-card--gradient { overflow: visible; }
+        .summary-card--gradient::after { clip-path: inset(0 10px 10px 0); }
+        .summary-card--gradient::before {
+            top: 0; left: 0; right: 0; bottom: 0;
+            height: auto;
+            border-radius: 12px;
+            background: conic-gradient(from var(--sv-angle), #f0d48a, #e8a0b4, #c4a8d4, #f0d48a);
+            filter: blur(14px);
+            z-index: -1;
+            animation: sv-spin 4s linear infinite;
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .summary-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .summary-date {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        .summary-text {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--text);
+        }
+
+        .summary-empty {
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .summary-photo-wrap {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            float: right;
+            margin: 0 0 12px 16px;
+            padding: 3px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .summary-photo-wrap img {
             width: 100%;
             height: 100%;
+            border-radius: 50%;
             object-fit: cover;
             display: block;
         }
+        [data-theme="dark"] .summary-photo-wrap img {
+            filter: brightness(0.85);
+        }
 
-        .hero-meta {
-            margin-top: 26px;
+        /* Photo lightbox */
+        #photo-lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            z-index: 2000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+        }
+        #photo-lightbox.open { display: flex; }
+        .lightbox-ring {
+            width: min(80vw, 420px);
+            height: min(80vw, 420px);
+            border-radius: 50%;
+            padding: 4px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .lightbox-ring img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+        .lightbox-jump-btn {
+            background: #fff;
+            color: #333;
+            border: none;
+            border-radius: 24px;
+            padding: 11px 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 0.01em;
+        }
+        .lightbox-jump-btn:active { opacity: 0.8; }
+
+        /* Photo collage overlay */
+        #collage-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(18, 14, 10, 0.18);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            z-index: 2100;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        #collage-overlay.open { display: block; }
+        #collage-topbar {
+            display: none;
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            z-index: 2102;
+            align-items: center;
+            justify-content: center;
+        }
+        #collage-topbar.open { display: flex; }
+        .collage-pill {
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            padding: 7px 16px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(240,212,138,0.82), rgba(232,160,180,0.82), rgba(196,168,212,0.82));
+            user-select: none;
+            cursor: default;
+            white-space: nowrap;
+        }
+        [data-theme="dark"] .collage-pill {
+            background: linear-gradient(135deg, rgba(184,160,90,0.82), rgba(176,120,136,0.82), rgba(150,128,168,0.82));
+        }
+        #collage-close-btn {
+            cursor: pointer;
+            font-size: 1.3rem;
+            line-height: 1;
+            padding: 7px 14px;
+            position: absolute;
+            right: 0;
+            transition: opacity 0.15s;
+        }
+        #collage-close-btn:hover { opacity: 0.8; }
+        #gallery-back-btn {
+            display: none;
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            color: #fff;
+            border: none;
+            border-radius: 24px;
+            padding: 11px 24px;
             font-size: 0.85rem;
-            letter-spacing: 0.08em;
-            color: var(--ink-dim);
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 1999;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 2px 14px rgba(232,160,180,0.5);
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+        #collage-canvas {
+            position: relative;
+        }
+        .polaroid {
+            position: absolute;
+            background: #faf8f4;
+            padding: 10px 10px 36px;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.25);
+            will-change: transform;
+            transition: box-shadow 0.15s, z-index 0s;
+            cursor: pointer;
+        }
+        .polaroid:hover {
+            box-shadow: 0 8px 28px rgba(0,0,0,0.65), 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .polaroid img {
+            display: block;
+            object-fit: cover;
+        }
+        .polaroid-caption {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.6rem;
+            color: #999;
+            text-align: center;
+            margin-top: 7px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0.03em;
         }
 
-        .hero-meta span + span::before {
-            content: "·";
-            margin: 0 10px;
-            color: var(--line);
-        }
-
-        /* ============ DIVIDER ============ */
-        .divider {
+        /* Section headers with flower ornaments */
+        .section-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 14px;
-            margin: 56px auto;
-            max-width: 320px;
-            color: var(--ink-dim);
+            gap: 10px;
+        }
+        .section-header img {
+            width: 12px;
+            height: 12px;
+            opacity: 0.25;
+        }
+        .section-header img:first-child { transform: rotate(-20deg); }
+        .section-header img:last-child { transform: rotate(20deg) scaleX(-1); }
+        [data-theme="dark"] .section-header img { filter: invert(1); opacity: 0.18; }
+
+        /* Timeline */
+        .timeline-header {
+            margin-bottom: 16px;
         }
 
-        .divider::before, .divider::after {
-            content: "";
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--line), transparent);
+        .day-group {
+            margin-bottom: 28px;
+            position: relative;
+            padding-left: 20px;
+        }
+        .day-group::before {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 16px;
+            bottom: 10px;
+            width: 2px;
+            background: linear-gradient(to bottom, #f0d48a, #e8a0b4, #c4a8d4, var(--border));
+            border-radius: 1px;
+            opacity: 0.4;
+        }
+        .day-group:last-child::before {
+            background: linear-gradient(to bottom, #f0d48a, #e8a0b4, transparent);
+            opacity: 0.4;
         }
 
-        .divider-dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: var(--gold);
-            opacity: 0.55;
+        .day-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--heading);
+            margin-bottom: 12px;
+            padding-left: 6px;
+            position: relative;
         }
 
-        /* ============ SECTION HEADINGS ============ */
-        .section-title {
-            font-family: var(--serif);
-            font-weight: 400;
-            font-size: clamp(1.7rem, 5vw, 2.2rem);
-            line-height: 1.15;
-            letter-spacing: -0.01em;
-            color: var(--ink);
-            text-align: center;
-            margin: 0 0 14px;
+        .day-label::before {
+            content: '';
+            position: absolute;
+            left: -23px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background: url('media/optimized/flowers/jasmine.webp') center/contain no-repeat;
+            opacity: 0.35;
+            box-shadow: none;
+        }
+        [data-theme="dark"] .day-label::before {
+            filter: invert(1);
+            opacity: 0.25;
         }
 
-        .section-kicker {
-            text-align: center;
-            font-size: 0.78rem;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            color: var(--ink-dim);
-            margin-bottom: 14px;
+        .update-entry {
+            background: var(--card-bg);
+            border: 1px solid var(--update-inner-border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: var(--card-shadow);
         }
 
-        .section-intro {
-            text-align: center;
-            color: var(--ink-soft);
-            max-width: 38ch;
-            margin: 0 auto 48px;
-            font-size: 1rem;
-            line-height: 1.65;
-        }
-
-        /* ============ TIMELINE / JOURNEY ============ */
-        .journey {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 0 22px;
-        }
-
-        .phase {
-            margin-bottom: 72px;
-        }
-
-        .phase:last-child {
-            margin-bottom: 0;
-        }
-
-        .phase-marker {
-            display: flex;
-            align-items: baseline;
-            gap: 14px;
-            margin-bottom: 18px;
-        }
-
-        .phase-num {
-            font-family: var(--serif);
-            font-style: italic;
-            font-weight: 300;
-            font-size: 1.05rem;
-            color: var(--gold);
-            min-width: 24px;
-        }
-
-        .phase-date {
-            font-size: 0.78rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--ink-dim);
-            font-weight: 500;
-        }
-
-        .phase-title {
-            font-family: var(--serif);
-            font-weight: 400;
-            font-size: clamp(1.4rem, 4.5vw, 1.8rem);
-            line-height: 1.2;
-            color: var(--ink);
-            margin: 0 0 16px;
-            letter-spacing: -0.01em;
-        }
-
-        .phase-text {
-            color: var(--ink-soft);
-            line-height: 1.75;
-            margin: 0 0 26px;
-            font-size: 1rem;
-        }
-
-        .phase-photo {
-            width: 100%;
-            border-radius: 4px;
+        .update-entry--good-news {
+            position: relative;
+            background: linear-gradient(135deg, #f5f0ff, #e8d8f5);
+            border-color: #9b7bc4;
             overflow: hidden;
-            box-shadow: var(--shadow-photo);
-            background: var(--bg-soft);
-            margin: 22px 0;
+        }
+        .update-entry--good-news::before {
+            content: '🌸 🌺 🌷';
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .update-entry--good-news::after {
+            content: '🌻 🌼 🌸';
+            position: absolute;
+            bottom: 6px;
+            left: 10px;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        [data-theme="dark"] .update-entry--good-news {
+            background: linear-gradient(135deg, #2a1f3a, #3a2e4a);
+            border-color: #6a4a8a;
         }
 
-        .phase-photo img,
-        .phase-photo video {
+        .update-time {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .update-text {
+            font-size: 0.95rem;
+            line-height: 1.65;
+            color: var(--text);
+        }
+
+        .update-photo {
+            margin-top: 12px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .update-photo img {
             width: 100%;
             height: auto;
             display: block;
-            cursor: zoom-in;
+            border-radius: 8px;
         }
 
-        .phase-photo video {
-            cursor: default;
+        .update-photo video {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
         }
 
-        .phase-photo-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 22px 0;
-        }
-
-        .phase-photo-grid .phase-photo {
-            margin: 0;
-        }
-
-        /* ============ GALLERY ============ */
-        .gallery-section {
-            background: linear-gradient(180deg, transparent, rgba(244, 222, 219, 0.25) 30%, rgba(244, 222, 219, 0.25) 70%, transparent);
-            padding: 80px 0;
-            margin: 80px 0 0;
-        }
-
-        .gallery-wrap {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 14px;
-        }
-
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        .update-media-grid {
+            display: flex;
+            flex-direction: column;
             gap: 8px;
+            margin-top: 12px;
         }
 
-        .gallery-item {
-            position: relative;
-            aspect-ratio: 1;
+        .update-media-grid .update-photo {
+            width: 100%;
+            margin-top: 0;
+        }
+
+        /* Phase blocks */
+        .phase-block {
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
             overflow: hidden;
-            border-radius: 3px;
-            background: var(--bg-soft);
-            cursor: zoom-in;
-            box-shadow: var(--shadow-soft);
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
         }
-
-        .gallery-item:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-photo);
+        .phase-summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px 16px;
+            background: #f2ede5;
+            user-select: none;
         }
-
-        .gallery-item img {
+        [data-theme="dark"] .phase-summary {
+            background: #2a261e;
+        }
+        .phase-summary--slim {
+            padding: 8px 16px;
+            align-items: center;
+        }
+        .phase-summary--slim .phase-date-range {
+            margin-bottom: 0;
+            font-size: 0.72rem;
+        }
+        .phase-summary::-webkit-details-marker { display: none; }
+        .phase-header-text {
+            flex: 1;
+            min-width: 0;
+        }
+        .phase-date-range {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+        .phase-title {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--heading);
+            margin-bottom: 4px;
+        }
+        .phase-resumo {
+            display: block;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+        .phase-photo-ring {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            padding: 2px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            flex-shrink: 0;
+            align-self: center;
+        }
+        .phase-photo-ring img {
             width: 100%;
             height: 100%;
+            border-radius: 50%;
             object-fit: cover;
             display: block;
-            transition: transform 0.6s ease;
+        }
+        .phase-chevron {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .phase-block[open] .phase-chevron {
+            transform: rotate(180deg);
+        }
+        .phase-days {
+            padding: 16px 16px 4px 16px;
+            border-top: 1px solid var(--border);
+        }
+        .phase-days .day-group:last-child {
+            margin-bottom: 4px;
+        }
+        [data-theme="dark"] .phase-block {
+            border-color: rgba(255,255,255,0.08);
+        }
+        [data-theme="dark"] .phase-days {
+            border-top-color: rgba(255,255,255,0.08);
         }
 
-        .gallery-item:hover img {
-            transform: scale(1.04);
-        }
-
-        /* ============ CLOSING ============ */
-        .closing {
-            max-width: 640px;
-            margin: 0 auto;
-            padding: 80px 26px 40px;
+        /* Loading & empty states */
+        .loading {
             text-align: center;
+            padding: 48px 0;
+            color: var(--text-dim);
         }
 
-        .closing-title {
-            font-family: var(--serif);
-            font-weight: 400;
-            font-style: italic;
-            font-size: clamp(1.5rem, 5vw, 2rem);
-            color: var(--ink);
-            margin: 0 0 28px;
-            letter-spacing: -0.005em;
+        .loading-spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: url('media/optimized/flowers/flower.webp') center/contain no-repeat;
+            animation: spin 2s linear infinite;
+            margin-bottom: 12px;
+        }
+        [data-theme="dark"] .loading-spinner {
+            filter: invert(1);
         }
 
-        .closing p {
-            font-family: var(--serif);
-            font-weight: 300;
-            font-size: clamp(1.05rem, 3.4vw, 1.18rem);
-            line-height: 1.75;
-            color: var(--ink-soft);
-            margin: 0 0 22px;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        .closing-signature {
-            margin-top: 38px;
-            font-family: var(--serif);
-            font-style: italic;
-            font-weight: 400;
-            color: var(--ink);
-            font-size: 1.1rem;
-        }
-
-        .closing-video {
-            margin: 40px auto 12px;
-            border-radius: 4px;
-            overflow: hidden;
-            box-shadow: var(--shadow-photo);
-            max-width: 560px;
-        }
-
-        .closing-video video {
-            width: 100%;
-            display: block;
-        }
-
-        /* ============ FOOTER ============ */
-        footer {
+        .empty-state {
             text-align: center;
-            padding: 60px 22px 40px;
-            color: var(--ink-dim);
-            font-size: 0.78rem;
-            letter-spacing: 0.12em;
+            padding: 48px 0;
+            color: var(--text-dim);
+            font-style: italic;
         }
 
-        footer .footer-flower {
-            display: block;
-            margin: 0 auto 18px;
-            width: 34px;
-            height: 34px;
-            opacity: 0.7;
+        /* Pull to refresh */
+        .pull-indicator {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            padding: 8px 0;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        /* ============ LIGHTBOX ============ */
-        .lightbox {
+        .pull-indicator.visible {
+            opacity: 1;
+        }
+
+        /* Notification bar */
+        #notif-bar {
+            margin-top: 40px;
+            margin-bottom: 0; text-align: center; cursor: pointer;
+            padding: 12px 20px; border-radius: 10px;
+            background: #f2ede5; color: var(--text);
+            font-size: 0.95rem; font-weight: 500;
+            transition: background 0.2s;
+        }
+        [data-theme="dark"] #notif-bar { background: #2a261e; }
+        #notif-bar:hover { background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4); color: #fff; }
+        [data-theme="dark"] #notif-bar:hover { background: linear-gradient(135deg, #b8a05a, #b07888, #9680a8); }
+        #notif-bar.subscribed { cursor: default; background: #d4e8d1; color: #4a6545; }
+        #notif-bar.subscribed:hover { background: #d4e8d1; }
+        [data-theme="dark"] #notif-bar.subscribed,
+        [data-theme="dark"] #notif-bar.subscribed:hover { background: #2e3d2a; color: #a8d5a2; }
+
+        /* Dark mode toggle */
+        #dark-toggle {
             position: fixed;
-            inset: 0;
-            background: rgba(20, 14, 8, 0.92);
-            display: none;
+            top: 14px;
+            right: 14px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            padding: 24px;
-            cursor: zoom-out;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            box-shadow: var(--card-shadow);
+            transition: background 0.3s, border-color 0.3s, transform 0.15s;
+        }
+        #dark-toggle:hover { transform: scale(1.08); }
+        #dark-toggle:active { transform: scale(0.95); }
+
+        /* Message board */
+        .board-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            margin-top: 40px;
         }
 
-        .lightbox.open {
+        .board-cards {
             display: flex;
-            opacity: 1;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding: 4px 2px 8px;
         }
 
-        .lightbox img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            border-radius: 4px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+        .msg-card {
+            padding: 14px 15px 12px;
+            border-radius: 6px;
+            width: calc(50% - 7px);
+            min-width: 130px;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+            transform: rotate(var(--r));
+            transition: transform 0.18s, box-shadow 0.18s;
             cursor: default;
+            position: relative;
         }
 
-        .lightbox-close {
-            position: absolute;
-            top: 22px;
-            right: 26px;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.75);
-            font-size: 2.4rem;
-            line-height: 1;
+        [data-theme="dark"] .msg-card {
+            box-shadow: 2px 3px 10px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .msg-card:hover {
+            transform: rotate(0deg) scale(1.03);
+            box-shadow: 3px 5px 14px rgba(0,0,0,0.14);
+            z-index: 2;
+        }
+
+        .msg-card-name {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--heading);
+            margin-bottom: 5px;
+        }
+
+        .msg-card-text {
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .msg-card-date {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            margin-top: 8px;
+        }
+
+        /* Reaction buttons on posts */
+        .post-react-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 10px; }
+        .post-react-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.85rem;
             cursor: pointer;
-            font-family: var(--serif);
+            transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+            font-family: inherit;
+            opacity: 0.45;
+        }
+        .post-react-btn:hover { opacity: 1; background: var(--accent-soft); }
+        .post-react-btn.active { opacity: 1; border-color: var(--accent); background: var(--accent-soft); }
+        .react-count { font-size: 0.8rem; color: var(--text-muted); min-width: 8px; }
+        @keyframes heartPop {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+        .post-react-btn.pop { animation: heartPop 0.3s ease-out; }
+
+        .msg-leave-btn {
+            display: block;
+            margin: 20px auto 32px;
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            border: none;
+            border-radius: 24px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.15s;
+            box-shadow: 0 2px 12px rgba(232, 160, 180, 0.35);
+        }
+        .msg-leave-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        [data-theme="dark"] .msg-leave-btn:not(.ghost) {
+            background: linear-gradient(135deg, #b8a05a, #b07888, #9680a8);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+        }
+        .msg-leave-btn.ghost {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--heading);
+            box-shadow: none;
+            font-weight: 400;
+        }
+        .msg-leave-btn.ghost:hover { opacity: 0.8; transform: none; }
+
+        #board-toggle-row.sticky {
+            position: sticky;
+            bottom: 12px;
+            z-index: 10;
         }
 
-        /* ============ RESPONSIVE ============ */
-        @media (min-width: 640px) {
-            .hero { padding: 90px 32px 50px; }
-            .journey { padding: 0 32px; }
-            .gallery { grid-template-columns: repeat(3, 1fr); gap: 12px; }
-            .gallery-wrap { padding: 0 24px; }
+        /* Modal */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.38);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-bg.open { display: flex; }
+
+        .modal-box {
+            background: var(--modal-bg);
+            border-radius: 14px;
+            padding: 26px 22px 22px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        }
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--heading);
+            margin-bottom: 18px;
+        }
+        .modal-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            margin-top: 14px;
+        }
+        .modal-input, .modal-textarea {
+            width: 100%;
+            padding: 9px 11px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-family: inherit;
+            background: var(--modal-input-bg);
+            color: var(--text);
+            outline: none;
+        }
+        .modal-input:focus, .modal-textarea:focus { border-color: var(--accent); }
+        .modal-textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .modal-btn-send { background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4); color: #fff; }
+        [data-theme="dark"] .modal-btn-send { background: linear-gradient(135deg, #b8a05a, #b07888, #9680a8); }
+        .modal-btn-cancel { background: var(--modal-cancel-bg); color: var(--modal-cancel-text); }
+        .modal-fb { margin-top: 10px; font-size: 0.82rem; padding: 8px 10px; border-radius: 7px; }
+        .modal-fb-ok  { background: #e8f5e9; color: #2e7d32; }
+        .modal-fb-err { background: #fce4ec; color: #c62828; }
+
+        /* Footer with flower garland */
+        .footer {
+            text-align: center;
+            padding: 24px 0;
+            margin-top: 16px;
+            position: relative;
+        }
+        .footer-garland {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 16px;
+            opacity: 0.12;
+        }
+        .footer-garland img {
+            width: 16px;
+            height: 16px;
+        }
+        .footer-garland img:nth-child(1) { transform: rotate(-25deg); }
+        .footer-garland img:nth-child(2) { transform: rotate(15deg); width: 20px; height: 20px; }
+        .footer-garland img:nth-child(3) { transform: rotate(-10deg); width: 14px; height: 14px; }
+        .footer-garland img:nth-child(4) { transform: rotate(20deg); width: 18px; height: 18px; }
+        .footer-garland img:nth-child(5) { transform: rotate(-15deg); }
+        .footer-garland img:nth-child(6) { transform: rotate(25deg); width: 14px; height: 14px; }
+        .footer-garland img:nth-child(7) { transform: rotate(-5deg); width: 20px; height: 20px; }
+        [data-theme="dark"] .footer-garland { opacity: 0.08; }
+        [data-theme="dark"] .footer-garland img { filter: invert(1); }
+
+        .footer p {
+            font-size: 0.75rem;
+            color: var(--footer-text);
         }
 
-        @media (min-width: 900px) {
-            body { font-size: 18px; }
-            .gallery { grid-template-columns: repeat(4, 1fr); }
-            .phase { display: grid; grid-template-columns: 220px 1fr; gap: 40px; align-items: start; }
-            .phase-marker {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 6px;
-                position: sticky;
-                top: 40px;
-            }
-            .phase-content { min-width: 0; }
+        /* Top Banner */
+        .top-banner {
+            position: relative;
+            margin: 0 0 24px;
+            padding: 18px 40px;
+            background: linear-gradient(135deg, #f0d48a, #e8a0b4, #c4a8d4);
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(232, 160, 180, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        [data-theme="dark"] .top-banner {
+            background: linear-gradient(135deg, #b8a05a, #b07888, #9680a8);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+        .top-banner .banner-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            z-index: 1;
+            line-height: 1.4;
+        }
+        [data-theme="dark"] .top-banner .banner-text {
+            color: #f5f0eb;
+        }
+        .top-banner .banner-flower {
+            position: absolute;
+            width: 28px;
+            opacity: 0.85;
+            z-index: 0;
+            filter: brightness(0) invert(1) opacity(0.4);
+        }
+        .top-banner .banner-flower.left { left: 12px; top: 50%; transform: translateY(-50%) rotate(-15deg); }
+        .top-banner .banner-flower.right { right: 12px; top: 50%; transform: translateY(-50%) rotate(15deg); width: 24px; }
+        [data-theme="dark"] .top-banner .banner-flower { filter: invert(1) opacity(0.6); }
+
+        /* Flower Shower */
+        .flower-flake {
+            position: fixed;
+            top: -5vh;
+            z-index: 9999;
+            pointer-events: none;
+            user-select: none;
+            animation: fall linear forwards;
+            font-size: 1.5rem;
+            will-change: transform;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
-                animation-duration: 0.01ms !important;
-                transition-duration: 0.01ms !important;
-            }
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--bg, #fdfaf6);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
         }
-
-        /* Selection */
-        ::selection {
-            background: var(--rose-soft);
-            color: var(--ink);
-        }
-
-        /* Loading: hide-on-load fade */
-        .fade-in {
+        #loading-overlay.hidden {
             opacity: 0;
-            transform: translateY(8px);
-            transition: opacity 0.7s ease, transform 0.7s ease;
-        }
-
-        .fade-in.visible {
-            opacity: 1;
-            transform: none;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
-
-    <!-- ============ HERO ============ -->
-    <header class="hero">
-        <div class="hero-eyebrow">Uma jornada de recuperação</div>
-        <h1 class="hero-name">Adriana</h1>
-        <p class="hero-lede">A história de 45 dias, da força que ela teve, e do carinho que nos cercou.</p>
-
-        <div class="hero-photo-wrap">
+    <button id="dark-toggle" onclick="toggleDark()">🌙</button>
+    <div class="container">
+        <div class="pull-indicator" id="pull-indicator">Solte para atualizar</div>
+        <div id="top-banner" class="top-banner" style="display:none;">
+            <img src="media/optimized/flowers/1.webp" class="banner-flower left" alt="">
+            <div class="banner-text" id="top-banner-text">ALTA DA UTI!</div>
+            <img src="media/optimized/flowers/jasmine.webp" class="banner-flower right" alt="">
+        </div>
+        <div class="header">
             <picture>
                 <source srcset="media/optimized/adriana-flowers.webp" type="image/webp">
-                <img src="media/optimized/adriana-flowers.jpg" alt="Adriana com flores">
+                <img class="header-photo" src="media/optimized/adriana-flowers.jpg" alt="Adriana">
             </picture>
         </div>
 
-        <div class="hero-meta">
-            <span>Fevereiro a Abril de 2026</span>
-            <span>Em casa desde 10 de abril</span>
-        </div>
-    </header>
-
-    <div class="divider"><span class="divider-dot"></span></div>
-
-    <!-- ============ JOURNEY / FASES ============ -->
-    <section class="journey">
-        <div class="section-kicker">A jornada</div>
-        <h2 class="section-title">Dia após dia</h2>
-        <p class="section-intro">Cada fase desta caminhada teve seu peso e sua luz. Aqui ficam os momentos que marcaram.</p>
-
-        <!-- Fase 1 -->
-        <article class="phase">
-            <div class="phase-marker">
-                <span class="phase-num">01</span>
-                <span class="phase-date">Final de Fevereiro de 2026</span>
-            </div>
-            <div class="phase-content">
-                <h3 class="phase-title">O começo, e o susto</h3>
-                <p class="phase-text">No fim de fevereiro, a Adriana foi internada. Os primeiros dias foram os mais difíceis, com a UTI, os exames, a espera por respostas. A família se reuniu em torno dela, e o telefone não parou de tocar com mensagens de quem se importava.</p>
-                <div class="phase-photo">
-                    <img src="media/IMG-20260226-WA0013.jpg" alt="Adriana no hospital, fim de fevereiro" loading="lazy">
-                </div>
-            </div>
-        </article>
-
-        <!-- Fase 2 -->
-        <article class="phase">
-            <div class="phase-marker">
-                <span class="phase-num">02</span>
-                <span class="phase-date">Início de Março de 2026</span>
-            </div>
-            <div class="phase-content">
-                <h3 class="phase-title">Cuidado intensivo</h3>
-                <p class="phase-text">As semanas seguintes foram de tratamento intensivo. A equipe do hospital foi extraordinária, e a Adriana, sempre forte, foi enfrentando cada etapa com a coragem que sempre teve. Pequenos avanços viraram grandes vitórias.</p>
-                <div class="phase-photo-grid">
-                    <div class="phase-photo">
-                        <img src="media/IMG-20260311-WA0013.jpg" alt="Adriana em cuidado intensivo" loading="lazy">
-                    </div>
-                    <div class="phase-photo">
-                        <img src="media/IMG-20260311-WA0015.jpg" alt="Momento de tratamento" loading="lazy">
-                    </div>
-                </div>
-                <div class="phase-photo">
-                    <img src="media/IMG-20260312-WA0005.jpg" alt="Adriana com a família" loading="lazy">
-                </div>
-            </div>
-        </article>
-
-        <!-- Fase 3 -->
-        <article class="phase">
-            <div class="phase-marker">
-                <span class="phase-num">03</span>
-                <span class="phase-date">Meados de Março de 2026</span>
-            </div>
-            <div class="phase-content">
-                <h3 class="phase-title">Os primeiros sinais</h3>
-                <p class="phase-text">Sorrisos voltaram. A voz voltou. As conversas com a família ficaram mais longas, mais leves. Cada visita trazia um pedaço de casa, e cada dia trazia um pouco mais de Adriana de volta.</p>
-                <div class="phase-photo-grid">
-                    <div class="phase-photo">
-                        <img src="media/IMG-20260314-WA0026.jpg" alt="Sinais de melhora" loading="lazy">
-                    </div>
-                    <div class="phase-photo">
-                        <img src="media/IMG-20260314-WA0027.jpg" alt="Sorriso de volta" loading="lazy">
-                    </div>
-                </div>
-                <div class="phase-photo-grid">
-                    <div class="phase-photo">
-                        <img src="media/IMG-20260317-WA0016.jpg" alt="Conversa em família" loading="lazy">
-                    </div>
-                    <div class="phase-photo">
-                        <img src="media/IMG-20260317-WA0017.jpg" alt="Momento de carinho" loading="lazy">
-                    </div>
-                </div>
-            </div>
-        </article>
-
-        <!-- Fase 4 -->
-        <article class="phase">
-            <div class="phase-marker">
-                <span class="phase-num">04</span>
-                <span class="phase-date">Final de Março de 2026</span>
-            </div>
-            <div class="phase-content">
-                <h3 class="phase-title">A alta da UTI</h3>
-                <p class="phase-text">Foi um dia de respiração funda para todos nós. Sair da UTI significava que o pior tinha passado, que o corpo dela tinha respondido, que a luta de tantas semanas tinha valido. A festa foi silenciosa, mas a alegria foi imensa.</p>
-                <div class="phase-photo">
-                    <img src="media/IMG-20260321-WA0001.jpg" alt="Após a alta da UTI" loading="lazy">
-                </div>
-                <div class="phase-photo-grid">
-                    <div class="phase-photo">
-                        <img src="media/IMG-20260323-WA0001.jpg" alt="Adriana em recuperação" loading="lazy">
-                    </div>
-                    <div class="phase-photo">
-                        <img src="media/WhatsApp_Image_2026-03-27_at_11.42.26.jpeg" alt="Recuperação no quarto" loading="lazy">
-                    </div>
-                </div>
-            </div>
-        </article>
-
-        <!-- Fase 5 -->
-        <article class="phase">
-            <div class="phase-marker">
-                <span class="phase-num">05</span>
-                <span class="phase-date">10 de Abril de 2026</span>
-            </div>
-            <div class="phase-content">
-                <h3 class="phase-title">A volta pra casa</h3>
-                <p class="phase-text">Depois de 45 dias, a Adriana voltou para Aracaju, para o sofá, para a janela, para a cozinha que ela conhece de cor. A casa inteira parecia respirar de novo. Foi o dia mais esperado, e ele chegou.</p>
-                <div class="phase-photo">
-                    <video controls preload="metadata" poster="media/IMG-20260321-WA0001.jpg">
-                        <source src="media/VID-20260405-WA0001.mp4" type="video/mp4">
-                        Seu navegador não suporta vídeo.
-                    </video>
-                </div>
-                <div class="phase-photo">
-                    <img src="media/IMG-20260228-WA0000.jpg" alt="Adriana em casa" loading="lazy">
-                </div>
-            </div>
-        </article>
-
-        <!-- Fase 6 -->
-        <article class="phase">
-            <div class="phase-marker">
-                <span class="phase-num">06</span>
-                <span class="phase-date">Desde Abril de 2026</span>
-            </div>
-            <div class="phase-content">
-                <h3 class="phase-title">Cada dia melhor</h3>
-                <p class="phase-text">O tratamento continua, com a calma e a constância que a recuperação pede. A Adriana está muito bem, mais forte a cada semana, voltando aos poucos para tudo o que ela ama. A vida segue, e ela segue com ela.</p>
-                <div class="phase-photo">
-                    <img src="media/adriana.jpg" alt="Adriana hoje" loading="lazy">
-                </div>
-            </div>
-        </article>
-    </section>
-
-    <!-- ============ GALLERY ============ -->
-    <section class="gallery-section">
-        <div class="gallery-wrap">
-            <div class="section-kicker">Lembranças</div>
-            <h2 class="section-title">Álbum da jornada</h2>
-            <p class="section-intro">Os registros que ficaram destes dois meses, organizados em ordem.</p>
-
-            <div class="gallery">
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260226-WA0013.jpg')">
-                    <img src="media/IMG-20260226-WA0013.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260228-WA0000.jpg')">
-                    <img src="media/IMG-20260228-WA0000.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260311-WA0013.jpg')">
-                    <img src="media/IMG-20260311-WA0013.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260311-WA0015.jpg')">
-                    <img src="media/IMG-20260311-WA0015.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260312-WA0005.jpg')">
-                    <img src="media/IMG-20260312-WA0005.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260314-WA0026.jpg')">
-                    <img src="media/IMG-20260314-WA0026.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260314-WA0027.jpg')">
-                    <img src="media/IMG-20260314-WA0027.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260317-WA0016.jpg')">
-                    <img src="media/IMG-20260317-WA0016.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260317-WA0017.jpg')">
-                    <img src="media/IMG-20260317-WA0017.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260321-WA0001.jpg')">
-                    <img src="media/IMG-20260321-WA0001.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/IMG-20260323-WA0001.jpg')">
-                    <img src="media/IMG-20260323-WA0001.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/WhatsApp_Image_2026-03-27_at_11.42.26.jpeg')">
-                    <img src="media/WhatsApp_Image_2026-03-27_at_11.42.26.jpeg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/adriana.jpg')">
-                    <img src="media/adriana.jpg" alt="" loading="lazy">
-                </div>
-                <div class="gallery-item" onclick="openLightbox('media/adriana-flowers.png')">
-                    <img src="media/optimized/adriana-flowers.jpg" alt="" loading="lazy">
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============ CLOSING ============ -->
-    <section class="closing">
-        <div class="divider"><span class="divider-dot"></span></div>
-
-        <h2 class="closing-title">Para a Adriana, com carinho</h2>
-
-        <p>Esta página existe porque tanta gente se preocupou, rezou, mandou mensagem, ligou, mandou flor, mandou comida, apareceu na porta. Tudo isso fez diferença, e a Adriana sente cada gesto.</p>
-
-        <p>Obrigado a todos que estiveram com a gente nestes 45 dias. Obrigado à equipe que cuidou dela com tanto profissionalismo e afeto. Obrigado, principalmente, à Adriana, pela força e pela alegria que ela trouxe de volta para a nossa casa.</p>
-
-        <div class="closing-video">
-            <video controls preload="metadata">
-                <source src="media/VID-20260405-WA0002.mp4" type="video/mp4">
-                Seu navegador não suporta vídeo.
-            </video>
+        <div class="intro">
+            Se você está aqui, é porque se preocupa com a Adriana, e isso significa muito para nós. Criei esta página para que você possa acompanhar a recuperação dela de perto, no seu tempo. — Élder
         </div>
 
-        <p class="closing-signature">Com amor, a família.</p>
-    </section>
+        <div id="notif-bar" onclick="notifBarClick()">🔔 Receber notificações quando houver novidades</div>
 
-    <footer>
-        <img class="footer-flower" src="media/optimized/flowers/jasmine.webp" alt="">
-        Aracaju, Sergipe · 2026
-    </footer>
+        <div class="flower-divider"><img src="media/optimized/flowers/1.webp" alt=""><img src="media/optimized/flowers/flowers.webp" alt="" onclick="testAnim2(this)"><img src="media/optimized/flowers/jasmine.webp" alt=""></div>
 
-    <!-- ============ LIGHTBOX ============ -->
-    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-        <button class="lightbox-close" onclick="closeLightbox()" aria-label="Fechar">×</button>
-        <img id="lightbox-img" src="" alt="">
+        <div id="summary-section">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Carregando...</p>
+            </div>
+        </div>
+
+        <!-- Message board -->
+        <div id="board-section">
+            <div class="board-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Mural de carinho<img src="media/optimized/flowers/1.webp" alt=""></div>
+            <button class="msg-leave-btn" onclick="openMsgModal()">💌 Deixar uma mensagem</button>
+            <div class="board-cards" id="board-cards"></div>
+            <div id="board-toggle-row" style="display:none;text-align:center;">
+                <button class="msg-leave-btn ghost" id="board-toggle-btn" onclick="toggleBoardExpand()"></button>
+            </div>
+        </div>
+
+        <div id="timeline-section">
+        </div>
+
+        <!-- Message modal -->
+        <div class="modal-bg" id="msg-modal">
+            <div class="modal-box">
+                <div class="modal-title">Deixe uma mensagem para Adriana</div>
+
+                <span class="modal-label">Escolha um emoji</span>
+                <div id="emoji-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                </div>
+
+                <span class="modal-label">Seu nome</span>
+                <input class="modal-input" id="msg-nome" type="text" placeholder="Como quer se identificar?">
+
+                <span class="modal-label">Sua mensagem</span>
+                <textarea class="modal-textarea" id="msg-texto" placeholder="Escreva com carinho..."></textarea>
+
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-send" id="msg-send-btn" onclick="sendMessage()">Enviar</button>
+                    <button class="modal-btn modal-btn-cancel" onclick="closeMsgModal()">Cancelar</button>
+                </div>
+                <div id="msg-fb" style="display:none"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-garland">
+                <img src="media/optimized/flowers/1.webp" alt="">
+                <img src="media/optimized/flowers/chrysanthemum.webp" alt="">
+                <img src="media/optimized/flowers/jasmine.webp" alt="">
+                <img src="media/optimized/flowers/flowers.webp" alt="">
+                <img src="media/optimized/flowers/shape.webp" alt="">
+                <img src="media/optimized/flowers/1.webp" alt="">
+                <img src="media/optimized/flowers/1.webp" alt="">
+            </div>
+        </div>
     </div>
 
     <script>
-        // Lightbox
-        function openLightbox(src) {
-            const box = document.getElementById('lightbox');
-            const img = document.getElementById('lightbox-img');
-            img.src = src;
-            box.classList.add('open');
-            document.body.style.overflow = 'hidden';
+        function testAnim1(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            
+            const flower = document.createElement('div');
+            flower.className = 'flower-grow';
+            flower.style.webkitMaskImage = "url('media/optimized/flowers/jasmine.webp')";
+            flower.style.maskImage = "url('media/optimized/flowers/jasmine.webp')";
+            flower.style.left = x + 'px';
+            flower.style.top = y + 'px';
+            flower.style.width = '100px';
+            flower.style.height = '100px';
+            flower.style.animation = 'pulseEthereal 2s ease-out forwards';
+            document.body.appendChild(flower);
+            setTimeout(() => flower.remove(), 2000);
         }
-        function closeLightbox() {
-            const box = document.getElementById('lightbox');
-            box.classList.remove('open');
-            document.body.style.overflow = '';
-            setTimeout(() => { document.getElementById('lightbox-img').src = ''; }, 300);
+
+        function testAnim2(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            const images = ['jasmine.webp', '1.webp', 'flowers.webp'];
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const colors = isDark 
+                ? ['#b8a05a', '#b07888', '#9680a8']
+                : ['#f0d48a', '#e8a0b4', '#c4a8d4'];
+            
+            images.forEach((img, i) => {
+                setTimeout(() => {
+                    const flower = document.createElement('div');
+                    flower.className = 'flower-grow';
+                    flower.style.backgroundColor = colors[i];
+                    flower.style.webkitMaskImage = `url('media/optimized/flowers/${img}')`;
+                    flower.style.maskImage = `url('media/optimized/flowers/${img}')`;
+                    flower.style.left = x + 'px';
+                    flower.style.top = y + 'px';
+                    flower.style.width = '80px';
+                    flower.style.height = '80px';
+                    flower.style.setProperty('--rot', (i * 30 - 30) + 'deg');
+                    flower.style.animation = 'layeredBloom 2s ease-out forwards';
+                    document.body.appendChild(flower);
+                    setTimeout(() => flower.remove(), 2000);
+                }, i * 200);
+            });
         }
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeLightbox();
+
+        function testAnim3(btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            const flower = document.createElement('div');
+            flower.className = 'flower-grow';
+            flower.style.webkitMaskImage = "url('media/optimized/flowers/chrysanthemum.webp')";
+            flower.style.maskImage = "url('media/optimized/flowers/chrysanthemum.webp')";
+            flower.style.left = x + 'px';
+            flower.style.top = y + 'px';
+            flower.style.width = '120px';
+            flower.style.height = '120px';
+            flower.style.animation = (isDark ? 'organicGrowthDark' : 'organicGrowth') + ' 2.5s ease-in-out forwards';
+            document.body.appendChild(flower);
+            setTimeout(() => flower.remove(), 2500);
+        }
+
+        const SPREADSHEET_ID = '14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE';
+        const UPDATES_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Updates`;
+        const RESUMO_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Resumo`;
+        const MENSAGENS_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Mensagens`;
+        const CURTIDAS_URL       = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Curtidas`;
+        const CONFIGURACOES_URL  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Configuracoes`;
+        const FASES_URL          = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=Fases`;
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFpm4kTYwWHUi-Tn_yX7_uMOzkJcofM_cMHySVek9mtU-Hk0wu-4hQYs5eMFcIwOLUqw/exec';
+        const REFRESH_INTERVAL = 5 * 60 * 1000;
+
+        function parseCSV(text) {
+            const raw = text.trim().split('\n');
+            if (raw.length < 2) return [];
+            // Rejoin lines that are inside quoted fields (newlines within cells)
+            const lines = [];
+            let buf = '';
+            for (const line of raw) {
+                buf = buf ? buf + '\n' + line : line;
+                const quotes = (buf.match(/"/g) || []).length;
+                if (quotes % 2 === 0) { lines.push(buf); buf = ''; }
+            }
+            if (buf) lines.push(buf);
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const row = parseCSVLine(lines[i]);
+                if (row.length > 0 && row[0]) rows.push(row);
+            }
+            return rows;
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (inQuotes) {
+                    if (ch === '"') {
+                        if (i + 1 < line.length && line[i + 1] === '"') {
+                            current += '"';
+                            i++;
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        current += ch;
+                    }
+                } else {
+                    if (ch === '"') {
+                        inQuotes = true;
+                    } else if (ch === ',') {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += ch;
+                    }
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        function resolveMediaUrl(url) {
+            if (!url) return null;
+            url = url.trim();
+            // Drive video preview URLs — pass through as-is
+            if (url.includes('/preview')) return url;
+            // Drive image URLs — convert to thumbnail URL
+            if (url.includes('drive.google.com')) {
+                const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+                if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+            }
+            // Relative or direct URLs
+            if (url.match(/\.(jpg|jpeg|png|gif|webp|mp4|mov)/i)) return url;
+            return null;
+        }
+
+        function isVideo(url) {
+            return url && /\.(mp4|mov|webm)/i.test(url);
+        }
+
+        function isDriveVideo(url) {
+            return url && url.includes('/preview');
+        }
+
+        function renderMedia(fotoField) {
+            if (!fotoField) return '';
+            const items = fotoField.split('|').map(s => resolveMediaUrl(s)).filter(Boolean);
+            if (items.length === 0) return '';
+            if (items.length === 1) {
+                const url = items[0];
+                if (isDriveVideo(url)) {
+                    return `<div class="update-photo"><iframe src="${url}" frameborder="0" allowfullscreen style="width:100%;aspect-ratio:16/9;border-radius:8px;"></iframe></div>`;
+                }
+                if (isVideo(url)) {
+                    return `<div class="update-photo"><video src="${url}" controls playsinline style="width:100%;border-radius:6px;"></video></div>`;
+                }
+                return `<div class="update-photo"><img src="${url}" alt="Foto" loading="lazy"></div>`;
+            }
+            let html = '<div class="update-media-grid">';
+            for (const url of items) {
+                if (isDriveVideo(url)) {
+                    html += `<div class="update-photo"><iframe src="${url}" frameborder="0" allowfullscreen style="width:100%;aspect-ratio:16/9;border-radius:8px;"></iframe></div>`;
+                } else if (isVideo(url)) {
+                    html += `<div class="update-photo"><video src="${url}" controls playsinline style="width:100%;border-radius:6px;"></video></div>`;
+                } else {
+                    html += `<div class="update-photo"><img src="${url}" alt="Foto" loading="lazy"></div>`;
+                }
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            // Handle DD/MM/YYYY or YYYY-MM-DD
+            let parts;
+            if (dateStr.includes('/')) {
+                parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    const [d, m, y] = parts;
+                    const months = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+                    return `${parseInt(d)} de ${months[parseInt(m)]} de ${y}`;
+                }
+            } else if (dateStr.includes('-')) {
+                parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    const [y, m, d] = parts;
+                    const months = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+                    return `${parseInt(d)} de ${months[parseInt(m)]} de ${y}`;
+                }
+            }
+            return dateStr;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function groupByDate(updates) {
+            const groups = {};
+            for (const u of updates) {
+                const key = u.data;
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(u);
+            }
+            return groups;
+        }
+
+        function sortDateKeysDesc(keys) {
+            return keys.sort((a, b) => {
+                const toISO = (d) => {
+                    if (d.includes('/')) {
+                        const [dd, mm, yy] = d.split('/');
+                        return `${yy}-${mm}-${dd}`;
+                    }
+                    return d;
+                };
+                return toISO(b).localeCompare(toISO(a));
+            });
+        }
+
+        async function fetchData() {
+            try {
+                const t = Date.now();
+                const [updatesResp, resumoResp, curtidasResp, fasesResp] = await Promise.all([
+                    fetch(UPDATES_URL),
+                    fetch(RESUMO_URL),
+                    fetch(CURTIDAS_URL + '&t=' + t),
+                    fetch(FASES_URL).catch(() => null)
+                ]);
+                const [updatesText, resumoText, curtidasText, fasesText] = await Promise.all([
+                    updatesResp.text(), resumoResp.text(), curtidasResp.text(),
+                    fasesResp ? fasesResp.text() : Promise.resolve('')
+                ]);
+
+                const updatesRows = parseCSV(updatesText);
+                const resumoRows  = parseCSV(resumoText);
+                const fasesRows   = fasesText ? parseCSV(fasesText) : [];
+
+                const updates = updatesRows
+                    .map(row => {
+                        const fotoRaw = row[3] || '';
+                        const goodNews = fotoRaw.includes('#boa-noticia');
+                        const foto = fotoRaw.split('|').filter(s => s.trim() !== '#boa-noticia').join('|');
+                        return { data: row[0] || '', hora: row[1] || '', texto: row[2] || '', foto, goodNews };
+                    })
+                    .filter(u => u.texto || u.foto)
+                    .filter(u => {
+                        // Hide entries scheduled for a future date/time (scheduling feature)
+                        if (!u.data || !u.hora) return true;
+                        const [dd, mm, yyyy] = u.data.split('/').map(Number);
+                        const [hh, min] = u.hora.split(':').map(Number);
+                        const entryTs = Date.UTC(yyyy, mm - 1, dd, hh + 3, min); // BRT = UTC-3
+                        return entryTs <= Date.now();
+                    });
+
+                const resumo = resumoRows.length > 0
+                    ? { data: resumoRows[0][0] || '', texto: resumoRows[0][1] || '' }
+                    : null;
+
+                const fases = fasesRows.map(row => ({
+                    nome:        row[0] || '',
+                    resumo:      row[1] || '',
+                    data_inicio: row[2] || '',
+                    data_fim:    row[3] || ''
+                })).filter(f => f.nome && f.data_inicio && f.data_fim);
+
+                const curtidas = {};
+                const curLines = curtidasText.trim().split('\n');
+                for (let i = 1; i < curLines.length; i++) {
+                    const r = parseCSVLine(curLines[i]);
+                    if (r[0]) curtidas[r[0]] = parseInt(r[1]) || 0;
+                }
+
+                window._collageUpdates = updates;
+                renderSummary(resumo, updates);
+                renderTimeline(updates, curtidas, fases);
+                updateLastUpdate(updates);
+            } catch (err) {
+                console.error('Erro ao carregar dados:', err);
+            }
+        }
+
+        let _resumoGlow = false;
+        function renderSummary(resumo, updates) {
+            const section = document.getElementById('summary-section');
+            if (!resumo || !resumo.texto) {
+                section.innerHTML = `
+                    <div class="summary-card">
+                        <div class="summary-label">Resumo da situação atual</div>
+                        <p class="summary-empty">Nenhum resumo disponível ainda.</p>
+                    </div>`;
+                return;
+            }
+
+            // Find most recent update marked with #destaque
+            let featuredPhoto = null;
+            if (updates) {
+                const sorted = [...updates].sort((a, b) => {
+                    const ka = dateToISO(a.data) + (a.hora || '');
+                    const kb = dateToISO(b.data) + (b.hora || '');
+                    return kb.localeCompare(ka);
+                });
+                for (const u of sorted) {
+                    if (!u.foto) continue;
+                    const parts = u.foto.split('|').map(s => s.trim());
+                    if (!parts.includes('#destaque')) continue;
+                    const photoUrl = parts.find(s => s && !s.startsWith('#'));
+                    const resolved = photoUrl ? resolveMediaUrl(photoUrl) : null;
+                    if (resolved) { featuredPhoto = { src: resolved, date: u.data, hora: u.hora }; break; }
+                }
+            }
+
+            // Sync lightbox to the featured photo
+            const lb = document.getElementById('photo-lightbox');
+            if (lb && featuredPhoto) {
+                lb.querySelector('img').src = featuredPhoto.src;
+                lb.querySelector('.lightbox-jump-btn').setAttribute('data-date', featuredPhoto.date);
+                lb.querySelector('.lightbox-jump-btn').setAttribute('data-hora', featuredPhoto.hora);
+            }
+
+            let lastTime = '';
+            if (updates && resumo.data) {
+                const dayUpdates = updates.filter(u => u.data === resumo.data && u.hora);
+                if (dayUpdates.length) {
+                    dayUpdates.sort((a, b) => b.hora.localeCompare(a.hora));
+                    lastTime = ' às ' + dayUpdates[0].hora.replace(/^(\d{2}):(\d{2}).*/, '$1:$2');
+                }
+            }
+            section.innerHTML = `
+                <div class="summary-card">
+                    ${featuredPhoto ? `<div class="summary-photo-wrap" onclick="openLightbox()"><img src="${featuredPhoto.src}" alt=""></div>` : ''}
+                    <div class="summary-label">Resumo da situação atual</div>
+                    <div class="summary-date">Atualizado em ${formatDate(resumo.data)}${lastTime}</div>
+                    <div class="summary-text">${escapeHtml(resumo.texto).replace(/\n/g, '<br>')}</div>
+                </div>`;
+            const _sc = section.querySelector('.summary-card');
+            if (_sc) _sc.classList.toggle('summary-card--gradient', _resumoGlow);
+        }
+
+        function dateToISO(d) {
+            if (!d) return '';
+            if (d.includes('/')) { const [dd, mm, yy] = d.split('/'); return `${yy}-${mm}-${dd}`; }
+            return d;
+        }
+
+        function formatDateShort(dateStr) {
+            if (!dateStr) return '';
+            if (dateStr.includes('/')) { const [d, m] = dateStr.split('/'); return `${d.padStart(2,'0')}/${m.padStart(2,'0')}`; }
+            return dateStr;
+        }
+
+        function renderEntry(entry, curtidas) {
+            const h      = hashStr(entry.data + entry.hora + entry.texto.slice(0, 30));
+            const count  = curtidas[String(h)] || 0;
+            let reaction = localStorage.getItem('reaction_' + h);
+            if (!reaction && localStorage.getItem('heart_' + h) === '1') {
+                reaction = 'heart';
+                localStorage.setItem('reaction_' + h, 'heart');
+                localStorage.removeItem('heart_' + h);
+            }
+            return `
+                <div class="update-entry${entry.goodNews ? ' update-entry--good-news' : ''}" data-date="${escapeHtml(entry.data)}" data-hora="${escapeHtml(entry.hora || '')}">
+                    ${entry.hora ? `<div class="update-time">${escapeHtml(entry.hora)}</div>` : ''}
+                    <div class="update-text">${escapeHtml(entry.texto).replace(/\n/g, '<br>')}</div>
+                    ${renderMedia(entry.foto)}
+                    <div class="post-react-row">
+                        <button class="post-react-btn${reaction==='heart'?' active':''}" data-type="heart" onclick="toggleReaction(this,${h},'heart')" title="Curtir">${reaction==='heart'?'❤️':'🩶'}</button>
+                        <button class="post-react-btn${reaction==='pray'?' active':''}" data-type="pray" onclick="toggleReaction(this,${h},'pray')" title="Orar">🙏</button>
+                        <span class="react-count">${count > 0 ? count : ''}</span>
+                    </div>
+                </div>`;
+        }
+
+        function renderDayGroup(entries, date, curtidas, isLast) {
+            entries = [...entries].sort((a, b) => (b.hora || '').localeCompare(a.hora || ''));
+            let html = `<div class="day-group${isLast ? ' day-group--last' : ''}">`;
+            html += `<div class="day-label">${formatDate(date)}</div>`;
+            for (const entry of entries) html += renderEntry(entry, curtidas);
+            html += '</div>';
+            return html;
+        }
+
+        function getPhasePhoto(updates) {
+            const sorted = [...updates].sort((a, b) => {
+                const ka = dateToISO(a.data) + (a.hora || '');
+                const kb = dateToISO(b.data) + (b.hora || '');
+                return kb.localeCompare(ka);
+            });
+            for (const preferTagged of [true, false]) {
+                for (const u of sorted) {
+                    if (!u.foto) continue;
+                    const parts = u.foto.split('|').map(s => s.trim());
+                    if (preferTagged && !parts.includes('#boa-noticia')) continue;
+                    const url = parts.find(s => s && !s.startsWith('#'));
+                    if (!url) continue;
+                    const resolved = resolveMediaUrl(url);
+                    if (resolved && !isVideo(resolved) && !isDriveVideo(resolved)) return resolved;
+                }
+            }
+            return null;
+        }
+
+        function renderPhaseBlock(fase, updates, curtidas, isOpen) {
+            const dateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(fase.data_fim)}`;
+            const grouped   = groupByDate(updates);
+            const dates     = sortDateKeysDesc(Object.keys(grouped));
+            let daysHtml    = '';
+            for (let i = 0; i < dates.length; i++) {
+                daysHtml += renderDayGroup(grouped[dates[i]], dates[i], curtidas, i === dates.length - 1);
+            }
+            const photoUrl  = isOpen ? null : getPhasePhoto(updates);
+            const photoHtml = photoUrl ? `<div class="phase-photo-ring"><img src="${photoUrl}" alt="" loading="lazy"></div>` : '';
+            if (isOpen) {
+                const latestDate    = sortDateKeysDesc(Object.keys(groupByDate(updates)))[0] || fase.data_fim;
+                const openDateRange = `${formatDateShort(fase.data_inicio)} – ${formatDateShort(latestDate)}`;
+                return `
+                <details class="phase-block phase-block--open" open>
+                    <summary class="phase-summary phase-summary--slim">
+                        <div class="phase-header-text">
+                            <span class="phase-title">${escapeHtml(fase.nome)}</span>
+                            <span class="phase-date-range">${escapeHtml(openDateRange)}</span>
+                        </div>
+                        ${photoHtml}
+                        <span class="phase-chevron">▾</span>
+                    </summary>
+                    <div class="phase-days">${daysHtml}</div>
+                </details>`;
+            }
+            return `
+                <details class="phase-block">
+                    <summary class="phase-summary">
+                        <div class="phase-header-text">
+                            <span class="phase-date-range">${escapeHtml(dateRange)}</span>
+                            <span class="phase-title">${escapeHtml(fase.nome)}</span>
+                            <span class="phase-resumo">${escapeHtml(fase.resumo)}</span>
+                        </div>
+                        ${photoHtml}
+                        <span class="phase-chevron">▾</span>
+                    </summary>
+                    <div class="phase-days">${daysHtml}</div>
+                </details>`;
+        }
+
+        function renderTimeline(updates, curtidas, fases) {
+            curtidas = curtidas || {};
+            fases    = fases    || [];
+            const section = document.getElementById('timeline-section');
+            if (updates.length === 0) {
+                section.innerHTML = '<div class="empty-state">Nenhuma atualização ainda.</div>';
+                return;
+            }
+
+            function getPhase(dateStr) {
+                const iso = dateToISO(dateStr);
+                return fases.find(f => iso >= dateToISO(f.data_inicio) && iso <= dateToISO(f.data_fim));
+            }
+
+            const ungrouped    = updates.filter(u => !getPhase(u.data));
+            const phaseUpdates = {};
+            for (const u of updates) {
+                const p = getPhase(u.data);
+                if (p) {
+                    if (!phaseUpdates[p.nome]) phaseUpdates[p.nome] = [];
+                    phaseUpdates[p.nome].push(u);
+                }
+            }
+
+            // Open phase = the one with the latest data_fim
+            const sortedFases = [...fases].sort((a, b) => dateToISO(b.data_fim).localeCompare(dateToISO(a.data_fim)));
+            const openPhase   = sortedFases[0] || null;
+
+            // Merge ungrouped updates into the open phase
+            if (openPhase && ungrouped.length > 0) {
+                if (!phaseUpdates[openPhase.nome]) phaseUpdates[openPhase.nome] = [];
+                phaseUpdates[openPhase.nome] = phaseUpdates[openPhase.nome].concat(ungrouped);
+            }
+
+            let html = '<div class="timeline-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Histórico<img src="media/optimized/flowers/1.webp" alt=""></div>'
+                     + '<button class="msg-leave-btn" onclick="openCollage()" style="margin:12px auto 20px;">📷 Ver galeria de fotos</button>';
+
+            // Phases, most recent first
+            for (const fase of sortedFases) {
+                const phUpdates = phaseUpdates[fase.nome] || [];
+                html += renderPhaseBlock(fase, phUpdates, curtidas, fase === openPhase);
+            }
+
+            section.innerHTML = html;
+        }
+
+        function updateLastUpdate(updates) {
+            const el = document.getElementById('last-update');
+            if (updates.length === 0) {
+                el.textContent = '';
+                return;
+            }
+            // Find the most recent entry
+            const sorted = [...updates].sort((a, b) => {
+                const toISO = (d) => {
+                    if (d.includes('/')) {
+                        const [dd, mm, yy] = d.split('/');
+                        return `${yy}-${mm}-${dd}`;
+                    }
+                    return d;
+                };
+                const cmp = toISO(b.data).localeCompare(toISO(a.data));
+                if (cmp !== 0) return cmp;
+                return (b.hora || '').localeCompare(a.hora || '');
+            });
+            const latest = sorted[0];
+            el.textContent = `Última notícia: ${formatDate(latest.data)}${latest.hora ? ' às ' + latest.hora : ''}`;
+        }
+
+        // Pull-to-refresh
+        (function() {
+            let startY = 0;
+            let pulling = false;
+            const indicator = document.getElementById('pull-indicator');
+
+            document.addEventListener('touchstart', (e) => {
+                if (window.scrollY === 0) {
+                    startY = e.touches[0].clientY;
+                    pulling = true;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!pulling) return;
+                const diff = e.touches[0].clientY - startY;
+                if (diff > 60) {
+                    indicator.classList.add('visible');
+                } else {
+                    indicator.classList.remove('visible');
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', () => {
+                if (indicator.classList.contains('visible')) {
+                    indicator.textContent = 'Atualizando...';
+                    fetchData().then(() => {
+                        indicator.textContent = 'Solte para atualizar';
+                        indicator.classList.remove('visible');
+                    });
+                }
+                pulling = false;
+            });
+        })();
+
+        // Notification bar
+        var _osReady = false;
+        OneSignalDeferred.push(async function(OneSignal) {
+            _osReady = true;
+            if (OneSignal.User.PushSubscription.optedIn) {
+                const bar = document.getElementById('notif-bar');
+                bar.textContent = '✓ Notificações ativadas';
+                bar.classList.add('subscribed');
+            }
         });
 
-        // Click any phase photo to open lightbox (skip videos)
-        document.querySelectorAll('.phase-photo img').forEach(img => {
-            img.addEventListener('click', () => openLightbox(img.src));
-        });
+        function notifBarClick() {
+            const bar = document.getElementById('notif-bar');
+            if (bar.classList.contains('subscribed')) return;
 
-        // Subtle fade-in on scroll for phases
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                    observer.unobserve(entry.target);
+            // Permission previously denied - guide user to settings
+            if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+                bar.textContent = '⚠ Notificações bloqueadas. Ative nas configurações do navegador e recarregue a página.';
+                bar.style.pointerEvents = 'none';
+                return;
+            }
+
+            // SDK failed to load - can't do push without it
+            if (!_osReady) {
+                bar.textContent = '⚠ Serviço indisponível. Desative o bloqueador de anúncios e recarregue.';
+                bar.style.pointerEvents = 'none';
+                return;
+            }
+
+            bar.textContent = '⏳ Ativando notificações...';
+            bar.style.pointerEvents = 'none';
+            var timeout = setTimeout(function() {
+                bar.textContent = '⚠ Tempo esgotado. Toque para tentar novamente.';
+                bar.style.pointerEvents = '';
+            }, 15000);
+            OneSignalDeferred.push(async function(OneSignal) {
+                try {
+                    await OneSignal.User.PushSubscription.optIn();
+                    clearTimeout(timeout);
+                    if (OneSignal.User.PushSubscription.optedIn) {
+                        bar.textContent = '✓ Notificações ativadas';
+                        bar.classList.add('subscribed');
+                    } else {
+                        bar.textContent = '🔔 Permissão negada. Toque para tentar novamente.';
+                        bar.style.pointerEvents = '';
+                    }
+                } catch (e) {
+                    clearTimeout(timeout);
+                    console.error('Push subscribe failed', e);
+                    bar.textContent = '⚠ Erro ao ativar. Toque para tentar novamente.';
+                    bar.style.pointerEvents = '';
                 }
             });
-        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        }
 
-        document.querySelectorAll('.phase, .gallery-item, .closing').forEach(el => {
-            el.classList.add('fade-in');
-            observer.observe(el);
+        function triggerFlowerShower() {
+            const emojis = ['🌸', '🌺', '🌻', '🌼', '🌷', '✨'];
+            const container = document.body;
+            const flakeCount = 40;
+
+            for (let i = 0; i < flakeCount; i++) {
+                setTimeout(() => {
+                    const flake = document.createElement('div');
+                    flake.className = 'flower-flake';
+                    flake.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    flake.style.left = Math.random() * 100 + 'vw';
+                    const size = Math.random() * 1 + 0.8;
+                    flake.style.fontSize = size + 'rem';
+                    const duration = Math.random() * 3 + 4;
+                    flake.style.animationDuration = duration + 's';
+                    container.appendChild(flake);
+                    setTimeout(() => flake.remove(), duration * 1000);
+                }, Math.random() * 2000);
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL + '?action=get_settings&t=' + Date.now());
+                const cfg = await resp.json();
+                if (cfg['notif_bar'] === 'false') document.getElementById('notif-bar').style.setProperty('display','none','important');
+                if (cfg['message_board'] === 'false') document.getElementById('board-section').style.display = 'none';
+                if (cfg['allow_messages'] === 'false') { const b = document.querySelector('.msg-leave-btn'); if (b) b.style.display = 'none'; }
+                
+
+            } catch (e) { console.error(e); }
+        }
+
+        function applyConfig(cfg, triggerEffects) {
+            const banner = document.getElementById('top-banner');
+            const bannerText = document.getElementById('top-banner-text');
+            if (banner && bannerText) {
+                if (cfg.banner_visible && cfg.banner_text) {
+                    bannerText.textContent = cfg.banner_text;
+                    banner.style.display = 'flex';
+                } else {
+                    banner.style.display = 'none';
+                }
+            }
+            if (triggerEffects && cfg.flower_shower) setTimeout(triggerFlowerShower, 500);
+            _resumoGlow = cfg.resumo_glow === true;
+            const summaryCard = document.querySelector('.summary-card');
+            if (summaryCard) summaryCard.classList.toggle('summary-card--gradient', _resumoGlow);
+        }
+
+        async function loadConfig(triggerEffects) {
+            const cached = localStorage.getItem('adriana_config');
+            if (cached) { try { applyConfig(JSON.parse(cached), false); } catch (_) {} }
+            try {
+                const resp = await fetch('./config.json?t=' + Date.now());
+                const cfg = await resp.json();
+                localStorage.setItem('adriana_config', JSON.stringify(cfg));
+                applyConfig(cfg, triggerEffects);
+            } catch (e) { console.error(e); }
+        }
+
+        // Initial load
+        Promise.all([fetchData(), loadMessages(), loadSettings(), loadConfig(true)]).finally(() => {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                setTimeout(() => overlay.remove(), 500);
+            }
+        });
+        
+
+        // Auto-refresh
+        setInterval(fetchData, REFRESH_INTERVAL);
+        setInterval(loadSettings, REFRESH_INTERVAL);
+        setInterval(() => loadConfig(false), REFRESH_INTERVAL);
+
+        // Refetch immediately when tab becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                fetchData();
+                loadSettings();
+                loadConfig(false);
+            }
+        });
+
+        // ================================================
+        // MESSAGE BOARD
+        // ================================================
+        const CARD_COLORS_LIGHT = ['#fffdf5','#fff8e0','#fce4ec','#f3e5f5','#fef9ec','#fdeef4','#f0e6f6','#fff6e8'];
+        const CARD_COLORS_DARK  = ['#2e2b1e','#33291a','#302025','#2a1f2e','#2e2718','#2d1e24','#251e2a','#2e2618'];
+        function getCardColors() { return document.documentElement.getAttribute('data-theme') === 'dark' ? CARD_COLORS_DARK : CARD_COLORS_LIGHT; }
+        const CARD_EMOJIS  = ['🌸','🌻','🌈','💛','🙏','💪','❤️','🌿','☀\uFE0F','💐','🕊\uFE0F','⭐\uFE0F'];
+        let selectedEmoji  = CARD_EMOJIS[0];
+
+        // Build emoji picker
+        (function() {
+            const picker = document.getElementById('emoji-picker');
+            CARD_EMOJIS.forEach(e => {
+                const btn = document.createElement('button');
+                btn.textContent = e;
+                btn.style.cssText = 'font-size:1.4rem;background:var(--card-bg);border:2px solid var(--border);border-radius:8px;padding:4px 7px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;';
+                function markSelected(b, sel) {
+                    b.style.borderColor = sel ? '#c4a97d' : '';
+                    b.style.boxShadow = sel ? '0 0 0 2px #c4a97d' : 'none';
+                }
+                btn.onclick = () => {
+                    selectedEmoji = e;
+                    picker.querySelectorAll('button').forEach(b => markSelected(b, false));
+                    markSelected(btn, true);
+                };
+                markSelected(btn, e === selectedEmoji);
+                picker.appendChild(btn);
+            });
+        })();
+
+        function hashStr(s) {
+            let h = 0;
+            for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+            return Math.abs(h);
+        }
+
+        async function loadMessages() {
+            try {
+                const resp = await fetch(MENSAGENS_URL + '&t=' + Date.now());
+                const text = await resp.text();
+                const rows = parseCSV(text);
+                const msgs = rows
+                    .filter(r => r[0] && r[1])
+                    .map(r => ({ nome: r[0], mensagem: r[1], data: r[2] || '' }));
+                renderMessages(msgs.reverse());
+            } catch (e) { console.error(e); }
+        }
+
+        function renderMessages(msgs) {
+            const board     = document.getElementById('board-cards');
+            const toggleRow = document.getElementById('board-toggle-row');
+            const toggleBtn = document.getElementById('board-toggle-btn');
+            if (msgs.length === 0) {
+                board.innerHTML = '<p style="color:#a89880;font-style:italic;font-size:0.85rem;width:100%;text-align:center;padding:8px 0">Seja o primeiro a deixar uma mensagem de carinho!</p>';
+                toggleRow.style.display = 'none';
+                return;
+            }
+            board.innerHTML = msgs.map((m, i) => {
+                const h     = hashStr(m.nome + m.mensagem);
+                const colors = getCardColors();
+                const color = colors[h % colors.length];
+                const rot   = ((h % 7) - 3);
+                const emojiMatch = m.nome.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(\u200D(\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*/u);
+                const emoji     = emojiMatch ? emojiMatch[0] : '';
+                const name      = emoji ? m.nome.slice(emoji.length).trim() : m.nome;
+                const hidden    = i >= 2 ? ' class="msg-card msg-card-extra"' : ' class="msg-card"';
+                const style     = `background:${color};--r:${rot}deg${i >= 2 ? ';display:none' : ''}`;
+                return `<div${hidden} style="${style}">
+                    ${emoji ? `<div style="font-size:1.6rem;margin-bottom:6px">${emoji}</div>` : ''}
+                    <div class="msg-card-name">${escapeHtml(name)}</div>
+                    <div class="msg-card-text">${escapeHtml(m.mensagem).replace(/\n/g, '<br>')}</div>
+                    ${m.data ? `<div class="msg-card-date">${escapeHtml(m.data)}</div>` : ''}
+                </div>`;
+            }).join('');
+
+            if (msgs.length > 2) {
+                toggleBtn.textContent = `Ver todas as mensagens (${msgs.length})`;
+                toggleRow.style.display = 'block';
+            } else {
+                toggleRow.style.display = 'none';
+            }
+        }
+
+        function toggleBoardExpand() {
+            const extras   = document.querySelectorAll('.msg-card-extra');
+            const btn      = document.getElementById('board-toggle-btn');
+            const expanded = extras.length > 0 && extras[0].style.display !== 'none';
+            const toggleRow = document.getElementById('board-toggle-row');
+            if (expanded) {
+                extras.forEach(el => el.style.display = 'none');
+                btn.textContent = `Ver todas as mensagens (${extras.length + 2})`;
+                toggleRow.classList.remove('sticky');
+                document.getElementById('board-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                extras.forEach(el => el.style.display = '');
+                btn.textContent = 'Esconder mensagens';
+                toggleRow.classList.add('sticky');
+            }
+        }
+
+        async function toggleReaction(btn, h, type) {
+            const key      = 'reaction_' + h;
+            const current  = localStorage.getItem(key);
+            const row      = btn.closest('.post-react-row');
+            const heartBtn = row.querySelector('[data-type="heart"]');
+            const prayBtn  = row.querySelector('[data-type="pray"]');
+            const countEl  = row.querySelector('.react-count');
+            const curCount = parseInt(countEl.textContent || '0') || 0;
+            let countChange = 0;
+
+            if (current === type) {
+                // Already active, do nothing
+                return;
+            } else if (current) {
+                // Switch reaction type, count stays
+                localStorage.setItem(key, type);
+                countChange = 0;
+            } else {
+                // New reaction
+                localStorage.setItem(key, type);
+                countChange = 1;
+            }
+
+            const newReaction = localStorage.getItem(key);
+            heartBtn.textContent = newReaction === 'heart' ? '❤️' : '🩶';
+            heartBtn.classList.toggle('active', newReaction === 'heart');
+            prayBtn.classList.toggle('active', newReaction === 'pray');
+            const newCount = curCount + countChange;
+            countEl.textContent = newCount > 0 ? newCount : '';
+
+            if (countChange !== 0) {
+                btn.classList.add('pop');
+                setTimeout(() => btn.classList.remove('pop'), 350);
+                try {
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'toggle_heart', hash: String(h), hearted: countChange > 0 })
+                    });
+                } catch (e) { console.error('reaction sync failed', e); }
+            }
+        }
+
+        function openMsgModal() {
+            if (document.getElementById('msg-modal').classList.contains('open')) return;
+            // Random emoji default each time — user can still change it
+            selectedEmoji = CARD_EMOJIS[Math.floor(Math.random() * CARD_EMOJIS.length)];
+            document.getElementById('emoji-picker').querySelectorAll('button').forEach(btn => {
+                const sel = btn.textContent === selectedEmoji;
+                btn.style.borderColor = sel ? '#c4a97d' : '';
+                btn.style.boxShadow = sel ? '0 0 0 2px #c4a97d' : 'none';
+            });
+            document.getElementById('msg-modal').classList.add('open');
+            const saved = localStorage.getItem('adriana_msg_name');
+            if (saved) document.getElementById('msg-nome').value = saved;
+            document.getElementById('msg-fb').style.display = 'none';
+        }
+
+        function closeMsgModal() {
+            document.getElementById('msg-modal').classList.remove('open');
+        }
+
+
+        async function sendMessage() {
+            const nome   = document.getElementById('msg-nome').value.trim();
+            const texto  = document.getElementById('msg-texto').value.trim();
+            const fb     = document.getElementById('msg-fb');
+            const btn    = document.getElementById('msg-send-btn');
+
+            if (!nome || !texto) {
+                fb.textContent = 'Preencha seu nome e a mensagem.';
+                fb.className = 'modal-fb modal-fb-err';
+                fb.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            fb.style.display = 'none';
+
+            // Prepend selected emoji to name so it's stored and displayed
+            const nomeComEmoji = selectedEmoji + ' ' + nome;
+            localStorage.setItem('adriana_msg_name', nome);
+            localStorage.setItem('adriana_msg_sent', '1');
+
+            const br  = new Date(new Date().getTime() + (new Date().getTimezoneOffset() * 60000) - (3 * 3600000));
+            const data = `${String(br.getDate()).padStart(2,'0')}/${String(br.getMonth()+1).padStart(2,'0')}/${br.getFullYear()}`;
+
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'post_message', nome: nomeComEmoji, mensagem: texto, data })
+                });
+                const res = await resp.json();
+                if (res.ok) {
+                    fb.textContent = 'Mensagem enviada! 💛';
+                    fb.className = 'modal-fb modal-fb-ok';
+                    fb.style.display = 'block';
+                    document.getElementById('msg-texto').value = '';
+                    setTimeout(() => { closeMsgModal(); loadMessages(); }, 1600);
+                } else {
+                    fb.textContent = res.error || 'Erro ao enviar.';
+                    fb.className = 'modal-fb modal-fb-err';
+                    fb.style.display = 'block';
+                }
+            } catch (e) {
+                fb.textContent = 'Erro de conexão.';
+                fb.className = 'modal-fb modal-fb-err';
+                fb.style.display = 'block';
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Enviar';
+        }
+
+        localStorage.setItem('adriana_visited', '1');
+
+        // Dark mode
+        function toggleDark() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('adriana_theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('adriana_theme', 'dark');
+            }
+            updateDarkToggle();
+            loadMessages();
+        }
+
+        function updateDarkToggle() {
+            const btn = document.getElementById('dark-toggle');
+            if (!btn) return;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            btn.textContent = isDark ? '☀️' : '🌙';
+            btn.title = isDark ? 'Modo claro' : 'Modo escuro';
+        }
+
+        // Sync toggle icon with initial state (set in <head>)
+        updateDarkToggle();
+
+        // Follow OS changes only when user hasn't set a manual preference
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('adriana_theme')) {
+                if (e.matches) document.documentElement.setAttribute('data-theme', 'dark');
+                else document.documentElement.removeAttribute('data-theme');
+                updateDarkToggle();
+            }
         });
     </script>
+
+<div id="photo-lightbox" onclick="closeLightbox()">
+    <div class="lightbox-ring" onclick="event.stopPropagation()">
+        <img src="media/IMG-20260323-WA0001.jpg" alt="">
+    </div>
+    <button class="lightbox-jump-btn" onclick="event.stopPropagation(); jumpToPost(this.dataset.date, this.dataset.hora)" data-date="" data-hora="">Ver publicação original ↓</button>
+    <span style="position:absolute;bottom:15vh;color:rgba(255,255,255,0.4);font-size:2.6rem;line-height:1;pointer-events:none;user-select:none;">×</span>
+</div>
+
+<script>
+function openLightbox() {
+    document.getElementById('photo-lightbox').classList.add('open');
+}
+function closeLightbox() {
+    document.getElementById('photo-lightbox').classList.remove('open');
+}
+function jumpToPost(date, hora) {
+    closeLightbox();
+    const entry = document.querySelector(`.update-entry[data-date="${date}"][data-hora="${hora}"]`);
+    if (!entry) return;
+    let details = entry.closest('details');
+    while (details) {
+        details.open = true;
+        details = details.parentElement && details.parentElement.closest('details');
+    }
+    setTimeout(() => {
+        entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        entry.style.transition = 'background-color 0.4s';
+        entry.style.backgroundColor = 'rgba(240,212,138,0.35)';
+        setTimeout(() => { entry.style.backgroundColor = ''; }, 1600);
+    }, 120);
+}
+</script>
+
+<div id="collage-topbar">
+    <span class="collage-pill">Toque para ver publicação original</span>
+    <span class="collage-pill" id="collage-close-btn" onclick="closeCollage()">×</span>
+</div>
+<div id="collage-overlay">
+    <div id="collage-canvas"></div>
+</div>
+<button id="gallery-back-btn" onclick="openCollage()">← Voltar à galeria</button>
+
+<script>
+function openCollage() {
+    buildCollage();
+    document.getElementById('collage-overlay').classList.add('open');
+    document.getElementById('collage-topbar').classList.add('open');
+    document.getElementById('gallery-back-btn').style.display = 'none';
+    clearTimeout(window._galleryBackTimer);
+    document.body.style.overflow = 'hidden';
+}
+function closeCollage() {
+    document.getElementById('collage-overlay').classList.remove('open');
+    document.getElementById('collage-topbar').classList.remove('open');
+    document.getElementById('gallery-back-btn').style.display = 'none';
+    document.body.style.overflow = '';
+}
+function jumpToCollagePhoto(date, hora) {
+    closeCollage();
+    jumpToPost(date, hora);
+    document.getElementById('gallery-back-btn').style.display = 'block';
+}
+
+function _strHash(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+    return Math.abs(h >>> 0);
+}
+function _sfrac(h, seed) {
+    return ((h * seed) % 9973) / 9973;
+}
+
+function buildCollage() {
+    const canvas = document.getElementById('collage-canvas');
+    const updates = window._collageUpdates || [];
+
+    // Collect unique local image photos, oldest first (lowest z-index = bottom of pile)
+    const seen = new Set();
+    const photos = [];
+    const sorted = [...updates].sort((a, b) => {
+        const ka = dateToISO(a.data) + (a.hora || '');
+        const kb = dateToISO(b.data) + (b.hora || '');
+        return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    for (const u of sorted) {
+        if (!u.foto) continue;
+        for (const part of u.foto.split('|').map(s => s.trim())) {
+            if (!part || part.startsWith('#')) continue;
+            if (part.includes('/preview')) continue;        // Drive video embed
+            if (/\.(mp4|mov|webm)$/i.test(part)) continue; // local video
+            const resolved = resolveMediaUrl(part);
+            if (!resolved) continue;
+            if (seen.has(resolved)) continue;
+            seen.add(resolved);
+            photos.push({ src: resolved, date: u.data, hora: u.hora });
+        }
+    }
+
+    if (photos.length === 0) {
+        canvas.innerHTML = '<p style="color:rgba(255,255,255,0.35);text-align:center;padding:80px 20px;font-family:Inter,sans-serif;">Nenhuma foto ainda.</p>';
+        return;
+    }
+
+    // Shuffle deterministically so layout looks scattered, not chronological
+    photos.sort((a, b) => _strHash(a.src + 'x') - _strHash(b.src + 'x'));
+
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const cols = vw < 520 ? 2 : vw < 900 ? 3 : 4;
+    const sidePad = 16;
+    const gapX = 6;
+    const polaroidW = Math.floor((vw - sidePad - gapX * (cols - 1)) / cols);
+    const photoSize = polaroidW - 14;
+    const polaroidH = photoSize + 46;
+    const stepX = polaroidW + gapX;
+    const stepY = polaroidH + 14;
+    const rows = Math.ceil(photos.length / cols);
+    const canvasW = vw;
+    const canvasH = rows * stepY + 120;
+
+    canvas.style.width = canvasW + 'px';
+    canvas.style.height = canvasH + 'px';
+    canvas.innerHTML = '';
+
+    const gridLeft = sidePad / 2;
+
+    photos.forEach(function(photo, i) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const h = _strHash(photo.src);
+
+        const angle = (_sfrac(h, 7919) - 0.5) * 34;
+        const ox    = (_sfrac(h, 6271) - 0.5) * 55;
+        const oy    = (_sfrac(h, 5003) - 0.5) * 55;
+
+        const x = gridLeft + col * stepX + ox;
+        const y = 70 + row * stepY + oy;
+
+        const el = document.createElement('div');
+        el.className = 'polaroid';
+        el.style.cssText = 'left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;transform:rotate(' + angle.toFixed(2) + 'deg);z-index:' + (i + 1) + ';';
+
+        const img = document.createElement('img');
+        img.src = photo.src;
+        img.width = photoSize;
+        img.height = photoSize;
+        img.alt = '';
+        img.loading = 'lazy';
+
+        const cap = document.createElement('div');
+        cap.className = 'polaroid-caption';
+        cap.textContent = formatDateShort(photo.date);
+
+        el.onclick = (function(d, h) { return function() { jumpToCollagePhoto(d, h); }; })(photo.date, photo.hora);
+
+        el.appendChild(img);
+        el.appendChild(cap);
+        canvas.appendChild(el);
+    });
+}
+</script>
 </body>
 </html>
