@@ -1501,6 +1501,11 @@ function applyLayout() {
   rLC.classList.toggle('is-hidden', !(layoutState.left.visible  && (layoutState.center.visible || layoutState.right.visible)));
   rCR.classList.toggle('is-hidden', !(layoutState.right.visible && (layoutState.center.visible || layoutState.left.visible)));
 
+  // Clamp persisted widths to the current viewport so a saved layout from a wider monitor
+  // doesn't leave the side columns stuck off-screen.
+  var maxW = Math.min(600, Math.max(280, window.innerWidth - 320));
+  layoutState.left.width  = Math.max(260, Math.min(maxW, layoutState.left.width  || 360));
+  layoutState.right.width = Math.max(280, Math.min(maxW, layoutState.right.width || 380));
   leftEl.style.width  = layoutState.left.width  + 'px';
   rightEl.style.width = layoutState.right.width + 'px';
 

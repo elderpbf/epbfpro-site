@@ -312,6 +312,10 @@
     collapseQaBar();
     document.getElementById('qa-bar').classList.remove('visible');
     document.getElementById('state-student-qa').style.display = 'none';
+    document.getElementById('sqa-meta').textContent = '';
+    document.getElementById('sqa-text').textContent = '';
+    document.getElementById('sqa-answer').textContent = '';
+    document.getElementById('sqa-answer-wrap').style.display = 'none';
 
     document.getElementById('session-screen').style.display = 'none';
     document.getElementById('join-screen').style.display    = 'block';
