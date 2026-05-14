@@ -18,6 +18,7 @@
     var _questions = [];
     var _activeStudentQuestionId = null;
     var _activeQuestionId = null;
+    var _activeQuestionText = null;
     var _drafts = {};
     var _focusedRowId = null;
     var _pollTimer = null;
@@ -227,6 +228,14 @@
     }
 
     function doPromote(id) {
+      // If a different question is already active (instructor-launched OR a different student_qa),
+      // explain that it'll be closed before we promote.
+      if (_activeQuestionId && _activeStudentQuestionId !== id) {
+        var snippet = (_activeQuestionText || '').replace(/\s+/g, ' ').trim();
+        if (snippet.length > 90) snippet = snippet.slice(0, 87) + '...';
+        var msg = 'Há uma pergunta ativa no display:\n\n"' + snippet + '"\n\nEncerrar essa pergunta e mostrar a pergunta do aluno no lugar dela?';
+        if (!window.confirm(msg)) return;
+      }
       _busy = true;
       callWorkerFn({
         action: 'promote_student_question',
@@ -295,12 +304,16 @@
         }
         var prevActive = _activeStudentQuestionId;
         var prevActiveQ = _activeQuestionId;
-        if (state.active_question && state.active_question.type === 'student_qa') {
-          _activeStudentQuestionId = state.active_question.student_question_id || null;
-          _activeQuestionId = state.active_question.id;
+        if (state.active_question) {
+          _activeQuestionId   = state.active_question.id;
+          _activeQuestionText = state.active_question.text || '';
+          _activeStudentQuestionId = state.active_question.type === 'student_qa'
+            ? (state.active_question.student_question_id || null)
+            : null;
         } else {
           _activeStudentQuestionId = null;
           _activeQuestionId = null;
+          _activeQuestionText = null;
         }
         if (prevActive !== _activeStudentQuestionId || prevActiveQ !== _activeQuestionId) {
           render();

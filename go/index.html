@@ -68,6 +68,7 @@
     /* Student Q&A bottom bar */
     .cp-qa-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 90; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 14px env(safe-area-inset-bottom, 10px); display: none; }
     .cp-qa-bar.visible { display: block; }
+    body.qa-bar-on .container { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
     .cp-qa-bar-collapsed { display: flex; align-items: center; gap: 10px; cursor: text; padding: 9px 12px; background: var(--background); border: 1px solid var(--border); border-radius: 999px; color: var(--text-light); font-size: 0.9rem; transition: border-color 0.15s; }
     .cp-qa-bar-collapsed:hover { border-color: var(--primary); }
     .cp-qa-bar-collapsed .cp-qa-bar-placeholder { flex: 1; }
@@ -195,7 +196,7 @@
 </div>
 <script src="../backstage/js/utils.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.1"></script>
-<script src="../backstage/js/question-renderer.js?v=2.4"></script>
+<script src="../backstage/js/question-renderer.js?v=2.5"></script>
 <script src="../backstage/js/classpulse-question.min.js?v=1.8"></script>
 <script src="../backstage/js/theme-manager.js?v=1.1"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
@@ -311,6 +312,7 @@
     document.getElementById('cpq').removeAttribute('session');
     collapseQaBar();
     document.getElementById('qa-bar').classList.remove('visible');
+    document.body.classList.remove('qa-bar-on');
     document.getElementById('state-student-qa').style.display = 'none';
     document.getElementById('sqa-meta').textContent = '';
     document.getElementById('sqa-text').textContent = '';
@@ -392,6 +394,7 @@
   function syncQa(data) {
     const qaOn = !!data.qa_enabled && !!currentSession;
     document.getElementById('qa-bar').classList.toggle('visible', qaOn);
+    document.body.classList.toggle('qa-bar-on', qaOn);
     if (!qaOn) collapseQaBar();
   }
 

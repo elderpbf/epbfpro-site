@@ -478,6 +478,10 @@ QR.renderResults = function(question, counts, container, opts) {
     case 'numeric':
       QR._renderNumericResults(question, container, opts);
       break;
+    case 'student_qa':
+      // student_qa questions are rendered by host/student/display pages directly (not via QR).
+      container.innerHTML = '';
+      break;
     default:
       if (typeof showToastError === 'function') {
         showToastError('Tipo de questao nao suportado: ' + type);
