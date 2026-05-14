@@ -21,14 +21,31 @@
   .host-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; width: 100%; box-sizing: border-box; }
 
   .host-session-bar {
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    background: var(--surface); border: 1px solid rgba(20,184,166,.2);
-    border-radius: 10px; padding: 0.55rem 1rem; margin-bottom: 0.6rem; flex-wrap: wrap;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.9rem;
+    background: var(--surface);
+    border: 0; border-bottom: 1px solid rgba(20,184,166,.18);
+    border-radius: 0; padding: 0.4rem 1.1rem; margin: -14px -18px 0.5rem;
+    flex-wrap: wrap;
     position: sticky; top: 0; z-index: 30;
   }
-  .host-code { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.2em; color: var(--primary); line-height: 1.1; }
-  .host-session-name { font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.1rem; }
-  .host-bar-actions { display: flex; gap: 0.6rem; }
+  .host-code { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.18em; color: var(--primary); line-height: 1.1; }
+  .host-session-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.1rem; }
+  .host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+  /* Compact host buttons inside the session bar */
+  .host-session-bar .host-btn { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+  .host-session-bar .host-bar-actions .view-toggle { padding: 4px 9px; font-size: 0.72rem; }
+  .host-pres-btn { display: inline-flex; align-items: center; gap: 6px; }
+  .host-pres-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(127,127,127,.4); flex-shrink: 0; transition: background 0.15s; }
+  .host-pres-btn.is-linked .host-pres-dot { background: var(--success, #10b981); box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
+  .host-pres-modal-content { font-size: 0.88rem; color: var(--text-primary); }
+  .host-pres-modal-content .host-pres-status { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+  .host-pres-modal-content .host-pres-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
+  .host-pres-modal-content .host-pres-engine { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.9rem; }
+  .host-pres-modal-content .host-pres-link { display: inline-block; font-size: 0.85rem; color: var(--primary); text-decoration: none; margin-bottom: 0.9rem; }
+  .host-pres-modal-content .host-pres-link:hover { text-decoration: underline; }
+  .host-pres-modal-content select { width: 100%; padding: 0.55rem 0.9rem; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 8px; color: var(--text-primary); font-family: inherit; font-size: 0.88rem; outline: none; margin-bottom: 0.9rem; }
+  .host-pres-modal-content select:focus { border-color: var(--primary); }
+  .host-pres-modal-content .host-pres-empty { color: var(--text-secondary); font-size: 0.85rem; padding: 0.6rem 0; }
 
   /* Cards */
   .host-card { background: var(--surface); border: 1px solid rgba(20,184,166,.15); border-radius: 14px; padding: 1.3rem; margin-bottom: 1.25rem; }
@@ -382,6 +399,7 @@
             <button class="view-toggle is-on" data-toggle-col="right"  type="button">Q&amp;A</button>
             <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
           </div>
+          <button class="host-btn host-btn-ghost host-pres-btn" id="pres-btn" type="button" hidden><span class="host-pres-dot" id="pres-dot"></span>Apresentação</button>
           <button class="host-btn host-btn-ghost" id="qr-btn" hidden>QR</button>
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener" hidden>Display</a>
           <button class="host-btn host-btn-ghost" id="qa-toggle-btn" type="button" aria-pressed="false" hidden>Ativar Q&amp;A</button>
@@ -395,8 +413,6 @@
         Sessão não está sendo hospedada. Clique em <strong>Iniciar</strong> para começar.
       </div>
 
-      <!-- Presentation link row -->
-      <div class="host-pres-row" id="pres-row"></div>
 
       <!-- ── Dashboard (B1+) ───────────────────────────────── -->
       <div class="host-dashboard" id="hostDashboard">
@@ -612,6 +628,15 @@
   </div>
 </div>
 
+<!-- Apresentação Modal -->
+<div class="qr-modal" id="pres-modal">
+  <div class="qr-box" style="max-width: 420px; text-align: left">
+    <h3 style="margin-bottom: 1rem">Apresentação vinculada à sessão</h3>
+    <div id="pres-modal-content" class="host-pres-modal-content"></div>
+    <button class="host-btn host-btn-ghost host-btn-full" id="pres-modal-close-btn" style="margin-top:1rem">Fechar</button>
+  </div>
+</div>
+
 <script src="../js/utils.js?v=1.3"></script>
 <script src="../js/api-client.js?v=1.1"></script>
 <script src="../js/question-renderer.js?v=2.5"></script>
@@ -789,9 +814,13 @@ function applyHostedUI(isHosted) {
 // ---------------------------------------------------------------------------
 
 function renderPresentationLink() {
-  var row = document.getElementById('pres-row');
-  if (!row) return;
+  var btn     = document.getElementById('pres-btn');
+  var content = document.getElementById('pres-modal-content');
+  if (!btn || !content) return;
   var slug = _currentSession && _currentSession.presentation_slug;
+
+  btn.hidden = false;
+  btn.classList.toggle('is-linked', !!slug);
 
   if (slug) {
     var linked = _presentations.find(function(p) { return p.slug === slug; });
@@ -801,28 +830,30 @@ function renderPresentationLink() {
     var href    = engine === 'panels'
       ? '/backstage/classforge/presentations/' + slug + '/'
       : '/backstage/classforge/viewer/?slug=' + encodeURIComponent(slug);
-    row.innerHTML =
-      '<span class="host-pres-label">Apresenta\u00e7\u00e3o</span>' +
-      '<a class="host-pres-badge" href="' + escHtml(href) + '" target="_blank" rel="noopener">' + escHtml(title) + ' (' + engLabel + ')</a>' +
-      '<button class="host-btn host-btn-ghost" id="pres-unlink-btn" style="padding:0.3rem 0.75rem;font-size:0.78rem">Desvincular</button>';
+    content.innerHTML =
+      '<div class="host-pres-status">Vinculada a esta sess\u00e3o</div>' +
+      '<div class="host-pres-title">' + escHtml(title) + '</div>' +
+      '<div class="host-pres-engine">' + engLabel + '</div>' +
+      '<a class="host-pres-link" href="' + escHtml(href) + '" target="_blank" rel="noopener">Abrir apresenta\u00e7\u00e3o \u2197</a>' +
+      '<button class="host-btn host-btn-danger host-btn-full" id="pres-unlink-btn">Desvincular apresenta\u00e7\u00e3o</button>';
     document.getElementById('pres-unlink-btn').addEventListener('click', doUnlinkPresentation);
   } else if (_presentations.length > 0) {
-    var opts = '<option value="">Vincular apresenta\u00e7\u00e3o\u2026</option>';
+    var opts = '<option value="">Selecione uma apresenta\u00e7\u00e3o\u2026</option>';
     _presentations.forEach(function(p) {
       var el = p.engine === 'panels' ? 'Panels' : 'Reveal';
       opts += '<option value="' + escHtml(p.slug) + '">' + escHtml(p.title) + ' (' + el + ')</option>';
     });
-    row.innerHTML =
-      '<span class="host-pres-label">Apresenta\u00e7\u00e3o</span>' +
-      '<select class="host-pres-select" id="pres-picker">' + opts + '</select>' +
-      '<button class="host-btn host-btn-ghost" id="pres-link-btn" style="padding:0.3rem 0.75rem;font-size:0.78rem">Vincular</button>';
+    content.innerHTML =
+      '<div class="host-pres-status">Nenhuma apresenta\u00e7\u00e3o vinculada</div>' +
+      '<select id="pres-picker">' + opts + '</select>' +
+      '<button class="host-btn host-btn-primary host-btn-full" id="pres-link-btn">Vincular apresenta\u00e7\u00e3o</button>';
     document.getElementById('pres-link-btn').addEventListener('click', async function() {
       var s = document.getElementById('pres-picker').value;
       if (!s) return;
       await doLinkPresentation(s);
     });
   } else {
-    row.innerHTML = '';
+    content.innerHTML = '<div class="host-pres-empty">Nenhuma apresenta\u00e7\u00e3o dispon\u00edvel para vincular.</div>';
   }
 }
 
@@ -831,6 +862,7 @@ async function doLinkPresentation(slug) {
     await callWorker({ action: 'link_presentation', auth_token: AUTH_TOKEN, code: sessionCode, slug: slug });
     _currentSession.presentation_slug = slug;
     renderPresentationLink();
+    document.getElementById('pres-modal').classList.remove('open');
     showToast('Apresenta\u00e7\u00e3o vinculada.');
   } catch (e) {
     showToastError(e.message);
@@ -842,11 +874,23 @@ async function doUnlinkPresentation() {
     await callWorker({ action: 'unlink_presentation', auth_token: AUTH_TOKEN, code: sessionCode });
     _currentSession.presentation_slug = null;
     renderPresentationLink();
+    document.getElementById('pres-modal').classList.remove('open');
     showToast('Apresenta\u00e7\u00e3o desvinculada.');
   } catch (e) {
     showToastError(e.message);
   }
 }
+
+// Open/close pres modal
+document.getElementById('pres-btn').addEventListener('click', function() {
+  document.getElementById('pres-modal').classList.add('open');
+});
+document.getElementById('pres-modal-close-btn').addEventListener('click', function() {
+  document.getElementById('pres-modal').classList.remove('open');
+});
+document.getElementById('pres-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
 
 // Boot
 if (urlCode) loadSession();
