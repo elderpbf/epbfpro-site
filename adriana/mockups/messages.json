@@ -1,0 +1,35 @@
+{
+  "_note": "Placeholder messages. Real messages need to be exported from old Google Sheet (ID 14WWz2LsbziG8yXaU9ZzcKGRQXHufZivf7FHsANTRueE) and replace these.",
+  "messages": [
+    {
+      "from": "Fernanda",
+      "date": "27 de Fevereiro",
+      "text": "Estamos juntos em oração. Toda força e luz para vocês."
+    },
+    {
+      "from": "Pr. Carlos e Família",
+      "date": "1 de Março",
+      "text": "Que Deus continue sustentando vocês. Adriana é guerreira."
+    },
+    {
+      "from": "Maria Helena",
+      "date": "14 de Março",
+      "text": "Cada notícia boa é motivo de gratidão. Continuamos firmes."
+    },
+    {
+      "from": "Tia Cida",
+      "date": "22 de Março",
+      "text": "Quanta força essa mulher tem. Estamos orgulhosos."
+    },
+    {
+      "from": "Vizinhos da Rua",
+      "date": "10 de Abril",
+      "text": "Que bom saber que ela voltou pra casa. Que alegria!"
+    },
+    {
+      "from": "Igreja",
+      "date": "20 de Abril",
+      "text": "A oração da família funciona. Continuamos com vocês."
+    }
+  ]
+}

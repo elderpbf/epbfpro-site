@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adriana retrospectiva, 5 mockups</title>
+  <link rel="icon" href="../media/favicon-adriana.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #faf6f0;
+      color: #2a1f1a;
+      min-height: 100vh;
+      padding: 48px 20px 80px;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: clamp(36px, 6vw, 56px);
+      text-align: center;
+      margin: 0 0 12px;
+      letter-spacing: -0.01em;
+      color: #2a1f1a;
+    }
+    .lede {
+      text-align: center;
+      max-width: 56ch;
+      margin: 0 auto 40px;
+      color: #5a4d47;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      display: block;
+      background: #fff;
+      border: 1px solid #ecdfcf;
+      border-radius: 14px;
+      padding: 22px 22px 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(80, 50, 20, 0.10);
+      border-color: #d6c8b8;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .s1 { background: linear-gradient(135deg, #faf6f0, #e8d8c0); }
+    .s2 { background: linear-gradient(135deg, #e8a880, #b56848); }
+    .s3 { background: linear-gradient(135deg, #2a1f1a 0%, #2a1f1a 50%, #f6f1ea 50%, #f6f1ea 100%); }
+    .s4 { background: linear-gradient(135deg, #fbf7f2, #c98a6b); }
+    .s5 { background: radial-gradient(circle at 30% 30%, #ffd5d5, #f6d5c8 50%, #fbf0e6); }
+    .card h2 {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: 20px;
+      margin: 0;
+      color: #2a1f1a;
+    }
+    .desc {
+      font-size: 14px;
+      color: #5a4d47;
+      margin: 0 0 12px;
+      line-height: 1.5;
+    }
+    .link {
+      font-size: 13px;
+      color: #8a5a3a;
+      font-weight: 500;
+    }
+    .card:hover .link { text-decoration: underline; }
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      font-size: 12px;
+      color: #8a7a6a;
+    }
+    footer a {
+      color: #5a4d47;
+      text-decoration: none;
+      border-bottom: 1px dotted #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Adriana retrospectiva, 5 mockups</h1>
+    <p class="lede">Cinco direções diferentes para a página de retrospectiva. Cada uma cabe em uma única tela, com dois botões que abrem História completa e Mensagens de carinho. Clique para visualizar.</p>
+
+    <div class="grid">
+      <a class="card" href="./1-polaroid.html">
+        <div class="card-head">
+          <div class="swatch s1"></div>
+          <h2>1. Polaroid</h2>
+        </div>
+        <p class="desc">Foto em moldura branca rotacionada, fundo creme, nome em caligrafia. Aconchego de álbum de família.</p>
+        <span class="link">Ver mockup →</span>
+      </a>
+
+      <a class="card" href="./2-frosted-hero.html">
+        <div class="card-head">
+          <div class="swatch s2"></div>
+          <h2>2. Frosted Hero</h2>
+        </div>
+        <p class="desc">Foto em tela cheia desfocada com gradiente caloroso, cartão de vidro fosco centralizado. Atmosfera cinematográfica.</p>
+        <span class="link">Ver mockup →</span>
+      </a>
+
+      <a class="card" href="./3-editorial-split.html">
+        <div class="card-head">
+          <div class="swatch s3"></div>
+          <h2>3. Editorial Split</h2>
+        </div>
+        <p class="desc">Layout dividido em duas colunas, retrato à esquerda, tipografia editorial à direita. Estilo de revista.</p>
+        <span class="link">Ver mockup →</span>
+      </a>
+
+      <a class="card" href="./4-soft-carousel.html">
+        <div class="card-head">
+          <div class="swatch s4"></div>
+          <h2>4. Soft Carousel</h2>
+        </div>
+        <p class="desc">Carrossel de fotos em crossfade no topo, paleta cremosa com acento terracota. Álbum vivo.</p>
+        <span class="link">Ver mockup →</span>
+      </a>
+
+      <a class="card" href="./5-constellation.html">
+        <div class="card-head">
+          <div class="swatch s5"></div>
+          <h2>5. Constellation</h2>
+        </div>
+        <p class="desc">Aquarela suave, nome em destaque, arco de seis pontos representando as fases. Minimalista e contemplativo.</p>
+        <span class="link">Ver mockup →</span>
+      </a>
+    </div>
+
+    <footer>
+      Voltar à página atual, <a href="../index.html">/adriana</a>
+    </footer>
+  </div>
+</body>
+</html>

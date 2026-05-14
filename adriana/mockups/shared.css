@@ -1,0 +1,59 @@
+/* shared.css, floating mockup nav widget */
+.mockup-nav {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: 12px/1 Inter, system-ui, sans-serif;
+  color: #555;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.mockup-nav a {
+  color: #2a1f1a;
+  text-decoration: none;
+  padding: 2px 4px;
+}
+
+.mockup-nav a:hover {
+  text-decoration: underline;
+}
+
+.mockup-nav .sep {
+  color: #aaa;
+}
+
+.mockup-nav .count {
+  font-variant-numeric: tabular-nums;
+  color: #555;
+}
+
+@media (max-width: 720px) {
+  .mockup-nav {
+    top: 12px;
+    left: 12px;
+    right: auto;
+  }
+}
+
+/* Footer label common to all 5 mockups */
+.mockup-footer-label {
+  position: fixed;
+  bottom: 6px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font: 10px/1.4 Inter, system-ui, sans-serif;
+  color: rgba(120, 110, 100, 0.65);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 40;
+}
