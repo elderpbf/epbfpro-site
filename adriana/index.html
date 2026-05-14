@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2026.05.14b modo histórico -->
+<!-- v2026.05.14c modo histórico -->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1713,7 +1713,7 @@
                         <div class="phase-header-text">
                             <span class="phase-date-range">${escapeHtml(dateRange)}</span>
                             <span class="phase-title">${escapeHtml(fase.nome === 'Notícias recentes' ? 'Notícias' : fase.nome)}</span>
-                            <span class="phase-resumo">${escapeHtml(fase.resumo)}</span>
+                            <span class="phase-resumo">${escapeHtml(fase.resumo || (fase.nome === 'Notícias recentes' ? 'Em casa, em tratamento contínuo, indo bem.' : ''))}</span>
                         </div>
                         ${photoHtml}
                         <span class="phase-chevron">▾</span>
@@ -1746,14 +1746,15 @@
                 }
             }
 
-            // Open phase = the one with the latest data_fim
-            const sortedFases = [...fases].sort((a, b) => dateToISO(b.data_fim).localeCompare(dateToISO(a.data_fim)));
-            const openPhase   = sortedFases[0] || null;
+            // Histórico mode: no auto-open. mostRecent kept for ungrouped-merge below.
+            const sortedFases     = [...fases].sort((a, b) => dateToISO(b.data_fim).localeCompare(dateToISO(a.data_fim)));
+            const mostRecentPhase = sortedFases[0] || null;
+            const openPhase       = null;
 
-            // Merge ungrouped updates into the open phase
-            if (openPhase && ungrouped.length > 0) {
-                if (!phaseUpdates[openPhase.nome]) phaseUpdates[openPhase.nome] = [];
-                phaseUpdates[openPhase.nome] = phaseUpdates[openPhase.nome].concat(ungrouped);
+            // Merge ungrouped updates into the most recent phase
+            if (mostRecentPhase && ungrouped.length > 0) {
+                if (!phaseUpdates[mostRecentPhase.nome]) phaseUpdates[mostRecentPhase.nome] = [];
+                phaseUpdates[mostRecentPhase.nome] = phaseUpdates[mostRecentPhase.nome].concat(ungrouped);
             }
 
             let html = '<div class="timeline-header section-divider"><img src="media/optimized/flowers/1.webp" alt="">Histórico<img src="media/optimized/flowers/1.webp" alt=""></div>'
