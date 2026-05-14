@@ -95,7 +95,7 @@
       if (prevDetails) _resolvedOpen = prevDetails.open;
 
       var pending  = _questions.filter(function(q) { return q.status === 'pending'; });
-      var resolved = _questions.filter(function(q) { return q.status !== 'pending'; });
+      var resolved = _questions.filter(function(q) { return q.status !== 'pending'; }).reverse();
 
       updateBadge(pending.length);
 
@@ -157,12 +157,14 @@
           + '<div class="cp-qa-action-buttons">'
           +   '<button class="host-btn host-btn-primary cp-qa-btn-sm" data-qa-action="promote" data-qa-id="' + escHtml(q.id) + '">Mostrar no display</button>'
           +   '<button class="host-btn host-btn-ghost cp-qa-btn-sm" data-qa-action="answer" data-qa-id="' + escHtml(q.id) + '">Responder aqui</button>'
-          +   '<button class="host-btn host-btn-danger cp-qa-btn-sm" data-qa-action="dismiss" data-qa-id="' + escHtml(q.id) + '">Ignorar</button>'
+          +   '<button class="host-btn host-btn-ghost cp-qa-btn-sm" data-qa-action="dismiss" data-qa-id="' + escHtml(q.id) + '">Ignorar</button>'
+          +   '<button class="host-btn host-btn-danger cp-qa-btn-sm" data-qa-action="delete" data-qa-id="' + escHtml(q.id) + '" title="Apagar pergunta">Apagar</button>'
           + '</div>'
           + '</div>';
       } else if (q.status !== 'pending') {
         html += '<div class="cp-qa-actions"><div class="cp-qa-action-buttons">'
           + '<button class="host-btn host-btn-ghost cp-qa-btn-sm" data-qa-action="promote" data-qa-id="' + escHtml(q.id) + '">Mostrar no display</button>'
+          + '<button class="host-btn host-btn-danger cp-qa-btn-sm" data-qa-action="delete" data-qa-id="' + escHtml(q.id) + '" title="Apagar pergunta">Apagar</button>'
           + '</div></div>';
       }
       html += '</div>';
@@ -223,7 +225,28 @@
         doPromote(id);
       } else if (action === 'close-active') {
         doCloseActive();
+      } else if (action === 'delete') {
+        doDelete(id);
       }
+    }
+
+    function doDelete(id) {
+      if (!window.confirm('Apagar esta pergunta para sempre? A ação não pode ser desfeita.')) return;
+      _busy = true;
+      callWorkerFn({
+        action: 'delete_student_question',
+        auth_token: authToken,
+        id: id
+      }).then(function(res) {
+        if (!res || !res.ok) {
+          onError((res && res.error) || 'Falha ao apagar pergunta.');
+        } else {
+          delete _drafts[id];
+        }
+        poll();
+      }).catch(function(err) {
+        onError(err && err.message ? err.message : String(err));
+      }).finally(function() { _busy = false; });
     }
 
     function doUpdate(id, status, answer) {

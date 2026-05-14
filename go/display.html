@@ -44,18 +44,17 @@
       pensoia-header .ph-bar { padding: 4px 16px; }
     }
 
-    /* Promoted student Q&A on display */
+    /* Promoted student Q&A on display — renders in the same slot as instructor questions */
     .cp-qa-student {
       display: none;
-      margin: clamp(16px, 2vh, 32px) auto;
-      max-width: min(1040px, 90vw);
-      padding: clamp(24px, 3vh, 44px) clamp(28px, 3.5vw, 56px);
+      flex: 1; min-height: 0;
+      width: 100%;
+      padding: clamp(24px, 3vh, 44px) clamp(20px, 3vw, 48px);
       background: rgba(245,158,11,0.06);
-      border: 2px solid rgba(245,158,11,0.4);
-      border-radius: 20px;
-      box-shadow: 0 4px 28px rgba(245,158,11,0.10);
+      border: 1px solid rgba(245,158,11,0.4);
+      border-radius: 16px;
     }
-    .cp-qa-student.is-active { display: block; }
+    .cp-qa-student.is-active { display: flex; flex-direction: column; justify-content: center; }
     .cp-qa-student .cp-qa-student-label {
       font-size: clamp(0.82rem, 1.25vw, 1rem);
       font-weight: 700;
@@ -105,19 +104,18 @@
   <pensoia-header mode="display" theme-storage-key="bs_theme_public"></pensoia-header>
 
   <div class="main" id="main-content">
-    <div class="center-state">
+    <div class="center-state" id="center-state">
       <span class="state-icon">&#8987;</span>
       <span class="state-text">Carregando...</span>
     </div>
-  </div>
-
-  <div id="qa-student-card" class="cp-qa-student">
-    <div class="cp-qa-student-label">Pergunta do aluno</div>
-    <div class="cp-qa-student-name" id="qa-student-name"></div>
-    <div class="cp-qa-student-text" id="qa-student-text"></div>
-    <div id="qa-student-answer-wrap" class="cp-qa-student-answer-wrap">
-      <div class="cp-qa-student-answer-label">Resposta</div>
-      <div class="cp-qa-student-answer" id="qa-student-answer"></div>
+    <div id="qa-student-card" class="cp-qa-student">
+      <div class="cp-qa-student-label">Pergunta do aluno</div>
+      <div class="cp-qa-student-name" id="qa-student-name"></div>
+      <div class="cp-qa-student-text" id="qa-student-text"></div>
+      <div id="qa-student-answer-wrap" class="cp-qa-student-answer-wrap">
+        <div class="cp-qa-student-answer-label">Resposta</div>
+        <div class="cp-qa-student-answer" id="qa-student-answer"></div>
+      </div>
     </div>
   </div>
 
@@ -174,12 +172,13 @@
   } else {
     headerEl.setAttribute('code', sessionCode);
     const mainEl = document.getElementById('main-content');
-    mainEl.innerHTML = '';
+    const centerState = document.getElementById('center-state');
+    if (centerState) centerState.remove();
     const cpq = document.createElement('classpulse-question');
     cpq.id = 'cpq';
     cpq.setAttribute('mode', 'display');
     cpq.setAttribute('session', sessionCode);
-    mainEl.appendChild(cpq);
+    mainEl.insertBefore(cpq, document.getElementById('qa-student-card'));
 
     cpq.addEventListener('cpq-data', (e) => {
       if (!e.detail) return;

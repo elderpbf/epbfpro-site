@@ -68,7 +68,7 @@
     /* Student Q&A bottom bar */
     .cp-qa-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 90; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 14px env(safe-area-inset-bottom, 10px); display: none; }
     .cp-qa-bar.visible { display: block; }
-    body.qa-bar-on .container { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    body.qa-bar-on .container { padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
     .cp-qa-bar-collapsed { display: flex; align-items: center; gap: 10px; cursor: text; padding: 9px 12px; background: var(--background); border: 1px solid var(--border); border-radius: 999px; color: var(--text-light); font-size: 0.9rem; transition: border-color 0.15s; }
     .cp-qa-bar-collapsed:hover { border-color: var(--primary); }
     .cp-qa-bar-collapsed .cp-qa-bar-placeholder { flex: 1; }
@@ -477,11 +477,13 @@
 
   cpqEl.addEventListener('cpq-question', (e) => {
     const row = e.detail;
+    // student_qa active questions are rendered by syncStudentQa, not by the cpq pipeline.
+    if (row && row.type === 'student_qa') return;
     activeQuestionData = { id: row.id, text: row.text, options: row.options, type: row.type };
     document.getElementById('cpq-q-text').textContent = row.text;
     document.getElementById('answer-error').textContent = '';
     document.getElementById('results-footer').style.display = 'none';
-    
+
     const myAnswer = localStorage.getItem('cl_ans_' + row.id);
     if (myAnswer !== null) {
       showState('answered');
@@ -493,6 +495,7 @@
 
   cpqEl.addEventListener('cpq-revealed', (e) => {
     const row = e.detail;
+    if (row && row.type === 'student_qa') return;
     document.getElementById('cpq-q-text').textContent = row.text;
     document.getElementById('results-footer').style.display = 'block';
     document.getElementById('answer-sending-msg').style.display = 'none';
@@ -500,7 +503,7 @@
 
     const myAnswer = localStorage.getItem('cl_ans_' + row.id);
     if (myAnswer !== null) cpqEl.setAttribute('my-answer', myAnswer);
-    
+
     showState('cpq');
   });
 
