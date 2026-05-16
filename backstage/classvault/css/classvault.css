@@ -1,0 +1,12 @@
+/* ClassVault — design tokens (extends theme.css). */
+
+:root {
+  --task: #d97706;
+  --task-dark: #92400e;
+  --llm: #db2777;
+  --llm-dark: #9d174d;
+  --recurso: #0284c7;
+  --recurso-dark: #075985;
+  --material: #7c3aed;
+  --material-dark: #5b21b6;
+}
