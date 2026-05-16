@@ -13,74 +13,125 @@ window.Topbar.init({
 
 window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
+ClassVault.turmas = [];
 ClassVault.items = [];
-ClassVault.filterType = null;  // null = "Tudo"
+ClassVault.filterCategory = null;
 ClassVault.activeItemId = null;
 ClassVault._prevRenderer = null;
+
+// Categories group multiple item types under a single filter chip.
+// Order here drives chip order in the sidebar.
+const CV_CATEGORIES = [
+  { key: 'aulas',     label: 'Aulas',     types: ['aula', 'slide'] },
+  { key: 'llms',      label: 'LLMs',      types: ['popup_url'] },
+  { key: 'recursos',  label: 'Recursos',  types: ['embed'] },
+  { key: 'materiais', label: 'Materiais', types: null },  // fallback
+];
 
 (async function boot() {
   let data;
   try {
     data = await callWorker({ action: 'ct_list_all_turmas' });
   } catch (err) {
-    _renderTurmaChipEmpty('Erro ao carregar turmas');
+    _renderEmptySidebar('Erro ao carregar turmas');
     return;
   }
   const turmas = (data && data.turmas) || [];
   if (!turmas.length) {
-    _renderTurmaChipEmpty('Sem turmas');
+    _renderEmptySidebar('Sem turmas');
     return;
   }
-  const urlSel = new URLSearchParams(location.search).get('turma') || '';
-  const sepIdx = urlSel.indexOf('--');
-  const urlClient = sepIdx > 0 ? urlSel.slice(0, sepIdx) : '';
-  const urlTurma  = sepIdx > 0 ? urlSel.slice(sepIdx + 2) : '';
-  let active = turmas.find(t => t.client_slug === urlClient && t.turma_slug === urlTurma);
-  if (!active) active = turmas[0];
+  ClassVault.turmas = turmas;
+  const active = _pickActive(turmas);
   ClassVault.active = active;
-  _renderTurmaChip(active, turmas);
+  _renderSidebarHead(active, turmas);
   _wireItemClicks();
   _loadItems(active);
 })();
 
-function _wireItemClicks() {
-  const body = document.querySelector('.cv-sm-body');
-  if (!body) return;
-  body.addEventListener('click', e => {
-    const sub = e.target.closest('.sub');
-    if (!sub) return;
-    const id = sub.getAttribute('data-item-id');
-    const item = ClassVault.items.find(it => String(it.id) === id);
-    if (!item) return;
-    _selectItem(item, sub);
+function _pickActive(turmas) {
+  const urlSel = new URLSearchParams(location.search).get('turma') || '';
+  const sepIdx = urlSel.indexOf('--');
+  const urlClient = sepIdx > 0 ? urlSel.slice(0, sepIdx) : '';
+  const urlTurma  = sepIdx > 0 ? urlSel.slice(sepIdx + 2) : '';
+  return turmas.find(t => t.client_slug === urlClient && t.turma_slug === urlTurma) || turmas[0];
+}
+
+function _renderEmptySidebar(label) {
+  const head = document.querySelector('.cv-sm-head');
+  if (head) head.innerHTML = '<div class="cv-sm-empty">' + _esc(label) + '</div>';
+}
+
+// ── Sidebar head: turma block (with dropdown) + category chips ─
+
+function _renderSidebarHead(active, turmas) {
+  const head = document.querySelector('.cv-sm-head');
+  if (!head) return;
+  head.innerHTML = '';
+
+  const turmaBlock = document.createElement('button');
+  turmaBlock.type = 'button';
+  turmaBlock.className = 'cv-sm-turma';
+  turmaBlock.setAttribute('aria-haspopup', 'true');
+  turmaBlock.setAttribute('aria-expanded', 'false');
+  turmaBlock.innerHTML =
+    '<span class="cv-sm-turma-avatar">' + _esc(_initials(active)) + '</span>' +
+    '<span class="cv-sm-turma-meta">' +
+      '<span class="cv-sm-turma-eyebrow">' + _esc(active.client_display_name || active.client_slug) + '</span>' +
+      '<span class="cv-sm-turma-name">' + _esc(active.display_name || active.name) + '</span>' +
+    '</span>' +
+    '<span class="cv-sm-turma-chev">▾</span>';
+  head.appendChild(turmaBlock);
+
+  const menu = document.createElement('div');
+  menu.className = 'cv-turma-menu';
+  menu.hidden = true;
+  menu.innerHTML = turmas.map(t => {
+    const key = t.client_slug + '--' + t.turma_slug;
+    const isActive = (active.client_slug === t.client_slug && active.turma_slug === t.turma_slug);
+    return '<button class="cv-turma-menu-item' + (isActive ? ' is-active' : '') + '" ' +
+             'type="button" data-key="' + _esc(key) + '">' +
+             '<span class="cv-turma-menu-eyebrow">' + _esc(t.client_display_name || t.client_slug) + '</span>' +
+             '<span class="cv-turma-menu-name">' + _esc(t.display_name || t.name) + '</span>' +
+           '</button>';
+  }).join('');
+  document.body.appendChild(menu);
+
+  function positionMenu() {
+    const r = turmaBlock.getBoundingClientRect();
+    menu.style.top = (r.bottom + 4) + 'px';
+    menu.style.left = r.left + 'px';
+    menu.style.width = r.width + 'px';
+  }
+  function openMenu() {
+    menu.hidden = false;
+    turmaBlock.setAttribute('aria-expanded', 'true');
+    positionMenu();
+    document.addEventListener('click', onDocClick, true);
+    window.addEventListener('resize', positionMenu);
+  }
+  function closeMenu() {
+    menu.hidden = true;
+    turmaBlock.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClick, true);
+    window.removeEventListener('resize', positionMenu);
+  }
+  function onDocClick(e) {
+    if (turmaBlock.contains(e.target) || menu.contains(e.target)) return;
+    closeMenu();
+  }
+  turmaBlock.addEventListener('click', () => menu.hidden ? openMenu() : closeMenu());
+  menu.addEventListener('click', e => {
+    const it = e.target.closest('.cv-turma-menu-item');
+    if (!it) return;
+    const key = it.getAttribute('data-key');
+    const u = new URL(location.href);
+    u.searchParams.set('turma', key);
+    location.href = u.toString();
   });
 }
 
-function _selectItem(item, subEl) {
-  document.querySelectorAll('.cv-sm-body .sub.is-active').forEach(el => el.classList.remove('is-active'));
-  if (subEl) subEl.classList.add('is-active');
-  _renderBreadcrumb(item);
-  const view = document.querySelector('.cv-main-view');
-  if (!view) return;
-  if (ClassVault._prevRenderer) ClassVault._prevRenderer.cleanup(view);
-  const renderer = _getRenderer(item.type);
-  renderer.render(item, view);
-  ClassVault._prevRenderer = renderer;
-  ClassVault.activeItemId = item.id;
-}
-
-function _renderBreadcrumb(item) {
-  const crumb = document.querySelector('.cv-main-crumb');
-  if (!crumb) return;
-  const turmaName = ClassVault.active ? (ClassVault.active.display_name || ClassVault.active.name) : '';
-  const typeLabel = item.type_label || item.type;
-  crumb.innerHTML =
-    '<span>' + _esc(turmaName) + '</span>' +
-    '<span class="cv-main-crumb-sep">/</span>' +
-    '<span>' + _esc(typeLabel) + '</span>' +
-    '<span class="cv-main-crumb-sep">/</span>' +
-    '<strong>' + _esc(item.title) + '</strong>';
-}
+// ── Items: fetch, chips, group by aula, render ─────────────────
 
 async function _loadItems(active) {
   const body = document.querySelector('.cv-sm-body');
@@ -98,50 +149,59 @@ async function _loadItems(active) {
     return;
   }
   ClassVault.items = (data && data.items) || [];
-  _renderFilterChips(ClassVault.items);
+  _renderCategoryChips(ClassVault.items);
   _renderItems(_filterItems(ClassVault.items));
 }
 
-function _renderFilterChips(items) {
+function _renderCategoryChips(items) {
   const head = document.querySelector('.cv-sm-head');
   if (!head) return;
-  if (!items.length) { head.innerHTML = ''; return; }
+  const existing = head.querySelector('.cv-sm-chips');
+  if (existing) existing.remove();
+  if (!items.length) return;
 
   const counts = new Map();
-  const labels = new Map();
   for (const it of items) {
-    counts.set(it.type, (counts.get(it.type) || 0) + 1);
-    if (!labels.has(it.type)) labels.set(it.type, it.type_label || it.type);
+    const cat = _categoryOfType(it.type);
+    counts.set(cat, (counts.get(cat) || 0) + 1);
   }
-  const sortedTypes = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
 
-  const chips = [
-    '<button class="cv-sm-chip is-active" type="button" data-type="">' +
-      'Tudo <span class="cv-sm-chip-count">' + items.length + '</span>' +
-    '</button>'
-  ];
-  for (const [type, count] of sortedTypes) {
+  const chips = ['<button class="cv-sm-chip is-active" type="button" data-cat="">' +
+    'Tudo <span class="cv-sm-chip-count">' + items.length + '</span></button>'];
+  for (const cat of CV_CATEGORIES) {
+    const count = counts.get(cat.key) || 0;
+    if (count === 0) continue;
     chips.push(
-      '<button class="cv-sm-chip" type="button" data-type="' + _esc(type) + '">' +
-        _esc(labels.get(type)) + ' <span class="cv-sm-chip-count">' + count + '</span>' +
+      '<button class="cv-sm-chip" type="button" data-cat="' + cat.key + '">' +
+        _esc(cat.label) + ' <span class="cv-sm-chip-count">' + count + '</span>' +
       '</button>'
     );
   }
+  const strip = document.createElement('div');
+  strip.className = 'cv-sm-chips';
+  strip.innerHTML = chips.join('');
+  head.appendChild(strip);
 
-  head.innerHTML = '<div class="cv-sm-chips">' + chips.join('') + '</div>';
-  head.addEventListener('click', e => {
+  strip.addEventListener('click', e => {
     const chip = e.target.closest('.cv-sm-chip');
     if (!chip) return;
-    head.querySelectorAll('.cv-sm-chip').forEach(c => c.classList.remove('is-active'));
+    strip.querySelectorAll('.cv-sm-chip').forEach(c => c.classList.remove('is-active'));
     chip.classList.add('is-active');
-    ClassVault.filterType = chip.getAttribute('data-type') || null;
+    ClassVault.filterCategory = chip.getAttribute('data-cat') || null;
     _renderItems(_filterItems(ClassVault.items));
   });
 }
 
+function _categoryOfType(type) {
+  for (const cat of CV_CATEGORIES) {
+    if (cat.types && cat.types.indexOf(type) !== -1) return cat.key;
+  }
+  return 'materiais';
+}
+
 function _filterItems(items) {
-  if (!ClassVault.filterType) return items;
-  return items.filter(it => it.type === ClassVault.filterType);
+  if (!ClassVault.filterCategory) return items;
+  return items.filter(it => _categoryOfType(it.type) === ClassVault.filterCategory);
 }
 
 function _renderItems(items) {
@@ -151,7 +211,34 @@ function _renderItems(items) {
     body.innerHTML = '<div class="cv-sm-empty">Nenhum item nesta categoria.</div>';
     return;
   }
-  body.innerHTML = items.map(_renderSubCard).join('');
+
+  // Group by aula_number; null aula → "Sem aula" section at the bottom.
+  const groups = new Map();
+  for (const it of items) {
+    const key = (it.aula_number != null && it.aula_number !== '') ? String(it.aula_number) : '__none__';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(it);
+  }
+  const groupKeys = Array.from(groups.keys()).sort((a, b) => {
+    if (a === '__none__') return 1;
+    if (b === '__none__') return -1;
+    return Number(a) - Number(b);
+  });
+
+  const html = [];
+  for (const key of groupKeys) {
+    const groupItems = groups.get(key);
+    const label = key === '__none__' ? 'Sem aula' : 'Aula ' + key;
+    html.push(
+      '<div class="cv-sm-section">' +
+        '<span>' + _esc(label) + '</span>' +
+        '<span class="cv-sm-section-line"></span>' +
+        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
+      '</div>'
+    );
+    html.push(groupItems.map(_renderSubCard).join(''));
+  }
+  body.innerHTML = html.join('');
 }
 
 function _renderSubCard(item) {
@@ -197,7 +284,48 @@ function _zoneIconFor(type) {
   }
 }
 
-// ── Renderers (registry keyed by item.type) ──────────────────
+// ── Item click → renderer mount ────────────────────────────────
+
+function _wireItemClicks() {
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+  body.addEventListener('click', e => {
+    const sub = e.target.closest('.sub');
+    if (!sub) return;
+    const id = sub.getAttribute('data-item-id');
+    const item = ClassVault.items.find(it => String(it.id) === id);
+    if (!item) return;
+    _selectItem(item, sub);
+  });
+}
+
+function _selectItem(item, subEl) {
+  document.querySelectorAll('.cv-sm-body .sub.is-active').forEach(el => el.classList.remove('is-active'));
+  if (subEl) subEl.classList.add('is-active');
+  _renderBreadcrumb(item);
+  const view = document.querySelector('.cv-main-view');
+  if (!view) return;
+  if (ClassVault._prevRenderer) ClassVault._prevRenderer.cleanup(view);
+  const renderer = _getRenderer(item.type);
+  renderer.render(item, view);
+  ClassVault._prevRenderer = renderer;
+  ClassVault.activeItemId = item.id;
+}
+
+function _renderBreadcrumb(item) {
+  const crumb = document.querySelector('.cv-main-crumb');
+  if (!crumb) return;
+  const turmaName = ClassVault.active ? (ClassVault.active.display_name || ClassVault.active.name) : '';
+  const typeLabel = item.type_label || item.type;
+  crumb.innerHTML =
+    '<span>' + _esc(turmaName) + '</span>' +
+    '<span class="cv-main-crumb-sep">/</span>' +
+    '<span>' + _esc(typeLabel) + '</span>' +
+    '<span class="cv-main-crumb-sep">/</span>' +
+    '<strong>' + _esc(item.title) + '</strong>';
+}
+
+// ── Renderers (registry keyed by item.type) ────────────────────
 
 ClassVault.renderers = {
   slide:     { render: _renderIframe,    cleanup: _cleanupClear },
@@ -283,87 +411,7 @@ function _openPopup(url) {
   return popup;
 }
 
-function _renderTurmaChip(active, turmas) {
-  const topbarInner = document.querySelector('.bs-topbar-inner');
-  const spacer = topbarInner && topbarInner.querySelector('.bs-topbar-spacer');
-  if (!topbarInner || !spacer) return;
-
-  const chip = document.createElement('button');
-  chip.className = 'cv-turma-chip';
-  chip.type = 'button';
-  chip.setAttribute('aria-haspopup', 'true');
-  chip.setAttribute('aria-expanded', 'false');
-  chip.innerHTML =
-    '<span class="cv-turma-chip-avatar">' + _esc(_initials(active)) + '</span>' +
-    '<span class="cv-turma-chip-label">' + _esc(active.display_name || active.name) + '</span>' +
-    '<span class="cv-turma-chip-chev">▾</span>';
-
-  const menu = document.createElement('div');
-  menu.className = 'cv-turma-menu';
-  menu.hidden = true;
-  menu.innerHTML = turmas.map(t => {
-    const key = t.client_slug + '--' + t.turma_slug;
-    const isActive = (active.client_slug === t.client_slug && active.turma_slug === t.turma_slug);
-    const client = t.client_display_name || t.client_slug;
-    const turma  = t.display_name || t.name;
-    return '<button class="cv-turma-menu-item' + (isActive ? ' is-active' : '') + '" ' +
-             'type="button" data-key="' + _esc(key) + '">' +
-             '<span class="cv-turma-menu-eyebrow">' + _esc(client) + '</span>' +
-             '<span class="cv-turma-menu-name">' + _esc(turma) + '</span>' +
-           '</button>';
-  }).join('');
-
-  function positionMenu() {
-    const r = chip.getBoundingClientRect();
-    menu.style.top = (r.bottom + 6) + 'px';
-    menu.style.left = r.left + 'px';
-  }
-  function openMenu() {
-    menu.hidden = false;
-    chip.setAttribute('aria-expanded', 'true');
-    positionMenu();
-    document.addEventListener('click', onDocClick, true);
-    window.addEventListener('resize', positionMenu);
-    window.addEventListener('scroll', positionMenu, true);
-  }
-  function closeMenu() {
-    menu.hidden = true;
-    chip.setAttribute('aria-expanded', 'false');
-    document.removeEventListener('click', onDocClick, true);
-    window.removeEventListener('resize', positionMenu);
-    window.removeEventListener('scroll', positionMenu, true);
-  }
-  function onDocClick(e) {
-    if (chip.contains(e.target) || menu.contains(e.target)) return;
-    closeMenu();
-  }
-
-  chip.addEventListener('click', () => menu.hidden ? openMenu() : closeMenu());
-  menu.addEventListener('click', e => {
-    const item = e.target.closest('.cv-turma-menu-item');
-    if (!item) return;
-    const key = item.getAttribute('data-key');
-    const u = new URL(location.href);
-    u.searchParams.set('turma', key);
-    location.href = u.toString();
-  });
-
-  topbarInner.insertBefore(chip, spacer);
-  document.body.appendChild(menu);
-}
-
-function _renderTurmaChipEmpty(label) {
-  const topbarInner = document.querySelector('.bs-topbar-inner');
-  const spacer = topbarInner && topbarInner.querySelector('.bs-topbar-spacer');
-  if (!topbarInner || !spacer) return;
-  const chip = document.createElement('span');
-  chip.className = 'cv-turma-chip';
-  chip.style.cursor = 'default';
-  chip.innerHTML =
-    '<span class="cv-turma-chip-avatar">?</span>' +
-    '<span class="cv-turma-chip-label">' + _esc(label) + '</span>';
-  topbarInner.insertBefore(chip, spacer);
-}
+// ── Utilities ──────────────────────────────────────────────────
 
 function _initials(t) {
   const src = (t && (t.client_display_name || t.name || t.display_name)) || '?';
