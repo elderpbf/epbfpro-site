@@ -349,19 +349,21 @@ function _renderBreadcrumb(item) {
 // ── Renderers (registry keyed by item.type) ────────────────────
 
 ClassVault.renderers = {
-  slide:     { render: _renderIframe,    cleanup: _cleanupClear },
-  embed:     { render: _renderIframe,    cleanup: _cleanupClear },
-  popup_url: { render: _renderPopupCard, cleanup: _cleanupClear },
+  slide:        { render: _renderIframe,      cleanup: _cleanupClear },
+  embed:        { render: _renderIframe,      cleanup: _cleanupClear },
+  popup_url:    { render: _renderPopupCard,   cleanup: _cleanupClear },
+  drive_folder: { render: _renderDriveFolder, cleanup: _cleanupClear },
+  drive_file:   { render: _renderDriveFile,   cleanup: _cleanupClear },
+  video:        { render: _renderVideo,       cleanup: _cleanupClear },
 };
 
 function _getRenderer(type) {
   return ClassVault.renderers[type] || { render: _renderFallback, cleanup: _cleanupClear };
 }
 
-function _renderIframe(item, container) {
-  const url = (item.meta_json && item.meta_json.url) || '';
+function _mountIframe(url, container, emptyMsg) {
   if (!url) {
-    container.innerHTML = '<div class="cv-renderer-empty">URL não definida para este item.</div>';
+    container.innerHTML = '<div class="cv-renderer-empty">' + _esc(emptyMsg || 'URL não definida para este item.') + '</div>';
     return;
   }
   const iframe = document.createElement('iframe');
@@ -371,6 +373,53 @@ function _renderIframe(item, container) {
   iframe.setAttribute('referrerpolicy', 'no-referrer');
   container.innerHTML = '';
   container.appendChild(iframe);
+}
+
+function _renderIframe(item, container) {
+  const url = (item.meta_json && item.meta_json.url) || '';
+  _mountIframe(url, container);
+}
+
+function _renderDriveFolder(item, container) {
+  const meta = item.meta_json || {};
+  const id = meta.folder_id || _extractDriveFolderId(meta.url || '');
+  const src = id ? 'https://drive.google.com/embeddedfolderview?id=' + encodeURIComponent(id) : '';
+  _mountIframe(src, container, 'Pasta Drive sem folder_id (ou URL inválida).');
+}
+
+function _renderDriveFile(item, container) {
+  const meta = item.meta_json || {};
+  const id = meta.file_id || _extractDriveFileId(meta.url || '');
+  const src = id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';
+  _mountIframe(src, container, 'Arquivo Drive sem file_id (ou URL inválida).');
+}
+
+function _renderVideo(item, container) {
+  const url = (item.meta_json && item.meta_json.url) || '';
+  const embed = _toVideoEmbedUrl(url);
+  _mountIframe(embed, container, 'URL de vídeo não reconhecida (esperado YouTube ou TikTok).');
+}
+
+function _extractDriveFolderId(url) {
+  const m = String(url).match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : '';
+}
+
+function _extractDriveFileId(url) {
+  const m = String(url).match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : '';
+}
+
+function _toVideoEmbedUrl(url) {
+  const s = String(url || '');
+  if (!s) return '';
+  // YouTube: watch?v=, youtu.be/, shorts/, embed/
+  let m = s.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([a-zA-Z0-9_-]{11})/);
+  if (m) return 'https://www.youtube.com/embed/' + m[1];
+  // TikTok: /@user/video/<id>
+  m = s.match(/tiktok\.com\/[^/]+\/video\/(\d+)/);
+  if (m) return 'https://www.tiktok.com/embed/v2/' + m[1];
+  return '';
 }
 
 function _renderPopupCard(item, container) {
