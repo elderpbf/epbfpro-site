@@ -421,66 +421,71 @@
   font-size: 0.9rem;
   text-align: center;
 }
+/* Card: structural flex column. Header is a fixed sibling above the
+   scrollable body — content does NOT scroll under it. */
 .cv-renderer-fallback {
   max-width: 760px;
   height: 100%;
   margin: 0 auto;
-  overflow-y: auto;
-  padding: 28px 36px;
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 8px 24px -12px var(--shadow);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+.cv-renderer-header {
+  flex-shrink: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--surface);
+}
+.cv-renderer-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 36px 32px;
   font-size: 0.95rem;
   line-height: 1.55;
-  color: var(--text-primary);
 }
-.cv-renderer-fallback h1 { font-size: 1.5rem; margin: 0 0 0.6em; line-height: 1.2; }
-.cv-renderer-fallback h2 { font-size: 1.2rem; margin: 1.2em 0 0.4em; line-height: 1.25; }
-.cv-renderer-fallback h3 { font-size: 1.05rem; margin: 1em 0 0.4em; line-height: 1.3; }
-.cv-renderer-fallback p  { margin: 0 0 0.8em; }
-.cv-renderer-fallback ul,
-.cv-renderer-fallback ol { margin: 0 0 0.8em; padding-left: 1.5em; }
-.cv-renderer-fallback li { margin: 0.2em 0; }
-.cv-renderer-fallback code {
+.cv-renderer-scroll h1 { font-size: 1.5rem; margin: 0 0 0.6em; line-height: 1.2; }
+.cv-renderer-scroll h2 { font-size: 1.2rem; margin: 1.2em 0 0.4em; line-height: 1.25; }
+.cv-renderer-scroll h3 { font-size: 1.05rem; margin: 1em 0 0.4em; line-height: 1.3; }
+.cv-renderer-scroll p  { margin: 0 0 0.8em; }
+.cv-renderer-scroll ul,
+.cv-renderer-scroll ol { margin: 0 0 0.8em; padding-left: 1.5em; }
+.cv-renderer-scroll li { margin: 0.2em 0; }
+.cv-renderer-scroll code {
   background: var(--surface-soft);
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 0.88em;
   font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
 }
-.cv-renderer-fallback pre {
+.cv-renderer-scroll pre {
   background: var(--surface-soft);
   padding: 10px 12px;
   border-radius: 6px;
   overflow-x: auto;
   font-size: 0.85rem;
 }
-.cv-renderer-fallback pre code { background: none; padding: 0; }
-.cv-renderer-fallback .ctr-prompt-verbatim {
+.cv-renderer-scroll pre code { background: none; padding: 0; }
+.cv-renderer-scroll .ctr-prompt-verbatim {
   white-space: pre-wrap;
   word-break: break-word;
   font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
   font-size: 0.88rem;
 }
-.cv-renderer-fallback .ctr-prompt-body { font-size: 0.95rem; line-height: 1.55; }
-/* Top action bar — sticky inside the scrollable fallback area */
-.cv-renderer-actions--top {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--surface);
-  margin: 0 0 16px;
-  padding: 4px 0 12px;
-  border-bottom: 1px solid var(--border-soft);
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
+.cv-renderer-scroll .ctr-prompt-body { font-size: 0.95rem; line-height: 1.55; }
 
-/* Shared style for both top + bottom copy buttons in the fallback */
-.cv-renderer-fallback .cv-renderer-copy-btn,
-.cv-renderer-fallback .ctr-copy-btn {
+/* Shared style for both top (header) and bottom (CTRenderer) copy buttons */
+.cv-renderer-copy-btn,
+.cv-renderer-scroll .ctr-copy-btn {
   padding: 7px 16px;
   background: var(--primary);
   color: white;
@@ -492,13 +497,13 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.cv-renderer-fallback .cv-renderer-copy-btn:hover,
-.cv-renderer-fallback .ctr-copy-btn:hover { background: var(--primary-dark); }
-.cv-renderer-fallback .ctr-copy-btn {
+.cv-renderer-copy-btn:hover,
+.cv-renderer-scroll .ctr-copy-btn:hover { background: var(--primary-dark); }
+.cv-renderer-scroll .ctr-copy-btn {
   margin-top: 22px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
-.cv-renderer-fallback .ctr-affordance-btn { font-size: 0.82rem; }
+.cv-renderer-scroll .ctr-affordance-btn { font-size: 0.82rem; }
 
 .cv-popup-launcher {
   max-width: 520px;

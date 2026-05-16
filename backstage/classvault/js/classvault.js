@@ -397,33 +397,40 @@ function _renderPopupCard(item, container) {
 }
 
 function _renderFallback(item, container) {
-  container.innerHTML = '<div class="cv-renderer-fallback"></div>';
-  const inner = container.querySelector('.cv-renderer-fallback');
+  container.innerHTML = '';
 
-  // Sticky top action bar — only when there's text content to copy.
+  // Outer card: flex column, no overflow. Header (fixed) + scroll (bounded).
+  const card = document.createElement('div');
+  card.className = 'cv-renderer-fallback';
+
   const md = item.body_md || '';
   if (md) {
-    const topRow = document.createElement('div');
-    topRow.className = 'cv-renderer-actions cv-renderer-actions--top';
+    const header = document.createElement('div');
+    header.className = 'cv-renderer-header';
     const topBtn = document.createElement('button');
     topBtn.type = 'button';
     topBtn.className = 'cv-renderer-copy-btn';
     topBtn.textContent = 'Copiar';
     topBtn.addEventListener('click', () => _cvCopy(md, topBtn));
-    topRow.appendChild(topBtn);
-    inner.appendChild(topRow);
+    header.appendChild(topBtn);
+    card.appendChild(header);
   }
 
-  const bodyMount = document.createElement('div');
-  bodyMount.className = 'cv-renderer-body';
-  inner.appendChild(bodyMount);
+  const scroll = document.createElement('div');
+  scroll.className = 'cv-renderer-scroll';
+  card.appendChild(scroll);
+
+  const body = document.createElement('div');
+  body.className = 'cv-renderer-body';
+  scroll.appendChild(body);
+
+  container.appendChild(card);
 
   if (window.CTRenderer && CTRenderer.render) {
-    CTRenderer.render(item, bodyMount);
-    // Hide CTRenderer's bottom copy button when content already fits.
-    _hideBottomBtnIfFits(inner, bodyMount);
+    CTRenderer.render(item, body);
+    _hideBottomBtnIfFits(scroll, body);
   } else {
-    bodyMount.innerHTML = '<div class="cv-renderer-empty">Tipo "' + _esc(item.type) + '" sem renderer.</div>';
+    body.innerHTML = '<div class="cv-renderer-empty">Tipo "' + _esc(item.type) + '" sem renderer.</div>';
   }
 }
 
