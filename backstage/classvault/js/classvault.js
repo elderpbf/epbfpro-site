@@ -15,7 +15,8 @@ window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
 ClassVault.turmas = [];
 ClassVault.items = [];
-ClassVault.filterCategory = null;
+ClassVault.filterCategories = new Set();   // empty = no filter (Tudo)
+ClassVault.collapsedAulas = new Set();     // empty = all expanded
 ClassVault.activeItemId = null;
 ClassVault._prevRenderer = null;
 
@@ -156,9 +157,14 @@ async function _loadItems(active) {
 function _renderCategoryChips(items) {
   const head = document.querySelector('.cv-sm-head');
   if (!head) return;
-  const existing = head.querySelector('.cv-sm-chips');
-  if (existing) existing.remove();
-  if (!items.length) return;
+  let strip = head.querySelector('.cv-sm-chips');
+  const firstRender = !strip;
+  if (firstRender) {
+    strip = document.createElement('div');
+    strip.className = 'cv-sm-chips';
+    head.appendChild(strip);
+    strip.addEventListener('click', _onChipClick);
+  }
 
   const counts = new Map();
   for (const it of items) {
@@ -166,30 +172,40 @@ function _renderCategoryChips(items) {
     counts.set(cat, (counts.get(cat) || 0) + 1);
   }
 
-  const chips = ['<button class="cv-sm-chip is-active" type="button" data-cat="">' +
-    'Tudo <span class="cv-sm-chip-count">' + items.length + '</span></button>'];
+  const tudoActive = ClassVault.filterCategories.size === 0;
+  const chips = [
+    '<button class="cv-sm-chip' + (tudoActive ? ' is-active' : '') + '" type="button" data-cat="">' +
+      'Tudo <span class="cv-sm-chip-count">' + items.length + '</span></button>'
+  ];
   for (const cat of CV_CATEGORIES) {
     const count = counts.get(cat.key) || 0;
-    if (count === 0) continue;
+    const isActive = ClassVault.filterCategories.has(cat.key);
+    const isDisabled = count === 0;
     chips.push(
-      '<button class="cv-sm-chip" type="button" data-cat="' + cat.key + '">' +
+      '<button class="cv-sm-chip' +
+        (isActive ? ' is-active' : '') +
+        (isDisabled ? ' is-disabled' : '') + '" type="button" data-cat="' + cat.key + '"' +
+        (isDisabled ? ' disabled' : '') + '>' +
         _esc(cat.label) + ' <span class="cv-sm-chip-count">' + count + '</span>' +
       '</button>'
     );
   }
-  const strip = document.createElement('div');
-  strip.className = 'cv-sm-chips';
   strip.innerHTML = chips.join('');
-  head.appendChild(strip);
+}
 
-  strip.addEventListener('click', e => {
-    const chip = e.target.closest('.cv-sm-chip');
-    if (!chip) return;
-    strip.querySelectorAll('.cv-sm-chip').forEach(c => c.classList.remove('is-active'));
-    chip.classList.add('is-active');
-    ClassVault.filterCategory = chip.getAttribute('data-cat') || null;
-    _renderItems(_filterItems(ClassVault.items));
-  });
+function _onChipClick(e) {
+  const chip = e.target.closest('.cv-sm-chip');
+  if (!chip || chip.disabled) return;
+  const cat = chip.getAttribute('data-cat');
+  if (!cat) {
+    ClassVault.filterCategories.clear();           // "Tudo" → clear filters
+  } else if (ClassVault.filterCategories.has(cat)) {
+    ClassVault.filterCategories.delete(cat);       // toggle off
+  } else {
+    ClassVault.filterCategories.add(cat);          // toggle on (multi-select)
+  }
+  _renderCategoryChips(ClassVault.items);
+  _renderItems(_filterItems(ClassVault.items));
 }
 
 function _categoryOfType(type) {
@@ -200,8 +216,8 @@ function _categoryOfType(type) {
 }
 
 function _filterItems(items) {
-  if (!ClassVault.filterCategory) return items;
-  return items.filter(it => _categoryOfType(it.type) === ClassVault.filterCategory);
+  if (ClassVault.filterCategories.size === 0) return items;
+  return items.filter(it => ClassVault.filterCategories.has(_categoryOfType(it.type)));
 }
 
 function _renderItems(items) {
@@ -229,16 +245,27 @@ function _renderItems(items) {
   for (const key of groupKeys) {
     const groupItems = groups.get(key);
     const label = key === '__none__' ? 'Sem aula' : 'Aula ' + key;
+    const isCollapsed = ClassVault.collapsedAulas.has(key);
     html.push(
-      '<div class="cv-sm-section">' +
+      '<button type="button" class="cv-sm-section' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+        'data-aula="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
+        '<span class="cv-sm-section-chev">▾</span>' +
         '<span>' + _esc(label) + '</span>' +
         '<span class="cv-sm-section-line"></span>' +
         '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
-      '</div>'
+      '</button>'
     );
-    html.push(groupItems.map(_renderSubCard).join(''));
+    if (!isCollapsed) {
+      html.push(groupItems.map(_renderSubCard).join(''));
+    }
   }
   body.innerHTML = html.join('');
+
+  // Preserve active sub state across re-renders
+  if (ClassVault.activeItemId != null) {
+    const el = body.querySelector('.sub[data-item-id="' + ClassVault.activeItemId + '"]');
+    if (el) el.classList.add('is-active');
+  }
 }
 
 function _renderSubCard(item) {
@@ -290,6 +317,17 @@ function _wireItemClicks() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
   body.addEventListener('click', e => {
+    const section = e.target.closest('.cv-sm-section');
+    if (section) {
+      const aulaKey = section.getAttribute('data-aula');
+      if (ClassVault.collapsedAulas.has(aulaKey)) {
+        ClassVault.collapsedAulas.delete(aulaKey);
+      } else {
+        ClassVault.collapsedAulas.add(aulaKey);
+      }
+      _renderItems(_filterItems(ClassVault.items));
+      return;
+    }
     const sub = e.target.closest('.sub');
     if (!sub) return;
     const id = sub.getAttribute('data-item-id');

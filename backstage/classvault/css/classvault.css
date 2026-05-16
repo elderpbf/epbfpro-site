@@ -155,13 +155,29 @@
   color: white;
   border-color: var(--primary);
 }
+.cv-sm-chip:disabled,
+.cv-sm-chip.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cv-sm-chip:disabled:hover,
+.cv-sm-chip.is-disabled:hover {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
 .cv-sm-chip-count {
   font-size: 0.6rem;
   opacity: 0.7;
 }
 
-/* aula section headers in body */
+/* aula section headers in body (clickable, collapsible) */
 .cv-sm-section {
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -171,8 +187,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  border-radius: 4px;
 }
+.cv-sm-section:hover { color: var(--text-primary); }
 .cv-sm-body > .cv-sm-section:first-child { padding-top: 6px; }
+.cv-sm-section-chev {
+  font-size: 0.9rem;
+  opacity: 0.6;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.cv-sm-section.is-collapsed .cv-sm-section-chev { transform: rotate(-90deg); }
 .cv-sm-section-line {
   flex: 1;
   height: 1px;
