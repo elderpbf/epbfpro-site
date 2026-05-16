@@ -1074,6 +1074,8 @@ window.CT_ADMIN = (function() {
     var initialTagIds = Array.isArray(src.tag_ids)
       ? src.tag_ids
       : (isEdit && Array.isArray(item.tags) ? item.tags.map(function(t) { return t.id; }) : []);
+    var initialAudience = (src.audience != null ? src.audience : (isEdit && item.audience ? item.audience : 'public'));
+    if (initialAudience !== 'public' && initialAudience !== 'vault_only') initialAudience = 'public';
 
     var refazerBtn = aiContext
       ? '<button class="ct-btn" id="ie-refazer-btn" type="button">&#9889; Refazer com IA</button>'
@@ -1096,6 +1098,18 @@ window.CT_ADMIN = (function() {
         '</div>' +
         '<div class="ct-field"><label>Tags</label>' +
           '<div class="ct-tag-picker" id="ie-tag-picker"></div>' +
+        '</div>' +
+        '<div class="ct-field"><label>Audiência</label>' +
+          '<div class="ct-audience-picker">' +
+            '<label class="ct-audience-opt"><input type="radio" name="ie-audience" value="public"' + (initialAudience === 'public' ? ' checked' : '') + '> ' +
+              '<span class="ct-audience-opt-label">Pública</span>' +
+              '<span class="ct-audience-opt-hint">aparece na trilha do aluno</span>' +
+            '</label>' +
+            '<label class="ct-audience-opt"><input type="radio" name="ie-audience" value="vault_only"' + (initialAudience === 'vault_only' ? ' checked' : '') + '> ' +
+              '<span class="ct-audience-opt-label">Vault only</span>' +
+              '<span class="ct-audience-opt-hint">só visível no ClassVault do professor</span>' +
+            '</label>' +
+          '</div>' +
         '</div>' +
         '<div id="ie-type-block"></div>' +
       '</div>' +
@@ -1222,6 +1236,9 @@ window.CT_ADMIN = (function() {
       var body_md = typeData.body_md;
       var meta_json = typeData.meta_json;
 
+      var audienceEl = bd.querySelector('input[name="ie-audience"]:checked');
+      var audience = audienceEl ? audienceEl.value : 'public';
+
       var action = isEdit ? 'ct_update_item' : 'ct_create_item';
       var params = {
         action: action,
@@ -1230,7 +1247,8 @@ window.CT_ADMIN = (function() {
         summary: summary || null,
         body_md: body_md,
         meta_json: meta_json ? JSON.stringify(meta_json) : null,
-        tag_ids: Array.from(selectedTagIds)
+        tag_ids: Array.from(selectedTagIds),
+        audience: audience
       };
       if (isEdit) params.id = item.id;
 
