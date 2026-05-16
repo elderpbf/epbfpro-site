@@ -466,6 +466,12 @@
 .cv-renderer-scroll ul,
 .cv-renderer-scroll ol { margin: 0 0 0.8em; padding-left: 1.5em; }
 .cv-renderer-scroll li { margin: 0.2em 0; }
+.cv-renderer-scroll a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cv-renderer-scroll a:hover { color: var(--primary-light); }
 .cv-renderer-scroll code {
   background: var(--surface-soft);
   padding: 1px 5px;
