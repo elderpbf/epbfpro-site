@@ -15,19 +15,10 @@ window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
 ClassVault.turmas = [];
 ClassVault.items = [];
-ClassVault.filterCategories = new Set();   // empty = no filter (Tudo)
-ClassVault.collapsedAulas = new Set();     // empty = all expanded
+ClassVault.filterTypes = new Set();         // empty = no filter (Tudo)
+ClassVault.collapsedAulas = new Set();      // empty = all expanded
 ClassVault.activeItemId = null;
 ClassVault._prevRenderer = null;
-
-// Categories group multiple item types under a single filter chip.
-// Order here drives chip order in the sidebar.
-const CV_CATEGORIES = [
-  { key: 'aulas',     label: 'Aulas',     types: ['aula', 'slide'] },
-  { key: 'llms',      label: 'LLMs',      types: ['popup_url'] },
-  { key: 'recursos',  label: 'Recursos',  types: ['embed'] },
-  { key: 'materiais', label: 'Materiais', types: null },  // fallback
-];
 
 (async function boot() {
   let data;
@@ -166,27 +157,26 @@ function _renderCategoryChips(items) {
     strip.addEventListener('click', _onChipClick);
   }
 
+  // One chip per type present in items, sorted by count desc.
   const counts = new Map();
+  const labels = new Map();
   for (const it of items) {
-    const cat = _categoryOfType(it.type);
-    counts.set(cat, (counts.get(cat) || 0) + 1);
+    counts.set(it.type, (counts.get(it.type) || 0) + 1);
+    if (!labels.has(it.type)) labels.set(it.type, it.type_label || it.type);
   }
+  const sortedTypes = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
 
-  const tudoActive = ClassVault.filterCategories.size === 0;
+  const tudoActive = ClassVault.filterTypes.size === 0;
   const chips = [
-    '<button class="cv-sm-chip' + (tudoActive ? ' is-active' : '') + '" type="button" data-cat="">' +
+    '<button class="cv-sm-chip' + (tudoActive ? ' is-active' : '') + '" type="button" data-type="">' +
       'Tudo <span class="cv-sm-chip-count">' + items.length + '</span></button>'
   ];
-  for (const cat of CV_CATEGORIES) {
-    const count = counts.get(cat.key) || 0;
-    const isActive = ClassVault.filterCategories.has(cat.key);
-    const isDisabled = count === 0;
+  for (const [type, count] of sortedTypes) {
+    const isActive = ClassVault.filterTypes.has(type);
     chips.push(
-      '<button class="cv-sm-chip' +
-        (isActive ? ' is-active' : '') +
-        (isDisabled ? ' is-disabled' : '') + '" type="button" data-cat="' + cat.key + '"' +
-        (isDisabled ? ' disabled' : '') + '>' +
-        _esc(cat.label) + ' <span class="cv-sm-chip-count">' + count + '</span>' +
+      '<button class="cv-sm-chip' + (isActive ? ' is-active' : '') + '" ' +
+        'type="button" data-type="' + _esc(type) + '">' +
+        _esc(labels.get(type)) + ' <span class="cv-sm-chip-count">' + count + '</span>' +
       '</button>'
     );
   }
@@ -196,28 +186,21 @@ function _renderCategoryChips(items) {
 function _onChipClick(e) {
   const chip = e.target.closest('.cv-sm-chip');
   if (!chip || chip.disabled) return;
-  const cat = chip.getAttribute('data-cat');
-  if (!cat) {
-    ClassVault.filterCategories.clear();           // "Tudo" → clear filters
-  } else if (ClassVault.filterCategories.has(cat)) {
-    ClassVault.filterCategories.delete(cat);       // toggle off
+  const type = chip.getAttribute('data-type');
+  if (!type) {
+    ClassVault.filterTypes.clear();           // "Tudo" → clear filters
+  } else if (ClassVault.filterTypes.has(type)) {
+    ClassVault.filterTypes.delete(type);      // toggle off
   } else {
-    ClassVault.filterCategories.add(cat);          // toggle on (multi-select)
+    ClassVault.filterTypes.add(type);         // toggle on (multi-select)
   }
   _renderCategoryChips(ClassVault.items);
   _renderItems(_filterItems(ClassVault.items));
 }
 
-function _categoryOfType(type) {
-  for (const cat of CV_CATEGORIES) {
-    if (cat.types && cat.types.indexOf(type) !== -1) return cat.key;
-  }
-  return 'materiais';
-}
-
 function _filterItems(items) {
-  if (ClassVault.filterCategories.size === 0) return items;
-  return items.filter(it => ClassVault.filterCategories.has(_categoryOfType(it.type)));
+  if (ClassVault.filterTypes.size === 0) return items;
+  return items.filter(it => ClassVault.filterTypes.has(it.type));
 }
 
 function _renderItems(items) {
@@ -416,10 +399,70 @@ function _renderPopupCard(item, container) {
 function _renderFallback(item, container) {
   container.innerHTML = '<div class="cv-renderer-fallback"></div>';
   const inner = container.querySelector('.cv-renderer-fallback');
+
+  // Sticky top action bar — only when there's text content to copy.
+  const md = item.body_md || '';
+  if (md) {
+    const topRow = document.createElement('div');
+    topRow.className = 'cv-renderer-actions cv-renderer-actions--top';
+    const topBtn = document.createElement('button');
+    topBtn.type = 'button';
+    topBtn.className = 'cv-renderer-copy-btn';
+    topBtn.textContent = 'Copiar';
+    topBtn.addEventListener('click', () => _cvCopy(md, topBtn));
+    topRow.appendChild(topBtn);
+    inner.appendChild(topRow);
+  }
+
+  const bodyMount = document.createElement('div');
+  bodyMount.className = 'cv-renderer-body';
+  inner.appendChild(bodyMount);
+
   if (window.CTRenderer && CTRenderer.render) {
-    CTRenderer.render(item, inner);
+    CTRenderer.render(item, bodyMount);
+    // Hide CTRenderer's bottom copy button when content already fits.
+    _hideBottomBtnIfFits(inner, bodyMount);
   } else {
-    inner.innerHTML = '<div class="cv-renderer-empty">Tipo "' + _esc(item.type) + '" sem renderer.</div>';
+    bodyMount.innerHTML = '<div class="cv-renderer-empty">Tipo "' + _esc(item.type) + '" sem renderer.</div>';
+  }
+}
+
+// CTRenderer may mount its copy button synchronously (prompt) or after
+// dynamically loading marked.js (guide/material/paper). Try once, then
+// observe for the async case.
+function _hideBottomBtnIfFits(scrollContainer, bodyMount) {
+  const apply = () => {
+    const btn = bodyMount.querySelector('.ctr-copy-btn');
+    if (!btn) return false;
+    const fits = scrollContainer.scrollHeight <= scrollContainer.clientHeight + 1;
+    btn.style.display = fits ? 'none' : '';
+    return true;
+  };
+  if (apply()) return;
+  const obs = new MutationObserver(() => { if (apply()) obs.disconnect(); });
+  obs.observe(bodyMount, { childList: true, subtree: true });
+  setTimeout(() => obs.disconnect(), 3000);
+}
+
+function _cvCopy(text, btn) {
+  const orig = btn.textContent;
+  const flash = () => {
+    btn.textContent = 'Copiado!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+    flash();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(flash).catch(fallback);
+  } else {
+    fallback();
   }
 }
 

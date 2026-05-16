@@ -464,7 +464,40 @@
   font-size: 0.88rem;
 }
 .cv-renderer-fallback .ctr-prompt-body { font-size: 0.95rem; line-height: 1.55; }
-.cv-renderer-fallback .ctr-copy-btn,
+/* Top action bar — sticky inside the scrollable fallback area */
+.cv-renderer-actions--top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+  margin: 0 0 16px;
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Shared style for both top + bottom copy buttons in the fallback */
+.cv-renderer-fallback .cv-renderer-copy-btn,
+.cv-renderer-fallback .ctr-copy-btn {
+  padding: 7px 16px;
+  background: var(--primary);
+  color: white;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cv-renderer-fallback .cv-renderer-copy-btn:hover,
+.cv-renderer-fallback .ctr-copy-btn:hover { background: var(--primary-dark); }
+.cv-renderer-fallback .ctr-copy-btn {
+  margin-top: 22px;
+  margin-bottom: 8px;
+}
 .cv-renderer-fallback .ctr-affordance-btn { font-size: 0.82rem; }
 
 .cv-popup-launcher {
