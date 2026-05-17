@@ -825,25 +825,7 @@
 
 /* ----- Notification toast ----- */
 
-.ct-toast {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  padding: 0.7rem 1.1rem;
-  border-radius: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: 0 6px 24px var(--shadow);
-  font-size: 0.88rem;
-  color: var(--text-primary);
-  z-index: 999;
-  animation: ct-toast-in 0.25s ease;
-}
-
-@keyframes ct-toast-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* Toast moved to shared-components.css as .bs-toast (BSToast.show). */
 
 /* ----- Type filter chips (shared with student page) ----- */
 
