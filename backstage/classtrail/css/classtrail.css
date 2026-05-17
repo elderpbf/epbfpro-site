@@ -282,6 +282,46 @@
 
 .ct-field textarea { resize: vertical; min-height: 80px; }
 
+.ct-audience-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ct-audience-opt {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--surface);
+  transition: border-color 0.12s, background 0.12s;
+}
+.ct-audience-opt:hover { border-color: var(--primary-light); }
+.ct-audience-opt:has(input[type="radio"]:checked) {
+  border-color: var(--primary);
+  background: var(--surface-soft);
+}
+.ct-audience-opt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  line-height: 1.25;
+}
+.ct-audience-opt-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+}
+.ct-audience-opt-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
 .ct-editor-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -489,6 +529,38 @@
 }
 
 .ct-item-row:hover { border-color: rgba(20,184,166,.4); }
+
+.ct-item-row-selected,
+.ct-item-row-selected:hover {
+  background: rgba(20,184,166,.08);
+  border-color: rgba(20,184,166,.55);
+}
+
+.ct-item-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0 4px 0 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: rgb(20,184,166);
+}
+
+.ct-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.ct-bulk-bar #items-bulk-count {
+  font-size: 0.9rem;
+  color: var(--text-muted, var(--text));
+  margin-right: auto;
+}
 
 .ct-item-type-icon {
   width: 44px;

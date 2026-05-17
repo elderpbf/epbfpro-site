@@ -14,20 +14,38 @@
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.10">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.5">
-<link rel="stylesheet" href="../css/question-types.css?v=1.7">
+<link rel="stylesheet" href="../css/question-types.css?v=1.8">
 <script src="../js/debug.js?v=2.5"></script>
 <style>
   /* Host-specific styles */
   .host-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; width: 100%; box-sizing: border-box; }
 
   .host-session-bar {
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    background: var(--surface); border: 1px solid rgba(20,184,166,.2);
-    border-radius: 12px; padding: 1rem 1.3rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.9rem;
+    background: var(--surface);
+    border: 0; border-bottom: 1px solid rgba(20,184,166,.18);
+    border-radius: 0; padding: 0.4rem 1.1rem; margin: -14px -18px 0.5rem;
+    flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 30;
   }
-  .host-code { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.2em; color: var(--primary); }
-  .host-session-name { font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.1rem; }
-  .host-bar-actions { display: flex; gap: 0.6rem; }
+  .host-code { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.18em; color: var(--primary); line-height: 1.1; }
+  .host-session-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.1rem; }
+  .host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+  /* Compact host buttons inside the session bar */
+  .host-session-bar .host-btn { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+  .host-session-bar .host-bar-actions .view-toggle { padding: 4px 9px; font-size: 0.72rem; }
+  .host-pres-btn { display: inline-flex; align-items: center; gap: 6px; }
+  .host-pres-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(127,127,127,.4); flex-shrink: 0; transition: background 0.15s; }
+  .host-pres-btn.is-linked .host-pres-dot { background: var(--success, #10b981); box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
+  .host-pres-modal-content { font-size: 0.88rem; color: var(--text-primary); }
+  .host-pres-modal-content .host-pres-status { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+  .host-pres-modal-content .host-pres-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
+  .host-pres-modal-content .host-pres-engine { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.9rem; }
+  .host-pres-modal-content .host-pres-link { display: inline-block; font-size: 0.85rem; color: var(--primary); text-decoration: none; margin-bottom: 0.9rem; }
+  .host-pres-modal-content .host-pres-link:hover { text-decoration: underline; }
+  .host-pres-modal-content select { width: 100%; padding: 0.55rem 0.9rem; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 8px; color: var(--text-primary); font-family: inherit; font-size: 0.88rem; outline: none; margin-bottom: 0.9rem; }
+  .host-pres-modal-content select:focus { border-color: var(--primary); }
+  .host-pres-modal-content .host-pres-empty { color: var(--text-secondary); font-size: 0.85rem; padding: 0.6rem 0; }
 
   /* Cards */
   .host-card { background: var(--surface); border: 1px solid rgba(20,184,166,.15); border-radius: 14px; padding: 1.3rem; margin-bottom: 1.25rem; }
@@ -192,6 +210,161 @@
     .host-container { padding: 1.5rem 1rem 3rem; }
     .host-bar-actions { flex-wrap: wrap; }
   }
+
+  /* Q&A panel (host side) */
+  .cp-qa-host-section { background: var(--surface); border: 1px solid rgba(20,184,166,.15); border-radius: 14px; padding: 1.3rem; margin-bottom: 1.25rem; }
+  .cp-qa-host-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
+  .cp-qa-host-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+  .cp-qa-badge { display: inline-block; min-width: 22px; text-align: center; padding: 0.15rem 0.5rem; font-size: 0.72rem; font-weight: 700; color: #fff; background: #ef4444; border-radius: 999px; }
+  .cp-qa-empty { font-size: 0.85rem; color: var(--text-secondary); text-align: center; padding: 1rem 0; }
+  .cp-qa-row { padding: 0.8rem; border: 1px solid rgba(20,184,166,.12); border-radius: 10px; margin-bottom: 0.6rem; background: var(--background); transition: border-color .15s; }
+  .cp-qa-row.cp-qa-answered { opacity: 0.75; }
+  .cp-qa-row.cp-qa-dismissed { opacity: 0.45; }
+  .cp-qa-row.cp-qa-pinned { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+  .cp-qa-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.3rem; }
+  .cp-qa-meta { font-size: 0.72rem; color: var(--text-secondary); }
+  .cp-qa-pin-badge { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--primary); background: rgba(20,184,166,.12); padding: 0.15rem 0.45rem; border-radius: 4px; }
+  .cp-qa-text { font-size: 0.92rem; color: var(--text-primary); line-height: 1.5; }
+  .cp-qa-answer-text { margin-top: 0.4rem; font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0.6rem; background: rgba(20,184,166,.05); border-left: 2px solid var(--primary); border-radius: 0 6px 6px 0; }
+  .cp-qa-actions { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.45rem; }
+  .cp-qa-answer-input { width: 100%; padding: 0.5rem 0.7rem; background: var(--surface); border: 1px solid rgba(20,184,166,.25); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.85rem; line-height: 1.4; outline: none; resize: vertical; box-sizing: border-box; }
+  .cp-qa-answer-input:focus { border-color: var(--primary); }
+  .cp-qa-action-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .cp-qa-btn-sm { padding: 0.4rem 0.85rem; font-size: 0.78rem; }
+  .cp-qa-resolved { margin-top: 0.6rem; }
+  .cp-qa-resolved > summary { cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); padding: 0.4rem 0; user-select: none; }
+  .cp-qa-resolved > summary:hover { color: var(--primary); }
+  .cp-qa-resolved[open] > summary { margin-bottom: 0.5rem; }
+
+  /* ── Dashboard (B1+) ──────────────────────────────────────── */
+  .host-container.host-dashboard-container { max-width: none; padding: 0; margin: 0; }
+  .host-screen.host-screen-flex {
+    display: flex; flex-direction: column;
+    height: calc(100vh - 4px);
+    min-height: 0;
+    padding: 14px 18px 4px;
+  }
+  .host-screen.host-screen-flex > .host-session-bar,
+  .host-screen.host-screen-flex > .host-not-hosted-note,
+  .host-screen.host-screen-flex > .host-pres-row { flex-shrink: 0; }
+
+  .host-dashboard {
+    display: flex; gap: 0;
+    flex: 1; min-height: 0;
+    padding-top: 4px;
+  }
+  .hd-col {
+    display: flex; flex-direction: column; gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 10px 16px;
+  }
+  .hd-col-left   { width: 360px; flex-shrink: 0; min-width: 260px; max-width: 600px; padding-left: 0; }
+  .hd-col-center { flex: 1; min-width: 280px; }
+  .hd-col-right  { width: 380px; flex-shrink: 0; min-width: 280px; max-width: 600px; padding-right: 0; }
+  .hd-col.is-hidden { display: none !important; }
+  .hd-col > .host-card,
+  .hd-col > .active-q-panel,
+  .hd-col > .cp-qa-host-section { margin-bottom: 0; }
+  .hd-col::-webkit-scrollbar { width: 6px; }
+  .hd-col::-webkit-scrollbar-track { background: transparent; }
+  .hd-col::-webkit-scrollbar-thumb { background: rgba(127,127,127,.25); border-radius: 3px; }
+
+  .hd-resizer {
+    width: 8px; flex-shrink: 0; cursor: col-resize;
+    position: relative; background: transparent;
+    transition: background 0.15s;
+  }
+  .hd-resizer::before {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px; height: 36px;
+    background: var(--border); border-radius: 1px;
+    transition: background 0.15s, height 0.15s;
+  }
+  .hd-resizer:hover { background: rgba(20,184,166,.08); }
+  .hd-resizer:hover::before, .hd-resizer.dragging::before { background: var(--primary); height: 56px; }
+  .hd-resizer.dragging { background: rgba(20,184,166,.18); }
+  .hd-resizer.is-hidden { display: none; }
+
+  .view-toggles {
+    display: flex; gap: 4px;
+    padding-right: 10px; margin-right: 4px;
+    border-right: 1px solid var(--border);
+    align-items: center;
+  }
+  .view-toggle-label {
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-light);
+    margin-right: 4px;
+  }
+  .view-toggle {
+    padding: 5px 10px; font-size: 0.76rem; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    border-radius: 6px; border: 1.5px solid transparent;
+    background: rgba(127,127,127,.08); color: var(--text-secondary);
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .view-toggle::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(127,127,127,.4); transition: background 0.15s;
+  }
+  .view-toggle.is-on { background: rgba(20,184,166,.14); color: var(--primary); }
+  .view-toggle.is-on::before { background: var(--primary); }
+  .view-toggle:hover { background: rgba(127,127,127,.14); }
+  .view-toggle.is-on:hover { background: rgba(20,184,166,.22); }
+  .reset-layout-btn {
+    margin-left: 2px; background: transparent; border: none;
+    color: var(--text-light); cursor: pointer;
+    font-size: 0.92rem; font-weight: 600; padding: 4px 7px;
+    border-radius: 5px; line-height: 1;
+  }
+  .reset-layout-btn:hover { color: var(--text-primary); background: rgba(127,127,127,.08); }
+
+  /* Student-Q&A active card */
+  .active-q-badge.student-qa { background: rgba(245,158,11,.18); color: #b45309; }
+  .student-qa-meta { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 8px; }
+  .student-qa-answer-block {
+    background: rgba(245,158,11,.06);
+    border: 1px dashed rgba(245,158,11,.4);
+    border-radius: 10px; padding: 14px;
+    margin: 14px 0;
+  }
+  .student-qa-answer-label {
+    font-size: 0.7rem; font-weight: 700; color: #b45309;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+  }
+  .student-qa-answer-input {
+    width: 100%; padding: 10px 12px;
+    font-size: 0.92rem; font-family: inherit; line-height: 1.45;
+    background: var(--surface); color: var(--text-primary);
+    border: 1px solid rgba(245,158,11,.35); border-radius: 8px;
+    outline: none; resize: vertical; min-height: 70px;
+    box-sizing: border-box;
+  }
+  .student-qa-answer-input:focus { border-color: #f59e0b; }
+  .student-qa-hint { font-size: 0.76rem; color: var(--text-light); margin-top: 6px; }
+  .student-qa-status { font-size: 0.74rem; color: var(--text-light); margin-top: 6px; }
+  .student-qa-status.is-saving { color: var(--primary); }
+
+  /* Light/dark — accent backgrounds we use already work in both because they're rgba over current surface */
+
+  @media (max-width: 1100px) {
+    .host-screen.host-screen-flex { padding: 12px 14px 4px; }
+    .hd-col-left  { width: 320px; }
+    .hd-col-right { width: 340px; }
+  }
+  @media (max-width: 900px) {
+    .host-screen.host-screen-flex { height: auto; }
+    .host-dashboard { flex-direction: column; overflow-y: auto; padding: 8px 0 16px; }
+    .hd-col, .hd-col-left, .hd-col-center, .hd-col-right {
+      width: 100% !important; max-width: none !important;
+      overflow-y: visible; padding: 0 12px 14px;
+    }
+    .hd-resizer { display: none; }
+    .view-toggles { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -200,12 +373,12 @@
 
 <div id="screen-app" class="bs-app">
 
-  <div class="host-container">
+  <div class="host-container host-dashboard-container">
 
     <div class="host-alert host-alert-success" id="alert-success"></div>
 
     <!-- ── SCREEN: session ───────────────────────────────── -->
-    <div class="host-screen active" id="screen-session">
+    <div class="host-screen active host-screen-flex" id="screen-session">
 
       <!-- Session bar -->
       <div class="host-session-bar">
@@ -219,8 +392,18 @@
           <div class="host-session-name" id="session-name-display"></div>
         </div>
         <div class="host-bar-actions">
+          <div class="view-toggles" id="viewToggles" title="Mostrar ou esconder cada coluna do dashboard" hidden>
+            <span class="view-toggle-label">Visão</span>
+            <button class="view-toggle is-on" data-toggle-col="left"   type="button">Composer</button>
+            <button class="view-toggle is-on" data-toggle-col="center" type="button">Pergunta ativa</button>
+            <button class="view-toggle is-on" data-toggle-col="right"  type="button">Q&amp;A</button>
+            <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
+          </div>
+          <button class="host-btn host-btn-ghost host-pres-btn" id="pres-btn" type="button" hidden><span class="host-pres-dot" id="pres-dot"></span>Apresentação</button>
+          <button class="host-btn host-btn-ghost host-pres-btn" id="trail-btn" type="button" hidden><span class="host-pres-dot" id="trail-dot"></span>Trilha</button>
           <button class="host-btn host-btn-ghost" id="qr-btn" hidden>QR</button>
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener" hidden>Display</a>
+          <button class="host-btn host-btn-ghost" id="qa-toggle-btn" type="button" aria-pressed="false" hidden>Ativar Q&amp;A</button>
           <button class="host-btn host-btn-primary" id="start-host-btn" hidden>Iniciar</button>
           <button class="host-btn host-btn-danger" id="stop-host-btn" hidden>Encerrar</button>
         </div>
@@ -231,26 +414,11 @@
         Sessão não está sendo hospedada. Clique em <strong>Iniciar</strong> para começar.
       </div>
 
-      <!-- Presentation link row -->
-      <div class="host-pres-row" id="pres-row"></div>
 
-      <!-- Active question panel -->
-      <div class="active-q-panel" id="active-q-panel">
-        <div class="active-q-badge">Pergunta ativa</div>
-        <div class="active-q-text" id="aq-text"></div>
-        <classpulse-question id="cpq" mode="host"></classpulse-question>
-        <div style="margin-top:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
-          <span class="answer-tally" id="aq-tally"></span>
-          <div>
-            <div class="close-options">
-              <label><input type="checkbox" id="chk-show-results" checked> Mostrar resultados</label>
-              <label><input type="checkbox" id="chk-reveal-answer"> Revelar resposta correta</label>
-            </div>
-            <button class="host-btn host-btn-ghost cp-toggle-btn" id="toggle-bars-btn" type="button"></button>
-            <button class="host-btn host-btn-danger" id="close-question-btn">Encerrar pergunta</button>
-          </div>
-        </div>
-      </div>
+      <!-- ── Dashboard (B1+) ───────────────────────────────── -->
+      <div class="host-dashboard" id="hostDashboard">
+
+      <section class="hd-col hd-col-left" id="hdColLeft">
 
       <!-- Launch question form -->
       <div class="host-card" id="launch-q-card">
@@ -314,11 +482,21 @@
             <input class="host-input" type="text" id="q-opt-d" placeholder="Opção D">
             <label class="opt-correct-radio" title="Marcar como correta"><input type="radio" name="correct" value="d" id="q-correct-d"></label>
           </div>
+          <div style="margin-top:0.6rem;display:flex;align-items:center;gap:0.5rem">
+            <label class="host-label" style="margin:0;white-space:nowrap">Seleções por aluno</label>
+            <input type="number" class="host-input" id="q-mc-max-select" value="1" min="0" step="1" style="max-width:80px">
+            <span style="font-size:0.75rem;color:var(--text-secondary)">1 = única · 0 = todas</span>
+          </div>
         </div>
 
         <div id="q-opts-poll" style="display:none">
           <div id="poll-rows"></div>
           <button class="host-btn host-btn-ghost" id="poll-add-btn" type="button" style="font-size:0.82rem;margin-top:0.3rem">+ Adicionar opção</button>
+          <div style="margin-top:0.6rem;display:flex;align-items:center;gap:0.5rem">
+            <label class="host-label" style="margin:0;white-space:nowrap">Seleções por aluno</label>
+            <input type="number" class="host-input" id="q-poll-max-select" value="1" min="0" step="1" style="max-width:80px">
+            <span style="font-size:0.75rem;color:var(--text-secondary)">1 = única · 0 = todas</span>
+          </div>
         </div>
 
         <div id="q-opts-rating" style="display:none">
@@ -367,11 +545,73 @@
         </div>
       </div>
 
+      </section><!-- /hd-col-left -->
+
+      <div class="hd-resizer" data-resize="left-center" id="hdResizerLC"></div>
+
+      <section class="hd-col hd-col-center" id="hdColCenter">
+
+      <!-- Active question panel (instructor-launched OR student_qa, JS swaps) -->
+      <div class="active-q-panel" id="active-q-panel">
+        <!-- Standard active question (mc/tf/poll/open/wordcloud/rating/numeric) -->
+        <div id="active-standard">
+          <div class="active-q-badge">Pergunta ativa</div>
+          <div class="active-q-text" id="aq-text"></div>
+          <classpulse-question id="cpq" mode="host"></classpulse-question>
+          <div style="margin-top:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+            <span class="answer-tally" id="aq-tally"></span>
+            <div>
+              <div class="close-options">
+                <label><input type="checkbox" id="chk-show-results" checked> Mostrar resultados</label>
+                <label><input type="checkbox" id="chk-reveal-answer"> Revelar resposta correta</label>
+              </div>
+              <button class="host-btn host-btn-ghost cp-toggle-btn" id="toggle-bars-btn" type="button"></button>
+              <button class="host-btn host-btn-danger" id="close-question-btn">Encerrar pergunta</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Promoted student question (type='student_qa') -->
+        <div id="active-student-qa" style="display:none">
+          <div class="active-q-badge student-qa">Pergunta do aluno · no display</div>
+          <div class="student-qa-meta" id="sqa-meta"></div>
+          <div class="active-q-text" id="sqa-text"></div>
+          <div class="student-qa-answer-block">
+            <div class="student-qa-answer-label">Resposta no display</div>
+            <textarea class="student-qa-answer-input" id="sqa-response" placeholder="Digite a resposta. Os alunos veem cada palavra ao vivo enquanto você escreve." rows="3"></textarea>
+            <div class="student-qa-status" id="sqa-status"></div>
+            <div class="student-qa-hint">Encerre a pergunta quando terminar; a resposta fica salva no Q&amp;A.</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:0.6rem">
+            <button class="host-btn host-btn-danger" id="sqa-close-btn">Encerrar pergunta</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Question history -->
       <div class="host-card" id="history-card" style="display:none">
         <div class="host-card-title">Histórico</div>
         <div id="history-list"></div>
       </div>
+
+      </section><!-- /hd-col-center -->
+
+      <div class="hd-resizer" data-resize="center-right" id="hdResizerCR"></div>
+
+      <section class="hd-col hd-col-right" id="hdColRight">
+
+      <!-- Student Q&A feed -->
+      <section class="cp-qa-host-section" id="qa-section" style="display:none">
+        <div class="cp-qa-host-header">
+          <span class="cp-qa-host-title">Perguntas dos alunos</span>
+          <span class="cp-qa-badge" id="qa-badge" style="display:none">0</span>
+        </div>
+        <div id="qa-feed"></div>
+      </section>
+
+      </section><!-- /hd-col-right -->
+
+      </div><!-- /host-dashboard -->
 
     </div>
 
@@ -389,15 +629,34 @@
   </div>
 </div>
 
+<!-- Apresentação Modal -->
+<div class="qr-modal" id="pres-modal">
+  <div class="qr-box" style="max-width: 420px; text-align: left">
+    <h3 style="margin-bottom: 1rem">Apresentação vinculada à sessão</h3>
+    <div id="pres-modal-content" class="host-pres-modal-content"></div>
+    <button class="host-btn host-btn-ghost host-btn-full" id="pres-modal-close-btn" style="margin-top:1rem">Fechar</button>
+  </div>
+</div>
+
+<!-- Trilha Modal -->
+<div class="qr-modal" id="trail-modal">
+  <div class="qr-box" style="max-width: 420px; text-align: left">
+    <h3 style="margin-bottom: 1rem">Turma vinculada à sessão</h3>
+    <div id="trail-modal-content" class="host-pres-modal-content"></div>
+    <button class="host-btn host-btn-ghost host-btn-full" id="trail-modal-close-btn" style="margin-top:1rem">Fechar</button>
+  </div>
+</div>
+
 <script src="../js/utils.js?v=1.3"></script>
 <script src="../js/api-client.js?v=1.1"></script>
-<script src="../js/question-renderer.js?v=2.3"></script>
-<script src="../js/classpulse-question-types.js?v=1.1"></script>
-<script src="../js/classpulse-question.min.js?v=1.7"></script>
-<script src="../js/classpulse-visibility-toggle.js?v=1.3"></script>
+<script src="../js/question-renderer.js?v=2.5"></script>
+<script src="../js/classpulse-question-types.js?v=1.2"></script>
+<script src="../js/classpulse-question.min.js?v=1.8"></script>
+<script src="../js/classpulse-visibility-toggle.js?v=1.4"></script>
+<script src="../js/classpulse-qa.js?v=2.3"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
-<script src="../js/question-bank.js?v=1.9"></script>
+<script src="../js/question-bank.js?v=2.0"></script>
 <script src="../js/auth.js?v=1.1"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/backstage-topbar.js?v=1.2"></script>
@@ -427,6 +686,8 @@ var pollTimer      = null;
 var _historyMap    = {};
 var _presentations = [];
 var _currentSession = null;
+var _trailTurma     = null;
+var _trailAllTurmas = [];
 
 var visToggle = CPVisibilityToggle.attach({
   buttonEl:       document.getElementById('toggle-bars-btn'),
@@ -436,6 +697,8 @@ var visToggle = CPVisibilityToggle.attach({
   callWorker:     callWorker,
   onError:        function(msg) { showAlert('error', msg); }
 });
+
+var qaModule = null;
 
 // ---------------------------------------------------------------------------
 // Screens
@@ -477,12 +740,17 @@ if (!urlCode) {
 
 async function loadSession() {
   try {
+    var code = urlCode.toUpperCase();
     var results = await Promise.allSettled([
       callWorker({ action: 'list_sessions' }),
-      callWorker({ action: 'list_presentations' })
+      callWorker({ action: 'list_presentations' }),
+      callWorker({ action: 'ct_lookup_turma_by_session', auth_token: AUTH_TOKEN, session_id: code }),
+      callWorker({ action: 'ct_list_all_turmas', auth_token: AUTH_TOKEN })
     ]);
     var data = results[0].status === 'fulfilled' ? results[0].value : { sessions: [] };
     _presentations = (results[1].status === 'fulfilled' ? results[1].value.presentations : null) || [];
+    _trailTurma     = (results[2].status === 'fulfilled' ? results[2].value.turma : null) || null;
+    _trailAllTurmas = (results[3].status === 'fulfilled' ? results[3].value.turmas : null) || [];
 
     var match = (data.sessions || []).find(function(s) { return s.code === urlCode.toUpperCase(); });
     if (!match) {
@@ -509,7 +777,32 @@ function selectSession(s) {
 
   clearAlert();
   renderPresentationLink();
+  renderTrailLink();
   applyHostedUI(s.status === 'open');
+
+  if (!qaModule) {
+    qaModule = ClassPulseQA.attach({
+      sessionCode: s.code,
+      authToken:   AUTH_TOKEN,
+      callWorker:  callWorker,
+      containerEl: document.getElementById('qa-section'),
+      toggleEl:    document.getElementById('qa-toggle-btn'),
+      badgeEl:     document.getElementById('qa-badge'),
+      feedEl:      document.getElementById('qa-feed'),
+      onError:     function(msg) { showAlert('error', msg); },
+      onPromoted:  function() {
+        // ensure the center column is visible so the new student_qa active card is in view
+        if (!layoutState.center.visible) {
+          layoutState.center.visible = true;
+          applyLayout(); saveLayout();
+        }
+      },
+      onClosedActive: function() { /* cpq-data tick will refresh */ }
+    });
+  } else {
+    qaModule.setSessionCode(s.code);
+  }
+
   // Always poll session state so history renders even when not hosted
   document.getElementById('cpq').setAttribute('session', s.code);
 }
@@ -522,10 +815,15 @@ function applyHostedUI(isHosted) {
   document.getElementById('display-link').hidden = !isHosted;
   document.getElementById('start-host-btn').hidden = isHosted;
   document.getElementById('stop-host-btn').hidden = !isHosted;
+  document.getElementById('qa-toggle-btn').hidden = !isHosted;
+  document.getElementById('viewToggles').hidden = !isHosted;
   document.getElementById('launch-q-card').style.display = isHosted ? '' : 'none';
   if (!isHosted) {
     document.getElementById('active-q-panel').style.display = 'none';
+    document.getElementById('qa-section').style.display = 'none';
     activeQId = null;
+    activeQType = null;
+    activeStudentQuestionId = null;
   }
 }
 
@@ -534,9 +832,13 @@ function applyHostedUI(isHosted) {
 // ---------------------------------------------------------------------------
 
 function renderPresentationLink() {
-  var row = document.getElementById('pres-row');
-  if (!row) return;
+  var btn     = document.getElementById('pres-btn');
+  var content = document.getElementById('pres-modal-content');
+  if (!btn || !content) return;
   var slug = _currentSession && _currentSession.presentation_slug;
+
+  btn.hidden = false;
+  btn.classList.toggle('is-linked', !!slug);
 
   if (slug) {
     var linked = _presentations.find(function(p) { return p.slug === slug; });
@@ -546,28 +848,30 @@ function renderPresentationLink() {
     var href    = engine === 'panels'
       ? '/backstage/classforge/presentations/' + slug + '/'
       : '/backstage/classforge/viewer/?slug=' + encodeURIComponent(slug);
-    row.innerHTML =
-      '<span class="host-pres-label">Apresenta\u00e7\u00e3o</span>' +
-      '<a class="host-pres-badge" href="' + escHtml(href) + '" target="_blank" rel="noopener">' + escHtml(title) + ' (' + engLabel + ')</a>' +
-      '<button class="host-btn host-btn-ghost" id="pres-unlink-btn" style="padding:0.3rem 0.75rem;font-size:0.78rem">Desvincular</button>';
+    content.innerHTML =
+      '<div class="host-pres-status">Vinculada a esta sess\u00e3o</div>' +
+      '<div class="host-pres-title">' + escHtml(title) + '</div>' +
+      '<div class="host-pres-engine">' + engLabel + '</div>' +
+      '<a class="host-pres-link" href="' + escHtml(href) + '" target="_blank" rel="noopener">Abrir apresenta\u00e7\u00e3o \u2197</a>' +
+      '<button class="host-btn host-btn-danger host-btn-full" id="pres-unlink-btn">Desvincular apresenta\u00e7\u00e3o</button>';
     document.getElementById('pres-unlink-btn').addEventListener('click', doUnlinkPresentation);
   } else if (_presentations.length > 0) {
-    var opts = '<option value="">Vincular apresenta\u00e7\u00e3o\u2026</option>';
+    var opts = '<option value="">Selecione uma apresenta\u00e7\u00e3o\u2026</option>';
     _presentations.forEach(function(p) {
       var el = p.engine === 'panels' ? 'Panels' : 'Reveal';
       opts += '<option value="' + escHtml(p.slug) + '">' + escHtml(p.title) + ' (' + el + ')</option>';
     });
-    row.innerHTML =
-      '<span class="host-pres-label">Apresenta\u00e7\u00e3o</span>' +
-      '<select class="host-pres-select" id="pres-picker">' + opts + '</select>' +
-      '<button class="host-btn host-btn-ghost" id="pres-link-btn" style="padding:0.3rem 0.75rem;font-size:0.78rem">Vincular</button>';
+    content.innerHTML =
+      '<div class="host-pres-status">Nenhuma apresenta\u00e7\u00e3o vinculada</div>' +
+      '<select id="pres-picker">' + opts + '</select>' +
+      '<button class="host-btn host-btn-primary host-btn-full" id="pres-link-btn">Vincular apresenta\u00e7\u00e3o</button>';
     document.getElementById('pres-link-btn').addEventListener('click', async function() {
       var s = document.getElementById('pres-picker').value;
       if (!s) return;
       await doLinkPresentation(s);
     });
   } else {
-    row.innerHTML = '';
+    content.innerHTML = '<div class="host-pres-empty">Nenhuma apresenta\u00e7\u00e3o dispon\u00edvel para vincular.</div>';
   }
 }
 
@@ -576,6 +880,7 @@ async function doLinkPresentation(slug) {
     await callWorker({ action: 'link_presentation', auth_token: AUTH_TOKEN, code: sessionCode, slug: slug });
     _currentSession.presentation_slug = slug;
     renderPresentationLink();
+    document.getElementById('pres-modal').classList.remove('open');
     showToast('Apresenta\u00e7\u00e3o vinculada.');
   } catch (e) {
     showToastError(e.message);
@@ -587,11 +892,134 @@ async function doUnlinkPresentation() {
     await callWorker({ action: 'unlink_presentation', auth_token: AUTH_TOKEN, code: sessionCode });
     _currentSession.presentation_slug = null;
     renderPresentationLink();
+    document.getElementById('pres-modal').classList.remove('open');
     showToast('Apresenta\u00e7\u00e3o desvinculada.');
   } catch (e) {
     showToastError(e.message);
   }
 }
+
+// Open/close pres modal
+document.getElementById('pres-btn').addEventListener('click', function() {
+  document.getElementById('pres-modal').classList.add('open');
+});
+document.getElementById('pres-modal-close-btn').addEventListener('click', function() {
+  document.getElementById('pres-modal').classList.remove('open');
+});
+document.getElementById('pres-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+
+// ---------------------------------------------------------------------------
+// Trail (ClassTrail turma) linking
+// ---------------------------------------------------------------------------
+
+function renderTrailLink() {
+  var btn     = document.getElementById('trail-btn');
+  var content = document.getElementById('trail-modal-content');
+  if (!btn || !content) return;
+
+  btn.hidden = false;
+  btn.classList.toggle('is-linked', !!_trailTurma);
+
+  if (_trailTurma) {
+    var t = _trailTurma;
+    var turmaName  = t.display_name || t.name || t.turma_slug;
+    var clientName = t.client_display_name || t.client_slug;
+    var trilhaUrl  = '/trilha/' + encodeURIComponent(t.client_slug) + '/' + encodeURIComponent(t.turma_slug) + (t.token ? '?k=' + encodeURIComponent(t.token) : '');
+    var adminUrl   = '/backstage/classtrail/';
+    content.innerHTML =
+      '<div class="host-pres-status">Vinculada a esta sessão</div>' +
+      '<div class="host-pres-title">' + escHtml(turmaName) + '</div>' +
+      '<div class="host-pres-engine">' + escHtml(clientName) + '</div>' +
+      '<a class="host-pres-link" href="' + escHtml(trilhaUrl) + '" target="_blank" rel="noopener">Abrir trilha pública ↗</a><br>' +
+      '<a class="host-pres-link" href="' + escHtml(adminUrl) + '" target="_blank" rel="noopener">Abrir ClassTrail (admin) ↗</a>' +
+      '<button class="host-btn host-btn-danger host-btn-full" id="trail-unlink-btn" style="margin-top:0.6rem">Desvincular turma</button>';
+    document.getElementById('trail-unlink-btn').addEventListener('click', doUnlinkTrail);
+  } else if (_trailAllTurmas.length > 0) {
+    var opts = '<option value="">Selecione uma turma…</option>';
+    _trailAllTurmas.forEach(function(t) {
+      var turmaName  = t.display_name || t.name || t.turma_slug;
+      var clientName = t.client_display_name || t.client_slug;
+      var label      = clientName + ' · ' + turmaName;
+      var inUse      = t.classpulse_session_id && t.classpulse_session_id !== sessionCode;
+      var suffix     = inUse ? ' (vinculada a ' + t.classpulse_session_id + ')' : '';
+      var disabled   = inUse ? ' disabled' : '';
+      var value      = t.client_slug + '|' + t.turma_slug;
+      opts += '<option value="' + escHtml(value) + '"' + disabled + '>' + escHtml(label + suffix) + '</option>';
+    });
+    content.innerHTML =
+      '<div class="host-pres-status">Nenhuma turma vinculada</div>' +
+      '<select id="trail-picker">' + opts + '</select>' +
+      '<button class="host-btn host-btn-primary host-btn-full" id="trail-link-btn">Vincular turma</button>';
+    document.getElementById('trail-link-btn').addEventListener('click', async function() {
+      var v = document.getElementById('trail-picker').value;
+      if (!v) return;
+      var parts = v.split('|');
+      await doLinkTrail(parts[0], parts[1]);
+    });
+  } else {
+    content.innerHTML = '<div class="host-pres-empty">Nenhuma turma cadastrada em ClassTrail.</div>';
+  }
+}
+
+async function doLinkTrail(clientSlug, turmaSlug) {
+  try {
+    await callWorker({
+      action: 'ct_update_turma_meta',
+      auth_token: AUTH_TOKEN,
+      client_slug: clientSlug,
+      slug: turmaSlug,
+      classpulse_session_id: sessionCode
+    });
+    var res = await callWorker({ action: 'ct_lookup_turma_by_session', auth_token: AUTH_TOKEN, session_id: sessionCode });
+    _trailTurma = res.turma || null;
+    // refresh the picker list so the just-linked turma reflects the new state next time
+    try {
+      var listRes = await callWorker({ action: 'ct_list_all_turmas', auth_token: AUTH_TOKEN });
+      _trailAllTurmas = listRes.turmas || [];
+    } catch (_) {}
+    renderTrailLink();
+    document.getElementById('trail-modal').classList.remove('open');
+    showToast('Turma vinculada.');
+  } catch (e) {
+    showToastError(e.message);
+  }
+}
+
+async function doUnlinkTrail() {
+  if (!_trailTurma) return;
+  try {
+    await callWorker({
+      action: 'ct_update_turma_meta',
+      auth_token: AUTH_TOKEN,
+      client_slug: _trailTurma.client_slug,
+      slug: _trailTurma.turma_slug,
+      classpulse_session_id: null
+    });
+    _trailTurma = null;
+    try {
+      var listRes = await callWorker({ action: 'ct_list_all_turmas', auth_token: AUTH_TOKEN });
+      _trailAllTurmas = listRes.turmas || [];
+    } catch (_) {}
+    renderTrailLink();
+    document.getElementById('trail-modal').classList.remove('open');
+    showToast('Turma desvinculada.');
+  } catch (e) {
+    showToastError(e.message);
+  }
+}
+
+// Open/close trail modal
+document.getElementById('trail-btn').addEventListener('click', function() {
+  document.getElementById('trail-modal').classList.add('open');
+});
+document.getElementById('trail-modal-close-btn').addEventListener('click', function() {
+  document.getElementById('trail-modal').classList.remove('open');
+});
+document.getElementById('trail-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
 
 // Boot
 if (urlCode) loadSession();
@@ -708,8 +1136,14 @@ var formEls = {
   ratingMax: document.getElementById('q-rating-max'),
   numericMin: document.getElementById('q-num-min'),
   numericMax: document.getElementById('q-num-max'),
+  mcMaxSelect:  document.getElementById('q-mc-max-select'),
+  pollMaxSelect: document.getElementById('q-poll-max-select'),
   initPollRows: initPollRows
 };
+
+document.getElementById('q-mc-max-select').addEventListener('change', function() {
+  CPQuestionTypes.get('mc').setupForm(formEls);
+});
 
 function applyTypeUI(qType) {
   var T = CPQuestionTypes.get(qType);
@@ -752,7 +1186,8 @@ document.getElementById('launch-btn').addEventListener('click', async function()
     var res = await callWorker({
       action: 'launch_question', auth_token: AUTH_TOKEN,
       session_code: sessionCode, type: qType, text: text,
-      options: read.options, correct_answer: read.correct_answer
+      options: read.options, correct_answer: read.correct_answer,
+      max_select: read.max_select !== undefined ? read.max_select : 1
     });
     activeQId = res.id;
     visToggle.reset();
@@ -815,31 +1250,154 @@ cpqEl.addEventListener('cpq-data', (e) => {
   const data = e.detail;
   if (!sessionCode) return;
 
+  if (qaModule) qaModule.syncFromState(data);
+
   renderHistory(data.history || []);
 
   const q = data.active_question;
-  if (q) {
-    activeQId = q.id;
-    document.getElementById('aq-text').textContent = q.text;
-    visToggle.syncFromQuestion(q);
-
-    var T = CPQuestionTypes.get(q.type || 'mc');
-    let total = 0;
-    if (T.usesTextAnswers) {
-      total = (q.text_answers || []).length;
-    } else {
-      const counts = q.answer_counts || [];
-      total = counts.reduce((a, b) => a + b, 0);
-    }
-    document.getElementById('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
-
-    setChk('chk-reveal-answer', T.canReveal);
-    setChk('chk-show-results',  T.canShowResults);
-
-    document.getElementById('active-q-panel').style.display = 'block';
-  } else {
+  if (!q) {
     activeQId = null;
+    activeQType = null;
+    activeStudentQuestionId = null;
     document.getElementById('active-q-panel').style.display = 'none';
+    document.getElementById('active-standard').style.display = '';
+    document.getElementById('active-student-qa').style.display = 'none';
+    return;
+  }
+
+  activeQId = q.id;
+  activeQType = q.type || 'mc';
+
+  if (activeQType === 'student_qa') {
+    activeStudentQuestionId = q.student_question_id || null;
+    renderStudentQaActive(q);
+    document.getElementById('active-standard').style.display = 'none';
+    document.getElementById('active-student-qa').style.display = '';
+    document.getElementById('active-q-panel').style.display = 'block';
+    return;
+  }
+
+  activeStudentQuestionId = null;
+  document.getElementById('active-student-qa').style.display = 'none';
+  document.getElementById('active-standard').style.display = '';
+
+  document.getElementById('aq-text').textContent = q.text;
+  visToggle.syncFromQuestion(q);
+
+  var T = CPQuestionTypes.get(q.type || 'mc');
+  let total = 0;
+  if (T.usesTextAnswers) {
+    total = (q.text_answers || []).length;
+  } else {
+    const counts = q.answer_counts || [];
+    total = counts.reduce((a, b) => a + b, 0);
+  }
+  document.getElementById('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
+
+  setChk('chk-reveal-answer', T.canReveal);
+  setChk('chk-show-results',  T.canShowResults);
+
+  document.getElementById('active-q-panel').style.display = 'block';
+});
+
+// ---------------------------------------------------------------------------
+// Student_qa active question (C1 promote flow)
+// ---------------------------------------------------------------------------
+
+var activeQType = null;
+var activeStudentQuestionId = null;
+var _sqaLastServerAnswer = null;
+var _sqaDraft = null;
+var _sqaDebounce = null;
+var _sqaSaving = false;
+
+function renderStudentQaActive(q) {
+  var metaEl    = document.getElementById('sqa-meta');
+  var textEl    = document.getElementById('sqa-text');
+  var inputEl   = document.getElementById('sqa-response');
+  var statusEl  = document.getElementById('sqa-status');
+
+  var when = '';
+  try { when = q.student_time ? new Date(q.student_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''; } catch (_) {}
+  metaEl.textContent = (q.student_name || 'Aluno') + (when ? ' · ' + when : '');
+  textEl.textContent = q.text || '';
+
+  var serverAnswer = q.student_answer || '';
+  // Only overwrite the textarea when the server answer changed and the user
+  // isn't actively typing a different draft (D1 + D2 protection).
+  if (document.activeElement !== inputEl) {
+    if (serverAnswer !== _sqaLastServerAnswer) {
+      inputEl.value = serverAnswer;
+      _sqaDraft = serverAnswer;
+    }
+  }
+  _sqaLastServerAnswer = serverAnswer;
+  statusEl.textContent = _sqaSaving ? 'Salvando…' : '';
+  statusEl.classList.toggle('is-saving', _sqaSaving);
+}
+
+function scheduleSqaSave() {
+  if (_sqaDebounce) clearTimeout(_sqaDebounce);
+  _sqaDebounce = setTimeout(commitSqaAnswer, 350);
+}
+
+async function commitSqaAnswer() {
+  if (!activeStudentQuestionId) return;
+  var inputEl = document.getElementById('sqa-response');
+  var text = inputEl.value;
+  if (text === _sqaLastServerAnswer) return;
+  _sqaSaving = true;
+  document.getElementById('sqa-status').textContent = 'Salvando…';
+  document.getElementById('sqa-status').classList.add('is-saving');
+  try {
+    var res = await callWorker({
+      action: 'update_student_question',
+      auth_token: AUTH_TOKEN,
+      id: activeStudentQuestionId,
+      status: 'pending',
+      answer: text
+    });
+    if (res && res.ok) {
+      _sqaLastServerAnswer = text;
+      document.getElementById('sqa-status').textContent = 'Salvo';
+      setTimeout(function() {
+        if (!_sqaSaving) document.getElementById('sqa-status').textContent = '';
+      }, 1200);
+    }
+  } catch (e) {
+    showAlert('error', 'Erro ao salvar resposta: ' + e.message);
+  } finally {
+    _sqaSaving = false;
+    document.getElementById('sqa-status').classList.remove('is-saving');
+  }
+}
+
+document.getElementById('sqa-response').addEventListener('input', function() {
+  _sqaDraft = this.value;
+  scheduleSqaSave();
+});
+
+document.getElementById('sqa-close-btn').addEventListener('click', async function() {
+  if (!activeQId) return;
+  if (_sqaDebounce) { clearTimeout(_sqaDebounce); _sqaDebounce = null; }
+  await commitSqaAnswer();
+  this.disabled = true;
+  this.textContent = 'Encerrando...';
+  try {
+    await callWorker({
+      action: 'close_question', auth_token: AUTH_TOKEN,
+      id: activeQId, session_code: sessionCode,
+      show_results: true, reveal_answer: false
+    });
+    activeQId = null;
+    activeQType = null;
+    activeStudentQuestionId = null;
+    document.getElementById('active-q-panel').style.display = 'none';
+  } catch (e) {
+    showAlert('error', 'Erro: ' + e.message);
+  } finally {
+    this.disabled = false;
+    this.textContent = 'Encerrar pergunta';
   }
 });
 
@@ -874,11 +1432,13 @@ function renderHistory(closedQs) {
 
     var resultsHtml = '';
     if (q.options && q.answer_counts && q.options.length > 0) {
-      var total = q.answer_counts.reduce(function(a,b){ return a+b; }, 0);
+      var hTotal = q.answer_counts.reduce(function(a,b){ return a+b; }, 0);
+      var hDenom = (q.voter_count && q.voter_count > 0) ? q.voter_count : hTotal;
+      var hCorrect = Array.isArray(q.correct_answers) ? q.correct_answers : [];
       resultsHtml = '<div class="hi-results">';
       q.options.forEach(function(opt, i) {
-        var pct = total > 0 ? Math.round(q.answer_counts[i] / total * 100) : 0;
-        var isCorrect = q.correct_answer !== null && i === q.correct_answer;
+        var pct = hDenom > 0 ? Math.round(q.answer_counts[i] / hDenom * 100) : 0;
+        var isCorrect = q.reveal_answer && hCorrect.indexOf(i) !== -1;
         resultsHtml += '<div class="hi-bar">' +
                          '<div class="hi-bar-label">' +
                            '<span class="hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' + LETTERS[i] + (isCorrect ? ' \u2713' : '') + '</span>' +
@@ -930,7 +1490,10 @@ async function relaunchFromHistory(btn, q) {
       type: q.type || 'mc',
       text: q.text,
       options: q.options,
-      correct_answer: q.correct_answer
+      correct_answer: q.correct_answers && q.correct_answers.length
+        ? (q.max_select !== 1 ? q.correct_answers : q.correct_answers[0])
+        : null,
+      max_select: q.max_select || 1
     });
     activeQId = res.id;
     clearAlert();
@@ -957,7 +1520,12 @@ function editFromHistory(q) {
   var qType = q.type || 'mc';
   document.getElementById('q-type').value = qType;
   applyTypeUI(qType);
-  CPQuestionTypes.get(qType).restoreForm(formEls, q);
+  CPQuestionTypes.get(qType).restoreForm(formEls, {
+    options: q.options,
+    correct_answers: q.correct_answers || [],
+    correct_answer: q.correct_answers && q.correct_answers.length === 1 ? q.correct_answers[0] : null,
+    max_select: q.max_select || 1
+  });
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.getElementById('q-text').focus();
 }
@@ -1002,15 +1570,19 @@ QuestionBank.init({
   onSelect: function(q) { prefillForm(q); },
   onLaunch: function(q, btn) { launchFromBank(q, btn); },
   getFormState: function() {
+    var qType = document.getElementById('q-type').value;
+    var maxSelEl = qType === 'mc' ? document.getElementById('q-mc-max-select')
+                 : qType === 'poll' ? document.getElementById('q-poll-max-select') : null;
     return {
       text: document.getElementById('q-text').value.trim(),
-      type: document.getElementById('q-type').value,
+      type: qType,
       options: [
         document.getElementById('q-opt-a').value.trim(),
         document.getElementById('q-opt-b').value.trim(),
         document.getElementById('q-opt-c').value.trim(),
         document.getElementById('q-opt-d').value.trim()
-      ]
+      ],
+      max_select: maxSelEl ? parseInt(maxSelEl.value) : 1
     };
   }
 });
@@ -1020,15 +1592,17 @@ async function launchFromBank(q, btn) {
   btn.textContent = 'Lançando...';
   try {
     var opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+    var maxSel = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select) : 1;
     var ca = (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '')
-      ? parseInt(q.correct_answer) : null;
+      ? q.correct_answer : null;
     var res = await callWorker({
       action: 'launch_question', auth_token: AUTH_TOKEN,
       session_code: sessionCode,
       type: q.type || 'mc',
       text: q.question,
       options: opts,
-      correct_answer: ca
+      correct_answer: ca,
+      max_select: maxSel
     });
     activeQId = res.id;
     clearAlert();
@@ -1051,9 +1625,133 @@ function prefillForm(q) {
   } else {
     parsedOpts = q.options || [];
   }
-  CPQuestionTypes.get(qType).restoreForm(formEls, { options: parsedOpts, correct_answer: q.correct_answer });
+  var correctAnswers = Array.isArray(q.correct_answers) ? q.correct_answers
+    : (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '' ? [parseInt(q.correct_answer)] : []);
+  CPQuestionTypes.get(qType).restoreForm(formEls, {
+    options: parsedOpts,
+    correct_answers: correctAnswers,
+    correct_answer: q.correct_answer,
+    max_select: q.max_select !== undefined ? q.max_select : 1
+  });
 }
 
+// ---------------------------------------------------------------------------
+// Dashboard layout (B1+) — resize + toggle + persist
+// ---------------------------------------------------------------------------
+
+var LAYOUT_KEY = 'classpulse_b1_layout';
+var DEFAULT_LAYOUT = { left: { visible: true, width: 360 }, center: { visible: true }, right: { visible: true, width: 380 } };
+
+function loadLayout() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(LAYOUT_KEY));
+    if (!saved) return JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+    ['left','center','right'].forEach(function(k) {
+      if (!saved[k]) saved[k] = JSON.parse(JSON.stringify(DEFAULT_LAYOUT[k]));
+      if (typeof saved[k].visible !== 'boolean') saved[k].visible = true;
+    });
+    return saved;
+  } catch (e) { return JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); }
+}
+
+function saveLayout() {
+  try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layoutState)); } catch (e) {}
+}
+
+var layoutState = loadLayout();
+
+function applyLayout() {
+  var leftEl   = document.getElementById('hdColLeft');
+  var centerEl = document.getElementById('hdColCenter');
+  var rightEl  = document.getElementById('hdColRight');
+  var rLC      = document.getElementById('hdResizerLC');
+  var rCR      = document.getElementById('hdResizerCR');
+  if (!leftEl || !centerEl || !rightEl) return;
+
+  leftEl.classList.toggle('is-hidden',   !layoutState.left.visible);
+  centerEl.classList.toggle('is-hidden', !layoutState.center.visible);
+  rightEl.classList.toggle('is-hidden',  !layoutState.right.visible);
+
+  rLC.classList.toggle('is-hidden', !(layoutState.left.visible  && (layoutState.center.visible || layoutState.right.visible)));
+  rCR.classList.toggle('is-hidden', !(layoutState.right.visible && (layoutState.center.visible || layoutState.left.visible)));
+
+  // Clamp persisted widths to the current viewport so a saved layout from a wider monitor
+  // doesn't leave the side columns stuck off-screen.
+  var maxW = Math.min(600, Math.max(280, window.innerWidth - 320));
+  layoutState.left.width  = Math.max(260, Math.min(maxW, layoutState.left.width  || 360));
+  layoutState.right.width = Math.max(280, Math.min(maxW, layoutState.right.width || 380));
+  leftEl.style.width  = layoutState.left.width  + 'px';
+  rightEl.style.width = layoutState.right.width + 'px';
+
+  document.querySelectorAll('[data-toggle-col]').forEach(function(btn) {
+    btn.classList.toggle('is-on', !!layoutState[btn.dataset.toggleCol].visible);
+  });
+}
+
+document.querySelectorAll('[data-toggle-col]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var col = btn.dataset.toggleCol;
+    layoutState[col].visible = !layoutState[col].visible;
+    var visibleCount = ['left','center','right'].filter(function(k){ return layoutState[k].visible; }).length;
+    if (visibleCount === 0) {
+      layoutState[col].visible = true;
+      showAlert('error', 'Pelo menos uma coluna precisa ficar visível.');
+      return;
+    }
+    applyLayout();
+    saveLayout();
+  });
+});
+
+document.getElementById('resetLayoutBtn').addEventListener('click', function() {
+  layoutState = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+  applyLayout();
+  saveLayout();
+});
+
+function startResize(e, handle) {
+  e.preventDefault();
+  try { handle.setPointerCapture && handle.setPointerCapture(e.pointerId); } catch (_) {}
+  handle.classList.add('dragging');
+  var direction = handle.dataset.resize;
+  var startX = e.clientX;
+  var leftCol = document.getElementById('hdColLeft');
+  var rightCol = document.getElementById('hdColRight');
+  var startLeftW  = leftCol.offsetWidth;
+  var startRightW = rightCol.offsetWidth;
+
+  function onMove(ev) {
+    var delta = ev.clientX - startX;
+    var maxW = Math.min(600, window.innerWidth - 320);
+    if (direction === 'left-center') {
+      var w = Math.max(260, Math.min(maxW, startLeftW + delta));
+      leftCol.style.width = w + 'px';
+      layoutState.left.width = w;
+    } else {
+      var w = Math.max(280, Math.min(maxW, startRightW - delta));
+      rightCol.style.width = w + 'px';
+      layoutState.right.width = w;
+    }
+  }
+  function onUp() {
+    handle.classList.remove('dragging');
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    saveLayout();
+  }
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.body.style.userSelect = 'none';
+  document.body.style.cursor = 'col-resize';
+}
+
+document.querySelectorAll('.hd-resizer').forEach(function(h) {
+  h.addEventListener('pointerdown', function(e) { startResize(e, h); });
+});
+
+applyLayout();
 
 </script>
 </body>

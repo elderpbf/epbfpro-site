@@ -43,6 +43,60 @@
     @media (max-height: 600px) {
       pensoia-header .ph-bar { padding: 4px 16px; }
     }
+
+    /* Promoted student Q&A on display — renders in the same slot as instructor questions */
+    .cp-qa-student {
+      display: none;
+      flex: 1; min-height: 0;
+      width: 100%;
+      padding: clamp(24px, 3vh, 44px) clamp(20px, 3vw, 48px);
+      background: rgba(245,158,11,0.06);
+      border: 1px solid rgba(245,158,11,0.4);
+      border-radius: 16px;
+    }
+    .cp-qa-student.is-active { display: flex; flex-direction: column; justify-content: center; }
+    .cp-qa-student .cp-qa-student-label {
+      font-size: clamp(0.82rem, 1.25vw, 1rem);
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #b45309;
+      margin-bottom: 10px;
+    }
+    .cp-qa-student .cp-qa-student-name {
+      font-size: clamp(0.9rem, 1.4vw, 1.15rem);
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+    }
+    .cp-qa-student .cp-qa-student-text {
+      font-size: clamp(1.6rem, 3vw, 2.6rem);
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+    .cp-qa-student .cp-qa-student-answer-wrap {
+      display: none;
+      margin-top: 22px;
+      padding: 16px 22px;
+      background: rgba(245,158,11,0.08);
+      border-left: 4px solid #b45309;
+      border-radius: 0 14px 14px 0;
+    }
+    .cp-qa-student .cp-qa-student-answer-wrap.is-visible { display: block; }
+    .cp-qa-student .cp-qa-student-answer-label {
+      font-size: clamp(0.72rem, 1vw, 0.85rem);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #b45309;
+      margin-bottom: 8px;
+    }
+    .cp-qa-student .cp-qa-student-answer {
+      font-size: clamp(1.1rem, 1.9vw, 1.5rem);
+      line-height: 1.45;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
@@ -50,9 +104,18 @@
   <pensoia-header mode="display" theme-storage-key="bs_theme_public"></pensoia-header>
 
   <div class="main" id="main-content">
-    <div class="center-state">
+    <div class="center-state" id="center-state">
       <span class="state-icon">&#8987;</span>
       <span class="state-text">Carregando...</span>
+    </div>
+    <div id="qa-student-card" class="cp-qa-student">
+      <div class="cp-qa-student-label">Pergunta do aluno</div>
+      <div class="cp-qa-student-name" id="qa-student-name"></div>
+      <div class="cp-qa-student-text" id="qa-student-text"></div>
+      <div id="qa-student-answer-wrap" class="cp-qa-student-answer-wrap">
+        <div class="cp-qa-student-answer-label">Resposta</div>
+        <div class="cp-qa-student-answer" id="qa-student-answer"></div>
+      </div>
     </div>
   </div>
 
@@ -63,8 +126,8 @@
 
 <script src="../backstage/js/utils.js?v=1.0"></script>
 <script src="../backstage/js/api-client.js?v=1.1"></script>
-<script src="../backstage/js/question-renderer.js?v=2.3"></script>
-<script src="../backstage/js/classpulse-question.min.js?v=1.7"></script>
+<script src="../backstage/js/question-renderer.js?v=2.5"></script>
+<script src="../backstage/js/classpulse-question.min.js?v=1.8"></script>
 <script src="../backstage/js/theme-manager.js?v=1.1"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
 <script>
@@ -109,18 +172,45 @@
   } else {
     headerEl.setAttribute('code', sessionCode);
     const mainEl = document.getElementById('main-content');
-    mainEl.innerHTML = '';
+    const centerState = document.getElementById('center-state');
+    if (centerState) centerState.remove();
     const cpq = document.createElement('classpulse-question');
     cpq.id = 'cpq';
     cpq.setAttribute('mode', 'display');
     cpq.setAttribute('session', sessionCode);
-    mainEl.appendChild(cpq);
+    mainEl.insertBefore(cpq, document.getElementById('qa-student-card'));
 
     cpq.addEventListener('cpq-data', (e) => {
-      if (e.detail && e.detail.session) {
+      if (!e.detail) return;
+      if (e.detail.session) {
         headerEl.setAttribute('session-title', e.detail.session.title);
       }
+      renderStudentQA(e.detail, cpq);
     });
+  }
+
+  function renderStudentQA(data, cpq) {
+    const card = document.getElementById('qa-student-card');
+    if (!card) return;
+    const aq = data.active_question;
+    const isStudentQA = aq && aq.type === 'student_qa';
+    if (!isStudentQA) {
+      card.classList.remove('is-active');
+      if (cpq) cpq.style.display = '';
+      return;
+    }
+    if (cpq) cpq.style.display = 'none';
+    document.getElementById('qa-student-name').textContent = aq.student_name || '';
+    document.getElementById('qa-student-text').textContent = aq.text || '';
+    const ansWrap = document.getElementById('qa-student-answer-wrap');
+    const ansText = (aq.student_answer || '').trim();
+    if (ansText) {
+      document.getElementById('qa-student-answer').textContent = aq.student_answer;
+      ansWrap.classList.add('is-visible');
+    } else {
+      ansWrap.classList.remove('is-visible');
+    }
+    card.classList.add('is-active');
   }
 
   document.addEventListener('visibilitychange', () => { 

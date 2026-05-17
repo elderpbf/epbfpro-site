@@ -11,35 +11,57 @@
     canReveal: true,
     canShowResults: true,
     aiGenSupported: true,
+    canMultiSelect: true,
     usesTextAnswers: false,
     setupForm: function(els) {
       els.mcRows.forEach(function(row) { row.style.display = ''; });
-      els.mcRadios.forEach(function(el) { el.style.display = ''; });
+      var maxSel = els.mcMaxSelect ? parseInt(els.mcMaxSelect.value) : 1;
+      var isMulti = Number.isInteger(maxSel) && maxSel !== 1;
+      els.mcRadios.forEach(function(el) {
+        el.style.display = '';
+        var inp = el.querySelector('input[type="radio"],input[type="checkbox"]');
+        if (inp) inp.type = isMulti ? 'checkbox' : 'radio';
+      });
     },
     readForm: function(els) {
       var opts = [els.optA.value.trim(), els.optB.value.trim(), els.optC.value.trim(), els.optD.value.trim()].filter(Boolean);
       if (opts.length < 2) return { error: 'Informe pelo menos 2 opções.' };
-      var caEl = document.querySelector('input[name="correct"]:checked');
-      var ca = caEl ? ['a','b','c','d'].indexOf(caEl.value) : null;
-      if (ca !== null && ca >= opts.length) ca = null;
-      return { options: opts, correct_answer: ca };
+      var maxSel = els.mcMaxSelect ? parseInt(els.mcMaxSelect.value) : 1;
+      if (!Number.isInteger(maxSel) || maxSel < 0) return { error: 'Seleções por aluno inválido.' };
+      if (maxSel > opts.length) return { error: 'Seleções por aluno maior que o número de opções.' };
+      var isMulti = maxSel !== 1;
+      var ca;
+      if (isMulti) {
+        var checked = Array.prototype.slice.call(document.querySelectorAll('input[name="correct"]:checked'));
+        ca = checked.map(function(el) { return ['a','b','c','d'].indexOf(el.value); }).filter(function(i) { return i !== -1 && i < opts.length; });
+        if (ca.length === 0) ca = [];
+      } else {
+        var caEl = document.querySelector('input[name="correct"]:checked');
+        ca = caEl ? ['a','b','c','d'].indexOf(caEl.value) : null;
+        if (ca !== null && ca >= opts.length) ca = null;
+      }
+      return { options: opts, correct_answer: ca, max_select: maxSel };
     },
     restoreForm: function(els, q) {
       var opts = q.options || [];
       ['optA','optB','optC','optD'].forEach(function(k, i) { els[k].value = opts[i] || ''; });
+      var maxSel = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select) : 1;
+      if (els.mcMaxSelect) els.mcMaxSelect.value = maxSel;
+      R.mc.setupForm(els);
       els.correctRadios.forEach(function(r) { r.checked = false; });
-      var ca = q.correct_answer;
-      if (ca !== null && ca !== undefined && ca !== '') {
-        var idx = parseInt(ca, 10);
-        if (!isNaN(idx) && idx >= 0 && idx < 4) {
-          var radio = document.querySelector('input[name="correct"][value="' + ['a','b','c','d'][idx] + '"]');
-          if (radio) radio.checked = true;
+      var correctAnswers = Array.isArray(q.correct_answers) ? q.correct_answers
+        : (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '' ? [parseInt(q.correct_answer)] : []);
+      correctAnswers.forEach(function(idx) {
+        if (idx >= 0 && idx < 4) {
+          var inp = document.querySelector('input[name="correct"][value="' + ['a','b','c','d'][idx] + '"]');
+          if (inp) inp.checked = true;
         }
-      }
+      });
     },
     clearForm: function(els) {
       ['optA','optB','optC','optD'].forEach(function(k) { els[k].value = ''; });
       els.correctRadios.forEach(function(r) { r.checked = false; });
+      if (els.mcMaxSelect) els.mcMaxSelect.value = 1;
     }
   };
 
@@ -89,6 +111,7 @@
     canReveal: false,
     canShowResults: true,
     aiGenSupported: true,
+    canMultiSelect: true,
     usesTextAnswers: false,
     setupForm: function(els) {
       if (els.pollRows.children.length === 0) els.initPollRows(2);
@@ -97,16 +120,22 @@
       var inputs = els.pollRows.querySelectorAll('.host-input');
       var opts = Array.prototype.map.call(inputs, function(i) { return i.value.trim(); }).filter(Boolean);
       if (opts.length < 2) return { error: 'Informe pelo menos 2 opções.' };
-      return { options: opts, correct_answer: null };
+      var maxSel = els.pollMaxSelect ? parseInt(els.pollMaxSelect.value) : 1;
+      if (!Number.isInteger(maxSel) || maxSel < 0) return { error: 'Seleções por aluno inválido.' };
+      if (maxSel > opts.length) return { error: 'Seleções por aluno maior que o número de opções.' };
+      return { options: opts, correct_answer: null, max_select: maxSel };
     },
     restoreForm: function(els, q) {
       var opts = q.options || [];
       els.initPollRows(opts.length || 2);
       var inputs = els.pollRows.querySelectorAll('.host-input');
       Array.prototype.forEach.call(inputs, function(inp, i) { inp.value = opts[i] || ''; });
+      var maxSel = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select) : 1;
+      if (els.pollMaxSelect) els.pollMaxSelect.value = maxSel;
     },
     clearForm: function(els) {
       els.pollRows.innerHTML = '';
+      if (els.pollMaxSelect) els.pollMaxSelect.value = 1;
     }
   };
 

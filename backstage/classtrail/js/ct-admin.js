@@ -10,6 +10,8 @@ window.CT_ADMIN = (function() {
   var _types = []; // [{slug, label, icon, sort_order}]
   var _tags  = []; // [{id, label, item_count}]
   var _selectedTypeFilter = null; // null = "Todos"
+  var _selectMode = false;
+  var _selectedIds = new Set();
   var _relAllItems = [];           // items pulled from ct_list_items
   var _relReleased = [];           // ordered array of released item IDs
   var _relClientSlug = null;
@@ -681,7 +683,19 @@ window.CT_ADMIN = (function() {
       var setBadge = item.set_id
         ? '<span class="ct-set-badge" title="Item faz parte do conteúdo importado; edições manuais podem ser sobrescritas em sincronizações futuras.">Conteúdo do curso</span>'
         : '';
-      return '<div class="ct-item-row" onclick="CT_ADMIN.openItem(' + item.id + ')">' +
+      var rowOnclick = _selectMode
+        ? 'CT_ADMIN.toggleItemSelection(' + item.id + ')'
+        : 'CT_ADMIN.openItem(' + item.id + ')';
+      var checkboxHtml = _selectMode
+        ? '<input type="checkbox" class="ct-item-checkbox"' + (_selectedIds.has(Number(item.id)) ? ' checked' : '') + ' onclick="event.stopPropagation();CT_ADMIN.toggleItemSelection(' + item.id + ')">'
+        : '';
+      var actionsHtml = _selectMode
+        ? ''
+        : '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.duplicateItem(' + item.id + ')" title="Duplicar item">Duplicar</button>' +
+          '<button class="ct-btn ct-btn-sm ct-btn-danger" onclick="event.stopPropagation();CT_ADMIN.deleteItem(' + item.id + ')">Excluir</button>';
+      var rowSelectedClass = _selectedIds.has(Number(item.id)) ? ' ct-item-row-selected' : '';
+      return '<div class="ct-item-row' + rowSelectedClass + '" data-item-id="' + item.id + '" onclick="' + rowOnclick + '">' +
+        checkboxHtml +
         '<span class="ct-item-type-icon">' + meta.icon + '</span>' +
         '<div class="ct-item-info">' +
           '<div class="ct-item-title">' + _esc(item.title) + setBadge + '</div>' +
@@ -690,9 +704,38 @@ window.CT_ADMIN = (function() {
           '</div>' +
           tagsHtml +
         '</div>' +
-        '<button class="ct-btn ct-btn-sm ct-btn-danger" onclick="event.stopPropagation();CT_ADMIN.deleteItem(' + item.id + ')">Excluir</button>' +
+        actionsHtml +
       '</div>';
     }).join('');
+  }
+
+  function _removeItemFromDom(id) {
+    var idStr = String(id);
+    var row = document.querySelector('.ct-item-row[data-item-id="' + idStr + '"]');
+    if (row && row.parentNode) row.parentNode.removeChild(row);
+    var libraryItems = _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo'; });
+    _renderItemsFilter(libraryItems);
+    var grid = document.getElementById('items-list');
+    if (grid && grid.children.length === 0) {
+      var filtered = CT_TYPE_FILTER.apply(libraryItems, _selectedTypeFilter);
+      grid.innerHTML = !libraryItems.length
+        ? '<div class="ct-empty">Nenhum item na biblioteca.</div>'
+        : (filtered.length ? '' : '<div class="ct-empty">Nenhum item neste filtro.</div>');
+    }
+  }
+
+  function _updateBulkBar() {
+    var bar = document.getElementById('items-bulk-bar');
+    var btn = document.getElementById('btn-select-mode');
+    if (!bar || !btn) return;
+    bar.style.display = _selectMode ? 'flex' : 'none';
+    btn.textContent = _selectMode ? 'Sair da seleção' : 'Selecionar';
+    if (_selectMode) {
+      var count = _selectedIds.size;
+      document.getElementById('items-bulk-count').textContent = count + ' selecionado(s)';
+      var delBtn = document.getElementById('btn-bulk-delete');
+      if (delBtn) delBtn.disabled = count === 0;
+    }
   }
 
   function _renderItemsFilter(itemsSubset) {
@@ -1031,6 +1074,8 @@ window.CT_ADMIN = (function() {
     var initialTagIds = Array.isArray(src.tag_ids)
       ? src.tag_ids
       : (isEdit && Array.isArray(item.tags) ? item.tags.map(function(t) { return t.id; }) : []);
+    var initialAudience = (src.audience != null ? src.audience : (isEdit && item.audience ? item.audience : 'public'));
+    if (initialAudience !== 'public' && initialAudience !== 'vault_only') initialAudience = 'public';
 
     var refazerBtn = aiContext
       ? '<button class="ct-btn" id="ie-refazer-btn" type="button">&#9889; Refazer com IA</button>'
@@ -1053,6 +1098,24 @@ window.CT_ADMIN = (function() {
         '</div>' +
         '<div class="ct-field"><label>Tags</label>' +
           '<div class="ct-tag-picker" id="ie-tag-picker"></div>' +
+        '</div>' +
+        '<div class="ct-field"><label>Audiência</label>' +
+          '<div class="ct-audience-picker">' +
+            '<label class="ct-audience-opt">' +
+              '<input type="radio" name="ie-audience" value="public"' + (initialAudience === 'public' ? ' checked' : '') + '>' +
+              '<span class="ct-audience-opt-text">' +
+                '<span class="ct-audience-opt-label">Pública</span>' +
+                '<span class="ct-audience-opt-hint">aparece na trilha do aluno</span>' +
+              '</span>' +
+            '</label>' +
+            '<label class="ct-audience-opt">' +
+              '<input type="radio" name="ie-audience" value="vault_only"' + (initialAudience === 'vault_only' ? ' checked' : '') + '>' +
+              '<span class="ct-audience-opt-text">' +
+                '<span class="ct-audience-opt-label">Vault only</span>' +
+                '<span class="ct-audience-opt-hint">só visível no ClassVault do professor</span>' +
+              '</span>' +
+            '</label>' +
+          '</div>' +
         '</div>' +
         '<div id="ie-type-block"></div>' +
       '</div>' +
@@ -1179,6 +1242,9 @@ window.CT_ADMIN = (function() {
       var body_md = typeData.body_md;
       var meta_json = typeData.meta_json;
 
+      var audienceEl = bd.querySelector('input[name="ie-audience"]:checked');
+      var audience = audienceEl ? audienceEl.value : 'public';
+
       var action = isEdit ? 'ct_update_item' : 'ct_create_item';
       var params = {
         action: action,
@@ -1187,7 +1253,8 @@ window.CT_ADMIN = (function() {
         summary: summary || null,
         body_md: body_md,
         meta_json: meta_json ? JSON.stringify(meta_json) : null,
-        tag_ids: Array.from(selectedTagIds)
+        tag_ids: Array.from(selectedTagIds),
+        audience: audience
       };
       if (isEdit) params.id = item.id;
 
@@ -2865,6 +2932,15 @@ window.CT_ADMIN = (function() {
       if (newTarefaBtn) newTarefaBtn.addEventListener('click', _openNewTarefaModal);
       var manageTagsBtn = document.getElementById('btn-manage-tags');
       if (manageTagsBtn) manageTagsBtn.addEventListener('click', _openTagManager);
+      var selectModeBtn = document.getElementById('btn-select-mode');
+      if (selectModeBtn) selectModeBtn.addEventListener('click', function() {
+        if (_selectMode) CT_ADMIN.exitSelectMode();
+        else CT_ADMIN.enterSelectMode();
+      });
+      var bulkDeleteBtn = document.getElementById('btn-bulk-delete');
+      if (bulkDeleteBtn) bulkDeleteBtn.addEventListener('click', function() { CT_ADMIN.bulkDeleteItems(); });
+      var bulkCancelBtn = document.getElementById('btn-bulk-cancel');
+      if (bulkCancelBtn) bulkCancelBtn.addEventListener('click', function() { CT_ADMIN.exitSelectMode(); });
       var importGdocBtn = document.getElementById('btn-import-gdoc');
       if (importGdocBtn) importGdocBtn.addEventListener('click', function() {
         _openGdocIngestModal(function() {
@@ -2937,24 +3013,82 @@ window.CT_ADMIN = (function() {
 
     deleteItem: function(id) {
       if (!confirm('Excluir este item? Ele será removido de todas as turmas onde está liberado.')) return;
-      // Optimistic delete: remove from local cache and re-render without
-      // round-tripping ct_list_items. Worker DELETE still runs in the
-      // background; if it fails, we restore and toast the error.
+      // Optimistic surgical delete: remove from local cache + DOM node, no
+      // full re-render (avoids the screen flash on every delete).
       var idNum = Number(id);
       var idx = _items.findIndex(function(it) { return Number(it.id) === idNum; });
       var snapshot = idx >= 0 ? _items[idx] : null;
       if (idx >= 0) {
         _items.splice(idx, 1);
-        _renderItems();
+        _removeItemFromDom(idNum);
       }
       callWorker({ action: 'ct_delete_item', id: id, _silent: true }).then(function() {
         _toast('Item excluído.');
       }).catch(function(err) {
-        if (snapshot && idx >= 0) {
+        if (snapshot) {
           _items.splice(idx, 0, snapshot);
           _renderItems();
         }
         _toast('Erro: ' + (err.message || err));
+      });
+    },
+
+    duplicateItem: function(id) {
+      callWorker({ action: 'ct_duplicate_item', id: id, _silent: true }).then(function(data) {
+        if (data && data.item) {
+          _items.push(data.item);
+          _renderItems();
+          _toast('Item duplicado.');
+        }
+      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    },
+
+    enterSelectMode: function() {
+      _selectMode = true;
+      _selectedIds.clear();
+      _renderItems();
+      _updateBulkBar();
+    },
+
+    exitSelectMode: function() {
+      _selectMode = false;
+      _selectedIds.clear();
+      _renderItems();
+      _updateBulkBar();
+    },
+
+    toggleItemSelection: function(id) {
+      var idNum = Number(id);
+      if (_selectedIds.has(idNum)) _selectedIds.delete(idNum);
+      else _selectedIds.add(idNum);
+      var row = document.querySelector('.ct-item-row[data-item-id="' + idNum + '"]');
+      if (row) {
+        row.classList.toggle('ct-item-row-selected', _selectedIds.has(idNum));
+        var cb = row.querySelector('.ct-item-checkbox');
+        if (cb) cb.checked = _selectedIds.has(idNum);
+      }
+      _updateBulkBar();
+    },
+
+    bulkDeleteItems: function() {
+      var ids = Array.from(_selectedIds);
+      if (!ids.length) { _toast('Nenhum item selecionado.'); return; }
+      if (!confirm('Excluir ' + ids.length + ' item(ns)? Eles serão removidos de todas as turmas onde estão liberados.')) return;
+      // Optimistic: remove from cache + DOM surgically
+      ids.forEach(function(id) {
+        var idNum = Number(id);
+        var idx = _items.findIndex(function(it) { return Number(it.id) === idNum; });
+        if (idx >= 0) _items.splice(idx, 1);
+        _removeItemFromDom(idNum);
+      });
+      _selectedIds.clear();
+      _selectMode = false;
+      _updateBulkBar();
+      callWorker({ action: 'ct_delete_items_bulk', ids: ids, _silent: true }).then(function() {
+        _toast(ids.length + ' item(ns) excluído(s).');
+      }).catch(function(err) {
+        _toast('Erro: ' + (err.message || err));
+        _loadItems();
       });
     },
 
