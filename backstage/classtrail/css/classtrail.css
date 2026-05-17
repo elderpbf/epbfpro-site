@@ -825,25 +825,7 @@
 
 /* ----- Notification toast ----- */
 
-.ct-toast {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  padding: 0.7rem 1.1rem;
-  border-radius: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: 0 6px 24px var(--shadow);
-  font-size: 0.88rem;
-  color: var(--text-primary);
-  z-index: 999;
-  animation: ct-toast-in 0.25s ease;
-}
-
-@keyframes ct-toast-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* Toast moved to shared-components.css as .bs-toast (BSToast.show). */
 
 /* ----- Type filter chips (shared with student page) ----- */
 
@@ -902,6 +884,47 @@
 }
 
 .ct-tf-chip.active .ct-tf-count {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ----- Items grid: type filter row + audience chip ----- */
+.ct-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.ct-filter-types { flex: 1; min-width: 0; }
+.ct-audience-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.ct-audience-chip:hover { border-color: rgba(20,184,166,.5); }
+.ct-audience-chip.is-active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.ct-audience-chip-count {
+  font-size: 0.74rem;
+  opacity: 0.75;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.ct-audience-chip.is-active .ct-audience-chip-count {
   background: rgba(255, 255, 255, 0.22);
 }
 
@@ -1115,6 +1138,25 @@
 }
 
 .ct-set-badge[title] { cursor: help; }
+
+.ct-vault-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.08);
+  color: rgba(99, 102, 241, 1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  margin-left: 6px;
+  cursor: default;
+  vertical-align: middle;
+}
+.ct-vault-badge[title] { cursor: help; }
 
 /* ----- Aula picker in release row ----- */
 

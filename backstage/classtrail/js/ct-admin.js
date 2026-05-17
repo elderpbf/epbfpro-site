@@ -10,6 +10,7 @@ window.CT_ADMIN = (function() {
   var _types = []; // [{slug, label, icon, sort_order}]
   var _tags  = []; // [{id, label, item_count}]
   var _selectedTypeFilter = null; // null = "Todos"
+  var _filterVaultOnly = false;   // toggle: when true, items grid shows only audience='vault_only'
   var _selectMode = false;
   var _selectedIds = new Set();
   var _relAllItems = [];           // items pulled from ct_list_items
@@ -34,12 +35,10 @@ window.CT_ADMIN = (function() {
     return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   }
 
+  // Thin alias over the shared BSToast.show (Site/backstage/js/bs-toast.js).
+  // Kept local because ~80 callsites in this file use `_toast(...)`.
   function _toast(msg, duration) {
-    var t = document.createElement('div');
-    t.className = 'ct-toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, duration || 2500);
+    if (window.BSToast && window.BSToast.show) window.BSToast.show(msg, duration);
   }
 
   function _baseUrl() {
@@ -62,20 +61,6 @@ window.CT_ADMIN = (function() {
     var t = _types.find(function(x) { return x.slug === slug; });
     if (t) return { label: t.label, icon: t.icon || TYPE_ICON_FALLBACK[slug] || '📄' };
     return { label: slug || 'item', icon: TYPE_ICON_FALLBACK[slug] || '📄' };
-  }
-
-  function _renderTypeOptions(selectedSlug) {
-    var opts = _types.map(function(t) {
-      var sel = t.slug === selectedSlug ? ' selected' : '';
-      var icon = t.icon ? t.icon + ' ' : '';
-      return '<option value="' + _esc(t.slug) + '"' + sel + '>' + _esc(icon + t.label) + '</option>';
-    }).join('');
-    // Preserve unregistered types so opening an item with type='material' (etc.)
-    // doesn't silently downgrade to the first registered type on save.
-    if (selectedSlug && !_types.find(function(t) { return t.slug === selectedSlug; })) {
-      opts = '<option value="' + _esc(selectedSlug) + '" selected>' + _esc(selectedSlug) + ' (não registrado)</option>' + opts;
-    }
-    return opts + '<option value="__new__">+ Criar novo tipo...</option>';
   }
 
   function _turmaUrl(clientSlug, turmaSlug, token) {
@@ -668,6 +653,9 @@ window.CT_ADMIN = (function() {
       el.innerHTML = '<div class="ct-empty">Nenhum item na biblioteca.</div>';
       return;
     }
+    if (_filterVaultOnly) {
+      libraryItems = libraryItems.filter(function(it) { return it.audience === 'vault_only'; });
+    }
     var filtered = CT_TYPE_FILTER.apply(libraryItems, _selectedTypeFilter);
     if (!filtered.length) {
       el.innerHTML = '<div class="ct-empty">Nenhum item neste filtro.</div>';
@@ -683,22 +671,31 @@ window.CT_ADMIN = (function() {
       var setBadge = item.set_id
         ? '<span class="ct-set-badge" title="Item faz parte do conteúdo importado; edições manuais podem ser sobrescritas em sincronizações futuras.">Conteúdo do curso</span>'
         : '';
+      var isVault = item.audience === 'vault_only';
+      var vaultBadge = isVault
+        ? '<span class="ct-vault-badge" title="Audience vault_only — só aparece no PensoCodex do professor, nunca na trilha do aluno.">🔒 Vault</span>'
+        : '';
       var rowOnclick = _selectMode
         ? 'CT_ADMIN.toggleItemSelection(' + item.id + ')'
         : 'CT_ADMIN.openItem(' + item.id + ')';
       var checkboxHtml = _selectMode
         ? '<input type="checkbox" class="ct-item-checkbox"' + (_selectedIds.has(Number(item.id)) ? ' checked' : '') + ' onclick="event.stopPropagation();CT_ADMIN.toggleItemSelection(' + item.id + ')">'
         : '';
+      var moveBtnLabel = isVault ? '→ Trilha' : '→ Vault';
+      var moveBtnTitle = isVault
+        ? 'Promover para Trilha (audience=public; passa a aparecer na trilha do aluno).'
+        : 'Mover para PensoCodex (audience=vault_only; remove da trilha do aluno).';
       var actionsHtml = _selectMode
         ? ''
-        : '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.duplicateItem(' + item.id + ')" title="Duplicar item">Duplicar</button>' +
+        : '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.toggleItemAudience(' + item.id + ')" title="' + _esc(moveBtnTitle) + '">' + moveBtnLabel + '</button>' +
+          '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.duplicateItem(' + item.id + ')" title="Duplicar item">Duplicar</button>' +
           '<button class="ct-btn ct-btn-sm ct-btn-danger" onclick="event.stopPropagation();CT_ADMIN.deleteItem(' + item.id + ')">Excluir</button>';
       var rowSelectedClass = _selectedIds.has(Number(item.id)) ? ' ct-item-row-selected' : '';
       return '<div class="ct-item-row' + rowSelectedClass + '" data-item-id="' + item.id + '" onclick="' + rowOnclick + '">' +
         checkboxHtml +
         '<span class="ct-item-type-icon">' + meta.icon + '</span>' +
         '<div class="ct-item-info">' +
-          '<div class="ct-item-title">' + _esc(item.title) + setBadge + '</div>' +
+          '<div class="ct-item-title">' + _esc(item.title) + setBadge + vaultBadge + '</div>' +
           '<div class="ct-item-sub">' + _esc(meta.label) +
             ' · ' + new Date(item.updated_at * 1000).toLocaleDateString('pt-BR') +
           '</div>' +
@@ -743,8 +740,13 @@ window.CT_ADMIN = (function() {
     if (!fc) return;
     var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo'; });
     if (!items.length) { fc.innerHTML = ''; return; }
+    fc.innerHTML =
+      '<div class="ct-filter-row">' +
+        '<div id="ct-type-filter-host" class="ct-filter-types"></div>' +
+        _renderVaultOnlyChip() +
+      '</div>';
     CT_TYPE_FILTER.render({
-      container:    fc,
+      container:    fc.querySelector('#ct-type-filter-host'),
       types:        _types,
       items:        items,
       selectedSlug: _selectedTypeFilter,
@@ -753,6 +755,21 @@ window.CT_ADMIN = (function() {
         _renderItems();
       }
     });
+    var vaultBtn = fc.querySelector('.ct-audience-chip');
+    if (vaultBtn) vaultBtn.addEventListener('click', function() {
+      _filterVaultOnly = !_filterVaultOnly;
+      _renderItems();
+    });
+  }
+
+  function _renderVaultOnlyChip() {
+    var count = _items.filter(function(it) {
+      return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo' && it.audience === 'vault_only';
+    }).length;
+    var active = _filterVaultOnly ? ' is-active' : '';
+    return '<button type="button" class="ct-audience-chip' + active + '">' +
+      '🔒 Vault only <span class="ct-audience-chip-count">' + count + '</span>' +
+    '</button>';
   }
 
   // ---- GDoc ingest button + modal ----
@@ -1065,500 +1082,26 @@ window.CT_ADMIN = (function() {
 
   function _openItemEditorFull(item, prefill, aiContext) {
     var isEdit = !!item;
-    var src = prefill || item || {};
-    var initialType = src.type || (isEdit ? item.type : null) || (_types[0] && _types[0].slug) || 'prompt';
-    var initialTitle   = src.title   != null ? src.title   : '';
-    var initialSummary = src.summary != null ? src.summary : '';
-    var initialBody    = src.body_md != null ? src.body_md : '';
-    var initialMeta    = (isEdit && item.meta_json) ? (typeof item.meta_json === 'string' ? JSON.parse(item.meta_json) : item.meta_json) : {};
-    var initialTagIds = Array.isArray(src.tag_ids)
-      ? src.tag_ids
-      : (isEdit && Array.isArray(item.tags) ? item.tags.map(function(t) { return t.id; }) : []);
-    var initialAudience = (src.audience != null ? src.audience : (isEdit && item.audience ? item.audience : 'public'));
-    if (initialAudience !== 'public' && initialAudience !== 'vault_only') initialAudience = 'public';
-
-    var refazerBtn = aiContext
-      ? '<button class="ct-btn" id="ie-refazer-btn" type="button">&#9889; Refazer com IA</button>'
-      : '';
-
-    var html = '<div class="ct-editor">' +
-      '<div class="ct-editor-header">' +
-        '<span class="ct-editor-title">' + (isEdit ? 'Editar item' : 'Novo item · 2 de 2') + '</span>' +
-        '<button class="ct-btn ct-btn-sm" id="ie-close">Fechar</button>' +
-      '</div>' +
-      '<div class="ct-editor-body">' +
-        '<div class="ct-field"><label>Título</label>' +
-          '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="Título do item">' +
-        '</div>' +
-        '<div class="ct-field"><label>Tipo</label>' +
-          '<select id="ie-type">' + _renderTypeOptions(initialType) + '</select>' +
-        '</div>' +
-        '<div class="ct-field"><label>Resumo</label>' +
-          '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="Uma linha descrevendo o item">' +
-        '</div>' +
-        '<div class="ct-field"><label>Tags</label>' +
-          '<div class="ct-tag-picker" id="ie-tag-picker"></div>' +
-        '</div>' +
-        '<div class="ct-field"><label>Audiência</label>' +
-          '<div class="ct-audience-picker">' +
-            '<label class="ct-audience-opt">' +
-              '<input type="radio" name="ie-audience" value="public"' + (initialAudience === 'public' ? ' checked' : '') + '>' +
-              '<span class="ct-audience-opt-text">' +
-                '<span class="ct-audience-opt-label">Pública</span>' +
-                '<span class="ct-audience-opt-hint">aparece na trilha do aluno</span>' +
-              '</span>' +
-            '</label>' +
-            '<label class="ct-audience-opt">' +
-              '<input type="radio" name="ie-audience" value="vault_only"' + (initialAudience === 'vault_only' ? ' checked' : '') + '>' +
-              '<span class="ct-audience-opt-text">' +
-                '<span class="ct-audience-opt-label">Vault only</span>' +
-                '<span class="ct-audience-opt-hint">só visível no ClassVault do professor</span>' +
-              '</span>' +
-            '</label>' +
-          '</div>' +
-        '</div>' +
-        '<div id="ie-type-block"></div>' +
-      '</div>' +
-      '<div class="ct-editor-footer">' +
-        '<div class="ct-modal-actions">' +
-          '<button class="ct-btn" id="ie-cancel">Cancelar</button>' +
-          refazerBtn +
-          '<button class="ct-btn ct-btn-primary" id="ie-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-
-    var bd = _openModal(html, { disableBackdropClose: true });
-    var selectedTagIds = new Set(initialTagIds);
-
-    // Pending file for asset upload (set by type-specific blocks)
-    var _pendingAssetFile = null;
-    var _pendingAssetField = null; // 'attachment_url' or 'pdf_url'
-
-    var typeSel = bd.querySelector('#ie-type');
-    var lastTypeValue = initialType;
-
-    function renderTypeBlock(typeSlug) {
-      var block = bd.querySelector('#ie-type-block');
-      block.innerHTML = _buildTypeBlock(typeSlug, initialBody, initialMeta, isEdit ? item : null);
-      _wireTypeBlockEvents(block, typeSlug, function(file, field) {
-        _pendingAssetFile = file;
-        _pendingAssetField = field;
-      });
-    }
-
-    renderTypeBlock(initialType);
-
-    typeSel.addEventListener('change', function() {
-      if (typeSel.value === '__new__') {
-        _openTypeCreateForm(function(newSlug) {
-          if (newSlug) {
-            typeSel.innerHTML = _renderTypeOptions(newSlug);
-            lastTypeValue = newSlug;
-            renderTypeBlock(newSlug);
-          } else {
-            typeSel.value = lastTypeValue;
-          }
-        });
-        return;
-      }
-      lastTypeValue = typeSel.value;
-      renderTypeBlock(typeSel.value);
-    });
-
-    _renderTagPicker(bd.querySelector('#ie-tag-picker'), selectedTagIds);
-
-    bd.querySelector('#ie-close').addEventListener('click', _closeModal);
-    bd.querySelector('#ie-cancel').addEventListener('click', _closeModal);
-
-    if (aiContext) {
-      bd.querySelector('#ie-refazer-btn').addEventListener('click', async function() {
-        var btn = this;
-        var prev = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '&#9889; Refazendo...';
-        try {
-          var currentTagIds = Array.from(selectedTagIds);
-          var currentTagLabels = currentTagIds.map(function(id) {
-            var t = _tags.find(function(x) { return x.id === id; });
-            return t ? t.label : null;
-          }).filter(Boolean);
-
-          var bodyEl = bd.querySelector('#ie-body');
-          var current = {
-            title:      bd.querySelector('#ie-title').value.trim(),
-            summary:    bd.querySelector('#ie-summary').value.trim(),
-            type:       bd.querySelector('#ie-type').value,
-            body_md:    bodyEl ? bodyEl.value : '',
-            tag_labels: currentTagLabels
-          };
-          var diff = CT_AI_SPEC.computeEditDiff(aiContext.firstOutput, current);
-          var systemPrompt = CT_AI_SPEC.buildRefineSystemPrompt({ addEmojis: aiContext.addEmojis });
-          var userMsg = CT_AI_SPEC.buildRefineUserMessage(aiContext.rawInput, aiContext.firstOutput, diff);
-
-          var res = await AIClient.generate({
-            action:      'ai_chat',
-            system:      systemPrompt,
-            messages:    [{ role: 'user', content: userMsg }],
-            temperature: 0.3,
-            max_tokens:  CT_AI_SPEC.MAX_TOKENS
-          });
-          if (!res || !res.text) { _toast('IA não retornou conteúdo.'); return; }
-          var parsed = CT_AI_SPEC.parseModelJson(res.text);
-          if (!parsed || !parsed.body_md) { _toast('IA retornou formato inesperado.'); return; }
-          parsed = CT_AI_SPEC.enforcePromptVerbatim(parsed, aiContext.rawInput);
-
-          aiContext.firstOutput = parsed;
-
-          bd.querySelector('#ie-title').value   = parsed.title   || '';
-          bd.querySelector('#ie-summary').value = parsed.summary || '';
-          if (parsed.type) bd.querySelector('#ie-type').value = parsed.type;
-          if (bodyEl) bodyEl.value = parsed.body_md || '';
-          var newTagIds = await _tagsByLabels(parsed.tag_labels || []);
-          selectedTagIds.clear();
-          newTagIds.forEach(function(id) { selectedTagIds.add(id); });
-          _renderTagPicker(bd.querySelector('#ie-tag-picker'), selectedTagIds);
-          var pre = bd.querySelector('#ie-preview');
-          if (pre && pre.style.display !== 'none') _renderMarkdown(parsed.body_md || '', pre);
-          _toast('Item refeito.');
-        } catch (e) {
-          _toast('Erro: ' + (e.message || e));
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = prev;
-        }
-      });
-    }
-
-    bd.querySelector('#ie-save').addEventListener('click', async function() {
-      var title = bd.querySelector('#ie-title').value.trim();
-      var type = typeSel.value;
-      if (type === '__new__') { _toast('Selecione um tipo.'); return; }
-      var summary = bd.querySelector('#ie-summary').value.trim();
-      if (!title) { _toast('Título obrigatório.'); return; }
-
-      // Collect type-specific fields
-      var typeData = _collectTypeData(bd, type);
-      var body_md = typeData.body_md;
-      var meta_json = typeData.meta_json;
-
-      var audienceEl = bd.querySelector('input[name="ie-audience"]:checked');
-      var audience = audienceEl ? audienceEl.value : 'public';
-
-      var action = isEdit ? 'ct_update_item' : 'ct_create_item';
-      var params = {
-        action: action,
-        type: type,
-        title: title,
-        summary: summary || null,
-        body_md: body_md,
-        meta_json: meta_json ? JSON.stringify(meta_json) : null,
-        tag_ids: Array.from(selectedTagIds),
-        audience: audience
-      };
-      if (isEdit) params.id = item.id;
-
-      try {
-        var saveRes = await callWorker(params);
-        var savedId = isEdit ? item.id : (saveRes && saveRes.id ? saveRes.id : saveRes && saveRes.item ? saveRes.item.id : null);
-
-        // Handle pending asset upload
-        if (_pendingAssetFile && savedId) {
-          var progressEl = bd.querySelector('.ct-upload-progress');
-          if (progressEl) progressEl.textContent = 'Enviando arquivo...';
-          var b64 = await _readFileAsBase64(_pendingAssetFile);
-          var uploadRes = await callWorker({
-            action: 'ct_upload_asset',
-            item_id: savedId,
-            filename: _pendingAssetFile.name,
-            content_b64: b64
-          });
-          var assetUrl = uploadRes && uploadRes.url;
-          if (assetUrl && _pendingAssetField) {
-            var updatedMeta = Object.assign({}, meta_json || {});
-            updatedMeta[_pendingAssetField] = assetUrl;
-            await callWorker({
-              action: 'ct_update_item',
-              id: savedId,
-              meta_json: JSON.stringify(updatedMeta)
-            });
-          }
-          if (progressEl) progressEl.textContent = '';
-          var filenameEl = bd.querySelector('.ct-upload-filename');
-          if (filenameEl) filenameEl.textContent = _pendingAssetFile.name;
-        }
-
+    var bd = _openModal('<div class="ct-modal-body"></div>', { disableBackdropClose: true });
+    CTItemForm.mount(bd, {
+      item: item,
+      prefill: prefill,
+      aiContext: aiContext,
+      types: _types,
+      tags: _tags,
+      defaultAudience: 'public',
+      titleLabel: isEdit ? 'Editar item' : 'Novo item · 2 de 2',
+      saveLabel: isEdit ? 'Salvar' : 'Criar',
+      closeLabel: 'Fechar',
+      onCreateType: _openTypeCreateForm,
+      onSave: function() {
         _closeModal();
         _toast(isEdit ? 'Item atualizado.' : 'Item criado.');
         _loadItems({ silent: true });
         _loadTags();
-      } catch (err) {
-        _toast('Erro: ' + (err.message || err));
-      }
+      },
+      onCancel: _closeModal
     });
-  }
-
-  // ---- Type-specific editor blocks ----
-
-  function _buildTypeBlock(typeSlug, body_md, meta, existingItem) {
-    var m = meta || {};
-    var hasBody = '<div class="ct-field"><label>Corpo em Markdown</label>' +
-      '<textarea id="ie-body" rows="10" placeholder="Conteúdo do item em Markdown...">' + _esc(body_md || '') + '</textarea>' +
-      '<div class="ct-editor-toolbar">' +
-        '<button class="ct-btn ct-btn-sm" id="ie-preview-btn" type="button">Visualizar preview</button>' +
-      '</div>' +
-      '<div class="ct-preview-area" id="ie-preview" style="display:none"></div>' +
-    '</div>';
-
-    if (typeSlug === 'prompt') {
-      return '<div class="ct-type-block">' + hasBody + '</div>';
-    }
-
-    if (typeSlug === 'guide') {
-      var hasPlatformTabs = !!(m.platform_tabs);
-      return '<div class="ct-type-block">' +
-        hasBody +
-        '<div class="ct-field">' +
-          '<label class="ct-toggle-label" style="font-size:0.82rem;text-transform:none;letter-spacing:normal">' +
-            '<span class="ct-toggle">' +
-              '<input type="checkbox" id="ie-platform-toggle"' + (hasPlatformTabs ? ' checked' : '') + '>' +
-              '<span class="ct-toggle-slider"></span>' +
-            '</span>' +
-            '<span> Plataformas separadas (Windows, Mac, Linux)</span>' +
-          '</label>' +
-        '</div>' +
-        '<div id="ie-platform-tabs-wrap" style="display:' + (hasPlatformTabs ? '' : 'none') + '">' +
-          '<div class="ct-platform-tabs">' +
-            '<div class="ct-field"><label>Windows</label>' +
-              '<textarea id="ie-pt-windows" rows="5">' + _esc((m.platform_tabs && m.platform_tabs.windows) || '') + '</textarea>' +
-            '</div>' +
-            '<div class="ct-field"><label>Mac</label>' +
-              '<textarea id="ie-pt-mac" rows="5">' + _esc((m.platform_tabs && m.platform_tabs.mac) || '') + '</textarea>' +
-            '</div>' +
-            '<div class="ct-field"><label>Linux</label>' +
-              '<textarea id="ie-pt-linux" rows="5">' + _esc((m.platform_tabs && m.platform_tabs.linux) || '') + '</textarea>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    }
-
-    if (typeSlug === 'material') {
-      return '<div class="ct-type-block">' +
-        hasBody +
-        '<div class="ct-field"><label>Arquivo anexo (PNG, JPG, PDF, opcional)</label>' +
-          '<div class="ct-upload-row">' +
-            '<input type="file" id="ie-material-file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf">' +
-            '<span class="ct-upload-progress"></span>' +
-          '</div>' +
-          (m.attachment_url ? '<div class="ct-upload-filename">Arquivo atual: <a href="' + _esc(m.attachment_url) + '" target="_blank" rel="noopener">visualizar</a></div>' : '') +
-        '</div>' +
-      '</div>';
-    }
-
-    if (typeSlug === 'paper') {
-      return '<div class="ct-type-block">' +
-        '<div class="ct-field"><label>Autores</label>' +
-          '<input type="text" id="ie-paper-authors" value="' + _esc(m.authors || '') + '" placeholder="Ex: Silva, J.; Santos, M.">' +
-        '</div>' +
-        '<div class="ct-field"><label>Ano</label>' +
-          '<input type="number" id="ie-paper-year" value="' + _esc(m.year || '') + '" placeholder="2024" min="1900" max="2099">' +
-        '</div>' +
-        '<div class="ct-field"><label>Resumo (abstract)</label>' +
-          '<textarea id="ie-paper-abstract" rows="4" placeholder="Resumo do artigo...">' + _esc(m.abstract || '') + '</textarea>' +
-        '</div>' +
-        '<div class="ct-field"><label>PDF do artigo</label>' +
-          '<div class="ct-upload-row">' +
-            '<input type="file" id="ie-paper-pdf" accept=".pdf,application/pdf">' +
-            '<span class="ct-upload-progress"></span>' +
-          '</div>' +
-          (m.pdf_url ? '<div class="ct-upload-filename">PDF atual: <a href="' + _esc(m.pdf_url) + '" target="_blank" rel="noopener">visualizar</a></div>' : '') +
-        '</div>' +
-        '<div class="ct-field"><label>Conteúdo complementar (Markdown, opcional)</label>' +
-          '<textarea id="ie-body" rows="6" placeholder="Notas, contexto ou resumo expandido...">' + _esc(body_md || '') + '</textarea>' +
-        '</div>' +
-      '</div>';
-    }
-
-    if (typeSlug === 'model_info') {
-      return '<div class="ct-type-block">' +
-        '<div class="ct-field"><label>Provedor</label>' +
-          '<input type="text" id="ie-mi-provider" value="' + _esc(m.provider || '') + '" placeholder="Ex: Anthropic">' +
-        '</div>' +
-        '<div class="ct-field"><label>ID do modelo</label>' +
-          '<input type="text" id="ie-mi-model-id" value="' + _esc(m.model_id || '') + '" placeholder="Ex: claude-opus-4-5">' +
-        '</div>' +
-        '<div class="ct-field"><label>Janela de contexto (tokens)</label>' +
-          '<input type="number" id="ie-mi-context" value="' + _esc(m.context_window || '') + '" placeholder="200000">' +
-        '</div>' +
-        '<div class="ct-field"><label>Pontos fortes (um por linha)</label>' +
-          '<textarea id="ie-mi-strengths" rows="4" placeholder="Raciocínio avançado&#10;Geração de código&#10;Multilíngue">' + _esc(Array.isArray(m.strengths) ? m.strengths.join('\n') : (m.strengths || '')) + '</textarea>' +
-        '</div>' +
-        '<div class="ct-field"><label>URL da documentação</label>' +
-          '<input type="text" id="ie-mi-doc-url" value="' + _esc(m.doc_url || '') + '" placeholder="https://...">' +
-        '</div>' +
-      '</div>';
-    }
-
-    // Fallback: generic body editor (handles unknown types the same way as prompt)
-    return '<div class="ct-type-block">' + hasBody + '</div>';
-  }
-
-  function _wireTypeBlockEvents(block, typeSlug, onFileSelected) {
-    // Preview button (prompt + guide + material fallback)
-    var previewBtn = block.querySelector('#ie-preview-btn');
-    if (previewBtn) {
-      previewBtn.addEventListener('click', function() {
-        var pre = block.querySelector('#ie-preview');
-        var bodyEl = block.querySelector('#ie-body');
-        if (!pre || !bodyEl) return;
-        if (pre.style.display === 'none') {
-          pre.style.display = '';
-          _renderMarkdown(bodyEl.value, pre);
-          previewBtn.textContent = 'Fechar preview';
-        } else {
-          pre.style.display = 'none';
-          previewBtn.textContent = 'Visualizar preview';
-        }
-      });
-    }
-
-    // Textarea Enter key fix
-    block.querySelectorAll('textarea').forEach(function(ta) {
-      ta.addEventListener('keydown', function(e) { if (e.key === 'Enter') e.stopPropagation(); });
-    });
-
-    // Platform tabs toggle (guide)
-    var platformToggle = block.querySelector('#ie-platform-toggle');
-    if (platformToggle) {
-      platformToggle.addEventListener('change', function() {
-        var wrap = block.querySelector('#ie-platform-tabs-wrap');
-        if (wrap) wrap.style.display = platformToggle.checked ? '' : 'none';
-      });
-    }
-
-    // File input (material)
-    var materialFile = block.querySelector('#ie-material-file');
-    if (materialFile) {
-      materialFile.addEventListener('change', function() {
-        var f = materialFile.files[0];
-        if (f) onFileSelected(f, 'attachment_url');
-      });
-    }
-
-    // File input (paper)
-    var paperPdf = block.querySelector('#ie-paper-pdf');
-    if (paperPdf) {
-      paperPdf.addEventListener('change', function() {
-        var f = paperPdf.files[0];
-        if (f) onFileSelected(f, 'pdf_url');
-      });
-    }
-  }
-
-  function _collectTypeData(bd, typeSlug) {
-    var body_md = '';
-    var meta_json = null;
-
-    var bodyEl = bd.querySelector('#ie-body');
-    if (bodyEl) body_md = bodyEl.value;
-
-    if (typeSlug === 'prompt') {
-      // body_md is all we need; no meta
-    } else if (typeSlug === 'guide') {
-      var platformToggle = bd.querySelector('#ie-platform-toggle');
-      if (platformToggle && platformToggle.checked) {
-        meta_json = {
-          platform_tabs: {
-            windows: (bd.querySelector('#ie-pt-windows') || {}).value || '',
-            mac:     (bd.querySelector('#ie-pt-mac') || {}).value || '',
-            linux:   (bd.querySelector('#ie-pt-linux') || {}).value || ''
-          }
-        };
-      }
-    } else if (typeSlug === 'material') {
-      // attachment_url set after upload; preserve existing if present
-      meta_json = {};
-    } else if (typeSlug === 'paper') {
-      meta_json = {
-        authors:  (bd.querySelector('#ie-paper-authors') || {}).value || null,
-        year:     (bd.querySelector('#ie-paper-year') || {}).value || null,
-        abstract: (bd.querySelector('#ie-paper-abstract') || {}).value || null
-      };
-    } else if (typeSlug === 'model_info') {
-      var strengthsEl = bd.querySelector('#ie-mi-strengths');
-      var strengthsArr = strengthsEl
-        ? strengthsEl.value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean)
-        : [];
-      meta_json = {
-        provider:       (bd.querySelector('#ie-mi-provider') || {}).value || null,
-        model_id:       (bd.querySelector('#ie-mi-model-id') || {}).value || null,
-        context_window: (bd.querySelector('#ie-mi-context') || {}).value || null,
-        strengths:      strengthsArr,
-        doc_url:        (bd.querySelector('#ie-mi-doc-url') || {}).value || null
-      };
-      body_md = ''; // model_info has no body_md
-    }
-
-    return { body_md: body_md, meta_json: meta_json };
-  }
-
-  // ---- Tag picker (single-row chips + inline "+ tag" button) ----
-
-  function _renderTagPicker(container, selectedTagIds) {
-    function render() {
-      var chips = _tags.map(function(t) {
-        var active = selectedTagIds.has(t.id);
-        return '<button type="button" class="ct-tag-chip' + (active ? ' active' : '') +
-          '" data-id="' + t.id + '">' + _esc(t.label) + '</button>';
-      }).join('');
-      container.innerHTML =
-        '<div class="ct-tag-chip-row">' + chips +
-          '<button type="button" class="ct-tag-add-chip">+ tag</button>' +
-        '</div>';
-
-      container.querySelectorAll('.ct-tag-chip').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var id = parseInt(btn.dataset.id);
-          if (selectedTagIds.has(id)) selectedTagIds.delete(id);
-          else selectedTagIds.add(id);
-          btn.classList.toggle('active');
-        });
-      });
-
-      var addBtn = container.querySelector('.ct-tag-add-chip');
-      addBtn.addEventListener('click', function() {
-        var input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'ct-tag-add-input';
-        input.placeholder = 'nome da tag';
-        addBtn.replaceWith(input);
-        input.focus();
-        function commit() {
-          var label = input.value.trim();
-          if (!label) { render(); return; }
-          callWorker({ action: 'ct_create_tag', label: label }).then(function(res) {
-            if (res && res.tag) {
-              if (!_tags.find(function(x) { return x.id === res.tag.id; })) {
-                _tags.push({ id: res.tag.id, label: res.tag.label, item_count: 0 });
-                _tags.sort(function(a, b) { return a.label.localeCompare(b.label, 'pt-BR'); });
-              }
-              selectedTagIds.add(res.tag.id);
-            }
-            render();
-          }).catch(function(err) {
-            _toast('Erro: ' + (err.message || err));
-            render();
-          });
-        }
-        input.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commit(); }
-          else if (e.key === 'Escape') { render(); }
-        });
-        input.addEventListener('blur', commit);
-      });
-    }
-    render();
   }
 
   // ---- Inline "+ Criar novo tipo" form ----
@@ -1688,17 +1231,6 @@ window.CT_ADMIN = (function() {
     return callWorker({ action: 'ct_list_tags' }).then(function(data) {
       _tags = data.tags || [];
     }).catch(function() {});
-  }
-
-  function _renderMarkdown(md, container) {
-    if (window.marked) {
-      container.innerHTML = window.marked.parse(md);
-      return;
-    }
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
-    s.onload = function() { container.innerHTML = window.marked.parse(md); };
-    document.head.appendChild(s);
   }
 
   // ---- Releases ----
@@ -3041,6 +2573,28 @@ window.CT_ADMIN = (function() {
           _toast('Item duplicado.');
         }
       }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    },
+
+    // Audience flip: toggles a single item between public (Trilha) and
+    // vault_only (PensoCodex). Optimistic local update + Worker call;
+    // rolls back on error.
+    toggleItemAudience: function(id) {
+      var idNum = Number(id);
+      var idx = _items.findIndex(function(it) { return Number(it.id) === idNum; });
+      if (idx < 0) return;
+      var current = _items[idx].audience === 'vault_only' ? 'vault_only' : 'public';
+      var next = current === 'vault_only' ? 'public' : 'vault_only';
+      _items[idx].audience = next;
+      _renderItems();
+      callWorker({ action: 'ct_update_item', id: id, audience: next, _silent: true })
+        .then(function() {
+          _toast(next === 'vault_only' ? 'Movido para Vault.' : 'Promovido para Trilha.');
+        })
+        .catch(function(err) {
+          _items[idx].audience = current;
+          _renderItems();
+          _toast('Erro: ' + (err.message || err));
+        });
     },
 
     enterSelectMode: function() {
