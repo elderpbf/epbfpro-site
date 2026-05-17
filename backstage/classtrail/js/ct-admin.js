@@ -1101,13 +1101,19 @@ window.CT_ADMIN = (function() {
         '</div>' +
         '<div class="ct-field"><label>Audiência</label>' +
           '<div class="ct-audience-picker">' +
-            '<label class="ct-audience-opt"><input type="radio" name="ie-audience" value="public"' + (initialAudience === 'public' ? ' checked' : '') + '> ' +
-              '<span class="ct-audience-opt-label">Pública</span>' +
-              '<span class="ct-audience-opt-hint">aparece na trilha do aluno</span>' +
+            '<label class="ct-audience-opt">' +
+              '<input type="radio" name="ie-audience" value="public"' + (initialAudience === 'public' ? ' checked' : '') + '>' +
+              '<span class="ct-audience-opt-text">' +
+                '<span class="ct-audience-opt-label">Pública</span>' +
+                '<span class="ct-audience-opt-hint">aparece na trilha do aluno</span>' +
+              '</span>' +
             '</label>' +
-            '<label class="ct-audience-opt"><input type="radio" name="ie-audience" value="vault_only"' + (initialAudience === 'vault_only' ? ' checked' : '') + '> ' +
-              '<span class="ct-audience-opt-label">Vault only</span>' +
-              '<span class="ct-audience-opt-hint">só visível no ClassVault do professor</span>' +
+            '<label class="ct-audience-opt">' +
+              '<input type="radio" name="ie-audience" value="vault_only"' + (initialAudience === 'vault_only' ? ' checked' : '') + '>' +
+              '<span class="ct-audience-opt-text">' +
+                '<span class="ct-audience-opt-label">Vault only</span>' +
+                '<span class="ct-audience-opt-hint">só visível no ClassVault do professor</span>' +
+              '</span>' +
             '</label>' +
           '</div>' +
         '</div>' +
