@@ -68,6 +68,61 @@
 .cv-sm-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .cv-sm-body::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
 
+/* footer with "+ Adicionar" trigger for in-pane authoring */
+.cv-sm-footer {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.cv-sm-add-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.cv-sm-add-btn:hover {
+  border-color: var(--primary);
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+
+/* context menu (right-click on sidebar item) */
+.cv-ctx-menu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+  padding: 4px;
+  min-width: 200px;
+}
+.cv-ctx-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.cv-ctx-item:hover {
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+
 /* turma block at top of sidebar */
 .cv-sm-turma {
   display: flex;

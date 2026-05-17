@@ -10,6 +10,7 @@ window.CT_ADMIN = (function() {
   var _types = []; // [{slug, label, icon, sort_order}]
   var _tags  = []; // [{id, label, item_count}]
   var _selectedTypeFilter = null; // null = "Todos"
+  var _filterVaultOnly = false;   // toggle: when true, items grid shows only audience='vault_only'
   var _selectMode = false;
   var _selectedIds = new Set();
   var _relAllItems = [];           // items pulled from ct_list_items
@@ -652,6 +653,9 @@ window.CT_ADMIN = (function() {
       el.innerHTML = '<div class="ct-empty">Nenhum item na biblioteca.</div>';
       return;
     }
+    if (_filterVaultOnly) {
+      libraryItems = libraryItems.filter(function(it) { return it.audience === 'vault_only'; });
+    }
     var filtered = CT_TYPE_FILTER.apply(libraryItems, _selectedTypeFilter);
     if (!filtered.length) {
       el.innerHTML = '<div class="ct-empty">Nenhum item neste filtro.</div>';
@@ -667,22 +671,31 @@ window.CT_ADMIN = (function() {
       var setBadge = item.set_id
         ? '<span class="ct-set-badge" title="Item faz parte do conteúdo importado; edições manuais podem ser sobrescritas em sincronizações futuras.">Conteúdo do curso</span>'
         : '';
+      var isVault = item.audience === 'vault_only';
+      var vaultBadge = isVault
+        ? '<span class="ct-vault-badge" title="Audience vault_only — só aparece no PensoCodex do professor, nunca na trilha do aluno.">🔒 Vault</span>'
+        : '';
       var rowOnclick = _selectMode
         ? 'CT_ADMIN.toggleItemSelection(' + item.id + ')'
         : 'CT_ADMIN.openItem(' + item.id + ')';
       var checkboxHtml = _selectMode
         ? '<input type="checkbox" class="ct-item-checkbox"' + (_selectedIds.has(Number(item.id)) ? ' checked' : '') + ' onclick="event.stopPropagation();CT_ADMIN.toggleItemSelection(' + item.id + ')">'
         : '';
+      var moveBtnLabel = isVault ? '→ Trilha' : '→ Vault';
+      var moveBtnTitle = isVault
+        ? 'Promover para Trilha (audience=public; passa a aparecer na trilha do aluno).'
+        : 'Mover para PensoCodex (audience=vault_only; remove da trilha do aluno).';
       var actionsHtml = _selectMode
         ? ''
-        : '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.duplicateItem(' + item.id + ')" title="Duplicar item">Duplicar</button>' +
+        : '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.toggleItemAudience(' + item.id + ')" title="' + _esc(moveBtnTitle) + '">' + moveBtnLabel + '</button>' +
+          '<button class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.duplicateItem(' + item.id + ')" title="Duplicar item">Duplicar</button>' +
           '<button class="ct-btn ct-btn-sm ct-btn-danger" onclick="event.stopPropagation();CT_ADMIN.deleteItem(' + item.id + ')">Excluir</button>';
       var rowSelectedClass = _selectedIds.has(Number(item.id)) ? ' ct-item-row-selected' : '';
       return '<div class="ct-item-row' + rowSelectedClass + '" data-item-id="' + item.id + '" onclick="' + rowOnclick + '">' +
         checkboxHtml +
         '<span class="ct-item-type-icon">' + meta.icon + '</span>' +
         '<div class="ct-item-info">' +
-          '<div class="ct-item-title">' + _esc(item.title) + setBadge + '</div>' +
+          '<div class="ct-item-title">' + _esc(item.title) + setBadge + vaultBadge + '</div>' +
           '<div class="ct-item-sub">' + _esc(meta.label) +
             ' · ' + new Date(item.updated_at * 1000).toLocaleDateString('pt-BR') +
           '</div>' +
@@ -727,8 +740,13 @@ window.CT_ADMIN = (function() {
     if (!fc) return;
     var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo'; });
     if (!items.length) { fc.innerHTML = ''; return; }
+    fc.innerHTML =
+      '<div class="ct-filter-row">' +
+        '<div id="ct-type-filter-host" class="ct-filter-types"></div>' +
+        _renderVaultOnlyChip() +
+      '</div>';
     CT_TYPE_FILTER.render({
-      container:    fc,
+      container:    fc.querySelector('#ct-type-filter-host'),
       types:        _types,
       items:        items,
       selectedSlug: _selectedTypeFilter,
@@ -737,6 +755,21 @@ window.CT_ADMIN = (function() {
         _renderItems();
       }
     });
+    var vaultBtn = fc.querySelector('.ct-audience-chip');
+    if (vaultBtn) vaultBtn.addEventListener('click', function() {
+      _filterVaultOnly = !_filterVaultOnly;
+      _renderItems();
+    });
+  }
+
+  function _renderVaultOnlyChip() {
+    var count = _items.filter(function(it) {
+      return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo' && it.audience === 'vault_only';
+    }).length;
+    var active = _filterVaultOnly ? ' is-active' : '';
+    return '<button type="button" class="ct-audience-chip' + active + '">' +
+      '🔒 Vault only <span class="ct-audience-chip-count">' + count + '</span>' +
+    '</button>';
   }
 
   // ---- GDoc ingest button + modal ----
@@ -2540,6 +2573,28 @@ window.CT_ADMIN = (function() {
           _toast('Item duplicado.');
         }
       }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    },
+
+    // Audience flip: toggles a single item between public (Trilha) and
+    // vault_only (PensoCodex). Optimistic local update + Worker call;
+    // rolls back on error.
+    toggleItemAudience: function(id) {
+      var idNum = Number(id);
+      var idx = _items.findIndex(function(it) { return Number(it.id) === idNum; });
+      if (idx < 0) return;
+      var current = _items[idx].audience === 'vault_only' ? 'vault_only' : 'public';
+      var next = current === 'vault_only' ? 'public' : 'vault_only';
+      _items[idx].audience = next;
+      _renderItems();
+      callWorker({ action: 'ct_update_item', id: id, audience: next, _silent: true })
+        .then(function() {
+          _toast(next === 'vault_only' ? 'Movido para Vault.' : 'Promovido para Trilha.');
+        })
+        .catch(function(err) {
+          _items[idx].audience = current;
+          _renderItems();
+          _toast('Erro: ' + (err.message || err));
+        });
     },
 
     enterSelectMode: function() {

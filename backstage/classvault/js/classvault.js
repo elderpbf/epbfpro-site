@@ -15,10 +15,15 @@ window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
 ClassVault.turmas = [];
 ClassVault.items = [];
+ClassVault.types = [];                       // ct_types, lazy-loaded for editor
+ClassVault.tags = [];                        // ct_tags, lazy-loaded for editor
 ClassVault.filterTypes = new Set();         // empty = no filter (Tudo)
 ClassVault.collapsedAulas = new Set();      // empty = all expanded
 ClassVault.activeItemId = null;
 ClassVault._prevRenderer = null;
+ClassVault.mode = 'render';                  // 'render' | 'editor'
+ClassVault._editorHandle = null;             // CTItemForm handle when in editor mode
+ClassVault._editorTarget = null;             // item being edited; null = create-new
 
 (async function boot() {
   let data;
@@ -38,6 +43,8 @@ ClassVault._prevRenderer = null;
   ClassVault.active = active;
   _renderSidebarHead(active, turmas);
   _wireItemClicks();
+  _wireSidebarFooter();
+  _wireItemContextMenu();
   _loadItems(active);
 })();
 
@@ -321,6 +328,8 @@ function _wireItemClicks() {
 }
 
 function _selectItem(item, subEl) {
+  if (!_dirtyCheckBeforeSwitch()) return;
+  if (ClassVault.mode === 'editor') _teardownEditor();
   document.querySelectorAll('.cv-sm-body .sub.is-active').forEach(el => el.classList.remove('is-active'));
   if (subEl) subEl.classList.add('is-active');
   _renderBreadcrumb(item);
@@ -331,6 +340,191 @@ function _selectItem(item, subEl) {
   renderer.render(item, view);
   ClassVault._prevRenderer = renderer;
   ClassVault.activeItemId = item.id;
+}
+
+// ── Sidebar footer: "+ Adicionar" button (mounts editor in right pane) ──
+
+function _wireSidebarFooter() {
+  const aside = document.querySelector('.cv-sm');
+  if (!aside) return;
+  let footer = aside.querySelector('.cv-sm-footer');
+  if (!footer) {
+    footer = document.createElement('div');
+    footer.className = 'cv-sm-footer';
+    footer.innerHTML = '<button type="button" class="cv-sm-add-btn">+ Adicionar item</button>';
+    aside.appendChild(footer);
+  }
+  const btn = footer.querySelector('.cv-sm-add-btn');
+  btn.addEventListener('click', () => _openEditor(null));
+}
+
+// Right-click on an item opens a small contextual menu: Edit + audience flip.
+function _wireItemContextMenu() {
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+  body.addEventListener('contextmenu', e => {
+    const sub = e.target.closest('.sub');
+    if (!sub) return;
+    e.preventDefault();
+    const id = sub.getAttribute('data-item-id');
+    const item = ClassVault.items.find(it => String(it.id) === id);
+    if (!item) return;
+    _openContextMenu(e.clientX, e.clientY, item);
+  });
+}
+
+function _openContextMenu(x, y, item) {
+  _closeContextMenu();
+  const isVault = item.audience === 'vault_only';
+  const flipLabel = isVault ? '↗ Promover para Trilha' : '↘ Mover para Vault';
+  const menu = document.createElement('div');
+  menu.className = 'cv-ctx-menu';
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+  menu.innerHTML =
+    '<button type="button" class="cv-ctx-item" data-action="edit">✏️ Editar...</button>' +
+    '<button type="button" class="cv-ctx-item" data-action="flip">' + flipLabel + '</button>';
+  document.body.appendChild(menu);
+  ClassVault._ctxMenuEl = menu;
+  menu.addEventListener('click', e => {
+    const btn = e.target.closest('.cv-ctx-item');
+    if (!btn) return;
+    const action = btn.getAttribute('data-action');
+    _closeContextMenu();
+    if (action === 'edit') _openEditor(item);
+    else if (action === 'flip') _flipItemAudience(item);
+  });
+  setTimeout(() => document.addEventListener('click', _closeContextMenu, { once: true }), 0);
+  setTimeout(() => document.addEventListener('contextmenu', _closeContextMenu, { once: true }), 0);
+}
+
+function _closeContextMenu() {
+  if (ClassVault._ctxMenuEl && ClassVault._ctxMenuEl.parentNode) {
+    ClassVault._ctxMenuEl.parentNode.removeChild(ClassVault._ctxMenuEl);
+  }
+  ClassVault._ctxMenuEl = null;
+}
+
+async function _flipItemAudience(item) {
+  const idx = ClassVault.items.findIndex(it => it.id === item.id);
+  if (idx < 0) return;
+  const current = item.audience === 'vault_only' ? 'vault_only' : 'public';
+  const next = current === 'vault_only' ? 'public' : 'vault_only';
+  ClassVault.items[idx].audience = next;
+  try {
+    const res = await callWorker({ action: 'ct_update_item', id: item.id, audience: next, _silent: true });
+    if (res && res.error) throw new Error(res.error);
+    if (window.BSToast) BSToast.show(next === 'vault_only' ? 'Movido para Vault.' : 'Promovido para Trilha.');
+  } catch (err) {
+    ClassVault.items[idx].audience = current;
+    if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
+  }
+}
+
+// ── Right-pane editor mount/unmount ─────────────────────────────
+
+async function _openEditor(itemOrNull) {
+  if (!_dirtyCheckBeforeSwitch()) return;
+  if (!ClassVault.active) return;
+  await _ensureTypesAndTagsLoaded();
+  const view = document.querySelector('.cv-main-view');
+  if (!view) return;
+  // Tear down any previous renderer
+  if (ClassVault._prevRenderer) {
+    ClassVault._prevRenderer.cleanup(view);
+    ClassVault._prevRenderer = null;
+  }
+  // Tear down any previous editor
+  if (ClassVault._editorHandle) {
+    try { ClassVault._editorHandle.destroy(); } catch (_) {}
+    ClassVault._editorHandle = null;
+  }
+  ClassVault.mode = 'editor';
+  ClassVault._editorTarget = itemOrNull;
+  _renderEditorBreadcrumb(itemOrNull);
+
+  const isEdit = !!itemOrNull;
+  ClassVault._editorHandle = CTItemForm.mount(view, {
+    item: itemOrNull,
+    types: ClassVault.types,
+    tags: ClassVault.tags,
+    defaultAudience: 'vault_only',
+    titleLabel: isEdit ? 'Editar item' : 'Adicionar item',
+    saveLabel: isEdit ? 'Salvar' : 'Adicionar',
+    closeLabel: '',
+    createAction: 'cv_create_item',
+    createExtraParams: {
+      client_slug: ClassVault.active.client_slug,
+      turma_slug: ClassVault.active.turma_slug
+    },
+    onSave: async function(savedItem) {
+      if (window.BSToast) BSToast.show(isEdit ? 'Item atualizado.' : 'Item adicionado.');
+      ClassVault._editorHandle = null;
+      ClassVault.mode = 'render';
+      ClassVault._editorTarget = null;
+      await _loadItems(ClassVault.active);
+      const fresh = ClassVault.items.find(it => savedItem && it.id === savedItem.id);
+      if (fresh) _selectItem(fresh, null);
+      else _renderEmptyMainView();
+    },
+    onCancel: function() { _teardownEditor(); _restoreLastRendered(); },
+    onDirtyChange: function() { /* no visual indicator yet */ }
+  });
+}
+
+function _teardownEditor() {
+  if (ClassVault._editorHandle) {
+    try { ClassVault._editorHandle.destroy(); } catch (_) {}
+    ClassVault._editorHandle = null;
+  }
+  ClassVault.mode = 'render';
+  ClassVault._editorTarget = null;
+}
+
+function _restoreLastRendered() {
+  if (ClassVault.activeItemId) {
+    const item = ClassVault.items.find(it => it.id === ClassVault.activeItemId);
+    if (item) { _selectItem(item, null); return; }
+  }
+  _renderEmptyMainView();
+}
+
+function _renderEmptyMainView() {
+  const view = document.querySelector('.cv-main-view');
+  if (view) view.innerHTML = '';
+  const crumb = document.querySelector('.cv-main-crumb');
+  if (crumb) crumb.innerHTML = '';
+}
+
+function _renderEditorBreadcrumb(item) {
+  const crumb = document.querySelector('.cv-main-crumb');
+  if (!crumb) return;
+  const turmaName = ClassVault.active ? (ClassVault.active.display_name || ClassVault.active.name) : '';
+  const label = item ? ('Editar / ' + (item.title || '')) : 'Adicionar item';
+  crumb.innerHTML =
+    '<span>' + _esc(turmaName) + '</span>' +
+    '<span class="cv-main-crumb-sep">/</span>' +
+    '<strong>' + _esc(label) + '</strong>';
+}
+
+function _dirtyCheckBeforeSwitch() {
+  if (ClassVault.mode !== 'editor' || !ClassVault._editorHandle) return true;
+  if (!ClassVault._editorHandle.isDirty()) return true;
+  return window.confirm('Descartar alterações não salvas?');
+}
+
+async function _ensureTypesAndTagsLoaded() {
+  if (ClassVault.types.length && ClassVault.tags.length) return;
+  try {
+    const [typesRes, tagsRes] = await Promise.all([
+      callWorker({ action: 'ct_list_types' }),
+      callWorker({ action: 'ct_list_tags' })
+    ]);
+    ClassVault.types = (typesRes && typesRes.types) || [];
+    ClassVault.tags = (tagsRes && tagsRes.tags) || [];
+  } catch (e) {
+    if (window.BSToast) BSToast.show('Erro carregando tipos/tags.');
+  }
 }
 
 function _renderBreadcrumb(item) {
