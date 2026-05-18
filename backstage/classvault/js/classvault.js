@@ -346,7 +346,7 @@ function _renderAulaPicker() {
   const aulas = ClassVault.aulas || [];
   const items = [
     { num: null, label: 'Todas as aulas' },
-    ...aulas.map(a => ({ num: a.aula_number, label: 'Aula ' + a.aula_number + (a.label ? ' · ' + a.label : '') }))
+    ...aulas.map(a => ({ num: a.aula_number, label: 'Aula ' + a.aula_number + (a.title ? ' · ' + a.title : '') }))
   ];
   menu.innerHTML = items.map(o => {
     const isActive = (o.num === ClassVault.aulaNumber);
