@@ -932,126 +932,23 @@ window.CT_ADMIN = (function() {
   // ---- Step 1: content-first screen (new items only) ----
 
   function _openItemContentFirst() {
-    var html = '<div class="ct-editor">' +
-      '<div class="ct-editor-header">' +
-        '<span class="ct-editor-title">Novo item · 1 de 2</span>' +
-        '<button class="ct-btn ct-btn-sm" id="cf-close">Fechar</button>' +
-      '</div>' +
-      '<div class="ct-editor-body">' +
-        '<div class="ct-field">' +
-          '<label>Cole ou escreva seu conteúdo</label>' +
-          '<textarea id="cf-raw" rows="10" placeholder="Cole aqui o texto do prompt, exemplo, exercício, dica..."></textarea>' +
-        '</div>' +
-        '<div class="ct-gdoc-row">' +
-          '<span class="ct-helper-text">ou importe de um Google Docs:</span>' +
-          '<div class="ct-gdoc-inline">' +
-            '<input type="text" id="cf-gdoc-url" placeholder="URL do Google Docs..." style="flex:1;min-width:0">' +
-            '<button class="ct-btn ct-btn-sm" id="cf-gdoc-load" type="button">Carregar</button>' +
-          '</div>' +
-          '<p class="ct-helper-text" id="cf-gdoc-hint">O documento deve estar compartilhado como "Qualquer pessoa com o link pode visualizar".</p>' +
-        '</div>' +
-        '<div class="ct-emoji-toggle-row">' +
-          '<label class="ct-toggle-label">' +
-            '<span class="ct-toggle">' +
-              '<input type="checkbox" id="cf-emoji-toggle" checked>' +
-              '<span class="ct-toggle-slider"></span>' +
-            '</span>' +
-            '<span class="ct-toggle-text">Adicionar emojis quando ajudar</span>' +
-          '</label>' +
-          '<p class="ct-helper-text">* Se o conteúdo for um prompt para IA, ele será mantido exatamente como está, sem alterações.</p>' +
-        '</div>' +
-      '</div>' +
-      '<div class="ct-editor-footer">' +
-        '<div class="ct-modal-actions">' +
-          '<button class="ct-btn" id="cf-cancel">Cancelar</button>' +
-          '<button class="ct-btn" id="cf-manual" type="button">Continuar manualmente</button>' +
-          '<button class="ct-btn ct-btn-primary" id="cf-ai" type="button">&#9889; Formatar com IA</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-    var bd = _openModal(html, { disableBackdropClose: true });
-    bd.querySelector('#cf-raw').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') e.stopPropagation();
-    });
-    bd.querySelector('#cf-close').addEventListener('click', _closeModal);
-    bd.querySelector('#cf-cancel').addEventListener('click', _closeModal);
-
-    // GDoc single-item loader: fetches body_md and pastes it into the raw textarea
-    bd.querySelector('#cf-gdoc-load').addEventListener('click', function() {
-      var url = bd.querySelector('#cf-gdoc-url').value.trim();
-      if (!url) { _toast('Informe a URL do Google Docs.'); return; }
-      var btn = bd.querySelector('#cf-gdoc-load');
-      btn.disabled = true;
-      btn.textContent = 'Carregando...';
-      callWorker({ action: 'ct_ingest_gdoc', url: url, mode: 'single' }).then(function(res) {
-        btn.disabled = false;
-        btn.textContent = 'Carregar';
-        if (res && res.preview && res.preview.body_md) {
-          var rawEl = bd.querySelector('#cf-raw');
-          rawEl.value = res.preview.body_md;
-          rawEl.focus();
-          _toast('Conteúdo importado. Revise e formate com IA.');
-        } else {
-          _toast('Documento importado, mas sem conteúdo reconhecível.');
-        }
-      }).catch(function(err) {
-        btn.disabled = false;
-        btn.textContent = 'Carregar';
-        _toast('Erro ao importar: ' + (err.message || err));
-      });
-    });
-
-    bd.querySelector('#cf-manual').addEventListener('click', function() {
-      var raw = bd.querySelector('#cf-raw').value;
-      _closeModal();
-      _openItemEditorFull(null, { body_md: raw }, null);
-    });
-
-    bd.querySelector('#cf-ai').addEventListener('click', async function() {
-      var raw = bd.querySelector('#cf-raw').value.trim();
-      if (!raw) { _toast('Cole ou digite seu conteúdo primeiro.'); return; }
-      var addEmojis = bd.querySelector('#cf-emoji-toggle').checked;
-      var btn = this;
-      var prev = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '&#9889; Gerando...';
-      try {
-        var systemPrompt = CT_AI_SPEC.buildSystemPrompt(_types, _tags, { addEmojis: addEmojis });
-        var res = await AIClient.generate({
-          action: 'ai_chat',
-          system: systemPrompt,
-          messages: [{ role: 'user', content: raw }],
-          temperature: 0.3,
-          max_tokens: CT_AI_SPEC.MAX_TOKENS
-        });
-        if (!res || !res.text) { _toast('IA não retornou conteúdo. Tente continuar manualmente.'); return; }
-        var parsed = CT_AI_SPEC.parseModelJson(res.text);
-        if (!parsed || !parsed.body_md) {
-          _toast('IA retornou em formato inesperado. Tente continuar manualmente.');
-          return;
-        }
-        parsed = CT_AI_SPEC.enforcePromptVerbatim(parsed, raw);
-        if (parsed.type !== 'prompt' && CT_AI_SPEC.looksTruncated(raw, parsed.body_md)) {
-          if (!confirm('A IA parece ter encurtado o texto significativamente. Usar mesmo assim?\n\nClique em Cancelar para tentar de novo ou continuar manualmente.')) return;
-        }
+    var bd = _openModal('<div class="ct-modal-body"></div>', { disableBackdropClose: true });
+    CTItemCreator.mount(bd, {
+      types: _types,
+      tags: _tags,
+      titleLabel: 'Novo item · 1 de 2',
+      closeLabel: 'Fechar',
+      onClose: _closeModal,
+      onCancel: _closeModal,
+      onManual: function(out) {
         _closeModal();
-        var tagIds = await _tagsByLabels(parsed.tag_labels || []);
-        _openItemEditorFull(null, {
-          title:    parsed.title    || '',
-          summary:  parsed.summary  || '',
-          type:     parsed.type     || (_types[0] && _types[0].slug),
-          body_md:  parsed.body_md  || raw,
-          tag_ids:  tagIds
-        }, {
-          rawInput:    raw,
-          firstOutput: parsed,
-          addEmojis:   addEmojis
-        });
-      } catch (e) {
-        _toast('Erro: ' + (e.message || e));
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = prev;
+        _openItemEditorFull(null, { body_md: out.body_md }, null);
+      },
+      onAIComplete: async function(result) {
+        _closeModal();
+        var tagIds = await _tagsByLabels(result.tagLabels || []);
+        var prefill = Object.assign({}, result.prefill, { tag_ids: tagIds });
+        _openItemEditorFull(null, prefill, result.aiContext);
       }
     });
   }

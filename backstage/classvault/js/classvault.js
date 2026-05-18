@@ -351,6 +351,7 @@ function _wireItemClicks() {
 function _selectItem(item, subEl) {
   if (!_dirtyCheckBeforeSwitch()) return;
   if (ClassVault.mode === 'editor') _teardownEditor();
+  if (ClassVault.mode === 'creator') _teardownCreator();
   document.querySelectorAll('.cv-sm-body .sub.is-active').forEach(el => el.classList.remove('is-active'));
   if (subEl) subEl.classList.add('is-active');
   _renderBreadcrumb(item);
@@ -376,7 +377,7 @@ function _wireSidebarFooter() {
     aside.appendChild(footer);
   }
   const btn = footer.querySelector('.cv-sm-add-btn');
-  btn.addEventListener('click', () => _openEditor(null));
+  btn.addEventListener('click', () => _openCreator());
 }
 
 // Right-click on an item opens a small contextual menu: Edit + audience flip.
@@ -444,7 +445,7 @@ async function _flipItemAudience(item) {
 
 // ── Right-pane editor mount/unmount ─────────────────────────────
 
-async function _openEditor(itemOrNull) {
+async function _openEditor(itemOrNull, prefill, aiContext) {
   if (!_dirtyCheckBeforeSwitch()) return;
   if (!ClassVault.active) return;
   await _ensureTypesAndTagsLoaded();
@@ -455,10 +456,14 @@ async function _openEditor(itemOrNull) {
     ClassVault._prevRenderer.cleanup(view);
     ClassVault._prevRenderer = null;
   }
-  // Tear down any previous editor
+  // Tear down any previous editor or creator
   if (ClassVault._editorHandle) {
     try { ClassVault._editorHandle.destroy(); } catch (_) {}
     ClassVault._editorHandle = null;
+  }
+  if (ClassVault._creatorHandle) {
+    try { ClassVault._creatorHandle.destroy(); } catch (_) {}
+    ClassVault._creatorHandle = null;
   }
   ClassVault.mode = 'editor';
   ClassVault._editorTarget = itemOrNull;
@@ -467,6 +472,8 @@ async function _openEditor(itemOrNull) {
   const isEdit = !!itemOrNull;
   ClassVault._editorHandle = CTItemForm.mount(view, {
     item: itemOrNull,
+    prefill: prefill || null,
+    aiContext: aiContext || null,
     types: ClassVault.types,
     tags: ClassVault.tags,
     defaultAudience: 'vault_only',
@@ -492,6 +499,88 @@ async function _openEditor(itemOrNull) {
     onCancel: function() { _teardownEditor(); _restoreLastRendered(); },
     onDirtyChange: function() { /* no visual indicator yet */ }
   });
+}
+
+// Step-1 content-first flow for new items. Edit mode skips this and goes
+// straight to the editor.
+async function _openCreator() {
+  if (!_dirtyCheckBeforeSwitch()) return;
+  if (!ClassVault.active) return;
+  await _ensureTypesAndTagsLoaded();
+  const view = document.querySelector('.cv-main-view');
+  if (!view) return;
+  if (ClassVault._prevRenderer) {
+    ClassVault._prevRenderer.cleanup(view);
+    ClassVault._prevRenderer = null;
+  }
+  if (ClassVault._editorHandle) {
+    try { ClassVault._editorHandle.destroy(); } catch (_) {}
+    ClassVault._editorHandle = null;
+  }
+  if (ClassVault._creatorHandle) {
+    try { ClassVault._creatorHandle.destroy(); } catch (_) {}
+    ClassVault._creatorHandle = null;
+  }
+  ClassVault.mode = 'creator';
+  _renderCreatorBreadcrumb();
+
+  ClassVault._creatorHandle = CTItemCreator.mount(view, {
+    types: ClassVault.types,
+    tags: ClassVault.tags,
+    titleLabel: 'Adicionar item · 1 de 2',
+    closeLabel: '',
+    onCancel: function() { _teardownCreator(); _restoreLastRendered(); },
+    onManual: function(out) {
+      _teardownCreator();
+      _openEditor(null, { body_md: out.body_md }, null);
+    },
+    onAIComplete: async function(result) {
+      _teardownCreator();
+      const tagIds = await _resolveTagLabels(result.tagLabels || []);
+      const prefill = Object.assign({}, result.prefill, { tag_ids: tagIds });
+      _openEditor(null, prefill, result.aiContext);
+    }
+  });
+}
+
+function _teardownCreator() {
+  if (ClassVault._creatorHandle) {
+    try { ClassVault._creatorHandle.destroy(); } catch (_) {}
+    ClassVault._creatorHandle = null;
+  }
+  ClassVault.mode = 'render';
+}
+
+function _renderCreatorBreadcrumb() {
+  const crumb = document.querySelector('.cv-main-crumb');
+  if (!crumb) return;
+  const turmaName = ClassVault.active ? (ClassVault.active.display_name || ClassVault.active.name) : '';
+  crumb.innerHTML =
+    '<span>' + _esc(turmaName) + '</span>' +
+    '<span class="cv-main-crumb-sep">/</span>' +
+    '<strong>Adicionar item · 1 de 2</strong>';
+}
+
+// Resolve a list of tag labels to existing tag IDs, creating any missing
+// ones. Mirrors ct-admin.js _tagsByLabels but mutates ClassVault.tags.
+async function _resolveTagLabels(labels) {
+  const ids = [];
+  for (let i = 0; i < labels.length; i++) {
+    const label = (labels[i] || '').trim();
+    if (!label) continue;
+    const existing = ClassVault.tags.find(t => t.label.toLowerCase() === label.toLowerCase());
+    if (existing) { ids.push(existing.id); continue; }
+    try {
+      const res = await callWorker({ action: 'ct_create_tag', label: label });
+      if (res && res.tag) {
+        if (!ClassVault.tags.find(t => t.id === res.tag.id)) {
+          ClassVault.tags.push({ id: res.tag.id, label: res.tag.label, item_count: 0 });
+        }
+        ids.push(res.tag.id);
+      }
+    } catch (e) {}
+  }
+  return ids;
 }
 
 function _teardownEditor() {
