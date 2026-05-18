@@ -14,15 +14,20 @@ window.Topbar.init({
 window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
 ClassVault.turmas = [];
-ClassVault.items = [];
 ClassVault.types = [];                       // ct_types, lazy-loaded for editor
 ClassVault.tags = [];                        // ct_tags, lazy-loaded for editor
-ClassVault.filterTypes = new Set();         // empty = no filter (Tudo)
-ClassVault.collapsedAulas = new Set();      // empty = all expanded
+// Phase 3: three buckets keyed by section
+ClassVault.vaultItems = [];                  // global vault library (audience='vault_only')
+ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for active turma+aula
+ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
+ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
+ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
+ClassVault.collapsedSections = new Set();    // section keys collapsed (hoje / vault / trilha / tag:X / aula:N)
 ClassVault.activeItemId = null;
 ClassVault._prevRenderer = null;
-ClassVault.mode = 'render';                  // 'render' | 'editor'
+ClassVault.mode = 'render';                  // 'render' | 'editor' | 'creator'
 ClassVault._editorHandle = null;             // CTItemForm handle when in editor mode
+ClassVault._creatorHandle = null;            // CTItemCreator handle when in creator mode
 ClassVault._editorTarget = null;             // item being edited; null = create-new
 
 (async function boot() {
@@ -41,12 +46,20 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   ClassVault.turmas = turmas;
   const active = _pickActive(turmas);
   ClassVault.active = active;
+  ClassVault.aulaNumber = _pickAula();
   _renderSidebarHead(active, turmas);
   _wireItemClicks();
   _wireSidebarFooter();
   _wireItemContextMenu();
-  _loadItems(active);
+  _loadCodex();
 })();
+
+function _pickAula() {
+  const raw = new URLSearchParams(location.search).get('aula');
+  if (!raw) return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
+}
 
 function _pickActive(turmas) {
   const urlSel = new URLSearchParams(location.search).get('turma') || '';
@@ -132,130 +145,250 @@ function _renderSidebarHead(active, turmas) {
 
 // ── Items: fetch, chips, group by aula, render ─────────────────
 
-async function _loadItems(active) {
+// Phase 3: load all three buckets + aulas in a single roundtrip.
+async function _loadCodex() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
   body.innerHTML = '<div class="cv-sm-empty">Carregando itens...</div>';
+  const active = ClassVault.active;
+  if (!active) return;
   let data;
   try {
     data = await callWorker({
-      action: 'cv_list_turma_items',
+      action: 'cv_get_codex_view',
       client_slug: active.client_slug,
       turma_slug: active.turma_slug,
+      aula_number: ClassVault.aulaNumber
     });
   } catch (err) {
     body.innerHTML = '<div class="cv-sm-empty">Erro ao carregar itens.</div>';
     return;
   }
-  ClassVault.items = (data && data.items) || [];
-  _renderCategoryChips(ClassVault.items);
-  _renderItems(_filterItems(ClassVault.items));
+  ClassVault.vaultItems = (data && data.vault) || [];
+  ClassVault.aulaPlanItems = (data && data.aula_plan) || [];
+  ClassVault.releaseItems = (data && data.releases) || [];
+  ClassVault.aulas = (data && data.aulas) || [];
+  _renderAulaPicker();
+  _renderSidebar();
 }
 
-function _renderCategoryChips(items) {
-  const head = document.querySelector('.cv-sm-head');
-  if (!head) return;
-  let strip = head.querySelector('.cv-sm-chips');
-  const firstRender = !strip;
-  if (firstRender) {
-    strip = document.createElement('div');
-    strip.className = 'cv-sm-chips';
-    head.appendChild(strip);
-    strip.addEventListener('click', _onChipClick);
-  }
-
-  // One chip per type present in items, sorted by count desc.
-  const counts = new Map();
-  const labels = new Map();
-  for (const it of items) {
-    counts.set(it.type, (counts.get(it.type) || 0) + 1);
-    if (!labels.has(it.type)) labels.set(it.type, it.type_label || it.type);
-  }
-  const sortedTypes = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-
-  const tudoActive = ClassVault.filterTypes.size === 0;
-  const chips = [
-    '<button class="cv-sm-chip' + (tudoActive ? ' is-active' : '') + '" type="button" data-type="">' +
-      'Tudo <span class="cv-sm-chip-count">' + items.length + '</span></button>'
-  ];
-  for (const [type, count] of sortedTypes) {
-    const isActive = ClassVault.filterTypes.has(type);
-    chips.push(
-      '<button class="cv-sm-chip' + (isActive ? ' is-active' : '') + '" ' +
-        'type="button" data-type="' + _esc(type) + '">' +
-        _esc(labels.get(type)) + ' <span class="cv-sm-chip-count">' + count + '</span>' +
-      '</button>'
-    );
-  }
-  strip.innerHTML = chips.join('');
+// Locate an item across the three buckets. Returns null if not found.
+function _findItem(itemId) {
+  const idNum = Number(itemId);
+  const match = (it) => Number(it.id) === idNum;
+  let it = ClassVault.aulaPlanItems.find(match);
+  if (it) return { item: it, source: 'aula_plan' };
+  it = ClassVault.vaultItems.find(match);
+  if (it) return { item: it, source: 'vault' };
+  it = ClassVault.releaseItems.find(match);
+  if (it) return { item: it, source: 'release' };
+  return null;
 }
 
-function _onChipClick(e) {
-  const chip = e.target.closest('.cv-sm-chip');
-  if (!chip || chip.disabled) return;
-  const type = chip.getAttribute('data-type');
-  if (!type) {
-    ClassVault.filterTypes.clear();           // "Tudo" → clear filters
-  } else if (ClassVault.filterTypes.has(type)) {
-    ClassVault.filterTypes.delete(type);      // toggle off
-  } else {
-    ClassVault.filterTypes.add(type);         // toggle on (multi-select)
-  }
-  _renderCategoryChips(ClassVault.items);
-  _renderItems(_filterItems(ClassVault.items));
-}
-
-function _filterItems(items) {
-  if (ClassVault.filterTypes.size === 0) return items;
-  return items.filter(it => ClassVault.filterTypes.has(it.type));
-}
-
-function _renderItems(items) {
+function _renderSidebar() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
-  if (!items.length) {
-    body.innerHTML = '<div class="cv-sm-empty">Nenhum item nesta categoria.</div>';
-    return;
-  }
-
-  // Group by aula_number; null aula → "Sem aula" section at the bottom.
-  const groups = new Map();
-  for (const it of items) {
-    const key = (it.aula_number != null && it.aula_number !== '') ? String(it.aula_number) : '__none__';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(it);
-  }
-  const groupKeys = Array.from(groups.keys()).sort((a, b) => {
-    if (a === '__none__') return 1;
-    if (b === '__none__') return -1;
-    return Number(a) - Number(b);
-  });
-
   const html = [];
-  for (const key of groupKeys) {
-    const groupItems = groups.get(key);
-    const label = key === '__none__' ? 'Sem aula' : 'Aula ' + key;
-    const isCollapsed = ClassVault.collapsedAulas.has(key);
-    html.push(
-      '<button type="button" class="cv-sm-section' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
-        'data-aula="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
-        '<span class="cv-sm-section-chev">▾</span>' +
-        '<span>' + _esc(label) + '</span>' +
-        '<span class="cv-sm-section-line"></span>' +
-        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
-      '</button>'
-    );
-    if (!isCollapsed) {
-      html.push(_renderAulaBody(groupItems));
-    }
+
+  // ── Hoje section (active aula only) ───────────────────────────
+  if (ClassVault.aulaNumber != null) {
+    html.push(_renderSection({
+      key: 'hoje',
+      label: 'Hoje · Aula ' + ClassVault.aulaNumber,
+      count: ClassVault.aulaPlanItems.length,
+      body: ClassVault.aulaPlanItems.length
+        ? _renderAulaBody(ClassVault.aulaPlanItems)
+        : '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum item planejado. Clique direito num item do Vault → "Adicionar ao plano de hoje".</div>'
+    }));
   }
+
+  // ── Vault section (global, grouped by tag) ────────────────────
+  html.push(_renderSection({
+    key: 'vault',
+    label: 'Vault',
+    count: ClassVault.vaultItems.length,
+    body: _renderVaultGroups(ClassVault.vaultItems)
+  }));
+
+  // ── Trilha section (read-only releases for turma) ─────────────
+  html.push(_renderSection({
+    key: 'trilha',
+    label: 'Trilha · ' + (ClassVault.active.display_name || ClassVault.active.name),
+    count: ClassVault.releaseItems.length,
+    body: _renderTrilhaGroups(ClassVault.releaseItems)
+  }));
+
   body.innerHTML = html.join('');
 
-  // Preserve active sub state across re-renders
   if (ClassVault.activeItemId != null) {
     const el = body.querySelector('.sub[data-item-id="' + ClassVault.activeItemId + '"]');
     if (el) el.classList.add('is-active');
   }
+}
+
+function _renderSection({ key, label, count, body }) {
+  const isCollapsed = ClassVault.collapsedSections.has(key);
+  const sectionBody = isCollapsed ? '' : body;
+  return (
+    '<button type="button" class="cv-sm-section' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+      'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
+      '<span class="cv-sm-section-chev">▾</span>' +
+      '<span>' + _esc(label) + '</span>' +
+      '<span class="cv-sm-section-line"></span>' +
+      '<span class="cv-sm-section-count">' + count + '</span>' +
+    '</button>' +
+    sectionBody
+  );
+}
+
+// Vault: group items by primary tag. Untagged items in a final "Sem tag" group.
+function _renderVaultGroups(items) {
+  if (!items.length) {
+    return '<div class="cv-sm-empty cv-sm-empty--inline">Vault vazio. Use "+ Adicionar item" para criar.</div>';
+  }
+  const byTag = new Map();
+  const untagged = [];
+  for (const it of items) {
+    const tags = it.tags || [];
+    if (!tags.length) {
+      untagged.push(it);
+    } else {
+      for (const t of tags) {
+        const k = t.label;
+        if (!byTag.has(k)) byTag.set(k, []);
+        byTag.get(k).push(it);
+      }
+    }
+  }
+  const tagKeys = Array.from(byTag.keys()).sort((a, b) =>
+    (byTag.get(b).length - byTag.get(a).length) || a.localeCompare(b)
+  );
+  if (untagged.length) tagKeys.push('__untagged__');
+
+  return tagKeys.map(tagKey => {
+    const groupItems = tagKey === '__untagged__' ? untagged : byTag.get(tagKey);
+    const subKey = 'tag:' + tagKey;
+    const isCollapsed = ClassVault.collapsedSections.has(subKey);
+    const headerLabel = tagKey === '__untagged__' ? 'Sem tag' : '#' + tagKey;
+    return (
+      '<button type="button" class="cv-sm-subsection' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+        'data-section="' + _esc(subKey) + '" aria-expanded="' + (!isCollapsed) + '">' +
+        '<span class="cv-sm-section-chev">▾</span>' +
+        '<span>' + _esc(headerLabel) + '</span>' +
+        '<span class="cv-sm-section-line"></span>' +
+        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
+      '</button>' +
+      (isCollapsed ? '' : _renderAulaBody(groupItems))
+    );
+  }).join('');
+}
+
+// Trilha: group released items by aula_number.
+function _renderTrilhaGroups(items) {
+  if (!items.length) {
+    return '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum item liberado para esta turma ainda.</div>';
+  }
+  const groups = new Map();
+  for (const it of items) {
+    const k = it.aula_number != null ? String(it.aula_number) : '__none__';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(it);
+  }
+  const keys = Array.from(groups.keys()).sort((a, b) => {
+    if (a === '__none__') return 1;
+    if (b === '__none__') return -1;
+    return Number(a) - Number(b);
+  });
+  return keys.map(k => {
+    const groupItems = groups.get(k);
+    const subKey = 'trilha-aula:' + k;
+    const isCollapsed = ClassVault.collapsedSections.has(subKey);
+    const headerLabel = k === '__none__' ? 'Sem aula' : 'Aula ' + k;
+    return (
+      '<button type="button" class="cv-sm-subsection' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+        'data-section="' + _esc(subKey) + '" aria-expanded="' + (!isCollapsed) + '">' +
+        '<span class="cv-sm-section-chev">▾</span>' +
+        '<span>' + _esc(headerLabel) + '</span>' +
+        '<span class="cv-sm-section-line"></span>' +
+        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
+      '</button>' +
+      (isCollapsed ? '' : _renderAulaBody(groupItems))
+    );
+  }).join('');
+}
+
+// Aula picker: dropdown chip rendered in the head, next to the turma chip.
+function _renderAulaPicker() {
+  const head = document.querySelector('.cv-sm-head');
+  if (!head) return;
+  let block = head.querySelector('.cv-sm-aula');
+  if (!block) {
+    block = document.createElement('button');
+    block.type = 'button';
+    block.className = 'cv-sm-aula';
+    block.setAttribute('aria-haspopup', 'true');
+    block.setAttribute('aria-expanded', 'false');
+    head.appendChild(block);
+  }
+  const currentLabel = ClassVault.aulaNumber == null
+    ? 'Todas as aulas'
+    : ('Aula ' + ClassVault.aulaNumber);
+  block.innerHTML =
+    '<span class="cv-sm-aula-label">' + _esc(currentLabel) + '</span>' +
+    '<span class="cv-sm-aula-chev">▾</span>';
+
+  // Rebuild dropdown each render (cheap; aula list rarely changes)
+  let menu = document.querySelector('.cv-aula-menu');
+  if (menu) menu.remove();
+  menu = document.createElement('div');
+  menu.className = 'cv-aula-menu';
+  menu.hidden = true;
+  const aulas = ClassVault.aulas || [];
+  const items = [
+    { num: null, label: 'Todas as aulas' },
+    ...aulas.map(a => ({ num: a.aula_number, label: 'Aula ' + a.aula_number + (a.title ? ' · ' + a.title : '') }))
+  ];
+  menu.innerHTML = items.map(o => {
+    const isActive = (o.num === ClassVault.aulaNumber);
+    const key = o.num == null ? '' : String(o.num);
+    return '<button class="cv-aula-menu-item' + (isActive ? ' is-active' : '') + '" ' +
+             'type="button" data-aula="' + _esc(key) + '">' + _esc(o.label) + '</button>';
+  }).join('');
+  document.body.appendChild(menu);
+
+  function positionMenu() {
+    const r = block.getBoundingClientRect();
+    menu.style.top = (r.bottom + 4) + 'px';
+    menu.style.left = r.left + 'px';
+    menu.style.width = r.width + 'px';
+  }
+  function openMenu() {
+    menu.hidden = false;
+    block.setAttribute('aria-expanded', 'true');
+    positionMenu();
+    document.addEventListener('click', onDocClick, true);
+    window.addEventListener('resize', positionMenu);
+  }
+  function closeMenu() {
+    menu.hidden = true;
+    block.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClick, true);
+    window.removeEventListener('resize', positionMenu);
+  }
+  function onDocClick(e) {
+    if (block.contains(e.target) || menu.contains(e.target)) return;
+    closeMenu();
+  }
+  block.onclick = () => menu.hidden ? openMenu() : closeMenu();
+  menu.onclick = e => {
+    const it = e.target.closest('.cv-aula-menu-item');
+    if (!it) return;
+    const raw = it.getAttribute('data-aula');
+    const u = new URL(location.href);
+    if (raw) u.searchParams.set('aula', raw);
+    else u.searchParams.delete('aula');
+    location.href = u.toString();
+  };
 }
 
 // Within an aula, group items by type so the sidebar mirrors PensoTrilha's
@@ -328,23 +461,23 @@ function _wireItemClicks() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
   body.addEventListener('click', e => {
-    const section = e.target.closest('.cv-sm-section');
+    const section = e.target.closest('.cv-sm-section, .cv-sm-subsection');
     if (section) {
-      const aulaKey = section.getAttribute('data-aula');
-      if (ClassVault.collapsedAulas.has(aulaKey)) {
-        ClassVault.collapsedAulas.delete(aulaKey);
+      const key = section.getAttribute('data-section');
+      if (ClassVault.collapsedSections.has(key)) {
+        ClassVault.collapsedSections.delete(key);
       } else {
-        ClassVault.collapsedAulas.add(aulaKey);
+        ClassVault.collapsedSections.add(key);
       }
-      _renderItems(_filterItems(ClassVault.items));
+      _renderSidebar();
       return;
     }
     const sub = e.target.closest('.sub');
     if (!sub) return;
     const id = sub.getAttribute('data-item-id');
-    const item = ClassVault.items.find(it => String(it.id) === id);
-    if (!item) return;
-    _selectItem(item, sub);
+    const located = _findItem(id);
+    if (!located) return;
+    _selectItem(located.item, sub);
   });
 }
 
@@ -380,7 +513,8 @@ function _wireSidebarFooter() {
   btn.addEventListener('click', () => _openCreator());
 }
 
-// Right-click on an item opens a small contextual menu: Edit + audience flip.
+// Right-click on an item opens a contextual menu whose options vary by where
+// the item lives (vault / hoje / trilha).
 function _wireItemContextMenu() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
@@ -389,23 +523,39 @@ function _wireItemContextMenu() {
     if (!sub) return;
     e.preventDefault();
     const id = sub.getAttribute('data-item-id');
-    const item = ClassVault.items.find(it => String(it.id) === id);
-    if (!item) return;
-    _openContextMenu(e.clientX, e.clientY, item);
+    const located = _findItem(id);
+    if (!located) return;
+    _openContextMenu(e.clientX, e.clientY, located);
   });
 }
 
-function _openContextMenu(x, y, item) {
+function _openContextMenu(x, y, located) {
   _closeContextMenu();
-  const isVault = item.audience === 'vault_only';
-  const flipLabel = isVault ? '↗ Promover para Trilha' : '↘ Mover para Vault';
+  const { item, source } = located;
+  const items = [];
+  items.push({ action: 'edit', label: '✏️ Editar...' });
+
+  if (source === 'vault') {
+    const aulaOk = ClassVault.aulaNumber != null;
+    const inPlanAlready = ClassVault.aulaPlanItems.some(it => it.id === item.id);
+    if (aulaOk && !inPlanAlready) {
+      items.push({ action: 'add-to-hoje', label: '📌 Adicionar ao plano de hoje' });
+    }
+    items.push({ action: 'promote', label: '↗ Promover para Trilha' });
+  } else if (source === 'aula_plan') {
+    items.push({ action: 'remove-from-hoje', label: '✖ Remover do plano' });
+    items.push({ action: 'release', label: '↗ Liberar para alunos' });
+  } else if (source === 'release') {
+    items.push({ action: 'demote', label: '↘ Mover para Vault' });
+  }
+
   const menu = document.createElement('div');
   menu.className = 'cv-ctx-menu';
   menu.style.left = x + 'px';
   menu.style.top  = y + 'px';
-  menu.innerHTML =
-    '<button type="button" class="cv-ctx-item" data-action="edit">✏️ Editar...</button>' +
-    '<button type="button" class="cv-ctx-item" data-action="flip">' + flipLabel + '</button>';
+  menu.innerHTML = items.map(o =>
+    '<button type="button" class="cv-ctx-item" data-action="' + _esc(o.action) + '">' + o.label + '</button>'
+  ).join('');
   document.body.appendChild(menu);
   ClassVault._ctxMenuEl = menu;
   menu.addEventListener('click', e => {
@@ -414,7 +564,11 @@ function _openContextMenu(x, y, item) {
     const action = btn.getAttribute('data-action');
     _closeContextMenu();
     if (action === 'edit') _openEditor(item);
-    else if (action === 'flip') _flipItemAudience(item);
+    else if (action === 'add-to-hoje') _addToHoje(item);
+    else if (action === 'remove-from-hoje') _removeFromHoje(item);
+    else if (action === 'promote') _setItemAudience(item, 'public');
+    else if (action === 'demote') _setItemAudience(item, 'vault_only');
+    else if (action === 'release') _releaseItemToCurrentAula(item);
   });
   setTimeout(() => document.addEventListener('click', _closeContextMenu, { once: true }), 0);
   setTimeout(() => document.addEventListener('contextmenu', _closeContextMenu, { once: true }), 0);
@@ -427,18 +581,92 @@ function _closeContextMenu() {
   ClassVault._ctxMenuEl = null;
 }
 
-async function _flipItemAudience(item) {
-  const idx = ClassVault.items.findIndex(it => it.id === item.id);
-  if (idx < 0) return;
-  const current = item.audience === 'vault_only' ? 'vault_only' : 'public';
-  const next = current === 'vault_only' ? 'public' : 'vault_only';
-  ClassVault.items[idx].audience = next;
+async function _addToHoje(item) {
+  if (ClassVault.aulaNumber == null) return;
   try {
-    const res = await callWorker({ action: 'ct_update_item', id: item.id, audience: next, _silent: true });
+    const res = await callWorker({
+      action: 'cv_add_to_aula_plan',
+      client_slug: ClassVault.active.client_slug,
+      turma_slug: ClassVault.active.turma_slug,
+      aula_number: ClassVault.aulaNumber,
+      item_id: item.id
+    });
     if (res && res.error) throw new Error(res.error);
-    if (window.BSToast) BSToast.show(next === 'vault_only' ? 'Movido para Vault.' : 'Promovido para Trilha.');
+    if (window.BSToast) BSToast.show('Adicionado ao plano de hoje.');
+    await _loadCodex();
   } catch (err) {
-    ClassVault.items[idx].audience = current;
+    if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
+  }
+}
+
+async function _removeFromHoje(item) {
+  if (ClassVault.aulaNumber == null) return;
+  try {
+    const res = await callWorker({
+      action: 'cv_remove_from_aula_plan',
+      client_slug: ClassVault.active.client_slug,
+      turma_slug: ClassVault.active.turma_slug,
+      aula_number: ClassVault.aulaNumber,
+      item_id: item.id
+    });
+    if (res && res.error) throw new Error(res.error);
+    if (window.BSToast) BSToast.show('Removido do plano.');
+    await _loadCodex();
+  } catch (err) {
+    if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
+  }
+}
+
+async function _setItemAudience(item, nextAudience) {
+  const current = item.audience === 'vault_only' ? 'vault_only' : 'public';
+  if (current === nextAudience) return;
+  try {
+    const res = await callWorker({
+      action: 'ct_update_item',
+      id: item.id,
+      audience: nextAudience,
+      _silent: true
+    });
+    if (res && res.error) throw new Error(res.error);
+    if (window.BSToast) BSToast.show(
+      nextAudience === 'vault_only' ? 'Movido para Vault.' : 'Promovido para Trilha.'
+    );
+    await _loadCodex();
+  } catch (err) {
+    if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
+  }
+}
+
+// "Liberar para alunos" on a Hoje item: release to current turma+aula via
+// ct_release_item and flip audience to public. After release the item moves
+// from Hoje → Trilha.
+async function _releaseItemToCurrentAula(item) {
+  if (ClassVault.aulaNumber == null) return;
+  try {
+    const release = await callWorker({
+      action: 'ct_release_item',
+      client_slug: ClassVault.active.client_slug,
+      turma_slug: ClassVault.active.turma_slug,
+      item_id: item.id,
+      aula_number: ClassVault.aulaNumber
+    });
+    if (release && release.error) throw new Error(release.error);
+    if (item.audience !== 'public') {
+      const upd = await callWorker({
+        action: 'ct_update_item', id: item.id, audience: 'public', _silent: true
+      });
+      if (upd && upd.error) throw new Error(upd.error);
+    }
+    await callWorker({
+      action: 'cv_remove_from_aula_plan',
+      client_slug: ClassVault.active.client_slug,
+      turma_slug: ClassVault.active.turma_slug,
+      aula_number: ClassVault.aulaNumber,
+      item_id: item.id
+    });
+    if (window.BSToast) BSToast.show('Liberado para alunos.');
+    await _loadCodex();
+  } catch (err) {
     if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
   }
 }
@@ -484,16 +712,20 @@ async function _openEditor(itemOrNull, prefill, aiContext) {
     createAction: 'cv_create_item',
     createExtraParams: {
       client_slug: ClassVault.active.client_slug,
-      turma_slug: ClassVault.active.turma_slug
+      turma_slug: ClassVault.active.turma_slug,
+      // If the user picks audience=public in the form, also release to current
+      // turma+aula as a convenience. Worker no-ops this for audience=vault_only.
+      release_to_turma: true,
+      aula_number: ClassVault.aulaNumber
     },
     onSave: async function(savedItem) {
       if (window.BSToast) BSToast.show(isEdit ? 'Item atualizado.' : 'Item adicionado.');
       ClassVault._editorHandle = null;
       ClassVault.mode = 'render';
       ClassVault._editorTarget = null;
-      await _loadItems(ClassVault.active);
-      const fresh = ClassVault.items.find(it => savedItem && it.id === savedItem.id);
-      if (fresh) _selectItem(fresh, null);
+      await _loadCodex();
+      const located = savedItem ? _findItem(savedItem.id) : null;
+      if (located) _selectItem(located.item, null);
       else _renderEmptyMainView();
     },
     onCancel: function() { _teardownEditor(); _restoreLastRendered(); },
@@ -594,8 +826,8 @@ function _teardownEditor() {
 
 function _restoreLastRendered() {
   if (ClassVault.activeItemId) {
-    const item = ClassVault.items.find(it => it.id === ClassVault.activeItemId);
-    if (item) { _selectItem(item, null); return; }
+    const located = _findItem(ClassVault.activeItemId);
+    if (located) { _selectItem(located.item, null); return; }
   }
   _renderEmptyMainView();
 }
