@@ -1093,6 +1093,7 @@ window.CT_ADMIN = (function() {
       titleLabel: isEdit ? 'Editar item' : 'Novo item · 2 de 2',
       saveLabel: isEdit ? 'Salvar' : 'Criar',
       closeLabel: 'Fechar',
+      excludeTypes: isEdit ? [] : ['conteudo', 'tarefa'],
       onCreateType: _openTypeCreateForm,
       onSave: function() {
         _closeModal();
@@ -1845,6 +1846,10 @@ window.CT_ADMIN = (function() {
     var aulaLabel = (item._aula_number != null) ? 'Aula ' + item._aula_number : 'Sem aula';
     var subCount = (_tarSubmissions[item.id] && _tarSubmissions[item.id].length) || 0;
     var countCls = subCount === 0 ? 'ct-tarefa-count zero' : 'ct-tarefa-count';
+    var anonBlock = anonOk
+      ? ''
+      : '<span class="ct-tarefa-dot">·</span>' +
+        '<span class="ct-tarefa-anon-badge">Identificação obrigatória</span>';
     return '<article class="ct-tarefa-row" data-item-id="' + item.id + '">' +
       '<div class="ct-tarefa-head">' +
         '<div class="ct-tarefa-icon">📋</div>' +
@@ -1856,8 +1861,7 @@ window.CT_ADMIN = (function() {
             '<span class="' + countCls + '" data-item="' + item.id + '">' +
               subCount + ' resposta' + (subCount === 1 ? '' : 's') +
             '</span>' +
-            '<span class="ct-tarefa-dot">·</span>' +
-            '<span class="ct-tarefa-anon-badge">' + (anonOk ? 'Anônimo permitido' : 'Identificação obrigatória') + '</span>' +
+            anonBlock +
             '<span class="ct-tarefa-dot">·</span>' +
             '<span class="ct-tarefa-reuse" data-item="' + item.id + '">…</span>' +
           '</div>' +
@@ -2048,7 +2052,28 @@ window.CT_ADMIN = (function() {
         var titleEl = row.querySelector('.ct-tarefa-title');
         if (titleEl) titleEl.textContent = title;
         var anonEl = row.querySelector('.ct-tarefa-anon-badge');
-        if (anonEl) anonEl.textContent = anon ? 'Anônimo permitido' : 'Identificação obrigatória';
+        if (anon) {
+          // Anonymous allowed: remove the badge and its preceding separator dot if present.
+          if (anonEl) {
+            var prevDot = anonEl.previousElementSibling;
+            if (prevDot && prevDot.classList.contains('ct-tarefa-dot')) prevDot.remove();
+            anonEl.remove();
+          }
+        } else if (!anonEl) {
+          // Identification required and no badge yet: insert dot + badge before the trailing reuse element.
+          var reuseEl = row.querySelector('.ct-tarefa-reuse');
+          if (reuseEl) {
+            var trailingDot = reuseEl.previousElementSibling;
+            var dotEl = document.createElement('span');
+            dotEl.className = 'ct-tarefa-dot';
+            dotEl.textContent = '·';
+            var badgeEl = document.createElement('span');
+            badgeEl.className = 'ct-tarefa-anon-badge';
+            badgeEl.textContent = 'Identificação obrigatória';
+            reuseEl.parentNode.insertBefore(dotEl, trailingDot);
+            reuseEl.parentNode.insertBefore(badgeEl, trailingDot);
+          }
+        }
       }
     }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
   }

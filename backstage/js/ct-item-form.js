@@ -25,6 +25,11 @@
 //                           Caller opens its own type-create modal, invokes
 //                           callback(slug) on success (with new slug) or callback(null) on cancel.
 //                           If not provided, "+ Criar novo tipo..." option is hidden.
+//   excludeTypes            array of type slugs to hide from the dropdown. Used
+//                           to keep dedicated authoring surfaces (e.g., conteudo
+//                           imports, tarefa builder) out of the generic flow.
+//                           In edit mode, callers should pass [] so the existing
+//                           type stays selectable.
 //
 // Returned handle:
 //   isDirty()     → boolean
@@ -66,15 +71,25 @@ window.CTItemForm = (function() {
     document.head.appendChild(s);
   }
 
-  function _renderTypeOptions(types, selectedSlug, includeNewOption) {
-    var opts = types.map(function(t) {
+  function _renderTypeOptions(types, selectedSlug, includeNewOption, excludeTypes) {
+    var excluded = excludeTypes && excludeTypes.length ? excludeTypes : null;
+    var visible = excluded
+      ? types.filter(function(t) { return excluded.indexOf(t.slug) < 0; })
+      : types;
+    var opts = visible.map(function(t) {
       var sel = t.slug === selectedSlug ? ' selected' : '';
       var icon = t.icon ? t.icon + ' ' : '';
       return '<option value="' + _esc(t.slug) + '"' + sel + '>' + _esc(icon + t.label) + '</option>';
     }).join('');
-    if (selectedSlug && !types.find(function(t) { return t.slug === selectedSlug; })) {
-      opts = '<option value="' + _esc(selectedSlug) + '" selected>' +
-        _esc(selectedSlug) + ' (não registrado)</option>' + opts;
+    if (selectedSlug && !visible.find(function(t) { return t.slug === selectedSlug; })) {
+      // Selected slug excluded or unregistered — surface it so edit mode keeps
+      // the current value selectable. Edit-mode callers should pass an empty
+      // excludeTypes; this is a safety net.
+      var fallbackLabel = types.find(function(t) { return t.slug === selectedSlug; });
+      var labelText = fallbackLabel
+        ? (fallbackLabel.icon ? fallbackLabel.icon + ' ' : '') + fallbackLabel.label
+        : selectedSlug + ' (não registrado)';
+      opts = '<option value="' + _esc(selectedSlug) + '" selected>' + _esc(labelText) + '</option>' + opts;
     }
     if (includeNewOption) {
       opts += '<option value="__new__">+ Criar novo tipo...</option>';
@@ -368,6 +383,7 @@ window.CTItemForm = (function() {
     var onCancel = opts.onCancel || function() {};
     var onDirtyChange = opts.onDirtyChange || function() {};
     var onCreateType = opts.onCreateType || null;
+    var excludeTypes = Array.isArray(opts.excludeTypes) ? opts.excludeTypes : [];
 
     var isEdit = !!item;
     var src = prefill || item || {};
@@ -404,7 +420,7 @@ window.CTItemForm = (function() {
           '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="Título do item">' +
         '</div>' +
         '<div class="ct-field"><label>Tipo</label>' +
-          '<select id="ie-type">' + _renderTypeOptions(types, initialType, !!onCreateType) + '</select>' +
+          '<select id="ie-type">' + _renderTypeOptions(types, initialType, !!onCreateType, excludeTypes) + '</select>' +
         '</div>' +
         '<div class="ct-field"><label>Resumo</label>' +
           '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="Uma linha descrevendo o item">' +
@@ -485,7 +501,7 @@ window.CTItemForm = (function() {
         if (onCreateType) {
           onCreateType(function(newSlug) {
             if (newSlug) {
-              typeSel.innerHTML = _renderTypeOptions(types, newSlug, !!onCreateType);
+              typeSel.innerHTML = _renderTypeOptions(types, newSlug, !!onCreateType, excludeTypes);
               lastTypeValue = newSlug;
               renderTypeBlock(newSlug);
               markDirty();

@@ -452,6 +452,7 @@ async function _openEditor(itemOrNull) {
     titleLabel: isEdit ? 'Editar item' : 'Adicionar item',
     saveLabel: isEdit ? 'Salvar' : 'Adicionar',
     closeLabel: '',
+    excludeTypes: isEdit ? [] : ['conteudo', 'tarefa'],
     createAction: 'cv_create_item',
     createExtraParams: {
       client_slug: ClassVault.active.client_slug,

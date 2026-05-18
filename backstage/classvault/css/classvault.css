@@ -460,6 +460,20 @@
   position: relative;
 }
 
+/* CTItemForm editor is sized as a modal by default (max-height: calc(100vh - 4rem)).
+   When mounted in the right pane it must conform to the parent's bounded height
+   so the footer (save button) stays visible. */
+.cv-main-view .ct-editor {
+  max-height: 100%;
+  height: 100%;
+  width: 100%;
+  max-width: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cv-main-view .ct-editor-body { min-height: 0; }
+
 @media (max-width: 840px) {
   .cv-shell { grid-template-columns: 1fr; }
   .cv-sm { display: none; }

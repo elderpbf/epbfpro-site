@@ -352,6 +352,16 @@
   color: white;
 }
 
+.bs-tool-codename {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
 .bs-tool-name {
   font-size: 1.2rem;
   font-weight: 700;
