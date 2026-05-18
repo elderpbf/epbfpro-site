@@ -267,12 +267,12 @@ function logoWordmarkInline(c, o = {}) {
 
 const TAB_1 = [
   {
-    id: '1A', label: 'Tagline alinhada à direita, terminando no fim do "IA"',
+    id: '1.1', label: 'Tagline alinhada à direita, terminando no fim do "IA"',
     note: 'Tagline flush right no x onde "IA" termina. Alinhamento óptico clean.',
     render: c => logoHorizontal(c, { taglineX: 2020, taglineAnchor: 'end', taglineSize: 78, taglineY: 810 })
   },
   {
-    id: '1B', label: 'Mesma, tagline em duas cores',
+    id: '1.2', label: 'Mesma, tagline em duas cores',
     note: '"pensamento humano," num tom e "inteligência ampliada" no outro. Reforça a dualidade.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -289,32 +289,32 @@ const TAB_1 = [
 
 const TAB_2 = [
   {
-    id: '2A', label: 'Logo sem tagline',
+    id: '2.1', label: 'Logo sem tagline',
     note: 'Versão "compact" pra headers de site, assinatura de e-mail, contextos onde a tagline atrapalha.',
     render: c => logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' })
   },
   {
-    id: '2B', label: 'Mark only (só o P)',
+    id: '2.2', label: 'Mark only (só o P)',
     note: 'Pra favicon, app icon, avatar de rede social, marca d\'água. Versão minimalista da marca.',
     render: c => logoMarkOnly(c)
   },
   {
-    id: '2C', label: 'Wordmark only (sem o P) -- nota o "p" minúsculo agora',
+    id: '2.3', label: 'Wordmark only (sem o P) -- nota o "p" minúsculo agora',
     note: 'Sem o P glyph, o texto começa com "p" minúsculo: pensoIA. Sem isso, leria como "ensoIA".',
     render: c => logoWordmarkOnly(c)
   },
   {
-    id: '2D', label: 'Stacked (P em cima, wordmark embaixo)',
+    id: '2.4', label: 'Stacked (P em cima, wordmark embaixo)',
     note: 'P glyph em cima, "pensoIA" embaixo com p minúsculo (mesmo motivo). Pra espaços quadrados/verticais.',
     render: c => logoStacked(c)
   },
   {
-    id: '2E', label: 'Stacked com tagline',
+    id: '2.5', label: 'Stacked com tagline',
     note: 'Versão vertical completa. Boa pra título de slide, certificado, capa de PDF.',
     render: c => logoStacked(c, { showTagline: true })
   },
   {
-    id: '2F', label: 'Mark only alternativo (P navy, ponto teal)',
+    id: '2.6', label: 'Mark only alternativo (P navy, ponto teal)',
     note: 'P todo navy, só o ponto sináptico em teal. Versão mais sóbria pra impressão pequena ou contextos formais.',
     customRender: bg => {
       let cust;
@@ -325,12 +325,12 @@ const TAB_2 = [
     }
   },
   {
-    id: '2G', label: 'Mark only thick (P grosso standalone)',
+    id: '2.7', label: 'Mark only thick (P grosso standalone)',
     note: 'Glifo do wordmark inline em formato mark-only. Versão alternativa pro 2B com presença mais robusta.',
     render: c => buildSvg('0 0 600 739', pInlineThick(c, 0, 0, 739))
   },
   {
-    id: '2H', label: 'Stacked com p thick',
+    id: '2.8', label: 'Stacked com p thick',
     note: 'P grosso em cima, "pensoIA" embaixo. Stacked usando o glifo do inline.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -341,7 +341,7 @@ const TAB_2 = [
     }
   },
   {
-    id: '2I', label: 'Wordmark inline compact (sem tagline)',
+    id: '2.9', label: 'Wordmark inline compact (sem tagline)',
     note: 'Baseline 4A em viewBox apertado, pra headers e contextos compactos.',
     render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340 })
   }
@@ -349,16 +349,16 @@ const TAB_2 = [
 
 const TAB_3 = [
   {
-    id: '3A', label: 'Layout vertical centralizado completo',
+    id: '3.1', label: 'Layout vertical centralizado completo',
     note: 'Stacked com tagline. Variante final pra contextos verticais: avatar LinkedIn, story Instagram, slide central.',
     render: c => logoStacked(c, { showTagline: true })
   },
   {
-    id: '3B', label: 'Gradient navy→teal no wordmark',
+    id: '3.2', label: 'Gradient navy→teal no wordmark',
     note: 'Texto "ensoIA" com gradiente sutil em vez de cor flat. Tom mais expressivo.',
     customRender: bg => {
       const c = stdColors(bg);
-      const gradId = 'grad-3B-' + bg;
+      const gradId = 'grad-3.2-' + bg;
       const stop1 = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
       const stop2 = bg === 'white' ? C.teal : (bg === 'navy' ? C.white : C.white);
       let content = `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${stop1}"/><stop offset="1" stop-color="${stop2}"/></linearGradient></defs>`;
@@ -368,7 +368,7 @@ const TAB_3 = [
     }
   },
   {
-    id: '3C', label: 'Mark outline only (P oco)',
+    id: '3.3', label: 'Mark outline only (P oco)',
     note: 'Só o contorno do P, sem fill. Útil pra stencil, silkscreen, contextos minimalistas.',
     customRender: bg => {
       const stroke = bg === 'white' ? C.navy : C.white;
@@ -377,7 +377,7 @@ const TAB_3 = [
     }
   },
   {
-    id: '3D', label: 'Tagline em handwriting (Caveat)',
+    id: '3.4', label: 'Tagline em handwriting (Caveat)',
     note: 'Tagline em fonte cursiva pra contraste humano vs tech.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -391,12 +391,12 @@ const TAB_3 = [
 
 const TAB_4 = [
   {
-    id: '4A', label: 'Wordmark inline (baseline aprovado)',
+    id: '4.1', label: 'Wordmark inline (baseline aprovado)',
     note: 'pSize=380, pY=320, wordmarkX=340. Posição vertical confirmada: topo do p alinha com lowercase letters. Brain↔P alinhados pelo viewBox compartilhado dos SVGs v2.',
     render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340 })
   },
   {
-    id: '4B', label: 'Baseline + tagline full-width',
+    id: '4.2', label: 'Baseline + tagline full-width',
     note: 'Tagline estendida do início do p até o fim do "IA" via textLength. Spanning total do logo.',
     render: c => {
       const base = logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340, viewBox: '0 0 2400 1000' });
@@ -408,7 +408,7 @@ const TAB_4 = [
 
 const TAB_5 = [
   {
-    id: '5A', label: 'Favicons em browser tabs',
+    id: '5.1', label: 'Favicons em browser tabs',
     note: 'Mark only como favicon em 4 tabs. Como fica em ~14px.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -430,7 +430,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5B', label: 'App icon (rounded square iOS-style)',
+    id: '5.2', label: 'App icon (rounded square iOS-style)',
     note: 'Mark only num quadrado arredondado. Como ficaria no springboard.',
     customRender: bg => {
       const tileBg = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
@@ -443,7 +443,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5C', label: 'Cartão de boas-vindas',
+    id: '5.3', label: 'Cartão de boas-vindas',
     note: 'Cartão 5x7" com logo stacked e mensagem manuscrita.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -459,7 +459,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5D', label: 'Logo em header de landing',
+    id: '5.4', label: 'Logo em header de landing',
     note: 'Header de site com logo à esquerda e nav à direita. Tamanho realista.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -478,7 +478,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5E', label: 'Cartão de visita (frente)',
+    id: '5.5', label: 'Cartão de visita (frente)',
     note: 'Cartão 85x55mm com logo, nome, cargo e contato.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -498,7 +498,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5F', label: 'Avatar social circular',
+    id: '5.6', label: 'Avatar social circular',
     note: 'Mark only num círculo. Pro LinkedIn / Twitter / Instagram.',
     customRender: bg => {
       const circleBg = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
@@ -511,7 +511,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5G', label: 'Assinatura de email',
+    id: '5.7', label: 'Assinatura de email',
     note: 'Bloco horizontal com logo + linha divisora + contato.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -530,7 +530,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5H', label: 'Capa de slide 16:9',
+    id: '5.8', label: 'Capa de slide 16:9',
     note: 'Slide deck cover com logo centralizado, título e subtítulo.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -546,7 +546,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5I', label: 'T-shirt (peito esquerdo)',
+    id: '5.9', label: 'T-shirt (peito esquerdo)',
     note: 'Mark only estampado no peito esquerdo de uma t-shirt.',
     customRender: bg => {
       const shirtBg = bg === 'white' ? '#F5F5F4' : (bg === 'navy' ? C.navy : C.teal);
@@ -561,7 +561,7 @@ const TAB_5 = [
     }
   },
   {
-    id: '5J', label: 'Watermark em PDF',
+    id: '5.10', label: 'Watermark em PDF',
     note: 'Página A4 com mark only diagonal em opacidade baixa.',
     customRender: bg => {
       const pageBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
