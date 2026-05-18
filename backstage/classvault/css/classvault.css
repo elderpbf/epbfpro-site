@@ -284,6 +284,104 @@
   color: var(--text-dim);
 }
 
+/* Nested subsection (tag group inside Vault, aula group inside Trilha) */
+.cv-sm-subsection {
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 8px 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px;
+  opacity: 0.85;
+}
+.cv-sm-subsection:hover { color: var(--text-primary); opacity: 1; }
+.cv-sm-subsection .cv-sm-section-chev {
+  font-size: 0.85rem;
+  opacity: 0.6;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+}
+.cv-sm-subsection.is-collapsed .cv-sm-section-chev { transform: rotate(-90deg); }
+
+/* Inline empty state inside an expanded section */
+.cv-sm-empty--inline {
+  padding: 10px 12px 14px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Aula picker (next to turma chip in sidebar head) */
+.cv-sm-aula {
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  font: inherit;
+  color: var(--text-primary);
+  text-align: left;
+  transition: border-color .15s, background .15s;
+}
+.cv-sm-aula:hover { border-color: var(--primary); }
+.cv-sm-aula-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-sm-aula-chev {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Aula dropdown */
+.cv-aula-menu {
+  position: fixed;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -10px var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cv-aula-menu-item {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background .12s;
+}
+.cv-aula-menu-item:hover { background: var(--surface-soft); }
+.cv-aula-menu-item.is-active {
+  color: var(--primary);
+  font-weight: 600;
+}
+
 /* turma dropdown (anchored under sidebar turma block) */
 .cv-turma-menu {
   position: fixed;
