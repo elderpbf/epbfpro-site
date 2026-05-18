@@ -274,6 +274,16 @@
   border-radius: 999px;
 }
 
+/* Sub-group label inside an aula: Tarefa(s) / Conteúdo / Outros */
+.cv-sm-subgroup-label {
+  padding: 10px 12px 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
 /* turma dropdown (anchored under sidebar turma block) */
 .cv-turma-menu {
   position: fixed;
@@ -459,6 +469,20 @@
   overflow: hidden;
   position: relative;
 }
+
+/* CTItemForm editor is sized as a modal by default (max-height: calc(100vh - 4rem)).
+   When mounted in the right pane it must conform to the parent's bounded height
+   so the footer (save button) stays visible. */
+.cv-main-view .ct-editor {
+  max-height: 100%;
+  height: 100%;
+  width: 100%;
+  max-width: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cv-main-view .ct-editor-body { min-height: 0; }
 
 @media (max-width: 840px) {
   .cv-shell { grid-template-columns: 1fr; }

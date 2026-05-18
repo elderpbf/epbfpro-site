@@ -1,4 +1,4 @@
-// LaudoAI mockup — interactivity (vanilla JS, no deps)
+// Lauterna mockup — interactivity (vanilla JS, no deps)
 
 (function () {
   'use strict';

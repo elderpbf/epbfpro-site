@@ -1,8 +1,8 @@
-# LaudoAI — Clickable Mockup
+# Lauterna — Clickable Mockup
 
-Standalone HTML mockup for showing the LaudoAI concept to medical professionals and design partners. No backend, no real data, no build step. Open `index.html` and click around.
+Standalone HTML mockup for showing the Lauterna concept to medical professionals and design partners. No backend, no real data, no build step. Open `index.html` and click around.
 
-> **LaudoAI** is a provisional brand name. See "Rebranding" below to swap it later.
+> **Lauterna** is a provisional brand name. See "Rebranding" below to swap it later.
 
 ## How to open
 
@@ -53,14 +53,14 @@ mockup/
 
 ## Rebranding
 
-The brand "LaudoAI" appears in:
+The brand "Lauterna" appears in:
 
 - The `<title>` of each HTML page
-- The sidebar logo block (search `LaudoAI` in each HTML — the text sits next to a microphone SVG)
+- The sidebar logo block (search `Lauterna` in each HTML — the text sits next to a microphone SVG)
 - The footer of `planos.html` (final small disclaimer line)
 - The footer of each sidebar (`v0.1 · pré-lançamento`)
 
-Find-replace `LaudoAI` across the five HTML files when the real brand is chosen. The logo glyph is a generic mic SVG; swap it in the same block if you have a real mark.
+Find-replace `Lauterna` across the five HTML files when the real brand is chosen. The logo glyph is a generic mic SVG; swap it in the same block if you have a real mark.
 
 ## Limitations
 

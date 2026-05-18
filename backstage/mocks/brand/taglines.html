@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>pensoIA, Comfortaa, 4 taglines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: #F5F5F4;
+    color: #1C1917;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    padding: 4px 16px;
+    background: white;
+    border-bottom: 1px solid #E7E5E4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+  .topbar h1 { font-size: 11px; font-weight: 600; }
+  .topbar .legend { color: #78716C; font-size: 10px; }
+
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0;
+    overflow: hidden;
+  }
+  .cell {
+    border-right: 1px solid #E7E5E4;
+    border-bottom: 1px solid #E7E5E4;
+    padding: 24px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: hidden;
+    background: white;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+  }
+  .cell:nth-child(2n) { border-right: none; }
+  .cell:nth-child(n+3) { border-bottom: none; }
+
+  .badge {
+    position: absolute;
+    top: 8px;
+    left: 24px;
+    font-size: 10px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #A8A29E;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .wordmark {
+    font-family: 'Comfortaa', sans-serif;
+    line-height: 1;
+    white-space: nowrap;
+    font-size: clamp(60px, 11vh, 140px);
+    letter-spacing: -0.01em;
+  }
+  .penso { color: #1F2937; font-weight: 400; }
+  .accent { color: #0F8B82; font-weight: 700; }
+
+  .tagline {
+    margin-top: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: clamp(16px, 2.2vh, 26px);
+    color: #57534E;
+    letter-spacing: -0.005em;
+  }
+  .tagline .em { color: #0F8B82; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>pensoIA, Comfortaa, 4 taglines</h1>
+  <div class="legend">wordmark em Comfortaa &nbsp;·&nbsp; tagline em Inter</div>
+</div>
+
+<div class="grid">
+
+  <div class="cell">
+    <div class="badge">Tagline 1</div>
+    <div class="wordmark"><span class="penso">penso</span><span class="accent">IA</span></div>
+    <div class="tagline">Pense com inteligência.</div>
+  </div>
+
+  <div class="cell">
+    <div class="badge">Tagline 2</div>
+    <div class="wordmark"><span class="penso">penso</span><span class="accent">IA</span></div>
+    <div class="tagline">Inteligência para o seu pensamento.</div>
+  </div>
+
+  <div class="cell">
+    <div class="badge">Tagline 3</div>
+    <div class="wordmark"><span class="penso">penso</span><span class="accent">IA</span></div>
+    <div class="tagline">Inteligência ampliada.</div>
+  </div>
+
+  <div class="cell">
+    <div class="badge">Tagline 4</div>
+    <div class="wordmark"><span class="penso">penso</span><span class="accent">IA</span></div>
+    <div class="tagline">Pensamento humano, inteligência aumentada.</div>
+  </div>
+
+</div>
+
+</body>
+</html>

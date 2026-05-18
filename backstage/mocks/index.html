@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>pensoIA · Mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --teal: #0F8B82;
+  --navy: #061a51;
+  --bg: #F5F5F4;
+  --surface: #ffffff;
+  --border: #E7E5E4;
+  --text: #1C1917;
+  --text-muted: #78716C;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  transition: grid-template-columns 0.2s;
+}
+body.sidebar-hidden { grid-template-columns: 1fr; }
+
+aside.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+body.sidebar-hidden aside.sidebar { display: none; }
+
+.sidebar-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.sidebar-header h1 { font-size: 14px; font-weight: 600; }
+
+.project-list { list-style: none; padding: 8px; }
+.project-list > li { margin-bottom: 2px; }
+
+details summary {
+  list-style: none;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  user-select: none;
+}
+details summary::-webkit-details-marker { display: none; }
+details summary:hover { background: var(--bg); }
+details summary::before {
+  content: '';
+  width: 0; height: 0;
+  border-left: 5px solid var(--text-muted);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.15s;
+}
+details[open] summary::before { transform: rotate(90deg); }
+
+.count {
+  margin-left: auto;
+  background: var(--bg);
+  color: var(--text-muted);
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+details ul { list-style: none; padding: 4px 0 6px 22px; }
+details ul li a {
+  display: block;
+  padding: 6px 10px;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+details ul li a:hover { background: var(--bg); }
+details ul li a.active {
+  background: var(--teal);
+  color: white;
+}
+
+main.content {
+  background: var(--bg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.topbar {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.toggle-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.toggle-btn:hover { background: var(--bg); }
+.current-title {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.current-title strong { color: var(--text); font-weight: 500; }
+.copy-link {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--teal);
+  background: none;
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.copy-link:hover { border-color: var(--teal); }
+
+.viewer-area {
+  flex: 1;
+  position: relative;
+  background: var(--bg);
+  overflow: hidden;
+}
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 20px;
+  text-align: center;
+}
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+  display: none;
+}
+
+@media (max-width: 768px) {
+  body { grid-template-columns: 1fr; }
+  aside.sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 280px;
+    z-index: 100;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  }
+  body.sidebar-hidden aside.sidebar { display: none; }
+}
+</style>
+</head>
+<body class="sidebar-hidden">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>pensoIA · Mocks</h1>
+    </div>
+    <ul class="project-list" id="projectList"></ul>
+  </aside>
+
+  <main class="content">
+    <div class="topbar">
+      <button class="toggle-btn" onclick="document.body.classList.toggle('sidebar-hidden')" aria-label="Toggle sidebar">☰</button>
+      <div class="current-title" id="currentTitle">Selecione um mock</div>
+      <button class="copy-link" onclick="copyLink()" id="copyBtn" style="display:none;">Copiar link</button>
+    </div>
+    <div class="viewer-area">
+      <iframe id="viewer" src="about:blank"></iframe>
+      <div class="empty-state" id="emptyState">
+        ← Abra a barra lateral pra ver os mocks disponíveis
+      </div>
+    </div>
+  </main>
+
+<script>
+const MOCKS = {
+  brand: {
+    label: 'Brand',
+    items: [
+      { name: 'Explorações de tagline e variações', file: 'brand/exploracoes.html' },
+      { name: 'Preview do logo (3 fundos)', file: 'brand/preview.html' },
+      { name: 'Alternativas pro retângulo do logo', file: 'brand/alternativas.html' },
+      { name: 'Comparação de 20 fontes', file: 'brand/fontes.html' },
+      { name: 'Comfortaa + 4 taglines', file: 'brand/taglines.html' },
+      { name: 'Família Penso em Comfortaa', file: 'brand/produtos.html' }
+    ]
+  },
+  lauterna: {
+    label: 'Lauterna (provisório · plataforma de laudos médicos)',
+    items: [
+      { name: 'Home', file: 'lauterna/index.html' },
+      { name: 'Novo laudo', file: 'lauterna/novo-laudo.html' },
+      { name: 'Máscaras', file: 'lauterna/mascaras.html' },
+      { name: 'Assinar laudo', file: 'lauterna/assinar.html' },
+      { name: 'Planos', file: 'lauterna/planos.html' }
+    ]
+  }
+};
+
+function render() {
+  const list = document.getElementById('projectList');
+  let html = '';
+  for (const key of Object.keys(MOCKS)) {
+    const project = MOCKS[key];
+    const items = project.items.map(item => {
+      const hash = item.file.replace(/\.html$/, '');
+      return '<li><a href="#' + hash + '" data-file="' + item.file + '" data-name="' + item.name + '">' + item.name + '</a></li>';
+    }).join('');
+    html += '<li><details><summary>' + project.label + '<span class="count">' + project.items.length + '</span></summary><ul>' + items + '</ul></details></li>';
+  }
+  list.innerHTML = html;
+}
+
+function loadMock(file, name) {
+  const viewer = document.getElementById('viewer');
+  const empty = document.getElementById('emptyState');
+  const title = document.getElementById('currentTitle');
+  const copyBtn = document.getElementById('copyBtn');
+
+  viewer.src = file;
+  viewer.style.display = 'block';
+  empty.style.display = 'none';
+  title.innerHTML = '<strong>' + name + '</strong>';
+  copyBtn.style.display = 'inline-block';
+
+  document.querySelectorAll('.project-list a').forEach(a => {
+    a.classList.toggle('active', a.dataset.file === file);
+    if (a.dataset.file === file) {
+      a.closest('details').open = true;
+    }
+  });
+}
+
+function routeFromHash() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) {
+    document.getElementById('viewer').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'flex';
+    document.getElementById('currentTitle').textContent = 'Selecione um mock';
+    document.getElementById('copyBtn').style.display = 'none';
+    // Auto-open sidebar at root (so user sees the list, not a blank-looking empty state)
+    document.body.classList.remove('sidebar-hidden');
+    return;
+  }
+  for (const key of Object.keys(MOCKS)) {
+    const item = MOCKS[key].items.find(i => i.file.replace(/\.html$/, '') === hash);
+    if (item) {
+      loadMock(item.file, item.name);
+      return;
+    }
+  }
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copiado!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.tagName === 'A' && e.target.dataset.file) {
+    setTimeout(routeFromHash, 0);
+  }
+});
+window.addEventListener('hashchange', routeFromHash);
+
+render();
+routeFromHash();
+</script>
+</body>
+</html>
