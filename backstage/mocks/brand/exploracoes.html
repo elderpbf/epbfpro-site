@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <title>pensoIA, exploração de variações</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -33,7 +33,9 @@
   .tabs label:hover { color: #1C1917; }
   #t1:checked ~ .tabs label[for="t1"],
   #t2:checked ~ .tabs label[for="t2"],
-  #t3:checked ~ .tabs label[for="t3"] {
+  #t3:checked ~ .tabs label[for="t3"],
+  #t4:checked ~ .tabs label[for="t4"],
+  #t5:checked ~ .tabs label[for="t5"] {
     color: #0F8B82;
     border-bottom-color: #0F8B82;
   }
@@ -41,7 +43,10 @@
   #t1:checked ~ .tab-content > .pane-1,
   #t2:checked ~ .tab-content > .pane-2,
   #t3:checked ~ .tab-content > .pane-3,
-  #t4:checked ~ .tab-content > .pane-4 { display: block; }
+  #t4:checked ~ .tab-content > .pane-4,
+  #t5:checked ~ .tab-content > .pane-5 { display: block; }
+  .pane-5 .bg-cell { min-height: 220px; padding: 18px; }
+  .pane-5 .bg-cell svg { max-height: 200px; }
 
   .grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
   .card {
@@ -93,18 +98,20 @@
 <body>
 
 <h1>pensoIA, explorações de tagline e variações</h1>
-<div class="sub">3 abas. Cada variante testada nos 3 fundos: branco, navy e teal.</div>
+<div class="sub">5 abas. Cada variante testada nos 3 fundos: branco, navy e teal.</div>
 
 <input type="radio" name="tab" id="t1" checked>
 <input type="radio" name="tab" id="t2">
 <input type="radio" name="tab" id="t3">
 <input type="radio" name="tab" id="t4">
+<input type="radio" name="tab" id="t5">
 
 <div class="tabs">
-  <label for="t1">1, Posicionamento da Tagline</label>
+  <label for="t1">1, Tagline</label>
   <label for="t2">2, Versões Reduzidas</label>
   <label for="t3">3, Experimentais</label>
   <label for="t4">4, Wordmark Inline (p como letra)</label>
+  <label for="t5">5, Mundo Real</label>
 </div>
 
 <div class="tab-content">
@@ -112,6 +119,7 @@
   <section class="pane-2"><div class="grid" id="grid-2"></div></section>
   <section class="pane-3"><div class="grid" id="grid-3"></div></section>
   <section class="pane-4"><div class="grid" id="grid-4"></div></section>
+  <section class="pane-5"><div class="grid" id="grid-5"></div></section>
 </div>
 
 <script>
@@ -138,6 +146,11 @@ function pGlyph(outerColor, brainColor, dotColor, tx=0, ty=0, scale=1) {
 
 function buildSvg(viewBox, content) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">${content}</svg>`;
+}
+
+// Embed an existing SVG string into another SVG by injecting x/y/width/height attrs
+function embedSvg(svgStr, x, y, w, h) {
+  return svgStr.replace(/^<svg([^>]*)>/, `<svg$1 x="${x}" y="${y}" width="${w}" height="${h}">`);
 }
 
 // Horizontal logo (P glyph beside wordmark)
@@ -254,44 +267,23 @@ function logoWordmarkInline(c, o = {}) {
 
 const TAB_1 = [
   {
-    id: '1A', label: 'Atual, alinhada à esquerda (78px)',
-    note: 'Versão atual. A tagline passa do "A" do IA. Mostra o problema.',
-    render: c => logoHorizontal(c)
+    id: '1A', label: 'Tagline alinhada à direita, terminando no fim do "IA"',
+    note: 'Tagline flush right no x onde "IA" termina. Alinhamento óptico clean.',
+    render: c => logoHorizontal(c, { taglineX: 2020, taglineAnchor: 'end', taglineSize: 78, taglineY: 810 })
   },
   {
-    id: '1B', label: 'Reduzida até o "I" (~52px)',
-    note: 'Tagline encolhe pra terminar antes do "I" do IA. Versão mais discreta.',
-    render: c => logoHorizontal(c, { taglineSize: 52, taglineY: 830 })
-  },
-  {
-    id: '1C', label: 'Centralizada sob "ensoIA" (60px)',
-    note: 'Centralizada no centro horizontal do wordmark. Hierarquia clean, sem alinhamento forçado.',
-    render: c => logoHorizontal(c, { taglineSize: 60, taglineX: 1500, taglineY: 820, taglineAnchor: 'middle' })
-  },
-  {
-    id: '1D', label: 'Centralizada menor (50px)',
-    note: 'Mesma estrutura da 1C com presença ainda mais discreta. Boa pra tamanho médio.',
-    render: c => logoHorizontal(c, { taglineSize: 50, taglineX: 1500, taglineY: 825, taglineAnchor: 'middle' })
-  },
-  {
-    id: '1E', label: 'Forçada via textLength (estica/comprime)',
-    note: 'Mantém 78px mas força largura via textLength. Letras espremidas. Risco de deformação.',
-    render: c => logoHorizontal(c, { taglineSize: 78, taglineTextLength: 1320 })
-  },
-  {
-    id: '1F', label: 'Duas linhas, alinhada à esquerda',
-    note: 'Quebra natural na vírgula. Permite fonte maior. Logo fica mais alto verticalmente.',
-    render: c => logoHorizontal(c, { taglineLines: ['pensamento humano,', 'inteligência ampliada'], taglineSize: 80, taglineY: 810, taglineLineGap: 100, viewBox: '0 0 2400 960' })
-  },
-  {
-    id: '1G', label: 'Duas linhas, centralizada',
-    note: 'Versão centralizada da 1F. Hierarquia visual mais elegante.',
-    render: c => logoHorizontal(c, { taglineLines: ['pensamento humano,', 'inteligência ampliada'], taglineSize: 80, taglineX: 1500, taglineY: 810, taglineAnchor: 'middle', taglineLineGap: 100, viewBox: '0 0 2400 960' })
-  },
-  {
-    id: '1H', label: 'Separador "·" no lugar da vírgula',
-    note: 'Ponto médio com espaços extras dá respiro visual. Tom mais premium.',
-    render: c => logoHorizontal(c, { taglineText: 'pensamento humano  ·  inteligência ampliada', taglineSize: 56, taglineY: 825 })
+    id: '1B', label: 'Mesma, tagline em duas cores',
+    note: '"pensamento humano," num tom e "inteligência ampliada" no outro. Reforça a dualidade.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      let c1, c2;
+      if (bg === 'white') { c1 = C.navy; c2 = C.teal; }
+      if (bg === 'navy')  { c1 = C.white; c2 = C.teal; }
+      if (bg === 'teal')  { c1 = C.white; c2 = C.navy; }
+      const tagline = `<text x="2020" y="810" text-anchor="end" font-weight="400" font-size="78" fill="${c1}">pensamento humano,<tspan fill="${c2}"> inteligência ampliada</tspan></text>`;
+      const base = logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 870' });
+      return base.replace('</svg>', tagline + '</svg>');
+    }
   }
 ];
 
@@ -331,108 +323,263 @@ const TAB_2 = [
       if (bg === 'teal')  cust = { pOuter: C.white, pBrain: C.white, pDot: C.navy };
       return logoMarkOnly(cust);
     }
+  },
+  {
+    id: '2G', label: 'Mark only thick (P grosso standalone)',
+    note: 'Glifo do wordmark inline em formato mark-only. Versão alternativa pro 2B com presença mais robusta.',
+    render: c => buildSvg('0 0 600 739', pInlineThick(c, 0, 0, 739))
+  },
+  {
+    id: '2H', label: 'Stacked com p thick',
+    note: 'P grosso em cima, "pensoIA" embaixo. Stacked usando o glifo do inline.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const pH = 600;
+      let content = pInlineThick(c, (1900 - 488) / 2, 0, pH);
+      content += `<text x="950" y="${pH + 480}" font-size="380" letter-spacing="-8" font-weight="400" fill="${c.ensoColor}" text-anchor="middle">penso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
+      return buildSvg(`0 0 1900 ${pH + 540}`, content);
+    }
+  },
+  {
+    id: '2I', label: 'Wordmark inline compact (sem tagline)',
+    note: 'Baseline 4A em viewBox apertado, pra headers e contextos compactos.',
+    render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340 })
   }
 ];
 
 const TAB_3 = [
   {
-    id: '3A', label: 'Pesos invertidos (enso bold, IA light)',
-    note: 'Inverte a hierarquia tipográfica. Quem se destaca: "enso" (o pensar) ou "IA"? Experimento conceitual.',
-    render: c => logoHorizontal(c, { ensoWeight: 700, iaWeight: 400, showTagline: false, viewBox: '0 0 2400 745' })
-  },
-  {
-    id: '3B', label: 'Tagline em duas cores',
-    note: '"pensamento humano" e "inteligência ampliada" em cores diferentes, reforçando visualmente a dualidade.',
-    customRender: bg => {
-      const c = stdColors(bg);
-      let color1, color2;
-      if (bg === 'white') { color1 = C.navy; color2 = C.teal; }
-      if (bg === 'navy')  { color1 = C.white; color2 = C.teal; }
-      if (bg === 'teal')  { color1 = C.white; color2 = C.navy; }
-      const tagline = `<text x="610" y="810" font-weight="400" font-size="78" fill="${color1}">pensamento humano,<tspan fill="${color2}"> inteligência ampliada</tspan></text>`;
-      return logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 870', customTaglineMarkup: tagline }).replace('</svg>', tagline + '</svg>');
-    }
-  },
-  {
-    id: '3C', label: 'Tagline em caps + tracking wide',
-    note: 'Tudo em maiúsculas com espaçamento largo entre letras. Vibe corporate/premium, mais sério.',
-    render: c => logoHorizontal(c, { taglineText: 'PENSAMENTO HUMANO   ·   INTELIGÊNCIA AMPLIADA', taglineSize: 38, taglineLetterSpacing: 6, taglineY: 825 })
-  },
-  {
-    id: '3D', label: 'Monocromático navy (adapta no fundo navy)',
-    note: 'Tudo em navy. Quando o fundo é navy, vira tudo branco pra manter contraste. Útil pra impressão 1-cor.',
-    customRender: bg => logoHorizontal(monoColors(bg === 'navy' ? C.white : C.navy), {})
-  },
-  {
-    id: '3E', label: 'Monocromático teal (adapta no fundo teal)',
-    note: 'Tudo em teal. Quando o fundo é teal, vira tudo branco. Útil pra estampa, brindes, contextos coloridos.',
-    customRender: bg => logoHorizontal(monoColors(bg === 'teal' ? C.white : C.teal), {})
-  },
-  {
-    id: '3F', label: 'Tagline ACIMA do wordmark',
-    note: 'Inverte a ordem. Tagline vira "etiqueta" antes do nome. Diferente, pode ser muito conceitual.',
-    customRender: bg => {
-      const c = stdColors(bg);
-      // Build manually to position tagline above
-      let content = `<text x="610" y="100" font-weight="400" font-size="78" fill="${c.taglineColor}">${TAGLINE}</text>`;
-      content += pGlyph(c.pOuter, c.pBrain, c.pDot, 0, 170, 1);
-      content += `<text x="610" y="785" font-size="500" letter-spacing="-10" font-weight="400" fill="${c.ensoColor}">enso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
-      return buildSvg('0 0 2400 950', content);
-    }
-  },
-  {
-    id: '3G', label: 'Tagline reduzida: "inteligência ampliada"',
-    note: 'Joga fora "pensamento humano,". Foca só na promessa principal. Mais memorável? Mais radical.',
-    render: c => logoHorizontal(c, { taglineText: 'inteligência ampliada', taglineSize: 78, taglineY: 810 })
-  },
-  {
-    id: '3H', label: 'Layout vertical centralizado completo',
-    note: 'Mesma 2E mas pensada como variante final pra contextos verticais: avatar Linkedin, story Instagram, slide central.',
+    id: '3A', label: 'Layout vertical centralizado completo',
+    note: 'Stacked com tagline. Variante final pra contextos verticais: avatar LinkedIn, story Instagram, slide central.',
     render: c => logoStacked(c, { showTagline: true })
+  },
+  {
+    id: '3B', label: 'Gradient navy→teal no wordmark',
+    note: 'Texto "ensoIA" com gradiente sutil em vez de cor flat. Tom mais expressivo.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const gradId = 'grad-3B-' + bg;
+      const stop1 = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
+      const stop2 = bg === 'white' ? C.teal : (bg === 'navy' ? C.white : C.white);
+      let content = `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${stop1}"/><stop offset="1" stop-color="${stop2}"/></linearGradient></defs>`;
+      content += pGlyph(c.pOuter, c.pBrain, c.pDot);
+      content += `<text x="610" y="615" font-size="500" letter-spacing="-10" font-weight="400" fill="url(#${gradId})">enso<tspan font-weight="700">IA</tspan></text>`;
+      return buildSvg('0 0 2400 745', content);
+    }
+  },
+  {
+    id: '3C', label: 'Mark outline only (P oco)',
+    note: 'Só o contorno do P, sem fill. Útil pra stencil, silkscreen, contextos minimalistas.',
+    customRender: bg => {
+      const stroke = bg === 'white' ? C.navy : C.white;
+      const content = `<g transform="translate(0,745) scale(0.1,-0.1)" fill="none" stroke="${stroke}" stroke-width="40"><path d="${PATHS.outer}"/></g>`;
+      return buildSvg('0 0 600 745', content);
+    }
+  },
+  {
+    id: '3D', label: 'Tagline em handwriting (Caveat)',
+    note: 'Tagline em fonte cursiva pra contraste humano vs tech.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      let content = pGlyph(c.pOuter, c.pBrain, c.pDot);
+      content += `<text x="610" y="615" font-size="500" letter-spacing="-10" font-weight="400" fill="${c.ensoColor}">enso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
+      content += `<text x="610" y="830" font-family="Caveat, cursive" font-weight="500" font-size="92" fill="${c.taglineColor}">${TAGLINE}</text>`;
+      return buildSvg('0 0 2400 900', content);
+    }
   }
 ];
-
 
 const TAB_4 = [
   {
     id: '4A', label: 'Wordmark inline (baseline aprovado)',
-    note: 'pSize=380, pY=320, wordmarkX=340. Posição vertical confirmada: topo do p alinha com topo das lowercase letters. Brain↔P alinhados pelo viewBox compartilhado dos SVGs v2.',
+    note: 'pSize=380, pY=320, wordmarkX=340. Posição vertical confirmada: topo do p alinha com lowercase letters. Brain↔P alinhados pelo viewBox compartilhado dos SVGs v2.',
     render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340 })
   },
   {
-    id: '4B', label: 'Mono p (glifo na mesma cor de "enso")',
-    note: 'O p estilizado inteiro renderizado na mesma cor de "enso", virando uma letra "p" comum (cérebro e ponto sumem porque ficam da mesma cor da silhueta). IA mantém a cor de acento.',
-    customRender: bg => {
-      const c = stdColors(bg);
-      const monoP = Object.assign({}, c, { pOuter: c.ensoColor, pBrain: c.ensoColor, pDot: c.ensoColor });
-      return logoWordmarkInline(monoP, { pSize: 380, pY: 320, wordmarkX: 340 });
+    id: '4B', label: 'Baseline + tagline full-width',
+    note: 'Tagline estendida do início do p até o fim do "IA" via textLength. Spanning total do logo.',
+    render: c => {
+      const base = logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340, viewBox: '0 0 2400 1000' });
+      const tagline = `<text x="30" y="940" font-weight="400" font-size="78" fill="${c.taglineColor}" textLength="1990" lengthAdjust="spacingAndGlyphs">${TAGLINE}</text>`;
+      return base.replace('</svg>', tagline + '</svg>');
     }
-  },
-  {
-    id: '4C', label: 'Inline standard + tagline',
-    note: 'Mesma 4A com tagline "pensamento humano, inteligência ampliada" embaixo.',
-    render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340, showTagline: true, viewBox: '0 0 2400 970' })
-  },
-  {
-    id: '4D', label: 'Mono p + tagline',
-    note: 'Mesma 4B (p monocromático) com tagline embaixo.',
-    customRender: bg => {
-      const c = stdColors(bg);
-      const monoP = Object.assign({}, c, { pOuter: c.ensoColor, pBrain: c.ensoColor, pDot: c.ensoColor });
-      return logoWordmarkInline(monoP, { pSize: 380, pY: 320, wordmarkX: 340, showTagline: true, viewBox: '0 0 2400 970' });
-    }
-  },
-  {
-    id: '4E', label: 'P maior (size 440)',
-    note: 'Glifo mais imponente. Bowl maior, descender mais longo. Topo ainda em pY=320 (alinha com lowercase).',
-    render: c => logoWordmarkInline(c, { pSize: 440, pY: 320, wordmarkX: 395 })
-  },
-  {
-    id: '4F', label: 'P menor (size 320)',
-    note: 'Glifo mais discreto, integrado ao texto. Bowl menor, mais sutil.',
-    render: c => logoWordmarkInline(c, { pSize: 320, pY: 320, wordmarkX: 295 })
   }
 ];
+
+const TAB_5 = [
+  {
+    id: '5A', label: 'Favicons em browser tabs',
+    note: 'Mark only como favicon em 4 tabs. Como fica em ~14px.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const fav = logoMarkOnly(c);
+      let content = '<rect width="800" height="220" fill="#E8E8E6"/>';
+      const tabs = ['pensoIA · Mocks', 'PJ Office', 'TJSE', 'Gmail'];
+      tabs.forEach((label, i) => {
+        const tx = 20 + i * 195;
+        const active = i === 0;
+        content += `<rect x="${tx}" y="20" width="180" height="38" rx="8" fill="${active ? 'white' : '#D6D5D2'}"/>`;
+        content += embedSvg(fav, tx + 12, 26, 18, 26);
+        content += `<text x="${tx + 38}" y="46" font-family="Inter, sans-serif" font-size="13" fill="#1C1917">${label}</text>`;
+      });
+      content += '<rect x="20" y="80" width="760" height="36" rx="18" fill="white" stroke="#D6D5D2"/>';
+      content += '<text x="40" y="103" font-family="Inter, sans-serif" font-size="12" fill="#78716C">pensoia.com/backstage/mocks</text>';
+      content += '<rect x="20" y="140" width="760" height="60" rx="6" fill="white" stroke="#D6D5D2"/>';
+      content += '<text x="40" y="175" font-family="Inter, sans-serif" font-size="14" fill="#1C1917">Mocks Hub · página atual</text>';
+      return buildSvg('0 0 800 220', content);
+    }
+  },
+  {
+    id: '5B', label: 'App icon (rounded square iOS-style)',
+    note: 'Mark only num quadrado arredondado. Como ficaria no springboard.',
+    customRender: bg => {
+      const tileBg = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
+      const inner = (bg === 'navy' || bg === 'teal')
+        ? { pOuter: C.white, pBrain: C.white, pDot: C.white }
+        : { pOuter: C.white, pBrain: C.teal, pDot: C.teal };
+      let content = `<rect width="400" height="400" rx="88" fill="${tileBg}"/>`;
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(inner.pOuter, inner.pBrain, inner.pDot)), 90, 60, 220, 280);
+      return buildSvg('0 0 400 400', content);
+    }
+  },
+  {
+    id: '5C', label: 'Cartão de boas-vindas',
+    note: 'Cartão 5x7" com logo stacked e mensagem manuscrita.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const cardBg = bg === 'white' ? '#FAF7F2' : (bg === 'navy' ? C.navy : C.teal);
+      const txtC = bg === 'white' ? C.navy : C.white;
+      let content = `<rect width="500" height="700" fill="${cardBg}"/>`;
+      content += embedSvg(logoStacked(c), 100, 60, 300, 220);
+      content += `<text x="250" y="430" text-anchor="middle" font-family="Caveat, cursive" font-weight="500" font-size="38" fill="${txtC}">bem-vindo à</text>`;
+      content += `<text x="250" y="495" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="58" fill="${txtC}">prática aumentada</text>`;
+      content += `<line x1="160" y1="555" x2="340" y2="555" stroke="${txtC}" stroke-width="1" opacity="0.3"/>`;
+      content += `<text x="250" y="595" text-anchor="middle" font-family="Comfortaa, sans-serif" font-size="14" fill="${txtC}" opacity="0.7">pensoia.com</text>`;
+      return buildSvg('0 0 500 700', content);
+    }
+  },
+  {
+    id: '5D', label: 'Logo em header de landing',
+    note: 'Header de site com logo à esquerda e nav à direita. Tamanho realista.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const headerBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
+      const navC = bg === 'white' ? '#1C1917' : 'white';
+      const divider = bg === 'white' ? '#E7E5E4' : 'rgba(255,255,255,0.15)';
+      let content = `<rect width="1200" height="120" fill="${headerBg}"/>`;
+      content += `<line x1="0" y1="119" x2="1200" y2="119" stroke="${divider}" stroke-width="1"/>`;
+      content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 40, 30, 220, 60);
+      ['Produto', 'Casos', 'Preços', 'Entrar'].forEach((item, i) => {
+        content += `<text x="${760 + i * 90}" y="65" font-family="Inter, sans-serif" font-size="14" fill="${navC}">${item}</text>`;
+      });
+      content += `<rect x="1110" y="42" width="80" height="36" rx="6" fill="${C.teal}"/>`;
+      content += '<text x="1150" y="66" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="white">Comece</text>';
+      return buildSvg('0 0 1200 120', content);
+    }
+  },
+  {
+    id: '5E', label: 'Cartão de visita (frente)',
+    note: 'Cartão 85x55mm com logo, nome, cargo e contato.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const cardBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
+      const txtC = bg === 'white' ? '#1C1917' : 'white';
+      const subtC = bg === 'white' ? '#78716C' : 'rgba(255,255,255,0.75)';
+      const stroke = bg === 'white' ? '#E7E5E4' : 'none';
+      let content = `<rect width="500" height="325" fill="${cardBg}" stroke="${stroke}" stroke-width="1" rx="8"/>`;
+      content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 30, 30, 180, 50);
+      content += `<line x1="30" y1="150" x2="120" y2="150" stroke="${C.teal}" stroke-width="2"/>`;
+      content += `<text x="30" y="190" font-family="Inter, sans-serif" font-size="20" font-weight="600" fill="${txtC}">Elder Pelícoli</text>`;
+      content += `<text x="30" y="212" font-family="Inter, sans-serif" font-size="13" fill="${subtC}">Sócio · advogado · dev</text>`;
+      content += `<text x="30" y="270" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">elder@pensoia.com</text>`;
+      content += `<text x="30" y="287" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">pensoia.com</text>`;
+      content += `<text x="30" y="304" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">+55 79 9999-9999</text>`;
+      return buildSvg('0 0 500 325', content);
+    }
+  },
+  {
+    id: '5F', label: 'Avatar social circular',
+    note: 'Mark only num círculo. Pro LinkedIn / Twitter / Instagram.',
+    customRender: bg => {
+      const circleBg = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
+      const inner = (bg === 'navy' || bg === 'teal')
+        ? { pOuter: C.white, pBrain: C.white, pDot: C.white }
+        : { pOuter: C.white, pBrain: C.teal, pDot: C.teal };
+      let content = `<circle cx="200" cy="200" r="190" fill="${circleBg}"/>`;
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(inner.pOuter, inner.pBrain, inner.pDot)), 100, 70, 200, 260);
+      return buildSvg('0 0 400 400', content);
+    }
+  },
+  {
+    id: '5G', label: 'Assinatura de email',
+    note: 'Bloco horizontal com logo + linha divisora + contato.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const sigBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
+      const txtC = bg === 'white' ? '#1C1917' : 'white';
+      const subtC = bg === 'white' ? '#78716C' : 'rgba(255,255,255,0.75)';
+      const divider = bg === 'white' ? '#E7E5E4' : 'rgba(255,255,255,0.3)';
+      let content = `<rect width="600" height="200" fill="${sigBg}"/>`;
+      content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 30, 45, 180, 50);
+      content += `<line x1="240" y1="50" x2="240" y2="150" stroke="${divider}" stroke-width="1"/>`;
+      content += `<text x="270" y="80" font-family="Inter, sans-serif" font-size="16" font-weight="600" fill="${txtC}">Elder Pelícoli</text>`;
+      content += `<text x="270" y="102" font-family="Inter, sans-serif" font-size="12" fill="${subtC}">Sócio · PensoIA</text>`;
+      content += `<text x="270" y="128" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">elder@pensoia.com · pensoia.com</text>`;
+      content += `<text x="270" y="146" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">+55 79 9999-9999</text>`;
+      return buildSvg('0 0 600 200', content);
+    }
+  },
+  {
+    id: '5H', label: 'Capa de slide 16:9',
+    note: 'Slide deck cover com logo centralizado, título e subtítulo.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const slideBg = bg === 'white' ? '#FAFAF9' : (bg === 'navy' ? C.navy : C.teal);
+      const txtC = bg === 'white' ? '#1C1917' : 'white';
+      const accentC = bg === 'white' ? C.teal : 'rgba(255,255,255,0.8)';
+      let content = `<rect width="1920" height="1080" fill="${slideBg}"/>`;
+      content += embedSvg(logoStacked(c), 660, 180, 600, 460);
+      content += `<text x="960" y="780" text-anchor="middle" font-family="Inter, sans-serif" font-size="56" font-weight="700" fill="${txtC}">Inteligência ampliada</text>`;
+      content += `<text x="960" y="850" text-anchor="middle" font-family="Inter, sans-serif" font-size="30" font-weight="400" fill="${accentC}">para o operador do Direito</text>`;
+      content += `<text x="960" y="990" text-anchor="middle" font-family="Inter, sans-serif" font-size="18" fill="${accentC}" opacity="0.6">pensoia.com</text>`;
+      return buildSvg('0 0 1920 1080', content);
+    }
+  },
+  {
+    id: '5I', label: 'T-shirt (peito esquerdo)',
+    note: 'Mark only estampado no peito esquerdo de uma t-shirt.',
+    customRender: bg => {
+      const shirtBg = bg === 'white' ? '#F5F5F4' : (bg === 'navy' ? C.navy : C.teal);
+      const shirtStroke = bg === 'white' ? '#D6D5D2' : 'rgba(255,255,255,0.2)';
+      const inner = bg === 'white'
+        ? { pOuter: C.navy, pBrain: C.teal, pDot: C.teal }
+        : { pOuter: C.white, pBrain: C.white, pDot: C.white };
+      let content = `<path d="M150 80 L100 130 L60 110 L40 200 L100 220 L100 480 L300 480 L300 220 L360 200 L340 110 L300 130 L250 80 Q200 105 150 80 Z" fill="${shirtBg}" stroke="${shirtStroke}" stroke-width="2"/>`;
+      content += `<path d="M150 80 Q200 115 250 80" fill="none" stroke="${shirtStroke}" stroke-width="1.5"/>`;
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(inner.pOuter, inner.pBrain, inner.pDot)), 145, 175, 50, 62);
+      return buildSvg('0 0 400 500', content);
+    }
+  },
+  {
+    id: '5J', label: 'Watermark em PDF',
+    note: 'Página A4 com mark only diagonal em opacidade baixa.',
+    customRender: bg => {
+      const pageBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
+      const lineC = bg === 'white' ? '#1C1917' : 'white';
+      const wmC = bg === 'white' ? C.navy : C.white;
+      let content = `<rect width="420" height="594" fill="${pageBg}" stroke="#D6D5D2" stroke-width="1"/>`;
+      content += '<g opacity="0.08" transform="rotate(-30 210 297)">';
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(wmC, wmC, wmC)), 110, 197, 200, 240);
+      content += '</g>';
+      const widths = [340, 365, 310, 350, 330, 370, 320, 355, 300, 360, 325, 345, 372, 318, 358, 348, 335, 350];
+      widths.forEach((w, i) => {
+        content += `<rect x="40" y="${40 + i * 26}" width="${w}" height="5" fill="${lineC}" opacity="0.5" rx="2"/>`;
+      });
+      return buildSvg('0 0 420 594', content);
+    }
+  }
+];
+
 // ============================================================
 // RENDER
 // ============================================================
@@ -461,6 +608,7 @@ renderVariants('grid-1', TAB_1);
 renderVariants('grid-2', TAB_2);
 renderVariants('grid-3', TAB_3);
 renderVariants('grid-4', TAB_4);
+renderVariants('grid-5', TAB_5);
 </script>
 
 </body>
