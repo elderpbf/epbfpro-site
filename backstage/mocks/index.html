@@ -235,8 +235,7 @@ body.guest-mode .topbar::before {
   </main>
 
 <script>
-const AUTH_KEY = 'bs_pw_hash';
-const isAuthenticated = () => !!localStorage.getItem(AUTH_KEY);
+const isAuthenticated = () => sessionStorage.getItem('bs_auth') === '1' && !!localStorage.getItem('bs_pw_hash');
 
 const MOCKS = {
   brand: {
