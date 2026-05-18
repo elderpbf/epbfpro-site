@@ -246,7 +246,7 @@ function _renderItems(items) {
       '</button>'
     );
     if (!isCollapsed) {
-      html.push(groupItems.map(_renderSubCard).join(''));
+      html.push(_renderAulaBody(groupItems));
     }
   }
   body.innerHTML = html.join('');
@@ -256,6 +256,27 @@ function _renderItems(items) {
     const el = body.querySelector('.sub[data-item-id="' + ClassVault.activeItemId + '"]');
     if (el) el.classList.add('is-active');
   }
+}
+
+// Within an aula, group items by type so the sidebar mirrors PensoTrilha's
+// student-facing structure: Tarefa(s) first, Conteúdo second, Outros last.
+// Sub-section labels render only when there's more than one populated group.
+function _renderAulaBody(aulaItems) {
+  const tarefa = aulaItems.filter(it => it.type === 'tarefa');
+  const conteudo = aulaItems.filter(it => it.type === 'conteudo');
+  const outros = aulaItems.filter(it => it.type !== 'tarefa' && it.type !== 'conteudo');
+  const groups = [
+    { label: tarefa.length === 1 ? 'Tarefa' : 'Tarefas', items: tarefa },
+    { label: 'Conteúdo da aula', items: conteudo },
+    { label: 'Outros', items: outros }
+  ].filter(g => g.items.length);
+  if (groups.length === 1) {
+    return groups[0].items.map(_renderSubCard).join('');
+  }
+  return groups.map(g =>
+    '<div class="cv-sm-subgroup-label">' + _esc(g.label) + '</div>' +
+    g.items.map(_renderSubCard).join('')
+  ).join('');
 }
 
 function _renderSubCard(item) {

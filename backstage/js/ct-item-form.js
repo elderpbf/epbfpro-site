@@ -81,15 +81,12 @@ window.CTItemForm = (function() {
       var icon = t.icon ? t.icon + ' ' : '';
       return '<option value="' + _esc(t.slug) + '"' + sel + '>' + _esc(icon + t.label) + '</option>';
     }).join('');
-    if (selectedSlug && !visible.find(function(t) { return t.slug === selectedSlug; })) {
-      // Selected slug excluded or unregistered — surface it so edit mode keeps
-      // the current value selectable. Edit-mode callers should pass an empty
-      // excludeTypes; this is a safety net.
-      var fallbackLabel = types.find(function(t) { return t.slug === selectedSlug; });
-      var labelText = fallbackLabel
-        ? (fallbackLabel.icon ? fallbackLabel.icon + ' ' : '') + fallbackLabel.label
-        : selectedSlug + ' (não registrado)';
-      opts = '<option value="' + _esc(selectedSlug) + '" selected>' + _esc(labelText) + '</option>' + opts;
+    var isExcludedSlug = excluded && excluded.indexOf(selectedSlug) >= 0;
+    if (selectedSlug && !isExcludedSlug && !visible.find(function(t) { return t.slug === selectedSlug; })) {
+      // Slug not in the visible list AND not in the excluded list → unregistered.
+      // Prepend as a selectable fallback (edit mode safety net).
+      opts = '<option value="' + _esc(selectedSlug) + '" selected>' +
+        _esc(selectedSlug + ' (não registrado)') + '</option>' + opts;
     }
     if (includeNewOption) {
       opts += '<option value="__new__">+ Criar novo tipo...</option>';
@@ -387,7 +384,10 @@ window.CTItemForm = (function() {
 
     var isEdit = !!item;
     var src = prefill || item || {};
-    var initialType = src.type || (isEdit ? item.type : null) || (types[0] && types[0].slug) || 'prompt';
+    var _firstVisibleType = excludeTypes.length
+      ? types.find(function(t) { return excludeTypes.indexOf(t.slug) < 0; })
+      : types[0];
+    var initialType = src.type || (isEdit ? item.type : null) || (_firstVisibleType && _firstVisibleType.slug) || 'prompt';
     var initialTitle = src.title != null ? src.title : '';
     var initialSummary = src.summary != null ? src.summary : '';
     var initialBody = src.body_md != null ? src.body_md : '';
