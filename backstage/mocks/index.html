@@ -26,7 +26,7 @@ body {
   grid-template-columns: 280px 1fr;
   transition: grid-template-columns 0.2s;
 }
-body.sidebar-hidden { grid-template-columns: 0 1fr; }
+body.sidebar-hidden { grid-template-columns: 1fr; }
 
 aside.sidebar {
   background: var(--surface);
@@ -260,6 +260,8 @@ function routeFromHash() {
     document.getElementById('emptyState').style.display = 'flex';
     document.getElementById('currentTitle').textContent = 'Selecione um mock';
     document.getElementById('copyBtn').style.display = 'none';
+    // Auto-open sidebar at root (so user sees the list, not a blank-looking empty state)
+    document.body.classList.remove('sidebar-hidden');
     return;
   }
   for (const key of Object.keys(MOCKS)) {
@@ -289,11 +291,6 @@ window.addEventListener('hashchange', routeFromHash);
 
 render();
 routeFromHash();
-
-// Auto-open sidebar if no hash (so user sees the list)
-if (!window.location.hash) {
-  document.body.classList.remove('sidebar-hidden');
-}
 </script>
 </body>
 </html>
