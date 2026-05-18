@@ -207,15 +207,25 @@ function logoWordmarkOnly(c) {
 }
 
 function logoStacked(c, o = {}) {
-  const { showTagline = false } = o;
+  const { showTagline = false, useThick = false } = o;
   const pScale = 0.7;
-  const pX = (1900 - 600 * pScale) / 2;
-  let content = pGlyph(c.pOuter, c.pBrain, c.pDot, pX, 0, pScale);
-  content += `<text x="950" y="${745*pScale + 480}" font-size="380" letter-spacing="-8" font-weight="400" fill="${c.ensoColor}" text-anchor="middle">penso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
-  if (showTagline) {
-    content += `<text x="950" y="${745*pScale + 620}" font-weight="400" font-size="62" fill="${c.taglineColor}" text-anchor="middle">${TAGLINE}</text>`;
+  const targetH = 745 * pScale;
+  let content;
+  if (useThick) {
+    // thick-p é a letra 'p' minúscula em si: centralizada acima, "ensoIA" embaixo completa o "pensoIA"
+    const thickW = (488 / 739) * targetH;
+    const thickX = (1900 - thickW) / 2;
+    content = pInlineThick(c, thickX, 0, targetH);
+  } else {
+    const pX = (1900 - 600 * pScale) / 2;
+    content = pGlyph(c.pOuter, c.pBrain, c.pDot, pX, 0, pScale);
   }
-  const totalH = showTagline ? 745*pScale + 700 : 745*pScale + 540;
+  const wordmarkPrefix = useThick ? 'enso' : 'penso';
+  content += `<text x="950" y="${targetH + 480}" font-size="380" letter-spacing="-8" font-weight="400" fill="${c.ensoColor}" text-anchor="middle">${wordmarkPrefix}<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
+  if (showTagline) {
+    content += `<text x="950" y="${targetH + 620}" font-weight="400" font-size="62" fill="${c.taglineColor}" text-anchor="middle">${TAGLINE}</text>`;
+  }
+  const totalH = showTagline ? targetH + 700 : targetH + 540;
   return buildSvg(`0 0 1900 ${totalH}`, content);
 }
 
@@ -304,19 +314,14 @@ const TAB_2 = [
     render: c => logoWordmarkOnly(c)
   },
   {
-    id: '2.2', label: 'Stacked (P em cima, wordmark embaixo)',
-    note: 'Pra espaços quadrados/verticais.',
-    render: c => logoStacked(c)
+    id: '2.2', label: 'Empilhada (thick-p como letra)',
+    note: 'Thick-p empilhado acima, "ensoIA" embaixo. O glifo é a letra p; lido na vertical forma "pensoIA".',
+    render: c => logoStacked(c, { useThick: true })
   },
   {
-    id: '2.3', label: 'Stacked com tagline',
-    note: 'Versão vertical completa. Boa pra título de slide, certificado, capa de PDF.',
-    render: c => logoStacked(c, { showTagline: true })
-  },
-  {
-    id: '2.4', label: 'Wordmark inline compact (sem tagline)',
-    note: 'Baseline inline em viewBox apertado, pra headers e contextos compactos.',
-    render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340 })
+    id: '2.3', label: 'Empilhada + tagline',
+    note: 'Mesma 2.2 com tagline embaixo.',
+    render: c => logoStacked(c, { useThick: true, showTagline: true })
   }
 ];
 
@@ -418,7 +423,7 @@ const TAB_3 = [
       content += `<line x1="30" y1="150" x2="120" y2="150" stroke="${C.teal}" stroke-width="2"/>`;
       content += `<text x="30" y="188" font-family="Inter, sans-serif" font-size="18" font-weight="600" fill="${txtC}">Élder Prudente Barbosa Filho</text>`;
       content += `<text x="30" y="210" font-family="Inter, sans-serif" font-size="13" fill="${subtC}">Consultor em IA</text>`;
-      content += `<text x="30" y="268" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com.br</text>`;
+      content += `<text x="30" y="268" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com</text>`;
       content += `<text x="30" y="285" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">pensoia.com</text>`;
       content += `<text x="30" y="302" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">(79) 9 8014-253</text>`;
       return buildSvg('0 0 500 325', content);
@@ -452,7 +457,7 @@ const TAB_3 = [
       content += `<line x1="240" y1="50" x2="240" y2="150" stroke="${divider}" stroke-width="1"/>`;
       content += `<text x="270" y="80" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="${txtC}">Élder Prudente Barbosa Filho</text>`;
       content += `<text x="270" y="102" font-family="Inter, sans-serif" font-size="12" fill="${subtC}">Consultor em IA · PensoIA</text>`;
-      content += `<text x="270" y="128" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com.br · pensoia.com</text>`;
+      content += `<text x="270" y="128" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com · pensoia.com</text>`;
       content += `<text x="270" y="146" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">(79) 9 8014-253</text>`;
       return buildSvg('0 0 600 200', content);
     }
