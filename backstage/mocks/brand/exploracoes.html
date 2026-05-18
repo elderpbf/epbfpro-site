@@ -41,15 +41,20 @@
   #t2:checked ~ .tab-content > .pane-2,
   #t3:checked ~ .tab-content > .pane-3 { display: block; }
 
-  .pane-3 .bg-row { grid-template-columns: 1fr; }
-  .pane-3 .bg-cell {
+  /* Tab 3 (Mundo Real) default: 3-col grid with bigger cells than tabs 1/2 */
+  .pane-3 .bg-cell { min-height: 240px; padding: 20px; }
+  .pane-3 .bg-cell svg { max-width: 100%; max-height: 280px; height: auto; }
+
+  /* Per-variant full-width layout (single column), for wide mockups */
+  .card-full .bg-row { grid-template-columns: 1fr; }
+  .card-full .bg-cell {
     border-right: none;
     border-bottom: 1px solid rgba(0,0,0,0.06);
     min-height: auto;
-    padding: 32px;
+    padding: 28px;
   }
-  .pane-3 .bg-cell:last-child { border-bottom: none; }
-  .pane-3 .bg-cell svg { max-width: 100%; max-height: 480px; height: auto; }
+  .card-full .bg-cell:last-child { border-bottom: none; }
+  .card-full .bg-cell svg { max-width: 100%; max-height: 280px; height: auto; }
 
   .grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
   .card {
@@ -322,6 +327,7 @@ const TAB_3 = [
   {
     id: '3.1', label: 'Favicons em browser tabs',
     note: 'Mark only como favicon em 4 tabs. Como fica em ~14px.',
+    layout: 'full',
     customRender: bg => {
       const c = stdColors(bg);
       const fav = logoMarkOnly(c);
@@ -343,13 +349,21 @@ const TAB_3 = [
   },
   {
     id: '3.2', label: 'App icon (rounded square iOS-style)',
-    note: 'Mark only num quadrado arredondado. Como ficaria no springboard.',
+    note: 'Tile branco com P navy/teal no fundo branco; tile teal e navy nos demais.',
     customRender: bg => {
-      const tileBg = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
-      const inner = (bg === 'navy' || bg === 'teal')
-        ? { pOuter: C.white, pBrain: C.white, pDot: C.white }
-        : { pOuter: C.white, pBrain: C.teal, pDot: C.teal };
-      let content = `<rect width="400" height="400" rx="88" fill="${tileBg}"/>`;
+      let tileBg, tileStroke = 'none', inner;
+      if (bg === 'white') {
+        tileBg = 'white';
+        tileStroke = '#E7E5E4';
+        inner = { pOuter: C.navy, pBrain: C.teal, pDot: C.teal };
+      } else if (bg === 'navy') {
+        tileBg = C.teal;
+        inner = { pOuter: C.white, pBrain: C.white, pDot: C.white };
+      } else {
+        tileBg = C.navy;
+        inner = { pOuter: C.white, pBrain: C.white, pDot: C.white };
+      }
+      let content = `<rect width="400" height="400" rx="88" fill="${tileBg}" stroke="${tileStroke}" stroke-width="2"/>`;
       content += embedSvg(buildSvg('0 0 600 745', pGlyph(inner.pOuter, inner.pBrain, inner.pDot)), 90, 60, 220, 280);
       return buildSvg('0 0 400 400', content);
     }
@@ -373,6 +387,7 @@ const TAB_3 = [
   {
     id: '3.4', label: 'Logo em header de landing',
     note: 'Header de site com logo à esquerda e nav à direita.',
+    layout: 'full',
     customRender: bg => {
       const c = stdColors(bg);
       const headerBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
@@ -401,11 +416,11 @@ const TAB_3 = [
       let content = `<rect width="500" height="325" fill="${cardBg}" stroke="${stroke}" stroke-width="1" rx="8"/>`;
       content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 30, 30, 180, 50);
       content += `<line x1="30" y1="150" x2="120" y2="150" stroke="${C.teal}" stroke-width="2"/>`;
-      content += `<text x="30" y="190" font-family="Inter, sans-serif" font-size="20" font-weight="600" fill="${txtC}">Elder Pelícoli</text>`;
-      content += `<text x="30" y="212" font-family="Inter, sans-serif" font-size="13" fill="${subtC}">Sócio · advogado · dev</text>`;
-      content += `<text x="30" y="270" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">elder@pensoia.com</text>`;
-      content += `<text x="30" y="287" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">pensoia.com</text>`;
-      content += `<text x="30" y="304" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">+55 79 9999-9999</text>`;
+      content += `<text x="30" y="188" font-family="Inter, sans-serif" font-size="18" font-weight="600" fill="${txtC}">Élder Prudente Barbosa Filho</text>`;
+      content += `<text x="30" y="210" font-family="Inter, sans-serif" font-size="13" fill="${subtC}">Consultor em IA</text>`;
+      content += `<text x="30" y="268" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com.br</text>`;
+      content += `<text x="30" y="285" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">pensoia.com</text>`;
+      content += `<text x="30" y="302" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">(79) 9 8014-253</text>`;
       return buildSvg('0 0 500 325', content);
     }
   },
@@ -425,6 +440,7 @@ const TAB_3 = [
   {
     id: '3.7', label: 'Assinatura de email',
     note: 'Bloco horizontal com logo + linha divisora + contato.',
+    layout: 'full',
     customRender: bg => {
       const c = stdColors(bg);
       const sigBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
@@ -434,10 +450,10 @@ const TAB_3 = [
       let content = `<rect width="600" height="200" fill="${sigBg}"/>`;
       content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 30, 45, 180, 50);
       content += `<line x1="240" y1="50" x2="240" y2="150" stroke="${divider}" stroke-width="1"/>`;
-      content += `<text x="270" y="80" font-family="Inter, sans-serif" font-size="16" font-weight="600" fill="${txtC}">Elder Pelícoli</text>`;
-      content += `<text x="270" y="102" font-family="Inter, sans-serif" font-size="12" fill="${subtC}">Sócio · PensoIA</text>`;
-      content += `<text x="270" y="128" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">elder@pensoia.com · pensoia.com</text>`;
-      content += `<text x="270" y="146" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">+55 79 9999-9999</text>`;
+      content += `<text x="270" y="80" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="${txtC}">Élder Prudente Barbosa Filho</text>`;
+      content += `<text x="270" y="102" font-family="Inter, sans-serif" font-size="12" fill="${subtC}">Consultor em IA · PensoIA</text>`;
+      content += `<text x="270" y="128" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com.br · pensoia.com</text>`;
+      content += `<text x="270" y="146" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">(79) 9 8014-253</text>`;
       return buildSvg('0 0 600 200', content);
     }
   },
@@ -500,8 +516,9 @@ function renderVariants(targetId, variants) {
       const svg = v.customRender ? v.customRender(bg) : v.render(stdColors(bg));
       return `<div class="bg-cell ${bg}">${svg}</div>`;
     }).join('');
+    const cardClass = v.layout === 'full' ? 'card card-full' : 'card';
     return `
-      <div class="card">
+      <div class="${cardClass}">
         <div class="card-header">
           <div class="card-label">${v.label}</div>
           <div class="card-id">${v.id}</div>
