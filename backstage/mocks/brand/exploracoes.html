@@ -395,19 +395,42 @@ const TAB_3 = [
 
 const TAB_4 = [
   {
-    id: '4A', label: 'pensoIA inline (pY ajustado pra alinhar com lowercase)',
-    note: 'Mesmo tamanho da 4D anterior, mas com pY=320 pra alinhar o topo do P com o topo das outras letras. Topo do bowl deve bater com topo do "e", "n", "s", "o", "I", "A".',
+    id: '4A', label: 'Wordmark inline (baseline aprovado)',
+    note: 'pSize=380, pY=320, wordmarkX=340. Posição vertical confirmada: topo do p alinha com topo das lowercase letters. Brain↔P alinhados pelo viewBox compartilhado dos SVGs v2.',
     render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340 })
   },
   {
-    id: '4B', label: 'pensoIA inline (pY um pouco mais abaixo)',
-    note: 'Variante com pY=345. P top alinha mais com a altura visual dos lowercase letters de Comfortaa.',
-    render: c => logoWordmarkInline(c, { pSize: 380, pY: 345, wordmarkX: 340 })
+    id: '4B', label: 'Mono p (glifo na mesma cor de "enso")',
+    note: 'O p estilizado inteiro renderizado na mesma cor de "enso", virando uma letra "p" comum (cérebro e ponto sumem porque ficam da mesma cor da silhueta). IA mantém a cor de acento.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const monoP = Object.assign({}, c, { pOuter: c.ensoColor, pBrain: c.ensoColor, pDot: c.ensoColor });
+      return logoWordmarkInline(monoP, { pSize: 380, pY: 320, wordmarkX: 340 });
+    }
   },
   {
-    id: '4C', label: 'pensoIA inline (pY=300, ainda elevado)',
-    note: 'Mais perto da posição antiga (pY=260 era 4D). Confirma quanto subir.',
-    render: c => logoWordmarkInline(c, { pSize: 380, pY: 300, wordmarkX: 340 })
+    id: '4C', label: 'Inline standard + tagline',
+    note: 'Mesma 4A com tagline "pensamento humano, inteligência ampliada" embaixo.',
+    render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340, showTagline: true, viewBox: '0 0 2400 970' })
+  },
+  {
+    id: '4D', label: 'Mono p + tagline',
+    note: 'Mesma 4B (p monocromático) com tagline embaixo.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const monoP = Object.assign({}, c, { pOuter: c.ensoColor, pBrain: c.ensoColor, pDot: c.ensoColor });
+      return logoWordmarkInline(monoP, { pSize: 380, pY: 320, wordmarkX: 340, showTagline: true, viewBox: '0 0 2400 970' });
+    }
+  },
+  {
+    id: '4E', label: 'P maior (size 440)',
+    note: 'Glifo mais imponente. Bowl maior, descender mais longo. Topo ainda em pY=320 (alinha com lowercase).',
+    render: c => logoWordmarkInline(c, { pSize: 440, pY: 320, wordmarkX: 395 })
+  },
+  {
+    id: '4F', label: 'P menor (size 320)',
+    note: 'Glifo mais discreto, integrado ao texto. Bowl menor, mais sutil.',
+    render: c => logoWordmarkInline(c, { pSize: 320, pY: 320, wordmarkX: 295 })
   }
 ];
 // ============================================================
