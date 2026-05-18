@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Família Penso em Comfortaa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Comfortaa', sans-serif;
+    background: white;
+    color: #1C1917;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    padding: 4px 32px;
+    background: white;
+    border-bottom: 1px solid #E7E5E4;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-weight: 600;
+    color: #57534E;
+  }
+
+  .stack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 64px;
+    gap: clamp(8px, 2vh, 32px);
+    overflow: hidden;
+  }
+  .row {
+    line-height: 1;
+    white-space: nowrap;
+    font-family: 'Comfortaa', sans-serif;
+    font-size: clamp(72px, 17vh, 220px);
+    letter-spacing: -0.015em;
+  }
+  .base { color: #1F2937; font-weight: 400; }
+  .accent { color: #0F8B82; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">Família Penso, Comfortaa</div>
+
+<div class="stack">
+  <div class="row"><span class="base">penso</span><span class="accent">IA</span></div>
+  <div class="row"><span class="base">penso</span><span class="accent">Trilha</span></div>
+  <div class="row"><span class="base">penso</span><span class="accent">Nexo</span></div>
+  <div class="row"><span class="base">penso</span><span class="accent">Codex</span></div>
+</div>
+
+</body>
+</html>
