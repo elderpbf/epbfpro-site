@@ -41,13 +41,19 @@ body.sidebar-hidden aside.sidebar { display: none; }
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   position: sticky;
   top: 0;
   background: var(--surface);
   z-index: 1;
 }
 .sidebar-header h1 { font-size: 14px; font-weight: 600; }
+.back-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 9px; cursor: pointer; font-size: 14px; line-height: 1;
+  color: var(--text-muted);
+}
+.back-btn:hover { background: var(--bg); color: var(--text); border-color: var(--text-muted); }
 
 .project-list { list-style: none; padding: 8px; }
 .project-list > li { margin-bottom: 2px; }
@@ -101,6 +107,11 @@ details ul li a.active {
   background: var(--teal);
   color: white;
 }
+
+ul.child-list { list-style: none; padding: 2px 0 4px 14px; margin: 2px 0 0 8px; border-left: 1px solid var(--border); }
+ul.child-list li a { font-size: 12px; padding: 5px 10px; color: var(--text-muted); }
+ul.child-list li a:hover { color: var(--text); background: var(--bg); }
+ul.child-list li a.active { color: white; background: var(--teal); }
 
 main.content {
   background: var(--bg);
@@ -169,6 +180,24 @@ iframe {
   display: none;
 }
 
+body.guest-mode { grid-template-columns: 1fr; }
+body.guest-mode aside.sidebar { display: none; }
+body.guest-mode .toggle-btn,
+body.guest-mode .copy-link,
+body.guest-mode .current-title { display: none; }
+body.guest-mode .topbar {
+  justify-content: center;
+  background: white;
+  padding: 14px 16px;
+}
+body.guest-mode .topbar::before {
+  content: 'pensoIA  ·  este é um mock em desenvolvimento';
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
 @media (max-width: 768px) {
   body { grid-template-columns: 1fr; }
   aside.sidebar {
@@ -185,6 +214,7 @@ iframe {
 <body class="sidebar-hidden">
   <aside class="sidebar">
     <div class="sidebar-header">
+      <button class="back-btn" onclick="window.location.href='/backstage/'" aria-label="Voltar pro Backstage" title="Voltar pro Backstage">←</button>
       <h1>pensoIA · Mocks</h1>
     </div>
     <ul class="project-list" id="projectList"></ul>
@@ -205,6 +235,9 @@ iframe {
   </main>
 
 <script>
+const AUTH_KEY = 'bs_pw_hash';
+const isAuthenticated = () => !!localStorage.getItem(AUTH_KEY);
+
 const MOCKS = {
   brand: {
     label: 'Brand',
@@ -220,25 +253,59 @@ const MOCKS = {
   lauterna: {
     label: 'Lauterna (provisório · plataforma de laudos médicos)',
     items: [
-      { name: 'Home', file: 'lauterna/index.html' },
-      { name: 'Novo laudo', file: 'lauterna/novo-laudo.html' },
-      { name: 'Máscaras', file: 'lauterna/mascaras.html' },
-      { name: 'Assinar laudo', file: 'lauterna/assinar.html' },
-      { name: 'Planos', file: 'lauterna/planos.html' }
+      { name: 'Home', file: 'lauterna/index.html', children: [
+        { name: 'Novo laudo', file: 'lauterna/novo-laudo.html' },
+        { name: 'Máscaras', file: 'lauterna/mascaras.html' },
+        { name: 'Assinar laudo', file: 'lauterna/assinar.html' },
+        { name: 'Planos', file: 'lauterna/planos.html' }
+      ]}
     ]
   }
 };
 
+function renderItem(item) {
+  const hash = item.file.replace(/\.html$/, '');
+  const link = '<a href="#' + hash + '" data-file="' + item.file + '" data-name="' + item.name + '">' + item.name + '</a>';
+  if (item.children && item.children.length) {
+    const subs = item.children.map(c => '<li>' + renderItem(c) + '</li>').join('');
+    return link + '<ul class="child-list">' + subs + '</ul>';
+  }
+  return link;
+}
+
+function countItems(items) {
+  return items.reduce((acc, i) => acc + 1 + (i.children ? i.children.length : 0), 0);
+}
+
+function findItemByHash(hash) {
+  function search(items) {
+    for (const item of items) {
+      if (item.file.replace(/\.html$/, '') === hash) return item;
+      if (item.children) {
+        const found = search(item.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  for (const key of Object.keys(MOCKS)) {
+    const found = search(MOCKS[key].items);
+    if (found) return found;
+  }
+  return null;
+}
+
 function render() {
+  if (!isAuthenticated()) {
+    document.body.classList.add('guest-mode');
+    return;
+  }
   const list = document.getElementById('projectList');
   let html = '';
   for (const key of Object.keys(MOCKS)) {
     const project = MOCKS[key];
-    const items = project.items.map(item => {
-      const hash = item.file.replace(/\.html$/, '');
-      return '<li><a href="#' + hash + '" data-file="' + item.file + '" data-name="' + item.name + '">' + item.name + '</a></li>';
-    }).join('');
-    html += '<li><details><summary>' + project.label + '<span class="count">' + project.items.length + '</span></summary><ul>' + items + '</ul></details></li>';
+    const items = project.items.map(item => '<li>' + renderItem(item) + '</li>').join('');
+    html += '<li><details><summary>' + project.label + '<span class="count">' + countItems(project.items) + '</span></summary><ul>' + items + '</ul></details></li>';
   }
   list.innerHTML = html;
 }
@@ -265,22 +332,19 @@ function loadMock(file, name) {
 
 function routeFromHash() {
   const hash = window.location.hash.slice(1);
+  const auth = isAuthenticated();
   if (!hash) {
     document.getElementById('viewer').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'flex';
+    const empty = document.getElementById('emptyState');
+    empty.style.display = 'flex';
+    empty.textContent = auth ? '← Abra a barra lateral pra ver os mocks disponíveis' : 'Acesse via um link direto pra ver o mock';
     document.getElementById('currentTitle').textContent = 'Selecione um mock';
     document.getElementById('copyBtn').style.display = 'none';
-    // Auto-open sidebar at root (so user sees the list, not a blank-looking empty state)
-    document.body.classList.remove('sidebar-hidden');
+    if (auth) document.body.classList.remove('sidebar-hidden');
     return;
   }
-  for (const key of Object.keys(MOCKS)) {
-    const item = MOCKS[key].items.find(i => i.file.replace(/\.html$/, '') === hash);
-    if (item) {
-      loadMock(item.file, item.name);
-      return;
-    }
-  }
+  const item = findItemByHash(hash);
+  if (item) loadMock(item.file, item.name);
 }
 
 function copyLink() {
