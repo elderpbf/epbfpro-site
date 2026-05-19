@@ -968,12 +968,89 @@ function _renderBreadcrumb(item) {
   if (!crumb) return;
   const turmaName = ClassVault.active ? (ClassVault.active.display_name || ClassVault.active.name) : '';
   const typeLabel = item.type_label || item.type;
-  crumb.innerHTML =
+  const located = _findItem(item.id);
+  const source = located ? located.source : null;
+
+  // Path + actions area
+  let html =
     '<span>' + _esc(turmaName) + '</span>' +
     '<span class="cv-main-crumb-sep">/</span>' +
     '<span>' + _esc(typeLabel) + '</span>' +
     '<span class="cv-main-crumb-sep">/</span>' +
-    '<strong>' + _esc(item.title) + '</strong>';
+    '<strong>' + _esc(item.title) + '</strong>' +
+    '<span class="cv-main-crumb-spacer"></span>';
+
+  // Primary action varies by where the item lives
+  if (source === 'vault') {
+    const disabled = ClassVault.aulaNumber == null;
+    html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--primary" data-action="add-to-hoje"' +
+      (disabled ? ' disabled title="Selecione uma aula no menu lateral para planejar"' : '') +
+      '>📌 Adicionar ao plano</button>';
+  } else if (source === 'aula_plan') {
+    html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--primary" data-action="release">↗ Liberar para alunos</button>';
+  } else if (source === 'release') {
+    html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--primary" data-action="demote">↘ Mover para Vault</button>';
+  }
+
+  html += '<button type="button" class="cv-crumb-btn" data-action="edit" title="Editar item">✏️ Editar</button>';
+  if (_hasCrumbOverflow(source)) {
+    html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--icon" data-action="overflow" title="Mais ações" aria-haspopup="true">⋮</button>';
+  }
+  crumb.innerHTML = html;
+  _wireCrumbActions(crumb, item, source);
+}
+
+function _hasCrumbOverflow(source) {
+  // Vault items have "Promover para Trilha" as secondary; Hoje has "Remover do plano".
+  // Trilha items currently have no secondary actions beyond Editar/Mover para Vault.
+  return source === 'vault' || source === 'aula_plan';
+}
+
+function _wireCrumbActions(crumb, item, source) {
+  crumb.querySelectorAll('.cv-crumb-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      if (btn.disabled) return;
+      const action = btn.getAttribute('data-action');
+      if (action === 'edit') _openEditor(item);
+      else if (action === 'add-to-hoje') _addToHoje(item);
+      else if (action === 'release') _releaseItemToCurrentAula(item);
+      else if (action === 'demote') _setItemAudience(item, 'vault_only');
+      else if (action === 'overflow') _openCrumbOverflowMenu(e.currentTarget, item, source);
+    });
+  });
+}
+
+function _openCrumbOverflowMenu(anchor, item, source) {
+  _closeContextMenu();
+  const items = [];
+  if (source === 'vault') {
+    items.push({ action: 'promote', label: '↗ Promover para Trilha' });
+  } else if (source === 'aula_plan') {
+    items.push({ action: 'remove-from-hoje', label: '✖ Remover do plano' });
+  }
+  if (!items.length) return;
+  const rect = anchor.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.className = 'cv-ctx-menu';
+  menu.style.left = Math.max(8, rect.right - 220) + 'px';
+  menu.style.top = (rect.bottom + 4) + 'px';
+  menu.innerHTML = items.map(o =>
+    '<button type="button" class="cv-ctx-item" data-action="' + _esc(o.action) + '">' + o.label + '</button>'
+  ).join('');
+  document.body.appendChild(menu);
+  ClassVault._ctxMenuEl = menu;
+  menu.addEventListener('click', e => {
+    const btn = e.target.closest('.cv-ctx-item');
+    if (!btn) return;
+    const action = btn.getAttribute('data-action');
+    _closeContextMenu();
+    if (action === 'promote') _setItemAudience(item, 'public');
+    else if (action === 'remove-from-hoje') _removeFromHoje(item);
+  });
+  setTimeout(() => {
+    document.addEventListener('click', _docDismissCtxMenu);
+    document.addEventListener('contextmenu', _docDismissCtxMenu);
+  }, 0);
 }
 
 // ── Renderers (registry keyed by item.type) ────────────────────
