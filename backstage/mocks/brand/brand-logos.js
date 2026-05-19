@@ -11,10 +11,17 @@ const PATHS = {
 const C = { navy: '#061a51', teal: '#14b8a6', white: '#ffffff' };
 const TAGLINE = 'pensamento humano, inteligência ampliada';
 
+// Scheme B (adopted): brain bubble always matches IA accent (teal where teal works).
+// P outer matches the name/wordmark color so mark + wordmark read as one continuous lockup.
+// On bg.teal the teal accent disappears against the surface, so brain + IA fall back to navy.
+// bg.trasp uses the same palette as bg.white (no fill).
 function stdColors(bg) {
-  if (bg === 'white') return { pOuter: C.navy, pBrain: C.teal, pDot: C.teal, ensoColor: C.navy, iaColor: C.teal, taglineColor: C.navy };
-  if (bg === 'navy')  return { pOuter: C.teal, pBrain: C.white, pDot: C.white, ensoColor: C.white, iaColor: C.teal, taglineColor: C.white };
-  if (bg === 'teal')  return { pOuter: C.navy, pBrain: C.white, pDot: C.white, ensoColor: C.white, iaColor: C.navy, taglineColor: C.white };
+  if (bg === 'white' || bg === 'trasp')
+    return { pOuter: C.navy,  pBrain: C.teal,  pDot: C.teal,  ensoColor: C.navy,  iaColor: C.teal,  taglineColor: C.navy };
+  if (bg === 'navy')
+    return { pOuter: C.white, pBrain: C.teal,  pDot: C.teal,  ensoColor: C.white, iaColor: C.teal,  taglineColor: C.white };
+  if (bg === 'teal')
+    return { pOuter: C.white, pBrain: C.navy,  pDot: C.navy,  ensoColor: C.white, iaColor: C.navy,  taglineColor: C.white };
 }
 
 function pGlyph(outerColor, brainColor, dotColor, tx=0, ty=0, scale=1) {
