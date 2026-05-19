@@ -232,8 +232,8 @@
   <!-- SCHEME A (CURRENT)             -->
   <!-- ============================== -->
   <section>
-    <h2><span class="scheme-tag">A</span>Esquema atual, posição do teal inverte conforme o fundo</h2>
-    <p class="lead">Em superfícies claras a bolha é teal e o contorno do P é navy. Em superfícies escuras o contorno do P é teal e a bolha é branca. O acento teal "troca de lugar". É o comportamento atual de <code>stdColors()</code> em <code>brand-logos.js</code>.</p>
+    <h2><span class="scheme-tag">A</span>Esquema anterior, posição do teal invertia conforme o fundo</h2>
+    <p class="lead">Em superfícies claras a bolha era teal e o contorno do P era navy. Em superfícies escuras o contorno do P era teal e a bolha era branca. O acento teal "trocava de lugar". Era o comportamento de <code>stdColors()</code> em <code>brand-logos.js</code> antes da adoção do Esquema B.</p>
 
     <div class="scheme-row">
       <div class="bg-cell white">
@@ -286,7 +286,7 @@
   <!-- SCHEME B                       -->
   <!-- ============================== -->
   <section>
-    <h2><span class="scheme-tag">B</span>Bolha sempre teal (combina com as letras IA)</h2>
+    <h2><span class="scheme-tag">B</span>Bolha sempre teal (combina com as letras IA) · ADOTADO</h2>
     <p class="lead">A bolha (cérebro) é a representação visual da inteligência, a mesma ideia que as letras "IA" carregam. Neste esquema, elas sempre compartilham a cor. O contorno do P combina com a cor do wordmark, então a marca lê como um único elemento de "nome" contínuo. Em <code>bg.teal</code> a bolha (teal sobre teal) sumiria, então o acento da IA cai pra navy nessa superfície.</p>
 
     <div class="scheme-row">
@@ -423,10 +423,16 @@
   const C_TEAL = '#14b8a6';
   const C_WHITE = '#ffffff';
 
-  // Scheme A: current (from brand-logos.js). stdColors only knows white/navy/teal;
-  // trasp uses the white-scheme palette (no bg fill), so fall back to white.
+  // Scheme A: the LEGACY "inverted" scheme that lived in stdColors() before Scheme B
+  // was adopted. Preserved here hardcoded so this study still works as historical
+  // documentation of the decision (stdColors now emits Scheme B).
   function schemeA(bg) {
-    return stdColors(bg) || stdColors('white');
+    if (bg === 'white' || bg === 'trasp')
+      return { pOuter: C_NAVY, pBrain: C_TEAL, pDot: C_TEAL, ensoColor: C_NAVY, iaColor: C_TEAL, taglineColor: C_NAVY };
+    if (bg === 'navy')
+      return { pOuter: C_TEAL, pBrain: C_WHITE, pDot: C_WHITE, ensoColor: C_WHITE, iaColor: C_TEAL, taglineColor: C_WHITE };
+    if (bg === 'teal')
+      return { pOuter: C_NAVY, pBrain: C_WHITE, pDot: C_WHITE, ensoColor: C_WHITE, iaColor: C_NAVY, taglineColor: C_WHITE };
   }
 
   // Scheme B: brain always teal (matches AI letters)
