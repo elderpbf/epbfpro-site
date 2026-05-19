@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>pensoIA, refactor (2 abas)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+    background: #F5F5F4;
+    color: #1C1917;
+    padding: 24px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #78716C; margin-bottom: 24px; }
+  .sub code { background: #E7E5E4; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid #E7E5E4; margin-bottom: 20px; }
+  .tabs input[type="radio"] { display: none; }
+  .tabs label {
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #78716C;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    user-select: none;
+  }
+  .tabs label:hover { color: #1C1917; }
+  #t1:checked ~ .tabs label[for="t1"],
+  #t2:checked ~ .tabs label[for="t2"] {
+    color: #0F8B82;
+    border-bottom-color: #0F8B82;
+  }
+  .tab-content > section { display: none; }
+  #t1:checked ~ .tab-content > .pane-1,
+  #t2:checked ~ .tab-content > .pane-2 { display: block; }
+
+  /* Tab 2 (Mundo Real) default cells: 3-col grid, slightly bigger than tab 1 */
+  .pane-2 .bg-cell { min-height: 240px; padding: 20px; }
+  .pane-2 .bg-cell svg { max-width: 100%; max-height: 280px; height: auto; }
+
+  /* Per-variant full-width layout, for wide mockups */
+  .card-full .bg-row { grid-template-columns: 1fr; }
+  .card-full .bg-cell {
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    min-height: auto;
+    padding: 28px;
+  }
+  .card-full .bg-cell:last-child { border-bottom: none; }
+  .card-full .bg-cell svg { max-width: 100%; max-height: 280px; height: auto; }
+
+  .grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  .card {
+    background: white;
+    border: 1px solid #E7E5E4;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #E7E5E4;
+  }
+  .card-id {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10px;
+    color: #A8A29E;
+    letter-spacing: 0.06em;
+  }
+  .card-label { font-size: 14px; font-weight: 600; color: #1C1917; }
+  .bg-row { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .bg-cell {
+    padding: 28px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    border-right: 1px solid rgba(0,0,0,0.06);
+  }
+  .bg-cell:last-child { border-right: none; }
+  .bg-cell.white { background: #ffffff; }
+  .bg-cell.navy { background: #061a51; }
+  .bg-cell.teal { background: #14b8a6; }
+  .bg-cell svg { max-width: 100%; max-height: 120px; height: auto; display: block; }
+  .card-note {
+    padding: 12px 20px;
+    font-size: 12px;
+    color: #57534E;
+    line-height: 1.5;
+    background: #FAFAF9;
+    border-top: 1px solid #E7E5E4;
+  }
+  .card-note code { background: #E7E5E4; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  svg text { font-family: 'Comfortaa', sans-serif; }
+</style>
+</head>
+<body>
+
+<h1>pensoIA, refactor</h1>
+<div class="sub">
+  Naming: <a href="https://pensoia.com/backstage/mocks/" style="color: inherit;">PensoIA/Brand/manifest/naming.md</a>.
+  Mudança principal vs <code>exploracoes.html</code>: <code>sp-wm-s</code> → <code>bp-wm-s</code>, agora o mark stacked é o bigP standalone com "pensoIA" full text embaixo (font p), não a letterform thick-p.
+</div>
+
+<input type="radio" name="tab" id="t1" checked>
+<input type="radio" name="tab" id="t2">
+
+<div class="tabs">
+  <label for="t1">1, Versões (9)</label>
+  <label for="t2">2, Mundo Real (10)</label>
+</div>
+
+<div class="tab-content">
+  <section class="pane-1"><div class="grid" id="grid-1"></div></section>
+  <section class="pane-2"><div class="grid" id="grid-2"></div></section>
+</div>
+
+<script src="brand-logos.js"></script>
+<script>
+
+// ============================================================
+// TAB 1: Versões (9 logos canônicos)
+// ============================================================
+
+const TAB_VERSIONS = [
+  {
+    id: 'm', label: 'mark',
+    note: 'Só o símbolo P standalone (bigP). Pra favicon, app icon, avatar, marca d\'água.',
+    render: c => logoMarkOnly(c)
+  },
+  {
+    id: 'wm', label: 'wordmark',
+    note: 'Só o texto "pensoIA" puro, sem nenhum símbolo. Pra contextos onde texto é o suficiente.',
+    render: c => logoWordmarkOnly(c)
+  },
+  {
+    id: 'bp-wm', label: 'bigPwordmark',
+    note: 'Mark + ensoIA side-by-side, sem tagline. Header de site, assinatura de email.',
+    render: c => logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' })
+  },
+  {
+    id: 'bp-wm-t', label: 'bigPwordmark + tagline',
+    note: 'Mesma bp-wm + tagline alinhada à direita, terminando no fim do "IA". Wordmark forçado via textLength pra garantir o alinhamento.',
+    customRender: bg => logoHorizontalRightAligned(stdColors(bg))
+  },
+  {
+    id: 'bp-wm-d', label: 'bigPwordmark + duotone',
+    note: 'Mesma bp-wm-t mas com tagline em duas cores. "pensamento humano," num tom e "inteligência ampliada" no outro.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      let c1, c2;
+      if (bg === 'white') { c1 = C.navy; c2 = C.teal; }
+      if (bg === 'navy')  { c1 = C.white; c2 = C.teal; }
+      if (bg === 'teal')  { c1 = C.white; c2 = C.navy; }
+      const tagline = `<text x="2400" y="810" text-anchor="end" font-weight="400" font-size="78" fill="${c1}">pensamento humano,<tspan fill="${c2}"> inteligência ampliada</tspan></text>`;
+      return logoHorizontalRightAligned(c, { taglineMarkup: tagline });
+    }
+  },
+  {
+    id: 'bp-wm-s', label: 'bigPwordmark + stacked',
+    note: 'Mark P standalone empilhado acima, "pensoIA" full text com font p embaixo. Lockup vertical clássico, igual NASA/Pinterest/Wayfair: mark + wordmark com glifos visivelmente diferentes.',
+    render: c => logoStacked(c)
+  },
+  {
+    id: 'bp-wm-t-s', label: 'bigPwordmark + tagline + stacked',
+    note: 'Mesma bp-wm-s com tagline embaixo. Pra cerimônias, slide de abertura, certificados.',
+    render: c => logoStacked(c, { showTagline: true })
+  },
+  {
+    id: 'sp-wm', label: 'smallpwordmark',
+    note: 'Thick-p (letterform) inline em ensoIA, formando "pensoIA" como uma palavra única. Slogans, frases incorporadas em copy.',
+    render: c => logoWordmarkInline(c)
+  },
+  {
+    id: 'sp-wm-t', label: 'smallpwordmark + tagline',
+    note: 'sp-wm com tagline estendida via textLength do início do p até o fim do "IA". Capa de PDF, hero de landing.',
+    render: c => {
+      const base = logoWordmarkInline(c, { viewBox: '0 0 2400 1000' });
+      const tagline = `<text x="30" y="940" font-weight="400" font-size="78" fill="${c.taglineColor}" textLength="1990" lengthAdjust="spacingAndGlyphs">${TAGLINE}</text>`;
+      return base.replace('</svg>', tagline + '</svg>');
+    }
+  }
+];
+
+// ============================================================
+// TAB 2: Mundo Real (mockups em contexto)
+// ============================================================
+
+const TAB_REAL = [
+  {
+    id: 'tabs', label: 'Favicons em browser tabs',
+    note: 'Usa <code>m</code>. Mostra o mark only renderizado em ~14px (tamanho real de favicon).',
+    layout: 'full',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const fav = logoMarkOnly(c);
+      let content = '<rect width="800" height="220" fill="#E8E8E6"/>';
+      const tabs = ['pensoIA · Mocks', 'PJ Office', 'TJSE', 'Gmail'];
+      tabs.forEach((label, i) => {
+        const tx = 20 + i * 195;
+        const active = i === 0;
+        content += `<rect x="${tx}" y="20" width="180" height="38" rx="8" fill="${active ? 'white' : '#D6D5D2'}"/>`;
+        content += embedSvg(fav, tx + 12, 26, 18, 26);
+        content += `<text x="${tx + 38}" y="46" font-family="Inter, sans-serif" font-size="13" fill="#1C1917">${label}</text>`;
+      });
+      content += '<rect x="20" y="80" width="760" height="36" rx="18" fill="white" stroke="#D6D5D2"/>';
+      content += '<text x="40" y="103" font-family="Inter, sans-serif" font-size="12" fill="#78716C">pensoia.com/backstage/mocks</text>';
+      content += '<rect x="20" y="140" width="760" height="60" rx="6" fill="white" stroke="#D6D5D2"/>';
+      content += '<text x="40" y="175" font-family="Inter, sans-serif" font-size="14" fill="#1C1917">Mocks Hub · página atual</text>';
+      return buildSvg('0 0 800 220', content);
+    }
+  },
+  {
+    id: 'app-icon', label: 'App icon (rounded square iOS-style)',
+    note: 'Usa <code>m</code>. Tile branco com P navy/teal no fundo branco; tile teal e navy nos demais.',
+    customRender: bg => {
+      let tileBg, tileStroke = 'none', inner;
+      if (bg === 'white') {
+        tileBg = 'white';
+        tileStroke = '#E7E5E4';
+        inner = { pOuter: C.navy, pBrain: C.teal, pDot: C.teal };
+      } else if (bg === 'navy') {
+        tileBg = C.teal;
+        inner = { pOuter: C.white, pBrain: C.white, pDot: C.white };
+      } else {
+        tileBg = C.navy;
+        inner = { pOuter: C.white, pBrain: C.white, pDot: C.white };
+      }
+      let content = `<rect width="400" height="400" rx="88" fill="${tileBg}" stroke="${tileStroke}" stroke-width="2"/>`;
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(inner.pOuter, inner.pBrain, inner.pDot)), 90, 60, 220, 280);
+      return buildSvg('0 0 400 400', content);
+    }
+  },
+  {
+    id: 'welcome-card', label: 'Cartão de boas-vindas',
+    note: 'Usa <code>bp-wm-s</code>. Cartão 5x7" com mark + wordmark stacked e mensagem manuscrita.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const cardBg = bg === 'white' ? '#FAF7F2' : (bg === 'navy' ? C.navy : C.teal);
+      const txtC = bg === 'white' ? C.navy : C.white;
+      let content = `<rect width="500" height="700" fill="${cardBg}"/>`;
+      content += embedSvg(logoStacked(c), 100, 60, 300, 220);
+      content += `<text x="250" y="430" text-anchor="middle" font-family="Caveat, cursive" font-weight="500" font-size="38" fill="${txtC}">bem-vindo à</text>`;
+      content += `<text x="250" y="495" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="58" fill="${txtC}">prática aumentada</text>`;
+      content += `<line x1="160" y1="555" x2="340" y2="555" stroke="${txtC}" stroke-width="1" opacity="0.3"/>`;
+      content += `<text x="250" y="595" text-anchor="middle" font-family="Comfortaa, sans-serif" font-size="14" fill="${txtC}" opacity="0.7">pensoia.com</text>`;
+      return buildSvg('0 0 500 700', content);
+    }
+  },
+  {
+    id: 'landing-header', label: 'Logo em header de landing',
+    note: 'Usa <code>bp-wm</code>. Header de site com logo à esquerda e nav à direita.',
+    layout: 'full',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const headerBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
+      const navC = bg === 'white' ? '#1C1917' : 'white';
+      const divider = bg === 'white' ? '#E7E5E4' : 'rgba(255,255,255,0.15)';
+      let content = `<rect width="1200" height="120" fill="${headerBg}"/>`;
+      content += `<line x1="0" y1="119" x2="1200" y2="119" stroke="${divider}" stroke-width="1"/>`;
+      content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 40, 30, 220, 60);
+      ['Produto', 'Casos', 'Preços', 'Entrar'].forEach((item, i) => {
+        content += `<text x="${760 + i * 90}" y="65" font-family="Inter, sans-serif" font-size="14" fill="${navC}">${item}</text>`;
+      });
+      content += `<rect x="1110" y="42" width="80" height="36" rx="6" fill="${C.teal}"/>`;
+      content += '<text x="1150" y="66" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="white">Comece</text>';
+      return buildSvg('0 0 1200 120', content);
+    }
+  },
+  {
+    id: 'biz-card', label: 'Cartão de visita (frente)',
+    note: 'Usa <code>bp-wm</code>. Cartão 85x55mm com logo, nome, cargo e contato.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const cardBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
+      const txtC = bg === 'white' ? '#1C1917' : 'white';
+      const subtC = bg === 'white' ? '#78716C' : 'rgba(255,255,255,0.75)';
+      const stroke = bg === 'white' ? '#E7E5E4' : 'none';
+      let content = `<rect width="500" height="325" fill="${cardBg}" stroke="${stroke}" stroke-width="1" rx="8"/>`;
+      content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 30, 30, 180, 50);
+      content += `<line x1="30" y1="150" x2="120" y2="150" stroke="${C.teal}" stroke-width="2"/>`;
+      content += `<text x="30" y="188" font-family="Inter, sans-serif" font-size="18" font-weight="600" fill="${txtC}">Élder Prudente Barbosa Filho</text>`;
+      content += `<text x="30" y="210" font-family="Inter, sans-serif" font-size="13" fill="${subtC}">Consultor em IA</text>`;
+      content += `<text x="30" y="268" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com</text>`;
+      content += `<text x="30" y="285" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">pensoia.com</text>`;
+      content += `<text x="30" y="302" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">(79) 9 8014-253</text>`;
+      return buildSvg('0 0 500 325', content);
+    }
+  },
+  {
+    id: 'avatar', label: 'Avatar social circular',
+    note: 'Usa <code>m</code>. Mark only num círculo. Pro LinkedIn / Twitter / Instagram.',
+    customRender: bg => {
+      const circleBg = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
+      const inner = (bg === 'navy' || bg === 'teal')
+        ? { pOuter: C.white, pBrain: C.white, pDot: C.white }
+        : { pOuter: C.white, pBrain: C.teal, pDot: C.teal };
+      let content = `<circle cx="200" cy="200" r="190" fill="${circleBg}"/>`;
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(inner.pOuter, inner.pBrain, inner.pDot)), 100, 70, 200, 260);
+      return buildSvg('0 0 400 400', content);
+    }
+  },
+  {
+    id: 'email-sig', label: 'Assinatura de email',
+    note: 'Usa <code>bp-wm</code>. Bloco horizontal com logo + linha divisora + contato.',
+    layout: 'full',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const sigBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
+      const txtC = bg === 'white' ? '#1C1917' : 'white';
+      const subtC = bg === 'white' ? '#78716C' : 'rgba(255,255,255,0.75)';
+      const divider = bg === 'white' ? '#E7E5E4' : 'rgba(255,255,255,0.3)';
+      let content = `<rect width="600" height="200" fill="${sigBg}"/>`;
+      content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 30, 45, 180, 50);
+      content += `<line x1="240" y1="50" x2="240" y2="150" stroke="${divider}" stroke-width="1"/>`;
+      content += `<text x="270" y="80" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="${txtC}">Élder Prudente Barbosa Filho</text>`;
+      content += `<text x="270" y="102" font-family="Inter, sans-serif" font-size="12" fill="${subtC}">Consultor em IA · PensoIA</text>`;
+      content += `<text x="270" y="128" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com · pensoia.com</text>`;
+      content += `<text x="270" y="146" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">(79) 9 8014-253</text>`;
+      return buildSvg('0 0 600 200', content);
+    }
+  },
+  {
+    id: 'slide-cover', label: 'Capa de slide 16:9',
+    note: 'Usa <code>bp-wm-s</code>. Slide deck cover com mark stacked acima do wordmark + título e subtítulo.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      const slideBg = bg === 'white' ? '#FAFAF9' : (bg === 'navy' ? C.navy : C.teal);
+      const txtC = bg === 'white' ? '#1C1917' : 'white';
+      const accentC = bg === 'white' ? C.teal : 'rgba(255,255,255,0.8)';
+      let content = `<rect width="1920" height="1080" fill="${slideBg}"/>`;
+      content += embedSvg(logoStacked(c), 660, 180, 600, 460);
+      content += `<text x="960" y="780" text-anchor="middle" font-family="Inter, sans-serif" font-size="56" font-weight="700" fill="${txtC}">Inteligência ampliada</text>`;
+      content += `<text x="960" y="850" text-anchor="middle" font-family="Inter, sans-serif" font-size="30" font-weight="400" fill="${accentC}">para o operador do Direito</text>`;
+      content += `<text x="960" y="990" text-anchor="middle" font-family="Inter, sans-serif" font-size="18" fill="${accentC}" opacity="0.6">pensoia.com</text>`;
+      return buildSvg('0 0 1920 1080', content);
+    }
+  },
+  {
+    id: 'tshirt', label: 'T-shirt (peito esquerdo)',
+    note: 'Usa <code>m</code>. Mark only estampado no peito esquerdo.',
+    customRender: bg => {
+      const shirtBg = bg === 'white' ? '#F5F5F4' : (bg === 'navy' ? C.navy : C.teal);
+      const shirtStroke = bg === 'white' ? '#D6D5D2' : 'rgba(255,255,255,0.2)';
+      const inner = bg === 'white'
+        ? { pOuter: C.navy, pBrain: C.teal, pDot: C.teal }
+        : { pOuter: C.white, pBrain: C.white, pDot: C.white };
+      let content = `<path d="M150 80 L100 130 L60 110 L40 200 L100 220 L100 480 L300 480 L300 220 L360 200 L340 110 L300 130 L250 80 Q200 105 150 80 Z" fill="${shirtBg}" stroke="${shirtStroke}" stroke-width="2"/>`;
+      content += `<path d="M150 80 Q200 115 250 80" fill="none" stroke="${shirtStroke}" stroke-width="1.5"/>`;
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(inner.pOuter, inner.pBrain, inner.pDot)), 145, 175, 50, 62);
+      return buildSvg('0 0 400 500', content);
+    }
+  },
+  {
+    id: 'watermark', label: 'Watermark em PDF',
+    note: 'Usa <code>m</code>. Página A4 com mark only diagonal em opacidade baixa.',
+    customRender: bg => {
+      const pageBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
+      const lineC = bg === 'white' ? '#1C1917' : 'white';
+      const wmC = bg === 'white' ? C.navy : C.white;
+      let content = `<rect width="420" height="594" fill="${pageBg}" stroke="#D6D5D2" stroke-width="1"/>`;
+      content += '<g opacity="0.08" transform="rotate(-30 210 297)">';
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(wmC, wmC, wmC)), 110, 197, 200, 240);
+      content += '</g>';
+      const widths = [340, 365, 310, 350, 330, 370, 320, 355, 300, 360, 325, 345, 372, 318, 358, 348, 335, 350];
+      widths.forEach((w, i) => {
+        content += `<rect x="40" y="${40 + i * 26}" width="${w}" height="5" fill="${lineC}" opacity="0.5" rx="2"/>`;
+      });
+      return buildSvg('0 0 420 594', content);
+    }
+  }
+];
+
+// ============================================================
+// RENDER
+// ============================================================
+
+function renderVariants(targetId, variants) {
+  const host = document.getElementById(targetId);
+  host.innerHTML = variants.map(v => {
+    const bgs = ['white', 'navy', 'teal'];
+    const cells = bgs.map(bg => {
+      const svg = v.customRender ? v.customRender(bg) : v.render(stdColors(bg));
+      return `<div class="bg-cell ${bg}">${svg}</div>`;
+    }).join('');
+    const cardClass = v.layout === 'full' ? 'card card-full' : 'card';
+    return `
+      <div class="${cardClass}">
+        <div class="card-header">
+          <div class="card-label">${v.label}</div>
+          <div class="card-id">${v.id}</div>
+        </div>
+        <div class="bg-row">${cells}</div>
+        ${v.note ? `<div class="card-note">${v.note}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+renderVariants('grid-1', TAB_VERSIONS);
+renderVariants('grid-2', TAB_REAL);
+</script>
+
+</body>
+</html>
