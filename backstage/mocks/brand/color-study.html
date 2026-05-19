@@ -423,9 +423,10 @@
   const C_TEAL = '#14b8a6';
   const C_WHITE = '#ffffff';
 
-  // Scheme A: current (from brand-logos.js)
+  // Scheme A: current (from brand-logos.js). stdColors only knows white/navy/teal;
+  // trasp uses the white-scheme palette (no bg fill), so fall back to white.
   function schemeA(bg) {
-    return stdColors(bg);
+    return stdColors(bg) || stdColors('white');
   }
 
   // Scheme B: brain always teal (matches AI letters)
