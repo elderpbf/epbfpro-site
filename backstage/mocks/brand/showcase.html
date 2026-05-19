@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pensoIA, brand system showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #061a51;
+    --teal: #14b8a6;
+    --white: #ffffff;
+    --cream: #faf7f2;
+    --paper: #f5f5f4;
+    --line: #e7e5e4;
+    --ink-soft: #78716c;
+    --ink-mid: #57534e;
+    --ink: #1c1917;
+    --shadow: 0 4px 24px rgba(6, 26, 81, 0.08);
+    --shadow-lg: 0 12px 48px rgba(6, 26, 81, 0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: var(--white); }
+
+  body {
+    font-family: 'Comfortaa', sans-serif;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .showcase {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  section {
+    padding: 96px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  section:last-of-type { border-bottom: none; }
+
+  h2 {
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  h2::after {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 3px;
+    background: var(--teal);
+    margin-top: 14px;
+    margin-bottom: 28px;
+    border-radius: 2px;
+  }
+
+  h3 {
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 12px 0 8px;
+  }
+
+  .lead {
+    font-size: 17px;
+    color: var(--ink-mid);
+    max-width: 720px;
+    margin-bottom: 32px;
+  }
+
+  p.anno {
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-align: center;
+    margin-top: 16px;
+    margin-bottom: 56px;
+  }
+
+  code {
+    font-family: ui-monospace, 'SF Mono', 'Menlo', monospace;
+    font-size: 0.88em;
+    background: var(--paper);
+    color: var(--navy);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  ul { padding-left: 18px; }
+  ul li { font-size: 14px; color: var(--ink-mid); margin-bottom: 4px; }
+
+  /* ===== HERO ===== */
+  .hero {
+    padding: 140px 0 120px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .hero-logo {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto 36px;
+  }
+  .hero-logo svg { width: 100%; height: auto; display: block; }
+  .hero-caption {
+    font-size: 15px;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* ===== CANONICAL VARIANTS ===== */
+  .variants {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .variant-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 32px 24px 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .variant-svg {
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .variant-svg svg { max-width: 100%; max-height: 100%; height: auto; display: block; }
+  .variant-card code {
+    align-self: flex-start;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  .variant-card p {
+    font-size: 14px;
+    color: var(--ink-mid);
+    margin-bottom: 12px;
+  }
+
+  /* ===== LIGHT VS DARK ===== */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  .surface {
+    padding: 80px 40px;
+    min-height: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .surface.white { background: var(--white); }
+  .surface.navy { background: var(--navy); }
+  .surface > div:first-child { width: 100%; max-width: 320px; }
+  .surface svg { width: 100%; height: auto; display: block; }
+  .surface-label {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+  .surface.white .surface-label { color: var(--ink-soft); }
+  .surface.navy .surface-label { color: rgba(255, 255, 255, 0.5); }
+
+  /* ===== BROWSER TAB MOCK ===== */
+  .browser-mock {
+    background: #dad6d2;
+    border-radius: 10px 10px 4px 4px;
+    padding: 12px 12px 0;
+    margin: 24px 0 8px;
+    box-shadow: var(--shadow);
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .browser-tab-row { display: flex; gap: 2px; align-items: flex-end; }
+  .browser-tab {
+    background: #c5c0bb;
+    padding: 8px 14px;
+    border-radius: 8px 8px 0 0;
+    font-size: 12px;
+    color: var(--ink-mid);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 280px;
+    min-width: 180px;
+  }
+  .browser-tab.active {
+    background: var(--white);
+    color: var(--ink);
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.04);
+  }
+  .browser-tab .favicon {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .browser-tab .favicon svg { width: 14px; height: 14px; }
+  .browser-tab .tab-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 12px;
+  }
+  .browser-tab .tab-close {
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1;
+  }
+  .browser-bar {
+    background: var(--white);
+    padding: 8px 14px;
+    border-radius: 0 0 4px 4px;
+    margin-top: 0;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 12px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .browser-bar .url-pill {
+    flex: 1;
+    background: var(--paper);
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+
+  /* ===== APP ICONS ===== */
+  .app-icons {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 32px;
+    margin: 24px 0 8px;
+    padding: 40px 24px;
+    background: var(--paper);
+    border-radius: 14px;
+  }
+  .app-icon {
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+  }
+  .app-icon.size-60 { width: 60px; height: 60px; border-radius: 13px; padding: 12px; }
+  .app-icon.size-120 { width: 120px; height: 120px; border-radius: 26px; padding: 22px; }
+  .app-icon.size-240 { width: 240px; height: 240px; border-radius: 52px; padding: 44px; }
+  .app-icon svg { width: 100%; height: 100%; display: block; }
+
+  /* ===== ADAPTIVE ICONS ===== */
+  .adaptive-icons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    margin: 24px 0 8px;
+    padding: 40px 24px;
+    background: var(--paper);
+    border-radius: 14px;
+  }
+  .adaptive {
+    background: var(--navy);
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 26px;
+    box-shadow: var(--shadow);
+  }
+  .adaptive.circle { border-radius: 50%; }
+  .adaptive.squircle { border-radius: 38%; }
+  .adaptive svg { width: 100%; height: 100%; display: block; }
+
+  /* ===== SOCIAL PROFILE ===== */
+  .profile-mock {
+    max-width: 480px;
+    margin: 24px auto 8px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    box-shadow: var(--shadow);
+  }
+  .profile-pic {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    flex: 0 0 88px;
+  }
+  .profile-pic svg { width: 100%; height: 100%; display: block; }
+  .profile-info .name {
+    font-family: 'Comfortaa', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .profile-info .handle {
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .profile-info .bio {
+    font-size: 14px;
+    color: var(--ink-mid);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  /* ===== REAL WORLD MOCKS ===== */
+  .mock {
+    margin: 24px 0 8px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .navbar-light, .navbar-dark { padding: 0; }
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+  }
+  .navbar-light .navbar { background: var(--white); }
+  .navbar-dark .navbar { background: var(--navy); }
+  .navbar-logo { width: 180px; }
+  .navbar-logo svg { width: 100%; height: auto; display: block; }
+  .navbar-nav { display: flex; gap: 28px; }
+  .navbar-nav a {
+    font-family: 'Comfortaa', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .navbar-light .navbar-nav a { color: var(--ink-mid); }
+  .navbar-dark .navbar-nav a { color: rgba(255, 255, 255, 0.85); }
+
+  /* Business card */
+  .card-mock { background: transparent; box-shadow: none; padding: 32px 0; display: flex; justify-content: center; }
+  .business-card {
+    background: var(--cream);
+    width: 380px;
+    height: 220px;
+    border-radius: 8px;
+    padding: 32px 32px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+  }
+  .bc-logo { width: 200px; }
+  .bc-logo svg { width: 100%; height: auto; display: block; }
+  .bc-info .bc-name {
+    font-family: 'Comfortaa', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--navy);
+  }
+  .bc-info .bc-role {
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 11px;
+    color: var(--ink-mid);
+    margin-top: 2px;
+  }
+  .bc-info .bc-email {
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    margin-top: 8px;
+  }
+
+  /* Slide cover */
+  .slide-mock { background: transparent; box-shadow: none; padding: 0; display: flex; justify-content: center; }
+  .slide-cover {
+    background: var(--navy);
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    max-width: 720px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    box-shadow: var(--shadow-lg);
+  }
+  .slide-logo { width: 70%; max-width: 440px; }
+  .slide-logo svg { width: 100%; height: auto; display: block; }
+  .slide-caption {
+    font-family: 'Caveat', 'Comfortaa', cursive;
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 32px;
+    font-weight: 500;
+  }
+
+  /* ===== TEXT FALLBACK ===== */
+  .text-mocks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin: 24px 0 8px;
+  }
+  .text-mock {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .tm-header {
+    background: var(--paper);
+    padding: 10px 16px;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--line);
+  }
+  .tm-content {
+    padding: 20px 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink);
+    min-height: 140px;
+  }
+  .tm-content.tm-comfortaa { font-family: 'Comfortaa', sans-serif; }
+  .tm-content.tm-mono { font-family: ui-monospace, 'SF Mono', 'Menlo', monospace; background: #1c1917; color: #d4d4d8; }
+  .tm-content.tm-serif { font-family: Georgia, 'Times New Roman', serif; font-style: italic; }
+
+  /* ===== BACKGROUNDS ===== */
+  .bg-trio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  .bg-cell {
+    padding: 64px 32px 48px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .bg-cell > div:first-child { width: 100%; max-width: 220px; }
+  .bg-cell svg { width: 100%; height: auto; display: block; }
+  .bg-cell.white { background: var(--white); }
+  .bg-cell.navy { background: var(--navy); }
+  .bg-cell.trasp {
+    background-image:
+      linear-gradient(45deg, #e7e5e4 25%, transparent 25%),
+      linear-gradient(-45deg, #e7e5e4 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e7e5e4 75%),
+      linear-gradient(-45deg, transparent 75%, #e7e5e4 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-color: var(--white);
+  }
+  .bg-label {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+  .bg-cell.white .bg-label { color: var(--ink-soft); }
+  .bg-cell.navy .bg-label { color: rgba(255, 255, 255, 0.5); }
+  .bg-cell.trasp .bg-label { color: var(--ink-soft); background: rgba(255, 255, 255, 0.8); }
+
+  /* ===== CUTS ===== */
+  .cuts-list {
+    background: var(--paper);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  .cuts-list li {
+    font-size: 14px;
+    color: var(--ink-mid);
+    margin-bottom: 8px;
+    list-style: none;
+    padding-left: 18px;
+    position: relative;
+  }
+  .cuts-list li::before {
+    content: '×';
+    color: var(--teal);
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    padding: 48px 0 56px;
+    text-align: center;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+    border-top: 1px solid var(--line);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 880px) {
+    .showcase { padding: 0 20px; }
+    section { padding: 64px 0; }
+    h2 { font-size: 22px; }
+    .lead { font-size: 15px; }
+    .hero { padding: 80px 0 64px; }
+    .hero-logo { max-width: 360px; }
+    .variants { grid-template-columns: 1fr; }
+    .compare { grid-template-columns: 1fr; }
+    .surface { padding: 56px 32px; min-height: 180px; }
+    .text-mocks { grid-template-columns: 1fr; }
+    .bg-trio { grid-template-columns: 1fr; }
+    .app-icons { gap: 20px; padding: 28px 16px; }
+    .app-icon.size-240 { width: 160px; height: 160px; border-radius: 36px; padding: 30px; }
+    .navbar { padding: 14px 18px; }
+    .navbar-logo { width: 140px; }
+    .navbar-nav { gap: 14px; }
+    .business-card { width: 100%; max-width: 360px; height: auto; min-height: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<main class="showcase">
+
+  <!-- ===================================================== -->
+  <!-- HERO                                                  -->
+  <!-- ===================================================== -->
+  <section class="hero">
+    <div class="hero-logo" id="hero-logo"></div>
+    <p class="hero-caption">brand system, canonical mark and use contexts</p>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- THE THREE CANONICAL VARIANTS                          -->
+  <!-- ===================================================== -->
+  <section>
+    <h2>The three canonical variants</h2>
+    <p class="lead">Everything that lives in the brand system. Each variant exists because a real context needs it, not one more.</p>
+    <div class="variants">
+
+      <div class="variant-card">
+        <div class="variant-svg" id="v-mark"></div>
+        <code>mark</code>
+        <h3>The standalone mark</h3>
+        <p>For surfaces where the space is square or too small to fit the full name.</p>
+        <ul>
+          <li>Favicon</li>
+          <li>App icon</li>
+          <li>Profile picture, watermark</li>
+        </ul>
+      </div>
+
+      <div class="variant-card">
+        <div class="variant-svg" id="v-bp-wm"></div>
+        <code>bigP-wordmark</code>
+        <h3>The default lockup</h3>
+        <p>Use in any context that takes a horizontal mark. This is the default.</p>
+        <ul>
+          <li>Site and Backstage headers</li>
+          <li>Email signature</li>
+          <li>ClassForge, ClassPulse, ClassTrail</li>
+        </ul>
+      </div>
+
+      <div class="variant-card">
+        <div class="variant-svg" id="v-bp-wm-t"></div>
+        <code>bigP-wordmark_tag.mono</code>
+        <h3>Lockup with tagline</h3>
+        <p>For formal and presentational contexts where the tagline adds narrative.</p>
+        <ul>
+          <li>Homepage hero</li>
+          <li>Business card</li>
+          <li>Presentation cover</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- LIGHT VS DARK                                         -->
+  <!-- ===================================================== -->
+  <section>
+    <h2>Light and dark, same mark, two surfaces</h2>
+    <p class="lead">The intent is always to use white. Navy steps in only when a dark surface is forced, system dark mode, a dark slide deck, an environment where the background isn't yours to choose.</p>
+    <div class="compare">
+      <div class="surface white">
+        <div id="lvd-white"></div>
+        <span class="surface-label">bg.white</span>
+      </div>
+      <div class="surface navy">
+        <div id="lvd-navy"></div>
+        <span class="surface-label">bg.navy</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- MARK IN SIZE-CONSTRAINED CONTEXTS                     -->
+  <!-- ===================================================== -->
+  <section>
+    <h2>The <code>mark</code> in size-constrained contexts</h2>
+    <p class="lead">The reason the <code>mark</code> exists as a separate artifact, surfaces where the full name doesn't fit or doesn't read.</p>
+
+    <div class="browser-mock">
+      <div class="browser-tab-row">
+        <div class="browser-tab active">
+          <span class="favicon" id="favicon-1"></span>
+          <span class="tab-title">pensoIA, human thinking</span>
+          <span class="tab-close">×</span>
+        </div>
+        <div class="browser-tab">
+          <span class="favicon">○</span>
+          <span class="tab-title">another tab</span>
+        </div>
+        <div class="browser-tab">
+          <span class="favicon">◐</span>
+          <span class="tab-title">another tab</span>
+        </div>
+      </div>
+      <div class="browser-bar">
+        <span style="color: var(--ink-soft);">←  →  ⟳</span>
+        <span class="url-pill">pensoia.com</span>
+      </div>
+    </div>
+    <p class="anno">Favicon, 16×16, in an active browser tab.</p>
+
+    <div class="app-icons">
+      <div class="app-icon size-60" id="app-60"></div>
+      <div class="app-icon size-120" id="app-120"></div>
+      <div class="app-icon size-240" id="app-240"></div>
+    </div>
+    <p class="anno">App icon, iOS rounded square, 60 / 120 / 240 px. Navy fill keeps the brand color on light and dark homescreens.</p>
+
+    <div class="adaptive-icons">
+      <div class="adaptive circle" id="adp-circle"></div>
+      <div class="adaptive squircle" id="adp-squircle"></div>
+    </div>
+    <p class="anno">Android adaptive icon, circle and squircle (140×140).</p>
+
+    <div class="profile-mock">
+      <div class="profile-pic" id="profile-pic"></div>
+      <div class="profile-info">
+        <div class="name">pensoIA</div>
+        <div class="handle">@pensoia</div>
+        <div class="bio">Human thinking, augmented intelligence.</div>
+      </div>
+    </div>
+    <p class="anno">Social profile picture, 88×88 circle on the profile card.</p>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- IN REAL-WORLD CONTEXTS                                -->
+  <!-- ===================================================== -->
+  <section>
+    <h2>In real-world contexts</h2>
+    <p class="lead">Where the mark lives day to day, in mockups of the surfaces it will actually inhabit.</p>
+
+    <div class="mock navbar-light">
+      <div class="navbar">
+        <div class="navbar-logo" id="nav-light"></div>
+        <nav class="navbar-nav">
+          <a>About</a>
+          <a>Solutions</a>
+          <a>Contact</a>
+        </nav>
+      </div>
+    </div>
+    <p class="anno">Site navbar, light mode (default).</p>
+
+    <div class="mock navbar-dark">
+      <div class="navbar">
+        <div class="navbar-logo" id="nav-dark"></div>
+        <nav class="navbar-nav">
+          <a>About</a>
+          <a>Solutions</a>
+          <a>Contact</a>
+        </nav>
+      </div>
+    </div>
+    <p class="anno">Site navbar, dark mode.</p>
+
+    <div class="card-mock">
+      <div class="business-card">
+        <div class="bc-logo" id="bc-logo"></div>
+        <div class="bc-info">
+          <div class="bc-name">Élder Prudente Barbosa Filho</div>
+          <div class="bc-role">Founder</div>
+          <div class="bc-email">elder@pensoia.com.br</div>
+        </div>
+      </div>
+    </div>
+    <p class="anno">Business card, front, cream paper 380×220 px.</p>
+
+    <div class="slide-mock">
+      <div class="slide-cover">
+        <div class="slide-logo" id="slide-logo"></div>
+        <div class="slide-caption">institutional presentation</div>
+      </div>
+    </div>
+    <p class="anno">Slide cover, 16:9 dark.</p>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- PLAIN-TEXT FALLBACK                                   -->
+  <!-- ===================================================== -->
+  <section>
+    <h2>Plain-text fallback, contexts without images</h2>
+    <p class="lead">In fields with no image support (plaintext email, code, terminal, some form inputs), the mark is the name spelled out in whatever font is available. There's no "invisible logo", it's plain text. Brand recognition happens through consistent typography wherever Comfortaa loads, and through the name written correctly everywhere else.</p>
+
+    <div class="text-mocks">
+      <div class="text-mock">
+        <div class="tm-header">plaintext email, comfortaa</div>
+        <div class="tm-content tm-comfortaa">
+          Hi,<br><br>
+          Thanks for reaching out. I'll get back to you soon.<br><br>
+          pensoIA<br>
+          elder@pensoia.com.br
+        </div>
+      </div>
+      <div class="text-mock">
+        <div class="tm-header">terminal, monospace</div>
+        <div class="tm-content tm-mono">
+          $ npm install pensoia<br>
+          ✓ pensoia@1.0.0 added<br>
+          <br>
+          $ pensoia --help<br>
+          Usage: pensoia [command]
+        </div>
+      </div>
+      <div class="text-mock">
+        <div class="tm-header">document, serif fallback</div>
+        <div class="tm-content tm-serif">
+          "pensoIA believes well-built technology augments the human without replacing them."
+        </div>
+      </div>
+    </div>
+    <p class="anno">Three fonts, same mark, spelled out in all of them.</p>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- BACKGROUNDS                                           -->
+  <!-- ===================================================== -->
+  <section>
+    <h2>The three canonical backgrounds</h2>
+    <p class="lead">Each render picks one of three surfaces. <code>bg.trasp</code> uses the same color scheme as <code>bg.white</code> with no solid fill, for light surfaces or contexts where the downstream controls the background.</p>
+    <div class="bg-trio">
+      <div class="bg-cell white">
+        <div id="bg-white"></div>
+        <span class="bg-label">bg.white</span>
+      </div>
+      <div class="bg-cell navy">
+        <div id="bg-navy"></div>
+        <span class="bg-label">bg.navy</span>
+      </div>
+      <div class="bg-cell trasp">
+        <div id="bg-trasp"></div>
+        <span class="bg-label">bg.trasp</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- WHAT DIDN'T MAKE THE CANONICAL SET                    -->
+  <!-- ===================================================== -->
+  <section>
+    <h2>What didn't make the canonical set</h2>
+    <p class="lead">Every shipping variant needs a real consumer. These were cut because the cost of maintaining, rendering and validating them didn't pay rent:</p>
+    <ul class="cuts-list">
+      <li><code>stack</code>, very rare use. Bring back when a real consumer shows up (specific square crop, vertical sidebar).</li>
+      <li><code>tag.duo</code>, second color on the tagline added complexity without consistent payoff.</li>
+      <li><code>smallp-wordmark</code>, in image-less contexts we use plain text (previous section), not another letter-as-image.</li>
+      <li><code>wordmark</code> alone, text without the P loses the visual identity; prefer the full lockup.</li>
+      <li><code>bg.teal</code>, no real teal surfaces where the mark lives today.</li>
+    </ul>
+    <p class="lead">Everything cut lives in <code>archive/</code>, accessible if a real need reappears.</p>
+  </section>
+
+  <footer>
+    pensoIA · brand system · v1 · 2026
+  </footer>
+
+</main>
+
+<script type="module">
+  import {
+    stdColors,
+    logoMarkOnly,
+    logoHorizontal,
+    logoHorizontalRightAligned
+  } from './brand-logos.js';
+
+  const set = (id, svg) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = svg;
+  };
+
+  // ---- Hero (bigP-wordmark with tagline, on white) ----
+  set('hero-logo', logoHorizontalRightAligned(stdColors('white')));
+
+  // ---- 3 Canonical variants (on white) ----
+  set('v-mark', logoMarkOnly(stdColors('white')));
+  set('v-bp-wm', logoHorizontal(stdColors('white'), { showTagline: false }));
+  set('v-bp-wm-t', logoHorizontalRightAligned(stdColors('white')));
+
+  // ---- Light vs dark comparison ----
+  set('lvd-white', logoHorizontal(stdColors('white'), { showTagline: false }));
+  set('lvd-navy', logoHorizontal(stdColors('navy'), { showTagline: false }));
+
+  // ---- Favicon (mark with white-scheme colors, in browser tab) ----
+  set('favicon-1', logoMarkOnly(stdColors('white')));
+
+  // ---- App icons (mark with navy-scheme colors on navy bg) ----
+  const markOnDark = logoMarkOnly(stdColors('navy'));
+  set('app-60', markOnDark);
+  set('app-120', markOnDark);
+  set('app-240', markOnDark);
+
+  // ---- Adaptive icons ----
+  set('adp-circle', markOnDark);
+  set('adp-squircle', markOnDark);
+
+  // ---- Profile picture ----
+  set('profile-pic', markOnDark);
+
+  // ---- Navbars ----
+  set('nav-light', logoHorizontal(stdColors('white'), { showTagline: false }));
+  set('nav-dark', logoHorizontal(stdColors('navy'), { showTagline: false }));
+
+  // ---- Business card (cream paper, treat as white scheme) ----
+  set('bc-logo', logoHorizontalRightAligned(stdColors('white')));
+
+  // ---- Slide cover (dark) ----
+  set('slide-logo', logoHorizontalRightAligned(stdColors('navy')));
+
+  // ---- Backgrounds trio ----
+  set('bg-white', logoHorizontal(stdColors('white'), { showTagline: false }));
+  set('bg-navy', logoHorizontal(stdColors('navy'), { showTagline: false }));
+  set('bg-trasp', logoHorizontal(stdColors('white'), { showTagline: false }));
+</script>
+
+</body>
+</html>
