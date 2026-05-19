@@ -115,7 +115,7 @@
 <input type="radio" name="tab" id="t2">
 
 <div class="tabs">
-  <label for="t1">1, Versions (10)</label>
+  <label for="t1">1, Versions (11)</label>
   <label for="t2">2, Real World (10)</label>
 </div>
 
@@ -132,6 +132,20 @@
 // ============================================================
 
 const TAB_VERSIONS = [
+  {
+    id: 'exp-navy-teal-enso', label: 'EXPERIMENTAL · bg.navy, enso teal + IA white',
+    note: 'Color exploration. On <code>bg.navy</code>: P outer and "enso" letters are teal (brand color carrying the "name" group); brain bubble and "IA" letters are white (high-emphasis "AI" group). Tagline is teal to stay grouped with the name. Inverts the current scheme where IA carries the teal accent. White and teal cells show the current scheme as a baseline for comparison.',
+    customRender: bg => {
+      if (bg === 'navy') {
+        const c = {
+          pOuter: C.teal, pBrain: C.white, pDot: C.white,
+          ensoColor: C.teal, iaColor: C.white, taglineColor: C.teal
+        };
+        return logoHorizontalRightAligned(c);
+      }
+      return logoHorizontalRightAligned(stdColors(bg));
+    }
+  },
   {
     id: 'm', label: 'mark',
     note: 'The standalone P symbol (bigP) alone. For favicon, app icon, avatar, watermark.',
