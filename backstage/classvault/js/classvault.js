@@ -649,11 +649,25 @@ function _openContextMenu(x, y, located) {
     else if (action === 'demote') _setItemAudience(item, 'vault_only');
     else if (action === 'release') _releaseItemToCurrentAula(item);
   });
-  setTimeout(() => document.addEventListener('click', _closeContextMenu, { once: true }), 0);
-  setTimeout(() => document.addEventListener('contextmenu', _closeContextMenu, { once: true }), 0);
+  // Dismiss listeners. Use named handlers so _closeContextMenu can remove them
+  // before the bubble reaches document on the NEXT contextmenu — otherwise the
+  // stale dismiss handler would close the menu the body just opened.
+  setTimeout(() => {
+    document.addEventListener('click', _docDismissCtxMenu);
+    document.addEventListener('contextmenu', _docDismissCtxMenu);
+  }, 0);
+}
+
+function _docDismissCtxMenu(e) {
+  // Don't dismiss if the click/right-click landed inside the menu itself —
+  // the menu's own click handler will close it after running the action.
+  if (ClassVault._ctxMenuEl && ClassVault._ctxMenuEl.contains(e.target)) return;
+  _closeContextMenu();
 }
 
 function _closeContextMenu() {
+  document.removeEventListener('click', _docDismissCtxMenu);
+  document.removeEventListener('contextmenu', _docDismissCtxMenu);
   if (ClassVault._ctxMenuEl && ClassVault._ctxMenuEl.parentNode) {
     ClassVault._ctxMenuEl.parentNode.removeChild(ClassVault._ctxMenuEl);
   }
