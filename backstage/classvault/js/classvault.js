@@ -51,6 +51,7 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   _wireItemClicks();
   _wireSidebarFooter();
   _wireItemContextMenu();
+  _wireDragReorder();
   _loadCodex();
 })();
 
@@ -197,7 +198,7 @@ function _renderSidebar() {
       label: 'Hoje · Aula ' + ClassVault.aulaNumber,
       count: ClassVault.aulaPlanItems.length,
       body: ClassVault.aulaPlanItems.length
-        ? _renderAulaBody(ClassVault.aulaPlanItems)
+        ? _renderAulaBody(ClassVault.aulaPlanItems, { draggable: true })
         : '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum item planejado. Clique direito num item do Vault → "Adicionar ao plano de hoje".</div>'
     }));
   }
@@ -394,7 +395,9 @@ function _renderAulaPicker() {
 // Within an aula, group items by type so the sidebar mirrors PensoTrilha's
 // student-facing structure: Tarefa(s) first, Conteúdo second, Outros last.
 // Sub-section labels render only when there's more than one populated group.
-function _renderAulaBody(aulaItems) {
+// opts.draggable === true marks .sub elements as HTML5-draggable (Hoje only).
+function _renderAulaBody(aulaItems, opts) {
+  const draggable = !!(opts && opts.draggable);
   const tarefa = aulaItems.filter(it => it.type === 'tarefa');
   const conteudo = aulaItems.filter(it => it.type === 'conteudo');
   const outros = aulaItems.filter(it => it.type !== 'tarefa' && it.type !== 'conteudo');
@@ -403,20 +406,23 @@ function _renderAulaBody(aulaItems) {
     { label: 'Conteúdo da aula', items: conteudo },
     { label: 'Outros', items: outros }
   ].filter(g => g.items.length);
+  const renderCard = (it) => _renderSubCard(it, draggable);
   if (groups.length === 1) {
-    return groups[0].items.map(_renderSubCard).join('');
+    return groups[0].items.map(renderCard).join('');
   }
   return groups.map(g =>
     '<div class="cv-sm-subgroup-label">' + _esc(g.label) + '</div>' +
-    g.items.map(_renderSubCard).join('')
+    g.items.map(renderCard).join('')
   ).join('');
 }
 
-function _renderSubCard(item) {
+function _renderSubCard(item, draggable) {
   const zoneClass = _zoneClassFor(item.type);
   const icon = item.type_icon || _zoneIconFor(item.type);
+  const dragAttrs = draggable ? ' draggable="true" data-draggable="1"' : '';
   return (
-    '<div class="sub" data-item-id="' + _esc(String(item.id)) + '">' +
+    '<div class="sub' + (draggable ? ' sub--draggable' : '') + '"' +
+      ' data-item-id="' + _esc(String(item.id)) + '"' + dragAttrs + '>' +
       '<div class="sub-zone' + (zoneClass ? ' ' + zoneClass : '') + '">' + _esc(icon || '•') + '</div>' +
       '<div class="sub-meta">' +
         '<span class="sub-type">' + _esc(item.type_label || item.type) + '</span>' +
@@ -513,6 +519,79 @@ function _wireSidebarFooter() {
   btn.addEventListener('click', () => _openCreator());
 }
 
+// Phase 4: drag-to-reorder for Hoje items. Only .sub[data-draggable="1"] is
+// draggable (set by _renderSubCard when Hoje requests it). Drop must land on
+// another draggable .sub — non-Hoje items don't accept drops, so cross-section
+// drags are silently ignored. On a valid drop, compute the new order from DOM
+// and call cv_reorder_aula_plan.
+function _wireDragReorder() {
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+
+  let draggedId = null;
+
+  body.addEventListener('dragstart', e => {
+    const sub = e.target.closest('.sub[data-draggable="1"]');
+    if (!sub) return;
+    draggedId = sub.getAttribute('data-item-id');
+    sub.classList.add('is-dragging');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+    }
+  });
+
+  body.addEventListener('dragend', e => {
+    const sub = e.target.closest('.sub');
+    if (sub) sub.classList.remove('is-dragging');
+    body.querySelectorAll('.is-drop-target').forEach(el => el.classList.remove('is-drop-target'));
+    draggedId = null;
+  });
+
+  body.addEventListener('dragover', e => {
+    const sub = e.target.closest('.sub[data-draggable="1"]');
+    if (!sub || sub.classList.contains('is-dragging')) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    body.querySelectorAll('.is-drop-target').forEach(el => el.classList.remove('is-drop-target'));
+    sub.classList.add('is-drop-target');
+  });
+
+  body.addEventListener('drop', async e => {
+    const sub = e.target.closest('.sub[data-draggable="1"]');
+    if (!sub || !draggedId) return;
+    e.preventDefault();
+    body.querySelectorAll('.is-drop-target').forEach(el => el.classList.remove('is-drop-target'));
+    if (sub.getAttribute('data-item-id') === draggedId) return;
+
+    const allDraggable = Array.from(body.querySelectorAll('.sub[data-draggable="1"]'));
+    const draggedEl = allDraggable.find(el => el.getAttribute('data-item-id') === draggedId);
+    if (!draggedEl) return;
+
+    const dropIdx = allDraggable.indexOf(sub);
+    const draggedIdx = allDraggable.indexOf(draggedEl);
+    const reordered = allDraggable.slice();
+    reordered.splice(draggedIdx, 1);
+    const newDropIdx = draggedIdx < dropIdx ? dropIdx - 1 : dropIdx;
+    reordered.splice(newDropIdx, 0, draggedEl);
+    const newOrder = reordered.map(el => Number(el.getAttribute('data-item-id')));
+
+    try {
+      const res = await callWorker({
+        action: 'cv_reorder_aula_plan',
+        client_slug: ClassVault.active.client_slug,
+        turma_slug: ClassVault.active.turma_slug,
+        aula_number: ClassVault.aulaNumber,
+        item_ids: newOrder
+      });
+      if (res && res.error) throw new Error(res.error);
+      await _loadCodex();
+    } catch (err) {
+      if (window.BSToast) BSToast.show('Erro ao reordenar: ' + (err.message || err));
+    }
+  });
+}
+
 // Right-click on an item opens a contextual menu whose options vary by where
 // the item lives (vault / hoje / trilha).
 function _wireItemContextMenu() {
@@ -570,11 +649,25 @@ function _openContextMenu(x, y, located) {
     else if (action === 'demote') _setItemAudience(item, 'vault_only');
     else if (action === 'release') _releaseItemToCurrentAula(item);
   });
-  setTimeout(() => document.addEventListener('click', _closeContextMenu, { once: true }), 0);
-  setTimeout(() => document.addEventListener('contextmenu', _closeContextMenu, { once: true }), 0);
+  // Dismiss listeners. Use named handlers so _closeContextMenu can remove them
+  // before the bubble reaches document on the NEXT contextmenu — otherwise the
+  // stale dismiss handler would close the menu the body just opened.
+  setTimeout(() => {
+    document.addEventListener('click', _docDismissCtxMenu);
+    document.addEventListener('contextmenu', _docDismissCtxMenu);
+  }, 0);
+}
+
+function _docDismissCtxMenu(e) {
+  // Don't dismiss if the click/right-click landed inside the menu itself —
+  // the menu's own click handler will close it after running the action.
+  if (ClassVault._ctxMenuEl && ClassVault._ctxMenuEl.contains(e.target)) return;
+  _closeContextMenu();
 }
 
 function _closeContextMenu() {
+  document.removeEventListener('click', _docDismissCtxMenu);
+  document.removeEventListener('contextmenu', _docDismissCtxMenu);
   if (ClassVault._ctxMenuEl && ClassVault._ctxMenuEl.parentNode) {
     ClassVault._ctxMenuEl.parentNode.removeChild(ClassVault._ctxMenuEl);
   }

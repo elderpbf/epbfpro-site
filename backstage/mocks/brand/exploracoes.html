@@ -261,12 +261,12 @@ function logoWordmarkInline(c, o = {}) {
 // ============================================================
 const TAB_1 = [
   {
-    id: '1.1', label: 'Tagline alinhada à direita, terminando no fim do "IA"',
+    id: 'bp-wm-t', label: 'bigPwordmark + tagline',
     note: 'Wordmark forçado via textLength a terminar no mesmo x da tagline. Alinhamento óptico garantido.',
     customRender: bg => logoHorizontalRightAligned(stdColors(bg))
   },
   {
-    id: '1.2', label: 'Mesma, tagline em duas cores',
+    id: 'bp-wm-d', label: 'bigPwordmark + duotone',
     note: '"pensamento humano," num tom e "inteligência ampliada" no outro.',
     customRender: bg => {
       const c = stdColors(bg);
@@ -279,13 +279,13 @@ const TAB_1 = [
     }
   },
   {
-    id: '1.3', label: 'Wordmark inline (p como letra), baseline',
+    id: 'sp-wm', label: 'smallpwordmark',
     note: 'pSize=380, pY=320, wordmarkX=340. Topo do p alinha com lowercase letters. Sem tagline.',
     render: c => logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340 })
   },
   {
-    id: '1.4', label: 'Wordmark inline + tagline full-width',
-    note: 'Baseline 1.3 com tagline estendida via textLength do início do p até o fim do "IA".',
+    id: 'sp-wm-t', label: 'smallpwordmark + tagline',
+    note: 'sp-wm com tagline estendida via textLength do início do p até o fim do "IA".',
     render: c => {
       const base = logoWordmarkInline(c, { pSize: 380, pY: 320, wordmarkX: 340, viewBox: '0 0 2400 1000' });
       const tagline = `<text x="30" y="940" font-weight="400" font-size="78" fill="${c.taglineColor}" textLength="1990" lengthAdjust="spacingAndGlyphs">${TAGLINE}</text>`;
@@ -293,12 +293,12 @@ const TAB_1 = [
     }
   },
   {
-    id: '1.5', label: 'Logo sem tagline',
+    id: 'bp-wm', label: 'bigPwordmark',
     note: 'Versão compact pra headers de site, assinatura de e-mail.',
     render: c => logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' })
   },
   {
-    id: '1.6', label: 'Mark only (só o P)',
+    id: 'm', label: 'mark',
     note: 'Pra favicon, app icon, avatar de rede social, marca d\'água.',
     render: c => logoMarkOnly(c)
   }
@@ -309,18 +309,18 @@ const TAB_1 = [
 // ============================================================
 const TAB_2 = [
   {
-    id: '2.1', label: 'Wordmark only (sem o P)',
+    id: 'wm', label: 'wordmark',
     note: 'Sem o P glyph, o texto começa com "p" minúsculo: pensoIA.',
     render: c => logoWordmarkOnly(c)
   },
   {
-    id: '2.2', label: 'Empilhada (thick-p como letra)',
+    id: 'sp-wm-s', label: 'smallpwordmark + stacked',
     note: 'Thick-p empilhado acima, "ensoIA" embaixo. O glifo é a letra p; lido na vertical forma "pensoIA".',
     render: c => logoStacked(c, { useThick: true })
   },
   {
-    id: '2.3', label: 'Empilhada + tagline',
-    note: 'Mesma 2.2 com tagline embaixo.',
+    id: 'sp-wm-t-s', label: 'smallpwordmark + tagline + stacked',
+    note: 'sp-wm-s com tagline embaixo.',
     render: c => logoStacked(c, { useThick: true, showTagline: true })
   }
 ];
