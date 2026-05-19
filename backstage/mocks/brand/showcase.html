@@ -847,14 +847,8 @@
 
 </main>
 
-<script type="module">
-  import {
-    stdColors,
-    logoMarkOnly,
-    logoHorizontal,
-    logoHorizontalRightAligned
-  } from './brand-logos.js';
-
+<script src="brand-logos.js"></script>
+<script>
   const set = (id, svg) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = svg;
