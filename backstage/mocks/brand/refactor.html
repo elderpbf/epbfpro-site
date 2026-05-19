@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>pensoIA, refactor (2 abas)</title>
+<title>pensoIA, refactor (2 tabs)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
@@ -40,7 +40,7 @@
   #t1:checked ~ .tab-content > .pane-1,
   #t2:checked ~ .tab-content > .pane-2 { display: block; }
 
-  /* Tab 2 (Mundo Real) default cells: 3-col grid, slightly bigger than tab 1 */
+  /* Tab 2 (Real World) default cells: 3-col grid, slightly bigger than tab 1 */
   .pane-2 .bg-cell { min-height: 240px; padding: 20px; }
   .pane-2 .bg-cell svg { max-width: 100%; max-height: 280px; height: auto; }
 
@@ -108,15 +108,15 @@
 <h1>pensoIA, refactor</h1>
 <div class="sub">
   Naming: <a href="https://pensoia.com/backstage/mocks/" style="color: inherit;">PensoIA/Brand/manifest/naming.md</a>.
-  Mudança principal vs <code>exploracoes.html</code>: <code>sp-wm-s</code> → <code>bp-wm-s</code>, agora o mark stacked é o bigP standalone com "pensoIA" full text embaixo (font p), não a letterform thick-p.
+  Main change vs <code>exploracoes.html</code>: <code>sp-wm-s</code> → <code>bp-wm-s</code>. The stacked mark is now the standalone bigP with full "pensoIA" text below (font p), not the thick-p letterform. Mark and font p are intentionally different glyphs (Pinterest/Wayfair/NASA pattern).
 </div>
 
 <input type="radio" name="tab" id="t1" checked>
 <input type="radio" name="tab" id="t2">
 
 <div class="tabs">
-  <label for="t1">1, Versões (9)</label>
-  <label for="t2">2, Mundo Real (10)</label>
+  <label for="t1">1, Versions (9)</label>
+  <label for="t2">2, Real World (10)</label>
 </div>
 
 <div class="tab-content">
@@ -128,33 +128,33 @@
 <script>
 
 // ============================================================
-// TAB 1: Versões (9 logos canônicos)
+// TAB 1: Versions (9 canonical logos)
 // ============================================================
 
 const TAB_VERSIONS = [
   {
     id: 'm', label: 'mark',
-    note: 'Só o símbolo P standalone (bigP). Pra favicon, app icon, avatar, marca d\'água.',
+    note: 'The standalone P symbol (bigP) alone. For favicon, app icon, avatar, watermark.',
     render: c => logoMarkOnly(c)
   },
   {
     id: 'wm', label: 'wordmark',
-    note: 'Só o texto "pensoIA" puro, sem nenhum símbolo. Pra contextos onde texto é o suficiente.',
+    note: 'The typographic "pensoIA" text alone, no symbol. For contexts where text on its own is enough.',
     render: c => logoWordmarkOnly(c)
   },
   {
     id: 'bp-wm', label: 'bigPwordmark',
-    note: 'Mark + ensoIA side-by-side, sem tagline. Header de site, assinatura de email.',
+    note: 'Mark + ensoIA side-by-side, no tagline. Website header, email signature.',
     render: c => logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' })
   },
   {
     id: 'bp-wm-t', label: 'bigPwordmark + tagline',
-    note: 'Mesma bp-wm + tagline alinhada à direita, terminando no fim do "IA". Wordmark forçado via textLength pra garantir o alinhamento.',
+    note: 'Same as bp-wm with the tagline right-aligned ending at "IA". Wordmark forced via textLength to guarantee the alignment.',
     customRender: bg => logoHorizontalRightAligned(stdColors(bg))
   },
   {
     id: 'bp-wm-d', label: 'bigPwordmark + duotone',
-    note: 'Mesma bp-wm-t mas com tagline em duas cores. "pensamento humano," num tom e "inteligência ampliada" no outro.',
+    note: 'Same as bp-wm-t but the tagline uses two colors. "pensamento humano," in one tone and "inteligência ampliada" in the other.',
     customRender: bg => {
       const c = stdColors(bg);
       let c1, c2;
@@ -167,22 +167,22 @@ const TAB_VERSIONS = [
   },
   {
     id: 'bp-wm-s', label: 'bigPwordmark + stacked',
-    note: 'Mark P standalone empilhado acima, "pensoIA" full text com font p embaixo. Lockup vertical clássico, igual NASA/Pinterest/Wayfair: mark + wordmark com glifos visivelmente diferentes.',
+    note: 'Standalone P mark stacked above, full "pensoIA" text with font p below. Classic vertical lockup, like NASA/Pinterest/Wayfair: mark + wordmark with visibly different glyphs.',
     render: c => logoStacked(c)
   },
   {
     id: 'bp-wm-t-s', label: 'bigPwordmark + tagline + stacked',
-    note: 'Mesma bp-wm-s com tagline embaixo. Pra cerimônias, slide de abertura, certificados.',
+    note: 'Same as bp-wm-s with the tagline below. For ceremonies, opening slides, certificates.',
     render: c => logoStacked(c, { showTagline: true })
   },
   {
     id: 'sp-wm', label: 'smallpwordmark',
-    note: 'Thick-p (letterform) inline em ensoIA, formando "pensoIA" como uma palavra única. Slogans, frases incorporadas em copy.',
+    note: 'Thick-p (letterform) inline within ensoIA, forming "pensoIA" as a single word. Slogans, brand mentions embedded in copy.',
     render: c => logoWordmarkInline(c)
   },
   {
     id: 'sp-wm-t', label: 'smallpwordmark + tagline',
-    note: 'sp-wm com tagline estendida via textLength do início do p até o fim do "IA". Capa de PDF, hero de landing.',
+    note: 'sp-wm with the tagline stretched via textLength from the start of the p to the end of "IA". PDF cover, landing hero.',
     render: c => {
       const base = logoWordmarkInline(c, { viewBox: '0 0 2400 1000' });
       const tagline = `<text x="30" y="940" font-weight="400" font-size="78" fill="${c.taglineColor}" textLength="1990" lengthAdjust="spacingAndGlyphs">${TAGLINE}</text>`;
@@ -192,17 +192,15 @@ const TAB_VERSIONS = [
 ];
 
 // ============================================================
-// TAB 2: Mundo Real (mockups em contexto)
+// TAB 2: Real World (mockups in context)
 // ============================================================
 
 const TAB_REAL = [
   {
-    id: 'tabs', label: 'Favicons em browser tabs',
-    note: 'Usa <code>m</code> com tile próprio (tricolor). O tile garante legibilidade tanto em browser tabs claros (light mode) quanto escuros (dark mode).',
+    id: 'tabs', label: 'Favicons in browser tabs',
+    note: 'Uses <code>m</code> with its own tile (tricolor). The tile keeps the mark legible on light-mode and dark-mode browser tabs alike.',
     layout: 'full',
     customRender: bg => {
-      // Favicon design varies per cell: cada cell mostra uma opção de tile (branco, teal, navy).
-      // Cores do P seguem stdColors(tile color) pra garantir tricolor.
       let tileBg, tileBgKey, tileStroke = 'none';
       if (bg === 'white') { tileBg = 'white'; tileBgKey = 'white'; tileStroke = '#D6D5D2'; }
       else if (bg === 'navy') { tileBg = C.teal; tileBgKey = 'teal'; }
@@ -232,13 +230,13 @@ const TAB_REAL = [
       content += '<rect x="20" y="80" width="760" height="36" rx="18" fill="white" stroke="#D6D5D2"/>';
       content += '<text x="40" y="103" font-family="Inter, sans-serif" font-size="12" fill="#78716C">pensoia.com/backstage/mocks</text>';
       content += '<rect x="20" y="140" width="760" height="60" rx="6" fill="white" stroke="#D6D5D2"/>';
-      content += '<text x="40" y="175" font-family="Inter, sans-serif" font-size="14" fill="#1C1917">Mocks Hub · página atual</text>';
+      content += '<text x="40" y="175" font-family="Inter, sans-serif" font-size="14" fill="#1C1917">Mocks Hub · current page</text>';
       return buildSvg('0 0 800 220', content);
     }
   },
   {
     id: 'app-icon', label: 'App icon (tricolor)',
-    note: 'Usa <code>m</code>. Tile + P em 3 cores: P usa stdColors do tile color, não do cell. Versão canônica.',
+    note: 'Uses <code>m</code>. Tile + P in 3 colors: the P uses stdColors of the tile color, not the cell. Canonical version.',
     customRender: bg => {
       let tileBg, tileBgKey, tileStroke = 'none';
       if (bg === 'white') { tileBg = 'white'; tileBgKey = 'white'; tileStroke = '#E7E5E4'; }
@@ -251,8 +249,8 @@ const TAB_REAL = [
     }
   },
   {
-    id: 'app-icon-bi', label: 'App icon (bicolor, referência)',
-    note: 'Versões bicolor pra referência durante a discovery: cada cell usa só 2 cores (tile + uma cor sólida pro P inteiro). Mais sóbrio, menos expressivo que a versão tricolor acima.',
+    id: 'app-icon-bi', label: 'App icon (bicolor, reference)',
+    note: 'Bicolor variants kept for reference during discovery: each cell uses only 2 colors (tile + a single solid color for the entire P). Soberer, less expressive than the tricolor version above.',
     customRender: bg => {
       let tileBg, tileStroke = 'none', pColor;
       if (bg === 'white') { tileBg = 'white'; tileStroke = '#E7E5E4'; pColor = C.navy; }
@@ -264,24 +262,24 @@ const TAB_REAL = [
     }
   },
   {
-    id: 'welcome-card', label: 'Cartão de boas-vindas',
-    note: 'Usa <code>bp-wm-s</code>. Cartão 5x7" com mark + wordmark stacked e mensagem manuscrita.',
+    id: 'welcome-card', label: 'Welcome card',
+    note: 'Uses <code>bp-wm-s</code>. 5x7" card with the stacked mark + wordmark and a handwritten message.',
     customRender: bg => {
       const c = stdColors(bg);
       const cardBg = bg === 'white' ? '#FAF7F2' : (bg === 'navy' ? C.navy : C.teal);
       const txtC = bg === 'white' ? C.navy : C.white;
       let content = `<rect width="500" height="700" fill="${cardBg}"/>`;
       content += embedSvg(logoStacked(c), 100, 60, 300, 220);
-      content += `<text x="250" y="430" text-anchor="middle" font-family="Caveat, cursive" font-weight="500" font-size="38" fill="${txtC}">bem-vindo à</text>`;
-      content += `<text x="250" y="495" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="58" fill="${txtC}" textLength="440" lengthAdjust="spacingAndGlyphs">prática aumentada</text>`;
+      content += `<text x="250" y="430" text-anchor="middle" font-family="Caveat, cursive" font-weight="500" font-size="38" fill="${txtC}">welcome to</text>`;
+      content += `<text x="250" y="495" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="58" fill="${txtC}" textLength="440" lengthAdjust="spacingAndGlyphs">augmented practice</text>`;
       content += `<line x1="160" y1="555" x2="340" y2="555" stroke="${txtC}" stroke-width="1" opacity="0.3"/>`;
       content += `<text x="250" y="595" text-anchor="middle" font-family="Comfortaa, sans-serif" font-size="14" fill="${txtC}" opacity="0.7">pensoia.com</text>`;
       return buildSvg('0 0 500 700', content);
     }
   },
   {
-    id: 'landing-header', label: 'Logo em header de landing',
-    note: 'Usa <code>bp-wm</code>. Header de site com logo à esquerda e nav à direita.',
+    id: 'landing-header', label: 'Logo in a landing header',
+    note: 'Uses <code>bp-wm</code>. Site header with the logo on the left and nav on the right.',
     layout: 'full',
     customRender: bg => {
       const c = stdColors(bg);
@@ -291,17 +289,17 @@ const TAB_REAL = [
       let content = `<rect width="1200" height="120" fill="${headerBg}"/>`;
       content += `<line x1="0" y1="119" x2="1200" y2="119" stroke="${divider}" stroke-width="1"/>`;
       content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 40, 30, 220, 60);
-      ['Produto', 'Casos', 'Preços', 'Entrar'].forEach((item, i) => {
+      ['Product', 'Cases', 'Pricing', 'Login'].forEach((item, i) => {
         content += `<text x="${760 + i * 90}" y="65" font-family="Inter, sans-serif" font-size="14" fill="${navC}">${item}</text>`;
       });
       content += `<rect x="1110" y="42" width="80" height="36" rx="6" fill="${C.teal}"/>`;
-      content += '<text x="1150" y="66" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="white">Comece</text>';
+      content += '<text x="1150" y="66" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="white">Start</text>';
       return buildSvg('0 0 1200 120', content);
     }
   },
   {
-    id: 'biz-card', label: 'Cartão de visita (frente)',
-    note: 'Usa <code>bp-wm</code>. Cartão 85x55mm com logo, nome, cargo e contato.',
+    id: 'biz-card', label: 'Business card (front)',
+    note: 'Uses <code>bp-wm</code>. 85x55mm card with logo, name, title, and contact.',
     customRender: bg => {
       const c = stdColors(bg);
       const cardBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
@@ -312,7 +310,7 @@ const TAB_REAL = [
       content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 30, 30, 180, 50);
       content += `<line x1="30" y1="150" x2="120" y2="150" stroke="${C.teal}" stroke-width="2"/>`;
       content += `<text x="30" y="188" font-family="Inter, sans-serif" font-size="18" font-weight="600" fill="${txtC}">Élder Prudente Barbosa Filho</text>`;
-      content += `<text x="30" y="210" font-family="Inter, sans-serif" font-size="13" fill="${subtC}">Consultor em IA</text>`;
+      content += `<text x="30" y="210" font-family="Inter, sans-serif" font-size="13" fill="${subtC}">AI Consultant</text>`;
       content += `<text x="30" y="268" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com</text>`;
       content += `<text x="30" y="285" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">pensoia.com</text>`;
       content += `<text x="30" y="302" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">(79) 9 8014-253</text>`;
@@ -320,8 +318,8 @@ const TAB_REAL = [
     }
   },
   {
-    id: 'avatar', label: 'Avatar social circular',
-    note: 'Usa <code>m</code>. Mark only num círculo. Pro LinkedIn / Twitter / Instagram.',
+    id: 'avatar', label: 'Circular social avatar',
+    note: 'Uses <code>m</code>. Mark only inside a circle. For LinkedIn / Twitter / Instagram.',
     customRender: bg => {
       const circleBg = bg === 'white' ? C.navy : (bg === 'navy' ? C.teal : C.navy);
       const inner = (bg === 'navy' || bg === 'teal')
@@ -333,8 +331,8 @@ const TAB_REAL = [
     }
   },
   {
-    id: 'email-sig', label: 'Assinatura de email',
-    note: 'Usa <code>bp-wm</code>. Bloco horizontal com logo + linha divisora + contato.',
+    id: 'email-sig', label: 'Email signature',
+    note: 'Uses <code>bp-wm</code>. Horizontal block with logo + divider line + contact.',
     layout: 'full',
     customRender: bg => {
       const c = stdColors(bg);
@@ -346,15 +344,15 @@ const TAB_REAL = [
       content += embedSvg(logoHorizontal(c, { showTagline: false, viewBox: '0 0 2400 745' }), 30, 45, 180, 50);
       content += `<line x1="240" y1="50" x2="240" y2="150" stroke="${divider}" stroke-width="1"/>`;
       content += `<text x="270" y="80" font-family="Inter, sans-serif" font-size="15" font-weight="600" fill="${txtC}">Élder Prudente Barbosa Filho</text>`;
-      content += `<text x="270" y="102" font-family="Inter, sans-serif" font-size="12" fill="${subtC}">Consultor em IA · PensoIA</text>`;
+      content += `<text x="270" y="102" font-family="Inter, sans-serif" font-size="12" fill="${subtC}">AI Consultant · PensoIA</text>`;
       content += `<text x="270" y="128" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">contato@pensoia.com · pensoia.com</text>`;
       content += `<text x="270" y="146" font-family="Inter, sans-serif" font-size="11" fill="${subtC}">(79) 9 8014-253</text>`;
       return buildSvg('0 0 600 200', content);
     }
   },
   {
-    id: 'slide-cover', label: 'Capa de slide 16:9',
-    note: 'Usa <code>bp-wm-s</code>. Slide deck cover com mark stacked acima do wordmark + título e subtítulo.',
+    id: 'slide-cover', label: '16:9 slide cover',
+    note: 'Uses <code>bp-wm-s</code>. Slide deck cover with the mark stacked above the wordmark, plus title and subtitle.',
     customRender: bg => {
       const c = stdColors(bg);
       const slideBg = bg === 'white' ? '#FAFAF9' : (bg === 'navy' ? C.navy : C.teal);
@@ -362,15 +360,15 @@ const TAB_REAL = [
       const accentC = bg === 'white' ? C.teal : 'rgba(255,255,255,0.8)';
       let content = `<rect width="1920" height="1080" fill="${slideBg}"/>`;
       content += embedSvg(logoStacked(c), 660, 180, 600, 460);
-      content += `<text x="960" y="780" text-anchor="middle" font-family="Inter, sans-serif" font-size="56" font-weight="700" fill="${txtC}">Inteligência ampliada</text>`;
-      content += `<text x="960" y="850" text-anchor="middle" font-family="Inter, sans-serif" font-size="30" font-weight="400" fill="${accentC}">para o operador do Direito</text>`;
+      content += `<text x="960" y="780" text-anchor="middle" font-family="Inter, sans-serif" font-size="56" font-weight="700" fill="${txtC}">Augmented intelligence</text>`;
+      content += `<text x="960" y="850" text-anchor="middle" font-family="Inter, sans-serif" font-size="30" font-weight="400" fill="${accentC}">for legal professionals</text>`;
       content += `<text x="960" y="990" text-anchor="middle" font-family="Inter, sans-serif" font-size="18" fill="${accentC}" opacity="0.6">pensoia.com</text>`;
       return buildSvg('0 0 1920 1080', content);
     }
   },
   {
-    id: 'tshirt', label: 'T-shirt (peito esquerdo)',
-    note: 'Usa <code>m</code>. Mark only estampado no peito esquerdo.',
+    id: 'tshirt', label: 'T-shirt (left chest)',
+    note: 'Uses <code>m</code>. Mark only printed on the left chest.',
     customRender: bg => {
       const shirtBg = bg === 'white' ? '#F5F5F4' : (bg === 'navy' ? C.navy : C.teal);
       const shirtStroke = bg === 'white' ? '#D6D5D2' : 'rgba(255,255,255,0.2)';
@@ -384,8 +382,8 @@ const TAB_REAL = [
     }
   },
   {
-    id: 'watermark', label: 'Watermark em PDF',
-    note: 'Usa <code>m</code>. Página A4 com mark only diagonal em opacidade baixa.',
+    id: 'watermark', label: 'PDF watermark',
+    note: 'Uses <code>m</code>. A4 page with a diagonal mark only at low opacity.',
     customRender: bg => {
       const pageBg = bg === 'white' ? 'white' : (bg === 'navy' ? C.navy : C.teal);
       const lineC = bg === 'white' ? '#1C1917' : 'white';
