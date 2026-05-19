@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -191,7 +191,7 @@ body.guest-mode .topbar {
   padding: 14px 16px;
 }
 body.guest-mode .topbar::before {
-  content: 'pensoIA  ·  este é um mock em desenvolvimento';
+  content: 'pensoIA  ·  mock in development';
   font-size: 13px;
   font-weight: 500;
   color: var(--navy);
@@ -214,7 +214,7 @@ body.guest-mode .topbar::before {
 <body class="sidebar-hidden">
   <aside class="sidebar">
     <div class="sidebar-header">
-      <button class="back-btn" onclick="window.location.href='/backstage/'" aria-label="Voltar pro Backstage" title="Voltar pro Backstage">←</button>
+      <button class="back-btn" onclick="window.location.href='/backstage/'" aria-label="Back to Backstage" title="Back to Backstage">←</button>
       <h1>pensoIA · Mocks</h1>
     </div>
     <ul class="project-list" id="projectList"></ul>
@@ -223,13 +223,13 @@ body.guest-mode .topbar::before {
   <main class="content">
     <div class="topbar">
       <button class="toggle-btn" onclick="document.body.classList.toggle('sidebar-hidden')" aria-label="Toggle sidebar">☰</button>
-      <div class="current-title" id="currentTitle">Selecione um mock</div>
-      <button class="copy-link" onclick="copyLink()" id="copyBtn" style="display:none;">Copiar link</button>
+      <div class="current-title" id="currentTitle">Select a mock</div>
+      <button class="copy-link" onclick="copyLink()" id="copyBtn" style="display:none;">Copy link</button>
     </div>
     <div class="viewer-area">
       <iframe id="viewer" src="about:blank"></iframe>
       <div class="empty-state" id="emptyState">
-        ← Abra a barra lateral pra ver os mocks disponíveis
+        ← Open the sidebar to browse available mocks
       </div>
     </div>
   </main>
@@ -241,24 +241,25 @@ const MOCKS = {
   brand: {
     label: 'Brand',
     items: [
-      { name: 'Explorações de tagline e variações', file: 'brand/exploracoes.html', children: [
-        { name: 'Refactor (2 abas, com bp-wm-s)', file: 'brand/refactor.html' }
+      { name: 'Brand system showcase (canonical set)', file: 'brand/showcase.html' },
+      { name: 'Tagline and variation explorations', file: 'brand/exploracoes.html', children: [
+        { name: 'Refactor (2 tabs, with bp-wm-s)', file: 'brand/refactor.html' }
       ]},
-      { name: 'Preview do logo (3 fundos)', file: 'brand/preview.html' },
-      { name: 'Alternativas pro retângulo do logo', file: 'brand/alternativas.html' },
-      { name: 'Comparação de 20 fontes', file: 'brand/fontes.html' },
+      { name: 'Logo preview (3 backgrounds)', file: 'brand/preview.html' },
+      { name: 'Logo rectangle alternatives', file: 'brand/alternativas.html' },
+      { name: '20-font comparison', file: 'brand/fontes.html' },
       { name: 'Comfortaa + 4 taglines', file: 'brand/taglines.html' },
-      { name: 'Família Penso em Comfortaa', file: 'brand/produtos.html' }
+      { name: 'Penso family in Comfortaa', file: 'brand/produtos.html' }
     ]
   },
   lauterna: {
-    label: 'Lauterna (provisório · plataforma de laudos médicos)',
+    label: 'Lauterna (working title · medical reports platform)',
     items: [
       { name: 'Home', file: 'lauterna/index.html', children: [
-        { name: 'Novo laudo', file: 'lauterna/novo-laudo.html' },
-        { name: 'Máscaras', file: 'lauterna/mascaras.html' },
-        { name: 'Assinar laudo', file: 'lauterna/assinar.html' },
-        { name: 'Planos', file: 'lauterna/planos.html' }
+        { name: 'New report', file: 'lauterna/novo-laudo.html' },
+        { name: 'Templates', file: 'lauterna/mascaras.html' },
+        { name: 'Sign report', file: 'lauterna/assinar.html' },
+        { name: 'Plans', file: 'lauterna/planos.html' }
       ]}
     ]
   }
@@ -338,8 +339,8 @@ function routeFromHash() {
     document.getElementById('viewer').style.display = 'none';
     const empty = document.getElementById('emptyState');
     empty.style.display = 'flex';
-    empty.textContent = auth ? '← Abra a barra lateral pra ver os mocks disponíveis' : 'Acesse via um link direto pra ver o mock';
-    document.getElementById('currentTitle').textContent = 'Selecione um mock';
+    empty.textContent = auth ? '← Open the sidebar to browse available mocks' : 'Open via a direct link to view the mock';
+    document.getElementById('currentTitle').textContent = 'Select a mock';
     document.getElementById('copyBtn').style.display = 'none';
     if (auth) document.body.classList.remove('sidebar-hidden');
     return;
@@ -352,7 +353,7 @@ function copyLink() {
   navigator.clipboard.writeText(window.location.href).then(() => {
     const btn = document.getElementById('copyBtn');
     const orig = btn.textContent;
-    btn.textContent = 'Copiado!';
+    btn.textContent = 'Copied!';
     setTimeout(() => { btn.textContent = orig; }, 1500);
   });
 }
