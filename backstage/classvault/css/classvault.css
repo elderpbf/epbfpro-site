@@ -274,6 +274,48 @@
   border-radius: 999px;
 }
 
+/* Phase 4: item action buttons in the breadcrumb area when an item is selected */
+.cv-crumb-btn {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
+}
+.cv-crumb-btn:hover:not(:disabled) {
+  background: var(--surface-soft);
+  border-color: var(--primary);
+}
+.cv-crumb-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.cv-crumb-btn--primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.cv-crumb-btn--primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  color: white;
+  border-color: var(--primary-dark);
+}
+.cv-crumb-btn--icon {
+  padding: 4px 8px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 /* Phase 4: drag-to-reorder visual states for Hoje items */
 .sub--draggable { cursor: grab; }
 .sub--draggable:active { cursor: grabbing; }
