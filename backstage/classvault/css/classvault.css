@@ -632,6 +632,23 @@
 }
 .cv-main-view .ct-editor-body { min-height: 0; }
 
+/* Reuse hint shown beneath the editor header when the item being edited is
+   released to turmas other than the active one. Quiet, single line, ellipsis. */
+.cv-main-view .cv-reuse-hint {
+  flex-shrink: 0;
+  padding: 0.55rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cv-main-view .cv-reuse-hint-label {
+  color: var(--text-dim);
+  margin-right: 0.25rem;
+}
+
 @media (max-width: 840px) {
   .cv-shell { grid-template-columns: 1fr; }
   .cv-sm { display: none; }
