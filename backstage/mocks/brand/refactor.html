@@ -115,7 +115,7 @@
 <input type="radio" name="tab" id="t2">
 
 <div class="tabs">
-  <label for="t1">1, Versions (9)</label>
+  <label for="t1">1, Versions (10)</label>
   <label for="t2">2, Real World (10)</label>
 </div>
 
@@ -186,6 +186,20 @@ const TAB_VERSIONS = [
     render: c => {
       const base = logoWordmarkInline(c, { viewBox: '0 0 2400 1000' });
       const tagline = `<text x="30" y="940" font-weight="400" font-size="78" fill="${c.taglineColor}" textLength="1990" lengthAdjust="spacingAndGlyphs">${TAGLINE}</text>`;
+      return base.replace('</svg>', tagline + '</svg>');
+    }
+  },
+  {
+    id: 'sp-wm-d', label: 'smallpwordmark + duotone',
+    note: 'Same as sp-wm-t but the tagline uses two colors. "pensamento humano," in one tone and "inteligência ampliada" in the other, stretched full-width.',
+    customRender: bg => {
+      const c = stdColors(bg);
+      let c1, c2;
+      if (bg === 'white') { c1 = C.navy; c2 = C.teal; }
+      if (bg === 'navy')  { c1 = C.white; c2 = C.teal; }
+      if (bg === 'teal')  { c1 = C.white; c2 = C.navy; }
+      const base = logoWordmarkInline(c, { viewBox: '0 0 2400 1000' });
+      const tagline = `<text x="30" y="940" font-weight="400" font-size="78" fill="${c1}" textLength="1990" lengthAdjust="spacingAndGlyphs">pensamento humano,<tspan fill="${c2}"> inteligência ampliada</tspan></text>`;
       return base.replace('</svg>', tagline + '</svg>');
     }
   }
