@@ -237,10 +237,9 @@ const TAB_REAL = [
     }
   },
   {
-    id: 'app-icon', label: 'App icon (rounded square iOS-style)',
-    note: 'Usa <code>m</code>. Os 3 tiles (branco, teal, navy) e a marca sempre tricolor: cores do P seguem stdColors do tile, não do cell.',
+    id: 'app-icon', label: 'App icon (tricolor)',
+    note: 'Usa <code>m</code>. Tile + P em 3 cores: P usa stdColors do tile color, não do cell. Versão canônica.',
     customRender: bg => {
-      // Tile color por cell + cores do P via stdColors(tile color) pra garantir tricolor em todos.
       let tileBg, tileBgKey, tileStroke = 'none';
       if (bg === 'white') { tileBg = 'white'; tileBgKey = 'white'; tileStroke = '#E7E5E4'; }
       else if (bg === 'navy') { tileBg = C.teal; tileBgKey = 'teal'; }
@@ -248,6 +247,19 @@ const TAB_REAL = [
       const inner = stdColors(tileBgKey);
       let content = `<rect width="400" height="400" rx="88" fill="${tileBg}" stroke="${tileStroke}" stroke-width="2"/>`;
       content += embedSvg(buildSvg('0 0 600 745', pGlyph(inner.pOuter, inner.pBrain, inner.pDot)), 90, 60, 220, 280);
+      return buildSvg('0 0 400 400', content);
+    }
+  },
+  {
+    id: 'app-icon-bi', label: 'App icon (bicolor, referência)',
+    note: 'Versões bicolor pra referência durante a discovery: cada cell usa só 2 cores (tile + uma cor sólida pro P inteiro). Mais sóbrio, menos expressivo que a versão tricolor acima.',
+    customRender: bg => {
+      let tileBg, tileStroke = 'none', pColor;
+      if (bg === 'white') { tileBg = 'white'; tileStroke = '#E7E5E4'; pColor = C.navy; }
+      else if (bg === 'navy') { tileBg = C.teal; pColor = C.white; }
+      else { tileBg = C.navy; pColor = C.white; }
+      let content = `<rect width="400" height="400" rx="88" fill="${tileBg}" stroke="${tileStroke}" stroke-width="2"/>`;
+      content += embedSvg(buildSvg('0 0 600 745', pGlyph(pColor, pColor, pColor)), 90, 60, 220, 280);
       return buildSvg('0 0 400 400', content);
     }
   },
