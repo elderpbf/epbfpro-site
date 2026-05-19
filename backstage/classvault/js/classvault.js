@@ -824,6 +824,41 @@ async function _openEditor(itemOrNull, prefill, aiContext) {
     onCancel: function() { _teardownEditor(); _restoreLastRendered(); },
     onDirtyChange: function() { /* no visual indicator yet */ }
   });
+  if (isEdit && itemOrNull && itemOrNull.id) {
+    _renderReuseHint(view, itemOrNull.id);
+  }
+}
+
+// Show "Também liberado em: ..." beneath the editor header when the item being
+// edited is released to turmas other than the currently active one. Silent if
+// the item is vault-only or only released to the active turma.
+async function _renderReuseHint(view, itemId) {
+  let res;
+  try {
+    res = await callWorker({ action: 'ct_list_item_turmas', item_id: itemId });
+  } catch (_) { return; }
+  if (!res || !res.turmas || !res.turmas.length) return;
+  // Editor may have been torn down or replaced while we awaited
+  if (!ClassVault._editorHandle || ClassVault._editorTarget !== _editorTargetById(itemId)) return;
+  const active = ClassVault.active || {};
+  const others = res.turmas.filter(function(t) {
+    return !(t.client_slug === active.client_slug && t.turma_slug === active.turma_slug);
+  });
+  if (!others.length) return;
+  const header = view.querySelector('.ct-editor-header');
+  if (!header) return;
+  const labels = others.map(function(t) {
+    return _esc((t.client_display_name || t.client_name) + ' / ' + (t.turma_display_name || t.turma_name));
+  }).join(' · ');
+  const hint = document.createElement('div');
+  hint.className = 'cv-reuse-hint';
+  hint.innerHTML = '<span class="cv-reuse-hint-label">Também liberado em:</span> ' + labels;
+  header.insertAdjacentElement('afterend', hint);
+}
+
+function _editorTargetById(itemId) {
+  const t = ClassVault._editorTarget;
+  return (t && t.id === itemId) ? t : null;
 }
 
 // Step-1 content-first flow for new items. Edit mode skips this and goes
