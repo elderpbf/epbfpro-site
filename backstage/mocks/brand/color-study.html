@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pensoIA, color study (where does teal live?)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #061a51;
+    --teal: #14b8a6;
+    --white: #ffffff;
+    --paper: #f5f5f4;
+    --line: #e7e5e4;
+    --ink-soft: #78716c;
+    --ink-mid: #57534e;
+    --ink: #1c1917;
+    --shadow: 0 4px 24px rgba(6, 26, 81, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--white); }
+  body {
+    font-family: 'Comfortaa', sans-serif;
+    color: var(--ink);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .study {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  section {
+    padding: 96px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  section:last-of-type { border-bottom: none; }
+  section > *:last-child { margin-bottom: 0; }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  h1::after {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 3px;
+    background: var(--teal);
+    margin-top: 18px;
+    border-radius: 2px;
+  }
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  h2 .scheme-tag {
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 13px;
+    color: var(--teal);
+    margin-right: 12px;
+    font-weight: 500;
+    background: var(--paper);
+    padding: 2px 8px;
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+  h2::after {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 2px;
+    background: var(--teal);
+    margin-top: 14px;
+    margin-bottom: 24px;
+    border-radius: 2px;
+  }
+  .lead {
+    font-size: 16px;
+    color: var(--ink-mid);
+    max-width: 760px;
+    margin-bottom: 36px;
+  }
+  code {
+    font-family: ui-monospace, 'SF Mono', 'Menlo', monospace;
+    font-size: 0.9em;
+    background: var(--paper);
+    color: var(--navy);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* Grid of bg cells per scheme */
+  .scheme-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+  }
+  .bg-cell {
+    padding: 36px 20px 56px;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    position: relative;
+    border-right: 1px solid var(--line);
+  }
+  .bg-cell:last-child { border-right: none; }
+  .bg-cell.white { background: var(--white); }
+  .bg-cell.navy { background: var(--navy); }
+  .bg-cell.teal { background: var(--teal); }
+  .bg-cell.trasp {
+    background-image:
+      linear-gradient(45deg, #e7e5e4 25%, transparent 25%),
+      linear-gradient(-45deg, #e7e5e4 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e7e5e4 75%),
+      linear-gradient(-45deg, transparent 75%, #e7e5e4 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-color: var(--white);
+  }
+
+  .mark-wrap { width: 80px; display: flex; align-items: center; justify-content: center; }
+  .mark-wrap svg { width: 100%; height: auto; display: block; }
+
+  .lockup-wrap { width: 100%; max-width: 200px; }
+  .lockup-wrap svg { width: 100%; height: auto; display: block; }
+
+  .cell-label {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .bg-cell.white .cell-label { color: var(--ink-soft); }
+  .bg-cell.navy .cell-label { color: rgba(255, 255, 255, 0.6); }
+  .bg-cell.teal .cell-label { color: rgba(255, 255, 255, 0.85); }
+  .bg-cell.trasp .cell-label { color: var(--ink-soft); background: rgba(255, 255, 255, 0.85); }
+
+  .scheme-meta {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .meta-cell {
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-mid);
+    line-height: 1.7;
+    padding: 12px 14px;
+    background: var(--paper);
+    border-radius: 6px;
+  }
+  .meta-cell .meta-row { display: flex; align-items: center; gap: 8px; }
+  .meta-cell .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    border: 1px solid rgba(0,0,0,0.1);
+    flex: 0 0 10px;
+  }
+  .meta-cell .key { color: var(--ink-soft); width: 38px; flex: 0 0 38px; }
+  .meta-cell .fallback {
+    color: var(--teal);
+    font-size: 10px;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* Synthesis */
+  .synthesis {
+    background: var(--paper);
+    border-radius: 12px;
+    padding: 28px 32px;
+  }
+  .synthesis h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+  .synthesis p { font-size: 14px; color: var(--ink-mid); margin-bottom: 14px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  @media (max-width: 880px) {
+    .study { padding: 0 20px; }
+    section { padding: 64px 0; }
+    .scheme-row { grid-template-columns: repeat(2, 1fr); }
+    .scheme-meta { grid-template-columns: repeat(2, 1fr); }
+    .bg-cell:nth-child(2) { border-right: none; }
+  }
+</style>
+</head>
+<body>
+
+<main class="study">
+
+  <!-- ============================== -->
+  <!-- INTRO                          -->
+  <!-- ============================== -->
+  <section>
+    <h1>Where does teal live?</h1>
+    <p class="lead">In the current scheme, teal jumps between two parts of the mark depending on the background. On <code>bg.white</code> the brain (bubble) is teal. On <code>bg.navy</code> the P outer is teal. Teal is the brand's "AI / intelligence" accent, and the part of the mark wearing it shifts. This study compares the current behavior against two alternatives that pin teal to a single semantic role.</p>
+    <p class="lead">Each row renders the mark across all four backgrounds (<code>bg.white</code>, <code>bg.navy</code>, <code>bg.teal</code>, <code>bg.trasp</code>) so the trade-off is visible at a glance.</p>
+  </section>
+
+  <!-- ============================== -->
+  <!-- SCHEME A (CURRENT)             -->
+  <!-- ============================== -->
+  <section>
+    <h2><span class="scheme-tag">A</span>Current scheme, teal location inverts by background</h2>
+    <p class="lead">On light surfaces the brain is teal and the P outer is navy. On dark surfaces the P outer is teal and the brain is white. The teal accent "swaps" places. This is the shipping behavior of <code>stdColors()</code> in <code>brand-logos.js</code>.</p>
+
+    <div class="scheme-row">
+      <div class="bg-cell white">
+        <div class="mark-wrap" id="A-mark-white"></div>
+        <div class="lockup-wrap" id="A-lock-white"></div>
+        <span class="cell-label">bg.white</span>
+      </div>
+      <div class="bg-cell navy">
+        <div class="mark-wrap" id="A-mark-navy"></div>
+        <div class="lockup-wrap" id="A-lock-navy"></div>
+        <span class="cell-label">bg.navy</span>
+      </div>
+      <div class="bg-cell teal">
+        <div class="mark-wrap" id="A-mark-teal"></div>
+        <div class="lockup-wrap" id="A-lock-teal"></div>
+        <span class="cell-label">bg.teal</span>
+      </div>
+      <div class="bg-cell trasp">
+        <div class="mark-wrap" id="A-mark-trasp"></div>
+        <div class="lockup-wrap" id="A-lock-trasp"></div>
+        <span class="cell-label">bg.trasp</span>
+      </div>
+    </div>
+
+    <div class="scheme-meta">
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">P</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">brain</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">P</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #ffffff"></span><span class="key">brain</span>white</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">P</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #ffffff"></span><span class="key">brain</span>white</div>
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">IA</span>navy</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">P</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">brain</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== -->
+  <!-- SCHEME B                       -->
+  <!-- ============================== -->
+  <section>
+    <h2><span class="scheme-tag">B</span>Brain always teal (matches AI letters)</h2>
+    <p class="lead">The brain (bubble) is the visual representation of intelligence, the same idea the "IA" letters carry. In this scheme they always share color. The P outer matches the wordmark color, so it reads as one continuous "name" element. On <code>bg.teal</code> the brain (teal on teal) would disappear, so the IA accent falls back to navy on that surface.</p>
+
+    <div class="scheme-row">
+      <div class="bg-cell white">
+        <div class="mark-wrap" id="B-mark-white"></div>
+        <div class="lockup-wrap" id="B-lock-white"></div>
+        <span class="cell-label">bg.white</span>
+      </div>
+      <div class="bg-cell navy">
+        <div class="mark-wrap" id="B-mark-navy"></div>
+        <div class="lockup-wrap" id="B-lock-navy"></div>
+        <span class="cell-label">bg.navy</span>
+      </div>
+      <div class="bg-cell teal">
+        <div class="mark-wrap" id="B-mark-teal"></div>
+        <div class="lockup-wrap" id="B-lock-teal"></div>
+        <span class="cell-label">bg.teal (fallback)</span>
+      </div>
+      <div class="bg-cell trasp">
+        <div class="mark-wrap" id="B-mark-trasp"></div>
+        <div class="lockup-wrap" id="B-lock-trasp"></div>
+        <span class="cell-label">bg.trasp</span>
+      </div>
+    </div>
+
+    <div class="scheme-meta">
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">P</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">brain</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #ffffff"></span><span class="key">P</span>white</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">brain</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #ffffff"></span><span class="key">P</span>white</div>
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">brain</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">IA</span>navy</div>
+        <div class="fallback">teal would disappear, brain + IA → navy</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">P</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">brain</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== -->
+  <!-- SCHEME C                       -->
+  <!-- ============================== -->
+  <section>
+    <h2><span class="scheme-tag">C</span>P always teal (matches AI letters)</h2>
+    <p class="lead">If teal represents the "AI" idea, then arguably the P (the brand mark itself) should wear it permanently. In this scheme the P outer is always teal and the brain becomes a contrast element matching the wordmark color. On <code>bg.teal</code> the teal P would disappear, so the P falls back to navy on that surface.</p>
+
+    <div class="scheme-row">
+      <div class="bg-cell white">
+        <div class="mark-wrap" id="C-mark-white"></div>
+        <div class="lockup-wrap" id="C-lock-white"></div>
+        <span class="cell-label">bg.white</span>
+      </div>
+      <div class="bg-cell navy">
+        <div class="mark-wrap" id="C-mark-navy"></div>
+        <div class="lockup-wrap" id="C-lock-navy"></div>
+        <span class="cell-label">bg.navy</span>
+      </div>
+      <div class="bg-cell teal">
+        <div class="mark-wrap" id="C-mark-teal"></div>
+        <div class="lockup-wrap" id="C-lock-teal"></div>
+        <span class="cell-label">bg.teal (fallback)</span>
+      </div>
+      <div class="bg-cell trasp">
+        <div class="mark-wrap" id="C-mark-trasp"></div>
+        <div class="lockup-wrap" id="C-lock-trasp"></div>
+        <span class="cell-label">bg.trasp</span>
+      </div>
+    </div>
+
+    <div class="scheme-meta">
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">P</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">brain</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">P</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #ffffff"></span><span class="key">brain</span>white</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">P</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #ffffff"></span><span class="key">brain</span>white</div>
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">IA</span>navy</div>
+        <div class="fallback">teal would disappear, P + IA → navy</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">P</span>teal</div>
+        <div class="meta-row"><span class="swatch" style="background: #061a51"></span><span class="key">brain</span>navy</div>
+        <div class="meta-row"><span class="swatch" style="background: #14b8a6"></span><span class="key">IA</span>teal</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== -->
+  <!-- SYNTHESIS                      -->
+  <!-- ============================== -->
+  <section>
+    <h2>What this study reveals</h2>
+    <div class="synthesis">
+      <h3>Scheme A (current) is the least defensible</h3>
+      <p>It doesn't pick a side. Teal is a brand asset; treating it as a "wherever-contrast-allows" token gives up the semantic anchor. A viewer of the mark can't say what teal "is" in the PensoIA brand — the brain on light, the P outline on dark — because there's no rule.</p>
+
+      <h3>Scheme B is the strongest semantic match</h3>
+      <p>The brain stroke is literally a brain (the AI idea). The "IA" letters are literally "AI". They share teal because they share meaning. The P, freed from the teal duty, takes on the name's color and reads as the first letter of "pensoIA". Mark + wordmark become one continuous word visually, with teal pulling attention to the AI accent (brain + IA). This is also the conventional pattern in tech logos with a separable mark + colored accent (Slack's old logo, several others).</p>
+
+      <h3>Scheme C is a defensible alternative but weaker</h3>
+      <p>It also pins teal to a single role, but the role is "the P is the AI". This is conceptually fine but it overloads the P with both "we are pensoIA" and "we are AI". The brain stroke becomes pure ornament once teal is removed from it. The "P is AI, but also the brain isn't AI anymore" message is murky.</p>
+
+      <h3>Recommendation</h3>
+      <p>Switch to <strong>Scheme B</strong>. It keeps the teal semantic clean (brain + IA share it), removes the inversion between light and dark, and makes the mark + wordmark read as one continuous lockup. Update <code>stdColors()</code> in <code>brand-logos.js</code> to emit Scheme B colors, then re-render the showcase.</p>
+
+      <h3>Caveat on bg.teal</h3>
+      <p>Both B and C need a fallback for <code>bg.teal</code> because the accent color is the surface color. Since <code>bg.teal</code> is currently cut from the canonical set (no real consumer for it), this is academic, but the fallback is easy if it ever comes back: shift the teal accent to navy on teal surfaces.</p>
+    </div>
+  </section>
+
+</main>
+
+<script src="brand-logos.js"></script>
+<script>
+  const C_NAVY = '#061a51';
+  const C_TEAL = '#14b8a6';
+  const C_WHITE = '#ffffff';
+
+  // Scheme A: current (from brand-logos.js)
+  function schemeA(bg) {
+    return stdColors(bg);
+  }
+
+  // Scheme B: brain always teal (matches AI letters)
+  function schemeB(bg) {
+    if (bg === 'white' || bg === 'trasp')
+      return { pOuter: C_NAVY, pBrain: C_TEAL, pDot: C_TEAL, ensoColor: C_NAVY, iaColor: C_TEAL, taglineColor: C_NAVY };
+    if (bg === 'navy')
+      return { pOuter: C_WHITE, pBrain: C_TEAL, pDot: C_TEAL, ensoColor: C_WHITE, iaColor: C_TEAL, taglineColor: C_WHITE };
+    if (bg === 'teal')
+      return { pOuter: C_WHITE, pBrain: C_NAVY, pDot: C_NAVY, ensoColor: C_WHITE, iaColor: C_NAVY, taglineColor: C_WHITE };
+  }
+
+  // Scheme C: P always teal (matches AI letters)
+  function schemeC(bg) {
+    if (bg === 'white' || bg === 'trasp')
+      return { pOuter: C_TEAL, pBrain: C_NAVY, pDot: C_NAVY, ensoColor: C_NAVY, iaColor: C_TEAL, taglineColor: C_NAVY };
+    if (bg === 'navy')
+      return { pOuter: C_TEAL, pBrain: C_WHITE, pDot: C_WHITE, ensoColor: C_WHITE, iaColor: C_TEAL, taglineColor: C_WHITE };
+    if (bg === 'teal')
+      return { pOuter: C_NAVY, pBrain: C_WHITE, pDot: C_WHITE, ensoColor: C_WHITE, iaColor: C_NAVY, taglineColor: C_WHITE };
+  }
+
+  const set = (id, svg) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = svg;
+  };
+
+  const schemes = { A: schemeA, B: schemeB, C: schemeC };
+  const bgs = ['white', 'navy', 'teal', 'trasp'];
+
+  for (const [name, fn] of Object.entries(schemes)) {
+    for (const bg of bgs) {
+      const c = fn(bg);
+      set(`${name}-mark-${bg}`, logoMarkOnly(c));
+      set(`${name}-lock-${bg}`, logoHorizontal(c, { showTagline: false }));
+    }
+  }
+</script>
+
+</body>
+</html>
