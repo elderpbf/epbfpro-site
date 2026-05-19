@@ -137,20 +137,18 @@ section[id] {
 }
 
 .logo {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    padding: 0.5rem 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px var(--shadow);
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
     transition: transform 0.3s ease;
 }
 
 .logo:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.3);
 }
 
 .logo-img {
-    height: 50px;
+    height: 80px;
     width: auto;
     display: block;
 }
@@ -1087,11 +1085,11 @@ section[id] {
 
 @media (max-width: 480px) {
     .logo {
-        padding: 0.4rem 1rem;
+        padding: 0;
     }
 
     .logo-img {
-        height: 40px;
+        height: 60px;
     }
 
     .hero {
