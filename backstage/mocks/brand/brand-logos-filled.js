@@ -66,7 +66,7 @@ function pGlyph(outerColor, brainColor, dotColor, tx=0, ty=0, scale=1) {
 }
 
 function buildSvg(viewBox, content) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">${content}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet"><style>text{font-family:'Comfortaa',sans-serif}</style>${content}</svg>`;
 }
 
 function embedSvg(svgStr, x, y, w, h) {
