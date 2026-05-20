@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -23,9 +23,7 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   html, body { background: var(--white); }
-
   body {
     font-family: 'Comfortaa', sans-serif;
     font-weight: 400;
@@ -44,10 +42,7 @@
     padding: 96px 0;
     border-bottom: 1px solid var(--line);
   }
-
   section:last-of-type { border-bottom: none; }
-
-  /* Normalize section endings so every gap between sections is equal */
   section > *:last-child { margin-bottom: 0; }
   section > p.anno:last-child { margin-bottom: 0; }
 
@@ -59,7 +54,6 @@
     margin-bottom: 8px;
     letter-spacing: -0.01em;
   }
-
   h2::after {
     content: '';
     display: block;
@@ -70,7 +64,6 @@
     margin-bottom: 28px;
     border-radius: 2px;
   }
-
   h3 {
     font-family: 'Comfortaa', sans-serif;
     font-size: 16px;
@@ -78,14 +71,12 @@
     color: var(--navy);
     margin: 12px 0 8px;
   }
-
   .lead {
     font-size: 17px;
     color: var(--ink-mid);
     max-width: 720px;
     margin-bottom: 32px;
   }
-
   p.anno {
     font-family: 'Comfortaa', sans-serif;
     font-size: 12px;
@@ -96,7 +87,6 @@
     margin-top: 16px;
     margin-bottom: 56px;
   }
-
   code {
     font-family: ui-monospace, 'SF Mono', 'Menlo', monospace;
     font-size: 0.88em;
@@ -106,9 +96,30 @@
     border-radius: 4px;
     font-weight: 500;
   }
-
   ul { padding-left: 18px; }
   ul li { font-size: 14px; color: var(--ink-mid); margin-bottom: 4px; }
+
+  /* ===== LANGUAGE TOGGLE ===== */
+  .lang-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .lang-toggle:hover { opacity: 0.88; transform: translateY(-1px); }
+  .lang-toggle:active { transform: translateY(0); }
 
   /* ===== HERO ===== */
   .hero {
@@ -204,22 +215,23 @@
     padding: 12px 12px 0;
     margin: 24px 0 8px;
     box-shadow: var(--shadow);
-    max-width: 720px;
+    max-width: 760px;
     margin-left: auto;
     margin-right: auto;
   }
   .browser-tab-row { display: flex; gap: 2px; align-items: flex-end; }
   .browser-tab {
     background: #c5c0bb;
-    padding: 8px 14px;
+    padding: 8px 12px;
     border-radius: 8px 8px 0 0;
     font-size: 12px;
     color: var(--ink-mid);
     display: flex;
     align-items: center;
     gap: 8px;
-    max-width: 280px;
-    min-width: 180px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 200px;
   }
   .browser-tab.active {
     background: var(--white);
@@ -234,10 +246,27 @@
     align-items: center;
     justify-content: center;
   }
-  .browser-tab #favicon-1 {
+  .browser-tab .favicon-sq-w {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1.5px;
+  }
+  .browser-tab .favicon-sq-n {
     background: var(--navy);
     border-radius: 3px;
     padding: 1.5px;
+  }
+  .browser-tab .favicon-cr-w {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    padding: 2px;
+  }
+  .browser-tab .favicon-cr-n {
+    background: var(--navy);
+    border-radius: 50%;
+    padding: 2px;
   }
   .browser-tab .favicon svg { width: 100%; height: 100%; }
   .browser-tab .tab-title {
@@ -246,7 +275,8 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: -apple-system, system-ui, sans-serif;
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 500;
   }
   .browser-tab .tab-close {
     color: var(--ink-soft);
@@ -296,7 +326,6 @@
   .app-icon.size-240 { width: 240px; height: 240px; border-radius: 52px; padding: 44px; }
   .app-icon svg { width: 100%; height: 100%; display: block; }
 
-  /* Light variant: white tile + mark in white-scheme colors */
   .app-icons.light-row { background: #ededec; }
   .app-icon-light {
     background: var(--white);
@@ -403,7 +432,6 @@
     overflow: hidden;
     box-shadow: var(--shadow);
   }
-
   .navbar-light, .navbar-dark { padding: 0; }
   .navbar {
     display: flex;
@@ -620,10 +648,16 @@
     .navbar-logo { width: 140px; }
     .navbar-nav { gap: 14px; }
     .business-card { width: 100%; max-width: 360px; height: auto; min-height: 200px; }
+    .browser-tab { padding: 6px 8px; gap: 6px; }
+    .browser-tab .tab-title { font-size: 10px; }
+    .browser-tab .tab-close { display: none; }
+    .lang-toggle { top: 12px; right: 12px; padding: 6px 12px; font-size: 11px; }
   }
 </style>
 </head>
 <body>
+
+<button class="lang-toggle" id="lang-toggle" type="button" aria-label="Toggle language">EN</button>
 
 <main class="showcase">
 
@@ -632,50 +666,50 @@
   <!-- ===================================================== -->
   <section class="hero">
     <div class="hero-logo" id="hero-logo"></div>
-    <p class="hero-caption">brand system, canonical mark and use contexts</p>
+    <p class="hero-caption" data-i18n="heroCaption">brand system, marca canônica e contextos de uso</p>
   </section>
 
   <!-- ===================================================== -->
-  <!-- THE THREE CANONICAL VARIANTS                          -->
+  <!-- AS TRÊS VARIANTES                                     -->
   <!-- ===================================================== -->
   <section>
-    <h2>The three canonical variants</h2>
-    <p class="lead">Everything that lives in the brand system. Each variant exists because a real context needs it, not one more.</p>
+    <h2 data-i18n="variantsTitle">As três variantes canônicas</h2>
+    <p class="lead" data-i18n="variantsLead">Tudo que mora no brand system. Cada variante existe porque um contexto real precisa dela, nem uma a mais.</p>
     <div class="variants">
 
       <div class="variant-card">
         <div class="variant-svg" id="v-mark"></div>
         <code>mark</code>
-        <h3>The standalone mark</h3>
-        <p>For surfaces where the space is square or too small to fit the full name.</p>
+        <h3 data-i18n="variant1Title">O símbolo isolado</h3>
+        <p data-i18n="variant1Desc">Pra superfícies onde o espaço é quadrado ou minúsculo demais pra acomodar o nome completo.</p>
         <ul>
-          <li>Favicon</li>
-          <li>App icon</li>
-          <li>Profile picture, watermark</li>
+          <li data-i18n="variant1Use1">Favicon</li>
+          <li data-i18n="variant1Use2">App icon</li>
+          <li data-i18n="variant1Use3">Foto de perfil, marca d'água</li>
         </ul>
       </div>
 
       <div class="variant-card">
         <div class="variant-svg" id="v-bp-wm"></div>
         <code>bigP-wordmark</code>
-        <h3>The default lockup</h3>
-        <p>Use in any context that takes a horizontal mark. This is the default.</p>
+        <h3 data-i18n="variant2Title">O lockup default</h3>
+        <p data-i18n="variant2Desc">Usar em qualquer contexto que aceite uma marca horizontal. É o default.</p>
         <ul>
-          <li>Site and Backstage headers</li>
-          <li>Email signature</li>
-          <li>ClassForge, ClassPulse, ClassTrail</li>
+          <li data-i18n="variant2Use1">Header de site e Backstage</li>
+          <li data-i18n="variant2Use2">Assinatura de email</li>
+          <li data-i18n="variant2Use3">ClassForge, ClassPulse, ClassTrail</li>
         </ul>
       </div>
 
       <div class="variant-card">
         <div class="variant-svg" id="v-bp-wm-t"></div>
         <code>bigP-wordmark_tag.mono</code>
-        <h3>Lockup with tagline</h3>
-        <p>For formal and presentational contexts where the tagline adds narrative.</p>
+        <h3 data-i18n="variant3Title">Lockup com tagline</h3>
+        <p data-i18n="variant3Desc">Pra contextos formais e apresentacionais onde a tagline agrega narrativa.</p>
         <ul>
-          <li>Homepage hero</li>
-          <li>Business card</li>
-          <li>Presentation cover</li>
+          <li data-i18n="variant3Use1">Hero da homepage</li>
+          <li data-i18n="variant3Use2">Cartão de visita</li>
+          <li data-i18n="variant3Use3">Capa de apresentação</li>
         </ul>
       </div>
 
@@ -686,8 +720,8 @@
   <!-- LIGHT VS DARK                                         -->
   <!-- ===================================================== -->
   <section>
-    <h2>Light and dark, same mark, two surfaces</h2>
-    <p class="lead">The intent is always to use white. Navy steps in only when a dark surface is forced, system dark mode, a dark slide deck, an environment where the background isn't yours to choose.</p>
+    <h2 data-i18n="lightDarkTitle">Light e dark, mesma marca, duas superfícies</h2>
+    <p class="lead" data-i18n="lightDarkLead">A intenção é sempre usar branco. Navy entra só quando uma superfície escura é imposta, dark mode do sistema, deck de slides escuro, ambiente sem controle do fundo.</p>
     <div class="compare">
       <div class="surface white">
         <div id="lvd-white"></div>
@@ -701,26 +735,33 @@
   </section>
 
   <!-- ===================================================== -->
-  <!-- MARK IN SIZE-CONSTRAINED CONTEXTS                     -->
+  <!-- MARK EM CONTEXTOS PEQUENOS                            -->
   <!-- ===================================================== -->
   <section>
-    <h2>The <code>mark</code> in size-constrained contexts</h2>
-    <p class="lead">The reason the <code>mark</code> exists as a separate artifact, surfaces where the full name doesn't fit or doesn't read.</p>
+    <h2 data-i18n="markCtxTitle">O <code>mark</code> em contextos pequenos</h2>
+    <p class="lead" data-i18n="markCtxLead">A razão pela qual o <code>mark</code> existe como artefato separado, superfícies onde o nome completo não cabe ou não lê.</p>
 
     <div class="browser-mock">
       <div class="browser-tab-row">
         <div class="browser-tab active">
-          <span class="favicon" id="favicon-1"></span>
-          <span class="tab-title">pensoIA, human thinking</span>
+          <span class="favicon favicon-sq-w" id="favicon-sq-w"></span>
+          <span class="tab-title" data-i18n="faviconTab1">rounded · light</span>
           <span class="tab-close">×</span>
         </div>
-        <div class="browser-tab">
-          <span class="favicon">○</span>
-          <span class="tab-title">another tab</span>
+        <div class="browser-tab active">
+          <span class="favicon favicon-sq-n" id="favicon-sq-n"></span>
+          <span class="tab-title" data-i18n="faviconTab2">rounded · navy</span>
+          <span class="tab-close">×</span>
         </div>
-        <div class="browser-tab">
-          <span class="favicon">◐</span>
-          <span class="tab-title">another tab</span>
+        <div class="browser-tab active">
+          <span class="favicon favicon-cr-w" id="favicon-cr-w"></span>
+          <span class="tab-title" data-i18n="faviconTab3">circle · light</span>
+          <span class="tab-close">×</span>
+        </div>
+        <div class="browser-tab active">
+          <span class="favicon favicon-cr-n" id="favicon-cr-n"></span>
+          <span class="tab-title" data-i18n="faviconTab4">circle · navy</span>
+          <span class="tab-close">×</span>
         </div>
       </div>
       <div class="browser-bar">
@@ -728,110 +769,110 @@
         <span class="url-pill">pensoia.com</span>
       </div>
     </div>
-    <p class="anno">Favicon, 16×16, in an active browser tab.</p>
+    <p class="anno" data-i18n="annoFavicon">Favicon, 16×16, em 4 variantes: rounded square e circle, em tile light (<code>bg.w</code>) e tile navy (<code>bg.navy</code>).</p>
 
     <div class="app-icons">
       <div class="app-icon size-60" id="app-60"></div>
       <div class="app-icon size-120" id="app-120"></div>
       <div class="app-icon size-240" id="app-240"></div>
     </div>
-    <p class="anno">App icon (dark), navy tile + mark in navy-scheme colors. iOS rounded square, 60 / 120 / 240 px.</p>
+    <p class="anno" data-i18n="annoAppDark">App icon (escuro), tile navy + mark em cores navy-scheme. iOS rounded square, 60 / 120 / 240 px.</p>
 
     <div class="app-icons light-row">
       <div class="app-icon-light size-60" id="app-light-60"></div>
       <div class="app-icon-light size-120" id="app-light-120"></div>
       <div class="app-icon-light size-240" id="app-light-240"></div>
     </div>
-    <p class="anno">App icon (light), white tile + mark in white-scheme colors. For systems that switch icon variants in dark mode (iOS 18+, themed Android adaptive icons).</p>
+    <p class="anno" data-i18n="annoAppLight">App icon (claro), tile branco + mark em cores white-scheme. Pra sistemas que trocam variantes em dark mode (iOS 18+, Android adaptive themed icons).</p>
 
     <div class="adaptive-icons">
       <div class="adaptive circle" id="adp-circle"></div>
       <div class="adaptive squircle" id="adp-squircle"></div>
     </div>
-    <p class="anno">Android adaptive icon (dark), circle and squircle (140×140).</p>
+    <p class="anno" data-i18n="annoAdaptiveDark">Android adaptive icon (escuro), circle e squircle (140×140).</p>
 
     <div class="adaptive-icons light-row">
       <div class="adaptive-light circle" id="adp-light-circle"></div>
       <div class="adaptive-light squircle" id="adp-light-squircle"></div>
     </div>
-    <p class="anno">Android adaptive icon (light), white tile variant.</p>
+    <p class="anno" data-i18n="annoAdaptiveLight">Android adaptive icon (claro), variante tile branco.</p>
 
     <div class="profile-mock">
       <div class="profile-pic" id="profile-pic"></div>
       <div class="profile-info">
         <div class="name">pensoIA</div>
         <div class="handle">@pensoia</div>
-        <div class="bio">Human thinking, augmented intelligence.</div>
+        <div class="bio" data-i18n="profileBio">Pensamento humano, inteligência ampliada.</div>
       </div>
     </div>
-    <p class="anno">Social profile picture, 88×88 circle on the profile card.</p>
+    <p class="anno" data-i18n="annoProfile">Foto de perfil em rede social, círculo 88×88 no card de perfil.</p>
   </section>
 
   <!-- ===================================================== -->
-  <!-- IN REAL-WORLD CONTEXTS                                -->
+  <!-- EM CONTEXTOS REAIS                                    -->
   <!-- ===================================================== -->
   <section>
-    <h2>In real-world contexts</h2>
-    <p class="lead">Where the mark lives day to day, in mockups of the surfaces it will actually inhabit.</p>
+    <h2 data-i18n="realCtxTitle">Em contextos reais</h2>
+    <p class="lead" data-i18n="realCtxLead">Onde a marca vive no dia a dia, em mockups das superfícies que ela vai habitar de fato.</p>
 
     <div class="mock navbar-light">
       <div class="navbar">
         <div class="navbar-logo" id="nav-light"></div>
         <nav class="navbar-nav">
-          <a>About</a>
-          <a>Solutions</a>
-          <a>Contact</a>
+          <a data-i18n="navAbout">Sobre</a>
+          <a data-i18n="navSolutions">Soluções</a>
+          <a data-i18n="navContact">Contato</a>
         </nav>
       </div>
     </div>
-    <p class="anno">Site navbar, light mode (default).</p>
+    <p class="anno" data-i18n="annoNavLight">Navbar do site, light mode (default).</p>
 
     <div class="mock navbar-dark">
       <div class="navbar">
         <div class="navbar-logo" id="nav-dark"></div>
         <nav class="navbar-nav">
-          <a>About</a>
-          <a>Solutions</a>
-          <a>Contact</a>
+          <a data-i18n="navAbout">Sobre</a>
+          <a data-i18n="navSolutions">Soluções</a>
+          <a data-i18n="navContact">Contato</a>
         </nav>
       </div>
     </div>
-    <p class="anno">Site navbar, dark mode.</p>
+    <p class="anno" data-i18n="annoNavDark">Navbar do site, dark mode.</p>
 
     <div class="card-mock">
       <div class="business-card">
         <div class="bc-logo" id="bc-logo"></div>
         <div class="bc-info">
           <div class="bc-name">Élder Prudente Barbosa Filho</div>
-          <div class="bc-role">Founder</div>
+          <div class="bc-role" data-i18n="bcRole">Fundador</div>
           <div class="bc-email">contato@pensoia.com</div>
         </div>
       </div>
     </div>
-    <p class="anno">Business card, front, cream paper 380×220 px.</p>
+    <p class="anno" data-i18n="annoBc">Cartão de visita, frente, papel cream 380×220 px.</p>
 
     <div class="slide-mock">
       <div class="slide-cover">
         <div class="slide-logo" id="slide-logo"></div>
-        <div class="slide-caption">institutional presentation</div>
+        <div class="slide-caption" data-i18n="slideCaption">apresentação institucional</div>
       </div>
     </div>
-    <p class="anno">Slide cover, 16:9 dark.</p>
+    <p class="anno" data-i18n="annoSlide">Capa de slide, 16:9 dark.</p>
   </section>
 
   <!-- ===================================================== -->
-  <!-- PLAIN-TEXT FALLBACK                                   -->
+  <!-- FALLBACK TEXTO-PURO                                   -->
   <!-- ===================================================== -->
   <section>
-    <h2>Plain-text fallback, contexts without images</h2>
-    <p class="lead">In fields with no image support (plaintext email, code, terminal, some form inputs), the mark is the name spelled out in whatever font is available. There's no "invisible logo", it's plain text. Brand recognition happens through consistent typography wherever Comfortaa loads, and through the name written correctly everywhere else.</p>
+    <h2 data-i18n="textTitle">Fallback texto-puro, contextos sem imagem</h2>
+    <p class="lead" data-i18n="textLead">Em campos sem suporte a imagem (email plaintext, código, terminal, alguns campos de formulário), a marca é o nome escrito por extenso na fonte disponível. Não tem "logo invisível", é texto puro. O reconhecimento da marca acontece pela tipografia consistente onde Comfortaa carrega, e pelo nome escrito corretamente em qualquer outro lugar.</p>
 
     <div class="text-mocks">
       <div class="text-mock">
-        <div class="tm-header">plaintext email, comfortaa</div>
-        <div class="tm-content tm-comfortaa">
-          Hi,<br><br>
-          Thanks for reaching out. I'll get back to you soon.<br><br>
+        <div class="tm-header" data-i18n="tmHeader1">email plaintext, comfortaa</div>
+        <div class="tm-content tm-comfortaa" data-i18n="tmEmail">
+          Oi,<br><br>
+          Obrigado pelo contato. Em breve respondo.<br><br>
           pensoIA<br>
           contato@pensoia.com
         </div>
@@ -847,21 +888,21 @@
         </div>
       </div>
       <div class="text-mock">
-        <div class="tm-header">document, serif fallback</div>
-        <div class="tm-content tm-serif">
-          "pensoIA believes well-built technology augments the human without replacing them."
+        <div class="tm-header" data-i18n="tmHeader3">documento, serif fallback</div>
+        <div class="tm-content tm-serif" data-i18n="tmDoc">
+          "pensoIA acredita que tecnologia bem feita amplia o humano, sem substituí-lo."
         </div>
       </div>
     </div>
-    <p class="anno">Three fonts, same mark, spelled out in all of them.</p>
+    <p class="anno" data-i18n="annoText">Três fontes, mesma marca, escrita por extenso em todas.</p>
   </section>
 
   <!-- ===================================================== -->
   <!-- BACKGROUNDS                                           -->
   <!-- ===================================================== -->
   <section>
-    <h2>The three canonical backgrounds</h2>
-    <p class="lead">Each render picks one of three surfaces. <code>bg.trasp</code> uses the same color scheme as <code>bg.white</code> with no solid fill, for light surfaces or contexts where the downstream controls the background.</p>
+    <h2 data-i18n="bgTitle">Os três fundos canônicos</h2>
+    <p class="lead" data-i18n="bgLead">Cada renderização escolhe uma das três superfícies. <code>bg.trasp</code> usa o mesmo esquema de cores do <code>bg.white</code> sem fundo sólido, pra superfícies claras ou contextos onde o downstream controla o fundo.</p>
     <div class="bg-trio">
       <div class="bg-cell white">
         <div id="bg-white"></div>
@@ -879,18 +920,18 @@
   </section>
 
   <!-- ===================================================== -->
-  <!-- WHAT DIDN'T MAKE THE CANONICAL SET                    -->
+  <!-- O QUE NÃO ENTROU                                      -->
   <!-- ===================================================== -->
   <section>
-    <h2>What didn't make the canonical set</h2>
-    <p class="lead">Every shipping variant needs a real consumer. These were cut because the cost of maintaining, rendering and validating them didn't pay rent:</p>
+    <h2 data-i18n="cutsTitle">O que não entrou no canônico</h2>
+    <p class="lead" data-i18n="cutsLead">Cada variante shipping precisa de um consumer real. Estas foram cortadas porque o custo de manter, renderizar e validar não se pagava:</p>
     <ul class="cuts-list">
-      <li><code>stack</code>, very rare use. Bring back when a real consumer shows up (specific square crop, vertical sidebar).</li>
-      <li><code>tag.duo</code>, second color on the tagline added complexity without consistent payoff.</li>
-      <li><code>smallp-wordmark</code>, in image-less contexts we use plain text (previous section), not another letter-as-image.</li>
-      <li><code>wordmark</code> alone, text without the P loses the visual identity; prefer the full lockup.</li>
+      <li data-i18n="cut1"><code>stack</code>, uso muito raro. Trazer de volta quando aparecer um consumer real (crop quadrado específico, sidebar vertical).</li>
+      <li data-i18n="cut2"><code>tag.duo</code>, segunda cor na tagline adicionava complexidade sem payoff consistente.</li>
+      <li data-i18n="cut3"><code>smallp-wordmark</code>, em contextos sem imagem usamos texto puro (seção anterior), não outra letra-imagem.</li>
+      <li data-i18n="cut4"><code>wordmark</code> sozinho, texto sem o P perde a identidade visual; preferir o lockup completo.</li>
     </ul>
-    <p class="lead">Everything cut lives in <code>archive/</code>, accessible if a real need reappears.</p>
+    <p class="lead" data-i18n="cutsTail">Tudo cortado vive em <code>archive/</code>, acessível se uma necessidade real reaparecer.</p>
   </section>
 
   <footer>
@@ -901,61 +942,168 @@
 
 <script src="brand-logos-filled.js?v=1"></script>
 <script>
+  // ============================================================
+  // Logo rendering
+  // ============================================================
   const set = (id, svg) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = svg;
   };
 
-  // ---- Hero (bigP-wordmark with tagline, on white) ----
   set('hero-logo', logoHorizontalRightAligned(stdColors('white')));
 
-  // ---- 3 Canonical variants (on white) ----
   set('v-mark', logoMarkOnly(stdColors('white')));
   set('v-bp-wm', logoHorizontal(stdColors('white'), { showTagline: false }));
   set('v-bp-wm-t', logoHorizontalRightAligned(stdColors('white')));
 
-  // ---- Light vs dark comparison ----
   set('lvd-white', logoHorizontal(stdColors('white'), { showTagline: false }));
   set('lvd-navy', logoHorizontal(stdColors('navy'), { showTagline: false }));
 
-  // ---- Favicon (mark with navy-scheme on navy bg, visible on light AND dark browser tabs) ----
-  set('favicon-1', logoMarkOnly(stdColors('navy')));
+  // Favicons: 4 variants (rounded square + circle, on white tile + navy tile)
+  const markLight = logoMarkOnly(stdColors('white'));
+  const markDark = logoMarkOnly(stdColors('navy'));
+  set('favicon-sq-w', markLight);
+  set('favicon-sq-n', markDark);
+  set('favicon-cr-w', markLight);
+  set('favicon-cr-n', markDark);
 
-  // ---- App icons, dark variant (mark with navy-scheme on navy bg) ----
-  const markOnDark = logoMarkOnly(stdColors('navy'));
-  set('app-60', markOnDark);
-  set('app-120', markOnDark);
-  set('app-240', markOnDark);
+  set('app-60', markDark);
+  set('app-120', markDark);
+  set('app-240', markDark);
+  set('app-light-60', markLight);
+  set('app-light-120', markLight);
+  set('app-light-240', markLight);
 
-  // ---- App icons, light variant (mark with white-scheme on white tile) ----
-  const markOnLight = logoMarkOnly(stdColors('white'));
-  set('app-light-60', markOnLight);
-  set('app-light-120', markOnLight);
-  set('app-light-240', markOnLight);
+  set('adp-circle', markDark);
+  set('adp-squircle', markDark);
+  set('adp-light-circle', markLight);
+  set('adp-light-squircle', markLight);
 
-  // ---- Adaptive icons ----
-  set('adp-circle', markOnDark);
-  set('adp-squircle', markOnDark);
-  set('adp-light-circle', markOnLight);
-  set('adp-light-squircle', markOnLight);
+  set('profile-pic', markDark);
 
-  // ---- Profile picture ----
-  set('profile-pic', markOnDark);
-
-  // ---- Navbars ----
   set('nav-light', logoHorizontal(stdColors('white'), { showTagline: false }));
   set('nav-dark', logoHorizontal(stdColors('navy'), { showTagline: false }));
 
-  // ---- Business card (cream paper, treat as white scheme) ----
   set('bc-logo', logoHorizontalRightAligned(stdColors('white')));
-
-  // ---- Slide cover (dark) ----
   set('slide-logo', logoHorizontalRightAligned(stdColors('navy')));
 
-  // ---- Backgrounds trio ----
   set('bg-white', logoHorizontal(stdColors('white'), { showTagline: false }));
   set('bg-navy', logoHorizontal(stdColors('navy'), { showTagline: false }));
   set('bg-trasp', logoHorizontal(stdColors('white'), { showTagline: false }));
+
+  // ============================================================
+  // i18n (PT-BR default, EN toggle)
+  // ============================================================
+  const EN = {
+    heroCaption: 'brand system, canonical mark and use contexts',
+
+    variantsTitle: 'The three canonical variants',
+    variantsLead: 'Everything that lives in the brand system. Each variant exists because a real context needs it, not one more.',
+
+    variant1Title: 'The standalone mark',
+    variant1Desc: 'For surfaces where the space is square or too small to fit the full name.',
+    variant1Use1: 'Favicon',
+    variant1Use2: 'App icon',
+    variant1Use3: 'Profile picture, watermark',
+
+    variant2Title: 'The default lockup',
+    variant2Desc: 'Use in any context that takes a horizontal mark. This is the default.',
+    variant2Use1: 'Site and Backstage headers',
+    variant2Use2: 'Email signature',
+    variant2Use3: 'ClassForge, ClassPulse, ClassTrail',
+
+    variant3Title: 'Lockup with tagline',
+    variant3Desc: 'For formal and presentational contexts where the tagline adds narrative.',
+    variant3Use1: 'Homepage hero',
+    variant3Use2: 'Business card',
+    variant3Use3: 'Presentation cover',
+
+    lightDarkTitle: 'Light and dark, same mark, two surfaces',
+    lightDarkLead: 'The intent is always to use white. Navy steps in only when a dark surface is forced, system dark mode, a dark slide deck, an environment where the background isn\'t yours to choose.',
+
+    markCtxTitle: 'The <code>mark</code> in size-constrained contexts',
+    markCtxLead: 'The reason the <code>mark</code> exists as a separate artifact, surfaces where the full name doesn\'t fit or doesn\'t read.',
+
+    faviconTab1: 'rounded · light',
+    faviconTab2: 'rounded · navy',
+    faviconTab3: 'circle · light',
+    faviconTab4: 'circle · navy',
+    annoFavicon: 'Favicon, 16×16, in 4 variants: rounded square and circle, on light tile (<code>bg.w</code>) and navy tile (<code>bg.navy</code>).',
+
+    annoAppDark: 'App icon (dark), navy tile + mark in navy-scheme colors. iOS rounded square, 60 / 120 / 240 px.',
+    annoAppLight: 'App icon (light), white tile + mark in white-scheme colors. For systems that switch icon variants in dark mode (iOS 18+, themed Android adaptive icons).',
+
+    annoAdaptiveDark: 'Android adaptive icon (dark), circle and squircle (140×140).',
+    annoAdaptiveLight: 'Android adaptive icon (light), white tile variant.',
+
+    profileBio: 'Human thinking, augmented intelligence.',
+    annoProfile: 'Social profile picture, 88×88 circle on the profile card.',
+
+    realCtxTitle: 'In real-world contexts',
+    realCtxLead: 'Where the mark lives day to day, in mockups of the surfaces it will actually inhabit.',
+
+    navAbout: 'About',
+    navSolutions: 'Solutions',
+    navContact: 'Contact',
+
+    annoNavLight: 'Site navbar, light mode (default).',
+    annoNavDark: 'Site navbar, dark mode.',
+
+    bcRole: 'Founder',
+    annoBc: 'Business card, front, cream paper 380×220 px.',
+
+    slideCaption: 'institutional presentation',
+    annoSlide: 'Slide cover, 16:9 dark.',
+
+    textTitle: 'Plain-text fallback, contexts without images',
+    textLead: 'In fields with no image support (plaintext email, code, terminal, some form inputs), the mark is the name spelled out in whatever font is available. There\'s no "invisible logo", it\'s plain text. Brand recognition happens through consistent typography wherever Comfortaa loads, and through the name written correctly everywhere else.',
+
+    tmHeader1: 'plaintext email, comfortaa',
+    tmEmail: 'Hi,<br><br>Thanks for reaching out. I\'ll get back to you soon.<br><br>pensoIA<br>contato@pensoia.com',
+    tmHeader3: 'document, serif fallback',
+    tmDoc: '"pensoIA believes well-built technology augments the human without replacing them."',
+    annoText: 'Three fonts, same mark, spelled out in all of them.',
+
+    bgTitle: 'The three canonical backgrounds',
+    bgLead: 'Each render picks one of three surfaces. <code>bg.trasp</code> uses the same color scheme as <code>bg.white</code> with no solid fill, for light surfaces or contexts where the downstream controls the background.',
+
+    cutsTitle: 'What didn\'t make the canonical set',
+    cutsLead: 'Every shipping variant needs a real consumer. These were cut because the cost of maintaining, rendering and validating them didn\'t pay rent:',
+    cut1: '<code>stack</code>, very rare use. Bring back when a real consumer shows up (specific square crop, vertical sidebar).',
+    cut2: '<code>tag.duo</code>, second color on the tagline added complexity without consistent payoff.',
+    cut3: '<code>smallp-wordmark</code>, in image-less contexts we use plain text (previous section), not another letter-as-image.',
+    cut4: '<code>wordmark</code> alone, text without the P loses the visual identity; prefer the full lockup.',
+    cutsTail: 'Everything cut lives in <code>archive/</code>, accessible if a real need reappears.'
+  };
+
+  const originals = new Map();
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    originals.set(el, el.innerHTML);
+  });
+
+  function setLang(lang) {
+    document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
+    document.body.dataset.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (lang === 'en' && EN[key]) {
+        el.innerHTML = EN[key];
+      } else {
+        el.innerHTML = originals.get(el);
+      }
+    });
+    document.getElementById('lang-toggle').textContent = lang === 'pt' ? 'EN' : 'PT';
+    try { localStorage.setItem('showcase-filled-lang', lang); } catch (e) {}
+  }
+
+  document.getElementById('lang-toggle').addEventListener('click', () => {
+    const current = document.body.dataset.lang || 'pt';
+    setLang(current === 'pt' ? 'en' : 'pt');
+  });
+
+  let saved = 'pt';
+  try { saved = localStorage.getItem('showcase-filled-lang') || 'pt'; } catch (e) {}
+  setLang(saved);
 </script>
 
 </body>
