@@ -296,6 +296,21 @@
   .app-icon.size-240 { width: 240px; height: 240px; border-radius: 52px; padding: 44px; }
   .app-icon svg { width: 100%; height: 100%; display: block; }
 
+  /* Light variant: white tile + mark in white-scheme colors */
+  .app-icons.light-row { background: #ededec; }
+  .app-icon-light {
+    background: var(--white);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+  }
+  .app-icon-light.size-60 { width: 60px; height: 60px; border-radius: 13px; padding: 12px; }
+  .app-icon-light.size-120 { width: 120px; height: 120px; border-radius: 26px; padding: 22px; }
+  .app-icon-light.size-240 { width: 240px; height: 240px; border-radius: 52px; padding: 44px; }
+  .app-icon-light svg { width: 100%; height: 100%; display: block; }
+
   /* ===== ADAPTIVE ICONS ===== */
   .adaptive-icons {
     display: flex;
@@ -320,6 +335,22 @@
   .adaptive.circle { border-radius: 50%; }
   .adaptive.squircle { border-radius: 38%; }
   .adaptive svg { width: 100%; height: 100%; display: block; }
+
+  .adaptive-icons.light-row { background: #ededec; }
+  .adaptive-light {
+    background: var(--white);
+    border: 1px solid var(--line);
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 26px;
+    box-shadow: var(--shadow);
+  }
+  .adaptive-light.circle { border-radius: 50%; }
+  .adaptive-light.squircle { border-radius: 38%; }
+  .adaptive-light svg { width: 100%; height: 100%; display: block; }
 
   /* ===== SOCIAL PROFILE ===== */
   .profile-mock {
@@ -704,13 +735,26 @@
       <div class="app-icon size-120" id="app-120"></div>
       <div class="app-icon size-240" id="app-240"></div>
     </div>
-    <p class="anno">App icon, iOS rounded square, 60 / 120 / 240 px. Navy fill keeps the brand color on light and dark homescreens.</p>
+    <p class="anno">App icon (dark), navy tile + mark in navy-scheme colors. iOS rounded square, 60 / 120 / 240 px.</p>
+
+    <div class="app-icons light-row">
+      <div class="app-icon-light size-60" id="app-light-60"></div>
+      <div class="app-icon-light size-120" id="app-light-120"></div>
+      <div class="app-icon-light size-240" id="app-light-240"></div>
+    </div>
+    <p class="anno">App icon (light), white tile + mark in white-scheme colors. For systems that switch icon variants in dark mode (iOS 18+, themed Android adaptive icons).</p>
 
     <div class="adaptive-icons">
       <div class="adaptive circle" id="adp-circle"></div>
       <div class="adaptive squircle" id="adp-squircle"></div>
     </div>
-    <p class="anno">Android adaptive icon, circle and squircle (140×140).</p>
+    <p class="anno">Android adaptive icon (dark), circle and squircle (140×140).</p>
+
+    <div class="adaptive-icons light-row">
+      <div class="adaptive-light circle" id="adp-light-circle"></div>
+      <div class="adaptive-light squircle" id="adp-light-squircle"></div>
+    </div>
+    <p class="anno">Android adaptive icon (light), white tile variant.</p>
 
     <div class="profile-mock">
       <div class="profile-pic" id="profile-pic"></div>
@@ -855,7 +899,7 @@
 
 </main>
 
-<script src="brand-logos.js"></script>
+<script src="brand-logos.js?v=2"></script>
 <script>
   const set = (id, svg) => {
     const el = document.getElementById(id);
@@ -877,15 +921,23 @@
   // ---- Favicon (mark with navy-scheme on navy bg, visible on light AND dark browser tabs) ----
   set('favicon-1', logoMarkOnly(stdColors('navy')));
 
-  // ---- App icons (mark with navy-scheme colors on navy bg) ----
+  // ---- App icons, dark variant (mark with navy-scheme on navy bg) ----
   const markOnDark = logoMarkOnly(stdColors('navy'));
   set('app-60', markOnDark);
   set('app-120', markOnDark);
   set('app-240', markOnDark);
 
+  // ---- App icons, light variant (mark with white-scheme on white tile) ----
+  const markOnLight = logoMarkOnly(stdColors('white'));
+  set('app-light-60', markOnLight);
+  set('app-light-120', markOnLight);
+  set('app-light-240', markOnLight);
+
   // ---- Adaptive icons ----
   set('adp-circle', markOnDark);
   set('adp-squircle', markOnDark);
+  set('adp-light-circle', markOnLight);
+  set('adp-light-squircle', markOnLight);
 
   // ---- Profile picture ----
   set('profile-pic', markOnDark);
