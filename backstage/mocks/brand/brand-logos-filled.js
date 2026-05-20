@@ -34,9 +34,9 @@ const TAGLINE = 'pensamento humano, inteligência ampliada';
 // P outer matches the name/wordmark color so mark + wordmark read as one continuous lockup.
 // On bg.teal the teal accent can't live on a teal surface, so the entire logo collapses
 // to all-white (treat teal like a dark brand surface, same rule as navy).
-// bg.trasp uses the same palette as bg.white (no fill).
+// bg.transp uses the same palette as bg.white (no fill on the SVG itself).
 function stdColors(bg) {
-  if (bg === 'white' || bg === 'trasp')
+  if (bg === 'white' || bg === 'transp')
     return { pOuter: C.navy,  pBrain: C.teal,  pDot: C.teal,  ensoColor: C.navy,  iaColor: C.teal,  taglineColor: C.navy };
   if (bg === 'navy')
     return { pOuter: C.white, pBrain: C.teal,  pDot: C.teal,  ensoColor: C.white, iaColor: C.teal,  taglineColor: C.white };
@@ -74,93 +74,43 @@ function embedSvg(svgStr, x, y, w, h) {
   return svgStr.replace(/^<svg([^>]*)>/, `<svg$1 x="${x}" y="${y}" width="${w}" height="${h}">`);
 }
 
-// bp-wm family: bigP standalone mark + ensoIA wordmark, side-by-side
-function logoHorizontal(c, o = {}) {
+// mark: just the P glyph, standalone
+function mark(c) {
+  return buildSvg('0 0 600 757', pGlyph(c.pOuter, c.pBrain, c.pDot));
+}
+
+// fontWordmark: just the typographic "pensoIA", no glyph
+function fontWordmark(c) {
+  const content = `<text x="0" y="500" font-size="500" letter-spacing="-10" font-weight="400" fill="${c.ensoColor}">penso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
+  return buildSvg('0 0 2200 550', content);
+}
+
+// glyphWordmark: P glyph + "ensoIA" wordmark side-by-side. No tagline.
+// (For the lockup with tagline, use glyphWordmarkTag — that's the only tagline variant
+// shipping in the canonical set, hence the dedicated function.)
+function glyphWordmark(c, o = {}) {
   const {
-    showTagline = true, taglineText = TAGLINE,
-    taglineSize = 78, taglineX = 610, taglineY = 810,
-    taglineAnchor = 'start', ensoWeight = 400, iaWeight = 700,
+    ensoWeight = 400, iaWeight = 700,
     viewBox = '0 0 2400 870', showSymbol = true
   } = o;
   let content = showSymbol ? pGlyph(c.pOuter, c.pBrain, c.pDot) : '';
   const wmX = showSymbol ? 610 : 0;
   content += `<text x="${wmX}" y="615" font-size="500" letter-spacing="-10" font-weight="${ensoWeight}" fill="${c.ensoColor}">enso<tspan font-weight="${iaWeight}" fill="${c.iaColor}">IA</tspan></text>`;
-  if (showTagline) {
-    content += `<text x="${taglineX}" y="${taglineY}" font-weight="400" font-size="${taglineSize}" text-anchor="${taglineAnchor}" fill="${c.taglineColor}">${taglineText}</text>`;
-  }
   return buildSvg(viewBox, content);
 }
 
-// bp-wm-t with forced-width wordmark so tagline-end == IA-end. Used by bp-wm-t variant.
-function logoHorizontalRightAligned(c, o = {}) {
+// glyphWordmarkTag: glyphWordmark + tagline right-aligned to IA-end via textLength.
+function glyphWordmarkTag(c, o = {}) {
   const {
     wmEnd = 2400, wmStart = 610,
     taglineY = 810, taglineSize = 78,
-    taglineMarkup = null, viewBox = '0 0 2400 870'
+    viewBox = '0 0 2400 870'
   } = o;
   const wmW = wmEnd - wmStart;
   let content = pGlyph(c.pOuter, c.pBrain, c.pDot);
   content += `<text x="${wmStart}" y="615" textLength="${wmW}" lengthAdjust="spacing" font-size="500" letter-spacing="-10" font-weight="400" fill="${c.ensoColor}">enso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
-  if (taglineMarkup) {
-    content += taglineMarkup;
-  } else {
-    content += `<text x="${wmEnd}" y="${taglineY}" text-anchor="end" font-weight="400" font-size="${taglineSize}" fill="${c.taglineColor}">${TAGLINE}</text>`;
-  }
+  content += `<text x="${wmEnd}" y="${taglineY}" text-anchor="end" font-weight="400" font-size="${taglineSize}" fill="${c.taglineColor}">${TAGLINE}</text>`;
   return buildSvg(viewBox, content);
 }
 
-// m: just the bigP mark
-function logoMarkOnly(c) {
-  return buildSvg('0 0 600 757', pGlyph(c.pOuter, c.pBrain, c.pDot));
-}
 
-// wm: just the typographic pensoIA
-function logoWordmarkOnly(c) {
-  const content = `<text x="0" y="500" font-size="500" letter-spacing="-10" font-weight="400" fill="${c.ensoColor}">penso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
-  return buildSvg('0 0 2200 550', content);
-}
-
-// bp-wm-s: bigP mark stacked above pensoIA wordmark. Optionally + tagline.
-// Refactor change vs original: ALWAYS uses bigP (not thick-p) above; text below is full
-// "pensoIA" with font p. The mark and the font p are intentionally different glyphs.
-function logoStacked(c, o = {}) {
-  const { showTagline = false } = o;
-  const pScale = 0.7;
-  const pX = (1900 - 600 * pScale) / 2;
-  let content = pGlyph(c.pOuter, c.pBrain, c.pDot, pX, 0, pScale);
-  content += `<text x="950" y="${757*pScale + 480}" font-size="380" letter-spacing="-8" font-weight="400" fill="${c.ensoColor}" text-anchor="middle">penso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
-  if (showTagline) {
-    content += `<text x="950" y="${757*pScale + 620}" font-weight="400" font-size="62" fill="${c.taglineColor}" text-anchor="middle">${TAGLINE}</text>`;
-  }
-  const totalH = showTagline ? 757*pScale + 700 : 757*pScale + 540;
-  return buildSvg(`0 0 1900 ${totalH}`, content);
-}
-
-// Thick-p (smallp letterform). Designed as the inline letter 'p'. Never used standalone.
-const THICK_PATHS = {
-  p: `M2880 7377 c-3 -2 -52 -7 -110 -11 -112 -7 -113 -7 -290 -37 -507 -86 -1023 -325 -1410 -654 -111 -95 -369 -359 -449 -460 -296 -373 -499 -819 -593 -1307 l-22 -113 -3 -2354 -3 -2355 42 -43 42 -43 266 0 266 0 37 38 37 38 3 2244 c2 1235 7 2265 11 2290 77 459 217 800 463 1124 165 218 296 339 538 500 450 299 1044 463 1543 426 510 -38 933 -199 1327 -505 121 -94 177 -147 259 -245 230 -275 380 -591 441 -925 26 -140 27 -366 4 -505 -38 -222 -149 -504 -276 -700 -120 -184 -232 -307 -393 -431 -278 -214 -594 -349 -987 -420 -109 -20 -164 -23 -733 -29 l-615 -7 -121 -31 c-290 -74 -475 -177 -683 -376 -207 -200 -342 -430 -392 -671 -21 -101 -26 -315 -8 -362 5 -15 33 -52 62 -80 l51 -53 111 0 110 0 108 111 c109 113 203 226 331 396 114 152 261 250 474 317 167 52 216 56 736 56 595 0 704 8 981 71 346 78 667 229 965 453 118 88 368 331 465 451 275 342 441 714 511 1145 22 132 30 515 15 677 -52 556 -295 1068 -711 1497 -488 504 -1047 779 -1770 871 -60 7 -624 19 -630 12z`,
-  brain: `M2833 6433 c-29 -2 -53 -8 -53 -13 0 -5 -7 -7 -15 -4 -27 11 -324 -55 -352 -78 -7 -6 -13 -8 -13 -5 0 3 -37 -7 -82 -23 -114 -39 -119 -41 -111 -53 4 -6 1 -7 -6 -3 -15 10 -220 -90 -222 -107 -1 -7 -1 -16 0 -20 1 -5 -3 -6 -9 -2 -6 3 -7 11 -4 17 4 6 -8 2 -26 -8 -18 -10 -34 -25 -37 -31 -3 -7 -8 -11 -12 -8 -4 2 -32 -15 -62 -38 -30 -23 -72 -54 -94 -69 -116 -79 -463 -475 -459 -523 1 -8 -3 -13 -10 -12 -6 1 -10 -6 -10 -15 1 -10 -2 -16 -6 -13 -4 3 -36 -52 -69 -121 -49 -101 -59 -129 -50 -140 9 -12 9 -13 -3 -9 -10 4 -21 -14 -41 -71 -15 -42 -24 -80 -21 -85 3 -5 1 -9 -4 -9 -18 0 -78 -319 -69 -366 2 -14 0 -27 -4 -30 -5 -3 -9 -475 -9 -1058 0 -828 3 -1055 13 -1065 10 -11 9 -12 -3 -6 -8 4 -2 -6 14 -23 27 -29 36 -32 86 -32 51 0 59 3 89 34 21 21 30 39 26 47 -5 7 -4 10 3 5 13 -8 44 33 35 47 -3 6 -2 7 4 4 13 -8 86 67 76 77 -5 4 -1 6 7 4 9 -2 15 4 15 17 0 11 6 20 12 20 16 0 173 126 173 138 0 6 3 7 7 4 4 -4 19 5 35 20 15 15 28 23 28 19 0 -5 15 3 34 18 19 14 39 26 45 26 5 0 13 5 17 12 5 7 3 8 -6 3 -8 -5 -11 -4 -6 3 4 6 14 8 23 5 12 -5 14 -3 8 7 -5 8 -4 11 2 7 14 -9 116 36 106 46 -4 5 1 5 11 1 15 -6 17 -4 11 6 -5 8 -4 11 3 6 6 -4 37 4 69 18 32 13 96 34 143 46 47 12 92 24 100 27 8 3 24 8 35 10 33 7 50 11 55 13 3 1 9 2 13 1 5 -1 46 6 91 14 105 20 161 22 530 24 280 1 298 2 291 19 -4 9 -10 29 -13 44 -2 15 -7 26 -11 24 -3 -2 -5 66 -3 151 l3 155 -423 -4 -423 -5 -169 -32 c-92 -17 -178 -37 -190 -43 -11 -7 -24 -11 -28 -10 -11 3 -211 -68 -236 -84 -13 -9 -20 -20 -15 -27 5 -9 3 -9 -9 0 -12 11 -21 10 -47 -3 -17 -8 -31 -18 -31 -20 0 -3 6 -2 13 1 6 4 4 0 -5 -8 -10 -8 -14 -18 -10 -22 4 -5 1 -5 -6 -1 -7 4 -10 12 -6 17 3 6 -13 1 -35 -11 -23 -11 -39 -25 -36 -30 3 -5 0 -7 -8 -4 -8 3 -18 1 -22 -5 -6 -11 -53 -15 -77 -6 -11 4 -13 121 -11 653 3 642 7 739 39 865 8 32 12 63 8 70 -4 7 -4 9 1 5 10 -9 58 129 50 143 -4 5 -2 9 3 9 13 0 63 120 55 133 -4 6 -1 7 7 2 10 -6 12 -4 7 9 -4 9 -3 15 1 12 5 -3 17 12 26 32 26 54 122 199 170 256 22 28 41 52 41 55 0 3 29 35 64 70 35 35 60 58 56 50 -8 -12 -6 -12 8 0 9 7 14 17 11 22 -3 5 -2 9 3 8 21 -4 24 2 12 19 -13 16 -12 16 5 2 16 -12 20 -12 30 1 6 8 19 18 29 22 11 4 15 12 11 18 -4 7 -3 9 3 6 12 -8 75 37 66 47 -4 4 0 4 8 1 10 -4 28 7 49 27 19 18 28 24 20 13 -14 -17 -12 -17 20 3 19 13 52 30 72 38 22 9 35 21 31 27 -3 5 -1 7 4 4 6 -4 39 6 74 22 107 48 279 102 399 126 153 30 271 38 430 30 85 -4 172 -8 193 -9 20 0 37 -5 37 -10 0 -4 15 -6 34 -4 20 2 32 0 29 -6 -4 -5 5 -6 21 -2 14 3 26 3 26 -2 0 -5 22 -14 50 -20 61 -14 266 -90 297 -110 12 -7 28 -10 35 -6 7 4 10 4 6 -1 -5 -5 2 -14 15 -20 18 -10 27 -9 47 3 l25 15 -19 -21 c-18 -21 -18 -22 0 -28 11 -4 27 -14 36 -21 9 -8 22 -12 29 -7 7 4 10 3 6 -3 -9 -14 70 -66 85 -57 6 4 8 3 5 -4 -4 -5 16 -28 44 -51 28 -22 75 -68 106 -103 67 -75 68 -77 58 -58 -5 8 -4 12 0 7 5 -4 10 -13 11 -20 2 -17 105 -179 124 -195 8 -8 9 -11 3 -7 -9 4 -11 1 -7 -9 3 -9 9 -14 13 -12 3 2 7 -6 7 -17 1 -12 11 -42 22 -67 47 -104 81 -255 89 -390 7 -140 -14 -293 -59 -420 -17 -47 -31 -91 -31 -97 0 -7 -3 -13 -7 -13 -11 0 -31 -51 -24 -62 4 -6 3 -8 -3 -5 -13 8 -36 -41 -27 -55 4 -6 2 -8 -4 -4 -6 3 -13 -2 -17 -13 -3 -10 -17 -31 -30 -47 -27 -31 -33 -50 -12 -38 7 4 9 3 4 -2 -5 -5 -13 -9 -19 -9 -6 0 -16 -8 -22 -19 -6 -10 -20 -29 -31 -42 -11 -13 -31 -36 -45 -53 -14 -16 -30 -30 -37 -30 -7 -1 -16 -7 -20 -14 -4 -8 -21 -22 -36 -32 l-28 -18 32 -33 c18 -18 37 -32 43 -31 6 1 10 -4 8 -11 -3 -19 17 -54 28 -47 6 3 7 0 4 -8 -3 -8 0 -18 5 -22 6 -3 9 -11 6 -16 -4 -5 -2 -9 3 -9 9 0 16 -58 16 -157 1 -55 3 -60 17 -47 8 8 19 14 22 14 12 0 107 72 107 81 0 5 5 9 10 9 18 0 80 62 73 73 -3 6 -2 7 4 4 5 -3 32 16 58 43 27 28 45 50 41 50 -5 0 3 10 18 21 18 14 25 27 21 37 -3 9 -3 14 0 10 10 -9 58 40 50 52 -3 6 -2 9 3 8 13 -4 64 71 57 82 -3 5 0 12 6 16 8 4 9 3 5 -4 -4 -7 -5 -12 -1 -12 7 0 29 52 27 63 -1 4 2 7 8 7 12 0 56 100 52 119 -2 7 1 10 6 7 17 -10 99 262 88 291 -3 8 -2 12 3 8 16 -9 26 141 25 350 -2 200 -19 332 -55 420 -7 17 -11 33 -11 38 3 12 -39 131 -51 146 -6 7 -12 18 -13 25 -4 30 -47 105 -57 99 -6 -4 -8 0 -4 10 3 9 0 18 -9 21 -9 3 -13 10 -10 15 8 12 -54 112 -65 105 -5 -3 -7 1 -4 8 3 7 -5 25 -19 39 -13 14 -29 35 -35 47 -7 13 -17 20 -24 16 -7 -4 -9 -4 -5 1 11 11 -92 126 -105 118 -7 -3 -9 -2 -4 2 10 11 -33 56 -46 48 -6 -3 -7 -1 -4 4 4 6 -8 22 -26 36 -17 14 -52 43 -77 66 -25 22 -50 41 -56 41 -6 0 -19 9 -29 20 -10 12 -25 18 -32 16 -7 -3 -12 0 -10 6 3 14 -61 50 -75 42 -6 -4 -8 -2 -5 4 8 12 -97 74 -129 76 -12 0 -20 5 -16 10 3 5 -2 7 -11 3 -10 -4 -16 -2 -14 5 1 7 -16 17 -38 22 -22 6 -43 14 -46 19 -4 5 -18 10 -32 10 -14 1 -23 5 -20 10 2 4 -3 8 -11 8 -18 2 -25 3 -46 12 -40 16 -177 49 -285 68 -100 18 -165 22 -385 24 -146 1 -289 1 -317 -2z m664 -40 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m50 0 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-1312 -133 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m-38 -27 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m1830 -40 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-2000 -40 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-127 -77 c0 -2 -7 -9 -15 -16 -13 -11 -14 -10 -9 4 5 14 24 23 24 12z m1697 -83 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-1832 -23 c-3 -5 -12 -10 -18 -10 -7 0 -6 4 3 10 19 12 23 12 15 0z m2065 -25 c0 -2 -10 -9 -22 -15 -22 -11 -22 -10 -4 4 21 17 26 19 26 11z m-2163 -52 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m680 10 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m2168 -21 c-3 -3 -11 0 -18 7 -9 10 -8 11 6 5 10 -3 15 -9 12 -12z m-2268 -29 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-654 -28 c-3 -9 -8 -14 -10 -11 -3 3 -2 9 2 15 9 16 15 13 8 -4z m3012 -25 c-3 -5 -12 -10 -18 -10 -7 0 -6 4 3 10 19 12 23 12 15 0z m-2485 -24 c0 -3 -5 -8 -12 -12 -7 -4 -8 -3 -4 4 7 12 16 16 16 8z m-613 -43 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m2630 10 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-2080 -10 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m2138 -33 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m-2238 -27 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m2268 -3 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m-2795 -20 c-6 -11 -13 -20 -16 -20 -2 0 0 9 6 20 6 11 13 20 16 20 2 0 0 -9 -6 -20z m2875 -30 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m-2415 -4 c0 -2 -8 -10 -17 -17 -16 -13 -17 -12 -4 4 13 16 21 21 21 13z m-95 -86 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m-15 -24 c0 -3 -5 -8 -12 -12 -7 -4 -8 -3 -4 4 7 12 16 16 16 8z m-445 -26 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m372 -17 c-4 -3 -1 -13 6 -22 11 -14 10 -14 -5 -2 -16 12 -16 31 -1 31 4 0 3 -3 0 -7z m60 0 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m3080 -15 c-3 -8 -6 -5 -6 6 -1 11 2 17 5 13 3 -3 4 -12 1 -19z m-3610 -85 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m-30 -40 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m-50 -120 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m388 -13 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m3002 -7 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m-3440 -230 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m3520 -80 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m380 -10 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m-3600 -50 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m-370 -110 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m3958 -123 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m-375 -64 c0 -3 -5 -8 -12 -12 -7 -4 -8 -3 -4 4 7 12 16 16 16 8z m-146 -472 c3 -8 2 -12 -4 -9 -6 3 -10 10 -10 16 0 14 7 11 14 -7z m-89 -34 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m382 -87 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m-457 -17 c0 -2 -8 -10 -17 -17 -16 -13 -17 -12 -4 4 13 16 21 21 21 13z m-75 -66 c-3 -5 -12 -10 -18 -10 -7 0 -6 4 3 10 19 12 23 12 15 0z m-24 -27 c13 -16 12 -17 -3 -4 -10 7 -18 15 -18 17 0 8 8 3 21 -13z m54 -33 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m410 -10 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m-65 -84 c0 -2 -6 -9 -14 -15 -11 -9 -16 -9 -22 0 -4 7 -3 9 4 5 6 -3 13 -2 17 4 6 10 15 14 15 6z m-110 -70 c0 -3 -5 -8 -12 -12 -7 -4 -8 -3 -4 4 7 12 16 16 16 8z m20 -20 c0 -3 -5 -8 -12 -12 -7 -4 -8 -3 -4 4 7 12 16 16 16 8z m-2323 -113 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-240 -60 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m300 -280 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-60 -10 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m120 0 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-390 -90 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-292 -163 c3 -5 4 -10 1 -10 -3 0 -8 5 -11 10 -3 6 -4 10 -1 10 3 0 8 -4 11 -10z m-155 -100 c-8 -5 -11 -10 -7 -10 5 0 5 -5 2 -10 -4 -6 -11 -8 -16 -4 -12 7 8 34 25 34 6 0 4 -5 -4 -10z m-93 -47 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m20 -20 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z m-18 -24 c-15 -9 -32 -2 -24 11 3 5 13 6 21 3 12 -4 13 -8 3 -14z m-92 -66 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m-64 -58 c-3 -9 -8 -14 -10 -11 -3 3 -2 9 2 15 9 16 15 13 8 -4z m-236 -62 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m141 -18 c-3 -3 -9 2 -12 12 -6 14 -5 15 5 6 7 -7 10 -15 7 -18z m49 -12 c-4 -3 -7 0 -7 7 0 7 3 10 7 7 3 -4 3 -10 0 -14z m-157 3 c0 -3 -5 -8 -12 -12 -7 -4 -8 -3 -4 4 7 12 16 16 16 8z m10 -20 c0 -3 -5 -8 -12 -12 -7 -4 -8 -3 -4 4 7 12 16 16 16 8z`,
-  dot: `M3617 3765 c-14 -7 -28 -11 -30 -9 -8 8 -102 -62 -99 -75 1 -7 -1 -10 -6 -7 -14 8 -55 -41 -47 -55 5 -8 4 -10 -3 -5 -12 7 -45 -47 -35 -58 4 -3 1 -6 -6 -6 -8 0 -11 -8 -8 -20 3 -11 1 -20 -4 -20 -5 0 -8 -45 -8 -100 1 -55 6 -100 11 -100 5 0 7 -4 3 -10 -8 -14 23 -82 35 -75 5 3 8 0 5 -7 -9 -23 91 -115 159 -148 52 -24 77 -30 134 -30 85 0 134 9 125 23 -3 6 -1 7 6 3 14 -9 90 34 142 81 32 29 37 38 27 50 -6 8 -7 13 -2 12 21 -4 31 3 43 27 6 14 8 30 5 36 -5 7 -2 8 6 3 10 -6 12 -4 7 8 -3 9 -1 17 6 20 21 7 15 193 -7 249 -10 27 -23 45 -29 41 -6 -4 -7 -1 -2 6 9 15 -33 63 -48 54 -6 -3 -7 -1 -3 5 4 7 2 12 -5 12 -7 0 -10 3 -6 6 17 17 -98 85 -148 87 -18 1 -31 5 -29 9 8 12 -164 6 -189 -7z m240 -21 c-3 -3 -12 -4 -19 -1 -8 3 -5 6 6 6 11 1 17 -2 13 -5z m-263 -20 c3 -8 2 -12 -4 -9 -6 3 -10 10 -10 16 0 14 7 11 14 -7z m320 -2 c2 -4 -4 -8 -14 -8 -10 0 -16 4 -14 8 3 4 9 8 14 8 5 0 11 -4 14 -8z m41 -33 c-4 -5 -1 -9 6 -9 7 0 9 -3 6 -6 -9 -9 -38 16 -31 27 3 5 10 7 15 3 5 -3 7 -10 4 -15z m-441 -37 c3 -5 -1 -9 -9 -9 -8 0 -12 4 -9 9 3 4 7 8 9 8 2 0 6 -4 9 -8z m446 -7 c0 -7 -30 -13 -34 -7 -3 4 4 9 15 9 10 1 19 0 19 -2z m100 -71 c0 -8 -19 -13 -24 -6 -3 5 1 9 9 9 8 0 15 -2 15 -3z m-630 -328 c0 -6 -7 -1 -15 10 -8 10 -15 23 -15 28 0 6 7 1 15 -10 8 -10 15 -23 15 -28z m97 -121 c0 -8 -4 -12 -9 -9 -5 3 -6 10 -3 15 9 13 12 11 12 -6z m407 -6 c-3 -5 -10 -7 -15 -3 -5 3 -7 10 -3 15 3 5 10 7 15 3 5 -3 7 -10 3 -15z m-377 -16 c-4 -3 -10 -3 -14 0 -3 4 0 7 7 7 7 0 10 -3 7 -7z`
-};
-
-function pInlineThick(c, x, y, size) {
-  const scale = size / 739;
-  const t = `translate(${x},${y + 739 * scale}) scale(${scale * 0.1},${-scale * 0.1})`;
-  return `<g transform="${t}" stroke="none"><path fill="${c.pOuter}" d="${THICK_PATHS.p}"/><path fill="${c.pBrain}" d="${THICK_PATHS.brain}"/><path fill="${c.pDot}" d="${THICK_PATHS.dot}"/></g>`;
-}
-
-// sp-wm family: thick-p as the letter p, inline with ensoIA
-function logoWordmarkInline(c, o = {}) {
-  const {
-    pSize = 380, pX = 30, pY = 320,
-    wordmarkX = 340, wordmarkY = 615, fontSize = 500,
-    showTagline = false, taglineY = 780, taglineSize = 60,
-    viewBox = '0 0 2400 870'
-  } = o;
-  let content = pInlineThick(c, pX, pY, pSize);
-  content += `<text x="${wordmarkX}" y="${wordmarkY}" font-size="${fontSize}" letter-spacing="-10" font-weight="400" fill="${c.ensoColor}">enso<tspan font-weight="700" fill="${c.iaColor}">IA</tspan></text>`;
-  if (showTagline) {
-    content += `<text x="${pX}" y="${taglineY}" font-weight="400" font-size="${taglineSize}" fill="${c.taglineColor}">${TAGLINE}</text>`;
-  }
-  return buildSvg(viewBox, content);
-}

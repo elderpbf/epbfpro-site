@@ -776,7 +776,7 @@
     <h2 data-i18n="lockupTagTitle">Lockup com tagline</h2>
     <div class="logo-stage lockup" id="stage-lockup-tag"></div>
     <div class="spec-row">
-      <div class="spec-block"><span class="spec-label">id</span><span class="spec-value">glyph-wordmark_tag.mono</span></div>
+      <div class="spec-block"><span class="spec-label">id</span><span class="spec-value">glyph-wordmark_tag</span></div>
       <div class="spec-block"><span class="spec-label" data-i18n="specApplication">aplicação</span><span class="spec-value" data-i18n="lockupTagApp">contextos formais e apresentacionais</span></div>
       <div class="spec-block"><span class="spec-label" data-i18n="specUseCases">contextos</span><span class="spec-value" data-i18n="lockupTagCtx">hero · cartão de visita · capa de apresentação</span></div>
     </div>
@@ -959,11 +959,19 @@
           <div class="adaptive-row">
             <div class="adaptive circle" id="adp-circle"></div>
             <div class="adaptive squircle" id="adp-squircle"></div>
+          </div>
+        </div>
+        <div class="app-card-label">android adaptive · dark · circle + squircle</div>
+      </div>
+
+      <div class="app-card">
+        <div class="app-card-body">
+          <div class="adaptive-row">
             <div class="adaptive-light circle" id="adp-light-circle"></div>
             <div class="adaptive-light squircle" id="adp-light-squircle"></div>
           </div>
         </div>
-        <div class="app-card-label">android adaptive · dark + light · circle · squircle</div>
+        <div class="app-card-label">android adaptive · light · circle + squircle</div>
       </div>
 
       <div class="app-card">
@@ -1057,7 +1065,7 @@
 
 </main>
 
-<script src="brand-logos-filled.js?v=5"></script>
+<script src="brand-logos-filled.js?v=6"></script>
 <script>
   const set = (id, svg) => {
     const el = document.getElementById(id);
@@ -1067,28 +1075,28 @@
   const cWhite = stdColors('white');
   const cNavy = stdColors('navy');
   const cTeal = stdColors('teal');
-  const markLight = logoMarkOnly(cWhite);
-  const markDark = logoMarkOnly(cNavy);
+  const markLight = mark(cWhite);
+  const markDark = mark(cNavy);
 
-  set('cover-logo', logoHorizontalRightAligned(cWhite));
+  set('cover-logo', glyphWordmarkTag(cWhite));
 
-  set('stage-mark', logoMarkOnly(cWhite));
-  set('stage-lockup', logoHorizontal(cWhite, { showTagline: false }));
-  set('stage-lockup-tag', logoHorizontalRightAligned(cWhite));
+  set('stage-mark', mark(cWhite));
+  set('stage-lockup', glyphWordmark(cWhite));
+  set('stage-lockup-tag', glyphWordmarkTag(cWhite));
 
-  set('bg-white', logoHorizontal(cWhite, { showTagline: false }));
-  set('bg-navy', logoHorizontal(cNavy, { showTagline: false }));
-  set('bg-trasp', logoHorizontal(cWhite, { showTagline: false }));
+  set('bg-white', glyphWordmark(cWhite));
+  set('bg-navy', glyphWordmark(cNavy));
+  set('bg-trasp', glyphWordmark(cWhite));
 
-  set('lvd-white', logoHorizontal(cWhite, { showTagline: false }));
-  set('lvd-navy', logoHorizontal(cNavy, { showTagline: false }));
-  set('lvd-teal', logoHorizontal(cTeal, { showTagline: false }));
+  set('lvd-white', glyphWordmark(cWhite));
+  set('lvd-navy', glyphWordmark(cNavy));
+  set('lvd-teal', glyphWordmark(cTeal));
 
-  set('clearspace-logo', logoHorizontal(cWhite, { showTagline: false }));
+  set('clearspace-logo', glyphWordmark(cWhite));
 
   set('min-mark', markLight);
-  set('min-lockup', logoHorizontal(cWhite, { showTagline: false }));
-  set('min-lockup-tag', logoHorizontalRightAligned(cWhite));
+  set('min-lockup', glyphWordmark(cWhite));
+  set('min-lockup-tag', glyphWordmarkTag(cWhite));
 
   set('fav-sq-w', markLight);
   set('fav-sq-n', markDark);
@@ -1107,12 +1115,12 @@
   set('adp-light-circle', markLight);
   set('adp-light-squircle', markLight);
 
-  set('nav-light', logoHorizontal(cWhite, { showTagline: false }));
-  set('nav-dark', logoHorizontal(cNavy, { showTagline: false }));
+  set('nav-light', glyphWordmark(cWhite));
+  set('nav-dark', glyphWordmark(cNavy));
 
-  set('biz-logo-light', logoHorizontalRightAligned(cWhite));
-  set('biz-logo-dark', logoHorizontalRightAligned(cNavy));
-  set('slide-logo', logoHorizontalRightAligned(cNavy));
+  set('biz-logo-light', glyphWordmarkTag(cWhite));
+  set('biz-logo-dark', glyphWordmarkTag(cNavy));
+  set('slide-logo', glyphWordmarkTag(cNavy));
 
   // ============================================================
   // i18n

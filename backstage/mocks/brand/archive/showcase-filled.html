@@ -940,7 +940,7 @@
 
 </main>
 
-<script src="../brand-logos-filled.js?v=4"></script>
+<script src="../brand-logos-filled.js?v=6"></script>
 <script>
   // ============================================================
   // Logo rendering
@@ -950,18 +950,18 @@
     if (el) el.innerHTML = svg;
   };
 
-  set('hero-logo', logoHorizontalRightAligned(stdColors('white')));
+  set('hero-logo', glyphWordmarkTag(stdColors('white')));
 
-  set('v-mark', logoMarkOnly(stdColors('white')));
-  set('v-bp-wm', logoHorizontal(stdColors('white'), { showTagline: false }));
-  set('v-bp-wm-t', logoHorizontalRightAligned(stdColors('white')));
+  set('v-mark', mark(stdColors('white')));
+  set('v-bp-wm', glyphWordmark(stdColors('white')));
+  set('v-bp-wm-t', glyphWordmarkTag(stdColors('white')));
 
-  set('lvd-white', logoHorizontal(stdColors('white'), { showTagline: false }));
-  set('lvd-navy', logoHorizontal(stdColors('navy'), { showTagline: false }));
+  set('lvd-white', glyphWordmark(stdColors('white')));
+  set('lvd-navy', glyphWordmark(stdColors('navy')));
 
   // Favicons: 4 variants (rounded square + circle, on white tile + navy tile)
-  const markLight = logoMarkOnly(stdColors('white'));
-  const markDark = logoMarkOnly(stdColors('navy'));
+  const markLight = mark(stdColors('white'));
+  const markDark = mark(stdColors('navy'));
   set('favicon-sq-w', markLight);
   set('favicon-sq-n', markDark);
   set('favicon-cr-w', markLight);
@@ -981,15 +981,15 @@
 
   set('profile-pic', markDark);
 
-  set('nav-light', logoHorizontal(stdColors('white'), { showTagline: false }));
-  set('nav-dark', logoHorizontal(stdColors('navy'), { showTagline: false }));
+  set('nav-light', glyphWordmark(stdColors('white')));
+  set('nav-dark', glyphWordmark(stdColors('navy')));
 
-  set('bc-logo', logoHorizontalRightAligned(stdColors('white')));
-  set('slide-logo', logoHorizontalRightAligned(stdColors('navy')));
+  set('bc-logo', glyphWordmarkTag(stdColors('white')));
+  set('slide-logo', glyphWordmarkTag(stdColors('navy')));
 
-  set('bg-white', logoHorizontal(stdColors('white'), { showTagline: false }));
-  set('bg-navy', logoHorizontal(stdColors('navy'), { showTagline: false }));
-  set('bg-trasp', logoHorizontal(stdColors('white'), { showTagline: false }));
+  set('bg-white', glyphWordmark(stdColors('white')));
+  set('bg-navy', glyphWordmark(stdColors('navy')));
+  set('bg-trasp', glyphWordmark(stdColors('white')));
 
   // ============================================================
   // i18n (PT-BR default, EN toggle)

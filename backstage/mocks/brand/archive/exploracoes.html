@@ -597,9 +597,9 @@ const TAB_4 = [
 function renderTeal4(targetId, recipes) {
   const host = document.getElementById(targetId);
   host.innerHTML = recipes.map(r => {
-    // logoMarkOnly and logoHorizontalRightAligned come from brand-logos-filled.js
-    const markSvg = window.logoMarkOnly(r.teal);
-    const lockupSvg = window.logoHorizontalRightAligned(r.teal);
+    // mark and glyphWordmarkTag come from brand-logos-filled.js
+    const markSvg = window.mark(r.teal);
+    const lockupSvg = window.glyphWordmarkTag(r.teal);
     return `
       <div class="card">
         <div class="card-header">
