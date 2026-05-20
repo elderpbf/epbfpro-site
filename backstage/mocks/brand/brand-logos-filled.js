@@ -32,7 +32,8 @@ const TAGLINE = 'pensamento humano, inteligência ampliada';
 
 // Scheme B (adopted): brain bubble always matches IA accent (teal where teal works).
 // P outer matches the name/wordmark color so mark + wordmark read as one continuous lockup.
-// On bg.teal the teal accent disappears against the surface, so brain + IA fall back to navy.
+// On bg.teal the teal accent can't live on a teal surface, so the entire logo collapses
+// to all-white (treat teal like a dark brand surface, same rule as navy).
 // bg.trasp uses the same palette as bg.white (no fill).
 function stdColors(bg) {
   if (bg === 'white' || bg === 'trasp')
@@ -40,7 +41,7 @@ function stdColors(bg) {
   if (bg === 'navy')
     return { pOuter: C.white, pBrain: C.teal,  pDot: C.teal,  ensoColor: C.white, iaColor: C.teal,  taglineColor: C.white };
   if (bg === 'teal')
-    return { pOuter: C.white, pBrain: C.navy,  pDot: C.navy,  ensoColor: C.white, iaColor: C.navy,  taglineColor: C.white };
+    return { pOuter: C.white, pBrain: C.white, pDot: C.white, ensoColor: C.white, iaColor: C.white, taglineColor: C.white };
 }
 
 function pGlyph(outerColor, brainColor, dotColor, tx=0, ty=0, scale=1) {

@@ -274,10 +274,10 @@
   .bg-cell.navy .bg-label { color: rgba(255, 255, 255, 0.55); }
   .bg-cell.trasp .bg-label { color: var(--ink-soft); background: rgba(255, 255, 255, 0.85); }
 
-  /* ===== LIGHT VS DARK ===== */
+  /* ===== BRAND SURFACES (light · dark · teal) ===== */
   .compare {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     border-radius: 14px;
     overflow: hidden;
     box-shadow: var(--shadow);
@@ -292,6 +292,7 @@
   }
   .surface.white { background: var(--white); }
   .surface.navy { background: var(--navy); }
+  .surface.teal { background: var(--teal); }
   .surface > div { width: 100%; max-width: 360px; }
   .surface svg { width: 100%; height: auto; display: block; }
   .surface-label {
@@ -306,6 +307,7 @@
   }
   .surface.white .surface-label { color: var(--ink-soft); }
   .surface.navy .surface-label { color: rgba(255, 255, 255, 0.55); }
+  .surface.teal .surface-label { color: rgba(255, 255, 255, 0.7); }
 
   /* ===== CLEARSPACE ===== */
   .clearspace-stage {
@@ -760,7 +762,7 @@
     <h2 data-i18n="lockupTitle">Lockup primário</h2>
     <div class="logo-stage lockup" id="stage-lockup"></div>
     <div class="spec-row">
-      <div class="spec-block"><span class="spec-label">id</span><span class="spec-value">bigP-wordmark</span></div>
+      <div class="spec-block"><span class="spec-label">id</span><span class="spec-value">glyph-wordmark</span></div>
       <div class="spec-block"><span class="spec-label" data-i18n="specApplication">aplicação</span><span class="spec-value" data-i18n="lockupApp">uso default em superfícies horizontais</span></div>
       <div class="spec-block"><span class="spec-label" data-i18n="specUseCases">contextos</span><span class="spec-value" data-i18n="lockupCtx">header · email · documentos</span></div>
     </div>
@@ -774,7 +776,7 @@
     <h2 data-i18n="lockupTagTitle">Lockup com tagline</h2>
     <div class="logo-stage lockup" id="stage-lockup-tag"></div>
     <div class="spec-row">
-      <div class="spec-block"><span class="spec-label">id</span><span class="spec-value">bigP-wordmark_tag.mono</span></div>
+      <div class="spec-block"><span class="spec-label">id</span><span class="spec-value">glyph-wordmark_tag.mono</span></div>
       <div class="spec-block"><span class="spec-label" data-i18n="specApplication">aplicação</span><span class="spec-value" data-i18n="lockupTagApp">contextos formais e apresentacionais</span></div>
       <div class="spec-block"><span class="spec-label" data-i18n="specUseCases">contextos</span><span class="spec-value" data-i18n="lockupTagCtx">hero · cartão de visita · capa de apresentação</span></div>
     </div>
@@ -844,15 +846,19 @@
   <!-- ===================================================== -->
   <section>
     <div class="section-num">06 / 09</div>
-    <h2 data-i18n="lightDarkTitle">Light &amp; dark</h2>
+    <h2 data-i18n="lightDarkTitle">Superfícies da marca</h2>
     <div class="compare">
       <div class="surface white">
         <div id="lvd-white"></div>
-        <span class="surface-label" data-i18n="primary">primário</span>
+        <span class="surface-label" data-i18n="surfBranco">branco</span>
       </div>
       <div class="surface navy">
         <div id="lvd-navy"></div>
-        <span class="surface-label" data-i18n="alternate">alternativa para superfícies escuras</span>
+        <span class="surface-label" data-i18n="surfNavy">navy</span>
+      </div>
+      <div class="surface teal">
+        <div id="lvd-teal"></div>
+        <span class="surface-label" data-i18n="surfTeal">teal</span>
       </div>
     </div>
   </section>
@@ -1051,7 +1057,7 @@
 
 </main>
 
-<script src="brand-logos-filled.js?v=4"></script>
+<script src="brand-logos-filled.js?v=5"></script>
 <script>
   const set = (id, svg) => {
     const el = document.getElementById(id);
@@ -1060,6 +1066,7 @@
 
   const cWhite = stdColors('white');
   const cNavy = stdColors('navy');
+  const cTeal = stdColors('teal');
   const markLight = logoMarkOnly(cWhite);
   const markDark = logoMarkOnly(cNavy);
 
@@ -1075,6 +1082,7 @@
 
   set('lvd-white', logoHorizontal(cWhite, { showTagline: false }));
   set('lvd-navy', logoHorizontal(cNavy, { showTagline: false }));
+  set('lvd-teal', logoHorizontal(cTeal, { showTagline: false }));
 
   set('clearspace-logo', logoHorizontal(cWhite, { showTagline: false }));
 
@@ -1133,9 +1141,10 @@
 
     bgTitle: 'Canonical backgrounds',
 
-    lightDarkTitle: 'Light &amp; dark',
-    primary: 'primary',
-    alternate: 'alternative for dark surfaces',
+    lightDarkTitle: 'Brand surfaces',
+    surfBranco: 'white',
+    surfNavy: 'navy',
+    surfTeal: 'teal',
 
     clearspaceTitle: 'Clearspace',
     clearspaceX: 'half the height of the P',
