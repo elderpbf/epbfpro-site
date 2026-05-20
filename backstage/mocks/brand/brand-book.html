@@ -455,49 +455,73 @@
   .appicon svg, .appicon-light svg { width: 100%; height: 100%; display: block; }
 
   /* Adaptive */
-  .adaptive-row { display: flex; gap: 24px; justify-content: center; align-items: center; }
+  .adaptive-row { display: flex; gap: 20px; justify-content: center; align-items: center; flex-wrap: wrap; }
   .adaptive {
     background: var(--navy);
-    width: 110px;
-    height: 110px;
+    width: 96px;
+    height: 96px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 17px;
     box-shadow: var(--shadow);
   }
   .adaptive.circle { border-radius: 50%; }
   .adaptive.squircle { border-radius: 38%; }
   .adaptive svg { width: 100%; height: 100%; display: block; }
 
+  .adaptive-light {
+    background: var(--white);
+    border: 1px solid var(--line);
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 17px;
+    box-shadow: var(--shadow);
+  }
+  .adaptive-light.circle { border-radius: 50%; }
+  .adaptive-light.squircle { border-radius: 38%; }
+  .adaptive-light svg { width: 100%; height: 100%; display: block; }
+
   /* Navbars */
-  .navbar-mock { width: 100%; max-width: 520px; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
-  .navbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; }
+  .navbar-stack { display: flex; flex-direction: column; gap: 12px; align-items: center; width: 100%; }
+  .navbar-mock { width: 100%; max-width: 460px; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
+  .navbar { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; }
   .navbar.light { background: var(--white); border: 1px solid var(--line); }
   .navbar.dark { background: var(--navy); }
-  .navbar .nav-logo { width: 140px; }
+  .navbar .nav-logo { width: 130px; }
   .navbar .nav-logo svg { width: 100%; height: auto; display: block; }
   .navbar .nav-items { display: flex; gap: 22px; font-family: 'Comfortaa', sans-serif; font-size: 12px; font-weight: 500; }
   .navbar.light .nav-items { color: var(--ink-mid); }
   .navbar.dark .nav-items { color: rgba(255, 255, 255, 0.85); }
 
   /* Business card */
+  .biz-stack { display: flex; flex-direction: column; gap: 14px; align-items: center; }
   .biz-card {
-    background: var(--cream);
-    width: 360px;
-    height: 210px;
+    width: 320px;
+    height: 188px;
     border-radius: 6px;
-    padding: 30px 30px 26px;
+    padding: 26px 26px 22px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     box-shadow: var(--shadow-lg);
   }
-  .biz-card .biz-logo { width: 190px; }
+  .biz-card.light { background: var(--cream); }
+  .biz-card.dark { background: var(--navy); }
+  .biz-card .biz-logo { width: 170px; }
   .biz-card .biz-logo svg { width: 100%; height: auto; display: block; }
-  .biz-card .biz-info .biz-name { font-family: 'Comfortaa', sans-serif; font-weight: 700; font-size: 12px; color: var(--navy); }
-  .biz-card .biz-info .biz-role { font-family: 'Comfortaa', sans-serif; font-size: 10px; color: var(--ink-mid); margin-top: 2px; }
-  .biz-card .biz-info .biz-email { font-family: var(--mono); font-size: 10px; color: var(--teal); margin-top: 6px; }
+  .biz-card .biz-info .biz-name { font-family: 'Comfortaa', sans-serif; font-weight: 700; font-size: 12px; }
+  .biz-card .biz-info .biz-role { font-family: 'Comfortaa', sans-serif; font-size: 10px; margin-top: 2px; }
+  .biz-card .biz-info .biz-email { font-family: var(--mono); font-size: 10px; margin-top: 6px; }
+  .biz-card.light .biz-info .biz-name { color: var(--navy); }
+  .biz-card.light .biz-info .biz-role { color: var(--ink-mid); }
+  .biz-card.light .biz-info .biz-email { color: var(--teal); }
+  .biz-card.dark .biz-info .biz-name { color: var(--white); }
+  .biz-card.dark .biz-info .biz-role { color: rgba(255, 255, 255, 0.7); }
+  .biz-card.dark .biz-info .biz-email { color: var(--teal); }
 
   /* Slide */
   .slide-cover {
@@ -929,47 +953,55 @@
           <div class="adaptive-row">
             <div class="adaptive circle" id="adp-circle"></div>
             <div class="adaptive squircle" id="adp-squircle"></div>
+            <div class="adaptive-light circle" id="adp-light-circle"></div>
+            <div class="adaptive-light squircle" id="adp-light-squircle"></div>
           </div>
         </div>
-        <div class="app-card-label">android adaptive · circle · squircle</div>
+        <div class="app-card-label">android adaptive · dark + light · circle · squircle</div>
       </div>
 
       <div class="app-card">
         <div class="app-card-body">
-          <div class="navbar-mock">
-            <div class="navbar light">
-              <div class="nav-logo" id="nav-light"></div>
-              <div class="nav-items"><span data-i18n="navAbout">Sobre</span><span data-i18n="navContact">Contato</span></div>
+          <div class="navbar-stack">
+            <div class="navbar-mock">
+              <div class="navbar light">
+                <div class="nav-logo" id="nav-light"></div>
+                <div class="nav-items"><span data-i18n="navAbout">Sobre</span><span data-i18n="navContact">Contato</span></div>
+              </div>
+            </div>
+            <div class="navbar-mock">
+              <div class="navbar dark">
+                <div class="nav-logo" id="nav-dark"></div>
+                <div class="nav-items"><span data-i18n="navAbout">Sobre</span><span data-i18n="navContact">Contato</span></div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="app-card-label">navbar · light</div>
+        <div class="app-card-label">navbar · light + dark</div>
       </div>
 
       <div class="app-card">
         <div class="app-card-body">
-          <div class="navbar-mock">
-            <div class="navbar dark">
-              <div class="nav-logo" id="nav-dark"></div>
-              <div class="nav-items"><span data-i18n="navAbout">Sobre</span><span data-i18n="navContact">Contato</span></div>
+          <div class="biz-stack">
+            <div class="biz-card light">
+              <div class="biz-logo" id="biz-logo-light"></div>
+              <div class="biz-info">
+                <div class="biz-name">Élder Prudente Barbosa Filho</div>
+                <div class="biz-role" data-i18n="bizRole">Fundador</div>
+                <div class="biz-email">contato@pensoia.com</div>
+              </div>
+            </div>
+            <div class="biz-card dark">
+              <div class="biz-logo" id="biz-logo-dark"></div>
+              <div class="biz-info">
+                <div class="biz-name">Élder Prudente Barbosa Filho</div>
+                <div class="biz-role" data-i18n="bizRole">Fundador</div>
+                <div class="biz-email">contato@pensoia.com</div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="app-card-label">navbar · dark</div>
-      </div>
-
-      <div class="app-card">
-        <div class="app-card-body">
-          <div class="biz-card">
-            <div class="biz-logo" id="biz-logo"></div>
-            <div class="biz-info">
-              <div class="biz-name">Élder Prudente Barbosa Filho</div>
-              <div class="biz-role" data-i18n="bizRole">Fundador</div>
-              <div class="biz-email">contato@pensoia.com</div>
-            </div>
-          </div>
-        </div>
-        <div class="app-card-label" data-i18n="bizCardLabel">cartão de visita · cream 380 × 220 px</div>
+        <div class="app-card-label" data-i18n="bizCardLabel">cartão de visita · light + dark · 320 × 188 px</div>
       </div>
 
       <div class="app-card">
@@ -1019,7 +1051,7 @@
 
 </main>
 
-<script src="brand-logos-filled.js?v=2"></script>
+<script src="brand-logos-filled.js?v=3"></script>
 <script>
   const set = (id, svg) => {
     const el = document.getElementById(id);
@@ -1064,11 +1096,14 @@
 
   set('adp-circle', markDark);
   set('adp-squircle', markDark);
+  set('adp-light-circle', markLight);
+  set('adp-light-squircle', markLight);
 
   set('nav-light', logoHorizontal(cWhite, { showTagline: false }));
   set('nav-dark', logoHorizontal(cNavy, { showTagline: false }));
 
-  set('biz-logo', logoHorizontalRightAligned(cWhite));
+  set('biz-logo-light', logoHorizontalRightAligned(cWhite));
+  set('biz-logo-dark', logoHorizontalRightAligned(cNavy));
   set('slide-logo', logoHorizontalRightAligned(cNavy));
 
   // ============================================================
@@ -1113,7 +1148,7 @@
     navAbout: 'About',
     navContact: 'Contact',
     bizRole: 'Founder',
-    bizCardLabel: 'business card · cream 380 × 220 px',
+    bizCardLabel: 'business card · light + dark · 320 × 188 px',
     slideCaption: 'institutional presentation',
 
     typeTitle: 'Typography',
