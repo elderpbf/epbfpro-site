@@ -1092,8 +1092,8 @@
         el.innerHTML = originals.get(el);
       }
     });
-    document.getElementById('lang-toggle').textContent = lang === 'pt' ? 'EN' : 'PT';
-    try { localStorage.setItem('showcase-filled-lang', lang); } catch (e) {}
+    document.getElementById('lang-toggle').textContent = lang === 'pt' ? 'EN' : 'BR';
+    try { localStorage.setItem('showcase-filled-lang-v2', lang); } catch (e) {}
   }
 
   document.getElementById('lang-toggle').addEventListener('click', () => {
@@ -1101,8 +1101,10 @@
     setLang(current === 'pt' ? 'en' : 'pt');
   });
 
+  // Storage key bumped to -v2 to invalidate any stale "en" from earlier testing.
+  // BR is always the fresh default; user toggle re-persists from there.
   let saved = 'pt';
-  try { saved = localStorage.getItem('showcase-filled-lang') || 'pt'; } catch (e) {}
+  try { saved = localStorage.getItem('showcase-filled-lang-v2') || 'pt'; } catch (e) {}
   setLang(saved);
 </script>
 
