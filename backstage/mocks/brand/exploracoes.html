@@ -32,18 +32,37 @@
   .tabs label:hover { color: #1C1917; }
   #t1:checked ~ .tabs label[for="t1"],
   #t2:checked ~ .tabs label[for="t2"],
-  #t3:checked ~ .tabs label[for="t3"] {
+  #t3:checked ~ .tabs label[for="t3"],
+  #t4:checked ~ .tabs label[for="t4"] {
     color: #0F8B82;
     border-bottom-color: #0F8B82;
   }
   .tab-content > section { display: none; }
   #t1:checked ~ .tab-content > .pane-1,
   #t2:checked ~ .tab-content > .pane-2,
-  #t3:checked ~ .tab-content > .pane-3 { display: block; }
+  #t3:checked ~ .tab-content > .pane-3,
+  #t4:checked ~ .tab-content > .pane-4 { display: block; }
 
   /* Tab 3 (Mundo Real) default: 3-col grid with bigger cells than tabs 1/2 */
   .pane-3 .bg-cell { min-height: 240px; padding: 20px; }
   .pane-3 .bg-cell svg { max-width: 100%; max-height: 280px; height: auto; }
+
+  /* Tab 4 (Experimental): 2-col grid, both cells teal (mark + lockup) */
+  .pane-4 .bg-row { grid-template-columns: 1fr 1fr; }
+  .pane-4 .bg-cell {
+    flex-direction: column;
+    gap: 14px;
+    min-height: 220px;
+    padding: 32px 24px 22px;
+  }
+  .pane-4 .bg-cell svg { max-width: 100%; max-height: 160px; height: auto; }
+  .pane-4 .cell-label {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+  }
 
   /* Per-variant full-width layout (single column), for wide mockups */
   .card-full .bg-row { grid-template-columns: 1fr; }
@@ -106,22 +125,25 @@
 <body>
 
 <h1>pensoIA, explorações de tagline e variações</h1>
-<div class="sub">3 abas. Cada variante testada nos 3 fundos: branco, navy e teal.</div>
+<div class="sub">4 abas. Cada variante testada nos 3 fundos: branco, navy e teal. Tab 4 estuda receitas alternativas pro bg teal.</div>
 
 <input type="radio" name="tab" id="t1" checked>
 <input type="radio" name="tab" id="t2">
 <input type="radio" name="tab" id="t3">
+<input type="radio" name="tab" id="t4">
 
 <div class="tabs">
   <label for="t1">1, Principais</label>
   <label for="t2">2, Reduzidas</label>
   <label for="t3">3, Mundo Real</label>
+  <label for="t4">4, Experimental</label>
 </div>
 
 <div class="tab-content">
   <section class="pane-1"><div class="grid" id="grid-1"></div></section>
   <section class="pane-2"><div class="grid" id="grid-2"></div></section>
   <section class="pane-3"><div class="grid" id="grid-3"></div></section>
+  <section class="pane-4"><div class="grid" id="grid-4"></div></section>
 </div>
 
 <script>
@@ -538,6 +560,52 @@ function renderVariants(targetId, variants) {
 renderVariants('grid-1', TAB_1);
 renderVariants('grid-2', TAB_2);
 renderVariants('grid-3', TAB_3);
+
+// ============================================================
+// TAB 4, Experimental, receitas de cor pro bg teal
+// Cada card = uma receita; mostra mark + bigP-wordmark lado a lado em bg teal.
+// ============================================================
+const DEEP_TEAL = '#0a4f47';
+const TAB_4 = [
+  {
+    id: '4.A', label: 'A, tudo branco',
+    note: 'Todas as camadas brancas. Trata bg teal como bg navy. Mais limpo, perde a semântica bolha=AI mas é consistente com a regra "superfície escura da marca = logo branco sólido".',
+    teal: { pOuter: C.white, pBrain: C.white, pDot: C.white, ensoColor: C.white, iaColor: C.white, taglineColor: C.white }
+  },
+  {
+    id: '4.B', label: 'B, Scheme B atual (bolha + IA caem pra navy)',
+    note: 'Regra canônica vigente em brand-logos.js stdColors(\'teal\'). P branco + bolha navy + "enso" branco + "IA" navy. Cria contraste duotone mas a bolha vira carimbo navy.',
+    teal: { pOuter: C.white, pBrain: C.navy, pDot: C.navy, ensoColor: C.white, iaColor: C.navy, taglineColor: C.white }
+  },
+  {
+    id: '4.C', label: 'C, tonal deep-teal (mantém semântica AI)',
+    note: 'Bolha + "IA" em deep teal ' + DEEP_TEAL + '. Preserva o papel "teal = AI" via tonal mais escuro do mesmo hue. Mais editorial, ideal pra mock Seixas Advogados.',
+    teal: { pOuter: C.white, pBrain: DEEP_TEAL, pDot: DEEP_TEAL, ensoColor: C.white, iaColor: DEEP_TEAL, taglineColor: C.white }
+  }
+];
+
+function renderTeal4(targetId, recipes) {
+  const host = document.getElementById(targetId);
+  host.innerHTML = recipes.map(r => {
+    const markSvg = logoMarkOnly(r.teal);
+    const lockupSvg = logoHorizontalRightAligned(r.teal);
+    return `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-label">${r.label}</div>
+          <div class="card-id">${r.id}</div>
+        </div>
+        <div class="bg-row">
+          <div class="bg-cell teal">${markSvg}<span class="cell-label">mark</span></div>
+          <div class="bg-cell teal">${lockupSvg}<span class="cell-label">bigP-wordmark + tagline</span></div>
+        </div>
+        ${r.note ? `<div class="card-note">${r.note}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+renderTeal4('grid-4', TAB_4);
 </script>
 
 </body>
