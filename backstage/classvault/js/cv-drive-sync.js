@@ -40,32 +40,34 @@ function _clearCache() {
 
 // ── MIME mapping (ClassVault-specific) ───────────────────────────────────────
 
+// Icons use text-presentation Unicode glyphs (not emoji) so they inherit the
+// zone color via CSS. Keeps contrast legible across light + dark themes.
 function _mimeToMeta(mimeType, fileName) {
   if (mimeType === 'application/vnd.google-apps.presentation') {
-    return { type: 'popup_url', label: 'Slides', icon: '🎞️' };
+    return { type: 'popup_url', label: 'Slides', icon: '▶' };
   }
   if (mimeType === 'application/vnd.google-apps.document') {
-    return { type: 'drive_file', label: 'Doc', icon: '📑' };
+    return { type: 'drive_file', label: 'Doc', icon: '¶' };
   }
   if (mimeType === 'application/vnd.google-apps.spreadsheet') {
-    return { type: 'drive_file', label: 'Planilha', icon: '📊' };
+    return { type: 'drive_file', label: 'Planilha', icon: '▦' };
   }
   if (mimeType === 'application/pdf') {
-    return { type: 'drive_file', label: 'PDF', icon: '📕' };
+    return { type: 'drive_file', label: 'PDF', icon: '▥' };
   }
   if (mimeType === 'application/vnd.google-apps.folder') {
     return null; // skip; folders become section headers
   }
   if (mimeType === 'text/markdown' || (fileName && fileName.endsWith('.md'))) {
-    return { type: 'drive_file', label: 'Markdown', icon: '📝' };
+    return { type: 'drive_file', label: 'Markdown', icon: '#' };
   }
   if (mimeType && mimeType.startsWith('image/')) {
-    return { type: 'drive_file', label: 'Imagem', icon: '🖼️' };
+    return { type: 'drive_file', label: 'Imagem', icon: '◫' };
   }
   if (mimeType && mimeType.startsWith('video/')) {
-    return { type: 'drive_file', label: 'Vídeo', icon: '🎬' };
+    return { type: 'drive_file', label: 'Vídeo', icon: '►' };
   }
-  return { type: 'drive_file', label: 'Arquivo', icon: '📎' };
+  return { type: 'drive_file', label: 'Arquivo', icon: '◆' };
 }
 
 // Synthesize a ClassVault item from a raw Drive file object.

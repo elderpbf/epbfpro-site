@@ -141,6 +141,62 @@
 .bs-auth-btn:hover { opacity: .9; transform: translateY(-1px); }
 .bs-auth-btn:active { transform: translateY(0); }
 
+/* Google sign-in: white button, multi-color logo. Standard Google look. */
+.bs-auth-btn--google {
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.bs-auth-btn--google:hover {
+  background: #f8f9fa;
+  opacity: 1;
+  border-color: rgba(0, 0, 0, 0.25);
+}
+[data-theme="dark"] .bs-auth-btn--google {
+  background: #2a2a2a;
+  color: #e8eaed;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+[data-theme="dark"] .bs-auth-btn--google:hover {
+  background: #353535;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Divider above the password fallback toggle. */
+.bs-auth-divider {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  text-align: center;
+  border-top: 1px solid rgba(20, 184, 166, 0.12);
+}
+[data-theme="dark"] .bs-auth-divider {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Subtle text-link toggle for revealing the password input. */
+.bs-auth-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color .15s;
+}
+.bs-auth-toggle:hover {
+  color: var(--text-primary);
+}
+
 /* =========================================================
    APP SHELL
    ========================================================= */
