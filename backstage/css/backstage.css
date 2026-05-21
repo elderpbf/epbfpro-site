@@ -272,29 +272,39 @@
   flex-shrink: 0;
 }
 
-.bs-topbar-logo img {
-  height: 36px;
+/* Mark + product name as one continuous lockup. */
+.bs-topbar-logo {
+  gap: 0;
+  align-items: center;
+}
+
+.bs-topbar-mark {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+}
+.bs-topbar-mark svg {
+  height: 32px;
   width: auto;
   display: block;
 }
 
-/* Theme-aware mark switch. Light theme shows mark_bg.white.svg (navy P);
-   dark theme shows mark_bg.navy.svg (white P). Both images in DOM, CSS hides one. */
+/* Theme-aware mark switch via inline SVG. Light theme = mark with navy P
+   (designed for white backgrounds); dark theme = mark with white P (designed
+   for navy backgrounds). Both rendered, CSS hides one. */
 .bs-topbar-logo-dark { display: none; }
 [data-theme="dark"] .bs-topbar-logo-light { display: none; }
-[data-theme="dark"] .bs-topbar-logo-dark { display: block; }
-
-.bs-topbar-wordmark-link {
-  display: flex; align-items: center;
-  text-decoration: none;
-}
+[data-theme="dark"] .bs-topbar-logo-dark { display: inline-flex; }
 
 .bs-topbar-name {
   font-family: 'Comfortaa', 'Inter', sans-serif;
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 400;
   color: var(--text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  /* Tight lockup: text continues the mark P with minimal gap. */
+  margin-left: -2px;
+  line-height: 1;
 }
 
 .bs-topbar-spacer { flex: 1; }
