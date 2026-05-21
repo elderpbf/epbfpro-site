@@ -263,11 +263,23 @@ const MOCKS = {
   lauterna: {
     label: 'Lauterna (working title · medical reports platform)',
     items: [
-      { name: 'Home', file: 'lauterna/index.html', children: [
-        { name: 'New report', file: 'lauterna/novo-laudo.html' },
-        { name: 'Templates', file: 'lauterna/mascaras.html' },
-        { name: 'Sign report', file: 'lauterna/assinar.html' },
-        { name: 'Plans', file: 'lauterna/planos.html' }
+      { name: 'Marketing landing (public · start here)', file: 'lauterna/marketing.html', children: [
+        { name: 'Login (magic-link)', file: 'lauterna/login.html' },
+        { name: 'Onboarding (first-login 4-step)', file: 'lauterna/onboarding.html' }
+      ]},
+      { name: 'Dashboard (app home)', file: 'lauterna/index.html', children: [
+        { name: 'New report (dictation)', file: 'lauterna/novo-laudo.html' },
+        { name: 'Editor with inline AI ★', file: 'lauterna/editor-com-ai.html' },
+        { name: 'Laudo view (read-only)', file: 'lauterna/laudo-view.html' },
+        { name: 'Sign + emit', file: 'lauterna/assinar.html' },
+        { name: 'Templates (máscaras)', file: 'lauterna/mascaras.html' },
+        { name: 'History (filters + pagination)', file: 'lauterna/historico.html' },
+        { name: 'Settings', file: 'lauterna/configuracoes.html' },
+        { name: 'Plans (in-app upgrade)', file: 'lauterna/planos.html' },
+        { name: 'Empty state (fresh tenant)', file: 'lauterna/empty-state.html' }
+      ]},
+      { name: 'Errors', file: 'lauterna/404.html', children: [
+        { name: '500 (incident ID + status)', file: 'lauterna/500.html' }
       ]}
     ]
   }

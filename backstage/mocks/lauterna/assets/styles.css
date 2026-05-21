@@ -1,4 +1,4 @@
-/* Lauterna mockup — custom styles beyond Tailwind */
+/* LaudoAI mockup — custom styles beyond Tailwind */
 
 :root {
   --accent: #0891b2;       /* cyan-700 */
@@ -6,6 +6,10 @@
   --accent-light: #ecfeff; /* cyan-50 */
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
 html, body {
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   font-feature-settings: 'cv11', 'ss01';
@@ -167,3 +171,111 @@ details[open] .faq-chev { transform: rotate(180deg); }
 .wave-bar:nth-child(5){ animation-delay: -0.2s; }
 .wave-bar:nth-child(6){ animation-delay:  0.0s; }
 .wave-bar:nth-child(7){ animation-delay: -0.5s; }
+
+/* ===== Inline AI suggestion pattern (editor-com-ai.html) ===== */
+
+/* Inline anchor — the phrase the AI is commenting on */
+.ai-anchor {
+  background: linear-gradient(180deg, transparent 60%, #cffafe 60%);
+  border-bottom: 1.5px dotted #0891b2;
+  padding: 0 1px;
+  cursor: pointer;
+  position: relative;
+}
+.ai-anchor:hover {
+  background: linear-gradient(180deg, transparent 60%, #a5f3fc 60%);
+}
+
+/* Block-level proposed insertion (a paragraph the AI suggests adding) */
+.ai-proposed {
+  background: #ecfeff;
+  border-left: 3px solid #0891b2;
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  position: relative;
+}
+.ai-proposed::before {
+  content: 'IA sugere';
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0e7490;
+  background: #cffafe;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+/* Floating action chip on hover for an ai-anchor */
+.ai-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 2px 6px 2px 8px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  font-size: 11px;
+  font-weight: 500;
+  color: #0e7490;
+  vertical-align: super;
+  margin-left: 4px;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+.ai-actions:hover {
+  background: #ecfeff;
+  border-color: #67e8f9;
+}
+.ai-actions .accept,
+.ai-actions .reject {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+}
+.ai-actions .accept { background: #d1fae5; color: #047857; }
+.ai-actions .accept:hover { background: #a7f3d0; }
+.ai-actions .reject { background: #fee2e2; color: #b91c1c; }
+.ai-actions .reject:hover { background: #fecaca; }
+
+/* Inline AI alerts (missing field, lateralidade, CRIT) */
+.ai-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 2px 0;
+}
+.ai-alert-warn   { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.ai-alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.ai-alert-info   { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
+
+/* Editable field appearance */
+.editor-field {
+  background: #ffffff;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: -6px -10px;
+  transition: all 160ms ease;
+}
+.editor-field:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+.editor-field:focus,
+.editor-field.focused {
+  outline: none;
+  background: #ffffff;
+  border-color: #0891b2;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}

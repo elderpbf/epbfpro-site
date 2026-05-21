@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LaudoAI · Laudos médicos com IA, voz e assinatura ICP-Brasil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="bg-white text-slate-800">
+
+<!-- Top nav (no sidebar on public pages) -->
+<header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="marketing.html" class="flex items-center gap-2">
+      <span class="inline-flex w-8 h-8 items-center justify-center rounded-lg bg-cyan-700">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      </span>
+      <span class="font-semibold text-lg tracking-tight text-slate-900">LaudoAI</span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-7 text-sm text-slate-600">
+      <a href="#diferenciais" class="hover:text-slate-900">Diferenciais</a>
+      <a href="#especialidades" class="hover:text-slate-900">Especialidades</a>
+      <a href="#como-funciona" class="hover:text-slate-900">Como funciona</a>
+      <a href="#planos" class="hover:text-slate-900">Planos</a>
+      <a href="#faq" class="hover:text-slate-900">FAQ</a>
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <a href="login.html" class="text-sm font-medium text-slate-700 hover:text-slate-900">Entrar</a>
+      <a href="login.html" class="inline-flex items-center gap-1.5 px-4 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-sm font-medium shadow-sm">
+        Começar agora
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-cyan-50 via-white to-slate-50 -z-10"></div>
+  <div class="absolute top-20 -right-20 w-96 h-96 bg-cyan-200/30 rounded-full blur-3xl -z-10"></div>
+
+  <div class="max-w-7xl mx-auto px-6 pt-16 pb-12 md:pt-24 md:pb-20">
+    <div class="grid lg:grid-cols-12 gap-10 items-center">
+
+      <div class="lg:col-span-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-100 text-cyan-800 text-xs font-medium mb-5">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-600"></span>
+          Conforme CFM 2.454/2026 desde o dia 1
+        </div>
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 leading-[1.05]">
+          Laudos médicos com<br />
+          <span class="text-cyan-700">voz, IA</span> e assinatura<br />
+          <span class="text-cyan-700">ICP-Brasil</span> integrada.
+        </h1>
+        <p class="mt-6 text-lg text-slate-600 leading-relaxed max-w-xl">
+          Plataforma brasileira para radiologistas, ultrassonografistas, cardiologistas e qualquer médico que emite laudos. Ditado em PT-BR, sugestões de IA inline, assinatura digital nativa e integração PACS de verdade.
+        </p>
+
+        <div class="mt-8 flex flex-col sm:flex-row gap-3">
+          <a href="login.html" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg font-medium shadow-sm">
+            Começar agora · grátis por 30 dias
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+          </a>
+          <a href="#planos" class="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 hover:border-slate-400 text-slate-700 rounded-lg font-medium bg-white">
+            Ver planos
+          </a>
+        </div>
+
+        <div class="mt-8 flex items-center gap-6 text-xs text-slate-500">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-emerald-600"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+            Sem cartão para testar
+          </div>
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-emerald-600"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+            Dados em território brasileiro
+          </div>
+          <div class="hidden md:flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-emerald-600"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+            Cancele quando quiser
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero proof: stylized dashboard preview -->
+      <div class="lg:col-span-6">
+        <div class="relative">
+          <div class="absolute -inset-4 bg-gradient-to-br from-cyan-200/40 to-transparent rounded-2xl blur-xl -z-10"></div>
+          <div class="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+            <!-- Fake browser chrome -->
+            <div class="h-9 bg-slate-100 border-b border-slate-200 flex items-center px-3 gap-1.5">
+              <div class="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+              <div class="ml-4 px-3 py-0.5 bg-white rounded text-xs text-slate-500 border border-slate-200">laudoai.com.br/dashboard</div>
+            </div>
+            <!-- Mini dashboard -->
+            <div class="flex h-72">
+              <div class="w-12 bg-slate-900 flex flex-col items-center py-3 gap-3">
+                <div class="w-6 h-6 rounded bg-cyan-700"></div>
+                <div class="w-6 h-6 rounded bg-slate-700"></div>
+                <div class="w-6 h-6 rounded bg-slate-700"></div>
+                <div class="w-6 h-6 rounded bg-slate-700"></div>
+              </div>
+              <div class="flex-1 p-4 bg-slate-50">
+                <div class="text-xs font-semibold text-slate-900 mb-3">Bom dia, Dr. Rafael</div>
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                  <div class="bg-white rounded-lg p-2 border border-slate-200">
+                    <div class="text-[9px] text-slate-500">Laudos hoje</div>
+                    <div class="text-lg font-semibold text-slate-900">12</div>
+                  </div>
+                  <div class="bg-white rounded-lg p-2 border border-slate-200">
+                    <div class="text-[9px] text-slate-500">Tempo médio</div>
+                    <div class="text-lg font-semibold text-slate-900">2m 14s</div>
+                  </div>
+                  <div class="bg-white rounded-lg p-2 border border-slate-200">
+                    <div class="text-[9px] text-slate-500">Pendentes</div>
+                    <div class="text-lg font-semibold text-amber-600">3</div>
+                  </div>
+                </div>
+                <div class="bg-white rounded-lg border border-slate-200 p-2">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="text-[10px] font-semibold text-slate-700">Laudos recentes</div>
+                    <div class="text-[9px] text-cyan-700">Ver todos</div>
+                  </div>
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-[10px]">
+                      <div class="text-slate-700">Maria Silva · CT Tórax</div>
+                      <span class="badge badge-warn text-[9px] py-0">● Rascunho</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px]">
+                      <div class="text-slate-700">João Pereira · USG Tireoide</div>
+                      <span class="badge badge-success text-[9px] py-0">● Assinado</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px]">
+                      <div class="text-slate-700">Ana Costa · RM Crânio</div>
+                      <span class="badge badge-info text-[9px] py-0">● Aguardando</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating ICP-Brasil pill -->
+          <div class="hidden md:flex absolute -bottom-4 -left-6 bg-white shadow-lg border border-slate-200 rounded-xl px-4 py-3 items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-900">ICP-Brasil A3 nuvem</div>
+              <div class="text-[10px] text-emerald-700">● Pronto para assinar</div>
+            </div>
+          </div>
+          <!-- Floating PACS pill -->
+          <div class="hidden md:flex absolute -top-3 -right-4 bg-white shadow-lg border border-slate-200 rounded-xl px-4 py-3 items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6Z"/></svg>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-900">PACS via DICOMweb</div>
+              <div class="text-[10px] text-cyan-700">Pixeon · MV · Mobilemed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Logos bar (placeholder trust strip) -->
+<section class="border-y border-slate-100 bg-slate-50/50">
+  <div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="text-center text-xs uppercase tracking-widest text-slate-400 mb-5">Compatível com a infraestrutura que sua clínica já usa</div>
+    <div class="flex flex-wrap items-center justify-center gap-x-12 gap-y-4 opacity-70">
+      <div class="text-base font-semibold text-slate-500">Pixeon Aurora</div>
+      <div class="text-base font-semibold text-slate-500">MV PACS</div>
+      <div class="text-base font-semibold text-slate-500">Mobilemed</div>
+      <div class="text-base font-semibold text-slate-500">Vidaas / Valid</div>
+      <div class="text-base font-semibold text-slate-500">Bird ID / Soluti</div>
+      <div class="text-base font-semibold text-slate-500">Resend</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 Differentiators -->
+<section id="diferenciais" class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="max-w-2xl mb-12">
+      <div class="text-xs uppercase tracking-widest text-cyan-700 font-semibold mb-3">Por que LaudoAI</div>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">As 5 lacunas que o mercado deixou de lado.</h2>
+      <p class="mt-4 text-slate-600">Sete anos de incumbente significaram sete anos de retrabalho copiando e colando entre o PACS e o laudo, ditando do desktop, e cobrando aditivo pela assinatura digital. Decidimos que isso não precisa continuar.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- PACS -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 card-hover">
+        <div class="w-11 h-11 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25Z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900">Integração PACS/RIS nativa</h3>
+        <p class="mt-2 text-sm text-slate-600 leading-relaxed">QIDO-RS, WADO-RS, STOW-RS. Você abre o exame, dita o laudo, ele volta para o PACS assinado. Sem copy-paste, sem janela paralela.</p>
+        <div class="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700">
+          DICOMweb completo
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+        </div>
+      </div>
+
+      <!-- Mobile -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 card-hover">
+        <div class="w-11 h-11 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3.75 18h4.5"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900">Mobile-native dictation</h3>
+        <p class="mt-2 text-sm text-slate-600 leading-relaxed">Apps reais iOS + Android, não um site travestido. Dite no plantão de madrugada, no ônibus voltando do hospital, em qualquer lugar com sinal.</p>
+        <div class="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700">
+          iOS · Android · Web
+        </div>
+      </div>
+
+      <!-- ICP-Brasil -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 card-hover">
+        <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900">Assinatura ICP-Brasil incluída</h3>
+        <p class="mt-2 text-sm text-slate-600 leading-relaxed">Vidaas A3 em nuvem + Bird ID por push, integrados ao fluxo de emissão. Não é addon. Não é cobrança extra. Não passa por aplicativo externo.</p>
+        <div class="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+          Sem aditivo · sem PDFs paralelos
+        </div>
+      </div>
+
+      <!-- CFM 2.454/2026 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 card-hover">
+        <div class="w-11 h-11 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900">CFM 2.454/2026 desde o dia 1</h3>
+        <p class="mt-2 text-sm text-slate-600 leading-relaxed">Trilha de auditoria de cada inferência da IA, atribuição explícita de responsabilidade médica, custódia jurídica de dados de referência (FMF, Doppler, BI-RADS). Conformidade não é checkbox, é arquitetura.</p>
+      </div>
+
+      <!-- Multi-browser -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 card-hover">
+        <div class="w-11 h-11 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 0 1 9-9"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900">Chrome, Edge, Firefox, Safari</h3>
+        <p class="mt-2 text-sm text-slate-600 leading-relaxed">Web standards, não Web Speech API só do Chrome. Funciona no notebook do residente, no iMac da clínica, no iPad do plantão.</p>
+      </div>
+
+      <!-- IA inline (bonus) -->
+      <div class="bg-gradient-to-br from-cyan-700 to-cyan-800 text-white rounded-xl p-6 card-hover">
+        <div class="w-11 h-11 rounded-lg bg-white/15 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.091 3.091Z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold">IA invisível, sugestões inline</h3>
+        <p class="mt-2 text-sm text-cyan-50 leading-relaxed">Nada de "selecionar o agente". O laudo é seu, a IA aparece como uma pílula no parágrafo, você aceita ou ignora, e segue ditando. Como deveria ter sido sempre.</p>
+        <div class="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-cyan-100">
+          qwen3-32b · sugestões contextuais
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Specialties (specialty-agnostic positioning) -->
+<section id="especialidades" class="py-20 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="max-w-2xl mx-auto text-center mb-12">
+      <div class="text-xs uppercase tracking-widest text-cyan-700 font-semibold mb-3">Especialidade não importa</div>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Se você emite laudo baseado em imagem ou exame, é para você.</h2>
+      <p class="mt-4 text-slate-600">A plataforma é agnóstica de especialidade desde o desenho. Suas máscaras, sua estrutura, sua linguagem.</p>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
+      <div class="bg-white rounded-lg border border-slate-200 px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center text-lg">🩻</span>
+        <div>
+          <div class="text-sm font-semibold text-slate-900">Radiologia</div>
+          <div class="text-xs text-slate-500">RX, CT, RM</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-200 px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center text-lg">🫀</span>
+        <div>
+          <div class="text-sm font-semibold text-slate-900">Cardiologia</div>
+          <div class="text-xs text-slate-500">Eco, Holter, ECG</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-200 px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center text-lg">🤰</span>
+        <div>
+          <div class="text-sm font-semibold text-slate-900">US OB/Gyn</div>
+          <div class="text-xs text-slate-500">Obstétrico, TV</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-200 px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center text-lg">🩺</span>
+        <div>
+          <div class="text-sm font-semibold text-slate-900">US Geral</div>
+          <div class="text-xs text-slate-500">Abdome, Vascular</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-200 px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center text-lg">🔬</span>
+        <div>
+          <div class="text-sm font-semibold text-slate-900">Patologia</div>
+          <div class="text-xs text-slate-500">Histo, Cito</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-200 px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center text-lg">👁️</span>
+        <div>
+          <div class="text-sm font-semibold text-slate-900">Oftalmologia</div>
+          <div class="text-xs text-slate-500">OCT, FA, USG</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-200 px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center text-lg">🫁</span>
+        <div>
+          <div class="text-sm font-semibold text-slate-900">Endoscopia</div>
+          <div class="text-xs text-slate-500">EDA, Colono</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-200 px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center text-lg">🧠</span>
+        <div>
+          <div class="text-sm font-semibold text-slate-900">Neurofisiologia</div>
+          <div class="text-xs text-slate-500">EEG, EMG</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="como-funciona" class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="max-w-2xl mb-12">
+      <div class="text-xs uppercase tracking-widest text-cyan-700 font-semibold mb-3">Como funciona</div>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Do exame aberto ao laudo assinado, em três passos.</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="relative">
+        <div class="absolute -left-2 top-0 text-7xl font-bold text-cyan-100 -z-0 select-none">1</div>
+        <div class="relative bg-white rounded-xl border border-slate-200 p-6 pl-8">
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">Abra a máscara</h3>
+          <p class="text-sm text-slate-600">Escolha o template da sua biblioteca, ou deixe a IA detectar pelo PACS qual exame você está laudando.</p>
+        </div>
+      </div>
+      <div class="relative">
+        <div class="absolute -left-2 top-0 text-7xl font-bold text-cyan-100 -z-0 select-none">2</div>
+        <div class="relative bg-white rounded-xl border border-slate-200 p-6 pl-8">
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">Dite o achado</h3>
+          <p class="text-sm text-slate-600">Voz em PT-BR vira texto estruturado em tempo real. A IA sugere achados, alerta sobre lateralidade, completa campos esquecidos.</p>
+        </div>
+      </div>
+      <div class="relative">
+        <div class="absolute -left-2 top-0 text-7xl font-bold text-cyan-100 -z-0 select-none">3</div>
+        <div class="relative bg-white rounded-xl border border-slate-200 p-6 pl-8">
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">Assine e emita</h3>
+          <p class="text-sm text-slate-600">Assinatura ICP-Brasil por push no celular. PDF assinado volta para o PACS. Pronto. Próximo paciente.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quote / social proof -->
+<section class="py-20 bg-slate-900 text-white">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-cyan-500 mx-auto mb-6 opacity-60"><path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z"/></svg>
+    <blockquote class="text-2xl md:text-3xl font-medium leading-snug">
+      "O principal gargalo de toda IA de laudo no Brasil hoje é não ter dados de referência embutidos. Curvas FMF, Orades, calculadora Doppler, tudo é busca em outra aba."
+    </blockquote>
+    <div class="mt-8 inline-flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-cyan-700 text-white font-semibold flex items-center justify-center">F</div>
+      <div class="text-left">
+        <div class="text-sm font-semibold">Dr. Felipe</div>
+        <div class="text-xs text-slate-400">Ultrassonografista · 90 laudos/dia · pilot Stage A</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="planos" class="py-20 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="max-w-2xl mx-auto text-center mb-10">
+      <div class="text-xs uppercase tracking-widest text-cyan-700 font-semibold mb-3">Planos</div>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Planos que crescem com sua prática.</h2>
+      <p class="mt-4 text-slate-600">Assinatura digital ICP-Brasil, app mobile nativo e integração PACS inclusos em todos os planos. Sem cobrança por laudo.</p>
+
+      <div class="mt-6 flex items-center justify-center gap-3">
+        <div class="toggle-pill" data-pricing-toggle>
+          <button class="active" data-mode="anual">Anual · economize 20%</button>
+          <button data-mode="mensal">Mensal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plans grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+
+      <!-- Solo -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm uppercase tracking-wide text-slate-500 font-medium">Solo</div>
+            <div class="text-xs text-slate-400 mt-0.5">Médicos autônomos</div>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
+          </div>
+        </div>
+        <div class="mt-5">
+          <span data-price-anual>
+            <span class="text-4xl font-semibold text-slate-900">R$ 149</span>
+            <span class="text-slate-500 text-sm">/mês · anual</span>
+          </span>
+          <span data-price-mensal class="hidden">
+            <span class="text-4xl font-semibold text-slate-900">R$ 189</span>
+            <span class="text-slate-500 text-sm">/mês</span>
+          </span>
+        </div>
+        <ul class="mt-5 space-y-2.5 text-sm text-slate-700 flex-1">
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Voz + IA + máscaras estruturadas</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>1 integração PACS nativa</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Assinatura digital ICP-Brasil</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>App mobile iOS + Android</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Conformidade CFM 2.454/2026</li>
+        </ul>
+        <a href="login.html" class="mt-6 w-full px-4 py-2.5 border border-cyan-700 text-cyan-700 hover:bg-cyan-50 rounded-lg font-medium text-sm text-center">Começar grátis</a>
+      </div>
+
+      <!-- Pro (highlighted) -->
+      <div class="bg-white rounded-xl shadow-md border-2 border-cyan-700 p-6 flex flex-col relative card-hover">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-cyan-700 text-white text-xs font-medium rounded-full">Mais popular</div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm uppercase tracking-wide text-cyan-700 font-semibold">Pro</div>
+            <div class="text-xs text-slate-500 mt-0.5">Teleradiologia, múltiplas instituições</div>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-cyan-700 text-white flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.091 3.091Z"/></svg>
+          </div>
+        </div>
+        <div class="mt-5">
+          <span data-price-anual>
+            <span class="text-4xl font-semibold text-slate-900">R$ 249</span>
+            <span class="text-slate-500 text-sm">/mês · anual</span>
+          </span>
+          <span data-price-mensal class="hidden">
+            <span class="text-4xl font-semibold text-slate-900">R$ 299</span>
+            <span class="text-slate-500 text-sm">/mês</span>
+          </span>
+        </div>
+        <ul class="mt-5 space-y-2.5 text-sm text-slate-700 flex-1">
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Tudo do Solo</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Multi-PACS (ilimitado)</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Até 3 instituições</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Trilha de auditoria exportável</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Alertas CRIT + comparação prévia</li>
+        </ul>
+        <a href="login.html" class="mt-6 w-full px-4 py-2.5 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg font-medium text-sm shadow-sm text-center">Começar grátis</a>
+      </div>
+
+      <!-- Clínica -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm uppercase tracking-wide text-slate-500 font-medium">Clínica</div>
+            <div class="text-xs text-slate-400 mt-0.5">Grupos de 5-15 médicos</div>
+          </div>
+          <div class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
+          </div>
+        </div>
+        <div class="mt-5">
+          <span data-price-anual>
+            <span class="text-4xl font-semibold text-slate-900">R$ 199</span>
+            <span class="text-slate-500 text-sm">/usuário · anual</span>
+          </span>
+          <span data-price-mensal class="hidden">
+            <span class="text-4xl font-semibold text-slate-900">R$ 249</span>
+            <span class="text-slate-500 text-sm">/usuário · mensal</span>
+          </span>
+          <div class="text-xs text-slate-500 mt-1">Mínimo 5 usuários</div>
+        </div>
+        <ul class="mt-5 space-y-2.5 text-sm text-slate-700 flex-1">
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Tudo do Pro</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Revisão por pares</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Dashboard de produção</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Console admin multi-usuário</li>
+          <li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 text-cyan-700 mt-0.5 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Branding por instituição</li>
+        </ul>
+        <a href="login.html" class="mt-6 w-full px-4 py-2.5 border border-cyan-700 text-cyan-700 hover:bg-cyan-50 rounded-lg font-medium text-sm text-center">Falar com vendas</a>
+      </div>
+    </div>
+
+    <!-- Hospital (less prominent) -->
+    <div class="max-w-6xl mx-auto mt-6">
+      <div class="bg-slate-100 border border-slate-200 rounded-xl px-6 py-5 flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <div class="text-sm font-semibold text-slate-800">Hospital · Enterprise</div>
+          <div class="text-xs text-slate-500 mt-0.5">SLA dedicado, integrações sob medida, CSM exclusivo, certificação SBIS-SADT em andamento</div>
+        </div>
+        <a href="#" class="text-sm font-medium text-cyan-700 hover:text-cyan-800 inline-flex items-center gap-1">
+          Sob consulta
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Resident discount -->
+    <div class="max-w-3xl mx-auto mt-8">
+      <div class="rounded-xl bg-gradient-to-r from-cyan-700 to-cyan-800 text-white px-6 py-5 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <div class="text-xs uppercase tracking-wide text-cyan-200">Para residentes</div>
+          <div class="text-lg font-semibold mt-1">Médico residente: 60% off no Solo</div>
+          <div class="text-sm text-cyan-100 mt-0.5">R$ 60/mês no anual · com comprovação de residência</div>
+        </div>
+        <a href="login.html" class="px-4 py-2 bg-white text-cyan-700 font-medium rounded-lg text-sm">Solicitar desconto</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="py-20 bg-white">
+  <div class="max-w-3xl mx-auto px-6">
+    <div class="text-center mb-10">
+      <div class="text-xs uppercase tracking-widest text-cyan-700 font-semibold mb-3">Perguntas frequentes</div>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Ainda em dúvida?</h2>
+      <p class="mt-3 text-slate-600">As perguntas que mais ouvimos de médicos avaliando o LaudoAI.</p>
+    </div>
+
+    <div class="space-y-3">
+      <details class="bg-white border border-slate-200 rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between font-medium text-slate-900">
+          <span>Como funciona o teste grátis de 30 dias?</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chev w-5 h-5 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </summary>
+        <div class="mt-3 text-sm text-slate-600 leading-relaxed">
+          Sem cartão, sem cobrança automática. Após 30 dias, você decide se continua. Os laudos criados no período de teste continuam acessíveis mesmo se não converter, e podem ser baixados em PDF.
+        </div>
+      </details>
+
+      <details class="bg-white border border-slate-200 rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between font-medium text-slate-900">
+          <span>Posso cancelar a qualquer momento?</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chev w-5 h-5 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </summary>
+        <div class="mt-3 text-sm text-slate-600 leading-relaxed">
+          Sim. Cancele do próprio app, em um clique, sem ligar para ninguém. No anual, devolvemos pro-rata dos meses restantes. Sem multa, sem fidelidade.
+        </div>
+      </details>
+
+      <details class="bg-white border border-slate-200 rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between font-medium text-slate-900">
+          <span>Como é feita a assinatura digital ICP-Brasil?</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chev w-5 h-5 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </summary>
+        <div class="mt-3 text-sm text-slate-600 leading-relaxed">
+          Integração nativa com Vidaas (Valid) A3 em nuvem e Bird ID. Você aprova a assinatura por push no celular, em segundos. Sem token físico, sem driver, sem janela paralela. Cada laudo emitido carrega timestamp confiável e hash do PDF assinado, em conformidade com a MP 2.200-2/2001.
+        </div>
+      </details>
+
+      <details class="bg-white border border-slate-200 rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between font-medium text-slate-900">
+          <span>Vocês integram com o PACS da minha clínica?</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chev w-5 h-5 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </summary>
+        <div class="mt-3 text-sm text-slate-600 leading-relaxed">
+          Sim, via DICOMweb (QIDO-RS, WADO-RS, STOW-RS) — o padrão aberto suportado por Pixeon Aurora, MV PACS, Mobilemed, Carestream e praticamente todos os PACS modernos do mercado brasileiro. Se o seu PACS é mais antigo, a gente conversa.
+        </div>
+      </details>
+
+      <details class="bg-white border border-slate-200 rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between font-medium text-slate-900">
+          <span>Os dados ficam onde? E a LGPD?</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chev w-5 h-5 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </summary>
+        <div class="mt-3 text-sm text-slate-600 leading-relaxed">
+          Dados de pacientes são armazenados em território brasileiro, conforme o Art. 33 da LGPD. Nunca usamos seus dados para treinar modelos. O acesso é restrito ao signatário, à instituição vinculada e a autoridades competentes mediante requisição judicial.
+        </div>
+      </details>
+
+      <details class="bg-white border border-slate-200 rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between font-medium text-slate-900">
+          <span>A IA substitui o médico?</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chev w-5 h-5 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+        </summary>
+        <div class="mt-3 text-sm text-slate-600 leading-relaxed">
+          Não. A IA é uma ferramenta auxiliar de redação e estruturação. A responsabilidade técnica e jurídica do laudo permanece integralmente do médico signatário, conforme a Resolução CFM 2.454/2026. Toda inferência da IA fica registrada na trilha de auditoria, para revisão a qualquer momento.
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="py-20 bg-white">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="bg-gradient-to-br from-cyan-700 to-cyan-800 rounded-2xl px-8 py-12 md:px-12 md:py-16 text-center text-white relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-0 left-0 w-72 h-72 bg-cyan-400/10 rounded-full blur-3xl"></div>
+      <div class="relative">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Pronto para deixar o copy-paste?</h2>
+        <p class="mt-4 text-cyan-100 max-w-xl mx-auto">30 dias grátis, sem cartão, sem comprometimento. Em 5 minutos você está ditando o primeiro laudo.</p>
+        <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+          <a href="login.html" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 text-cyan-700 rounded-lg font-semibold shadow-sm">
+            Começar agora
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+          </a>
+          <a href="#planos" class="inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/30 hover:bg-white/10 text-white rounded-lg font-medium">
+            Comparar planos
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-slate-900 text-slate-400 py-12">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid md:grid-cols-4 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="inline-flex w-8 h-8 items-center justify-center rounded-lg bg-cyan-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+          </span>
+          <span class="font-semibold text-lg text-white">LaudoAI</span>
+        </div>
+        <p class="text-sm">Laudos médicos com voz, IA e assinatura digital. Plataforma brasileira em conformidade com CFM 2.454/2026.</p>
+      </div>
+
+      <div>
+        <div class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3">Produto</div>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#diferenciais" class="hover:text-white">Diferenciais</a></li>
+          <li><a href="#especialidades" class="hover:text-white">Especialidades</a></li>
+          <li><a href="#como-funciona" class="hover:text-white">Como funciona</a></li>
+          <li><a href="#planos" class="hover:text-white">Planos</a></li>
+          <li><a href="#faq" class="hover:text-white">FAQ</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3">Conformidade</div>
+        <ul class="space-y-2 text-sm">
+          <li>CFM 2.454/2026</li>
+          <li>LGPD Art. 33</li>
+          <li>ICP-Brasil A3</li>
+          <li>Dados em território BR</li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3">Contato</div>
+        <ul class="space-y-2 text-sm">
+          <li><a href="login.html" class="hover:text-white">Entrar</a></li>
+          <li><a href="#" class="hover:text-white">Falar com vendas</a></li>
+          <li><a href="#" class="hover:text-white">Suporte</a></li>
+          <li><a href="#" class="hover:text-white">Status</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-10 pt-6 border-t border-slate-800 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-3">
+      <div>LaudoAI · marca provisória · v0.1 pré-lançamento</div>
+      <div class="flex gap-5">
+        <a href="#" class="hover:text-slate-300">Privacidade</a>
+        <a href="#" class="hover:text-slate-300">Termos</a>
+        <a href="#" class="hover:text-slate-300">LGPD</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LaudoAI · Histórico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Sidebar -->
+<aside class="fixed inset-y-0 left-0 w-60 bg-slate-900 text-slate-100 flex flex-col">
+  <div class="h-16 flex items-center px-5 border-b border-slate-800">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex w-8 h-8 items-center justify-center rounded-lg bg-cyan-700">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      </span>
+      <span class="font-semibold text-lg tracking-tight">LaudoAI</span>
+    </div>
+  </div>
+  <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
+    <a href="index.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12 12 3l9 9M5 10.5V21h14V10.5"/></svg>
+      Dashboard
+    </a>
+    <a href="novo-laudo.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      Novo Laudo
+    </a>
+    <a href="mascaras.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
+      Máscaras
+    </a>
+    <a href="historico.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+      Histórico
+    </a>
+    <a href="configuracoes.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.094c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.388.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.27 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.205.108l-.737.527a1.125 1.125 0 0 1-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.203-.165-.398-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+      Configurações
+    </a>
+    <a href="planos.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+      Planos
+    </a>
+  </nav>
+  <div class="px-4 py-3 border-t border-slate-800 text-xs text-slate-400">
+    v0.1 · pré-lançamento
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="ml-60 min-h-screen flex flex-col">
+
+  <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+    <div class="text-sm text-slate-500">Histórico</div>
+    <div class="flex items-center gap-4">
+      <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 text-sm hover:bg-slate-50">
+        <span>PT</span><span>🇧🇷</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+      </button>
+      <div class="flex items-center gap-3">
+        <div class="text-right leading-tight">
+          <div class="text-sm font-medium text-slate-800">Dr. Rafael Bariani</div>
+          <div class="text-xs text-slate-500">CRM-SE 12345</div>
+        </div>
+        <div class="w-9 h-9 rounded-full bg-cyan-700 text-white font-semibold flex items-center justify-center">RB</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 px-8 py-8">
+
+    <!-- Page header -->
+    <div class="flex items-start justify-between mb-6 flex-wrap gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Histórico de laudos</h1>
+        <p class="text-sm text-slate-500 mt-1">347 laudos · últimos 30 dias</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+          Exportar CSV
+        </button>
+        <a href="novo-laudo.html" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-sm font-medium shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+          Novo laudo
+        </a>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+      <!-- Filter sidebar -->
+      <aside class="lg:col-span-1">
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm sticky top-24">
+          <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-900 text-sm">Filtros</h2>
+            <button class="text-xs text-cyan-700 hover:text-cyan-800">Limpar</button>
+          </div>
+
+          <div class="p-5 space-y-5">
+
+            <!-- Search -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">Buscar paciente</label>
+              <div class="relative">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+                <input type="search" placeholder="Nome do paciente..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:border-cyan-700"/>
+              </div>
+            </div>
+
+            <!-- Date range -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">Período</label>
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" name="period" class="accent-cyan-700" /> Hoje
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" name="period" class="accent-cyan-700" /> Últimos 7 dias
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" name="period" class="accent-cyan-700" checked /> Últimos 30 dias
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" name="period" class="accent-cyan-700" /> Este ano
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" name="period" class="accent-cyan-700" /> Personalizado
+                </label>
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">Status</label>
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" class="accent-cyan-700" checked /> <span class="badge badge-warn">● Rascunho</span>
+                  <span class="text-xs text-slate-400 ml-auto">12</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" class="accent-cyan-700" checked /> <span class="badge badge-info">● Aguardando</span>
+                  <span class="text-xs text-slate-400 ml-auto">8</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" class="accent-cyan-700" checked /> <span class="badge badge-success">● Assinado</span>
+                  <span class="text-xs text-slate-400 ml-auto">327</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Máscara -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">Máscara</label>
+              <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                <option>Todas</option>
+                <option>Abdome total</option>
+                <option>Transvaginal</option>
+                <option>Mamas</option>
+                <option>Tireoide</option>
+                <option>MI VARIZES</option>
+                <option>Ombro</option>
+                <option>Próstata</option>
+              </select>
+            </div>
+
+            <!-- Modalidade -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">Modalidade</label>
+              <div class="flex flex-wrap gap-1.5">
+                <button class="px-2.5 py-1 text-xs rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 font-medium">USG</button>
+                <button class="px-2.5 py-1 text-xs rounded-full bg-white text-slate-600 border border-slate-200 hover:border-slate-300">CT</button>
+                <button class="px-2.5 py-1 text-xs rounded-full bg-white text-slate-600 border border-slate-200 hover:border-slate-300">RM</button>
+                <button class="px-2.5 py-1 text-xs rounded-full bg-white text-slate-600 border border-slate-200 hover:border-slate-300">RX</button>
+                <button class="px-2.5 py-1 text-xs rounded-full bg-white text-slate-600 border border-slate-200 hover:border-slate-300">Mamo</button>
+                <button class="px-2.5 py-1 text-xs rounded-full bg-white text-slate-600 border border-slate-200 hover:border-slate-300">Eco</button>
+              </div>
+            </div>
+
+            <!-- Instituição -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">Instituição</label>
+              <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                <option>Todas</option>
+                <option>Hospital São Lucas</option>
+                <option>Clínica Imagem Aju</option>
+                <option>Centro Diagnóstico SE</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="px-5 py-3 border-t border-slate-200">
+            <button class="w-full px-3 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-sm font-medium">Aplicar filtros</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Results -->
+      <div class="lg:col-span-3">
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+
+          <!-- Toolbar -->
+          <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between flex-wrap gap-3">
+            <div class="text-sm text-slate-600">
+              <strong class="text-slate-900">347</strong> laudos · ordenados por <span class="text-slate-900 font-medium">data de criação</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <select class="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white">
+                <option>Mais recentes</option>
+                <option>Mais antigos</option>
+                <option>Paciente A-Z</option>
+                <option>Status</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Active filter chips -->
+          <div class="px-5 py-2.5 border-b border-slate-100 flex items-center gap-2 flex-wrap">
+            <span class="text-xs text-slate-500">Filtros ativos:</span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-cyan-50 text-cyan-800 text-xs rounded-full font-medium">
+              Últimos 30 dias
+              <button class="hover:text-cyan-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg></button>
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-cyan-50 text-cyan-800 text-xs rounded-full font-medium">
+              Modalidade: USG
+              <button class="hover:text-cyan-900"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg></button>
+            </span>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500">
+                <tr>
+                  <th class="text-left font-medium px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></th>
+                  <th class="text-left font-medium px-5 py-3">Paciente</th>
+                  <th class="text-left font-medium px-5 py-3">Exame</th>
+                  <th class="text-left font-medium px-5 py-3">Máscara</th>
+                  <th class="text-left font-medium px-5 py-3">Status</th>
+                  <th class="text-left font-medium px-5 py-3">Data</th>
+                  <th class="text-right font-medium px-5 py-3">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Maria Silva Santos</div>
+                    <div class="text-xs text-slate-500">54 anos · #20264-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">CT Tórax sem contraste</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">CT Tórax</td>
+                  <td class="px-5 py-3"><span class="badge badge-warn">● Rascunho</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">17/05 09:42</td>
+                  <td class="px-5 py-3 text-right"><a href="laudo-view.html" class="text-cyan-700 hover:text-cyan-800 font-medium">Abrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">João Pereira Lima</div>
+                    <div class="text-xs text-slate-500">38 anos · #20263-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">USG Tireoide (TI-RADS)</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">Tireoide</td>
+                  <td class="px-5 py-3"><span class="badge badge-success">● Assinado</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">17/05 09:21</td>
+                  <td class="px-5 py-3 text-right"><a href="#" class="text-slate-500 hover:text-slate-700 font-medium">Reabrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Ana Beatriz Costa</div>
+                    <div class="text-xs text-slate-500">62 anos · #20262-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">RM Crânio</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">RM Crânio</td>
+                  <td class="px-5 py-3"><span class="badge badge-info">● Aguardando</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">17/05 08:55</td>
+                  <td class="px-5 py-3 text-right"><a href="assinar.html" class="text-cyan-700 hover:text-cyan-800 font-medium">Abrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Joana Beatriz Ribeiro</div>
+                    <div class="text-xs text-slate-500">47 anos · #20261-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">USG Doppler Venoso MMII</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">MI VARIZES</td>
+                  <td class="px-5 py-3"><span class="badge badge-warn">● Rascunho</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">17/05 08:48</td>
+                  <td class="px-5 py-3 text-right"><a href="editor-com-ai.html" class="text-cyan-700 hover:text-cyan-800 font-medium">Abrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Carlos Eduardo Rocha</div>
+                    <div class="text-xs text-slate-500">47 anos · #20260-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">Mamografia (BI-RADS)</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">Mamas</td>
+                  <td class="px-5 py-3"><span class="badge badge-success">● Assinado</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">17/05 08:33</td>
+                  <td class="px-5 py-3 text-right"><a href="#" class="text-slate-500 hover:text-slate-700 font-medium">Reabrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Lucas Martins Vieira</div>
+                    <div class="text-xs text-slate-500">29 anos · #20259-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">USG Abdome total</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">Abdome total</td>
+                  <td class="px-5 py-3"><span class="badge badge-success">● Assinado</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">17/05 08:12</td>
+                  <td class="px-5 py-3 text-right"><a href="#" class="text-slate-500 hover:text-slate-700 font-medium">Reabrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Patrícia Oliveira</div>
+                    <div class="text-xs text-slate-500">51 anos · #20258-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">RX Tórax PA</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">RX Tórax</td>
+                  <td class="px-5 py-3"><span class="badge badge-warn">● Rascunho</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">16/05 18:47</td>
+                  <td class="px-5 py-3 text-right"><a href="editor-com-ai.html" class="text-cyan-700 hover:text-cyan-800 font-medium">Abrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Fernanda Almeida</div>
+                    <div class="text-xs text-slate-500">35 anos · #20257-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">RM Joelho direito</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">RM Joelho</td>
+                  <td class="px-5 py-3"><span class="badge badge-success">● Assinado</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">16/05 17:25</td>
+                  <td class="px-5 py-3 text-right"><a href="#" class="text-slate-500 hover:text-slate-700 font-medium">Reabrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Roberto Cavalcanti</div>
+                    <div class="text-xs text-slate-500">70 anos · #20256-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">CT Abdome com contraste</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">CT Abdome</td>
+                  <td class="px-5 py-3"><span class="badge badge-success">● Assinado</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">16/05 16:11</td>
+                  <td class="px-5 py-3 text-right"><a href="#" class="text-slate-500 hover:text-slate-700 font-medium">Reabrir</a></td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3"><input type="checkbox" class="accent-cyan-700" /></td>
+                  <td class="px-5 py-3">
+                    <div class="font-medium text-slate-800">Sandra Mello Castro</div>
+                    <div class="text-xs text-slate-500">42 anos · #20255-7</div>
+                  </td>
+                  <td class="px-5 py-3 text-slate-600">USG Transvaginal</td>
+                  <td class="px-5 py-3 text-xs text-slate-500">Transvaginal</td>
+                  <td class="px-5 py-3"><span class="badge badge-success">● Assinado</span></td>
+                  <td class="px-5 py-3 text-slate-500 text-xs">16/05 15:18</td>
+                  <td class="px-5 py-3 text-right"><a href="#" class="text-slate-500 hover:text-slate-700 font-medium">Reabrir</a></td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="px-5 py-3 border-t border-slate-200 flex items-center justify-between flex-wrap gap-3">
+            <div class="text-xs text-slate-500">
+              Mostrando <strong class="text-slate-700">1-10</strong> de <strong class="text-slate-700">347</strong>
+            </div>
+            <div class="flex items-center gap-1">
+              <button disabled class="px-2.5 py-1.5 border border-slate-200 text-slate-400 rounded text-sm cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg>
+              </button>
+              <button class="px-3 py-1.5 border border-cyan-700 bg-cyan-700 text-white rounded text-sm font-medium">1</button>
+              <button class="px-3 py-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded text-sm">2</button>
+              <button class="px-3 py-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded text-sm">3</button>
+              <span class="px-2 text-slate-400">…</span>
+              <button class="px-3 py-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded text-sm">35</button>
+              <button class="px-2.5 py-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>
