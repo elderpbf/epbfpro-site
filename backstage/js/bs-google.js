@@ -130,6 +130,28 @@ async function _driveListFolder(folderId) {
   return json.files || [];
 }
 
+// Returns plain-text contents of a Drive file. Google Docs route through the
+// export endpoint; plain-text files (.txt, .md) come through alt=media.
+// Caller is responsible for checking the mime type is text-extractable.
+async function _driveGetText(fileId, mimeType) {
+  const token = BS_GOOGLE.getAccessToken();
+  if (!token) throw new Error('not_authed');
+  let url;
+  if (mimeType === 'application/vnd.google-apps.document') {
+    url = 'https://www.googleapis.com/drive/v3/files/' +
+      encodeURIComponent(fileId) + '/export?mimeType=text/plain';
+  } else {
+    url = 'https://www.googleapis.com/drive/v3/files/' +
+      encodeURIComponent(fileId) + '?alt=media';
+  }
+  const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+  if (!resp.ok) {
+    const text = await resp.text().catch(function() { return String(resp.status); });
+    throw new Error('drive_api_error:' + resp.status + ':' + text.slice(0, 120));
+  }
+  return await resp.text();
+}
+
 async function _driveListChildrenOfFolders(folderIds) {
   const results = new Map();
   await Promise.all(folderIds.map(async function(id) {
@@ -231,7 +253,8 @@ window.BS_GOOGLE = {
 
   drive: {
     listFolder: _driveListFolder,
-    listChildrenOfFolders: _driveListChildrenOfFolders
+    listChildrenOfFolders: _driveListChildrenOfFolders,
+    getText: _driveGetText
   },
 
   // Stubs for future service namespaces. Each gets implemented when its first

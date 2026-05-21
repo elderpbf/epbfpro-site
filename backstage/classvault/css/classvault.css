@@ -61,7 +61,9 @@ body.cv-focus.cv-focus--top .bs-topbar {
 }
 
 body.cv-focus .cv-shell {
-  grid-template-columns: 0 1fr;
+  /* .cv-sm is position:fixed (out of grid flow), so the only in-flow child
+     .cv-main lands in track 1. Collapse to a single 1fr column so it fills. */
+  grid-template-columns: 1fr;
 }
 body.cv-focus .cv-sm {
   position: fixed;
@@ -704,6 +706,38 @@ body.cv-focus.cv-focus--side .cv-sm {
   color: var(--text-secondary);
   font-size: 0.9rem;
   text-align: center;
+}
+
+/* Inline Slides embed with floating "open in popup" button (Drive items). */
+.cv-slides-inline {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.cv-slides-inline .cv-renderer-iframe {
+  width: 100%;
+  height: 100%;
+}
+.cv-slides-popup-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px var(--shadow);
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.cv-slides-popup-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 /* Card: structural flex column. Header is a fixed sibling above the
    scrollable body — content does NOT scroll under it. */
