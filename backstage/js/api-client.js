@@ -12,6 +12,16 @@ async function callWorker(params) {
     params.auth_token = localStorage.getItem('bs_pw_hash') || '';
   }
 
+  // Build request headers. If Google-authed, send Bearer token as primary.
+  // Worker checks Bearer first, falls back to auth_token param if absent/invalid.
+  var reqHeaders = {};
+  var googleToken = (window.BS_GOOGLE && window.BS_GOOGLE.isAuthed())
+    ? window.BS_GOOGLE.getAccessToken()
+    : null;
+  if (googleToken) {
+    reqHeaders['Authorization'] = 'Bearer ' + googleToken;
+  }
+
   var bodyJson = JSON.stringify(params);
   var payload  = encodeURIComponent(bodyJson);
   var getUrl   = WORKER_URL + '?payload=' + payload;
@@ -23,14 +33,15 @@ async function callWorker(params) {
   var resp;
   try {
     if (usePost) {
+      reqHeaders['Content-Type'] = 'application/json';
       resp = await fetch(WORKER_URL, {
         method:   'POST',
-        headers:  { 'Content-Type': 'application/json' },
+        headers:  reqHeaders,
         body:     bodyJson,
         redirect: 'follow'
       });
     } else {
-      resp = await fetch(getUrl, { redirect: 'follow' });
+      resp = await fetch(getUrl, { headers: reqHeaders, redirect: 'follow' });
     }
   } catch (netErr) {
     var netMsg = (netErr && netErr.message) ? netErr.message : String(netErr);
