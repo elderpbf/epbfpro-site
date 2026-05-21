@@ -272,39 +272,40 @@
   flex-shrink: 0;
 }
 
-/* Mark + product name as one continuous lockup. */
+/* PensoIA glyph-wordmark + page suffix lockup. */
 .bs-topbar-logo {
-  gap: 0;
+  gap: 0.6rem;
   align-items: center;
 }
 
 .bs-topbar-mark {
   display: inline-flex;
   align-items: center;
-  height: 32px;
+  height: 28px;
 }
 .bs-topbar-mark svg {
-  height: 32px;
+  height: 28px;
   width: auto;
   display: block;
 }
 
-/* Theme-aware mark switch via inline SVG. Light theme = mark with navy P
-   (designed for white backgrounds); dark theme = mark with white P (designed
-   for navy backgrounds). Both rendered, CSS hides one. */
+/* Theme-aware wordmark switch via inline SVG. Light theme = navy P + navy
+   "enso" + teal "IA"; dark theme = white P + white "enso" + teal "IA". Both
+   rendered, CSS hides one based on the active theme. */
 .bs-topbar-logo-dark { display: none; }
 [data-theme="dark"] .bs-topbar-logo-light { display: none; }
 [data-theme="dark"] .bs-topbar-logo-dark { display: inline-flex; }
 
 .bs-topbar-name {
   font-family: 'Comfortaa', 'Inter', sans-serif;
-  font-size: 1.4rem;
-  font-weight: 400;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
-  /* Tight lockup: text continues the mark P with minimal gap. */
-  margin-left: -2px;
+  letter-spacing: -0.01em;
   line-height: 1;
+  /* Subtle separator hint via a thin border-left for visual lockup integrity. */
+  padding-left: 0.65rem;
+  border-left: 1px solid var(--border, rgba(255,255,255,0.16));
 }
 
 .bs-topbar-spacer { flex: 1; }

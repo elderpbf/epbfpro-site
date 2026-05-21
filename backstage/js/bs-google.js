@@ -146,15 +146,38 @@ async function _driveListChildrenOfFolders(folderIds) {
 
 window.BS_GOOGLE = {
 
-  // Call once at Backstage boot. Restores cached token if still valid.
-  // Does NOT trigger a popup; silent only.
+  // Call once at Backstage boot. If we have a fresh token, returns immediately.
+  // If the stored token is missing or expired, attempts a SILENT refresh in case
+  // the user is still signed in to Google (token expired but session valid). On
+  // silent failure (signed out, never authorized, network), resolves quietly so
+  // the caller can fall through to the login screen.
   init: async function() {
-    // Nothing async needed on init for password-authed users.
-    // For Google-authed: token is in localStorage, isAuthed() is synchronous.
-    // Pre-warm the GIS token client in background so first requestToken is fast.
-    if (_getStoredEntry()) {
-      _ensureTokenClient().catch(function() {});
-    }
+    // Pre-warm GIS token client. Without it we can't even attempt silent refresh.
+    try { await _ensureTokenClient(); } catch (_) { return; }
+
+    // Fresh token already present, nothing to do.
+    if (_getStoredEntry()) return;
+
+    // Stale or absent. Attempt silent refresh.
+    await new Promise(function(resolve) {
+      if (_pendingCallback) {
+        try { _pendingCallback.reject(new Error('superseded')); } catch (_) {}
+      }
+      _pendingCallback = {
+        // Both branches resolve the init() promise. The caller checks isAuthed()
+        // after init() to decide login vs app; a failed silent refresh just
+        // means isAuthed() returns false, which is the same as never having
+        // a token in the first place.
+        resolve: function() { resolve(); },
+        reject: function() { resolve(); }
+      };
+      if (!_tokenClient) { resolve(); return; }
+      try {
+        _tokenClient.requestAccessToken({ prompt: '' });
+      } catch (_) {
+        resolve();
+      }
+    });
   },
 
   isAuthed: function() {

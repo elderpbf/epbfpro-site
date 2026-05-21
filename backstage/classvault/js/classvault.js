@@ -577,7 +577,11 @@ function _renderAulaBody(aulaItems, opts) {
 
 function _renderSubCard(item, draggable) {
   const zoneClass = _zoneClassFor(item.type);
-  const icon = item.type_icon || _zoneIconFor(item.type);
+  // BSTypeIcon (utils.js) returns a text-presentation Unicode glyph for known
+  // types so the icon inherits the zone color via CSS, instead of clashing as
+  // a multi-color emoji from the legacy ct_types.icon DB values. Falls back to
+  // the DB icon (or _zoneIconFor) for any type without an override.
+  const icon = (window.BSTypeIcon ? BSTypeIcon(item.type, item.type_icon || _zoneIconFor(item.type)) : (item.type_icon || _zoneIconFor(item.type)));
   const dragAttrs = draggable ? ' draggable="true" data-draggable="1"' : '';
   return (
     '<div class="sub' + (draggable ? ' sub--draggable' : '') + '"' +
