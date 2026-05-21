@@ -78,4 +78,49 @@ document.addEventListener('keydown', function(e) {
   if (btn && !btn.disabled) btn.click();
 });
 
+// ============================================================
+// BSTypeIcon: map item type slug to a text-presentation Unicode glyph.
+// Used by item sub-cards in ClassVault (and any other Backstage list view that
+// shows type icons) to ensure the icon inherits the zone color via CSS instead
+// of rendering as a multi-color emoji that clashes with the zone background.
+// Falls back to the caller-provided fallback (usually the legacy emoji from the
+// DB) for unknown types.
+// ============================================================
+window.BSTypeIcon = function(typeSlug, fallback) {
+  var glyphs = {
+    // Content-type items
+    prompt:        '¶',  // ¶  paragraph (prompt body)
+    apostila:      '¶',  // ¶
+    material:      '¶',  // ¶
+    paper:         '¶',  // ¶
+    conteudo:      '¶',  // ¶
+    leitura:       '☰',  // ☰  text lines
+    resumo:        '≡',  // ≡  triple bar (summary)
+    exemplo:       '✦',  // ✦  sparkle (example)
+    dica:          '★',  // ★  star (tip)
+    instrucao:     '✓',  // ✓  check (instruction)
+    exercicio:     '✎',  // ✎  pencil
+    guide:         '★',  // ★
+
+    // Task-type items
+    tarefa:        '✓',  // ✓
+    model_info:    '◉',  // ◉
+
+    // Media + external resources
+    video:         '▸',  // ▸  play (text-presentation triangle)
+    slide:         '▦',  // ▦  grid
+    embed:         '⚙',  // ⚙
+    popup_url:     '✦',  // ✦
+    llm:           '◉',  // ◉
+    link:          '◆',  // ◆
+    recurso:       '◆',  // ◆
+    configuracao:  '⚙',  // ⚙
+
+    // Drive mirror items (Phase 5)
+    drive_file:    '◆',  // ◆
+    drive_folder:  '▦'   // ▦
+  };
+  return glyphs[typeSlug] || fallback || '•'; // • bullet as last resort
+};
+
 if (typeof module !== 'undefined') module.exports = { escHtml, parseCSV, parseCSVLine, LETTERS, stripOptPrefix, hashPw };

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LaudoAI · Laudo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Sidebar -->
+<aside class="fixed inset-y-0 left-0 w-60 bg-slate-900 text-slate-100 flex flex-col">
+  <div class="h-16 flex items-center px-5 border-b border-slate-800">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex w-8 h-8 items-center justify-center rounded-lg bg-cyan-700">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      </span>
+      <span class="font-semibold text-lg tracking-tight">LaudoAI</span>
+    </div>
+  </div>
+  <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
+    <a href="index.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12 12 3l9 9M5 10.5V21h14V10.5"/></svg>
+      Dashboard
+    </a>
+    <a href="novo-laudo.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      Novo Laudo
+    </a>
+    <a href="mascaras.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
+      Máscaras
+    </a>
+    <a href="historico.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+      Histórico
+    </a>
+    <a href="configuracoes.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.094c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.388.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.27 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.205.108l-.737.527a1.125 1.125 0 0 1-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.203-.165-.398-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+      Configurações
+    </a>
+    <a href="planos.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+      Planos
+    </a>
+  </nav>
+  <div class="px-4 py-3 border-t border-slate-800 text-xs text-slate-400">
+    v0.1 · pré-lançamento
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="ml-60 min-h-screen flex flex-col">
+
+  <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+    <div class="text-sm text-slate-500">
+      <a href="index.html" class="hover:text-slate-700">Dashboard</a>
+      <span class="mx-2 text-slate-300">/</span>
+      <a href="historico.html" class="hover:text-slate-700">Histórico</a>
+      <span class="mx-2 text-slate-300">/</span>
+      <span class="text-slate-800 font-medium">Laudo #20264-7</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 text-sm hover:bg-slate-50">
+        <span>PT</span><span>🇧🇷</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+      </button>
+      <div class="flex items-center gap-3">
+        <div class="text-right leading-tight">
+          <div class="text-sm font-medium text-slate-800">Dr. Rafael Bariani</div>
+          <div class="text-xs text-slate-500">CRM-SE 12345</div>
+        </div>
+        <div class="w-9 h-9 rounded-full bg-cyan-700 text-white font-semibold flex items-center justify-center">RB</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 px-8 py-8 pb-28">
+
+    <!-- Header row: status + actions -->
+    <div class="flex items-start justify-between mb-6 flex-wrap gap-4">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="badge badge-warn">● Rascunho</span>
+          <span class="text-xs text-slate-500">Salvo automaticamente · 17/05/2026 09:42</span>
+        </div>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">CT Tórax sem contraste</h1>
+        <p class="text-sm text-slate-500 mt-1">Máscara: <span class="text-slate-700 font-medium">CT Tórax sem contraste · Hospital São Lucas</span></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15M9 12l3 3m0 0 3-3m-3 3V2.25"/></svg>
+          Baixar PDF
+        </button>
+        <a href="editor-com-ai.html" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/></svg>
+          Editar
+        </a>
+        <a href="assinar.html" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-sm font-medium shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+          Assinar e emitir
+        </a>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Laudo body (read-only) -->
+      <div class="lg:col-span-2 pdf-page p-10">
+
+        <header class="border-b border-slate-200 pb-5 mb-6 flex items-start justify-between">
+          <div>
+            <div class="text-xs text-slate-500">Hospital São Lucas · Centro de Diagnóstico por Imagem</div>
+            <h2 class="font-semibold text-lg text-slate-900 mt-1">Laudo de Tomografia Computadorizada</h2>
+          </div>
+          <div class="text-right text-xs text-slate-500 leading-relaxed">
+            <div>Estudo: <strong class="text-slate-700">#20264-7</strong></div>
+            <div>Data: 17/05/2026</div>
+            <div>Solicitante: Dr. P. Almeida</div>
+          </div>
+        </header>
+
+        <div class="space-y-4 text-[15px] leading-relaxed text-slate-800">
+
+          <div class="grid grid-cols-3 gap-3 text-sm bg-slate-50 rounded-lg p-4 mb-2">
+            <div>
+              <div class="text-xs text-slate-500 uppercase tracking-wide">Paciente</div>
+              <div class="font-medium">Maria Silva Santos</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 uppercase tracking-wide">Idade</div>
+              <div class="font-medium">54 anos</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 uppercase tracking-wide">Exame</div>
+              <div class="font-medium">CT Tórax sem contraste</div>
+            </div>
+          </div>
+
+          <section>
+            <h3 class="font-semibold text-slate-900 mb-1">Indicação clínica</h3>
+            <p>Dor torácica em investigação.</p>
+          </section>
+
+          <section>
+            <h3 class="font-semibold text-slate-900 mb-1">Técnica</h3>
+            <p>Aquisição helicoidal multidetectores, cortes axiais de 1,25 mm, com reformatações coronais e sagitais, sem administração de contraste iodado.</p>
+          </section>
+
+          <section>
+            <h3 class="font-semibold text-slate-900 mb-1">Achados</h3>
+            <p>Parênquima pulmonar com transparência preservada bilateralmente. Ausência de consolidações, nódulos ou massas. Não se observa derrame pleural ou pneumotórax.</p>
+            <p class="mt-2">Traqueia e brônquios principais pérvios, de calibre conservado. Mediastino centrado, com estruturas vasculares de morfologia habitual. Não há linfonodomegalias mediastinais ou hilares de dimensões significativas.</p>
+            <p class="mt-2">Pleuras de espessura normal. Comparado ao estudo prévio de 12/03/2026, observa-se redução do nódulo pulmonar do lobo superior direito, atualmente medindo 6 mm (previamente 8 mm).</p>
+            <p class="mt-2">Estruturas ósseas avaliadas sem alterações relevantes. Partes moles da parede torácica preservadas.</p>
+          </section>
+
+          <section>
+            <h3 class="font-semibold text-slate-900 mb-1">Conclusão</h3>
+            <p>Tomografia de tórax sem alterações pulmonares ou mediastinais agudas. Nódulo pulmonar conhecido em LSD em redução, sugerindo evolução benigna. Sugere-se seguimento conforme protocolo Fleischner.</p>
+          </section>
+
+          <footer class="mt-8 pt-5 border-t border-dashed border-slate-200 text-xs text-slate-500 italic">
+            Rascunho não assinado · Sem validade jurídica até a aplicação da assinatura digital ICP-Brasil.
+          </footer>
+
+        </div>
+      </div>
+
+      <!-- Side panel: metadata + history -->
+      <div class="space-y-5">
+
+        <!-- Metadata -->
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-5 py-4 border-b border-slate-200">
+            <h3 class="font-semibold text-slate-900">Detalhes do laudo</h3>
+          </div>
+          <dl class="p-5 space-y-3 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-slate-500">ID</dt>
+              <dd class="text-slate-800 font-mono text-xs">lau_3vK8nM2Q</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-slate-500">Status</dt>
+              <dd><span class="badge badge-warn">● Rascunho</span></dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-slate-500">Criado em</dt>
+              <dd class="text-slate-800">17/05/2026 09:38</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-slate-500">Atualizado</dt>
+              <dd class="text-slate-800">17/05/2026 09:42</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-slate-500">Máscara</dt>
+              <dd class="text-slate-800 text-right">CT Tórax sem<br/>contraste</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-slate-500">Instituição</dt>
+              <dd class="text-slate-800 text-right">Hospital<br/>São Lucas</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- ICP-Brasil status -->
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-cyan-700"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+            <h3 class="font-semibold text-slate-900">Pronto para assinar</h3>
+          </div>
+          <p class="text-sm text-slate-500">Vidaas A3 nuvem · válido até 2029-04</p>
+          <a href="assinar.html" class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-700 hover:text-cyan-800">
+            Ir para assinatura
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+          </a>
+        </div>
+
+        <!-- Activity -->
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-5 py-4 border-b border-slate-200">
+            <h3 class="font-semibold text-slate-900">Atividade</h3>
+          </div>
+          <ol class="p-5 space-y-4 text-sm relative">
+            <li class="flex gap-3">
+              <div class="w-2 h-2 rounded-full bg-cyan-600 mt-1.5 flex-shrink-0"></div>
+              <div>
+                <div class="font-medium text-slate-800">Rascunho atualizado</div>
+                <div class="text-xs text-slate-500">17/05/2026 09:42</div>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <div class="w-2 h-2 rounded-full bg-slate-300 mt-1.5 flex-shrink-0"></div>
+              <div>
+                <div class="font-medium text-slate-800">Máscara carregada</div>
+                <div class="text-xs text-slate-500">17/05/2026 09:38 · CT Tórax sem contraste</div>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <div class="w-2 h-2 rounded-full bg-slate-300 mt-1.5 flex-shrink-0"></div>
+              <div>
+                <div class="font-medium text-slate-800">Laudo criado</div>
+                <div class="text-xs text-slate-500">17/05/2026 09:38 · Dr. Rafael Bariani</div>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

@@ -141,6 +141,62 @@
 .bs-auth-btn:hover { opacity: .9; transform: translateY(-1px); }
 .bs-auth-btn:active { transform: translateY(0); }
 
+/* Google sign-in: white button, multi-color logo. Standard Google look. */
+.bs-auth-btn--google {
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.bs-auth-btn--google:hover {
+  background: #f8f9fa;
+  opacity: 1;
+  border-color: rgba(0, 0, 0, 0.25);
+}
+[data-theme="dark"] .bs-auth-btn--google {
+  background: #2a2a2a;
+  color: #e8eaed;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+[data-theme="dark"] .bs-auth-btn--google:hover {
+  background: #353535;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Divider above the password fallback toggle. */
+.bs-auth-divider {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  text-align: center;
+  border-top: 1px solid rgba(20, 184, 166, 0.12);
+}
+[data-theme="dark"] .bs-auth-divider {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Subtle text-link toggle for revealing the password input. */
+.bs-auth-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color .15s;
+}
+.bs-auth-toggle:hover {
+  color: var(--text-primary);
+}
+
 /* =========================================================
    APP SHELL
    ========================================================= */
@@ -216,34 +272,40 @@
   flex-shrink: 0;
 }
 
-.bs-topbar-logo img {
-  height: 36px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  border-radius: 8px;
-  padding: 3px;
+/* PensoIA glyph-wordmark + page suffix lockup. */
+.bs-topbar-logo {
+  gap: 0.6rem;
+  align-items: center;
 }
 
-.bs-topbar-wordmark {
-  display: flex; flex-direction: column; line-height: 1;
+.bs-topbar-mark {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+}
+.bs-topbar-mark svg {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 
-.bs-topbar-brand {
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  letter-spacing: 0.04em;
-}
-
-.bs-topbar-wordmark-link {
-  display: flex; align-items: center;
-  text-decoration: none;
-}
+/* Theme-aware wordmark switch via inline SVG. Light theme = navy P + navy
+   "enso" + teal "IA"; dark theme = white P + white "enso" + teal "IA". Both
+   rendered, CSS hides one based on the active theme. */
+.bs-topbar-logo-dark { display: none; }
+[data-theme="dark"] .bs-topbar-logo-light { display: none; }
+[data-theme="dark"] .bs-topbar-logo-dark { display: inline-flex; }
 
 .bs-topbar-name {
+  font-family: 'Comfortaa', 'Inter', sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  /* Subtle separator hint via a thin border-left for visual lockup integrity. */
+  padding-left: 0.65rem;
+  border-left: 1px solid var(--border, rgba(255,255,255,0.16));
 }
 
 .bs-topbar-spacer { flex: 1; }
@@ -419,6 +481,6 @@
 
 @media (max-width: 600px) {
   .bs-main { padding: 1.5rem 1rem; }
-  .bs-topbar-wordmark { display: none; }
+  .bs-topbar-name { font-size: 1rem; }
   .bs-tool-grid { grid-template-columns: 1fr; }
 }

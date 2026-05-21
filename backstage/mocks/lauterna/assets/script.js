@@ -1,4 +1,4 @@
-// Lauterna mockup — interactivity (vanilla JS, no deps)
+// LaudoAI mockup — interactivity (vanilla JS, no deps)
 
 (function () {
   'use strict';
@@ -68,4 +68,65 @@
       if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
     });
   }
+
+  // ----- editor-com-ai.html: accept/reject AI suggestion pills -----
+  document.querySelectorAll('[data-ai-accept]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const container = btn.closest('[data-ai-suggestion]');
+      if (!container) return;
+      const anchor = container.querySelector('.ai-anchor');
+      if (anchor) {
+        anchor.style.background = '#d1fae5';
+        anchor.style.borderBottom = 'none';
+      }
+      container.querySelector('.ai-actions')?.remove();
+      container.querySelector('[data-ai-popover]')?.remove();
+    });
+  });
+
+  document.querySelectorAll('[data-ai-reject]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const container = btn.closest('[data-ai-suggestion]');
+      if (!container) return;
+      const anchor = container.querySelector('.ai-anchor');
+      if (anchor) {
+        anchor.style.background = 'transparent';
+        anchor.style.borderBottom = 'none';
+      }
+      container.querySelector('.ai-actions')?.remove();
+      container.querySelector('[data-ai-popover]')?.remove();
+    });
+  });
+
+  // editor-com-ai.html: dismiss block-level proposed paragraphs
+  document.querySelectorAll('[data-ai-dismiss]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.closest('.ai-proposed')?.remove();
+    });
+  });
+  document.querySelectorAll('[data-ai-accept-block]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const block = btn.closest('.ai-proposed');
+      if (!block) return;
+      block.style.background = '#ecfdf5';
+      block.style.borderLeftColor = '#10b981';
+      const badge = block.querySelector('.ai-proposed-actions');
+      if (badge) badge.innerHTML = '<span class="text-xs text-emerald-700 font-medium inline-flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>Aceito</span>';
+    });
+  });
+
+  // editor-com-ai.html: toggle popover on inline anchor
+  document.querySelectorAll('[data-ai-suggestion] .ai-anchor').forEach((anchor) => {
+    anchor.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const container = anchor.closest('[data-ai-suggestion]');
+      const popover = container?.querySelector('[data-ai-popover]');
+      if (popover) popover.classList.toggle('hidden');
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('[data-ai-popover]:not(.hidden)').forEach((p) => p.classList.add('hidden'));
+  });
 })();

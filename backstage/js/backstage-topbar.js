@@ -90,33 +90,50 @@ window.Topbar = (function() {
       _inner.appendChild(back);
     }
 
-    // Logo image (always links to pensoia.com)
-    var logo = document.createElement('a');
-    logo.href = 'https://pensoia.com';
-    logo.className = 'bs-topbar-logo';
-    logo.setAttribute('aria-label', 'PensoIA');
-    var img = document.createElement('img');
-    img.src = '/images/logo.png';
-    img.alt = 'PensoIA';
-    logo.appendChild(img);
-    _inner.appendChild(logo);
+    // Full glyph-wordmark (PensoIA lockup) + page-specific suffix. Two theme
+    // variants of the wordmark in DOM, CSS hides one based on data-theme. Suffix
+    // is just the distinguishing part of the product name (PensoCodex -> Codex,
+    // PensoNexo -> Nexo). Non-Penso products show their full name.
+    var brand = document.createElement('a');
+    brand.href = backLink || 'https://pensoia.com';
+    brand.className = 'bs-topbar-logo';
+    brand.setAttribute('aria-label', 'PensoIA — ' + (subtitle || title));
 
-    // Wordmark (links to backLink or pensoia.com)
-    var wordmarkLink = document.createElement('a');
-    wordmarkLink.href = backLink || 'https://pensoia.com';
-    wordmarkLink.className = 'bs-topbar-wordmark-link';
-    var wordmark = document.createElement('div');
-    wordmark.className = 'bs-topbar-wordmark';
-    var brand = document.createElement('span');
-    brand.className = 'bs-topbar-brand';
-    brand.textContent = isPresentation ? title : (subtitle ? title : 'PensoIA');
-    wordmark.appendChild(brand);
-    var name = document.createElement('span');
-    name.className = 'bs-topbar-name';
-    name.textContent = subtitle || title;
-    wordmark.appendChild(name);
-    wordmarkLink.appendChild(wordmark);
-    _inner.appendChild(wordmarkLink);
+    var displayName = subtitle || title;
+    var suffix;
+    if (displayName.indexOf('Penso') === 0) {
+      // Wordmark already says "PensoIA"; show only the differentiator.
+      suffix = displayName.slice(5);  // "PensoCodex" -> "Codex"
+    } else {
+      // Non-Penso product (ClassForge, TypeDrill); show the full name beside
+      // the brand wordmark.
+      suffix = displayName;
+    }
+
+    var wmLight = document.createElement('span');
+    wmLight.className = 'bs-topbar-logo-light bs-topbar-mark';
+    wmLight.setAttribute('aria-hidden', 'true');
+    if (window.glyphWordmark && window.stdColors) {
+      wmLight.innerHTML = window.glyphWordmark(window.stdColors('white'));
+    }
+    brand.appendChild(wmLight);
+
+    var wmDark = document.createElement('span');
+    wmDark.className = 'bs-topbar-logo-dark bs-topbar-mark';
+    wmDark.setAttribute('aria-hidden', 'true');
+    if (window.glyphWordmark && window.stdColors) {
+      wmDark.innerHTML = window.glyphWordmark(window.stdColors('navy'));
+    }
+    brand.appendChild(wmDark);
+
+    if (suffix) {
+      var suffixEl = document.createElement('span');
+      suffixEl.className = 'bs-topbar-name';
+      suffixEl.textContent = suffix;
+      brand.appendChild(suffixEl);
+    }
+
+    _inner.appendChild(brand);
 
     // Spacer
     var spacer = document.createElement('div');

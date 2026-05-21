@@ -43,6 +43,40 @@
   height: 100%;
 }
 
+/* ── Focus mode (cv-focus-mode.js) ────────────────────────────
+   Body.cv-focus hides the topbar + sidebar; reveal classes
+   (cv-focus--top, cv-focus--side) slide each one back in. */
+
+body.cv-focus .bs-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9900;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cv-focus.cv-focus--top .bs-topbar {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+body.cv-focus .cv-shell {
+  grid-template-columns: 0 1fr;
+}
+body.cv-focus .cv-sm {
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  width: 340px;
+  z-index: 9800;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+body.cv-focus.cv-focus--side .cv-sm {
+  transform: translateX(0);
+  box-shadow: 4px 0 16px var(--shadow);
+}
+
 /* ── Sidebar (side menu) ──────────────────────────────────── */
 
 .cv-sm {

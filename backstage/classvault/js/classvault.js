@@ -10,6 +10,7 @@ window.Topbar.init({
   subtitle: 'PensoCodex',
   backLink: '/backstage/',
 });
+if (window.CVFocusMode) CVFocusMode.init();
 
 window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
@@ -22,7 +23,8 @@ ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for acti
 ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
 ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
 ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
-ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive']);    // top-level sections collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
+ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive']);    // all sections (top-level + sub) collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
+ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive']);    // tracks which keys we've already initialized as collapsed; prevents re-collapsing after user expand
 // Phase 5: Drive Mirror — synthetic items fetched browser-side via GIS token client.
 ClassVault.driveItems = [];                  // synthetic Drive items (id prefixed with 'drive:')
 ClassVault.activeItemId = null;
@@ -285,6 +287,7 @@ function _renderVaultGroups(items) {
   return tagKeys.map(tagKey => {
     const groupItems = tagKey === '__untagged__' ? untagged : byTag.get(tagKey);
     const subKey = 'tag:' + tagKey;
+    _seedCollapsedSubsection(subKey);
     const isCollapsed = ClassVault.collapsedSections.has(subKey);
     const headerLabel = tagKey === '__untagged__' ? 'Sem tag' : '#' + tagKey;
     return (
@@ -319,6 +322,7 @@ function _renderTrilhaGroups(items) {
   return keys.map(k => {
     const groupItems = groups.get(k);
     const subKey = 'trilha-aula:' + k;
+    _seedCollapsedSubsection(subKey);
     const isCollapsed = ClassVault.collapsedSections.has(subKey);
     const headerLabel = k === '__none__' ? 'Sem aula' : 'Aula ' + k;
     return (
@@ -363,8 +367,9 @@ function _renderDriveSectionOnly() {
 function _renderDriveSection() {
   const key = 'drive';
   const isCollapsed = ClassVault.collapsedSections.has(key);
-  const authed = window.CVDriveSync && CVDriveSync.isAuthed();
-  const pending = window.CVDriveSync && CVDriveSync.isPending();
+  // Google-authed: Drive syncs automatically at boot (no CTA needed).
+  // Password-authed: show a small "Conectar para sincronizar Drive" prompt.
+  const googleAuthed = window.BS_GOOGLE && window.BS_GOOGLE.isAuthed();
   const count = ClassVault.driveItems.length;
 
   const headerHtml =
@@ -379,18 +384,18 @@ function _renderDriveSection() {
 
   let bodyHtml = '';
   if (!isCollapsed) {
-    if (pending) {
-      bodyHtml =
-        '<div class="cv-sm-empty cv-sm-empty--inline cv-drive-auth-prompt">' +
-          'Configuração OAuth pendente. Aguardando Client ID do Google Cloud Console.' +
-        '</div>';
-    } else if (!authed || count === 0) {
-      bodyHtml =
-        '<div class="cv-sm-empty cv-sm-empty--inline cv-drive-auth-prompt">' +
-          '<button type="button" class="cv-drive-connect-btn" data-drive-action="connect">Conectar Drive</button>' +
-        '</div>';
-    } else {
+    if (googleAuthed && count > 0) {
+      // Happy path: Google-authed and items loaded.
       bodyHtml = _renderDriveGroups(ClassVault.driveItems);
+    } else if (googleAuthed && count === 0) {
+      // Google-authed but no items yet (sync in progress or empty folder).
+      bodyHtml = '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum arquivo encontrado na pasta Drive.</div>';
+    } else {
+      // Password-authed (or not authed at all): show upgrade prompt.
+      bodyHtml =
+        '<div class="cv-sm-empty cv-sm-empty--inline cv-drive-auth-prompt">' +
+          '<button type="button" class="cv-drive-connect-btn" data-drive-action="connect">Conectar para sincronizar Drive</button>' +
+        '</div>';
     }
   }
 
@@ -419,6 +424,7 @@ function _renderDriveGroups(items) {
   return groups.map(function(groupKey) {
     const groupItems = groupMap.get(groupKey);
     const subKey = 'drive-folder:' + groupKey;
+    _seedCollapsedSubsection(subKey);
     const isCollapsed = ClassVault.collapsedSections.has(subKey);
     const headerLabel = groupKey === '__raiz__' ? '📁 (raiz)' : groupKey;
     return (
@@ -572,7 +578,11 @@ function _renderAulaBody(aulaItems, opts) {
 
 function _renderSubCard(item, draggable) {
   const zoneClass = _zoneClassFor(item.type);
-  const icon = item.type_icon || _zoneIconFor(item.type);
+  // BSTypeIcon (utils.js) returns a text-presentation Unicode glyph for known
+  // types so the icon inherits the zone color via CSS, instead of clashing as
+  // a multi-color emoji from the legacy ct_types.icon DB values. Falls back to
+  // the DB icon (or _zoneIconFor) for any type without an override.
+  const icon = (window.BSTypeIcon ? BSTypeIcon(item.type, item.type_icon || _zoneIconFor(item.type)) : (item.type_icon || _zoneIconFor(item.type)));
   const dragAttrs = draggable ? ' draggable="true" data-draggable="1"' : '';
   return (
     '<div class="sub' + (draggable ? ' sub--draggable' : '') + '"' +
@@ -1464,6 +1474,15 @@ function _initials(t) {
   const words = src.trim().split(/\s+/).slice(0, 2);
   const out = words.map(w => (w[0] || '').toUpperCase()).join('');
   return out || '?';
+}
+
+// Seed a sub-section key as collapsed the first time we see it (per session).
+// If user later expands and we hit a re-render, _seededCollapsedKeys retains
+// the key so we don't re-collapse over their choice.
+function _seedCollapsedSubsection(key) {
+  if (ClassVault._seededCollapsedKeys.has(key)) return;
+  ClassVault._seededCollapsedKeys.add(key);
+  ClassVault.collapsedSections.add(key);
 }
 
 function _esc(s) {

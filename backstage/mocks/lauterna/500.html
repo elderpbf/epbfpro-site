@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LaudoAI · Algo deu errado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Sidebar -->
+<aside class="fixed inset-y-0 left-0 w-60 bg-slate-900 text-slate-100 flex flex-col">
+  <div class="h-16 flex items-center px-5 border-b border-slate-800">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex w-8 h-8 items-center justify-center rounded-lg bg-cyan-700">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      </span>
+      <span class="font-semibold text-lg tracking-tight">LaudoAI</span>
+    </div>
+  </div>
+  <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
+    <a href="index.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12 12 3l9 9M5 10.5V21h14V10.5"/></svg>
+      Dashboard
+    </a>
+    <a href="novo-laudo.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      Novo Laudo
+    </a>
+    <a href="mascaras.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
+      Máscaras
+    </a>
+    <a href="historico.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+      Histórico
+    </a>
+    <a href="configuracoes.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.094c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.388.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.27 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.205.108l-.737.527a1.125 1.125 0 0 1-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.203-.165-.398-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+      Configurações
+    </a>
+    <a href="planos.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+      Planos
+    </a>
+  </nav>
+  <div class="px-4 py-3 border-t border-slate-800 text-xs text-slate-400">
+    v0.1 · pré-lançamento
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="ml-60 min-h-screen flex flex-col">
+
+  <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+    <div class="text-sm text-slate-500">Erro</div>
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="text-right leading-tight">
+          <div class="text-sm font-medium text-slate-800">Dr. Rafael Bariani</div>
+          <div class="text-xs text-slate-500">CRM-SE 12345</div>
+        </div>
+        <div class="w-9 h-9 rounded-full bg-cyan-700 text-white font-semibold flex items-center justify-center">RB</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-center justify-center px-8 py-16">
+    <div class="text-center max-w-md">
+
+      <div class="mx-auto w-20 h-20 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-10 h-10"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+      </div>
+
+      <div class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">Erro 500</div>
+      <h1 class="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">Algo deu errado do nosso lado</h1>
+      <p class="text-slate-500 mt-3 leading-relaxed">
+        Tivemos um problema interno ao processar sua solicitação. Nada do seu trabalho foi perdido: seus laudos em rascunho continuam salvos.
+      </p>
+
+      <div class="mt-8 flex items-center justify-center gap-3 flex-wrap">
+        <button onclick="location.reload()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg font-medium shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+          Tentar novamente
+        </button>
+        <a href="index.html" class="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-300 text-slate-700 hover:bg-white rounded-lg font-medium">
+          Ir ao dashboard
+        </a>
+      </div>
+
+      <!-- Error metadata + status link -->
+      <div class="mt-10 pt-8 border-t border-slate-200 space-y-3">
+        <div class="bg-white border border-slate-200 rounded-lg px-4 py-3 text-left text-xs">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold text-slate-700">ID do incidente</span>
+            <button class="text-cyan-700 hover:text-cyan-800 font-medium">Copiar</button>
+          </div>
+          <code class="block text-slate-500 font-mono">err_3KP8nM2QvR_2026-05-21T14:32:18Z</code>
+          <div class="text-slate-400 mt-1.5">Inclua este ID ao falar com o suporte.</div>
+        </div>
+
+        <div class="flex items-center justify-center gap-5 text-sm">
+          <a href="#" class="text-cyan-700 hover:text-cyan-800 font-medium inline-flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3"/></svg>
+            Status do sistema
+          </a>
+          <a href="#" class="text-slate-500 hover:text-slate-700 inline-flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+            Falar com suporte
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

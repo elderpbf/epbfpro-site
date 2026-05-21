@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LaudoAI · Configurações</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Sidebar -->
+<aside class="fixed inset-y-0 left-0 w-60 bg-slate-900 text-slate-100 flex flex-col">
+  <div class="h-16 flex items-center px-5 border-b border-slate-800">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex w-8 h-8 items-center justify-center rounded-lg bg-cyan-700">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      </span>
+      <span class="font-semibold text-lg tracking-tight">LaudoAI</span>
+    </div>
+  </div>
+  <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
+    <a href="index.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12 12 3l9 9M5 10.5V21h14V10.5"/></svg>
+      Dashboard
+    </a>
+    <a href="novo-laudo.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5a6 6 0 0 0-12 0v1.5a6 6 0 0 0 6 6Zm0 0v3m-3 0h6"/></svg>
+      Novo Laudo
+    </a>
+    <a href="mascaras.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
+      Máscaras
+    </a>
+    <a href="historico.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+      Histórico
+    </a>
+    <a href="configuracoes.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.094c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.388.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.27 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.205.108l-.737.527a1.125 1.125 0 0 1-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.203-.165-.398-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+      Configurações
+    </a>
+    <a href="planos.html" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+      Planos
+    </a>
+  </nav>
+  <div class="px-4 py-3 border-t border-slate-800 text-xs text-slate-400">
+    v0.1 · pré-lançamento
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="ml-60 min-h-screen flex flex-col">
+
+  <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+    <div class="text-sm text-slate-500">Configurações</div>
+    <div class="flex items-center gap-4">
+      <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 text-sm hover:bg-slate-50">
+        <span>PT</span><span>🇧🇷</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+      </button>
+      <div class="flex items-center gap-3">
+        <div class="text-right leading-tight">
+          <div class="text-sm font-medium text-slate-800">Dr. Rafael Bariani</div>
+          <div class="text-xs text-slate-500">CRM-SE 12345</div>
+        </div>
+        <div class="w-9 h-9 rounded-full bg-cyan-700 text-white font-semibold flex items-center justify-center">RB</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 px-8 py-8">
+
+    <!-- Page header -->
+    <div class="mb-6">
+      <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Configurações</h1>
+      <p class="text-sm text-slate-500 mt-1">Perfil, segurança, certificado digital, integrações e plano.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+      <!-- Section nav (left rail) -->
+      <aside class="lg:col-span-1">
+        <nav class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <a href="#perfil" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-cyan-700 bg-cyan-50 border-l-2 border-cyan-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
+            Perfil
+          </a>
+          <a href="#seguranca" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border-l-2 border-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+            Segurança
+          </a>
+          <a href="#icp" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border-l-2 border-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+            ICP-Brasil
+          </a>
+          <a href="#integracoes" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border-l-2 border-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6Z"/></svg>
+            Integrações
+          </a>
+          <a href="#notificacoes" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border-l-2 border-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+            Notificações
+          </a>
+          <a href="#idioma" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border-l-2 border-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802"/></svg>
+            Idioma
+          </a>
+          <a href="#plano" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border-l-2 border-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-slate-400"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75"/></svg>
+            Plano e cobrança
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Sections -->
+      <div class="lg:col-span-3 space-y-6">
+
+        <!-- Perfil -->
+        <section id="perfil" class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">Perfil</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Informações exibidas no rodapé do laudo assinado.</p>
+          </div>
+          <div class="p-6 space-y-4">
+
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 rounded-full bg-cyan-700 text-white text-xl font-semibold flex items-center justify-center">RB</div>
+              <div>
+                <button class="px-3 py-1.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-medium">Trocar foto</button>
+                <p class="text-xs text-slate-500 mt-1.5">PNG ou JPG até 2 MB</p>
+              </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Nome completo</label>
+                <input type="text" value="Dr. Rafael Bariani" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:border-cyan-700"/>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">E-mail</label>
+                <input type="email" value="rafael.bariani@hospital.com.br" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:border-cyan-700"/>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">CRM</label>
+                <input type="text" value="12345" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:border-cyan-700"/>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">UF do CRM</label>
+                <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                  <option>SE — Sergipe</option>
+                  <option>SP — São Paulo</option>
+                  <option>RJ — Rio de Janeiro</option>
+                  <option>MG — Minas Gerais</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Especialidade principal</label>
+                <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                  <option>Ultrassonografia</option>
+                  <option>Radiologia geral</option>
+                  <option>Tomografia / RM</option>
+                  <option>Cardiologia · Eco</option>
+                  <option>Patologia</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">RQE (opcional)</label>
+                <input type="text" placeholder="Ex: 14523" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:border-cyan-700"/>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2">
+            <button class="px-4 py-2 text-slate-600 hover:text-slate-900 rounded-lg text-sm font-medium">Cancelar</button>
+            <button class="px-4 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-sm font-medium shadow-sm">Salvar alterações</button>
+          </div>
+        </section>
+
+        <!-- Segurança -->
+        <section id="seguranca" class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">Segurança</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Sessões ativas e métodos de autenticação.</p>
+          </div>
+          <div class="p-6 space-y-5">
+
+            <div>
+              <h3 class="text-sm font-semibold text-slate-800 mb-2">Método de login</h3>
+              <div class="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <span class="w-9 h-9 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25"/></svg>
+                  </span>
+                  <div>
+                    <div class="text-sm font-medium text-slate-800">Link mágico no e-mail</div>
+                    <div class="text-xs text-slate-500">rafael.bariani@hospital.com.br</div>
+                  </div>
+                </div>
+                <span class="badge badge-success">● Ativo</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-2">Login por senha e Google em breve.</p>
+            </div>
+
+            <div>
+              <h3 class="text-sm font-semibold text-slate-800 mb-2">Sessões ativas</h3>
+              <div class="border border-slate-200 rounded-lg divide-y divide-slate-100">
+                <div class="px-4 py-3 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25"/></svg>
+                    </span>
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">Chrome · macOS · Aracaju, SE</div>
+                      <div class="text-xs text-slate-500">Sessão atual · iniciada há 2h</div>
+                    </div>
+                  </div>
+                  <span class="badge badge-success text-xs">Esta sessão</span>
+                </div>
+                <div class="px-4 py-3 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5"/></svg>
+                    </span>
+                    <div>
+                      <div class="text-sm font-medium text-slate-800">iPhone · iOS · LaudoAI mobile</div>
+                      <div class="text-xs text-slate-500">Ativo há 4h</div>
+                    </div>
+                  </div>
+                  <button class="text-xs text-rose-600 hover:text-rose-700 font-medium">Encerrar</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-200">
+              <button class="text-sm text-rose-600 hover:text-rose-700 font-medium">Encerrar todas as outras sessões</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ICP-Brasil -->
+        <section id="icp" class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">Certificado ICP-Brasil</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Certificado A3 em nuvem usado para assinar laudos.</p>
+          </div>
+          <div class="p-6">
+            <div class="border border-emerald-200 bg-emerald-50/50 rounded-xl p-5">
+              <div class="flex items-start gap-4">
+                <span class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg>
+                </span>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-semibold text-slate-900">Vidaas · A3 nuvem</h3>
+                    <span class="badge badge-success">● Ativo</span>
+                  </div>
+                  <dl class="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                    <div class="flex justify-between sm:block">
+                      <dt class="text-slate-500 text-xs">Titular</dt>
+                      <dd class="text-slate-800 font-medium">Rafael Bariani</dd>
+                    </div>
+                    <div class="flex justify-between sm:block">
+                      <dt class="text-slate-500 text-xs">CPF</dt>
+                      <dd class="text-slate-800 font-mono text-xs">***.***.***-**</dd>
+                    </div>
+                    <div class="flex justify-between sm:block">
+                      <dt class="text-slate-500 text-xs">Validade</dt>
+                      <dd class="text-slate-800 font-medium">24/04/2029</dd>
+                    </div>
+                    <div class="flex justify-between sm:block">
+                      <dt class="text-slate-500 text-xs">Autenticação</dt>
+                      <dd class="text-slate-800 font-medium">Push no app Vidaas</dd>
+                    </div>
+                  </dl>
+                  <div class="mt-4 flex items-center gap-2">
+                    <button class="px-3 py-1.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium">Reconectar</button>
+                    <button class="px-3 py-1.5 text-rose-600 hover:text-rose-700 text-xs font-medium">Desvincular</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 p-4 bg-slate-50 rounded-lg flex items-start gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/></svg>
+              <div class="text-xs text-slate-600 leading-relaxed">
+                Cada assinatura registra hash do PDF, timestamp confiável e identificador do certificado na trilha de auditoria do laudo, conforme CFM 2.454/2026 e ICP-Brasil.
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center gap-3 text-sm">
+              <button class="px-3 py-1.5 border border-cyan-700 text-cyan-700 hover:bg-cyan-50 rounded-lg text-sm font-medium">+ Adicionar Bird ID como backup</button>
+              <a href="#" class="text-xs text-slate-500 hover:text-slate-700">O que é ICP-Brasil? ↗</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Integrações -->
+        <section id="integracoes" class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">Integrações</h2>
+            <p class="text-xs text-slate-500 mt-0.5">PACS, e-mail de envio, calendário.</p>
+          </div>
+          <div class="p-6 space-y-3">
+
+            <div class="border border-slate-200 rounded-lg px-4 py-3 flex items-center gap-4">
+              <span class="w-10 h-10 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6Z"/></svg>
+              </span>
+              <div class="flex-1">
+                <div class="font-medium text-slate-800 text-sm">PACS · Pixeon Aurora</div>
+                <div class="text-xs text-slate-500">Hospital São Lucas · DICOMweb</div>
+              </div>
+              <span class="badge badge-success">● Conectado</span>
+              <button class="text-xs text-slate-500 hover:text-slate-700 font-medium ml-2">Gerenciar</button>
+            </div>
+
+            <div class="border border-slate-200 rounded-lg px-4 py-3 flex items-center gap-4">
+              <span class="w-10 h-10 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6Z"/></svg>
+              </span>
+              <div class="flex-1">
+                <div class="font-medium text-slate-800 text-sm">+ Adicionar segundo PACS</div>
+                <div class="text-xs text-slate-500">MV, Mobilemed, Carestream, qualquer DICOMweb</div>
+              </div>
+              <button class="px-3 py-1.5 text-cyan-700 hover:text-cyan-800 text-xs font-medium">Conectar</button>
+            </div>
+
+            <div class="border border-slate-200 rounded-lg px-4 py-3 flex items-center gap-4">
+              <span class="w-10 h-10 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75"/></svg>
+              </span>
+              <div class="flex-1">
+                <div class="font-medium text-slate-800 text-sm">E-mail de envio para pacientes</div>
+                <div class="text-xs text-slate-500">Padrão: laudo via Resend</div>
+              </div>
+              <span class="badge badge-neutral text-xs">Em breve</span>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Notificações -->
+        <section id="notificacoes" class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">Notificações</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Quando e como você quer ser avisado.</p>
+          </div>
+          <div class="p-6 divide-y divide-slate-100">
+
+            <div class="py-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-slate-800 text-sm">Laudo pronto para assinatura</div>
+                <div class="text-xs text-slate-500">Quando a IA termina de processar e o rascunho está pronto.</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-slate-200 rounded-full peer-checked:bg-cyan-700 transition relative">
+                  <span class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition peer-checked:translate-x-5 shadow"></span>
+                </div>
+              </label>
+            </div>
+
+            <div class="py-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-slate-800 text-sm">Achado crítico (CRIT)</div>
+                <div class="text-xs text-slate-500">Alertas urgentes de achados imagiológicos pré-flagados.</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-slate-200 rounded-full peer-checked:bg-cyan-700 transition relative">
+                  <span class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition peer-checked:translate-x-5 shadow"></span>
+                </div>
+              </label>
+            </div>
+
+            <div class="py-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-slate-800 text-sm">Resumo diário</div>
+                <div class="text-xs text-slate-500">E-mail com seus números do dia, todas as noites às 21h.</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 rounded-full peer-checked:bg-cyan-700 transition relative">
+                  <span class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition peer-checked:translate-x-5 shadow"></span>
+                </div>
+              </label>
+            </div>
+
+            <div class="py-3 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-slate-800 text-sm">Novidades do produto</div>
+                <div class="text-xs text-slate-500">Anúncios de novas features e máscaras. Máximo 1 e-mail por mês.</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-slate-200 rounded-full peer-checked:bg-cyan-700 transition relative">
+                  <span class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition peer-checked:translate-x-5 shadow"></span>
+                </div>
+              </label>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Idioma -->
+        <section id="idioma" class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">Idioma</h2>
+          </div>
+          <div class="p-6 max-w-md">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Idioma da interface</label>
+            <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+              <option>🇧🇷 Português (Brasil)</option>
+              <option>🇺🇸 English (US)</option>
+            </select>
+            <p class="text-xs text-slate-500 mt-2">O ditado e o reconhecimento de voz operam sempre em PT-BR.</p>
+          </div>
+        </section>
+
+        <!-- Plano -->
+        <section id="plano" class="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">Plano e cobrança</h2>
+          </div>
+          <div class="p-6">
+            <div class="flex items-start justify-between flex-wrap gap-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 bg-cyan-700 text-white text-xs font-semibold rounded">Pro</span>
+                  <span class="text-sm text-slate-500">· R$ 249/mês · anual</span>
+                </div>
+                <div class="text-2xl font-semibold text-slate-900 mt-2">Próxima cobrança em 12/06/2026</div>
+                <div class="text-xs text-slate-500 mt-1">Cartão Visa final 4242 · 26 dias restantes do ciclo</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <a href="planos.html" class="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-medium">Comparar planos</a>
+                <a href="planos.html" class="px-4 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-sm font-medium shadow-sm">Fazer upgrade</a>
+              </div>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-slate-200">
+              <h3 class="text-sm font-semibold text-slate-800 mb-3">Faturas recentes</h3>
+              <div class="border border-slate-200 rounded-lg divide-y divide-slate-100 text-sm">
+                <div class="px-4 py-2.5 flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-slate-800">Maio 2026</div>
+                    <div class="text-xs text-slate-500">12/05/2026 · R$ 249,00</div>
+                  </div>
+                  <a href="#" class="text-xs text-cyan-700 hover:text-cyan-800 font-medium">Baixar PDF</a>
+                </div>
+                <div class="px-4 py-2.5 flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-slate-800">Abril 2026</div>
+                    <div class="text-xs text-slate-500">12/04/2026 · R$ 249,00</div>
+                  </div>
+                  <a href="#" class="text-xs text-cyan-700 hover:text-cyan-800 font-medium">Baixar PDF</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Danger zone -->
+        <section class="bg-white border border-rose-200 rounded-xl shadow-sm">
+          <div class="px-6 py-4 border-b border-rose-200 bg-rose-50/50">
+            <h2 class="font-semibold text-rose-900">Zona de perigo</h2>
+          </div>
+          <div class="p-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div class="font-medium text-slate-800 text-sm">Excluir conta</div>
+              <div class="text-xs text-slate-500 mt-1">Os laudos assinados continuam armazenados conforme retenção legal mínima.</div>
+            </div>
+            <button class="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 rounded-lg text-sm font-medium">Excluir conta</button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>
