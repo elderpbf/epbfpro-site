@@ -1172,14 +1172,26 @@ function _renderBreadcrumb(item) {
   const located = _findItem(item.id);
   const source = located ? located.source : null;
 
-  // Phase 5: Drive items get path-only breadcrumb, no action buttons.
+  // Phase 5: Drive items get path-only breadcrumb. Drive items whose mime
+  // type is text-extractable (Google Docs, .txt, .md) also get a "Copiar
+  // texto" button; PDFs aren't supported yet (need pdf.js).
   if (source === 'drive') {
+    const dMime = (item.meta_json && item.meta_json.mimeType) || '';
+    const canCopy = _driveItemCanCopyText(dMime, item.title);
     crumb.innerHTML =
       '<span>PensoCodex</span>' +
       '<span class="cv-main-crumb-sep">/</span>' +
       '<span>Drive</span>' +
       '<span class="cv-main-crumb-sep">/</span>' +
-      '<strong>' + _esc(item.title) + '</strong>';
+      '<strong>' + _esc(item.title) + '</strong>' +
+      (canCopy
+        ? '<span class="cv-main-crumb-spacer"></span>' +
+          '<button type="button" class="cv-crumb-btn" data-action="copy-drive-text" title="Copiar texto do arquivo">📋 Copiar texto</button>'
+        : '');
+    if (canCopy) {
+      crumb.querySelector('[data-action="copy-drive-text"]')
+        .addEventListener('click', () => _copyDriveFileText(item));
+    }
     return;
   }
 
@@ -1329,6 +1341,32 @@ function _extractDriveFileId(url) {
   return m ? m[1] : '';
 }
 
+function _driveItemCanCopyText(mimeType, fileName) {
+  if (mimeType === 'application/vnd.google-apps.document') return true;
+  if (mimeType === 'text/plain' || mimeType === 'text/markdown') return true;
+  if (fileName && /\.(txt|md)$/i.test(fileName)) return true;
+  return false;
+}
+
+async function _copyDriveFileText(item) {
+  const meta = item.meta_json || {};
+  const fileId = meta.file_id;
+  const mimeType = meta.mimeType || '';
+  if (!fileId) return;
+  if (!window.BS_GOOGLE || !window.BS_GOOGLE.isAuthed()) {
+    if (window.BSToast) BSToast.show('Conecte ao Drive para copiar texto.');
+    return;
+  }
+  try {
+    const text = await BS_GOOGLE.drive.getText(fileId, mimeType);
+    await navigator.clipboard.writeText(text);
+    if (window.BSToast) BSToast.show('Texto copiado.');
+  } catch (err) {
+    const msg = (err && err.message) || 'erro desconhecido';
+    if (window.BSToast) BSToast.show('Erro ao copiar texto: ' + msg);
+  }
+}
+
 function _toVideoEmbedUrl(url) {
   const s = String(url || '');
   if (!s) return '';
@@ -1343,6 +1381,25 @@ function _toVideoEmbedUrl(url) {
 
 function _renderPopupCard(item, container) {
   const url = (item.meta_json && item.meta_json.url) || '';
+  const isDrive = String(item.id || '').startsWith('drive:');
+
+  // Drive Slides: render the /embed URL inline and keep an "open in window"
+  // affordance as a floating button. Falls back to the launcher card if the
+  // iframe is blocked (user sees a broken embed and clicks the popup button).
+  if (isDrive && url) {
+    container.innerHTML =
+      '<div class="cv-slides-inline">' +
+        '<iframe class="cv-renderer-iframe" src="' + _esc(url) + '" ' +
+          'allow="autoplay; encrypted-media; clipboard-write; fullscreen" ' +
+          'referrerpolicy="no-referrer"></iframe>' +
+        '<button type="button" class="cv-slides-popup-btn" title="Abrir em janela">↗ Janela</button>' +
+      '</div>';
+    container.querySelector('.cv-slides-popup-btn').addEventListener('click', () => {
+      if (url) _openPopup(url);
+    });
+    return;
+  }
+
   container.innerHTML =
     '<div class="cv-popup-launcher">' +
       '<h2 class="cv-popup-launcher-title">' + _esc(item.title) + '</h2>' +

@@ -8,3 +8,5 @@
 ## Cache busting
 
 Increment `?v=X.X` on CSS/JS files in `index.html` when pushing changes. Inline-script mocks (e.g. self-contained `backstage/mocks/brand/*.html`) don't need version bumps; the HTML itself isn't aggressively cached.
+
+**Favicon versioning:** All `favicon.svg` link tags must include a `?v=N` query string (e.g. `href="/favicon.svg?v=1"`). Browser favicon cache is aggressive and ignores normal hard-refresh. When the SVG changes, increment the version number across all HTML files. The `.ico` and `.png` variants don't need versioning (they are legacy fallbacks and rarely change).
