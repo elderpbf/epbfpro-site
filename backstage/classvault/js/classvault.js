@@ -22,7 +22,7 @@ ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for acti
 ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
 ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
 ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
-ClassVault.collapsedSections = new Set();    // section keys collapsed (hoje / vault / trilha / tag:X / aula:N / drive-folder:X)
+ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive']);    // top-level sections collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
 // Phase 5: Drive Mirror — synthetic items fetched browser-side via GIS token client.
 ClassVault.driveItems = [];                  // synthetic Drive items (id prefixed with 'drive:')
 ClassVault.activeItemId = null;
