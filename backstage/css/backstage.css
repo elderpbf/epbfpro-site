@@ -274,21 +274,15 @@
 
 .bs-topbar-logo img {
   height: 36px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  border-radius: 8px;
-  padding: 3px;
+  width: auto;
+  display: block;
 }
 
-.bs-topbar-wordmark {
-  display: flex; flex-direction: column; line-height: 1;
-}
-
-.bs-topbar-brand {
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  letter-spacing: 0.04em;
-}
+/* Theme-aware mark switch. Light theme shows mark_bg.white.svg (navy P);
+   dark theme shows mark_bg.navy.svg (white P). Both images in DOM, CSS hides one. */
+.bs-topbar-logo-dark { display: none; }
+[data-theme="dark"] .bs-topbar-logo-light { display: none; }
+[data-theme="dark"] .bs-topbar-logo-dark { display: block; }
 
 .bs-topbar-wordmark-link {
   display: flex; align-items: center;
@@ -296,10 +290,11 @@
 }
 
 .bs-topbar-name {
-  font-size: 1.05rem;
+  font-family: 'Comfortaa', 'Inter', sans-serif;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .bs-topbar-spacer { flex: 1; }
@@ -475,6 +470,6 @@
 
 @media (max-width: 600px) {
   .bs-main { padding: 1.5rem 1rem; }
-  .bs-topbar-wordmark { display: none; }
+  .bs-topbar-name { font-size: 1rem; }
   .bs-tool-grid { grid-template-columns: 1fr; }
 }

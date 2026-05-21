@@ -90,33 +90,33 @@ window.Topbar = (function() {
       _inner.appendChild(back);
     }
 
-    // Logo image (always links to pensoia.com)
+    // Mark (P logo). Two theme variants in DOM; CSS shows the right one.
+    // Always returns to pensoia.com (the marketing site, not /backstage/).
     var logo = document.createElement('a');
     logo.href = 'https://pensoia.com';
     logo.className = 'bs-topbar-logo';
     logo.setAttribute('aria-label', 'PensoIA');
-    var img = document.createElement('img');
-    img.src = '/images/logo.png';
-    img.alt = 'PensoIA';
-    logo.appendChild(img);
+    var imgLight = document.createElement('img');
+    imgLight.src = '/images/brand/mark_bg.white.svg';
+    imgLight.alt = 'PensoIA';
+    imgLight.className = 'bs-topbar-logo-light';
+    logo.appendChild(imgLight);
+    var imgDark = document.createElement('img');
+    imgDark.src = '/images/brand/mark_bg.navy.svg';
+    imgDark.alt = 'PensoIA';
+    imgDark.className = 'bs-topbar-logo-dark';
+    logo.appendChild(imgDark);
     _inner.appendChild(logo);
 
-    // Wordmark (links to backLink or pensoia.com)
-    var wordmarkLink = document.createElement('a');
-    wordmarkLink.href = backLink || 'https://pensoia.com';
-    wordmarkLink.className = 'bs-topbar-wordmark-link';
-    var wordmark = document.createElement('div');
-    wordmark.className = 'bs-topbar-wordmark';
-    var brand = document.createElement('span');
-    brand.className = 'bs-topbar-brand';
-    brand.textContent = isPresentation ? title : (subtitle ? title : 'PensoIA');
-    wordmark.appendChild(brand);
+    // Product name (single line, Comfortaa, links to backLink or /backstage/).
+    var nameLink = document.createElement('a');
+    nameLink.href = backLink || 'https://pensoia.com';
+    nameLink.className = 'bs-topbar-wordmark-link';
     var name = document.createElement('span');
     name.className = 'bs-topbar-name';
     name.textContent = subtitle || title;
-    wordmark.appendChild(name);
-    wordmarkLink.appendChild(wordmark);
-    _inner.appendChild(wordmarkLink);
+    nameLink.appendChild(name);
+    _inner.appendChild(nameLink);
 
     // Spacer
     var spacer = document.createElement('div');
