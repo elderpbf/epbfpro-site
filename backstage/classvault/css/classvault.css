@@ -810,3 +810,94 @@
   color: #b91c1c;
   font-size: 0.85rem;
 }
+
+/* ── Phase 5: Drive section ───────────────────────────────────── */
+
+:root {
+  --cv-drive-sync-bg: #e0f2fe;
+  --cv-drive-sync-color: #0369a1;
+  --cv-drive-sync-bg-hover: #bae6fd;
+  --cv-drive-auth-bg: #f0fdf4;
+  --cv-drive-auth-border: #bbf7d0;
+  --cv-drive-connect-bg: #14b8a6;
+  --cv-drive-connect-color: #ffffff;
+  --cv-drive-connect-bg-hover: #0d9488;
+}
+
+[data-theme="dark"] {
+  --cv-drive-sync-bg: #1e3a4f;
+  --cv-drive-sync-color: #7dd3fc;
+  --cv-drive-sync-bg-hover: #1e4a6a;
+  --cv-drive-auth-bg: #1a2e23;
+  --cv-drive-auth-border: #166534;
+  --cv-drive-connect-bg: #0d9488;
+  --cv-drive-connect-color: #ffffff;
+  --cv-drive-connect-bg-hover: #0f766e;
+}
+
+/* Wrapper div that contains the Drive section header + body. */
+.cv-sm-section--drive-wrapper {
+  display: contents;
+}
+
+/* The Drive section header is a div[role="button"] styled identically
+   to .cv-sm-section but with cursor and display already set by that class.
+   Override only what needs to differ. */
+.cv-sm-section--drive {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Sync button injected inside the Drive section header. */
+.cv-drive-sync-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: var(--cv-drive-sync-bg);
+  color: var(--cv-drive-sync-color);
+  font-size: 0.9rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cv-drive-sync-btn:hover {
+  background: var(--cv-drive-sync-bg-hover);
+  border-color: var(--cv-drive-sync-color);
+}
+
+/* Auth / pending prompt area inside the Drive section body. */
+.cv-drive-auth-prompt {
+  background: var(--cv-drive-auth-bg);
+  border: 1px solid var(--cv-drive-auth-border);
+  border-radius: 8px;
+  margin: 4px 0 8px;
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* "Conectar Drive" call-to-action button inside the auth prompt. */
+.cv-drive-connect-btn {
+  margin-top: 10px;
+  display: inline-block;
+  padding: 7px 16px;
+  background: var(--cv-drive-connect-bg);
+  color: var(--cv-drive-connect-color);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cv-drive-connect-btn:hover {
+  background: var(--cv-drive-connect-bg-hover);
+}
