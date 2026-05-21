@@ -10,6 +10,7 @@ window.Topbar.init({
   subtitle: 'PensoCodex',
   backLink: '/backstage/',
 });
+if (window.CVFocusMode) CVFocusMode.init();
 
 window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
