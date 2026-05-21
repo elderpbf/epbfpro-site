@@ -22,7 +22,9 @@ ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for acti
 ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
 ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
 ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
-ClassVault.collapsedSections = new Set();    // section keys collapsed (hoje / vault / trilha / tag:X / aula:N)
+ClassVault.collapsedSections = new Set();    // section keys collapsed (hoje / vault / trilha / tag:X / aula:N / drive-folder:X)
+// Phase 5: Drive Mirror — synthetic items fetched browser-side via GIS token client.
+ClassVault.driveItems = [];                  // synthetic Drive items (id prefixed with 'drive:')
 ClassVault.activeItemId = null;
 ClassVault._prevRenderer = null;
 ClassVault.mode = 'render';                  // 'render' | 'editor' | 'creator'
@@ -52,7 +54,9 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   _wireSidebarFooter();
   _wireItemContextMenu();
   _wireDragReorder();
-  _loadCodex();
+  // _loadCodex renders the sidebar; Drive section appends after codex resolves.
+  await _loadCodex();
+  if (window.CVDriveSync) CVDriveSync.init();
 })();
 
 function _pickAula() {
@@ -173,8 +177,14 @@ async function _loadCodex() {
   _renderSidebar();
 }
 
-// Locate an item across the three buckets. Returns null if not found.
+// Locate an item across all buckets. Returns null if not found.
+// Phase 5: string ids starting with 'drive:' look up ClassVault.driveItems (string compare).
 function _findItem(itemId) {
+  const idStr = String(itemId);
+  if (idStr.startsWith('drive:')) {
+    const it = ClassVault.driveItems.find(function(d) { return d.id === idStr; });
+    return it ? { item: it, source: 'drive' } : null;
+  }
   const idNum = Number(itemId);
   const match = (it) => Number(it.id) === idNum;
   let it = ClassVault.aulaPlanItems.find(match);
@@ -219,12 +229,18 @@ function _renderSidebar() {
     body: _renderTrilhaGroups(ClassVault.releaseItems)
   }));
 
+  // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
+  html.push(_renderDriveSection());
+
   body.innerHTML = html.join('');
 
   if (ClassVault.activeItemId != null) {
     const el = body.querySelector('.sub[data-item-id="' + ClassVault.activeItemId + '"]');
     if (el) el.classList.add('is-active');
   }
+
+  // Wire Drive section interactive buttons (sync, connect) after DOM is stamped.
+  _wireDriveSyncButton();
 }
 
 function _renderSection({ key, label, count, body }) {
@@ -316,6 +332,144 @@ function _renderTrilhaGroups(items) {
       (isCollapsed ? '' : _renderAulaBody(groupItems))
     );
   }).join('');
+}
+
+// ── Phase 5: Drive section ─────────────────────────────────────
+
+// Re-render only the Drive section (called after sync completes without
+// tearing down the full sidebar, preserving active selection).
+function _renderDriveSectionOnly() {
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+  // Find or create the Drive section placeholder.
+  let placeholder = body.querySelector('.cv-sm-section--drive-wrapper');
+  if (!placeholder) {
+    // Drive section was not in the DOM yet; fall back to full sidebar re-render.
+    _renderSidebar();
+    return;
+  }
+  placeholder.outerHTML = _renderDriveSection();
+  // Re-highlight active item if it's a Drive item.
+  if (ClassVault.activeItemId && String(ClassVault.activeItemId).startsWith('drive:')) {
+    const el = body.querySelector('.sub[data-item-id="' + ClassVault.activeItemId + '"]');
+    if (el) el.classList.add('is-active');
+  }
+  _wireDriveSyncButton();
+}
+
+// Produce the full Drive section HTML string (header + body).
+// The header uses a <div role="button"> instead of <button> so the sync button
+// (a true <button>) can be a valid child (nested buttons are invalid HTML).
+function _renderDriveSection() {
+  const key = 'drive';
+  const isCollapsed = ClassVault.collapsedSections.has(key);
+  const authed = window.CVDriveSync && CVDriveSync.isAuthed();
+  const pending = window.CVDriveSync && CVDriveSync.isPending();
+  const count = ClassVault.driveItems.length;
+
+  const headerHtml =
+    '<div role="button" tabindex="0" class="cv-sm-section cv-sm-section--drive' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+      'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
+      '<span class="cv-sm-section-chev">▾</span>' +
+      '<span>📁 Drive</span>' +
+      '<span class="cv-sm-section-line"></span>' +
+      '<button type="button" class="cv-drive-sync-btn" data-drive-action="sync" title="Sincronizar Drive" aria-label="Sincronizar Drive">↻</button>' +
+      '<span class="cv-sm-section-count">' + count + '</span>' +
+    '</div>';
+
+  let bodyHtml = '';
+  if (!isCollapsed) {
+    if (pending) {
+      bodyHtml =
+        '<div class="cv-sm-empty cv-sm-empty--inline cv-drive-auth-prompt">' +
+          'Configuração OAuth pendente. Aguardando Client ID do Google Cloud Console.' +
+        '</div>';
+    } else if (!authed || count === 0) {
+      bodyHtml =
+        '<div class="cv-sm-empty cv-sm-empty--inline cv-drive-auth-prompt">' +
+          '<button type="button" class="cv-drive-connect-btn" data-drive-action="connect">Conectar Drive</button>' +
+        '</div>';
+    } else {
+      bodyHtml = _renderDriveGroups(ClassVault.driveItems);
+    }
+  }
+
+  // Wrap in a marker element so _renderDriveSectionOnly can find and replace it.
+  return '<div class="cv-sm-section--drive-wrapper">' + headerHtml + bodyHtml + '</div>';
+}
+
+// Group Drive items by subfolder name and render subsections.
+function _renderDriveGroups(items) {
+  if (!items.length) {
+    return '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum arquivo encontrado na pasta Drive.</div>';
+  }
+
+  // Preserve group order as synthesized (groups appear in folder-appearance order).
+  const groups = [];
+  const groupMap = new Map();
+  for (const it of items) {
+    const g = it._group || '__raiz__';
+    if (!groupMap.has(g)) {
+      groupMap.set(g, []);
+      groups.push(g);
+    }
+    groupMap.get(g).push(it);
+  }
+
+  return groups.map(function(groupKey) {
+    const groupItems = groupMap.get(groupKey);
+    const subKey = 'drive-folder:' + groupKey;
+    const isCollapsed = ClassVault.collapsedSections.has(subKey);
+    const headerLabel = groupKey === '__raiz__' ? '📁 (raiz)' : groupKey;
+    return (
+      '<button type="button" class="cv-sm-subsection' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+        'data-section="' + _esc(subKey) + '" aria-expanded="' + (!isCollapsed) + '">' +
+        '<span class="cv-sm-section-chev">▾</span>' +
+        '<span>' + _esc(headerLabel) + '</span>' +
+        '<span class="cv-sm-section-line"></span>' +
+        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
+      '</button>' +
+      (isCollapsed ? '' : groupItems.map(function(it) { return _renderSubCard(it, false); }).join(''))
+    );
+  }).join('');
+}
+
+// Wire the sync button and "Conectar Drive" button after the Drive section
+// is stamped into the DOM. Called by _renderSidebar and by _renderDriveSectionOnly.
+function _wireDriveSyncButton() {
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+  const wrapper = body.querySelector('.cv-sm-section--drive-wrapper');
+  if (!wrapper) return;
+
+  // Sync button: stop propagation so the parent section header doesn't collapse.
+  const syncBtn = wrapper.querySelector('[data-drive-action="sync"]');
+  if (syncBtn) {
+    syncBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (window.CVDriveSync) CVDriveSync.syncNow();
+    });
+  }
+
+  // "Conectar Drive" CTA.
+  const connectBtn = wrapper.querySelector('[data-drive-action="connect"]');
+  if (connectBtn) {
+    connectBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (window.CVDriveSync) CVDriveSync.connect();
+    });
+  }
+
+  // Keyboard activation for the div[role="button"] Drive section header.
+  const header = wrapper.querySelector('.cv-sm-section--drive');
+  if (header) {
+    header.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        header.click();
+      }
+    });
+  }
 }
 
 // Aula picker: dropdown chip rendered in the head, next to the turma chip.
@@ -609,6 +763,8 @@ function _wireItemContextMenu() {
 }
 
 function _openContextMenu(x, y, located) {
+  // Phase 5: Drive items are non-actionable, no context menu.
+  if (located.source === 'drive') return;
   _closeContextMenu();
   const { item, source } = located;
   const items = [];
@@ -1005,6 +1161,17 @@ function _renderBreadcrumb(item) {
   const typeLabel = item.type_label || item.type;
   const located = _findItem(item.id);
   const source = located ? located.source : null;
+
+  // Phase 5: Drive items get path-only breadcrumb, no action buttons.
+  if (source === 'drive') {
+    crumb.innerHTML =
+      '<span>PensoCodex</span>' +
+      '<span class="cv-main-crumb-sep">/</span>' +
+      '<span>Drive</span>' +
+      '<span class="cv-main-crumb-sep">/</span>' +
+      '<strong>' + _esc(item.title) + '</strong>';
+    return;
+  }
 
   // Path + actions area
   let html =
