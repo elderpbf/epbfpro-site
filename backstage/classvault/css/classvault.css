@@ -403,6 +403,53 @@ body.cv-focus.cv-focus--side .cv-sm {
   background: var(--border);
 }
 
+/* Pinned slot above the .cv-sm-footer button. Holds the PensoNexo launcher
+   card so it stays visible regardless of body scroll position. */
+.cv-sm-pinned {
+  flex-shrink: 0;
+  padding: 6px 12px 0;
+  background: var(--surface);
+}
+
+/* PensoNexo brand swap: "PensoNexo · X" by default; .is-cramped (set by JS
+   when the label would overflow) collapses the brand to "Nexo · X" so the
+   session name keeps its room. */
+.cv-nexo-brand--short { display: none; }
+.cv-sm-section-label.is-cramped .cv-nexo-brand--full { display: none; }
+.cv-sm-section-label.is-cramped .cv-nexo-brand--short { display: inline; }
+
+/* PensoNexo refresh button (inside the launcher card; mirrors the Drive sync
+   button styling but in the section's indigo tone). */
+.cv-nexo-refresh-btn {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: color-mix(in oklab, var(--sec, var(--primary)) 14%, transparent);
+  color: var(--sec, var(--primary));
+  font-size: 0.85rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cv-nexo-refresh-btn:hover {
+  background: color-mix(in oklab, var(--sec, var(--primary)) 25%, transparent);
+  border-color: var(--sec, var(--primary));
+}
+.cv-nexo-refresh-btn.is-loading {
+  animation: cv-spin 0.8s linear infinite;
+  pointer-events: none;
+}
+@keyframes cv-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Live indicator on PensoNexo header — pulsing red dot. Sized to occupy the
    same right-edge slot as a count badge. */
 .cv-sm-section-live-dot {

@@ -96,8 +96,11 @@ pensoia-header .ph-action-btn svg {
   flex-shrink: 0;
 }
 
+pensoia-header .ph-action-btn .ph-label-mobile { display: none; }
+
 @media (max-width: 560px) {
   pensoia-header .ph-action-btn span { display: none; }
+  pensoia-header .ph-action-btn .ph-label-mobile { display: inline; }
   pensoia-header .ph-action-btn { padding: 8px 10px; }
 }
 

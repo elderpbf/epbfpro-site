@@ -154,53 +154,50 @@
 
     /* ── Bar chart ──────────────────────────────────────────
        Bars use a 12-row grid so they always divide the chart's
-       available height evenly. The number 12 isn't responsive,
-       but the per-row height is. Each .k2-bar is a flex row
-       (token, track, pct), with the track sized as a percentage
-       of its bar row so everything scales with viewport. */
+       available height evenly. The chart now bleeds onto the
+       panel background (no surrounding box/card) so the bars
+       get the full available width and the chart breathes
+       into the bottom space instead of being framed inside a
+       smaller container. */
     .k2-chart-wrap {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 0.55rem 1rem;
       display: flex;
       flex-direction: column;
       min-height: 0;
+      padding: 0;
     }
     .k2-bars {
       flex: 1;
       display: grid;
       grid-template-rows: repeat(12, minmax(0, 1fr));
-      gap: 0.3rem;
+      gap: 0.35rem;
       min-height: 0;
     }
     .k2-bar {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.7rem;
       min-height: 0;
       min-width: 0;
     }
     .k2-bar-token {
       flex: 0 0 auto;
-      width: clamp(200px, 15vw, 290px);
-      padding-right: 0.5rem;
+      width: clamp(220px, 16vw, 320px);
+      padding-right: 0.7rem;
       font-family: var(--font-mono);
-      font-size: clamp(18px, 1.55vw, 28px);
+      font-size: clamp(17px, 1.4vw, 24px);
       font-weight: 600;
       color: var(--text);
       text-align: right;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      overflow: visible;
     }
     .k2-bar-track {
       flex: 1 1 auto;
       min-width: 0;
       position: relative;
-      height: 78%;
+      height: 80%;
       min-height: 22px;
-      max-height: 60px;
+      max-height: 64px;
       background: color-mix(in srgb, var(--text) 6%, transparent);
       border-radius: 8px;
       overflow: hidden;
@@ -232,9 +229,9 @@
     }
     .k2-bar-pct {
       flex: 0 0 auto;
-      width: clamp(74px, 6vw, 110px);
+      width: clamp(68px, 5.2vw, 96px);
       font-family: var(--font-mono);
-      font-size: clamp(20px, 1.6vw, 28px);
+      font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 600;
       color: var(--text-dim);
       text-align: right;
@@ -249,13 +246,13 @@
     .k2-controls {
       background: var(--surface);
       border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 0.6rem 1.1rem;
+      border-radius: 10px;
+      padding: 0.45rem 0.9rem;
     }
     .k2-temp-block {
       display: grid;
-      grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
-      column-gap: 1.2rem;
+      grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+      column-gap: 1.1rem;
       align-items: center;
       min-width: 0;
     }
@@ -269,7 +266,7 @@
     }
     .k2-temp-value {
       font-family: var(--font-mono);
-      font-size: clamp(64px, 7vw, 104px);
+      font-size: clamp(44px, 5vw, 72px);
       font-weight: 700;
       color: var(--warm);
       letter-spacing: -0.02em;
@@ -277,7 +274,7 @@
     }
     .k2-temp-desc {
       font-family: var(--font-display);
-      font-size: clamp(18px, 1.3vw, 24px);
+      font-size: clamp(15px, 1.1vw, 20px);
       color: var(--text-dim);
       font-weight: 500;
       letter-spacing: 0.02em;

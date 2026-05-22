@@ -655,6 +655,8 @@ html, body {
 
 .item-action:active { transform: translateY(0); }
 
+.item-action .ia-label-short { display: none; }
+
 .item-action svg {
   width: 13px;
   height: 13px;
@@ -950,8 +952,9 @@ html, body {
   .tl-dot { left: -28px; width: 22px; height: 22px; }
   .tl-row.is-open .tl-dot { left: -31px; width: 28px; height: 28px; }
 
-  /* Sub-action button shrinks on mobile */
+  /* Sub-action button shrinks on mobile; short label (if provided) replaces the full label */
   .item-action span { display: none; }
+  .item-action .ia-label-short { display: inline; }
   .item-action { padding: 0.4rem 0.6rem; }
   .item-action svg { width: 15px; height: 15px; }
 

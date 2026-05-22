@@ -207,7 +207,7 @@
         cp.target = '_blank';
         cp.rel = 'noopener';
         cp.title = 'Perguntas ao vivo';
-        cp.innerHTML = QR_ICON + '<span>Perguntas ao vivo</span>';
+        cp.innerHTML = QR_ICON + '<span class="ph-label-full">Perguntas ao vivo</span><span class="ph-label-mobile">ao vivo</span>';
         frag.appendChild(cp);
       }
       phRight.insertBefore(frag, phRight.firstChild);
@@ -590,9 +590,9 @@
     var meta = _getMeta(item);
     if (item.type === 'tarefa') {
       if (_hasSubmittedTarefa(item.id)) {
-        return { kind: 'submitted', label: 'Resposta enviada', icon: 'check' };
+        return { kind: 'submitted', label: 'Resposta enviada', shortLabel: 'Enviada', icon: 'check' };
       }
-      return { kind: 'submit', label: 'Enviar resposta', icon: 'send', item: item };
+      return { kind: 'submit', label: 'Enviar resposta', shortLabel: 'Enviar', icon: 'send', item: item };
     }
     if (meta.pdf_url) return { kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' };
     if (meta.attachment_url) {
@@ -629,7 +629,11 @@
     var cls = 'item-action' + (opts && opts.isTarefa ? ' item-action--task' : '');
     if (action.kind === 'submitted') cls += ' item-action--submitted is-done';
     btn.className = cls;
-    btn.innerHTML = (ICONS[action.icon] || ICONS.copy) + '<span>' + _esc(action.label) + '</span>';
+    var labelHtml = '<span class="ia-label-full">' + _esc(action.label) + '</span>';
+    if (action.shortLabel) {
+      labelHtml += '<span class="ia-label-short">' + _esc(action.shortLabel) + '</span>';
+    }
+    btn.innerHTML = (ICONS[action.icon] || ICONS.copy) + labelHtml;
     if (action.kind === 'submitted') btn.disabled = true;
 
     btn.addEventListener('click', function(e) {
@@ -876,7 +880,11 @@
       btn.type = 'button';
     }
     btn.className = 'item-action';
-    btn.innerHTML = (ICONS[action.icon] || ICONS.copy) + '<span>' + _esc(action.label) + '</span>';
+    var labelHtml = '<span class="ia-label-full">' + _esc(action.label) + '</span>';
+    if (action.shortLabel) {
+      labelHtml += '<span class="ia-label-short">' + _esc(action.shortLabel) + '</span>';
+    }
+    btn.innerHTML = (ICONS[action.icon] || ICONS.copy) + labelHtml;
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (action.kind === 'copy') {
