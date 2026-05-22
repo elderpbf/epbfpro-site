@@ -23,8 +23,58 @@ ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for acti
 ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
 ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
 ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
-ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);    // all sections (top-level + sub) collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
-ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);    // tracks which keys we've already initialized as collapsed; prevents re-collapsing after user expand
+// Sections that start COLLAPSED. Favoritos and Nexo are intentionally NOT here:
+// favorites is meant to be visible when there are any (one-click access in class),
+// nexo only contains a single launcher so collapsing it adds nothing.
+ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);
+ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);
+
+// PensoNexo live-session state. null = nothing live (Worker hasn't returned
+// yet or no active session). Polled every 30s while the page is open so the
+// header dot reflects reality without manual refresh.
+ClassVault.liveSession = null;
+ClassVault._liveSessionTimer = null;
+async function _loadLiveSession() {
+  let res;
+  try { res = await callWorker({ action: 'cp_get_live_session', _silent: true }); }
+  catch (e) { return; }
+  const next = (res && res.session) || null;
+  const prevId = ClassVault.liveSession && ClassVault.liveSession.id;
+  const nextId = next && next.id;
+  if (prevId !== nextId || (next && next.name) !== (ClassVault.liveSession && ClassVault.liveSession.name)) {
+    ClassVault.liveSession = next;
+    _renderSidebar();
+  }
+}
+function _startLiveSessionPolling() {
+  _loadLiveSession();
+  if (ClassVault._liveSessionTimer) clearInterval(ClassVault._liveSessionTimer);
+  ClassVault._liveSessionTimer = setInterval(_loadLiveSession, 30000);
+}
+
+// Favorites — persistent across sessions via localStorage.
+// Stored as JSON-array of stringified item ids (works for numeric ct_items.id,
+// 'drive:<gid>' and 'lab:<key>' synthetic ids alike).
+const _FAVORITES_KEY = 'cv_favorites_v1';
+ClassVault.favorites = (function() {
+  try {
+    const raw = localStorage.getItem(_FAVORITES_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch (e) { return new Set(); }
+})();
+function _saveFavorites() {
+  try {
+    localStorage.setItem(_FAVORITES_KEY, JSON.stringify(Array.from(ClassVault.favorites)));
+  } catch (e) {}
+}
+function _toggleFavorite(item) {
+  const id = String(item.id);
+  if (ClassVault.favorites.has(id)) ClassVault.favorites.delete(id);
+  else ClassVault.favorites.add(id);
+  _saveFavorites();
+  _renderSidebar();
+}
 // Phase 5: Drive Mirror — synthetic items fetched browser-side via GIS token client.
 ClassVault.driveItems = [];                  // synthetic Drive items (id prefixed with 'drive:')
 ClassVault.activeItemId = null;
@@ -63,6 +113,7 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   // _loadCodex renders the sidebar; Drive section appends after codex resolves.
   await _loadCodex();
   if (window.CVDriveSync) CVDriveSync.init();
+  _startLiveSessionPolling();
 })();
 
 function _pickAula() {
@@ -179,7 +230,8 @@ async function _loadCodex() {
   ClassVault.aulaPlanItems = (data && data.aula_plan) || [];
   ClassVault.releaseItems = (data && data.releases) || [];
   ClassVault.aulas = (data && data.aulas) || [];
-  _renderAulaPicker();
+  // _renderAulaPicker() disabled with the turma+aula UI; "Todas as aulas" chip
+  // no longer renders. Keep the data load — sub-renderers still expect aulas.
   _renderSidebar();
 }
 
@@ -215,6 +267,10 @@ function _renderSidebar() {
   if (!body) return;
   const html = [];
 
+  // ── Favoritos (top, only when there are any; uncollapsed by default) ──
+  const favSection = _renderFavoritesSection();
+  if (favSection) html.push(favSection);
+
   // ── LLMs section: launchers that open external tools in a new tab ──
   html.push(_renderLLMsSection());
 
@@ -237,6 +293,9 @@ function _renderSidebar() {
   // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
   html.push(_renderDriveSection());
 
+  // ── PensoNexo launcher (bottom, click-to-open, live-aware) ────
+  html.push(_renderNexoSection());
+
   body.innerHTML = html.join('');
 
   if (ClassVault.activeItemId != null) {
@@ -255,7 +314,9 @@ function _renderSidebar() {
 // Per-section glyphs for the neon-glow card headers. Colors come from CSS
 // (--sec set by .cv-sm-section--<key> modifier classes in classvault.css).
 const SECTION_GLYPHS = {
+  favorites: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>',
   llms:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9 14 11l-2 5-2-5-4.5-2 4.7-1.4z"/><path d="M5 17l.7 1.8L7.5 19.5l-1.8.7L5 22l-.7-1.8L2.5 19.5l1.8-.7z"/></svg>',
+  nexo:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
   hoje:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><circle cx="12" cy="15" r="2"/></svg>',
   vault:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/></svg>',
   trilha: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16v-4a4 4 0 014-4h4"/></svg>',
@@ -619,6 +680,54 @@ function _renderLLMsSection() {
   return headerHtml + bodyHtml;
 }
 
+// ── Favoritos section ──────────────────────────────────────────
+// Renders nothing when there are no favorites (avoids an empty card).
+// Uncollapsed by default. Looks up favorited ids against the currently-loaded
+// item buckets (vault, drive, lab); items that no longer resolve are skipped.
+function _renderFavoritesSection() {
+  if (!ClassVault.favorites || ClassVault.favorites.size === 0) return '';
+  const items = [];
+  ClassVault.favorites.forEach(function(idStr) {
+    const located = _findItem(idStr);
+    if (located) items.push(located.item);
+  });
+  if (!items.length) return '';
+  const key = 'favorites';
+  const isCollapsed = ClassVault.collapsedSections.has(key);
+  const headerHtml =
+    '<button type="button" class="cv-sm-section cv-sm-section--favorites' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+      'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
+      '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.favorites + '</span>' +
+      '<span class="cv-sm-section-label">Favoritos</span>' +
+      '<span class="cv-sm-section-count">' + items.length + '</span>' +
+      '<span class="cv-sm-section-chev">▾</span>' +
+    '</button>';
+  const bodyHtml = isCollapsed ? '' : items.map(it => _renderSubCard(it, false)).join('');
+  return headerHtml + bodyHtml;
+}
+
+// ── PensoNexo header (no children; click-to-open) ─────────────
+// Label and link target depend on whether a ClassPulse session is currently
+// live (any question.status='active'). The header card itself is the launcher;
+// _wireItemClicks special-cases data-section="nexo" to open data-href instead
+// of toggling collapse. A pulsing red dot replaces the count when live.
+function _renderNexoSection() {
+  const live = ClassVault.liveSession;
+  const label = live ? 'PensoNexo · ' + live.name : 'PensoNexo · Abrir sessões';
+  const href = live
+    ? '/backstage/classpulse/host.html?code=' + encodeURIComponent(live.id)
+    : '/backstage/classpulse/';
+  return (
+    '<button type="button" class="cv-sm-section cv-sm-section--nexo" ' +
+      'data-section="nexo" data-href="' + _esc(href) + '" ' +
+      'title="' + _esc(label) + '">' +
+      '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.nexo + '</span>' +
+      '<span class="cv-sm-section-label">' + _esc(label) + '</span>' +
+      (live ? '<span class="cv-sm-section-live-dot" aria-label="Sessão ao vivo"></span>' : '') +
+    '</button>'
+  );
+}
+
 // Aula picker: dropdown chip rendered in the head, next to the turma chip.
 function _renderAulaPicker() {
   const head = document.querySelector('.cv-sm-head');
@@ -775,6 +884,12 @@ function _wireItemClicks() {
     const section = e.target.closest('.cv-sm-section, .cv-sm-subsection');
     if (section) {
       const key = section.getAttribute('data-section');
+      // PensoNexo header is a launcher, not a collapsible.
+      if (key === 'nexo') {
+        const url = section.getAttribute('data-href');
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
       if (ClassVault.collapsedSections.has(key)) {
         ClassVault.collapsedSections.delete(key);
       } else {
@@ -914,27 +1029,34 @@ function _wireItemContextMenu() {
 }
 
 function _openContextMenu(x, y, located) {
-  // Phase 5: Drive items are non-actionable, no context menu.
-  if (located.source === 'drive') return;
-  // Labs are read-only launchers (no DB row, no editor, no audience moves).
-  if (located.source === 'lab') return;
   _closeContextMenu();
   const { item, source } = located;
   const items = [];
-  items.push({ action: 'edit', label: '✏️ Editar...' });
 
-  if (source === 'vault') {
-    const aulaOk = ClassVault.aulaNumber != null;
-    const inPlanAlready = ClassVault.aulaPlanItems.some(it => it.id === item.id);
-    if (aulaOk && !inPlanAlready) {
-      items.push({ action: 'add-to-hoje', label: '📌 Adicionar ao plano de hoje' });
+  // Favorite toggle — available on every item type, always first option.
+  const isFav = ClassVault.favorites.has(String(item.id));
+  items.push({
+    action: isFav ? 'unfavorite' : 'favorite',
+    label: isFav ? '★ Desfavoritar' : '☆ Favoritar'
+  });
+
+  // Drive + Lab items: read-only synthetic items. Favorite is the only action.
+  if (source !== 'drive' && source !== 'lab') {
+    items.push({ action: 'edit', label: '✏️ Editar...' });
+
+    if (source === 'vault') {
+      const aulaOk = ClassVault.aulaNumber != null;
+      const inPlanAlready = ClassVault.aulaPlanItems.some(it => it.id === item.id);
+      if (aulaOk && !inPlanAlready) {
+        items.push({ action: 'add-to-hoje', label: '📌 Adicionar ao plano de hoje' });
+      }
+      items.push({ action: 'promote', label: '↗ Promover para Trilha' });
+    } else if (source === 'aula_plan') {
+      items.push({ action: 'remove-from-hoje', label: '✖ Remover do plano' });
+      items.push({ action: 'release', label: '↗ Liberar para alunos' });
+    } else if (source === 'release') {
+      items.push({ action: 'demote', label: '↘ Mover para Vault' });
     }
-    items.push({ action: 'promote', label: '↗ Promover para Trilha' });
-  } else if (source === 'aula_plan') {
-    items.push({ action: 'remove-from-hoje', label: '✖ Remover do plano' });
-    items.push({ action: 'release', label: '↗ Liberar para alunos' });
-  } else if (source === 'release') {
-    items.push({ action: 'demote', label: '↘ Mover para Vault' });
   }
 
   const menu = document.createElement('div');
@@ -951,7 +1073,8 @@ function _openContextMenu(x, y, located) {
     if (!btn) return;
     const action = btn.getAttribute('data-action');
     _closeContextMenu();
-    if (action === 'edit') _openEditor(item);
+    if (action === 'favorite' || action === 'unfavorite') _toggleFavorite(item);
+    else if (action === 'edit') _openEditor(item);
     else if (action === 'add-to-hoje') _addToHoje(item);
     else if (action === 'remove-from-hoje') _removeFromHoje(item);
     else if (action === 'promote') _setItemAudience(item, 'public');
