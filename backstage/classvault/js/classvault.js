@@ -23,8 +23,8 @@ ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for acti
 ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
 ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
 ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
-ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms']);    // all sections (top-level + sub) collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
-ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms']);    // tracks which keys we've already initialized as collapsed; prevents re-collapsing after user expand
+ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);    // all sections (top-level + sub) collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
+ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);    // tracks which keys we've already initialized as collapsed; prevents re-collapsing after user expand
 // Phase 5: Drive Mirror — synthetic items fetched browser-side via GIS token client.
 ClassVault.driveItems = [];                  // synthetic Drive items (id prefixed with 'drive:')
 ClassVault.activeItemId = null;
@@ -181,8 +181,16 @@ async function _loadCodex() {
 
 // Locate an item across all buckets. Returns null if not found.
 // Phase 5: string ids starting with 'drive:' look up ClassVault.driveItems (string compare).
+// Labs: string ids starting with 'lab:' are synthetic items from the CVLabs registry.
 function _findItem(itemId) {
   const idStr = String(itemId);
+  if (idStr.indexOf('lab:') === 0) {
+    if (window.CVLabs) {
+      const it = CVLabs.findItem(idStr);
+      if (it) return { item: it, source: 'lab' };
+    }
+    return null;
+  }
   if (idStr.startsWith('drive:')) {
     const it = ClassVault.driveItems.find(function(d) { return d.id === idStr; });
     return it ? { item: it, source: 'drive' } : null;
@@ -205,6 +213,11 @@ function _renderSidebar() {
 
   // ── LLMs section: launchers that open external tools in a new tab ──
   html.push(_renderLLMsSection());
+
+  // ── Labs section: in-house interactive teaching demos (PensoLabs) ──
+  if (window.CVLabs) {
+    html.push(CVLabs.renderSection(ClassVault.collapsedSections));
+  }
 
   // ── Hoje section (active aula only) ───────────────────────────
   if (ClassVault.aulaNumber != null) {
@@ -248,16 +261,28 @@ function _renderSidebar() {
   _wireDriveSyncButton();
 }
 
+// Per-section glyphs for the neon-glow card headers. Colors come from CSS
+// (--sec set by .cv-sm-section--<key> modifier classes in classvault.css).
+const SECTION_GLYPHS = {
+  llms:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9 14 11l-2 5-2-5-4.5-2 4.7-1.4z"/><path d="M5 17l.7 1.8L7.5 19.5l-1.8.7L5 22l-.7-1.8L2.5 19.5l1.8-.7z"/></svg>',
+  hoje:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><circle cx="12" cy="15" r="2"/></svg>',
+  vault:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/></svg>',
+  trilha: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16v-4a4 4 0 014-4h4"/></svg>',
+  drive:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
+  labs:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6.5L4 18a3 3 0 002.6 4.5h10.8A3 3 0 0020 18l-5-8.5V3"/><path d="M8 3h8"/></svg>'
+};
+
 function _renderSection({ key, label, count, body }) {
   const isCollapsed = ClassVault.collapsedSections.has(key);
   const sectionBody = isCollapsed ? '' : body;
+  const glyph = SECTION_GLYPHS[key] || '';
   return (
-    '<button type="button" class="cv-sm-section' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+    '<button type="button" class="cv-sm-section cv-sm-section--' + _esc(key) + (isCollapsed ? ' is-collapsed' : '') + '" ' +
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
-      '<span class="cv-sm-section-chev">▾</span>' +
-      '<span>' + _esc(label) + '</span>' +
-      '<span class="cv-sm-section-line"></span>' +
+      '<span class="cv-sm-section-glyph">' + glyph + '</span>' +
+      '<span class="cv-sm-section-label">' + _esc(label) + '</span>' +
       '<span class="cv-sm-section-count">' + count + '</span>' +
+      '<span class="cv-sm-section-chev">▾</span>' +
     '</button>' +
     sectionBody
   );
@@ -378,11 +403,11 @@ function _renderDriveSection() {
   const headerHtml =
     '<div role="button" tabindex="0" class="cv-sm-section cv-sm-section--drive' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
-      '<span class="cv-sm-section-chev">▾</span>' +
-      '<span>📁 Drive</span>' +
-      '<span class="cv-sm-section-line"></span>' +
+      '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.drive + '</span>' +
+      '<span class="cv-sm-section-label">Drive</span>' +
       '<button type="button" class="cv-drive-sync-btn" data-drive-action="sync" title="Sincronizar Drive" aria-label="Sincronizar Drive">↻</button>' +
       '<span class="cv-sm-section-count">' + count + '</span>' +
+      '<span class="cv-sm-section-chev">▾</span>' +
     '</div>';
 
   let bodyHtml = '';
@@ -498,12 +523,12 @@ function _renderLLMsSection() {
     { name: 'Perplexity', url: 'https://www.perplexity.ai/',    domain: 'perplexity.ai' }
   ];
   const headerHtml =
-    '<button type="button" class="cv-sm-section' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+    '<button type="button" class="cv-sm-section cv-sm-section--llms' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
-      '<span class="cv-sm-section-chev">▾</span>' +
-      '<span>LLMs</span>' +
-      '<span class="cv-sm-section-line"></span>' +
+      '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.llms + '</span>' +
+      '<span class="cv-sm-section-label">LLMs</span>' +
       '<span class="cv-sm-section-count">' + llms.length + '</span>' +
+      '<span class="cv-sm-section-chev">▾</span>' +
     '</button>';
   const bodyHtml = isCollapsed ? '' : llms.map(function(l) {
     return '<a class="cv-sm-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
@@ -811,6 +836,8 @@ function _wireItemContextMenu() {
 function _openContextMenu(x, y, located) {
   // Phase 5: Drive items are non-actionable, no context menu.
   if (located.source === 'drive') return;
+  // Labs are read-only launchers (no DB row, no editor, no audience moves).
+  if (located.source === 'lab') return;
   _closeContextMenu();
   const { item, source } = located;
   const items = [];
@@ -1208,6 +1235,18 @@ function _renderBreadcrumb(item) {
   const located = _findItem(item.id);
   const source = located ? located.source : null;
 
+  // Labs: path-only breadcrumb. No actions (no edit, no add-to-hoje), since
+  // labs are shipped read-only artifacts launched directly from the registry.
+  if (source === 'lab') {
+    crumb.innerHTML =
+      '<span>PensoCodex</span>' +
+      '<span class="cv-main-crumb-sep">/</span>' +
+      '<span>Labs</span>' +
+      '<span class="cv-main-crumb-sep">/</span>' +
+      '<strong>' + _esc(item.title) + '</strong>';
+    return;
+  }
+
   // Phase 5: Drive items get path-only breadcrumb. Drive items whose mime
   // type is text-extractable (Google Docs, .txt, .md) also get a "Copiar
   // texto" button; PDFs aren't supported yet (need pdf.js).
@@ -1318,6 +1357,7 @@ function _openCrumbOverflowMenu(anchor, item, source) {
 ClassVault.renderers = {
   slide:        { render: _renderIframe,      cleanup: _cleanupClear },
   embed:        { render: _renderIframe,      cleanup: _cleanupClear },
+  lab:          { render: _renderIframe,      cleanup: _cleanupClear },
   popup_url:    { render: _renderPopupCard,   cleanup: _cleanupClear },
   drive_folder: { render: _renderDriveFolder, cleanup: _cleanupClear },
   drive_file:   { render: _renderDriveFile,   cleanup: _cleanupClear },

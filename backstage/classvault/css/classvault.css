@@ -267,27 +267,82 @@ body.cv-focus.cv-focus--side .cv-sm {
   opacity: 0.7;
 }
 
-/* aula section headers in body (clickable, collapsible) */
+/* Top-level section headers (neon-glow card, per-section color).
+   --sec is set by .cv-sm-section--<key> modifiers below; falls back to primary. */
+.cv-sm-section--llms   { --sec: #8b5cf6; }   /* violet */
+.cv-sm-section--labs   { --sec: #ec4899; }   /* pink */
+.cv-sm-section--hoje   { --sec: #10b981; }   /* emerald */
+.cv-sm-section--vault  { --sec: #14b8a6; }   /* teal */
+.cv-sm-section--trilha { --sec: #f59e0b; }   /* amber */
+.cv-sm-section--drive  { --sec: #3b82f6; }   /* blue */
+
 .cv-sm-section {
   cursor: pointer;
-  background: none;
-  border: none;
   width: 100%;
   text-align: left;
   font: inherit;
-  font-size: 0.62rem;
+  font-size: 0.84rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  padding: 14px 4px 6px;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec, var(--primary)) 6%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec, var(--primary)) 35%, transparent);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin: 8px 0 7px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  border-radius: 4px;
+  gap: 10px;
+  transition: box-shadow 0.18s, border-color 0.15s, transform 0.15s;
 }
-.cv-sm-section:hover { color: var(--text-primary); }
-.cv-sm-body > .cv-sm-section:first-child { padding-top: 6px; }
+.cv-sm-section:hover {
+  border-color: var(--sec, var(--primary));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--sec, var(--primary)) 25%, transparent),
+              0 6px 22px -10px var(--sec, var(--primary));
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .cv-sm-section {
+  background: color-mix(in oklab, var(--sec, var(--primary)) 10%, var(--surface));
+  box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec, var(--primary)) 60%, transparent);
+}
+[data-theme="dark"] .cv-sm-section:hover {
+  box-shadow: 0 0 24px -6px var(--sec, var(--primary));
+}
+.cv-sm-body > .cv-sm-section:first-child { margin-top: 0; }
+
+/* Section glyph (SVG, colored by --sec) */
+.cv-sm-section-glyph {
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  color: var(--sec, var(--primary));
+  flex-shrink: 0;
+}
+.cv-sm-section-glyph svg {
+  width: 18px; height: 18px;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--sec, var(--primary)) 50%, transparent));
+}
+
+/* Label inside the section header */
+.cv-sm-section-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chevron — in section color, rotates when collapsed */
+.cv-sm-section > .cv-sm-section-chev {
+  font-size: 0.8rem;
+  color: var(--sec, var(--primary));
+  opacity: 0.7;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+}
+.cv-sm-section.is-collapsed > .cv-sm-section-chev { transform: rotate(-90deg); }
+
+/* Sub-section chevron keeps the old subtle gray */
 .cv-sm-section-chev {
   font-size: 0.9rem;
   opacity: 0.6;
@@ -295,12 +350,30 @@ body.cv-focus.cv-focus--side .cv-sm {
   flex-shrink: 0;
   display: inline-block;
 }
-.cv-sm-section.is-collapsed .cv-sm-section-chev { transform: rotate(-90deg); }
+
+/* Hide the legacy expanding line inside top-level sections (no longer used) */
+.cv-sm-section > .cv-sm-section-line { display: none; }
+
+/* Sub-section line stays as-is */
 .cv-sm-section-line {
   flex: 1;
   height: 1px;
   background: var(--border);
 }
+
+/* Count badge — colored pill matching section color (top-level only) */
+.cv-sm-section > .cv-sm-section-count {
+  min-width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--sec, var(--primary));
+  border-radius: 999px;
+  padding: 0 7px;
+  box-shadow: 0 0 8px -2px color-mix(in oklab, var(--sec, var(--primary)) 80%, transparent);
+}
+/* Sub-section count keeps the old subtle pill */
 .cv-sm-section-count {
   font-size: 0.6rem;
   font-weight: 700;
@@ -555,6 +628,7 @@ body.cv-focus.cv-focus--side .cv-sm {
 .cv-sm .sub-zone--llm      { background: var(--llm); }
 .cv-sm .sub-zone--recurso  { background: var(--recurso); }
 .cv-sm .sub-zone--material { background: var(--material); }
+.cv-sm .sub-zone--lab      { background: var(--primary); }
 .cv-sm .sub-meta {
   flex: 1;
   padding: 7px 10px;
