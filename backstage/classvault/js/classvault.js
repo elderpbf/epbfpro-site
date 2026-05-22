@@ -29,6 +29,29 @@ ClassVault.aulaNumber = null;                // currently-selected aula (URL ?au
 ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);
 ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);
 
+// PensoNexo live-session state. null = nothing live (Worker hasn't returned
+// yet or no active session). Polled every 30s while the page is open so the
+// header dot reflects reality without manual refresh.
+ClassVault.liveSession = null;
+ClassVault._liveSessionTimer = null;
+async function _loadLiveSession() {
+  let res;
+  try { res = await callWorker({ action: 'cp_get_live_session', _silent: true }); }
+  catch (e) { return; }
+  const next = (res && res.session) || null;
+  const prevId = ClassVault.liveSession && ClassVault.liveSession.id;
+  const nextId = next && next.id;
+  if (prevId !== nextId || (next && next.name) !== (ClassVault.liveSession && ClassVault.liveSession.name)) {
+    ClassVault.liveSession = next;
+    _renderSidebar();
+  }
+}
+function _startLiveSessionPolling() {
+  _loadLiveSession();
+  if (ClassVault._liveSessionTimer) clearInterval(ClassVault._liveSessionTimer);
+  ClassVault._liveSessionTimer = setInterval(_loadLiveSession, 30000);
+}
+
 // Favorites — persistent across sessions via localStorage.
 // Stored as JSON-array of stringified item ids (works for numeric ct_items.id,
 // 'drive:<gid>' and 'lab:<key>' synthetic ids alike).
@@ -90,6 +113,7 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   // _loadCodex renders the sidebar; Drive section appends after codex resolves.
   await _loadCodex();
   if (window.CVDriveSync) CVDriveSync.init();
+  _startLiveSessionPolling();
 })();
 
 function _pickAula() {
@@ -206,7 +230,8 @@ async function _loadCodex() {
   ClassVault.aulaPlanItems = (data && data.aula_plan) || [];
   ClassVault.releaseItems = (data && data.releases) || [];
   ClassVault.aulas = (data && data.aulas) || [];
-  _renderAulaPicker();
+  // _renderAulaPicker() disabled with the turma+aula UI; "Todas as aulas" chip
+  // no longer renders. Keep the data load — sub-renderers still expect aulas.
   _renderSidebar();
 }
 
@@ -249,9 +274,6 @@ function _renderSidebar() {
   // ── LLMs section: launchers that open external tools in a new tab ──
   html.push(_renderLLMsSection());
 
-  // ── PensoNexo launcher (ClassPulse sessions) ──────────────────
-  html.push(_renderNexoSection());
-
   // ── Labs section: in-house interactive teaching demos (PensoLabs) ──
   if (window.CVLabs) {
     html.push(CVLabs.renderSection(ClassVault.collapsedSections));
@@ -270,6 +292,9 @@ function _renderSidebar() {
 
   // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
   html.push(_renderDriveSection());
+
+  // ── PensoNexo launcher (bottom, click-to-open, live-aware) ────
+  html.push(_renderNexoSection());
 
   body.innerHTML = html.join('');
 
@@ -681,28 +706,26 @@ function _renderFavoritesSection() {
   return headerHtml + bodyHtml;
 }
 
-// ── PensoNexo section ─────────────────────────────────────────
-// Single launcher; opens the ClassPulse sessions list in a new tab so the
-// teacher can pick the active session (or start a new one). Uncollapsed by
-// default since there's nothing else inside.
+// ── PensoNexo header (no children; click-to-open) ─────────────
+// Label and link target depend on whether a ClassPulse session is currently
+// live (any question.status='active'). The header card itself is the launcher;
+// _wireItemClicks special-cases data-section="nexo" to open data-href instead
+// of toggling collapse. A pulsing red dot replaces the count when live.
 function _renderNexoSection() {
-  const key = 'nexo';
-  const isCollapsed = ClassVault.collapsedSections.has(key);
-  const headerHtml =
-    '<button type="button" class="cv-sm-section cv-sm-section--nexo' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
-      'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
+  const live = ClassVault.liveSession;
+  const label = live ? 'PensoNexo · ' + live.name : 'PensoNexo · Abrir sessões';
+  const href = live
+    ? '/backstage/classpulse/host.html?code=' + encodeURIComponent(live.id)
+    : '/backstage/classpulse/';
+  return (
+    '<button type="button" class="cv-sm-section cv-sm-section--nexo" ' +
+      'data-section="nexo" data-href="' + _esc(href) + '" ' +
+      'title="' + _esc(label) + '">' +
       '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.nexo + '</span>' +
-      '<span class="cv-sm-section-label">PensoNexo</span>' +
-      '<span class="cv-sm-section-chev">▾</span>' +
-    '</button>';
-  const bodyHtml = isCollapsed ? '' :
-    '<a class="cv-sm-llm" href="/backstage/classpulse/" target="_blank" rel="noopener noreferrer">' +
-      '<span class="cv-sm-llm-favicon" style="display:inline-flex;align-items:center;justify-content:center;color:#6366f1;background:rgba(99,102,241,0.12);border-radius:4px;">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' +
-      '</span>' +
-      '<span class="cv-sm-llm-name">Abrir sessões</span>' +
-    '</a>';
-  return headerHtml + bodyHtml;
+      '<span class="cv-sm-section-label">' + _esc(label) + '</span>' +
+      (live ? '<span class="cv-sm-section-live-dot" aria-label="Sessão ao vivo"></span>' : '') +
+    '</button>'
+  );
 }
 
 // Aula picker: dropdown chip rendered in the head, next to the turma chip.
@@ -861,6 +884,12 @@ function _wireItemClicks() {
     const section = e.target.closest('.cv-sm-section, .cv-sm-subsection');
     if (section) {
       const key = section.getAttribute('data-section');
+      // PensoNexo header is a launcher, not a collapsible.
+      if (key === 'nexo') {
+        const url = section.getAttribute('data-href');
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
       if (ClassVault.collapsedSections.has(key)) {
         ClassVault.collapsedSections.delete(key);
       } else {
