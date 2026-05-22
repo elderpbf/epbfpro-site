@@ -305,12 +305,14 @@ body.cv-focus.cv-focus--side .cv-sm {
 
 /* Top-level section headers (neon-glow card, per-section color).
    --sec is set by .cv-sm-section--<key> modifiers below; falls back to primary. */
-.cv-sm-section--llms   { --sec: #8b5cf6; }   /* violet */
-.cv-sm-section--labs   { --sec: #ec4899; }   /* pink */
-.cv-sm-section--hoje   { --sec: #10b981; }   /* emerald */
-.cv-sm-section--vault  { --sec: #14b8a6; }   /* teal */
-.cv-sm-section--trilha { --sec: #f59e0b; }   /* amber */
-.cv-sm-section--drive  { --sec: #3b82f6; }   /* blue */
+.cv-sm-section--favorites { --sec: #eab308; }   /* gold */
+.cv-sm-section--llms      { --sec: #8b5cf6; }   /* violet */
+.cv-sm-section--nexo      { --sec: #6366f1; }   /* indigo */
+.cv-sm-section--labs      { --sec: #ec4899; }   /* pink */
+.cv-sm-section--hoje      { --sec: #10b981; }   /* emerald */
+.cv-sm-section--vault     { --sec: #14b8a6; }   /* teal */
+.cv-sm-section--trilha    { --sec: #f59e0b; }   /* amber */
+.cv-sm-section--drive     { --sec: #3b82f6; }   /* blue */
 
 .cv-sm-section {
   cursor: pointer;
