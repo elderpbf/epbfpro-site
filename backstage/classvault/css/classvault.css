@@ -278,6 +278,10 @@ body.cv-focus.cv-focus--side .cv-sm {
 
 .cv-sm-section {
   cursor: pointer;
+  /* border-box so the Drive section <div role="button"> matches the other
+     sections' <button> default sizing (button is border-box by UA stylesheet;
+     div is content-box, which made the Drive card 26px wider). */
+  box-sizing: border-box;
   width: 100%;
   text-align: left;
   font: inherit;
