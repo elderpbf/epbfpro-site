@@ -371,12 +371,13 @@
       cursor: wait;
     }
 
-    /* ── Visualization ────────────────────────────────────── */
+    /* ── Visualization ──────────────────────────────────────
+       No surrounding card: the SVG sits directly on the panel
+       background so the FRUTA / ROUPA labels and clusters get
+       the full panel width without a frame chewing pixels off
+       the edges. */
     .k1-viz-wrap {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 0.4rem 0.5rem;
+      padding: 0;
       display: flex;
       align-items: stretch;
       justify-content: center;
@@ -840,10 +841,17 @@
         // Push the cluster slightly below center so the big cluster labels
         // above the regions always have room without clipping the viewBox.
         MANGA_Y   = VB_H * 0.62;
-        ROUPA_X   = VB_W * 0.08;
-        FRUTA_X   = VB_W * 0.92;
-        // Slightly smaller than before so labels + dots fit even on short viz.
-        CLUSTER_R = Math.min(VB_H * 0.26, VB_W * 0.085);
+        // ROUPA / FRUTA cluster centres: aim for 16% / 84% of width, but
+        // clamp inward so the big cap-labels ("ROUPA" / "FRUTA") never get
+        // clipped by the viewBox at narrow widths. Half-width estimate for
+        // those labels is CLUSTER_LABEL_F * 1.8 (~5 chars × ~0.6em + letter
+        // spacing, then halved); add a 12-px safety margin.
+        const labelHalfW = CLUSTER_LABEL_F * 1.8;
+        ROUPA_X   = Math.max(labelHalfW + 12, VB_W * 0.16);
+        FRUTA_X   = Math.min(VB_W - labelHalfW - 12, VB_W * 0.84);
+        // Cluster gets a bigger radius now that the surrounding card is
+        // gone and the SVG has the full panel width and height.
+        CLUSTER_R = Math.min(VB_H * 0.32, VB_W * 0.11);
         return true;
       }
 

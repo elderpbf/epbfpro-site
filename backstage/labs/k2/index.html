@@ -499,37 +499,36 @@
         },
         normal: {
           base: 'Eu gosto de',
+          // 3-step path: NOUN + ADVERB + ENDER. Tokens at each step are
+          // curated so that ANY combination produces a coherent (if
+          // sometimes informal) Brazilian-Portuguese sentence — e.g.
+          // "Eu gosto de música demais.", "Eu gosto de café muito também".
+          // The chart stays meaningfully flatter than the overfit case so
+          // the pedagogical point holds, but it isn't so flat that sampling
+          // produces grammatical nonsense.
           steps: [
             {
               prefix: 'Eu gosto de',
               logits: [
-                ['música', 2.8], ['café', 2.6], ['praia', 2.5], ['cinema', 2.4],
-                ['livros', 2.3], ['arte', 2.2], ['viagem', 2.1], ['esporte', 2.0],
-                ['silêncio', 1.9], ['flores', 1.7], ['chuva', 1.6], ['festa', 1.5]
+                ['música', 3.0], ['café', 2.9], ['cinema', 2.8], ['filmes', 2.7],
+                ['festa', 2.6], ['praia', 2.5], ['livros', 2.4], ['arte', 2.3],
+                ['churrasco', 2.2], ['domingo', 2.1], ['viagem', 2.0], ['silêncio', 1.9]
               ]
             },
             {
               prefix: 'Eu gosto de _',
               logits: [
-                ['com', 2.8], ['no', 2.6], ['de', 2.5], ['em', 2.4],
-                ['e', 2.3], ['da', 2.2], ['ao', 2.1], ['do', 2.0],
-                ['que', 1.9], ['mas', 1.7], ['ou', 1.6], ['sem', 1.5]
+                ['demais', 3.0], ['muito', 2.9], ['também', 2.7], ['sempre', 2.6],
+                ['mesmo', 2.4], ['bastante', 2.3], ['tanto', 2.1], ['hoje', 1.9],
+                ['agora', 1.7], ['ainda', 1.5], ['talvez', 1.3], ['junto', 1.1]
               ]
             },
             {
               prefix: 'Eu gosto de _ _',
               logits: [
-                ['casa', 2.8], ['amigos', 2.6], ['domingo', 2.5], ['manhã', 2.4],
-                ['família', 2.3], ['noite', 2.2], ['sol', 2.1], ['inverno', 2.0],
-                ['flores', 1.9], ['mar', 1.7], ['silêncio', 1.6], ['vento', 1.5]
-              ]
-            },
-            {
-              prefix: 'Eu gosto de _ _ _',
-              logits: [
-                ['.', 2.8], ['!', 2.6], [',', 2.4], ['também', 2.3],
-                ['sempre', 2.2], ['hoje', 2.1], ['ainda', 2.0], ['agora', 1.9],
-                ['mesmo', 1.8], ['demais', 1.7], ['junto', 1.6], ['talvez', 1.5]
+                ['.', 3.4], ['!', 3.1], [',', 2.7], ['também', 2.3],
+                ['mesmo', 2.0], ['demais', 1.8], ['hoje', 1.6], ['sempre', 1.4],
+                ['agora', 1.3], ['ainda', 1.1], ['junto', 1.0], ['talvez', 0.9]
               ]
             }
           ]

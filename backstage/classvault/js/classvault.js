@@ -538,7 +538,9 @@ function _renderDriveSection() {
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
       '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.drive + '</span>' +
       '<span class="cv-sm-section-label">Drive</span>' +
-      '<button type="button" class="cv-drive-sync-btn" data-drive-action="sync" title="Sincronizar Drive" aria-label="Sincronizar Drive">↻</button>' +
+      '<button type="button" class="cv-drive-sync-btn" data-drive-action="sync" title="Sincronizar Drive" aria-label="Sincronizar Drive">' +
+        '<span class="cv-spin-glyph">↻</span>' +
+      '</button>' +
       '<span class="cv-sm-section-count">' + count + '</span>' +
       '<span class="cv-sm-section-chev">▾</span>' +
     '</div>';
@@ -612,9 +614,13 @@ function _wireDriveSyncButton() {
   // Sync button: stop propagation so the parent section header doesn't collapse.
   const syncBtn = wrapper.querySelector('[data-drive-action="sync"]');
   if (syncBtn) {
-    syncBtn.addEventListener('click', function(e) {
+    syncBtn.addEventListener('click', async function(e) {
       e.stopPropagation();
-      if (window.CVDriveSync) CVDriveSync.syncNow();
+      if (!window.CVDriveSync) return;
+      // Spin the glyph while syncing. _renderDriveSectionOnly re-creates the
+      // section when syncNow finishes, so the new button starts clean.
+      syncBtn.classList.add('is-loading');
+      try { await CVDriveSync.syncNow(); } catch (_) {}
     });
   }
 
@@ -732,13 +738,19 @@ function _renderPinnedNexo() {
         ' · ' + _esc(tail) +
       '</span>' +
       '<button type="button" class="cv-nexo-refresh-btn' + (loading ? ' is-loading' : '') + '" ' +
-        'data-nexo-action="refresh" title="Atualizar" aria-label="Atualizar sessão ao vivo">↻</button>' +
+        'data-nexo-action="refresh" title="Atualizar" aria-label="Atualizar sessão ao vivo">' +
+        '<span class="cv-spin-glyph">↻</span>' +
+      '</button>' +
       (live ? '<span class="cv-sm-section-live-dot" aria-label="Sessão ao vivo"></span>' : '') +
     '</div>';
 
   const card = pinned.querySelector('.cv-sm-section--nexo');
   if (card) {
-    card.addEventListener('click', function() {
+    card.addEventListener('click', function(e) {
+      // Defensive: clicks that originated on the refresh button (or its
+      // descendants) must not trigger the launcher even if stopPropagation
+      // upstream is bypassed for any reason.
+      if (e.target && e.target.closest && e.target.closest('[data-nexo-action="refresh"]')) return;
       const url = card.getAttribute('data-href');
       if (url) window.open(url, '_blank', 'noopener,noreferrer');
     });
@@ -753,7 +765,9 @@ function _renderPinnedNexo() {
   const btn = pinned.querySelector('[data-nexo-action="refresh"]');
   if (btn) {
     btn.addEventListener('click', function(e) {
+      e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
       if (ClassVault._liveSessionLoading) return;
       _loadLiveSession();
     });
