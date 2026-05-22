@@ -203,6 +203,9 @@ function _renderSidebar() {
   if (!body) return;
   const html = [];
 
+  // ── LLMs section: launchers that open external tools in a new tab ──
+  html.push(_renderLLMsSection());
+
   // ── Hoje section (active aula only) ───────────────────────────
   if (ClassVault.aulaNumber != null) {
     html.push(_renderSection({
@@ -233,9 +236,6 @@ function _renderSidebar() {
 
   // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
   html.push(_renderDriveSection());
-
-  // ── LLMs section: launchers that open external tools in a new tab ──
-  html.push(_renderLLMsSection());
 
   body.innerHTML = html.join('');
 

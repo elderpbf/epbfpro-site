@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ClassVault — Section header options</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=1">
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../../css/backstage.css?v=2.0">
+<link rel="stylesheet" href="../../classvault/css/classvault.css?v=1.22">
+<style>
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text-primary);
+    font-family: var(--font-body, system-ui, sans-serif);
+  }
+  .mock-page {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+  .mock-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .mock-head h1 {
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .mock-sub {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0 0 28px;
+  }
+  .mock-controls {
+    display: inline-flex;
+    gap: 6px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .mock-controls button {
+    background: transparent;
+    border: 0;
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .mock-controls button.is-on {
+    background: var(--primary);
+    color: #fff;
+  }
+  .mock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 22px;
+    align-items: start;
+  }
+  .mock-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 16px 22px;
+    min-width: 0;
+  }
+  .mock-col h2 {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 0 0 4px;
+  }
+  .mock-col .mock-name {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+  }
+  .mock-col .mock-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin: 0 0 16px;
+    line-height: 1.4;
+    min-height: 2.2em;
+  }
+  .mock-pick {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 8px 12px;
+    background: var(--primary);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .mock-pick:hover { background: var(--primary-hover, #0d9488); }
+  /* The body of each column mimics .cv-sm-body so headers feel like they're inside a real sidebar */
+  .mock-body { display: flex; flex-direction: column; gap: 0; padding: 4px 6px; }
+  .mock-sample { display: flex; flex-direction: column; gap: 6px; padding: 4px 4px 8px; }
+  .mock-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .mock-card .dot {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    background: var(--primary);
+    flex-shrink: 0;
+  }
+
+  /* ───────────────────────────────────────────────────────────── */
+  /* Option 1 — Pill: subtle full-width background pill, count chip */
+  /* ───────────────────────────────────────────────────────────── */
+  .opt-1 .h {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: color-mix(in oklab, var(--primary) 8%, transparent);
+    border-radius: 999px;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .opt-1 .h .chev {
+    font-size: 0.8rem;
+    color: var(--primary);
+    transition: transform 0.18s;
+  }
+  .opt-1 .h.is-collapsed .chev { transform: rotate(-90deg); }
+  .opt-1 .h .label {
+    flex: 1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-primary);
+  }
+  .opt-1 .h .count {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--surface);
+    padding: 2px 9px;
+    border-radius: 999px;
+  }
+
+  /* ───────────────────────────────────────────────────────────── */
+  /* Option 2 — Accent bar: 3px primary stripe on the left, big label */
+  /* ───────────────────────────────────────────────────────────── */
+  .opt-2 .h {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 4px 6px 14px;
+    margin-bottom: 6px;
+    position: relative;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .opt-2 .h::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 6px; bottom: 6px;
+    width: 3px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+  .opt-2 .h .chev {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: transform 0.18s;
+  }
+  .opt-2 .h.is-collapsed .chev { transform: rotate(-90deg); }
+  .opt-2 .h .label {
+    flex: 1;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+  .opt-2 .h .count {
+    min-width: 22px; height: 22px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--primary);
+    background: color-mix(in oklab, var(--primary) 12%, transparent);
+    border-radius: 999px;
+    padding: 0 6px;
+  }
+
+  /* ───────────────────────────────────────────────────────────── */
+  /* Option 3 — Card: header sits on a soft elevated surface row */
+  /* ───────────────────────────────────────────────────────────── */
+  .opt-3 .h {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .opt-3 .h:hover {
+    border-color: var(--primary-light, color-mix(in oklab, var(--primary) 30%, transparent));
+  }
+  .opt-3 .h .chev {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    transition: transform 0.18s;
+  }
+  .opt-3 .h.is-collapsed .chev { transform: rotate(-90deg); }
+  .opt-3 .h .label {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.005em;
+  }
+  .opt-3 .h .count {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: var(--background);
+    padding: 2px 9px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  /* ───────────────────────────────────────────────────────────── */
+  /* Option 4 — Gradient underline: bold label, no chev-line; thin gradient stroke below */
+  /* ───────────────────────────────────────────────────────────── */
+  .opt-4 .h {
+    display: block;
+    padding: 12px 2px 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    position: relative;
+  }
+  .opt-4 .h .row1 {
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .opt-4 .h .chev {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: transform 0.18s;
+    line-height: 1;
+  }
+  .opt-4 .h.is-collapsed .chev { transform: rotate(-90deg); }
+  .opt-4 .h .label {
+    flex: 1;
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+  .opt-4 .h .count {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .opt-4 .h::after {
+    content: "";
+    display: block;
+    margin-top: 6px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--primary) 0%, color-mix(in oklab, var(--primary) 40%, transparent) 35%, transparent 100%);
+  }
+
+  /* ───────────────────────────────────────────────────────────── */
+  /* Option 5 — Iconic: emoji glyph + bold label + dot-count, more visual */
+  /* ───────────────────────────────────────────────────────────── */
+  .opt-5 .h {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 8px 9px 4px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .opt-5 .h:hover {
+    background: color-mix(in oklab, var(--primary) 5%, transparent);
+  }
+  .opt-5 .h .icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 1.05rem;
+    background: color-mix(in oklab, var(--primary) 12%, transparent);
+    flex-shrink: 0;
+  }
+  .opt-5 .h .label {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.005em;
+  }
+  .opt-5 .h .count {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+  .opt-5 .h .chev {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.65;
+    transition: transform 0.18s;
+    margin-left: 4px;
+  }
+  .opt-5 .h.is-collapsed .chev { transform: rotate(-90deg); }
+
+  /* Per-option footer with the "Choose this" affordance */
+  .mock-footer {
+    margin-top: 32px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .mock-footer kbd {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="mock-page">
+
+  <div class="mock-head">
+    <div>
+      <h1>ClassVault — section headers</h1>
+      <p class="mock-sub">Cinco direções para o header de cada seção do menu lateral. Compare lado a lado, alterne tema, e me diga qual escolher.</p>
+    </div>
+    <div class="mock-controls" role="tablist" aria-label="Tema">
+      <button id="btn-dark" class="is-on" type="button">Dark</button>
+      <button id="btn-light" type="button">Light</button>
+    </div>
+  </div>
+
+  <div class="mock-grid">
+
+    <!-- Option 1 — Pill -->
+    <div class="mock-col opt-1">
+      <h2>Opção 1</h2>
+      <div class="mock-name">Pílula suave</div>
+      <p class="mock-desc">Fundo arredondado com tom teal leve. Contagem em chip claro. Limpo e identificável.</p>
+      <div class="mock-body">
+
+        <div class="h" data-collapsed="false">
+          <span class="chev">▾</span>
+          <span class="label">LLMs</span>
+          <span class="count">6</span>
+        </div>
+        <div class="mock-sample">
+          <div class="mock-card"><span class="dot"></span> ChatGPT</div>
+          <div class="mock-card"><span class="dot"></span> Claude</div>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">Vault</span>
+          <span class="count">42</span>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">Trilha · Capacitação IA</span>
+          <span class="count">18</span>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">📁 Drive</span>
+          <span class="count">9</span>
+        </div>
+      </div>
+      <button class="mock-pick" data-pick="1">Escolher opção 1</button>
+    </div>
+
+    <!-- Option 2 — Accent bar -->
+    <div class="mock-col opt-2">
+      <h2>Opção 2</h2>
+      <div class="mock-name">Faixa lateral</div>
+      <p class="mock-desc">Stripe vertical em teal à esquerda + label em caps tracked. Visual estrutural e firme.</p>
+      <div class="mock-body">
+
+        <div class="h" data-collapsed="false">
+          <span class="chev">▾</span>
+          <span class="label">LLMs</span>
+          <span class="count">6</span>
+        </div>
+        <div class="mock-sample">
+          <div class="mock-card"><span class="dot"></span> ChatGPT</div>
+          <div class="mock-card"><span class="dot"></span> Claude</div>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">Vault</span>
+          <span class="count">42</span>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">Trilha · Capacitação IA</span>
+          <span class="count">18</span>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">📁 Drive</span>
+          <span class="count">9</span>
+        </div>
+      </div>
+      <button class="mock-pick" data-pick="2">Escolher opção 2</button>
+    </div>
+
+    <!-- Option 3 — Card -->
+    <div class="mock-col opt-3">
+      <h2>Opção 3</h2>
+      <div class="mock-name">Cartão suave</div>
+      <p class="mock-desc">Cada header é um cartão com borda. Mais peso visual. Boa para sidebar com muitos blocos.</p>
+      <div class="mock-body">
+
+        <div class="h" data-collapsed="false">
+          <span class="chev">▾</span>
+          <span class="label">LLMs</span>
+          <span class="count">6</span>
+        </div>
+        <div class="mock-sample">
+          <div class="mock-card"><span class="dot"></span> ChatGPT</div>
+          <div class="mock-card"><span class="dot"></span> Claude</div>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">Vault</span>
+          <span class="count">42</span>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">Trilha · Capacitação IA</span>
+          <span class="count">18</span>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="chev">▾</span>
+          <span class="label">📁 Drive</span>
+          <span class="count">9</span>
+        </div>
+      </div>
+      <button class="mock-pick" data-pick="3">Escolher opção 3</button>
+    </div>
+
+    <!-- Option 4 — Gradient underline -->
+    <div class="mock-col opt-4">
+      <h2>Opção 4</h2>
+      <div class="mock-name">Sublinhado gradiente</div>
+      <p class="mock-desc">Label maior + traço fino em gradiente teal embaixo. Editorial, com ritmo de leitura.</p>
+      <div class="mock-body">
+
+        <div class="h" data-collapsed="false">
+          <div class="row1">
+            <span class="chev">▾</span>
+            <span class="label">LLMs</span>
+            <span class="count">6</span>
+          </div>
+        </div>
+        <div class="mock-sample">
+          <div class="mock-card"><span class="dot"></span> ChatGPT</div>
+          <div class="mock-card"><span class="dot"></span> Claude</div>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <div class="row1">
+            <span class="chev">▾</span>
+            <span class="label">Vault</span>
+            <span class="count">42</span>
+          </div>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <div class="row1">
+            <span class="chev">▾</span>
+            <span class="label">Trilha · Capacitação IA</span>
+            <span class="count">18</span>
+          </div>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <div class="row1">
+            <span class="chev">▾</span>
+            <span class="label">📁 Drive</span>
+            <span class="count">9</span>
+          </div>
+        </div>
+      </div>
+      <button class="mock-pick" data-pick="4">Escolher opção 4</button>
+    </div>
+
+    <!-- Option 5 — Iconic -->
+    <div class="mock-col opt-5">
+      <h2>Opção 5</h2>
+      <div class="mock-name">Ícone destacado</div>
+      <p class="mock-desc">Glyph quadrado teal + label nítido. Mais expressivo, ajuda a escanear o menu rápido.</p>
+      <div class="mock-body">
+
+        <div class="h" data-collapsed="false">
+          <span class="icon">🤖</span>
+          <span class="label">LLMs</span>
+          <span class="count">6</span>
+          <span class="chev">▾</span>
+        </div>
+        <div class="mock-sample">
+          <div class="mock-card"><span class="dot"></span> ChatGPT</div>
+          <div class="mock-card"><span class="dot"></span> Claude</div>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="icon">📚</span>
+          <span class="label">Vault</span>
+          <span class="count">42</span>
+          <span class="chev">▾</span>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="icon">🛤️</span>
+          <span class="label">Trilha · Capacitação IA</span>
+          <span class="count">18</span>
+          <span class="chev">▾</span>
+        </div>
+
+        <div class="h is-collapsed" data-collapsed="true">
+          <span class="icon">📁</span>
+          <span class="label">Drive</span>
+          <span class="count">9</span>
+          <span class="chev">▾</span>
+        </div>
+      </div>
+      <button class="mock-pick" data-pick="5">Escolher opção 5</button>
+    </div>
+
+  </div>
+
+  <div class="mock-footer">
+    Clique no header para expandir/colapsar (apenas para demo). Tema atual: <kbd id="theme-name">dark</kbd>.
+  </div>
+
+</div>
+
+<script>
+  // Theme toggle
+  var root = document.getElementById('html-root');
+  var btnDark = document.getElementById('btn-dark');
+  var btnLight = document.getElementById('btn-light');
+  var themeName = document.getElementById('theme-name');
+  function setTheme(t) {
+    root.setAttribute('data-theme', t);
+    btnDark.classList.toggle('is-on', t === 'dark');
+    btnLight.classList.toggle('is-on', t === 'light');
+    themeName.textContent = t;
+  }
+  btnDark.addEventListener('click', function () { setTheme('dark'); });
+  btnLight.addEventListener('click', function () { setTheme('light'); });
+
+  // Collapse demo: clicking a header toggles its sample
+  document.querySelectorAll('.mock-col .h').forEach(function (h) {
+    h.addEventListener('click', function () {
+      var collapsed = h.classList.toggle('is-collapsed');
+      var sample = h.nextElementSibling;
+      if (sample && sample.classList.contains('mock-sample')) {
+        sample.style.display = collapsed ? 'none' : '';
+      }
+    });
+  });
+
+  // Pick button — just acknowledges
+  document.querySelectorAll('.mock-pick').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var n = btn.getAttribute('data-pick');
+      alert('Opção ' + n + ' escolhida. Me avise pelo chat para eu aplicar.');
+    });
+  });
+</script>
+
+</body>
+</html>
