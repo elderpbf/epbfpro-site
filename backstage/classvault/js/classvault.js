@@ -23,8 +23,8 @@ ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for acti
 ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
 ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
 ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
-ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive']);    // all sections (top-level + sub) collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
-ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive']);    // tracks which keys we've already initialized as collapsed; prevents re-collapsing after user expand
+ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms']);    // all sections (top-level + sub) collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
+ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms']);    // tracks which keys we've already initialized as collapsed; prevents re-collapsing after user expand
 // Phase 5: Drive Mirror — synthetic items fetched browser-side via GIS token client.
 ClassVault.driveItems = [];                  // synthetic Drive items (id prefixed with 'drive:')
 ClassVault.activeItemId = null;
@@ -233,6 +233,9 @@ function _renderSidebar() {
 
   // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
   html.push(_renderDriveSection());
+
+  // ── LLMs section: launchers that open external tools in a new tab ──
+  html.push(_renderLLMsSection());
 
   body.innerHTML = html.join('');
 
@@ -476,6 +479,39 @@ function _wireDriveSyncButton() {
       }
     });
   }
+}
+
+// ── LLMs section ───────────────────────────────────────────────
+// Static list of external LLM launchers. Each entry is a plain <a target="_blank">,
+// so the existing .sub click handler ignores them and the browser handles the
+// new-tab navigation natively. Favicons come from Google's S2 service so we
+// don't depend on each provider's own favicon being reachable / correctly sized.
+function _renderLLMsSection() {
+  const key = 'llms';
+  const isCollapsed = ClassVault.collapsedSections.has(key);
+  const llms = [
+    { name: 'ChatGPT',    url: 'https://chatgpt.com/',          domain: 'chatgpt.com' },
+    { name: 'Claude',     url: 'https://claude.ai/',            domain: 'claude.ai' },
+    { name: 'Gemini',     url: 'https://gemini.google.com/',    domain: 'gemini.google.com' },
+    { name: 'Grok',       url: 'https://grok.com/',             domain: 'grok.com' },
+    { name: 'NotebookLM', url: 'https://notebooklm.google.com/', domain: 'notebooklm.google.com' },
+    { name: 'Perplexity', url: 'https://www.perplexity.ai/',    domain: 'perplexity.ai' }
+  ];
+  const headerHtml =
+    '<button type="button" class="cv-sm-section' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+      'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
+      '<span class="cv-sm-section-chev">▾</span>' +
+      '<span>LLMs</span>' +
+      '<span class="cv-sm-section-line"></span>' +
+      '<span class="cv-sm-section-count">' + llms.length + '</span>' +
+    '</button>';
+  const bodyHtml = isCollapsed ? '' : llms.map(function(l) {
+    return '<a class="cv-sm-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
+             '<img class="cv-sm-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
+             '<span class="cv-sm-llm-name">' + _esc(l.name) + '</span>' +
+           '</a>';
+  }).join('');
+  return headerHtml + bodyHtml;
 }
 
 // Aula picker: dropdown chip rendered in the head, next to the turma chip.

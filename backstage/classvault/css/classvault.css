@@ -969,3 +969,40 @@ body.cv-focus.cv-focus--side .cv-sm {
 .cv-drive-connect-btn:hover {
   background: var(--cv-drive-connect-bg-hover);
 }
+
+/* ── LLMs section: external launchers (open in new tab) ──────── */
+
+.cv-sm-llm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.15s, background 0.12s;
+}
+.cv-sm-llm:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 3px 10px -5px var(--shadow);
+}
+.cv-sm-llm-favicon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+.cv-sm-llm-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
