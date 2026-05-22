@@ -96,14 +96,17 @@
       min-height: 0;
     }
 
-    /* Accuracy display (huge font, color-coded) */
-    .k4-acc-row {
+    /* Size selector — audience-visible context for the curve depth.
+       Four discrete buttons (segmented look) so each step is anchored
+       in the audience's mind. Labels are lawyer-speak, no token counts. */
+    .k4-size-row {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 1.5rem;
+      gap: 1.2rem;
+      flex-wrap: wrap;
     }
-    .k4-acc-label {
+    .k4-size-label {
       font-family: var(--font-display);
       font-size: clamp(15px, 1.2vw, 20px);
       color: var(--text-dim);
@@ -111,18 +114,36 @@
       text-transform: uppercase;
       font-weight: 600;
     }
-    .k4-acc-value {
-      font-family: var(--font-mono);
-      font-size: clamp(56px, 6vw, 92px);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      transition: color 220ms;
-      color: var(--good);
+    .k4-size-buttons {
+      display: inline-flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
     }
-    .k4-acc-value.k4-acc--high  { color: var(--good); }
-    .k4-acc-value.k4-acc--mid   { color: var(--amber); }
-    .k4-acc-value.k4-acc--low   { color: var(--bad); }
+    .k4-size-btn {
+      font-family: var(--font-display);
+      font-size: clamp(15px, 1.15vw, 19px);
+      font-weight: 600;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 220ms, color 220ms, border-color 220ms, box-shadow 220ms, transform 150ms;
+      letter-spacing: 0.01em;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      line-height: 1.15;
+    }
+    .k4-size-btn:hover {
+      border-color: var(--cool);
+      color: var(--cool);
+      transform: translateY(-1px);
+    }
+    .k4-size-btn.k4-size-btn--active {
+      border-color: var(--cool);
+      background: rgba(var(--cool-rgb), 0.18);
+      color: var(--cool);
+      box-shadow: 0 0 14px rgba(var(--cool-rgb), 0.25);
+    }
 
     /* Context bar with draggable needle */
     .k4-ctx-section {
@@ -359,31 +380,36 @@
 
   <div class="k4-question">
     <p class="k4-question-q">
-      "Qual o nome da mãe do ex-presidente Lula?"
+      "Em que data o réu foi intimado da sentença neste processo?"
     </p>
     <p class="k4-question-hint">
-      A resposta correta — <span class="k4-answer-key">Eurídice Ferreira de Mello</span> — está escondida em algum lugar do contexto abaixo. Arraste a agulha e veja como a precisão do modelo muda conforme a posição.
+      A informação — <span class="k4-answer-key">15 de março de 2024</span> — está em algum trecho do processo abaixo. Arraste a agulha para mover a posição do ato e veja como a resposta do modelo muda. Quanto maior o processo, mais profunda a zona morta no meio.
     </p>
   </div>
 
   <div class="k4-main">
-    <div class="k4-acc-row">
-      <span class="k4-acc-label">Acurácia da resposta</span>
-      <span class="k4-acc-value k4-acc--high" id="k4-acc">95%</span>
+    <div class="k4-size-row" role="radiogroup" aria-label="Tamanho do processo">
+      <span class="k4-size-label">Tamanho do processo</span>
+      <div class="k4-size-buttons">
+        <button class="k4-size-btn" data-size="0" type="button" role="radio">Petição inicial</button>
+        <button class="k4-size-btn k4-size-btn--active" data-size="1" type="button" role="radio" aria-checked="true">Processo simples</button>
+        <button class="k4-size-btn" data-size="2" type="button" role="radio">Processo complexo</button>
+        <button class="k4-size-btn" data-size="3" type="button" role="radio">Processo monstro</button>
+      </div>
     </div>
 
     <div class="k4-ctx-section">
       <div class="k4-ctx-bar" id="k4-ctx-bar" role="slider" tabindex="0"
-           aria-label="Posição da informação no contexto"
+           aria-label="Posição da intimação no processo"
            aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="k4-needle" id="k4-needle">
-          <span class="k4-needle-tag">Eurídice Ferreira de Mello</span>
+          <span class="k4-needle-tag">15/03/2024 — intimação do réu</span>
         </div>
       </div>
       <div class="k4-scale">
-        <span>0% (início)</span>
-        <span>50% (meio)</span>
-        <span>100% (final)</span>
+        <span>início do processo</span>
+        <span>meio do processo</span>
+        <span>final do processo</span>
       </div>
     </div>
 
@@ -435,46 +461,52 @@
   <script>
     (function() {
       // ── Constants ───────────────────────────────────────
-      // Accuracy formula (per FUTURE.md §4):
-      //   acc(pos) = 0.95 - 0.70 * exp(-((pos - 0.5)^2) / 0.05)
-      // → ~95% at edges, dips to ~25% at center. Pos ∈ [0, 1].
-      function accuracy(pos) {
-        return 0.95 - 0.70 * Math.exp(-((pos - 0.5) ** 2) / 0.05);
+      // Per-size dip depth. Values chosen so that even the deepest
+      // ("processo monstro") only drops accuracy to ~30% at the centre,
+      // not to zero — real lost-in-the-middle research shows the dip is
+      // visible but not catastrophic. acc(pos) = 0.95 - depth * gaussian.
+      const SIZE_DEPTHS = [0.10, 0.30, 0.50, 0.65];
+      const SIZE_LABELS = ['Petição inicial', 'Processo simples', 'Processo complexo', 'Processo monstro'];
+
+      function accuracyAt(pos, depth) {
+        return 0.95 - depth * Math.exp(-((pos - 0.5) ** 2) / 0.05);
       }
-      // Zones for the response answer (per brief):
-      //   high  : pos ∈ [0, 0.15) ∪ (0.85, 1]
-      //   mid   : pos ∈ [0.15, 0.30) ∪ (0.70, 0.85]
-      //   low   : pos ∈ [0.30, 0.70]
-      function zoneOf(pos) {
-        const d = Math.min(pos, 1 - pos);  // distance to nearest edge
-        if (d < 0.15) return 'high';
-        if (d < 0.30) return 'mid';
+      // Zone for the answer card. Computed from the current accuracy
+      // (size + position together), NOT from position alone — the whole
+      // point of the size selector is that the same middle position is
+      // safe in a small case but lethal in a monster.
+      function zoneOfAcc(acc) {
+        if (acc >= 0.75) return 'high';
+        if (acc >= 0.55) return 'mid';
         return 'low';
       }
 
       // ── State ───────────────────────────────────────────
       let needlePos    = 0;   // 0..1
+      let sizeIdx      = 1;   // index into SIZE_DEPTHS; default "Processo simples"
       let isDragging   = false;
       let lowAnswerIdx = 0;   // cycles through hallucinated answers on repeated asks
 
-      // Hallucinated answers cycled through when the model "loses" the
-      // information in the middle of the context.
+      // Hallucinated / hedged answers cycled through when the model
+      // "loses" the intimação in the middle of a long processo.
       const LOW_ANSWERS = [
-        'Não tenho essa informação no contexto.',
-        'Maria das Dores Silva.',
-        'Lindu (apelido). Nome completo não recordado.'
+        'Não localizei a intimação do réu neste processo.',
+        '23 de abril de 2024.',
+        'A intimação consta, mas a data não pôde ser determinada.',
+        '15 de fevereiro de 2024.',
+        'Não há registro de intimação específica da sentença no processo.'
       ];
 
       // ── DOM refs ────────────────────────────────────────
       const ctxBarEl   = document.getElementById('k4-ctx-bar');
       const needleEl   = document.getElementById('k4-needle');
-      const accEl      = document.getElementById('k4-acc');
       const curvePath  = document.getElementById('k4-curve-path');
       const curveArea  = document.getElementById('k4-curve-area');
       const curveDot   = document.getElementById('k4-curve-dot');
       const responseEl = document.getElementById('k4-response');
       const askBtn     = document.getElementById('k4-ask');
       const resetBtn   = document.getElementById('k4-reset');
+      const sizeBtns   = document.querySelectorAll('.k4-size-btn');
 
       // ── Curve geometry (one-time path build) ────────────
       // We sample 101 points across pos ∈ [0, 1] and emit them as an SVG
@@ -485,12 +517,13 @@
       const CURVE_W = 1000;
       const CURVE_H = 320;
       function buildCurve() {
+        const depth = SIZE_DEPTHS[sizeIdx];
         const N = 100;
         let path = '';
         let area = '';
         for (let i = 0; i <= N; i++) {
           const pos = i / N;
-          const acc = accuracy(pos);
+          const acc = accuracyAt(pos, depth);
           const x = pos * CURVE_W;
           const y = (1 - acc) * CURVE_H;
           path += (i === 0 ? 'M ' : 'L ') + x.toFixed(2) + ' ' + y.toFixed(2) + ' ';
@@ -499,24 +532,18 @@
         curvePath.setAttribute('d', path);
         curveArea.setAttribute('d', area);
       }
-      buildCurve();
 
       // ── Render ──────────────────────────────────────────
       function render() {
-        const acc = accuracy(needlePos);
-        const pct = Math.round(acc * 100);
-        const zone = zoneOf(needlePos);
+        const depth = SIZE_DEPTHS[sizeIdx];
+        const acc = accuracyAt(needlePos, depth);
 
         // Needle horizontal position (% of context bar)
         needleEl.style.left = (needlePos * 100) + '%';
         ctxBarEl.setAttribute('aria-valuenow', String(Math.round(needlePos * 100)));
 
-        // Accuracy display
-        accEl.textContent = pct + '%';
-        accEl.classList.remove('k4-acc--high', 'k4-acc--mid', 'k4-acc--low');
-        accEl.classList.add('k4-acc--' + zone);
-
-        // Curve dot
+        // Curve dot — its vertical drop is the audience's *implicit*
+        // accuracy reading. We deliberately don't display the percentage.
         curveDot.setAttribute('cx', String(needlePos * CURVE_W));
         curveDot.setAttribute('cy', String((1 - acc) * CURVE_H));
       }
@@ -580,23 +607,25 @@
 
       // ── Ask handler ─────────────────────────────────────
       function ask() {
-        const zone = zoneOf(needlePos);
+        const depth = SIZE_DEPTHS[sizeIdx];
+        const acc = accuracyAt(needlePos, depth);
+        const zone = zoneOfAcc(acc);
         const card = responseEl;
         card.classList.remove('k4-response--empty', 'k4-response--high', 'k4-response--mid', 'k4-response--low');
 
         let answer, verdict;
         if (zone === 'high') {
-          answer = 'Eurídice Ferreira de Mello.';
-          verdict = 'Resposta correta. Modelo localizou a informação sem dificuldade — ela estava perto da borda do contexto.';
+          answer = 'O réu foi intimado da sentença em 15 de março de 2024.';
+          verdict = 'Resposta correta. O ato estava perto da borda do processo e o modelo localizou sem dificuldade.';
           card.classList.add('k4-response--high');
         } else if (zone === 'mid') {
-          answer = 'Acredito que seja... Eurídice (?)';
-          verdict = 'Resposta parcial. A recuperação está incerta — o modelo hesitou porque a informação está se afastando da borda.';
+          answer = 'Acredito que a intimação tenha ocorrido em 15 de março de 2024 (?).';
+          verdict = 'Recuperação incerta. O ato está se afastando da borda e o modelo já hesita.';
           card.classList.add('k4-response--mid');
         } else {
           answer = LOW_ANSWERS[lowAnswerIdx % LOW_ANSWERS.length];
           lowAnswerIdx += 1;
-          verdict = 'Modelo perdeu a informação no meio do contexto. A atenção afrouxa nessa região e a resposta vira chute.';
+          verdict = 'Modelo perdeu o ato no meio do processo. Quanto maior o processo, maior essa zona morta.';
           card.classList.add('k4-response--low');
         }
 
@@ -620,6 +649,25 @@
         render();
       }
 
+      // ── Size selector ───────────────────────────────────
+      // Picking a size redraws the curve (deeper dip = bigger processo)
+      // and re-renders the dot so the audience sees the change instantly.
+      // We DON'T reset the response card — it's fair game to ask, then
+      // change the size, then ask again to compare same position / two
+      // processo sizes.
+      sizeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          sizeIdx = Number(btn.dataset.size);
+          sizeBtns.forEach(b => {
+            const isActive = Number(b.dataset.size) === sizeIdx;
+            b.classList.toggle('k4-size-btn--active', isActive);
+            b.setAttribute('aria-checked', String(isActive));
+          });
+          buildCurve();
+          render();
+        });
+      });
+
       askBtn  .addEventListener('click', ask);
       resetBtn.addEventListener('click', reset);
 
@@ -633,6 +681,7 @@
       });
 
       // ── Init ────────────────────────────────────────────
+      buildCurve();
       render();
     })();
   </script>
