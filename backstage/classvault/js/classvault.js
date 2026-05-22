@@ -30,26 +30,19 @@ ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llm
 ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);
 
 // PensoNexo live-session state. null = nothing live (Worker hasn't returned
-// yet or no active session). Polled every 30s while the page is open so the
-// header dot reflects reality without manual refresh.
+// yet or no active session). Refreshed on boot and on demand via the refresh
+// button inside the pinned PensoNexo card — no background polling.
 ClassVault.liveSession = null;
-ClassVault._liveSessionTimer = null;
+ClassVault._liveSessionLoading = false;
 async function _loadLiveSession() {
+  ClassVault._liveSessionLoading = true;
+  _renderPinnedNexo();
   let res;
   try { res = await callWorker({ action: 'cp_get_live_session', _silent: true }); }
-  catch (e) { return; }
-  const next = (res && res.session) || null;
-  const prevId = ClassVault.liveSession && ClassVault.liveSession.id;
-  const nextId = next && next.id;
-  if (prevId !== nextId || (next && next.name) !== (ClassVault.liveSession && ClassVault.liveSession.name)) {
-    ClassVault.liveSession = next;
-    _renderSidebar();
-  }
-}
-function _startLiveSessionPolling() {
-  _loadLiveSession();
-  if (ClassVault._liveSessionTimer) clearInterval(ClassVault._liveSessionTimer);
-  ClassVault._liveSessionTimer = setInterval(_loadLiveSession, 30000);
+  catch (e) { /* keep prior state on error */ }
+  ClassVault._liveSessionLoading = false;
+  ClassVault.liveSession = (res && res.session) || null;
+  _renderPinnedNexo();
 }
 
 // Favorites — persistent across sessions via localStorage.
@@ -113,7 +106,8 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   // _loadCodex renders the sidebar; Drive section appends after codex resolves.
   await _loadCodex();
   if (window.CVDriveSync) CVDriveSync.init();
-  _startLiveSessionPolling();
+  _renderPinnedNexo();   // initial paint (null state)
+  _loadLiveSession();    // fetch once on boot; user clicks refresh to update
 })();
 
 function _pickAula() {
@@ -293,9 +287,7 @@ function _renderSidebar() {
   // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
   html.push(_renderDriveSection());
 
-  // ── PensoNexo launcher (bottom, click-to-open, live-aware) ────
-  html.push(_renderNexoSection());
-
+  // PensoNexo lives in the pinned slot below .cv-sm-body, not here.
   body.innerHTML = html.join('');
 
   if (ClassVault.activeItemId != null) {
@@ -706,26 +698,49 @@ function _renderFavoritesSection() {
   return headerHtml + bodyHtml;
 }
 
-// ── PensoNexo header (no children; click-to-open) ─────────────
+// ── PensoNexo pinned card (lives in .cv-sm-pinned, not in .cv-sm-body) ─
 // Label and link target depend on whether a ClassPulse session is currently
-// live (any question.status='active'). The header card itself is the launcher;
+// live (any question.status='active'). The card itself is the launcher; a
+// refresh button on the right re-fetches live state on demand (no polling).
 // _wireItemClicks special-cases data-section="nexo" to open data-href instead
-// of toggling collapse. A pulsing red dot replaces the count when live.
-function _renderNexoSection() {
+// of toggling collapse. The refresh button stops propagation so clicking it
+// doesn't open the launcher.
+function _renderPinnedNexo() {
+  const pinned = document.querySelector('.cv-sm-pinned');
+  if (!pinned) return;
   const live = ClassVault.liveSession;
+  const loading = ClassVault._liveSessionLoading;
   const label = live ? 'PensoNexo · ' + live.name : 'PensoNexo · Abrir sessões';
   const href = live
     ? '/backstage/classpulse/host.html?code=' + encodeURIComponent(live.id)
     : '/backstage/classpulse/';
-  return (
+  pinned.innerHTML =
     '<button type="button" class="cv-sm-section cv-sm-section--nexo" ' +
       'data-section="nexo" data-href="' + _esc(href) + '" ' +
       'title="' + _esc(label) + '">' +
       '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.nexo + '</span>' +
       '<span class="cv-sm-section-label">' + _esc(label) + '</span>' +
+      '<button type="button" class="cv-nexo-refresh-btn' + (loading ? ' is-loading' : '') + '" ' +
+        'data-nexo-action="refresh" title="Atualizar" aria-label="Atualizar sessão ao vivo">↻</button>' +
       (live ? '<span class="cv-sm-section-live-dot" aria-label="Sessão ao vivo"></span>' : '') +
-    '</button>'
-  );
+    '</button>';
+  // Wire the card itself as the launcher (refresh-btn stops propagation below).
+  const card = pinned.querySelector('.cv-sm-section--nexo');
+  if (card) {
+    card.addEventListener('click', function() {
+      const url = card.getAttribute('data-href');
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    });
+  }
+  // Wire the refresh button (re-attached on every render).
+  const btn = pinned.querySelector('[data-nexo-action="refresh"]');
+  if (btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (ClassVault._liveSessionLoading) return;
+      _loadLiveSession();
+    });
+  }
 }
 
 // Aula picker: dropdown chip rendered in the head, next to the turma chip.
@@ -884,12 +899,6 @@ function _wireItemClicks() {
     const section = e.target.closest('.cv-sm-section, .cv-sm-subsection');
     if (section) {
       const key = section.getAttribute('data-section');
-      // PensoNexo header is a launcher, not a collapsible.
-      if (key === 'nexo') {
-        const url = section.getAttribute('data-href');
-        if (url) window.open(url, '_blank', 'noopener,noreferrer');
-        return;
-      }
       if (ClassVault.collapsedSections.has(key)) {
         ClassVault.collapsedSections.delete(key);
       } else {
