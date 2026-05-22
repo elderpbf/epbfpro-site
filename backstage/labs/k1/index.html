@@ -1115,11 +1115,13 @@
         VB_W = Math.round(rect.width);
         VB_H = Math.round(rect.height);
         CENTER_X  = VB_W / 2;
-        MANGA_Y   = VB_H * 0.55;
+        // Push the cluster slightly below center so the big cluster labels
+        // above the regions always have room without clipping the viewBox.
+        MANGA_Y   = VB_H * 0.62;
         ROUPA_X   = VB_W * 0.08;
         FRUTA_X   = VB_W * 0.92;
-        // Tighter than before so the cluster doesn't overflow when the viz is tall
-        CLUSTER_R = Math.min(VB_H * 0.30, VB_W * 0.09);
+        // Slightly smaller than before so labels + dots fit even on short viz.
+        CLUSTER_R = Math.min(VB_H * 0.26, VB_W * 0.085);
         return true;
       }
 
@@ -1222,8 +1224,13 @@
         });
         vizEl.appendChild(fruitaRegion);
 
-        // Big cluster labels (above each region)
-        const clusterLabelY = MANGA_Y - CLUSTER_R - CLUSTER_LABEL_F * 0.35;
+        // Big cluster labels (above each region). Clamp to a safe minimum so
+        // the cap top stays inside the viewBox even when the viz is short.
+        // The SVG text Y attribute is the BASELINE, so the cap rises roughly
+        // CLUSTER_LABEL_F * 0.8 above it. Anything less than that as a Y
+        // value would clip the top of "FRUTA" / "ROUPA".
+        const idealLabelY = MANGA_Y - CLUSTER_R - CLUSTER_LABEL_F * 0.4;
+        const clusterLabelY = Math.max(CLUSTER_LABEL_F * 0.85, idealLabelY);
         roupaLabel = makeEl('text', {
           x: ROUPA_X, y: clusterLabelY,
           'text-anchor': 'middle',
