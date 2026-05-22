@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>K1 — Atenção e o sentido da palavra · PensoLabs</title>
+<title>Atenção e o sentido da palavra · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
 <link rel="stylesheet" href="../css/labs.css?v=1.0">
 <script>
@@ -40,9 +40,9 @@
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
-      gap: 0.9rem;
-      padding: 1.5rem 2.5rem 1.25rem;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 0.85rem;
+      padding: 1rem 2rem;
       box-sizing: border-box;
       background: var(--bg);
       color: var(--text);
@@ -108,7 +108,7 @@
       border-radius: 10px;
       padding: 0.55rem 1.1rem;
       font-family: var(--font-display);
-      font-size: clamp(22px, 1.7vw, 30px);
+      font-size: clamp(32px, 2.4vw, 44px);
       font-weight: 600;
       color: var(--text);
       outline: none;
@@ -138,11 +138,11 @@
     .k1-type-suggestion {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.55rem;
       flex: 1 1 auto;
       min-width: 0;
       font-family: var(--font-mono);
-      font-size: clamp(15px, 1.05vw, 19px);
+      font-size: clamp(22px, 1.6vw, 28px);
       color: var(--text-dim);
       white-space: nowrap;
       overflow: hidden;
@@ -155,12 +155,12 @@
     .k1-sug-chip {
       display: inline-flex;
       align-items: center;
-      padding: 0.3rem 0.95rem;
+      padding: 0.35rem 1.1rem;
       background: rgba(var(--lab-focal-rgb), 0.12);
-      border: 1.5px solid var(--accent);
+      border: 2px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: clamp(18px, 1.35vw, 23px);
+      font-size: clamp(28px, 2.2vw, 38px);
       font-weight: 700;
       color: var(--accent);
       cursor: pointer;
@@ -202,9 +202,9 @@
     .k1-frase {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem 0.5rem;
+      gap: 0.55rem 0.6rem;
       align-items: center;
-      min-height: 50px;
+      min-height: 64px;
       border: 2px dashed transparent;
       border-radius: 10px;
       padding: 0.35rem 0.5rem;
@@ -219,12 +219,12 @@
     .k1-word-anchor {
       display: inline-flex;
       align-items: center;
-      padding: 0.4rem 1.15rem;
+      padding: 0.45rem 1.3rem;
       background: rgba(var(--lab-focal-rgb), 0.20);
       border: 2.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: clamp(18px, 1.35vw, 23px);
+      font-size: clamp(30px, 2.4vw, 42px);
       font-weight: 800;
       color: var(--accent);
       letter-spacing: 0.005em;
@@ -255,16 +255,18 @@
     .k1-word-active {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
-      padding: 0.4rem 0.55rem 0.4rem 1rem;
+      gap: 0.5rem;
+      padding: 0.45rem 0.65rem 0.45rem 1.15rem;
       background: rgba(var(--lab-focal-rgb), 0.12);
       border: 1.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: clamp(17px, 1.25vw, 21px);
+      font-size: clamp(26px, 2vw, 36px);
       font-weight: 600;
       color: var(--text);
       line-height: 1;
+    }
+    .k1-word-active.k1-word-just-added {
       animation: k1-pop-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
     .k1-word-active.k1-bias-fruta {
@@ -285,7 +287,7 @@
     .k1-frase-placeholder {
       color: var(--text-dim);
       font-style: italic;
-      font-size: clamp(15px, 1.1vw, 19px);
+      font-size: clamp(22px, 1.6vw, 28px);
       opacity: 0.55;
       letter-spacing: 0.01em;
     }
@@ -322,7 +324,7 @@
     .k1-btn-reset {
       flex-shrink: 0;
       font-family: var(--font-display);
-      font-size: clamp(15px, 1.05vw, 18px);
+      font-size: clamp(20px, 1.5vw, 26px);
       font-weight: 600;
       padding: 0.55rem 1.2rem;
       border-radius: 999px;
@@ -340,7 +342,7 @@
     .k1-btn-suggest {
       flex-shrink: 0;
       font-family: var(--font-display);
-      font-size: clamp(15px, 1.1vw, 19px);
+      font-size: clamp(22px, 1.6vw, 28px);
       font-weight: 700;
       padding: 0.55rem 1.4rem;
       border-radius: 999px;
@@ -390,24 +392,17 @@
     }
   </style>
 
-  <!-- Typing input with autocomplete -->
   <div class="k1-type-wrap">
-    <div class="k1-section-label">
-      Escreva uma palavra
-      <span class="hint">apenas letras que formam palavras conhecidas são aceitas · <kbd>enter</kbd> adiciona a sugestão · <kbd>tab</kbd> completa no campo</span>
-    </div>
     <div class="k1-type-row">
       <input class="k1-type-input" id="k1-type-input" type="text"
              autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"
-             placeholder="digite…" />
+             placeholder="digite uma palavra..." />
       <div class="k1-type-suggestion" id="k1-type-suggestion"></div>
     </div>
   </div>
 
-  <!-- Frase (drop zone) + ações -->
   <div class="k1-frase-row">
     <div class="k1-frase-wrap">
-      <div class="k1-section-label">Frase em construção <span class="hint">digite acima, arraste pílulas para reordenar, ou peça uma frase de exemplo</span></div>
       <div class="k1-frase" id="k1-frase"></div>
     </div>
     <button class="k1-btn-suggest" id="k1-suggest" title="Inserir uma frase de exemplo aleatória">Sugerir frase</button>
@@ -418,9 +413,6 @@
   <div class="k1-viz-wrap">
     <svg class="k1-viz" id="k1-viz" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
-
-  <!-- Caption -->
-  <p class="k1-caption">Mesma palavra. Mesmo ID de token. Significados diferentes — moldados pelo contexto.</p>
 
   <script>
     (function () {
@@ -1094,11 +1086,11 @@
       // This makes 1 viewBox unit equal to 1 screen pixel, and lets us pin
       // clusters at percentages of the actual width.
       let VB_W, VB_H, CENTER_X, ROUPA_X, FRUTA_X, MANGA_Y, CLUSTER_R;
-      const MEMBER_DOT_R    = 7;
-      const MEMBER_FONT     = 20;
-      const CLUSTER_LABEL_F = 38;
-      const MANGA_DOT_R     = 22;
-      const MANGA_LABEL_F   = 36;
+      const MEMBER_DOT_R    = 11;
+      const MEMBER_FONT     = 30;
+      const CLUSTER_LABEL_F = 56;
+      const MANGA_DOT_R     = 32;
+      const MANGA_LABEL_F   = 56;
 
       // Member offsets are expressed as ratios of CLUSTER_R, so they scale
       // with the cluster size.
@@ -1430,11 +1422,14 @@
           '<span class="k1-sug-chip ' + biasClass + '" data-text="' + match.text + '" title="clique para adicionar">' +
             '<span class="k1-sug-prefix">' + prefix + '</span>' +
             '<span class="k1-sug-suffix">' + suffix + '</span>' +
-          '</span>' +
-          '<span class="k1-sug-keys"><kbd>enter</kbd> adiciona · <kbd>tab</kbd> completa</span>';
+          '</span>';
       }
 
       // ── Render the frase ─────────────────────────────────
+      // Only pills carrying _justAdded === true play the pop-in animation.
+      // Without this flag every renderFrase() would replay the animation on
+      // every existing pill, producing a jarring full-row refresh on each
+      // insertion (visible during Sugerir frase's stagger-insert).
       function renderFrase() {
         fraseEl.innerHTML = '';
         if (activeWords.length === 0) {
@@ -1447,6 +1442,10 @@
         activeWords.forEach((w, idx) => {
           const pill = document.createElement('span');
           pill.className = 'k1-word-active';
+          if (w._justAdded) {
+            pill.classList.add('k1-word-just-added');
+            delete w._justAdded;
+          }
           if (w.bias === 'fruta') pill.classList.add('k1-bias-fruta');
           else if (w.bias === 'roupa') pill.classList.add('k1-bias-roupa');
           else if (w.bias === 'manga') pill.classList.add('k1-bias-manga');
@@ -1469,7 +1468,8 @@
         if (!def) return;
         const clamped = Math.max(0, Math.min(activeWords.length, idx));
         // Each insertion is a fresh entry so duplicates work cleanly.
-        activeWords.splice(clamped, 0, { text: def.text, bias: def.bias });
+        // _justAdded marks this pill for the pop-in animation on next render.
+        activeWords.splice(clamped, 0, { text: def.text, bias: def.bias, _justAdded: true });
         updateSuggestion();
         renderFrase();
         animateToBias(computeBias(activeWords));
