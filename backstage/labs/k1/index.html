@@ -40,9 +40,9 @@
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr);
-      gap: 0.85rem;
-      padding: 1rem 2rem;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
       background: var(--bg);
       color: var(--text);
@@ -314,50 +314,57 @@
     }
     .k1-x:hover { background: var(--accent-bad); color: var(--lab-bg); }
 
-    /* ── Reset button (top-right corner of frase) ─────────── */
+    /* ── Frase + bottom button bar ─────────────────────────
+       Frase takes the full row width now. Operator buttons
+       (Sugerir frase / Limpar) live in the .k1-button-bar at
+       the bottom of the panel, kept visually small since
+       Elder operates them while the class watches the viz. */
     .k1-frase-row {
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
     }
     .k1-frase-row .k1-frase-wrap { flex: 1; min-width: 0; }
-    .k1-btn-reset {
-      flex-shrink: 0;
+
+    .k1-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+    }
+    .k1-btn-reset,
+    .k1-btn-suggest {
       font-family: var(--font-display);
-      font-size: clamp(20px, 1.5vw, 26px);
+      font-size: clamp(13px, 0.95vw, 15px);
       font-weight: 600;
-      padding: 0.55rem 1.2rem;
+      padding: 0.38rem 1rem;
       border-radius: 999px;
-      border: 2px solid var(--border);
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      transition: background 180ms ease, color 180ms ease,
+                  border-color 180ms ease, box-shadow 180ms ease,
+                  transform 150ms ease;
+    }
+    .k1-btn-reset {
+      border: 1.5px solid var(--border);
       background: transparent;
       color: var(--text-dim);
-      cursor: pointer;
-      align-self: stretch;
-      transition: border-color 200ms ease, color 200ms ease, background 200ms ease;
     }
     .k1-btn-reset:hover {
       border-color: var(--accent-bad);
       color: var(--accent-bad);
     }
     .k1-btn-suggest {
-      flex-shrink: 0;
-      font-family: var(--font-display);
-      font-size: clamp(22px, 1.6vw, 28px);
-      font-weight: 700;
-      padding: 0.55rem 1.4rem;
-      border-radius: 999px;
-      border: 2px solid var(--accent);
-      background: rgba(var(--lab-focal-rgb), 0.15);
+      border: 1.5px solid var(--accent);
+      background: rgba(var(--lab-focal-rgb), 0.16);
       color: var(--accent);
-      cursor: pointer;
-      align-self: stretch;
-      transition: background 200ms ease, transform 150ms ease, box-shadow 200ms ease;
-      box-shadow: 0 0 14px rgba(var(--lab-focal-rgb), 0.18);
+      box-shadow: 0 0 10px rgba(var(--lab-focal-rgb), 0.18);
     }
     .k1-btn-suggest:hover:not(:disabled) {
       background: rgba(var(--lab-focal-rgb), 0.28);
       transform: translateY(-1px);
-      box-shadow: 0 0 22px rgba(var(--lab-focal-rgb), 0.34);
+      box-shadow: 0 0 16px rgba(var(--lab-focal-rgb), 0.3);
     }
     .k1-btn-suggest:disabled {
       opacity: 0.45;
@@ -405,13 +412,16 @@
     <div class="k1-frase-wrap">
       <div class="k1-frase" id="k1-frase"></div>
     </div>
-    <button class="k1-btn-suggest" id="k1-suggest" title="Inserir uma frase de exemplo aleatória">Sugerir frase</button>
-    <button class="k1-btn-reset" id="k1-reset" title="Limpar a frase">Limpar</button>
   </div>
 
   <!-- Visualization -->
   <div class="k1-viz-wrap">
     <svg class="k1-viz" id="k1-viz" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <div class="k1-button-bar">
+    <button class="k1-btn-suggest" id="k1-suggest" title="Inserir uma frase de exemplo aleatória">Sugerir frase</button>
+    <button class="k1-btn-reset" id="k1-reset" title="Limpar a frase">Limpar</button>
   </div>
 
   <script>
