@@ -51,7 +51,11 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   const active = _pickActive(turmas);
   ClassVault.active = active;
   ClassVault.aulaNumber = _pickAula();
-  _renderSidebarHead(active, turmas);
+  // TODO(post-class refactor): turma chip + aula picker disabled for the
+  // "files-for-class-tomorrow" simplification. Active turma is still read from
+  // the URL by _pickActive; only the UI switcher is gone. _renderSidebarHead
+  // and _renderAulaPicker remain in the file and can be re-enabled if needed.
+  _renderSearchInput();
   _wireItemClicks();
   _wireSidebarFooter();
   _wireItemContextMenu();
@@ -219,32 +223,15 @@ function _renderSidebar() {
     html.push(CVLabs.renderSection(ClassVault.collapsedSections));
   }
 
-  // ── Hoje section (active aula only) ───────────────────────────
-  if (ClassVault.aulaNumber != null) {
-    html.push(_renderSection({
-      key: 'hoje',
-      label: 'Hoje · Aula ' + ClassVault.aulaNumber,
-      count: ClassVault.aulaPlanItems.length,
-      body: ClassVault.aulaPlanItems.length
-        ? _renderAulaBody(ClassVault.aulaPlanItems, { draggable: true })
-        : '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum item planejado. Clique direito num item do Vault → "Adicionar ao plano de hoje".</div>'
-    }));
-  }
-
-  // ── Vault section (global, grouped by tag) ────────────────────
-  html.push(_renderSection({
-    key: 'vault',
-    label: 'Vault',
-    count: ClassVault.vaultItems.length,
-    body: _renderVaultGroups(ClassVault.vaultItems)
-  }));
-
-  // ── Trilha section (read-only releases for turma) ─────────────
+  // ── Trilha: all authored items (vault_only + public), grouped by type ──
+  // Hoje and the per-turma Trilha are intentionally not rendered in the
+  // simplified flow. Worker's cv_get_codex_view now returns both vault_only
+  // and public items in data.vault, so vaultItems is the full library.
   html.push(_renderSection({
     key: 'trilha',
-    label: 'Trilha · ' + (ClassVault.active.display_name || ClassVault.active.name),
-    count: ClassVault.releaseItems.length,
-    body: _renderTrilhaGroups(ClassVault.releaseItems)
+    label: 'Trilha',
+    count: ClassVault.vaultItems.length,
+    body: _renderItemsByType(ClassVault.vaultItems)
   }));
 
   // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
@@ -259,6 +246,10 @@ function _renderSidebar() {
 
   // Wire Drive section interactive buttons (sync, connect) after DOM is stamped.
   _wireDriveSyncButton();
+
+  // Re-apply search filter on re-render so collapse toggles don't reset it.
+  const searchInput = document.querySelector('.cv-sm-search');
+  if (searchInput && searchInput.value) _applySearchFilter(searchInput.value);
 }
 
 // Per-section glyphs for the neon-glow card headers. Colors come from CSS
@@ -289,6 +280,95 @@ function _renderSection({ key, label, count, body }) {
 }
 
 // Vault: group items by primary tag. Untagged items in a final "Sem tag" group.
+// Render all items grouped by item.type — used by the simplified Trilha section.
+// Type order is opinionated to match how the teacher thinks about items in class:
+// Tarefas first, then Conteúdo, then visual aids, then everything else.
+const _TYPE_ORDER = ['tarefa', 'conteudo', 'slide', 'prompt', 'material', 'paper'];
+const _TYPE_LABEL = {
+  tarefa:   'Tarefas',
+  conteudo: 'Conteúdo',
+  slide:    'Slides',
+  prompt:   'Prompts',
+  material: 'Materiais',
+  paper:    'Papers'
+};
+function _renderItemsByType(items) {
+  if (!items.length) {
+    return '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum item ainda.</div>';
+  }
+  const groups = new Map();
+  for (const it of items) {
+    const k = it.type || '__other__';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(it);
+  }
+  const ordered = [];
+  for (const k of _TYPE_ORDER) if (groups.has(k)) ordered.push(k);
+  for (const k of groups.keys()) if (ordered.indexOf(k) === -1) ordered.push(k);
+
+  return ordered.map(typeKey => {
+    const groupItems = groups.get(typeKey);
+    const subKey = 'type:' + typeKey;
+    _seedCollapsedSubsection(subKey);
+    const isCollapsed = ClassVault.collapsedSections.has(subKey);
+    const headerLabel = _TYPE_LABEL[typeKey]
+      || (groupItems[0] && groupItems[0].type_label)
+      || (typeKey === '__other__' ? 'Outros' : typeKey);
+    return (
+      '<button type="button" class="cv-sm-subsection' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+        'data-section="' + _esc(subKey) + '" aria-expanded="' + (!isCollapsed) + '">' +
+        '<span class="cv-sm-section-chev">▾</span>' +
+        '<span>' + _esc(headerLabel) + '</span>' +
+        '<span class="cv-sm-section-line"></span>' +
+        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
+      '</button>' +
+      (isCollapsed ? '' : groupItems.map(it => _renderSubCard(it, false)).join(''))
+    );
+  }).join('');
+}
+
+// Search input placed in the (otherwise hidden) cv-sm-head. Live-filters .sub
+// elements in the body by title substring. ESC clears.
+function _renderSearchInput() {
+  const head = document.querySelector('.cv-sm-head');
+  if (!head) return;
+  head.innerHTML =
+    '<div class="cv-sm-search-wrap">' +
+      '<span class="cv-sm-search-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
+      '</span>' +
+      '<input type="search" class="cv-sm-search" placeholder="Buscar..." autocomplete="off" spellcheck="false">' +
+    '</div>';
+  const input = head.querySelector('.cv-sm-search');
+  if (!input) return;
+  input.addEventListener('input', () => _applySearchFilter(input.value));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && input.value) {
+      input.value = '';
+      _applySearchFilter('');
+      e.stopPropagation();
+    }
+  });
+}
+
+// Hide .sub items whose .sub-title doesn't contain the query (case-insensitive).
+// Group headers (subgroups, subsections) stay visible to avoid layout flicker.
+function _applySearchFilter(rawQuery) {
+  const q = (rawQuery || '').trim().toLowerCase();
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+  const subs = body.querySelectorAll('.sub');
+  if (!q) {
+    subs.forEach(el => { el.style.display = ''; });
+    return;
+  }
+  subs.forEach(el => {
+    const titleEl = el.querySelector('.sub-title');
+    const title = titleEl ? titleEl.textContent.toLowerCase() : '';
+    el.style.display = title.indexOf(q) !== -1 ? '' : 'none';
+  });
+}
+
 function _renderVaultGroups(items) {
   if (!items.length) {
     return '<div class="cv-sm-empty cv-sm-empty--inline">Vault vazio. Use "+ Adicionar item" para criar.</div>';

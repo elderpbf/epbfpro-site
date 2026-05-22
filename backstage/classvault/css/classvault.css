@@ -94,6 +94,42 @@ body.cv-focus.cv-focus--side .cv-sm {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+
+/* Search input that replaced the turma + aula picker in cv-sm-head. */
+.cv-sm-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.cv-sm-search-icon {
+  position: absolute;
+  left: 10px;
+  display: inline-flex;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.cv-sm-search-icon svg { width: 16px; height: 16px; }
+.cv-sm-search {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px 8px 34px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cv-sm-search::placeholder { color: var(--text-secondary); opacity: 0.7; }
+.cv-sm-search:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+/* Remove the default ✕ in WebKit/Edge search inputs so our own ESC clear is the only affordance */
+.cv-sm-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 .cv-sm-body {
   flex: 1;
   overflow-y: auto;
