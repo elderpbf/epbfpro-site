@@ -990,16 +990,19 @@ body.cv-focus.cv-focus--side .cv-sm {
   user-select: none;
 }
 
-/* Sync button injected inside the Drive section header. */
+/* Sync button injected inside the Drive section header.
+   box-sizing border-box keeps the 22x22 outer size with the 1px border so the
+   button doesn't make the Drive header row taller than the other sections. */
 .cv-drive-sync-btn {
   flex-shrink: 0;
+  box-sizing: border-box;
   width: 22px;
   height: 22px;
   border-radius: 5px;
   border: 1px solid transparent;
   background: var(--cv-drive-sync-bg);
   color: var(--cv-drive-sync-color);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1;
   display: inline-flex;
   align-items: center;
