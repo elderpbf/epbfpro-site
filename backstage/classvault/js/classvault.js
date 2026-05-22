@@ -732,13 +732,19 @@ function _renderPinnedNexo() {
         ' · ' + _esc(tail) +
       '</span>' +
       '<button type="button" class="cv-nexo-refresh-btn' + (loading ? ' is-loading' : '') + '" ' +
-        'data-nexo-action="refresh" title="Atualizar" aria-label="Atualizar sessão ao vivo">↻</button>' +
+        'data-nexo-action="refresh" title="Atualizar" aria-label="Atualizar sessão ao vivo">' +
+        '<span class="cv-nexo-refresh-icon">↻</span>' +
+      '</button>' +
       (live ? '<span class="cv-sm-section-live-dot" aria-label="Sessão ao vivo"></span>' : '') +
     '</div>';
 
   const card = pinned.querySelector('.cv-sm-section--nexo');
   if (card) {
-    card.addEventListener('click', function() {
+    card.addEventListener('click', function(e) {
+      // Defensive: clicks that originated on the refresh button (or its
+      // descendants) must not trigger the launcher even if stopPropagation
+      // upstream is bypassed for any reason.
+      if (e.target && e.target.closest && e.target.closest('[data-nexo-action="refresh"]')) return;
       const url = card.getAttribute('data-href');
       if (url) window.open(url, '_blank', 'noopener,noreferrer');
     });
@@ -753,7 +759,9 @@ function _renderPinnedNexo() {
   const btn = pinned.querySelector('[data-nexo-action="refresh"]');
   if (btn) {
     btn.addEventListener('click', function(e) {
+      e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
       if (ClassVault._liveSessionLoading) return;
       _loadLiveSession();
     });
