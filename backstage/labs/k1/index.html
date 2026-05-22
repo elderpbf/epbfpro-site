@@ -1,14 +1,48 @@
-<section class="k1-panel anim-panel" data-anim-id="k1" hidden>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Atenção e o sentido da palavra · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.0">
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k1-panel">
   <style>
     .k1-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --surface: var(--lab-surface);
+      --surface-2: var(--lab-surface-2);
+      --accent: var(--lab-focal);
+      --accent-good: var(--lab-context-b);
+      --accent-warm: var(--lab-context-a);
+      --accent-bad: var(--lab-bad);
+      --border: var(--lab-border);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
       position: relative;
       width: 100%;
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
-      gap: 0.9rem;
-      padding: 1.5rem 2.5rem 1.25rem;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 0.85rem;
+      padding: 1rem 2rem;
       box-sizing: border-box;
       background: var(--bg);
       color: var(--text);
@@ -74,7 +108,7 @@
       border-radius: 10px;
       padding: 0.55rem 1.1rem;
       font-family: var(--font-display);
-      font-size: clamp(22px, 1.7vw, 30px);
+      font-size: clamp(32px, 2.4vw, 44px);
       font-weight: 600;
       color: var(--text);
       outline: none;
@@ -89,12 +123,12 @@
     }
     .k1-type-input:focus {
       border-color: var(--accent);
-      background: rgba(108, 182, 255, 0.06);
+      background: rgba(var(--lab-focal-rgb), 0.06);
     }
     .k1-type-input.k1-error {
       animation: k1-shake 260ms ease;
       border-color: var(--accent-bad);
-      background: rgba(255, 108, 138, 0.08);
+      background: rgba(var(--lab-bad-rgb), 0.08);
     }
     @keyframes k1-shake {
       0%, 100% { transform: translateX(0); }
@@ -104,11 +138,11 @@
     .k1-type-suggestion {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.55rem;
       flex: 1 1 auto;
       min-width: 0;
       font-family: var(--font-mono);
-      font-size: clamp(15px, 1.05vw, 19px);
+      font-size: clamp(22px, 1.6vw, 28px);
       color: var(--text-dim);
       white-space: nowrap;
       overflow: hidden;
@@ -121,22 +155,22 @@
     .k1-sug-chip {
       display: inline-flex;
       align-items: center;
-      padding: 0.3rem 0.95rem;
-      background: rgba(108, 182, 255, 0.12);
-      border: 1.5px solid var(--accent);
+      padding: 0.35rem 1.1rem;
+      background: rgba(var(--lab-focal-rgb), 0.12);
+      border: 2px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: clamp(18px, 1.35vw, 23px);
+      font-size: clamp(28px, 2.2vw, 38px);
       font-weight: 700;
       color: var(--accent);
       cursor: pointer;
       transition: background 150ms, transform 150ms;
     }
-    .k1-sug-chip:hover { background: rgba(108, 182, 255, 0.22); transform: translateY(-1px); }
-    .k1-sug-chip.k1-bias-fruta { border-color: var(--accent-good); color: var(--accent-good); background: rgba(108, 255, 168, 0.10); }
-    .k1-sug-chip.k1-bias-fruta:hover { background: rgba(108, 255, 168, 0.20); }
-    .k1-sug-chip.k1-bias-roupa { border-color: var(--accent-warm); color: var(--accent-warm); background: rgba(255, 184, 108, 0.10); }
-    .k1-sug-chip.k1-bias-roupa:hover { background: rgba(255, 184, 108, 0.20); }
+    .k1-sug-chip:hover { background: rgba(var(--lab-focal-rgb), 0.22); transform: translateY(-1px); }
+    .k1-sug-chip.k1-bias-fruta { border-color: var(--accent-good); color: var(--accent-good); background: rgba(var(--lab-context-b-rgb), 0.10); }
+    .k1-sug-chip.k1-bias-fruta:hover { background: rgba(var(--lab-context-b-rgb), 0.20); }
+    .k1-sug-chip.k1-bias-roupa { border-color: var(--accent-warm); color: var(--accent-warm); background: rgba(var(--lab-context-a-rgb), 0.10); }
+    .k1-sug-chip.k1-bias-roupa:hover { background: rgba(var(--lab-context-a-rgb), 0.20); }
     .k1-sug-prefix { /* what you've typed so far, in solid color of the chip */ }
     .k1-sug-suffix { opacity: 0.55; font-weight: 500; }
     .k1-sug-empty {
@@ -168,9 +202,9 @@
     .k1-frase {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem 0.5rem;
+      gap: 0.55rem 0.6rem;
       align-items: center;
-      min-height: 50px;
+      min-height: 64px;
       border: 2px dashed transparent;
       border-radius: 10px;
       padding: 0.35rem 0.5rem;
@@ -178,19 +212,19 @@
     }
     .k1-frase.k1-drag-hover {
       border-color: var(--accent);
-      background: rgba(108, 182, 255, 0.06);
+      background: rgba(var(--lab-focal-rgb), 0.06);
     }
     /* The pinned "manga" anchor — looks like a draggable pill, can be
        reordered, but has no × button so it cannot be removed. */
     .k1-word-anchor {
       display: inline-flex;
       align-items: center;
-      padding: 0.4rem 1.15rem;
-      background: rgba(108, 182, 255, 0.20);
+      padding: 0.45rem 1.3rem;
+      background: rgba(var(--lab-focal-rgb), 0.20);
       border: 2.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: clamp(18px, 1.35vw, 23px);
+      font-size: clamp(30px, 2.4vw, 42px);
       font-weight: 800;
       color: var(--accent);
       letter-spacing: 0.005em;
@@ -198,7 +232,7 @@
       cursor: grab;
       user-select: none;
       white-space: nowrap;
-      box-shadow: 0 0 16px rgba(108, 182, 255, 0.28);
+      box-shadow: 0 0 16px rgba(var(--lab-focal-rgb), 0.28);
       animation: k1-pop-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
     .k1-word-anchor:active { cursor: grabbing; }
@@ -209,7 +243,7 @@
       height: 32px;
       background: var(--accent);
       border-radius: 2px;
-      box-shadow: 0 0 10px rgba(108, 182, 255, 0.7);
+      box-shadow: 0 0 10px rgba(var(--lab-focal-rgb), 0.7);
       animation: k1-pulse-indicator 700ms ease-in-out infinite alternate;
       pointer-events: none;
       flex-shrink: 0;
@@ -221,37 +255,39 @@
     .k1-word-active {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
-      padding: 0.4rem 0.55rem 0.4rem 1rem;
-      background: rgba(108, 182, 255, 0.12);
+      gap: 0.5rem;
+      padding: 0.45rem 0.65rem 0.45rem 1.15rem;
+      background: rgba(var(--lab-focal-rgb), 0.12);
       border: 1.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: clamp(17px, 1.25vw, 21px);
+      font-size: clamp(26px, 2vw, 36px);
       font-weight: 600;
       color: var(--text);
       line-height: 1;
+    }
+    .k1-word-active.k1-word-just-added {
       animation: k1-pop-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
     .k1-word-active.k1-bias-fruta {
-      background: rgba(108, 255, 168, 0.13);
+      background: rgba(var(--lab-context-b-rgb), 0.13);
       border-color: var(--accent-good);
     }
     .k1-word-active.k1-bias-roupa {
-      background: rgba(255, 184, 108, 0.13);
+      background: rgba(var(--lab-context-a-rgb), 0.13);
       border-color: var(--accent-warm);
     }
     .k1-word-active.k1-bias-manga {
-      background: rgba(108, 182, 255, 0.20);
+      background: rgba(var(--lab-focal-rgb), 0.20);
       border-color: var(--accent);
       color: var(--accent);
       font-weight: 800;
-      box-shadow: 0 0 14px rgba(108, 182, 255, 0.28);
+      box-shadow: 0 0 14px rgba(var(--lab-focal-rgb), 0.28);
     }
     .k1-frase-placeholder {
       color: var(--text-dim);
       font-style: italic;
-      font-size: clamp(15px, 1.1vw, 19px);
+      font-size: clamp(22px, 1.6vw, 28px);
       opacity: 0.55;
       letter-spacing: 0.01em;
     }
@@ -267,7 +303,7 @@
       height: 1.4em;
       border-radius: 50%;
       border: none;
-      background: rgba(255, 255, 255, 0.08);
+      background: color-mix(in srgb, var(--lab-text) 12%, transparent);
       color: var(--text-dim);
       font-family: inherit;
       font-size: 0.85em;
@@ -276,7 +312,7 @@
       padding: 0;
       line-height: 1;
     }
-    .k1-x:hover { background: var(--accent-bad); color: #0a0e1a; }
+    .k1-x:hover { background: var(--accent-bad); color: var(--lab-bg); }
 
     /* ── Reset button (top-right corner of frase) ─────────── */
     .k1-frase-row {
@@ -288,7 +324,7 @@
     .k1-btn-reset {
       flex-shrink: 0;
       font-family: var(--font-display);
-      font-size: clamp(15px, 1.05vw, 18px);
+      font-size: clamp(20px, 1.5vw, 26px);
       font-weight: 600;
       padding: 0.55rem 1.2rem;
       border-radius: 999px;
@@ -306,22 +342,22 @@
     .k1-btn-suggest {
       flex-shrink: 0;
       font-family: var(--font-display);
-      font-size: clamp(15px, 1.1vw, 19px);
+      font-size: clamp(22px, 1.6vw, 28px);
       font-weight: 700;
       padding: 0.55rem 1.4rem;
       border-radius: 999px;
       border: 2px solid var(--accent);
-      background: rgba(108, 182, 255, 0.15);
+      background: rgba(var(--lab-focal-rgb), 0.15);
       color: var(--accent);
       cursor: pointer;
       align-self: stretch;
       transition: background 200ms ease, transform 150ms ease, box-shadow 200ms ease;
-      box-shadow: 0 0 14px rgba(108, 182, 255, 0.18);
+      box-shadow: 0 0 14px rgba(var(--lab-focal-rgb), 0.18);
     }
     .k1-btn-suggest:hover:not(:disabled) {
-      background: rgba(108, 182, 255, 0.28);
+      background: rgba(var(--lab-focal-rgb), 0.28);
       transform: translateY(-1px);
-      box-shadow: 0 0 22px rgba(108, 182, 255, 0.34);
+      box-shadow: 0 0 22px rgba(var(--lab-focal-rgb), 0.34);
     }
     .k1-btn-suggest:disabled {
       opacity: 0.45;
@@ -356,24 +392,17 @@
     }
   </style>
 
-  <!-- Typing input with autocomplete -->
   <div class="k1-type-wrap">
-    <div class="k1-section-label">
-      Escreva uma palavra
-      <span class="hint">apenas letras que formam palavras conhecidas são aceitas · <kbd>enter</kbd> adiciona a sugestão · <kbd>tab</kbd> completa no campo</span>
-    </div>
     <div class="k1-type-row">
       <input class="k1-type-input" id="k1-type-input" type="text"
              autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"
-             placeholder="digite…" />
+             placeholder="digite uma palavra..." />
       <div class="k1-type-suggestion" id="k1-type-suggestion"></div>
     </div>
   </div>
 
-  <!-- Frase (drop zone) + ações -->
   <div class="k1-frase-row">
     <div class="k1-frase-wrap">
-      <div class="k1-section-label">Frase em construção <span class="hint">digite acima, arraste pílulas para reordenar, ou peça uma frase de exemplo</span></div>
       <div class="k1-frase" id="k1-frase"></div>
     </div>
     <button class="k1-btn-suggest" id="k1-suggest" title="Inserir uma frase de exemplo aleatória">Sugerir frase</button>
@@ -384,9 +413,6 @@
   <div class="k1-viz-wrap">
     <svg class="k1-viz" id="k1-viz" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
-
-  <!-- Caption -->
-  <p class="k1-caption">Mesma palavra. Mesmo ID de token. Significados diferentes — moldados pelo contexto.</p>
 
   <script>
     (function () {
@@ -1044,20 +1070,27 @@
         ],
       };
 
-      // Colors (must match the CSS custom properties)
-      const NEUTRAL_RGB = [108, 182, 255];
-      const FRUTA_RGB   = [108, 255, 168];
-      const ROUPA_RGB   = [255, 184, 108];
+      // Colors come from the lab palette (labs.css). Reading them from CSS at
+      // runtime keeps SVG fills in sync with light/dark mode without baking
+      // the values into JS literals.
+      function readRgb(varName) {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        const parts = v.split(',').map(s => parseInt(s.trim(), 10));
+        return parts.length === 3 && parts.every(n => Number.isFinite(n)) ? parts : [128, 128, 128];
+      }
+      let NEUTRAL_RGB = readRgb('--lab-focal-rgb');
+      let FRUTA_RGB   = readRgb('--lab-context-b-rgb');
+      let ROUPA_RGB   = readRgb('--lab-context-a-rgb');
 
       // Viz geometry — computed dynamically so viewBox matches container size.
       // This makes 1 viewBox unit equal to 1 screen pixel, and lets us pin
       // clusters at percentages of the actual width.
       let VB_W, VB_H, CENTER_X, ROUPA_X, FRUTA_X, MANGA_Y, CLUSTER_R;
-      const MEMBER_DOT_R    = 7;
-      const MEMBER_FONT     = 20;
-      const CLUSTER_LABEL_F = 38;
-      const MANGA_DOT_R     = 22;
-      const MANGA_LABEL_F   = 36;
+      const MEMBER_DOT_R    = 11;
+      const MEMBER_FONT     = 30;
+      const CLUSTER_LABEL_F = 56;
+      const MANGA_DOT_R     = 32;
+      const MANGA_LABEL_F   = 56;
 
       // Member offsets are expressed as ratios of CLUSTER_R, so they scale
       // with the cluster size.
@@ -1389,11 +1422,14 @@
           '<span class="k1-sug-chip ' + biasClass + '" data-text="' + match.text + '" title="clique para adicionar">' +
             '<span class="k1-sug-prefix">' + prefix + '</span>' +
             '<span class="k1-sug-suffix">' + suffix + '</span>' +
-          '</span>' +
-          '<span class="k1-sug-keys"><kbd>enter</kbd> adiciona · <kbd>tab</kbd> completa</span>';
+          '</span>';
       }
 
       // ── Render the frase ─────────────────────────────────
+      // Only pills carrying _justAdded === true play the pop-in animation.
+      // Without this flag every renderFrase() would replay the animation on
+      // every existing pill, producing a jarring full-row refresh on each
+      // insertion (visible during Sugerir frase's stagger-insert).
       function renderFrase() {
         fraseEl.innerHTML = '';
         if (activeWords.length === 0) {
@@ -1406,6 +1442,10 @@
         activeWords.forEach((w, idx) => {
           const pill = document.createElement('span');
           pill.className = 'k1-word-active';
+          if (w._justAdded) {
+            pill.classList.add('k1-word-just-added');
+            delete w._justAdded;
+          }
           if (w.bias === 'fruta') pill.classList.add('k1-bias-fruta');
           else if (w.bias === 'roupa') pill.classList.add('k1-bias-roupa');
           else if (w.bias === 'manga') pill.classList.add('k1-bias-manga');
@@ -1428,7 +1468,8 @@
         if (!def) return;
         const clamped = Math.max(0, Math.min(activeWords.length, idx));
         // Each insertion is a fresh entry so duplicates work cleanly.
-        activeWords.splice(clamped, 0, { text: def.text, bias: def.bias });
+        // _justAdded marks this pill for the pop-in animation on next render.
+        activeWords.splice(clamped, 0, { text: def.text, bias: def.bias, _justAdded: true });
         updateSuggestion();
         renderFrase();
         animateToBias(computeBias(activeWords));
@@ -1712,6 +1753,23 @@
       renderFrase();
       // Pre-focus the typing input so the instructor can start typing.
       setTimeout(() => inputEl.focus(), 0);
+
+      // ── Theme sync: when the parent toggles bs_theme in localStorage,
+      //    reflect it here and rebuild viz so the SVG colors (which are
+      //    inline attributes, not CSS-driven) refresh.
+      window.addEventListener('storage', function(e) {
+        if (e.key !== 'bs_theme') return;
+        const t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+          NEUTRAL_RGB = readRgb('--lab-focal-rgb');
+          FRUTA_RGB   = readRgb('--lab-context-b-rgb');
+          ROUPA_RGB   = readRgb('--lab-context-a-rgb');
+          buildViz();
+        }
+      });
     })();
   </script>
 </section>
+</body>
+</html>

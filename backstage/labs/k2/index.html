@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Previsão do próximo token · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.0">
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k2-panel">
+  <style>
+    .k2-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --surface: var(--lab-surface);
+      --surface-2: var(--lab-surface-2);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --warm: var(--lab-context-a);
+      --warm-rgb: var(--lab-context-a-rgb);
+      --cool: var(--lab-context-b);
+      --cool-rgb: var(--lab-context-b-rgb);
+      --border: var(--lab-border);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.85rem;
+      padding: 1rem 2rem;
+      box-sizing: border-box;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    .k2-header { text-align: center; }
+    .k2-header h1 {
+      font-size: clamp(28px, 2.6vw, 42px);
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.01em;
+      line-height: 1.05;
+    }
+    .k2-header .subtitle {
+      font-size: clamp(15px, 1.15vw, 19px);
+      color: var(--text-dim);
+      margin: 0.3rem 0 0;
+      font-weight: 400;
+    }
+
+    /* ── Section labels ───────────────────────────────────── */
+    .k2-section-label {
+      font-family: var(--font-mono);
+      font-size: clamp(12px, 0.9vw, 15px);
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin: 0 0 0.4rem;
+      font-weight: 600;
+    }
+
+    /* ── Prompt row ───────────────────────────────────────── */
+    .k2-prompt-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+    .k2-prompt-wrap {
+      flex: 1;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 0.7rem 1.2rem 0.85rem;
+      min-width: 0;
+    }
+    .k2-prompt-line {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 3vw, 56px);
+      font-weight: 600;
+      letter-spacing: 0.005em;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .k2-prompt-word {
+      display: inline-block;
+      animation: k2-pop-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .k2-blank {
+      display: inline-block;
+      min-width: 2.5em;
+      border-bottom: 3px solid var(--focal);
+      color: var(--focal);
+      font-weight: 700;
+      position: relative;
+    }
+    .k2-blank::after {
+      content: '';
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--focal);
+      margin-left: 0.1em;
+      vertical-align: middle;
+      animation: k2-blink 900ms steps(2) infinite;
+    }
+    .k2-prompt-final {
+      color: var(--focal);
+      font-weight: 800;
+    }
+    @keyframes k2-blink {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0; }
+    }
+    @keyframes k2-pop-in {
+      from { transform: translateY(-0.5em) scale(0.7); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .k2-final-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.3rem;
+      margin-left: 0.8rem;
+      background: rgba(var(--cool-rgb), 0.14);
+      border: 2px solid var(--cool);
+      border-radius: 999px;
+      font-family: var(--font-display);
+      font-size: clamp(20px, 1.5vw, 28px);
+      font-weight: 700;
+      color: var(--cool);
+      animation: k2-pop-in 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    /* ── Bar chart ────────────────────────────────────────── */
+    .k2-chart-wrap {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 0.7rem 1.2rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .k2-bars {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .k2-bar {
+      display: grid;
+      grid-template-columns: minmax(180px, 18ch) 1fr minmax(80px, auto);
+      align-items: center;
+      gap: 1.2rem;
+      min-height: 0;
+    }
+    .k2-bar-token {
+      font-family: var(--font-mono);
+      font-size: clamp(24px, 2vw, 36px);
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .k2-bar-track {
+      position: relative;
+      height: clamp(36px, 4vh, 52px);
+      background: color-mix(in srgb, var(--text) 6%, transparent);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .k2-bar-fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg,
+        rgba(var(--cool-rgb), 0.55),
+        rgba(var(--focal-rgb), 0.85));
+      border-radius: 6px;
+      transition: width 600ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                  background 320ms;
+    }
+    .k2-bar.k2-bar--top .k2-bar-fill {
+      background: linear-gradient(90deg,
+        rgba(var(--warm-rgb), 0.65),
+        var(--warm));
+      box-shadow: 0 0 14px rgba(var(--warm-rgb), 0.35);
+    }
+    .k2-bar.k2-bar--sampled .k2-bar-fill {
+      animation: k2-pulse 600ms ease-out;
+    }
+    @keyframes k2-pulse {
+      0%   { filter: brightness(1); }
+      40%  { filter: brightness(1.6); transform: scaleY(1.1); }
+      100% { filter: brightness(1); transform: scaleY(1); }
+    }
+    .k2-bar-pct {
+      font-family: var(--font-mono);
+      font-size: clamp(22px, 1.8vw, 30px);
+      font-weight: 600;
+      color: var(--text-dim);
+      text-align: right;
+      min-width: 5ch;
+    }
+    .k2-bar.k2-bar--top .k2-bar-pct { color: var(--warm); font-weight: 700; }
+
+    /* ── Controls row ─────────────────────────────────────── */
+    .k2-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 1rem;
+      align-items: center;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 0.7rem 1.2rem 0.85rem;
+    }
+    .k2-temp-block {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto;
+      column-gap: 1.2rem;
+      align-items: center;
+      min-width: 0;
+    }
+    .k2-temp-label-col {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.1rem;
+    }
+    .k2-temp-value {
+      font-family: var(--font-mono);
+      font-size: clamp(64px, 7vw, 104px);
+      font-weight: 700;
+      color: var(--warm);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .k2-temp-desc {
+      font-family: var(--font-display);
+      font-size: clamp(18px, 1.3vw, 24px);
+      color: var(--text-dim);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .k2-temp-slider-row {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      min-width: 0;
+    }
+    .k2-temp-slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: clamp(14px, 1vw, 18px);
+      color: var(--text-dim);
+      opacity: 0.7;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .k2-temp-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      background: color-mix(in srgb, var(--text) 8%, transparent);
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+    .k2-temp-slider {
+      height: 14px;
+    }
+    .k2-temp-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--warm);
+      border: 4px solid var(--surface);
+      box-shadow: 0 0 0 1px var(--warm), 0 0 16px rgba(var(--warm-rgb), 0.4);
+      cursor: grab;
+      transition: transform 120ms;
+    }
+    .k2-temp-slider::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.1); }
+    .k2-temp-slider::-moz-range-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--warm);
+      border: 4px solid var(--surface);
+      box-shadow: 0 0 0 1px var(--warm), 0 0 16px rgba(var(--warm-rgb), 0.4);
+      cursor: grab;
+    }
+
+    .k2-btn {
+      flex-shrink: 0;
+      font-family: var(--font-display);
+      font-size: clamp(22px, 1.6vw, 28px);
+      font-weight: 700;
+      padding: 0.7rem 1.6rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 200ms, transform 150ms, box-shadow 200ms, border-color 200ms;
+      align-self: stretch;
+    }
+    .k2-btn-sample {
+      border: 2px solid var(--focal);
+      background: rgba(var(--focal-rgb), 0.15);
+      color: var(--focal);
+      box-shadow: 0 0 14px rgba(var(--focal-rgb), 0.2);
+    }
+    .k2-btn-sample:hover:not(:disabled) {
+      background: rgba(var(--focal-rgb), 0.28);
+      transform: translateY(-1px);
+      box-shadow: 0 0 22px rgba(var(--focal-rgb), 0.34);
+    }
+    .k2-btn-sample:disabled { opacity: 0.45; cursor: not-allowed; }
+    .k2-btn-reset {
+      border: 2px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k2-btn-reset:hover {
+      border-color: var(--warm);
+      color: var(--warm);
+    }
+
+    /* ── Flying token clone ───────────────────────────────── */
+    .k2-fly {
+      position: fixed;
+      pointer-events: none;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--warm);
+      z-index: 100;
+      transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                  font-size 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                  opacity 700ms ease-out;
+    }
+  </style>
+
+  <div class="k2-prompt-row">
+    <div class="k2-prompt-wrap">
+      <div class="k2-prompt-line" id="k2-prompt"></div>
+    </div>
+    <button class="k2-btn k2-btn-reset" id="k2-reset" title="Voltar ao prompt inicial">Reiniciar</button>
+  </div>
+
+  <div class="k2-chart-wrap">
+    <div class="k2-bars" id="k2-bars"></div>
+  </div>
+
+  <div class="k2-controls">
+    <div class="k2-temp-block">
+      <div class="k2-temp-label-col">
+        <div class="k2-temp-value" id="k2-temp-value">1.00</div>
+        <div class="k2-temp-desc" id="k2-temp-desc">distribuição natural</div>
+      </div>
+      <div class="k2-temp-slider-row">
+        <div class="k2-temp-slider-label">
+          <span>0.00 · determinístico</span>
+          <span>aleatório · 2.00</span>
+        </div>
+        <input type="range" class="k2-temp-slider" id="k2-temp-slider"
+               min="0" max="2" step="0.01" value="1.0">
+      </div>
+    </div>
+    <button class="k2-btn k2-btn-sample" id="k2-sample">Amostrar token</button>
+  </div>
+
+  <script>
+    (function() {
+      // ── States: each entry holds the prompt prefix + the 12 logits for the
+      // next-token slot. Verbatim from FUTURE.md §2. ────────────────────────
+      const STATES = [
+        {
+          prefix: 'O rato roeu a',
+          logits: [
+            ['roupa', 5.2], ['casa', 2.1], ['parede', 1.9], ['mesa', 1.6],
+            ['rolha', 1.4], ['fruta', 1.2], ['queijo', 1.1], ['madeira', 0.9],
+            ['porta', 0.7], ['corda', 0.5], ['vela', 0.3], ['capa', 0.1]
+          ]
+        },
+        {
+          prefix: 'O rato roeu a roupa',
+          logits: [
+            ['do', 6.0], ['.', 4.5], ['e', 2.0], [',', 1.8],
+            ['no', 1.5], ['que', 1.4], ['com', 1.3], ['da', 1.0],
+            ['em', 0.8], ['então', 0.6], ['para', 0.5], ['mas', 0.3]
+          ]
+        },
+        {
+          prefix: 'O rato roeu a roupa do',
+          logits: [
+            ['rei', 5.5], ['padre', 2.5], ['soldado', 2.2], ['pai', 1.8],
+            ['juiz', 1.6], ['nobre', 1.4], ['príncipe', 1.2], ['conde', 1.0],
+            ['duque', 0.8], ['bispo', 0.6], ['avô', 0.4], ['mestre', 0.2]
+          ]
+        },
+        {
+          prefix: 'O rato roeu a roupa do rei',
+          logits: [
+            ['de', 6.2], ['da', 1.8], [',', 1.2], ['do', 1.0],
+            ['com', 0.7], ['e', 0.6], ['na', 0.6], ['que', 0.5],
+            ['.', 0.4], ['em', 0.4], ['mas', 0.3], ['sem', 0.2]
+          ]
+        },
+        {
+          prefix: 'O rato roeu a roupa do rei de',
+          logits: [
+            ['Roma', 5.8], ['França', 2.2], ['Portugal', 1.9], ['Espanha', 1.5],
+            ['Veneza', 1.2], ['Israel', 1.0], ['Roma.', 1.5], ['Roma!', 1.0],
+            ['Aragão', 0.7], ['Castela', 0.6], ['Sevilha', 0.4], ['ouro', 0.3]
+          ]
+        }
+      ];
+
+      // ── State ─────────────────────────────────────────────
+      let stepIdx = 0;             // 0..4; 5 = complete
+      let temperature = 1.0;
+      let sampledTokens = [];      // tokens chosen so far, in order
+      let isSampling = false;
+
+      // ── DOM refs ─────────────────────────────────────────
+      const promptEl   = document.getElementById('k2-prompt');
+      const barsEl     = document.getElementById('k2-bars');
+      const tempValEl  = document.getElementById('k2-temp-value');
+      const tempDescEl = document.getElementById('k2-temp-desc');
+      const sliderEl   = document.getElementById('k2-temp-slider');
+      const sampleBtn  = document.getElementById('k2-sample');
+      const resetBtn   = document.getElementById('k2-reset');
+
+      // ── Math ─────────────────────────────────────────────
+      function softmax(logits, T) {
+        const Tsafe = Math.max(T, 0.01);
+        // At T < 0.05, snap to argmax (deterministic greedy) per spec.
+        if (Tsafe < 0.05) {
+          const argmax = logits.reduce((best, l, i) => l > logits[best] ? i : best, 0);
+          return logits.map((_, i) => i === argmax ? 1 : 0);
+        }
+        const scaled = logits.map(l => l / Tsafe);
+        const maxL = Math.max(...scaled);   // for numerical stability
+        const exps = scaled.map(l => Math.exp(l - maxL));
+        const sum = exps.reduce((a, b) => a + b, 0);
+        return exps.map(e => e / sum);
+      }
+      function weightedSample(probs) {
+        const r = Math.random();
+        let acc = 0;
+        for (let i = 0; i < probs.length; i++) {
+          acc += probs[i];
+          if (r <= acc) return i;
+        }
+        return probs.length - 1;
+      }
+      function tempDescription(T) {
+        if (T < 0.05) return 'totalmente determinístico (argmax)';
+        if (T < 0.3)  return 'quase determinístico';
+        if (T < 0.7)  return 'mais focado';
+        if (T < 1.2)  return 'distribuição natural';
+        if (T < 1.6)  return 'mais criativo';
+        return 'muito aleatório';
+      }
+
+      // ── Render prompt ────────────────────────────────────
+      function renderPrompt() {
+        const base = 'O rato roeu a';
+        const parts = [escapeHtml(base)];
+        sampledTokens.forEach(tok => {
+          parts.push('<span class="k2-prompt-word">' + escapeHtml(tok) + '</span>');
+        });
+        const isComplete = stepIdx >= STATES.length;
+        if (!isComplete) {
+          parts.push('<span class="k2-blank" id="k2-blank">&nbsp;&nbsp;&nbsp;</span>');
+        } else {
+          parts.push('<span class="k2-final-badge">✓ Frase completa</span>');
+        }
+        // Join with spaces but skip the space before standalone punctuation.
+        const html = parts.reduce((acc, part, i) => {
+          if (i === 0) return part;
+          // Heuristic: if the rendered word starts with a punctuation char,
+          // omit the leading space so "rolha." reads naturally.
+          const m = part.match(/^<span[^>]*>(.)/);
+          const firstChar = m ? m[1] : '';
+          const isPunct = firstChar === '.' || firstChar === ',' || firstChar === '!';
+          return acc + (isPunct ? '' : ' ') + part;
+        }, '');
+        promptEl.innerHTML = html;
+      }
+      function escapeHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      // ── Render bars ──────────────────────────────────────
+      function renderBars(animate) {
+        const isComplete = stepIdx >= STATES.length;
+        if (isComplete) {
+          barsEl.innerHTML = '<div style="text-align:center; color:var(--text-dim); ' +
+            'font-style:italic; padding:1.5rem; opacity:0.6;">Sentença finalizada. ' +
+            'Clique em Reiniciar para começar de novo.</div>';
+          return;
+        }
+        const state = STATES[stepIdx];
+        const logits = state.logits.map(l => l[1]);
+        const probs = softmax(logits, temperature);
+        // Argmax stays as the visual "top" no matter where T pushes the
+        // distribution. We deliberately do NOT reorder bars when T changes,
+        // since shuffling 12 rows on each slider tick is jarring and obscures
+        // which bar is the same token across reads. Bars stay in their fixed
+        // logit-rank order from the state definition.
+        const argmaxIdx = probs.reduce((best, p, i) => p > probs[best] ? i : best, 0);
+
+        const needsRebuild = barsEl.dataset.stateIdx !== String(stepIdx);
+        if (needsRebuild) {
+          barsEl.dataset.stateIdx = String(stepIdx);
+          barsEl.innerHTML = state.logits.map((l, i) => {
+            const tok = escapeHtml(l[0]);
+            return (
+              '<div class="k2-bar" data-i="' + i + '">' +
+                '<div class="k2-bar-token">' + tok + '</div>' +
+                '<div class="k2-bar-track"><div class="k2-bar-fill"></div></div>' +
+                '<div class="k2-bar-pct"></div>' +
+              '</div>'
+            );
+          }).join('');
+        }
+        // Apply widths, percentages, and argmax highlight.
+        const bars = barsEl.querySelectorAll('.k2-bar');
+        bars.forEach(barEl => {
+          const i = Number(barEl.dataset.i);
+          const p = probs[i];
+          const fill = barEl.querySelector('.k2-bar-fill');
+          const pctEl = barEl.querySelector('.k2-bar-pct');
+          fill.style.width = (p * 100).toFixed(2) + '%';
+          pctEl.textContent = (p * 100).toFixed(p >= 0.1 ? 1 : 2) + '%';
+          if (i === argmaxIdx) barEl.classList.add('k2-bar--top');
+          else barEl.classList.remove('k2-bar--top');
+        });
+      }
+
+      // ── Temperature wiring ───────────────────────────────
+      function setTemperature(T) {
+        temperature = T;
+        tempValEl.textContent = T.toFixed(2);
+        tempDescEl.textContent = tempDescription(T);
+        renderBars();
+      }
+      sliderEl.addEventListener('input', e => {
+        setTemperature(parseFloat(e.target.value));
+      });
+
+      // ── Sample button: pick a token, animate it into the blank ───
+      function doSample() {
+        if (isSampling) return;
+        if (stepIdx >= STATES.length) return;
+        isSampling = true;
+        sampleBtn.disabled = true;
+
+        const state = STATES[stepIdx];
+        const probs = softmax(state.logits.map(l => l[1]), temperature);
+        const chosenIdx = weightedSample(probs);
+        const chosenToken = state.logits[chosenIdx][0];
+
+        // Pulse the chosen bar
+        const bars = barsEl.querySelectorAll('.k2-bar');
+        const chosenBar = Array.from(bars).find(b => Number(b.dataset.i) === chosenIdx);
+        if (chosenBar) {
+          chosenBar.classList.add('k2-bar--sampled');
+          setTimeout(() => chosenBar.classList.remove('k2-bar--sampled'), 700);
+        }
+
+        // After pulse, fly the token text into the blank
+        setTimeout(() => {
+          const sourceEl = chosenBar ? chosenBar.querySelector('.k2-bar-token') : null;
+          const blankEl  = document.getElementById('k2-blank');
+          if (!sourceEl || !blankEl) {
+            finalizeSample(chosenToken);
+            return;
+          }
+          const srcRect  = sourceEl.getBoundingClientRect();
+          const dstRect  = blankEl.getBoundingClientRect();
+          const fly = document.createElement('span');
+          fly.className = 'k2-fly';
+          fly.textContent = chosenToken;
+          fly.style.left = srcRect.left + 'px';
+          fly.style.top  = srcRect.top + 'px';
+          fly.style.fontSize = window.getComputedStyle(sourceEl).fontSize;
+          document.body.appendChild(fly);
+          // Force reflow before applying the transition target.
+          void fly.offsetWidth;
+          const dx = dstRect.left - srcRect.left;
+          const dy = dstRect.top - srcRect.top;
+          const promptFontSize = window.getComputedStyle(promptEl).fontSize;
+          fly.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+          fly.style.fontSize = promptFontSize;
+          fly.style.opacity = '0.0';
+          setTimeout(() => {
+            if (fly.parentNode) fly.parentNode.removeChild(fly);
+            finalizeSample(chosenToken);
+          }, 720);
+        }, 420);
+      }
+      function finalizeSample(tok) {
+        sampledTokens.push(tok);
+        stepIdx += 1;
+        renderPrompt();
+        renderBars();
+        isSampling = false;
+        sampleBtn.disabled = stepIdx >= STATES.length;
+      }
+
+      sampleBtn.addEventListener('click', doSample);
+
+      // ── Reset ────────────────────────────────────────────
+      function reset() {
+        stepIdx = 0;
+        sampledTokens = [];
+        isSampling = false;
+        sampleBtn.disabled = false;
+        renderPrompt();
+        renderBars();
+      }
+      resetBtn.addEventListener('click', reset);
+
+      // ── Theme sync ───────────────────────────────────────
+      window.addEventListener('storage', e => {
+        if (e.key !== 'bs_theme') return;
+        const t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+
+      // ── Init ─────────────────────────────────────────────
+      setTemperature(1.0);
+      renderPrompt();
+      renderBars();
+    })();
+  </script>
+</section>
+</body>
+</html>

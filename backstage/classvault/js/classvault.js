@@ -23,8 +23,8 @@ ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for acti
 ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
 ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
 ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
-ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive']);    // all sections (top-level + sub) collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
-ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive']);    // tracks which keys we've already initialized as collapsed; prevents re-collapsing after user expand
+ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);    // all sections (top-level + sub) collapsed by default; user expands as needed (sub keys: tag:X / aula:N / drive-folder:X)
+ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);    // tracks which keys we've already initialized as collapsed; prevents re-collapsing after user expand
 // Phase 5: Drive Mirror — synthetic items fetched browser-side via GIS token client.
 ClassVault.driveItems = [];                  // synthetic Drive items (id prefixed with 'drive:')
 ClassVault.activeItemId = null;
@@ -51,7 +51,11 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   const active = _pickActive(turmas);
   ClassVault.active = active;
   ClassVault.aulaNumber = _pickAula();
-  _renderSidebarHead(active, turmas);
+  // TODO(post-class refactor): turma chip + aula picker disabled for the
+  // "files-for-class-tomorrow" simplification. Active turma is still read from
+  // the URL by _pickActive; only the UI switcher is gone. _renderSidebarHead
+  // and _renderAulaPicker remain in the file and can be re-enabled if needed.
+  _renderSearchInput();
   _wireItemClicks();
   _wireSidebarFooter();
   _wireItemContextMenu();
@@ -181,8 +185,16 @@ async function _loadCodex() {
 
 // Locate an item across all buckets. Returns null if not found.
 // Phase 5: string ids starting with 'drive:' look up ClassVault.driveItems (string compare).
+// Labs: string ids starting with 'lab:' are synthetic items from the CVLabs registry.
 function _findItem(itemId) {
   const idStr = String(itemId);
+  if (idStr.indexOf('lab:') === 0) {
+    if (window.CVLabs) {
+      const it = CVLabs.findItem(idStr);
+      if (it) return { item: it, source: 'lab' };
+    }
+    return null;
+  }
   if (idStr.startsWith('drive:')) {
     const it = ClassVault.driveItems.find(function(d) { return d.id === idStr; });
     return it ? { item: it, source: 'drive' } : null;
@@ -203,32 +215,23 @@ function _renderSidebar() {
   if (!body) return;
   const html = [];
 
-  // ── Hoje section (active aula only) ───────────────────────────
-  if (ClassVault.aulaNumber != null) {
-    html.push(_renderSection({
-      key: 'hoje',
-      label: 'Hoje · Aula ' + ClassVault.aulaNumber,
-      count: ClassVault.aulaPlanItems.length,
-      body: ClassVault.aulaPlanItems.length
-        ? _renderAulaBody(ClassVault.aulaPlanItems, { draggable: true })
-        : '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum item planejado. Clique direito num item do Vault → "Adicionar ao plano de hoje".</div>'
-    }));
+  // ── LLMs section: launchers that open external tools in a new tab ──
+  html.push(_renderLLMsSection());
+
+  // ── Labs section: in-house interactive teaching demos (PensoLabs) ──
+  if (window.CVLabs) {
+    html.push(CVLabs.renderSection(ClassVault.collapsedSections));
   }
 
-  // ── Vault section (global, grouped by tag) ────────────────────
-  html.push(_renderSection({
-    key: 'vault',
-    label: 'Vault',
-    count: ClassVault.vaultItems.length,
-    body: _renderVaultGroups(ClassVault.vaultItems)
-  }));
-
-  // ── Trilha section (read-only releases for turma) ─────────────
+  // ── Trilha: all authored items (vault_only + public), grouped by type ──
+  // Hoje and the per-turma Trilha are intentionally not rendered in the
+  // simplified flow. Worker's cv_get_codex_view now returns both vault_only
+  // and public items in data.vault, so vaultItems is the full library.
   html.push(_renderSection({
     key: 'trilha',
-    label: 'Trilha · ' + (ClassVault.active.display_name || ClassVault.active.name),
-    count: ClassVault.releaseItems.length,
-    body: _renderTrilhaGroups(ClassVault.releaseItems)
+    label: 'Trilha',
+    count: ClassVault.vaultItems.length,
+    body: _renderItemsByType(ClassVault.vaultItems)
   }));
 
   // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
@@ -243,24 +246,129 @@ function _renderSidebar() {
 
   // Wire Drive section interactive buttons (sync, connect) after DOM is stamped.
   _wireDriveSyncButton();
+
+  // Re-apply search filter on re-render so collapse toggles don't reset it.
+  const searchInput = document.querySelector('.cv-sm-search');
+  if (searchInput && searchInput.value) _applySearchFilter(searchInput.value);
 }
+
+// Per-section glyphs for the neon-glow card headers. Colors come from CSS
+// (--sec set by .cv-sm-section--<key> modifier classes in classvault.css).
+const SECTION_GLYPHS = {
+  llms:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9 14 11l-2 5-2-5-4.5-2 4.7-1.4z"/><path d="M5 17l.7 1.8L7.5 19.5l-1.8.7L5 22l-.7-1.8L2.5 19.5l1.8-.7z"/></svg>',
+  hoje:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><circle cx="12" cy="15" r="2"/></svg>',
+  vault:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/></svg>',
+  trilha: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16v-4a4 4 0 014-4h4"/></svg>',
+  drive:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
+  labs:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6.5L4 18a3 3 0 002.6 4.5h10.8A3 3 0 0020 18l-5-8.5V3"/><path d="M8 3h8"/></svg>'
+};
 
 function _renderSection({ key, label, count, body }) {
   const isCollapsed = ClassVault.collapsedSections.has(key);
   const sectionBody = isCollapsed ? '' : body;
+  const glyph = SECTION_GLYPHS[key] || '';
   return (
-    '<button type="button" class="cv-sm-section' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+    '<button type="button" class="cv-sm-section cv-sm-section--' + _esc(key) + (isCollapsed ? ' is-collapsed' : '') + '" ' +
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
-      '<span class="cv-sm-section-chev">▾</span>' +
-      '<span>' + _esc(label) + '</span>' +
-      '<span class="cv-sm-section-line"></span>' +
+      '<span class="cv-sm-section-glyph">' + glyph + '</span>' +
+      '<span class="cv-sm-section-label">' + _esc(label) + '</span>' +
       '<span class="cv-sm-section-count">' + count + '</span>' +
+      '<span class="cv-sm-section-chev">▾</span>' +
     '</button>' +
     sectionBody
   );
 }
 
 // Vault: group items by primary tag. Untagged items in a final "Sem tag" group.
+// Render all items grouped by item.type — used by the simplified Trilha section.
+// Type order is opinionated to match how the teacher thinks about items in class:
+// Tarefas first, then Conteúdo, then visual aids, then everything else.
+const _TYPE_ORDER = ['tarefa', 'conteudo', 'slide', 'prompt', 'material', 'paper'];
+const _TYPE_LABEL = {
+  tarefa:   'Tarefas',
+  conteudo: 'Conteúdo',
+  slide:    'Slides',
+  prompt:   'Prompts',
+  material: 'Materiais',
+  paper:    'Papers'
+};
+function _renderItemsByType(items) {
+  if (!items.length) {
+    return '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum item ainda.</div>';
+  }
+  const groups = new Map();
+  for (const it of items) {
+    const k = it.type || '__other__';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(it);
+  }
+  const ordered = [];
+  for (const k of _TYPE_ORDER) if (groups.has(k)) ordered.push(k);
+  for (const k of groups.keys()) if (ordered.indexOf(k) === -1) ordered.push(k);
+
+  return ordered.map(typeKey => {
+    const groupItems = groups.get(typeKey);
+    const subKey = 'type:' + typeKey;
+    _seedCollapsedSubsection(subKey);
+    const isCollapsed = ClassVault.collapsedSections.has(subKey);
+    const headerLabel = _TYPE_LABEL[typeKey]
+      || (groupItems[0] && groupItems[0].type_label)
+      || (typeKey === '__other__' ? 'Outros' : typeKey);
+    return (
+      '<button type="button" class="cv-sm-subsection' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+        'data-section="' + _esc(subKey) + '" aria-expanded="' + (!isCollapsed) + '">' +
+        '<span class="cv-sm-section-chev">▾</span>' +
+        '<span>' + _esc(headerLabel) + '</span>' +
+        '<span class="cv-sm-section-line"></span>' +
+        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
+      '</button>' +
+      (isCollapsed ? '' : groupItems.map(it => _renderSubCard(it, false)).join(''))
+    );
+  }).join('');
+}
+
+// Search input placed in the (otherwise hidden) cv-sm-head. Live-filters .sub
+// elements in the body by title substring. ESC clears.
+function _renderSearchInput() {
+  const head = document.querySelector('.cv-sm-head');
+  if (!head) return;
+  head.innerHTML =
+    '<div class="cv-sm-search-wrap">' +
+      '<span class="cv-sm-search-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
+      '</span>' +
+      '<input type="search" class="cv-sm-search" placeholder="Buscar..." autocomplete="off" spellcheck="false">' +
+    '</div>';
+  const input = head.querySelector('.cv-sm-search');
+  if (!input) return;
+  input.addEventListener('input', () => _applySearchFilter(input.value));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && input.value) {
+      input.value = '';
+      _applySearchFilter('');
+      e.stopPropagation();
+    }
+  });
+}
+
+// Hide .sub items whose .sub-title doesn't contain the query (case-insensitive).
+// Group headers (subgroups, subsections) stay visible to avoid layout flicker.
+function _applySearchFilter(rawQuery) {
+  const q = (rawQuery || '').trim().toLowerCase();
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+  const subs = body.querySelectorAll('.sub');
+  if (!q) {
+    subs.forEach(el => { el.style.display = ''; });
+    return;
+  }
+  subs.forEach(el => {
+    const titleEl = el.querySelector('.sub-title');
+    const title = titleEl ? titleEl.textContent.toLowerCase() : '';
+    el.style.display = title.indexOf(q) !== -1 ? '' : 'none';
+  });
+}
+
 function _renderVaultGroups(items) {
   if (!items.length) {
     return '<div class="cv-sm-empty cv-sm-empty--inline">Vault vazio. Use "+ Adicionar item" para criar.</div>';
@@ -375,11 +483,11 @@ function _renderDriveSection() {
   const headerHtml =
     '<div role="button" tabindex="0" class="cv-sm-section cv-sm-section--drive' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
-      '<span class="cv-sm-section-chev">▾</span>' +
-      '<span>📁 Drive</span>' +
-      '<span class="cv-sm-section-line"></span>' +
+      '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.drive + '</span>' +
+      '<span class="cv-sm-section-label">Drive</span>' +
       '<button type="button" class="cv-drive-sync-btn" data-drive-action="sync" title="Sincronizar Drive" aria-label="Sincronizar Drive">↻</button>' +
       '<span class="cv-sm-section-count">' + count + '</span>' +
+      '<span class="cv-sm-section-chev">▾</span>' +
     '</div>';
 
   let bodyHtml = '';
@@ -476,6 +584,39 @@ function _wireDriveSyncButton() {
       }
     });
   }
+}
+
+// ── LLMs section ───────────────────────────────────────────────
+// Static list of external LLM launchers. Each entry is a plain <a target="_blank">,
+// so the existing .sub click handler ignores them and the browser handles the
+// new-tab navigation natively. Favicons come from Google's S2 service so we
+// don't depend on each provider's own favicon being reachable / correctly sized.
+function _renderLLMsSection() {
+  const key = 'llms';
+  const isCollapsed = ClassVault.collapsedSections.has(key);
+  const llms = [
+    { name: 'ChatGPT',    url: 'https://chatgpt.com/',          domain: 'chatgpt.com' },
+    { name: 'Claude',     url: 'https://claude.ai/',            domain: 'claude.ai' },
+    { name: 'Gemini',     url: 'https://gemini.google.com/',    domain: 'gemini.google.com' },
+    { name: 'Grok',       url: 'https://grok.com/',             domain: 'grok.com' },
+    { name: 'NotebookLM', url: 'https://notebooklm.google.com/', domain: 'notebooklm.google.com' },
+    { name: 'Perplexity', url: 'https://www.perplexity.ai/',    domain: 'perplexity.ai' }
+  ];
+  const headerHtml =
+    '<button type="button" class="cv-sm-section cv-sm-section--llms' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+      'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
+      '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.llms + '</span>' +
+      '<span class="cv-sm-section-label">LLMs</span>' +
+      '<span class="cv-sm-section-count">' + llms.length + '</span>' +
+      '<span class="cv-sm-section-chev">▾</span>' +
+    '</button>';
+  const bodyHtml = isCollapsed ? '' : llms.map(function(l) {
+    return '<a class="cv-sm-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
+             '<img class="cv-sm-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
+             '<span class="cv-sm-llm-name">' + _esc(l.name) + '</span>' +
+           '</a>';
+  }).join('');
+  return headerHtml + bodyHtml;
 }
 
 // Aula picker: dropdown chip rendered in the head, next to the turma chip.
@@ -775,6 +916,8 @@ function _wireItemContextMenu() {
 function _openContextMenu(x, y, located) {
   // Phase 5: Drive items are non-actionable, no context menu.
   if (located.source === 'drive') return;
+  // Labs are read-only launchers (no DB row, no editor, no audience moves).
+  if (located.source === 'lab') return;
   _closeContextMenu();
   const { item, source } = located;
   const items = [];
@@ -1172,6 +1315,18 @@ function _renderBreadcrumb(item) {
   const located = _findItem(item.id);
   const source = located ? located.source : null;
 
+  // Labs: path-only breadcrumb. No actions (no edit, no add-to-hoje), since
+  // labs are shipped read-only artifacts launched directly from the registry.
+  if (source === 'lab') {
+    crumb.innerHTML =
+      '<span>PensoCodex</span>' +
+      '<span class="cv-main-crumb-sep">/</span>' +
+      '<span>Labs</span>' +
+      '<span class="cv-main-crumb-sep">/</span>' +
+      '<strong>' + _esc(item.title) + '</strong>';
+    return;
+  }
+
   // Phase 5: Drive items get path-only breadcrumb. Drive items whose mime
   // type is text-extractable (Google Docs, .txt, .md) also get a "Copiar
   // texto" button; PDFs aren't supported yet (need pdf.js).
@@ -1282,6 +1437,7 @@ function _openCrumbOverflowMenu(anchor, item, source) {
 ClassVault.renderers = {
   slide:        { render: _renderIframe,      cleanup: _cleanupClear },
   embed:        { render: _renderIframe,      cleanup: _cleanupClear },
+  lab:          { render: _renderIframe,      cleanup: _cleanupClear },
   popup_url:    { render: _renderPopupCard,   cleanup: _cleanupClear },
   drive_folder: { render: _renderDriveFolder, cleanup: _cleanupClear },
   drive_file:   { render: _renderDriveFile,   cleanup: _cleanupClear },

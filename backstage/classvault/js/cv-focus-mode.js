@@ -40,10 +40,7 @@ window.CVFocusMode = (function () {
     document.addEventListener('mousemove', _onMouseMove);
     document.addEventListener('keydown', _onKeyDown);
     _wireBarHover();
-
-    try {
-      if (localStorage.getItem(STORAGE_KEY) === '1') enable();
-    } catch (e) { /* localStorage unavailable */ }
+    // Focus mode does not auto-restore from localStorage; each session starts off.
   }
 
   function toggle() { if (_on) disable(); else enable(); }

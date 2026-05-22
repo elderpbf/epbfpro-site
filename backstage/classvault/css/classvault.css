@@ -94,6 +94,42 @@ body.cv-focus.cv-focus--side .cv-sm {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+
+/* Search input that replaced the turma + aula picker in cv-sm-head. */
+.cv-sm-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.cv-sm-search-icon {
+  position: absolute;
+  left: 10px;
+  display: inline-flex;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.cv-sm-search-icon svg { width: 16px; height: 16px; }
+.cv-sm-search {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px 8px 34px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cv-sm-search::placeholder { color: var(--text-secondary); opacity: 0.7; }
+.cv-sm-search:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+/* Remove the default ✕ in WebKit/Edge search inputs so our own ESC clear is the only affordance */
+.cv-sm-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 .cv-sm-body {
   flex: 1;
   overflow-y: auto;
@@ -267,27 +303,86 @@ body.cv-focus.cv-focus--side .cv-sm {
   opacity: 0.7;
 }
 
-/* aula section headers in body (clickable, collapsible) */
+/* Top-level section headers (neon-glow card, per-section color).
+   --sec is set by .cv-sm-section--<key> modifiers below; falls back to primary. */
+.cv-sm-section--llms   { --sec: #8b5cf6; }   /* violet */
+.cv-sm-section--labs   { --sec: #ec4899; }   /* pink */
+.cv-sm-section--hoje   { --sec: #10b981; }   /* emerald */
+.cv-sm-section--vault  { --sec: #14b8a6; }   /* teal */
+.cv-sm-section--trilha { --sec: #f59e0b; }   /* amber */
+.cv-sm-section--drive  { --sec: #3b82f6; }   /* blue */
+
 .cv-sm-section {
   cursor: pointer;
-  background: none;
-  border: none;
+  /* border-box so the Drive section <div role="button"> matches the other
+     sections' <button> default sizing (button is border-box by UA stylesheet;
+     div is content-box, which made the Drive card 26px wider). */
+  box-sizing: border-box;
   width: 100%;
   text-align: left;
   font: inherit;
-  font-size: 0.62rem;
+  font-size: 0.84rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  padding: 14px 4px 6px;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec, var(--primary)) 6%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec, var(--primary)) 35%, transparent);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin: 8px 0 7px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  border-radius: 4px;
+  gap: 10px;
+  transition: box-shadow 0.18s, border-color 0.15s, transform 0.15s;
 }
-.cv-sm-section:hover { color: var(--text-primary); }
-.cv-sm-body > .cv-sm-section:first-child { padding-top: 6px; }
+.cv-sm-section:hover {
+  border-color: var(--sec, var(--primary));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--sec, var(--primary)) 25%, transparent),
+              0 6px 22px -10px var(--sec, var(--primary));
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .cv-sm-section {
+  background: color-mix(in oklab, var(--sec, var(--primary)) 10%, var(--surface));
+  box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec, var(--primary)) 60%, transparent);
+}
+[data-theme="dark"] .cv-sm-section:hover {
+  box-shadow: 0 0 24px -6px var(--sec, var(--primary));
+}
+.cv-sm-body > .cv-sm-section:first-child { margin-top: 0; }
+
+/* Section glyph (SVG, colored by --sec) */
+.cv-sm-section-glyph {
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  color: var(--sec, var(--primary));
+  flex-shrink: 0;
+}
+.cv-sm-section-glyph svg {
+  width: 18px; height: 18px;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--sec, var(--primary)) 50%, transparent));
+}
+
+/* Label inside the section header */
+.cv-sm-section-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chevron — in section color, rotates when collapsed */
+.cv-sm-section > .cv-sm-section-chev {
+  font-size: 0.8rem;
+  color: var(--sec, var(--primary));
+  opacity: 0.7;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+}
+.cv-sm-section.is-collapsed > .cv-sm-section-chev { transform: rotate(-90deg); }
+
+/* Sub-section chevron keeps the old subtle gray */
 .cv-sm-section-chev {
   font-size: 0.9rem;
   opacity: 0.6;
@@ -295,12 +390,30 @@ body.cv-focus.cv-focus--side .cv-sm {
   flex-shrink: 0;
   display: inline-block;
 }
-.cv-sm-section.is-collapsed .cv-sm-section-chev { transform: rotate(-90deg); }
+
+/* Hide the legacy expanding line inside top-level sections (no longer used) */
+.cv-sm-section > .cv-sm-section-line { display: none; }
+
+/* Sub-section line stays as-is */
 .cv-sm-section-line {
   flex: 1;
   height: 1px;
   background: var(--border);
 }
+
+/* Count badge — colored pill matching section color (top-level only) */
+.cv-sm-section > .cv-sm-section-count {
+  min-width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--sec, var(--primary));
+  border-radius: 999px;
+  padding: 0 7px;
+  box-shadow: 0 0 8px -2px color-mix(in oklab, var(--sec, var(--primary)) 80%, transparent);
+}
+/* Sub-section count keeps the old subtle pill */
 .cv-sm-section-count {
   font-size: 0.6rem;
   font-weight: 700;
@@ -555,6 +668,7 @@ body.cv-focus.cv-focus--side .cv-sm {
 .cv-sm .sub-zone--llm      { background: var(--llm); }
 .cv-sm .sub-zone--recurso  { background: var(--recurso); }
 .cv-sm .sub-zone--material { background: var(--material); }
+.cv-sm .sub-zone--lab      { background: var(--primary); }
 .cv-sm .sub-meta {
   flex: 1;
   padding: 7px 10px;
@@ -916,16 +1030,19 @@ body.cv-focus.cv-focus--side .cv-sm {
   user-select: none;
 }
 
-/* Sync button injected inside the Drive section header. */
+/* Sync button injected inside the Drive section header.
+   box-sizing border-box keeps the 22x22 outer size with the 1px border so the
+   button doesn't make the Drive header row taller than the other sections. */
 .cv-drive-sync-btn {
   flex-shrink: 0;
+  box-sizing: border-box;
   width: 22px;
   height: 22px;
   border-radius: 5px;
   border: 1px solid transparent;
   background: var(--cv-drive-sync-bg);
   color: var(--cv-drive-sync-color);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -968,4 +1085,41 @@ body.cv-focus.cv-focus--side .cv-sm {
 }
 .cv-drive-connect-btn:hover {
   background: var(--cv-drive-connect-bg-hover);
+}
+
+/* ── LLMs section: external launchers (open in new tab) ──────── */
+
+.cv-sm-llm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.15s, background 0.12s;
+}
+.cv-sm-llm:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 3px 10px -5px var(--shadow);
+}
+.cv-sm-llm-favicon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+.cv-sm-llm-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
