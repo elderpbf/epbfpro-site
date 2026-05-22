@@ -371,11 +371,7 @@
     <div class="k3-bars" id="k3-bars">
       <div class="k3-block k3-block-response" data-cat="response">
         <span class="k3-block-label">Espaço para resposta</span>
-        <span class="k3-block-tokens" id="k3-tok-response">105.000</span>
-      </div>
-      <div class="k3-block k3-block-current" data-cat="current">
-        <span class="k3-block-label">Mensagem atual</span>
-        <span class="k3-block-tokens">5.000</span>
+        <span class="k3-block-tokens" id="k3-tok-response">110.000</span>
       </div>
       <div class="k3-block k3-block-pdfs" data-cat="pdfs">
         <span class="k3-block-label" id="k3-lbl-pdfs">PDFs anexados</span>
@@ -402,11 +398,10 @@
         <li><span class="k3-dot k3-dot-skills"></span>   <span>Habilidades carregadas</span><span class="k3-legend-val">10.000</span></li>
         <li><span class="k3-dot k3-dot-history"></span>  <span>Histórico de conversa</span> <span class="k3-legend-val" id="k3-leg-history">0</span></li>
         <li><span class="k3-dot k3-dot-pdfs"></span>     <span>PDFs anexados</span>          <span class="k3-legend-val" id="k3-leg-pdfs">0</span></li>
-        <li><span class="k3-dot k3-dot-current"></span>  <span>Mensagem atual</span>        <span class="k3-legend-val">5.000</span></li>
         <li class="k3-legend-li--response" id="k3-leg-li-response">
           <span class="k3-dot k3-dot-response"></span>
           <span>Espaço para resposta</span>
-          <span class="k3-legend-val" id="k3-leg-response">105.000</span>
+          <span class="k3-legend-val" id="k3-leg-response">110.000</span>
         </li>
       </ul>
       <div class="k3-turn-row">
@@ -430,7 +425,6 @@
       const TOTAL          = 128000;
       const TOK_SYSTEM     = 8000;
       const TOK_SKILLS     = 10000;
-      const TOK_CURRENT    = 5000;
       const TOK_PER_TURN   = 7500;
       const TOK_PER_PDF    = 24000;
       const TOK_SUMMARY    = 4000;
@@ -474,7 +468,7 @@
         return isCompacted ? TOK_SUMMARY : turnCount * TOK_PER_TURN;
       }
       function getPdfs()  { return pdfCount * TOK_PER_PDF; }
-      function getUsed()  { return TOK_SYSTEM + TOK_SKILLS + getHistory() + getPdfs() + TOK_CURRENT; }
+      function getUsed()  { return TOK_SYSTEM + TOK_SKILLS + getHistory() + getPdfs(); }
       function getResp()  { return Math.max(0, TOTAL - getUsed()); }
 
       // ── Formatting ───────────────────────────────────────
@@ -489,7 +483,6 @@
           skills:   TOK_SKILLS,
           history:  getHistory(),
           pdfs:     getPdfs(),
-          current:  TOK_CURRENT,
           response: getResp()
         };
         // Each block's height as percent of TOTAL. We bias up tiny non-zero
