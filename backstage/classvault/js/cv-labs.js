@@ -10,13 +10,23 @@ window.CVLabs = (function() {
   const LABS = [
     {
       key: 'k1',
-      title: 'Atenção e o sentido da palavra',
+      title: 'Atenção!',
       summary: 'Contexto reescreve significado'
     },
     {
       key: 'k2',
-      title: 'Previsão do próximo token',
-      summary: 'Temperatura e distribuição'
+      title: 'Temperatura',
+      summary: 'Distribuição, amostragem, sobreajuste'
+    },
+    {
+      key: 'k3',
+      title: 'Janela de contexto',
+      summary: 'Orçamento de tokens e compactação'
+    },
+    {
+      key: 'k4',
+      title: 'Perdido no meio',
+      summary: 'Acurácia cai onde a atenção afrouxa'
     }
   ];
 
