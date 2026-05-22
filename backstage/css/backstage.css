@@ -360,6 +360,8 @@
   width: 100%;
   box-sizing: border-box;
 }
+/* Tighter top on the dashboard so the tabs sit closer to the topbar. */
+.bs-main:has(#view-dashboard) { padding-top: 1.25rem; }
 
 /* =========================================================
    DASHBOARD — Tool grid
