@@ -743,6 +743,13 @@ if (!urlCode) {
   location.href = '/backstage/classpulse/';
 }
 
+// Mark this session as "being taught right now" so ClassVault's PensoNexo
+// indicator can light up. Fire-and-forget; failure here must not block load.
+if (urlCode) {
+  callWorker({ action: 'cp_touch_session', code: urlCode, _silent: true })
+    .catch(function() { /* non-blocking */ });
+}
+
 async function loadSession() {
   try {
     var code = urlCode.toUpperCase();

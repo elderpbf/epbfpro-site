@@ -442,13 +442,15 @@ body.cv-focus.cv-focus--side .cv-sm {
   background: color-mix(in oklab, var(--sec, var(--primary)) 25%, transparent);
   border-color: var(--sec, var(--primary));
 }
-/* Inner glyph wrapper — only this rotates when loading, not the button itself
-   (which would also spin the background square and border). */
-.cv-nexo-refresh-icon {
+/* Shared spin glyph — used by both PensoNexo refresh and Drive sync. Wrap the
+   ↻ in a <span class="cv-spin-glyph"> and add .is-loading to the parent button
+   to start the rotation. Only the glyph rotates, never the button background. */
+.cv-spin-glyph {
   display: inline-block;
   line-height: 1;
 }
-.cv-nexo-refresh-btn.is-loading .cv-nexo-refresh-icon {
+.is-loading > .cv-spin-glyph,
+.is-loading .cv-spin-glyph {
   animation: cv-spin 0.8s linear infinite;
 }
 @keyframes cv-spin {
