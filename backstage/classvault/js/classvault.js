@@ -710,29 +710,46 @@ function _renderPinnedNexo() {
   if (!pinned) return;
   const live = ClassVault.liveSession;
   const loading = ClassVault._liveSessionLoading;
-  const label = live ? 'PensoNexo · ' + live.name : 'PensoNexo · Abrir sessões';
+  const tail = live ? live.name : 'Abrir sessões';
+  const titleAttr = (live ? 'PensoNexo · ' + live.name : 'PensoNexo · Abrir sessões');
   const href = live
     ? '/backstage/classpulse/host.html?code=' + encodeURIComponent(live.id)
     : '/backstage/classpulse/';
+  // Outer element is a <div role="button"> instead of <button> so the inner
+  // refresh <button> is valid HTML (nested buttons are invalid and most
+  // browsers reflow the inner one outside the outer, which is what made the
+  // refresh icon land below the card).
   pinned.innerHTML =
-    '<button type="button" class="cv-sm-section cv-sm-section--nexo" ' +
+    '<div role="button" tabindex="0" class="cv-sm-section cv-sm-section--nexo" ' +
       'data-section="nexo" data-href="' + _esc(href) + '" ' +
-      'title="' + _esc(label) + '">' +
+      'title="' + _esc(titleAttr) + '">' +
       '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.nexo + '</span>' +
-      '<span class="cv-sm-section-label">' + _esc(label) + '</span>' +
+      '<span class="cv-sm-section-label">' +
+        // Two brand spans + cramp-detection swaps one for the other when the
+        // label would otherwise overflow (see _detectNexoCramp below).
+        '<span class="cv-nexo-brand cv-nexo-brand--full">PensoNexo</span>' +
+        '<span class="cv-nexo-brand cv-nexo-brand--short">Nexo</span>' +
+        ' · ' + _esc(tail) +
+      '</span>' +
       '<button type="button" class="cv-nexo-refresh-btn' + (loading ? ' is-loading' : '') + '" ' +
         'data-nexo-action="refresh" title="Atualizar" aria-label="Atualizar sessão ao vivo">↻</button>' +
       (live ? '<span class="cv-sm-section-live-dot" aria-label="Sessão ao vivo"></span>' : '') +
-    '</button>';
-  // Wire the card itself as the launcher (refresh-btn stops propagation below).
+    '</div>';
+
   const card = pinned.querySelector('.cv-sm-section--nexo');
   if (card) {
     card.addEventListener('click', function() {
       const url = card.getAttribute('data-href');
       if (url) window.open(url, '_blank', 'noopener,noreferrer');
     });
+    // Keyboard activation for the div[role="button"].
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        card.click();
+      }
+    });
   }
-  // Wire the refresh button (re-attached on every render).
   const btn = pinned.querySelector('[data-nexo-action="refresh"]');
   if (btn) {
     btn.addEventListener('click', function(e) {
@@ -741,6 +758,21 @@ function _renderPinnedNexo() {
       _loadLiveSession();
     });
   }
+  _detectNexoCramp();
+}
+
+// After paint, check whether the label overflows its flex slot. If so, switch
+// the brand span from "PensoNexo" to "Nexo" so the session name has room.
+function _detectNexoCramp() {
+  const labelEl = document.querySelector('.cv-sm-pinned .cv-sm-section-label');
+  if (!labelEl) return;
+  labelEl.classList.remove('is-cramped');
+  // Read after a microtask so layout has settled.
+  requestAnimationFrame(function() {
+    if (labelEl.scrollWidth > labelEl.clientWidth + 1) {
+      labelEl.classList.add('is-cramped');
+    }
+  });
 }
 
 // Aula picker: dropdown chip rendered in the head, next to the turma chip.

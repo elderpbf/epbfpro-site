@@ -411,6 +411,13 @@ body.cv-focus.cv-focus--side .cv-sm {
   background: var(--surface);
 }
 
+/* PensoNexo brand swap: "PensoNexo · X" by default; .is-cramped (set by JS
+   when the label would overflow) collapses the brand to "Nexo · X" so the
+   session name keeps its room. */
+.cv-nexo-brand--short { display: none; }
+.cv-sm-section-label.is-cramped .cv-nexo-brand--full { display: none; }
+.cv-sm-section-label.is-cramped .cv-nexo-brand--short { display: inline; }
+
 /* PensoNexo refresh button (inside the launcher card; mirrors the Drive sync
    button styling but in the section's indigo tone). */
 .cv-nexo-refresh-btn {
