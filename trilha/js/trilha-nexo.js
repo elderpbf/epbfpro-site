@@ -1,18 +1,21 @@
 'use strict';
 
-// Trilha-side live-session integration. Polls cp_get_active_for_turma every
-// 15s (paused via Page Visibility API when the tab is hidden). When the
-// turma's bound ClassPulse session has an active question, the trilha content
-// area is replaced by the inline NexoAnswer panel. When the session closes
-// (no question, or session closed), the trilha content reappears.
+// Trilha-side PensoNexo surfacer. Polls cp_get_active_for_turma every 15s
+// (paused via Page Visibility API when the tab is hidden) and paints one of
+// three states into a single floating root:
 //
-// The pensoia-header stays visible at all times. The session code is NEVER
-// surfaced on the public page.
+//   - no open session            → nothing rendered
+//   - open session, no question  → small pending pill (bottom-right)
+//   - open session + question    → fullscreen takeover overlay
+//
+// The takeover currently shows the question text plus an "Abrir sessão"
+// button that lands on /go/?code=<session_code> for the actual answer flow.
+// A future iteration will inline the answer UI directly here.
 
 (function () {
   var POLL_MS         = 15000;
-  var POLL_MS_BACKOFF = 60000; // when there's no open session, slow down
-  var ROOT_ID         = 'nx-answer-root';
+  var POLL_MS_BACKOFF = 60000;   // when there's no open session, slow down
+  var ROOT_ID         = 'nx-root';
 
   var _params     = new URLSearchParams(location.search);
   var _clientSlug = _params.get('c');
@@ -29,13 +32,21 @@
 
   var _timer = null;
   var _stopped = false;
-  var _mounted = false; // tracks whether NexoAnswer is currently mounted
-  var _lastSessionCode = null;
+  var _lastState = { sessionCode: null, questionId: null };
 
   function init() {
     if (!_clientSlug || !_turmaSlug) return; // trilha will surface its own error
+    _ensureRoot();
     _tick();
     document.addEventListener('visibilitychange', _onVisibilityChange);
+  }
+
+  function _ensureRoot() {
+    if (document.getElementById(ROOT_ID)) return;
+    var root = document.createElement('div');
+    root.id = ROOT_ID;
+    root.className = 'nx-root';
+    document.body.appendChild(root);
   }
 
   function _schedule(ms) {
@@ -72,96 +83,86 @@
     }
   }
 
-  function _getContentArea() {
-    // The trilha layout: <main id="tr-main"> contains .tr-hero, .tr-tabs,
-    // and .tr-tab-content. We hide tabs+tab-content and inject the answer
-    // panel as a sibling. Hero + header stay visible.
-    return document.querySelector('#tr-main');
-  }
-
-  function _ensureRoot() {
-    var root = document.getElementById(ROOT_ID);
-    if (root) return root;
-    var main = _getContentArea();
-    if (!main) return null;
-    root = document.createElement('div');
-    root.id = ROOT_ID;
-    root.className = 'nx-answer-root';
-    // Insert after the hero (or after tabs), so it sits in the content slot.
-    var tabContent = main.querySelector('.tr-tab-content');
-    if (tabContent && tabContent.parentNode === main) {
-      main.insertBefore(root, tabContent);
-    } else {
-      main.appendChild(root);
-    }
-    return root;
-  }
-
-  function _hideTrilhaContent() {
-    var tabs = document.querySelector('.tr-tabs');
-    var tabContent = document.querySelector('.tr-tab-content');
-    var footer = document.querySelector('.tr-footer');
-    if (tabs) tabs.hidden = true;
-    if (tabContent) tabContent.hidden = true;
-    if (footer) footer.hidden = true;
-  }
-
-  function _showTrilhaContent() {
-    var tabs = document.querySelector('.tr-tabs');
-    var tabContent = document.querySelector('.tr-tab-content');
-    var footer = document.querySelector('.tr-footer');
-    if (tabs) tabs.hidden = false;
-    if (tabContent) tabContent.hidden = false;
-    if (footer) footer.hidden = false;
-  }
-
-  function _unmountAnswer() {
-    if (window.NexoAnswer && typeof window.NexoAnswer.unmount === 'function') {
-      try { window.NexoAnswer.unmount(); } catch (_) {}
-    }
-    var root = document.getElementById(ROOT_ID);
-    if (root && root.parentNode) root.parentNode.removeChild(root);
-    _mounted = false;
-    _lastSessionCode = null;
-    _showTrilhaContent();
-  }
-
   function _render(data) {
+    var root = document.getElementById(ROOT_ID);
+    if (!root) return;
+
     var session = data && data.session;
     var question = data && data.current_question;
 
-    // No open session, or session has no live question → show trilha content
-    // and tear down the answer panel.
-    if (!session || !question) {
-      if (_mounted) _unmountAnswer();
+    var nextCode = session ? session.code : null;
+    var nextQid  = question ? question.id : null;
+
+    // No-op if state didn't change. The overlay survives across ticks so its
+    // option highlights and any future inline answer affordances aren't
+    // re-rendered every 15s.
+    if (nextCode === _lastState.sessionCode && nextQid === _lastState.questionId) return;
+    _lastState = { sessionCode: nextCode, questionId: nextQid };
+
+    if (!session) {
+      root.innerHTML = '';
+      document.body.classList.remove('nx-overlay-open');
       return;
     }
 
-    if (!window.NexoAnswer || typeof window.NexoAnswer.mount !== 'function') {
-      // Module not loaded yet — nothing we can do this tick.
+    if (!question) {
+      // Session open, no question yet — quiet floating pill.
+      root.innerHTML =
+        '<div class="nx-pending-pill" role="status">' +
+          '<span class="nx-pill-dot" aria-hidden="true"></span>' +
+          '<span class="nx-pill-text">Aguardando pergunta ao vivo</span>' +
+        '</div>';
+      document.body.classList.remove('nx-overlay-open');
       return;
     }
 
-    var root = _ensureRoot();
-    if (!root) return;
+    // Active question — fullscreen takeover. Body class freezes scroll.
+    var optsHtml = '';
+    if (Array.isArray(question.options) && question.options.length) {
+      optsHtml = '<ul class="nx-overlay-opts">' +
+        question.options.map(function (o, i) {
+          return '<li class="nx-overlay-opt">' +
+                   '<span class="nx-overlay-opt-letter">' + _letter(i) + '</span>' +
+                   '<span class="nx-overlay-opt-text">' + _esc(o) + '</span>' +
+                 '</li>';
+        }).join('') +
+      '</ul>';
+    }
 
-    // Mount (idempotent inside NexoAnswer when sessionCode unchanged).
-    // We intentionally do NOT pass the session code as a visible string;
-    // it's only used to drive polling via the classpulse-question element.
-    _hideTrilhaContent();
-    window.NexoAnswer.mount({
-      container:    root,
-      sessionCode:  session.code,
-      sessionTitle: session.title || '',
-      onClose:      _unmountAnswer
-    });
-    _mounted = true;
-    _lastSessionCode = session.code;
+    var goHref = '/go/?code=' + encodeURIComponent(session.code);
+
+    root.innerHTML =
+      '<div class="nx-overlay" role="dialog" aria-modal="true" aria-labelledby="nx-overlay-title">' +
+        '<div class="nx-overlay-card">' +
+          '<div class="nx-overlay-eyebrow">' +
+            '<span class="nx-pill-dot" aria-hidden="true"></span>' +
+            'Pergunta ao vivo' +
+          '</div>' +
+          '<h2 id="nx-overlay-title" class="nx-overlay-title">' + _esc(question.text || '') + '</h2>' +
+          optsHtml +
+          '<a class="nx-overlay-cta" href="' + goHref + '">Responder agora</a>' +
+          '<p class="nx-overlay-hint">' + _esc(session.title || 'Sessão ao vivo') + '</p>' +
+        '</div>' +
+      '</div>';
+    document.body.classList.add('nx-overlay-open');
+  }
+
+  function _letter(i) {
+    return String.fromCharCode(65 + i); // A, B, C, ...
+  }
+
+  function _esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   // Expose a stop hook for tests / cleanup; not used by trilha itself.
   window.TrilhaNexo = {
-    stop: function () { _stopped = true; clearTimeout(_timer); _unmountAnswer(); }
+    stop: function () { _stopped = true; clearTimeout(_timer); }
   };
 
   document.addEventListener('DOMContentLoaded', init);
