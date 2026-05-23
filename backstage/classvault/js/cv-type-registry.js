@@ -109,7 +109,7 @@ CVTypes.register('slide', {
       id: 'popup',
       label: '↗ Janela',
       title: 'Abrir em janela',
-      handler: function() { _openPopup(url); }
+      handler: function() { _cvtOpenPopup(url); }
     }];
   }
 });
@@ -124,7 +124,7 @@ CVTypes.register('drive_file', {
       id: 'popup',
       label: '↗ Janela',
       title: 'Abrir em janela',
-      handler: function() { _openPopup(url); }
+      handler: function() { _cvtOpenPopup(url); }
     }];
   }
 });
@@ -140,7 +140,10 @@ CVTypes.register('lab', { actions: [] });
 CVTypes.register('video', { actions: [] });
 CVTypes.register('drive_folder', { actions: [] });
 
-function _openPopup(url) {
+// Renamed from `_openPopup` to avoid clobbering classvault.js's identically
+// named helper. They served the same role; keeping a private name here means
+// future divergence in either copy can't silently break the other.
+function _cvtOpenPopup(url) {
   var w = Math.max(800, Math.floor((window.outerWidth || window.innerWidth) - 80));
   var h = Math.max(600, Math.floor((window.outerHeight || window.innerHeight) - 80));
   var left = (typeof window.screenX === 'number' ? window.screenX : 0) + 40;

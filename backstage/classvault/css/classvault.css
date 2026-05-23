@@ -377,7 +377,7 @@ body.cv-focus.cv-focus--side .cv-sm {
   background: var(--border);
 }
 
-/* Pinned slot above the .cv-sm-footer button. Holds the PensoNexo launcher
+/* Pinned slot at the bottom of the sidebar. Holds the PensoNexo launcher
    card so it stays visible regardless of body scroll position. */
 .cv-sm-pinned {
   flex-shrink: 0;
