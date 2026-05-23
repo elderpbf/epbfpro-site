@@ -670,10 +670,11 @@
 
 <script src="../js/utils.js?v=1.4"></script>
 <script src="../js/api-client.js?v=1.2"></script>
-<script src="../js/question-renderer.js?v=2.5"></script>
+<script src="../js/question-renderer.js?v=2.6"></script>
 <script src="../js/classpulse-question-types.js?v=1.2"></script>
 <script src="../js/classpulse-question.min.js?v=1.8"></script>
 <script src="../js/classpulse-visibility-toggle.js?v=1.4"></script>
+<script src="../js/classpulse-checkbox-sync.js?v=1.0"></script>
 <script src="../js/classpulse-qa.js?v=2.4"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
@@ -1070,15 +1071,32 @@ function initPollRows(count) {
   for (var i = 0; i < count; i++) container.appendChild(buildPollRow(i));
 }
 
-function setChk(id, enabled) {
-  var chk = document.getElementById(id);
-  if (!chk) return;
-  var lbl = chk.parentElement; // input is a direct child of <label>
-  chk.disabled = !enabled;
-  chk.checked  = enabled;
-  lbl.style.opacity       = enabled ? '' : '0.35';
-  lbl.style.cursor        = enabled ? '' : 'not-allowed';
-  lbl.style.pointerEvents = enabled ? '' : 'none';
+// Default checked state for each close-question checkbox. Used by the
+// type-selector seed path; the polling path uses CPCheckboxSync.sync which
+// preserves whatever the user toggled.
+var CHK_DEFAULTS = {
+  'chk-show-results':  true,   // matches the `checked` attr in HTML
+  'chk-reveal-answer': false
+};
+
+// Seed a checkbox to its default for the active question type. Called when
+// the user picks a new type or clears the launch form; called once on boot.
+function resetChk(id, supported) {
+  CPCheckboxSync.reset({
+    chk: document.getElementById(id),
+    supported: supported,
+    defaultChecked: !!CHK_DEFAULTS[id]
+  });
+}
+
+// Sync a checkbox's enabled state without touching its checked state. Called
+// from the cpq-data poll handler so a user's local toggle (e.g. unchecking
+// "Revelar resposta correta" before encerrando) survives the next poll tick.
+function syncChk(id, supported) {
+  CPCheckboxSync.sync({
+    chk: document.getElementById(id),
+    supported: supported
+  });
 }
 
 var formEls = {
@@ -1111,8 +1129,9 @@ document.getElementById('q-mc-max-select').addEventListener('change', function()
 function applyTypeUI(qType) {
   var T = CPQuestionTypes.get(qType);
   CPQuestionTypes.applyVisibility(formEls, T);
-  setChk('chk-reveal-answer', T.canReveal);
-  setChk('chk-show-results',  T.canShowResults);
+  // Type selector / form clear: explicit seed -- the user is starting fresh.
+  resetChk('chk-reveal-answer', T.canReveal);
+  resetChk('chk-show-results',  T.canShowResults);
   document.getElementById('q-generate-btn').style.display = T.aiGenSupported ? '' : 'none';
   document.getElementById('q-improve-btn').style.display  = T.aiGenSupported ? '' : 'none';
 }
@@ -1257,8 +1276,11 @@ cpqEl.addEventListener('cpq-data', (e) => {
   }
   document.getElementById('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
 
-  setChk('chk-reveal-answer', T.canReveal);
-  setChk('chk-show-results',  T.canShowResults);
+  // Polling: keep the checkbox enabled-state in sync with the type, but DO NOT
+  // overwrite the user's checked-state. Stomping it every 3s is Bundle J's
+  // headline bug (unchecked checkmarks re-checking themselves).
+  syncChk('chk-reveal-answer', T.canReveal);
+  syncChk('chk-show-results',  T.canShowResults);
 
   document.getElementById('active-q-panel').style.display = 'block';
 });
