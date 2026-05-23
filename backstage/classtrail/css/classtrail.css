@@ -47,6 +47,28 @@
   .ct-two-pane { grid-template-columns: 1fr; }
 }
 
+/* ----- Three-pane layout (Bundle G: Clientes / Turmas / Liberações) ----- *
+ * Clientes and Turmas keep their compact 280px lanes; the Liberações pane
+ * eats the remaining width so the aula-centric composer (which holds three
+ * sub-lists of items per aula) has room to breathe.
+ * The min-height of 0 lets the inner .ct-pane-body actually scroll within
+ * the available viewport instead of pushing the page down.
+ */
+
+.ct-three-pane {
+  display: grid;
+  grid-template-columns: 280px 280px 1fr;
+  gap: 1.25rem;
+  min-height: calc(100vh - 220px);
+  align-items: stretch;
+}
+
+/* Narrow viewports: collapse to a stacked single column so users can still
+ * drill from cliente → turma → liberações sequentially. */
+@media (max-width: 980px) {
+  .ct-three-pane { grid-template-columns: 1fr; }
+}
+
 .ct-pane {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1899,3 +1921,213 @@
 }
 
 .ct-access-actions .bs-toggle-btn { flex: 1; min-width: 140px; font-size: 0.78rem; }
+
+/* ====================================================================
+   BUNDLE G — Per-turma settings drawer + gear trigger
+   The drawer slides in from the right with the same chrome as the
+   shared Backstage settings drawer (settings-drawer.css patterns).
+   The gear button lives in the Liberações pane header (column 3) and
+   only appears once a turma is selected.
+   ==================================================================== */
+
+.ct-turma-settings-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.ct-turma-settings-btn:hover {
+  background: rgba(20,184,166,.10);
+  border-color: rgba(20,184,166,.25);
+  color: var(--primary);
+}
+
+.ct-turma-settings-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* The drawer reuses the shared .bs-overlay + .bs-drawer base from
+ * settings-drawer.css (already loaded by classtrail/index.html via the
+ * ../css/settings-drawer.css link). These three class names are local
+ * additions so the per-turma drawer can render distinct content (an aulas
+ * list, contact links, roster/icon placeholders) without colliding with
+ * the global theme/access drawer that bs-drawer feeds.
+ * The container is fixed-positioned and uses the same right-slide animation.
+ */
+
+.ct-turma-drawer-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9990;
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+.ct-turma-drawer-overlay.open { opacity: 1; }
+
+.ct-turma-drawer {
+  position: fixed;
+  top: 0; right: -480px; bottom: 0;
+  width: 440px; max-width: 100vw;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 9991;
+  padding: 1.5rem 1.75rem 2rem;
+  overflow-y: auto;
+  transition: right .28s ease;
+  box-shadow: -4px 0 30px rgba(0,0,0,.35);
+  box-sizing: border-box;
+  color: var(--text-primary);
+}
+
+.ct-turma-drawer.open { right: 0; }
+
+.ct-turma-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ct-turma-drawer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.ct-turma-drawer-eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.ct-turma-drawer-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ct-turma-drawer-close:hover {
+  background: var(--surface-soft, rgba(20,184,166,.08));
+  color: var(--text-primary);
+  border-color: var(--primary-light, rgba(20,184,166,.35));
+}
+
+.ct-turma-drawer-section {
+  margin-bottom: 1.25rem;
+}
+
+.ct-turma-drawer-section-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.ct-turma-drawer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  margin-bottom: 6px;
+}
+
+.ct-turma-drawer-row-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ct-turma-drawer-row-meta {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  flex: 1;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ct-turma-drawer-row-meta.is-empty {
+  color: var(--text-dim, var(--text-secondary));
+  font-style: italic;
+}
+
+.ct-turma-drawer-row .ct-btn {
+  flex-shrink: 0;
+}
+
+.ct-turma-drawer-aula-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface-soft, rgba(20,184,166,.08));
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  color: var(--text-primary);
+  margin: 0 4px 4px 0;
+}
+
+.ct-turma-drawer-aula-pill strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.ct-turma-drawer-aulas-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ct-turma-drawer-stub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.ct-turma-drawer-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.ct-turma-drawer-actions .ct-btn { flex: 1; }

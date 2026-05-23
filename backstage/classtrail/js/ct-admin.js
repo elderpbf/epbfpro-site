@@ -151,7 +151,33 @@ window.CT_ADMIN = (function() {
       title.textContent = 'Turmas — ' + (client.display_name || client.name);
       btn.style.display = '';
     }
+    // Bundle G: switching client resets column 3 unless the saved turma still
+    // belongs to the new client (the auto-restore path on initial boot keeps
+    // the previous selection sticky).
+    var savedClient = null;
+    try { savedClient = localStorage.getItem(LS_REL_CLIENT); } catch (_) {}
+    if (savedClient !== slug) {
+      _clearReleasesColumn();
+    }
     _loadTurmas(slug);
+  }
+
+  // Bundle G: blank column 3 when no turma is selected (or when the user
+  // switches to a different client and the previously-loaded turma no longer
+  // belongs to the current client list).
+  function _clearReleasesColumn() {
+    _relClientSlug = null;
+    _relTurmaSlug = null;
+    _relAulas = [];
+    _relReleased = [];
+    _relReleasedMeta = {};
+    _relAllItems = [];
+    var hdr = document.getElementById('releases-pane-title');
+    if (hdr) hdr.textContent = 'Liberações';
+    var gear = document.getElementById('btn-turma-settings');
+    if (gear) gear.style.display = 'none';
+    var list = document.getElementById('releases-list');
+    if (list) list.innerHTML = '<div class="ct-empty">Selecione uma turma para gerenciar as liberações.</div>';
   }
 
   // ---- Client form with icon picker ----
@@ -352,7 +378,9 @@ window.CT_ADMIN = (function() {
       var wpLabel = wpOk ? 'WhatsApp ✓' : 'WhatsApp não definido';
       var cpOk = !!(t.classpulse_session_id);
       var cpLabel = cpOk ? 'ClassPulse ✓' : 'ClassPulse não definido';
-      return '<div class="ct-card" data-id="' + t.id + '">' +
+      var isSelected = (t.client_slug === _relClientSlug && t.slug === _relTurmaSlug);
+      return '<div class="ct-card' + (isSelected ? ' selected' : '') + '" data-id="' + t.id +
+              '" data-client-slug="' + _esc(t.client_slug) + '" data-turma-slug="' + _esc(t.slug) + '">' +
         '<div class="ct-card-name">' + _esc(t.display_name || t.name) + archived + '</div>' +
         '<div class="ct-card-meta">' + _esc(t.client_slug) + ' / ' + _esc(t.slug) + '</div>' +
         '<div class="ct-url-row">' +
@@ -371,6 +399,40 @@ window.CT_ADMIN = (function() {
         '</div>' +
       '</div>';
     }).join('');
+
+    // Bundle G: clicking the body of a turma card selects it for column 3
+    // (loads its liberações). Buttons inside the card carry their own onclick
+    // handlers and have already been wired above; the listener short-circuits
+    // when the event originated from a button / link / input.
+    el.querySelectorAll('.ct-card').forEach(function(card) {
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('button, a, input, textarea, .ct-turma-chip')) return;
+        _selectTurmaForReleases(card.dataset.clientSlug, card.dataset.turmaSlug);
+      });
+    });
+  }
+
+  // Bundle G: drive column 3 (Liberações) from a click on column 2 (Turmas).
+  // Also surfaces the gear icon for the per-turma settings drawer.
+  function _selectTurmaForReleases(clientSlug, turmaSlug) {
+    if (!clientSlug || !turmaSlug) return;
+    if (clientSlug === _relClientSlug && turmaSlug === _relTurmaSlug) return;
+    try {
+      localStorage.setItem(LS_REL_CLIENT, clientSlug);
+      localStorage.setItem(LS_REL_TURMA, turmaSlug);
+    } catch (_) {}
+    // Update header label so the user sees which turma column 3 is showing.
+    var hdr = document.getElementById('releases-pane-title');
+    if (hdr) {
+      var t = _turmas.find(function(x) { return x.client_slug === clientSlug && x.slug === turmaSlug; });
+      var name = t ? (t.display_name || t.name) : '';
+      hdr.textContent = name ? 'Liberações — ' + name : 'Liberações';
+    }
+    var gear = document.getElementById('btn-turma-settings');
+    if (gear) gear.style.display = '';
+    _loadReleases(clientSlug, turmaSlug);
+    // Re-render turmas so the selected card gets the .selected class.
+    _renderTurmas();
   }
 
   function _openTurmaForm(turma, scrollTo) {
@@ -1500,11 +1562,191 @@ window.CT_ADMIN = (function() {
     });
   }
 
+  // ---- Bundle G: Per-turma settings drawer ----
+  //
+  // Triggered by the gear icon in the Liberações pane header. Shows a slim
+  // summary of the currently selected turma: aulas list, WhatsApp URL,
+  // ClassPulse session, roster + icon (placeholders for now). The "Editar"
+  // buttons delegate to the existing turma edit modal so we reuse the
+  // already-tested form code instead of duplicating fields here.
+
+  function openTurmaSettingsDrawer() {
+    var clientSlug = _relClientSlug;
+    var turmaSlug  = _relTurmaSlug;
+    if (!clientSlug || !turmaSlug) {
+      _toast('Selecione uma turma antes de abrir as configurações.');
+      return;
+    }
+    var turma = _turmas.find(function(t) {
+      return t.client_slug === clientSlug && t.slug === turmaSlug;
+    });
+    if (!turma) {
+      // Turmas list might be from a different client (user changed columns).
+      // Fetch the turmas of the correct client to find the row.
+      callWorker({ action: 'ct_list_turmas', client_slug: clientSlug }).then(function(d) {
+        var t = (d.turmas || []).find(function(x) { return x.slug === turmaSlug; });
+        if (!t) { _toast('Turma não encontrada.'); return; }
+        _renderTurmaSettingsDrawer(t);
+      }).catch(function() { _toast('Erro ao carregar turma.'); });
+    } else {
+      _renderTurmaSettingsDrawer(turma);
+    }
+  }
+
+  function _renderTurmaSettingsDrawer(turma) {
+    _closeTurmaSettingsDrawer();
+    var clientName = (function() {
+      var c = _clients.find(function(x) { return x.slug === turma.client_slug; });
+      return c ? (c.display_name || c.name) : turma.client_slug;
+    })();
+    var turmaName = turma.display_name || turma.name;
+    var whatsappCell = turma.whatsapp_url
+      ? '<a class="ct-turma-drawer-row-meta" href="' + _esc(turma.whatsapp_url) + '" target="_blank" rel="noopener" title="' + _esc(turma.whatsapp_url) + '">' + _esc(turma.whatsapp_url) + '</a>'
+      : '<span class="ct-turma-drawer-row-meta is-empty">não definido</span>';
+    var cpName = '';
+    if (turma.classpulse_session_id) {
+      var s = _cpSessions.find(function(x) { return x.id === turma.classpulse_session_id; });
+      cpName = s ? s.name : turma.classpulse_session_id;
+    }
+    var classpulseCell = cpName
+      ? '<span class="ct-turma-drawer-row-meta">' + _esc(cpName) + '</span>'
+      : '<span class="ct-turma-drawer-row-meta is-empty">não definida</span>';
+
+    var overlay = document.createElement('div');
+    overlay.className = 'ct-turma-drawer-overlay';
+    overlay.id = 'ct-turma-drawer-overlay';
+
+    var drawer = document.createElement('aside');
+    drawer.className = 'ct-turma-drawer';
+    drawer.id = 'ct-turma-drawer';
+    drawer.setAttribute('role', 'dialog');
+    drawer.setAttribute('aria-label', 'Configurações da turma');
+    drawer.innerHTML =
+      '<div class="ct-turma-drawer-head">' +
+        '<div>' +
+          '<span class="ct-turma-drawer-eyebrow">' + _esc(clientName) + '</span>' +
+          '<div class="ct-turma-drawer-title">' + _esc(turmaName) + '</div>' +
+        '</div>' +
+        '<button type="button" class="ct-turma-drawer-close" id="ct-turma-drawer-close" aria-label="Fechar">×</button>' +
+      '</div>' +
+
+      '<div class="ct-turma-drawer-section">' +
+        '<h3 class="ct-turma-drawer-section-title">Aulas</h3>' +
+        '<div class="ct-turma-drawer-aulas-list" id="ct-drawer-aulas-list">' +
+          '<span class="ct-empty">Carregando aulas...</span>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="ct-turma-drawer-section">' +
+        '<h3 class="ct-turma-drawer-section-title">Comunicação</h3>' +
+        '<div class="ct-turma-drawer-row">' +
+          '<span class="ct-turma-drawer-row-label">WhatsApp</span>' +
+          whatsappCell +
+          '<button class="ct-btn ct-btn-sm" type="button" data-drawer-action="edit-whatsapp">Editar</button>' +
+        '</div>' +
+        '<div class="ct-turma-drawer-row">' +
+          '<span class="ct-turma-drawer-row-label">ClassPulse</span>' +
+          classpulseCell +
+          '<button class="ct-btn ct-btn-sm" type="button" data-drawer-action="edit-classpulse">Editar</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="ct-turma-drawer-section">' +
+        '<h3 class="ct-turma-drawer-section-title">Roster</h3>' +
+        '<div class="ct-turma-drawer-stub">Em breve · cadastro de alunos por turma.</div>' +
+      '</div>' +
+
+      '<div class="ct-turma-drawer-section">' +
+        '<h3 class="ct-turma-drawer-section-title">Ícone</h3>' +
+        '<div class="ct-turma-drawer-stub">Em breve · ícone por turma (hoje só por cliente).</div>' +
+      '</div>' +
+
+      '<div class="ct-turma-drawer-actions">' +
+        '<button class="ct-btn ct-btn-primary" type="button" data-drawer-action="edit-turma">Editar turma</button>' +
+        '<button class="ct-btn" type="button" data-drawer-action="close">Fechar</button>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(drawer);
+    // Force a reflow before adding .open so the CSS transition runs.
+    /* eslint-disable-next-line no-unused-expressions */
+    overlay.offsetWidth;
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+
+    // Wire actions (single delegated listener on the drawer).
+    drawer.addEventListener('click', function(e) {
+      var actionEl = e.target.closest('[data-drawer-action]');
+      if (actionEl) {
+        var action = actionEl.getAttribute('data-drawer-action');
+        if (action === 'close') return _closeTurmaSettingsDrawer();
+        if (action === 'edit-whatsapp')  return _openTurmaFromDrawer(turma, 'whatsapp');
+        if (action === 'edit-classpulse') return _openTurmaFromDrawer(turma, 'classpulse');
+        if (action === 'edit-turma')     return _openTurmaFromDrawer(turma, null);
+      }
+      var closeBtn = e.target.closest('#ct-turma-drawer-close');
+      if (closeBtn) return _closeTurmaSettingsDrawer();
+    });
+    overlay.addEventListener('click', _closeTurmaSettingsDrawer);
+
+    // ESC dismisses.
+    function escHandler(e) {
+      if (e.key === 'Escape') {
+        _closeTurmaSettingsDrawer();
+        document.removeEventListener('keydown', escHandler);
+      }
+    }
+    document.addEventListener('keydown', escHandler);
+
+    // Async: fill the aulas list (small list, cached by Worker).
+    callWorker({
+      action: 'ct_list_aulas',
+      client_slug: turma.client_slug,
+      turma_slug: turma.slug
+    }).then(function(d) {
+      var aulas = (d.aulas || []).slice().sort(function(a, b) {
+        return (a.aula_number || 0) - (b.aula_number || 0);
+      });
+      var listEl = document.getElementById('ct-drawer-aulas-list');
+      if (!listEl) return;
+      if (!aulas.length) {
+        listEl.innerHTML = '<span class="ct-turma-drawer-stub">Nenhuma aula cadastrada ainda.</span>';
+        return;
+      }
+      listEl.innerHTML = aulas.map(function(a) {
+        var label = a.title ? (_esc(a.title)) : '';
+        return '<span class="ct-turma-drawer-aula-pill"><strong>' + _esc(a.aula_number) + '</strong>' +
+          (label ? ' ' + label : '') + '</span>';
+      }).join('');
+    }).catch(function() {
+      var listEl = document.getElementById('ct-drawer-aulas-list');
+      if (listEl) listEl.innerHTML = '<span class="ct-turma-drawer-stub">Erro ao carregar aulas.</span>';
+    });
+  }
+
+  function _openTurmaFromDrawer(turma, scrollTo) {
+    // The turma form expects _selectedClientSlug to be set so it can call
+    // ct_update_turma against the right client. Sync it before opening.
+    _selectedClientSlug = turma.client_slug;
+    _closeTurmaSettingsDrawer();
+    _openTurmaForm(turma, scrollTo);
+  }
+
+  function _closeTurmaSettingsDrawer() {
+    var overlay = document.getElementById('ct-turma-drawer-overlay');
+    var drawer  = document.getElementById('ct-turma-drawer');
+    if (drawer)  drawer.parentNode  && drawer.parentNode.removeChild(drawer);
+    if (overlay) overlay.parentNode && overlay.parentNode.removeChild(overlay);
+  }
+
   // ---- Tab switching ----
 
   // URL ?tab=<x>  ↔  internal panel id
   // The URL uses semantic Codex hub names that match the topbar labels;
   // panel ids retain their legacy names (panel-items, panel-clients, ...).
+  // Bundle G: liberações was folded into the Turmas three-column under
+  // panel-clients, so legacy ?tab=liberacoes and ?tab=releases land on
+  // 'clients' (which now contains the Liberações column 3).
   var URL_TO_INTERNAL = {
     turmas:     'clients',
     conteudo:   'items',
@@ -1512,11 +1754,11 @@ window.CT_ADMIN = (function() {
     tarefas:    'tarefas',
     drive:      'drive',
     presets:    'presets',
-    liberacoes: 'releases',
+    liberacoes: 'clients',
     // legacy aliases — anything that ever pointed at the old in-page tabs
     clients:    'clients',
     items:      'items',
-    releases:   'releases'
+    releases:   'clients'
   };
 
   function _activatePanel(internalId) {
@@ -1536,8 +1778,31 @@ window.CT_ADMIN = (function() {
     if (internalId === 'items')    _loadItems();
     if (internalId === 'apostila') _loadApostila();
     if (internalId === 'tarefas')  _initTarefasPicker();
-    if (internalId === 'releases') _initTurmaPicker();
+    // Bundle G: when landing on the Turmas three-column, auto-restore the
+    // last-selected turma into column 3 (sticky liberações context). The
+    // Clientes list (column 1) is loaded by CT_ADMIN.init() at boot.
+    if (internalId === 'clients')  _restoreTurmaForReleases();
     // drive + presets are Bundle I placeholders; they render their own static markup.
+  }
+
+  // Bundle G: re-hydrate the Liberações column from localStorage so reloading
+  // the page or following a deep link (?tab=liberacoes) brings back the user's
+  // last turma. Silent no-op if nothing was previously selected.
+  function _restoreTurmaForReleases() {
+    var savedClient = null, savedTurma = null;
+    try {
+      savedClient = localStorage.getItem(LS_REL_CLIENT);
+      savedTurma  = localStorage.getItem(LS_REL_TURMA);
+    } catch (_) {}
+    if (!savedClient || !savedTurma) return;
+    // Wait for clients to be loaded before driving column 1's selection;
+    // CT_ADMIN.init() fires _loadClients() asynchronously. If clients aren't
+    // ready yet, _renderClients (called when the fetch resolves) will set the
+    // .selected class via _selectedClientSlug below.
+    _selectedClientSlug = savedClient;
+    // Wire the gear icon now so it picks up the saved turma even before the
+    // user clicks a turma card on a fresh page load.
+    _selectTurmaForReleases(savedClient, savedTurma);
   }
 
   function _initTabs() {
@@ -2408,10 +2673,18 @@ window.CT_ADMIN = (function() {
       });
       var deleteSetBtn = document.getElementById('btn-delete-set');
       if (deleteSetBtn) deleteSetBtn.addEventListener('click', _deleteApostilaSet);
+      // Bundle G: gear icon in column 3 header opens the per-turma settings drawer.
+      var gearBtn = document.getElementById('btn-turma-settings');
+      if (gearBtn) gearBtn.addEventListener('click', function() {
+        openTurmaSettingsDrawer();
+      });
       _loadClients();
     },
 
     openTagManager: _openTagManager,
+
+    // Bundle G: per-turma settings drawer (column 3 gear icon).
+    openTurmaSettingsDrawer: openTurmaSettingsDrawer,
 
     accessSectionHtml: _accessSectionHtml,
     renderAccessLog: _renderAccessLog,
