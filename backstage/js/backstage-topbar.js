@@ -5,7 +5,11 @@
 // Generates topbar DOM, wires theme toggle, logout, settings.
 // Portal mode assumes globals: ThemeManager, SettingsDrawer, BS_AUTH
 // Presentation mode assumes globals: ThemeManager, SettingsDrawer (no BS_AUTH)
-// Usage: Topbar.init({ title?, subtitle?, backLink?, sections?, container?, mode? })
+// Usage: Topbar.init({ title?, subtitle?, backLink?, sections?, container?, mode?, tabs? })
+// tabs: optional [{ label, href, active?, dot? }] — renders Codex hub tab strip
+// between the brand and icon buttons. Each page that joins the hub passes the
+// same tabs array with its own `active` flag set. `dot` paints a small red
+// pulsing dot (for live indicators like an open Nexo session).
 // ============================================================
 
 window.Topbar = (function() {
@@ -70,6 +74,7 @@ window.Topbar = (function() {
     var subtitle = opts.subtitle || '';
     var backLink = opts.backLink || '';
     var sections = opts.sections || [];
+    var tabs = opts.tabs || [];
     var container = opts.container || document.querySelector('.bs-app') || document.body;
 
     // Build header
@@ -79,6 +84,7 @@ window.Topbar = (function() {
 
     _inner = document.createElement('div');
     _inner.className = 'bs-topbar-inner';
+    if (tabs.length > 0) _inner.classList.add('bs-topbar-inner--with-tabs');
 
     // Back arrow (portal sub-pages only)
     if (backLink && !isPresentation) {
@@ -134,6 +140,33 @@ window.Topbar = (function() {
     }
 
     _inner.appendChild(brand);
+
+    // Codex hub tabs (between brand and spacer)
+    if (tabs.length > 0) {
+      var tabStrip = document.createElement('nav');
+      tabStrip.className = 'bs-topbar-tabs';
+      tabStrip.setAttribute('role', 'tablist');
+      tabStrip.setAttribute('aria-label', 'PensoCodex');
+      tabs.forEach(function(t) {
+        var a = document.createElement('a');
+        a.className = 'bs-topbar-tab' + (t.active ? ' active' : '');
+        a.href = t.href || '#';
+        a.setAttribute('role', 'tab');
+        if (t.active) a.setAttribute('aria-current', 'page');
+        var labelSpan = document.createElement('span');
+        labelSpan.className = 'bs-topbar-tab-label';
+        labelSpan.textContent = t.label;
+        a.appendChild(labelSpan);
+        if (t.dot) {
+          var dotSpan = document.createElement('span');
+          dotSpan.className = 'bs-topbar-tab-dot';
+          dotSpan.setAttribute('aria-hidden', 'true');
+          a.appendChild(dotSpan);
+        }
+        tabStrip.appendChild(a);
+      });
+      _inner.appendChild(tabStrip);
+    }
 
     // Spacer
     var spacer = document.createElement('div');
@@ -245,6 +278,37 @@ window.Topbar = (function() {
     if (el) el.textContent = text;
   }
 
-  return { init: init, addItem: addItem, setSubtitle: setSubtitle };
+  // ── Codex hub tabs (canonical definition) ─────────────────
+  // Single source of truth for the 5-tab strip shared across the
+  // PensoCodex hub (ClassVault Aula + ClassTrail Conteúdo/Liberações/
+  // Turmas + ClassPulse Nexo). Each consuming page calls
+  // Topbar.codexTabs('<key>') to get the tabs array with the right
+  // entry flagged active.
+  var CODEX_TABS = [
+    { key: 'aula',       label: 'Aula',       href: '/backstage/classvault/' },
+    { key: 'conteudo',   label: 'Conteúdo',   href: '/backstage/classtrail/?tab=conteudo' },
+    { key: 'liberacoes', label: 'Liberações', href: '/backstage/classtrail/?tab=liberacoes' },
+    { key: 'turmas',     label: 'Turmas',     href: '/backstage/classtrail/?tab=turmas' },
+    { key: 'nexo',       label: 'Nexo',       href: '/backstage/classpulse/' }
+  ];
+
+  function codexTabs(activeKey, overrides) {
+    overrides = overrides || {};
+    return CODEX_TABS.map(function(t) {
+      var entry = { label: t.label, href: t.href };
+      if (t.key === activeKey) entry.active = true;
+      if (overrides[t.key]) {
+        if (overrides[t.key].dot) entry.dot = true;
+      }
+      return entry;
+    });
+  }
+
+  return {
+    init: init,
+    addItem: addItem,
+    setSubtitle: setSubtitle,
+    codexTabs: codexTabs
+  };
 
 })();

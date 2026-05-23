@@ -9,6 +9,7 @@ window.Topbar.init({
   title: 'PensoIA',
   subtitle: 'PensoCodex',
   backLink: '/backstage/',
+  tabs: window.Topbar.codexTabs('aula')
 });
 if (window.CVFocusMode) CVFocusMode.init();
 

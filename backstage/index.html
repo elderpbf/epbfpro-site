@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png?v=2">
 
 <link rel="stylesheet" href="css/theme.css?v=1.3">
-<link rel="stylesheet" href="css/backstage.css?v=2.0">
+<link rel="stylesheet" href="css/backstage.css?v=2.1">
 <link rel="stylesheet" href="css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="css/classforge.css?v=1.3">
 <link rel="stylesheet" href="css/shared-components.css?v=1.3">
@@ -73,51 +73,15 @@
       </nav>
       <div class="bs-tool-grid">
 
-        <!-- ClassForge (codename only — phasing out) -->
-        <a class="bs-tool-card" id="card-classforge" href="classforge/index.html" aria-label="Abrir ClassForge">
-          <div class="bs-tool-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-          </div>
-          <div class="bs-tool-name">ClassForge</div>
-          <div class="bs-tool-desc" data-key="classforge_desc">Apresentações</div>
-        </a>
-
-        <!-- ClassPulse → PensoNexo -->
-        <a class="bs-tool-card" id="card-classpulse" href="classpulse/index.html" aria-label="Abrir PensoNexo">
-          <div class="bs-tool-icon" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line>
-            </svg>
-          </div>
-          <div class="bs-tool-codename">ClassPulse</div>
-          <div class="bs-tool-name">PensoNexo</div>
-          <div class="bs-tool-desc" data-key="classpulse_desc">Interação em sala</div>
-        </a>
-
-        <!-- ClassTrail → PensoTrilha -->
-        <a class="bs-tool-card" id="card-classtrail" href="classtrail/index.html" aria-label="Abrir PensoTrilha">
-          <div class="bs-tool-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>
-          </div>
-          <div class="bs-tool-codename">ClassTrail</div>
-          <div class="bs-tool-name">PensoTrilha</div>
-          <div class="bs-tool-desc" data-key="classtrail_desc">Trilha de conteúdo</div>
-        </a>
-
-        <!-- ClassVault → PensoCodex -->
-        <a class="bs-tool-card" id="card-classvault" href="classvault/index.html" aria-label="Abrir PensoCodex">
+        <!-- PensoCodex — unified admin hub (ClassVault + ClassTrail + ClassPulse) -->
+        <a class="bs-tool-card" id="card-pensocodex" href="classvault/index.html" aria-label="Abrir PensoCodex">
           <div class="bs-tool-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
             </svg>
           </div>
-          <div class="bs-tool-codename">ClassVault</div>
           <div class="bs-tool-name">PensoCodex</div>
-          <div class="bs-tool-desc" data-key="classvault_desc">Painel do professor em aula</div>
+          <div class="bs-tool-desc" data-key="pensocodex_desc">Aula, conteúdo, liberações, turmas e Nexo</div>
         </a>
 
         <!-- TypeDrill (admin-only — codename only) -->
@@ -132,6 +96,15 @@
         </a>
 
       </div>
+
+      <!-- Legacy: tools kept around for ongoing maintenance, not active development. -->
+      <section class="bs-legacy-section" aria-label="Legado">
+        <div class="bs-legacy-label" data-key="legacy_label">Legado</div>
+        <a class="bs-legacy-link" id="card-classforge" href="classforge/index.html" aria-label="Abrir ClassForge">
+          <span class="bs-legacy-name">ClassForge</span>
+          <span class="bs-legacy-desc" data-key="classforge_desc">Apresentações</span>
+        </a>
+      </section>
     </div>
 
   </main>
@@ -149,7 +122,7 @@
 <script src="js/auth.js?v=1.2"></script>
 <script src="js/settings-drawer.js?v=1.1"></script>
 <script src="js/brand-logos.js?v=1.0"></script>
-<script src="js/backstage-topbar.js?v=1.5"></script>
+<script src="js/backstage-topbar.js?v=1.6"></script>
 <script>
 'use strict';
 
@@ -171,6 +144,8 @@ var TRANSLATIONS = {
     classpulse_desc:           'Interação em sala',
     classtrail_desc:           'Trilha de conteúdo',
     classvault_desc:           'Painel do professor em aula',
+    pensocodex_desc:           'Aula, conteúdo, liberações, turmas e Nexo',
+    legacy_label:              'Legado',
     typedrill_desc:            'Treino de digitação',
     laudoai_mockup_desc:       'Mockup — Laudo com IA',
     mocks_desc:                'Galeria de mockups',

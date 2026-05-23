@@ -1532,19 +1532,61 @@ window.CT_ADMIN = (function() {
 
   // ---- Tab switching ----
 
+  // URL ?tab=<x>  ↔  internal panel id
+  // The URL uses semantic Codex hub names that match the topbar labels;
+  // panel ids retain their legacy names (panel-items, panel-clients, ...).
+  var URL_TO_INTERNAL = {
+    turmas:     'clients',
+    conteudo:   'items',
+    apostila:   'apostila',
+    tarefas:    'tarefas',
+    liberacoes: 'releases',
+    // legacy aliases — anything that ever pointed at the old in-page tabs
+    clients:    'clients',
+    items:      'items',
+    releases:   'releases'
+  };
+  var INTERNAL_TO_URL = {
+    clients:  'turmas',
+    items:    'conteudo',
+    apostila: 'apostila',
+    tarefas:  'tarefas',
+    releases: 'liberacoes'
+  };
+  // The three in-page sub-tabs (Conteúdo / Apostila / Tarefas) only show
+  // when the active panel belongs to the topbar's "Conteúdo" group.
+  var CONTEUDO_SUBSET = { items: true, apostila: true, tarefas: true };
+
+  function _activatePanel(internalId) {
+    document.querySelectorAll('.ct-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.ct-panel').forEach(function(p) { p.classList.remove('active'); });
+    var panel = document.getElementById('panel-' + internalId);
+    if (panel) panel.classList.add('active');
+    var subtab = document.querySelector('.ct-tab[data-tab="' + internalId + '"]');
+    if (subtab) subtab.classList.add('active');
+    var subtabBar = document.getElementById('ct-subtabs');
+    if (subtabBar) subtabBar.style.display = CONTEUDO_SUBSET[internalId] ? '' : 'none';
+    if (internalId === 'items')    _loadItems();
+    if (internalId === 'apostila') _loadApostila();
+    if (internalId === 'tarefas')  _initTarefasPicker();
+    if (internalId === 'releases') _initTurmaPicker();
+  }
+
   function _initTabs() {
+    // Initial activation from ?tab=
+    var params = new URLSearchParams(location.search);
+    var urlTab = params.get('tab') || 'turmas';
+    var initial = URL_TO_INTERNAL[urlTab] || 'clients';
+    _activatePanel(initial);
+
     document.querySelectorAll('.ct-tab').forEach(function(tab) {
       tab.addEventListener('click', function() {
         var id = tab.dataset.tab;
-        document.querySelectorAll('.ct-tab').forEach(function(t) { t.classList.remove('active'); });
-        document.querySelectorAll('.ct-panel').forEach(function(p) { p.classList.remove('active'); });
-        tab.classList.add('active');
-        var panel = document.getElementById('panel-' + id);
-        if (panel) panel.classList.add('active');
-        if (id === 'items') _loadItems();
-        if (id === 'apostila') _loadApostila();
-        if (id === 'tarefas') _initTarefasPicker();
-        if (id === 'releases') _initTurmaPicker();
+        _activatePanel(id);
+        var urlValue = INTERNAL_TO_URL[id] || id;
+        var p = new URLSearchParams(location.search);
+        p.set('tab', urlValue);
+        history.replaceState(null, '', location.pathname + '?' + p.toString());
       });
     });
   }
@@ -2378,7 +2420,10 @@ window.CT_ADMIN = (function() {
 
   return {
     init: function() {
-      _initTabs();
+      // Kick off types+tags before activating the initial panel so that
+      // landing directly on ?tab=conteudo has type/tag data ready for
+      // _renderItems on first paint.
+      Promise.all([_loadTypes(), _loadTags()]).then(_initTabs);
       document.getElementById('btn-new-client').addEventListener('click', function() { _openClientForm(null); });
       document.getElementById('btn-new-turma').addEventListener('click', function() { _openTurmaForm(null); });
       document.getElementById('btn-new-item').addEventListener('click', function() { _openItemEditor(null); });
@@ -2405,8 +2450,6 @@ window.CT_ADMIN = (function() {
       var deleteSetBtn = document.getElementById('btn-delete-set');
       if (deleteSetBtn) deleteSetBtn.addEventListener('click', _deleteApostilaSet);
       _loadClients();
-      _loadTypes();
-      _loadTags();
     },
 
     openTagManager: _openTagManager,
