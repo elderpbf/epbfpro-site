@@ -19,9 +19,9 @@ ClassVault.turmas = [];
 ClassVault.types = [];                       // ct_types, lazy-loaded for editor
 ClassVault.tags = [];                        // ct_tags, lazy-loaded for editor
 // Phase 3: three buckets keyed by section
-ClassVault.vaultItems = [];                  // global vault library (audience='vault_only')
+ClassVault.vaultItems = [];                  // global library of all authored items
 ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for active turma+aula
-ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (audience='public', read-only)
+ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (read-only)
 ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
 ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
 // Sections that start COLLAPSED. Favoritos and Nexo are intentionally NOT here:
@@ -101,7 +101,6 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   // and _renderAulaPicker remain in the file and can be re-enabled if needed.
   _renderSearchInput();
   _wireItemClicks();
-  _wireSidebarFooter();
   _wireItemContextMenu();
   _wireDragReorder();
   // _loadCodex renders the sidebar; Drive section appends after codex resolves.
@@ -109,6 +108,7 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   if (window.CVDriveSync) CVDriveSync.init();
   _renderPinnedNexo();   // initial paint (null state)
   _loadLiveSession();    // fetch once on boot; user clicks refresh to update
+  _renderEmptyMainView();  // welcome state until user selects a sidebar item
 })();
 
 function _pickAula() {
@@ -274,10 +274,10 @@ function _renderSidebar() {
     html.push(CVLabs.renderSection(ClassVault.collapsedSections));
   }
 
-  // ── Trilha: all authored items (vault_only + public), grouped by type ──
+  // ── Trilha: all authored items, grouped by type ──
   // Hoje and the per-turma Trilha are intentionally not rendered in the
-  // simplified flow. Worker's cv_get_codex_view now returns both vault_only
-  // and public items in data.vault, so vaultItems is the full library.
+  // simplified flow. Worker's cv_get_codex_view returns the entire library
+  // in data.vault, so vaultItems is the full library.
   html.push(_renderSection({
     key: 'trilha',
     label: 'Trilha',
@@ -425,7 +425,7 @@ function _applySearchFilter(rawQuery) {
 
 function _renderVaultGroups(items) {
   if (!items.length) {
-    return '<div class="cv-sm-empty cv-sm-empty--inline">Vault vazio. Use "+ Adicionar item" para criar.</div>';
+    return '<div class="cv-sm-empty cv-sm-empty--inline">Vault vazio.</div>';
   }
   const byTag = new Map();
   const untagged = [];
@@ -979,21 +979,10 @@ function _selectItem(item, subEl) {
   ClassVault.activeItemId = item.id;
 }
 
-// ── Sidebar footer: "+ Adicionar" button (mounts editor in right pane) ──
-
-function _wireSidebarFooter() {
-  const aside = document.querySelector('.cv-sm');
-  if (!aside) return;
-  let footer = aside.querySelector('.cv-sm-footer');
-  if (!footer) {
-    footer = document.createElement('div');
-    footer.className = 'cv-sm-footer';
-    footer.innerHTML = '<button type="button" class="cv-sm-add-btn">+ Adicionar item</button>';
-    aside.appendChild(footer);
-  }
-  const btn = footer.querySelector('.cv-sm-add-btn');
-  btn.addEventListener('click', () => _openCreator());
-}
+// Bundle D removed the sidebar "+ Adicionar" footer. Authoring moves to the
+// Conteúdo tab in Bundle F. _openCreator stays in this file so Bundle F can
+// rewire it without re-implementation; _openEditor is still reached via the
+// item context menu's "Editar..." action.
 
 // Phase 4: drag-to-reorder for Hoje items. Only .sub[data-draggable="1"] is
 // draggable (set by _renderSubCard when Hoje requests it). Drop must land on
@@ -1106,12 +1095,9 @@ function _openContextMenu(x, y, located) {
       if (aulaOk && !inPlanAlready) {
         items.push({ action: 'add-to-hoje', label: '📌 Adicionar ao plano de hoje' });
       }
-      items.push({ action: 'promote', label: '↗ Promover para Trilha' });
     } else if (source === 'aula_plan') {
       items.push({ action: 'remove-from-hoje', label: '✖ Remover do plano' });
       items.push({ action: 'release', label: '↗ Liberar para alunos' });
-    } else if (source === 'release') {
-      items.push({ action: 'demote', label: '↘ Mover para Vault' });
     }
   }
 
@@ -1133,8 +1119,6 @@ function _openContextMenu(x, y, located) {
     else if (action === 'edit') _openEditor(item);
     else if (action === 'add-to-hoje') _addToHoje(item);
     else if (action === 'remove-from-hoje') _removeFromHoje(item);
-    else if (action === 'promote') _setItemAudience(item, 'public');
-    else if (action === 'demote') _setItemAudience(item, 'vault_only');
     else if (action === 'release') _releaseItemToCurrentAula(item);
   });
   // Dismiss listeners. Use named handlers so _closeContextMenu can remove them
@@ -1198,29 +1182,9 @@ async function _removeFromHoje(item) {
   }
 }
 
-async function _setItemAudience(item, nextAudience) {
-  const current = item.audience === 'vault_only' ? 'vault_only' : 'public';
-  if (current === nextAudience) return;
-  try {
-    const res = await callWorker({
-      action: 'ct_update_item',
-      id: item.id,
-      audience: nextAudience,
-      _silent: true
-    });
-    if (res && res.error) throw new Error(res.error);
-    if (window.BSToast) BSToast.show(
-      nextAudience === 'vault_only' ? 'Movido para Vault.' : 'Promovido para Trilha.'
-    );
-    await _loadCodex();
-  } catch (err) {
-    if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
-  }
-}
-
 // "Liberar para alunos" on a Hoje item: release to current turma+aula via
-// ct_release_item and flip audience to public. After release the item moves
-// from Hoje → Trilha.
+// ct_release_item then drop it from the aula plan so the item moves from
+// Hoje → Trilha.
 async function _releaseItemToCurrentAula(item) {
   if (ClassVault.aulaNumber == null) return;
   try {
@@ -1232,12 +1196,6 @@ async function _releaseItemToCurrentAula(item) {
       aula_number: ClassVault.aulaNumber
     });
     if (release && release.error) throw new Error(release.error);
-    if (item.audience !== 'public') {
-      const upd = await callWorker({
-        action: 'ct_update_item', id: item.id, audience: 'public', _silent: true
-      });
-      if (upd && upd.error) throw new Error(upd.error);
-    }
     await callWorker({
       action: 'cv_remove_from_aula_plan',
       client_slug: ClassVault.active.client_slug,
@@ -1285,7 +1243,6 @@ async function _openEditor(itemOrNull, prefill, aiContext) {
     aiContext: aiContext || null,
     types: ClassVault.types,
     tags: ClassVault.tags,
-    defaultAudience: 'vault_only',
     titleLabel: isEdit ? 'Editar item' : 'Adicionar item',
     saveLabel: isEdit ? 'Salvar' : 'Adicionar',
     closeLabel: '',
@@ -1293,11 +1250,7 @@ async function _openEditor(itemOrNull, prefill, aiContext) {
     createAction: 'cv_create_item',
     createExtraParams: {
       client_slug: ClassVault.active.client_slug,
-      turma_slug: ClassVault.active.turma_slug,
-      // If the user picks audience=public in the form, also release to current
-      // turma+aula as a convenience. Worker no-ops this for audience=vault_only.
-      release_to_turma: true,
-      aula_number: ClassVault.aulaNumber
+      turma_slug: ClassVault.active.turma_slug
     },
     onSave: async function(savedItem) {
       if (window.BSToast) BSToast.show(isEdit ? 'Item atualizado.' : 'Item adicionado.');
@@ -1563,8 +1516,15 @@ function _renderBreadcrumb(item) {
       '>📌 Adicionar ao plano</button>';
   } else if (source === 'aula_plan') {
     html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--primary" data-action="release">↗ Liberar para alunos</button>';
-  } else if (source === 'release') {
-    html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--primary" data-action="demote">↘ Mover para Vault</button>';
+  }
+
+  // Content-type actions (popup, copy, etc.) from CVTypes registry.
+  if (window.CVTypes) {
+    const typeActions = CVTypes.actionsFor(item);
+    for (const a of typeActions) {
+      html += '<button type="button" class="cv-crumb-btn" data-action="type:' + _esc(a.id) +
+        '"' + (a.title ? ' title="' + _esc(a.title) + '"' : '') + '>' + _esc(a.label) + '</button>';
+    }
   }
 
   html += '<button type="button" class="cv-crumb-btn" data-action="edit" title="Editar item">✏️ Editar</button>';
@@ -1576,9 +1536,9 @@ function _renderBreadcrumb(item) {
 }
 
 function _hasCrumbOverflow(source) {
-  // Vault items have "Promover para Trilha" as secondary; Hoje has "Remover do plano".
-  // Trilha items currently have no secondary actions beyond Editar/Mover para Vault.
-  return source === 'vault' || source === 'aula_plan';
+  // Hoje items have "Remover do plano" as secondary. Vault and Trilha items
+  // currently have no secondary actions beyond Editar.
+  return source === 'aula_plan';
 }
 
 function _wireCrumbActions(crumb, item, source) {
@@ -1589,8 +1549,11 @@ function _wireCrumbActions(crumb, item, source) {
       if (action === 'edit') _openEditor(item);
       else if (action === 'add-to-hoje') _addToHoje(item);
       else if (action === 'release') _releaseItemToCurrentAula(item);
-      else if (action === 'demote') _setItemAudience(item, 'vault_only');
       else if (action === 'overflow') _openCrumbOverflowMenu(e.currentTarget, item, source);
+      else if (action && action.startsWith('type:') && window.CVTypes) {
+        const handler = CVTypes.handlerFor(item, action.slice(5));
+        if (handler) handler(item);
+      }
     });
   });
 }
@@ -1598,9 +1561,7 @@ function _wireCrumbActions(crumb, item, source) {
 function _openCrumbOverflowMenu(anchor, item, source) {
   _closeContextMenu();
   const items = [];
-  if (source === 'vault') {
-    items.push({ action: 'promote', label: '↗ Promover para Trilha' });
-  } else if (source === 'aula_plan') {
+  if (source === 'aula_plan') {
     items.push({ action: 'remove-from-hoje', label: '✖ Remover do plano' });
   }
   if (!items.length) return;
@@ -1619,8 +1580,7 @@ function _openCrumbOverflowMenu(anchor, item, source) {
     if (!btn) return;
     const action = btn.getAttribute('data-action');
     _closeContextMenu();
-    if (action === 'promote') _setItemAudience(item, 'public');
-    else if (action === 'remove-from-hoje') _removeFromHoje(item);
+    if (action === 'remove-from-hoje') _removeFromHoje(item);
   });
   setTimeout(() => {
     document.addEventListener('click', _docDismissCtxMenu);
@@ -1650,31 +1610,31 @@ function _mountIframe(url, container, emptyMsg, opts) {
     container.innerHTML = '<div class="cv-renderer-empty">' + _esc(emptyMsg || 'URL não definida para este item.') + '</div>';
     return;
   }
+  container.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'cv-renderer-iframe-wrap';
   const iframe = document.createElement('iframe');
   iframe.className = 'cv-renderer-iframe';
   iframe.src = url;
   iframe.setAttribute('allow', 'autoplay; encrypted-media; clipboard-write; fullscreen');
   iframe.setAttribute('referrerpolicy', 'no-referrer');
-  container.innerHTML = '';
-  if (opts.clip) {
-    // Wrap iframe in a clip box so Google's "Open in Slides" corner link and
-    // any toolbar chrome at iframe edges fall outside the visible area.
-    const wrap = document.createElement('div');
-    wrap.className = 'cv-renderer-iframe-clip';
-    wrap.appendChild(iframe);
-    container.appendChild(wrap);
-  } else {
-    container.appendChild(iframe);
+  wrap.appendChild(iframe);
+  if (opts.mask) {
+    // Surface-coloured corner mask covers Google's "Open in Slides" badge.
+    const mask = document.createElement('div');
+    mask.className = 'cv-slides-corner-mask';
+    mask.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(mask);
   }
+  container.appendChild(wrap);
 }
 
 function _renderIframe(item, container) {
   const url = (item.meta_json && item.meta_json.url) || '';
-  // Crop the iframe edges for type=slide (Google Slides published embed) so
-  // the "Open in Slides" corner link and toolbar fall outside view. For lab
-  // and embed types we keep the host chrome visible.
-  const useClip = item.type === 'slide';
-  _mountIframe(url, container, undefined, { clip: useClip });
+  // Apply the corner mask for type=slide (Google Slides published embed) so
+  // the "Open in Slides" badge is hidden. For lab and embed types we keep the
+  // host chrome visible.
+  _mountIframe(url, container, undefined, { mask: item.type === 'slide' });
 }
 
 function _renderDriveFolder(item, container) {
@@ -1688,7 +1648,7 @@ function _renderDriveFile(item, container) {
   const meta = item.meta_json || {};
   const id = meta.file_id || _extractDriveFileId(meta.url || '');
   const src = id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';
-  _mountIframe(src, container, 'Arquivo Drive sem file_id (ou URL inválida).', { clip: true });
+  _mountIframe(src, container, 'Arquivo Drive sem file_id (ou URL inválida).');
 }
 
 function _renderVideo(item, container) {
@@ -1749,20 +1709,18 @@ function _renderPopupCard(item, container) {
   const url = (item.meta_json && item.meta_json.url) || '';
   const isDrive = String(item.id || '').startsWith('drive:');
 
-  // Drive Slides: render the /embed URL inline and keep an "open in window"
-  // affordance as a floating button. Falls back to the launcher card if the
-  // iframe is blocked (user sees a broken embed and clicks the popup button).
+  // Drive Slides: render the /embed URL full-bleed inline. A surface-coloured
+  // corner mask covers Google's "Open in Slides" badge in the top-right of the
+  // iframe. The "↗ Janela" action lives in the bottom action bar via CVTypes.
+  // Falls back to the launcher card below when not a Drive item.
   if (isDrive && url) {
     container.innerHTML =
-      '<div class="cv-slides-inline cv-renderer-iframe-clip">' +
+      '<div class="cv-slides-inline">' +
         '<iframe class="cv-renderer-iframe" src="' + _esc(url) + '" ' +
           'allow="autoplay; encrypted-media; clipboard-write; fullscreen" ' +
           'referrerpolicy="no-referrer"></iframe>' +
-        '<button type="button" class="cv-slides-popup-btn" title="Abrir em janela">↗ Janela</button>' +
+        '<div class="cv-slides-corner-mask" aria-hidden="true"></div>' +
       '</div>';
-    container.querySelector('.cv-slides-popup-btn').addEventListener('click', () => {
-      if (url) _openPopup(url);
-    });
     return;
   }
 
@@ -1790,22 +1748,10 @@ function _renderPopupCard(item, container) {
 function _renderFallback(item, container) {
   container.innerHTML = '';
 
-  // Outer card: flex column, no overflow. Header (fixed) + scroll (bounded).
+  // Outer card: flex column, no overflow. Single scroll area; the per-renderer
+  // "Copiar" button moved to the bottom action bar via CVTypes registry.
   const card = document.createElement('div');
   card.className = 'cv-renderer-fallback';
-
-  const md = item.body_md || '';
-  if (md) {
-    const header = document.createElement('div');
-    header.className = 'cv-renderer-header';
-    const topBtn = document.createElement('button');
-    topBtn.type = 'button';
-    topBtn.className = 'cv-renderer-copy-btn';
-    topBtn.textContent = 'Copiar';
-    topBtn.addEventListener('click', () => _cvCopy(md, topBtn));
-    header.appendChild(topBtn);
-    card.appendChild(header);
-  }
 
   const scroll = document.createElement('div');
   scroll.className = 'cv-renderer-scroll';
@@ -1819,21 +1765,19 @@ function _renderFallback(item, container) {
 
   if (window.CTRenderer && CTRenderer.render) {
     CTRenderer.render(item, body);
-    _hideBottomBtnIfFits(scroll, body);
+    _hideCtrCopyBtn(body);
   } else {
     body.innerHTML = '<div class="cv-renderer-empty">Tipo "' + _esc(item.type) + '" sem renderer.</div>';
   }
 }
 
-// CTRenderer may mount its copy button synchronously (prompt) or after
-// dynamically loading marked.js (guide/material/paper). Try once, then
-// observe for the async case.
-function _hideBottomBtnIfFits(scrollContainer, bodyMount) {
+// CTRenderer may mount its own copy button (prompt-style). Hide it
+// unconditionally — the bottom action bar exposes Copiar via the registry.
+function _hideCtrCopyBtn(bodyMount) {
   const apply = () => {
     const btn = bodyMount.querySelector('.ctr-copy-btn');
     if (!btn) return false;
-    const fits = scrollContainer.scrollHeight <= scrollContainer.clientHeight + 1;
-    btn.style.display = fits ? 'none' : '';
+    btn.style.display = 'none';
     return true;
   };
   if (apply()) return;

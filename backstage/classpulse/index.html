@@ -673,56 +673,9 @@ function renderSessions() {
       liveIndicator.appendChild(label);
     }
 
-    // Presentation link badge or picker (interactions stop propagation so they don't navigate)
-    var presLink = document.createElement('div');
-    presLink.className = 'cp-pres-link';
-    presLink.addEventListener('click', function(e) { e.stopPropagation(); });
-    if (s.presentation_slug) {
-      var linked = presentations.find(function(p) { return p.slug === s.presentation_slug; });
-      var presTitle = linked ? linked.title : s.presentation_slug;
-      var presEngine = linked ? linked.engine : 'reveal';
-      var presHref = presEngine === 'panels'
-        ? '/backstage/classforge/presentations/' + s.presentation_slug + '/'
-        : '/backstage/classforge/viewer/?slug=' + s.presentation_slug;
-
-      var engineLabel = presEngine === 'panels' ? 'Panels' : 'Reveal';
-      var presBadge = document.createElement('span');
-      presBadge.className = 'cp-pres-badge';
-      presBadge.title = presTitle + ' (' + engineLabel + ')';
-      presBadge.textContent = presTitle + ' (' + engineLabel + ')';
-      presBadge.addEventListener('click', function(e) { e.stopPropagation(); window.open(presHref, '_blank'); });
-      presLink.appendChild(presBadge);
-
-      var unlinkBtn = document.createElement('button');
-      unlinkBtn.className = 'cp-pres-unlink';
-      unlinkBtn.title = 'Desvincular apresentação';
-      unlinkBtn.textContent = '×';
-      unlinkBtn.addEventListener('click', async function(e) {
-        e.stopPropagation();
-        try { await doUnlinkPresentation(s); } catch (err) { showToastError(err.message); }
-      });
-      presLink.appendChild(unlinkBtn);
-    } else if (presentations.length > 0) {
-      var picker = document.createElement('select');
-      picker.className = 'cp-pres-picker';
-      var placeholder = document.createElement('option');
-      placeholder.disabled = true;
-      placeholder.selected = true;
-      placeholder.textContent = 'Vincular apresentação...';
-      picker.appendChild(placeholder);
-      presentations.forEach(function(p) {
-        var opt = document.createElement('option');
-        opt.value = p.slug;
-        var engineLabel = p.engine === 'panels' ? 'Panels' : 'Reveal';
-        opt.textContent = p.title + ' (' + engineLabel + ')';
-        picker.appendChild(opt);
-      });
-      picker.addEventListener('change', async function(e) {
-        e.stopPropagation();
-        try { await doLinkPresentation(s, picker.value); } catch (err) { showToastError(err.message); }
-      });
-      presLink.appendChild(picker);
-    }
+    // Bundle D dropped the ClassForge presentation-link UI here. ClassForge
+    // moved to the Legado section in Bundle A; presentations no longer link
+    // from a ClassPulse session card.
 
     var actions = document.createElement('div');
     actions.className = 'cp-session-actions';
@@ -740,7 +693,6 @@ function renderSessions() {
     card.appendChild(codeEl);
     card.appendChild(info);
     if (liveIndicator) card.appendChild(liveIndicator);
-    card.appendChild(presLink);
     card.appendChild(actions);
     list.appendChild(card);
   });

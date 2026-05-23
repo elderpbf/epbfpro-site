@@ -2,7 +2,7 @@
 
 // Shared item editor form. Consumers: ClassTrail admin (modal mount) and
 // PensoCodex / ClassVault (right-pane mount). Owns all type-specific field
-// rendering, tag picker, audience radio, asset upload chain, save flow.
+// rendering, tag picker, asset upload chain, save flow.
 //
 // Mount-time options:
 //   container     DOM element to render into
@@ -12,7 +12,6 @@
 //   types         array of ct_types rows (slug, label, icon)
 //   tags          array of ct_tags rows (id, label) — module mutates this in place
 //                 when user creates a new tag inline
-//   defaultAudience  'public' | 'vault_only' — initial radio when no item given
 //   titleLabel    header text (e.g., 'Editar item', 'Adicionar item')
 //   saveLabel     primary button text (e.g., 'Salvar', 'Criar', 'Adicionar')
 //   closeLabel    secondary close-without-saving button text; '' to hide
@@ -33,7 +32,7 @@
 //
 // Returned handle:
 //   isDirty()     → boolean
-//   getState()    → { type, title, summary, body_md, meta_json, tag_ids, audience }
+//   getState()    → { type, title, summary, body_md, meta_json, tag_ids }
 //   destroy()     → unmount + free listeners
 window.CTItemForm = (function() {
 
@@ -370,7 +369,6 @@ window.CTItemForm = (function() {
     var aiContext = opts.aiContext || null;
     var types = opts.types || [];
     var tags = opts.tags || [];
-    var defaultAudience = opts.defaultAudience || 'public';
     var titleLabel = opts.titleLabel || (item ? 'Editar item' : 'Novo item');
     var saveLabel = opts.saveLabel || (item ? 'Salvar' : 'Criar');
     var closeLabel = opts.closeLabel != null ? opts.closeLabel : 'Fechar';
@@ -397,10 +395,6 @@ window.CTItemForm = (function() {
     var initialTagIds = Array.isArray(src.tag_ids)
       ? src.tag_ids
       : (isEdit && Array.isArray(item.tags) ? item.tags.map(function(t) { return t.id; }) : []);
-    var initialAudience = (src.audience != null
-      ? src.audience
-      : (isEdit && item.audience ? item.audience : defaultAudience));
-    if (initialAudience !== 'public' && initialAudience !== 'vault_only') initialAudience = defaultAudience;
 
     var refazerBtn = aiContext
       ? '<button class="ct-btn" id="ie-refazer-btn" type="button">&#9889; Refazer com IA</button>'
@@ -427,24 +421,6 @@ window.CTItemForm = (function() {
         '</div>' +
         '<div class="ct-field"><label>Tags</label>' +
           '<div class="ct-tag-picker" id="ie-tag-picker"></div>' +
-        '</div>' +
-        '<div class="ct-field"><label>Audiência</label>' +
-          '<div class="ct-audience-picker">' +
-            '<label class="ct-audience-opt">' +
-              '<input type="radio" name="ie-audience" value="public"' + (initialAudience === 'public' ? ' checked' : '') + '>' +
-              '<span class="ct-audience-opt-text">' +
-                '<span class="ct-audience-opt-label">Pública</span>' +
-                '<span class="ct-audience-opt-hint">aparece na trilha do aluno</span>' +
-              '</span>' +
-            '</label>' +
-            '<label class="ct-audience-opt">' +
-              '<input type="radio" name="ie-audience" value="vault_only"' + (initialAudience === 'vault_only' ? ' checked' : '') + '>' +
-              '<span class="ct-audience-opt-text">' +
-                '<span class="ct-audience-opt-label">Vault only</span>' +
-                '<span class="ct-audience-opt-hint">só visível no ClassVault do professor</span>' +
-              '</span>' +
-            '</label>' +
-          '</div>' +
         '</div>' +
         '<div id="ie-type-block"></div>' +
       '</div>' +
@@ -521,12 +497,9 @@ window.CTItemForm = (function() {
 
     _renderTagPicker(root.querySelector('#ie-tag-picker'), tags, selectedTagIds, markDirty);
 
-    // Top-level inputs (title / summary / audience) dirty-tracking
+    // Top-level inputs (title / summary) dirty-tracking
     root.querySelector('#ie-title').addEventListener('input', markDirty);
     root.querySelector('#ie-summary').addEventListener('input', markDirty);
-    root.querySelectorAll('input[name="ie-audience"]').forEach(function(r) {
-      r.addEventListener('change', markDirty);
-    });
 
     var closeBtnEl = root.querySelector('#ie-close');
     if (closeBtnEl) closeBtnEl.addEventListener('click', function() { onCancel(); });
@@ -597,16 +570,13 @@ window.CTItemForm = (function() {
       var title = root.querySelector('#ie-title').value.trim();
       var summary = root.querySelector('#ie-summary').value.trim();
       var typeData = _collectTypeData(root, type);
-      var audienceEl = root.querySelector('input[name="ie-audience"]:checked');
-      var audience = audienceEl ? audienceEl.value : defaultAudience;
       return {
         type: type,
         title: title,
         summary: summary,
         body_md: typeData.body_md,
         meta_json: typeData.meta_json,
-        tag_ids: Array.from(selectedTagIds),
-        audience: audience
+        tag_ids: Array.from(selectedTagIds)
       };
     }
 
@@ -623,8 +593,7 @@ window.CTItemForm = (function() {
         summary: state.summary || null,
         body_md: state.body_md,
         meta_json: state.meta_json ? JSON.stringify(state.meta_json) : null,
-        tag_ids: state.tag_ids,
-        audience: state.audience
+        tag_ids: state.tag_ids
       });
       if (isEdit) params.id = item.id;
 

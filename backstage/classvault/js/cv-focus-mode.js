@@ -40,7 +40,11 @@ window.CVFocusMode = (function () {
     document.addEventListener('mousemove', _onMouseMove);
     document.addEventListener('keydown', _onKeyDown);
     _wireBarHover();
-    // Focus mode does not auto-restore from localStorage; each session starts off.
+    // Focus mode defaults to ON. localStorage opt-out: user explicitly toggles
+    // off (stores '0'). Any other state (missing key, '1', stale value) → on.
+    var stored = null;
+    try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (stored !== '0') enable();
   }
 
   function toggle() { if (_on) disable(); else enable(); }

@@ -282,46 +282,6 @@
 
 .ct-field textarea { resize: vertical; min-height: 80px; }
 
-.ct-audience-picker {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.ct-audience-opt {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  background: var(--surface);
-  transition: border-color 0.12s, background 0.12s;
-}
-.ct-audience-opt:hover { border-color: var(--primary-light); }
-.ct-audience-opt:has(input[type="radio"]:checked) {
-  border-color: var(--primary);
-  background: var(--surface-soft);
-}
-.ct-audience-opt-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  line-height: 1.25;
-}
-.ct-audience-opt-label {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.88rem;
-}
-.ct-audience-opt-hint {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
 .ct-editor-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -887,7 +847,7 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
-/* ----- Items grid: type filter row + audience chip ----- */
+/* ----- Items grid: type filter row ----- */
 .ct-filter-row {
   display: flex;
   flex-wrap: wrap;
@@ -895,38 +855,6 @@
   gap: 12px;
 }
 .ct-filter-types { flex: 1; min-width: 0; }
-.ct-audience-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: 999px;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  flex-shrink: 0;
-}
-.ct-audience-chip:hover { border-color: rgba(20,184,166,.5); }
-.ct-audience-chip.is-active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-.ct-audience-chip-count {
-  font-size: 0.74rem;
-  opacity: 0.75;
-  background: rgba(0, 0, 0, 0.05);
-  padding: 1px 7px;
-  border-radius: 999px;
-}
-.ct-audience-chip.is-active .ct-audience-chip-count {
-  background: rgba(255, 255, 255, 0.22);
-}
 
 /* ----- GDoc inline import row (inside new-item step 1) ----- */
 
@@ -1138,25 +1066,6 @@
 }
 
 .ct-set-badge[title] { cursor: help; }
-
-.ct-vault-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 8px;
-  border-radius: 20px;
-  background: rgba(99, 102, 241, 0.08);
-  color: rgba(99, 102, 241, 1);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  margin-left: 6px;
-  cursor: default;
-  vertical-align: middle;
-}
-.ct-vault-badge[title] { cursor: help; }
 
 /* ----- Aula picker in release row ----- */
 
