@@ -29,7 +29,21 @@ if (window.CVFocusMode) CVFocusMode.init();
   }
   function save(v) { try { localStorage.setItem(SCALE_KEY, String(v)); } catch (e) {} }
   function apply(v) {
-    document.documentElement.style.setProperty('--cv-content-scale', String(v));
+    // Scope the variable to .cv-main-view so it doesn't leak into the global
+    // cascade. .cv-renderer-scroll lives inside .cv-main-view, so the CSS
+    // calc(... * var(--cv-content-scale)) still resolves via inheritance.
+    // During the very early boot tick the element may not exist yet; in that
+    // case we retry once DOMContentLoaded fires.
+    var target = document.querySelector('.cv-main-view');
+    if (target) {
+      target.style.setProperty('--cv-content-scale', String(v));
+    } else if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function once() {
+        document.removeEventListener('DOMContentLoaded', once);
+        var el = document.querySelector('.cv-main-view');
+        if (el) el.style.setProperty('--cv-content-scale', String(v));
+      });
+    }
   }
   window.CVTextResize = {
     apply: function() { apply(load()); },
@@ -482,10 +496,13 @@ function _renderSearchInput() {
 
 function _applySearchFilter(rawQuery) {
   const q = (rawQuery || '').trim().toLowerCase();
+  const pinned = document.querySelector('.cv-sm-pinned');
   if (!q) {
-    // Restore accordion: only Favorites open.
+    // Restore accordion: only Favorites open. Also restore the pinned card
+    // (Perguntas launcher) which the non-empty branch may have hidden.
     _resetAccordion();
     _renderSidebar();
+    if (pinned) pinned.style.display = '';
     return;
   }
   // Open every section that has matching items so users can see results.
@@ -512,6 +529,12 @@ function _applySearchFilter(rawQuery) {
     const name = el.textContent.toLowerCase();
     el.style.display = name.indexOf(q) !== -1 ? '' : 'none';
   });
+  // Pinned card (Perguntas launcher) lives outside .cv-sm-body. Match against
+  // its visible text so search is consistent across the whole sidebar.
+  if (pinned) {
+    const text = pinned.textContent.toLowerCase();
+    pinned.style.display = text.indexOf(q) !== -1 ? '' : 'none';
+  }
 }
 
 function _sectionMatchesQuery(key, q) {

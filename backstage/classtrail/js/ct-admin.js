@@ -1522,6 +1522,16 @@ window.CT_ADMIN = (function() {
   function _activatePanel(internalId) {
     document.querySelectorAll('.ct-panel').forEach(function(p) { p.classList.remove('active'); });
     var panel = document.getElementById('panel-' + internalId);
+    if (!panel) {
+      // Defensive: unknown internalId (typo, dropped panel, stale URL). Fall
+      // back to the default landing instead of leaving the user on a blank
+      // page; a console.warn surfaces the bad id during development.
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[CT_ADMIN] Unknown panel id "' + internalId + '"; falling back to clients.');
+      }
+      internalId = 'clients';
+      panel = document.getElementById('panel-' + internalId);
+    }
     if (panel) panel.classList.add('active');
     if (internalId === 'items')    _loadItems();
     if (internalId === 'apostila') _loadApostila();
