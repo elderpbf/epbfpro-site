@@ -1735,8 +1735,18 @@ window.CT_ADMIN = (function() {
   function _closeTurmaSettingsDrawer() {
     var overlay = document.getElementById('ct-turma-drawer-overlay');
     var drawer  = document.getElementById('ct-turma-drawer');
-    if (drawer)  drawer.parentNode  && drawer.parentNode.removeChild(drawer);
-    if (overlay) overlay.parentNode && overlay.parentNode.removeChild(overlay);
+    if (!drawer && !overlay) return;
+    // Strip IDs immediately so a re-open call doesn't collide with the
+    // still-animating element. Then play the slide-out via .open removal
+    // and let the 0.28s CSS transition finish before removing the nodes.
+    if (drawer)  drawer.id  = '';
+    if (overlay) overlay.id = '';
+    if (drawer)  drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    setTimeout(function() {
+      if (drawer  && drawer.parentNode)  drawer.parentNode.removeChild(drawer);
+      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }, 280);
   }
 
   // ---- Tab switching ----
