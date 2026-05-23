@@ -440,7 +440,7 @@
         student_name: _state.studentName,
         answer_index: answerIndex,
       });
-      if (result.ok || result.error === 'already answered') {
+      if (result.ok || result.error === 'Você já enviou resposta.') {
         try { localStorage.setItem('cl_ans_' + qId, String(answerIndex)); } catch (_) {}
         _showState('answered');
       } else {
