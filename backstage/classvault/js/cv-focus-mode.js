@@ -127,10 +127,19 @@ window.CVFocusMode = (function () {
   }
 
   function _onKeyDown(e) {
-    if (e.key !== 'Escape' || !_on) return;
+    // Ignore when the user is typing into an input.
     var tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
-    disable();
+    if (e.key === 'Escape' && _on) {
+      disable();
+      return;
+    }
+    // F toggles focus mode in/out. Plain F only — modifier combos belong to
+    // the browser / OS (Ctrl+F find, etc.).
+    if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      toggle();
+    }
   }
 
   return { init: init, enable: enable, disable: disable, toggle: toggle };

@@ -1450,7 +1450,24 @@ function _restoreLastRendered() {
 
 function _renderEmptyMainView() {
   const view = document.querySelector('.cv-main-view');
-  if (view) view.innerHTML = '';
+  if (view) {
+    view.innerHTML =
+      '<div class="cv-empty-welcome">' +
+        '<div class="cv-empty-icon" aria-hidden="true">' +
+          '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>' +
+            '<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>' +
+          '</svg>' +
+        '</div>' +
+        '<h2 class="cv-empty-title">PensoCodex</h2>' +
+        '<p class="cv-empty-hint">Selecione um item na barra lateral para começar.</p>' +
+        '<div class="cv-empty-shortcuts">' +
+          '<kbd class="cv-empty-kbd">F</kbd><span class="cv-empty-kbd-label">Modo foco</span>' +
+          '<span class="cv-empty-sep">·</span>' +
+          '<kbd class="cv-empty-kbd">Esc</kbd><span class="cv-empty-kbd-label">Sair do foco</span>' +
+        '</div>' +
+      '</div>';
+  }
   const crumb = document.querySelector('.cv-main-crumb');
   if (crumb) crumb.innerHTML = '';
 }
@@ -1627,7 +1644,8 @@ function _getRenderer(type) {
   return ClassVault.renderers[type] || { render: _renderFallback, cleanup: _cleanupClear };
 }
 
-function _mountIframe(url, container, emptyMsg) {
+function _mountIframe(url, container, emptyMsg, opts) {
+  opts = opts || {};
   if (!url) {
     container.innerHTML = '<div class="cv-renderer-empty">' + _esc(emptyMsg || 'URL não definida para este item.') + '</div>';
     return;
@@ -1638,12 +1656,25 @@ function _mountIframe(url, container, emptyMsg) {
   iframe.setAttribute('allow', 'autoplay; encrypted-media; clipboard-write; fullscreen');
   iframe.setAttribute('referrerpolicy', 'no-referrer');
   container.innerHTML = '';
-  container.appendChild(iframe);
+  if (opts.clip) {
+    // Wrap iframe in a clip box so Google's "Open in Slides" corner link and
+    // any toolbar chrome at iframe edges fall outside the visible area.
+    const wrap = document.createElement('div');
+    wrap.className = 'cv-renderer-iframe-clip';
+    wrap.appendChild(iframe);
+    container.appendChild(wrap);
+  } else {
+    container.appendChild(iframe);
+  }
 }
 
 function _renderIframe(item, container) {
   const url = (item.meta_json && item.meta_json.url) || '';
-  _mountIframe(url, container);
+  // Crop the iframe edges for type=slide (Google Slides published embed) so
+  // the "Open in Slides" corner link and toolbar fall outside view. For lab
+  // and embed types we keep the host chrome visible.
+  const useClip = item.type === 'slide';
+  _mountIframe(url, container, undefined, { clip: useClip });
 }
 
 function _renderDriveFolder(item, container) {
@@ -1657,7 +1688,7 @@ function _renderDriveFile(item, container) {
   const meta = item.meta_json || {};
   const id = meta.file_id || _extractDriveFileId(meta.url || '');
   const src = id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';
-  _mountIframe(src, container, 'Arquivo Drive sem file_id (ou URL inválida).');
+  _mountIframe(src, container, 'Arquivo Drive sem file_id (ou URL inválida).', { clip: true });
 }
 
 function _renderVideo(item, container) {
@@ -1723,7 +1754,7 @@ function _renderPopupCard(item, container) {
   // iframe is blocked (user sees a broken embed and clicks the popup button).
   if (isDrive && url) {
     container.innerHTML =
-      '<div class="cv-slides-inline">' +
+      '<div class="cv-slides-inline cv-renderer-iframe-clip">' +
         '<iframe class="cv-renderer-iframe" src="' + _esc(url) + '" ' +
           'allow="autoplay; encrypted-media; clipboard-write; fullscreen" ' +
           'referrerpolicy="no-referrer"></iframe>' +

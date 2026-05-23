@@ -788,10 +788,15 @@ body.cv-focus.cv-focus--side .cv-sm {
   background: var(--background);
 }
 .cv-main-crumb {
-  height: 44px;
+  /* The crumb lives at the BOTTOM of .cv-main as an action bar: item context
+     on the left, lifecycle / launch actions on the right. JS still calls it
+     .cv-main-crumb and populates the same DOM. The flex `order` flip below
+     keeps HTML order intact (crumb before view) while painting it last. */
+  order: 2;
+  height: 48px;
   flex-shrink: 0;
   padding: 0 20px;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   background: var(--surface);
   display: flex;
   align-items: center;
@@ -800,6 +805,9 @@ body.cv-focus.cv-focus--side .cv-sm {
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
+}
+.cv-main-crumb:empty {
+  display: none;
 }
 .cv-main-crumb > span:not(.cv-main-crumb-sep),
 .cv-main-crumb > strong {
@@ -833,6 +841,7 @@ body.cv-focus.cv-focus--side .cv-sm {
   border-color: var(--border);
 }
 .cv-main-view {
+  order: 1;
   flex: 1;
   min-height: 0;
   padding: 24px;
@@ -894,15 +903,117 @@ body.cv-focus.cv-focus--side .cv-sm {
   text-align: center;
 }
 
+/* Welcome state shown in .cv-main-view when no item is active. Quiet,
+   centered, with keyboard hints for focus mode. */
+.cv-empty-welcome {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.cv-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(79,70,229,0.10));
+  color: #6366f1;
+  margin-bottom: 1.25rem;
+}
+[data-theme="dark"] .cv-empty-icon {
+  background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(79,70,229,0.14));
+  color: #8b8df0;
+}
+.cv-empty-title {
+  font-family: 'Comfortaa', 'Inter', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0 0 0.45rem;
+}
+.cv-empty-hint {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.6rem;
+  max-width: 360px;
+  line-height: 1.45;
+}
+.cv-empty-shortcuts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-dim, var(--text-secondary));
+  opacity: 0.85;
+}
+.cv-empty-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(20,184,166,.18));
+  border-radius: 5px;
+  box-shadow: 0 1px 0 var(--border, rgba(20,184,166,.18));
+}
+.cv-empty-kbd-label {
+  margin-right: 0.35rem;
+}
+.cv-empty-sep {
+  opacity: 0.5;
+  margin: 0 0.15rem;
+}
+
 /* Inline Slides embed with floating "open in popup" button (Drive items). */
 .cv-slides-inline {
   position: relative;
   width: 100%;
   height: 100%;
 }
-.cv-slides-inline .cv-renderer-iframe {
+
+/* Oversize-clip wrapper: iframe is pushed beyond the wrapper bounds in both
+   axes and the wrapper crops the overflow. Google Slides' "Open in Slides"
+   corner link and any toolbar chrome at iframe edges fall outside view.
+   Pattern borrowed from ClassForge's slides-embed.css. Applied to type=slide,
+   drive_file, and the Drive popup card's inline preview. */
+.cv-renderer-iframe-clip {
+  position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px -12px var(--shadow);
+}
+.cv-renderer-iframe-clip .cv-renderer-iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100%, calc(100vh * 16 / 9));
+  height: max(100%, calc(100vw * 9 / 16));
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The popup button must stay above the absolutely-positioned iframe. */
+.cv-slides-inline.cv-renderer-iframe-clip .cv-slides-popup-btn {
+  z-index: 2;
 }
 .cv-slides-popup-btn {
   position: absolute;
