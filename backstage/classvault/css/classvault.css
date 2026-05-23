@@ -950,8 +950,9 @@ body.cv-focus.cv-focus--side .cv-sm {
   min-height: 0;
   overflow-y: auto;
   padding: 24px 36px 32px;
-  /* Bundle F text resize: --cv-content-scale (default 1) is set on :root by
-     CVTextResize. +A / −A buttons in the topbar bump it within [0.75, 1.6]. */
+  /* Bundle F text resize: --cv-content-scale (default 1) is set on
+     .cv-main-view by CVTextResize and inherits down into this element. +A /
+     −A buttons in the topbar bump it within [0.75, 1.6]. */
   font-size: calc(0.95rem * var(--cv-content-scale, 1));
   line-height: 1.55;
 }
