@@ -16,10 +16,15 @@
 // Lookups:
 //   CVTypes.actionsFor(item)            → array of {id, label, title}
 //   CVTypes.handlerFor(item, actionId)  → handler function or null
+//   CVTypes.supportsTextResize(item)    → boolean (Bundle F +A/-A controls)
 //
 // Body-markdown fallback: any item with a non-empty body_md automatically
 // gains the "Copiar" action even when its type isn't explicitly registered.
 // Explicit type entries can return [] to opt out.
+// textResize defaults to true for items rendered by the markdown card (any
+// type with body_md AND no explicit entry, OR an entry whose def sets it
+// explicitly). Iframe-based types (slide / drive_file / embed / video / lab)
+// register textResize:false because the embedded chrome controls its own font.
 
 window.CVTypes = (function() {
 
@@ -90,10 +95,20 @@ window.CVTypes = (function() {
     done();
   }
 
+  function supportsTextResize(item) {
+    if (!item) return false;
+    var def = _registry[item.type];
+    if (def && typeof def.textResize === 'boolean') return def.textResize;
+    // Default: any item with body_md is resizable (rendered by the markdown
+    // fallback card, whose font-size honours the CSS scale variable).
+    return !!(item.body_md && String(item.body_md).trim());
+  }
+
   return {
     register: register,
     actionsFor: actionsFor,
-    handlerFor: handlerFor
+    handlerFor: handlerFor,
+    supportsTextResize: supportsTextResize
   };
 
 })();
@@ -102,6 +117,7 @@ window.CVTypes = (function() {
 
 // Google Slides published embed: surface the popup-window launcher in the bar.
 CVTypes.register('slide', {
+  textResize: false,
   actions: function(item) {
     var url = (item.meta_json && item.meta_json.url) || '';
     if (!url) return [];
@@ -117,6 +133,7 @@ CVTypes.register('slide', {
 // Drive iframe-embedded files (drive_file type, stored in ct_items, not the
 // synthetic Drive-list items which have their own breadcrumb path).
 CVTypes.register('drive_file', {
+  textResize: false,
   actions: function(item) {
     var url = (item.meta_json && item.meta_json.url) || '';
     if (!url) return [];
@@ -135,10 +152,11 @@ CVTypes.register('popup_url', { actions: [] });
 CVTypes.register('llm', { actions: [] });
 
 // Embedded iframe (full chrome) and lab launchers have no extra bar actions.
-CVTypes.register('embed', { actions: [] });
-CVTypes.register('lab', { actions: [] });
-CVTypes.register('video', { actions: [] });
-CVTypes.register('drive_folder', { actions: [] });
+// textResize:false because the embedded chrome controls its own font sizing.
+CVTypes.register('embed',         { actions: [], textResize: false });
+CVTypes.register('lab',           { actions: [], textResize: false });
+CVTypes.register('video',         { actions: [], textResize: false });
+CVTypes.register('drive_folder',  { actions: [], textResize: false });
 
 // Renamed from `_openPopup` to avoid clobbering classvault.js's identically
 // named helper. They served the same role; keeping a private name here means

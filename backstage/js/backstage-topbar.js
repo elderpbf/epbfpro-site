@@ -5,11 +5,13 @@
 // Generates topbar DOM, wires theme toggle, logout, settings.
 // Portal mode assumes globals: ThemeManager, SettingsDrawer, BS_AUTH
 // Presentation mode assumes globals: ThemeManager, SettingsDrawer (no BS_AUTH)
-// Usage: Topbar.init({ title?, subtitle?, backLink?, sections?, container?, mode?, tabs? })
-// tabs: optional [{ label, href, active?, dot? }] — renders Codex hub tab strip
+// Usage: Topbar.init({ title?, subtitle?, backLink?, sections?, container?, mode?, tabs?, subTabs? })
+// tabs: optional [{ label, href, active?, dot? }] — Codex hub main tab strip
 // between the brand and icon buttons. Each page that joins the hub passes the
-// same tabs array with its own `active` flag set. `dot` paints a small red
-// pulsing dot (for live indicators like an open Nexo session).
+// same tabs array with its own `active` flag set.
+// subTabs: optional [{ label, href, active? }] — Bundle F hybrid nested row.
+// When non-empty, a thin 30px row appears INSIDE the topbar chassis, beneath
+// the main row. The sub-row hides itself when subTabs is empty or omitted.
 // ============================================================
 
 window.Topbar = (function() {
@@ -75,6 +77,7 @@ window.Topbar = (function() {
     var backLink = opts.backLink || '';
     var sections = opts.sections || [];
     var tabs = opts.tabs || [];
+    var subTabs = opts.subTabs || [];
     var container = opts.container || document.querySelector('.bs-app') || document.body;
 
     // Build header
@@ -208,6 +211,29 @@ window.Topbar = (function() {
 
     header.appendChild(_inner);
 
+    // Bundle F hybrid: optional sub-row inside the same chassis. Empty
+    // subTabs leaves the row out of the DOM so the topbar collapses to 64px.
+    if (subTabs.length > 0) {
+      var subRow = document.createElement('div');
+      subRow.className = 'bs-topbar-subrow';
+      var subStrip = document.createElement('nav');
+      subStrip.className = 'bs-topbar-subtabs';
+      subStrip.setAttribute('role', 'tablist');
+      subStrip.setAttribute('aria-label', subTabs[0] && subTabs[0]._ariaLabel || 'Sub-navegação');
+      subTabs.forEach(function(t) {
+        if (!t || t._ariaLabel) return; // skip metadata marker, if any
+        var a = document.createElement('a');
+        a.className = 'bs-topbar-subtab' + (t.active ? ' active' : '');
+        a.href = t.href || '#';
+        a.setAttribute('role', 'tab');
+        if (t.active) a.setAttribute('aria-current', 'page');
+        a.textContent = t.label;
+        subStrip.appendChild(a);
+      });
+      subRow.appendChild(subStrip);
+      header.appendChild(subRow);
+    }
+
     // Insert into DOM
     container.insertBefore(header, container.firstChild);
 
@@ -279,18 +305,39 @@ window.Topbar = (function() {
   }
 
   // ── Codex hub tabs (canonical definition) ─────────────────
-  // Single source of truth for the 5-tab strip shared across the
-  // PensoCodex hub (ClassVault Aula + ClassTrail Conteúdo/Liberações/
-  // Turmas + ClassPulse Nexo). Each consuming page calls
-  // Topbar.codexTabs('<key>') to get the tabs array with the right
-  // entry flagged active.
+  // Bundle F: 4 main tabs after Nexo (codename) was absorbed into Perguntas
+  // and Liberações was folded into Turmas (three-column layout, Bundle G).
+  //   - Aula     → ClassVault (the launcher used in class)
+  //   - Conteúdo → ClassTrail admin (Conteúdo/Apostila/Tarefas/Drive/Presets sub-tabs)
+  //   - Turmas   → ClassTrail Turmas tab (becomes three-column in Bundle G)
+  //   - Perguntas → ClassPulse (Ao vivo/Banco/Estatísticas/Configurações sub-tabs)
   var CODEX_TABS = [
-    { key: 'aula',       label: 'Aula',       href: '/backstage/classvault/' },
-    { key: 'conteudo',   label: 'Conteúdo',   href: '/backstage/classtrail/?tab=conteudo' },
-    { key: 'liberacoes', label: 'Liberações', href: '/backstage/classtrail/?tab=liberacoes' },
-    { key: 'turmas',     label: 'Turmas',     href: '/backstage/classtrail/?tab=turmas' },
-    { key: 'nexo',       label: 'Nexo',       href: '/backstage/classpulse/' }
+    { key: 'aula',      label: 'Aula',      href: '/backstage/classvault/' },
+    { key: 'conteudo',  label: 'Conteúdo',  href: '/backstage/classtrail/?tab=conteudo' },
+    { key: 'turmas',    label: 'Turmas',    href: '/backstage/classtrail/?tab=turmas' },
+    { key: 'perguntas', label: 'Perguntas', href: '/backstage/classpulse/' }
   ];
+
+  // Sub-tabs per main tab. Aula and Turmas have none → topbar collapses to
+  // 64px on those pages. Drive and Presets are routing-only stubs until
+  // Bundle I; the destination page paints a "Em breve" placeholder.
+  var CODEX_SUBTABS = {
+    aula: [],
+    conteudo: [
+      { key: 'conteudo', label: 'Conteúdo', href: '/backstage/classtrail/?tab=conteudo' },
+      { key: 'apostila', label: 'Apostila', href: '/backstage/classtrail/?tab=apostila' },
+      { key: 'tarefas',  label: 'Tarefas',  href: '/backstage/classtrail/?tab=tarefas' },
+      { key: 'drive',    label: 'Drive',    href: '/backstage/classtrail/?tab=drive' },
+      { key: 'presets',  label: 'Presets',  href: '/backstage/classtrail/?tab=presets' }
+    ],
+    turmas: [],
+    perguntas: [
+      { key: 'ao-vivo',        label: 'Ao vivo',        href: '/backstage/classpulse/host.html' },
+      { key: 'banco',          label: 'Banco',          href: '/backstage/classpulse/?tab=banks' },
+      { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' },
+      { key: 'configuracoes',  label: 'Configurações',  href: '/backstage/classpulse/?tab=settings' }
+    ]
+  };
 
   function codexTabs(activeKey, overrides) {
     overrides = overrides || {};
@@ -304,11 +351,21 @@ window.Topbar = (function() {
     });
   }
 
+  function codexSubTabs(parentKey, activeSubKey) {
+    var rows = CODEX_SUBTABS[parentKey] || [];
+    return rows.map(function(t) {
+      var entry = { label: t.label, href: t.href };
+      if (t.key === activeSubKey) entry.active = true;
+      return entry;
+    });
+  }
+
   return {
     init: init,
     addItem: addItem,
     setSubtitle: setSubtitle,
-    codexTabs: codexTabs
+    codexTabs: codexTabs,
+    codexSubTabs: codexSubTabs
   };
 
 })();

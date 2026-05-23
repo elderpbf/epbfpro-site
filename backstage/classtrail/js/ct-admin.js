@@ -1510,55 +1510,34 @@ window.CT_ADMIN = (function() {
     conteudo:   'items',
     apostila:   'apostila',
     tarefas:    'tarefas',
+    drive:      'drive',
+    presets:    'presets',
     liberacoes: 'releases',
     // legacy aliases — anything that ever pointed at the old in-page tabs
     clients:    'clients',
     items:      'items',
     releases:   'releases'
   };
-  var INTERNAL_TO_URL = {
-    clients:  'turmas',
-    items:    'conteudo',
-    apostila: 'apostila',
-    tarefas:  'tarefas',
-    releases: 'liberacoes'
-  };
-  // The three in-page sub-tabs (Conteúdo / Apostila / Tarefas) only show
-  // when the active panel belongs to the topbar's "Conteúdo" group.
-  var CONTEUDO_SUBSET = { items: true, apostila: true, tarefas: true };
 
   function _activatePanel(internalId) {
-    document.querySelectorAll('.ct-tab').forEach(function(t) { t.classList.remove('active'); });
     document.querySelectorAll('.ct-panel').forEach(function(p) { p.classList.remove('active'); });
     var panel = document.getElementById('panel-' + internalId);
     if (panel) panel.classList.add('active');
-    var subtab = document.querySelector('.ct-tab[data-tab="' + internalId + '"]');
-    if (subtab) subtab.classList.add('active');
-    var subtabBar = document.getElementById('ct-subtabs');
-    if (subtabBar) subtabBar.style.display = CONTEUDO_SUBSET[internalId] ? '' : 'none';
     if (internalId === 'items')    _loadItems();
     if (internalId === 'apostila') _loadApostila();
     if (internalId === 'tarefas')  _initTarefasPicker();
     if (internalId === 'releases') _initTurmaPicker();
+    // drive + presets are Bundle I placeholders; they render their own static markup.
   }
 
   function _initTabs() {
-    // Initial activation from ?tab=
+    // Bundle F: the in-page sub-tabs were retired. Sub-tab navigation is the
+    // shared topbar's hybrid sub-row (full-page reloads, ?tab= carries the
+    // active sub). We just parse the URL once on boot.
     var params = new URLSearchParams(location.search);
-    var urlTab = params.get('tab') || 'turmas';
+    var urlTab = params.get('tab') || 'conteudo';
     var initial = URL_TO_INTERNAL[urlTab] || 'clients';
     _activatePanel(initial);
-
-    document.querySelectorAll('.ct-tab').forEach(function(tab) {
-      tab.addEventListener('click', function() {
-        var id = tab.dataset.tab;
-        _activatePanel(id);
-        var urlValue = INTERNAL_TO_URL[id] || id;
-        var p = new URLSearchParams(location.search);
-        p.set('tab', urlValue);
-        history.replaceState(null, '', location.pathname + '?' + p.toString());
-      });
-    });
   }
 
   // ---- Shared flat pill bar turma picker (Liberações + Tarefas tabs) ----

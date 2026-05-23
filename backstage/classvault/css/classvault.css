@@ -960,6 +960,12 @@ body.cv-focus.cv-focus--side .cv-sm {
   margin: 0 0.15rem;
 }
 
+/* Bundle F text-resize icon glyph — sits inside .bs-icon-btn (32x32 box). */
+.cv-text-icon {
+  font: 600 11px/1 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
 /* Drive-Slides inline embed shell (matches generic .cv-renderer-iframe-wrap
    sizing). Bundle D ditched the oversize-clip technique because it cropped
    doc content; the popup launcher action moved into the bottom bar via
@@ -1002,7 +1008,9 @@ body.cv-focus.cv-focus--side .cv-sm {
   min-height: 0;
   overflow-y: auto;
   padding: 24px 36px 32px;
-  font-size: 0.95rem;
+  /* Bundle F text resize: --cv-content-scale (default 1) is set on :root by
+     CVTextResize. +A / −A buttons in the topbar bump it within [0.75, 1.6]. */
+  font-size: calc(0.95rem * var(--cv-content-scale, 1));
   line-height: 1.55;
 }
 .cv-renderer-scroll h1 { font-size: 1.5rem; margin: 0 0 0.6em; line-height: 1.2; }

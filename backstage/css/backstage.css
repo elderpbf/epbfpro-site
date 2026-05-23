@@ -362,6 +362,52 @@
   animation: bs-tab-dot-pulse 2s ease-in-out infinite;
 }
 
+/* Bundle F hybrid: thin 30px sub-row INSIDE the topbar chassis. Hidden when
+   subTabs is empty (the DOM node isn't rendered at all). Aligns with where
+   the main tabs start (logo + tabs use ~220px on the left). */
+.bs-topbar-subrow {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem 0 230px;
+  gap: 0.1rem;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  background: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .bs-topbar-subrow {
+  background: rgba(0,0,0,0.025);
+  border-top-color: rgba(20,184,166,0.10);
+}
+.bs-topbar-subtabs {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.bs-topbar-subtab {
+  padding: 0.2rem 0.65rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim, var(--text-secondary));
+  text-decoration: none;
+  border-radius: 5px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.bs-topbar-subtab:hover {
+  color: var(--text-primary);
+  background: rgba(20,184,166,0.06);
+}
+.bs-topbar-subtab.active {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.06);
+}
+[data-theme="light"] .bs-topbar-subtab.active {
+  background: rgba(20,184,166,0.12);
+  color: var(--primary);
+}
+
 @keyframes bs-tab-dot-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%      { opacity: 0.5; transform: scale(0.75); }

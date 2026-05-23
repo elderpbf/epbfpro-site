@@ -10,25 +10,80 @@ window.Topbar.init({
   subtitle: 'PensoCodex',
   backLink: '/backstage/',
   tabs: window.Topbar.codexTabs('aula')
+  // Aula has no sub-tabs → 64px topbar.
 });
 if (window.CVFocusMode) CVFocusMode.init();
+// Bundle F text resize: +A / -A topbar buttons. Visible only when the active
+// item supports text resize (per CVTypes.supportsTextResize). Scale persists
+// in localStorage and applies via the --cv-content-scale CSS variable on the
+// .cv-main-view element.
+(function() {
+  var SCALE_KEY = 'cv_content_scale';
+  var MIN = 0.75, MAX = 1.6, STEP = 0.1;
+  function clamp(s) { return Math.max(MIN, Math.min(MAX, +s.toFixed(2))); }
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(SCALE_KEY); } catch (e) {}
+    var n = parseFloat(raw);
+    return Number.isFinite(n) ? clamp(n) : 1;
+  }
+  function save(v) { try { localStorage.setItem(SCALE_KEY, String(v)); } catch (e) {} }
+  function apply(v) {
+    document.documentElement.style.setProperty('--cv-content-scale', String(v));
+  }
+  window.CVTextResize = {
+    apply: function() { apply(load()); },
+    bump: function(delta) {
+      var next = clamp(load() + delta);
+      save(next);
+      apply(next);
+    },
+    isApplicable: function(item) {
+      return !!(item && window.CVTypes && CVTypes.supportsTextResize(item));
+    },
+    setButtonsVisible: function(visible) {
+      var plus = document.getElementById('cv-text-plus');
+      var minus = document.getElementById('cv-text-minus');
+      if (plus) plus.style.display = visible ? '' : 'none';
+      if (minus) minus.style.display = visible ? '' : 'none';
+    }
+  };
+  CVTextResize.apply();
+  if (window.Topbar) {
+    // Pass HTML through `icon` so Topbar.addItem applies the bs-icon-btn box
+    // styling (32x32 square) — matching the mock's icon-row appearance.
+    var minus = Topbar.addItem({
+      icon: '<span class="cv-text-icon">−A</span>',
+      title: 'Diminuir texto',
+      onClick: function() { CVTextResize.bump(-STEP); }
+    });
+    var plus = Topbar.addItem({
+      icon: '<span class="cv-text-icon">+A</span>',
+      title: 'Aumentar texto',
+      onClick: function() { CVTextResize.bump(STEP); }
+    });
+    if (minus) minus.id = 'cv-text-minus';
+    if (plus)  plus.id  = 'cv-text-plus';
+    // Hidden until the user lands on a resizable item.
+    CVTextResize.setButtonsVisible(false);
+  }
+})();
 
 window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
 ClassVault.turmas = [];
 ClassVault.types = [];                       // ct_types, lazy-loaded for editor
 ClassVault.tags = [];                        // ct_tags, lazy-loaded for editor
-// Phase 3: three buckets keyed by section
+// Bundle E: single bucket. Sidebar groups by content TYPE in classvault.js.
 ClassVault.vaultItems = [];                  // global library of all authored items
-ClassVault.aulaPlanItems = [];               // Hoje: cv_aula_plan rows for active turma+aula
-ClassVault.releaseItems = [];                // Trilha: ct_releases for active turma (read-only)
-ClassVault.aulas = [];                       // ct_aulas for active turma (powers aula picker)
-ClassVault.aulaNumber = null;                // currently-selected aula (URL ?aula=N); null = "Todas"
-// Sections that start COLLAPSED. Favoritos and Nexo are intentionally NOT here:
-// favorites is meant to be visible when there are any (one-click access in class),
-// nexo only contains a single launcher so collapsing it adds nothing.
-ClassVault.collapsedSections = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);
-ClassVault._seededCollapsedKeys = new Set(['hoje', 'vault', 'trilha', 'drive', 'llms', 'labs']);
+// Top-level sidebar sections (Bundle E accordion: at most one open). The boot
+// always opens 'favorites' and collapses everything else; search may expand
+// sections temporarily to surface matches.
+ClassVault.SECTION_KEYS = [
+  'favorites', 'llms', 'external', 'labs', 'drive', 'items', 'apostila', 'tarefas'
+];
+ClassVault.collapsedSections = new Set();    // (re)populated by _resetAccordion()
+ClassVault._seededCollapsedKeys = new Set();
 
 // PensoNexo live-session state. null = nothing live (Worker hasn't returned
 // yet or no active session). Refreshed on boot and on demand via the refresh
@@ -92,18 +147,11 @@ ClassVault._editorTarget = null;             // item being edited; null = create
     return;
   }
   ClassVault.turmas = turmas;
-  const active = _pickActive(turmas);
-  ClassVault.active = active;
-  ClassVault.aulaNumber = _pickAula();
-  // TODO(post-class refactor): turma chip + aula picker disabled for the
-  // "files-for-class-tomorrow" simplification. Active turma is still read from
-  // the URL by _pickActive; only the UI switcher is gone. _renderSidebarHead
-  // and _renderAulaPicker remain in the file and can be re-enabled if needed.
+  ClassVault.active = _pickActive(turmas);
+  _resetAccordion();    // every load opens Favorites and collapses the rest
   _renderSearchInput();
   _wireItemClicks();
   _wireItemContextMenu();
-  _wireDragReorder();
-  // _loadCodex renders the sidebar; Drive section appends after codex resolves.
   await _loadCodex();
   if (window.CVDriveSync) CVDriveSync.init();
   _renderPinnedNexo();   // initial paint (null state)
@@ -111,11 +159,15 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   _renderEmptyMainView();  // welcome state until user selects a sidebar item
 })();
 
-function _pickAula() {
-  const raw = new URLSearchParams(location.search).get('aula');
-  if (!raw) return null;
-  const n = parseInt(raw, 10);
-  return Number.isFinite(n) ? n : null;
+function _resetAccordion() {
+  // Bundle E: every page load opens Favorites, collapses every other top-level
+  // section. Subsections (Drive folders, Labs categories) seed independently
+  // via _seedCollapsedSubsection.
+  ClassVault.collapsedSections = new Set();
+  for (const k of ClassVault.SECTION_KEYS) {
+    if (k !== 'favorites') ClassVault.collapsedSections.add(k);
+  }
+  ClassVault._seededCollapsedKeys = new Set(ClassVault.collapsedSections);
 }
 
 function _pickActive(turmas) {
@@ -200,9 +252,8 @@ function _renderSidebarHead(active, turmas) {
   });
 }
 
-// ── Items: fetch, chips, group by aula, render ─────────────────
+// ── Items: fetch + render ─────────────────────────────────────
 
-// Phase 3: load all three buckets + aulas in a single roundtrip.
 async function _loadCodex() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
@@ -214,25 +265,19 @@ async function _loadCodex() {
     data = await callWorker({
       action: 'cv_get_codex_view',
       client_slug: active.client_slug,
-      turma_slug: active.turma_slug,
-      aula_number: ClassVault.aulaNumber
+      turma_slug: active.turma_slug
     });
   } catch (err) {
     body.innerHTML = '<div class="cv-sm-empty">Erro ao carregar itens.</div>';
     return;
   }
   ClassVault.vaultItems = (data && data.vault) || [];
-  ClassVault.aulaPlanItems = (data && data.aula_plan) || [];
-  ClassVault.releaseItems = (data && data.releases) || [];
-  ClassVault.aulas = (data && data.aulas) || [];
-  // _renderAulaPicker() disabled with the turma+aula UI; "Todas as aulas" chip
-  // no longer renders. Keep the data load — sub-renderers still expect aulas.
   _renderSidebar();
 }
 
-// Locate an item across all buckets. Returns null if not found.
-// Phase 5: string ids starting with 'drive:' look up ClassVault.driveItems (string compare).
-// Labs: string ids starting with 'lab:' are synthetic items from the CVLabs registry.
+// Locate an item across the three id namespaces. Returns null if not found.
+// String ids starting with 'drive:' / 'lab:' are synthetic; numeric ids hit
+// the ct_items library.
 function _findItem(itemId) {
   const idStr = String(itemId);
   if (idStr.indexOf('lab:') === 0) {
@@ -247,48 +292,76 @@ function _findItem(itemId) {
     return it ? { item: it, source: 'drive' } : null;
   }
   const idNum = Number(itemId);
-  const match = (it) => Number(it.id) === idNum;
-  let it = ClassVault.aulaPlanItems.find(match);
-  if (it) return { item: it, source: 'aula_plan' };
-  it = ClassVault.vaultItems.find(match);
-  if (it) return { item: it, source: 'vault' };
-  it = ClassVault.releaseItems.find(match);
-  if (it) return { item: it, source: 'release' };
-  return null;
+  const it = ClassVault.vaultItems.find(function(x) { return Number(x.id) === idNum; });
+  return it ? { item: it, source: 'vault' } : null;
+}
+
+// Bundle E section order: Favorites / LLMs / External / Labs / Drive / Items /
+// Apostila / Tarefas. External and Apostila/Tarefas are conditional. The
+// classifier below partitions the vault library into the type-keyed buckets.
+function _classifyVault(items) {
+  const bucket = { llm: [], external: [], items: [], apostila: [], tarefas: [] };
+  for (const it of items) {
+    if (it.type === 'tarefa') bucket.tarefas.push(it);
+    else if (it.set_id != null) bucket.apostila.push(it);
+    else if (it.type === 'llm') bucket.llm.push(it);
+    else if (it.type === 'popup_url') bucket.external.push(it);
+    else bucket.items.push(it);
+  }
+  return bucket;
 }
 
 function _renderSidebar() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
   const html = [];
+  const buckets = _classifyVault(ClassVault.vaultItems);
 
-  // ── Favoritos (top, only when there are any; uncollapsed by default) ──
   const favSection = _renderFavoritesSection();
   if (favSection) html.push(favSection);
 
-  // ── LLMs section: launchers that open external tools in a new tab ──
-  html.push(_renderLLMsSection());
+  html.push(_renderLLMsSection(buckets.llm));
 
-  // ── Labs section: in-house interactive teaching demos (PensoLabs) ──
+  if (buckets.external.length) {
+    html.push(_renderSection({
+      key: 'external',
+      label: 'External',
+      count: buckets.external.length,
+      body: buckets.external.map(it => _renderSubCard(it, false)).join('')
+    }));
+  }
+
   if (window.CVLabs) {
     html.push(CVLabs.renderSection(ClassVault.collapsedSections));
   }
 
-  // ── Trilha: all authored items, grouped by type ──
-  // Hoje and the per-turma Trilha are intentionally not rendered in the
-  // simplified flow. Worker's cv_get_codex_view returns the entire library
-  // in data.vault, so vaultItems is the full library.
-  html.push(_renderSection({
-    key: 'trilha',
-    label: 'Trilha',
-    count: ClassVault.vaultItems.length,
-    body: _renderItemsByType(ClassVault.vaultItems)
-  }));
-
-  // ── Drive section (Phase 5: browser-side GIS mirror) ──────────
   html.push(_renderDriveSection());
 
-  // PensoNexo lives in the pinned slot below .cv-sm-body, not here.
+  html.push(_renderSection({
+    key: 'items',
+    label: 'Items',
+    count: buckets.items.length,
+    body: _renderItemsByType(buckets.items)
+  }));
+
+  if (buckets.apostila.length) {
+    html.push(_renderSection({
+      key: 'apostila',
+      label: 'Apostila',
+      count: buckets.apostila.length,
+      body: buckets.apostila.map(it => _renderSubCard(it, false)).join('')
+    }));
+  }
+
+  if (buckets.tarefas.length) {
+    html.push(_renderSection({
+      key: 'tarefas',
+      label: 'Tarefas',
+      count: buckets.tarefas.length,
+      body: buckets.tarefas.map(it => _renderSubCard(it, false)).join('')
+    }));
+  }
+
   body.innerHTML = html.join('');
 
   if (ClassVault.activeItemId != null) {
@@ -296,7 +369,6 @@ function _renderSidebar() {
     if (el) el.classList.add('is-active');
   }
 
-  // Wire Drive section interactive buttons (sync, connect) after DOM is stamped.
   _wireDriveSyncButton();
 
   // Re-apply search filter on re-render so collapse toggles don't reset it.
@@ -308,13 +380,14 @@ function _renderSidebar() {
 // (--sec set by .cv-sm-section--<key> modifier classes in classvault.css).
 const SECTION_GLYPHS = {
   favorites: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>',
-  llms:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9 14 11l-2 5-2-5-4.5-2 4.7-1.4z"/><path d="M5 17l.7 1.8L7.5 19.5l-1.8.7L5 22l-.7-1.8L2.5 19.5l1.8-.7z"/></svg>',
-  nexo:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
-  hoje:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><circle cx="12" cy="15" r="2"/></svg>',
-  vault:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/></svg>',
-  trilha: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16v-4a4 4 0 014-4h4"/></svg>',
-  drive:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
-  labs:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6.5L4 18a3 3 0 002.6 4.5h10.8A3 3 0 0020 18l-5-8.5V3"/><path d="M8 3h8"/></svg>'
+  llms:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9 14 11l-2 5-2-5-4.5-2 4.7-1.4z"/><path d="M5 17l.7 1.8L7.5 19.5l-1.8.7L5 22l-.7-1.8L2.5 19.5l1.8-.7z"/></svg>',
+  external: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg>',
+  nexo:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  items:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/></svg>',
+  apostila: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4z"/><path d="M4 4v16"/></svg>',
+  tarefas:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  drive:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
+  labs:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6.5L4 18a3 3 0 002.6 4.5h10.8A3 3 0 0020 18l-5-8.5V3"/><path d="M8 3h8"/></svg>'
 };
 
 function _renderSection({ key, label, count, body }) {
@@ -381,8 +454,10 @@ function _renderItemsByType(items) {
   }).join('');
 }
 
-// Search input placed in the (otherwise hidden) cv-sm-head. Live-filters .sub
-// elements in the body by title substring. ESC clears.
+// Search input placed in the cv-sm-head. Live-filters items in the body by
+// title substring. While the query is non-empty, every section with at least
+// one match is forced open so results are visible; sections without matches
+// stay collapsed. Clearing the query restores the accordion (Favorites open).
 function _renderSearchInput() {
   const head = document.querySelector('.cv-sm-head');
   if (!head) return;
@@ -405,99 +480,71 @@ function _renderSearchInput() {
   });
 }
 
-// Hide .sub items whose .sub-title doesn't contain the query (case-insensitive).
-// Group headers (subgroups, subsections) stay visible to avoid layout flicker.
 function _applySearchFilter(rawQuery) {
   const q = (rawQuery || '').trim().toLowerCase();
-  const body = document.querySelector('.cv-sm-body');
-  if (!body) return;
-  const subs = body.querySelectorAll('.sub');
   if (!q) {
-    subs.forEach(el => { el.style.display = ''; });
+    // Restore accordion: only Favorites open.
+    _resetAccordion();
+    _renderSidebar();
     return;
   }
-  subs.forEach(el => {
+  // Open every section that has matching items so users can see results.
+  for (const k of ClassVault.SECTION_KEYS) ClassVault.collapsedSections.add(k);
+  if (_sectionMatchesQuery('favorites', q)) ClassVault.collapsedSections.delete('favorites');
+  if (_sectionMatchesQuery('llms', q))      ClassVault.collapsedSections.delete('llms');
+  if (_sectionMatchesQuery('external', q))  ClassVault.collapsedSections.delete('external');
+  if (_sectionMatchesQuery('labs', q))      ClassVault.collapsedSections.delete('labs');
+  if (_sectionMatchesQuery('drive', q))     ClassVault.collapsedSections.delete('drive');
+  if (_sectionMatchesQuery('items', q))     ClassVault.collapsedSections.delete('items');
+  if (_sectionMatchesQuery('apostila', q))  ClassVault.collapsedSections.delete('apostila');
+  if (_sectionMatchesQuery('tarefas', q))   ClassVault.collapsedSections.delete('tarefas');
+  _renderSidebar();
+  // Now hide individual .sub items whose title doesn't match.
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+  body.querySelectorAll('.sub').forEach(el => {
     const titleEl = el.querySelector('.sub-title');
     const title = titleEl ? titleEl.textContent.toLowerCase() : '';
     el.style.display = title.indexOf(q) !== -1 ? '' : 'none';
   });
-}
-
-function _renderVaultGroups(items) {
-  if (!items.length) {
-    return '<div class="cv-sm-empty cv-sm-empty--inline">Vault vazio.</div>';
-  }
-  const byTag = new Map();
-  const untagged = [];
-  for (const it of items) {
-    const tags = it.tags || [];
-    if (!tags.length) {
-      untagged.push(it);
-    } else {
-      for (const t of tags) {
-        const k = t.label;
-        if (!byTag.has(k)) byTag.set(k, []);
-        byTag.get(k).push(it);
-      }
-    }
-  }
-  const tagKeys = Array.from(byTag.keys()).sort((a, b) =>
-    (byTag.get(b).length - byTag.get(a).length) || a.localeCompare(b)
-  );
-  if (untagged.length) tagKeys.push('__untagged__');
-
-  return tagKeys.map(tagKey => {
-    const groupItems = tagKey === '__untagged__' ? untagged : byTag.get(tagKey);
-    const subKey = 'tag:' + tagKey;
-    _seedCollapsedSubsection(subKey);
-    const isCollapsed = ClassVault.collapsedSections.has(subKey);
-    const headerLabel = tagKey === '__untagged__' ? 'Sem tag' : '#' + tagKey;
-    return (
-      '<button type="button" class="cv-sm-subsection' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
-        'data-section="' + _esc(subKey) + '" aria-expanded="' + (!isCollapsed) + '">' +
-        '<span class="cv-sm-section-chev">▾</span>' +
-        '<span>' + _esc(headerLabel) + '</span>' +
-        '<span class="cv-sm-section-line"></span>' +
-        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
-      '</button>' +
-      (isCollapsed ? '' : _renderAulaBody(groupItems))
-    );
-  }).join('');
-}
-
-// Trilha: group released items by aula_number.
-function _renderTrilhaGroups(items) {
-  if (!items.length) {
-    return '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum item liberado para esta turma ainda.</div>';
-  }
-  const groups = new Map();
-  for (const it of items) {
-    const k = it.aula_number != null ? String(it.aula_number) : '__none__';
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k).push(it);
-  }
-  const keys = Array.from(groups.keys()).sort((a, b) => {
-    if (a === '__none__') return 1;
-    if (b === '__none__') return -1;
-    return Number(a) - Number(b);
+  // Same for LLM launcher anchors and any section labels.
+  body.querySelectorAll('.cv-sm-llm').forEach(el => {
+    const name = el.textContent.toLowerCase();
+    el.style.display = name.indexOf(q) !== -1 ? '' : 'none';
   });
-  return keys.map(k => {
-    const groupItems = groups.get(k);
-    const subKey = 'trilha-aula:' + k;
-    _seedCollapsedSubsection(subKey);
-    const isCollapsed = ClassVault.collapsedSections.has(subKey);
-    const headerLabel = k === '__none__' ? 'Sem aula' : 'Aula ' + k;
-    return (
-      '<button type="button" class="cv-sm-subsection' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
-        'data-section="' + _esc(subKey) + '" aria-expanded="' + (!isCollapsed) + '">' +
-        '<span class="cv-sm-section-chev">▾</span>' +
-        '<span>' + _esc(headerLabel) + '</span>' +
-        '<span class="cv-sm-section-line"></span>' +
-        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
-      '</button>' +
-      (isCollapsed ? '' : _renderAulaBody(groupItems))
-    );
-  }).join('');
+}
+
+function _sectionMatchesQuery(key, q) {
+  const buckets = _classifyVault(ClassVault.vaultItems);
+  if (key === 'favorites') {
+    if (!ClassVault.favorites || !ClassVault.favorites.size) return false;
+    let any = false;
+    ClassVault.favorites.forEach(function(id) {
+      const located = _findItem(id);
+      if (located && _itemMatchesQuery(located.item, q)) any = true;
+    });
+    return any;
+  }
+  if (key === 'llms') {
+    const dbHit = buckets.llm.some(it => _itemMatchesQuery(it, q));
+    const staticHit = ['chatgpt','claude','gemini','grok','notebooklm','perplexity'].some(n => n.indexOf(q) !== -1);
+    return dbHit || staticHit;
+  }
+  if (key === 'external') return buckets.external.some(it => _itemMatchesQuery(it, q));
+  if (key === 'items')    return buckets.items.some(it => _itemMatchesQuery(it, q));
+  if (key === 'apostila') return buckets.apostila.some(it => _itemMatchesQuery(it, q));
+  if (key === 'tarefas')  return buckets.tarefas.some(it => _itemMatchesQuery(it, q));
+  if (key === 'drive')    return ClassVault.driveItems.some(it => _itemMatchesQuery(it, q));
+  if (key === 'labs') {
+    if (!window.CVLabs || !CVLabs.LABS) return false;
+    return CVLabs.LABS.some(lab => _itemMatchesQuery(lab, q));
+  }
+  return false;
+}
+
+function _itemMatchesQuery(item, q) {
+  const title = (item && item.title ? String(item.title) : '').toLowerCase();
+  return title.indexOf(q) !== -1;
 }
 
 // ── Phase 5: Drive section ─────────────────────────────────────
@@ -647,11 +694,10 @@ function _wireDriveSyncButton() {
 }
 
 // ── LLMs section ───────────────────────────────────────────────
-// Static list of external LLM launchers. Each entry is a plain <a target="_blank">,
-// so the existing .sub click handler ignores them and the browser handles the
-// new-tab navigation natively. Favicons come from Google's S2 service so we
-// don't depend on each provider's own favicon being reachable / correctly sized.
-function _renderLLMsSection() {
+// Hard-coded launchers for the major web LLM tools (open in a new tab) plus
+// any DB-stored type='llm' items the teacher authored. Favicons come from
+// Google's S2 service so we don't depend on each provider's own favicon.
+function _renderLLMsSection(dbItems) {
   const key = 'llms';
   const isCollapsed = ClassVault.collapsedSections.has(key);
   const llms = [
@@ -662,20 +708,28 @@ function _renderLLMsSection() {
     { name: 'NotebookLM', url: 'https://notebooklm.google.com/', domain: 'notebooklm.google.com' },
     { name: 'Perplexity', url: 'https://www.perplexity.ai/',    domain: 'perplexity.ai' }
   ];
+  const dbCount = Array.isArray(dbItems) ? dbItems.length : 0;
+  const total = llms.length + dbCount;
   const headerHtml =
     '<button type="button" class="cv-sm-section cv-sm-section--llms' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
       '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.llms + '</span>' +
       '<span class="cv-sm-section-label">LLMs</span>' +
-      '<span class="cv-sm-section-count">' + llms.length + '</span>' +
+      '<span class="cv-sm-section-count">' + total + '</span>' +
       '<span class="cv-sm-section-chev">▾</span>' +
     '</button>';
-  const bodyHtml = isCollapsed ? '' : llms.map(function(l) {
-    return '<a class="cv-sm-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
-             '<img class="cv-sm-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
-             '<span class="cv-sm-llm-name">' + _esc(l.name) + '</span>' +
-           '</a>';
-  }).join('');
+  let bodyHtml = '';
+  if (!isCollapsed) {
+    bodyHtml = llms.map(function(l) {
+      return '<a class="cv-sm-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
+               '<img class="cv-sm-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
+               '<span class="cv-sm-llm-name">' + _esc(l.name) + '</span>' +
+             '</a>';
+    }).join('');
+    if (dbCount) {
+      bodyHtml += dbItems.map(it => _renderSubCard(it, false)).join('');
+    }
+  }
   return headerHtml + bodyHtml;
 }
 
@@ -718,7 +772,7 @@ function _renderPinnedNexo() {
   const live = ClassVault.liveSession;
   const loading = ClassVault._liveSessionLoading;
   const tail = live ? live.name : 'Abrir sessões';
-  const titleAttr = (live ? 'PensoNexo · ' + live.name : 'PensoNexo · Abrir sessões');
+  const titleAttr = (live ? 'Perguntas · ' + live.name : 'Perguntas · Abrir sessões');
   const href = live
     ? '/backstage/classpulse/host.html?code=' + encodeURIComponent(live.id)
     : '/backstage/classpulse/';
@@ -732,10 +786,9 @@ function _renderPinnedNexo() {
       'title="' + _esc(titleAttr) + '">' +
       '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.nexo + '</span>' +
       '<span class="cv-sm-section-label">' +
-        // Two brand spans + cramp-detection swaps one for the other when the
-        // label would otherwise overflow (see _detectNexoCramp below).
-        '<span class="cv-nexo-brand cv-nexo-brand--full">PensoNexo</span>' +
-        '<span class="cv-nexo-brand cv-nexo-brand--short">Nexo</span>' +
+        // Single brand label "Perguntas" (was "PensoNexo / Nexo" pre-Bundle F);
+        // cramp detection no longer needs a fallback since the label is short.
+        '<span class="cv-nexo-brand cv-nexo-brand--full">Perguntas</span>' +
         ' · ' + _esc(tail) +
       '</span>' +
       '<button type="button" class="cv-nexo-refresh-btn' + (loading ? ' is-loading' : '') + '" ' +
@@ -790,115 +843,19 @@ function _detectNexoCramp() {
   });
 }
 
-// Aula picker: dropdown chip rendered in the head, next to the turma chip.
-function _renderAulaPicker() {
-  const head = document.querySelector('.cv-sm-head');
-  if (!head) return;
-  let block = head.querySelector('.cv-sm-aula');
-  if (!block) {
-    block = document.createElement('button');
-    block.type = 'button';
-    block.className = 'cv-sm-aula';
-    block.setAttribute('aria-haspopup', 'true');
-    block.setAttribute('aria-expanded', 'false');
-    head.appendChild(block);
-  }
-  const currentLabel = ClassVault.aulaNumber == null
-    ? 'Todas as aulas'
-    : ('Aula ' + ClassVault.aulaNumber);
-  block.innerHTML =
-    '<span class="cv-sm-aula-label">' + _esc(currentLabel) + '</span>' +
-    '<span class="cv-sm-aula-chev">▾</span>';
+// Bundle E dropped _renderAulaPicker and _renderAulaBody. The aula picker UI
+// hadn't been rendered since the 2026-05-22 turma-free pivot; the per-aula
+// grouping went away with Hoje.
 
-  // Rebuild dropdown each render (cheap; aula list rarely changes)
-  let menu = document.querySelector('.cv-aula-menu');
-  if (menu) menu.remove();
-  menu = document.createElement('div');
-  menu.className = 'cv-aula-menu';
-  menu.hidden = true;
-  const aulas = ClassVault.aulas || [];
-  const items = [
-    { num: null, label: 'Todas as aulas' },
-    ...aulas.map(a => ({ num: a.aula_number, label: 'Aula ' + a.aula_number + (a.title ? ' · ' + a.title : '') }))
-  ];
-  menu.innerHTML = items.map(o => {
-    const isActive = (o.num === ClassVault.aulaNumber);
-    const key = o.num == null ? '' : String(o.num);
-    return '<button class="cv-aula-menu-item' + (isActive ? ' is-active' : '') + '" ' +
-             'type="button" data-aula="' + _esc(key) + '">' + _esc(o.label) + '</button>';
-  }).join('');
-  document.body.appendChild(menu);
-
-  function positionMenu() {
-    const r = block.getBoundingClientRect();
-    menu.style.top = (r.bottom + 4) + 'px';
-    menu.style.left = r.left + 'px';
-    menu.style.width = r.width + 'px';
-  }
-  function openMenu() {
-    menu.hidden = false;
-    block.setAttribute('aria-expanded', 'true');
-    positionMenu();
-    document.addEventListener('click', onDocClick, true);
-    window.addEventListener('resize', positionMenu);
-  }
-  function closeMenu() {
-    menu.hidden = true;
-    block.setAttribute('aria-expanded', 'false');
-    document.removeEventListener('click', onDocClick, true);
-    window.removeEventListener('resize', positionMenu);
-  }
-  function onDocClick(e) {
-    if (block.contains(e.target) || menu.contains(e.target)) return;
-    closeMenu();
-  }
-  block.onclick = () => menu.hidden ? openMenu() : closeMenu();
-  menu.onclick = e => {
-    const it = e.target.closest('.cv-aula-menu-item');
-    if (!it) return;
-    const raw = it.getAttribute('data-aula');
-    const u = new URL(location.href);
-    if (raw) u.searchParams.set('aula', raw);
-    else u.searchParams.delete('aula');
-    location.href = u.toString();
-  };
-}
-
-// Within an aula, group items by type so the sidebar mirrors PensoTrilha's
-// student-facing structure: Tarefa(s) first, Conteúdo second, Outros last.
-// Sub-section labels render only when there's more than one populated group.
-// opts.draggable === true marks .sub elements as HTML5-draggable (Hoje only).
-function _renderAulaBody(aulaItems, opts) {
-  const draggable = !!(opts && opts.draggable);
-  const tarefa = aulaItems.filter(it => it.type === 'tarefa');
-  const conteudo = aulaItems.filter(it => it.type === 'conteudo');
-  const outros = aulaItems.filter(it => it.type !== 'tarefa' && it.type !== 'conteudo');
-  const groups = [
-    { label: tarefa.length === 1 ? 'Tarefa' : 'Tarefas', items: tarefa },
-    { label: 'Conteúdo da aula', items: conteudo },
-    { label: 'Outros', items: outros }
-  ].filter(g => g.items.length);
-  const renderCard = (it) => _renderSubCard(it, draggable);
-  if (groups.length === 1) {
-    return groups[0].items.map(renderCard).join('');
-  }
-  return groups.map(g =>
-    '<div class="cv-sm-subgroup-label">' + _esc(g.label) + '</div>' +
-    g.items.map(renderCard).join('')
-  ).join('');
-}
-
-function _renderSubCard(item, draggable) {
+function _renderSubCard(item) {
   const zoneClass = _zoneClassFor(item.type);
   // BSTypeIcon (utils.js) returns a text-presentation Unicode glyph for known
   // types so the icon inherits the zone color via CSS, instead of clashing as
   // a multi-color emoji from the legacy ct_types.icon DB values. Falls back to
   // the DB icon (or _zoneIconFor) for any type without an override.
   const icon = (window.BSTypeIcon ? BSTypeIcon(item.type, item.type_icon || _zoneIconFor(item.type)) : (item.type_icon || _zoneIconFor(item.type)));
-  const dragAttrs = draggable ? ' draggable="true" data-draggable="1"' : '';
   return (
-    '<div class="sub' + (draggable ? ' sub--draggable' : '') + '"' +
-      ' data-item-id="' + _esc(String(item.id)) + '"' + dragAttrs + '>' +
+    '<div class="sub" data-item-id="' + _esc(String(item.id)) + '">' +
       '<div class="sub-zone' + (zoneClass ? ' ' + zoneClass : '') + '">' + _esc(icon || '•') + '</div>' +
       '<div class="sub-meta">' +
         '<span class="sub-type">' + _esc(item.type_label || item.type) + '</span>' +
@@ -943,14 +900,26 @@ function _wireItemClicks() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
   body.addEventListener('click', e => {
-    const section = e.target.closest('.cv-sm-section, .cv-sm-subsection');
-    if (section) {
-      const key = section.getAttribute('data-section');
-      if (ClassVault.collapsedSections.has(key)) {
+    const topSection = e.target.closest('.cv-sm-section');
+    if (topSection) {
+      const key = topSection.getAttribute('data-section');
+      const wasCollapsed = ClassVault.collapsedSections.has(key);
+      // Accordion: opening a section collapses every other top-level section.
+      // Closing a section just collapses it (no auto-open elsewhere).
+      if (wasCollapsed) {
+        for (const k of ClassVault.SECTION_KEYS) ClassVault.collapsedSections.add(k);
         ClassVault.collapsedSections.delete(key);
       } else {
         ClassVault.collapsedSections.add(key);
       }
+      _renderSidebar();
+      return;
+    }
+    const subSection = e.target.closest('.cv-sm-subsection');
+    if (subSection) {
+      const key = subSection.getAttribute('data-section');
+      if (ClassVault.collapsedSections.has(key)) ClassVault.collapsedSections.delete(key);
+      else ClassVault.collapsedSections.add(key);
       _renderSidebar();
       return;
     }
@@ -977,6 +946,9 @@ function _selectItem(item, subEl) {
   renderer.render(item, view);
   ClassVault._prevRenderer = renderer;
   ClassVault.activeItemId = item.id;
+  if (window.CVTextResize) {
+    CVTextResize.setButtonsVisible(CVTextResize.isApplicable(item));
+  }
 }
 
 // Bundle D removed the sidebar "+ Adicionar" footer. Authoring moves to the
@@ -984,81 +956,8 @@ function _selectItem(item, subEl) {
 // rewire it without re-implementation; _openEditor is still reached via the
 // item context menu's "Editar..." action.
 
-// Phase 4: drag-to-reorder for Hoje items. Only .sub[data-draggable="1"] is
-// draggable (set by _renderSubCard when Hoje requests it). Drop must land on
-// another draggable .sub — non-Hoje items don't accept drops, so cross-section
-// drags are silently ignored. On a valid drop, compute the new order from DOM
-// and call cv_reorder_aula_plan.
-function _wireDragReorder() {
-  const body = document.querySelector('.cv-sm-body');
-  if (!body) return;
-
-  let draggedId = null;
-
-  body.addEventListener('dragstart', e => {
-    const sub = e.target.closest('.sub[data-draggable="1"]');
-    if (!sub) return;
-    draggedId = sub.getAttribute('data-item-id');
-    sub.classList.add('is-dragging');
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', draggedId);
-    }
-  });
-
-  body.addEventListener('dragend', e => {
-    const sub = e.target.closest('.sub');
-    if (sub) sub.classList.remove('is-dragging');
-    body.querySelectorAll('.is-drop-target').forEach(el => el.classList.remove('is-drop-target'));
-    draggedId = null;
-  });
-
-  body.addEventListener('dragover', e => {
-    const sub = e.target.closest('.sub[data-draggable="1"]');
-    if (!sub || sub.classList.contains('is-dragging')) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-    body.querySelectorAll('.is-drop-target').forEach(el => el.classList.remove('is-drop-target'));
-    sub.classList.add('is-drop-target');
-  });
-
-  body.addEventListener('drop', async e => {
-    const sub = e.target.closest('.sub[data-draggable="1"]');
-    if (!sub || !draggedId) return;
-    e.preventDefault();
-    body.querySelectorAll('.is-drop-target').forEach(el => el.classList.remove('is-drop-target'));
-    if (sub.getAttribute('data-item-id') === draggedId) return;
-
-    const allDraggable = Array.from(body.querySelectorAll('.sub[data-draggable="1"]'));
-    const draggedEl = allDraggable.find(el => el.getAttribute('data-item-id') === draggedId);
-    if (!draggedEl) return;
-
-    const dropIdx = allDraggable.indexOf(sub);
-    const draggedIdx = allDraggable.indexOf(draggedEl);
-    const reordered = allDraggable.slice();
-    reordered.splice(draggedIdx, 1);
-    const newDropIdx = draggedIdx < dropIdx ? dropIdx - 1 : dropIdx;
-    reordered.splice(newDropIdx, 0, draggedEl);
-    const newOrder = reordered.map(el => Number(el.getAttribute('data-item-id')));
-
-    try {
-      const res = await callWorker({
-        action: 'cv_reorder_aula_plan',
-        client_slug: ClassVault.active.client_slug,
-        turma_slug: ClassVault.active.turma_slug,
-        aula_number: ClassVault.aulaNumber,
-        item_ids: newOrder
-      });
-      if (res && res.error) throw new Error(res.error);
-      await _loadCodex();
-    } catch (err) {
-      if (window.BSToast) BSToast.show('Erro ao reordenar: ' + (err.message || err));
-    }
-  });
-}
-
 // Right-click on an item opens a contextual menu whose options vary by where
-// the item lives (vault / hoje / trilha).
+// the item lives (vault / drive / lab).
 function _wireItemContextMenu() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
@@ -1088,17 +987,6 @@ function _openContextMenu(x, y, located) {
   // Drive + Lab items: read-only synthetic items. Favorite is the only action.
   if (source !== 'drive' && source !== 'lab') {
     items.push({ action: 'edit', label: '✏️ Editar...' });
-
-    if (source === 'vault') {
-      const aulaOk = ClassVault.aulaNumber != null;
-      const inPlanAlready = ClassVault.aulaPlanItems.some(it => it.id === item.id);
-      if (aulaOk && !inPlanAlready) {
-        items.push({ action: 'add-to-hoje', label: '📌 Adicionar ao plano de hoje' });
-      }
-    } else if (source === 'aula_plan') {
-      items.push({ action: 'remove-from-hoje', label: '✖ Remover do plano' });
-      items.push({ action: 'release', label: '↗ Liberar para alunos' });
-    }
   }
 
   const menu = document.createElement('div');
@@ -1117,9 +1005,6 @@ function _openContextMenu(x, y, located) {
     _closeContextMenu();
     if (action === 'favorite' || action === 'unfavorite') _toggleFavorite(item);
     else if (action === 'edit') _openEditor(item);
-    else if (action === 'add-to-hoje') _addToHoje(item);
-    else if (action === 'remove-from-hoje') _removeFromHoje(item);
-    else if (action === 'release') _releaseItemToCurrentAula(item);
   });
   // Dismiss listeners. Use named handlers so _closeContextMenu can remove them
   // before the bubble reaches document on the NEXT contextmenu — otherwise the
@@ -1146,69 +1031,10 @@ function _closeContextMenu() {
   ClassVault._ctxMenuEl = null;
 }
 
-async function _addToHoje(item) {
-  if (ClassVault.aulaNumber == null) return;
-  try {
-    const res = await callWorker({
-      action: 'cv_add_to_aula_plan',
-      client_slug: ClassVault.active.client_slug,
-      turma_slug: ClassVault.active.turma_slug,
-      aula_number: ClassVault.aulaNumber,
-      item_id: item.id
-    });
-    if (res && res.error) throw new Error(res.error);
-    if (window.BSToast) BSToast.show('Adicionado ao plano de hoje.');
-    await _loadCodex();
-  } catch (err) {
-    if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
-  }
-}
-
-async function _removeFromHoje(item) {
-  if (ClassVault.aulaNumber == null) return;
-  try {
-    const res = await callWorker({
-      action: 'cv_remove_from_aula_plan',
-      client_slug: ClassVault.active.client_slug,
-      turma_slug: ClassVault.active.turma_slug,
-      aula_number: ClassVault.aulaNumber,
-      item_id: item.id
-    });
-    if (res && res.error) throw new Error(res.error);
-    if (window.BSToast) BSToast.show('Removido do plano.');
-    await _loadCodex();
-  } catch (err) {
-    if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
-  }
-}
-
-// "Liberar para alunos" on a Hoje item: release to current turma+aula via
-// ct_release_item then drop it from the aula plan so the item moves from
-// Hoje → Trilha.
-async function _releaseItemToCurrentAula(item) {
-  if (ClassVault.aulaNumber == null) return;
-  try {
-    const release = await callWorker({
-      action: 'ct_release_item',
-      client_slug: ClassVault.active.client_slug,
-      turma_slug: ClassVault.active.turma_slug,
-      item_id: item.id,
-      aula_number: ClassVault.aulaNumber
-    });
-    if (release && release.error) throw new Error(release.error);
-    await callWorker({
-      action: 'cv_remove_from_aula_plan',
-      client_slug: ClassVault.active.client_slug,
-      turma_slug: ClassVault.active.turma_slug,
-      aula_number: ClassVault.aulaNumber,
-      item_id: item.id
-    });
-    if (window.BSToast) BSToast.show('Liberado para alunos.');
-    await _loadCodex();
-  } catch (err) {
-    if (window.BSToast) BSToast.show('Erro: ' + (err.message || err));
-  }
-}
+// Bundle E dropped _addToHoje / _removeFromHoje / _releaseItemToCurrentAula
+// along with the cv_aula_plan table. Release management moves to the Turmas
+// three-column UI in Bundle G; until then the ClassTrail Liberações tab is
+// reachable directly via URL.
 
 // ── Right-pane editor mount/unmount ─────────────────────────────
 
@@ -1508,16 +1334,6 @@ function _renderBreadcrumb(item) {
     '<strong>' + _esc(item.title) + '</strong>' +
     '<span class="cv-main-crumb-spacer"></span>';
 
-  // Primary action varies by where the item lives
-  if (source === 'vault') {
-    const disabled = ClassVault.aulaNumber == null;
-    html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--primary" data-action="add-to-hoje"' +
-      (disabled ? ' disabled title="Selecione uma aula no menu lateral para planejar"' : '') +
-      '>📌 Adicionar ao plano</button>';
-  } else if (source === 'aula_plan') {
-    html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--primary" data-action="release">↗ Liberar para alunos</button>';
-  }
-
   // Content-type actions (popup, copy, etc.) from CVTypes registry.
   if (window.CVTypes) {
     const typeActions = CVTypes.actionsFor(item);
@@ -1528,17 +1344,8 @@ function _renderBreadcrumb(item) {
   }
 
   html += '<button type="button" class="cv-crumb-btn" data-action="edit" title="Editar item">✏️ Editar</button>';
-  if (_hasCrumbOverflow(source)) {
-    html += '<button type="button" class="cv-crumb-btn cv-crumb-btn--icon" data-action="overflow" title="Mais ações" aria-haspopup="true">⋮</button>';
-  }
   crumb.innerHTML = html;
   _wireCrumbActions(crumb, item, source);
-}
-
-function _hasCrumbOverflow(source) {
-  // Hoje items have "Remover do plano" as secondary. Vault and Trilha items
-  // currently have no secondary actions beyond Editar.
-  return source === 'aula_plan';
 }
 
 function _wireCrumbActions(crumb, item, source) {
@@ -1547,45 +1354,12 @@ function _wireCrumbActions(crumb, item, source) {
       if (btn.disabled) return;
       const action = btn.getAttribute('data-action');
       if (action === 'edit') _openEditor(item);
-      else if (action === 'add-to-hoje') _addToHoje(item);
-      else if (action === 'release') _releaseItemToCurrentAula(item);
-      else if (action === 'overflow') _openCrumbOverflowMenu(e.currentTarget, item, source);
       else if (action && action.startsWith('type:') && window.CVTypes) {
         const handler = CVTypes.handlerFor(item, action.slice(5));
         if (handler) handler(item);
       }
     });
   });
-}
-
-function _openCrumbOverflowMenu(anchor, item, source) {
-  _closeContextMenu();
-  const items = [];
-  if (source === 'aula_plan') {
-    items.push({ action: 'remove-from-hoje', label: '✖ Remover do plano' });
-  }
-  if (!items.length) return;
-  const rect = anchor.getBoundingClientRect();
-  const menu = document.createElement('div');
-  menu.className = 'cv-ctx-menu';
-  menu.style.left = Math.max(8, rect.right - 220) + 'px';
-  menu.style.top = (rect.bottom + 4) + 'px';
-  menu.innerHTML = items.map(o =>
-    '<button type="button" class="cv-ctx-item" data-action="' + _esc(o.action) + '">' + o.label + '</button>'
-  ).join('');
-  document.body.appendChild(menu);
-  ClassVault._ctxMenuEl = menu;
-  menu.addEventListener('click', e => {
-    const btn = e.target.closest('.cv-ctx-item');
-    if (!btn) return;
-    const action = btn.getAttribute('data-action');
-    _closeContextMenu();
-    if (action === 'remove-from-hoje') _removeFromHoje(item);
-  });
-  setTimeout(() => {
-    document.addEventListener('click', _docDismissCtxMenu);
-    document.addEventListener('contextmenu', _docDismissCtxMenu);
-  }, 0);
 }
 
 // ── Renderers (registry keyed by item.type) ────────────────────
