@@ -134,26 +134,16 @@ async function _fetchDriveItems() {
 
 window.CVDriveSync = {
 
-  // Call once after page load. If Google-authed and items cached, pre-populates
-  // ClassVault.driveItems. If authed but no cache, fetches silently in background.
+  // Call once after page load. Bundle I: this is now a no-op — Drive items
+  // live in ct_items as type='drive_file' rows, populated by the Conteúdo ·
+  // Drive sub-tab via cv_sync_drive_items. The Aula sidebar reads them through
+  // cv_get_codex_view (no daily Google OAuth round-trip needed).
+  //
+  // The function stays exported so the existing classvault.js boot call
+  // (`CVDriveSync.init()`) doesn't blow up; the syncNow + connect paths
+  // remain functional for any caller that still wants the browser-fetch path.
   init: function() {
-    if (!window.BS_GOOGLE || !window.BS_GOOGLE.isAuthed()) return;
-
-    const cached = _getCachedItems();
-    if (cached) {
-      window.ClassVault.driveItems = cached;
-      if (typeof _renderDriveSectionOnly === 'function') _renderDriveSectionOnly();
-      return;
-    }
-
-    // Token exists but no cache: fetch silently.
-    _fetchDriveItems().then(function(items) {
-      _storeCachedItems(items);
-      window.ClassVault.driveItems = items;
-      if (typeof _renderDriveSectionOnly === 'function') _renderDriveSectionOnly();
-    }).catch(function() {
-      // Silent: sidebar will show upgrade prompt if needed.
-    });
+    // Intentional no-op. See header comment.
   },
 
   // Force a re-fetch, bypassing cache. Called by the Sync button.

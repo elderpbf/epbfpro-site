@@ -290,8 +290,11 @@ async function _loadCodex() {
 }
 
 // Locate an item across the three id namespaces. Returns null if not found.
-// String ids starting with 'drive:' / 'lab:' are synthetic; numeric ids hit
-// the ct_items library.
+// String ids starting with 'drive:' / 'lab:' are synthetic legacy ids; numeric
+// ids hit the ct_items library. Bundle I moved Drive items into ct_items as
+// type='drive_file' rows with numeric ids, so the source='drive' branch now
+// resolves them through the vault list (legacy 'drive:<gid>' keys may still
+// linger in favorites but they no longer find anything and are skipped).
 function _findItem(itemId) {
   const idStr = String(itemId);
   if (idStr.indexOf('lab:') === 0) {
@@ -302,21 +305,32 @@ function _findItem(itemId) {
     return null;
   }
   if (idStr.startsWith('drive:')) {
-    const it = ClassVault.driveItems.find(function(d) { return d.id === idStr; });
+    // Legacy synthetic id from pre-Bundle I browser cache. Not stored in DB.
+    const it = (ClassVault.driveItems || []).find(function(d) { return d.id === idStr; });
     return it ? { item: it, source: 'drive' } : null;
   }
   const idNum = Number(itemId);
   const it = ClassVault.vaultItems.find(function(x) { return Number(x.id) === idNum; });
-  return it ? { item: it, source: 'vault' } : null;
+  if (!it) return null;
+  // Treat drive_file rows as the 'drive' source so the breadcrumb renders the
+  // Drive-specific actions ("Copiar texto" etc.) rather than the editor button.
+  if (it.type === 'drive_file') return { item: it, source: 'drive' };
+  return { item: it, source: 'vault' };
 }
 
 // Bundle E section order: Favorites / LLMs / External / Labs / Drive / Items /
 // Apostila / Tarefas. External and Apostila/Tarefas are conditional. The
 // classifier below partitions the vault library into the type-keyed buckets.
+//
+// Bundle I: drive_file rows now live in ct_items (synced via cv_sync_drive_items
+// from the Conteúdo · Drive panel). The classifier routes them into bucket.drive
+// so the Drive section reads from the DB cache instead of the browser-side
+// CVDriveSync.driveItems array.
 function _classifyVault(items) {
-  const bucket = { llm: [], external: [], items: [], apostila: [], tarefas: [] };
+  const bucket = { llm: [], external: [], items: [], apostila: [], tarefas: [], drive: [] };
   for (const it of items) {
-    if (it.type === 'tarefa') bucket.tarefas.push(it);
+    if (it.type === 'drive_file') bucket.drive.push(it);
+    else if (it.type === 'tarefa') bucket.tarefas.push(it);
     else if (it.set_id != null) bucket.apostila.push(it);
     else if (it.type === 'llm') bucket.llm.push(it);
     else if (it.type === 'popup_url') bucket.external.push(it);
@@ -388,6 +402,10 @@ function _renderSidebar() {
   // Re-apply search filter on re-render so collapse toggles don't reset it.
   const searchInput = document.querySelector('.cv-sm-search');
   if (searchInput && searchInput.value) _applySearchFilter(searchInput.value);
+
+  // Bundle I: re-apply the active preset filter (if any) after re-render so
+  // accordion toggles inside a filtered view don't surface hidden items.
+  if (ClassVault._activePresetIds) _applyPresetVisibility();
 }
 
 // Per-section glyphs for the neon-glow card headers. Colors come from CSS
@@ -476,6 +494,16 @@ function _renderSearchInput() {
   const head = document.querySelector('.cv-sm-head');
   if (!head) return;
   head.innerHTML =
+    // Bundle I: "Carregar preset" dropdown sits above the search input. When a
+    // preset is active the sidebar filters items down to the preset's item_ids
+    // list; the "Mostrar tudo" button clears the filter and reverts to the
+    // accordion default.
+    '<div class="cv-sm-preset-wrap">' +
+      '<select class="cv-sm-preset" id="cv-preset-select" aria-label="Carregar preset">' +
+        '<option value="">Carregar preset...</option>' +
+      '</select>' +
+      '<button type="button" class="cv-sm-preset-clear" id="cv-preset-clear" title="Mostrar tudo" hidden>Mostrar tudo</button>' +
+    '</div>' +
     '<div class="cv-sm-search-wrap">' +
       '<span class="cv-sm-search-icon" aria-hidden="true">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
@@ -491,6 +519,91 @@ function _renderSearchInput() {
       _applySearchFilter('');
       e.stopPropagation();
     }
+  });
+  // Preset dropdown: populate async; selection re-applies the filter.
+  const select = head.querySelector('#cv-preset-select');
+  const clearBtn = head.querySelector('#cv-preset-clear');
+  if (select) {
+    select.addEventListener('change', function() {
+      const v = select.value;
+      _applyPresetFilter(v ? Number(v) : null);
+    });
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function() {
+      if (select) select.value = '';
+      _applyPresetFilter(null);
+    });
+  }
+  _loadPresetsForDropdown();
+}
+
+// Active preset state. `null` means no preset filter; non-null means filter
+// the sidebar to only items whose stringified id is in `_activePresetIds`.
+ClassVault._activePresetId  = null;
+ClassVault._activePresetIds = null; // Set<string> | null
+
+async function _loadPresetsForDropdown() {
+  let res;
+  try {
+    res = await callWorker({ action: 'cv_list_presets', _silent: true });
+  } catch (e) { return; }
+  const presets = (res && res.presets) || [];
+  const select = document.querySelector('#cv-preset-select');
+  if (!select) return;
+  // Re-build options. Keep the placeholder first.
+  const optionsHtml = ['<option value="">Carregar preset...</option>']
+    .concat(presets.map(p => '<option value="' + p.id + '">' + _esc(p.name) + '</option>'))
+    .join('');
+  select.innerHTML = optionsHtml;
+  // Restore active selection if it still exists.
+  if (ClassVault._activePresetId != null) {
+    const still = presets.find(p => p.id === ClassVault._activePresetId);
+    if (still) select.value = String(ClassVault._activePresetId);
+  }
+}
+
+function _applyPresetFilter(presetId) {
+  const clearBtn = document.querySelector('#cv-preset-clear');
+  if (presetId == null) {
+    ClassVault._activePresetId  = null;
+    ClassVault._activePresetIds = null;
+    if (clearBtn) clearBtn.hidden = true;
+    _resetAccordion();
+    _renderSidebar();
+    return;
+  }
+  // Fetch the preset detail and apply the filter.
+  callWorker({ action: 'cv_get_preset', id: presetId, _silent: true }).then(function(res) {
+    if (!res || !res.ok || !res.preset) return;
+    ClassVault._activePresetId  = res.preset.id;
+    ClassVault._activePresetIds = new Set((res.preset.item_ids || []).map(String));
+    if (clearBtn) clearBtn.hidden = false;
+    // Open every section so the user can see the filtered results without
+    // clicking through the accordion. Mirrors the search-filter behaviour.
+    for (const k of ClassVault.SECTION_KEYS) ClassVault.collapsedSections.delete(k);
+    _renderSidebar();
+    _applyPresetVisibility();
+  });
+}
+
+// Walk every .sub item in the sidebar body and hide the ones not in the
+// active preset set. Called after _renderSidebar to layer on top of whatever
+// the section accordion already painted.
+function _applyPresetVisibility() {
+  if (!ClassVault._activePresetIds) return;
+  const body = document.querySelector('.cv-sm-body');
+  if (!body) return;
+  const allowed = ClassVault._activePresetIds;
+  body.querySelectorAll('.sub').forEach(function(el) {
+    const id = el.getAttribute('data-item-id');
+    el.style.display = allowed.has(String(id)) ? '' : 'none';
+  });
+  // Static LLM launcher anchors (no DB id): hidden under preset filter unless
+  // the preset explicitly includes their ids. Presets don't currently support
+  // static launcher ids, so they're hidden by default to keep the view honest.
+  body.querySelectorAll('.cv-sm-llm').forEach(function(el) {
+    el.style.display = 'none';
   });
 }
 
@@ -557,7 +670,7 @@ function _sectionMatchesQuery(key, q) {
   if (key === 'items')    return buckets.items.some(it => _itemMatchesQuery(it, q));
   if (key === 'apostila') return buckets.apostila.some(it => _itemMatchesQuery(it, q));
   if (key === 'tarefas')  return buckets.tarefas.some(it => _itemMatchesQuery(it, q));
-  if (key === 'drive')    return ClassVault.driveItems.some(it => _itemMatchesQuery(it, q));
+  if (key === 'drive')    return buckets.drive.some(it => _itemMatchesQuery(it, q));
   if (key === 'labs') {
     if (!window.CVLabs || !CVLabs.LABS) return false;
     return CVLabs.LABS.some(lab => _itemMatchesQuery(lab, q));
@@ -596,39 +709,40 @@ function _renderDriveSectionOnly() {
 // Produce the full Drive section HTML string (header + body).
 // The header uses a <div role="button"> instead of <button> so the sync button
 // (a true <button>) can be a valid child (nested buttons are invalid HTML).
+//
+// Bundle I: items come from the DB (ct_items rows with type='drive_file'),
+// synced via the Conteúdo · Drive panel. The sidebar no longer fetches from
+// Drive on boot, removing the daily OAuth dependency. The sync button here
+// is kept as a convenience shortcut to the Conteúdo · Drive sub-tab.
 function _renderDriveSection() {
   const key = 'drive';
   const isCollapsed = ClassVault.collapsedSections.has(key);
-  // Google-authed: Drive syncs automatically at boot (no CTA needed).
-  // Password-authed: show a small "Conectar para sincronizar Drive" prompt.
-  const googleAuthed = window.BS_GOOGLE && window.BS_GOOGLE.isAuthed();
-  const count = ClassVault.driveItems.length;
+  const buckets = _classifyVault(ClassVault.vaultItems);
+  const driveRows = buckets.drive;
+  const count = driveRows.length;
 
   const headerHtml =
     '<div role="button" tabindex="0" class="cv-sm-section cv-sm-section--drive' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
       '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.drive + '</span>' +
       '<span class="cv-sm-section-label">Drive</span>' +
-      '<button type="button" class="cv-drive-sync-btn" data-drive-action="sync" title="Sincronizar Drive" aria-label="Sincronizar Drive">' +
+      '<a class="cv-drive-sync-btn" data-drive-action="sync" href="/backstage/classtrail/?tab=drive" title="Abrir sub-aba Drive (sincronizar)" aria-label="Sincronizar Drive">' +
         '<span class="cv-spin-glyph">↻</span>' +
-      '</button>' +
+      '</a>' +
       '<span class="cv-sm-section-count">' + count + '</span>' +
       '<span class="cv-sm-section-chev">▾</span>' +
     '</div>';
 
   let bodyHtml = '';
   if (!isCollapsed) {
-    if (googleAuthed && count > 0) {
-      // Happy path: Google-authed and items loaded.
-      bodyHtml = _renderDriveGroups(ClassVault.driveItems);
-    } else if (googleAuthed && count === 0) {
-      // Google-authed but no items yet (sync in progress or empty folder).
-      bodyHtml = '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum arquivo encontrado na pasta Drive.</div>';
+    if (count > 0) {
+      // Happy path: drive_file rows loaded from the cv_get_codex_view payload.
+      bodyHtml = _renderDriveGroups(driveRows);
     } else {
-      // Password-authed (or not authed at all): show upgrade prompt.
+      // No cached Drive items. Point the teacher at the Drive sub-tab to sync.
       bodyHtml =
         '<div class="cv-sm-empty cv-sm-empty--inline cv-drive-auth-prompt">' +
-          '<button type="button" class="cv-drive-connect-btn" data-drive-action="connect">Conectar para sincronizar Drive</button>' +
+          '<a class="cv-drive-connect-btn" href="/backstage/classtrail/?tab=drive">Sincronizar Drive...</a>' +
         '</div>';
     }
   }
@@ -638,16 +752,26 @@ function _renderDriveSection() {
 }
 
 // Group Drive items by subfolder name and render subsections.
+// Items can come from two sources:
+//   - DB rows (Bundle I): folder name lives in meta_json.folder_name
+//   - Legacy browser-synthesized items: folder name lives in _group
+// Both paths converge on the same UI; _groupKey normalises lookup.
 function _renderDriveGroups(items) {
   if (!items.length) {
     return '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum arquivo encontrado na pasta Drive.</div>';
+  }
+
+  function _groupKey(it) {
+    if (it._group) return it._group;
+    const meta = it.meta_json || {};
+    return (meta.folder_name && String(meta.folder_name).trim()) || '__raiz__';
   }
 
   // Preserve group order as synthesized (groups appear in folder-appearance order).
   const groups = [];
   const groupMap = new Map();
   for (const it of items) {
-    const g = it._group || '__raiz__';
+    const g = _groupKey(it);
     if (!groupMap.has(g)) {
       groupMap.set(g, []);
       groups.push(g);

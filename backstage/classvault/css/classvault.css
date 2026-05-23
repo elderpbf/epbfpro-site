@@ -1179,3 +1179,60 @@ body.cv-focus.cv-focus--side .cv-sm {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── Bundle I: "Carregar preset" dropdown above the search ───────────────
+   Sits in .cv-sm-head, above the search input. When a preset is active the
+   "Mostrar tudo" clear button reveals next to the select. Dark mode override
+   is folded in: --surface-soft already has a [data-theme="dark"] mapping in
+   :root above, so .cv-sm-preset inherits the correct token automatically. */
+.cv-sm-preset-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.cv-sm-preset {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 7px 28px 7px 10px;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  background-color: var(--background);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+    linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cv-sm-preset:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+.cv-sm-preset:hover { border-color: var(--primary-light); }
+.cv-sm-preset-clear {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.cv-sm-preset-clear:hover {
+  background: color-mix(in oklab, var(--primary) 12%, var(--surface-soft));
+  border-color: var(--primary-light);
+}
+.cv-sm-preset-clear[hidden] { display: none; }

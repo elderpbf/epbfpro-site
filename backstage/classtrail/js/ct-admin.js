@@ -1537,7 +1537,9 @@ window.CT_ADMIN = (function() {
     if (internalId === 'apostila') _loadApostila();
     if (internalId === 'tarefas')  _initTarefasPicker();
     if (internalId === 'releases') _initTurmaPicker();
-    // drive + presets are Bundle I placeholders; they render their own static markup.
+    // Bundle I: Drive sub-tab (cache management) + Presets sub-tab (CRUD).
+    if (internalId === 'drive')    _initDrivePanel();
+    if (internalId === 'presets')  _initPresetsPanel();
   }
 
   function _initTabs() {
@@ -2372,6 +2374,342 @@ window.CT_ADMIN = (function() {
       }).join('');
     }).catch(function(err) {
       summary.textContent = 'Erro ao carregar: ' + (err.message || err);
+    });
+  }
+
+  // ---- Bundle I: Drive sub-tab (cache management UI) ----
+  //
+  // The actual Drive API call happens browser-side via CVDriveSync (which lives
+  // in the ClassVault bundle). On the Conteúdo · Drive panel we surface:
+  //   - OAuth status (connected / disconnected)
+  //   - "Sincronizar agora" button (drives the full fetch → cv_sync_drive_items round-trip)
+  //   - Last-sync timestamp (from Worker)
+  //   - List of currently-cached drive_file rows
+  //
+  // We don't reuse the sidebar's CVDriveSync directly because the panel needs
+  // to call the Worker action regardless of which app shell is mounted. The
+  // logic is small enough to inline.
+
+  var DRIVE_ROOT_FOLDER_ID = '1zR2ugAYShUmN_E5scM7om6Qy1y0iE2Mi';
+
+  function _drivePanelStatusEl()   { return document.getElementById('drive-status'); }
+  function _drivePanelLastSyncEl() { return document.getElementById('drive-last-sync'); }
+  function _drivePanelListEl()     { return document.getElementById('drive-list'); }
+  function _drivePanelSyncBtn()    { return document.getElementById('btn-drive-sync'); }
+
+  function _initDrivePanel() {
+    var btn = _drivePanelSyncBtn();
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener('click', _runDriveSync);
+    }
+    _refreshDriveStatus();
+    _loadDriveListFromWorker();
+  }
+
+  function _refreshDriveStatus() {
+    var el = _drivePanelStatusEl();
+    if (!el) return;
+    var authed = window.BS_GOOGLE && window.BS_GOOGLE.isAuthed();
+    if (authed) {
+      var email = window.BS_GOOGLE.getEmail ? window.BS_GOOGLE.getEmail() : '';
+      el.textContent = 'Conectado' + (email ? ' como ' + email : '');
+      el.classList.remove('is-warn');
+      el.classList.add('is-ok');
+    } else {
+      el.textContent = 'Não conectado ao Google. Conecte para sincronizar.';
+      el.classList.remove('is-ok');
+      el.classList.add('is-warn');
+    }
+  }
+
+  function _fmtRelTime(unixMs) {
+    if (!unixMs) return '';
+    var diff = Date.now() - unixMs;
+    if (diff < 0) diff = 0;
+    var sec = Math.floor(diff / 1000);
+    if (sec < 60)    return 'há ' + sec + 's';
+    var min = Math.floor(sec / 60);
+    if (min < 60)    return 'há ' + min + ' min';
+    var hr = Math.floor(min / 60);
+    if (hr  < 24)    return 'há ' + hr + 'h';
+    var day = Math.floor(hr / 24);
+    return 'há ' + day + ' dia' + (day === 1 ? '' : 's');
+  }
+
+  function _loadDriveListFromWorker() {
+    var listEl = _drivePanelListEl();
+    var lastEl = _drivePanelLastSyncEl();
+    if (listEl) listEl.innerHTML = '<div class="ct-empty">Carregando arquivos...</div>';
+    callWorker({ action: 'cv_list_drive_items' }).then(function(res) {
+      if (!res || !res.ok) {
+        if (listEl) listEl.innerHTML = '<div class="ct-empty">Erro ao listar arquivos.</div>';
+        return;
+      }
+      if (lastEl) {
+        lastEl.textContent = res.last_sync
+          ? 'Última sincronização: ' + _fmtRelTime(res.last_sync)
+          : 'Nunca sincronizado.';
+      }
+      var items = res.items || [];
+      if (!items.length) {
+        if (listEl) listEl.innerHTML = '<div class="ct-empty">Nenhum arquivo cacheado. Clique em "Sincronizar agora".</div>';
+        return;
+      }
+      // Group by folder_name (from meta_json) for readability.
+      var groups = new Map();
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var meta = it.meta_json || {};
+        var folder = (meta.folder_name && String(meta.folder_name).trim()) || '(raiz)';
+        if (!groups.has(folder)) groups.set(folder, []);
+        groups.get(folder).push(it);
+      }
+      var html = '';
+      groups.forEach(function(rows, folder) {
+        html += '<div class="ct-drive-group">';
+        html +=   '<div class="ct-drive-group-head">' + _esc(folder) + ' <span class="ct-drive-count">' + rows.length + '</span></div>';
+        for (var j = 0; j < rows.length; j++) {
+          var r = rows[j];
+          var m = r.meta_json || {};
+          html += '<div class="ct-drive-row">';
+          html +=   '<span class="ct-drive-name">' + _esc(r.title) + '</span>';
+          html +=   '<span class="ct-drive-mime">' + _esc(m.mimeType || '') + '</span>';
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+      if (listEl) listEl.innerHTML = html;
+    }).catch(function() {
+      if (listEl) listEl.innerHTML = '<div class="ct-empty">Erro ao listar arquivos.</div>';
+    });
+  }
+
+  // Fetches the Drive folder tree client-side via BS_GOOGLE, flattens to a
+  // file metadata list, then POSTs the full list to cv_sync_drive_items for
+  // upsert + orphan removal.
+  function _runDriveSync() {
+    var btn = _drivePanelSyncBtn();
+    if (btn && btn.disabled) return;
+    if (!window.BS_GOOGLE) {
+      if (window.BSToast) BSToast.show('Drive indisponível: BS_GOOGLE não carregado.');
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando...'; }
+    var p = window.BS_GOOGLE.isAuthed()
+      ? Promise.resolve()
+      : window.BS_GOOGLE.requestToken({ prompt: 'consent' });
+    p.then(function() {
+      return window.BS_GOOGLE.drive.listFolder(DRIVE_ROOT_FOLDER_ID);
+    }).then(function(rootFiles) {
+      var folders = rootFiles.filter(function(f) { return f.mimeType === 'application/vnd.google-apps.folder'; });
+      var rootOnly = rootFiles.filter(function(f) { return f.mimeType !== 'application/vnd.google-apps.folder'; });
+      return Promise.all(folders.map(function(folder) {
+        return window.BS_GOOGLE.drive.listFolder(folder.id).then(function(files) {
+          return { folder: folder, files: files };
+        }).catch(function() {
+          return { folder: folder, files: [] };
+        });
+      })).then(function(subResults) {
+        var flat = [];
+        rootOnly.forEach(function(f) {
+          flat.push({ file_id: f.id, name: f.name, mimeType: f.mimeType, modifiedTime: f.modifiedTime || '', folder_name: '' });
+        });
+        subResults.forEach(function(sr) {
+          sr.files.forEach(function(f) {
+            if (f.mimeType === 'application/vnd.google-apps.folder') return;
+            flat.push({ file_id: f.id, name: f.name, mimeType: f.mimeType, modifiedTime: f.modifiedTime || '', folder_name: sr.folder.name });
+          });
+        });
+        return callWorker({ action: 'cv_sync_drive_items', items: flat });
+      });
+    }).then(function(res) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Sincronizar agora'; }
+      if (res && res.ok) {
+        if (window.BSToast) {
+          var msg = 'Drive sincronizado · ' +
+            (res.inserted || 0) + ' novos, ' +
+            (res.updated  || 0) + ' atualizados, ' +
+            (res.deleted  || 0) + ' removidos.';
+          BSToast.show(msg);
+        }
+        _refreshDriveStatus();
+        _loadDriveListFromWorker();
+      } else {
+        if (window.BSToast) BSToast.show('Erro ao sincronizar Drive.');
+      }
+    }).catch(function(err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Sincronizar agora'; }
+      var m = (err && err.message) || 'erro desconhecido';
+      if (window.BSToast) BSToast.show('Erro ao sincronizar Drive: ' + m);
+    });
+  }
+
+  // ---- Bundle I: Presets sub-tab (CRUD) ----
+  //
+  // A preset is a named bag of item ids the teacher can later "load" into the
+  // Aula sidebar to filter the view to that subset. The list shows existing
+  // presets with their item count; clicking opens an editor where the teacher
+  // can rename or pick items from the global vault library.
+  //
+  // The picker uses ClassVault.types/tags loaded earlier in the page lifecycle.
+  // We never enforce that picked ids actually exist (lab:* and drive:* are
+  // legitimate too) — the sidebar gracefully skips ids that don't resolve.
+
+  var _PRESETS_CACHE = null;
+  var _VAULT_CACHE   = null;
+
+  function _initPresetsPanel() {
+    var btn = document.getElementById('btn-new-preset');
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener('click', function() { _openPresetEditor(null); });
+    }
+    _loadPresetList();
+  }
+
+  function _loadPresetList() {
+    var listEl = document.getElementById('preset-list');
+    if (listEl) listEl.innerHTML = '<div class="ct-empty">Carregando presets...</div>';
+    callWorker({ action: 'cv_list_presets' }).then(function(res) {
+      if (!res || !res.ok) {
+        if (listEl) listEl.innerHTML = '<div class="ct-empty">Erro ao listar presets.</div>';
+        return;
+      }
+      _PRESETS_CACHE = res.presets || [];
+      if (!_PRESETS_CACHE.length) {
+        if (listEl) listEl.innerHTML = '<div class="ct-empty">Nenhum preset criado. Clique em "+ Novo preset".</div>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < _PRESETS_CACHE.length; i++) {
+        var p = _PRESETS_CACHE[i];
+        var count = Array.isArray(p.item_ids) ? p.item_ids.length : 0;
+        html += '<div class="ct-preset-row" data-preset-id="' + p.id + '">';
+        html +=   '<span class="ct-preset-name">' + _esc(p.name) + '</span>';
+        html +=   '<span class="ct-preset-count">' + count + ' item' + (count === 1 ? '' : 's') + '</span>';
+        html +=   '<button class="ct-btn ct-btn-sm" data-action="edit" type="button">Editar</button>';
+        html +=   '<button class="ct-btn ct-btn-sm ct-btn-danger" data-action="delete" type="button">Excluir</button>';
+        html += '</div>';
+      }
+      if (listEl) {
+        listEl.innerHTML = html;
+        listEl.querySelectorAll('.ct-preset-row').forEach(function(row) {
+          var id = Number(row.getAttribute('data-preset-id'));
+          var preset = _PRESETS_CACHE.find(function(p) { return p.id === id; });
+          row.querySelector('[data-action="edit"]').addEventListener('click', function() {
+            _openPresetEditor(preset);
+          });
+          row.querySelector('[data-action="delete"]').addEventListener('click', function() {
+            _deletePresetWithConfirm(preset);
+          });
+        });
+      }
+    }).catch(function() {
+      if (listEl) listEl.innerHTML = '<div class="ct-empty">Erro ao listar presets.</div>';
+    });
+  }
+
+  function _deletePresetWithConfirm(preset) {
+    if (!preset) return;
+    if (!window.confirm('Excluir preset "' + preset.name + '"?')) return;
+    callWorker({ action: 'cv_delete_preset', id: preset.id }).then(function(res) {
+      if (res && res.ok) {
+        if (window.BSToast) BSToast.show('Preset excluído.');
+        _loadPresetList();
+      } else {
+        if (window.BSToast) BSToast.show('Erro ao excluir preset.');
+      }
+    });
+  }
+
+  function _ensureVaultLoaded() {
+    if (_VAULT_CACHE && _VAULT_CACHE.length) return Promise.resolve(_VAULT_CACHE);
+    // Pull the global library via the existing CT items endpoint. ct_list_items
+    // returns every item with id/title/type — enough to render a picker.
+    return callWorker({ action: 'ct_list_items' }).then(function(res) {
+      _VAULT_CACHE = (res && res.items) || [];
+      return _VAULT_CACHE;
+    });
+  }
+
+  function _openPresetEditor(preset) {
+    var isNew = !preset;
+    var initial = preset || { name: '', item_ids: [] };
+    var selected = new Set((initial.item_ids || []).map(String));
+
+    var html = '<div class="ct-modal ct-modal--wide" style="max-height:90vh;overflow-y:auto">' +
+      '<div class="ct-modal-title">' + (isNew ? 'Novo preset' : 'Editar preset') + '</div>' +
+      '<div class="ct-field"><label>Nome</label>' +
+        '<input type="text" id="preset-name-input" value="' + _esc(initial.name) + '" placeholder="Ex: Aula 1 — abertura">' +
+      '</div>' +
+      '<div class="ct-field"><label id="preset-count-label">Itens (' + selected.size + ' selecionado(s))</label>' +
+        '<input type="search" id="preset-item-search" placeholder="Buscar item por título...">' +
+        '<div class="ct-preset-item-picker" id="preset-item-picker"><div class="ct-empty">Carregando itens...</div></div>' +
+      '</div>' +
+      '<div class="ct-modal-actions">' +
+        '<button class="ct-btn" id="preset-cancel" type="button">Cancelar</button>' +
+        '<button class="ct-btn ct-btn-primary" id="preset-save" type="button">' + (isNew ? 'Criar' : 'Salvar') + '</button>' +
+      '</div>' +
+    '</div>';
+    var bd = _openModal(html, { disableBackdropClose: true });
+
+    function close() { if (bd.parentNode) bd.parentNode.removeChild(bd); }
+    bd.querySelector('#preset-cancel').addEventListener('click', close);
+
+    var picker      = bd.querySelector('#preset-item-picker');
+    var searchInput = bd.querySelector('#preset-item-search');
+    var countLabel  = bd.querySelector('#preset-count-label');
+
+    function renderPicker(filter) {
+      var f = (filter || '').toLowerCase();
+      var items = _VAULT_CACHE || [];
+      var filtered = f ? items.filter(function(it) { return (it.title || '').toLowerCase().indexOf(f) !== -1; }) : items;
+      if (!filtered.length) {
+        picker.innerHTML = '<div class="ct-empty">Nenhum item encontrado.</div>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < filtered.length; i++) {
+        var it = filtered[i];
+        var idStr = String(it.id);
+        var checked = selected.has(idStr) ? ' checked' : '';
+        html += '<label class="ct-preset-pick-row">';
+        html +=   '<input type="checkbox" data-id="' + _esc(idStr) + '"' + checked + '>';
+        html +=   '<span class="ct-preset-pick-type">' + _esc(it.type || '') + '</span>';
+        html +=   '<span class="ct-preset-pick-title">' + _esc(it.title || '') + '</span>';
+        html += '</label>';
+      }
+      picker.innerHTML = html;
+      picker.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          var id = cb.getAttribute('data-id');
+          if (cb.checked) selected.add(id);
+          else selected.delete(id);
+          countLabel.textContent = 'Itens (' + selected.size + ' selecionado(s))';
+        });
+      });
+    }
+
+    _ensureVaultLoaded().then(function() { renderPicker(''); });
+    searchInput.addEventListener('input', function() { renderPicker(searchInput.value); });
+
+    bd.querySelector('#preset-save').addEventListener('click', function() {
+      var name = bd.querySelector('#preset-name-input').value.trim();
+      if (!name) { if (window.BSToast) BSToast.show('Dê um nome ao preset.'); return; }
+      var ids = Array.from(selected);
+      var action = isNew ? 'cv_create_preset' : 'cv_update_preset';
+      var params = { action: action, name: name, item_ids: ids };
+      if (!isNew) params.id = initial.id;
+      callWorker(params).then(function(res) {
+        if (res && res.ok) {
+          if (window.BSToast) BSToast.show(isNew ? 'Preset criado.' : 'Preset atualizado.');
+          close();
+          _loadPresetList();
+        } else {
+          if (window.BSToast) BSToast.show('Erro ao salvar preset.');
+        }
+      });
     });
   }
 

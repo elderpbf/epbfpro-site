@@ -1899,3 +1899,109 @@
 }
 
 .ct-access-actions .bs-toggle-btn { flex: 1; min-width: 140px; font-size: 0.78rem; }
+
+/* ── Bundle I: Drive + Presets sub-tab panels ────────────────────────────
+   New surfaces under the Conteúdo main tab. Drive surfaces the cv_drive
+   metadata cache (no file bytes); Presets surfaces cv_lesson_presets CRUD.
+   Tokens used (--surface-soft, --border, --text-secondary) all have dark
+   overrides in theme.css or classtrail.css :root above, so no additional
+   [data-theme="dark"] block is needed here. */
+
+.ct-drive-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  margin: 0 0 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.ct-drive-status            { font-weight: 600; }
+.ct-drive-status.is-ok      { color: var(--text-primary); }
+.ct-drive-status.is-warn    { color: #c2410c; }
+[data-theme="dark"] .ct-drive-status.is-warn { color: #fb923c; }
+.ct-drive-last-sync         { color: var(--text-secondary); margin-left: auto; }
+
+.ct-drive-list  { display: flex; flex-direction: column; gap: 14px; }
+.ct-drive-group { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.ct-drive-group-head {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.ct-drive-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+.ct-drive-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 0.86rem;
+}
+.ct-drive-name { flex: 1; color: var(--text-primary); }
+.ct-drive-mime { color: var(--text-secondary); font-size: 0.72rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.ct-preset-list { display: flex; flex-direction: column; gap: 8px; }
+.ct-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.ct-preset-name  { flex: 1; font-weight: 600; color: var(--text-primary); }
+.ct-preset-count {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.ct-modal--wide { max-width: 720px; width: 90vw; }
+.ct-preset-item-picker {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  background: var(--surface);
+}
+.ct-preset-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.86rem;
+}
+.ct-preset-pick-row:hover { background: var(--surface-soft); }
+.ct-preset-pick-type {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  min-width: 70px;
+}
+.ct-preset-pick-title { flex: 1; color: var(--text-primary); }
