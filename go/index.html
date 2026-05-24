@@ -567,7 +567,7 @@
         answer_index: answerIndex
       });
 
-      if (result.ok || result.error === 'already answered') {
+      if (result.ok || result.error === 'Você já enviou resposta.') {
         localStorage.setItem('cl_ans_' + qId, String(answerIndex));
         dbg('ok', `answer ${answerIndex} saved for Q …${qId.slice(-6)}`);
         showState('answered');

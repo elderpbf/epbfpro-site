@@ -1264,193 +1264,315 @@ body.tr-modal-open { overflow: hidden; }
 }
 
 /* ============================================================
-   PensoNexo live-session surfacer (trilha-nexo.js)
+   ClassPulse inline answer experience (Bundle H)
+   When session.is_open, trilha-nexo.js hides the hero/tabs/
+   tab-content/footer (via .is-hidden-by-nexo) and mounts the
+   /go answer body into #nx-answer-host via NexoAnswer.mount().
+   Trilha's pensoia-header chrome stays visible above.
    ============================================================ */
 
-.nx-root {
-  /* Container for both the floating pill and the fullscreen overlay.
-     The pill positions itself fixed at the bottom; the overlay covers
-     the viewport. The root has no visual presence of its own. */
+.is-hidden-by-nexo {
+  display: none !important;
 }
 
-/* When the overlay is mounted, the body must not scroll behind it. */
-body.nx-overlay-open {
-  overflow: hidden;
-}
-
-/* Pending pill — small, floating, bottom-right. Visible while a session
-   is open but no question is active. Quiet, non-blocking. */
-.nx-pending-pill {
-  position: fixed;
-  right: clamp(12px, 3vw, 28px);
-  bottom: clamp(12px, 3vw, 28px);
-  z-index: 80;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.55rem 0.9rem 0.55rem 0.7rem;
-  background: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border, rgba(20,184,166,.2));
-  border-radius: 999px;
-  box-shadow: 0 6px 18px -8px rgba(0,0,0,0.25);
-  font-family: 'Inter', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  animation: nx-pill-in 0.25s ease-out;
-}
-
-@keyframes nx-pill-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.nx-pill-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #ef4444;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
-  animation: nx-pill-pulse 2s ease-out infinite;
-}
-
-@keyframes nx-pill-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
-  70%  { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-}
-
-.nx-pill-text {
-  white-space: nowrap;
-}
-
-/* Fullscreen takeover overlay. Painted when a question is open on the
-   session linked to this turma. No trilha chrome visible underneath. */
-.nx-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(16px, 4vw, 48px);
-  background: rgba(15, 23, 42, 0.78);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  animation: nx-overlay-in 0.2s ease-out;
-}
-
-[data-theme="dark"] .nx-overlay {
-  background: rgba(7, 12, 22, 0.86);
-}
-
-@keyframes nx-overlay-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.nx-overlay-card {
+#nx-answer-host {
+  max-width: clamp(480px, 80vw, 720px);
+  margin: 1.5rem auto 5rem;
+  padding: 0 1rem;
   width: 100%;
-  max-width: 640px;
-  background: var(--surface);
-  border-radius: 18px;
-  padding: clamp(20px, 4vw, 36px);
-  box-shadow: 0 24px 64px -16px rgba(0,0,0,0.35);
-  border: 1px solid var(--border, rgba(20,184,166,.2));
-  animation: nx-card-in 0.25s ease-out;
 }
 
-@keyframes nx-card-in {
-  from { opacity: 0; transform: translateY(12px) scale(0.985); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+/* Inline-answer state containers (mirror of /go/index.html inline rules).
+   These class/id selectors map to the DOM that NexoAnswer.mount() builds. */
+#nx-answer-host .nx-state {
+  margin-top: 1rem;
 }
 
-.nx-overlay-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.72rem;
+#nx-answer-host .state-center {
+  text-align: center;
+  padding: 56px 0;
+}
+
+#nx-answer-host .state-icon {
+  font-size: 2.4rem;
+  margin-bottom: 14px;
+}
+
+#nx-answer-host .state-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-bottom: 8px;
+}
+
+#nx-answer-host .state-sub {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+#nx-answer-host .question-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0 0 22px;
+  text-align: justify;
+}
+
+#nx-answer-host .results-next {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 10px;
+}
+
+#nx-answer-host .error-msg {
+  font-size: 1rem;
+  color: var(--error);
+  margin-top: 10px;
+  min-height: 1.2em;
+  text-align: center;
+}
+
+#nx-answer-host .dot-wrap {
+  text-align: center;
+  margin-top: 18px;
+}
+
+#nx-answer-host .refresh-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-light);
+  transition: background 0.3s;
+}
+
+#nx-answer-host .refresh-dot.active { background: var(--success); }
+
+@media (min-width: 600px) {
+  #nx-answer-host #q-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  #nx-answer-host .qr-option-btn { margin-bottom: 0 !important; }
+}
+
+/* Student Q&A "active question" card (instructor surfaces a student question) */
+#nx-answer-host .cp-sqa-card {
+  padding: 18px;
+  background: rgba(245,158,11,0.06);
+  border: 1px solid rgba(245,158,11,0.35);
+  border-radius: 12px;
+}
+
+#nx-answer-host .cp-sqa-label {
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #ef4444;
-  margin-bottom: 0.95rem;
+  color: #b45309;
+  margin-bottom: 8px;
 }
 
-.nx-overlay-title {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(1.1rem, 2.4vw, 1.45rem);
+#nx-answer-host .cp-sqa-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+#nx-answer-host .cp-sqa-text {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+#nx-answer-host .cp-sqa-answer {
+  margin-top: 18px;
+  padding: 12px 14px;
+  background: rgba(245,158,11,0.1);
+  border-left: 3px solid rgba(245,158,11,0.6);
+  border-radius: 0 8px 8px 0;
+}
+
+#nx-answer-host .cp-sqa-answer-label {
+  font-size: 0.7rem;
   font-weight: 700;
-  line-height: 1.35;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #b45309;
+  margin-bottom: 4px;
+}
+
+#nx-answer-host .cp-sqa-answer-text {
+  font-size: 0.95rem;
   color: var(--text-primary);
-  margin: 0 0 1.4rem;
-  letter-spacing: -0.01em;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
-.nx-overlay-opts {
-  list-style: none;
-  margin: 0 0 1.5rem;
-  padding: 0;
-  display: grid;
-  gap: 0.55rem;
+/* Dark-mode tints for the student-Q&A card so the orange surface keeps
+   readable contrast on dark theme (per project rule: dark-mode tokens
+   for any custom surface). */
+[data-theme="dark"] #nx-answer-host .cp-sqa-card {
+  background: rgba(245,158,11,0.10);
+  border-color: rgba(245,158,11,0.45);
 }
 
-.nx-overlay-opt {
+[data-theme="dark"] #nx-answer-host .cp-sqa-answer {
+  background: rgba(245,158,11,0.14);
+  border-left-color: rgba(245,158,11,0.7);
+}
+
+/* ----- Student-to-instructor Q&A bottom bar -----
+   Lives at body level (sibling of trilha content). Same surface as
+   /go/index.html: collapsed pill + expanded editor with backdrop. */
+.cp-qa-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px env(safe-area-inset-bottom, 10px);
+  display: none;
+}
+
+.cp-qa-bar.visible { display: block; }
+
+body.qa-bar-on #nx-answer-host {
+  padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+}
+
+.cp-qa-bar-collapsed {
   display: flex;
-  align-items: flex-start;
-  gap: 0.7rem;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--border, rgba(20,184,166,.16));
-  border-radius: 10px;
+  align-items: center;
+  gap: 10px;
+  cursor: text;
+  padding: 9px 12px;
   background: var(--background);
-  font-size: 0.92rem;
-  color: var(--text-primary);
-  line-height: 1.4;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
 }
 
-.nx-overlay-opt-letter {
-  display: inline-flex;
+.cp-qa-bar-collapsed:hover { border-color: var(--primary); }
+.cp-qa-bar-collapsed .cp-qa-bar-placeholder { flex: 1; }
+
+.cp-qa-bar-collapsed .cp-qa-bar-send {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-dark);
+  color: #fff;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 700;
-  flex-shrink: 0;
+  font-size: 0.9rem;
 }
 
-.nx-overlay-opt-text {
-  flex: 1;
+.cp-qa-bar.expanded .cp-qa-bar-collapsed { display: none; }
+
+.cp-qa-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 80;
+  display: none;
 }
 
-.nx-overlay-cta {
-  display: block;
+.cp-qa-backdrop.visible { display: block; }
+
+.cp-qa-editor { display: none; }
+.cp-qa-bar.expanded .cp-qa-editor { display: block; }
+
+.cp-qa-editor-textarea {
   width: 100%;
-  padding: 0.95rem 1.2rem;
-  background: var(--primary, #14b8a6);
+  min-height: 64px;
+  max-height: 140px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--background);
+  color: var(--text-primary);
+  outline: none;
+  resize: none;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+.cp-qa-editor-textarea:focus { border-color: var(--primary); }
+
+.cp-qa-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.cp-qa-editor-charcount {
+  font-size: 0.72rem;
+  color: var(--text-light);
+}
+
+.cp-qa-editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cp-qa-editor-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  transition: opacity 0.15s;
+}
+
+.cp-qa-editor-btn.primary {
+  background: var(--primary-dark);
   color: #fff;
-  text-align: center;
-  text-decoration: none;
-  border-radius: 12px;
-  font-family: 'Inter', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: -0.005em;
-  transition: transform 0.1s ease-out, opacity 0.15s;
+  border-color: var(--primary-dark);
 }
 
-.nx-overlay-cta:hover { opacity: 0.92; }
-.nx-overlay-cta:active { transform: translateY(1px); }
+.cp-qa-editor-btn:hover:not(:disabled) { opacity: 0.85; }
+.cp-qa-editor-btn:disabled { opacity: 0.4; cursor: default; }
 
-.nx-overlay-hint {
-  margin: 0.85rem 0 0;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  text-align: center;
-  opacity: 0.85;
+.cp-qa-editor-error {
+  font-size: 0.82rem;
+  color: var(--error);
+  margin-top: 8px;
+  min-height: 0;
+  display: none;
 }
+
+.cp-qa-editor-error.visible { display: block; }
+
+.cp-qa-toast {
+  position: absolute;
+  top: -36px;
+  left: 14px;
+  right: 14px;
+  background: var(--success);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: none;
+}
+
+.cp-qa-toast.visible { display: block; }
