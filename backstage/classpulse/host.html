@@ -332,11 +332,20 @@
   .host-bar-visao-panel .view-toggle { display: flex; width: 100%; justify-content: flex-start; margin-bottom: 0.3rem; }
   .host-bar-visao-panel .view-toggle:last-child { margin-bottom: 0; }
 
+  /* Generic modal overlay shared by trail-modal (and previously qr-modal) */
+  .qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }
+  .qr-modal.open { display: flex; }
+  .qr-box { background: var(--surface); border-radius: 16px; padding: 2rem; max-width: 320px; width: 90%; text-align: center; }
+  .qr-box h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
+
   /* Responsive hamburger menu */
   .host-bar-menu { display: none; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 7px; padding: 0.4rem 0.55rem; color: var(--text-primary); cursor: pointer; font-size: 1rem; line-height: 1; }
   .host-bar-menu:hover { border-color: var(--primary); }
-  .host-bar-menu-panel { position: absolute; right: 1rem; top: calc(100% + 0.4rem); min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 0.6rem; z-index: 60; display: flex; flex-direction: column; gap: 0.4rem; }
-  .host-bar-menu-panel > * { width: 100%; justify-content: flex-start; }
+  .host-bar-menu-panel { position: absolute; right: 1rem; top: calc(100% + 0.4rem); min-width: 240px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 0.6rem; z-index: 60; display: flex; flex-direction: column; gap: 0.4rem; }
+  .host-bar-menu-row { width: 100%; padding: 0.5rem 0.7rem; background: var(--background); border: 1px solid var(--border); border-radius: 7px; color: var(--text-primary); font-size: 0.85rem; text-align: left; cursor: pointer; font-family: inherit; }
+  .host-bar-menu-row:hover { background: rgba(20,184,166,.06); border-color: rgba(20,184,166,.35); }
+  .host-bar-menu-panel .host-bar-subtabs { flex-direction: column; align-items: stretch; gap: 0.3rem; }
+  .host-bar-menu-panel .bs-topbar-subtab { padding: 0.45rem 0.7rem; border-radius: 7px; background: var(--background); border: 1px solid var(--border); }
   @media (max-width: 900px) {
     .host-session-bar { position: relative; }
     .host-session-bar .host-bar-subtabs,
@@ -437,7 +446,7 @@
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener" hidden>Display</a>
           <button class="host-btn host-btn-primary" id="start-host-btn" hidden>Iniciar</button>
           <button class="host-btn host-btn-danger" id="stop-host-btn" hidden>Encerrar</button>
-          <button class="host-bar-menu" id="hostBarMenuBtn" type="button" aria-label="Mais opcoes">&#8801;</button>
+          <button class="host-bar-menu" id="hostBarMenuBtn" type="button" aria-label="Mais opções">&#8801;</button>
           <div class="host-bar-menu-panel" id="hostBarMenuPanel" hidden></div>
         </div>
       </div>
@@ -1707,18 +1716,47 @@ applyLayout();
   var btn = document.getElementById('hostBarMenuBtn');
   var panel = document.getElementById('hostBarMenuPanel');
   if (!btn || !panel) return;
+
+  // Build a proxy row that forwards its click to a source element on the
+  // live bar. Avoids cloning event listeners or duplicating IDs.
+  function _addProxy(sourceEl, label) {
+    if (!sourceEl || sourceEl.hidden) return;
+    var row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'host-bar-menu-row';
+    row.textContent = label || (sourceEl.textContent || sourceEl.getAttribute('aria-label') || '').trim();
+    row.addEventListener('click', function() {
+      panel.hidden = true;
+      if (sourceEl.tagName === 'A' && sourceEl.href) window.location.href = sourceEl.href;
+      else sourceEl.click();
+    });
+    panel.appendChild(row);
+  }
+
+  function _rebuildPanel() {
+    panel.innerHTML = '';
+    // Sub-tabs are plain anchors with href, cloneNode is safe (no JS handlers).
+    var subtabs = document.getElementById('live-bar-subtabs');
+    if (subtabs) {
+      var sc = subtabs.cloneNode(true);
+      sc.removeAttribute('id');
+      panel.appendChild(sc);
+    }
+    // Column visibility toggles, proxy each individually.
+    _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="left"]'),   'Coluna Composer');
+    _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="center"]'), 'Coluna Pergunta ativa');
+    _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="right"]'),  'Coluna Q&A');
+    _addProxy(document.getElementById('qa-toggle-btn'));
+    _addProxy(document.getElementById('resetLayoutBtn'), 'Restaurar layout');
+    _addProxy(document.getElementById('trail-btn'));
+    _addProxy(document.getElementById('qr-btn'));
+    _addProxy(document.getElementById('display-link'));
+  }
+
   btn.addEventListener('click', function(e) {
     e.stopPropagation();
-    var open = !panel.hidden;
-    if (open) { panel.hidden = true; return; }
-    // Build a stacked clone of the collapsed items each time it opens.
-    panel.innerHTML = '';
-    var subtabs = document.getElementById('live-bar-subtabs');
-    if (subtabs) panel.appendChild(subtabs.cloneNode(true));
-    ['viewToggles', 'resetLayoutBtn', 'trail-btn', 'qr-btn', 'display-link'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el && !el.hidden) panel.appendChild(el.cloneNode(true));
-    });
+    if (!panel.hidden) { panel.hidden = true; return; }
+    _rebuildPanel();
     panel.hidden = false;
   });
   document.addEventListener('click', function(e) {

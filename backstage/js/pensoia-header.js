@@ -99,20 +99,6 @@
     );
   }
 
-  function buildJoinUrl(code) {
-    // Always prefer the production host for projector QR codes so a
-    // phone scanning it lands somewhere public, even during local dev.
-    return 'https://pensoia.com/go/?code=' + encodeURIComponent(code);
-  }
-
-  function buildQrSrc(joinUrl) {
-    return (
-      'https://api.qrserver.com/v1/create-qr-code/' +
-      '?size=420x420&margin=4&data=' +
-      encodeURIComponent(joinUrl)
-    );
-  }
-
   class PensoiaHeader extends HTMLElement {
 
     static get observedAttributes() {
@@ -140,13 +126,11 @@
       this._exitBtn     = this.querySelector('.ph-exit-btn');
       this._zoomBtns    = this.querySelectorAll('.ph-zoom-btn');
 
-      // Code button opens QRShareModal if available, else falls back to legacy join URL.
+      // Code button opens QRShareModal. Requires a join-url attribute (set by
+      // the host page after resolving the trilha) and QRShareModal loaded.
       this._codeBtn.addEventListener('click', () => {
-        var url = this._joinUrl || (this.getAttribute('code') ? buildJoinUrl(this.getAttribute('code')) : null);
-        if (!url) return;
-        if (window.QRShareModal) {
-          QRShareModal.open({ joinUrl: url, title: this._sessionTitle || 'Entre na trilha' });
-        }
+        if (!this._joinUrl || !window.QRShareModal) return;
+        QRShareModal.open({ joinUrl: this._joinUrl, title: this._sessionTitle || 'Entre na trilha' });
       });
 
       // Exit button emits a custom event so host pages decide what to do
