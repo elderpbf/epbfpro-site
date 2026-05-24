@@ -40,7 +40,11 @@ window.CVFocusMode = (function () {
     document.addEventListener('mousemove', _onMouseMove);
     document.addEventListener('keydown', _onKeyDown);
     _wireBarHover();
-    // Focus mode does not auto-restore from localStorage; each session starts off.
+    // Focus mode defaults to ON. localStorage opt-out: user explicitly toggles
+    // off (stores '0'). Any other state (missing key, '1', stale value) → on.
+    var stored = null;
+    try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (stored !== '0') enable();
   }
 
   function toggle() { if (_on) disable(); else enable(); }
@@ -127,10 +131,19 @@ window.CVFocusMode = (function () {
   }
 
   function _onKeyDown(e) {
-    if (e.key !== 'Escape' || !_on) return;
+    // Ignore when the user is typing into an input.
     var tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
-    disable();
+    if (e.key === 'Escape' && _on) {
+      disable();
+      return;
+    }
+    // F toggles focus mode in/out. Plain F only — modifier combos belong to
+    // the browser / OS (Ctrl+F find, etc.).
+    if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      toggle();
+    }
   }
 
   return { init: init, enable: enable, disable: disable, toggle: toggle };

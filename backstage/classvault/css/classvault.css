@@ -140,32 +140,6 @@ body.cv-focus.cv-focus--side .cv-sm {
 .cv-sm-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .cv-sm-body::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
 
-/* footer with "+ Adicionar" trigger for in-pane authoring */
-.cv-sm-footer {
-  flex-shrink: 0;
-  padding: 10px 12px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-}
-.cv-sm-add-btn {
-  width: 100%;
-  padding: 9px 12px;
-  border-radius: 8px;
-  border: 1px dashed var(--border);
-  background: transparent;
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.12s, background 0.12s, color 0.12s;
-}
-.cv-sm-add-btn:hover {
-  border-color: var(--primary);
-  background: var(--surface-soft);
-  color: var(--primary);
-}
-
 /* context menu (right-click on sidebar item) */
 .cv-ctx-menu {
   position: fixed;
@@ -307,12 +281,13 @@ body.cv-focus.cv-focus--side .cv-sm {
    --sec is set by .cv-sm-section--<key> modifiers below; falls back to primary. */
 .cv-sm-section--favorites { --sec: #eab308; }   /* gold */
 .cv-sm-section--llms      { --sec: #8b5cf6; }   /* violet */
-.cv-sm-section--nexo      { --sec: #6366f1; }   /* indigo */
+.cv-sm-section--nexo      { --sec: #6366f1; }   /* indigo (Perguntas pinned card) */
+.cv-sm-section--external  { --sec: #f97316; }   /* orange */
 .cv-sm-section--labs      { --sec: #ec4899; }   /* pink */
-.cv-sm-section--hoje      { --sec: #10b981; }   /* emerald */
-.cv-sm-section--vault     { --sec: #14b8a6; }   /* teal */
-.cv-sm-section--trilha    { --sec: #f59e0b; }   /* amber */
 .cv-sm-section--drive     { --sec: #3b82f6; }   /* blue */
+.cv-sm-section--items     { --sec: #14b8a6; }   /* teal */
+.cv-sm-section--apostila  { --sec: #f59e0b; }   /* amber */
+.cv-sm-section--tarefas   { --sec: #ef4444; }   /* red */
 
 .cv-sm-section {
   cursor: pointer;
@@ -403,7 +378,7 @@ body.cv-focus.cv-focus--side .cv-sm {
   background: var(--border);
 }
 
-/* Pinned slot above the .cv-sm-footer button. Holds the PensoNexo launcher
+/* Pinned slot at the bottom of the sidebar. Holds the PensoNexo launcher
    card so it stays visible regardless of body scroll position. */
 .cv-sm-pinned {
   flex-shrink: 0;
@@ -591,67 +566,8 @@ body.cv-focus.cv-focus--side .cv-sm {
   line-height: 1.4;
 }
 
-/* Aula picker (next to turma chip in sidebar head) */
-.cv-sm-aula {
-  cursor: pointer;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  margin-top: 8px;
-  font: inherit;
-  color: var(--text-primary);
-  text-align: left;
-  transition: border-color .15s, background .15s;
-}
-.cv-sm-aula:hover { border-color: var(--primary); }
-.cv-sm-aula-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.cv-sm-aula-chev {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  opacity: 0.6;
-  flex-shrink: 0;
-}
-
-/* Aula dropdown */
-.cv-aula-menu {
-  position: fixed;
-  z-index: 100;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 12px 32px -10px var(--shadow);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-.cv-aula-menu-item {
-  background: none;
-  border: none;
-  text-align: left;
-  padding: 10px 14px;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background .12s;
-}
-.cv-aula-menu-item:hover { background: var(--surface-soft); }
-.cv-aula-menu-item.is-active {
-  color: var(--primary);
-  font-weight: 600;
-}
+/* Bundle E: the aula picker + dropdown were removed along with the Hoje
+   shelf. .cv-sm-aula* and .cv-aula-menu* rules dropped. */
 
 /* turma dropdown (anchored under sidebar turma block) */
 .cv-turma-menu {
@@ -788,10 +704,16 @@ body.cv-focus.cv-focus--side .cv-sm {
   background: var(--background);
 }
 .cv-main-crumb {
-  height: 44px;
+  /* The crumb lives at the BOTTOM of .cv-main as the full-width action bar:
+     item context on the left, lifecycle / launch / content actions on the
+     right. JS still calls it .cv-main-crumb. The flex `order` flip below
+     keeps HTML order intact (crumb before view) while painting it last. */
+  order: 2;
+  height: 48px;
   flex-shrink: 0;
+  width: 100%;
   padding: 0 20px;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   background: var(--surface);
   display: flex;
   align-items: center;
@@ -800,6 +722,9 @@ body.cv-focus.cv-focus--side .cv-sm {
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
+}
+.cv-main-crumb:empty {
+  display: none;
 }
 .cv-main-crumb > span:not(.cv-main-crumb-sep),
 .cv-main-crumb > strong {
@@ -833,9 +758,13 @@ body.cv-focus.cv-focus--side .cv-sm {
   border-color: var(--border);
 }
 .cv-main-view {
+  order: 1;
   flex: 1;
   min-height: 0;
-  padding: 24px;
+  /* Full-bleed: renderers (iframes, slides, video) sit edge-to-edge against
+     the sidebar and bottom action bar. The markdown fallback adds its own
+     interior padding via .cv-renderer-scroll. */
+  padding: 0;
   overflow: hidden;
   position: relative;
 }
@@ -878,14 +807,17 @@ body.cv-focus.cv-focus--side .cv-sm {
 
 /* ── Renderers in main viewport ───────────────────────────── */
 
+.cv-renderer-iframe-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 .cv-renderer-iframe {
   width: 100%;
   height: 100%;
   border: 0;
-  border-radius: 12px;
   background: var(--surface);
   display: block;
-  box-shadow: 0 8px 24px -12px var(--shadow);
 }
 .cv-renderer-empty {
   padding: 40px;
@@ -894,7 +826,92 @@ body.cv-focus.cv-focus--side .cv-sm {
   text-align: center;
 }
 
-/* Inline Slides embed with floating "open in popup" button (Drive items). */
+/* Welcome state shown in .cv-main-view when no item is active. Quiet,
+   centered, with keyboard hints for focus mode. */
+.cv-empty-welcome {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.cv-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(79,70,229,0.10));
+  color: #6366f1;
+  margin-bottom: 1.25rem;
+}
+[data-theme="dark"] .cv-empty-icon {
+  background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(79,70,229,0.14));
+  color: #8b8df0;
+}
+.cv-empty-title {
+  font-family: 'Comfortaa', 'Inter', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0 0 0.45rem;
+}
+.cv-empty-hint {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.6rem;
+  max-width: 360px;
+  line-height: 1.45;
+}
+.cv-empty-shortcuts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-dim, var(--text-secondary));
+  opacity: 0.85;
+}
+.cv-empty-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(20,184,166,.18));
+  border-radius: 5px;
+  box-shadow: 0 1px 0 var(--border, rgba(20,184,166,.18));
+}
+.cv-empty-kbd-label {
+  margin-right: 0.35rem;
+}
+.cv-empty-sep {
+  opacity: 0.5;
+  margin: 0 0.15rem;
+}
+
+/* Bundle F text-resize icon glyph — sits inside .bs-icon-btn (32x32 box). */
+.cv-text-icon {
+  font: 600 11px/1 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Drive-Slides inline embed shell (matches generic .cv-renderer-iframe-wrap
+   sizing). Bundle D ditched the oversize-clip technique because it cropped
+   doc content; the popup launcher action moved into the bottom bar via
+   CVTypes. The corner mask covers Google's "Open in Slides" badge. */
 .cv-slides-inline {
   position: relative;
   width: 100%;
@@ -904,26 +921,14 @@ body.cv-focus.cv-focus--side .cv-sm {
   width: 100%;
   height: 100%;
 }
-.cv-slides-popup-btn {
+.cv-slides-corner-mask {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 6px 12px;
+  top: 0;
+  right: 0;
+  width: 64px;
+  height: 56px;
   background: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  box-shadow: 0 2px 8px var(--shadow);
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-.cv-slides-popup-btn:hover {
-  background: var(--surface-soft);
-  border-color: var(--primary);
-  color: var(--primary);
+  pointer-events: none;
 }
 /* Card: structural flex column. Header is a fixed sibling above the
    scrollable body — content does NOT scroll under it. */
@@ -940,21 +945,15 @@ body.cv-focus.cv-focus--side .cv-sm {
   color: var(--text-primary);
   overflow: hidden;
 }
-.cv-renderer-header {
-  flex-shrink: 0;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border-soft);
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  background: var(--surface);
-}
 .cv-renderer-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 24px 36px 32px;
-  font-size: 0.95rem;
+  /* Bundle F text resize: --cv-content-scale (default 1) is set on
+     .cv-main-view by CVTextResize and inherits down into this element. +A /
+     −A buttons in the topbar bump it within [0.75, 1.6]. */
+  font-size: calc(0.95rem * var(--cv-content-scale, 1));
   line-height: 1.55;
 }
 .cv-renderer-scroll h1 { font-size: 1.5rem; margin: 0 0 0.6em; line-height: 1.2; }
@@ -993,26 +992,11 @@ body.cv-focus.cv-focus--side .cv-sm {
 }
 .cv-renderer-scroll .ctr-prompt-body { font-size: 0.95rem; line-height: 1.55; }
 
-/* Shared style for both top (header) and bottom (CTRenderer) copy buttons */
-.cv-renderer-copy-btn,
-.cv-renderer-scroll .ctr-copy-btn {
-  padding: 7px 16px;
-  background: var(--primary);
-  color: white;
-  border: 0;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.cv-renderer-copy-btn:hover,
-.cv-renderer-scroll .ctr-copy-btn:hover { background: var(--primary-dark); }
-.cv-renderer-scroll .ctr-copy-btn {
-  margin-top: 22px;
-  margin-bottom: 4px;
-}
+/* CTRenderer mounts its own .ctr-copy-btn inside the scroll area for some
+   types; classvault.js hides it after render because the bottom action bar
+   exposes the same affordance via CVTypes. The rule below is a safety net for
+   any race where the JS hide hasn't fired yet. */
+.cv-renderer-scroll .ctr-copy-btn { display: none; }
 .cv-renderer-scroll .ctr-affordance-btn { font-size: 0.82rem; }
 
 .cv-popup-launcher {

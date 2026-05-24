@@ -1,0 +1,396 @@
+/* CV Presets - styles shared across ClassTrail admin (Conteudo / Presets
+   sub-tab CRUD) and ClassVault (Aula sidebar "Carregar preset" dropdown).
+   Tokens come from theme.css. Dark-mode tokens already have overrides at
+   the theme layer; this file only needs surface/border/text references. */
+
+/* ---- Preset list (admin CRUD) -------------------------------------- */
+
+.cv-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cv-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.cv-preset-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cv-preset-count {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cv-preset-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cv-preset-edit,
+.cv-preset-delete {
+  font-size: 0.78rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.cv-preset-edit:hover {
+  background: var(--surface-soft);
+}
+
+.cv-preset-delete {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+[data-theme="dark"] .cv-preset-delete {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.3);
+}
+
+.cv-preset-delete:hover {
+  background: #fee2e2;
+}
+
+[data-theme="dark"] .cv-preset-delete:hover {
+  background: rgba(252, 165, 165, 0.12);
+}
+
+.cv-preset-empty {
+  margin: 40px auto;
+  max-width: 480px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Wider modal variant for the preset editor (default .ct-modal is 460px,
+   which crops the item picker). Applied as <div class="ct-modal ct-modal--wide">.
+   Also caps height at viewport so the save button is never clipped on
+   short screens; the picker list inside shrinks to fit, and the action
+   bar stays sticky at the bottom of the scrolling area. */
+
+.ct-modal.ct-modal--wide {
+  max-width: 720px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.ct-modal.ct-modal--wide .cv-preset-editor-actions {
+  position: sticky;
+  bottom: -1.5rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  margin: 14px -1.5rem -1.5rem;
+  padding: 12px 1.5rem;
+  z-index: 1;
+}
+
+/* Cap the picker list height inside the modal so it never pushes the action
+   bar offscreen on small viewports. Outside the modal (other consumers in
+   the future) the picker keeps its default 420px from the .cv-item-picker-list
+   rule below. */
+.ct-modal.ct-modal--wide .cv-item-picker-list {
+  max-height: min(420px, calc(100vh - 280px));
+}
+
+/* ---- Preset editor (modal body) ------------------------------------ */
+
+.cv-preset-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cv-preset-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cv-preset-editor-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.cv-preset-editor-name {
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.cv-preset-editor-name:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.cv-preset-editor-picker {
+  /* delegated to .cv-item-picker (sized by its own rules) */
+}
+
+.cv-preset-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.cv-preset-editor-cancel,
+.cv-preset-editor-save {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.cv-preset-editor-cancel {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.cv-preset-editor-cancel:hover {
+  background: var(--surface-soft);
+}
+
+.cv-preset-editor-save {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.cv-preset-editor-save:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.cv-preset-editor-error {
+  min-height: 1.1em;
+  font-size: 0.82rem;
+  color: var(--error, #b91c1c);
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .cv-preset-editor-error {
+  color: #fca5a5;
+}
+
+.cv-preset-editor-name.is-invalid {
+  border-color: var(--error, #b91c1c);
+}
+
+[data-theme="dark"] .cv-preset-editor-name.is-invalid {
+  border-color: #fca5a5;
+}
+
+/* ---- Item picker (multi-select widget) ----------------------------- */
+
+.cv-item-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.cv-item-picker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.cv-item-picker-search {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.cv-item-picker-search:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.cv-item-picker-count {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cv-item-picker-list {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+/* Type-grouped sections (Liberacoes-inspired layout). */
+.cv-item-picker-group {
+  margin-bottom: 10px;
+}
+
+.cv-item-picker-group:last-child {
+  margin-bottom: 0;
+}
+
+.cv-item-picker-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.cv-item-picker-group-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cv-item-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+}
+
+.cv-item-picker-row:hover {
+  background: var(--surface-soft);
+}
+
+.cv-item-picker-row.is-selected {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+[data-theme="dark"] .cv-item-picker-row.is-selected {
+  background: color-mix(in srgb, var(--primary) 26%, transparent);
+}
+
+.cv-item-picker-check {
+  margin: 0;
+  flex-shrink: 0;
+  /* Visual indicator only - clicks bubble up through the row, our handler
+     controls state. Prevents the click race that caused multi-select to
+     toggle twice per user action. */
+  pointer-events: none;
+}
+
+.cv-item-picker-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  min-width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.cv-item-picker-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cv-item-picker-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
+/* ---- Preset loader (Aula sidebar dropdown) ------------------------- */
+
+.cv-sm-preset {
+  padding: 0 12px 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cv-sm-preset:empty {
+  padding: 0;
+}
+
+.cv-preset-loader-select {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.cv-preset-loader-select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.cv-preset-loader-reset {
+  flex-shrink: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.cv-preset-loader-reset:hover {
+  filter: brightness(0.96);
+}
+
+/* The preset is now rendered as a standard sidebar section via the existing
+   _renderSection helper, so it inherits the .cv-sm-section styling. No
+   preset-specific section markup needed here. */

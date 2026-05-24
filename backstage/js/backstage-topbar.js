@@ -5,7 +5,13 @@
 // Generates topbar DOM, wires theme toggle, logout, settings.
 // Portal mode assumes globals: ThemeManager, SettingsDrawer, BS_AUTH
 // Presentation mode assumes globals: ThemeManager, SettingsDrawer (no BS_AUTH)
-// Usage: Topbar.init({ title?, subtitle?, backLink?, sections?, container?, mode? })
+// Usage: Topbar.init({ title?, subtitle?, backLink?, sections?, container?, mode?, tabs?, subTabs? })
+// tabs: optional [{ label, href, active?, dot? }] — Codex hub main tab strip
+// between the brand and icon buttons. Each page that joins the hub passes the
+// same tabs array with its own `active` flag set.
+// subTabs: optional [{ label, href, active? }] — Bundle F hybrid nested row.
+// When non-empty, a thin 30px row appears INSIDE the topbar chassis, beneath
+// the main row. The sub-row hides itself when subTabs is empty or omitted.
 // ============================================================
 
 window.Topbar = (function() {
@@ -16,6 +22,8 @@ window.Topbar = (function() {
 
   var _inner = null;
   var _itemsAnchor = null;
+  var _tabsByKey = {};
+  var _liveSessionTimer = null;
 
   // ── Auto-hide (presentation mode only) ────────────────────
 
@@ -70,6 +78,8 @@ window.Topbar = (function() {
     var subtitle = opts.subtitle || '';
     var backLink = opts.backLink || '';
     var sections = opts.sections || [];
+    var tabs = opts.tabs || [];
+    var subTabs = opts.subTabs || [];
     var container = opts.container || document.querySelector('.bs-app') || document.body;
 
     // Build header
@@ -79,6 +89,7 @@ window.Topbar = (function() {
 
     _inner = document.createElement('div');
     _inner.className = 'bs-topbar-inner';
+    if (tabs.length > 0) _inner.classList.add('bs-topbar-inner--with-tabs');
 
     // Back arrow (portal sub-pages only)
     if (backLink && !isPresentation) {
@@ -135,6 +146,38 @@ window.Topbar = (function() {
 
     _inner.appendChild(brand);
 
+    // Codex hub tabs (between brand and spacer)
+    _tabsByKey = {};
+    if (tabs.length > 0) {
+      var tabStrip = document.createElement('nav');
+      tabStrip.className = 'bs-topbar-tabs';
+      tabStrip.setAttribute('role', 'tablist');
+      tabStrip.setAttribute('aria-label', 'PensoCodex');
+      tabs.forEach(function(t) {
+        var a = document.createElement('a');
+        a.className = 'bs-topbar-tab' + (t.active ? ' active' : '');
+        a.href = t.href || '#';
+        a.setAttribute('role', 'tab');
+        if (t.active) a.setAttribute('aria-current', 'page');
+        var labelSpan = document.createElement('span');
+        labelSpan.className = 'bs-topbar-tab-label';
+        labelSpan.textContent = t.label;
+        a.appendChild(labelSpan);
+        // Always pre-create the dot for keyed tabs; CSS keeps it hidden until
+        // a .live class lights it up (e.g. live-session indicator on Perguntas).
+        if (t.key) {
+          var dotSpan = document.createElement('span');
+          dotSpan.className = 'bs-topbar-tab-dot';
+          if (t.dot) dotSpan.classList.add('live');
+          dotSpan.setAttribute('aria-hidden', 'true');
+          a.appendChild(dotSpan);
+          _tabsByKey[t.key] = { link: a, dot: dotSpan };
+        }
+        tabStrip.appendChild(a);
+      });
+      _inner.appendChild(tabStrip);
+    }
+
     // Spacer
     var spacer = document.createElement('div');
     spacer.className = 'bs-topbar-spacer';
@@ -175,6 +218,29 @@ window.Topbar = (function() {
 
     header.appendChild(_inner);
 
+    // Bundle F hybrid: optional sub-row inside the same chassis. Empty
+    // subTabs leaves the row out of the DOM so the topbar collapses to 64px.
+    if (subTabs.length > 0) {
+      var subRow = document.createElement('div');
+      subRow.className = 'bs-topbar-subrow';
+      var subStrip = document.createElement('nav');
+      subStrip.className = 'bs-topbar-subtabs';
+      subStrip.setAttribute('role', 'tablist');
+      subStrip.setAttribute('aria-label', subTabs[0] && subTabs[0]._ariaLabel || 'Sub-navegação');
+      subTabs.forEach(function(t) {
+        if (!t || t._ariaLabel) return; // skip metadata marker, if any
+        var a = document.createElement('a');
+        a.className = 'bs-topbar-subtab' + (t.active ? ' active' : '');
+        a.href = t.href || '#';
+        a.setAttribute('role', 'tab');
+        if (t.active) a.setAttribute('aria-current', 'page');
+        a.textContent = t.label;
+        subStrip.appendChild(a);
+      });
+      subRow.appendChild(subStrip);
+      header.appendChild(subRow);
+    }
+
     // Insert into DOM
     container.insertBefore(header, container.firstChild);
 
@@ -213,6 +279,11 @@ window.Topbar = (function() {
         _scheduleHide();
       });
     }
+
+    // Codex hub pages all get a global live-session indicator on Perguntas.
+    if (!isPresentation && _tabsByKey.perguntas) {
+      startLiveSessionPoll();
+    }
   }
 
   // ── addItem ───────────────────────────────────────────────
@@ -245,6 +316,115 @@ window.Topbar = (function() {
     if (el) el.textContent = text;
   }
 
-  return { init: init, addItem: addItem, setSubtitle: setSubtitle };
+  // ── Codex hub tabs (canonical definition) ─────────────────
+  // Bundle F: 4 main tabs after Nexo (codename) was absorbed into Perguntas
+  // and Liberações was folded into Turmas (three-column layout, Bundle G).
+  //   - Aula     → ClassVault (the launcher used in class)
+  //   - Conteúdo → ClassTrail admin (Conteúdo/Apostila/Tarefas/Drive/Presets sub-tabs)
+  //   - Turmas   → ClassTrail Turmas tab (becomes three-column in Bundle G)
+  //   - Perguntas → ClassPulse (Ao vivo/Banco/Estatísticas/Configurações sub-tabs)
+  var CODEX_TABS = [
+    { key: 'aula',      label: 'Aula',      href: '/backstage/classvault/' },
+    { key: 'conteudo',  label: 'Conteúdo',  href: '/backstage/classtrail/?tab=conteudo' },
+    { key: 'turmas',    label: 'Turmas',    href: '/backstage/classtrail/?tab=turmas' },
+    { key: 'perguntas', label: 'Perguntas', href: '/backstage/classpulse/' }
+  ];
+
+  // Sub-tabs per main tab. Aula and Turmas have none → topbar collapses to
+  // 64px on those pages. Drive and Presets are routing-only stubs until
+  // Bundle I; the destination page paints a "Em breve" placeholder.
+  var CODEX_SUBTABS = {
+    aula: [],
+    conteudo: [
+      { key: 'conteudo',   label: 'Items',      href: '/backstage/classtrail/?tab=conteudo' },
+      { key: 'apostila',   label: 'Apostila',   href: '/backstage/classtrail/?tab=apostila' },
+      { key: 'tarefas',    label: 'Tarefas',    href: '/backstage/classtrail/?tab=tarefas' },
+      { key: 'drive',      label: 'Drive',      href: '/backstage/classtrail/?tab=drive' },
+      { key: 'presets',    label: 'Presets',    href: '/backstage/classtrail/?tab=presets' },
+      { key: 'liberacoes', label: 'Liberações', href: '/backstage/classtrail/?tab=liberacoes' }
+    ],
+    turmas: [],
+    perguntas: [
+      { key: 'ao-vivo',        label: 'Ao vivo',        href: '/backstage/classpulse/' },
+      { key: 'banco',          label: 'Banco',          href: '/backstage/classpulse/?tab=banks' },
+      { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' },
+      { key: 'configuracoes',  label: 'Configurações',  href: '/backstage/classpulse/?tab=settings' }
+    ]
+  };
+
+  function codexTabs(activeKey, overrides) {
+    overrides = overrides || {};
+    return CODEX_TABS.map(function(t) {
+      var entry = { key: t.key, label: t.label, href: t.href };
+      if (t.key === activeKey) entry.active = true;
+      if (overrides[t.key]) {
+        if (overrides[t.key].dot) entry.dot = true;
+      }
+      return entry;
+    });
+  }
+
+  // Toggles the live indicator dot on a tab created via codexTabs(). Used by
+  // the live-session poll, but exposed so other future indicators (unread
+  // counts, errors) can target a tab by key without re-implementing the lookup.
+  function setTabDot(key, on) {
+    var ref = _tabsByKey[key];
+    if (!ref || !ref.dot) return;
+    ref.dot.classList.toggle('live', !!on);
+  }
+
+  // Backstage-wide live-session indicator: polls cp_get_live_session and
+  // toggles the Perguntas tab's red dot. Auto-started by init() when the
+  // tabs include a 'perguntas' entry; safe to call explicitly otherwise.
+  function startLiveSessionPoll() {
+    if (_liveSessionTimer) return;
+    if (typeof callWorker !== 'function' || typeof BS_AUTH === 'undefined') return;
+    if (!_tabsByKey.perguntas) return;
+    var poll = function() {
+      callWorker({ action: 'cp_get_live_session', auth_token: BS_AUTH.TOKEN })
+        .then(function(res) { setTabDot('perguntas', !!(res && res.session)); })
+        .catch(function() {});
+    };
+    poll();
+    _liveSessionTimer = setInterval(poll, 30000);
+  }
+
+  function codexSubTabs(parentKey, activeSubKey) {
+    var rows = CODEX_SUBTABS[parentKey] || [];
+    return rows.map(function(t) {
+      var entry = { label: t.label, href: t.href };
+      if (t.key === activeSubKey) entry.active = true;
+      return entry;
+    });
+  }
+
+  // Render the sub-tabs for a parent Codex key as inline links into an arbitrary
+  // container element (live bar, page header, etc.). Lets pages absorb the
+  // 30px sub-row into their own chrome instead of stacking another row.
+  function renderSubTabsInto(containerEl, parentKey, activeSubKey) {
+    if (!containerEl) return;
+    var rows = CODEX_SUBTABS[parentKey] || [];
+    containerEl.innerHTML = '';
+    rows.forEach(function(t) {
+      var a = document.createElement('a');
+      a.className = 'bs-topbar-subtab' + (t.key === activeSubKey ? ' active' : '');
+      a.href = t.href || '#';
+      a.setAttribute('role', 'tab');
+      if (t.key === activeSubKey) a.setAttribute('aria-current', 'page');
+      a.textContent = t.label;
+      containerEl.appendChild(a);
+    });
+  }
+
+  return {
+    init: init,
+    addItem: addItem,
+    setSubtitle: setSubtitle,
+    codexTabs: codexTabs,
+    codexSubTabs: codexSubTabs,
+    setTabDot: setTabDot,
+    startLiveSessionPoll: startLiveSessionPoll,
+    renderSubTabsInto: renderSubTabsInto
+  };
 
 })();

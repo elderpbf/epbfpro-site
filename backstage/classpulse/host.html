@@ -11,7 +11,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png?v=2">
 
 <link rel="stylesheet" href="../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/backstage.css?v=2.0">
+<link rel="stylesheet" href="../css/backstage.css?v=2.3">
+<link rel="stylesheet" href="../css/qr-share-modal.css?v=1.3">
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.10">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.5">
@@ -166,17 +167,13 @@
   .host-live-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #ef4444; text-transform: uppercase; }
   @keyframes host-live-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
 
+  .host-bar-subtabs { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 1; min-width: 0; overflow: hidden; }
+  .host-bar-subtabs .bs-topbar-subtab { white-space: nowrap; }
+
   .host-not-hosted-note { background: rgba(20,184,166,.08); border: 1px solid rgba(20,184,166,.2); border-radius: 10px; padding: 1rem 1.25rem; color: var(--text-secondary); font-size: 0.88rem; text-align: center; margin-bottom: 1.25rem; }
 
   /* Hide history action buttons when not hosting (cannot relaunch/edit without an active host) */
   body:not(.is-hosted) .hi-actions { display: none; }
-
-  /* QR modal */
-  .qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }
-  .qr-modal.open { display: flex; }
-  .qr-box { background: var(--surface); border-radius: 16px; padding: 2rem; max-width: 320px; width: 90%; text-align: center; }
-  .qr-box h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
-  .qr-code-big { font-size: 2rem; font-weight: 700; letter-spacing: 0.25em; color: var(--primary); margin-bottom: 1rem; }
 
   /* Question bank collapsible */
   .bank-toggle-btn { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); cursor: pointer; margin-bottom: 0.9rem; }
@@ -325,6 +322,43 @@
   }
   .reset-layout-btn:hover { color: var(--text-primary); background: rgba(127,127,127,.08); }
 
+  /* Visao collapsible dropdown */
+  .host-bar-visao { position: relative; }
+  .host-bar-visao > summary { list-style: none; cursor: pointer; padding: 0.4rem 0.7rem; border-radius: 7px; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); color: var(--text-primary); font-size: 0.84rem; user-select: none; }
+  .host-bar-visao > summary::-webkit-details-marker { display: none; }
+  .host-bar-visao[open] > summary { background: rgba(20,184,166,.08); border-color: rgba(20,184,166,.4); }
+  .host-bar-visao-panel { position: absolute; top: 100%; right: 0; margin-top: 0.4rem; min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 0.7rem; z-index: 50; }
+  .host-bar-visao-panel > .host-bar-visao-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.5rem; }
+  .host-bar-visao-panel .view-toggle { display: flex; width: 100%; justify-content: flex-start; margin-bottom: 0.3rem; }
+  .host-bar-visao-panel .view-toggle:last-child { margin-bottom: 0; }
+
+  /* Generic modal overlay shared by trail-modal (and previously qr-modal) */
+  .qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }
+  .qr-modal.open { display: flex; }
+  .qr-box { background: var(--surface); border-radius: 16px; padding: 2rem; max-width: 320px; width: 90%; text-align: center; }
+  .qr-box h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
+
+  /* Responsive hamburger menu */
+  .host-bar-menu { display: none; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 7px; padding: 0.4rem 0.55rem; color: var(--text-primary); cursor: pointer; font-size: 1rem; line-height: 1; }
+  .host-bar-menu:hover { border-color: var(--primary); }
+  .host-bar-menu-panel { position: absolute; right: 1rem; top: calc(100% + 0.4rem); min-width: 240px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 0.6rem; z-index: 60; display: flex; flex-direction: column; gap: 0.4rem; }
+  .host-bar-menu-row { width: 100%; padding: 0.5rem 0.7rem; background: var(--background); border: 1px solid var(--border); border-radius: 7px; color: var(--text-primary); font-size: 0.85rem; text-align: left; cursor: pointer; font-family: inherit; }
+  .host-bar-menu-row:hover { background: rgba(20,184,166,.06); border-color: rgba(20,184,166,.35); }
+  .host-bar-menu-panel .host-bar-subtabs { flex-direction: column; align-items: stretch; gap: 0.3rem; }
+  .host-bar-menu-panel .bs-topbar-subtab { padding: 0.45rem 0.7rem; border-radius: 7px; background: var(--background); border: 1px solid var(--border); }
+  @media (max-width: 900px) {
+    .host-session-bar { position: relative; }
+    .host-session-bar .host-bar-subtabs,
+    .host-session-bar .host-bar-visao,
+    .host-session-bar #resetLayoutBtn,
+    .host-session-bar #trail-btn,
+    .host-session-bar #qr-btn,
+    .host-session-bar #display-link {
+      display: none !important;
+    }
+    .host-bar-menu { display: inline-flex; }
+  }
+
   /* Student-Q&A active card */
   .active-q-badge.student-qa { background: rgba(245,158,11,.18); color: #b45309; }
   .student-qa-meta { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 8px; }
@@ -387,28 +421,31 @@
       <div class="host-session-bar">
         <div>
           <div class="host-code">
-            <span id="session-code-display"></span>
             <span class="host-live-indicator" id="host-live-indicator" hidden>
               <span class="host-live-dot"></span><span class="host-live-label">Live</span>
             </span>
           </div>
           <div class="host-session-name" id="session-name-display"></div>
         </div>
+        <div id="live-bar-subtabs" class="host-bar-subtabs"></div>
         <div class="host-bar-actions">
-          <div class="view-toggles" id="viewToggles" title="Mostrar ou esconder cada coluna do dashboard" hidden>
-            <span class="view-toggle-label">Visão</span>
-            <button class="view-toggle is-on" data-toggle-col="left"   type="button">Composer</button>
-            <button class="view-toggle is-on" data-toggle-col="center" type="button">Pergunta ativa</button>
-            <button class="view-toggle is-on" data-toggle-col="right"  type="button">Q&amp;A</button>
-            <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
-          </div>
-          <button class="host-btn host-btn-ghost host-pres-btn" id="pres-btn" type="button" hidden><span class="host-pres-dot" id="pres-dot"></span>Apresentação</button>
+          <details class="host-bar-visao" id="viewToggles" title="Mostrar ou esconder cada coluna do dashboard" hidden>
+            <summary>Visão ▾</summary>
+            <div class="host-bar-visao-panel">
+              <div class="host-bar-visao-label">Mostrar colunas</div>
+              <button class="view-toggle is-on" data-toggle-col="left"   type="button">Composer</button>
+              <button class="view-toggle is-on" data-toggle-col="center" type="button">Pergunta ativa</button>
+              <button class="view-toggle is-on" data-toggle-col="right"  type="button">Q&amp;A</button>
+            </div>
+          </details>
+          <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
           <button class="host-btn host-btn-ghost host-pres-btn" id="trail-btn" type="button" hidden><span class="host-pres-dot" id="trail-dot"></span>Trilha</button>
           <button class="host-btn host-btn-ghost" id="qr-btn" hidden>QR</button>
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener" hidden>Display</a>
-          <button class="host-btn host-btn-ghost" id="qa-toggle-btn" type="button" aria-pressed="false" hidden>Ativar Q&amp;A</button>
           <button class="host-btn host-btn-primary" id="start-host-btn" hidden>Iniciar</button>
           <button class="host-btn host-btn-danger" id="stop-host-btn" hidden>Encerrar</button>
+          <button class="host-bar-menu" id="hostBarMenuBtn" type="button" aria-label="Mais opções">&#8801;</button>
+          <div class="host-bar-menu-panel" id="hostBarMenuPanel" hidden></div>
         </div>
       </div>
 
@@ -621,26 +658,6 @@
   </div>
 </div>
 
-<!-- QR Modal -->
-<div class="qr-modal" id="qr-modal">
-  <div class="qr-box">
-    <h3>Alunos entram pelo código</h3>
-    <div class="qr-code-big" id="qr-code-text"></div>
-    <img id="qr-img" src="" alt="QR Code" style="max-width:200px">
-    <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem">pensoia.com/go</div>
-    <button class="host-btn host-btn-ghost host-btn-full" id="qr-close-btn" style="margin-top:1rem">Fechar</button>
-  </div>
-</div>
-
-<!-- Apresentação Modal -->
-<div class="qr-modal" id="pres-modal">
-  <div class="qr-box" style="max-width: 420px; text-align: left">
-    <h3 style="margin-bottom: 1rem">Apresentação vinculada à sessão</h3>
-    <div id="pres-modal-content" class="host-pres-modal-content"></div>
-    <button class="host-btn host-btn-ghost host-btn-full" id="pres-modal-close-btn" style="margin-top:1rem">Fechar</button>
-  </div>
-</div>
-
 <!-- Trilha Modal -->
 <div class="qr-modal" id="trail-modal">
   <div class="qr-box" style="max-width: 420px; text-align: left">
@@ -656,7 +673,7 @@
 <script src="../js/classpulse-question-types.js?v=1.2"></script>
 <script src="../js/classpulse-question.min.js?v=1.8"></script>
 <script src="../js/classpulse-visibility-toggle.js?v=1.4"></script>
-<script src="../js/classpulse-qa.js?v=2.3"></script>
+<script src="../js/classpulse-qa.js?v=2.4"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
 <script src="../js/question-bank.js?v=2.0"></script>
@@ -664,7 +681,8 @@
 <script src="../js/auth.js?v=1.2"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/brand-logos.js?v=1.0"></script>
-<script src="../js/backstage-topbar.js?v=1.5"></script>
+<script src="../js/qr-share-modal.js?v=1.3"></script>
+<script src="../js/backstage-topbar.js?v=2.1"></script>
 <script>
 'use strict';
 
@@ -673,7 +691,15 @@
 // ---------------------------------------------------------------------------
 
 BS_AUTH.guard();
-Topbar.init({ title: 'PensoIA', subtitle: 'NEXO · Host', backLink: '/backstage/classpulse/' });
+// Bundle F: host.html is the "Ao vivo" sub-tab of Perguntas. Wire the Codex
+// topbar so navigation from the live page back to other Codex surfaces works.
+Topbar.init({
+  title: 'PensoIA',
+  subtitle: 'PensoCodex',
+  backLink: '/backstage/',
+  tabs: Topbar.codexTabs('perguntas')
+});
+Topbar.renderSubTabsInto(document.getElementById('live-bar-subtabs'), 'perguntas', 'ao-vivo');
 
 // ---------------------------------------------------------------------------
 // Config (hardcoded - never configure via settings)
@@ -689,7 +715,6 @@ var sessionCode    = null;
 var activeQId      = null;
 var pollTimer      = null;
 var _historyMap    = {};
-var _presentations = [];
 var _currentSession = null;
 var _trailTurma     = null;
 var _trailAllTurmas = [];
@@ -748,14 +773,12 @@ async function loadSession() {
     var code = urlCode.toUpperCase();
     var results = await Promise.allSettled([
       callWorker({ action: 'list_sessions' }),
-      callWorker({ action: 'list_presentations' }),
       callWorker({ action: 'ct_lookup_turma_by_session', auth_token: AUTH_TOKEN, session_id: code }),
       callWorker({ action: 'ct_list_all_turmas', auth_token: AUTH_TOKEN })
     ]);
     var data = results[0].status === 'fulfilled' ? results[0].value : { sessions: [] };
-    _presentations = (results[1].status === 'fulfilled' ? results[1].value.presentations : null) || [];
-    _trailTurma     = (results[2].status === 'fulfilled' ? results[2].value.turma : null) || null;
-    _trailAllTurmas = (results[3].status === 'fulfilled' ? results[3].value.turmas : null) || [];
+    _trailTurma     = (results[1].status === 'fulfilled' ? results[1].value.turma : null) || null;
+    _trailAllTurmas = (results[2].status === 'fulfilled' ? results[2].value.turmas : null) || [];
 
     var match = (data.sessions || []).find(function(s) { return s.code === urlCode.toUpperCase(); });
     if (!match) {
@@ -773,16 +796,12 @@ function selectSession(s) {
   sessionCode = s.code;
   _currentSession = s;
 
-  document.getElementById('session-code-display').textContent = s.code;
   document.getElementById('session-name-display').textContent = s.title || ('Sessão ' + s.code);
   document.getElementById('display-link').href = '/go/display.html?code=' + encodeURIComponent(s.code);
-  document.getElementById('qr-code-text').textContent = s.code;
-  document.getElementById('qr-img').src =
-    'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent('https://pensoia.com/go?code=' + s.code);
 
   clearAlert();
-  renderPresentationLink();
   renderTrailLink();
+  refreshShareSurface();
   applyHostedUI(s.status === 'open');
 
   if (!qaModule) {
@@ -791,7 +810,7 @@ function selectSession(s) {
       authToken:   AUTH_TOKEN,
       callWorker:  callWorker,
       containerEl: document.getElementById('qa-section'),
-      toggleEl:    document.getElementById('qa-toggle-btn'),
+      toggleEl:    null,
       badgeEl:     document.getElementById('qa-badge'),
       feedEl:      document.getElementById('qa-feed'),
       onError:     function(msg) { showAlert('error', msg); },
@@ -812,16 +831,33 @@ function selectSession(s) {
   document.getElementById('cpq').setAttribute('session', s.code);
 }
 
+function buildTrilhaUrl() {
+  if (!_trailTurma) return null;
+  var t = _trailTurma;
+  return 'https://pensoia.com/trilha/' +
+    encodeURIComponent(t.client_slug) + '/' +
+    encodeURIComponent(t.turma_slug) +
+    (t.token ? '?k=' + encodeURIComponent(t.token) : '');
+}
+
+// QR button visibility: shown only when session is being hosted AND a turma is linked.
+// QR image is generated on-demand by QRShareModal when the button is clicked.
+function refreshShareSurface() {
+  var hasTrilha = !!buildTrilhaUrl();
+  var isHosted = document.body.classList.contains('is-hosted');
+  document.getElementById('qr-btn').hidden = !(isHosted && hasTrilha);
+}
+
 function applyHostedUI(isHosted) {
   document.body.classList.toggle('is-hosted', isHosted);
   document.getElementById('host-live-indicator').hidden = !isHosted;
   document.getElementById('not-hosted-note').hidden = isHosted;
-  document.getElementById('qr-btn').hidden = !isHosted;
+  document.getElementById('qr-btn').hidden = !(isHosted && !!_trailTurma);
   document.getElementById('display-link').hidden = !isHosted;
   document.getElementById('start-host-btn').hidden = isHosted;
   document.getElementById('stop-host-btn').hidden = !isHosted;
-  document.getElementById('qa-toggle-btn').hidden = !isHosted;
   document.getElementById('viewToggles').hidden = !isHosted;
+  document.getElementById('resetLayoutBtn').hidden = !isHosted;
   document.getElementById('launch-q-card').style.display = isHosted ? '' : 'none';
   if (!isHosted) {
     document.getElementById('active-q-panel').style.display = 'none';
@@ -831,89 +867,6 @@ function applyHostedUI(isHosted) {
     activeStudentQuestionId = null;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Presentation linking
-// ---------------------------------------------------------------------------
-
-function renderPresentationLink() {
-  var btn     = document.getElementById('pres-btn');
-  var content = document.getElementById('pres-modal-content');
-  if (!btn || !content) return;
-  var slug = _currentSession && _currentSession.presentation_slug;
-
-  btn.hidden = false;
-  btn.classList.toggle('is-linked', !!slug);
-
-  if (slug) {
-    var linked = _presentations.find(function(p) { return p.slug === slug; });
-    var title   = linked ? linked.title : slug;
-    var engine  = linked ? linked.engine : 'reveal';
-    var engLabel = engine === 'panels' ? 'Panels' : 'Reveal';
-    var href    = engine === 'panels'
-      ? '/backstage/classforge/presentations/' + slug + '/'
-      : '/backstage/classforge/viewer/?slug=' + encodeURIComponent(slug);
-    content.innerHTML =
-      '<div class="host-pres-status">Vinculada a esta sess\u00e3o</div>' +
-      '<div class="host-pres-title">' + escHtml(title) + '</div>' +
-      '<div class="host-pres-engine">' + engLabel + '</div>' +
-      '<a class="host-pres-link" href="' + escHtml(href) + '" target="_blank" rel="noopener">Abrir apresenta\u00e7\u00e3o \u2197</a>' +
-      '<button class="host-btn host-btn-danger host-btn-full" id="pres-unlink-btn">Desvincular apresenta\u00e7\u00e3o</button>';
-    document.getElementById('pres-unlink-btn').addEventListener('click', doUnlinkPresentation);
-  } else if (_presentations.length > 0) {
-    var opts = '<option value="">Selecione uma apresenta\u00e7\u00e3o\u2026</option>';
-    _presentations.forEach(function(p) {
-      var el = p.engine === 'panels' ? 'Panels' : 'Reveal';
-      opts += '<option value="' + escHtml(p.slug) + '">' + escHtml(p.title) + ' (' + el + ')</option>';
-    });
-    content.innerHTML =
-      '<div class="host-pres-status">Nenhuma apresenta\u00e7\u00e3o vinculada</div>' +
-      '<select id="pres-picker">' + opts + '</select>' +
-      '<button class="host-btn host-btn-primary host-btn-full" id="pres-link-btn">Vincular apresenta\u00e7\u00e3o</button>';
-    document.getElementById('pres-link-btn').addEventListener('click', async function() {
-      var s = document.getElementById('pres-picker').value;
-      if (!s) return;
-      await doLinkPresentation(s);
-    });
-  } else {
-    content.innerHTML = '<div class="host-pres-empty">Nenhuma apresenta\u00e7\u00e3o dispon\u00edvel para vincular.</div>';
-  }
-}
-
-async function doLinkPresentation(slug) {
-  try {
-    await callWorker({ action: 'link_presentation', auth_token: AUTH_TOKEN, code: sessionCode, slug: slug });
-    _currentSession.presentation_slug = slug;
-    renderPresentationLink();
-    document.getElementById('pres-modal').classList.remove('open');
-    showToast('Apresenta\u00e7\u00e3o vinculada.');
-  } catch (e) {
-    showToastError(e.message);
-  }
-}
-
-async function doUnlinkPresentation() {
-  try {
-    await callWorker({ action: 'unlink_presentation', auth_token: AUTH_TOKEN, code: sessionCode });
-    _currentSession.presentation_slug = null;
-    renderPresentationLink();
-    document.getElementById('pres-modal').classList.remove('open');
-    showToast('Apresenta\u00e7\u00e3o desvinculada.');
-  } catch (e) {
-    showToastError(e.message);
-  }
-}
-
-// Open/close pres modal
-document.getElementById('pres-btn').addEventListener('click', function() {
-  document.getElementById('pres-modal').classList.add('open');
-});
-document.getElementById('pres-modal-close-btn').addEventListener('click', function() {
-  document.getElementById('pres-modal').classList.remove('open');
-});
-document.getElementById('pres-modal').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('open');
-});
 
 // ---------------------------------------------------------------------------
 // Trail (ClassTrail turma) linking
@@ -937,7 +890,7 @@ function renderTrailLink() {
       '<div class="host-pres-status">Vinculada a esta sessão</div>' +
       '<div class="host-pres-title">' + escHtml(turmaName) + '</div>' +
       '<div class="host-pres-engine">' + escHtml(clientName) + '</div>' +
-      '<a class="host-pres-link" href="' + escHtml(trilhaUrl) + '" target="_blank" rel="noopener">Abrir trilha pública ↗</a><br>' +
+      '<a class="host-pres-link" href="' + escHtml(trilhaUrl) + '" target="_blank" rel="noopener" style="margin-bottom:1.6rem">Abrir trilha ↗</a><br>' +
       '<a class="host-pres-link" href="' + escHtml(adminUrl) + '" target="_blank" rel="noopener">Abrir ClassTrail (admin) ↗</a>' +
       '<button class="host-btn host-btn-danger host-btn-full" id="trail-unlink-btn" style="margin-top:0.6rem">Desvincular turma</button>';
     document.getElementById('trail-unlink-btn').addEventListener('click', doUnlinkTrail);
@@ -985,6 +938,7 @@ async function doLinkTrail(clientSlug, turmaSlug) {
       _trailAllTurmas = listRes.turmas || [];
     } catch (_) {}
     renderTrailLink();
+    refreshShareSurface();
     document.getElementById('trail-modal').classList.remove('open');
     showToast('Turma vinculada.');
   } catch (e) {
@@ -1008,6 +962,7 @@ async function doUnlinkTrail() {
       _trailAllTurmas = listRes.turmas || [];
     } catch (_) {}
     renderTrailLink();
+    refreshShareSurface();
     document.getElementById('trail-modal').classList.remove('open');
     showToast('Turma desvinculada.');
   } catch (e) {
@@ -1501,11 +1456,9 @@ async function relaunchFromHistory(btn, q) {
       max_select: q.max_select || 1
     });
     activeQId = res.id;
-    clearAlert();
-    showAlert('success', 'Pergunta relançada!');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('Pergunta relançada!');
   } catch (e) {
-    showAlert('error', 'Erro ao relançar: ' + e.message);
+    showToastError('Erro ao relançar: ' + e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = oldText;
@@ -1537,19 +1490,11 @@ function editFromHistory(q) {
 
 
 // ---------------------------------------------------------------------------
-// QR modal
+// QR modal (uses shared QRShareModal module)
 // ---------------------------------------------------------------------------
 
 document.getElementById('qr-btn').addEventListener('click', function() {
-  document.getElementById('qr-modal').classList.add('open');
-});
-
-document.getElementById('qr-close-btn').addEventListener('click', function() {
-  document.getElementById('qr-modal').classList.remove('open');
-});
-
-document.getElementById('qr-modal').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('open');
+  QRShareModal.open({ joinUrl: buildTrilhaUrl() });
 });
 
 // ---------------------------------------------------------------------------
@@ -1757,6 +1702,63 @@ document.querySelectorAll('.hd-resizer').forEach(function(h) {
 });
 
 applyLayout();
+
+// ---------------------------------------------------------------------------
+// Hamburger menu (narrow viewports)
+// ---------------------------------------------------------------------------
+
+(function() {
+  var btn = document.getElementById('hostBarMenuBtn');
+  var panel = document.getElementById('hostBarMenuPanel');
+  if (!btn || !panel) return;
+
+  // Build a proxy row that forwards its click to a source element on the
+  // live bar. Avoids cloning event listeners or duplicating IDs.
+  function _addProxy(sourceEl, label) {
+    if (!sourceEl || sourceEl.hidden) return;
+    var row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'host-bar-menu-row';
+    row.textContent = label || (sourceEl.textContent || sourceEl.getAttribute('aria-label') || '').trim();
+    row.addEventListener('click', function() {
+      panel.hidden = true;
+      if (sourceEl.tagName === 'A' && sourceEl.href) window.location.href = sourceEl.href;
+      else sourceEl.click();
+    });
+    panel.appendChild(row);
+  }
+
+  function _rebuildPanel() {
+    panel.innerHTML = '';
+    // Sub-tabs are plain anchors with href, cloneNode is safe (no JS handlers).
+    var subtabs = document.getElementById('live-bar-subtabs');
+    if (subtabs) {
+      var sc = subtabs.cloneNode(true);
+      sc.removeAttribute('id');
+      panel.appendChild(sc);
+    }
+    // Column visibility toggles, proxy each individually.
+    _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="left"]'),   'Coluna Composer');
+    _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="center"]'), 'Coluna Pergunta ativa');
+    _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="right"]'),  'Coluna Q&A');
+    _addProxy(document.getElementById('resetLayoutBtn'), 'Restaurar layout');
+    _addProxy(document.getElementById('trail-btn'));
+    _addProxy(document.getElementById('qr-btn'));
+    _addProxy(document.getElementById('display-link'));
+  }
+
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (!panel.hidden) { panel.hidden = true; return; }
+    _rebuildPanel();
+    panel.hidden = false;
+  });
+  document.addEventListener('click', function(e) {
+    if (panel.hidden) return;
+    if (panel.contains(e.target) || btn.contains(e.target)) return;
+    panel.hidden = true;
+  });
+})();
 
 </script>
 </body>

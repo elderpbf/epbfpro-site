@@ -47,6 +47,28 @@
   .ct-two-pane { grid-template-columns: 1fr; }
 }
 
+/* ----- Three-pane layout (Bundle G: Clientes / Turmas / Liberações) ----- *
+ * Clientes and Turmas keep their compact 280px lanes; the Liberações pane
+ * eats the remaining width so the aula-centric composer (which holds three
+ * sub-lists of items per aula) has room to breathe.
+ * The min-height of 0 lets the inner .ct-pane-body actually scroll within
+ * the available viewport instead of pushing the page down.
+ */
+
+.ct-three-pane {
+  display: grid;
+  grid-template-columns: 280px 280px 1fr;
+  gap: 1.25rem;
+  min-height: calc(100vh - 220px);
+  align-items: stretch;
+}
+
+/* Narrow viewports: collapse to a stacked single column so users can still
+ * drill from cliente → turma → liberações sequentially. */
+@media (max-width: 980px) {
+  .ct-three-pane { grid-template-columns: 1fr; }
+}
+
 .ct-pane {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -281,46 +303,6 @@
 }
 
 .ct-field textarea { resize: vertical; min-height: 80px; }
-
-.ct-audience-picker {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.ct-audience-opt {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  background: var(--surface);
-  transition: border-color 0.12s, background 0.12s;
-}
-.ct-audience-opt:hover { border-color: var(--primary-light); }
-.ct-audience-opt:has(input[type="radio"]:checked) {
-  border-color: var(--primary);
-  background: var(--surface-soft);
-}
-.ct-audience-opt-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  line-height: 1.25;
-}
-.ct-audience-opt-label {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.88rem;
-}
-.ct-audience-opt-hint {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
 
 .ct-editor-toolbar {
   display: flex;
@@ -887,7 +869,7 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
-/* ----- Items grid: type filter row + audience chip ----- */
+/* ----- Items grid: type filter row ----- */
 .ct-filter-row {
   display: flex;
   flex-wrap: wrap;
@@ -895,38 +877,6 @@
   gap: 12px;
 }
 .ct-filter-types { flex: 1; min-width: 0; }
-.ct-audience-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: 999px;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  flex-shrink: 0;
-}
-.ct-audience-chip:hover { border-color: rgba(20,184,166,.5); }
-.ct-audience-chip.is-active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-.ct-audience-chip-count {
-  font-size: 0.74rem;
-  opacity: 0.75;
-  background: rgba(0, 0, 0, 0.05);
-  padding: 1px 7px;
-  border-radius: 999px;
-}
-.ct-audience-chip.is-active .ct-audience-chip-count {
-  background: rgba(255, 255, 255, 0.22);
-}
 
 /* ----- GDoc inline import row (inside new-item step 1) ----- */
 
@@ -1139,25 +1089,6 @@
 
 .ct-set-badge[title] { cursor: help; }
 
-.ct-vault-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 8px;
-  border-radius: 20px;
-  background: rgba(99, 102, 241, 0.08);
-  color: rgba(99, 102, 241, 1);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  margin-left: 6px;
-  cursor: default;
-  vertical-align: middle;
-}
-.ct-vault-badge[title] { cursor: help; }
-
 /* ----- Aula picker in release row ----- */
 
 .ct-rel-aula-select {
@@ -1228,46 +1159,212 @@
   margin-bottom: 1rem;
 }
 
-/* ----- Turma status chips row (admin card) ----- */
+/* ----- G redesign v2: turma card mirrors client card pattern ----- */
+/* No .ct-turma-card override, no chevron, no kebab. The card uses the same
+ * .ct-card / .ct-card.selected / .ct-card-name / .ct-card-meta / .ct-card-actions
+ * structure as the client card, with extra info rows specific to turmas. */
 
-.ct-turma-chips {
+.ct-card-info-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 6px;
-  margin-bottom: 2px;
 }
 
-.ct-turma-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
+.ct-card-info-chip {
   font-size: 0.72rem;
-  font-weight: 500;
-  border-radius: 999px;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
+  font-weight: 600;
   color: var(--text-secondary);
-  cursor: pointer;
-  font-family: inherit;
-  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  background: rgba(20,184,166,.08);
+  border: 1px solid rgba(20,184,166,.18);
+  padding: 2px 8px;
+  border-radius: 999px;
   white-space: nowrap;
 }
 
-.ct-turma-chip:hover {
-  border-color: rgba(20,184,166,.5);
-  color: var(--text-primary);
+.ct-card-mini-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.ct-turma-chip.ok {
+.ct-card-mini-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.12s;
+}
+
+.ct-card-mini-icon.is-on {
   color: var(--success, #16a34a);
-  border-color: var(--success-bg, rgba(22,163,74,.25));
-  background: var(--success-bg, rgba(22,163,74,.07));
+  border-color: var(--success-bg, rgba(22,163,74,.35));
+  background: var(--success-bg, rgba(22,163,74,.08));
 }
 
-.ct-turma-chip.ok:hover {
+a.ct-card-mini-icon.is-on:hover {
+  transform: scale(1.06);
   border-color: var(--success, #16a34a);
+}
+
+.ct-card-mini-icon.is-off { opacity: 0.55; }
+
+.ct-card-url-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ct-card-url-text {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ct-card-url-text:hover {
+  background: rgba(20,184,166,.08);
+  color: var(--primary);
+}
+
+.ct-card-url-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 0 6px;
+  border-left: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
+  background: transparent;
+  transition: background 0.12s, color 0.12s;
+}
+
+.ct-card-url-open:hover {
+  background: rgba(20,184,166,.08);
+  color: var(--primary);
+}
+
+.ct-card-url-row.is-disabled .ct-card-url-text {
+  cursor: not-allowed;
+  color: var(--text-secondary);
+  opacity: 0.55;
+}
+
+/* ----- G redesign v2: Aulas column with inline editor ----- */
+
+.ct-aulas-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.ct-aulas-col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ct-aula-col-row {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.ct-aula-col-row-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.ct-aula-col-row-display:hover {
+  background: rgba(20,184,166,.06);
+}
+
+.ct-aula-col-row.is-editing {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.ct-aula-col-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ct-aula-col-row-title {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ct-aula-col-row-title .is-empty {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.ct-aula-col-editor {
+  padding: 0.75rem 0.85rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ct-aula-col-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.ct-aula-col-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.ct-aula-col-editor-actions-right {
+  display: flex;
+  gap: 0.5rem;
 }
 
 /* ----- Apostila panel ----- */
@@ -1990,3 +2087,4 @@
 }
 
 .ct-access-actions .bs-toggle-btn { flex: 1; min-width: 140px; font-size: 0.78rem; }
+

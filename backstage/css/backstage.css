@@ -260,6 +260,14 @@
   gap: 1rem;
 }
 
+/* Codex hub variant: wider inner to fit the 5-tab strip alongside
+   brand + icon buttons + logout, and tighter gap so tabs cluster
+   with the brand instead of floating mid-bar. */
+.bs-topbar-inner--with-tabs {
+  max-width: 1400px;
+  gap: 0.4rem;
+}
+
 .bs-topbar-logo {
   display: flex; align-items: center; gap: 0.6rem;
   text-decoration: none;
@@ -309,6 +317,104 @@
 }
 
 .bs-topbar-spacer { flex: 1; }
+
+/* Codex hub tab strip (between brand and spacer) */
+.bs-topbar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding-left: 0.4rem;
+}
+
+.bs-topbar-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 8px;
+  letter-spacing: -0.005em;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.bs-topbar-tab:hover {
+  color: var(--text-primary);
+  background: rgba(20,184,166,.08);
+}
+
+.bs-topbar-tab.active {
+  color: var(--primary);
+  background: rgba(20,184,166,.12);
+}
+
+.bs-topbar-tab-dot {
+  display: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+}
+.bs-topbar-tab-dot.live {
+  display: inline-block;
+  animation: bs-tab-dot-pulse 2s ease-in-out infinite;
+}
+
+/* Bundle F hybrid: thin 30px sub-row INSIDE the topbar chassis. Hidden when
+   subTabs is empty (the DOM node isn't rendered at all). Aligns with where
+   the main tabs start (logo + tabs use ~220px on the left). */
+.bs-topbar-subrow {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem 0 230px;
+  gap: 0.1rem;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  background: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .bs-topbar-subrow {
+  background: rgba(0,0,0,0.025);
+  border-top-color: rgba(20,184,166,0.10);
+}
+.bs-topbar-subtabs {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.bs-topbar-subtab {
+  padding: 0.2rem 0.65rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim, var(--text-secondary));
+  text-decoration: none;
+  border-radius: 5px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.bs-topbar-subtab:hover {
+  color: var(--text-primary);
+  background: rgba(20,184,166,0.06);
+}
+.bs-topbar-subtab.active {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.06);
+}
+[data-theme="light"] .bs-topbar-subtab.active {
+  background: rgba(20,184,166,0.12);
+  color: var(--primary);
+}
+
+@keyframes bs-tab-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.75); }
+}
 
 .bs-icon-btn {
   display: flex; align-items: center; justify-content: center;
@@ -480,6 +586,61 @@
 /* =========================================================
    RESPONSIVE
    ========================================================= */
+
+/* Legacy section on the Backstage homepage — small, de-emphasized
+   row below the primary tool grid for tools kept around for ongoing
+   maintenance only (ClassForge). */
+.bs-legacy-section {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border, rgba(20,184,166,.12));
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.bs-legacy-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.bs-legacy-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.5rem 0.85rem;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(20,184,166,.12));
+  background: var(--surface);
+  width: fit-content;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.bs-legacy-link:hover {
+  border-color: rgba(20,184,166,.3);
+  background: rgba(20,184,166,.04);
+}
+
+.bs-legacy-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.bs-legacy-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1100px) {
+  .bs-topbar-tab { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+  .bs-topbar-inner--with-tabs { gap: 0.25rem; padding: 0 0.85rem; }
+}
 
 @media (max-width: 600px) {
   .bs-main { padding: 1.5rem 1rem; }
