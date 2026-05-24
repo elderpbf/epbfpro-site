@@ -33,7 +33,7 @@ window.QRShareModal = (function() {
     var r = _ensure();
     r.querySelector('.qr-share-modal-title').textContent = opts.title || 'Sua trilha de aprendizado';
     var img = r.querySelector('.qr-share-modal-img');
-    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=2&data=' + encodeURIComponent(url);
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=1200x1200&margin=2&data=' + encodeURIComponent(url);
     r.hidden = false;
   }
 
