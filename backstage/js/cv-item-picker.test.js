@@ -495,11 +495,14 @@ test('each row has data-id attribute matching item id', () => {
   assert.ok(ids.includes('def'), 'row for id=def must exist');
 });
 
-test('each row contains a checkbox, type element, and title element', () => {
-  const { container } = freshMount([{ id: '1', title: 'Alpha', type: 'video' }]);
+test('each row contains a checkbox, icon element, and title element', () => {
+  // Bundle I rebuild v2: per-row type label dropped in favor of a single
+  // type-icon glyph; type info now lives in the group header (e.g. "Tarefas
+  // (5)") since rows are grouped by type.
+  const { container } = freshMount([{ id: '1', title: 'Alpha', type: 'tarefa' }]);
   const row = container.querySelector('.cv-item-picker-row');
   assert.ok(row.querySelector('.cv-item-picker-check'), '.cv-item-picker-check must exist in row');
-  assert.ok(row.querySelector('.cv-item-picker-type'),  '.cv-item-picker-type must exist in row');
+  assert.ok(row.querySelector('.cv-item-picker-icon'),  '.cv-item-picker-icon must exist in row');
   assert.ok(row.querySelector('.cv-item-picker-title'), '.cv-item-picker-title must exist in row');
 });
 

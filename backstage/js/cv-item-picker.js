@@ -1,18 +1,39 @@
 'use strict';
 
-// CVItemPicker - reusable multi-select picker for ct_items rows.
+// CVItemPicker - reusable multi-select picker for ct_items rows + synthetic
+// items (Labs, future Drive). Visual layout mirrors the Liberacoes composer
+// pattern: type-grouped sections, native checkbox rows, single search box.
 //
 // Mount: CVItemPicker.mount(container, { items, selectedIds, onChange })
 //   container:   DOM element OR CSS selector string
-//   items:       Array<{ id, title, type, ... }> (anything with id + title)
+//   items:       Array<{ id, title, type, set_id?, ... }>
+//                  Items are grouped by inferred section:
+//                    apostila  = set_id != null
+//                    tarefa    = type === 'tarefa'
+//                    llm       = type === 'llm'
+//                    external  = type === 'popup_url'
+//                    lab       = type === 'lab' (or id starting with 'lab:')
+//                    drive     = type === 'drive_file' (Bundle I drive caching;
+//                                  empty until that lands)
+//                    outros    = everything else
 //   selectedIds: Array<string|number> initial selection (coerced to string)
 //   onChange:    function(selectedIds: string[]) fired on every toggle
 //
-// Returns: { getSelected: () => string[], destroy: () => void }
+// Returns: { getSelected: () => string[], setItems: (items) => void,
+//            destroy: () => void }
 //
-// Used by cv-presets-ui.js mountPresetEditor; available to any future
-// consumer that needs "pick a subset of items from a list" (lesson plans,
-// shares, multi-select filters, etc.).
+// Implementation notes:
+//   - The bug fixed here (only one item ever saved despite multi-select) was
+//     a click race: <label> wrapping <input type="checkbox"> caused real
+//     browsers to fire TWO click events (one on the label, one synthetic on
+//     the forwarded checkbox), both bubbling to our delegated list handler.
+//     My handler toggled state twice -> net no change. Fix: call
+//     e.preventDefault() UNCONDITIONALLY on the click event, which cancels
+//     the label-to-checkbox default action and the checkbox's own toggle
+//     default. State + checkbox.checked are managed entirely by our code.
+//   - Used by cv-presets-ui.js mountPresetEditor; available for any future
+//     consumer that needs "pick items from a list" (lesson plans, shares,
+//     multi-filters, etc.).
 
 (function (global) {
   function _esc(s) {
@@ -21,16 +42,33 @@
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function _typeLabel(item) {
+  function _typeIcon(item) {
     var t = item && item.type;
-    if (t === 'drive_file') return 'Drive';
-    if (t === 'tarefa')     return 'Tarefa';
-    if (t === 'popup_url')  return 'Link';
-    if (t === 'llm')        return 'LLM';
-    if (t === 'iframe')     return 'Iframe';
-    if (t === 'markdown')   return 'Texto';
-    return t || '—';
+    if (t === 'tarefa')      return '⚑';   // ⚑
+    if (t === 'llm')         return '✦';   // ✦
+    if (t === 'popup_url')   return '↗';   // ↗
+    if (t === 'lab')         return '◈';   // ◈
+    if (t === 'drive_file')  return '🗂'; // 🗂
+    if (t === 'prompt')      return '¶';   // ¶
+    if (t === 'guide')       return '★';   // ★
+    if (t === 'material')    return '¶';   // ¶
+    if (t === 'paper')       return '📄'; // 📄
+    if (t === 'model_info')  return '✦';   // ✦
+    if (t === 'embed')       return '⧈';   // ⧈
+    return '•'; // •
   }
+
+  // Order matters: items are placed in the FIRST matching group. Apostila is
+  // a set membership check (set_id), so it must come before any type check.
+  var GROUPS = [
+    { key: 'apostila', label: 'Conteudo do curso', match: function (it) { return it && it.set_id != null; } },
+    { key: 'tarefa',   label: 'Tarefas',           match: function (it) { return it && it.type === 'tarefa'; } },
+    { key: 'llm',      label: 'LLMs',              match: function (it) { return it && it.type === 'llm'; } },
+    { key: 'external', label: 'Links externos',    match: function (it) { return it && it.type === 'popup_url'; } },
+    { key: 'lab',      label: 'Labs',              match: function (it) { return it && (it.type === 'lab' || (typeof it.id === 'string' && it.id.indexOf('lab:') === 0)); } },
+    { key: 'drive',    label: 'Drive',             match: function (it) { return it && it.type === 'drive_file'; } },
+    { key: 'outros',   label: 'Outros itens',      match: function () { return true; } }
+  ];
 
   function _resolveHost(container) {
     var host = (typeof container === 'string')
@@ -72,28 +110,54 @@
       return out;
     }
 
+    function _groupItems(itemList) {
+      var groups = {};
+      for (var gi = 0; gi < GROUPS.length; gi++) groups[GROUPS[gi].key] = [];
+      for (var i = 0; i < itemList.length; i++) {
+        var it = itemList[i];
+        for (var j = 0; j < GROUPS.length; j++) {
+          if (GROUPS[j].match(it)) { groups[GROUPS[j].key].push(it); break; }
+        }
+      }
+      return groups;
+    }
+
+    function _renderRow(item) {
+      var idStr = String(item.id);
+      var isSel = selected.has(idStr);
+      return '<label class="cv-item-picker-row' + (isSel ? ' is-selected' : '') +
+               '" data-id="' + _esc(idStr) + '">' +
+        '<input type="checkbox" class="cv-item-picker-check"' + (isSel ? ' checked' : '') + '>' +
+        '<span class="cv-item-picker-icon">' + _esc(_typeIcon(item)) + '</span>' +
+        '<span class="cv-item-picker-title">' + _esc((item && item.title) || '(sem titulo)') + '</span>' +
+      '</label>';
+    }
+
     function _renderList() {
       var q = query.trim().toLowerCase();
-      var rows = items.filter(function (it) {
+      var filtered = items.filter(function (it) {
         if (!q) return true;
         var title = String((it && it.title) || '').toLowerCase();
         return title.indexOf(q) !== -1;
       });
-      if (!rows.length) {
+      if (!filtered.length) {
         listEl.innerHTML = '<div class="cv-item-picker-empty">Nenhum item encontrado.</div>';
         return;
       }
-      var html = rows.map(function (it) {
-        var idStr = String(it.id);
-        var isSel = selected.has(idStr);
-        return '<label class="cv-item-picker-row' + (isSel ? ' is-selected' : '') +
-                 '" data-id="' + _esc(idStr) + '">' +
-          '<input type="checkbox" class="cv-item-picker-check"' + (isSel ? ' checked' : '') + '>' +
-          '<span class="cv-item-picker-type">' + _esc(_typeLabel(it)) + '</span>' +
-          '<span class="cv-item-picker-title">' + _esc((it && it.title) || '(sem titulo)') + '</span>' +
-        '</label>';
-      }).join('');
-      listEl.innerHTML = html;
+      var groups = _groupItems(filtered);
+      var parts = [];
+      for (var i = 0; i < GROUPS.length; i++) {
+        var g = GROUPS[i];
+        var rows = groups[g.key];
+        if (!rows.length) continue;
+        parts.push(
+          '<div class="cv-item-picker-group" data-group="' + g.key + '">' +
+            '<div class="cv-item-picker-group-label">' + _esc(g.label) + ' (' + rows.length + ')</div>' +
+            '<div class="cv-item-picker-group-rows">' + rows.map(_renderRow).join('') + '</div>' +
+          '</div>'
+        );
+      }
+      listEl.innerHTML = parts.join('') || '<div class="cv-item-picker-empty">Nenhum item encontrado.</div>';
     }
 
     function _renderCount() {
@@ -103,13 +167,15 @@
     function _onListClick(e) {
       var row = e.target.closest('.cv-item-picker-row');
       if (!row) return;
+      // Unconditional preventDefault stops both (a) the <label>'s default
+      // action of forwarding the click to the contained checkbox, and (b)
+      // the checkbox's own default action of toggling its checked state.
+      // Without this, real browsers fired TWO click events per user
+      // interaction (the click race), making multi-select toggle twice and
+      // net to no change.
+      e.preventDefault();
       var id = row.getAttribute('data-id');
       if (!id) return;
-      // The native <label>+<input> would toggle automatically; we override
-      // to manage selection state ourselves and keep the row in sync.
-      if (e.target.classList.contains('cv-item-picker-check')) {
-        e.preventDefault();
-      }
       if (selected.has(id)) selected.delete(id);
       else                  selected.add(id);
       row.classList.toggle('is-selected', selected.has(id));

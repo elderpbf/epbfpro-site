@@ -1874,6 +1874,14 @@ window.CT_ADMIN = (function() {
 
     function _openPresetEditor(preset) {
       _ensureItemsLoadedThen(function() {
+        // Merge ct_items library with synthetic Labs items (CVLabs.getAllItems)
+        // so the picker can include lab demos in a preset. Drive items will
+        // join naturally once Bundle I drive caching lands (postponed; see
+        // ClassVault manifest/tasks/postponed.md) -- they will appear as
+        // type='drive_file' rows in _items at that point, picked up by the
+        // picker's 'drive' group automatically.
+        var labItems = (window.CVLabs && CVLabs.getAllItems) ? CVLabs.getAllItems() : [];
+        var pickerItems = _items.concat(labItems);
         var bd = _openModal(
           '<div class="ct-modal ct-modal--wide">' +
             '<div class="ct-modal-title">' + (preset ? 'Editar preset' : 'Novo preset') + '</div>' +
@@ -1884,7 +1892,7 @@ window.CT_ADMIN = (function() {
         var mountBody = bd.querySelector('#preset-editor-mount');
         var inst = CVPresetsUI.mountPresetEditor(mountBody, {
           preset: preset || null,
-          items: _items,
+          items: pickerItems,
           onSave: function(payload) {
             var saver = preset && preset.id
               ? CVPresetsAPI.update(preset.id, { name: payload.name, item_ids: payload.item_ids })

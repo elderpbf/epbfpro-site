@@ -163,13 +163,34 @@
 }
 
 .cv-preset-editor-save {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  font-weight: 600;
 }
 
 .cv-preset-editor-save:hover {
-  filter: brightness(1.06);
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.cv-preset-editor-error {
+  min-height: 1.1em;
+  font-size: 0.82rem;
+  color: var(--error, #b91c1c);
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .cv-preset-editor-error {
+  color: #fca5a5;
+}
+
+.cv-preset-editor-name.is-invalid {
+  border-color: var(--error, #b91c1c);
+}
+
+[data-theme="dark"] .cv-preset-editor-name.is-invalid {
+  border-color: #fca5a5;
 }
 
 /* ---- Item picker (multi-select widget) ----------------------------- */
@@ -216,9 +237,35 @@
 }
 
 .cv-item-picker-list {
-  max-height: 360px;
+  max-height: 420px;
   overflow-y: auto;
-  padding: 4px;
+  padding: 6px;
+}
+
+/* Type-grouped sections (Liberacoes-inspired layout). */
+.cv-item-picker-group {
+  margin-bottom: 10px;
+}
+
+.cv-item-picker-group:last-child {
+  margin-bottom: 0;
+}
+
+.cv-item-picker-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.cv-item-picker-group-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .cv-item-picker-row {
@@ -237,26 +284,29 @@
 }
 
 .cv-item-picker-row.is-selected {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
 }
 
 [data-theme="dark"] .cv-item-picker-row.is-selected {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--primary) 26%, transparent);
 }
 
 .cv-item-picker-check {
   margin: 0;
   flex-shrink: 0;
+  /* Visual indicator only - clicks bubble up through the row, our handler
+     controls state. Prevents the click race that caused multi-select to
+     toggle twice per user action. */
+  pointer-events: none;
 }
 
-.cv-item-picker-type {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-  min-width: 60px;
+.cv-item-picker-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  min-width: 18px;
+  text-align: center;
   flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
 .cv-item-picker-title {
@@ -318,40 +368,6 @@
   filter: brightness(0.96);
 }
 
-/* ---- Aula sidebar preset view (flat list while preset is loaded) ---- */
-
-.cv-sm-preset-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
-  margin: 0 8px 10px;
-  background: var(--surface-soft);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.84rem;
-}
-
-.cv-sm-preset-header-label {
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-.cv-sm-preset-header-count {
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.cv-sm-preset-items {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0 8px 12px;
-}
+/* The preset is now rendered as a standard sidebar section via the existing
+   _renderSection helper, so it inherits the .cv-sm-section styling. No
+   preset-specific section markup needed here. */

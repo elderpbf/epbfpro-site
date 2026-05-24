@@ -92,9 +92,17 @@ window.CVLabs = (function() {
     );
   }
 
+  // Returns every lab in picker-compatible item shape. Used by the Presets
+  // editor (cv-presets-ui.js mountPresetEditor) so labs can be added to
+  // presets alongside ct_items rows. Cheap synchronous accessor (no I/O).
+  function getAllItems() {
+    return LABS.map(labToItem);
+  }
+
   return {
     LABS: LABS,
     findItem: findItem,
-    renderSection: renderSection
+    renderSection: renderSection,
+    getAllItems: getAllItems
   };
 })();

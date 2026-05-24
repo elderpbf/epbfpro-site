@@ -94,7 +94,7 @@ ClassVault.vaultItems = [];                  // global library of all authored i
 // always opens 'favorites' and collapses everything else; search may expand
 // sections temporarily to surface matches.
 ClassVault.SECTION_KEYS = [
-  'favorites', 'llms', 'external', 'labs', 'drive', 'items', 'apostila', 'tarefas'
+  'favorites', 'preset', 'llms', 'external', 'labs', 'drive', 'items', 'apostila', 'tarefas'
 ];
 ClassVault.collapsedSections = new Set();    // (re)populated by _resetAccordion()
 ClassVault._seededCollapsedKeys = new Set();
@@ -337,20 +337,18 @@ function _renderSidebar() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
 
-  // Bundle I (rebuild): preset-filtered view. When a preset is loaded, the
-  // sidebar shows ONLY the preset's items, resolved via _findItem (which
-  // already handles numeric ct_items, 'drive:' synthetic, 'lab:' synthetic).
-  // "Mostrar tudo" on the loader clears activePreset and triggers a re-render.
-  if (ClassVault.activePreset) {
-    _renderPresetView(body, ClassVault.activePreset);
-    return;
-  }
-
   const html = [];
   const buckets = _classifyVault(ClassVault.vaultItems);
 
   const favSection = _renderFavoritesSection();
   if (favSection) html.push(favSection);
+
+  // Bundle I (rebuild, v2): preset is a regular accordion section alongside
+  // the rest of the sidebar, not an exclusive view. Behaves like Favorites
+  // does: a preselected collection that does not remove access to the other
+  // sections. Renders only when activePreset is set; otherwise no slot.
+  const presetSection = _renderPresetSection();
+  if (presetSection) html.push(presetSection);
 
   html.push(_renderLLMsSection(buckets.llm));
 
@@ -408,37 +406,33 @@ function _renderSidebar() {
   if (searchInput && searchInput.value) _applySearchFilter(searchInput.value);
 }
 
-// Bundle I (rebuild): flat preset view. Replaces the normal grouped sidebar
-// while a preset is loaded. Resolves each preset.item_id via _findItem so
-// numeric ct_items, 'drive:<gid>', and 'lab:<key>' all render correctly.
-// Items the preset references but that no longer exist are silently skipped;
-// the header surfaces the resolved-vs-total count for transparency.
-function _renderPresetView(body, preset) {
-  const ids = (preset && preset.item_ids) || [];
-  const rows = [];
+// Bundle I (rebuild v2): preset as a regular sidebar section. Resolves each
+// preset.item_id via _findItem so numeric ct_items, 'drive:<gid>', and
+// 'lab:<key>' all surface in the section. Items the preset references but
+// that are not available right now are silently skipped; the section
+// header surfaces a resolved-vs-total count for transparency.
+function _renderPresetSection() {
+  if (!ClassVault.activePreset) return '';
+  const preset = ClassVault.activePreset;
+  const ids = (preset.item_ids || []);
+  const items = [];
   for (const id of ids) {
     const res = _findItem(id);
-    if (res && res.item) rows.push(_renderSubCard(res.item));
+    if (res && res.item) items.push(res.item);
   }
-  const header =
-    '<div class="cv-sm-preset-header">' +
-      '<span class="cv-sm-preset-header-label">Preset: ' + _esc(preset.name || '(sem nome)') + '</span>' +
-      '<span class="cv-sm-preset-header-count">' + rows.length + '/' + ids.length + ' item(s)</span>' +
-    '</div>';
-  if (!rows.length) {
-    body.innerHTML = header +
-      '<div class="cv-sm-empty">Nenhum item do preset esta disponivel agora.</div>';
-    return;
-  }
-  body.innerHTML = header + '<div class="cv-sm-preset-items">' + rows.join('') + '</div>';
-
-  if (ClassVault.activeItemId != null) {
-    const el = body.querySelector('.sub[data-item-id="' + ClassVault.activeItemId + '"]');
-    if (el) el.classList.add('is-active');
-  }
-
-  const searchInput = document.querySelector('.cv-sm-search');
-  if (searchInput && searchInput.value) _applySearchFilter(searchInput.value);
+  const label = 'Preset: ' + (preset.name || '(sem nome)') + ' (' + items.length + '/' + ids.length + ')';
+  // Body uses _renderItemsByType so the preset section is sub-grouped by
+  // type, matching the Items section visual. Empty preset still renders the
+  // accordion header with a clear empty hint.
+  const body = items.length
+    ? _renderItemsByType(items)
+    : '<div class="cv-sm-empty">Nenhum item do preset esta disponivel agora.</div>';
+  return _renderSection({
+    key: 'preset',
+    label: label,
+    count: items.length,
+    body: body
+  });
 }
 
 // Bundle I (rebuild): mount the Aula sidebar "Carregar preset" dropdown. Sits
@@ -466,12 +460,15 @@ async function _initPresetLoader() {
     currentPresetId: null,
     onSelect: function(preset) {
       ClassVault.activePreset = preset;
-      _resetAccordion();
+      // Default the preset section to OPEN when the user loads one, so the
+      // items are immediately visible. Other sections keep their current
+      // collapse state (Bundle I rebuild v2 changed presets from exclusive
+      // view to inline section; the rest of the sidebar stays accessible).
+      ClassVault.collapsedSections.delete('preset');
       _renderSidebar();
     },
     onReset: function() {
       ClassVault.activePreset = null;
-      _resetAccordion();
       _renderSidebar();
     }
   });

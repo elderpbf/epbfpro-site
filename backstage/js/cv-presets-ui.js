@@ -102,6 +102,7 @@
         '<div class="cv-preset-editor-field">' +
           '<label class="cv-preset-editor-label" for="cv-preset-name">Nome do preset</label>' +
           '<input id="cv-preset-name" type="text" class="cv-preset-editor-name" maxlength="120" required value="' + _esc(initialName) + '">' +
+          '<div class="cv-preset-editor-error" data-cv-preset-error role="alert" aria-live="polite"></div>' +
         '</div>' +
         '<div class="cv-preset-editor-field">' +
           '<label class="cv-preset-editor-label">Itens incluidos</label>' +
@@ -115,8 +116,19 @@
 
     var formEl   = host.querySelector('.cv-preset-editor');
     var nameEl   = host.querySelector('.cv-preset-editor-name');
+    var errorEl  = host.querySelector('[data-cv-preset-error]');
     var pickerEl = host.querySelector('[data-cv-preset-picker]');
     var cancelEl = host.querySelector('.cv-preset-editor-cancel');
+
+    function _clearError() {
+      if (errorEl) errorEl.textContent = '';
+      if (nameEl)  nameEl.classList.remove('is-invalid');
+    }
+    function _showError(msg) {
+      if (errorEl) errorEl.textContent = msg;
+      if (nameEl)  nameEl.classList.add('is-invalid');
+    }
+    if (nameEl) nameEl.addEventListener('input', _clearError);
 
     if (!global.CVItemPicker) {
       throw new Error('CVPresetsUI.mountPresetEditor: CVItemPicker not loaded');
@@ -129,9 +141,14 @@
 
     function _onSubmit(e) {
       e.preventDefault();
+      _clearError();
       var name = ((nameEl && nameEl.value) || '').trim();
       if (!name) {
-        nameEl.focus();
+        // Visible feedback so the user understands why the form didn't submit.
+        // Previously only focused the field, which left users (per Elder's
+        // staging feedback 2026-05-24) staring at an unresponsive button.
+        _showError('Digite um nome para o preset.');
+        if (nameEl) nameEl.focus();
         return;
       }
       // id is intentionally undefined (not null) for new presets so consumers
