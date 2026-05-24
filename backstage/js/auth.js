@@ -12,11 +12,19 @@ window.BS_AUTH = (function() {
   }
 
   // Gate for all Backstage tools. Redirects to login if neither path is authed.
-  // Google is checked first; password hash is the fallback.
+  // Google is checked first; password hash is the fallback. Bundle L Item 3:
+  // before redirecting, capture the current URL (path + query + hash) into
+  // sessionStorage so the login page can return the user to where they were.
   function guard() {
     var googleOk = window.BS_GOOGLE && window.BS_GOOGLE.isAuthed();
     var passwordOk = !!localStorage.getItem(PW_KEY);
     if (!googleOk && !passwordOk) {
+      try {
+        var here = location.pathname + location.search + location.hash;
+        if (here && here !== '/backstage/' && here !== '/backstage') {
+          sessionStorage.setItem('bs_auth_return', here);
+        }
+      } catch (_) {}
       location.replace('/backstage/');
       return;
     }

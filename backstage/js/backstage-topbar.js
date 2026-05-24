@@ -346,9 +346,9 @@ window.Topbar = (function() {
     turmas: [],
     perguntas: [
       { key: 'ao-vivo',        label: 'Ao vivo',        href: '/backstage/classpulse/' },
+      { key: 'live',           label: 'Live',           href: '/backstage/classpulse/?tab=live' },
       { key: 'banco',          label: 'Banco',          href: '/backstage/classpulse/?tab=banks' },
-      { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' },
-      { key: 'configuracoes',  label: 'Configurações',  href: '/backstage/classpulse/?tab=settings' }
+      { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' }
     ]
   };
 

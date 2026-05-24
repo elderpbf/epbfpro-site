@@ -4,6 +4,26 @@
    All class names use cp- prefix (ClassPulse-scoped).
    ========================================================= */
 
+/* Bundle L Item 2: Live sub-tab visibility guard. The Live sub-tab in the
+   Perguntas topbar row is only meaningful when a session is currently open
+   in this browser tab; cp-session-open on body lights it up. Without that
+   flag the tab is hidden so the row doesn't show a dead link. */
+body:not(.cp-session-open) .bs-topbar-subtab[href*="tab=live"] {
+  display: none;
+}
+
+/* The panel-live container hosts the embedded CPHost iframe. Fills available
+   space inside the cp-main grid so the iframe can be 100% tall. */
+#panel-live {
+  display: none;
+  min-height: 70vh;
+  height: 100%;
+  padding: 0;
+}
+#panel-live.active {
+  display: block;
+}
+
 /* =========================================================
    SETTINGS PANEL
    ========================================================= */

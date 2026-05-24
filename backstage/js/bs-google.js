@@ -40,6 +40,28 @@ function _storeEntry(accessToken, email, expiresIn) {
       expiresAt: Date.now() + (expiresIn - 60) * 1000
     }));
   } catch (_) {}
+  // Bundle L Item 3: kick off (or reset) the proactive silent refresh.
+  _scheduleProactiveRefresh();
+}
+
+// ── Proactive silent refresh ─────────────────────────────────────────────────
+// Google access tokens have a ~60min TTL. The previous implementation only
+// refreshed on page-load (init), so a user staying on the same page past expiry
+// would hit a 401 mid-action and get bounced to login. The setInterval below
+// fires silent refresh attempts well before expiry; failures surface the GIS
+// popup at a natural pause instead of mid-keystroke.
+var _refreshTimer = null;
+var PROACTIVE_REFRESH_MS = 50 * 60 * 1000;
+
+function _scheduleProactiveRefresh() {
+  if (_refreshTimer) {
+    try { clearInterval(_refreshTimer); } catch (_) {}
+    _refreshTimer = null;
+  }
+  _refreshTimer = setInterval(function() {
+    if (!_tokenClient) return;
+    try { _tokenClient.requestAccessToken({ prompt: '' }); } catch (_) {}
+  }, PROACTIVE_REFRESH_MS);
 }
 
 function _clearEntry() {
@@ -177,8 +199,11 @@ window.BS_GOOGLE = {
     // Pre-warm GIS token client. Without it we can't even attempt silent refresh.
     try { await _ensureTokenClient(); } catch (_) { return; }
 
-    // Fresh token already present, nothing to do.
-    if (_getStoredEntry()) return;
+    // Fresh token already present. Start the proactive refresher and return.
+    if (_getStoredEntry()) {
+      _scheduleProactiveRefresh();
+      return;
+    }
 
     // Stale or absent. Attempt silent refresh.
     await new Promise(function(resolve) {
@@ -243,6 +268,11 @@ window.BS_GOOGLE = {
     // Grab token before clearing, so we can revoke it.
     const entry = _getStoredEntry();
     _clearEntry();
+    // Stop the proactive refresher; otherwise it would silently re-auth.
+    if (_refreshTimer) {
+      try { clearInterval(_refreshTimer); } catch (_) {}
+      _refreshTimer = null;
+    }
     // Optionally revoke via GIS (best-effort; do not block).
     if (entry && entry.token && window.google && window.google.accounts && window.google.accounts.oauth2) {
       try {
