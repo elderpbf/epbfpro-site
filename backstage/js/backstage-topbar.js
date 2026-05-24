@@ -22,6 +22,8 @@ window.Topbar = (function() {
 
   var _inner = null;
   var _itemsAnchor = null;
+  var _tabsByKey = {};
+  var _liveSessionTimer = null;
 
   // ── Auto-hide (presentation mode only) ────────────────────
 
@@ -145,6 +147,7 @@ window.Topbar = (function() {
     _inner.appendChild(brand);
 
     // Codex hub tabs (between brand and spacer)
+    _tabsByKey = {};
     if (tabs.length > 0) {
       var tabStrip = document.createElement('nav');
       tabStrip.className = 'bs-topbar-tabs';
@@ -160,11 +163,15 @@ window.Topbar = (function() {
         labelSpan.className = 'bs-topbar-tab-label';
         labelSpan.textContent = t.label;
         a.appendChild(labelSpan);
-        if (t.dot) {
+        // Always pre-create the dot for keyed tabs; CSS keeps it hidden until
+        // a .live class lights it up (e.g. live-session indicator on Perguntas).
+        if (t.key) {
           var dotSpan = document.createElement('span');
           dotSpan.className = 'bs-topbar-tab-dot';
+          if (t.dot) dotSpan.classList.add('live');
           dotSpan.setAttribute('aria-hidden', 'true');
           a.appendChild(dotSpan);
+          _tabsByKey[t.key] = { link: a, dot: dotSpan };
         }
         tabStrip.appendChild(a);
       });
@@ -272,6 +279,11 @@ window.Topbar = (function() {
         _scheduleHide();
       });
     }
+
+    // Codex hub pages all get a global live-session indicator on Perguntas.
+    if (!isPresentation && _tabsByKey.perguntas) {
+      startLiveSessionPoll();
+    }
   }
 
   // ── addItem ───────────────────────────────────────────────
@@ -343,13 +355,38 @@ window.Topbar = (function() {
   function codexTabs(activeKey, overrides) {
     overrides = overrides || {};
     return CODEX_TABS.map(function(t) {
-      var entry = { label: t.label, href: t.href };
+      var entry = { key: t.key, label: t.label, href: t.href };
       if (t.key === activeKey) entry.active = true;
       if (overrides[t.key]) {
         if (overrides[t.key].dot) entry.dot = true;
       }
       return entry;
     });
+  }
+
+  // Toggles the live indicator dot on a tab created via codexTabs(). Used by
+  // the live-session poll, but exposed so other future indicators (unread
+  // counts, errors) can target a tab by key without re-implementing the lookup.
+  function setTabDot(key, on) {
+    var ref = _tabsByKey[key];
+    if (!ref || !ref.dot) return;
+    ref.dot.classList.toggle('live', !!on);
+  }
+
+  // Backstage-wide live-session indicator: polls cp_get_live_session and
+  // toggles the Perguntas tab's red dot. Auto-started by init() when the
+  // tabs include a 'perguntas' entry; safe to call explicitly otherwise.
+  function startLiveSessionPoll() {
+    if (_liveSessionTimer) return;
+    if (typeof callWorker !== 'function' || typeof BS_AUTH === 'undefined') return;
+    if (!_tabsByKey.perguntas) return;
+    var poll = function() {
+      callWorker({ action: 'cp_get_live_session', auth_token: BS_AUTH.TOKEN })
+        .then(function(res) { setTabDot('perguntas', !!(res && res.session)); })
+        .catch(function() {});
+    };
+    poll();
+    _liveSessionTimer = setInterval(poll, 30000);
   }
 
   function codexSubTabs(parentKey, activeSubKey) {
@@ -366,7 +403,9 @@ window.Topbar = (function() {
     addItem: addItem,
     setSubtitle: setSubtitle,
     codexTabs: codexTabs,
-    codexSubTabs: codexSubTabs
+    codexSubTabs: codexSubTabs,
+    setTabDot: setTabDot,
+    startLiveSessionPoll: startLiveSessionPoll
   };
 
 })();

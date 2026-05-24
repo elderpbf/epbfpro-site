@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png?v=2">
 
 <link rel="stylesheet" href="../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/backstage.css?v=2.2">
+<link rel="stylesheet" href="../css/backstage.css?v=2.3">
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.10">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.5">
@@ -402,7 +402,6 @@
             <button class="view-toggle is-on" data-toggle-col="right"  type="button">Q&amp;A</button>
             <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
           </div>
-          <button class="host-btn host-btn-ghost host-pres-btn" id="pres-btn" type="button" hidden><span class="host-pres-dot" id="pres-dot"></span>Apresentação</button>
           <button class="host-btn host-btn-ghost host-pres-btn" id="trail-btn" type="button" hidden><span class="host-pres-dot" id="trail-dot"></span>Trilha</button>
           <button class="host-btn host-btn-ghost" id="qr-btn" hidden>QR</button>
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener" hidden>Display</a>
@@ -624,20 +623,10 @@
 <!-- QR Modal -->
 <div class="qr-modal" id="qr-modal">
   <div class="qr-box">
-    <h3>Alunos entram pelo código</h3>
-    <div class="qr-code-big" id="qr-code-text"></div>
+    <h3>Alunos entram pela trilha</h3>
     <img id="qr-img" src="" alt="QR Code" style="max-width:200px">
-    <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem">pensoia.com/go</div>
+    <div id="qr-url-display" style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem;word-break:break-all"></div>
     <button class="host-btn host-btn-ghost host-btn-full" id="qr-close-btn" style="margin-top:1rem">Fechar</button>
-  </div>
-</div>
-
-<!-- Apresentação Modal -->
-<div class="qr-modal" id="pres-modal">
-  <div class="qr-box" style="max-width: 420px; text-align: left">
-    <h3 style="margin-bottom: 1rem">Apresentação vinculada à sessão</h3>
-    <div id="pres-modal-content" class="host-pres-modal-content"></div>
-    <button class="host-btn host-btn-ghost host-btn-full" id="pres-modal-close-btn" style="margin-top:1rem">Fechar</button>
   </div>
 </div>
 
@@ -664,7 +653,7 @@
 <script src="../js/auth.js?v=1.2"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/brand-logos.js?v=1.0"></script>
-<script src="../js/backstage-topbar.js?v=1.9"></script>
+<script src="../js/backstage-topbar.js?v=2.0"></script>
 <script>
 'use strict';
 
@@ -697,7 +686,6 @@ var sessionCode    = null;
 var activeQId      = null;
 var pollTimer      = null;
 var _historyMap    = {};
-var _presentations = [];
 var _currentSession = null;
 var _trailTurma     = null;
 var _trailAllTurmas = [];
@@ -756,14 +744,12 @@ async function loadSession() {
     var code = urlCode.toUpperCase();
     var results = await Promise.allSettled([
       callWorker({ action: 'list_sessions' }),
-      callWorker({ action: 'list_presentations' }),
       callWorker({ action: 'ct_lookup_turma_by_session', auth_token: AUTH_TOKEN, session_id: code }),
       callWorker({ action: 'ct_list_all_turmas', auth_token: AUTH_TOKEN })
     ]);
     var data = results[0].status === 'fulfilled' ? results[0].value : { sessions: [] };
-    _presentations = (results[1].status === 'fulfilled' ? results[1].value.presentations : null) || [];
-    _trailTurma     = (results[2].status === 'fulfilled' ? results[2].value.turma : null) || null;
-    _trailAllTurmas = (results[3].status === 'fulfilled' ? results[3].value.turmas : null) || [];
+    _trailTurma     = (results[1].status === 'fulfilled' ? results[1].value.turma : null) || null;
+    _trailAllTurmas = (results[2].status === 'fulfilled' ? results[2].value.turmas : null) || [];
 
     var match = (data.sessions || []).find(function(s) { return s.code === urlCode.toUpperCase(); });
     if (!match) {
@@ -784,13 +770,10 @@ function selectSession(s) {
   document.getElementById('session-code-display').textContent = s.code;
   document.getElementById('session-name-display').textContent = s.title || ('Sessão ' + s.code);
   document.getElementById('display-link').href = '/go/display.html?code=' + encodeURIComponent(s.code);
-  document.getElementById('qr-code-text').textContent = s.code;
-  document.getElementById('qr-img').src =
-    'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent('https://pensoia.com/go?code=' + s.code);
 
   clearAlert();
-  renderPresentationLink();
   renderTrailLink();
+  refreshShareSurface();
   applyHostedUI(s.status === 'open');
 
   if (!qaModule) {
@@ -820,11 +803,38 @@ function selectSession(s) {
   document.getElementById('cpq').setAttribute('session', s.code);
 }
 
+function buildTrilhaUrl() {
+  if (!_trailTurma) return null;
+  var t = _trailTurma;
+  return 'https://pensoia.com/trilha/' +
+    encodeURIComponent(t.client_slug) + '/' +
+    encodeURIComponent(t.turma_slug) +
+    (t.token ? '?k=' + encodeURIComponent(t.token) : '');
+}
+
+// QR encodes the trilha URL (legacy /go path retired). Button stays hidden
+// until both conditions hold: session is being hosted AND a turma is linked
+// (no turma = no trilha URL to encode).
+function refreshShareSurface() {
+  var url = buildTrilhaUrl();
+  var img = document.getElementById('qr-img');
+  var urlDisplay = document.getElementById('qr-url-display');
+  if (url) {
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+    urlDisplay.textContent = url.replace(/^https?:\/\//, '');
+  } else {
+    img.removeAttribute('src');
+    urlDisplay.textContent = '';
+  }
+  var isHosted = document.body.classList.contains('is-hosted');
+  document.getElementById('qr-btn').hidden = !(isHosted && url);
+}
+
 function applyHostedUI(isHosted) {
   document.body.classList.toggle('is-hosted', isHosted);
   document.getElementById('host-live-indicator').hidden = !isHosted;
   document.getElementById('not-hosted-note').hidden = isHosted;
-  document.getElementById('qr-btn').hidden = !isHosted;
+  document.getElementById('qr-btn').hidden = !(isHosted && !!_trailTurma);
   document.getElementById('display-link').hidden = !isHosted;
   document.getElementById('start-host-btn').hidden = isHosted;
   document.getElementById('stop-host-btn').hidden = !isHosted;
@@ -839,89 +849,6 @@ function applyHostedUI(isHosted) {
     activeStudentQuestionId = null;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Presentation linking
-// ---------------------------------------------------------------------------
-
-function renderPresentationLink() {
-  var btn     = document.getElementById('pres-btn');
-  var content = document.getElementById('pres-modal-content');
-  if (!btn || !content) return;
-  var slug = _currentSession && _currentSession.presentation_slug;
-
-  btn.hidden = false;
-  btn.classList.toggle('is-linked', !!slug);
-
-  if (slug) {
-    var linked = _presentations.find(function(p) { return p.slug === slug; });
-    var title   = linked ? linked.title : slug;
-    var engine  = linked ? linked.engine : 'reveal';
-    var engLabel = engine === 'panels' ? 'Panels' : 'Reveal';
-    var href    = engine === 'panels'
-      ? '/backstage/classforge/presentations/' + slug + '/'
-      : '/backstage/classforge/viewer/?slug=' + encodeURIComponent(slug);
-    content.innerHTML =
-      '<div class="host-pres-status">Vinculada a esta sess\u00e3o</div>' +
-      '<div class="host-pres-title">' + escHtml(title) + '</div>' +
-      '<div class="host-pres-engine">' + engLabel + '</div>' +
-      '<a class="host-pres-link" href="' + escHtml(href) + '" target="_blank" rel="noopener">Abrir apresenta\u00e7\u00e3o \u2197</a>' +
-      '<button class="host-btn host-btn-danger host-btn-full" id="pres-unlink-btn">Desvincular apresenta\u00e7\u00e3o</button>';
-    document.getElementById('pres-unlink-btn').addEventListener('click', doUnlinkPresentation);
-  } else if (_presentations.length > 0) {
-    var opts = '<option value="">Selecione uma apresenta\u00e7\u00e3o\u2026</option>';
-    _presentations.forEach(function(p) {
-      var el = p.engine === 'panels' ? 'Panels' : 'Reveal';
-      opts += '<option value="' + escHtml(p.slug) + '">' + escHtml(p.title) + ' (' + el + ')</option>';
-    });
-    content.innerHTML =
-      '<div class="host-pres-status">Nenhuma apresenta\u00e7\u00e3o vinculada</div>' +
-      '<select id="pres-picker">' + opts + '</select>' +
-      '<button class="host-btn host-btn-primary host-btn-full" id="pres-link-btn">Vincular apresenta\u00e7\u00e3o</button>';
-    document.getElementById('pres-link-btn').addEventListener('click', async function() {
-      var s = document.getElementById('pres-picker').value;
-      if (!s) return;
-      await doLinkPresentation(s);
-    });
-  } else {
-    content.innerHTML = '<div class="host-pres-empty">Nenhuma apresenta\u00e7\u00e3o dispon\u00edvel para vincular.</div>';
-  }
-}
-
-async function doLinkPresentation(slug) {
-  try {
-    await callWorker({ action: 'link_presentation', auth_token: AUTH_TOKEN, code: sessionCode, slug: slug });
-    _currentSession.presentation_slug = slug;
-    renderPresentationLink();
-    document.getElementById('pres-modal').classList.remove('open');
-    showToast('Apresenta\u00e7\u00e3o vinculada.');
-  } catch (e) {
-    showToastError(e.message);
-  }
-}
-
-async function doUnlinkPresentation() {
-  try {
-    await callWorker({ action: 'unlink_presentation', auth_token: AUTH_TOKEN, code: sessionCode });
-    _currentSession.presentation_slug = null;
-    renderPresentationLink();
-    document.getElementById('pres-modal').classList.remove('open');
-    showToast('Apresenta\u00e7\u00e3o desvinculada.');
-  } catch (e) {
-    showToastError(e.message);
-  }
-}
-
-// Open/close pres modal
-document.getElementById('pres-btn').addEventListener('click', function() {
-  document.getElementById('pres-modal').classList.add('open');
-});
-document.getElementById('pres-modal-close-btn').addEventListener('click', function() {
-  document.getElementById('pres-modal').classList.remove('open');
-});
-document.getElementById('pres-modal').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('open');
-});
 
 // ---------------------------------------------------------------------------
 // Trail (ClassTrail turma) linking
@@ -945,7 +872,7 @@ function renderTrailLink() {
       '<div class="host-pres-status">Vinculada a esta sessão</div>' +
       '<div class="host-pres-title">' + escHtml(turmaName) + '</div>' +
       '<div class="host-pres-engine">' + escHtml(clientName) + '</div>' +
-      '<a class="host-pres-link" href="' + escHtml(trilhaUrl) + '" target="_blank" rel="noopener">Abrir trilha pública ↗</a><br>' +
+      '<a class="host-btn host-btn-primary host-btn-full" href="' + escHtml(trilhaUrl) + '" target="_blank" rel="noopener" style="margin-bottom:0.6rem;text-decoration:none;text-align:center">Abrir trilha ↗</a>' +
       '<a class="host-pres-link" href="' + escHtml(adminUrl) + '" target="_blank" rel="noopener">Abrir ClassTrail (admin) ↗</a>' +
       '<button class="host-btn host-btn-danger host-btn-full" id="trail-unlink-btn" style="margin-top:0.6rem">Desvincular turma</button>';
     document.getElementById('trail-unlink-btn').addEventListener('click', doUnlinkTrail);
@@ -993,6 +920,7 @@ async function doLinkTrail(clientSlug, turmaSlug) {
       _trailAllTurmas = listRes.turmas || [];
     } catch (_) {}
     renderTrailLink();
+    refreshShareSurface();
     document.getElementById('trail-modal').classList.remove('open');
     showToast('Turma vinculada.');
   } catch (e) {
@@ -1016,6 +944,7 @@ async function doUnlinkTrail() {
       _trailAllTurmas = listRes.turmas || [];
     } catch (_) {}
     renderTrailLink();
+    refreshShareSurface();
     document.getElementById('trail-modal').classList.remove('open');
     showToast('Turma desvinculada.');
   } catch (e) {
@@ -1509,11 +1438,9 @@ async function relaunchFromHistory(btn, q) {
       max_select: q.max_select || 1
     });
     activeQId = res.id;
-    clearAlert();
-    showAlert('success', 'Pergunta relançada!');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('Pergunta relançada!');
   } catch (e) {
-    showAlert('error', 'Erro ao relançar: ' + e.message);
+    showToastError('Erro ao relançar: ' + e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = oldText;

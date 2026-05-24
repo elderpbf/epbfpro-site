@@ -353,12 +353,15 @@
 }
 
 .bs-topbar-tab-dot {
-  display: inline-block;
+  display: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #ef4444;
   flex-shrink: 0;
+}
+.bs-topbar-tab-dot.live {
+  display: inline-block;
   animation: bs-tab-dot-pulse 2s ease-in-out infinite;
 }
 
