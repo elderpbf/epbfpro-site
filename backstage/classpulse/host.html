@@ -12,6 +12,7 @@
 
 <link rel="stylesheet" href="../css/theme.css?v=1.3">
 <link rel="stylesheet" href="../css/backstage.css?v=2.3">
+<link rel="stylesheet" href="../css/qr-share-modal.css?v=1.0">
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.10">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.5">
@@ -166,17 +167,13 @@
   .host-live-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #ef4444; text-transform: uppercase; }
   @keyframes host-live-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
 
+  .host-bar-subtabs { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 1; min-width: 0; overflow: hidden; }
+  .host-bar-subtabs .bs-topbar-subtab { white-space: nowrap; }
+
   .host-not-hosted-note { background: rgba(20,184,166,.08); border: 1px solid rgba(20,184,166,.2); border-radius: 10px; padding: 1rem 1.25rem; color: var(--text-secondary); font-size: 0.88rem; text-align: center; margin-bottom: 1.25rem; }
 
   /* Hide history action buttons when not hosting (cannot relaunch/edit without an active host) */
   body:not(.is-hosted) .hi-actions { display: none; }
-
-  /* QR modal */
-  .qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }
-  .qr-modal.open { display: flex; }
-  .qr-box { background: var(--surface); border-radius: 16px; padding: 2rem; max-width: 320px; width: 90%; text-align: center; }
-  .qr-box h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
-  .qr-code-big { font-size: 2rem; font-weight: 700; letter-spacing: 0.25em; color: var(--primary); margin-bottom: 1rem; }
 
   /* Question bank collapsible */
   .bank-toggle-btn { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); cursor: pointer; margin-bottom: 0.9rem; }
@@ -325,6 +322,34 @@
   }
   .reset-layout-btn:hover { color: var(--text-primary); background: rgba(127,127,127,.08); }
 
+  /* Visao collapsible dropdown */
+  .host-bar-visao { position: relative; }
+  .host-bar-visao > summary { list-style: none; cursor: pointer; padding: 0.4rem 0.7rem; border-radius: 7px; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); color: var(--text-primary); font-size: 0.84rem; user-select: none; }
+  .host-bar-visao > summary::-webkit-details-marker { display: none; }
+  .host-bar-visao[open] > summary { background: rgba(20,184,166,.08); border-color: rgba(20,184,166,.4); }
+  .host-bar-visao-panel { position: absolute; top: 100%; right: 0; margin-top: 0.4rem; min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 0.7rem; z-index: 50; }
+  .host-bar-visao-panel > .host-bar-visao-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.5rem; }
+  .host-bar-visao-panel .view-toggle { display: flex; width: 100%; justify-content: flex-start; margin-bottom: 0.3rem; }
+  .host-bar-visao-panel .view-toggle:last-child { margin-bottom: 0; }
+
+  /* Responsive hamburger menu */
+  .host-bar-menu { display: none; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 7px; padding: 0.4rem 0.55rem; color: var(--text-primary); cursor: pointer; font-size: 1rem; line-height: 1; }
+  .host-bar-menu:hover { border-color: var(--primary); }
+  .host-bar-menu-panel { position: absolute; right: 1rem; top: calc(100% + 0.4rem); min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 0.6rem; z-index: 60; display: flex; flex-direction: column; gap: 0.4rem; }
+  .host-bar-menu-panel > * { width: 100%; justify-content: flex-start; }
+  @media (max-width: 900px) {
+    .host-session-bar { position: relative; }
+    .host-session-bar .host-bar-subtabs,
+    .host-session-bar .host-bar-visao,
+    .host-session-bar #resetLayoutBtn,
+    .host-session-bar #trail-btn,
+    .host-session-bar #qr-btn,
+    .host-session-bar #display-link {
+      display: none !important;
+    }
+    .host-bar-menu { display: inline-flex; }
+  }
+
   /* Student-Q&A active card */
   .active-q-badge.student-qa { background: rgba(245,158,11,.18); color: #b45309; }
   .student-qa-meta { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 8px; }
@@ -387,27 +412,33 @@
       <div class="host-session-bar">
         <div>
           <div class="host-code">
-            <span id="session-code-display"></span>
             <span class="host-live-indicator" id="host-live-indicator" hidden>
               <span class="host-live-dot"></span><span class="host-live-label">Live</span>
             </span>
           </div>
           <div class="host-session-name" id="session-name-display"></div>
         </div>
+        <div id="live-bar-subtabs" class="host-bar-subtabs"></div>
         <div class="host-bar-actions">
-          <div class="view-toggles" id="viewToggles" title="Mostrar ou esconder cada coluna do dashboard" hidden>
-            <span class="view-toggle-label">Visão</span>
-            <button class="view-toggle is-on" data-toggle-col="left"   type="button">Composer</button>
-            <button class="view-toggle is-on" data-toggle-col="center" type="button">Pergunta ativa</button>
-            <button class="view-toggle is-on" data-toggle-col="right"  type="button">Q&amp;A</button>
-            <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
-          </div>
+          <details class="host-bar-visao" id="viewToggles" title="Mostrar ou esconder cada coluna do dashboard" hidden>
+            <summary>Visão ▾</summary>
+            <div class="host-bar-visao-panel">
+              <div class="host-bar-visao-label">Mostrar colunas</div>
+              <button class="view-toggle is-on" data-toggle-col="left"   type="button">Composer</button>
+              <button class="view-toggle is-on" data-toggle-col="center" type="button">Pergunta ativa</button>
+              <button class="view-toggle is-on" data-toggle-col="right"  type="button">Q&amp;A</button>
+              <hr style="border:none;border-top:1px solid var(--border);margin:0.5rem 0">
+              <button class="view-toggle host-btn host-btn-ghost" id="qa-toggle-btn" type="button" aria-pressed="false" style="width:100%;justify-content:flex-start;margin-bottom:0">Ativar Q&amp;A</button>
+            </div>
+          </details>
+          <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
           <button class="host-btn host-btn-ghost host-pres-btn" id="trail-btn" type="button" hidden><span class="host-pres-dot" id="trail-dot"></span>Trilha</button>
           <button class="host-btn host-btn-ghost" id="qr-btn" hidden>QR</button>
           <a class="host-btn host-btn-ghost" id="display-link" href="#" target="_blank" rel="noopener" hidden>Display</a>
-          <button class="host-btn host-btn-ghost" id="qa-toggle-btn" type="button" aria-pressed="false" hidden>Ativar Q&amp;A</button>
           <button class="host-btn host-btn-primary" id="start-host-btn" hidden>Iniciar</button>
           <button class="host-btn host-btn-danger" id="stop-host-btn" hidden>Encerrar</button>
+          <button class="host-bar-menu" id="hostBarMenuBtn" type="button" aria-label="Mais opcoes">&#8801;</button>
+          <div class="host-bar-menu-panel" id="hostBarMenuPanel" hidden></div>
         </div>
       </div>
 
@@ -620,16 +651,6 @@
   </div>
 </div>
 
-<!-- QR Modal -->
-<div class="qr-modal" id="qr-modal">
-  <div class="qr-box">
-    <h3>Alunos entram pela trilha</h3>
-    <img id="qr-img" src="" alt="QR Code" style="max-width:200px">
-    <div id="qr-url-display" style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem;word-break:break-all"></div>
-    <button class="host-btn host-btn-ghost host-btn-full" id="qr-close-btn" style="margin-top:1rem">Fechar</button>
-  </div>
-</div>
-
 <!-- Trilha Modal -->
 <div class="qr-modal" id="trail-modal">
   <div class="qr-box" style="max-width: 420px; text-align: left">
@@ -653,7 +674,8 @@
 <script src="../js/auth.js?v=1.2"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/brand-logos.js?v=1.0"></script>
-<script src="../js/backstage-topbar.js?v=2.0"></script>
+<script src="../js/qr-share-modal.js?v=1.0"></script>
+<script src="../js/backstage-topbar.js?v=2.1"></script>
 <script>
 'use strict';
 
@@ -663,14 +685,14 @@
 
 BS_AUTH.guard();
 // Bundle F: host.html is the "Ao vivo" sub-tab of Perguntas. Wire the Codex
-// topbar so navigation from the host page back to other Codex surfaces works.
+// topbar so navigation from the live page back to other Codex surfaces works.
 Topbar.init({
   title: 'PensoIA',
   subtitle: 'PensoCodex',
   backLink: '/backstage/',
-  tabs: Topbar.codexTabs('perguntas'),
-  subTabs: Topbar.codexSubTabs('perguntas', 'ao-vivo')
+  tabs: Topbar.codexTabs('perguntas')
 });
+Topbar.renderSubTabsInto(document.getElementById('live-bar-subtabs'), 'perguntas', 'ao-vivo');
 
 // ---------------------------------------------------------------------------
 // Config (hardcoded - never configure via settings)
@@ -767,7 +789,6 @@ function selectSession(s) {
   sessionCode = s.code;
   _currentSession = s;
 
-  document.getElementById('session-code-display').textContent = s.code;
   document.getElementById('session-name-display').textContent = s.title || ('Sessão ' + s.code);
   document.getElementById('display-link').href = '/go/display.html?code=' + encodeURIComponent(s.code);
 
@@ -812,22 +833,12 @@ function buildTrilhaUrl() {
     (t.token ? '?k=' + encodeURIComponent(t.token) : '');
 }
 
-// QR encodes the trilha URL (legacy /go path retired). Button stays hidden
-// until both conditions hold: session is being hosted AND a turma is linked
-// (no turma = no trilha URL to encode).
+// QR button visibility: shown only when session is being hosted AND a turma is linked.
+// QR image is generated on-demand by QRShareModal when the button is clicked.
 function refreshShareSurface() {
-  var url = buildTrilhaUrl();
-  var img = document.getElementById('qr-img');
-  var urlDisplay = document.getElementById('qr-url-display');
-  if (url) {
-    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
-    urlDisplay.textContent = url.replace(/^https?:\/\//, '');
-  } else {
-    img.removeAttribute('src');
-    urlDisplay.textContent = '';
-  }
+  var hasTrilha = !!buildTrilhaUrl();
   var isHosted = document.body.classList.contains('is-hosted');
-  document.getElementById('qr-btn').hidden = !(isHosted && url);
+  document.getElementById('qr-btn').hidden = !(isHosted && hasTrilha);
 }
 
 function applyHostedUI(isHosted) {
@@ -838,8 +849,9 @@ function applyHostedUI(isHosted) {
   document.getElementById('display-link').hidden = !isHosted;
   document.getElementById('start-host-btn').hidden = isHosted;
   document.getElementById('stop-host-btn').hidden = !isHosted;
-  document.getElementById('qa-toggle-btn').hidden = !isHosted;
+  // viewToggles is now the Visao <details> dropdown; qa-toggle-btn lives inside it.
   document.getElementById('viewToggles').hidden = !isHosted;
+  document.getElementById('resetLayoutBtn').hidden = !isHosted;
   document.getElementById('launch-q-card').style.display = isHosted ? '' : 'none';
   if (!isHosted) {
     document.getElementById('active-q-panel').style.display = 'none';
@@ -872,8 +884,8 @@ function renderTrailLink() {
       '<div class="host-pres-status">Vinculada a esta sessão</div>' +
       '<div class="host-pres-title">' + escHtml(turmaName) + '</div>' +
       '<div class="host-pres-engine">' + escHtml(clientName) + '</div>' +
-      '<a class="host-btn host-btn-primary host-btn-full" href="' + escHtml(trilhaUrl) + '" target="_blank" rel="noopener" style="margin-bottom:0.6rem;text-decoration:none;text-align:center">Abrir trilha ↗</a>' +
-      '<a class="host-pres-link" href="' + escHtml(adminUrl) + '" target="_blank" rel="noopener">Abrir ClassTrail (admin) ↗</a>' +
+      '<a class="host-btn host-btn-primary host-btn-full" href="' + escHtml(trilhaUrl) + '" target="_blank" rel="noopener" style="margin-bottom:1.4rem;text-decoration:none;text-align:center">Abrir trilha ↗</a>' +
+      '<a class="host-pres-link" href="' + escHtml(adminUrl) + '" target="_blank" rel="noopener" style="display:inline-block;padding-top:0.4rem">Abrir ClassTrail (admin) ↗</a>' +
       '<button class="host-btn host-btn-danger host-btn-full" id="trail-unlink-btn" style="margin-top:0.6rem">Desvincular turma</button>';
     document.getElementById('trail-unlink-btn').addEventListener('click', doUnlinkTrail);
   } else if (_trailAllTurmas.length > 0) {
@@ -1472,19 +1484,13 @@ function editFromHistory(q) {
 
 
 // ---------------------------------------------------------------------------
-// QR modal
+// QR modal (uses shared QRShareModal module)
 // ---------------------------------------------------------------------------
 
 document.getElementById('qr-btn').addEventListener('click', function() {
-  document.getElementById('qr-modal').classList.add('open');
-});
-
-document.getElementById('qr-close-btn').addEventListener('click', function() {
-  document.getElementById('qr-modal').classList.remove('open');
-});
-
-document.getElementById('qr-modal').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('open');
+  var url = buildTrilhaUrl();
+  if (!url) return;
+  QRShareModal.open({ joinUrl: url, title: _currentSession && _currentSession.title || 'Entre na trilha' });
 });
 
 // ---------------------------------------------------------------------------
@@ -1692,6 +1698,35 @@ document.querySelectorAll('.hd-resizer').forEach(function(h) {
 });
 
 applyLayout();
+
+// ---------------------------------------------------------------------------
+// Hamburger menu (narrow viewports)
+// ---------------------------------------------------------------------------
+
+(function() {
+  var btn = document.getElementById('hostBarMenuBtn');
+  var panel = document.getElementById('hostBarMenuPanel');
+  if (!btn || !panel) return;
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var open = !panel.hidden;
+    if (open) { panel.hidden = true; return; }
+    // Build a stacked clone of the collapsed items each time it opens.
+    panel.innerHTML = '';
+    var subtabs = document.getElementById('live-bar-subtabs');
+    if (subtabs) panel.appendChild(subtabs.cloneNode(true));
+    ['viewToggles', 'resetLayoutBtn', 'trail-btn', 'qr-btn', 'display-link'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && !el.hidden) panel.appendChild(el.cloneNode(true));
+    });
+    panel.hidden = false;
+  });
+  document.addEventListener('click', function(e) {
+    if (panel.hidden) return;
+    if (panel.contains(e.target) || btn.contains(e.target)) return;
+    panel.hidden = true;
+  });
+})();
 
 </script>
 </body>

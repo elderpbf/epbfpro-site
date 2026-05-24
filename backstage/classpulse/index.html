@@ -569,7 +569,7 @@
 <script src="../js/auth.js?v=1.2"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/brand-logos.js?v=1.0"></script>
-<script src="../js/backstage-topbar.js?v=2.0"></script>
+<script src="../js/backstage-topbar.js?v=2.1"></script>
 <script src="../js/classpulse-bank-edit.js?v=1.0"></script>
 <script src="../js/classpulse-bank-search.js?v=1.0"></script>
 <script>
@@ -582,12 +582,14 @@
 BS_AUTH.guard();
 BS_AUTH.clearPasswordInputs();
 (function() {
-  var urlTab = (new URLSearchParams(location.search)).get('tab') || 'banks';
-  // index.html is the non-live admin surface (Banco / Estatísticas /
-  // Configurações). The active sub-tab tracks ?tab=. Ao vivo lives in host.html.
+  var urlTab = (new URLSearchParams(location.search)).get('tab') || '';
+  // index.html is the session picker and Ao vivo landing for ClassPulse.
+  // When no ?tab= param is set, mark Ao vivo as the active sub-tab.
+  // Banco / Estatísticas / Configurações panels are loaded via ?tab=.
   var subKey = (urlTab === 'global-stats') ? 'estatisticas'
              : (urlTab === 'settings')     ? 'configuracoes'
-             : 'banco';
+             : (urlTab === 'banks')        ? 'banco'
+             : 'ao-vivo';
   Topbar.init({
     title: 'PensoIA',
     subtitle: 'PensoCodex',

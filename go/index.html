@@ -11,12 +11,10 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column; }
-    .container { max-width: 480px; margin: 0 auto; padding: 48px 20px; width: 100%; text-align: center; }
-    h1 { font-size: 1.15rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 12px; }
-    p { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; }
-    .deprecated-note { font-size: 0.78rem; color: var(--text-light); margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border); }
-    .spinner { display: inline-block; width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .container { max-width: 480px; margin: 0 auto; padding: 64px 20px; width: 100%; text-align: center; }
+    h1 { font-size: 1.2rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 16px; }
+    p { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 14px; }
+    .note { font-size: 0.78rem; color: var(--text-light); margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--border); }
   </style>
 </head>
 <body>
@@ -24,56 +22,13 @@
 <pensoia-header mode="student" theme-storage-key="bs_theme_public"></pensoia-header>
 
 <div class="container">
-  <div id="resolving">
-    <div class="spinner"></div>
-    <h1>Abrindo trilha…</h1>
-    <p>Redirecionando para a trilha da sua turma.</p>
-  </div>
-  <div id="not-found" style="display:none">
-    <h1>Trilha não encontrada</h1>
-    <p>Esta sessão não foi encontrada ou ainda não tem trilha vinculada. Peça o link da trilha ao seu professor.</p>
-  </div>
-  <div id="no-code" style="display:none">
-    <h1>Use o link da trilha</h1>
-    <p>Esta página foi descontinuada. Acesse a trilha da sua turma pelo link compartilhado pelo professor.</p>
-  </div>
-  <div class="deprecated-note">Página descontinuada · use a trilha da turma</div>
+  <h1>Página descontinuada</h1>
+  <p>Acesse a trilha da sua turma pelo link compartilhado pelo professor.</p>
+  <div class="note">Se você chegou aqui por um QR code antigo, peça o novo link da trilha ao professor.</div>
 </div>
 
-<script src="../backstage/js/api-client.js?v=1.1"></script>
 <script src="../backstage/js/theme-manager.js?v=1.1"></script>
 <script src="../backstage/js/pensoia-header.js?v=1.0"></script>
-<script>
-  ThemeManager.initPublic();
-
-  function show(id) {
-    ['resolving', 'not-found', 'no-code'].forEach(function(k) {
-      document.getElementById(k).style.display = (k === id) ? '' : 'none';
-    });
-  }
-
-  var code = new URLSearchParams(location.search).get('code');
-  if (!code) {
-    var m = location.pathname.match(/\/go\/([A-Za-z0-9]{4})\/?$/);
-    if (m) code = m[1];
-  }
-
-  if (!code) {
-    show('no-code');
-  } else {
-    callWorker({ action: 'cp_resolve_trilha', code: code.toUpperCase() })
-      .then(function(res) {
-        var tr = res && res.trilha;
-        if (tr && tr.client_slug && tr.turma_slug) {
-          var url = '/trilha/' + encodeURIComponent(tr.client_slug) + '/' + encodeURIComponent(tr.turma_slug) +
-                    (tr.token ? '?k=' + encodeURIComponent(tr.token) : '');
-          location.replace(url);
-        } else {
-          show('not-found');
-        }
-      })
-      .catch(function() { show('not-found'); });
-  }
-</script>
+<script>ThemeManager.initPublic();</script>
 </body>
 </html>

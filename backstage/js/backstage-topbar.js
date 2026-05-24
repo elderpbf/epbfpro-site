@@ -345,7 +345,7 @@ window.Topbar = (function() {
     ],
     turmas: [],
     perguntas: [
-      { key: 'ao-vivo',        label: 'Ao vivo',        href: '/backstage/classpulse/host.html' },
+      { key: 'ao-vivo',        label: 'Ao vivo',        href: '/backstage/classpulse/' },
       { key: 'banco',          label: 'Banco',          href: '/backstage/classpulse/?tab=banks' },
       { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' },
       { key: 'configuracoes',  label: 'Configurações',  href: '/backstage/classpulse/?tab=settings' }
@@ -398,6 +398,24 @@ window.Topbar = (function() {
     });
   }
 
+  // Render the sub-tabs for a parent Codex key as inline links into an arbitrary
+  // container element (live bar, page header, etc.). Lets pages absorb the
+  // 30px sub-row into their own chrome instead of stacking another row.
+  function renderSubTabsInto(containerEl, parentKey, activeSubKey) {
+    if (!containerEl) return;
+    var rows = CODEX_SUBTABS[parentKey] || [];
+    containerEl.innerHTML = '';
+    rows.forEach(function(t) {
+      var a = document.createElement('a');
+      a.className = 'bs-topbar-subtab' + (t.key === activeSubKey ? ' active' : '');
+      a.href = t.href || '#';
+      a.setAttribute('role', 'tab');
+      if (t.key === activeSubKey) a.setAttribute('aria-current', 'page');
+      a.textContent = t.label;
+      containerEl.appendChild(a);
+    });
+  }
+
   return {
     init: init,
     addItem: addItem,
@@ -405,7 +423,8 @@ window.Topbar = (function() {
     codexTabs: codexTabs,
     codexSubTabs: codexSubTabs,
     setTabDot: setTabDot,
-    startLiveSessionPoll: startLiveSessionPoll
+    startLiveSessionPoll: startLiveSessionPoll,
+    renderSubTabsInto: renderSubTabsInto
   };
 
 })();

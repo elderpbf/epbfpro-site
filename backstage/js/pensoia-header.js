@@ -13,18 +13,17 @@
 //       mode="student"|"display"
 //       code="5K78"
 //       session-title="Aula 3"
+//       join-url="https://pensoia.com/trilha/..."
 //       exitable
 //       theme-storage-key="bs_theme_public">
 //   </pensoia-header>
 //
 // Attributes are reactive: setAttribute('code', ...) updates
-// the button and modal live.
+// the button live. setAttribute('join-url', ...) updates the
+// QR target URL used by QRShareModal.
 //
 // Emits:
 //   ph-exit    when the exit button is clicked (student mode)
-//
-// Public API:
-//   el.openModal()  / el.closeModal()
 // ============================================================
 
 (function() {
@@ -84,7 +83,7 @@
         '</div>' +
         '<div class="ph-title"></div>' +
         '<div class="ph-right">' +
-          '<button class="ph-code-btn" type="button" aria-label="Mostrar codigo de acesso">' +
+          '<button class="ph-code-btn" type="button" aria-label="Mostrar QR code">' +
             QR_GLYPH +
             '<span class="ph-code-text"></span>' +
           '</button>' +
@@ -96,19 +95,7 @@
             '<span class="ph-theme-icon"></span>' +
           '</button>' +
         '</div>' +
-      '</header>' +
-      '<div class="ph-modal" hidden>' +
-        '<div class="ph-modal-backdrop"></div>' +
-        '<div class="ph-modal-card" role="dialog" aria-modal="true">' +
-          '<button class="ph-modal-close" type="button" aria-label="Fechar">\u00d7</button>' +
-          '<div class="ph-modal-label">Para entrar na sess\u00e3o</div>' +
-          '<img class="ph-modal-qr" alt="QR Code">' +
-          '<div class="ph-modal-info">' +
-            '<div class="ph-modal-code"></div>' +
-            '<div class="ph-modal-url"></div>' +
-          '</div>' +
-        '</div>' +
-      '</div>'
+      '</header>'
     );
   }
 
@@ -129,13 +116,14 @@
   class PensoiaHeader extends HTMLElement {
 
     static get observedAttributes() {
-      return ['mode', 'code', 'session-title', 'exitable'];
+      return ['mode', 'code', 'session-title', 'exitable', 'join-url'];
     }
 
     constructor() {
       super();
-      this._initialized = false;
-      this._escHandler  = null;
+      this._initialized  = false;
+      this._joinUrl      = null;
+      this._sessionTitle = null;
     }
 
     connectedCallback() {
@@ -144,29 +132,22 @@
 
       this.innerHTML = buildHtml();
 
-      this._titleEl       = this.querySelector('.ph-title');
-      this._codeBtn       = this.querySelector('.ph-code-btn');
-      this._codeText      = this.querySelector('.ph-code-text');
-      this._themeBtn      = this.querySelector('.ph-theme-btn');
-      this._themeIconEl   = this.querySelector('.ph-theme-icon');
-      this._exitBtn       = this.querySelector('.ph-exit-btn');
-      this._modal         = this.querySelector('.ph-modal');
-      this._modalCard     = this.querySelector('.ph-modal-card');
-      this._modalQr       = this.querySelector('.ph-modal-qr');
-      this._modalCodeEl   = this.querySelector('.ph-modal-code');
-      this._modalUrl      = this.querySelector('.ph-modal-url');
-      this._modalCloseBtn = this.querySelector('.ph-modal-close');
-      this._modalBackdrop = this.querySelector('.ph-modal-backdrop');
-      this._zoomBtns      = this.querySelectorAll('.ph-zoom-btn');
+      this._titleEl     = this.querySelector('.ph-title');
+      this._codeBtn     = this.querySelector('.ph-code-btn');
+      this._codeText    = this.querySelector('.ph-code-text');
+      this._themeBtn    = this.querySelector('.ph-theme-btn');
+      this._themeIconEl = this.querySelector('.ph-theme-icon');
+      this._exitBtn     = this.querySelector('.ph-exit-btn');
+      this._zoomBtns    = this.querySelectorAll('.ph-zoom-btn');
 
-      // Code button opens the info modal
-      this._codeBtn.addEventListener('click', () => this.openModal());
-
-      // Modal dismissal (backdrop click + close button)
-      this._modalCloseBtn.addEventListener('click', () => this.closeModal());
-      this._modalBackdrop.addEventListener('click', () => this.closeModal());
-      // Prevent clicks inside the card from bubbling to the backdrop
-      this._modalCard.addEventListener('click', (e) => e.stopPropagation());
+      // Code button opens QRShareModal if available, else falls back to legacy join URL.
+      this._codeBtn.addEventListener('click', () => {
+        var url = this._joinUrl || (this.getAttribute('code') ? buildJoinUrl(this.getAttribute('code')) : null);
+        if (!url) return;
+        if (window.QRShareModal) {
+          QRShareModal.open({ joinUrl: url, title: this._sessionTitle || 'Entre na trilha' });
+        }
+      });
 
       // Exit button emits a custom event so host pages decide what to do
       this._exitBtn.addEventListener('click', () => {
@@ -203,58 +184,29 @@
     }
 
     disconnectedCallback() {
-      if (this._escHandler) {
-        document.removeEventListener('keydown', this._escHandler);
-        this._escHandler = null;
-      }
+      // No local ESC handler; QRShareModal owns its own ESC listener.
     }
 
     attributeChangedCallback(name, oldVal, newVal) {
       if (!this._initialized) return;
       if (oldVal === newVal) return;
-      if (name === 'session-title') this._syncTitle();
+      if (name === 'session-title') { this._sessionTitle = newVal; this._syncTitle(); }
       else if (name === 'code')      this._syncCode();
+      else if (name === 'join-url')  this._joinUrl = newVal || null;
       else if (name === 'mode' && newVal === 'display') applyZoom();
     }
 
     // ---- internals ----
 
     _syncTitle() {
-      this._titleEl.textContent = this.getAttribute('session-title') || '';
+      var title = this.getAttribute('session-title') || '';
+      this._sessionTitle = title;
+      this._titleEl.textContent = title;
     }
 
     _syncCode() {
       var code = (this.getAttribute('code') || '').toUpperCase();
-      this._codeText.textContent  = code;
-      this._modalCodeEl.textContent = code;
-
-      if (code) {
-        var joinUrl = buildJoinUrl(code);
-        this._modalQr.src         = buildQrSrc(joinUrl);
-        this._modalUrl.textContent = 'pensoia.com/go';
-      } else {
-        this._modalQr.removeAttribute('src');
-        this._modalUrl.textContent = '';
-        // Close modal if code cleared while open
-        if (!this._modal.hidden) this.closeModal();
-      }
-    }
-
-    // ---- public API ----
-
-    openModal() {
-      if (!this.getAttribute('code')) return;
-      this._modal.hidden = false;
-      this._escHandler = (e) => { if (e.key === 'Escape') this.closeModal(); };
-      document.addEventListener('keydown', this._escHandler);
-    }
-
-    closeModal() {
-      this._modal.hidden = true;
-      if (this._escHandler) {
-        document.removeEventListener('keydown', this._escHandler);
-        this._escHandler = null;
-      }
+      this._codeText.textContent = code;
     }
   }
 
