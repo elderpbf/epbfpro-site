@@ -85,7 +85,6 @@
         '<div class="ph-right">' +
           '<button class="ph-code-btn" type="button" aria-label="Mostrar QR code">' +
             QR_GLYPH +
-            '<span class="ph-code-text"></span>' +
           '</button>' +
           '<div class="ph-zoom" role="group" aria-label="Ajuste de texto">' +
             '<button class="ph-zoom-btn" data-delta="-1" type="button" aria-label="Diminuir texto">A\u2212</button>' +
@@ -120,7 +119,6 @@
 
       this._titleEl     = this.querySelector('.ph-title');
       this._codeBtn     = this.querySelector('.ph-code-btn');
-      this._codeText    = this.querySelector('.ph-code-text');
       this._themeBtn    = this.querySelector('.ph-theme-btn');
       this._themeIconEl = this.querySelector('.ph-theme-icon');
       this._exitBtn     = this.querySelector('.ph-exit-btn');
@@ -165,7 +163,6 @@
 
       // Hydrate from attributes
       this._syncTitle();
-      this._syncCode();
     }
 
     disconnectedCallback() {
@@ -176,7 +173,6 @@
       if (!this._initialized) return;
       if (oldVal === newVal) return;
       if (name === 'session-title') { this._sessionTitle = newVal; this._syncTitle(); }
-      else if (name === 'code')      this._syncCode();
       else if (name === 'join-url')  this._joinUrl = newVal || null;
       else if (name === 'mode' && newVal === 'display') applyZoom();
     }
@@ -187,11 +183,6 @@
       var title = this.getAttribute('session-title') || '';
       this._sessionTitle = title;
       this._titleEl.textContent = title;
-    }
-
-    _syncCode() {
-      var code = (this.getAttribute('code') || '').toUpperCase();
-      this._codeText.textContent = code;
     }
   }
 
