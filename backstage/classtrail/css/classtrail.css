@@ -1159,69 +1159,37 @@
   margin-bottom: 1rem;
 }
 
-/* ----- G redesign: slimmed turma card (status icons + kebab) ----- */
+/* ----- G redesign v2: turma card mirrors client card pattern ----- */
+/* No .ct-turma-card override, no chevron, no kebab. The card uses the same
+ * .ct-card / .ct-card.selected / .ct-card-name / .ct-card-meta / .ct-card-actions
+ * structure as the client card, with extra info rows specific to turmas. */
 
-.ct-turma-card {
-  position: relative;
-  padding: 0.75rem 0.85rem;
-}
-
-/* Stronger selected state, an accent left bar, deeper tint, and a chevron
- * pointing to column 3 so the visual link from selected card → Aulas reads
- * clearly. Reuses the .ct-card.selected hook the card already gets. */
-.ct-turma-card.selected {
-  border-color: var(--primary);
-  box-shadow: inset 3px 0 0 var(--primary);
-  background: rgba(20,184,166,.14);
-}
-
-/* Visual arrow indicator on the selected card (right-edge chevron pointing
- * to column 3). Implemented via ::after for zero extra DOM; the test in
- * bundle-g-redesign-turmas.test.js looks for the .ct-turma-selected-arrow
- * marker class as a clear hook. */
-.ct-turma-card.selected::after,
-.ct-turma-card.selected .ct-turma-selected-arrow {
-  content: "›";
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--primary);
-  font-size: 1.4rem;
-  line-height: 1;
-  font-weight: 700;
-  pointer-events: none;
-}
-
-.ct-turma-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-  position: relative;
-}
-
-.ct-turma-card-head .ct-card-name {
-  margin-bottom: 0;
-  flex: 1;
-  min-width: 0;
-}
-
-.ct-turma-card-row {
+.ct-card-info-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
-.ct-turma-status-icons {
+.ct-card-info-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(20,184,166,.08);
+  border: 1px solid rgba(20,184,166,.18);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.ct-card-mini-icons {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.ct-turma-status-icon {
+.ct-card-mini-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1230,91 +1198,90 @@
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--surface);
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.12s;
 }
 
-.ct-turma-status-icon.is-on {
+.ct-card-mini-icon.is-on {
   color: var(--success, #16a34a);
   border-color: var(--success-bg, rgba(22,163,74,.35));
   background: var(--success-bg, rgba(22,163,74,.08));
 }
 
-.ct-turma-status-icon.is-off {
-  color: var(--text-dim, var(--text-secondary));
-  opacity: 0.55;
+a.ct-card-mini-icon.is-on:hover {
+  transform: scale(1.06);
+  border-color: var(--success, #16a34a);
 }
 
-/* Kebab trigger + menu. The menu floats inside the card head so it stays
- * scoped to the card; outside-click handler in ct-admin.js dismisses it. */
-.ct-turma-kebab {
+.ct-card-mini-icon.is-off { opacity: 0.55; }
+
+.ct-card-url-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ct-card-url-text {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ct-card-url-text:hover {
+  background: rgba(20,184,166,.08);
+  color: var(--primary);
+}
+
+.ct-card-url-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
+  min-width: 28px;
+  padding: 0 6px;
+  border-left: 1px solid var(--border);
   color: var(--text-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-
-.ct-turma-kebab:hover {
-  background: rgba(20,184,166,.08);
-  border-color: rgba(20,184,166,.25);
-  color: var(--primary);
-}
-
-.ct-turma-kebab:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.ct-turma-kebab-menu {
-  position: absolute;
-  top: 32px;
-  right: 0;
-  min-width: 170px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.18);
-  padding: 4px;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ct-turma-kebab-menu[hidden] { display: none; }
-
-.ct-turma-kebab-item {
-  appearance: none;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
   background: transparent;
-  border: 0;
-  text-align: left;
-  padding: 7px 10px;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
 }
 
-.ct-turma-kebab-item:hover {
-  background: rgba(20,184,166,.10);
+.ct-card-url-open:hover {
+  background: rgba(20,184,166,.08);
   color: var(--primary);
 }
 
-.ct-turma-kebab-item-danger { color: var(--error); }
-.ct-turma-kebab-item-danger:hover {
-  background: var(--error-bg);
-  color: var(--error);
+.ct-card-url-row.is-disabled .ct-card-url-text {
+  cursor: not-allowed;
+  color: var(--text-secondary);
+  opacity: 0.55;
 }
 
-/* ----- G redesign: Aulas column (col 3 of Turmas tab) ----- */
+/* ----- G redesign v2: Aulas column with inline editor ----- */
+
+.ct-aulas-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
 
 .ct-aulas-col-list {
   display: flex;
@@ -1324,13 +1291,31 @@
 
 .ct-aula-col-row {
   display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.ct-aula-col-row-display {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 0.55rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.ct-aula-col-row-display:hover {
+  background: rgba(20,184,166,.06);
+}
+
+.ct-aula-col-row.is-editing {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
 }
 
 .ct-aula-col-row-main {
@@ -1349,9 +1334,37 @@
   white-space: nowrap;
 }
 
-.ct-aula-col-row-title.is-empty {
+.ct-aula-col-row-title .is-empty {
   color: var(--text-secondary);
   font-style: italic;
+}
+
+.ct-aula-col-editor {
+  padding: 0.75rem 0.85rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ct-aula-col-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.ct-aula-col-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.ct-aula-col-editor-actions-right {
+  display: flex;
+  gap: 0.5rem;
 }
 
 /* ----- Apostila panel ----- */

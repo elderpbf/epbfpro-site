@@ -106,6 +106,13 @@ window.CT_ADMIN = (function() {
     callWorker({ action: 'ct_list_clients' }).then(function(data) {
       _clients = data.clients || [];
       _renderClients();
+      // Pre-select the first non-archived client (fallback to any) so the page
+      // is never empty on first load. Respect _selectedClientSlug if it was
+      // already restored (e.g., from localStorage or a deep link).
+      if (!_selectedClientSlug && _clients.length) {
+        var firstActive = _clients.find(function(c) { return c.status !== 'archived'; }) || _clients[0];
+        if (firstActive) _selectClient(firstActive.slug);
+      }
     }).catch(function() {
       document.getElementById('clients-list').innerHTML = '<div class="ct-empty">Erro ao carregar clientes.</div>';
     });
@@ -149,7 +156,7 @@ window.CT_ADMIN = (function() {
     var title = document.getElementById('turmas-pane-title');
     var client = _clients.find(function(c) { return c.slug === slug; });
     if (client) {
-      title.textContent = 'Turmas — ' + (client.display_name || client.name);
+      title.textContent = 'Turmas: ' + (client.display_name || client.name);
       btn.style.display = '';
     }
     // G redesign: switching client resets column 3 (aulas) unless the saved
@@ -173,7 +180,7 @@ window.CT_ADMIN = (function() {
     var hdr = document.getElementById('aulas-pane-title');
     if (hdr) hdr.textContent = 'Aulas';
     var list = document.getElementById('aulas-list');
-    if (list) list.innerHTML = '<div class="ct-empty">Selecione uma turma para ver suas aulas.</div>';
+    if (list) list.innerHTML = '<div class="ct-empty">Selecione uma turma à esquerda para ver suas aulas.</div>';
   }
 
   // ---- Client form with icon picker ----
@@ -234,7 +241,7 @@ window.CT_ADMIN = (function() {
         '<button class="ct-btn ct-btn-primary" id="cf-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
       '</div>' +
     '</div>';
-    var bd = _openModal(html, { disableBackdropClose: true });
+    var bd = _openModal(html);
 
     // Icon mode toggle
     var modeUrl = bd.querySelector('#cf-icon-mode-url');
@@ -354,6 +361,18 @@ window.CT_ADMIN = (function() {
     callWorker({ action: 'ct_list_turmas', client_slug: clientSlug }).then(function(data) {
       _turmas = data.turmas || [];
       _renderTurmas();
+      // Pre-select the first non-archived turma so column 3 (Aulas) is never
+      // empty when a client has turmas. Skip if the saved selection from
+      // localStorage already matches one of the loaded turmas for this client.
+      var savedTurma = null;
+      try { savedTurma = localStorage.getItem(LS_REL_TURMA); } catch (_) {}
+      var savedMatches = savedTurma && _turmas.some(function(t) {
+        return t.client_slug === clientSlug && t.slug === savedTurma;
+      });
+      if (!savedMatches && _turmas.length) {
+        var firstActive = _turmas.find(function(t) { return t.status !== 'archived'; }) || _turmas[0];
+        if (firstActive) _selectTurmaForAulas(firstActive.client_slug, firstActive.slug);
+      }
     }).catch(function() {
       el.innerHTML = '<div class="ct-empty">Erro ao carregar turmas.</div>';
     });
@@ -367,86 +386,60 @@ window.CT_ADMIN = (function() {
     }
     el.innerHTML = _turmas.map(function(t) {
       var url = _turmaUrl(t.client_slug, t.slug, t.token);
+      var sel = (t.client_slug === _relClientSlug && t.slug === _relTurmaSlug) ? ' selected' : '';
       var archived = t.status === 'archived' ? ' <span class="ct-badge archived">Arquivada</span>' : '';
       var wpOk = !!(t.whatsapp_url);
       var cpOk = !!(t.classpulse_session_id);
-      var isSelected = (t.client_slug === _relClientSlug && t.slug === _relTurmaSlug);
-      var slugTooltip = _esc(t.client_slug) + ' / ' + _esc(t.slug);
-      var wpIcon =
-        '<span class="ct-turma-status-icon' + (wpOk ? ' is-on' : ' is-off') + '" title="WhatsApp: ' +
-        (wpOk ? 'definido' : 'não definido') + '" aria-label="WhatsApp ' + (wpOk ? 'ok' : 'ausente') + '">' +
-          '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">' +
-            '<path d="M20.52 3.48A11.78 11.78 0 0 0 12.05 0C5.5 0 .18 5.32.18 11.87a11.83 11.83 0 0 0 1.59 5.94L0 24l6.34-1.66a11.86 11.86 0 0 0 5.71 1.46h.01c6.55 0 11.87-5.32 11.87-11.87a11.79 11.79 0 0 0-3.41-8.45zM12.06 21.7h-.01a9.83 9.83 0 0 1-5.01-1.37l-.36-.21-3.76.99 1-3.66-.23-.38a9.85 9.85 0 0 1-1.51-5.2c0-5.44 4.43-9.87 9.87-9.87a9.79 9.79 0 0 1 6.97 2.89 9.79 9.79 0 0 1 2.89 6.98c0 5.44-4.43 9.83-9.85 9.83zm5.4-7.36c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.74-1.64-2.04-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.06 2.88 1.21 3.08c.15.2 2.08 3.18 5.05 4.45.71.31 1.26.49 1.68.63.71.22 1.35.19 1.86.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z"/>' +
-          '</svg>' +
-        '</span>';
+      var hasUrl = !!t.token;
+      var realName = t.name || '';
+      var displayName = t.display_name || '';
+      var subtitle = (displayName && displayName !== realName)
+        ? '<div class="ct-card-meta">Para alunos: ' + _esc(displayName) + '</div>'
+        : '';
+      var aulaCount = t.aula_count || 0;
+      var aulaCountLabel = aulaCount === 1 ? '1 aula' : aulaCount + ' aulas';
+      var wpInner =
+        '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">' +
+          '<path d="M20.52 3.48A11.78 11.78 0 0 0 12.05 0C5.5 0 .18 5.32.18 11.87a11.83 11.83 0 0 0 1.59 5.94L0 24l6.34-1.66a11.86 11.86 0 0 0 5.71 1.46h.01c6.55 0 11.87-5.32 11.87-11.87a11.79 11.79 0 0 0-3.41-8.45zM12.06 21.7h-.01a9.83 9.83 0 0 1-5.01-1.37l-.36-.21-3.76.99 1-3.66-.23-.38a9.85 9.85 0 0 1-1.51-5.2c0-5.44 4.43-9.87 9.87-9.87a9.79 9.79 0 0 1 6.97 2.89 9.79 9.79 0 0 1 2.89 6.98c0 5.44-4.43 9.83-9.85 9.83zm5.4-7.36c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.74-1.64-2.04-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.06 2.88 1.21 3.08c.15.2 2.08 3.18 5.05 4.45.71.31 1.26.49 1.68.63.71.22 1.35.19 1.86.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z"/>' +
+        '</svg>';
+      var wpIcon = wpOk
+        ? '<a class="ct-card-mini-icon is-on" href="' + _esc(t.whatsapp_url) + '" target="_blank" rel="noopener" title="Abrir grupo no WhatsApp" onclick="event.stopPropagation()">' + wpInner + '</a>'
+        : '<span class="ct-card-mini-icon is-off" title="WhatsApp não definido">' + wpInner + '</span>';
       var cpIcon =
-        '<span class="ct-turma-status-icon' + (cpOk ? ' is-on' : ' is-off') + '" title="ClassPulse: ' +
-        (cpOk ? 'definido' : 'não definido') + '" aria-label="ClassPulse ' + (cpOk ? 'ok' : 'ausente') + '">' +
-          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<span class="ct-card-mini-icon ' + (cpOk ? 'is-on' : 'is-off') + '" title="ClassPulse: ' + (cpOk ? 'definido' : 'não definido') + '">' +
+          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
             '<path d="M22 12h-4l-3 8-6-16-3 8H2"/>' +
           '</svg>' +
         '</span>';
-      var archiveItem = (t.status !== 'archived')
-        ? '<button type="button" class="ct-turma-kebab-item ct-turma-kebab-item-danger" onclick="CT_ADMIN.archiveTurma(\'' + _esc(t.client_slug) + '\',\'' + _esc(t.slug) + '\')">Arquivar</button>'
-        : '';
-      return '<div class="ct-card ct-turma-card' + (isSelected ? ' selected' : '') + '" data-id="' + t.id +
-              '" data-client-slug="' + _esc(t.client_slug) + '" data-turma-slug="' + _esc(t.slug) +
-              '" title="' + slugTooltip + '">' +
-        '<div class="ct-turma-card-head">' +
-          '<div class="ct-card-name">' + _esc(t.display_name || t.name) + archived + '</div>' +
-          '<button type="button" class="ct-turma-kebab" aria-haspopup="true" aria-expanded="false" aria-label="Mais ações">' +
-            '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">' +
-              '<circle cx="12" cy="5"  r="1.7"/>' +
-              '<circle cx="12" cy="12" r="1.7"/>' +
-              '<circle cx="12" cy="19" r="1.7"/>' +
-            '</svg>' +
-          '</button>' +
-          '<div class="ct-turma-kebab-menu" hidden>' +
-            '<button type="button" class="ct-turma-kebab-item" onclick="CT_ADMIN.copyTurmaUrl(\'' + _esc(url) + '\')">Copiar link</button>' +
-            '<button type="button" class="ct-turma-kebab-item" onclick="CT_ADMIN.regenerateToken(\'' + _esc(t.client_slug) + '\',\'' + _esc(t.slug) + '\')">Regenerar token</button>' +
-            archiveItem +
-          '</div>' +
+      var urlRow = hasUrl
+        ? '<div class="ct-card-url-row">' +
+            '<button type="button" class="ct-card-url-text" title="Copiar URL" onclick="event.stopPropagation();CT_ADMIN.copyTurmaUrl(\'' + _esc(url) + '\')">' + _esc(url) + '</button>' +
+            '<a class="ct-card-url-open" href="' + _esc(url) + '" target="_blank" rel="noopener" title="Abrir URL em nova aba" aria-label="Abrir URL em nova aba" onclick="event.stopPropagation()">↗</a>' +
+          '</div>'
+        : '<div class="ct-card-url-row is-disabled" title="Token de URL ausente"><span class="ct-card-url-text" aria-disabled="true">URL indisponível</span></div>';
+      return '<div class="ct-card' + sel + '" data-id="' + t.id +
+              '" data-client-slug="' + _esc(t.client_slug) + '" data-turma-slug="' + _esc(t.slug) + '">' +
+        '<div class="ct-card-name">' + _esc(realName) + archived + '</div>' +
+        subtitle +
+        '<div class="ct-card-info-row">' +
+          '<span class="ct-card-info-chip">' + aulaCountLabel + '</span>' +
+          '<span class="ct-card-mini-icons">' + wpIcon + cpIcon + '</span>' +
         '</div>' +
-        '<div class="ct-turma-card-row">' +
-          '<div class="ct-turma-status-icons">' + wpIcon + cpIcon + '</div>' +
-          '<button type="button" class="ct-btn ct-btn-sm ct-btn-primary" onclick="CT_ADMIN.editTurma(' + t.id + ')">Editar</button>' +
+        urlRow +
+        '<div class="ct-card-actions">' +
+          '<button type="button" class="ct-btn ct-btn-sm" onclick="event.stopPropagation();CT_ADMIN.editTurma(' + t.id + ')">Editar</button>' +
+          (t.status !== 'archived' ? '<button type="button" class="ct-btn ct-btn-sm ct-btn-danger" onclick="event.stopPropagation();CT_ADMIN.archiveTurma(\'' + _esc(t.client_slug) + '\',\'' + _esc(t.slug) + '\')">Arquivar</button>' : '') +
         '</div>' +
       '</div>';
     }).join('');
 
-    // G redesign: clicking the body of a turma card selects it for column 3
-    // (loads its aulas). Buttons / icons / kebab carry their own handlers,
-    // so the listener short-circuits when the event originates from one.
+    // Mirror client card pattern: click anywhere on card body (not on a button
+    // or link) selects the turma so column 3 loads its aulas.
     el.querySelectorAll('.ct-card').forEach(function(card) {
       card.addEventListener('click', function(e) {
-        if (e.target.closest('button, a, input, textarea, .ct-turma-kebab-menu')) return;
+        if (e.target.closest('button, a')) return;
         _selectTurmaForAulas(card.dataset.clientSlug, card.dataset.turmaSlug);
       });
-    });
-
-    // G redesign: kebab toggles its own menu and dismisses on outside click.
-    el.querySelectorAll('.ct-turma-kebab').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var menu = btn.parentElement.querySelector('.ct-turma-kebab-menu');
-        var wasOpen = !menu.hidden;
-        // Close any other open menus first.
-        el.querySelectorAll('.ct-turma-kebab-menu').forEach(function(m) { m.hidden = true; });
-        el.querySelectorAll('.ct-turma-kebab').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
-        if (!wasOpen) {
-          menu.hidden = false;
-          btn.setAttribute('aria-expanded', 'true');
-        }
-      });
-    });
-  }
-
-  // Outside-click dismiss for the kebab menu. Bound once at module init.
-  if (typeof document !== 'undefined') {
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.ct-turma-kebab') || e.target.closest('.ct-turma-kebab-menu')) return;
-      document.querySelectorAll('.ct-turma-kebab-menu').forEach(function(m) { m.hidden = true; });
-      document.querySelectorAll('.ct-turma-kebab').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
     });
   }
 
@@ -489,20 +482,195 @@ window.CT_ADMIN = (function() {
   function _renderTurmaAulas() {
     var el = document.getElementById('aulas-list');
     if (!el) return;
+    var addBtnHtml =
+      '<div class="ct-aulas-toolbar">' +
+        '<button type="button" class="ct-btn ct-btn-sm ct-btn-primary" id="cv-add-aula-btn">+ Nova aula</button>' +
+      '</div>';
     if (!_turmaAulas.length) {
-      el.innerHTML = '<div class="ct-empty">Nenhuma aula cadastrada. Use Editar para adicionar aulas.</div>';
-      return;
+      el.innerHTML = addBtnHtml +
+        '<div class="ct-empty">Nenhuma aula cadastrada. Clique em "+ Nova aula" para criar.</div>';
+    } else {
+      el.innerHTML = addBtnHtml +
+        '<div class="ct-aulas-col-list">' +
+          _turmaAulas.map(_renderAulaColRow).join('') +
+        '</div>';
     }
-    el.innerHTML = _turmaAulas.map(function(a) {
-      var ds = _aulaDateStatus(a);
-      return '<div class="ct-aula-col-row">' +
+    _wireAulasColEvents();
+  }
+
+  function _renderAulaColRow(a, idx) {
+    var ds = _aulaDateStatus(a);
+    var title = a.title ? _esc(a.title) : '<span class="is-empty">sem título</span>';
+    return '<div class="ct-aula-col-row" data-aula-idx="' + idx + '">' +
+      '<div class="ct-aula-col-row-display">' +
         '<div class="ct-aula-col-row-main">' +
           '<span class="ct-rel-aula-label">Aula ' + _esc(a.aula_number) + '</span>' +
-          (a.title ? '<span class="ct-aula-col-row-title">' + _esc(a.title) + '</span>' : '<span class="ct-aula-col-row-title is-empty">sem título</span>') +
+          '<span class="ct-aula-col-row-title">' + title + '</span>' +
         '</div>' +
         '<span class="ct-rel-aula-date ' + ds.cls + '">' + _esc(ds.text) + '</span>' +
-      '</div>';
-    }).join('');
+      '</div>' +
+    '</div>';
+  }
+
+  function _renderAulaColEditor(a) {
+    return '<div class="ct-aula-col-editor">' +
+      '<div class="ct-field">' +
+        '<label>Título</label>' +
+        '<input type="text" class="cv-aula-title" value="' + _esc(a.title || '') + '" placeholder="Título da aula">' +
+      '</div>' +
+      '<div class="ct-aula-col-editor-grid">' +
+        '<div class="ct-field">' +
+          '<label>Agendada para (vazio = sem data definida)</label>' +
+          '<input type="date" class="cv-aula-scheduled" value="' + _esc(a.scheduled_for || '') + '">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Ocorreu em</label>' +
+          '<input type="date" class="cv-aula-happened" value="' + _esc(a.happened_on || '') + '">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Remarcada de (data original)</label>' +
+          '<input type="date" class="cv-aula-rescheduled-from" value="' + _esc(a.rescheduled_from || '') + '">' +
+        '</div>' +
+        '<div class="ct-field">' +
+          '<label>Nota de remarcação (opcional)</label>' +
+          '<input type="text" class="cv-aula-rescheduled-note" value="' + _esc(a.rescheduled_note || '') + '" placeholder="Ex: feriado, aguardando nova data">' +
+        '</div>' +
+      '</div>' +
+      '<div class="ct-aula-col-editor-actions">' +
+        '<button type="button" class="ct-btn ct-btn-sm ct-btn-danger cv-aula-delete">Excluir</button>' +
+        '<div class="ct-aula-col-editor-actions-right">' +
+          '<button type="button" class="ct-btn ct-btn-sm cv-aula-cancel">Fechar</button>' +
+          '<button type="button" class="ct-btn ct-btn-sm ct-btn-primary cv-aula-save">Salvar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function _wireAulasColEvents() {
+    var addBtn = document.getElementById('cv-add-aula-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', _addNewAulaCol);
+    }
+    document.querySelectorAll('#aulas-list .ct-aula-col-row').forEach(function(row) {
+      var display = row.querySelector('.ct-aula-col-row-display');
+      if (display) {
+        display.addEventListener('click', function() { _expandAulaCol(row); });
+      }
+    });
+  }
+
+  function _addNewAulaCol() {
+    var nums = _turmaAulas.map(function(a) { return a.aula_number || 0; });
+    var nextNum = nums.length ? Math.max.apply(null, nums) + 1 : 1;
+    var newAula = {
+      id: null,
+      aula_number: nextNum,
+      title: '',
+      topics_json: null,
+      scheduled_for: null,
+      happened_on: null,
+      rescheduled_from: null,
+      rescheduled_note: null,
+      _isNew: true
+    };
+    _turmaAulas.push(newAula);
+    _renderTurmaAulas();
+    var rows = document.querySelectorAll('#aulas-list .ct-aula-col-row');
+    var newRow = rows[rows.length - 1];
+    if (newRow) _expandAulaCol(newRow);
+  }
+
+  function _expandAulaCol(row) {
+    var idx = parseInt(row.dataset.aulaIdx, 10);
+    var aula = _turmaAulas[idx];
+    if (!aula) return;
+    document.querySelectorAll('#aulas-list .ct-aula-col-row.is-editing').forEach(function(r) {
+      if (r !== row) _collapseAulaCol(r);
+    });
+    row.classList.add('is-editing');
+    var display = row.querySelector('.ct-aula-col-row-display');
+    if (display) display.style.display = 'none';
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = _renderAulaColEditor(aula);
+    var editorEl = wrapper.firstChild;
+    row.appendChild(editorEl);
+    _wireAulaEditorEvents(row, aula, idx);
+    var titleInput = row.querySelector('.cv-aula-title');
+    if (titleInput) setTimeout(function() { titleInput.focus(); }, 0);
+  }
+
+  function _collapseAulaCol(row) {
+    row.classList.remove('is-editing');
+    var display = row.querySelector('.ct-aula-col-row-display');
+    if (display) display.style.display = '';
+    var editor = row.querySelector('.ct-aula-col-editor');
+    if (editor) editor.parentNode.removeChild(editor);
+  }
+
+  function _wireAulaEditorEvents(row, aula, idx) {
+    var saveBtn = row.querySelector('.cv-aula-save');
+    var cancelBtn = row.querySelector('.cv-aula-cancel');
+    var deleteBtn = row.querySelector('.cv-aula-delete');
+    var titleInput = row.querySelector('.cv-aula-title');
+    var schedInput = row.querySelector('.cv-aula-scheduled');
+    var happInput = row.querySelector('.cv-aula-happened');
+    var rfromInput = row.querySelector('.cv-aula-rescheduled-from');
+    var rnoteInput = row.querySelector('.cv-aula-rescheduled-note');
+
+    saveBtn.addEventListener('click', function() {
+      var payload = {
+        client_slug: _relClientSlug,
+        turma_slug: _relTurmaSlug,
+        aula_number: aula.aula_number,
+        title: titleInput.value.trim(),
+        scheduled_for: schedInput.value || null,
+        happened_on: happInput.value || null,
+        rescheduled_from: rfromInput.value || null,
+        rescheduled_note: rnoteInput.value.trim() || null
+      };
+      var isNew = aula._isNew;
+      var params = Object.assign({ action: isNew ? 'ct_create_aula' : 'ct_update_aula' }, payload);
+      if (!isNew) params.id = aula.id;
+      callWorker(params).then(function(res) {
+        if (isNew) {
+          var created = res.aula || res;
+          if (created && created.id) {
+            aula.id = created.id;
+            aula._isNew = false;
+          }
+        }
+        aula.title = payload.title;
+        aula.scheduled_for = payload.scheduled_for;
+        aula.happened_on = payload.happened_on;
+        aula.rescheduled_from = payload.rescheduled_from;
+        aula.rescheduled_note = payload.rescheduled_note;
+        _toast('Aula salva.');
+        _renderTurmaAulas();
+      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    });
+
+    cancelBtn.addEventListener('click', function() {
+      if (aula._isNew) {
+        _turmaAulas.splice(idx, 1);
+        _renderTurmaAulas();
+      } else {
+        _collapseAulaCol(row);
+      }
+    });
+
+    deleteBtn.addEventListener('click', function() {
+      if (aula._isNew) {
+        _turmaAulas.splice(idx, 1);
+        _renderTurmaAulas();
+        return;
+      }
+      if (!confirm('Excluir aula ' + aula.aula_number + '? Os itens liberados para ela perderão a associação.')) return;
+      callWorker({ action: 'ct_delete_aula', id: aula.id }).then(function() {
+        _turmaAulas.splice(idx, 1);
+        _toast('Aula excluída.');
+        _renderTurmaAulas();
+      }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
+    });
   }
 
   function _openTurmaForm(turma, scrollTo) {
@@ -533,14 +701,13 @@ window.CT_ADMIN = (function() {
         '<div class="ct-field"><label>Sessão ClassPulse</label>' +
           '<select id="tf-classpulse">' + cpOptions + '</select>' +
         '</div>' +
-        (isEdit ? _renderAulasSection(turma) : '') +
         '<div class="ct-modal-actions">' +
           '<button class="ct-btn" id="tf-cancel">Cancelar</button>' +
           '<button class="ct-btn ct-btn-primary" id="tf-save">' + (isEdit ? 'Salvar' : 'Criar') + '</button>' +
         '</div>' +
       '</div>';
 
-      var bd = _openModal(html, { disableBackdropClose: true });
+      var bd = _openModal(html);
 
       // Scroll to a specific section after modal opens
       function _scrollModalTo(targetId) {
@@ -551,12 +718,7 @@ window.CT_ADMIN = (function() {
         }
       }
 
-      // Load aulas for existing turma
-      if (isEdit) {
-        _loadAulasIntoForm(bd, turma.client_slug, turma.slug);
-        if (scrollTo === 'aulas') { setTimeout(function() { _scrollModalTo('tf-aulas-section'); }, 200); }
-      }
-
+      // Aulas now live in column 3 of the Turmas tab (not in this modal).
       if (scrollTo === 'whatsapp') { setTimeout(function() { _scrollModalTo('tf-whatsapp'); bd.querySelector('#tf-whatsapp').focus(); }, 80); }
       else if (scrollTo === 'classpulse') { setTimeout(function() { _scrollModalTo('tf-classpulse'); bd.querySelector('#tf-classpulse').focus(); }, 80); }
 
@@ -602,158 +764,6 @@ window.CT_ADMIN = (function() {
           _closeModal();
           _toast(isEdit ? 'Turma atualizada.' : 'Turma criada.');
           _loadTurmas(_selectedClientSlug);
-        }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
-      });
-    });
-  }
-
-  // ---- Aulas section (inside turma edit) ----
-
-  function _renderAulasSection(turma) {
-    return '<div class="ct-aulas-section" id="tf-aulas-section">' +
-      '<div class="ct-aulas-header">' +
-        '<span class="ct-aulas-title">Aulas desta turma</span>' +
-        '<button type="button" class="ct-btn ct-btn-sm ct-btn-primary" id="tf-add-aula">+ Nova aula</button>' +
-      '</div>' +
-      '<div id="tf-aulas-list"><div class="ct-empty">Carregando aulas...</div></div>' +
-    '</div>';
-  }
-
-  function _loadAulasIntoForm(bd, clientSlug, turmaSlug) {
-    callWorker({ action: 'ct_list_aulas', client_slug: clientSlug, turma_slug: turmaSlug }).then(function(d) {
-      var aulas = d.aulas || [];
-      _renderAulaRows(bd, aulas, clientSlug, turmaSlug);
-    }).catch(function() {
-      var el = bd.querySelector('#tf-aulas-list');
-      if (el) el.innerHTML = '<div class="ct-empty">Erro ao carregar aulas.</div>';
-    });
-  }
-
-  function _renderAulaRows(bd, aulas, clientSlug, turmaSlug) {
-    var container = bd.querySelector('#tf-aulas-list');
-    if (!container) return;
-
-    function render(list) {
-      if (!list.length) {
-        container.innerHTML = '<div class="ct-empty">Nenhuma aula. Clique em "+ Nova aula" para adicionar.</div>';
-      } else {
-        container.innerHTML = list.map(_buildAulaRowHtml).join('');
-        _wireAulaRowEvents(bd, container, list, clientSlug, turmaSlug);
-      }
-    }
-
-    render(aulas);
-
-    var addBtn = bd.querySelector('#tf-add-aula');
-    if (addBtn) {
-      addBtn.addEventListener('click', function() {
-        var nums = aulas.map(function(a) { return a.aula_number || 0; });
-        var nextNum = nums.length ? Math.max.apply(null, nums) + 1 : 1;
-        var newAula = {
-          id: null,
-          aula_number: nextNum,
-          title: '',
-          topics_json: null,
-          scheduled_for: null,
-          happened_on: null,
-          rescheduled_from: null,
-          rescheduled_note: null,
-          _isNew: true
-        };
-        aulas.push(newAula);
-        render(aulas);
-        var modal = bd.querySelector('.ct-modal');
-        if (modal) modal.scrollTop = modal.scrollHeight;
-      });
-    }
-  }
-
-  function _buildAulaRowHtml(a) {
-    // Tarefa is no longer a field on the aula itself; tarefas are managed in
-    // the Liberações composer as items of type='tarefa' released to the aula.
-    return '<div class="ct-aula-row" data-aula-id="' + _esc(a.id || '') + '" data-is-new="' + (a._isNew ? '1' : '0') + '">' +
-      '<div class="ct-aula-num-label">Aula ' + _esc(a.aula_number) + '</div>' +
-      '<div class="ct-aula-row-grid">' +
-        '<div class="ct-field">' +
-          '<label>Título</label>' +
-          '<input type="text" class="aula-title" value="' + _esc(a.title || '') + '" placeholder="Título da aula">' +
-        '</div>' +
-        '<div class="ct-field">' +
-          '<label>Agendada para</label>' +
-          '<input type="date" class="aula-scheduled" value="' + _esc(a.scheduled_for || '') + '">' +
-        '</div>' +
-        '<div class="ct-field">' +
-          '<label>Ocorreu em</label>' +
-          '<input type="date" class="aula-happened" value="' + _esc(a.happened_on || '') + '">' +
-        '</div>' +
-        '<div class="ct-field">' +
-          '<label>Remarcada de (data original)</label>' +
-          '<input type="date" class="aula-rescheduled-from" value="' + _esc(a.rescheduled_from || '') + '">' +
-        '</div>' +
-        '<div class="ct-field">' +
-          '<label>Nota de remarcação (opcional)</label>' +
-          '<input type="text" class="aula-rescheduled-note" value="' + _esc(a.rescheduled_note || '') + '" placeholder="Ex: Feriado nacional">' +
-        '</div>' +
-      '</div>' +
-      '<div class="ct-aula-actions">' +
-        '<button type="button" class="ct-btn ct-btn-sm ct-btn-danger aula-delete-btn">Excluir</button>' +
-        '<button type="button" class="ct-btn ct-btn-sm ct-btn-primary aula-save-btn">Salvar aula</button>' +
-      '</div>' +
-    '</div>';
-  }
-
-  function _wireAulaRowEvents(bd, container, aulas, clientSlug, turmaSlug) {
-    container.querySelectorAll('.ct-aula-row').forEach(function(row, idx) {
-      var aula = aulas[idx];
-
-      var saveBtn = row.querySelector('.aula-save-btn');
-      var deleteBtn = row.querySelector('.aula-delete-btn');
-
-      saveBtn.addEventListener('click', function() {
-        // topics_json is intentionally omitted; the Worker preserves the existing value
-        // when the param is absent. Topics auto-fill from apostila releases now.
-        var payload = {
-          client_slug: clientSlug,
-          turma_slug: turmaSlug,
-          aula_number: aula.aula_number,
-          title: row.querySelector('.aula-title').value.trim(),
-          scheduled_for: row.querySelector('.aula-scheduled').value || null,
-          happened_on: row.querySelector('.aula-happened').value || null,
-          rescheduled_from: row.querySelector('.aula-rescheduled-from').value || null,
-          rescheduled_note: row.querySelector('.aula-rescheduled-note').value.trim() || null
-        };
-        var isNew = row.dataset.isNew === '1' || aula._isNew;
-        if (isNew) {
-          callWorker(Object.assign({ action: 'ct_create_aula' }, payload)).then(function(res) {
-            var created = res.aula || res;
-            if (created && created.id) {
-              aula.id = created.id;
-              aula._isNew = false;
-              row.dataset.aulaId = created.id;
-              row.dataset.isNew = '0';
-            }
-            _toast('Aula criada.');
-          }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
-        } else {
-          callWorker(Object.assign({ action: 'ct_update_aula', id: aula.id }, payload)).then(function() {
-            _toast('Aula salva.');
-          }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
-        }
-      });
-
-      deleteBtn.addEventListener('click', function() {
-        var isNew = row.dataset.isNew === '1' || aula._isNew;
-        if (isNew) {
-          // Not yet saved, just remove from DOM and local array
-          aulas.splice(idx, 1);
-          _renderAulaRows(bd, aulas, clientSlug, turmaSlug);
-          return;
-        }
-        if (!confirm('Excluir aula ' + aula.aula_number + '? Os itens liberados para ela perderão a associação.')) return;
-        callWorker({ action: 'ct_delete_aula', id: aula.id }).then(function() {
-          aulas.splice(idx, 1);
-          _renderAulaRows(bd, aulas, clientSlug, turmaSlug);
-          _toast('Aula excluída.');
         }).catch(function(err) { _toast('Erro: ' + (err.message || err)); });
       });
     });

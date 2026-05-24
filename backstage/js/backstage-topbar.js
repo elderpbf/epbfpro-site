@@ -324,7 +324,7 @@ window.Topbar = (function() {
   var CODEX_SUBTABS = {
     aula: [],
     conteudo: [
-      { key: 'conteudo',   label: 'Conteúdo',   href: '/backstage/classtrail/?tab=conteudo' },
+      { key: 'conteudo',   label: 'Items',      href: '/backstage/classtrail/?tab=conteudo' },
       { key: 'apostila',   label: 'Apostila',   href: '/backstage/classtrail/?tab=apostila' },
       { key: 'tarefas',    label: 'Tarefas',    href: '/backstage/classtrail/?tab=tarefas' },
       { key: 'drive',      label: 'Drive',      href: '/backstage/classtrail/?tab=drive' },
