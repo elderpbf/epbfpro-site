@@ -1,0 +1,357 @@
+/* CV Presets - styles shared across ClassTrail admin (Conteudo / Presets
+   sub-tab CRUD) and ClassVault (Aula sidebar "Carregar preset" dropdown).
+   Tokens come from theme.css. Dark-mode tokens already have overrides at
+   the theme layer; this file only needs surface/border/text references. */
+
+/* ---- Preset list (admin CRUD) -------------------------------------- */
+
+.cv-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cv-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.cv-preset-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cv-preset-count {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cv-preset-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cv-preset-edit,
+.cv-preset-delete {
+  font-size: 0.78rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.cv-preset-edit:hover {
+  background: var(--surface-soft);
+}
+
+.cv-preset-delete {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+[data-theme="dark"] .cv-preset-delete {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.3);
+}
+
+.cv-preset-delete:hover {
+  background: #fee2e2;
+}
+
+[data-theme="dark"] .cv-preset-delete:hover {
+  background: rgba(252, 165, 165, 0.12);
+}
+
+.cv-preset-empty {
+  margin: 40px auto;
+  max-width: 480px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Wider modal variant for the preset editor (default .ct-modal is 460px,
+   which crops the item picker). Applied as <div class="ct-modal ct-modal--wide">. */
+
+.ct-modal.ct-modal--wide {
+  max-width: 720px;
+}
+
+/* ---- Preset editor (modal body) ------------------------------------ */
+
+.cv-preset-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cv-preset-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cv-preset-editor-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.cv-preset-editor-name {
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.cv-preset-editor-name:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.cv-preset-editor-picker {
+  /* delegated to .cv-item-picker (sized by its own rules) */
+}
+
+.cv-preset-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.cv-preset-editor-cancel,
+.cv-preset-editor-save {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.cv-preset-editor-cancel {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.cv-preset-editor-cancel:hover {
+  background: var(--surface-soft);
+}
+
+.cv-preset-editor-save {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.cv-preset-editor-save:hover {
+  filter: brightness(1.06);
+}
+
+/* ---- Item picker (multi-select widget) ----------------------------- */
+
+.cv-item-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.cv-item-picker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.cv-item-picker-search {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.cv-item-picker-search:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.cv-item-picker-count {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cv-item-picker-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.cv-item-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+}
+
+.cv-item-picker-row:hover {
+  background: var(--surface-soft);
+}
+
+.cv-item-picker-row.is-selected {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+[data-theme="dark"] .cv-item-picker-row.is-selected {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.cv-item-picker-check {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.cv-item-picker-type {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.cv-item-picker-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cv-item-picker-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
+/* ---- Preset loader (Aula sidebar dropdown) ------------------------- */
+
+.cv-sm-preset {
+  padding: 0 12px 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cv-sm-preset:empty {
+  padding: 0;
+}
+
+.cv-preset-loader-select {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.cv-preset-loader-select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.cv-preset-loader-reset {
+  flex-shrink: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.cv-preset-loader-reset:hover {
+  filter: brightness(0.96);
+}
+
+/* ---- Aula sidebar preset view (flat list while preset is loaded) ---- */
+
+.cv-sm-preset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 0 8px 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.84rem;
+}
+
+.cv-sm-preset-header-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cv-sm-preset-header-count {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cv-sm-preset-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px 12px;
+}

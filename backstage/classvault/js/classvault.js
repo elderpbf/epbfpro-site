@@ -147,6 +147,13 @@ ClassVault._editorHandle = null;             // CTItemForm handle when in editor
 ClassVault._creatorHandle = null;            // CTItemCreator handle when in creator mode
 ClassVault._editorTarget = null;             // item being edited; null = create-new
 
+// Bundle I (rebuild): Lesson Presets. allPresets caches cv_list_presets for
+// the sidebar "Carregar preset" dropdown. activePreset holds the currently
+// loaded preset (full object) — when non-null, _renderSidebar branches to a
+// flat preset-view that shows ONLY the preset's items resolved via _findItem.
+ClassVault.allPresets = [];
+ClassVault.activePreset = null;
+
 (async function boot() {
   let data;
   try {
@@ -168,6 +175,7 @@ ClassVault._editorTarget = null;             // item being edited; null = create
   _wireItemContextMenu();
   await _loadCodex();
   if (window.CVDriveSync) CVDriveSync.init();
+  _initPresetLoader();   // Bundle I (rebuild): mount Aula sidebar dropdown
   _renderPinnedNexo();   // initial paint (null state)
   _loadLiveSession();    // fetch once on boot; user clicks refresh to update
   _renderEmptyMainView();  // welcome state until user selects a sidebar item
@@ -328,6 +336,16 @@ function _classifyVault(items) {
 function _renderSidebar() {
   const body = document.querySelector('.cv-sm-body');
   if (!body) return;
+
+  // Bundle I (rebuild): preset-filtered view. When a preset is loaded, the
+  // sidebar shows ONLY the preset's items, resolved via _findItem (which
+  // already handles numeric ct_items, 'drive:' synthetic, 'lab:' synthetic).
+  // "Mostrar tudo" on the loader clears activePreset and triggers a re-render.
+  if (ClassVault.activePreset) {
+    _renderPresetView(body, ClassVault.activePreset);
+    return;
+  }
+
   const html = [];
   const buckets = _classifyVault(ClassVault.vaultItems);
 
@@ -388,6 +406,75 @@ function _renderSidebar() {
   // Re-apply search filter on re-render so collapse toggles don't reset it.
   const searchInput = document.querySelector('.cv-sm-search');
   if (searchInput && searchInput.value) _applySearchFilter(searchInput.value);
+}
+
+// Bundle I (rebuild): flat preset view. Replaces the normal grouped sidebar
+// while a preset is loaded. Resolves each preset.item_id via _findItem so
+// numeric ct_items, 'drive:<gid>', and 'lab:<key>' all render correctly.
+// Items the preset references but that no longer exist are silently skipped;
+// the header surfaces the resolved-vs-total count for transparency.
+function _renderPresetView(body, preset) {
+  const ids = (preset && preset.item_ids) || [];
+  const rows = [];
+  for (const id of ids) {
+    const res = _findItem(id);
+    if (res && res.item) rows.push(_renderSubCard(res.item));
+  }
+  const header =
+    '<div class="cv-sm-preset-header">' +
+      '<span class="cv-sm-preset-header-label">Preset: ' + _esc(preset.name || '(sem nome)') + '</span>' +
+      '<span class="cv-sm-preset-header-count">' + rows.length + '/' + ids.length + ' item(s)</span>' +
+    '</div>';
+  if (!rows.length) {
+    body.innerHTML = header +
+      '<div class="cv-sm-empty">Nenhum item do preset esta disponivel agora.</div>';
+    return;
+  }
+  body.innerHTML = header + '<div class="cv-sm-preset-items">' + rows.join('') + '</div>';
+
+  if (ClassVault.activeItemId != null) {
+    const el = body.querySelector('.sub[data-item-id="' + ClassVault.activeItemId + '"]');
+    if (el) el.classList.add('is-active');
+  }
+
+  const searchInput = document.querySelector('.cv-sm-search');
+  if (searchInput && searchInput.value) _applySearchFilter(searchInput.value);
+}
+
+// Bundle I (rebuild): mount the Aula sidebar "Carregar preset" dropdown. Sits
+// in #cv-sm-preset (between cv-sm-head and cv-sm-body). Silent on error; if
+// the worker is unreachable, the loader simply hides. If no presets exist,
+// the mount point collapses (the rule keeps the head clean for first-time
+// users with no presets saved yet).
+async function _initPresetLoader() {
+  const mountEl = document.getElementById('cv-sm-preset');
+  if (!mountEl || !window.CVPresetsAPI || !window.CVPresetsUI) return;
+  let presets = [];
+  try {
+    presets = await CVPresetsAPI.list({ _silent: true });
+  } catch (_) {
+    return;
+  }
+  ClassVault.allPresets = presets;
+  if (!presets.length) {
+    mountEl.style.display = 'none';
+    return;
+  }
+  mountEl.style.display = '';
+  CVPresetsUI.mountPresetLoader(mountEl, {
+    presets: presets,
+    currentPresetId: null,
+    onSelect: function(preset) {
+      ClassVault.activePreset = preset;
+      _resetAccordion();
+      _renderSidebar();
+    },
+    onReset: function() {
+      ClassVault.activePreset = null;
+      _resetAccordion();
+      _renderSidebar();
+    }
+  });
 }
 
 // Per-section glyphs for the neon-glow card headers. Colors come from CSS

@@ -1687,7 +1687,8 @@ window.CT_ADMIN = (function() {
     // G redesign: Liberações is its own Conteúdo sub-tab. Boot the picker;
     // the picker auto-restores the last turma selection via LS_REL_CLIENT/TURMA.
     if (internalId === 'liberacoes') _initLiberacoesPicker();
-    // drive + presets are Bundle I placeholders; they render their own static markup.
+    if (internalId === 'presets')    _initPresetsPanel();
+    // drive remains a Bundle I placeholder (drive caching postponed; see ClassVault manifest/tasks/postponed.md).
   }
 
   // G redesign: re-hydrate the Aulas column from localStorage so reloading
@@ -1817,6 +1818,107 @@ window.CT_ADMIN = (function() {
       storageKey: { client: LS_REL_CLIENT, turma: LS_REL_TURMA },
       autoRestore: true
     });
+  }
+
+  // ==========================================================================
+  // Bundle I (rebuild): Lesson Presets sub-tab in Conteudo. Thin orchestrator;
+  // all rendering lives in CVPresetsUI, data fetching in CVPresetsAPI, and
+  // item-picking in CVItemPicker.
+  // ==========================================================================
+
+  function _initPresetsPanel() {
+    var panel = document.getElementById('panel-presets');
+    if (!panel) return;
+    panel.innerHTML =
+      '<div class="ct-toolbar">' +
+        '<h2>Lesson Presets</h2>' +
+        '<button class="ct-btn ct-btn-primary" id="btn-new-preset" type="button">+ Novo preset</button>' +
+      '</div>' +
+      '<div class="ct-preset-mount" id="preset-list-mount"><div class="ct-empty">Carregando presets...</div></div>';
+
+    var mountEl = document.getElementById('preset-list-mount');
+    var newBtn  = document.getElementById('btn-new-preset');
+    var listInst = null;
+
+    function _reload() {
+      CVPresetsAPI.list().then(function(presets) {
+        if (listInst && listInst.setPresets) {
+          listInst.setPresets(presets);
+        } else {
+          mountEl.innerHTML = '';
+          listInst = CVPresetsUI.mountPresetsList(mountEl, {
+            presets: presets,
+            onEdit:   function(p) { _openPresetEditor(p); },
+            onDelete: function(p) { _confirmDeletePreset(p); }
+          });
+        }
+      }).catch(function(err) {
+        mountEl.innerHTML = '<div class="ct-empty">Erro ao carregar presets: ' +
+          _esc(err && err.message ? err.message : 'desconhecido') + '</div>';
+      });
+    }
+
+    // The editor needs the full items library. _items populates when the user
+    // visits the Items tab; if they jump straight to Presets it may be empty.
+    // Trigger a silent load and resolve once available (or timeout at 3s).
+    function _ensureItemsLoadedThen(cb) {
+      if (_items && _items.length) { cb(); return; }
+      _loadItems({ silent: true });
+      var tries = 0;
+      var iv = setInterval(function() {
+        tries++;
+        if (_items && _items.length) { clearInterval(iv); cb(); }
+        else if (tries > 30) { clearInterval(iv); cb(); }
+      }, 100);
+    }
+
+    function _openPresetEditor(preset) {
+      _ensureItemsLoadedThen(function() {
+        var bd = _openModal(
+          '<div class="ct-modal ct-modal--wide">' +
+            '<div class="ct-modal-title">' + (preset ? 'Editar preset' : 'Novo preset') + '</div>' +
+            '<div id="preset-editor-mount"></div>' +
+          '</div>',
+          { disableBackdropClose: true }
+        );
+        var mountBody = bd.querySelector('#preset-editor-mount');
+        var inst = CVPresetsUI.mountPresetEditor(mountBody, {
+          preset: preset || null,
+          items: _items,
+          onSave: function(payload) {
+            var saver = preset && preset.id
+              ? CVPresetsAPI.update(preset.id, { name: payload.name, item_ids: payload.item_ids })
+              : CVPresetsAPI.create({ name: payload.name, item_ids: payload.item_ids });
+            saver.then(function() {
+              if (inst && inst.destroy) inst.destroy();
+              _closeModal();
+              _reload();
+              _toast(preset && preset.id ? 'Preset atualizado.' : 'Preset criado.');
+            }).catch(function(err) {
+              _toast('Erro ao salvar: ' + (err && err.message ? err.message : 'desconhecido'));
+            });
+          },
+          onCancel: function() {
+            if (inst && inst.destroy) inst.destroy();
+            _closeModal();
+          }
+        });
+      });
+    }
+
+    function _confirmDeletePreset(preset) {
+      if (!window.confirm('Excluir o preset "' + ((preset && preset.name) || '') + '"? Esta acao nao pode ser desfeita.')) return;
+      CVPresetsAPI.remove(preset.id).then(function() {
+        _toast('Preset excluido.');
+        _reload();
+      }).catch(function(err) {
+        _toast('Erro ao excluir: ' + (err && err.message ? err.message : 'desconhecido'));
+      });
+    }
+
+    if (newBtn) newBtn.addEventListener('click', function() { _openPresetEditor(null); });
+
+    _reload();
   }
 
   // ==========================================================================
