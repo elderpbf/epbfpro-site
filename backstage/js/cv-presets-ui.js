@@ -104,7 +104,7 @@
           '<input id="cv-preset-name" type="text" class="cv-preset-editor-name" maxlength="120" required value="' + _esc(initialName) + '">' +
           '<div class="cv-preset-editor-error" data-cv-preset-error role="alert" aria-live="polite"></div>' +
         '</div>' +
-        '<div class="cv-preset-editor-field">' +
+        '<div class="cv-preset-editor-field cv-preset-editor-field--picker">' +
           '<label class="cv-preset-editor-label">Itens incluidos</label>' +
           '<div class="cv-preset-editor-picker" data-cv-preset-picker></div>' +
         '</div>' +
