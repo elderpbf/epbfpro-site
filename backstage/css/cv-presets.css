@@ -90,10 +90,33 @@
 }
 
 /* Wider modal variant for the preset editor (default .ct-modal is 460px,
-   which crops the item picker). Applied as <div class="ct-modal ct-modal--wide">. */
+   which crops the item picker). Applied as <div class="ct-modal ct-modal--wide">.
+   Also caps height at viewport so the save button is never clipped on
+   short screens; the picker list inside shrinks to fit, and the action
+   bar stays sticky at the bottom of the scrolling area. */
 
 .ct-modal.ct-modal--wide {
   max-width: 720px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.ct-modal.ct-modal--wide .cv-preset-editor-actions {
+  position: sticky;
+  bottom: -1.5rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  margin: 14px -1.5rem -1.5rem;
+  padding: 12px 1.5rem;
+  z-index: 1;
+}
+
+/* Cap the picker list height inside the modal so it never pushes the action
+   bar offscreen on small viewports. Outside the modal (other consumers in
+   the future) the picker keeps its default 420px from the .cv-item-picker-list
+   rule below. */
+.ct-modal.ct-modal--wide .cv-item-picker-list {
+  max-height: min(420px, calc(100vh - 280px));
 }
 
 /* ---- Preset editor (modal body) ------------------------------------ */

@@ -1886,8 +1886,11 @@ window.CT_ADMIN = (function() {
           '<div class="ct-modal ct-modal--wide">' +
             '<div class="ct-modal-title">' + (preset ? 'Editar preset' : 'Novo preset') + '</div>' +
             '<div id="preset-editor-mount"></div>' +
-          '</div>',
-          { disableBackdropClose: true }
+          '</div>'
+          // Backdrop click closes the modal (matches the client + turma
+          // modal pattern from Bundle G). Note: unsaved name + selection
+          // are lost on backdrop close. If protecting that becomes a real
+          // pain in practice, add a "discard?" guard later.
         );
         var mountBody = bd.querySelector('#preset-editor-mount');
         var inst = CVPresetsUI.mountPresetEditor(mountBody, {
