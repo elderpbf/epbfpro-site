@@ -33,13 +33,19 @@ window.BS_AUTH = (function() {
     }
   }
 
-  // Sign out from both Google and password paths.
+  // Sign out from both Google and password paths. Bundle L L.1: set a
+  // sessionStorage flag the login page reads to skip its silent-refresh
+  // attempt once (otherwise GIS sometimes flashes a popup after revoke).
+  // Also clear the per-tab active-session marker so the Live sub-tab does
+  // not linger across sign-in cycles.
   function signOut() {
     if (window.BS_GOOGLE) {
       try { window.BS_GOOGLE.signOut(); } catch (_) {}
     }
     localStorage.removeItem(PW_KEY);
     sessionStorage.removeItem(AUTH_KEY);
+    try { sessionStorage.removeItem('cp_active_session_code'); } catch (_) {}
+    try { sessionStorage.setItem('bs_just_signed_out', '1'); } catch (_) {}
     location.replace('/backstage/');
   }
 

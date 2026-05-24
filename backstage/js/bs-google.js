@@ -205,6 +205,17 @@ window.BS_GOOGLE = {
       return;
     }
 
+    // Bundle L L.1: if the user just signed out, skip silent refresh this
+    // once. GIS sometimes briefly opens a popup as part of its silent-fallback
+    // flow right after a revoke, which surfaces as the "Sair opens a popup"
+    // regression. Flag is set by BS_AUTH.signOut and cleared here.
+    var justSignedOut = false;
+    try {
+      justSignedOut = sessionStorage.getItem('bs_just_signed_out') === '1';
+      if (justSignedOut) sessionStorage.removeItem('bs_just_signed_out');
+    } catch (_) {}
+    if (justSignedOut) return;
+
     // Stale or absent. Attempt silent refresh.
     await new Promise(function(resolve) {
       if (_pendingCallback) {

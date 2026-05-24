@@ -344,9 +344,13 @@ window.Topbar = (function() {
       { key: 'liberacoes', label: 'Liberações', href: '/backstage/classtrail/?tab=liberacoes' }
     ],
     turmas: [],
+    // Bundle L L.1: "Ao vivo" renamed to "Sessões" (key stays 'ao-vivo' for URL
+    // back-compat). The Live sub-tab is NOT in the static array; it is
+    // appended at render time by renderSubTabsInto / codexSubTabs when body
+    // has the cp-session-open class (set by host.html on load and by the
+    // index.html session-click path).
     perguntas: [
-      { key: 'ao-vivo',        label: 'Ao vivo',        href: '/backstage/classpulse/' },
-      { key: 'live',           label: 'Live',           href: '/backstage/classpulse/?tab=live' },
+      { key: 'ao-vivo',        label: 'Sessões',        href: '/backstage/classpulse/' },
       { key: 'banco',          label: 'Banco',          href: '/backstage/classpulse/?tab=banks' },
       { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' }
     ]
@@ -389,9 +393,33 @@ window.Topbar = (function() {
     _liveSessionTimer = setInterval(poll, 30000);
   }
 
+  // Bundle L L.1: the Perguntas Live sub-tab is conditional — it only appears
+  // when there is an active session in this browser tab. Source of truth is
+  // sessionStorage['cp_active_session_code'], set by host.html on load (and
+  // cleared by BS_AUTH.signOut). We append the entry at render time so the
+  // topbar reflects current state without relying on CSS :not() selectors
+  // (which proved fragile across cached HTML and theme overrides).
+  function _activeSessionCode() {
+    try { return sessionStorage.getItem('cp_active_session_code') || ''; } catch (_) { return ''; }
+  }
+
+  function _withLiveEntry(parentKey) {
+    var rows = (CODEX_SUBTABS[parentKey] || []).slice();
+    if (parentKey === 'perguntas') {
+      var code = _activeSessionCode();
+      if (code) {
+        rows.splice(1, 0, {
+          key: 'live',
+          label: 'Live',
+          href: '/backstage/classpulse/host.html?code=' + encodeURIComponent(code)
+        });
+      }
+    }
+    return rows;
+  }
+
   function codexSubTabs(parentKey, activeSubKey) {
-    var rows = CODEX_SUBTABS[parentKey] || [];
-    return rows.map(function(t) {
+    return _withLiveEntry(parentKey).map(function(t) {
       var entry = { label: t.label, href: t.href };
       if (t.key === activeSubKey) entry.active = true;
       return entry;
@@ -403,7 +431,7 @@ window.Topbar = (function() {
   // 30px sub-row into their own chrome instead of stacking another row.
   function renderSubTabsInto(containerEl, parentKey, activeSubKey) {
     if (!containerEl) return;
-    var rows = CODEX_SUBTABS[parentKey] || [];
+    var rows = _withLiveEntry(parentKey);
     containerEl.innerHTML = '';
     rows.forEach(function(t) {
       var a = document.createElement('a');
