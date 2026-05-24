@@ -1359,11 +1359,13 @@ body.tr-modal-open { overflow: hidden; }
   #nx-answer-host .qr-option-btn { margin-bottom: 0 !important; }
 }
 
-/* Student Q&A "active question" card (instructor surfaces a student question) */
+/* Student Q&A "active question" card (instructor surfaces a student question).
+   Uses neutral surface tokens (light or dark depending on theme) instead of
+   the previous orange tint that read as a stale warning color. */
 #nx-answer-host .cp-sqa-card {
   padding: 18px;
-  background: rgba(245,158,11,0.06);
-  border: 1px solid rgba(245,158,11,0.35);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -1372,7 +1374,7 @@ body.tr-modal-open { overflow: hidden; }
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #b45309;
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
@@ -1392,8 +1394,8 @@ body.tr-modal-open { overflow: hidden; }
 #nx-answer-host .cp-sqa-answer {
   margin-top: 18px;
   padding: 12px 14px;
-  background: rgba(245,158,11,0.1);
-  border-left: 3px solid rgba(245,158,11,0.6);
+  background: var(--background);
+  border-left: 3px solid var(--primary);
   border-radius: 0 8px 8px 0;
 }
 
@@ -1402,7 +1404,7 @@ body.tr-modal-open { overflow: hidden; }
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #b45309;
+  color: var(--primary);
   margin-bottom: 4px;
 }
 
@@ -1411,19 +1413,6 @@ body.tr-modal-open { overflow: hidden; }
   color: var(--text-primary);
   line-height: 1.5;
   white-space: pre-wrap;
-}
-
-/* Dark-mode tints for the student-Q&A card so the orange surface keeps
-   readable contrast on dark theme (per project rule: dark-mode tokens
-   for any custom surface). */
-[data-theme="dark"] #nx-answer-host .cp-sqa-card {
-  background: rgba(245,158,11,0.10);
-  border-color: rgba(245,158,11,0.45);
-}
-
-[data-theme="dark"] #nx-answer-host .cp-sqa-answer {
-  background: rgba(245,158,11,0.14);
-  border-left-color: rgba(245,158,11,0.7);
 }
 
 /* ----- Student-to-instructor Q&A bottom bar -----
@@ -1437,14 +1426,17 @@ body.tr-modal-open { overflow: hidden; }
   z-index: 90;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 10px 14px env(safe-area-inset-bottom, 10px);
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
   display: none;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .cp-qa-bar.visible { display: block; }
 
 body.qa-bar-on #nx-answer-host {
-  padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px));
 }
 
 .cp-qa-bar-collapsed {
