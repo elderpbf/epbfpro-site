@@ -12,7 +12,7 @@
 
 <link rel="stylesheet" href="../css/theme.css?v=1.3">
 <link rel="stylesheet" href="../css/backstage.css?v=2.3">
-<link rel="stylesheet" href="../css/qr-share-modal.css?v=1.0">
+<link rel="stylesheet" href="../css/qr-share-modal.css?v=1.1">
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.10">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.5">
@@ -436,8 +436,6 @@
               <button class="view-toggle is-on" data-toggle-col="left"   type="button">Composer</button>
               <button class="view-toggle is-on" data-toggle-col="center" type="button">Pergunta ativa</button>
               <button class="view-toggle is-on" data-toggle-col="right"  type="button">Q&amp;A</button>
-              <hr style="border:none;border-top:1px solid var(--border);margin:0.5rem 0">
-              <button class="view-toggle host-btn host-btn-ghost" id="qa-toggle-btn" type="button" aria-pressed="false" style="width:100%;justify-content:flex-start;margin-bottom:0">Ativar Q&amp;A</button>
             </div>
           </details>
           <button class="reset-layout-btn" id="resetLayoutBtn" type="button" title="Voltar ao layout padrão">↻</button>
@@ -675,7 +673,7 @@
 <script src="../js/classpulse-question-types.js?v=1.2"></script>
 <script src="../js/classpulse-question.min.js?v=1.8"></script>
 <script src="../js/classpulse-visibility-toggle.js?v=1.4"></script>
-<script src="../js/classpulse-qa.js?v=2.3"></script>
+<script src="../js/classpulse-qa.js?v=2.4"></script>
 <script src="../js/theme-manager.js?v=1.0"></script>
 <script src="../js/ai-client.js?v=1.0"></script>
 <script src="../js/question-bank.js?v=2.0"></script>
@@ -683,7 +681,7 @@
 <script src="../js/auth.js?v=1.2"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/brand-logos.js?v=1.0"></script>
-<script src="../js/qr-share-modal.js?v=1.0"></script>
+<script src="../js/qr-share-modal.js?v=1.1"></script>
 <script src="../js/backstage-topbar.js?v=2.1"></script>
 <script>
 'use strict';
@@ -812,7 +810,7 @@ function selectSession(s) {
       authToken:   AUTH_TOKEN,
       callWorker:  callWorker,
       containerEl: document.getElementById('qa-section'),
-      toggleEl:    document.getElementById('qa-toggle-btn'),
+      toggleEl:    null,
       badgeEl:     document.getElementById('qa-badge'),
       feedEl:      document.getElementById('qa-feed'),
       onError:     function(msg) { showAlert('error', msg); },
@@ -858,7 +856,6 @@ function applyHostedUI(isHosted) {
   document.getElementById('display-link').hidden = !isHosted;
   document.getElementById('start-host-btn').hidden = isHosted;
   document.getElementById('stop-host-btn').hidden = !isHosted;
-  // viewToggles is now the Visao <details> dropdown; qa-toggle-btn lives inside it.
   document.getElementById('viewToggles').hidden = !isHosted;
   document.getElementById('resetLayoutBtn').hidden = !isHosted;
   document.getElementById('launch-q-card').style.display = isHosted ? '' : 'none';
@@ -1499,7 +1496,7 @@ function editFromHistory(q) {
 document.getElementById('qr-btn').addEventListener('click', function() {
   var url = buildTrilhaUrl();
   if (!url) return;
-  QRShareModal.open({ joinUrl: url, title: _currentSession && _currentSession.title || 'Entre na trilha' });
+  QRShareModal.open({ joinUrl: url });
 });
 
 // ---------------------------------------------------------------------------
@@ -1746,7 +1743,6 @@ applyLayout();
     _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="left"]'),   'Coluna Composer');
     _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="center"]'), 'Coluna Pergunta ativa');
     _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="right"]'),  'Coluna Q&A');
-    _addProxy(document.getElementById('qa-toggle-btn'));
     _addProxy(document.getElementById('resetLayoutBtn'), 'Restaurar layout');
     _addProxy(document.getElementById('trail-btn'));
     _addProxy(document.getElementById('qr-btn'));

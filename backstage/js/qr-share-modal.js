@@ -1,7 +1,7 @@
 'use strict';
-// Shared big-QR modal used by the live page (host.html) and the projector
-// display page (go/display.html). Fullscreen overlay, huge QR centered, one
-// big title above. No URL text. Esc closes.
+// Shared QR share modal, used by the live page (host.html) and the projector
+// display page (go/display.html). Theme-aware card (light/dark via CSS vars),
+// big centered title, centered QR. No URL or code displayed.
 window.QRShareModal = (function() {
   var _root = null;
 
@@ -13,7 +13,7 @@ window.QRShareModal = (function() {
     _root.innerHTML =
       '<div class="qr-share-modal-backdrop"></div>' +
       '<div class="qr-share-modal-card" role="dialog" aria-modal="true">' +
-        '<button class="qr-share-modal-close" type="button" aria-label="Fechar">×</button>' +
+        '<button class="qr-share-modal-close" type="button" aria-label="Fechar">&times;</button>' +
         '<div class="qr-share-modal-title"></div>' +
         '<img class="qr-share-modal-img" alt="QR Code">' +
       '</div>';
@@ -31,9 +31,9 @@ window.QRShareModal = (function() {
     var url = opts.joinUrl;
     if (!url) return;
     var r = _ensure();
-    r.querySelector('.qr-share-modal-title').textContent = opts.title || 'Entre na trilha';
+    r.querySelector('.qr-share-modal-title').textContent = opts.title || 'Sua trilha de aprendizado';
     var img = r.querySelector('.qr-share-modal-img');
-    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=900x900&margin=2&data=' + encodeURIComponent(url);
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=2&data=' + encodeURIComponent(url);
     r.hidden = false;
   }
 

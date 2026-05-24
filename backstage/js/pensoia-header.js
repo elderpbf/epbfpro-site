@@ -130,7 +130,7 @@
       // the host page after resolving the trilha) and QRShareModal loaded.
       this._codeBtn.addEventListener('click', () => {
         if (!this._joinUrl || !window.QRShareModal) return;
-        QRShareModal.open({ joinUrl: this._joinUrl, title: this._sessionTitle || 'Entre na trilha' });
+        QRShareModal.open({ joinUrl: this._joinUrl });
       });
 
       // Exit button emits a custom event so host pages decide what to do

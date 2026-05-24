@@ -37,6 +37,7 @@
     }
 
     function setToggleUI(enabled, disabled) {
+      if (!toggleEl) return;
       toggleEl.setAttribute('aria-pressed', enabled ? 'true' : 'false');
       toggleEl.dataset.qaEnabled = enabled ? '1' : '0';
       toggleEl.textContent = enabled ? 'Desativar Q&A' : 'Ativar Q&A';
@@ -328,13 +329,27 @@
       });
     }
 
-    toggleEl.addEventListener('click', onToggleClick);
-    setEnabled(false);
+    if (toggleEl) {
+      toggleEl.addEventListener('click', onToggleClick);
+      setEnabled(false);
+    } else {
+      // No toggle UI = Q&A is implicitly always on. Force server state to
+      // match so students can submit without an explicit teacher action.
+      callWorkerFn({
+        action: 'toggle_qa',
+        auth_token: authToken,
+        code: sessionCode,
+        enabled: 1
+      }).catch(function() {});
+      setEnabled(true);
+    }
 
     return {
       syncFromState: function(state) {
         if (!state) return;
-        if (typeof state.qa_enabled !== 'undefined') {
+        // Only follow server qa_enabled when the teacher has a toggle UI.
+        // No toggle = Q&A is implicitly always on, ignore server reports.
+        if (toggleEl && typeof state.qa_enabled !== 'undefined') {
           var serverEnabled = !!state.qa_enabled;
           if (serverEnabled !== _qaEnabled) setEnabled(serverEnabled);
         }
@@ -362,7 +377,7 @@
       destroy: function() {
         _attached = false;
         stopPoll();
-        toggleEl.removeEventListener('click', onToggleClick);
+        if (toggleEl) toggleEl.removeEventListener('click', onToggleClick);
       }
     };
   }
