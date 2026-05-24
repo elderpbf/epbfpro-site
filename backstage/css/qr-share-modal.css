@@ -91,3 +91,17 @@
   padding: 10px;
   box-sizing: border-box;
 }
+
+.qr-share-modal-img[hidden] { display: none; }
+
+.qr-share-modal-notice {
+  max-width: clamp(280px, 60vmin, 560px);
+  font-size: clamp(1rem, 2.4vmin, 1.3rem);
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.45;
+  padding: 1rem 1.25rem;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}

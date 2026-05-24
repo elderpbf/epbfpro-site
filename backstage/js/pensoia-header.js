@@ -126,10 +126,11 @@
       this._exitBtn     = this.querySelector('.ph-exit-btn');
       this._zoomBtns    = this.querySelectorAll('.ph-zoom-btn');
 
-      // Code button opens QRShareModal. Requires a join-url attribute (set by
-      // the host page after resolving the trilha) and QRShareModal loaded.
+      // Code button opens QRShareModal. The modal renders a notice when
+      // join-url is missing (e.g. session has no linked turma yet), so the
+      // button is never silently dead.
       this._codeBtn.addEventListener('click', () => {
-        if (!this._joinUrl || !window.QRShareModal) return;
+        if (!window.QRShareModal) return;
         QRShareModal.open({ joinUrl: this._joinUrl });
       });
 
