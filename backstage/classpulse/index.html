@@ -17,7 +17,6 @@
 <link rel="stylesheet" href="../css/classpulse.css?v=1.13">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.6">
 <link rel="stylesheet" href="../css/question-types.css?v=1.9">
-<link rel="stylesheet" href="css/cp-host-module.css?v=1.1">
 <script src="../js/debug.js?v=2.5"></script>
 <style>
   .cp-session-card.is-clickable { cursor: pointer; transition: border-color .15s, background .15s; }
@@ -271,28 +270,6 @@
          the SettingsDrawer "Questões" section (cp-settings-section.js),
          wired via Topbar.init({sections}) below. -->
 
-    <!-- ============================================================
-         PANEL: SESSOES-TESTE (Bundle M, parallel host port)
-         ============================================================ -->
-    <div class="cp-panel" id="panel-sessoes-teste">
-      <div class="cp-st-layout">
-        <aside class="cp-st-sidebar" id="cp-st-sidebar">
-          <div class="cp-st-sidebar-header">
-            <span class="cp-st-sidebar-title">Sessões</span>
-            <button class="cp-st-collapse-btn" id="cp-st-collapse-btn" type="button" aria-label="Recolher lista">‹</button>
-          </div>
-          <div class="cp-st-session-list" id="cp-st-session-list"></div>
-        </aside>
-        <button class="cp-st-expand-btn" id="cp-st-expand-btn" type="button" aria-label="Mostrar lista" hidden>›</button>
-        <main class="cp-st-main" id="cp-st-main">
-          <div class="cp-st-empty" id="cp-st-empty">
-            <p>Selecione uma sessão à esquerda.</p>
-          </div>
-          <div class="cp-st-host" id="cp-st-host" hidden></div>
-        </main>
-      </div>
-    </div>
-
   </main>
 </div>
 
@@ -442,7 +419,7 @@
 <script src="../js/auth.js?v=1.4"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/brand-logos.js?v=1.0"></script>
-<script src="../js/backstage-topbar.js?v=2.5"></script>
+<script src="../js/backstage-topbar.js?v=2.4"></script>
 <script src="../js/classpulse-bank-edit.js?v=1.0"></script>
 <script src="../js/classpulse-bank-search.js?v=1.0"></script>
 <script src="js/cp-settings-section.js?v=1.0"></script>
@@ -461,9 +438,8 @@ BS_AUTH.clearPasswordInputs();
   // set, mark Sessões as the active sub-tab. Banco / Estatísticas panels load
   // via ?tab=. Configurações was removed (Bundle L Item 4) and lives in the
   // SettingsDrawer now.
-  var subKey = (urlTab === 'global-stats')   ? 'estatisticas'
-             : (urlTab === 'banks')          ? 'banco'
-             : (urlTab === 'sessoes-teste')  ? 'ao-vivo-teste'
+  var subKey = (urlTab === 'global-stats') ? 'estatisticas'
+             : (urlTab === 'banks')        ? 'banco'
              : 'ao-vivo';
   var cpSettingsSection = (window.CPSettings) ? [{
     id: 'cp-config',
@@ -508,7 +484,6 @@ var AUTH_TOKEN = BS_AUTH.TOKEN;
   if (initial === 'sessions') loadSessions();
   if (initial === 'banks') loadSets();
   if (initial === 'global-stats') loadGlobalStats();
-  if (initial === 'sessoes-teste' && window.__cpLoadSessoesTeste) window.__cpLoadSessoesTeste();
 })();
 document.querySelectorAll('.cp-tab').forEach(function(btn) {
   btn.addEventListener('click', function() {
@@ -520,7 +495,6 @@ document.querySelectorAll('.cp-tab').forEach(function(btn) {
     if (tab === 'sessions') loadSessions();
     if (tab === 'banks') loadSets();
     if (tab === 'global-stats') loadGlobalStats();
-    if (tab === 'sessoes-teste' && window.__cpLoadSessoesTeste) window.__cpLoadSessoesTeste();
   });
 });
 
@@ -1495,93 +1469,6 @@ BankSearch.init({
 // Boot
 // ---------------------------------------------------------------------------
 loadSessions();
-</script>
-
-<script src="js/cp-host-module.js?v=1.0"></script>
-<script>
-'use strict';
-// Bundle M: Sessoes-Teste panel -- sidebar + CPHostModule mount.
-(function() {
-  var STORAGE_KEY = 'cp_sessoes_teste_sidebar'; // 'collapsed' | 'expanded'
-  var sidebar      = document.getElementById('cp-st-sidebar');
-  var collapseBtn  = document.getElementById('cp-st-collapse-btn');
-  var expandBtn    = document.getElementById('cp-st-expand-btn');
-  var listEl       = document.getElementById('cp-st-session-list');
-  var hostEl       = document.getElementById('cp-st-host');
-  var emptyEl      = document.getElementById('cp-st-empty');
-  if (!sidebar) return; // panel not in DOM (older index.html)
-
-  var currentHandle = null;
-  var currentCode   = null;
-
-  function applyCollapseState() {
-    var collapsed = localStorage.getItem(STORAGE_KEY) === 'collapsed';
-    sidebar.classList.toggle('is-collapsed', collapsed);
-    expandBtn.hidden = !collapsed;
-  }
-  collapseBtn.addEventListener('click', function() {
-    localStorage.setItem(STORAGE_KEY, 'collapsed');
-    applyCollapseState();
-  });
-  expandBtn.addEventListener('click', function() {
-    localStorage.setItem(STORAGE_KEY, 'expanded');
-    applyCollapseState();
-  });
-  applyCollapseState();
-
-  function renderList(sessions) {
-    listEl.innerHTML = '';
-    if (!sessions.length) {
-      listEl.innerHTML = '<div style="padding:1rem;color:var(--text-secondary);font-size:0.85rem">Nenhuma sessão.</div>';
-      return;
-    }
-    sessions.forEach(function(s) {
-      var row = document.createElement('div');
-      row.className = 'cp-st-session-row' + (s.code === currentCode ? ' is-selected' : '');
-      row.dataset.code = s.code;
-      var statusCls   = s.status === 'open' ? 'is-open' : 'is-closed';
-      var statusLabel = s.status === 'open' ? 'Ao vivo' : 'Encerrada';
-      row.innerHTML =
-        '<span class="cp-st-session-code">' + escHtml(s.code) + '</span>' +
-        '<span class="cp-st-session-title">' + escHtml(s.title || 'Sem título') + '</span>' +
-        '<span class="cp-st-session-status ' + statusCls + '">' + statusLabel + '</span>';
-      row.addEventListener('click', function() { selectSession(s.code); });
-      listEl.appendChild(row);
-    });
-  }
-
-  function selectSession(code) {
-    if (currentHandle) { try { currentHandle.unmount(); } catch (_) {} currentHandle = null; }
-    currentCode = code;
-    Array.prototype.forEach.call(listEl.querySelectorAll('.cp-st-session-row'), function(r) {
-      r.classList.toggle('is-selected', r.dataset.code === code);
-    });
-    emptyEl.hidden = true;
-    hostEl.hidden = false;
-    currentHandle = CPHostModule.mount(hostEl, { sessionCode: code, authToken: BS_AUTH.TOKEN });
-  }
-
-  async function loadSessoesTeste() {
-    try {
-      var data = await callWorker({ action: 'list_sessions' });
-      renderList(data.sessions || []);
-    } catch (e) {
-      listEl.innerHTML = '<div style="padding:1rem;color:#ef4444;font-size:0.85rem">Erro ao carregar sessões: ' + escHtml(e.message) + '</div>';
-    }
-  }
-
-  // Exposed so the tab-switch logic can trigger it when activating this panel.
-  window.__cpLoadSessoesTeste = loadSessoesTeste;
-
-  // Self-init guard: the tab-switch IIFE above runs at parse-time, BEFORE this
-  // script block, so on direct ?tab=sessoes-teste URL loads it sees
-  // window.__cpLoadSessoesTeste === undefined and skips the call. We re-check
-  // here once we are defined and auto-load if our panel is the active one.
-  var selfPanel = document.getElementById('panel-sessoes-teste');
-  if (selfPanel && selfPanel.classList.contains('active')) {
-    loadSessoesTeste();
-  }
-})();
 </script>
 </body>
 </html>
