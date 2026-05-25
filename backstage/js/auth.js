@@ -11,6 +11,19 @@ window.BS_AUTH = (function() {
     return null;
   }
 
+  // Synchronous check with no BS_GOOGLE dependency. Reads localStorage directly.
+  // Use on pages that need a display gate but don't load bs-google.js.
+  function isAuthedLocal() {
+    try {
+      var raw = localStorage.getItem('bs_google_token_v1');
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p && p.token && p.expiresAt && Date.now() < p.expiresAt) return true;
+      }
+    } catch (_) {}
+    return !!localStorage.getItem(PW_KEY);
+  }
+
   // Gate for all Backstage tools. Redirects to login if neither path is authed.
   // Google is checked first; password hash is the fallback. Bundle L Item 3:
   // before redirecting, capture the current URL (path + query + hash) into
@@ -63,6 +76,7 @@ window.BS_AUTH = (function() {
     AUTH_KEY: AUTH_KEY,
     TOKEN: TOKEN,
     getMethod: getMethod,
+    isAuthedLocal: isAuthedLocal,
     guard: guard,
     signOut: signOut,
     logout: logout,
