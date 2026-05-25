@@ -192,35 +192,63 @@ test('backstage-topbar.js CODEX_SUBTABS.perguntas no longer has a configuracoes 
     'configuracoes key still present in CODEX_SUBTABS.perguntas (should be removed)');
 });
 
-// ── Item 5: Dark mode progress bar contrast (in host.html) ──────────────────
-// Styles live in host.html's inline <style> block (cp-host.js was reverted).
+// ── Item 5: Progress bar track consolidated in shared-components.css ────────
+// Single source of truth for .bar-track / .rb-track / .qr-bar-track so host,
+// display, trilha, and any future surface render identically. Neutral-alpha
+// track (rgba(0,0,0,0.08) light, rgba(255,255,255,0.08) dark) gives clear
+// hue contrast against the teal fill in both themes.
 
-test('host.html rb-track rule does not use teal rgba(20,184,166', () => {
-  const src = read('backstage/classpulse/host.html');
-  const block = src.match(/\.rb-track\s*\{([^}]*)\}/);
-  assert.ok(block, '.rb-track rule not found in host.html');
-  assert.ok(!/rgba\(\s*20\s*,\s*184\s*,\s*166/.test(block[1]),
-    '.rb-track in host.html still uses teal rgba(20,184,166) — must use neutral');
+test('shared-components.css consolidates .bar-track, .rb-track, .qr-bar-track in one selector list', () => {
+  const src = read('backstage/css/shared-components.css');
+  assert.match(src, /\.bar-track\s*,\s*\.rb-track\s*,\s*\.qr-bar-track\s*\{/,
+    'shared-components.css should declare all three track classes together');
 });
 
-test('host.html light-mode rb-track uses neutral dark-on-light background', () => {
-  const src = read('backstage/classpulse/host.html');
-  const block = src.match(/\.rb-track\s*\{([^}]*)\}/);
-  assert.ok(block, '.rb-track rule not found in host.html');
-  assert.match(block[1], /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,/,
-    '.rb-track light-mode background does not use rgba(0,0,0,...) neutral');
+test('shared-components.css light-mode track uses neutral dark-on-light alpha', () => {
+  const src = read('backstage/css/shared-components.css');
+  // Match the consolidated rule and confirm rgba(0,0,0,0.08) inside.
+  const block = src.match(/\.bar-track\s*,\s*\.rb-track\s*,\s*\.qr-bar-track\s*\{([^}]*)\}/);
+  assert.ok(block, 'consolidated track rule not found');
+  assert.match(block[1], /background:\s*rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0?\.08\s*\)/,
+    'track background should be rgba(0,0,0,0.08) in light mode');
 });
 
-test('host.html dark-mode rb-track override uses neutral light-on-dark background', () => {
-  const src = read('backstage/classpulse/host.html');
-  assert.match(src, /\[data-theme=["']dark["']\]\s*\.rb-track\s*\{[^}]*rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/,
-    'dark-mode .rb-track in host.html does not use rgba(255,255,255,...) neutral');
+test('shared-components.css dark-mode override uses neutral light-on-dark alpha', () => {
+  const src = read('backstage/css/shared-components.css');
+  assert.match(src, /\[data-theme=["']dark["']\]\s*\.bar-track[^}]*\.qr-bar-track\s*\{[\s\S]*?rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/,
+    'dark-mode track override should use rgba(255,255,255,...) and cover all three classes');
 });
 
-test('host.html rb-fill still uses var(--primary)', () => {
+test('shared-components.css consolidates .bar-fill, .rb-fill, .qr-bar-fill in one selector list', () => {
+  const src = read('backstage/css/shared-components.css');
+  assert.match(src, /\.bar-fill\s*,\s*\.rb-fill\s*,\s*\.qr-bar-fill\s*\{/,
+    'shared-components.css should declare all three fill classes together');
+});
+
+test('question-types.css does NOT carry its own .qr-bar-track background', () => {
+  const src = read('backstage/css/question-types.css');
+  // The standalone "background:" inside .qr-bar-track must be gone (shared handles it).
+  assert.ok(
+    !/\.qr-bar-track\s*\{[^}]*background\s*:/.test(src),
+    '.qr-bar-track in question-types.css should not set its own background (consolidated to shared-components)'
+  );
+});
+
+test('question-types.css does NOT carry the teal .qr-host .qr-bar-track background override', () => {
+  const src = read('backstage/css/question-types.css');
+  assert.ok(
+    !/\.qr-host\s+\.qr-bar-track\s*\{[^}]*rgba\(\s*20\s*,\s*184\s*,\s*166/.test(src),
+    'qr-host .qr-bar-track teal background override should be removed (track styling is shared now)'
+  );
+});
+
+test('host.html does NOT carry inline .rb-track background (uses shared rule)', () => {
   const src = read('backstage/classpulse/host.html');
-  assert.match(src, /\.rb-fill\s*\{[^}]*background:\s*var\(--primary\)/,
-    '.rb-fill in host.html does not use background: var(--primary)');
+  // The inline <style> may still set height/border-radius overrides, but NOT background.
+  const block = src.match(/\s\.rb-track\s*\{([^}]*)\}/);
+  assert.ok(block, 'host.html should still declare .rb-track for size override');
+  assert.ok(!/background\s*:/.test(block[1]),
+    'host.html inline .rb-track should NOT set background anymore (shared rule handles it)');
 });
 
 // ── Runner ───────────────────────────────────────────────────────────────────

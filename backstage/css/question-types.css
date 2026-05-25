@@ -59,8 +59,10 @@
 .qr-bar-text { font-size: 1.3rem; color: var(--text-primary); font-weight: 400; }
 .qr-bar-pct  { font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); }
 
-.qr-bar-track { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
-.qr-bar-fill  { height: 100%; background: var(--primary); border-radius: 6px; transition: width 0.8s ease; }
+/* Bundle L.1: track + base fill consolidated into shared-components.css
+   (.bar-track/.rb-track/.qr-bar-track and .bar-fill/.rb-fill/.qr-bar-fill).
+   Only the surface-specific overrides stay here. */
+.qr-bar-track { height: 12px; }
 .qr-bar-fill.correct { background: var(--success); }
 .qr-bar-fill.mine    { background: var(--primary-dark); }
 
@@ -85,7 +87,7 @@
 .qr-host .qr-bar-label { margin-bottom: 3px; }
 .qr-host .qr-bar-text  { font-size: 0.8rem; color: var(--text-primary); }
 .qr-host .qr-bar-pct   { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
-.qr-host .qr-bar-track { height: 7px; background: rgba(20,184,166,.12); }
+.qr-host .qr-bar-track { height: 7px; }
 .qr-host .qr-bar-count { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
 
 .qr-host .qr-feed-toggle {
