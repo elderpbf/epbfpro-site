@@ -1,0 +1,3 @@
+/* cp-host.css: entry point for the host panel styles.
+   All rules live in cp-host-module.css; this file imports them. */
+@import url('cp-host-module.css');
