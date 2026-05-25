@@ -1688,7 +1688,15 @@ window.CT_ADMIN = (function() {
     // the picker auto-restores the last turma selection via LS_REL_CLIENT/TURMA.
     if (internalId === 'liberacoes') _initLiberacoesPicker();
     if (internalId === 'presets')    _initPresetsPanel();
-    // drive remains a Bundle I placeholder (drive caching postponed; see ClassVault manifest/tasks/postponed.md).
+    if (internalId === 'drive')      _initDrivePanel();
+  }
+
+  function _initDrivePanel() {
+    var panel = document.getElementById('panel-drive');
+    if (!panel || panel._cvDriveMounted) return;
+    if (!window.CVDriveSyncUI || !window.CVDriveSyncUI.mount) return;
+    panel._cvDriveMounted = true;
+    window.CVDriveSyncUI.mount(panel, {});
   }
 
   // G redesign: re-hydrate the Aulas column from localStorage so reloading

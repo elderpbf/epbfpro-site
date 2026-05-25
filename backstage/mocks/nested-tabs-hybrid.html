@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Hybrid topbar — sub-tabs nested inside · PensoCodex</title>
+<style>
+  :root {
+    --bg:       #0f172a;
+    --surface:  #1e293b;
+    --border:   rgba(20,184,166,.18);
+    --text:     #e2e8f0;
+    --textsub:  #94a3b8;
+    --textdim:  #64748b;
+    --primary:  #14b8a6;
+    --accent:   rgba(20,184,166,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 24px 80px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .lede {
+    color: var(--textsub);
+    font-size: 0.92rem;
+    margin-bottom: 36px;
+    max-width: 760px;
+    line-height: 1.55;
+  }
+  .frame {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg);
+    margin-bottom: 24px;
+  }
+  .scenario-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--textdim);
+    margin: 28px 0 10px;
+  }
+  .scenario-tag {
+    background: var(--accent);
+    color: var(--primary);
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.7rem;
+  }
+
+  /* ── Hybrid topbar ────────────────────────────────────── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-row-1 {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+  .topbar-row-2 {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    padding-left: 220px; /* aligned with start of main tabs, past the brand */
+    gap: 2px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    background: rgba(0,0,0,0.12);
+  }
+  .topbar-row-2:empty {
+    display: none;
+  }
+
+  .brand {
+    font-family: 'Comfortaa', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #fff;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 180px;
+  }
+  .brand-glyph {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--primary), #0d9488);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #06241f;
+    font-weight: 800;
+    font-size: 0.82rem;
+  }
+  .brand-sep {
+    padding-left: 10px;
+    border-left: 1px solid var(--border);
+    color: var(--textsub);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .topbar-tabs {
+    display: flex;
+    gap: 2px;
+  }
+  .ttab {
+    padding: 8px 14px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--textsub);
+    border-radius: 8px;
+    cursor: default;
+    position: relative;
+  }
+  .ttab.active {
+    color: var(--primary);
+    background: var(--accent);
+  }
+  .ttab.has-sub.active::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -2px;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 1px;
+  }
+  .topbar-spacer { flex: 1; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    font-size: 0.78rem;
+  }
+  .logout {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--textsub);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: transparent;
+    cursor: default;
+  }
+
+  /* Sub-tabs inside topbar — smaller, lighter weight */
+  .stab {
+    padding: 4px 10px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--textdim);
+    border-radius: 5px;
+    cursor: default;
+    letter-spacing: 0.01em;
+  }
+  .stab.active {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+  .stab:hover { color: var(--textsub); }
+
+  /* Body placeholder */
+  .body-placeholder {
+    height: 180px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--textdim);
+    font-size: 0.85rem;
+  }
+
+  /* Annotation callouts */
+  .callout {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.84rem;
+    line-height: 1.55;
+    color: var(--text);
+  }
+  .callout strong { color: var(--primary); }
+
+  .compare-block {
+    margin-top: 24px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .compare-block h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .compare-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 80px;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 0.84rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .compare-row:last-child { border-bottom: 0; }
+  .compare-row strong { color: var(--textsub); }
+  .compare-row code {
+    color: var(--primary);
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.78rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Hybrid topbar — sub-tabs inside, not below</h1>
+  <p class="lede">
+    Main tabs sit in the top row of the topbar (~56px). When the active tab has
+    sub-tabs, a thinner second row (~30px) appears inside the same topbar
+    chassis, aligned with where the main tabs start. Total topbar height: 86px
+    when sub-tabs exist, 56px when they don't. No separate sub-nav row beneath.
+  </p>
+
+  <!-- ============== SCENARIO 1: Aula (no sub-tabs) ============== -->
+  <div class="scenario-label">
+    <span class="scenario-tag">CENÁRIO 1</span>
+    Aula tab — no sub-tabs, topbar stays at 56px
+  </div>
+  <div class="frame">
+    <div class="topbar">
+      <div class="topbar-row-1">
+        <div class="brand">
+          <span class="brand-glyph">P</span>ensoIA<span class="brand-sep">Codex</span>
+        </div>
+        <div class="topbar-tabs">
+          <div class="ttab active">Aula</div>
+          <div class="ttab has-sub">Conteúdo</div>
+          <div class="ttab">Turmas</div>
+          <div class="ttab has-sub">Perguntas</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="icon-btn">+A</div>
+        <div class="icon-btn">−A</div>
+        <div class="icon-btn">⤢</div>
+        <div class="icon-btn">☼</div>
+        <div class="icon-btn">⚙</div>
+        <button class="logout">Sair</button>
+      </div>
+      <!-- Row 2 hidden because Aula has no sub-tabs -->
+    </div>
+    <div class="body-placeholder">Aula sidebar + conteúdo da página</div>
+  </div>
+  <div class="callout">
+    Aula tab não tem sub-tabs, então a segunda linha do topbar não aparece.
+    Topbar fica em 56px. <strong>Espaço de conteúdo igual ao Option B</strong>
+    (single row) quando você está em Aula ou Turmas.
+  </div>
+
+  <!-- ============== SCENARIO 2: Perguntas (sub-tabs active) ============== -->
+  <div class="scenario-label">
+    <span class="scenario-tag">CENÁRIO 2</span>
+    Perguntas → Ao vivo — sub-tabs aparecem dentro do topbar
+  </div>
+  <div class="frame">
+    <div class="topbar">
+      <div class="topbar-row-1">
+        <div class="brand">
+          <span class="brand-glyph">P</span>ensoIA<span class="brand-sep">Codex</span>
+        </div>
+        <div class="topbar-tabs">
+          <div class="ttab">Aula</div>
+          <div class="ttab has-sub">Conteúdo</div>
+          <div class="ttab">Turmas</div>
+          <div class="ttab has-sub active">Perguntas</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="icon-btn">+A</div>
+        <div class="icon-btn">−A</div>
+        <div class="icon-btn">⤢</div>
+        <div class="icon-btn">☼</div>
+        <div class="icon-btn">⚙</div>
+        <button class="logout">Sair</button>
+      </div>
+      <div class="topbar-row-2">
+        <div class="stab active">Ao vivo</div>
+        <div class="stab">Banco</div>
+        <div class="stab">Estatísticas</div>
+        <div class="stab">Configurações</div>
+      </div>
+    </div>
+    <div class="body-placeholder">Host page (Ao vivo) — sessão + perguntas</div>
+  </div>
+  <div class="callout">
+    Sub-tabs vivem dentro do topbar, alinhadas com onde os tabs principais
+    começam (depois do "Codex" suffix). Tipografia <strong>menor (0.76rem vs
+    0.86rem)</strong> e cor mais discreta — hierarquia visual clara. Topbar
+    inteiro fica em 86px. O traço fino sob "Perguntas" (active) liga
+    visualmente o tab principal aos sub-tabs.
+  </div>
+
+  <!-- ============== SCENARIO 3: Conteúdo (different sub-tabs) ============== -->
+  <div class="scenario-label">
+    <span class="scenario-tag">CENÁRIO 3</span>
+    Conteúdo → Conteúdo — sub-tabs mudam conforme o tab principal
+  </div>
+  <div class="frame">
+    <div class="topbar">
+      <div class="topbar-row-1">
+        <div class="brand">
+          <span class="brand-glyph">P</span>ensoIA<span class="brand-sep">Codex</span>
+        </div>
+        <div class="topbar-tabs">
+          <div class="ttab">Aula</div>
+          <div class="ttab has-sub active">Conteúdo</div>
+          <div class="ttab">Turmas</div>
+          <div class="ttab has-sub">Perguntas</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="icon-btn">+A</div>
+        <div class="icon-btn">−A</div>
+        <div class="icon-btn">⤢</div>
+        <div class="icon-btn">☼</div>
+        <div class="icon-btn">⚙</div>
+        <button class="logout">Sair</button>
+      </div>
+      <div class="topbar-row-2">
+        <div class="stab active">Conteúdo</div>
+        <div class="stab">Apostila</div>
+        <div class="stab">Tarefas</div>
+        <div class="stab">Drive</div>
+      </div>
+    </div>
+    <div class="body-placeholder">Conteúdo grid + right pane</div>
+  </div>
+
+  <!-- ============== COMPARISON ============== -->
+  <div class="compare-block">
+    <h3>Altura do chrome (comparação)</h3>
+    <div class="compare-row">
+      <strong>Option A</strong>
+      <span>Topbar 64px + sub-nav 44px (linha separada)</span>
+      <code>108px</code>
+    </div>
+    <div class="compare-row">
+      <strong>Option B</strong>
+      <span>Linha única dinâmica (sub-tabs substituem principais)</span>
+      <code>64px</code>
+    </div>
+    <div class="compare-row">
+      <strong>Option C</strong>
+      <span>Topbar 64px + chip row 24px</span>
+      <code>88px</code>
+    </div>
+    <div class="compare-row">
+      <strong>Hybrid</strong>
+      <span>Topbar único 56px + 30px interno (quando aplicável)</span>
+      <code>86px</code>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top: 28px;">
+    <strong>Por que isso pode ser o vencedor:</strong> mesmo footprint que Option C
+    quando sub-tabs existem (88 vs 86px), mas <strong>menos chrome que Option A</strong>
+    (86 vs 108px). E quando você está em Aula ou Turmas (sem sub-tabs) cai pra
+    56px, igualando Option B sem perder os tabs principais de vista. Hierarquia
+    visual fica clara: tabs principais grandes em cima, sub-tabs menores
+    embaixo, todos no mesmo chassi do topbar.
+    <br><br>
+    <strong>Ponto de atenção:</strong> a fileira de 30px é apertada. Sub-tabs
+    ficam em fonte 0.76rem — legível mas próximo do limite. Em mobile pode
+    precisar quebrar pra uma segunda linha (e nesse caso vira o Option A
+    naturalmente).
+  </div>
+
+</div>
+</body>
+</html>

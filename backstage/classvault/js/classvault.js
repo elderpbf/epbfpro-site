@@ -192,7 +192,6 @@ ClassVault.activePreset = null;
   _wireItemClicks();
   _wireItemContextMenu();
   await _loadCodex();
-  if (window.CVDriveSync) CVDriveSync.init();
   _initPresetLoader();   // Bundle I (rebuild): mount Aula sidebar dropdown
   _renderPinnedNexo();   // initial paint (null state)
   _loadLiveSession();    // fetch once on boot; user clicks refresh to update
@@ -328,26 +327,37 @@ function _findItem(itemId) {
     return null;
   }
   if (idStr.startsWith('drive:')) {
-    const it = ClassVault.driveItems.find(function(d) { return d.id === idStr; });
+    // Legacy synthetic id from the pre-DB-cache browser sync. Stale favorites
+    // may still carry these; resolve against the in-memory driveItems list.
+    const it = (ClassVault.driveItems || []).find(function(d) { return d.id === idStr; });
     return it ? { item: it, source: 'drive' } : null;
   }
   const idNum = Number(itemId);
   const it = ClassVault.vaultItems.find(function(x) { return Number(x.id) === idNum; });
-  return it ? { item: it, source: 'vault' } : null;
+  if (!it) return null;
+  // drive_file rows live in ct_items but render with the Drive section's
+  // breadcrumb actions (Copiar texto etc.) rather than the editor button.
+  if (it.type === 'drive_file') return { item: it, source: 'drive' };
+  return { item: it, source: 'vault' };
 }
 
 // Bundle E section order: Favorites / LLMs / External / Labs / Drive / Items /
 // Apostila / Tarefas. External and Apostila/Tarefas are conditional. The
 // classifier below partitions the vault library into the type-keyed buckets.
 function _classifyVault(items) {
-  const bucket = { llm: [], external: [], items: [], apostila: [], tarefas: [] };
+  const bucket = { llm: [], external: [], items: [], apostila: [], tarefas: [], drive: [] };
   for (const it of items) {
-    if (it.type === 'tarefa') bucket.tarefas.push(it);
+    if (it.type === 'drive_file') bucket.drive.push(it);
+    else if (it.type === 'tarefa') bucket.tarefas.push(it);
     else if (it.set_id != null) bucket.apostila.push(it);
     else if (it.type === 'llm') bucket.llm.push(it);
     else if (it.type === 'popup_url') bucket.external.push(it);
     else bucket.items.push(it);
   }
+  // The Drive section's existing renderers read from ClassVault.driveItems for
+  // back-compat. Point it at the DB-backed bucket so the sidebar shows what
+  // cv_sync_drive_items persisted instead of the browser-fetch cache.
+  ClassVault.driveItems = bucket.drive;
   return bucket;
 }
 
@@ -695,128 +705,82 @@ function _renderDriveSectionOnly() {
   _wireDriveSyncButton();
 }
 
-// Produce the full Drive section HTML string (header + body).
-// The header uses a <div role="button"> instead of <button> so the sync button
-// (a true <button>) can be a valid child (nested buttons are invalid HTML).
+// Produce the full Drive section HTML string (header + body). Sync surface
+// lives in Conteudo > Drive now; the sidebar is read-only.
 function _renderDriveSection() {
   const key = 'drive';
   const isCollapsed = ClassVault.collapsedSections.has(key);
-  // Google-authed: Drive syncs automatically at boot (no CTA needed).
-  // Password-authed: show a small "Conectar para sincronizar Drive" prompt.
-  const googleAuthed = window.BS_GOOGLE && window.BS_GOOGLE.isAuthed();
   const count = ClassVault.driveItems.length;
 
   const headerHtml =
-    '<div role="button" tabindex="0" class="cv-sm-section cv-sm-section--drive' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
+    '<button type="button" class="cv-sm-section cv-sm-section--drive' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
       'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
       '<span class="cv-sm-section-glyph">' + SECTION_GLYPHS.drive + '</span>' +
       '<span class="cv-sm-section-label">Drive</span>' +
-      '<button type="button" class="cv-drive-sync-btn" data-drive-action="sync" title="Sincronizar Drive" aria-label="Sincronizar Drive">' +
-        '<span class="cv-spin-glyph">↻</span>' +
-      '</button>' +
       '<span class="cv-sm-section-count">' + count + '</span>' +
       '<span class="cv-sm-section-chev">▾</span>' +
-    '</div>';
+    '</button>';
 
   let bodyHtml = '';
   if (!isCollapsed) {
-    if (googleAuthed && count > 0) {
-      // Happy path: Google-authed and items loaded.
+    if (count > 0) {
       bodyHtml = _renderDriveGroups(ClassVault.driveItems);
-    } else if (googleAuthed && count === 0) {
-      // Google-authed but no items yet (sync in progress or empty folder).
-      bodyHtml = '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum arquivo encontrado na pasta Drive.</div>';
     } else {
-      // Password-authed (or not authed at all): show upgrade prompt.
-      bodyHtml =
-        '<div class="cv-sm-empty cv-sm-empty--inline cv-drive-auth-prompt">' +
-          '<button type="button" class="cv-drive-connect-btn" data-drive-action="connect">Conectar para sincronizar Drive</button>' +
-        '</div>';
+      bodyHtml = '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum arquivo cacheado. Sincronize na aba Conteudo &gt; Drive.</div>';
     }
   }
 
-  // Wrap in a marker element so _renderDriveSectionOnly can find and replace it.
   return '<div class="cv-sm-section--drive-wrapper">' + headerHtml + bodyHtml + '</div>';
 }
 
-// Group Drive items by subfolder name and render subsections.
+// Group Drive items by folder name and render subsections. Items come from
+// the ct_items cv_sync_drive_items cache and carry meta_json.folder_name;
+// legacy synthesized items still in memory expose their group via _group.
 function _renderDriveGroups(items) {
   if (!items.length) {
     return '<div class="cv-sm-empty cv-sm-empty--inline">Nenhum arquivo encontrado na pasta Drive.</div>';
   }
 
-  // Preserve group order as synthesized (groups appear in folder-appearance order).
-  const groups = [];
-  const groupMap = new Map();
-  for (const it of items) {
-    const g = it._group || '__raiz__';
-    if (!groupMap.has(g)) {
-      groupMap.set(g, []);
-      groups.push(g);
+  let groupResult;
+  if (window.CVDriveCache && typeof window.CVDriveCache.groupByFolder === 'function') {
+    groupResult = window.CVDriveCache.groupByFolder(items);
+  } else {
+    const fallback = [];
+    const map = new Map();
+    for (const it of items) {
+      const m = it.meta_json || {};
+      const key = (m.folder_name && String(m.folder_name).trim()) ||
+                  (it._group && it._group !== '__raiz__' ? it._group : '(raiz)');
+      if (!map.has(key)) { map.set(key, []); fallback.push({ name: key, items: [] }); }
+      map.get(key).push(it);
     }
-    groupMap.get(g).push(it);
+    fallback.forEach(function (g) { g.items = map.get(g.name); });
+    groupResult = { groups: fallback };
   }
 
-  return groups.map(function(groupKey) {
-    const groupItems = groupMap.get(groupKey);
-    const subKey = 'drive-folder:' + groupKey;
+  return groupResult.groups.map(function(g) {
+    const subKey = 'drive-folder:' + g.name;
     _seedCollapsedSubsection(subKey);
     const isCollapsed = ClassVault.collapsedSections.has(subKey);
-    const headerLabel = groupKey === '__raiz__' ? '📁 (raiz)' : groupKey;
+    const headerLabel = g.name === '(raiz)' ? '📁 (raiz)' : g.name;
     return (
       '<button type="button" class="cv-sm-subsection' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
         'data-section="' + _esc(subKey) + '" aria-expanded="' + (!isCollapsed) + '">' +
         '<span class="cv-sm-section-chev">▾</span>' +
         '<span>' + _esc(headerLabel) + '</span>' +
         '<span class="cv-sm-section-line"></span>' +
-        '<span class="cv-sm-section-count">' + groupItems.length + '</span>' +
+        '<span class="cv-sm-section-count">' + g.items.length + '</span>' +
       '</button>' +
-      (isCollapsed ? '' : groupItems.map(function(it) { return _renderSubCard(it, false); }).join(''))
+      (isCollapsed ? '' : g.items.map(function(it) { return _renderSubCard(it, false); }).join(''))
     );
   }).join('');
 }
 
-// Wire the sync button and "Conectar Drive" button after the Drive section
-// is stamped into the DOM. Called by _renderSidebar and by _renderDriveSectionOnly.
-function _wireDriveSyncButton() {
-  const body = document.querySelector('.cv-sm-body');
-  if (!body) return;
-  const wrapper = body.querySelector('.cv-sm-section--drive-wrapper');
-  if (!wrapper) return;
-
-  // Sync button: stop propagation so the parent section header doesn't collapse.
-  const syncBtn = wrapper.querySelector('[data-drive-action="sync"]');
-  if (syncBtn) {
-    syncBtn.addEventListener('click', async function(e) {
-      e.stopPropagation();
-      if (!window.CVDriveSync) return;
-      // Spin the glyph while syncing. _renderDriveSectionOnly re-creates the
-      // section when syncNow finishes, so the new button starts clean.
-      syncBtn.classList.add('is-loading');
-      try { await CVDriveSync.syncNow(); } catch (_) {}
-    });
-  }
-
-  // "Conectar Drive" CTA.
-  const connectBtn = wrapper.querySelector('[data-drive-action="connect"]');
-  if (connectBtn) {
-    connectBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (window.CVDriveSync) CVDriveSync.connect();
-    });
-  }
-
-  // Keyboard activation for the div[role="button"] Drive section header.
-  const header = wrapper.querySelector('.cv-sm-section--drive');
-  if (header) {
-    header.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        header.click();
-      }
-    });
-  }
-}
+// Vestigial after the sidebar Drive section lost its sync button. The Drive
+// header is now a real <button> so native click + keyboard handling apply;
+// no extra wiring needed. Kept as a no-op so existing callers do not need
+// edits in this commit.
+function _wireDriveSyncButton() { /* no-op */ }
 
 // ── LLMs section ───────────────────────────────────────────────
 // Hard-coded launchers for the major web LLM tools (open in a new tab) plus
@@ -1545,6 +1509,12 @@ function _renderDriveFolder(item, container) {
 }
 
 function _renderDriveFile(item, container) {
+  // Shared with the ClassTrail Drive sub-tab modal so the embed URL contract
+  // stays in one place.
+  if (window.CVDriveViewer && typeof window.CVDriveViewer.mountInContainer === 'function') {
+    window.CVDriveViewer.mountInContainer(item, container);
+    return;
+  }
   const meta = item.meta_json || {};
   const id = meta.file_id || _extractDriveFileId(meta.url || '');
   const src = id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';

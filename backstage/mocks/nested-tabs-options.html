@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Nested tabs — three options · PensoCodex</title>
+<style>
+  :root {
+    --bg:       #0f172a;
+    --surface:  #1e293b;
+    --border:   rgba(20,184,166,.18);
+    --text:     #e2e8f0;
+    --textsub:  #94a3b8;
+    --textdim:  #64748b;
+    --primary:  #14b8a6;
+    --accent:   rgba(20,184,166,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 24px 80px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .lede {
+    color: var(--textsub);
+    font-size: 0.92rem;
+    margin-bottom: 40px;
+    max-width: 720px;
+    line-height: 1.5;
+  }
+  .option {
+    margin-bottom: 56px;
+  }
+  .option-label {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .option-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 8px;
+    background: var(--primary);
+    color: #06241f;
+    font-weight: 700;
+    font-size: 0.82rem;
+    border-radius: 6px;
+  }
+  .option-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .option-note {
+    color: var(--textsub);
+    font-size: 0.85rem;
+    margin: 4px 0 14px;
+    line-height: 1.5;
+  }
+  .frame {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* ── Shared topbar ─────────────────────────────────────── */
+  .topbar {
+    height: 64px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+  .brand {
+    font-family: 'Comfortaa', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #fff;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand-glyph {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--primary), #0d9488);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #06241f;
+    font-weight: 800;
+    font-size: 0.82rem;
+  }
+  .brand-sep {
+    padding-left: 10px;
+    border-left: 1px solid var(--border);
+    color: var(--textsub);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .topbar-tabs {
+    display: flex;
+    gap: 2px;
+    margin-left: 20px;
+  }
+  .ttab {
+    padding: 8px 14px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--textsub);
+    border-radius: 8px;
+    cursor: default;
+  }
+  .ttab.active {
+    color: var(--primary);
+    background: var(--accent);
+  }
+  .topbar-spacer { flex: 1; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    font-size: 0.8rem;
+  }
+
+  /* ── Sub-nav row (option A) ───────────────────────────── */
+  .subnav-row {
+    height: 44px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 2px;
+  }
+  .stab {
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--textsub);
+    border-radius: 6px;
+    cursor: default;
+  }
+  .stab.active {
+    color: #fff;
+    background: rgba(255,255,255,0.06);
+    border-bottom: 2px solid var(--primary);
+    border-radius: 6px 6px 0 0;
+  }
+
+  /* ── Chip row (option C) ──────────────────────────────── */
+  .chip-row {
+    padding: 10px 24px;
+    background: transparent;
+    display: flex;
+    gap: 6px;
+  }
+  .chip {
+    padding: 4px 10px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--textsub);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    cursor: default;
+  }
+  .chip.active {
+    color: var(--primary);
+    background: var(--accent);
+    border-color: rgba(20,184,166,.4);
+  }
+
+  /* ── Option B: dynamic single row ─────────────────────── */
+  .back-chevron {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    color: var(--textsub);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: default;
+  }
+  .breadcrumb-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--textdim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 4px;
+  }
+
+  /* ── Body placeholder ─────────────────────────────────── */
+  .body-placeholder {
+    height: 200px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--textdim);
+    font-size: 0.85rem;
+  }
+
+  /* ── Pros/cons ─────────────────────────────────────────── */
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+  .pc-block {
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .pc-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .pc-pros .pc-label { color: #4ade80; }
+  .pc-cons .pc-label { color: #f87171; }
+  .pc-list { color: var(--text); margin: 0; padding-left: 18px; }
+  .pc-list li { margin-bottom: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Nested tabs — três opções</h1>
+  <p class="lede">
+    Estado em jogo: você está em <strong>Perguntas → Ao vivo</strong>. Há quatro tabs de
+    topo (Aula / Conteúdo / Turmas / Perguntas) e o tab Perguntas tem sub-tabs
+    (Ao vivo / Banco / Estatísticas / Configurações). Como mostrar isso?
+  </p>
+
+  <!-- ===================== OPÇÃO A ===================== -->
+  <div class="option">
+    <div class="option-label">
+      <span class="option-tag">A</span>
+      <span class="option-title">Duas linhas (padrão clássico)</span>
+    </div>
+    <p class="option-note">
+      Topbar com as 4 tabs principais, e uma segunda linha de sub-tabs abaixo
+      quando o tab atual tem sub-vistas. ~108px de chrome no topo.
+    </p>
+    <div class="frame">
+      <div class="topbar">
+        <div class="brand">
+          <span class="brand-glyph">P</span>ensoIA
+          <span class="brand-sep">Codex</span>
+        </div>
+        <div class="topbar-tabs">
+          <div class="ttab">Aula</div>
+          <div class="ttab">Conteúdo</div>
+          <div class="ttab">Turmas</div>
+          <div class="ttab active">Perguntas</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="icon-btn">☼</div>
+        <div class="icon-btn">⚙</div>
+      </div>
+      <div class="subnav-row">
+        <div class="stab active">Ao vivo</div>
+        <div class="stab">Banco</div>
+        <div class="stab">Estatísticas</div>
+        <div class="stab">Configurações</div>
+      </div>
+      <div class="body-placeholder">Conteúdo da página</div>
+    </div>
+    <div class="pros-cons">
+      <div class="pc-block pc-pros">
+        <div class="pc-label">Prós</div>
+        <ul class="pc-list">
+          <li>Sempre visível: você vê todos os níveis ao mesmo tempo</li>
+          <li>Familiar (igual a inúmeros admin tools)</li>
+          <li>Implementação direta, baixo risco</li>
+        </ul>
+      </div>
+      <div class="pc-block pc-cons">
+        <div class="pc-label">Contras</div>
+        <ul class="pc-list">
+          <li>~108px de chrome antes do conteúdo</li>
+          <li>Duas linhas competindo por atenção</li>
+          <li>Em mobile fica apertado</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== OPÇÃO B ===================== -->
+  <div class="option">
+    <div class="option-label">
+      <span class="option-tag">B</span>
+      <span class="option-title">Linha única dinâmica (drill-in)</span>
+    </div>
+    <p class="option-note">
+      Uma única linha de tabs. Quando você entra em Perguntas, os tabs do topo
+      são <em>substituídos</em> pelos sub-tabs do Perguntas, com um chevron
+      "voltar ao topo" à esquerda. Só ~64px de chrome.
+    </p>
+    <div class="frame">
+      <div class="topbar">
+        <div class="brand">
+          <span class="brand-glyph">P</span>ensoIA
+          <span class="brand-sep">Codex</span>
+        </div>
+        <div class="topbar-tabs">
+          <div class="back-chevron">←</div>
+          <span class="breadcrumb-tag">Perguntas /</span>
+          <div class="ttab active">Ao vivo</div>
+          <div class="ttab">Banco</div>
+          <div class="ttab">Estatísticas</div>
+          <div class="ttab">Configurações</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="icon-btn">☼</div>
+        <div class="icon-btn">⚙</div>
+      </div>
+      <div class="body-placeholder">Conteúdo da página</div>
+    </div>
+    <div class="pros-cons">
+      <div class="pc-block pc-pros">
+        <div class="pc-label">Prós</div>
+        <ul class="pc-list">
+          <li>Chrome mínimo (~64px)</li>
+          <li>Mais espaço para o conteúdo</li>
+          <li>Visualmente "focado" no que você está fazendo</li>
+        </ul>
+      </div>
+      <div class="pc-block pc-cons">
+        <div class="pc-label">Contras</div>
+        <ul class="pc-list">
+          <li>"Onde estou?" — você perde a vista dos outros tabs principais</li>
+          <li>Mais clique pra ir de Perguntas → Conteúdo (voltar primeiro)</li>
+          <li>Padrão menos familiar; alguns usuários ficam perdidos</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== OPÇÃO C ===================== -->
+  <div class="option">
+    <div class="option-label">
+      <span class="option-tag">C</span>
+      <span class="option-title">Chips compactas (peso visual leve)</span>
+    </div>
+    <p class="option-note">
+      Topbar normal com 4 tabs. Sub-tabs aparecem como pílulas pequenas logo
+      acima do conteúdo, sem barra de fundo. ~88px de chrome (intermediário).
+    </p>
+    <div class="frame">
+      <div class="topbar">
+        <div class="brand">
+          <span class="brand-glyph">P</span>ensoIA
+          <span class="brand-sep">Codex</span>
+        </div>
+        <div class="topbar-tabs">
+          <div class="ttab">Aula</div>
+          <div class="ttab">Conteúdo</div>
+          <div class="ttab">Turmas</div>
+          <div class="ttab active">Perguntas</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="icon-btn">☼</div>
+        <div class="icon-btn">⚙</div>
+      </div>
+      <div class="chip-row">
+        <div class="chip active">Ao vivo</div>
+        <div class="chip">Banco</div>
+        <div class="chip">Estatísticas</div>
+        <div class="chip">Configurações</div>
+      </div>
+      <div class="body-placeholder">Conteúdo da página</div>
+    </div>
+    <div class="pros-cons">
+      <div class="pc-block pc-pros">
+        <div class="pc-label">Prós</div>
+        <ul class="pc-list">
+          <li>Hierarquia visual clara (tabs principais &gt; chips secundárias)</li>
+          <li>Mais leve que opção A, ainda vê tudo</li>
+          <li>Chips são fáceis de empilhar/encolher em mobile</li>
+        </ul>
+      </div>
+      <div class="pc-block pc-cons">
+        <div class="pc-label">Contras</div>
+        <ul class="pc-list">
+          <li>Inconsistência: tabs principais com fundo, sub usam chip</li>
+          <li>Chips podem parecer "filtros" e confundir com filtragem real</li>
+          <li>Tab Conteúdo já tem sub-nav em formato tab — viraria mistura</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <p style="color: var(--textsub); font-size: 0.85rem; line-height: 1.5; padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+    <strong>Recomendação:</strong> Opção <strong>A</strong>. Padrão, sem surpresas, e o modo foco
+    já cuida do problema de chrome quando você precisa de espaço de verdade
+    durante uma aula. A perda de ~108px é o custo aceito por sempre ver
+    onde você está.
+  </p>
+
+</div>
+</body>
+</html>

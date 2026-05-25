@@ -1,0 +1,434 @@
+/* cv-drive.css: Drive sub-tab surfaces (ClassTrail Conteudo / Drive panel).
+   Owned by cv-drive-sync-ui.js + cv-drive-folders-ui.js. Token discipline:
+   all surface/border/text values come from CSS custom properties so light
+   and dark themes work without per-rule overrides; the one exception is
+   the warn-orange status text which needs an explicit dark variant. */
+
+.cv-drive-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 14px;
+}
+.cv-drive-toolbar h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.cv-drive-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  margin: 0 0 18px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.cv-drive-status            { font-weight: 600; }
+.cv-drive-status.is-ok      { color: var(--text-primary); }
+.cv-drive-status.is-warn    { color: #c2410c; }
+[data-theme="dark"] .cv-drive-status.is-warn { color: #fb923c; }
+.cv-drive-last-sync         { color: var(--text-secondary); margin-left: auto; }
+
+.cv-drive-folders-section,
+.cv-drive-files-section {
+  margin-bottom: 22px;
+}
+.cv-drive-folders-section h3,
+.cv-drive-files-section h3 {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.cv-drive-folders-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cv-drive-folders-section-header h3 { margin: 0; }
+
+.cv-drive-folders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cv-drive-folder-empty {
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  text-align: center;
+}
+.cv-drive-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cv-drive-folder-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-drive-folder-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-drive-folder-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.cv-drive-folder-edit,
+.cv-drive-folder-delete,
+.cv-drive-add-folder-btn,
+.cv-drive-folder-editor-cancel,
+.cv-drive-folder-editor-save {
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.cv-drive-folder-edit:hover,
+.cv-drive-folder-delete:hover,
+.cv-drive-add-folder-btn:hover,
+.cv-drive-folder-editor-cancel:hover {
+  background: color-mix(in oklab, var(--primary) 12%, var(--surface-soft));
+  border-color: var(--primary-light);
+}
+.cv-drive-folder-editor-save {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.cv-drive-folder-editor-save:hover {
+  background: var(--primary-dark, var(--primary));
+}
+
+.cv-drive-folder-editor-host {
+  margin-top: 6px;
+}
+.cv-drive-folder-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.cv-drive-folder-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.cv-drive-folder-editor-name,
+.cv-drive-folder-editor-folder-id {
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.cv-drive-folder-editor-folder-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+.cv-drive-folder-editor-name:focus,
+.cv-drive-folder-editor-folder-id:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+.cv-drive-folder-editor-name.is-invalid,
+.cv-drive-folder-editor-folder-id.is-invalid {
+  border-color: #c2410c;
+}
+[data-theme="dark"] .cv-drive-folder-editor-name.is-invalid,
+[data-theme="dark"] .cv-drive-folder-editor-folder-id.is-invalid {
+  border-color: #fb923c;
+}
+.cv-drive-folder-editor-error {
+  color: #c2410c;
+  font-size: 0.78rem;
+  min-height: 1em;
+}
+[data-theme="dark"] .cv-drive-folder-editor-error { color: #fb923c; }
+.cv-drive-folder-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Card-per-folder, mirrors backstage/classtrail/css/classtrail.css
+   .ct-rel-aula-outer / .ct-rel-aula-header / .ct-rel-aula-composer-body so
+   the Drive sub-tab looks and behaves like Liberações. */
+.cv-drive-folder-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  background: var(--surface);
+}
+.cv-drive-folder-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.95rem;
+  cursor: pointer;
+  gap: 0.75rem;
+  user-select: none;
+  transition: background 0.12s;
+}
+.cv-drive-folder-card-header:hover {
+  background: rgba(20,184,166,.05);
+}
+.cv-drive-folder-card-header.open {
+  background: rgba(20,184,166,.06);
+  border-bottom: 1px solid var(--border);
+}
+.cv-drive-folder-card-info {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.cv-drive-folder-card-info .cv-drive-folder-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.cv-drive-folder-card-info .cv-drive-folder-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-drive-folder-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+.cv-drive-folder-card-count {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(20,184,166,.1);
+  color: var(--primary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.cv-drive-folder-card-chevron {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.cv-drive-folder-card-header.open .cv-drive-folder-card-chevron {
+  transform: rotate(90deg);
+}
+.cv-drive-folder-card-body {
+  background: var(--surface);
+  padding: 0.85rem 0.95rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.cv-drive-card-empty {
+  padding: 0.7rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+/* Subfolder grouping inside an expanded card. */
+.cv-drive-subfolder {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.cv-drive-subfolder-head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  padding: 0.25rem 0 0.35rem;
+}
+.cv-drive-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.68rem;
+}
+.cv-drive-subfolder-files {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cv-drive-file {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.32rem 0.5rem;
+  font: inherit;
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.cv-drive-file:hover {
+  background: rgba(20,184,166,.06);
+  border-color: rgba(20,184,166,.18);
+}
+.cv-drive-file-icon {
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-secondary);
+  width: 14px;
+  text-align: center;
+}
+.cv-drive-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-drive-file-label {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Drive file preview modal (CVDriveViewer.openModal). */
+.cv-drive-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+.cv-drive-viewer-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, 100%);
+  height: min(80vh, 800px);
+  overflow: hidden;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+}
+.cv-drive-viewer-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.cv-drive-viewer-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-drive-viewer-close {
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 6px;
+}
+.cv-drive-viewer-close:hover {
+  background: var(--surface-soft);
+  color: var(--text-primary);
+}
+.cv-drive-viewer-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.cv-drive-viewer-body .cv-renderer-iframe-wrap,
+.cv-drive-viewer-body iframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--background);
+}
