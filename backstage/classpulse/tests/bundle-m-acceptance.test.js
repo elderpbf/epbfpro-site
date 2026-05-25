@@ -152,7 +152,10 @@ test('backstage-topbar.js preserves the existing ao-vivo / banco / estatisticas 
   const src = read('backstage/js/backstage-topbar.js');
   const block = src.match(/perguntas:\s*\[([\s\S]*?)\]/);
   assert.ok(block);
-  assert.match(block[1], /key:\s*['"]ao-vivo['"][^,]*label:\s*['"]Sess[oõ]es['"]/, 'existing ao-vivo entry was modified');
+  // Match the original ao-vivo entry: key followed by Sessões label, allowing
+  // the comma + whitespace between them. Bounded to a single object literal so
+  // we don't accidentally bridge across entries.
+  assert.match(block[1], /key:\s*['"]ao-vivo['"][^}]*label:\s*['"]Sess[oõ]es['"][^}]*['"]\/backstage\/classpulse\/['"]/, 'existing ao-vivo entry was modified or removed');
   assert.match(block[1], /key:\s*['"]banco['"]/, 'banco entry missing');
   assert.match(block[1], /key:\s*['"]estatisticas['"]/, 'estatisticas entry missing');
 });
@@ -175,12 +178,12 @@ test('backstage-topbar.js sub-tab order is Sessões / Sessões-Teste / Banco / E
 
 test('index.html links cp-host-module.css with v=1.0', () => {
   const src = read('backstage/classpulse/index.html');
-  assert.match(src, /cp-host\.css\?v=1\.0/, 'cp-host-module.css link missing or wrong version');
+  assert.match(src, /cp-host-module\.css\?v=1\.0/, 'cp-host-module.css link missing or wrong version');
 });
 
 test('index.html loads cp-host-module.js with v=1.0', () => {
   const src = read('backstage/classpulse/index.html');
-  assert.match(src, /cp-host\.js\?v=1\.0/, 'cp-host-module.js script missing or wrong version');
+  assert.match(src, /cp-host-module\.js\?v=1\.0/, 'cp-host-module.js script missing or wrong version');
 });
 
 test('index.html bumps backstage-topbar.js to v=2.5', () => {

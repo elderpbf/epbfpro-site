@@ -348,7 +348,7 @@ window.Topbar = (function() {
     // back-compat). Bundle M will absorb the host UI into the Sessões panel
     // (sidebar list + right-pane host); no separate Live sub-tab.
     perguntas: [
-      { key: 'ao-vivo' /* label: 'Sessões' */, label: 'Sessões', href: '/backstage/classpulse/' },
+      { key: 'ao-vivo',        label: 'Sessões',        href: '/backstage/classpulse/' },
       { key: 'ao-vivo-teste',  label: 'Sessões-Teste',  href: '/backstage/classpulse/?tab=sessoes-teste' },
       { key: 'banco',          label: 'Banco',          href: '/backstage/classpulse/?tab=banks' },
       { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' }
