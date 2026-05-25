@@ -1,13 +1,25 @@
-/* Shared structural CSS for bar track/fill */
+/* Shared structural CSS for bar track/fill.
+   Single source of truth — used by host.html (.rb-*), question-renderer.js
+   surfaces like display.html and student trilha (.qr-bar-*), and any future
+   bar consumer (.bar-*). Track color is intentionally neutral-alpha (not
+   var(--border)) so dark mode reads as a faded backdrop to the teal fill
+   rather than a near-match teal-on-teal. */
 .bar-track,
-.rb-track {
-  background: var(--border, rgba(20, 184, 166, 0.12));
+.rb-track,
+.qr-bar-track {
+  background: rgba(0, 0, 0, 0.08);
   border-radius: 6px;
   overflow: hidden;
 }
+[data-theme="dark"] .bar-track,
+[data-theme="dark"] .rb-track,
+[data-theme="dark"] .qr-bar-track {
+  background: rgba(255, 255, 255, 0.08);
+}
 
 .bar-fill,
-.rb-fill {
+.rb-fill,
+.qr-bar-fill {
   height: 100%;
   background: var(--primary);
   border-radius: 6px;

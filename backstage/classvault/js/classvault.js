@@ -13,6 +13,24 @@ window.Topbar.init({
   // Aula has no sub-tabs → 64px topbar.
 });
 if (window.CVFocusMode) CVFocusMode.init();
+
+// Bundle L Item 1: pin topbar in focus mode while Aula is empty (no item
+// selected AND side menu hidden). Releases on side-menu open, item select,
+// or focus mode off. Outside focus mode the body lacks .cv-focus, so the
+// CSS rule (body.cv-focus.cv-topbar-pin .bs-topbar) is a no-op anyway.
+function _updateTopbarPin() {
+  var noItem = !window.ClassVault || !ClassVault.activeItemId;
+  var focusOn = document.body.classList.contains('cv-focus');
+  var sideOpen = document.body.classList.contains('cv-focus--side');
+  var shouldPin = focusOn && noItem && !sideOpen;
+  document.body.classList.toggle('cv-topbar-pin', shouldPin);
+}
+(function _watchBodyForPin() {
+  if (typeof MutationObserver !== 'function') return;
+  var obs = new MutationObserver(function() { _updateTopbarPin(); });
+  obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+})();
+_updateTopbarPin();
 // Bundle F text resize: +A / -A topbar buttons. Visible only when the active
 // item supports text resize (per CVTypes.supportsTextResize). Scale persists
 // in localStorage and applies via the --cv-content-scale CSS variable on the
@@ -1056,6 +1074,7 @@ function _selectItem(item, subEl) {
   if (window.CVTextResize) {
     CVTextResize.setButtonsVisible(CVTextResize.isApplicable(item));
   }
+  _updateTopbarPin();
 }
 
 // Bundle D removed the sidebar "+ Adicionar" footer. Authoring moves to the

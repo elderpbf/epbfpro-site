@@ -12,11 +12,19 @@ window.BS_AUTH = (function() {
   }
 
   // Gate for all Backstage tools. Redirects to login if neither path is authed.
-  // Google is checked first; password hash is the fallback.
+  // Google is checked first; password hash is the fallback. Bundle L Item 3:
+  // before redirecting, capture the current URL (path + query + hash) into
+  // sessionStorage so the login page can return the user to where they were.
   function guard() {
     var googleOk = window.BS_GOOGLE && window.BS_GOOGLE.isAuthed();
     var passwordOk = !!localStorage.getItem(PW_KEY);
     if (!googleOk && !passwordOk) {
+      try {
+        var here = location.pathname + location.search + location.hash;
+        if (here && here !== '/backstage/' && here !== '/backstage') {
+          sessionStorage.setItem('bs_auth_return', here);
+        }
+      } catch (_) {}
       location.replace('/backstage/');
       return;
     }
@@ -25,13 +33,19 @@ window.BS_AUTH = (function() {
     }
   }
 
-  // Sign out from both Google and password paths.
+  // Sign out from both Google and password paths. Bundle L L.1: set a
+  // sessionStorage flag the login page reads to skip its silent-refresh
+  // attempt once (otherwise GIS sometimes flashes a popup after revoke).
+  // Also clear the per-tab active-session marker so the Live sub-tab does
+  // not linger across sign-in cycles.
   function signOut() {
     if (window.BS_GOOGLE) {
       try { window.BS_GOOGLE.signOut(); } catch (_) {}
     }
     localStorage.removeItem(PW_KEY);
     sessionStorage.removeItem(AUTH_KEY);
+    try { sessionStorage.removeItem('cp_active_session_code'); } catch (_) {}
+    try { sessionStorage.setItem('bs_just_signed_out', '1'); } catch (_) {}
     location.replace('/backstage/');
   }
 

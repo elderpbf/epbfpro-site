@@ -344,11 +344,13 @@ window.Topbar = (function() {
       { key: 'liberacoes', label: 'Liberações', href: '/backstage/classtrail/?tab=liberacoes' }
     ],
     turmas: [],
+    // Bundle L L.1: "Ao vivo" renamed to "Sessões" (key stays 'ao-vivo' for URL
+    // back-compat). Bundle M will absorb the host UI into the Sessões panel
+    // (sidebar list + right-pane host); no separate Live sub-tab.
     perguntas: [
-      { key: 'ao-vivo',        label: 'Ao vivo',        href: '/backstage/classpulse/' },
+      { key: 'ao-vivo',        label: 'Sessões',        href: '/backstage/classpulse/' },
       { key: 'banco',          label: 'Banco',          href: '/backstage/classpulse/?tab=banks' },
-      { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' },
-      { key: 'configuracoes',  label: 'Configurações',  href: '/backstage/classpulse/?tab=settings' }
+      { key: 'estatisticas',   label: 'Estatísticas',   href: '/backstage/classpulse/?tab=global-stats' }
     ]
   };
 

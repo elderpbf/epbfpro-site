@@ -59,6 +59,13 @@ body.cv-focus.cv-focus--top .bs-topbar {
   transform: translateY(0);
   opacity: 1;
 }
+/* Bundle L: pin topbar while Aula is empty and the side menu is hidden.
+   Toggled by _updateTopbarPin() in classvault.js. Releases when the side
+   menu opens (cv-focus--side) or an item is selected. */
+body.cv-focus.cv-topbar-pin .bs-topbar {
+  transform: translateY(0);
+  opacity: 1;
+}
 
 body.cv-focus .cv-shell {
   /* .cv-sm is position:fixed (out of grid flow), so the only in-flow child

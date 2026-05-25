@@ -40,6 +40,13 @@ QR.getTypeConfig = function(type) {
 // ── INTERNAL: Bar chart ───────────────────────────────────────
 // Renders option bars into container. Used by renderResults for mc/tf/poll.
 // opts: { mode, showResults, revealAnswer, correctAnswers, myAnswerIndices, voterCount }
+//
+// Bundle J: when the container already holds a matching bar structure (same
+// option count), we MUTATE existing elements rather than replacing innerHTML.
+// This keeps the .qr-bar-fill DOM identity stable across poll ticks so the
+// `transition: width 0.8s ease` works as designed (smooth tween) and the
+// student's `.mine` "your answer" highlight stops blink-flashing every time
+// another student submits an answer.
 QR._renderBarChart = function(options, counts, container, opts) {
   var showResults    = opts.showResults !== false;
   var revealAnswer   = opts.revealAnswer === true;
@@ -51,9 +58,26 @@ QR._renderBarChart = function(options, counts, container, opts) {
 
   var total = (counts || []).reduce(function(a, b) { return a + b; }, 0);
   var denominator = voterCount !== null ? voterCount : total;
-  var html  = '';
+  var opts2 = options || [];
 
-  (options || []).forEach(function(opt, i) {
+  // Try in-place update first. Falls back to full rebuild on structural change.
+  var existingBars = container.querySelectorAll('.qr-bar');
+  if (existingBars.length === opts2.length && opts2.length > 0) {
+    for (var i = 0; i < opts2.length; i++) {
+      _updateBar(existingBars[i], opts2[i], i, counts, opts, {
+        showResults: showResults,
+        revealAnswer: revealAnswer,
+        correctAnswers: correctAnswers,
+        myAnswerIndices: myAnswerIndices,
+        denominator: denominator
+      });
+    }
+    return;
+  }
+
+  // Structural change (new question, different option count): rebuild.
+  var html = '';
+  opts2.forEach(function(opt, i) {
     var count     = (counts && counts[i] !== undefined) ? counts[i] : 0;
     var pct       = showResults && denominator > 0 ? Math.round(count / denominator * 100) : 0;
     var isCorrect = revealAnswer && correctAnswers.indexOf(i) !== -1;
@@ -78,6 +102,47 @@ QR._renderBarChart = function(options, counts, container, opts) {
 
   container.innerHTML = html;
 };
+
+// Update an existing .qr-bar in place. Mutates width / percent / count text
+// and toggles is-correct + fill modifier classes. Designed for the polling
+// path where DOM identity must be preserved across renders.
+function _updateBar(bar, opt, i, counts, _opts, derived) {
+  var showResults    = derived.showResults;
+  var revealAnswer   = derived.revealAnswer;
+  var correctAnswers = derived.correctAnswers;
+  var myAnswerIndices = derived.myAnswerIndices;
+  var denominator    = derived.denominator;
+
+  var count     = (counts && counts[i] !== undefined) ? counts[i] : 0;
+  var pct       = showResults && denominator > 0 ? Math.round(count / denominator * 100) : 0;
+  var isCorrect = revealAnswer && correctAnswers.indexOf(i) !== -1;
+  var isMine    = myAnswerIndices.indexOf(i) !== -1;
+
+  // is-correct on the bar
+  bar.classList.toggle('is-correct', isCorrect);
+
+  // Option text (could change if the host edits the question -- rare but cheap)
+  var textEl = bar.querySelector('.qr-bar-text');
+  if (textEl) {
+    var nextText = stripOptPrefix(opt);
+    if (textEl.textContent !== nextText) textEl.textContent = nextText;
+  }
+
+  // Percent and count text
+  var pctEl = bar.querySelector('.qr-bar-pct');
+  if (pctEl) pctEl.textContent = showResults ? pct + '%' : '';
+  var countEl = bar.querySelector('.qr-bar-count');
+  if (countEl) countEl.textContent = showResults ? String(count) : '';
+
+  // Fill width + modifier classes. Width transitions smoothly via CSS.
+  var fill = bar.querySelector('.qr-bar-fill');
+  if (fill) {
+    fill.classList.toggle('correct', isCorrect);
+    // isCorrect wins over isMine (matches the rebuild branch's ternary)
+    fill.classList.toggle('mine', !isCorrect && isMine);
+    fill.style.width = (showResults ? pct : 0) + '%';
+  }
+}
 
 // ── INTERNAL: Word cloud ──────────────────────────────────────
 // Renders a frequency word cloud from an array of text answer strings.
