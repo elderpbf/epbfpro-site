@@ -196,47 +196,59 @@
   gap: 8px;
 }
 
-/* Liberacoes-style card per configured Drive root: header click expands the
-   body and lists the files (subfolders + raiz) inside that root. */
+/* Card-per-folder, mirrors backstage/classtrail/css/classtrail.css
+   .ct-rel-aula-outer / .ct-rel-aula-header / .ct-rel-aula-composer-body so
+   the Drive sub-tab looks and behaves like Liberações. */
 .cv-drive-folder-card {
-  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  margin-bottom: 8px;
   overflow: hidden;
+  margin-bottom: 6px;
+  background: var(--surface);
 }
 .cv-drive-folder-card-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
+  justify-content: space-between;
+  padding: 0.7rem 0.95rem;
   cursor: pointer;
+  gap: 0.75rem;
+  user-select: none;
   transition: background 0.12s;
 }
 .cv-drive-folder-card-header:hover {
-  background: var(--surface-soft);
+  background: rgba(20,184,166,.05);
+}
+.cv-drive-folder-card-header.open {
+  background: rgba(20,184,166,.06);
+  border-bottom: 1px solid var(--border);
 }
 .cv-drive-folder-card-info {
-  flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1;
   min-width: 0;
+  flex-wrap: wrap;
 }
 .cv-drive-folder-card-info .cv-drive-folder-name {
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.94rem;
-  min-width: 0;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
 }
 .cv-drive-folder-card-info .cv-drive-folder-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--text-secondary);
-  font-size: 0.72rem;
-  max-width: 380px;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  max-width: 320px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -244,41 +256,40 @@
 .cv-drive-folder-card-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.55rem;
   flex-shrink: 0;
 }
 .cv-drive-folder-card-count {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 2px 9px;
+  font-size: 0.72rem;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: var(--surface-soft);
+  background: rgba(20,184,166,.1);
+  color: var(--primary);
+  font-weight: 500;
+  white-space: nowrap;
 }
 .cv-drive-folder-card-chevron {
-  display: inline-block;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   color: var(--text-secondary);
-  transition: transform 0.18s ease;
-  width: 18px;
-  text-align: center;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
 }
 .cv-drive-folder-card-header.open .cv-drive-folder-card-chevron {
   transform: rotate(90deg);
 }
 .cv-drive-folder-card-body {
-  border-top: 1px solid var(--border);
   background: var(--background);
-  padding: 12px 14px;
+  padding: 0.85rem 0.95rem 0.6rem;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0.6rem;
 }
 .cv-drive-card-empty {
-  padding: 14px;
+  padding: 0.7rem;
   text-align: center;
   color: var(--text-secondary);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   background: var(--surface);
   border: 1px dashed var(--border);
   border-radius: 8px;
@@ -288,15 +299,15 @@
 .cv-drive-subfolder {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
 }
 .cv-drive-subfolder-head {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
-  padding: 4px 0;
+  padding: 0.25rem 0 0.35rem;
 }
 .cv-drive-count {
   display: inline-block;
@@ -306,38 +317,38 @@
   background: var(--surface-soft);
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 .cv-drive-subfolder-files {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 .cv-drive-file {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.55rem;
   width: 100%;
-  padding: 8px 10px;
+  padding: 0.32rem 0.5rem;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   color: var(--text-primary);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 6px;
   text-align: left;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
 }
 .cv-drive-file:hover {
-  background: var(--surface-soft);
-  border-color: var(--border);
+  background: rgba(20,184,166,.06);
+  border-color: rgba(20,184,166,.18);
 }
 .cv-drive-file-icon {
   flex-shrink: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--text-secondary);
-  width: 16px;
+  width: 14px;
   text-align: center;
 }
 .cv-drive-file-name {
@@ -350,7 +361,7 @@
 .cv-drive-file-label {
   flex-shrink: 0;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
