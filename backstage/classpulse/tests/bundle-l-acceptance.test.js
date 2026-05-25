@@ -192,6 +192,41 @@ test('backstage-topbar.js CODEX_SUBTABS.perguntas no longer has a configuracoes 
     'configuracoes key still present in CODEX_SUBTABS.perguntas (should be removed)');
 });
 
+// ── Item 7: Launched-question + red-dot lag fix ─────────────────────────────
+// Active-question panel was poll-driven (3s lag); red dot polled every 30s.
+// _onQuestionLaunched() forces immediate cpq poll + lights the tab dot.
+
+test('host.html defines _onQuestionLaunched helper', () => {
+  const src = read('backstage/classpulse/host.html');
+  assert.match(src, /function\s+_onQuestionLaunched\s*\(/,
+    '_onQuestionLaunched function should be defined in host.html');
+});
+
+test('_onQuestionLaunched forces immediate cpq poll via startPolling', () => {
+  const src = read('backstage/classpulse/host.html');
+  const fnMatch = src.match(/function\s+_onQuestionLaunched\s*\([\s\S]*?\n\}/);
+  assert.ok(fnMatch, '_onQuestionLaunched body not found');
+  assert.match(fnMatch[0], /startPolling\(\)/,
+    '_onQuestionLaunched should call cpq.startPolling() for immediate poll');
+});
+
+test('_onQuestionLaunched lights the Perguntas tab dot via Topbar.setTabDot', () => {
+  const src = read('backstage/classpulse/host.html');
+  const fnMatch = src.match(/function\s+_onQuestionLaunched\s*\([\s\S]*?\n\}/);
+  assert.ok(fnMatch, '_onQuestionLaunched body not found');
+  assert.match(fnMatch[0], /Topbar\.setTabDot\(\s*['"]perguntas['"]\s*,\s*true\s*\)/,
+    '_onQuestionLaunched should call Topbar.setTabDot(perguntas, true)');
+});
+
+test('all three launch_question sites in host.html call _onQuestionLaunched', () => {
+  const src = read('backstage/classpulse/host.html');
+  // Count occurrences of _onQuestionLaunched() invocations (not the definition).
+  const calls = src.match(/_onQuestionLaunched\(\)/g) || [];
+  // 1 def line + 3 call sites = 4 total; if only the def, it's 1.
+  assert.ok(calls.length >= 3,
+    'expected >= 3 _onQuestionLaunched() invocations (one per launch site); found ' + calls.length);
+});
+
 // ── Item 5: Progress bar track consolidated in shared-components.css ────────
 // Single source of truth for .bar-track / .rb-track / .qr-bar-track so host,
 // display, trilha, and any future surface render identically. Neutral-alpha

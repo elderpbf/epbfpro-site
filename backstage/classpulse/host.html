@@ -734,6 +734,20 @@ var visToggle = CPVisibilityToggle.attach({
 
 var qaModule = null;
 
+// Bundle L.1 follow-up: post-launch UI nudge. The active-question panel is
+// poll-driven by the <classpulse-question> element's 3s setInterval; without
+// this nudge the first question after a session opens lags up to 3s before
+// the panel appears. Forcing startPolling() runs an immediate _poll() (it
+// also resets the interval cleanly). The tab dot is lit synchronously so
+// the Codex topbar reflects live state without waiting for its 30s poll.
+function _onQuestionLaunched() {
+  try {
+    var cpq = document.getElementById('cpq');
+    if (cpq && typeof cpq.startPolling === 'function') cpq.startPolling();
+  } catch (_) {}
+  try { if (window.Topbar) Topbar.setTabDot('perguntas', true); } catch (_) {}
+}
+
 // ---------------------------------------------------------------------------
 // Screens
 // ---------------------------------------------------------------------------
@@ -1172,6 +1186,7 @@ document.getElementById('launch-btn').addEventListener('click', async function()
       max_select: read.max_select !== undefined ? read.max_select : 1
     });
     activeQId = res.id;
+    _onQuestionLaunched();
     visToggle.reset();
     clearAlert();
     clearForm();
@@ -1481,6 +1496,7 @@ async function relaunchFromHistory(btn, q) {
       max_select: q.max_select || 1
     });
     activeQId = res.id;
+    _onQuestionLaunched();
     showToast('Pergunta relançada!');
   } catch (e) {
     showToastError('Erro ao relançar: ' + e.message);
@@ -1580,6 +1596,7 @@ async function launchFromBank(q, btn) {
       max_select: maxSel
     });
     activeQId = res.id;
+    _onQuestionLaunched();
     clearAlert();
   } catch (e) {
     showAlert('error', 'Erro ao lançar: ' + e.message);
