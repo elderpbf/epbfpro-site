@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>pensoIA · Mocks</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="../js/auth.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -235,7 +236,7 @@ body.guest-mode .topbar::before {
   </main>
 
 <script>
-const isAuthenticated = () => sessionStorage.getItem('bs_auth') === '1' && !!localStorage.getItem('bs_pw_hash');
+const isAuthenticated = () => window.BS_AUTH ? BS_AUTH.isAuthedLocal() : false;
 
 const MOCKS = {
   brand: {
