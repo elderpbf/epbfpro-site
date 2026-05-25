@@ -28,6 +28,22 @@ Edit Doppler secret `BACKSTAGE_GOOGLE_ALLOWLIST` (comma-separated emails). Worke
 
 Why: account access is operationally controlled, not in code.
 
+## Client-side storage keys
+
+- Password hash (legacy fallback path): localStorage `bs_pw_hash`
+- Session auth flag: sessionStorage `bs_auth` = `'1'`
+- Theme: localStorage `bs_theme`
+- Reveal theme: localStorage `bs_reveal_theme`
+- Custom themes: localStorage `bs_custom_themes`
+- Debug mode: localStorage `bs_debug`
+- Apps Script URL: localStorage `bs_cf_script_url`
+
+To retrieve `AUTH_TOKEN` (legacy password path): `doppler secrets get AUTH_TOKEN -p backstage -c dev --plain`
+
+**R2 note:** Presentation data (`data.json`) is served from Cloudflare R2 via `get_presentation_json`, NOT from the local git file. To update, call `put_presentation_json` with auth_token.
+
+**Topbar zone:** `bs-topbar` auto-reveals on hover at the top edge (~64px). Never place interactive UI in the top ~64px of any Backstage page or panel. Same applies to the bottom ~64px when the side menu is present.
+
 ## Architecture: how Worker verifies a Google session
 
 Frontend sends `Authorization: Bearer <google_access_token>` on Worker requests.
