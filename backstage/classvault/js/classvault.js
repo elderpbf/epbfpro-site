@@ -1509,6 +1509,12 @@ function _renderDriveFolder(item, container) {
 }
 
 function _renderDriveFile(item, container) {
+  // Shared with the ClassTrail Drive sub-tab modal so the embed URL contract
+  // stays in one place.
+  if (window.CVDriveViewer && typeof window.CVDriveViewer.mountInContainer === 'function') {
+    window.CVDriveViewer.mountInContainer(item, container);
+    return;
+  }
   const meta = item.meta_json || {};
   const id = meta.file_id || _extractDriveFileId(meta.url || '');
   const src = id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';

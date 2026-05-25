@@ -105,11 +105,18 @@
       if (folderEl) folderEl.classList.remove('is-invalid');
     }
 
+    // Accept a full Drive URL in the folder_id field; auto-extract the ID so
+    // teachers can paste straight from the browser address bar.
+    function _extractFolderId(raw) {
+      var m = String(raw || '').match(/\/folders\/([A-Za-z0-9_-]+)/);
+      return m ? m[1] : String(raw || '').trim();
+    }
+
     function _onSubmit(e) {
       e.preventDefault();
       _clearErrors();
       var name     = ((nameEl   && nameEl.value)   || '').trim();
-      var folderId = ((folderEl && folderEl.value) || '').trim();
+      var folderId = _extractFolderId((folderEl && folderEl.value) || '');
 
       if (!name) {
         if (errorEl)  errorEl.textContent = 'Nome é obrigatório.';
