@@ -176,9 +176,9 @@ test('backstage-topbar.js sub-tab order is Sessões / Sessões-Teste / Banco / E
 
 // ── 5. classpulse/index.html additive wiring ────────────────────────────────
 
-test('index.html links cp-host-module.css with v=1.0', () => {
+test('index.html links cp-host-module.css with a cache-busting version', () => {
   const src = read('backstage/classpulse/index.html');
-  assert.match(src, /cp-host-module\.css\?v=1\.0/, 'cp-host-module.css link missing or wrong version');
+  assert.match(src, /cp-host-module\.css\?v=\d+\.\d+/, 'cp-host-module.css link missing or missing ?v= version');
 });
 
 test('index.html loads cp-host-module.js with v=1.0', () => {

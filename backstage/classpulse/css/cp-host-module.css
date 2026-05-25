@@ -384,8 +384,17 @@
   }
 
 /* Bundle M: Sessoes-Teste panel layout */
-#panel-sessoes-teste { padding: 0; }
-.cp-st-layout { display: flex; height: calc(100vh - 88px); min-height: 0; }
+/* Override .cp-panel.active's display:block with flex+full-height so the
+   inner sidebar can stretch via align-items:stretch. Without this the sidebar
+   collapses to header height because the block parent has no defined height
+   for stretch to anchor to. */
+#panel-sessoes-teste.cp-panel.active {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 88px - 5rem); /* topbar + bs-main vertical padding */
+  padding: 0;
+}
+.cp-st-layout { display: flex; flex: 1; min-height: 0; width: 100%; }
 .cp-st-sidebar {
   width: 320px; flex-shrink: 0;
   background: var(--surface); border-right: 1px solid var(--border);

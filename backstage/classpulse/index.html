@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="../css/classpulse.css?v=1.13">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.6">
 <link rel="stylesheet" href="../css/question-types.css?v=1.9">
-<link rel="stylesheet" href="css/cp-host-module.css?v=1.0">
+<link rel="stylesheet" href="css/cp-host-module.css?v=1.1">
 <script src="../js/debug.js?v=2.5"></script>
 <style>
   .cp-session-card.is-clickable { cursor: pointer; transition: border-color .15s, background .15s; }
@@ -1572,6 +1572,15 @@ loadSessions();
 
   // Exposed so the tab-switch logic can trigger it when activating this panel.
   window.__cpLoadSessoesTeste = loadSessoesTeste;
+
+  // Self-init guard: the tab-switch IIFE above runs at parse-time, BEFORE this
+  // script block, so on direct ?tab=sessoes-teste URL loads it sees
+  // window.__cpLoadSessoesTeste === undefined and skips the call. We re-check
+  // here once we are defined and auto-load if our panel is the active one.
+  var selfPanel = document.getElementById('panel-sessoes-teste');
+  if (selfPanel && selfPanel.classList.contains('active')) {
+    loadSessoesTeste();
+  }
 })();
 </script>
 </body>
