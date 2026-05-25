@@ -4,23 +4,6 @@
    All class names use cp- prefix (ClassPulse-scoped).
    ========================================================= */
 
-/* Bundle L L.1: Live sub-tab visibility moved from CSS :not() guard to
-   JS-conditional render in backstage-topbar.js (more reliable across
-   cached HTML + theme overrides). The previous body:not(.cp-session-open)
-   rule was removed here. */
-
-/* The panel-live container hosts the embedded host UI (iframe today, real
-   inline mount once Bundle M ships). Pending Bundle M decision on whether
-   this stays; left in place for now so the iframe path keeps working. */
-#panel-live {
-  display: none;
-  min-height: 70vh;
-  height: 100%;
-  padding: 0;
-}
-#panel-live.active {
-  display: block;
-}
 
 /* =========================================================
    SETTINGS PANEL

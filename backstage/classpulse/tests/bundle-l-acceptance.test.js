@@ -1,11 +1,15 @@
 // Bundle L acceptance tests — ClassVault + ClassPulse improvements.
-// Covers: topbar pin when no aula selected (Item 1), Perguntas Live sub-tab
-// and CPHost extraction (Item 2), auth return-URL + proactive refresh (Item 3),
-// Configurações moved into SettingsDrawer (Item 4), and dark-mode progress bar
-// contrast in cp-host.js (Item 5).
+// Covers:
+//   Item 1: topbar pin when no aula selected (ClassVault focus mode).
+//   Item 2: REVERTED. Bundle L's iframe/Live-tab approach was rolled back per
+//           Elder's feedback. Sessões click navigates to host.html (old flow).
+//           Bundle M will redesign Sessões as sidebar+content later.
+//   Item 3: auth return-URL capture + proactive refresh + sair-no-popup fix.
+//   Item 4: Configurações moved into SettingsDrawer (CPSettings module).
+//   Item 5: dark-mode progress bar neutral grey track (in host.html).
+//   Item 6: Sessões rename (Ao vivo -> Sessões).
 //
 // Run: node "C:/Users/Elder/Google Drive Streaming/My Drive/Archive/Tech/Dev/PensoIA/Site/backstage/classpulse/tests/bundle-l-acceptance.test.js"
-// All tests must FAIL before the implementation lands (red phase).
 
 'use strict';
 
@@ -48,51 +52,63 @@ test('_updateTopbarPin is invoked at least twice in classvault.js (definition + 
   assert.ok(matches.length >= 3, '_updateTopbarPin( found ' + matches.length + ' times; expected >= 3 (1 def + 2 calls)');
 });
 
-// ── Item 2: Perguntas Live sub-tab + host module extraction ─────────────────
+// ── Item 2: REVERTED ────────────────────────────────────────────────────────
+// Bundle L's iframe/Live-tab approach was reverted per Elder's feedback. The
+// host page stays a separate full-page surface; Sessões panel uses the old
+// click-to-navigate flow. Bundle M will redesign Sessões as sidebar+content
+// with no separate host URL.
 
-test('cp-host.js file exists', () => {
+test('cp-host.js does NOT exist (iframe wrapper reverted)', () => {
   const exists = fs.existsSync(path.join(ROOT, 'backstage/classpulse/js/cp-host.js'));
-  assert.ok(exists, 'backstage/classpulse/js/cp-host.js does not exist');
+  assert.ok(!exists, 'backstage/classpulse/js/cp-host.js should be deleted');
 });
 
-test('cp-host.js declares window.CPHost with mount and unmount', () => {
-  const src = tryRead('backstage/classpulse/js/cp-host.js');
-  assert.match(src, /window\.CPHost\s*=/, 'window.CPHost not declared in cp-host.js');
-  assert.match(src, /mount\s*:/, 'mount property not found in CPHost');
-  assert.match(src, /unmount\s*:/, 'unmount property not found in CPHost');
-});
-
-test('host.html calls CPHost.mount(', () => {
-  const src = read('backstage/classpulse/host.html');
-  assert.match(src, /CPHost\.mount\(/, 'CPHost.mount( call not found in host.html');
-});
-
-test('classpulse index.html contains a panel-live div', () => {
+test('classpulse index.html does NOT contain a panel-live div', () => {
   const src = read('backstage/classpulse/index.html');
-  assert.match(src, /id=["']panel-live["']/, 'id="panel-live" not found in classpulse/index.html');
+  assert.ok(!/id=["']panel-live["']/.test(src), 'panel-live div should be removed from classpulse/index.html');
 });
 
-test('classpulse index.html references CPHost.mount( in sub-tab routing', () => {
+test('classpulse index.html does NOT reference cp-host.js or CPHost.mount', () => {
   const src = read('backstage/classpulse/index.html');
-  assert.match(src, /CPHost\.mount\(/, 'CPHost.mount( not referenced in classpulse/index.html');
+  assert.ok(!/cp-host\.js/.test(src), 'cp-host.js script tag should be removed');
+  assert.ok(!/CPHost\.mount\(/.test(src), 'CPHost.mount call should be removed');
 });
 
-test('backstage-topbar.js CODEX_SUBTABS.perguntas includes a live key entry', () => {
+test('backstage-topbar.js CODEX_SUBTABS.perguntas does NOT include a live key entry', () => {
   const src = read('backstage/js/backstage-topbar.js');
-  // Locate the perguntas subtabs block then check for live key inside it.
   const perguntasBlock = src.match(/perguntas:\s*\[([\s\S]*?)\]/);
   assert.ok(perguntasBlock, 'CODEX_SUBTABS.perguntas block not found');
-  assert.match(perguntasBlock[1], /key:\s*['"]live['"]/, 'live key not found in perguntas sub-tabs');
+  assert.ok(!/key:\s*['"]live['"]/.test(perguntasBlock[1]),
+    'live key should be removed from perguntas sub-tabs');
 });
 
-test('classpulse.css or index.html hides the Live sub-tab unless cp-session-open is on body', () => {
-  const cssSrc = tryRead('backstage/css/classpulse.css');
-  const idxSrc = read('backstage/classpulse/index.html');
-  const combined = cssSrc + idxSrc;
-  assert.ok(
-    /cp-session-open/.test(combined),
-    'cp-session-open not referenced in classpulse.css or index.html (Live sub-tab visibility guard missing)'
-  );
+test('backstage-topbar.js does NOT reference cp_active_session_code or _withLiveEntry', () => {
+  const src = read('backstage/js/backstage-topbar.js');
+  assert.ok(!/cp_active_session_code/.test(src), 'cp_active_session_code reference should be removed');
+  assert.ok(!/_withLiveEntry/.test(src), '_withLiveEntry helper should be removed');
+});
+
+test('classpulse index.html session-click navigates via location.href (old behavior restored)', () => {
+  const src = read('backstage/classpulse/index.html');
+  assert.match(src, /location\.href\s*=\s*['"]host\.html\?code=/,
+    'session click should navigate via location.href to host.html');
+  assert.ok(!/openSessionLive/.test(src), 'openSessionLive helper should be removed');
+  assert.ok(!/restoreLiveIfActive/.test(src), 'restoreLiveIfActive helper should be removed');
+});
+
+test('Sessões sub-tab label is "Sessões" (renamed from "Ao vivo")', () => {
+  const src = read('backstage/js/backstage-topbar.js');
+  const perguntasBlock = src.match(/perguntas:\s*\[([\s\S]*?)\]/);
+  assert.ok(perguntasBlock, 'CODEX_SUBTABS.perguntas block not found');
+  assert.match(perguntasBlock[1], /label:\s*['"]Sess[oõ]es['"]/, 'first perguntas sub-tab should be labeled Sessões');
+});
+
+test('host.html marks Sessões (ao-vivo) as the active sub-tab', () => {
+  const src = read('backstage/classpulse/host.html');
+  // First-arg can contain parens (e.g. document.getElementById(...)); match
+  // across them up to the statement terminator.
+  assert.match(src, /renderSubTabsInto\([^;]*['"]perguntas['"]\s*,\s*['"]ao-vivo['"]/,
+    'host.html should mark ao-vivo (Sessões) as the active sub-tab');
 });
 
 // ── Item 3: Auth return-URL capture + proactive silent refresh ───────────────
@@ -176,37 +192,35 @@ test('backstage-topbar.js CODEX_SUBTABS.perguntas no longer has a configuracoes 
     'configuracoes key still present in CODEX_SUBTABS.perguntas (should be removed)');
 });
 
-// ── Item 5: Dark mode progress bar contrast (in cp-host.js) ─────────────────
-// host.html's inline styles will move into the extracted cp-host.js module.
-// Tests assert the styles land in cp-host.js; that file does not exist yet.
+// ── Item 5: Dark mode progress bar contrast (in host.html) ──────────────────
+// Styles live in host.html's inline <style> block (cp-host.js was reverted).
 
-test('cp-host.js rb-track rule does not use teal rgba(20,184,166', () => {
-  const src = tryRead('backstage/classpulse/js/cp-host.js');
-  // Extract the rb-track block (between .rb-track { and the next })
+test('host.html rb-track rule does not use teal rgba(20,184,166', () => {
+  const src = read('backstage/classpulse/host.html');
   const block = src.match(/\.rb-track\s*\{([^}]*)\}/);
-  assert.ok(block, '.rb-track rule not found in cp-host.js');
+  assert.ok(block, '.rb-track rule not found in host.html');
   assert.ok(!/rgba\(\s*20\s*,\s*184\s*,\s*166/.test(block[1]),
-    '.rb-track in cp-host.js still uses teal rgba(20,184,166) — must use neutral');
+    '.rb-track in host.html still uses teal rgba(20,184,166) — must use neutral');
 });
 
-test('cp-host.js light-mode rb-track uses neutral dark-on-light background', () => {
-  const src = tryRead('backstage/classpulse/js/cp-host.js');
+test('host.html light-mode rb-track uses neutral dark-on-light background', () => {
+  const src = read('backstage/classpulse/host.html');
   const block = src.match(/\.rb-track\s*\{([^}]*)\}/);
-  assert.ok(block, '.rb-track rule not found in cp-host.js');
+  assert.ok(block, '.rb-track rule not found in host.html');
   assert.match(block[1], /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,/,
     '.rb-track light-mode background does not use rgba(0,0,0,...) neutral');
 });
 
-test('cp-host.js dark-mode rb-track override uses neutral light-on-dark background', () => {
-  const src = tryRead('backstage/classpulse/js/cp-host.js');
+test('host.html dark-mode rb-track override uses neutral light-on-dark background', () => {
+  const src = read('backstage/classpulse/host.html');
   assert.match(src, /\[data-theme=["']dark["']\]\s*\.rb-track\s*\{[^}]*rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/,
-    'dark-mode .rb-track in cp-host.js does not use rgba(255,255,255,...) neutral');
+    'dark-mode .rb-track in host.html does not use rgba(255,255,255,...) neutral');
 });
 
-test('cp-host.js rb-fill still uses var(--primary)', () => {
-  const src = tryRead('backstage/classpulse/js/cp-host.js');
+test('host.html rb-fill still uses var(--primary)', () => {
+  const src = read('backstage/classpulse/host.html');
   assert.match(src, /\.rb-fill\s*\{[^}]*background:\s*var\(--primary\)/,
-    '.rb-fill in cp-host.js does not use background: var(--primary)');
+    '.rb-fill in host.html does not use background: var(--primary)');
 });
 
 // ── Runner ───────────────────────────────────────────────────────────────────
