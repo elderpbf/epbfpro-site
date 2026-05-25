@@ -734,19 +734,33 @@ var visToggle = CPVisibilityToggle.attach({
 
 var qaModule = null;
 
-// Bundle L.1 follow-up: post-launch UI nudge. The active-question panel is
-// poll-driven by the <classpulse-question> element's 3s setInterval; without
-// this nudge the first question after a session opens lags up to 3s before
-// the panel appears. Forcing startPolling() runs an immediate _poll() (it
-// also resets the interval cleanly). The tab dot is lit synchronously so
-// the Codex topbar reflects live state without waiting for its 30s poll.
-function _onQuestionLaunched() {
+// Bundle L.1 follow-up: cpq + topbar nudges for session lifecycle moments.
+//
+// Why this exists: classpulse-question.min.js (_poll) calls stopPolling()
+// whenever a get_session_state response comes back with status='closed' (see
+// lines 252-255 of that file). The element never restarts on its own — once
+// stopped, it stays stopped. So if the user opens host.html while the session
+// is still closed (very common: open the page, then click "Iniciar/Reabrir"),
+// cpq polls once, sees closed, and quits. After that, reopen + launches do
+// not surface in the active-question panel until the user refreshes the page.
+//
+// Fix: kick cpq.startPolling() at every moment where the session transitions
+// to open (reopen_session success, launch_question success). startPolling
+// runs _poll() synchronously so the panel updates within one round-trip.
+// Also lights the Perguntas tab dot immediately so the Codex topbar reflects
+// live state without waiting for the topbar's 30s cp_get_live_session poll.
+function _kickCpqPoll() {
   try {
     var cpq = document.getElementById('cpq');
     if (cpq && typeof cpq.startPolling === 'function') cpq.startPolling();
   } catch (_) {}
+}
+function _onSessionLive() {
+  _kickCpqPoll();
   try { if (window.Topbar) Topbar.setTabDot('perguntas', true); } catch (_) {}
 }
+// Backwards-compatible alias for the three launch call sites.
+function _onQuestionLaunched() { _onSessionLive(); }
 
 // ---------------------------------------------------------------------------
 // Screens
@@ -1012,6 +1026,10 @@ async function doStartHost(force) {
     _currentSession.status = 'open';
     applyHostedUI(true);
     clearAlert();
+    // Bundle L.1: cpq stopped itself on its first poll because the session was
+    // 'closed' at the time; now that we've reopened it, restart polling
+    // so the active-question panel + history populate immediately.
+    _onSessionLive();
   } catch (e) {
     if (!force && e.data && e.data.active_code) {
       var name = e.data.active_title || e.data.active_code;

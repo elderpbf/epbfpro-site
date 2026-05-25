@@ -202,29 +202,43 @@ test('host.html defines _onQuestionLaunched helper', () => {
     '_onQuestionLaunched function should be defined in host.html');
 });
 
-test('_onQuestionLaunched forces immediate cpq poll via startPolling', () => {
+test('host.html defines _kickCpqPoll helper that calls startPolling on the cpq element', () => {
   const src = read('backstage/classpulse/host.html');
-  const fnMatch = src.match(/function\s+_onQuestionLaunched\s*\([\s\S]*?\n\}/);
-  assert.ok(fnMatch, '_onQuestionLaunched body not found');
+  const fnMatch = src.match(/function\s+_kickCpqPoll\s*\([\s\S]*?\n\}/);
+  assert.ok(fnMatch, '_kickCpqPoll function not found');
   assert.match(fnMatch[0], /startPolling\(\)/,
-    '_onQuestionLaunched should call cpq.startPolling() for immediate poll');
-});
-
-test('_onQuestionLaunched lights the Perguntas tab dot via Topbar.setTabDot', () => {
-  const src = read('backstage/classpulse/host.html');
-  const fnMatch = src.match(/function\s+_onQuestionLaunched\s*\([\s\S]*?\n\}/);
-  assert.ok(fnMatch, '_onQuestionLaunched body not found');
-  assert.match(fnMatch[0], /Topbar\.setTabDot\(\s*['"]perguntas['"]\s*,\s*true\s*\)/,
-    '_onQuestionLaunched should call Topbar.setTabDot(perguntas, true)');
+    '_kickCpqPoll should call cpq.startPolling() for immediate poll');
 });
 
 test('all three launch_question sites in host.html call _onQuestionLaunched', () => {
   const src = read('backstage/classpulse/host.html');
   // Count occurrences of _onQuestionLaunched() invocations (not the definition).
   const calls = src.match(/_onQuestionLaunched\(\)/g) || [];
-  // 1 def line + 3 call sites = 4 total; if only the def, it's 1.
+  // The alias is now: 1 def + 3 call sites = 4 total.
   assert.ok(calls.length >= 3,
     'expected >= 3 _onQuestionLaunched() invocations (one per launch site); found ' + calls.length);
+});
+
+test('host.html defines _onSessionLive helper (cpq restart + tab dot)', () => {
+  const src = read('backstage/classpulse/host.html');
+  assert.match(src, /function\s+_onSessionLive\s*\(/,
+    '_onSessionLive function should be defined');
+  // _onSessionLive should kick cpq AND light the dot.
+  const fnMatch = src.match(/function\s+_onSessionLive\s*\([\s\S]*?\n\}/);
+  assert.ok(fnMatch, '_onSessionLive body not found');
+  assert.match(fnMatch[0], /_kickCpqPoll\(\)/,
+    '_onSessionLive should call _kickCpqPoll()');
+  assert.match(fnMatch[0], /Topbar\.setTabDot\(\s*['"]perguntas['"]\s*,\s*true\s*\)/,
+    '_onSessionLive should call Topbar.setTabDot(perguntas, true)');
+});
+
+test('doStartHost (reopen_session path) calls _onSessionLive after success', () => {
+  const src = read('backstage/classpulse/host.html');
+  // Find the doStartHost function body and confirm _onSessionLive runs after reopen_session.
+  const fnMatch = src.match(/async function doStartHost\s*\([\s\S]*?\n\}/);
+  assert.ok(fnMatch, 'doStartHost function body not found');
+  assert.match(fnMatch[0], /reopen_session[\s\S]*?_onSessionLive\(\)/,
+    'doStartHost should call _onSessionLive() after reopen_session succeeds');
 });
 
 // ── Item 5: Progress bar track consolidated in shared-components.css ────────
