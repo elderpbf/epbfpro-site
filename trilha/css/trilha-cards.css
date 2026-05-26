@@ -57,7 +57,7 @@
 }
 
 .zone--done     { background: var(--success); }
-.zone--und      { background: var(--text-secondary); }
+.zone--und      { background: var(--zone-und); }
 .zone--apostila { background: var(--primary-dark); }
 
 .zone-num {

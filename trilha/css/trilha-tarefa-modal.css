@@ -5,15 +5,23 @@
    action button itself and the modal-specific @media block.
    ========================================================= */
 
-.item-action--submitted {
+/* trilha.js applies both `is-done` and `item-action--submitted` on the
+   submitted state. `.item-action.is-done` (specificity 0,2,0) would
+   otherwise win over a single-class `.item-action--submitted` (0,1,0) and
+   force green-on-orange-text. Stacking the class with .item-action gives
+   us 0,2,0 too; same-specificity tie goes to the later-loaded stylesheet
+   (this file loads after trilha-cards.css). */
+.item-action.item-action--submitted {
   background: var(--task-bg);
   color: var(--task-dark);
-  border-color: var(--task-border);
+  border: none;
+  box-shadow: none;
   cursor: default;
   pointer-events: none;
+  transform: none;
 }
 
-.item-action--submitted svg { color: var(--task-dark); }
+.item-action.item-action--submitted svg { color: var(--task-dark); }
 
 body.tr-modal-open { overflow: hidden; }
 

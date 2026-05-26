@@ -7,18 +7,25 @@
    no orange.
    ========================================================= */
 
-/* ----- Local-only orange token for Tarefa accent ----- */
+/* ----- Local tokens -----
+   --task family: orange accent for Tarefa (theme.css has no orange).
+   --zone-und: "data a definir" zone background; uses --text-secondary in
+   light mode (dark teal) but a darker gray in dark mode because the dark-
+   mode --text-secondary is #d1d5db (light gray) and reads poorly with
+   white text. */
 :root {
   --task:        #d97706;
   --task-dark:   #92400e;
   --task-bg:     rgba(217, 119, 6, 0.12);
   --task-border: rgba(217, 119, 6, 0.34);
+  --zone-und:    var(--text-secondary);
 }
 [data-theme="dark"] {
   --task:        #f59e0b;
   --task-dark:   #fbbf24;
   --task-bg:     rgba(245, 158, 11, 0.16);
   --task-border: rgba(245, 158, 11, 0.42);
+  --zone-und:    #374151;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
