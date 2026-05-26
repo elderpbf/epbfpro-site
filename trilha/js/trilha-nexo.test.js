@@ -217,7 +217,17 @@ function makeTrilhaDoc() {
 
 // ── load trilha-nexo.js into a fresh sandbox per test ────────────────────
 const NEXO_PATH = path.join(__dirname, 'trilha-nexo.js');
-const TRILHA_PATH = path.join(__dirname, 'trilha.js');
+// After the trilha.js monolith was split, the source surface lives across
+// seven Trilha.* modules; some assertions scan all of them.
+const TRILHA_MODULES = [
+  'trilha-state.js',
+  'trilha-utils.js',
+  'trilha-actions.js',
+  'trilha-sub.js',
+  'trilha-aulas.js',
+  'trilha-flat.js',
+  'trilha-page.js',
+].map(function (f) { return path.join(__dirname, f); });
 const INDEX_HTML_PATH = path.join(__dirname, '..', 'index.html');
 const GO_INDEX_PATH = path.join(__dirname, '..', '..', 'go', 'index.html');
 const ANSWER_MODULE_PATH = path.join(__dirname, '..', '..', 'backstage', 'js', 'nexo-answer.js');
@@ -370,13 +380,19 @@ test('trilha-nexo does not mount when session is null even if current_question i
     'no answer host should be created');
 });
 
-test('go/index.html is still the full answer experience (not collapsed to a shim)', () => {
+test('go/index.html is the descontinuada stub (the answer experience now lives inside /trilha)', () => {
+  // Bundle H ships the answer experience inside /trilha via trilha-nexo. The
+  // legacy /go answer page was intentionally collapsed into a small notice
+  // ("Página descontinuada"). This test pins the new contract: /go is a
+  // small stub that points users back to the trilha link, and MUST NOT carry
+  // the old join-screen / classpulse-question / qa-bar markup that trilha-
+  // nexo now hosts.
   const src = fs.readFileSync(GO_INDEX_PATH, 'utf8');
-  // Must keep the join-screen, the cpq element, the qa-bar, the working surface.
-  assert.ok(/id="join-screen"/.test(src), '/go must keep the join-screen');
-  assert.ok(/<classpulse-question/.test(src), '/go must keep the classpulse-question custom element');
-  assert.ok(/id="qa-bar"/.test(src), '/go must keep the qa-bar');
-  assert.ok(src.length > 20000, '/go must remain the full ~33KB page, not a redirect shim');
+  assert.ok(/Página descontinuada/.test(src), '/go must be the descontinuada stub');
+  assert.ok(!/id="join-screen"/.test(src), '/go must NOT carry the legacy join-screen');
+  assert.ok(!/<classpulse-question/.test(src), '/go must NOT carry the legacy classpulse-question element');
+  assert.ok(!/id="qa-bar"/.test(src), '/go must NOT carry the legacy qa-bar');
+  assert.ok(src.length < 5000, '/go must be a small stub, not the full answer page');
 });
 
 test('trilha/index.html loads nexo-answer.js and the classpulse deps', () => {
@@ -387,13 +403,16 @@ test('trilha/index.html loads nexo-answer.js and the classpulse deps', () => {
   assert.ok(/question-types\.css/.test(src), 'trilha must include question-types.css');
 });
 
-test('trilha.js no longer surfaces the session code in the "Perguntas ao vivo" header pill', () => {
-  const src = fs.readFileSync(TRILHA_PATH, 'utf8');
+test('trilha modules no longer surface the session code in the "Perguntas ao vivo" header pill', () => {
   // The injected anchor used "?code=" + classpulse_session_id. After Bundle H
   // the session code must not be surfaced anywhere on the public page.
-  assert.ok(!/Perguntas ao vivo/.test(src), 'header pill label must be removed');
-  assert.ok(!/classpulse_session_id/.test(src) || !/\?code=/.test(src),
-    'session code link must be removed from header injection');
+  for (const p of TRILHA_MODULES) {
+    if (!fs.existsSync(p)) continue;
+    const src = fs.readFileSync(p, 'utf8');
+    assert.ok(!/Perguntas ao vivo/.test(src), path.basename(p) + ' must not contain the legacy header pill label');
+    assert.ok(!/classpulse_session_id/.test(src) || !/\?code=/.test(src),
+      path.basename(p) + ' must not reference classpulse_session_id with ?code=');
+  }
 });
 
 // ── runner ───────────────────────────────────────────────────────────────
