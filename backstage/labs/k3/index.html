@@ -428,6 +428,7 @@
       const TOK_PER_TURN   = 7500;
       const TOK_PER_PDF    = 24000;
       const TOK_SUMMARY    = 4000;
+      const TOK_PDF_SUMMARY = 2000;
       // Threshold for the meter color: below 20% remaining we go amber,
       // at 0% we go red. Tuned so the audience sees the meter shift well
       // before the band hits zero.
@@ -467,7 +468,7 @@
       function getHistory() {
         return isCompacted ? TOK_SUMMARY : turnCount * TOK_PER_TURN;
       }
-      function getPdfs()  { return pdfCount * TOK_PER_PDF; }
+      function getPdfs()  { return isCompacted ? pdfCount * TOK_PDF_SUMMARY : pdfCount * TOK_PER_PDF; }
       function getUsed()  { return TOK_SYSTEM + TOK_SKILLS + getHistory() + getPdfs(); }
       function getResp()  { return Math.max(0, TOTAL - getUsed()); }
 
@@ -508,9 +509,9 @@
           : (turnCount > 0
               ? 'Histórico de conversa (' + turnCount + ' turno' + (turnCount === 1 ? '' : 's') + ')'
               : 'Histórico de conversa');
-        lblPdfsEl.textContent = pdfCount > 0
-          ? 'PDFs anexados (' + pdfCount + ')'
-          : 'PDFs anexados';
+        lblPdfsEl.textContent = pdfCount === 0
+          ? 'PDFs anexados'
+          : (isCompacted ? 'Resumo dos PDFs (' + pdfCount + ')' : 'PDFs anexados (' + pdfCount + ')');
 
         // Legend numeric values.
         legHistEl.textContent = fmt(tokens.history);
@@ -553,7 +554,7 @@
         // Disable actions that don't fit any more.
         addTurnBtn.disabled = (getUsed() + TOK_PER_TURN) > TOTAL;
         addPdfBtn.disabled  = (getUsed() + TOK_PER_PDF)  > TOTAL;
-        compactBtn.disabled = isCompacted || turnCount === 0;
+        compactBtn.disabled = isCompacted || (turnCount === 0 && pdfCount === 0);
       }
 
       // ── Handlers ─────────────────────────────────────────
@@ -565,11 +566,12 @@
         render();
       }
       function addPdf() {
+        if (isCompacted) { isCompacted = false; pdfCount = 0; }
         pdfCount += 1;
         render();
       }
       function compact() {
-        if (turnCount === 0) return;
+        if (turnCount === 0 && pdfCount === 0) return;
         isCompacted = true;
         // turnCount stays so the audience sees "compactado X turnos" hint
         // remain useful — but the displayed block label switches to "Resumo".
