@@ -26,10 +26,13 @@
       : (window.BSTypeIcon ? window.BSTypeIcon(item.type, item.type_icon || '•') : (item.type_icon || '•'));
     var typeLabel = opts.isTarefa ? 'Tarefa' : (item.type_label || item.type || '');
 
+    var isFresh = !!(Trilha.Freshness && Trilha.Freshness.isFresh(item));
+    var novoPill = isFresh ? '<span class="novo-pill">NOVO</span>' : '';
+
     sub.innerHTML =
       '<div class="' + zoneClass + '">' + esc(icon) + '</div>' +
       '<div class="sub-meta">' +
-        '<span class="sub-type">' + esc(typeLabel) + '</span>' +
+        '<span class="sub-type">' + esc(typeLabel) + novoPill + '</span>' +
         '<span class="sub-title">' + esc(item.title) + '</span>' +
         (item.summary ? '<span class="sub-summary">' + esc(item.summary) + '</span>' : '') +
       '</div>' +
