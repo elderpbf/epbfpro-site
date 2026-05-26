@@ -317,9 +317,10 @@
         }).join('') + '</div>'
       : '';
 
+    var tarefaGlyph = window.BSTypeIcon ? window.BSTypeIcon('tarefa', '✓') : '✓';
     var tarefaPill = '';
-    if (tarefaCount === 1)      tarefaPill = '<span class="tarefa-pill">⚑ Tarefa</span>';
-    else if (tarefaCount >= 2)  tarefaPill = '<span class="tarefa-pill">⚑ Tarefas (' + tarefaCount + ')</span>';
+    if (tarefaCount === 1)      tarefaPill = '<span class="tarefa-pill">' + _esc(tarefaGlyph) + ' Tarefa</span>';
+    else if (tarefaCount >= 2)  tarefaPill = '<span class="tarefa-pill">' + _esc(tarefaGlyph) + ' Tarefas (' + tarefaCount + ')</span>';
     var paddedNum = String(aula.aula_number);
     if (paddedNum.length < 2) paddedNum = '0' + paddedNum;
 
@@ -498,7 +499,9 @@
     if (opts.isTarefa) zoneClass += ' sub-zone--tarefa';
     else if (opts.isApostila) zoneClass += ' sub-zone--apostila';
 
-    var icon = opts.isTarefa ? '⚑' : (item.type_icon || '📄');
+    var icon = opts.isTarefa
+      ? (window.BSTypeIcon ? window.BSTypeIcon('tarefa', '✓') : '✓')
+      : (window.BSTypeIcon ? window.BSTypeIcon(item.type, item.type_icon || '•') : (item.type_icon || '•'));
     var typeLabel = opts.isTarefa ? 'Tarefa' : (item.type_label || item.type || '');
 
     sub.innerHTML =
@@ -767,7 +770,7 @@
     card.className = 'card';
     card.dataset.itemId = item.id;
 
-    var icon = item.type_icon || '📄';
+    var icon = window.BSTypeIcon ? window.BSTypeIcon(item.type, item.type_icon || '•') : (item.type_icon || '•');
     var typeLabel = item.type_label || item.type || '';
     var zoneClass = 'zone' + (opts.isApostila ? ' zone--apostila' : '');
 

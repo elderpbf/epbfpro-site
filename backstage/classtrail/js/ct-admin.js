@@ -47,20 +47,26 @@ window.CT_ADMIN = (function() {
 
   // ---- Type / tag helpers ----
 
-  var TYPE_ICON_FALLBACK = {
-    prompt: '💬',
-    exemplo: '✨',
-    exercicio: '📝',
-    dica: '💡',
-    leitura: '📖',
-    video: '🎬',
-    link: '🔗'
-  };
-
+  // Icon source unified on BSTypeIcon (utils.js) so the same item renders the
+  // same glyph in every Backstage surface (Aula sidebar, Itens grid, Liberacoes
+  // composer, preset picker, public trilha). DB ct_types.icon stays as a second
+  // fallback so legacy types without a BSTypeIcon entry still paint.
   function _typeMeta(slug) {
     var t = _types.find(function(x) { return x.slug === slug; });
-    if (t) return { label: t.label, icon: t.icon || TYPE_ICON_FALLBACK[slug] || '📄' };
-    return { label: slug || 'item', icon: TYPE_ICON_FALLBACK[slug] || '📄' };
+    var label = t ? t.label : (slug || 'item');
+    var dbIcon = t && t.icon;
+    var icon = window.BSTypeIcon ? BSTypeIcon(slug, dbIcon) : (dbIcon || '•');
+    return { label: label, icon: icon };
+  }
+
+  // Glyph for the Liberacoes aula-card count chips. Apostila/outros are
+  // section pseudo-types (no real ct_types slug), so they get an explicit
+  // mapping; tarefa/drive_file flow through BSTypeIcon so they match the
+  // glyph used everywhere else.
+  function _countGlyph(key) {
+    if (key === 'apostila') return '¶';
+    if (key === 'outros')   return '◆';
+    return window.BSTypeIcon ? BSTypeIcon(key, '•') : '•';
   }
 
   function _turmaUrl(clientSlug, turmaSlug, token) {
@@ -787,7 +793,7 @@ window.CT_ADMIN = (function() {
 
   function _renderItems() {
     // Hide apostila items (set_id != null), tarefa, and conteudo items from the main Items grid.
-    var libraryItems = _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo'; });
+    var libraryItems = _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo' && it.type !== 'drive_file'; });
     _renderItemsFilter(libraryItems);
     var el = document.getElementById('items-list');
     if (!libraryItems.length) {
@@ -839,7 +845,7 @@ window.CT_ADMIN = (function() {
     var idStr = String(id);
     var row = document.querySelector('.ct-item-row[data-item-id="' + idStr + '"]');
     if (row && row.parentNode) row.parentNode.removeChild(row);
-    var libraryItems = _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo'; });
+    var libraryItems = _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo' && it.type !== 'drive_file'; });
     _renderItemsFilter(libraryItems);
     var grid = document.getElementById('items-list');
     if (grid && grid.children.length === 0) {
@@ -867,7 +873,7 @@ window.CT_ADMIN = (function() {
   function _renderItemsFilter(itemsSubset) {
     var fc = document.getElementById('items-filter');
     if (!fc) return;
-    var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo'; });
+    var items = itemsSubset !== undefined ? itemsSubset : _items.filter(function(it) { return !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo' && it.type !== 'drive_file'; });
     if (!items.length) { fc.innerHTML = ''; return; }
     fc.innerHTML =
       '<div class="ct-filter-row">' +
@@ -1350,16 +1356,23 @@ window.CT_ADMIN = (function() {
                String((_relReleasedMeta[i.id] || {}).aula_number) === String(n);
       }).length;
 
+      var driveCount = _relAllItems.filter(function(i) {
+        return i.type === 'drive_file' &&
+               _relReleased.indexOf(i.id) !== -1 &&
+               String((_relReleasedMeta[i.id] || {}).aula_number) === String(n);
+      }).length;
+
       var outrosCount = _relAllItems.filter(function(i) {
-        return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' &&
+        return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file' &&
                _relReleased.indexOf(i.id) !== -1 &&
                String((_relReleasedMeta[i.id] || {}).aula_number) === String(n);
       }).length;
 
       var counts = '';
-      if (apostilaCount) counts += '<span class="ct-rel-count">📖 ' + apostilaCount + '</span>';
-      if (tarefaCount)   counts += '<span class="ct-rel-count">⚑ ' + tarefaCount + '</span>';
-      if (outrosCount)   counts += '<span class="ct-rel-count">📄 ' + outrosCount + '</span>';
+      if (apostilaCount) counts += '<span class="ct-rel-count">' + _esc(_countGlyph('apostila')) + ' ' + apostilaCount + '</span>';
+      if (tarefaCount)   counts += '<span class="ct-rel-count">' + _esc(_countGlyph('tarefa'))   + ' ' + tarefaCount + '</span>';
+      if (outrosCount)   counts += '<span class="ct-rel-count">' + _esc(_countGlyph('outros'))   + ' ' + outrosCount + '</span>';
+      if (driveCount)    counts += '<span class="ct-rel-count">' + _esc(_countGlyph('drive_file')) + ' ' + driveCount + '</span>';
       if (!counts)       counts  = '<span class="ct-rel-count ct-rel-count-empty">vazio</span>';
 
       html +=
@@ -1380,10 +1393,21 @@ window.CT_ADMIN = (function() {
     });
 
     var outrosSolo = _relAllItems.filter(function(i) {
-      return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' &&
+      return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file' &&
              _relReleased.indexOf(i.id) !== -1 &&
              !(_relReleasedMeta[i.id] || {}).aula_number;
     }).length;
+
+    var driveSolo = _relAllItems.filter(function(i) {
+      return i.type === 'drive_file' &&
+             _relReleased.indexOf(i.id) !== -1 &&
+             !(_relReleasedMeta[i.id] || {}).aula_number;
+    }).length;
+
+    var outrosSoloCounts = '';
+    if (outrosSolo) outrosSoloCounts += '<span class="ct-rel-count">' + _esc(_countGlyph('outros'))     + ' ' + outrosSolo + '</span>';
+    if (driveSolo)  outrosSoloCounts += '<span class="ct-rel-count">' + _esc(_countGlyph('drive_file')) + ' ' + driveSolo  + '</span>';
+    if (!outrosSoloCounts) outrosSoloCounts = '<span class="ct-rel-count ct-rel-count-empty">vazio</span>';
 
     html +=
       '<div class="ct-rel-aula-outer ct-rel-outros-outer">' +
@@ -1393,9 +1417,7 @@ window.CT_ADMIN = (function() {
             '<span class="ct-rel-aula-title">Materiais sem aula</span>' +
           '</div>' +
           '<div class="ct-rel-aula-meta">' +
-            '<div class="ct-rel-aula-counts">' +
-              (outrosSolo ? '<span class="ct-rel-count">📄 ' + outrosSolo + '</span>' : '<span class="ct-rel-count ct-rel-count-empty">vazio</span>') +
-            '</div>' +
+            '<div class="ct-rel-aula-counts">' + outrosSoloCounts + '</div>' +
             '<span class="ct-rel-aula-chevron">&#8250;</span>' +
           '</div>' +
         '</div>' +
@@ -1428,19 +1450,27 @@ window.CT_ADMIN = (function() {
     var aula = _relAulas.find(function(a) { return String(a.id) === outer.dataset.aulaId; });
     if (!aula) return;
 
-    // Three parallel pools sourced from the library: apostila (via set_id),
-    // tarefa (type='tarefa'), and outros (everything else standalone).
+    // Parallel pools sourced from the library: apostila (via set_id), tarefa
+    // (type='tarefa'), drive (type='drive_file' — kept separate because drive
+    // rows are filename-only with no body, so mixing them with prompts/links
+    // muddies the picker), and outros (everything else standalone).
     var tarefaItems = _relAllItems.filter(function(i) {
       return !i.set_id && i.type === 'tarefa';
     });
+    var driveItems = _relAllItems.filter(function(i) {
+      return i.type === 'drive_file';
+    });
     var outrosItems = _relAllItems.filter(function(i) {
-      return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa';
+      return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file';
     });
 
     function isBound(id) {
       return _relReleased.indexOf(id) !== -1 &&
              String((_relReleasedMeta[id] || {}).aula_number) === String(aulaNum);
     }
+
+    var tarefaGlyph = _countGlyph('tarefa');
+    var driveGlyph  = _countGlyph('drive_file');
 
     var apostilaHtml = _apostilaItems.length
       ? _apostilaItems.map(function(i) {
@@ -1455,7 +1485,7 @@ window.CT_ADMIN = (function() {
       ? tarefaItems.map(function(i) {
           return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
             '<input type="checkbox" class="ct-comp-tarefa-cb" value="' + i.id + '"' + (isBound(i.id) ? ' checked' : '') + '>' +
-            '<span>⚑ ' + _esc(i.title) + '</span>' +
+            '<span>' + _esc(tarefaGlyph) + ' ' + _esc(i.title) + '</span>' +
           '</label>';
         }).join('')
       : '<div class="ct-comp-empty">Nenhuma tarefa cadastrada na biblioteca. Crie um item de tipo \'tarefa\' na aba Itens.</div>';
@@ -1470,6 +1500,22 @@ window.CT_ADMIN = (function() {
         }).join('')
       : '<div class="ct-comp-empty">Nenhum item na biblioteca.</div>';
 
+    var driveSectionHtml = '';
+    if (driveItems.length) {
+      var driveHtml = driveItems.map(function(i) {
+        return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
+          '<input type="checkbox" class="ct-comp-drive-cb" value="' + i.id + '"' + (isBound(i.id) ? ' checked' : '') + '>' +
+          '<span>' + _esc(driveGlyph) + ' ' + _esc(i.title) + '</span>' +
+        '</label>';
+      }).join('');
+      driveSectionHtml =
+        '<div class="ct-comp-section">' +
+          '<div class="ct-comp-section-label">Drive</div>' +
+          '<input type="text" class="ct-comp-search ct-comp-drive-search" placeholder="Buscar...">' +
+          '<div class="ct-comp-list ct-comp-drive-list">' + driveHtml + '</div>' +
+        '</div>';
+    }
+
     container.innerHTML =
       '<div class="ct-rel-aula-composer-body">' +
         '<div class="ct-comp-section">' +
@@ -1482,26 +1528,36 @@ window.CT_ADMIN = (function() {
         '</div>' +
         '<div class="ct-comp-section">' +
           '<div class="ct-comp-section-label">Outros itens</div>' +
-          '<input type="text" class="ct-comp-search" placeholder="Buscar...">' +
+          '<input type="text" class="ct-comp-search ct-comp-outros-search" placeholder="Buscar...">' +
           '<div class="ct-comp-list ct-comp-outros-list">' + outrosHtml + '</div>' +
         '</div>' +
+        driveSectionHtml +
         '<div class="ct-comp-actions">' +
           '<button class="ct-btn ct-btn-primary ct-comp-save">Salvar</button>' +
         '</div>' +
       '</div>';
 
-    var searchEl = container.querySelector('.ct-comp-search');
-    if (searchEl) {
-      searchEl.addEventListener('input', function() {
+    var outrosSearch = container.querySelector('.ct-comp-outros-search');
+    if (outrosSearch) {
+      outrosSearch.addEventListener('input', function() {
         var q = this.value.toLowerCase().trim();
         container.querySelectorAll('.ct-comp-outros-list .ct-comp-item').forEach(function(row) {
           row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
         });
       });
     }
+    var driveSearch = container.querySelector('.ct-comp-drive-search');
+    if (driveSearch) {
+      driveSearch.addEventListener('input', function() {
+        var q = this.value.toLowerCase().trim();
+        container.querySelectorAll('.ct-comp-drive-list .ct-comp-item').forEach(function(row) {
+          row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
+        });
+      });
+    }
 
     container.querySelector('.ct-comp-save').addEventListener('click', function() {
-      _saveAulaComposer(container, aula, aulaNum, tarefaItems, outrosItems);
+      _saveAulaComposer(container, aula, aulaNum, tarefaItems, outrosItems, driveItems);
     });
   }
 
@@ -1510,50 +1566,81 @@ window.CT_ADMIN = (function() {
     // that are unreleased OR currently in Outros (no aula). Apostila items live
     // on the Apostila tab only and must not surface here even if set_id was
     // somehow not populated. Items bound to an aula are managed via that aula's
-    // composer, not here.
-    var standaloneItems = _relAllItems.filter(function(i) {
+    // composer, not here. Drive items are split into their own Drive section
+    // below for the same filename-only-no-body reason as the aula composer.
+    var eligibleAll = _relAllItems.filter(function(i) {
       if (i.set_id || i.type === 'conteudo' || i.type === 'tarefa') return false;
       var wasReleased = _relReleased.indexOf(i.id) !== -1;
       if (!wasReleased) return true;
       return !(_relReleasedMeta[i.id] || {}).aula_number;
     });
 
+    var standaloneItems = eligibleAll.filter(function(i) { return i.type !== 'drive_file'; });
+    var driveItems      = eligibleAll.filter(function(i) { return i.type === 'drive_file'; });
+
+    function rowHtml(i, cls) {
+      var m = _typeMeta(i.type);
+      var inOtros = _relReleased.indexOf(i.id) !== -1 && !(_relReleasedMeta[i.id] || {}).aula_number;
+      return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
+        '<input type="checkbox" class="' + cls + '" value="' + i.id + '"' + (inOtros ? ' checked' : '') + '>' +
+        '<span>' + _esc(m.icon) + ' ' + _esc(i.title) + '</span>' +
+      '</label>';
+    }
+
     var listHtml = standaloneItems.length
-      ? standaloneItems.map(function(i) {
-          var m = _typeMeta(i.type);
-          var inOtros = _relReleased.indexOf(i.id) !== -1 && !(_relReleasedMeta[i.id] || {}).aula_number;
-          return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
-            '<input type="checkbox" class="ct-comp-outros-cb" value="' + i.id + '"' + (inOtros ? ' checked' : '') + '>' +
-            '<span>' + _esc(m.icon) + ' ' + _esc(i.title) + '</span>' +
-          '</label>';
-        }).join('')
+      ? standaloneItems.map(function(i) { return rowHtml(i, 'ct-comp-outros-cb'); }).join('')
       : '<div class="ct-comp-empty">Nenhum item disponível.</div>';
+
+    var driveSectionHtml = '';
+    if (driveItems.length) {
+      driveSectionHtml =
+        '<div class="ct-comp-section">' +
+          '<div class="ct-comp-section-label">Drive</div>' +
+          '<input type="text" class="ct-comp-search ct-comp-drive-search" placeholder="Buscar...">' +
+          '<div class="ct-comp-list ct-comp-drive-list">' +
+            driveItems.map(function(i) { return rowHtml(i, 'ct-comp-drive-cb'); }).join('') +
+          '</div>' +
+        '</div>';
+    }
 
     container.innerHTML =
       '<div class="ct-rel-aula-composer-body">' +
         '<div class="ct-comp-section">' +
           '<div class="ct-comp-section-label">Itens sem aula</div>' +
-          '<input type="text" class="ct-comp-search" placeholder="Buscar...">' +
-          '<div class="ct-comp-list">' + listHtml + '</div>' +
+          '<input type="text" class="ct-comp-search ct-comp-outros-search" placeholder="Buscar...">' +
+          '<div class="ct-comp-list ct-comp-outros-list">' + listHtml + '</div>' +
         '</div>' +
+        driveSectionHtml +
         '<div class="ct-comp-actions">' +
           '<button class="ct-btn ct-btn-primary ct-comp-save">Salvar</button>' +
         '</div>' +
       '</div>';
 
-    container.querySelector('.ct-comp-search').addEventListener('input', function() {
-      var q = this.value.toLowerCase().trim();
-      container.querySelectorAll('.ct-comp-list .ct-comp-item').forEach(function(row) {
-        row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
+    var outrosSearch = container.querySelector('.ct-comp-outros-search');
+    if (outrosSearch) {
+      outrosSearch.addEventListener('input', function() {
+        var q = this.value.toLowerCase().trim();
+        container.querySelectorAll('.ct-comp-outros-list .ct-comp-item').forEach(function(row) {
+          row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
+        });
       });
-    });
+    }
+    var driveSearch = container.querySelector('.ct-comp-drive-search');
+    if (driveSearch) {
+      driveSearch.addEventListener('input', function() {
+        var q = this.value.toLowerCase().trim();
+        container.querySelectorAll('.ct-comp-drive-list .ct-comp-item').forEach(function(row) {
+          row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
+        });
+      });
+    }
 
     container.querySelector('.ct-comp-save').addEventListener('click', function() {
-      _saveOutrosComposer(container, standaloneItems);
+      _saveOutrosComposer(container, standaloneItems, driveItems);
     });
   }
 
-  function _saveAulaComposer(container, aula, aulaNum, tarefaItems, outrosItems) {
+  function _saveAulaComposer(container, aula, aulaNum, tarefaItems, outrosItems, driveItems) {
     var btn = container.querySelector('.ct-comp-save');
     btn.disabled = true;
     btn.textContent = 'Salvando...';
@@ -1564,6 +1651,8 @@ window.CT_ADMIN = (function() {
     container.querySelectorAll('.ct-comp-tarefa-cb:checked').forEach(function(cb) { nowTarefa.add(parseInt(cb.value)); });
     var nowOutros = new Set();
     container.querySelectorAll('.ct-comp-outros-cb:checked').forEach(function(cb) { nowOutros.add(parseInt(cb.value)); });
+    var nowDrive = new Set();
+    container.querySelectorAll('.ct-comp-drive-cb:checked').forEach(function(cb) { nowDrive.add(parseInt(cb.value)); });
 
     var toRelease = [], toSetAula = [], toDropAula = [];
 
@@ -1581,6 +1670,7 @@ window.CT_ADMIN = (function() {
     _apostilaItems.forEach(function(i) { classify(i.id, nowApostila.has(i.id)); });
     tarefaItems.forEach(function(i)    { classify(i.id, nowTarefa.has(i.id)); });
     outrosItems.forEach(function(i)    { classify(i.id, nowOutros.has(i.id)); });
+    (driveItems || []).forEach(function(i) { classify(i.id, nowDrive.has(i.id)); });
 
     Promise.all(toRelease.map(function(id) {
       return callWorker({ action: 'ct_release_item', client_slug: _relClientSlug, turma_slug: _relTurmaSlug, item_id: id });
@@ -1605,20 +1695,27 @@ window.CT_ADMIN = (function() {
     });
   }
 
-  function _saveOutrosComposer(container, standaloneItems) {
+  function _saveOutrosComposer(container, standaloneItems, driveItems) {
     var btn = container.querySelector('.ct-comp-save');
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
-    var nowChecked = new Set();
-    container.querySelectorAll('.ct-comp-outros-cb:checked').forEach(function(cb) { nowChecked.add(parseInt(cb.value)); });
+    var nowOutros = new Set();
+    container.querySelectorAll('.ct-comp-outros-cb:checked').forEach(function(cb) { nowOutros.add(parseInt(cb.value)); });
+    var nowDrive = new Set();
+    container.querySelectorAll('.ct-comp-drive-cb:checked').forEach(function(cb) { nowDrive.add(parseInt(cb.value)); });
 
     var toRelease = [], toUnrelease = [];
-    standaloneItems.forEach(function(i) {
-      var inOtros = _relReleased.indexOf(i.id) !== -1 && !(_relReleasedMeta[i.id] || {}).aula_number;
-      if (nowChecked.has(i.id) && _relReleased.indexOf(i.id) === -1) toRelease.push(i.id);
-      else if (!nowChecked.has(i.id) && inOtros) toUnrelease.push(i.id);
-    });
+
+    function classify(pool, picked) {
+      pool.forEach(function(i) {
+        var inOtros = _relReleased.indexOf(i.id) !== -1 && !(_relReleasedMeta[i.id] || {}).aula_number;
+        if (picked.has(i.id) && _relReleased.indexOf(i.id) === -1) toRelease.push(i.id);
+        else if (!picked.has(i.id) && inOtros) toUnrelease.push(i.id);
+      });
+    }
+    classify(standaloneItems, nowOutros);
+    classify(driveItems || [], nowDrive);
 
     Promise.all(
       toRelease.map(function(id) {

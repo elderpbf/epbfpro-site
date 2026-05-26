@@ -42,20 +42,14 @@
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // Unified on BSTypeIcon (utils.js) so the picker, the ClassVault Aula
+  // sidebar, the ClassTrail Itens grid + Liberacoes composer, and the public
+  // trilha all paint the same glyph for the same type. Special-case 'lab'
+  // because it's a synthetic picker-only type, not a real ct_types slug.
   function _typeIcon(item) {
     var t = item && item.type;
-    if (t === 'tarefa')      return '⚑';   // ⚑
-    if (t === 'llm')         return '✦';   // ✦
-    if (t === 'popup_url')   return '↗';   // ↗
-    if (t === 'lab')         return '◈';   // ◈
-    if (t === 'drive_file')  return '🗂'; // 🗂
-    if (t === 'prompt')      return '¶';   // ¶
-    if (t === 'guide')       return '★';   // ★
-    if (t === 'material')    return '¶';   // ¶
-    if (t === 'paper')       return '📄'; // 📄
-    if (t === 'model_info')  return '✦';   // ✦
-    if (t === 'embed')       return '⧈';   // ⧈
-    return '•'; // •
+    if (t === 'lab') return '◈';
+    return window.BSTypeIcon ? window.BSTypeIcon(t, '•') : '•';
   }
 
   // Order matters: items are placed in the FIRST matching group. Apostila is
