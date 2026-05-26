@@ -1,0 +1,136 @@
+/* =========================================================
+   ClassTrail Public Student Page (trilha) v4.0
+   Partial: base layer.
+   Local design tokens, reset, page container, loading/error/
+   main/empty/footer states, shared keyframes.
+   Colors from theme.css; --task is local since theme.css has
+   no orange.
+   ========================================================= */
+
+/* ----- Local tokens -----
+   --task family: orange accent for Tarefa (theme.css has no orange).
+   --zone-und: "data a definir" zone background; uses --text-secondary in
+   light mode (dark teal) but a darker gray in dark mode because the dark-
+   mode --text-secondary is #d1d5db (light gray) and reads poorly with
+   white text. */
+:root {
+  --task:        #d97706;
+  --task-dark:   #92400e;
+  --task-bg:     rgba(217, 119, 6, 0.12);
+  --task-border: rgba(217, 119, 6, 0.34);
+  --zone-und:    var(--text-secondary);
+}
+[data-theme="dark"] {
+  --task:        #f59e0b;
+  --task-dark:   #fbbf24;
+  --task-bg:     rgba(245, 158, 11, 0.16);
+  --task-border: rgba(245, 158, 11, 0.42);
+  --zone-und:    #374151;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ----- Page layout ----- */
+
+.tr-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1.5rem 5rem;
+}
+
+/* ----- Loading state ----- */
+
+#tr-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.tr-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: tr-spin 0.75s linear infinite;
+  margin-right: 0.85rem;
+  flex-shrink: 0;
+}
+
+@keyframes tr-spin { to { transform: rotate(360deg); } }
+
+/* ----- Error state ----- */
+
+#tr-error {
+  text-align: center;
+  padding: 5rem 1rem;
+}
+
+.tr-error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.tr-error-msg {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 420px;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+
+/* ----- Main content + shared fade-in/slide-down ----- */
+
+#tr-main { animation: tr-fade-in 0.4s ease both; }
+
+@keyframes tr-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tr-slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ----- Empty + footer ----- */
+
+.tr-empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}
+
+.tr-footer {
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.tr-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}

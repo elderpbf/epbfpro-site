@@ -1,0 +1,71 @@
+/* =========================================================
+   trilha partial: mobile breakpoints.
+   General @media (max-width: 700px) tweaks plus the mobile-
+   only single-open focus mode that hides siblings and the
+   timeline rail while one .tl-row is open.
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .tr-page { padding: 0 1rem 3rem; }
+
+  .tr-hero {
+    padding: 1.5rem 1.25rem 1.75rem;
+    margin: 1.5rem 0 1rem;
+    border-radius: 16px;
+  }
+
+  .tr-client-name  { font-size: 1.5rem; }
+  .tr-client-avatar { width: 56px; height: 56px; }
+
+  .tl { padding-left: 30px; }
+  .tl::before { left: 9px; }
+  .tl-dot { left: -28px; width: 22px; height: 22px; }
+  .tl-row.is-open .tl-dot { left: -31px; width: 28px; height: 28px; }
+
+  /* Sub-action button shrinks on mobile; short label (if provided) replaces the full label */
+  .item-action span { display: none; }
+  .item-action .ia-label-short { display: inline; }
+  .item-action { padding: 0.4rem 0.6rem; }
+  .item-action svg { width: 15px; height: 15px; }
+
+  .tr-tab-btn { padding: 0.6rem 0.85rem; font-size: 0.8rem; }
+}
+
+@media (max-width: 360px) {
+  .tr-client-name { font-size: 1.25rem; }
+  .tr-tab-btn { padding: 0.55rem 0.65rem; font-size: 0.75rem; }
+}
+
+/* =====================================================================
+   Focus mode (mobile only)
+   On viewports <=700px, opening an aula switches to a single-open
+   accordion: rail, sibling rows, and the row dot collapse so the open
+   aula uses the full content width. Desktop keeps the default multi-open
+   timeline behaviour. CSS state is driven entirely by `.tl-row.is-open`
+   inside `@media (max-width: 700px)`; JS in trilha.js enforces the
+   single-open invariant via _toggleAula on mobile.
+   ===================================================================== */
+
+@media (max-width: 700px) {
+  .tr-page:has(.tl-row.is-open) .tl { padding-left: 0; }
+  .tr-page:has(.tl-row.is-open) .tl::before { opacity: 0; }
+  .tr-page:has(.tl-row.is-open) .tl-row:not(.is-open) { display: none; }
+  .tr-page:has(.tl-row.is-open) .tl-row.is-open .tl-dot { display: none; }
+  .tr-page:has(.tl-row.is-open) .tr-back-pill { display: inline-flex; }
+
+  /* Slim the zone (96 -> 34) and sub-zone (56 -> 26) bands. */
+  .tr-page:has(.tl-row.is-open) .card.open .zone {
+    width: 34px;
+    padding: 0.55rem 0.15rem;
+  }
+  .tr-page:has(.tl-row.is-open) .card.open .zone-num { font-size: 1.15rem; }
+  .tr-page:has(.tl-row.is-open) .card.open .zone-label { display: none; }
+  .tr-page:has(.tl-row.is-open) .card.open .meta { padding: 0.7rem 0.8rem; }
+  .tr-page:has(.tl-row.is-open) .card.open .body { padding: 0.9rem 0.75rem; }
+  .tr-page:has(.tl-row.is-open) .card.open .sub-zone {
+    width: 26px;
+    font-size: 0.9rem;
+  }
+  .tr-page:has(.tl-row.is-open) .card.open .sub-meta { padding: 0.55rem 0.7rem; }
+  .tr-page:has(.tl-row.is-open) .card.open .sub-expanded { padding: 0.85rem 0.75rem; }
+}
