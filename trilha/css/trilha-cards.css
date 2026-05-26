@@ -1,0 +1,517 @@
+/* =========================================================
+   trilha partial: cards + sub-cards + item actions.
+   .card is the shared module used by:
+     - aula row in the Aulas timeline,
+     - apostila section card in the Apostila tab,
+     - outros item card in the Outros tab.
+   .sub is the compact card inside .body for Tarefa / Apostila
+   desta aula / Outros materiais. .item-action is the right-
+   side dispatched action button. CTRenderer overrides that are
+   specific to the trilha hierarchical view live at the bottom.
+   ========================================================= */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.18s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px -10px var(--shadow);
+}
+
+.card.open {
+  transform: none;
+  box-shadow: 0 14px 36px -16px rgba(20, 184, 166, 0.32);
+}
+
+.card-header {
+  display: flex;
+  align-items: stretch;
+  min-height: 96px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.card-header:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: 13px;
+}
+
+.zone {
+  width: 96px;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0.6rem 0.4rem;
+}
+
+.zone--done     { background: var(--success); }
+.zone--und      { background: var(--text-secondary); }
+.zone--apostila { background: var(--primary-dark); }
+
+.zone-num {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.zone-icon {
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.zone-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.95;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.meta {
+  flex: 1;
+  padding: 0.9rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.meta-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.date-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--primary-dark);
+}
+
+.tarefa-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--task-bg);
+  color: var(--task-dark);
+  border: 1px solid var(--task-border);
+}
+
+.title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.summary {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.topic-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(13, 148, 136, 0.10);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .topic-chip {
+  background: rgba(94, 234, 212, 0.12);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem 0 0.4rem;
+  flex-shrink: 0;
+}
+
+.chevron {
+  font-size: 1.4rem;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  transform: rotate(0deg);
+  transition: transform 0.22s ease, opacity 0.15s;
+  line-height: 1;
+}
+
+.card.open .chevron { transform: rotate(90deg); opacity: 1; }
+
+/* =====================================================================
+   Aula expanded body (.body)
+   Appears below .card-header when card.open. Hosts .section blocks.
+   ===================================================================== */
+
+.body {
+  border-top: 1px solid var(--border);
+  padding: 1.1rem 1.25rem 1.35rem;
+  background: linear-gradient(180deg, rgba(20, 184, 166, 0.03), transparent 70%);
+  animation: tr-slide-down 0.22s ease both;
+}
+
+.section { margin-bottom: 1.1rem; }
+.section:last-child { margin-bottom: 0; }
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.55rem;
+}
+
+/* =====================================================================
+   .sub compact card (Tarefa / Apostila / Outros inside a .body)
+   ===================================================================== */
+
+.sub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sub {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 76px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.15s, border-radius 0.18s;
+}
+
+.sub:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px -6px var(--shadow);
+}
+
+.sub-zone {
+  width: 56px;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.sub-zone--apostila { background: var(--primary-dark); }
+.sub-zone--tarefa   { background: var(--task); }
+
+.sub-meta {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sub-type {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.sub--tarefa .sub-type { color: var(--task-dark); }
+
+.sub-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.sub-summary {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 2px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.sub--tarefa {
+  border-color: var(--task-border);
+  background: var(--task-bg);
+}
+
+.sub--tarefa:hover { border-color: var(--task); }
+
+/* Right-side actions slot — empty when closed; populated with the
+   type-dispatched action button when sub is open. */
+.sub-actions {
+  display: flex;
+  align-items: center;
+  padding: 0 0.85rem 0 0.4rem;
+  flex-shrink: 0;
+}
+
+.sub-actions:empty { padding: 0; }
+
+.sub.is-expanded { border-radius: 10px 10px 0 0; }
+
+.sub-expanded {
+  margin: -1px 0 0;
+  padding: 1rem 1.1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  animation: tr-slide-down 0.22s ease both;
+}
+
+.sub--tarefa.is-expanded {
+  border-bottom-color: var(--task-border);
+}
+
+.sub--tarefa.is-expanded + .sub-expanded {
+  border-color: var(--task-border);
+}
+
+/* =====================================================================
+   .item-action button (Copiar / Baixar / Acessar)
+   Mounted by trilha.js _getItemAction() dispatch on the right side of
+   an open .sub. Variants: --task (orange), is-done, --submitted.
+   ===================================================================== */
+
+.item-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.18s;
+  box-shadow: 0 3px 12px -4px rgba(20, 184, 166, 0.45);
+}
+
+.item-action:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px -4px rgba(20, 184, 166, 0.55);
+}
+
+.item-action:active { transform: translateY(0); }
+
+.item-action .ia-label-short { display: none; }
+
+.item-action svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.item-action--task {
+  background: var(--task);
+  box-shadow: 0 3px 12px -4px rgba(217, 119, 6, 0.5);
+}
+
+.item-action--task:hover {
+  background: var(--task-dark);
+  box-shadow: 0 5px 16px -4px rgba(217, 119, 6, 0.6);
+}
+
+.item-action.is-done {
+  background: var(--success);
+  box-shadow: 0 3px 12px -4px rgba(16, 185, 129, 0.5);
+}
+
+/* =====================================================================
+   Card list (used by Apostila do curso tab + Outros materiais tab)
+   ===================================================================== */
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* =====================================================================
+   Type-filter chips (ct-type-filter module).
+   Shared by the standalone Outros tab (#tr-outros-filter) and the
+   per-aula Outros materiais section (.tr-type-filter inside a lesson).
+   ===================================================================== */
+
+#tr-outros-filter { margin-bottom: 1.25rem; }
+.tr-type-filter:empty { display: none; }
+/* When the filter sits inside a lesson section, sit between the section
+   label and the sub-list with a small breathing margin. */
+.section > .tr-type-filter { margin: 0.4rem 0 0.75rem; }
+
+.tr-type-filter .ct-tf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tr-type-filter .ct-tf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.tr-type-filter .ct-tf-chip:hover {
+  border-color: var(--primary-dark);
+  color: var(--text-primary);
+}
+
+.tr-type-filter .ct-tf-chip.active {
+  background: var(--primary-dark);
+  color: #fff;
+  border-color: var(--primary-dark);
+}
+
+[data-theme="dark"] .tr-type-filter .ct-tf-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #0f1419;
+}
+
+.tr-type-filter .ct-tf-icon { font-size: 1rem; line-height: 1; }
+.tr-type-filter .ct-tf-count {
+  font-size: 0.74rem;
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.35);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.tr-type-filter .ct-tf-chip.active .ct-tf-count { background: rgba(255, 255, 255, 0.22); }
+
+/* =====================================================================
+   CTRenderer overrides specific to trilha cards.
+   Body Markdown baseline lives in ct-renderer.css; this block only
+   carries trilha-specific tweaks (justified prose, suppressed renderer
+   chrome, and the model_info/PDF refinements scoped to .sub-expanded).
+   ===================================================================== */
+
+/* Justified prose inside any CTRenderer body on the trilha page.
+   Applies to both hierarchical (.sub-expanded) and flat-card paths
+   because both render under .tr-page. */
+.tr-page .ctr-prompt-body p {
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* CTRenderer's built-in copy and affordance buttons are suppressed when
+   trilha.js renders items with opts.preview = true. The action is rendered
+   in .sub-actions instead. Keep these styles as a safety net. */
+.sub-expanded .ctr-copy-btn,
+.sub-expanded .ctr-affordance-row { display: none; }
+
+/* model_info supplementary content stays intact */
+.sub-expanded .ctr-model-badges {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 0.65rem;
+}
+.sub-expanded .ctr-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--primary-dark);
+}
+.sub-expanded .ctr-pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.08);
+  color: var(--text-secondary);
+}
+.sub-expanded .ctr-strengths-list {
+  margin: 0.6rem 0 0.5rem;
+  padding-left: 1.2em;
+}
+
+/* paper PDF embed: aspect-ratio'd inside the card instead of fixed 600px. */
+.sub-expanded .ctr-pdf-embed {
+  margin: 1rem 0;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+}
+.sub-expanded .ctr-pdf-object { width: 100%; height: 100%; border: 0; }
+
+/* =====================================================================
+   Inline-answer Q&A bottom-bar offset.
+   When the .cp-qa-bar (lives at body level) is visible, the flat-card
+   .body / hierarchical .sub-expanded need no special offset because the
+   bar's offset rules target #nx-answer-host (in trilha-nexo.css).
+   Left here intentionally empty as a reminder.
+   ===================================================================== */
