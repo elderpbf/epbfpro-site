@@ -116,6 +116,9 @@
         }).join('') + '</div>'
       : '';
 
+    var isFresh = !!(Trilha.Freshness && Trilha.Freshness.isFresh(item));
+    var novoPill = isFresh ? '<span class="novo-pill">NOVO</span>' : '';
+
     card.innerHTML =
       '<div class="card-header" role="button" tabindex="0" aria-expanded="false">' +
         '<div class="' + zoneClass + '">' +
@@ -124,7 +127,7 @@
         '</div>' +
         '<div class="meta">' +
           eyebrowHtml +
-          '<div class="title">' + esc(item.title) + '</div>' +
+          '<div class="title">' + esc(item.title) + novoPill + '</div>' +
           summaryHtml +
           tagsHtml +
         '</div>' +

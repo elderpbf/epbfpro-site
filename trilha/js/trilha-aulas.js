@@ -61,9 +61,9 @@
     var dateText = U.aulaDateText(aula);
     var topics = U.parseTopics(aula.topics_json);
     var items = data.items || [];
-    var tarefaCount = items.filter(function (it) {
-      return it.aula_number === aula.aula_number && it.type === 'tarefa';
-    }).length;
+    var aulaItems = items.filter(function (it) { return it.aula_number === aula.aula_number; });
+    var tarefaCount = aulaItems.filter(function (it) { return it.type === 'tarefa'; }).length;
+    var freshCount = (Trilha.Freshness ? Trilha.Freshness.countFreshIn(aulaItems) : 0);
     var statusBadge = status === 'done' ? '✓' : (status === 'upcoming' ? String(aula.aula_number) : '·');
 
     var row = document.createElement('div');
@@ -85,9 +85,17 @@
     var paddedNum = String(aula.aula_number);
     if (paddedNum.length < 2) paddedNum = '0' + paddedNum;
 
+    var novoBannerHtml = freshCount
+      ? '<div class="aula-novo-banner" role="button" tabindex="0" aria-label="Abrir aula com material novo">' +
+          '<span class="aula-novo-text">Novo material adicionado</span>' +
+          '<span class="aula-novo-count">' + freshCount + '</span>' +
+        '</div>'
+      : '';
+
     row.innerHTML =
       '<div class="tl-dot tl-dot--' + status + '">' + U.esc(statusBadge) + '</div>' +
-      '<div class="card" data-aula="' + aula.aula_number + '">' +
+      '<div class="card' + (freshCount ? ' card--has-novo' : '') + '" data-aula="' + aula.aula_number + '">' +
+        novoBannerHtml +
         '<div class="card-header" role="button" tabindex="0" aria-expanded="false">' +
           '<div class="zone zone--' + status + '">' +
             '<span class="zone-num">' + paddedNum + '</span>' +
@@ -110,6 +118,27 @@
       headerEl.addEventListener('click', function () { toggleAula(row, aula); });
       headerEl.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { if (e.preventDefault) e.preventDefault(); toggleAula(row, aula); }
+      });
+    }
+    var bannerEl = row.querySelector('.aula-novo-banner');
+    if (bannerEl) {
+      var openAndScroll = function () {
+        if (!row.classList.contains('is-open')) toggleAula(row, aula);
+        // After the body is appended, scroll the first NOVO item into view.
+        requestAnimationFrame(function () {
+          var firstFresh = row.querySelector('.sub .novo-pill');
+          if (firstFresh && firstFresh.closest) {
+            var subEl = firstFresh.closest('.sub');
+            if (subEl && subEl.scrollIntoView) subEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        });
+      };
+      bannerEl.addEventListener('click', function (e) {
+        if (e.stopPropagation) e.stopPropagation();
+        openAndScroll();
+      });
+      bannerEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { if (e.preventDefault) e.preventDefault(); openAndScroll(); }
       });
     }
     return row;

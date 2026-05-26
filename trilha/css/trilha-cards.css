@@ -126,6 +126,71 @@
   border: 1px solid var(--task-border);
 }
 
+/* NOVO pill: reuses the --task palette so it harmonises with .tarefa-pill in
+   both light and dark themes. Inline-block so it can sit next to .sub-type or
+   .title without breaking the flex line. */
+.novo-pill {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--task-bg);
+  color: var(--task-dark);
+  border: 1px solid var(--task-border);
+  vertical-align: middle;
+}
+
+/* Aula card "Novo material adicionado" banner, sits above .card-header.
+   Click target; reuses the --task palette like the pill. */
+.aula-novo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--task-bg);
+  color: var(--task-dark);
+  border-bottom: 1px solid var(--task-border);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  user-select: none;
+}
+.aula-novo-banner:hover,
+.aula-novo-banner:focus-visible {
+  background: var(--task);
+  color: #fff;
+  outline: none;
+}
+.aula-novo-text {
+  flex: 1;
+  min-width: 0;
+}
+.aula-novo-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--task);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.aula-novo-banner:hover .aula-novo-count,
+.aula-novo-banner:focus-visible .aula-novo-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
 .title {
   font-size: 1.02rem;
   font-weight: 700;
