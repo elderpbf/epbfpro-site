@@ -78,6 +78,14 @@
   }
   .open-btn:hover { background: var(--accent-hover); }
   .open-btn:active { transform: translateY(1px); }
+  .open-btn--secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1.5px solid var(--accent);
+    margin-left: 0.5rem;
+  }
+  .open-btn--secondary:hover { background: rgba(99, 102, 241, 0.14); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
   .hint {
     margin-top: 1.5rem;
     font-size: 14px;
@@ -195,11 +203,14 @@
     <button data-lab="k4">K4 — Overfit</button>
   </div>
 
-  <button class="open-btn" id="open-btn">Abrir lab em modal 16:9</button>
+  <div class="btn-row">
+    <button class="open-btn" id="open-btn">Abrir em modal 16:9</button>
+    <a class="open-btn open-btn--secondary" href="../k3-responsive/">Abrir K3 responsivo (tela cheia)</a>
+  </div>
 
   <p class="hint">
-    Fechar: <code>Esc</code>, clique fora do frame, ou no <code>×</code>.<br>
-    Em celular: precisa estar em modo paisagem.
+    <strong>Modal 16:9:</strong> Iframe fixo em 1920×1080, escalado via <code>transform</code>. Fechar com <code>Esc</code>, clique fora, ou no <code>×</code>. Celular em retrato pede pra girar.<br>
+    <strong>K3 responsivo:</strong> Versão de teste com media queries pra portrait/landscape/phone. Abre direto em tela cheia, sem modal. Volta com o botão "voltar" do navegador.
   </p>
 </main>
 
