@@ -6,7 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Perdido no meio · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.0">
+<link rel="stylesheet" href="../css/labs.css?v=1.1">
+<script src="../js/lab-header.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -47,7 +48,7 @@
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
@@ -56,7 +57,43 @@
       font-family: var(--font-display);
     }
 
-    /* ── Header: question card ───────────────────────────── */
+    /* ── Header (brand + title) — consistent across all labs ─ */
+    .k4-header {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 1.2rem;
+      align-items: center;
+    }
+    .k4-brand {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .lab-logo {
+      height: clamp(40px, 5vh, 60px);
+      width: auto;
+      display: block;
+    }
+    .lab-logo--dark { display: none; }
+    [data-theme="dark"] .lab-logo--light { display: none; }
+    [data-theme="dark"] .lab-logo--dark { display: block; }
+    .k4-title {
+      margin: 0;
+      font-size: clamp(28px, 2.6vw, 44px);
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      line-height: 1.05;
+    }
+    .k4-title-sub {
+      display: block;
+      font-size: clamp(14px, 1.1vw, 18px);
+      color: var(--text-dim);
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      margin-top: 0.2rem;
+    }
+
+    /* ── Question card ───────────────────────────────────── */
     .k4-question {
       background: var(--surface);
       border: 1.5px solid var(--border);
@@ -376,7 +413,132 @@
       color: var(--focal);
       box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
     }
+
+    /* ── Responsive: phone / narrow portrait ─────────────── */
+    @media (max-width: 700px) {
+      .k4-panel {
+        padding: 0.6rem 0.9rem 0.6rem;
+        gap: 0.55rem;
+      }
+      .k4-header { column-gap: 0.6rem; }
+      .lab-logo { height: clamp(28px, 9vw, 40px); }
+      .k4-title { font-size: 20px; }
+      .k4-title-sub { font-size: 12px; }
+      .k4-question {
+        padding: 0.55rem 0.9rem;
+        gap: 0.3rem;
+      }
+      .k4-question-q { font-size: 18px; line-height: 1.25; }
+      .k4-question-hint { font-size: 13px; line-height: 1.35; }
+
+      .k4-main { gap: 0.6rem; }
+      .k4-size-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.4rem;
+      }
+      .k4-size-label {
+        text-align: center;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+      }
+      .k4-size-buttons {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+      }
+      .k4-size-btn {
+        font-size: 13px;
+        padding: 0.45rem 0.7rem;
+        flex: 1 1 calc(50% - 0.15rem);
+        min-width: 0;
+        min-height: 38px;
+        text-align: center;
+      }
+
+      .k4-ctx-section { gap: 0.35rem; }
+      .k4-ctx-bar { height: 56px; }
+      .k4-needle-tag {
+        font-size: 12px;
+        padding: 0.25rem 0.65rem;
+        top: -42px;
+      }
+      .k4-scale {
+        font-size: 11px;
+        padding: 0 0.2rem;
+      }
+
+      .k4-bottom {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(140px, 1fr) auto;
+        gap: 0.55rem;
+      }
+      .k4-curve-title,
+      .k4-response-title { font-size: 11px; margin: 0 0 0.3rem; }
+      .k4-response-card { padding: 0.7rem 0.9rem; gap: 0.35rem; }
+      .k4-response-answer { font-size: 17px; line-height: 1.3; }
+      .k4-response-verdict { font-size: 13px; line-height: 1.4; }
+      .k4-response-card.k4-response--empty { font-size: 13px; }
+
+      .k4-button-bar { gap: 0.4rem; padding: 0; }
+      .k4-btn {
+        font-size: 14px;
+        padding: 0.65rem 0.5rem;
+        flex: 1 1 calc(50% - 0.2rem);
+        min-height: 44px;
+        min-width: 0;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .k4-question-q { font-size: 16px; }
+      .k4-size-btn { font-size: 12px; padding: 0.4rem 0.5rem; }
+      .k4-response-answer { font-size: 16px; }
+      .k4-btn { font-size: 13px; padding: 0.6rem 0.35rem; }
+    }
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k4-panel {
+        padding: 0.4rem 1rem 0.35rem;
+        gap: 0.4rem;
+      }
+      .lab-logo { height: 28px; }
+      .k4-title { font-size: 18px; }
+      .k4-title-sub { font-size: 11px; }
+      .k4-question {
+        padding: 0.4rem 0.9rem;
+        gap: 0.2rem;
+      }
+      .k4-question-q { font-size: 16px; }
+      .k4-question-hint { font-size: 12px; line-height: 1.3; }
+      .k4-main { gap: 0.5rem; }
+      .k4-size-btn {
+        font-size: 13px;
+        padding: 0.35rem 0.7rem;
+      }
+      .k4-ctx-bar { height: 44px; }
+      .k4-needle-tag {
+        font-size: 11px;
+        padding: 0.2rem 0.55rem;
+        top: -36px;
+      }
+      .k4-bottom { gap: 0.7rem; }
+      .k4-response-card { padding: 0.5rem 0.7rem; gap: 0.3rem; }
+      .k4-response-answer { font-size: 15px; }
+      .k4-response-verdict { font-size: 12px; }
+      .k4-btn {
+        font-size: 12px;
+        padding: 0.4rem 0.75rem;
+        min-height: 32px;
+      }
+    }
   </style>
+
+  <div class="lab-header"
+       data-lab-title="Perdido no meio"
+       data-lab-subtitle="Acurácia ao longo do processo"></div>
 
   <div class="k4-question">
     <p class="k4-question-q">

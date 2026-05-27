@@ -56,3 +56,90 @@
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+
+/* =========================================================
+   Lab header (reusable across all labs)
+   Markup is mounted by Site/backstage/labs/js/lab-header.js
+   from a single placeholder:
+     <div class="lab-header"
+          data-lab-title="..."
+          data-lab-subtitle="...">
+       <!-- optional right widget -->
+     </div>
+   The grid is 2-col by default; if the placeholder has any
+   child element past the script-injected brand + title wrap,
+   the CSS expands to a 3-col layout (K3's live meter).
+   ========================================================= */
+.lab-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 1.2rem;
+  align-items: center;
+}
+.lab-header:has(> *:nth-child(3)) {
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.4fr);
+}
+.lab-brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.lab-logo {
+  height: clamp(40px, 5vh, 60px);
+  width: auto;
+  display: block;
+}
+.lab-logo--dark { display: none; }
+[data-theme="dark"] .lab-logo--light { display: none; }
+[data-theme="dark"] .lab-logo--dark  { display: block; }
+.lab-title-wrap { min-width: 0; }
+.lab-title {
+  margin: 0;
+  font-size: clamp(28px, 2.6vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--lab-text);
+  font-family: var(--lab-font-display);
+}
+.lab-title-sub {
+  display: block;
+  font-size: clamp(14px, 1.1vw, 18px);
+  color: var(--lab-text-dim);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  margin-top: 0.2rem;
+  font-family: var(--lab-font-display);
+}
+
+@media (max-width: 700px) {
+  .lab-header { column-gap: 0.6rem; }
+  .lab-logo { height: clamp(28px, 9vw, 40px); }
+  .lab-title { font-size: 20px; }
+  .lab-title-sub { font-size: 12px; }
+
+  /* If the header has a right-side widget (e.g. K3's meter), stack
+     it below brand+title on portrait — it's usually too wide to
+     share a row with the title. */
+  .lab-header:has(> *:nth-child(3)) {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "brand title"
+      "widget widget";
+    row-gap: 0.4rem;
+  }
+  .lab-header:has(> *:nth-child(3)) > .lab-brand { grid-area: brand; }
+  .lab-header:has(> *:nth-child(3)) > .lab-title-wrap { grid-area: title; }
+  .lab-header:has(> *:nth-child(3)) > *:not(.lab-brand):not(.lab-title-wrap) {
+    grid-area: widget;
+  }
+}
+@media (max-width: 400px) {
+  .lab-title { font-size: 18px; }
+  .lab-title-sub { font-size: 11px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .lab-logo { height: 28px; }
+  .lab-title { font-size: 18px; }
+  .lab-title-sub { font-size: 11px; }
+}
