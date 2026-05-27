@@ -1753,6 +1753,7 @@ window.CT_ADMIN = (function() {
     apostila:   'apostila',
     tarefas:    'tarefas',
     drive:      'drive',
+    labs:       'labs',
     presets:    'presets',
     liberacoes: 'liberacoes',
     // legacy aliases, anything that ever pointed at the old in-page tabs
@@ -1786,6 +1787,16 @@ window.CT_ADMIN = (function() {
     if (internalId === 'liberacoes') _initLiberacoesPicker();
     if (internalId === 'presets')    _initPresetsPanel();
     if (internalId === 'drive')      _initDrivePanel();
+    if (internalId === 'labs')       _initLabsPanel();
+  }
+
+  function _initLabsPanel() {
+    // CTLabsPanel auto-mounts on DOMContentLoaded; this hook is a safety
+    // net in case _activatePanel fires before that script has loaded
+    // (e.g. tab=labs deep-link with slow JS evaluation order).
+    if (window.CTLabsPanel && typeof window.CTLabsPanel.mount === 'function') {
+      window.CTLabsPanel.mount();
+    }
   }
 
   function _initDrivePanel() {
