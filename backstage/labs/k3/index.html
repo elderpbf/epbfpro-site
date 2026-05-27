@@ -439,9 +439,12 @@
       const PCT_HIDE_LABEL = 0.04;
 
       // ── State ────────────────────────────────────────────
-      let turnCount   = 0;
-      let pdfCount    = 0;
-      let isCompacted = false;
+      // Two compaction flags so adding a fresh turn doesn't decompact PDFs
+      // (and vice versa). Each flag is unset only by its own addition path.
+      let turnCount          = 0;
+      let pdfCount           = 0;
+      let isHistoryCompacted = false;
+      let isPdfsCompacted    = false;
 
       // ── DOM refs ─────────────────────────────────────────
       const barsEl       = document.getElementById('k3-bars');
@@ -466,9 +469,9 @@
 
       // ── Derived getters ──────────────────────────────────
       function getHistory() {
-        return isCompacted ? TOK_SUMMARY : turnCount * TOK_PER_TURN;
+        return isHistoryCompacted ? TOK_SUMMARY : turnCount * TOK_PER_TURN;
       }
-      function getPdfs()  { return isCompacted ? pdfCount * TOK_PDF_SUMMARY : pdfCount * TOK_PER_PDF; }
+      function getPdfs()  { return isPdfsCompacted ? pdfCount * TOK_PDF_SUMMARY : pdfCount * TOK_PER_PDF; }
       function getUsed()  { return TOK_SYSTEM + TOK_SKILLS + getHistory() + getPdfs(); }
       function getResp()  { return Math.max(0, TOTAL - getUsed()); }
 
@@ -504,14 +507,14 @@
         tokRespEl.textContent = fmt(tokens.response);
         tokHistEl.textContent = fmt(tokens.history);
         tokPdfsEl.textContent = fmt(tokens.pdfs);
-        lblHistEl.textContent = isCompacted
+        lblHistEl.textContent = isHistoryCompacted
           ? 'Resumo da conversa'
           : (turnCount > 0
               ? 'Histórico de conversa (' + turnCount + ' turno' + (turnCount === 1 ? '' : 's') + ')'
               : 'Histórico de conversa');
         lblPdfsEl.textContent = pdfCount === 0
           ? 'PDFs anexados'
-          : (isCompacted ? 'Resumo dos PDFs (' + pdfCount + ')' : 'PDFs anexados (' + pdfCount + ')');
+          : (isPdfsCompacted ? 'Resumo dos PDFs (' + pdfCount + ')' : 'PDFs anexados (' + pdfCount + ')');
 
         // Legend numeric values.
         legHistEl.textContent = fmt(tokens.history);
@@ -554,33 +557,35 @@
         // Disable actions that don't fit any more.
         addTurnBtn.disabled = (getUsed() + TOK_PER_TURN) > TOTAL;
         addPdfBtn.disabled  = (getUsed() + TOK_PER_PDF)  > TOTAL;
-        compactBtn.disabled = isCompacted || (turnCount === 0 && pdfCount === 0);
+        // Enabled when either side has uncompacted content to summarize.
+        compactBtn.disabled = (turnCount === 0 || isHistoryCompacted) &&
+                              (pdfCount  === 0 || isPdfsCompacted);
       }
 
       // ── Handlers ─────────────────────────────────────────
       function addTurn() {
-        // Adding a turn after compaction "expands" the conversation again;
-        // we drop the compacted flag so future turns accumulate normally.
-        if (isCompacted) { isCompacted = false; turnCount = 0; }
+        // Adding a turn after compaction expands JUST the history side; PDFs
+        // stay compacted because the user didn't touch them.
+        if (isHistoryCompacted) { isHistoryCompacted = false; turnCount = 0; }
         turnCount += 1;
         render();
       }
       function addPdf() {
-        if (isCompacted) { isCompacted = false; pdfCount = 0; }
+        if (isPdfsCompacted) { isPdfsCompacted = false; pdfCount = 0; }
         pdfCount += 1;
         render();
       }
       function compact() {
         if (turnCount === 0 && pdfCount === 0) return;
-        isCompacted = true;
-        // turnCount stays so the audience sees "compactado X turnos" hint
-        // remain useful — but the displayed block label switches to "Resumo".
+        if (turnCount > 0) isHistoryCompacted = true;
+        if (pdfCount  > 0) isPdfsCompacted    = true;
         render();
       }
       function reset() {
         turnCount = 0;
         pdfCount = 0;
-        isCompacted = false;
+        isHistoryCompacted = false;
+        isPdfsCompacted    = false;
         render();
       }
 
