@@ -36,6 +36,8 @@
 
     <!-- panel-drive is painted by CT_ADMIN._initDrivePanel via CVDriveSyncUI. -->
     <div class="ct-panel" id="panel-drive"></div>
+    <!-- panel-labs is painted by CTLabsPanel.mount on first activation. -->
+    <div class="ct-panel" id="panel-labs"></div>
     <div class="ct-panel" id="panel-presets">
       <div class="ct-empty">Carregando presets...</div>
     </div>
@@ -156,11 +158,11 @@
 <script src="../js/auth.js?v=1.4"></script>
 <script src="../js/settings-drawer.js?v=1.1"></script>
 <script src="../js/brand-logos.js?v=1.0"></script>
-<script src="../js/backstage-topbar.js?v=2.4"></script>
+<script src="../js/backstage-topbar.js?v=2.5"></script>
 <script src="../js/bs-toast.js?v=1.0"></script>
 <script src="../js/ct-item-form.js?v=1.3"></script>
 <script src="../js/ct-item-creator.js?v=1.0"></script>
-<script src="../classvault/js/cv-labs.js?v=1.2"></script>
+<script src="../classvault/js/cv-labs.js?v=1.3"></script>
 <script src="../js/cv-presets-api.js?v=1.0"></script>
 <script src="../js/cv-item-picker.js?v=1.2"></script>
 <script src="../js/cv-presets-ui.js?v=1.2"></script>
@@ -169,6 +171,8 @@
 <script src="../js/cv-drive-folders-ui.js?v=1.1"></script>
 <script src="../js/cv-drive-viewer.js?v=1.0"></script>
 <script src="../js/cv-drive-sync-ui.js?v=2.0"></script>
+<script src="../js/cv-lab-viewer.js?v=1.0"></script>
+<script src="js/ct-labs-panel.js?v=1.0"></script>
 <script src="js/ct-admin.js?v=7.5"></script>
 <script>
 'use strict';
@@ -188,7 +192,8 @@ BS_AUTH.clearPasswordInputs();
     if (urlTab === 'liberacoes' || urlTab === 'releases') {
       subKey = 'liberacoes';
     } else if (urlTab === 'apostila' || urlTab === 'tarefas' ||
-               urlTab === 'drive'    || urlTab === 'presets') {
+               urlTab === 'drive'    || urlTab === 'labs'    ||
+               urlTab === 'presets') {
       subKey = urlTab;
     } else {
       subKey = 'conteudo';
