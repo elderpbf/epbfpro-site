@@ -109,6 +109,69 @@
     box-shadow: 4px 0 16px var(--shadow, rgba(0,0,0,.25));
   }
 
+  /* Compact density for sidebar content (mirrors cv-sm proportions in Aula).
+     Sessions cards + the inline "Nova sessão" form get tighter padding +
+     smaller fonts so they fit cleanly in a 320px-wide overlay. */
+  .cp-sessions-sidebar .cp-create-session {
+    background: var(--background);
+    padding: 0.7rem 0.8rem;
+    margin-bottom: 0.7rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .cp-sessions-sidebar .cp-create-session h3 {
+    font-size: 0.7rem;
+    margin-bottom: 0.45rem;
+  }
+  .cp-sessions-sidebar .cp-create-session .cp-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .cp-sessions-sidebar .cp-create-session .bs-field { margin-bottom: 0; }
+  .cp-sessions-sidebar .cp-create-session .bs-field label {
+    font-size: 0.68rem;
+    margin-bottom: 0.25rem;
+  }
+  .cp-sessions-sidebar .cp-create-session input {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.82rem;
+  }
+  .cp-sessions-sidebar .cp-create-session .cp-btn-primary {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.82rem;
+  }
+  .cp-sessions-sidebar .cp-empty { padding: 1rem 0.5rem; font-size: 0.82rem; }
+  .cp-sessions-sidebar .cp-empty-icon { font-size: 1.4rem; }
+  .cp-sessions-sidebar .cp-sessions-list { gap: 0.4rem; }
+  .cp-sessions-sidebar .cp-session-card {
+    padding: 0.55rem 0.7rem;
+    gap: 0.55rem;
+    border-radius: 8px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .cp-sessions-sidebar .cp-session-code {
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    min-width: 0;
+  }
+  .cp-sessions-sidebar .cp-session-info { min-width: 0; flex: 1; }
+  .cp-sessions-sidebar .cp-session-title {
+    font-size: 0.8rem;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cp-sessions-sidebar .cp-session-meta { font-size: 0.66rem; margin-top: 0; }
+  .cp-sessions-sidebar .cp-live-dot { width: 6px; height: 6px; }
+  .cp-sessions-sidebar .cp-live-label { font-size: 9px; }
+  .cp-sessions-sidebar .cp-live-indicator { gap: 3px; }
+  /* Estatísticas button doesn't fit a 320px overlay; hide here. It's still
+     reachable from the Perguntas > Estatísticas sub-tab. */
+  .cp-sessions-sidebar .cp-session-actions { display: none; }
+
   /* Trigger button: small floating chip at top-left. Hides when sidebar is open. */
   .cp-sidebar-toggle {
     position: absolute;
