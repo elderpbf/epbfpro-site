@@ -62,13 +62,22 @@
   .cp-question-card.cp-search-result { cursor:pointer; }
   .cp-question-card.cp-search-result:hover { border-color:rgba(20,184,166,.4); background:rgba(20,184,166,.03); }
 
-  /* Sessões panel: host content fills the full pane. Sidebar (session list)
-     is a floating overlay that slides in from the left, mirrors the
-     ClassVault Aula focus-mode pattern. Default state: sidebar hidden, host
-     takes the full frame. */
+  /* Sessões panel goes full-bleed: drops .bs-main's 2.5rem/1.5rem padding +
+     1200px max-width so the host content reaches the topbar edge-to-edge
+     (same pattern ClassVault Aula uses via .bs-app--classvault overrides).
+     :has() targets only when Sessões is the active panel; Banco /
+     Estatísticas keep their normal padded layout. */
+  .bs-main:has(#panel-sessions.cp-panel.active) {
+    padding: 0;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+  }
   #panel-sessions.cp-panel.active {
-    display: flex; flex-direction: column;
-    min-height: calc(100vh - 88px - 5rem);
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     position: relative;
   }
   .cp-sessions-layout {
