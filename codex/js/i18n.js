@@ -1,48 +1,35 @@
-'use strict';
 // Codex i18n engine.
 //
-// t(key)  -> the displayed string for the active language, or the key itself
-//            if missing (so an untranslated key is visible, not blank).
-// apply() -> fills every [data-i18n] element's textContent, and every
-//            [data-i18n-attr="attr:key,attr:key"] element's attributes.
+// t(key)        -> displayed string for the active language, or the key itself
+//                  if missing (so an untranslated key is visible, not blank).
+// apply(root)   -> fills [data-i18n] textContent and [data-i18n-attr] attrs.
+// languages()   -> loaded dictionary codes; render a selector only when > 1.
 //
-// Single active language for now (PT-BR). languages() returns every loaded
-// dictionary; the language selector should render only when there is more
-// than one, so it stays hidden until a second dictionary file is added.
-//
-// Assumed globals: CODEX_I18N (populated by i18n/<lang>.js files loaded first).
-window.I18N = (function() {
-  var DEFAULT = 'pt-BR';
-  var dicts = window.CODEX_I18N || {};
-  var active = DEFAULT;
+// PT-BR is the active language; EN ships alongside, one setLang() away.
+import pt from '../i18n/pt.js';
+import en from '../i18n/en.js';
 
-  function t(key) {
-    var d = dicts[active] || {};
-    return Object.prototype.hasOwnProperty.call(d, key) ? d[key] : key;
-  }
+const DICTS = { 'pt-BR': pt, 'en': en };
+let active = 'pt-BR';
 
-  function languages() { return Object.keys(dicts); }
+export function t(key) {
+  const d = DICTS[active] || {};
+  return Object.prototype.hasOwnProperty.call(d, key) ? d[key] : key;
+}
 
-  function setLang(lang) {
-    if (dicts[lang]) { active = lang; }
-    return active;
-  }
+export function languages() { return Object.keys(DICTS); }
 
-  function apply(root) {
-    root = root || document;
-    root.querySelectorAll('[data-i18n]').forEach(function(el) {
-      el.textContent = t(el.getAttribute('data-i18n'));
+export function setLang(lang) { if (DICTS[lang]) active = lang; return active; }
+
+export function apply(root) {
+  root = root || document;
+  root.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  root.querySelectorAll('[data-i18n-attr]').forEach((el) => {
+    el.getAttribute('data-i18n-attr').split(',').forEach((pair) => {
+      const kv = pair.split(':');
+      if (kv.length === 2) el.setAttribute(kv[0].trim(), t(kv[1].trim()));
     });
-    root.querySelectorAll('[data-i18n-attr]').forEach(function(el) {
-      el.getAttribute('data-i18n-attr').split(',').forEach(function(pair) {
-        var kv = pair.split(':');
-        if (kv.length === 2) { el.setAttribute(kv[0].trim(), t(kv[1].trim())); }
-      });
-    });
-  }
-
-  return { t: t, apply: apply, setLang: setLang, languages: languages, DEFAULT: DEFAULT };
-})();
-
-// Convenience global so call sites read t('key') like the rest of Backstage.
-window.t = window.I18N.t;
+  });
+}

@@ -1,11 +1,62 @@
 /* Codex-specific styles.
  *
  * Codex reuses Backstage's theme.css (color tokens), backstage.css (shell
- * chrome + the .bs-tool-* card grid), and shared-components.css. Add ONLY
- * Codex-only rules here. Colors must come from theme.css custom properties,
- * never hex literals. */
+ * chrome), and shared-components.css. Add ONLY Codex-only rules here. Surface/
+ * text/border values come from theme.css variables, never hex literals. */
 
-/* Language selector: hidden until a second i18n dictionary is loaded.
- * i18n.js exposes I18N.languages(); the selector should render only when
- * length > 1. Kept here so the markup can ship now and reveal later. */
+/* Per-functionality accent colors. These are brand accents, intentionally the
+ * same in light and dark (they tint a tab glyph + active underline), so they
+ * need no [data-theme="dark"] override. Any future surface/text/border var
+ * added here MUST get a dark override, per the project rule. */
+:root {
+  --codex-lessons:   #6366f1;
+  --codex-content:   #14b8a6;
+  --codex-cohorts:   #f59e0b;
+  --codex-questions: #ec4899;
+}
+
+/* ── Rich tab strip in the Codex topbar ─────────────────────── */
+.cdx-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: 1rem;
+  min-width: 0;
+  overflow-x: auto;
+}
+.cdx-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-muted, #9ca3af);
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.cdx-tab:hover {
+  color: var(--text, #e5e7eb);
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+}
+.cdx-tab-icon { display: inline-flex; color: var(--accent-color); }
+.cdx-tab:not(.active) .cdx-tab-icon { opacity: 0.8; }
+.cdx-tab.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+}
+
+/* Bind each functional tab to its accent token. */
+.cdx-tab--lessons   { --accent-color: var(--codex-lessons); }
+.cdx-tab--content   { --accent-color: var(--codex-content); }
+.cdx-tab--cohorts   { --accent-color: var(--codex-cohorts); }
+.cdx-tab--questions { --accent-color: var(--codex-questions); }
+
+/* ── Tab content host ───────────────────────────────────────── */
+.cdx-view { padding: 1.5rem; }
+
+/* Language selector: hidden until a second i18n dictionary is loaded
+ * (i18n.js exposes I18N.languages(); render the selector only when > 1). */
 .codex-lang-select { display: none; }

@@ -1,23 +1,118 @@
-'use strict';
-// PT-BR dictionary — the source of truth for all Codex UI strings.
-//
-// Convention: keys are English (so code and conversation stay in English),
-// values are the displayed Portuguese. A second language is added by dropping
-// a sibling file (e.g. en.js) that registers CODEX_I18N['en'] with the same
-// keys; the selector stays hidden until that second dictionary exists.
-window.CODEX_I18N = window.CODEX_I18N || {};
-window.CODEX_I18N['pt-BR'] = {
-  'app.title':          'Codex',
+// PT-BR dictionary — source of truth. Every key here MUST also exist in en.js.
+// Keys are English; values are the displayed Portuguese.
+export default {
+  'app.title':     'Codex',
+  'nav.lessons':   'Aula',
+  'nav.content':   'Conteúdo',
+  'nav.cohorts':   'Turmas',
+  'nav.questions': 'Perguntas',
 
-  // Top-level tabs (internal keys plural; PT labels keep their established form)
-  'nav.lessons':        'Aula',
-  'nav.content':        'Conteúdo',
-  'nav.cohorts':        'Turmas',
-  'nav.questions':      'Perguntas',
+  // Cohorts tab — general
+  'cohorts.loading':              'Carregando...',
+  'cohorts.error_loading':        'Erro ao carregar.',
+  'cohorts.error':                'Erro',
+  'cohorts.cancel':               'Cancelar',
+  'cohorts.save':                 'Salvar',
+  'cohorts.create':               'Criar',
+  'cohorts.edit':                 'Editar',
+  'cohorts.archive':              'Arquivar',
+  'cohorts.delete':               'Excluir',
+  'cohorts.close':                'Fechar',
+  'cohorts.none':                 '(nenhuma)',
+  'cohorts.archived':             'Arquivado',
+  'cohorts.danger_zone':          'Zona de perigo',
+  'cohorts.name_required':        'Nome obrigatório.',
+  'cohorts.slug_invalid':         'Nome inválido para gerar slug.',
+  'cohorts.confirm_type_name':    'Para confirmar, digite o nome interno:',
+  'cohorts.delete_confirm_btn':   'Excluir permanentemente',
+  'cohorts.defined':              'definido',
+  'cohorts.not_defined':          'não definido',
+  'cohorts.link_copied':          'Link copiado!',
+  'cohorts.copy_failed':          'Não foi possível copiar. URL:',
 
-  // Landing card descriptions
-  'card.lessons.desc':   'Apresente conteúdo durante a aula',
-  'card.content.desc':   'Itens, slides, apostila e tarefas',
-  'card.cohorts.desc':   'Alunos, turmas e liberações',
-  'card.questions.desc': 'Perguntas ao vivo, banco e estatísticas'
+  // Cohorts — columns
+  'cohorts.col_clients':          'Clientes',
+  'cohorts.col_turmas':           'Turmas',
+  'cohorts.col_aulas':            'Aulas',
+  'cohorts.select_client_prompt': 'Selecione um cliente para ver suas turmas.',
+  'cohorts.select_turma_prompt':  'Selecione uma turma para ver suas aulas.',
+
+  // Cohorts — clients
+  'cohorts.no_clients':            'Nenhum cliente cadastrado.',
+  'cohorts.new_client':            '+ Novo',
+  'cohorts.new_client_title':      'Novo cliente',
+  'cohorts.edit_client':           'Editar cliente',
+  'cohorts.client_created':        'Cliente criado.',
+  'cohorts.client_updated':        'Cliente atualizado.',
+  'cohorts.client_archived':       'Cliente arquivado.',
+  'cohorts.client_deleted':        'Cliente excluído.',
+  'cohorts.archive_client_title':  'Arquivar cliente',
+  'cohorts.archive_client_msg':    'As turmas existentes continuarão acessíveis até serem arquivadas individualmente.',
+  'cohorts.delete_client_btn':     'Excluir cliente permanentemente',
+  'cohorts.delete_client_warning': 'Apaga o cliente, todas as turmas dele e as liberações de cada turma. Os itens da biblioteca não são afetados. Essa ação não pode ser desfeita.',
+
+  // Cohorts — client form fields
+  'cohorts.field_name_internal':   'Nome interno',
+  'cohorts.field_display_name':    'Nome para alunos (opcional)',
+  'cohorts.field_icon':            'Ícone',
+  'cohorts.field_name_placeholder':'Ex: Acme Ltda',
+  'cohorts.field_display_placeholder': 'Igual ao nome interno se vazio',
+  'cohorts.icon_current':          'Atual',
+  'cohorts.icon_new':              'Novo',
+  'cohorts.icon_preview':          'Prévia',
+  'cohorts.icon_mode_url':         'URL externa',
+  'cohorts.icon_mode_upload':      'Upload de imagem',
+  'cohorts.icon_too_large':        'O arquivo excede 1 MB. Escolha uma imagem menor.',
+
+  // Cohorts — turmas
+  'cohorts.no_turmas':             'Nenhuma turma cadastrada.',
+  'cohorts.new_turma':             '+ Nova turma',
+  'cohorts.new_turma_title':       'Nova turma',
+  'cohorts.edit_turma':            'Editar turma',
+  'cohorts.turma_created':         'Turma criada.',
+  'cohorts.turma_updated':         'Turma atualizada.',
+  'cohorts.turma_archived':        'Turma arquivada.',
+  'cohorts.archive_turma_title':   'Arquivar turma',
+  'cohorts.archive_turma_msg':     'O link de acesso para os alunos parará de funcionar.',
+  'cohorts.regen_token_title':     'Regenerar token de URL',
+  'cohorts.regen_token_msg':       'O link atual dos alunos parará de funcionar imediatamente. Compartilhe o novo link após regenerar.',
+  'cohorts.token_regenerated':     'Token regenerado. Compartilhe o novo link com os alunos.',
+  'cohorts.copy_url':              'Copiar URL',
+  'cohorts.open_url':              'Abrir URL em nova aba',
+  'cohorts.url_unavailable':       'URL indisponível',
+  'cohorts.display_name_prefix':   'Para alunos:',
+  'cohorts.aula_singular':         'aula',
+  'cohorts.aula_plural':           'aulas',
+  'cohorts.whatsapp_open':         'Abrir grupo no WhatsApp',
+  'cohorts.whatsapp_none':         'WhatsApp não definido',
+  'cohorts.classpulse':            'ClassPulse',
+
+  // Cohorts — turma form fields
+  'cohorts.turma_name_placeholder': 'Ex: Turma A',
+  'cohorts.field_whatsapp':         'WhatsApp do grupo (URL, opcional)',
+  'cohorts.field_classpulse':       'Sessão ClassPulse',
+
+  // Cohorts — aulas
+  'cohorts.loading_aulas':          'Carregando aulas...',
+  'cohorts.no_aulas':               'Nenhuma aula cadastrada. Clique em "+ Nova aula" para criar.',
+  'cohorts.new_aula':               '+ Nova aula',
+  'cohorts.aula_label':             'Aula',
+  'cohorts.aula_no_title':          'sem título',
+  'cohorts.aula_saved':             'Aula salva.',
+  'cohorts.aula_deleted':           'Aula excluída.',
+  'cohorts.delete_aula_title':      'Excluir Aula',
+  'cohorts.delete_aula_msg':        'Os itens liberados para esta aula perderão a associação.',
+  'cohorts.aula_field_title':       'Título',
+  'cohorts.aula_title_placeholder': 'Título da aula',
+  'cohorts.aula_field_scheduled':   'Agendada para (vazio = sem data definida)',
+  'cohorts.aula_field_happened':    'Ocorreu em',
+  'cohorts.aula_field_rescheduled_from': 'Remarcada de (data original)',
+  'cohorts.aula_field_rescheduled_note': 'Nota de remarcação (opcional)',
+  'cohorts.aula_note_placeholder':  'Ex: feriado, aguardando nova data',
+
+  // Cohorts — aula date status
+  'cohorts.date_happened':   'ocorreu em',
+  'cohorts.date_scheduled':  'agendada para',
+  'cohorts.date_rescheduled':'remarcada →',
+  'cohorts.date_tbd':        'a definir'
 };
