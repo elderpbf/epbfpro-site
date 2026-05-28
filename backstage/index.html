@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png?v=2">
 
 <link rel="stylesheet" href="css/theme.css?v=1.3">
-<link rel="stylesheet" href="css/backstage.css?v=2.3">
+<link rel="stylesheet" href="css/backstage.css?v=2.8">
 <link rel="stylesheet" href="css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="css/classforge.css?v=1.3">
 <link rel="stylesheet" href="css/shared-components.css?v=1.6">
@@ -34,27 +34,22 @@
       <span class="bs-product">Backstage</span>
     </div>
     <h2 data-key="login_title">Bem-vindo de volta</h2>
-    <p class="bs-auth-hint" data-key="login_hint">Entre com sua conta Google para acessar o painel.</p>
+    <p class="bs-auth-hint" data-key="login_hint">Entre com sua senha para acessar o painel.</p>
 
-    <!-- Primary: Google sign-in -->
+    <!-- Primary: password sign-in -->
+    <div class="bs-field">
+      <input id="login-pw" type="password" autocomplete="off" autofocus placeholder="Senha">
+    </div>
+    <button class="bs-auth-btn" id="login-btn" data-key="login_btn">Entrar com senha</button>
+
+    <p class="bs-form-error" id="login-error"></p>
+
+    <!-- Secondary: Google sign-in -->
+    <div class="bs-auth-divider"><span class="bs-auth-divider-text">ou</span></div>
     <button class="bs-auth-btn bs-auth-btn--google" id="login-google-btn">
       <svg width="18" height="18" viewBox="0 0 48 48" style="vertical-align:middle;margin-right:8px"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
       Entrar com Google
     </button>
-
-    <p class="bs-form-error" id="login-error"></p>
-
-    <!-- Secondary: password fallback (collapsed by default) -->
-    <div class="bs-auth-divider">
-      <button type="button" class="bs-auth-toggle" id="login-pw-toggle">Entrar com senha</button>
-    </div>
-    <div id="login-pw-section" hidden>
-      <div class="bs-field">
-        <label data-key="login_pw_label">Senha</label>
-        <input id="login-pw" type="password" autocomplete="off">
-      </div>
-      <button class="bs-auth-btn" id="login-btn" data-key="login_btn">Entrar</button>
-    </div>
   </div>
 </div>
 
@@ -120,9 +115,9 @@
 <script src="js/theme-manager.js?v=1.0"></script>
 <script src="js/bs-google.js?v=1.4"></script>
 <script src="js/auth.js?v=1.4"></script>
-<script src="js/settings-drawer.js?v=1.1"></script>
+<script src="js/settings-drawer.js?v=1.2"></script>
 <script src="js/brand-logos.js?v=1.0"></script>
-<script src="js/backstage-topbar.js?v=2.4"></script>
+<script src="js/backstage-topbar.js?v=2.8"></script>
 <script>
 'use strict';
 
@@ -133,9 +128,9 @@
 var TRANSLATIONS = {
   'pt-BR': {
     login_title:               'Bem-vindo de volta',
-    login_hint:                'Entre com sua conta Google para acessar o painel.',
+    login_hint:                'Entre com sua senha para acessar o painel.',
     login_pw_label:            'Senha',
-    login_btn:                 'Entrar',
+    login_btn:                 'Entrar com senha',
     logout_btn:                'Sair',
     dashboard_title:           'Ferramentas',
     tab_tools:                 'Ferramentas',
@@ -216,143 +211,21 @@ Topbar.init({ title: 'Backstage' });
 // Screen management
 // ---------------------------------------------------------------------------
 
-var PW_KEY   = 'bs_pw_hash';
-var AUTH_KEY = 'bs_auth';
-
-var SCREENS = ['screen-login', 'screen-app'];
-
-function showScreen(id) {
-  SCREENS.forEach(function(s) {
-    document.getElementById(s).hidden = (s !== id);
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Boot
-// ---------------------------------------------------------------------------
-
 // Clear any browser-injected password values on load
 document.querySelectorAll('input[type="password"]').forEach(function(el) {
   el.value = '';
 });
+</script>
 
-async function init() {
-  // Init BS_GOOGLE (warms GIS token client in background).
-  if (window.BS_GOOGLE) await window.BS_GOOGLE.init();
-
-  // Auto-login: Google token present and still valid.
-  if (window.BS_GOOGLE && window.BS_GOOGLE.isAuthed()) {
-    showApp();
-    return;
-  }
-  // Auto-login: password hash present and session confirmed.
-  if (sessionStorage.getItem(AUTH_KEY) === '1' && localStorage.getItem(PW_KEY)) {
-    showApp();
-    return;
-  }
-  showScreen('screen-login');
-}
-
-// ---------------------------------------------------------------------------
-// Auth event handlers
-// ---------------------------------------------------------------------------
-
-// Google sign-in (primary path).
-document.getElementById('login-google-btn').addEventListener('click', async function() {
-  var btn = this;
-  var err = document.getElementById('login-error');
-  err.textContent = '';
-  btn.disabled = true;
-  try {
-    await window.BS_GOOGLE.requestToken({ prompt: 'consent' });
-    // Token is now stored in localStorage by BS_GOOGLE.
-    sessionStorage.setItem(AUTH_KEY, '1');
-    showApp();
-  } catch (e) {
-    var msg = e && e.message;
-    if (msg === 'gis_timeout') {
-      err.textContent = 'Não foi possível carregar o login do Google. Verifique sua conexão.';
-    } else if (msg === 'access_denied') {
-      err.textContent = 'Acesso negado. Verifique se a conta está autorizada.';
-    } else {
-      err.textContent = 'Erro ao entrar com Google. Tente novamente.';
-    }
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-// Reveal/hide password section.
-document.getElementById('login-pw-toggle').addEventListener('click', function() {
-  var section = document.getElementById('login-pw-section');
-  var hidden = section.hidden;
-  section.hidden = !hidden;
-  if (!hidden) {
-    document.getElementById('login-pw').value = '';
-  } else {
-    document.getElementById('login-pw').focus();
-  }
-});
-
-// Password sign-in (fallback path).
-document.getElementById('login-btn').addEventListener('click', async function() {
-  var btn = this;
-  var pw  = document.getElementById('login-pw').value;
-  var err = document.getElementById('login-error');
-  err.textContent = '';
-  btn.disabled = true;
-  try {
-    var hash   = await hashPw(pw);
-    var result = await callWorker({ action: 'validate_auth', auth_token: hash });
-    if (!result.ok) {
-      err.textContent = t('error_pw_wrong');
-      document.getElementById('login-pw').value = '';
-      document.getElementById('login-pw').focus();
-      return;
-    }
-    localStorage.setItem(PW_KEY, hash);
-    sessionStorage.setItem(AUTH_KEY, '1');
-    showApp();
-  } catch (e) {
-    err.textContent = t('error_pw_wrong');
-    document.getElementById('login-pw').value = '';
-    document.getElementById('login-pw').focus();
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-document.getElementById('login-pw').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('login-btn').click();
-});
-
-// Sign-out is handled by Topbar via BS_AUTH.signOut().
-
-// ---------------------------------------------------------------------------
-// App views
-// ---------------------------------------------------------------------------
-
-function showApp() {
-  // Bundle L Item 3: if auth.js captured a return URL before bouncing the user
-  // to login, send them back there instead of stranding them on the dashboard.
-  try {
-    var ret = sessionStorage.getItem('bs_auth_return');
-    if (ret) {
-      sessionStorage.removeItem('bs_auth_return');
-      // Only honor same-origin absolute paths (defense against open-redirect).
-      if (typeof ret === 'string' && ret.charAt(0) === '/' && ret.charAt(1) !== '/') {
-        location.replace(ret);
-        return;
-      }
-    }
-  } catch (_) {}
-  showScreen('screen-app');
-}
-
-// ---------------------------------------------------------------------------
-// Start
-// ---------------------------------------------------------------------------
-init();
+<!-- Bundle Q: auth boot lives in js/login-page.js per AGENTS.md Rule 8.
+     Loaded after the inline i18n / migrate / Topbar.init block so it can
+     consume the t() helper. init() auto-skips when the password hash is in
+     localStorage; bind() wires the Google + password sign-in handlers. -->
+<script src="js/login-page.js?v=1.2"></script>
+<script>
+'use strict';
+LoginPage.bind();
+LoginPage.init();
 </script>
 </body>
 </html>

@@ -15,7 +15,7 @@
 
   function renderHistory(closedQs) {
     if (!closedQs.length) {
-      document.getElementById('history-card').style.display = 'none';
+      CPHost.$('history-card').style.display = 'none';
       return;
     }
     var S = CPHost.State;
@@ -63,8 +63,9 @@
                '</div>' +
              '</div>';
     }).join('');
-    document.getElementById('history-list').innerHTML = html;
-    document.getElementById('history-list').querySelectorAll('.hi-btn[data-action]').forEach(function (btn) {
+    var historyListEl = CPHost.$('history-list');
+    historyListEl.innerHTML = html;
+    historyListEl.querySelectorAll('.hi-btn[data-action]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var q = S._historyMap[btn.dataset.qid];
         if (!q) return;
@@ -72,7 +73,7 @@
         else if (btn.dataset.action === 'edit') editFromHistory(q);
       });
     });
-    document.getElementById('history-card').style.display = 'block';
+    CPHost.$('history-card').style.display = 'block';
   }
 
   async function relaunchFromHistory(btn, q) {
@@ -110,9 +111,9 @@
     var Composer = CPHost.Composer;
     var Utils = CPHost.Utils;
     var S = CPHost.State;
-    document.getElementById('q-text').value = Utils.stripHtml(q.text || '');
+    CPHost.$('q-text').value = Utils.stripHtml(q.text || '');
     var qType = q.type || 'mc';
-    document.getElementById('q-type').value = qType;
+    CPHost.$('q-type').value = qType;
     Composer.applyTypeUI(qType);
     CPQuestionTypes.get(qType).restoreForm(S.formEls, {
       options: q.options,
@@ -121,7 +122,7 @@
       max_select: q.max_select || 1,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.getElementById('q-text').focus();
+    CPHost.$('q-text').focus();
   }
 
   CPHost.History = {

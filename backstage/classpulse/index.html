@@ -12,12 +12,22 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png?v=2">
 
 <link rel="stylesheet" href="../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/backstage.css?v=2.3">
+<link rel="stylesheet" href="../css/backstage.css?v=2.8">
 <link rel="stylesheet" href="../css/settings-drawer.css?v=1.0">
 <link rel="stylesheet" href="../css/classpulse.css?v=1.13">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.6">
 <link rel="stylesheet" href="../css/question-types.css?v=1.9">
-<script src="../js/debug.js?v=2.5"></script>
+<link rel="stylesheet" href="../css/qr-share-modal.css?v=1.3">
+<!-- Host CSS partials (shared with standalone host.html via the CPHost.mount path) -->
+<link rel="stylesheet" href="./css/host-shell.css?v=1.0">
+<link rel="stylesheet" href="./css/host-session-bar.css?v=1.0">
+<link rel="stylesheet" href="./css/host-composer.css?v=1.0">
+<link rel="stylesheet" href="./css/host-active-q.css?v=1.0">
+<link rel="stylesheet" href="./css/host-history.css?v=1.1">
+<link rel="stylesheet" href="./css/host-sqa.css?v=1.0">
+<link rel="stylesheet" href="./css/host-layout.css?v=1.0">
+<link rel="stylesheet" href="./css/host-modal.css?v=1.0">
+<script src="../js/debug.js?v=2.6"></script>
 <style>
   .cp-session-card.is-clickable { cursor: pointer; transition: border-color .15s, background .15s; }
   .cp-session-card.is-clickable:hover { border-color: rgba(20,184,166,.4); background: rgba(20,184,166,.04); }
@@ -51,6 +61,155 @@
   .cp-search-result-set { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--primary); margin-bottom:0.3rem; opacity:0.8; }
   .cp-question-card.cp-search-result { cursor:pointer; }
   .cp-question-card.cp-search-result:hover { border-color:rgba(20,184,166,.4); background:rgba(20,184,166,.03); }
+
+  /* Sessões panel goes full-bleed: drops .bs-main's 2.5rem/1.5rem padding +
+     1200px max-width so the host content reaches the topbar edge-to-edge
+     (same pattern ClassVault Aula uses via .bs-app--classvault overrides).
+     :has() targets only when Sessões is the active panel; Banco /
+     Estatísticas keep their normal padded layout. */
+  .bs-main:has(#panel-sessions.cp-panel.active) {
+    padding: 0;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+  }
+  #panel-sessions.cp-panel.active {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .cp-sessions-layout {
+    flex: 1; min-height: 0;
+    position: relative;
+  }
+  .cp-sessions-main {
+    height: 100%;
+    display: flex; flex-direction: column;
+  }
+  #host-mount-target {
+    flex: 1; min-height: 0;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .cp-sessions-placeholder { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); font-size: 0.92rem; }
+  .cp-session-card.is-selected { border-color: var(--primary); background: rgba(20,184,166,.06); }
+
+  /* Sidebar: floating overlay, hidden offscreen by default. .cp-sm--open on
+     the layout slides it in. Left-edge hover + the toggle button both flip it. */
+  .cp-sessions-sidebar {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 320px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1rem;
+    overflow-y: auto;
+    box-sizing: border-box;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cp-sessions-sidebar .cp-create-session { margin-bottom: 1rem; }
+  .cp-sessions-layout.cp-sm--open .cp-sessions-sidebar {
+    transform: translateX(0);
+    box-shadow: 4px 0 16px var(--shadow, rgba(0,0,0,.25));
+  }
+
+  /* Compact density for sidebar content (mirrors cv-sm proportions in Aula).
+     Sessions cards + the inline "Nova sessão" form get tighter padding +
+     smaller fonts so they fit cleanly in a 320px-wide overlay. */
+  .cp-sessions-sidebar .cp-create-session {
+    background: var(--background);
+    padding: 0.7rem 0.8rem;
+    margin-bottom: 0.7rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .cp-sessions-sidebar .cp-create-session h3 {
+    font-size: 0.7rem;
+    margin-bottom: 0.45rem;
+  }
+  .cp-sessions-sidebar .cp-create-session .cp-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .cp-sessions-sidebar .cp-create-session .bs-field { margin-bottom: 0; }
+  .cp-sessions-sidebar .cp-create-session .bs-field label {
+    font-size: 0.68rem;
+    margin-bottom: 0.25rem;
+  }
+  .cp-sessions-sidebar .cp-create-session input {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.82rem;
+  }
+  .cp-sessions-sidebar .cp-create-session .cp-btn-primary {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.82rem;
+  }
+  .cp-sessions-sidebar .cp-empty { padding: 1rem 0.5rem; font-size: 0.82rem; }
+  .cp-sessions-sidebar .cp-empty-icon { font-size: 1.4rem; }
+  .cp-sessions-sidebar .cp-sessions-list { gap: 0.4rem; }
+  .cp-sessions-sidebar .cp-session-card {
+    padding: 0.55rem 0.7rem;
+    gap: 0.55rem;
+    border-radius: 8px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .cp-sessions-sidebar .cp-session-code {
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    min-width: 0;
+  }
+  .cp-sessions-sidebar .cp-session-info { min-width: 0; flex: 1; }
+  .cp-sessions-sidebar .cp-session-title {
+    font-size: 0.8rem;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cp-sessions-sidebar .cp-session-meta { font-size: 0.66rem; margin-top: 0; }
+  .cp-sessions-sidebar .cp-live-dot { width: 6px; height: 6px; }
+  .cp-sessions-sidebar .cp-live-label { font-size: 9px; }
+  .cp-sessions-sidebar .cp-live-indicator { gap: 3px; }
+  /* Estatísticas button doesn't fit a 320px overlay; hide here. It's still
+     reachable from the Perguntas > Estatísticas sub-tab. */
+  .cp-sessions-sidebar .cp-session-actions { display: none; }
+
+  @media (max-width: 900px) {
+    .cp-sessions-sidebar { width: 80vw; max-width: 320px; }
+  }
+
+  /* Embedded-mode host overrides. The standalone host.html assumes it owns the
+     viewport (height: calc(100vh - 4px), negative margins on the session bar
+     to bleed edge-to-edge, etc). When mounted inside #host-mount-target the
+     host needs to behave as a normal block flow inside its container instead.
+     These rules fire only when .host-embedded is present on the mount root. */
+  .host-root.host-embedded .host-screen.host-screen-flex {
+    height: 100%;
+    padding: 0;
+  }
+  .host-root.host-embedded .host-session-bar {
+    margin: 0 0 0.5rem;
+    border-radius: 0;
+  }
+  .host-root.host-embedded .host-container.host-dashboard-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .host-root.host-embedded .host-dashboard {
+    padding-top: 0;
+  }
+  /* The Codex topbar is already rendered by the parent classpulse/index.html
+     in embedded mode; the host's own sub-tab strip (#live-bar-subtabs) is
+     left empty -- the parent's Perguntas sub-row stays the navigation surface. */
+  .host-root.host-embedded #live-bar-subtabs { display: none; }
 </style>
 </head>
 <body>
@@ -76,24 +235,39 @@
          ============================================================ -->
     <div class="cp-panel active" id="panel-sessions">
 
-      <div class="cp-create-session">
-        <h3>Nova sessão</h3>
-        <div class="cp-row">
-          <div class="bs-field">
-            <label>Título da sessão</label>
-            <input type="text" id="session-title" placeholder="Ex: Aula 3 — Redes Neurais" autocomplete="off">
-          </div>
-          <button class="cp-btn-primary" id="create-session-btn">Criar sessão</button>
-        </div>
-        <p class="cp-form-error" id="session-error"></p>
-      </div>
+      <div class="cp-sessions-layout" id="sessions-layout">
 
-      <div id="sessions-list-wrap">
-        <div class="cp-empty" id="sessions-empty" hidden>
-          <div class="cp-empty-icon">📋</div>
-          <p>Nenhuma sessão encontrada.<br>Crie uma sessão acima.</p>
-        </div>
-        <div class="cp-sessions-list" id="sessions-list"></div>
+        <!-- Sidebar: session list + create form. Floating overlay; hidden by default.
+             Reveal is mouse-on-left-edge only, matching ClassVault Aula's cv-sm pattern.
+             No toggle button (Aula doesn't have one either). -->
+        <aside class="cp-sessions-sidebar" id="cp-sessions-sidebar">
+          <div class="cp-create-session">
+            <h3>Nova sessão</h3>
+            <div class="cp-row">
+              <div class="bs-field">
+                <label>Título da sessão</label>
+                <input type="text" id="session-title" placeholder="Ex: Aula 3 — Redes Neurais" autocomplete="off">
+              </div>
+              <button class="cp-btn-primary" id="create-session-btn">Criar sessão</button>
+            </div>
+            <p class="cp-form-error" id="session-error"></p>
+          </div>
+
+          <div id="sessions-list-wrap">
+            <div class="cp-empty" id="sessions-empty" hidden>
+              <div class="cp-empty-icon">📋</div>
+              <p>Nenhuma sessão encontrada.<br>Crie uma sessão acima.</p>
+            </div>
+            <div class="cp-sessions-list" id="sessions-list"></div>
+          </div>
+        </aside>
+
+        <!-- Right pane: host content lives here when a session is selected. -->
+        <main class="cp-sessions-main">
+          <div id="host-mount-target">
+            <div class="cp-sessions-placeholder">Selecione uma sessão na lista para hospedá-la.</div>
+          </div>
+        </main>
       </div>
 
       <!-- ============================================================
@@ -417,12 +591,30 @@
 <script src="../js/question-bank.js?v=2.0"></script>
 <script src="../js/bs-google.js?v=1.4"></script>
 <script src="../js/auth.js?v=1.4"></script>
-<script src="../js/settings-drawer.js?v=1.1"></script>
+<script src="../js/settings-drawer.js?v=1.2"></script>
 <script src="../js/brand-logos.js?v=1.0"></script>
-<script src="../js/backstage-topbar.js?v=2.4"></script>
+<script src="../js/backstage-topbar.js?v=2.8"></script>
 <script src="../js/classpulse-bank-edit.js?v=1.0"></script>
 <script src="../js/classpulse-bank-search.js?v=1.0"></script>
 <script src="js/cp-settings-section.js?v=1.0"></script>
+<!-- Additional deps needed by CPHost modules when the host mounts in the sidebar pane -->
+<script src="../js/question-renderer.js?v=2.6"></script>
+<script src="../js/classpulse-question-types.js?v=1.2"></script>
+<script src="../js/classpulse-question.min.js?v=1.8"></script>
+<script src="../js/classpulse-visibility-toggle.js?v=1.4"></script>
+<script src="../js/classpulse-checkbox-sync.js?v=1.0"></script>
+<script src="../js/classpulse-qa.js?v=2.4"></script>
+<script src="../js/qr-share-modal.js?v=1.3"></script>
+<!-- CPHost modules (shared between standalone host.html and the sidebar mount in panel-sessions) -->
+<script src="./js/host-state.js?v=1.1"></script>
+<script src="./js/host-utils.js?v=1.1"></script>
+<script src="./js/host-session.js?v=1.1"></script>
+<script src="./js/host-share.js?v=1.1"></script>
+<script src="./js/host-composer.js?v=1.2"></script>
+<script src="./js/host-sqa.js?v=1.1"></script>
+<script src="./js/host-history.js?v=1.1"></script>
+<script src="./js/host-layout.js?v=1.1"></script>
+<script src="./js/host-page.js?v=1.2"></script>
 <script>
 'use strict';
 
@@ -504,6 +696,128 @@ document.querySelectorAll('.cp-tab').forEach(function(btn) {
 
 var sessions = [];
 var presentations = [];
+var selectedSessionCode = null;
+var _hostBodyCache = null;
+// Sidebar starts pinned-open while no session is mounted. Selecting a session
+// flips this to false and the overlay/auto-hide behavior takes over.
+var _sidebarPinned = true;
+
+// Lazily fetch host.html, extract its body content (everything between <body>
+// and the first <script src=>), cache for subsequent mounts.
+async function _loadHostBodyMarkup() {
+  if (_hostBodyCache) return _hostBodyCache;
+  var res = await fetch('host.html', { credentials: 'same-origin' });
+  if (!res.ok) throw new Error('Could not fetch host.html: ' + res.status);
+  var html = await res.text();
+  var m = html.match(/<body>([\s\S]*?)\s*<script\s+src=/i);
+  if (!m) throw new Error('Could not extract host body markup');
+  _hostBodyCache = m[1];
+  return _hostBodyCache;
+}
+
+// Mount the host UI in #host-mount-target for the given session. Replaces any
+// previously-mounted session via CPHost.unmount() first (lifecycle is
+// idempotent). Updates the URL via History API so ?session= survives a reload.
+async function mountHostForSession(session) {
+  var target = document.getElementById('host-mount-target');
+  if (!target) return;
+  try {
+    var bodyHtml = await _loadHostBodyMarkup();
+    if (window.CPHost && CPHost.State && CPHost.State.root) CPHost.unmount();
+    target.innerHTML = bodyHtml;
+    if (window.CPHost && typeof CPHost.mount === 'function') {
+      CPHost.mount(target, { sessionCode: session.code, authToken: AUTH_TOKEN });
+    }
+    selectedSessionCode = session.code;
+    try {
+      history.replaceState({ sessionCode: session.code }, '', '?session=' + encodeURIComponent(session.code));
+    } catch (_) {}
+    // Refresh sidebar selection highlight (re-render is cheap and keeps state correct).
+    renderSessions();
+    // First session pick: flip the sidebar from pinned-open to overlay mode
+    // (hides + reveals on left-edge hover from now on).
+    _sidebarPinned = false;
+    _closeSidebarOverlay();
+  } catch (e) {
+    if (typeof showToastError === 'function') showToastError('Erro ao montar sessão: ' + e.message);
+  }
+}
+
+// --- Sidebar overlay (mirrors classvault cv-focus-mode pattern) ----------
+// Sidebar is hidden by default. Reveal via the toggle button or by pointing
+// the cursor at the left edge of the Sessões panel. Auto-hides 1.5s after
+// the cursor leaves the sidebar. Selecting a session also hides it. Esc
+// hides it.
+
+var SIDEBAR_REVEAL_ZONE = 6;     // px from left edge
+var SIDEBAR_HIDE_DELAY  = 1500;  // ms
+var _sidebarHideTimer = null;
+var _overSidebar = false;
+
+function _openSidebarOverlay() {
+  var layout = document.getElementById('sessions-layout');
+  if (!layout) return;
+  layout.classList.add('cp-sm--open');
+  // Pinned mode (no session selected yet): leave it open, no hide timer.
+  if (_sidebarPinned) return;
+  clearTimeout(_sidebarHideTimer);
+  _sidebarHideTimer = setTimeout(_maybeHideSidebar, SIDEBAR_HIDE_DELAY);
+}
+function _closeSidebarOverlay() {
+  var layout = document.getElementById('sessions-layout');
+  if (!layout) return;
+  clearTimeout(_sidebarHideTimer);
+  // Pinned mode: refuse to close. The sidebar stays open until a session
+  // is selected.
+  if (_sidebarPinned) return;
+  layout.classList.remove('cp-sm--open');
+}
+function _maybeHideSidebar() {
+  if (_overSidebar) return;
+  _closeSidebarOverlay();
+}
+
+(function _wireSidebarOverlay() {
+  var sidebar = document.getElementById('cp-sessions-sidebar');
+  var panel = document.getElementById('panel-sessions');
+  if (!sidebar || !panel) return;
+
+  sidebar.addEventListener('mouseenter', function () {
+    _overSidebar = true;
+    clearTimeout(_sidebarHideTimer);
+  });
+  sidebar.addEventListener('mouseleave', function () {
+    _overSidebar = false;
+    clearTimeout(_sidebarHideTimer);
+    _sidebarHideTimer = setTimeout(_maybeHideSidebar, SIDEBAR_HIDE_DELAY);
+  });
+
+  // Left-edge hover trigger. Only fires when the Sessões panel is active so
+  // it doesn't compete with hover on Banco / Estatísticas.
+  document.addEventListener('mousemove', function (e) {
+    if (!panel.classList.contains('active')) return;
+    if (e.clientX <= SIDEBAR_REVEAL_ZONE) _openSidebarOverlay();
+  });
+
+  // Esc closes (only when not typing in a host input).
+  document.addEventListener('keydown', function (e) {
+    var tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
+    if (e.key === 'Escape') _closeSidebarOverlay();
+  });
+})();
+
+// Restore the previously-selected session from ?session= on initial load.
+// Returns true when a session was found and mounted, false otherwise.
+function _restoreSessionFromUrl() {
+  var params = new URLSearchParams(location.search);
+  var code = params.get('session');
+  if (!code) return false;
+  var match = sessions.find(function (s) { return s.code === code; });
+  if (!match) return false;
+  mountHostForSession(match);
+  return true;
+}
 
 async function loadSessions() {
   try {
@@ -517,6 +831,14 @@ async function loadSessions() {
     sessions = [];
   }
   renderSessions();
+  // First-load only: if ?session=X is in the URL, mount that session. Otherwise
+  // pin the sidebar open so the user immediately sees the picker without
+  // having to point at the left edge.
+  if (!_restoreSessionFromUrl._fired) {
+    _restoreSessionFromUrl._fired = true;
+    var hadSession = _restoreSessionFromUrl();
+    if (!hadSession) _openSidebarOverlay();
+  }
 }
 
 function renderSessions() {
@@ -533,8 +855,12 @@ function renderSessions() {
   sessions.forEach(function(s) {
     var card = document.createElement('div');
     card.className = 'cp-session-card is-clickable';
+    if (selectedSessionCode && s.code === selectedSessionCode) {
+      card.classList.add('is-selected');
+    }
+    card.dataset.sessionCode = s.code;
     card.addEventListener('click', function() {
-      location.href = 'host.html?code=' + encodeURIComponent(s.code);
+      mountHostForSession(s);
     });
 
     var codeEl = document.createElement('div');

@@ -9,10 +9,10 @@
 
   function renderStudentQaActive(q) {
     var S = CPHost.State;
-    var metaEl    = document.getElementById('sqa-meta');
-    var textEl    = document.getElementById('sqa-text');
-    var inputEl   = document.getElementById('sqa-response');
-    var statusEl  = document.getElementById('sqa-status');
+    var metaEl    = CPHost.$('sqa-meta');
+    var textEl    = CPHost.$('sqa-text');
+    var inputEl   = CPHost.$('sqa-response');
+    var statusEl  = CPHost.$('sqa-status');
 
     var when = '';
     try { when = q.student_time ? new Date(q.student_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''; } catch (_) {}
@@ -40,12 +40,12 @@
   async function commitSqaAnswer() {
     var S = CPHost.State;
     if (!S.activeStudentQuestionId) return;
-    var inputEl = document.getElementById('sqa-response');
+    var inputEl = CPHost.$('sqa-response');
     var text = inputEl.value;
     if (text === S._sqaLastServerAnswer) return;
     S._sqaSaving = true;
-    document.getElementById('sqa-status').textContent = 'Salvando…';
-    document.getElementById('sqa-status').classList.add('is-saving');
+    CPHost.$('sqa-status').textContent = 'Salvando…';
+    CPHost.$('sqa-status').classList.add('is-saving');
     try {
       var res = await callWorker({
         action: 'update_student_question',
@@ -56,16 +56,16 @@
       });
       if (res && res.ok) {
         S._sqaLastServerAnswer = text;
-        document.getElementById('sqa-status').textContent = 'Salvo';
+        CPHost.$('sqa-status').textContent = 'Salvo';
         setTimeout(function () {
-          if (!S._sqaSaving) document.getElementById('sqa-status').textContent = '';
+          if (!S._sqaSaving) CPHost.$('sqa-status').textContent = '';
         }, 1200);
       }
     } catch (e) {
       CPHost.Utils.showAlert('error', 'Erro ao salvar resposta: ' + e.message);
     } finally {
       S._sqaSaving = false;
-      document.getElementById('sqa-status').classList.remove('is-saving');
+      CPHost.$('sqa-status').classList.remove('is-saving');
     }
   }
 
@@ -82,7 +82,7 @@
 
   function init() {
     var S = CPHost.State;
-    var inputEl = document.getElementById('sqa-response');
+    var inputEl = CPHost.$('sqa-response');
     if (inputEl) {
       inputEl.addEventListener('input', function () {
         S._sqaDraft = this.value;
@@ -90,7 +90,7 @@
       });
     }
 
-    var closeBtn = document.getElementById('sqa-close-btn');
+    var closeBtn = CPHost.$('sqa-close-btn');
     if (closeBtn) {
       closeBtn.addEventListener('click', async function () {
         if (!S.activeQId) return;
@@ -107,7 +107,7 @@
           S.activeQId = null;
           S.activeQType = null;
           S.activeStudentQuestionId = null;
-          document.getElementById('active-q-panel').style.display = 'none';
+          CPHost.$('active-q-panel').style.display = 'none';
         } catch (e) {
           CPHost.Utils.showAlert('error', 'Erro: ' + e.message);
         } finally {

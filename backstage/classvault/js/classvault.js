@@ -117,6 +117,14 @@ ClassVault.SECTION_KEYS = [
 ClassVault.collapsedSections = new Set();    // (re)populated by _resetAccordion()
 ClassVault._seededCollapsedKeys = new Set();
 
+// Bottom action bar (.cv-main-crumb) collapse state — collapsible like the
+// sidebar, persisted across sessions. Collapsed = slim handle, gives the
+// content viewport more room.
+const _BAR_COLLAPSED_KEY = 'cv_bar_collapsed';
+ClassVault.barCollapsed = (function() {
+  try { return localStorage.getItem(_BAR_COLLAPSED_KEY) === '1'; } catch (e) { return false; }
+})();
+
 // PensoNexo live-session state. null = nothing live (Worker hasn't returned
 // yet or no active session). Refreshed on boot and on demand via the refresh
 // button inside the pinned PensoNexo card — no background polling.
@@ -1349,7 +1357,9 @@ function _renderEditorBreadcrumb(item) {
   crumb.innerHTML =
     '<span>' + _esc(turmaName) + '</span>' +
     '<span class="cv-main-crumb-sep">/</span>' +
-    '<strong>' + _esc(label) + '</strong>';
+    '<strong>' + _esc(label) + '</strong>' +
+    '<span class="cv-main-crumb-spacer"></span>';
+  _appendCrumbCollapse(crumb);
 }
 
 function _dirtyCheckBeforeSwitch() {
@@ -1398,20 +1408,31 @@ function _renderBreadcrumb(item) {
   if (source === 'drive') {
     const dMime = (item.meta_json && item.meta_json.mimeType) || '';
     const canCopy = _driveItemCanCopyText(dMime, item.title);
-    crumb.innerHTML =
+    let dHtml =
       '<span>PensoCodex</span>' +
       '<span class="cv-main-crumb-sep">/</span>' +
       '<span>Drive</span>' +
       '<span class="cv-main-crumb-sep">/</span>' +
       '<strong>' + _esc(item.title) + '</strong>' +
-      (canCopy
-        ? '<span class="cv-main-crumb-spacer"></span>' +
-          '<button type="button" class="cv-crumb-btn" data-action="copy-drive-text" title="Copiar texto do arquivo">📋 Copiar texto</button>'
-        : '');
+      '<span class="cv-main-crumb-spacer"></span>';
+    if (canCopy) {
+      dHtml += '<button type="button" class="cv-crumb-btn" data-action="copy-drive-text" title="Copiar texto do arquivo">📋 Copiar texto</button>';
+    }
+    // Content actions (↗ Janela, etc.) belong in the bottom bar, same as
+    // non-Drive items — not floating over the content.
+    if (window.CVTypes) {
+      for (const a of CVTypes.actionsFor(item)) {
+        dHtml += '<button type="button" class="cv-crumb-btn" data-action="type:' + _esc(a.id) +
+          '"' + (a.title ? ' title="' + _esc(a.title) + '"' : '') + '>' + _esc(a.label) + '</button>';
+      }
+    }
+    crumb.innerHTML = dHtml;
     if (canCopy) {
       crumb.querySelector('[data-action="copy-drive-text"]')
         .addEventListener('click', () => _copyDriveFileText(item));
     }
+    _wireCrumbActions(crumb, item, source);
+    _appendCrumbCollapse(crumb);
     return;
   }
 
@@ -1436,6 +1457,7 @@ function _renderBreadcrumb(item) {
   html += '<button type="button" class="cv-crumb-btn" data-action="edit" title="Editar item">✏️ Editar</button>';
   crumb.innerHTML = html;
   _wireCrumbActions(crumb, item, source);
+  _appendCrumbCollapse(crumb);
 }
 
 function _wireCrumbActions(crumb, item, source) {
@@ -1450,6 +1472,34 @@ function _wireCrumbActions(crumb, item, source) {
       }
     });
   });
+}
+
+// Collapse toggle for the bottom action bar. Appended as the last child of
+// every populated crumb so the chevron stays clickable even when collapsed
+// (CSS hides every sibling but this button). State persists in localStorage.
+function _appendCrumbCollapse(crumb) {
+  if (!crumb) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'cv-crumb-collapse';
+  btn.innerHTML = '<svg class="cv-crumb-collapse-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  btn.addEventListener('click', _toggleBarCollapsed);
+  crumb.appendChild(btn);
+  _applyBarCollapsed();
+}
+
+function _toggleBarCollapsed() {
+  ClassVault.barCollapsed = !ClassVault.barCollapsed;
+  try { localStorage.setItem(_BAR_COLLAPSED_KEY, ClassVault.barCollapsed ? '1' : '0'); } catch (e) {}
+  _applyBarCollapsed();
+}
+
+function _applyBarCollapsed() {
+  const crumb = document.querySelector('.cv-main-crumb');
+  if (!crumb) return;
+  crumb.classList.toggle('is-collapsed', !!ClassVault.barCollapsed);
+  const btn = crumb.querySelector('.cv-crumb-collapse');
+  if (btn) btn.title = ClassVault.barCollapsed ? 'Expandir barra de ações' : 'Recolher barra de ações';
 }
 
 // ── Renderers (registry keyed by item.type) ────────────────────
@@ -1476,7 +1526,10 @@ function _mountIframe(url, container, emptyMsg, opts) {
   }
   container.innerHTML = '';
   const wrap = document.createElement('div');
-  wrap.className = 'cv-renderer-iframe-wrap';
+  // opts.mask marks a slide embed: add cv-slides-clip so the oversize+clip rule
+  // (classvault.css) hides Google's bottom control bar. Non-slide iframes keep
+  // the plain wrap.
+  wrap.className = opts.mask ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
   const iframe = document.createElement('iframe');
   iframe.className = 'cv-renderer-iframe';
   iframe.src = url;
@@ -1549,9 +1602,25 @@ async function _copyDriveFileText(item) {
   const fileId = meta.file_id;
   const mimeType = meta.mimeType || '';
   if (!fileId) return;
-  if (!window.BS_GOOGLE || !window.BS_GOOGLE.isAuthed()) {
-    if (window.BSToast) BSToast.show('Conecte ao Drive para copiar texto.');
+  if (!window.BS_GOOGLE) {
+    if (window.BSToast) BSToast.show('Drive indisponível: BS_GOOGLE não carregado.');
     return;
+  }
+  // Inline-trigger pattern (Bundle Q follow-up): if not connected, prompt
+  // consent right here so the user doesn't have to find a separate Connect
+  // button. Toast only fires if consent fails or is cancelled.
+  if (!BS_GOOGLE.isAuthed()) {
+    try {
+      await BS_GOOGLE.requestToken({ prompt: 'consent' });
+      if (typeof BS_GOOGLE.init === 'function') BS_GOOGLE.init();
+    } catch (_) {
+      if (window.BSToast) BSToast.show('Conexão Google necessária para copiar texto.');
+      return;
+    }
+    if (!BS_GOOGLE.isAuthed()) {
+      if (window.BSToast) BSToast.show('Conexão Google necessária para copiar texto.');
+      return;
+    }
   }
   try {
     const text = await BS_GOOGLE.drive.getText(fileId, mimeType);
@@ -1594,25 +1663,16 @@ function _renderPopupCard(item, container) {
     return;
   }
 
+  // Launch lives in the bottom action bar (↗ Janela via CVTypes popup_url),
+  // not as an in-content button floating over the viewport. The card just
+  // describes the item and points at the bar.
   container.innerHTML =
     '<div class="cv-popup-launcher">' +
       '<h2 class="cv-popup-launcher-title">' + _esc(item.title) + '</h2>' +
       (item.summary ? '<p class="cv-popup-launcher-desc">' + _esc(item.summary) + '</p>' : '') +
-      '<button type="button" class="cv-popup-launcher-btn">Abrir em janela</button>' +
+      '<p class="cv-popup-launcher-hint">Use ↗ Janela na barra inferior para abrir.</p>' +
       (url ? '<p class="cv-popup-launcher-url">' + _esc(url) + '</p>' : '') +
     '</div>';
-  const card = container.querySelector('.cv-popup-launcher');
-  const btn = container.querySelector('.cv-popup-launcher-btn');
-  btn.addEventListener('click', () => {
-    if (!url) return;
-    const popup = _openPopup(url);
-    if (!popup) {
-      const warn = document.createElement('p');
-      warn.className = 'cv-popup-launcher-warn';
-      warn.textContent = 'O navegador bloqueou o popup. Permita popups para este site e tente novamente.';
-      card.appendChild(warn);
-    }
-  });
 }
 
 function _renderFallback(item, container) {
@@ -1680,28 +1740,6 @@ function _cvCopy(text, btn) {
 
 function _cleanupClear(container) {
   container.innerHTML = '';
-}
-
-function _openPopup(url) {
-  const w = Math.max(800, Math.floor((window.outerWidth || window.innerWidth) - 80));
-  const h = Math.max(600, Math.floor((window.outerHeight || window.innerHeight) - 80));
-  const left = (typeof window.screenX === 'number' ? window.screenX : 0) + 40;
-  const top  = (typeof window.screenY === 'number' ? window.screenY : 0) + 40;
-  const features = [
-    'popup=yes',
-    'width=' + w,
-    'height=' + h,
-    'left=' + left,
-    'top=' + top,
-    'toolbar=no',
-    'menubar=no',
-    'location=yes',
-    'resizable=yes',
-    'scrollbars=yes',
-  ].join(',');
-  const popup = window.open(url, '_blank', features);
-  if (popup && typeof popup.focus === 'function') popup.focus();
-  return popup;
 }
 
 // ── Utilities ──────────────────────────────────────────────────

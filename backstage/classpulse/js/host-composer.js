@@ -17,7 +17,7 @@
   }
 
   function initPollRows(count) {
-    var container = document.getElementById('poll-rows');
+    var container = CPHost.$('poll-rows');
     container.innerHTML = '';
     for (var i = 0; i < count; i++) container.appendChild(buildPollRow(i));
   }
@@ -27,7 +27,7 @@
   function resetChk(id, supported) {
     var S = CPHost.State;
     CPCheckboxSync.reset({
-      chk: document.getElementById(id),
+      chk: CPHost.$(id),
       supported: supported,
       defaultChecked: !!S.CHK_DEFAULTS[id],
     });
@@ -38,32 +38,32 @@
   // poll tick.
   function syncChk(id, supported) {
     CPCheckboxSync.sync({
-      chk: document.getElementById(id),
+      chk: CPHost.$(id),
       supported: supported,
     });
   }
 
   function buildFormEls() {
     return {
-      textInput:    document.getElementById('q-text'),
-      mcPanel:      document.getElementById('q-opts-mc'),
-      pollPanel:    document.getElementById('q-opts-poll'),
-      ratingPanel:  document.getElementById('q-opts-rating'),
-      numericPanel: document.getElementById('q-opts-numeric'),
-      optA: document.getElementById('q-opt-a'),
-      optB: document.getElementById('q-opt-b'),
-      optC: document.getElementById('q-opt-c'),
-      optD: document.getElementById('q-opt-d'),
-      mcRows:        document.querySelectorAll('#q-opts-mc .opt-row'),
-      mcRadios:      document.querySelectorAll('#q-opts-mc .opt-correct-radio'),
-      correctRadios: document.querySelectorAll('input[name="correct"]'),
-      pollRows:   document.getElementById('poll-rows'),
-      ratingMin:  document.getElementById('q-rating-min'),
-      ratingMax:  document.getElementById('q-rating-max'),
-      numericMin: document.getElementById('q-num-min'),
-      numericMax: document.getElementById('q-num-max'),
-      mcMaxSelect:   document.getElementById('q-mc-max-select'),
-      pollMaxSelect: document.getElementById('q-poll-max-select'),
+      textInput:    CPHost.$('q-text'),
+      mcPanel:      CPHost.$('q-opts-mc'),
+      pollPanel:    CPHost.$('q-opts-poll'),
+      ratingPanel:  CPHost.$('q-opts-rating'),
+      numericPanel: CPHost.$('q-opts-numeric'),
+      optA: CPHost.$('q-opt-a'),
+      optB: CPHost.$('q-opt-b'),
+      optC: CPHost.$('q-opt-c'),
+      optD: CPHost.$('q-opt-d'),
+      mcRows:        CPHost.qsa('#q-opts-mc .opt-row'),
+      mcRadios:      CPHost.qsa('#q-opts-mc .opt-correct-radio'),
+      correctRadios: CPHost.qsa('input[name="correct"]'),
+      pollRows:   CPHost.$('poll-rows'),
+      ratingMin:  CPHost.$('q-rating-min'),
+      ratingMax:  CPHost.$('q-rating-max'),
+      numericMin: CPHost.$('q-num-min'),
+      numericMax: CPHost.$('q-num-max'),
+      mcMaxSelect:   CPHost.$('q-mc-max-select'),
+      pollMaxSelect: CPHost.$('q-poll-max-select'),
       initPollRows: initPollRows,
     };
   }
@@ -74,17 +74,17 @@
     CPQuestionTypes.applyVisibility(S.formEls, T);
     resetChk('chk-reveal-answer', T.canReveal);
     resetChk('chk-show-results',  T.canShowResults);
-    document.getElementById('q-generate-btn').style.display = T.aiGenSupported ? '' : 'none';
-    document.getElementById('q-improve-btn').style.display  = T.aiGenSupported ? '' : 'none';
+    CPHost.$('q-generate-btn').style.display = T.aiGenSupported ? '' : 'none';
+    CPHost.$('q-improve-btn').style.display  = T.aiGenSupported ? '' : 'none';
   }
 
   function clearForm() {
     var S = CPHost.State;
-    document.getElementById('q-text').value = '';
+    CPHost.$('q-text').value = '';
     CPQuestionTypes.list().forEach(function (t) {
       CPQuestionTypes.get(t).clearForm(S.formEls);
     });
-    document.getElementById('q-type').value = 'mc';
+    CPHost.$('q-type').value = 'mc';
     applyTypeUI('mc');
   }
 
@@ -127,9 +127,9 @@
 
   function prefillForm(q) {
     var S = CPHost.State;
-    document.getElementById('q-text').value = CPHost.Utils.stripHtml(q.question || '');
+    CPHost.$('q-text').value = CPHost.Utils.stripHtml(q.question || '');
     var qType = q.type || 'mc';
-    document.getElementById('q-type').value = qType;
+    CPHost.$('q-type').value = qType;
     applyTypeUI(qType);
     var parsedOpts;
     if (typeof q.options === 'string') {
@@ -152,24 +152,24 @@
     var S = CPHost.State;
     S.formEls = buildFormEls();
 
-    document.getElementById('q-mc-max-select').addEventListener('change', function () {
+    CPHost.$('q-mc-max-select').addEventListener('change', function () {
       CPQuestionTypes.get('mc').setupForm(S.formEls);
     });
 
-    document.getElementById('q-type').addEventListener('change', function () {
+    CPHost.$('q-type').addEventListener('change', function () {
       applyTypeUI(this.value);
-      document.querySelectorAll('input[name="correct"]').forEach(function (r) { r.checked = false; });
+      CPHost.qsa('input[name="correct"]').forEach(function (r) { r.checked = false; });
     });
 
-    document.getElementById('poll-add-btn').addEventListener('click', function () {
-      var container = document.getElementById('poll-rows');
+    CPHost.$('poll-add-btn').addEventListener('click', function () {
+      var container = CPHost.$('poll-rows');
       if (container.children.length >= S.MAX_POLL_OPTS) return;
       container.appendChild(buildPollRow(container.children.length));
     });
 
-    document.getElementById('launch-btn').addEventListener('click', async function () {
-      var qType = document.getElementById('q-type').value;
-      var text  = document.getElementById('q-text').value.trim();
+    CPHost.$('launch-btn').addEventListener('click', async function () {
+      var qType = CPHost.$('q-type').value;
+      var text  = CPHost.$('q-text').value.trim();
       if (!text) return CPHost.Utils.showAlert('error', 'Escreva a pergunta.');
 
       var T = CPQuestionTypes.get(qType);
@@ -213,10 +213,10 @@
       }
     });
 
-    document.getElementById('close-question-btn').addEventListener('click', async function () {
+    CPHost.$('close-question-btn').addEventListener('click', async function () {
       if (!S.activeQId) return;
-      var showResults  = document.getElementById('chk-show-results').checked;
-      var revealAnswer = document.getElementById('chk-reveal-answer').checked;
+      var showResults  = CPHost.$('chk-show-results').checked;
+      var revealAnswer = CPHost.$('chk-reveal-answer').checked;
       var btn = this;
       btn.disabled = true;
       btn.textContent = 'Encerrando...';
@@ -227,7 +227,7 @@
           show_results: showResults, reveal_answer: revealAnswer,
         });
         S.activeQId = null;
-        document.getElementById('active-q-panel').style.display = 'none';
+        CPHost.$('active-q-panel').style.display = 'none';
         if (S.visToggle) S.visToggle.reset();
         CPHost.Utils.clearAlert();
       } catch (e) {
@@ -238,11 +238,11 @@
       }
     });
 
-    document.getElementById('clear-form-btn').addEventListener('click', clearForm);
+    CPHost.$('clear-form-btn').addEventListener('click', clearForm);
 
     // QuestionBank panel
-    document.getElementById('bank-toggle-btn').addEventListener('click', function () {
-      var panel = document.getElementById('bank-panel');
+    CPHost.$('bank-toggle-btn').addEventListener('click', function () {
+      var panel = CPHost.$('bank-panel');
       var isOpen = panel.classList.toggle('open');
       this.classList.toggle('open', isOpen);
       if (isOpen && typeof QuestionBank !== 'undefined') QuestionBank.loadSets();
@@ -250,27 +250,27 @@
 
     if (typeof QuestionBank !== 'undefined') {
       QuestionBank.init({
-        setSelect:    document.getElementById('bank-set-select'),
-        questionList: document.getElementById('bank-q-list'),
-        generateBtn:  document.getElementById('q-generate-btn'),
-        improveBtn:   document.getElementById('q-improve-btn'),
-        errorEl:      document.getElementById('q-error'),
+        setSelect:    CPHost.$('bank-set-select'),
+        questionList: CPHost.$('bank-q-list'),
+        generateBtn:  CPHost.$('q-generate-btn'),
+        improveBtn:   CPHost.$('q-improve-btn'),
+        errorEl:      CPHost.$('q-error'),
         canDelete:    false,
         canCreateSet: false,
         onSelect: function (q) { prefillForm(q); },
         onLaunch: function (q, btn) { launchFromBank(q, btn); },
         getFormState: function () {
-          var qType = document.getElementById('q-type').value;
-          var maxSelEl = qType === 'mc' ? document.getElementById('q-mc-max-select')
-                       : qType === 'poll' ? document.getElementById('q-poll-max-select') : null;
+          var qType = CPHost.$('q-type').value;
+          var maxSelEl = qType === 'mc' ? CPHost.$('q-mc-max-select')
+                       : qType === 'poll' ? CPHost.$('q-poll-max-select') : null;
           return {
-            text: document.getElementById('q-text').value.trim(),
+            text: CPHost.$('q-text').value.trim(),
             type: qType,
             options: [
-              document.getElementById('q-opt-a').value.trim(),
-              document.getElementById('q-opt-b').value.trim(),
-              document.getElementById('q-opt-c').value.trim(),
-              document.getElementById('q-opt-d').value.trim(),
+              CPHost.$('q-opt-a').value.trim(),
+              CPHost.$('q-opt-b').value.trim(),
+              CPHost.$('q-opt-c').value.trim(),
+              CPHost.$('q-opt-d').value.trim(),
             ],
             max_select: maxSelEl ? parseInt(maxSelEl.value) : 1,
           };
@@ -279,7 +279,7 @@
     }
 
     // Initialize checkbox state on page load
-    applyTypeUI(document.getElementById('q-type').value);
+    applyTypeUI(CPHost.$('q-type').value);
   }
 
   CPHost.Composer = {

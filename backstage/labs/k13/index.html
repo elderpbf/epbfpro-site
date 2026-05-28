@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Três velocidades · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.1">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k13-panel">
+  <style>
+    .k13-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --text-muted: var(--lab-text-muted);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --warm: var(--lab-context-a);
+      --warm-rgb: var(--lab-context-a-rgb);
+      --cool: var(--lab-context-b);
+      --cool-rgb: var(--lab-context-b-rgb);
+      --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
+      --gold: #facc15;
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      gap: 0.6rem;
+      padding: 0.85rem 1.6rem 0.65rem;
+      box-sizing: border-box;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+
+    .k13-question {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 0.55rem 0.95rem;
+      font-size: clamp(13px, 1.05vw, 17px);
+      color: var(--text);
+      font-style: italic;
+      line-height: 1.4;
+    }
+    .k13-question b { color: var(--cool); font-style: normal; font-weight: 700; }
+
+    /* Scenario picker */
+    .k13-scenarios {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .k13-sc-label {
+      font-family: var(--font-mono);
+      font-size: clamp(11px, 0.85vw, 13px);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+    .k13-sc-btn {
+      font-family: var(--font-display);
+      font-size: clamp(13px, 0.95vw, 15px);
+      font-weight: 600;
+      padding: 0.4rem 0.95rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 200ms, color 200ms, border-color 200ms, box-shadow 200ms;
+      letter-spacing: 0.01em;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k13-sc-btn:hover { border-color: var(--cool); color: var(--cool); }
+    .k13-sc-btn.is-active {
+      background: rgba(var(--cool-rgb), 0.18);
+      color: var(--cool);
+      border-color: var(--cool);
+      box-shadow: 0 0 14px rgba(var(--cool-rgb), 0.22);
+    }
+
+    /* Three lanes */
+    .k13-lanes {
+      display: grid;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 0.55rem;
+      min-height: 0;
+    }
+    .k13-lane {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr) 280px;
+      gap: 0.85rem;
+      align-items: center;
+      padding: 0.6rem 0.85rem;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      min-height: 0;
+      transition: box-shadow 360ms, border-color 360ms, transform 360ms;
+    }
+    .k13-lane.is-winner {
+      border-color: var(--gold);
+      box-shadow: 0 0 22px rgba(250, 204, 21, 0.34);
+      transform: translateY(-1px);
+    }
+    .k13-lane-name {
+      margin: 0;
+      font-size: clamp(20px, 2.4vw, 36px);
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      line-height: 1;
+    }
+    .k13-lane-sub {
+      display: block;
+      font-size: clamp(11px, 0.8vw, 13px);
+      color: var(--text-muted);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      margin-top: 0.2rem;
+      font-style: italic;
+    }
+    .k13-lane--trad .k13-lane-name { color: var(--good); }
+    .k13-lane--rac  .k13-lane-name { color: var(--cool); }
+    .k13-lane--ag   .k13-lane-name { color: var(--warm); }
+
+    .k13-track {
+      position: relative;
+      height: clamp(50px, 5.5vw, 72px);
+      background: color-mix(in srgb, var(--text) 6%, transparent);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .k13-stations {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 0.85rem;
+      pointer-events: none;
+      gap: 0.4rem;
+    }
+    .k13-station {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.18rem;
+      font-family: var(--font-display);
+      font-size: clamp(11px, 0.85vw, 14px);
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-align: center;
+      opacity: 0.7;
+      transition: opacity 280ms, color 280ms, transform 280ms;
+      min-width: 0;
+    }
+    .k13-station.is-hit { opacity: 1; color: var(--text); transform: scale(1.05); }
+    .k13-station.is-fail { color: var(--bad); }
+    .k13-station-icon {
+      font-size: clamp(16px, 1.5vw, 22px);
+      line-height: 1;
+    }
+    .k13-station-text { white-space: nowrap; }
+
+    .k13-dot {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(16px, 1.6vw, 22px);
+      height: clamp(16px, 1.6vw, 22px);
+      border-radius: 50%;
+      left: 12px;
+      transition: left 360ms cubic-bezier(.4,0,.2,1);
+      z-index: 2;
+    }
+    .k13-lane--trad .k13-dot { background: var(--good); box-shadow: 0 0 14px var(--good); }
+    .k13-lane--rac  .k13-dot { background: var(--cool); box-shadow: 0 0 14px var(--cool); }
+    .k13-lane--ag   .k13-dot { background: var(--warm); box-shadow: 0 0 14px var(--warm); }
+
+    /* Floating "..." bubble for raciocínio thinking pauses */
+    .k13-bubble {
+      position: absolute;
+      top: -22px;
+      left: 12px;
+      transform: translateX(-50%);
+      background: rgba(var(--cool-rgb), 0.96);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: clamp(10px, 0.85vw, 13px);
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 220ms, left 360ms cubic-bezier(.4,0,.2,1);
+      z-index: 3;
+      white-space: nowrap;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.24);
+    }
+    .k13-bubble.is-on { opacity: 1; }
+
+    /* Failure flash on agêntico */
+    .k13-fail-flash {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      font-family: var(--font-mono);
+      font-size: clamp(10px, 0.85vw, 13px);
+      color: var(--bad);
+      background: rgba(var(--bad-rgb), 0.16);
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 220ms;
+      z-index: 3;
+      border: 1px solid var(--bad);
+      font-weight: 700;
+    }
+    .k13-fail-flash.is-on { opacity: 1; }
+
+    /* Meter trio */
+    .k13-meters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.35rem;
+    }
+    .k13-mtr {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.35rem 0.2rem;
+      background: color-mix(in srgb, var(--text) 4%, transparent);
+      border-radius: 8px;
+      min-width: 0;
+      gap: 0.1rem;
+    }
+    .k13-mtr-name {
+      font-size: clamp(10px, 0.75vw, 12px);
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .k13-mtr-val {
+      font-family: var(--font-mono);
+      font-size: clamp(14px, 1.3vw, 21px);
+      font-weight: 800;
+      transition: color 360ms;
+      line-height: 1.1;
+      color: var(--text-dim);
+    }
+    .k13-mtr-val.is-low  { color: var(--good); }
+    .k13-mtr-val.is-mid  { color: var(--warm); }
+    .k13-mtr-val.is-high { color: var(--bad); }
+    .k13-mtr-sub {
+      font-family: var(--font-mono);
+      font-size: clamp(9px, 0.7vw, 11px);
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+      text-align: center;
+      line-height: 1.15;
+    }
+
+    /* Winner banner */
+    .k13-winner-line {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      font-size: clamp(13px, 1.05vw, 17px);
+      color: var(--text-dim);
+      font-style: italic;
+      transition: border-color 360ms, color 360ms;
+    }
+    .k13-winner-line.is-on {
+      border-color: var(--gold);
+      color: var(--text);
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.22);
+    }
+    .k13-winner-line b { color: var(--gold); font-style: normal; font-weight: 800; }
+
+    /* Operator bar */
+    .k13-button-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k13-bar-left { display: inline-flex; gap: 0.45rem; align-items: center; }
+    .k13-actions { display: inline-flex; gap: 0.45rem; flex-wrap: wrap; }
+    .k13-btn {
+      font-family: var(--font-display);
+      font-size: clamp(13px, 0.95vw, 15px);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k13-btn:hover { border-color: var(--warm); color: var(--warm); transform: translateY(-1px); }
+    .k13-btn-primary {
+      border-color: var(--focal);
+      background: rgba(var(--focal-rgb), 0.16);
+      color: var(--focal);
+      box-shadow: 0 0 10px rgba(var(--focal-rgb), 0.18);
+    }
+    .k13-btn-primary:hover {
+      background: rgba(var(--focal-rgb), 0.28);
+      border-color: var(--focal);
+      color: var(--focal);
+      box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
+    }
+    .k13-btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .k13-panel { padding: 0.55rem 0.8rem 0.55rem; gap: 0.45rem; }
+      .k13-question { font-size: 12.5px; padding: 0.4rem 0.7rem; }
+      .k13-scenarios { gap: 0.35rem; }
+      .k13-sc-btn { font-size: 12px; padding: 0.35rem 0.6rem; flex: 1 1 calc(33% - 0.2rem); min-height: 36px; text-align: center; }
+      .k13-sc-label { display: block; width: 100%; text-align: center; font-size: 10px; }
+      .k13-lane {
+        grid-template-columns: 88px minmax(0,1fr);
+        grid-template-rows: auto auto;
+        grid-template-areas:
+          "name track"
+          "meters meters";
+        gap: 0.4rem;
+        padding: 0.45rem 0.6rem;
+      }
+      .k13-lane-name { grid-area: name; font-size: 16px; }
+      .k13-lane-sub { display: none; }
+      .k13-track { grid-area: track; height: 44px; }
+      .k13-meters { grid-area: meters; }
+      .k13-station-text { font-size: 10px; }
+      .k13-station-icon { font-size: 14px; }
+      .k13-mtr-val { font-size: 14px; }
+      .k13-mtr-sub { font-size: 9px; }
+      .k13-winner-line { font-size: 13px; padding: 0.35rem 0.7rem; }
+      .k13-button-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem;
+      }
+      .k13-bar-left { grid-column: 1 / -1; justify-content: center; }
+      .k13-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+      .k13-btn { font-size: 13px; padding: 0.55rem 0.4rem; min-height: 44px; text-align: center; }
+    }
+    @media (max-width: 400px) {
+      .k13-lane-name { font-size: 14px; }
+      .k13-station-text { font-size: 9px; }
+      .k13-mtr-val { font-size: 13px; }
+      .k13-btn { font-size: 12.5px; padding: 0.5rem 0.35rem; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k13-panel { padding: 0.35rem 1rem 0.3rem; gap: 0.35rem; }
+      .k13-question { font-size: 11.5px; padding: 0.3rem 0.65rem; }
+      .k13-lane { grid-template-columns: 130px minmax(0,1fr) 200px; padding: 0.4rem 0.65rem; }
+      .k13-lane-name { font-size: 15px; }
+      .k13-track { height: 36px; }
+      .k13-mtr-val { font-size: 12px; }
+      .k13-btn { font-size: 12px; padding: 0.4rem 0.75rem; min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header"
+       data-lab-title="Três velocidades"
+       data-lab-subtitle="Tradicional, raciocínio, agêntico — três formatos, não três níveis"></div>
+
+  <div class="k13-question">
+    <b>Pergunta:</b> "Cliente demitido sem justa causa em 28/06/2024. Hoje, 25/05/2026. Prazo bienal (art. 7º XXIX CF) vence em 28/06/2026, restando ~1 mês. Posso ajuizar e calcular as verbas com este contracheque?"
+  </div>
+
+  <div class="k13-scenarios">
+    <span class="k13-sc-label">cenário</span>
+    <button class="k13-sc-btn is-active" data-sc="prazo" type="button">Cálculo de prazo</button>
+    <button class="k13-sc-btn" data-sc="dossie" type="button">Montar dossiê</button>
+    <button class="k13-sc-btn" data-sc="redacao" type="button">Redigir cláusula</button>
+  </div>
+
+  <div class="k13-lanes">
+    <!-- TRADICIONAL -->
+    <div class="k13-lane k13-lane--trad" data-lane="trad">
+      <div>
+        <h2 class="k13-lane-name">TRADICIONAL</h2>
+        <span class="k13-lane-sub">um passo, resposta direta</span>
+      </div>
+      <div class="k13-track">
+        <div class="k13-stations" id="k13-trad-stations">
+          <div class="k13-station"><span class="k13-station-icon">→</span><span class="k13-station-text">resposta</span></div>
+        </div>
+        <div class="k13-dot" id="k13-dot-trad"></div>
+      </div>
+      <div class="k13-meters">
+        <div class="k13-mtr"><span class="k13-mtr-name">tempo</span><span class="k13-mtr-val" id="k13-trad-tempo">—</span><span class="k13-mtr-sub" id="k13-trad-tempo-sub"></span></div>
+        <div class="k13-mtr"><span class="k13-mtr-name">custo</span><span class="k13-mtr-val" id="k13-trad-custo">—</span><span class="k13-mtr-sub" id="k13-trad-custo-sub"></span></div>
+        <div class="k13-mtr"><span class="k13-mtr-name">conf.</span><span class="k13-mtr-val" id="k13-trad-conf">—</span><span class="k13-mtr-sub" id="k13-trad-conf-sub"></span></div>
+      </div>
+    </div>
+
+    <!-- RACIOCÍNIO -->
+    <div class="k13-lane k13-lane--rac" data-lane="rac">
+      <div>
+        <h2 class="k13-lane-name">RACIOCÍNIO</h2>
+        <span class="k13-lane-sub">passos visíveis, pausa entre cada</span>
+      </div>
+      <div class="k13-track">
+        <div class="k13-stations" id="k13-rac-stations"></div>
+        <div class="k13-bubble" id="k13-rac-bubble">pensando…</div>
+        <div class="k13-dot" id="k13-dot-rac"></div>
+      </div>
+      <div class="k13-meters">
+        <div class="k13-mtr"><span class="k13-mtr-name">tempo</span><span class="k13-mtr-val" id="k13-rac-tempo">—</span><span class="k13-mtr-sub" id="k13-rac-tempo-sub"></span></div>
+        <div class="k13-mtr"><span class="k13-mtr-name">custo</span><span class="k13-mtr-val" id="k13-rac-custo">—</span><span class="k13-mtr-sub" id="k13-rac-custo-sub"></span></div>
+        <div class="k13-mtr"><span class="k13-mtr-name">conf.</span><span class="k13-mtr-val" id="k13-rac-conf">—</span><span class="k13-mtr-sub" id="k13-rac-conf-sub"></span></div>
+      </div>
+    </div>
+
+    <!-- AGÊNTICO -->
+    <div class="k13-lane k13-lane--ag" data-lane="ag">
+      <div>
+        <h2 class="k13-lane-name">AGÊNTICO</h2>
+        <span class="k13-lane-sub">chama ferramentas, pode falhar e voltar</span>
+      </div>
+      <div class="k13-track">
+        <div class="k13-stations" id="k13-ag-stations"></div>
+        <div class="k13-fail-flash" id="k13-ag-flash">✗ ferramenta falhou — retry</div>
+        <div class="k13-dot" id="k13-dot-ag"></div>
+      </div>
+      <div class="k13-meters">
+        <div class="k13-mtr"><span class="k13-mtr-name">tempo</span><span class="k13-mtr-val" id="k13-ag-tempo">—</span><span class="k13-mtr-sub" id="k13-ag-tempo-sub"></span></div>
+        <div class="k13-mtr"><span class="k13-mtr-name">custo</span><span class="k13-mtr-val" id="k13-ag-custo">—</span><span class="k13-mtr-sub" id="k13-ag-custo-sub"></span></div>
+        <div class="k13-mtr"><span class="k13-mtr-name">conf.</span><span class="k13-mtr-val" id="k13-ag-conf">—</span><span class="k13-mtr-sub" id="k13-ag-conf-sub"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="k13-winner-line" id="k13-winner-line">
+    🏆 escolha um cenário e clique <b>Executar os três</b> para ver qual formato cabe.
+  </div>
+
+  <div class="k13-button-bar">
+    <div class="k13-bar-left">
+      <span style="font-family: var(--font-mono); font-size: clamp(11px, 0.85vw, 13px); color: var(--text-dim); letter-spacing: 0.06em;">valores ilustrativos</span>
+    </div>
+    <div class="k13-actions">
+      <button class="k13-btn k13-btn-primary" id="k13-run" type="button">Executar os três</button>
+      <button class="k13-btn" id="k13-reset" type="button">Reiniciar</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // ── Scenario data ───────────────────────────────────
+      // Each scenario has, for each lane: stations array, race duration in ms,
+      // and meter values [tempo, custo, conf, custoAnnual]. The agêntico lane
+      // ALSO has an optional `fail` flag — when true, the dot loops back to a
+      // previous station once mid-race and a "ferramenta falhou" flash blinks.
+      //
+      // Winners by scenario:
+      //   prazo  → raciocínio (95% conf — slow math, but right)
+      //   dossie → agêntico   (92% conf — many tools needed)
+      //   redacao→ tradicional(95% conf — simple drafting, no need for tools)
+      const SCENARIOS = {
+        prazo: {
+          q: '"Cliente demitido em 28/06/2024. Hoje, 25/05/2026. Posso ajuizar dentro do prazo bienal?"',
+          trad: {
+            stations: [{ icon: '→', text: 'resposta' }],
+            duration: 1100,
+            tempo: '1,1s', tempoCls: 'is-low',
+            custo: 'R$0,01', custoCls: 'is-low', custoSub: '× 1.000/ano = R$10',
+            conf: '40%',  confCls: 'is-mid'
+          },
+          rac: {
+            stations: [
+              { icon: '?', text: 'prazo?' },
+              { icon: 'Σ', text: 'contar dias' },
+              { icon: '§', text: 'art. 7º XXIX' },
+              { icon: '✓', text: 'concluir' }
+            ],
+            duration: 4200,
+            tempo: '4,2s', tempoCls: 'is-mid',
+            custo: 'R$0,12', custoCls: 'is-mid', custoSub: '× 200/ano = R$24',
+            conf: '95%',  confCls: 'is-low'
+          },
+          ag: {
+            stations: [
+              { icon: '📅', text: 'calendário' },
+              { icon: '🧮', text: 'calc' },
+              { icon: '⚖',  text: 'súmulas' },
+              { icon: '📄', text: 'redigir' }
+            ],
+            duration: 11800,
+            tempo: '11,8s', tempoCls: 'is-high',
+            custo: 'R$0,62', custoCls: 'is-high', custoSub: '× 200/ano = R$124',
+            conf: '88%',  confCls: 'is-mid',
+            fail: false
+          },
+          winner: 'rac'
+        },
+        dossie: {
+          q: '"Monte um dossiê completo deste cliente com fatos, jurisprudência e cálculo de verbas."',
+          trad: {
+            stations: [{ icon: '→', text: 'resposta' }],
+            duration: 1300,
+            tempo: '1,3s', tempoCls: 'is-low',
+            custo: 'R$0,02', custoCls: 'is-low', custoSub: '× 50/ano = R$1',
+            conf: '22%',  confCls: 'is-high'
+          },
+          rac: {
+            stations: [
+              { icon: '◆', text: 'fatos' },
+              { icon: '⏱', text: 'linha do tempo' },
+              { icon: '⚖', text: 'jurisp.' },
+              { icon: 'Σ', text: 'verbas' },
+              { icon: '✓', text: 'concluir' }
+            ],
+            duration: 7200,
+            tempo: '7,2s', tempoCls: 'is-mid',
+            custo: 'R$0,21', custoCls: 'is-mid', custoSub: '× 50/ano = R$10',
+            conf: '64%',  confCls: 'is-mid'
+          },
+          ag: {
+            stations: [
+              { icon: '📄', text: 'ler peças' },
+              { icon: '⏱', text: 'timeline' },
+              { icon: '⚖', text: 'jurisp.' },
+              { icon: '🧮', text: 'verbas' },
+              { icon: '📄', text: 'montar' }
+            ],
+            duration: 16800,
+            tempo: '16,8s', tempoCls: 'is-high',
+            custo: 'R$0,80', custoCls: 'is-high', custoSub: '× 50/ano = R$40',
+            conf: '92%',  confCls: 'is-low',
+            fail: false
+          },
+          winner: 'ag'
+        },
+        redacao: {
+          q: '"Redija uma cláusula simples de confidencialidade em três linhas."',
+          trad: {
+            stations: [{ icon: '→', text: 'resposta' }],
+            duration: 800,
+            tempo: '0,8s', tempoCls: 'is-low',
+            custo: 'R$0,01', custoCls: 'is-low', custoSub: '× 2.000/ano = R$20',
+            conf: '95%',  confCls: 'is-low'
+          },
+          rac: {
+            stations: [
+              { icon: '?', text: 'pedido' },
+              { icon: '◇', text: 'estrutura' },
+              { icon: '✓', text: 'concluir' }
+            ],
+            duration: 3600,
+            tempo: '3,6s', tempoCls: 'is-mid',
+            custo: 'R$0,14', custoCls: 'is-mid', custoSub: '× 2.000/ano = R$280',
+            conf: '94%',  confCls: 'is-low'
+          },
+          ag: {
+            // For redação the tool calls are wasted — and the demo MUST show
+            // failure. The agêntico dot loops back: "calc" fails, dot rewinds
+            // to "tools", retries, then continues. Confirms that the wrong
+            // tool for the job costs more and is less reliable.
+            stations: [
+              { icon: '📅', text: 'tools' },
+              { icon: '🧮', text: 'calc' },
+              { icon: '🔁', text: 'retry' },
+              { icon: '📄', text: 'redigir' }
+            ],
+            duration: 13400,
+            tempo: '13,4s', tempoCls: 'is-high',
+            custo: 'R$0,68', custoCls: 'is-high', custoSub: '× 2.000/ano = R$1.360',
+            conf: '76%',  confCls: 'is-mid',
+            fail: true
+          },
+          winner: 'tra'  // Map to 'trad' label below
+        }
+      };
+      // Normalize winner key for the redação scenario.
+      SCENARIOS.redacao.winner = 'trad';
+
+      const WINNER_LABEL = {
+        trad: 'TRADICIONAL',
+        rac:  'RACIOCÍNIO',
+        ag:   'AGÊNTICO'
+      };
+
+      // ── DOM refs ────────────────────────────────────────
+      const scBtns      = document.querySelectorAll('.k13-sc-btn');
+      const runBtn      = document.getElementById('k13-run');
+      const resetBtn    = document.getElementById('k13-reset');
+      const winnerLine  = document.getElementById('k13-winner-line');
+      const lanes = {
+        trad: document.querySelector('.k13-lane[data-lane="trad"]'),
+        rac:  document.querySelector('.k13-lane[data-lane="rac"]'),
+        ag:   document.querySelector('.k13-lane[data-lane="ag"]')
+      };
+      const dots = {
+        trad: document.getElementById('k13-dot-trad'),
+        rac:  document.getElementById('k13-dot-rac'),
+        ag:   document.getElementById('k13-dot-ag')
+      };
+      const stationsEls = {
+        trad: document.getElementById('k13-trad-stations'),
+        rac:  document.getElementById('k13-rac-stations'),
+        ag:   document.getElementById('k13-ag-stations')
+      };
+      const bubble = document.getElementById('k13-rac-bubble');
+      const failFlash = document.getElementById('k13-ag-flash');
+
+      // ── State ───────────────────────────────────────────
+      let curScenario = 'prazo';
+      let activeTimers = [];
+
+      function clearTimers() {
+        activeTimers.forEach(t => clearTimeout(t));
+        activeTimers = [];
+      }
+      function defer(fn, ms) {
+        const id = setTimeout(fn, ms);
+        activeTimers.push(id);
+        return id;
+      }
+
+      // ── Render scenario (stations, meters cleared) ──────
+      function renderScenario() {
+        const sc = SCENARIOS[curScenario];
+        scBtns.forEach(b => b.classList.toggle('is-active', b.dataset.sc === curScenario));
+
+        ['trad', 'rac', 'ag'].forEach(k => {
+          const cfg = sc[k];
+          // Rebuild stations
+          const host = stationsEls[k];
+          host.innerHTML = '';
+          cfg.stations.forEach((st, i) => {
+            const div = document.createElement('div');
+            div.className = 'k13-station';
+            div.dataset.idx = String(i);
+            div.innerHTML =
+              '<span class="k13-station-icon">' + st.icon + '</span>' +
+              '<span class="k13-station-text">' + st.text + '</span>';
+            host.appendChild(div);
+          });
+          // Reset dot
+          dots[k].style.transition = 'none';
+          dots[k].style.left = '12px';
+          // Clear meters
+          document.getElementById('k13-' + k + '-tempo').textContent = '—';
+          document.getElementById('k13-' + k + '-tempo').className = 'k13-mtr-val';
+          document.getElementById('k13-' + k + '-custo').textContent = '—';
+          document.getElementById('k13-' + k + '-custo').className = 'k13-mtr-val';
+          document.getElementById('k13-' + k + '-conf').textContent = '—';
+          document.getElementById('k13-' + k + '-conf').className = 'k13-mtr-val';
+          document.getElementById('k13-' + k + '-tempo-sub').textContent = '';
+          document.getElementById('k13-' + k + '-custo-sub').textContent = '';
+          document.getElementById('k13-' + k + '-conf-sub').textContent = '';
+          // Clear winner halo
+          lanes[k].classList.remove('is-winner');
+        });
+        bubble.classList.remove('is-on');
+        failFlash.classList.remove('is-on');
+        winnerLine.classList.remove('is-on');
+        winnerLine.innerHTML = '🏆 escolha um cenário e clique <b>Executar os três</b> para ver qual formato cabe.';
+      }
+
+      // ── Run race ────────────────────────────────────────
+      function runRace() {
+        clearTimers();
+        renderScenario();
+        runBtn.setAttribute('disabled', 'true');
+        const sc = SCENARIOS[curScenario];
+
+        // ── TRADICIONAL ── single sprint
+        defer(() => moveDot('trad', sc.trad.duration, sc.trad.stations.length, false), 100);
+        defer(() => writeMeters('trad', sc.trad), sc.trad.duration + 200);
+
+        // ── RACIOCÍNIO ── step-by-step with pauses + thinking bubble
+        defer(() => stepRaciocinio(sc.rac), 100);
+        defer(() => writeMeters('rac', sc.rac), sc.rac.duration + 200);
+
+        // ── AGÊNTICO ── tool path, possible failure-loop
+        defer(() => stepAgentico(sc.ag), 100);
+        defer(() => writeMeters('ag', sc.ag), sc.ag.duration + 200);
+
+        // ── Winner ── halo + bottom card after all lanes settle
+        const maxDur = Math.max(sc.trad.duration, sc.rac.duration, sc.ag.duration);
+        defer(() => {
+          announceWinner();
+          runBtn.removeAttribute('disabled');
+        }, maxDur + 350);
+      }
+
+      function moveDot(lane, durationMs, stationCount, ignoreFail) {
+        const dot = dots[lane];
+        dot.style.transition = 'left ' + durationMs + 'ms cubic-bezier(.4,0,.2,1)';
+        // Trigger reflow so transition picks up the new transition value.
+        void dot.offsetWidth;
+        dot.style.left = 'calc(100% - 12px)';
+        // Light stations one by one in proportion to duration / count.
+        const stations = stationsEls[lane].querySelectorAll('.k13-station');
+        stations.forEach((s, i) => {
+          defer(() => {
+            s.classList.add('is-hit');
+          }, durationMs * (i + 0.5) / stations.length);
+        });
+      }
+
+      // Raciocínio: step-by-step with explicit pauses + "pensando…" bubble.
+      // Implementation: chunk the duration into N station segments. At each
+      // station: dot jumps to its position over (segDur * 0.55), then pauses
+      // for (segDur * 0.45) with the bubble visible.
+      function stepRaciocinio(cfg) {
+        const dot = dots.rac;
+        const segs = cfg.stations.length;
+        const segDur = cfg.duration / segs;
+        const moveMs = segDur * 0.55;
+        const pauseMs = segDur * 0.45;
+        const stations = stationsEls.rac.querySelectorAll('.k13-station');
+        let t = 0;
+        stations.forEach((s, i) => {
+          defer(() => {
+            // Compute target left as a % of track width.
+            const pct = (i + 1) / (segs + 0.0) * 100;  // 100% of track at last station
+            dot.style.transition = 'left ' + moveMs + 'ms cubic-bezier(.4,0,.2,1)';
+            dot.style.left = 'calc(' + pct + '% - 12px)';
+            // Light station
+            s.classList.add('is-hit');
+            // Show bubble at this station
+            bubble.classList.add('is-on');
+            bubble.style.transition = 'left ' + moveMs + 'ms cubic-bezier(.4,0,.2,1), opacity 220ms';
+            bubble.style.left = 'calc(' + pct + '% - 12px)';
+            bubble.textContent = ['identificando…','calculando…','verificando…','concluindo…'][Math.min(i, 3)];
+          }, t);
+          t += moveMs;
+          defer(() => {
+            // pause: bubble stays on; dot doesn't move
+          }, t);
+          t += pauseMs;
+        });
+        defer(() => bubble.classList.remove('is-on'), cfg.duration);
+      }
+
+      // Agêntico: walks tool stations. On scenarios with fail=true, after the
+      // second station the dot jumps BACK to the first, the fail flash blinks
+      // for 800ms, then continues forward — demonstrating that the wrong tool
+      // for the job costs time and confidence.
+      function stepAgentico(cfg) {
+        const dot = dots.ag;
+        const segs = cfg.stations.length;
+        const stations = stationsEls.ag.querySelectorAll('.k13-station');
+        // Reserve ~900ms for the failure loop if present.
+        const failOverhead = cfg.fail ? 1200 : 0;
+        const effective = cfg.duration - failOverhead;
+        const segDur = effective / segs;
+
+        let t = 0;
+        for (let i = 0; i < segs; i++) {
+          const idx = i;
+          defer(() => {
+            const pct = (idx + 1) / segs * 100;
+            dot.style.transition = 'left ' + segDur + 'ms cubic-bezier(.4,0,.2,1)';
+            dot.style.left = 'calc(' + pct + '% - 12px)';
+            stations[idx].classList.add('is-hit');
+          }, t);
+          t += segDur;
+
+          // Failure: after station 2 (index 1), rewind to station 0 and blink.
+          if (cfg.fail && idx === 1) {
+            defer(() => {
+              stations[1].classList.remove('is-hit');
+              stations[1].classList.add('is-fail');
+              failFlash.classList.add('is-on');
+              dot.style.transition = 'left 320ms cubic-bezier(.4,0,.2,1)';
+              dot.style.left = 'calc(' + (1/segs * 100) + '% - 12px)';
+            }, t);
+            t += 800;
+            defer(() => {
+              failFlash.classList.remove('is-on');
+              stations[1].classList.remove('is-fail');
+            }, t);
+            t += 400;
+          }
+        }
+      }
+
+      function writeMeters(lane, cfg) {
+        const tempo = document.getElementById('k13-' + lane + '-tempo');
+        const custo = document.getElementById('k13-' + lane + '-custo');
+        const conf  = document.getElementById('k13-' + lane + '-conf');
+        const custoSub = document.getElementById('k13-' + lane + '-custo-sub');
+        tempo.textContent = cfg.tempo;
+        tempo.classList.add(cfg.tempoCls);
+        custo.textContent = cfg.custo;
+        custo.classList.add(cfg.custoCls);
+        custoSub.textContent = cfg.custoSub || '';
+        conf.textContent  = cfg.conf;
+        conf.classList.add(cfg.confCls);
+      }
+
+      function announceWinner() {
+        const sc = SCENARIOS[curScenario];
+        const winnerKey = sc.winner;
+        // Apply gold halo
+        Object.keys(lanes).forEach(k => {
+          lanes[k].classList.toggle('is-winner', k === winnerKey);
+        });
+        winnerLine.classList.add('is-on');
+        winnerLine.innerHTML =
+          '🏆 Para esta tarefa, o melhor formato é <b>' + WINNER_LABEL[winnerKey] + '</b>. ' +
+          '<span style="color: var(--text-dim); font-style: italic;">' +
+          'Mais lento ou caro não significa melhor.</span>';
+      }
+
+      function reset() {
+        clearTimers();
+        runBtn.removeAttribute('disabled');
+        renderScenario();
+      }
+
+      // ── Wire up ─────────────────────────────────────────
+      scBtns.forEach(b => b.addEventListener('click', () => {
+        curScenario = b.dataset.sc;
+        reset();
+      }));
+      runBtn.addEventListener('click', runRace);
+      resetBtn.addEventListener('click', reset);
+
+      // ── Theme sync ──────────────────────────────────────
+      window.addEventListener('storage', e => {
+        if (e.key !== 'bs_theme') return;
+        const t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+
+      // ── Init ────────────────────────────────────────────
+      renderScenario();
+    })();
+  </script>
+</section>
+</body>
+</html>

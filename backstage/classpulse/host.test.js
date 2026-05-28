@@ -17,8 +17,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const JS_DIR = path.join(__dirname, 'js');
+const CSS_DIR = path.join(__dirname, 'css');
 const HOST_HTML = path.join(__dirname, 'host.html');
 function modPath(f) { return path.join(JS_DIR, f); }
+function cssPath(f) { return path.join(CSS_DIR, f); }
 
 // Modules load in this order. Page comes last because it consumes every other
 // namespace inside its DOMContentLoaded handler.
@@ -32,6 +34,20 @@ const MODULE_FILES = [
   'host-history.js',
   'host-layout.js',
   'host-page.js',
+];
+
+// CSS partials. Mirror the JS split: each *.css file owns the rules for the
+// matching JS module (plus host-shell.css for chrome / container / screen
+// states and host-modal.css for the trail modal overlay).
+const CSS_FILES = [
+  'host-shell.css',
+  'host-session-bar.css',
+  'host-composer.css',
+  'host-active-q.css',
+  'host-history.css',
+  'host-sqa.css',
+  'host-layout.css',
+  'host-modal.css',
 ];
 
 // --- DOM mock helpers (mirrors trilha.test.js shape) ----------------------
@@ -435,6 +451,34 @@ test('host.html references each host-*.js via <script src>', () => {
   }
 });
 
+// --- Structural: CSS modularization ---------------------------------------
+
+test('all 8 CSS partials exist on disk', () => {
+  for (const f of CSS_FILES) {
+    assert.equal(fs.existsSync(cssPath(f)), true, 'missing ' + f);
+  }
+});
+
+test('host.html no longer carries a long inline <style> block', () => {
+  const html = fs.readFileSync(HOST_HTML, 'utf8');
+  const re = /<style[^>]*>([\s\S]*?)<\/style>/g;
+  let m;
+  let longest = 0;
+  while ((m = re.exec(html)) !== null) {
+    if (m[1].length > longest) longest = m[1].length;
+  }
+  // Allow tiny <style> blocks (under 200 chars) for one-off page-scoped rules.
+  assert.ok(longest < 200, 'host.html still has a large inline <style> block (' + longest + ' chars)');
+});
+
+test('host.html references each host-*.css via <link rel="stylesheet">', () => {
+  const html = fs.readFileSync(HOST_HTML, 'utf8');
+  for (const f of CSS_FILES) {
+    const re = new RegExp('<link[^>]*href="[^"]*' + f.replace('.', '\\.') + '[^"]*"');
+    assert.match(html, re, 'host.html missing <link> for ' + f);
+  }
+});
+
 // --- Module loading: 9 namespaces ----------------------------------------
 
 test('CPHost namespace + 9 sub-namespaces exist after loading all modules', () => {
@@ -637,13 +681,156 @@ test('Layout.saveLayout writes State.layoutState to localStorage as JSON', () =>
 
 // --- Integration: Page.init boot ------------------------------------------
 
-test('CPHost.Page.init wires Topbar, State, and the rest without crashing', () => {
-  const { ctx, calls } = loadHost();
-  ctx.CPHost.Page.init();
-  assert.ok(calls.topbarInit >= 1, 'Topbar.init must be called by Page.init');
-  assert.equal(ctx.CPHost.State.AUTH_TOKEN, 'test-token');
-  // Layout should have been applied (layoutState materialized).
+test('CPHost.mount on document.body wires Topbar, State, and the rest without crashing', () => {
+  // Standalone path: State.root === document.body. Page.init is allowed to
+  // call Topbar.init in this case (the page owns its own topbar).
+  const { ctx, doc, calls } = loadHost();
+  ctx.CPHost.mount(doc.body, { sessionCode: 'X', authToken: 'tok-x' });
+  assert.ok(calls.topbarInit >= 1, 'Topbar.init must be called when standalone-mounted');
+  assert.equal(ctx.CPHost.State.AUTH_TOKEN, 'tok-x');
   assert.ok(ctx.CPHost.State.layoutState, 'State.layoutState must be set by Page.init -> Layout.init');
+});
+
+test('CPHost.mount on a non-body root does NOT call Topbar.init (parent page owns it)', () => {
+  // Embedded path: State.root is a sidebar div. Page.init must skip Topbar.init
+  // to avoid stacking a second topbar over the parent page's existing one.
+  const { ctx, doc, calls } = loadHost();
+  // Use a scope that doesn't have the host markup; we don't care that
+  // downstream init() calls fail to find their elements -- we only assert
+  // that Topbar.init was skipped before init() did anything else.
+  let topbarBefore = calls.topbarInit;
+  try {
+    const scope = doc.createElement('div');
+    doc.body.appendChild(scope);
+    ctx.CPHost.mount(scope, { sessionCode: 'X', authToken: 't' });
+  } catch (_) { /* expected -- module inits crash on empty scope */ }
+  assert.equal(calls.topbarInit, topbarBefore, 'Topbar.init must NOT be called for embedded mounts');
+});
+
+// --- Sidebar architecture: scoped lookups + mount/unmount lifecycle -------
+
+test('CPHost exposes $(id), qs(selector), qsa(selector) DOM helpers', () => {
+  const { ctx } = loadHost();
+  assert.equal(typeof ctx.CPHost.$, 'function', 'CPHost.$ must exist');
+  assert.equal(typeof ctx.CPHost.qs, 'function', 'CPHost.qs must exist');
+  assert.equal(typeof ctx.CPHost.qsa, 'function', 'CPHost.qsa must exist');
+});
+
+test('CPHost.$ falls back to document.getElementById when State.root is null', () => {
+  const { ctx, doc } = loadHost();
+  ctx.CPHost.State.root = null;
+  const el = ctx.CPHost.$('q-text');
+  assert.ok(el, 'should find #q-text via fallback');
+  assert.equal(el, doc.getElementById('q-text'));
+});
+
+test('CPHost.$ scopes to State.root when set', () => {
+  const { ctx, doc } = loadHost();
+  // Build an isolated sub-tree containing one element with id="scoped-id".
+  const scope = doc.createElement('div');
+  scope.id = 'host-root';
+  const child = doc.createElement('div');
+  child.id = 'scoped-id';
+  scope.appendChild(child);
+  doc.body.appendChild(scope);
+  ctx.CPHost.State.root = scope;
+  const found = ctx.CPHost.$('scoped-id');
+  assert.equal(found, child, 'CPHost.$("scoped-id") should find the scoped child');
+});
+
+// Mount tests use doc.body as the rootEl (it already has the full host
+// element ID set thanks to makeHostDoc). State.root === doc.body is the
+// shape host.html itself will take after Phase C7. For scoping behavior
+// alone, see the $(id) scopes test above.
+
+test('CPHost.mount(rootEl, opts) sets State.root + sessionCode + AUTH_TOKEN', () => {
+  const { ctx, doc } = loadHost();
+  ctx.CPHost.mount(doc.body, { sessionCode: 'XYZ789', authToken: 'tok-xyz' });
+  assert.equal(ctx.CPHost.State.root, doc.body);
+  assert.equal(ctx.CPHost.State.sessionCode === 'XYZ789' || ctx.CPHost.State.urlCode === 'XYZ789', true,
+    'session code must be on State.sessionCode OR State.urlCode after mount');
+  assert.equal(ctx.CPHost.State.AUTH_TOKEN, 'tok-xyz');
+});
+
+test('CPHost.mount adds .host-root class to the root element', () => {
+  const { ctx, doc } = loadHost();
+  ctx.CPHost.mount(doc.body, { sessionCode: 'X', authToken: 't' });
+  assert.equal(doc.body.classList.contains('host-root'), true);
+});
+
+test('CPHost.unmount clears State.root + sessionCode + activeQId', () => {
+  const { ctx, doc } = loadHost();
+  ctx.CPHost.mount(doc.body, { sessionCode: 'X', authToken: 't' });
+  ctx.CPHost.State.activeQId = 'q42';
+  ctx.CPHost.unmount();
+  assert.equal(ctx.CPHost.State.root, null);
+  assert.equal(ctx.CPHost.State.sessionCode, null);
+  assert.equal(ctx.CPHost.State.activeQId, null);
+});
+
+test('CPHost.unmount removes .host-root class from the previous root', () => {
+  const { ctx, doc } = loadHost();
+  ctx.CPHost.mount(doc.body, { sessionCode: 'X', authToken: 't' });
+  assert.equal(doc.body.classList.contains('host-root'), true);
+  ctx.CPHost.unmount();
+  assert.equal(doc.body.classList.contains('host-root'), false);
+});
+
+test('CPHost.State tracks document-level listeners in _docListeners', () => {
+  const { ctx } = loadHost();
+  assert.ok(Array.isArray(ctx.CPHost.State._docListeners),
+    'State._docListeners must be an array for unmount cleanup');
+});
+
+test('mount -> unmount -> mount cycle is idempotent (no state leak)', () => {
+  // Two consecutive mounts on the same root (doc.body). After unmount, all
+  // State must be cleared; after re-mount, it must reflect the new opts only.
+  const { ctx, doc } = loadHost();
+  ctx.CPHost.mount(doc.body, { sessionCode: 'AAA', authToken: 't1' });
+  ctx.CPHost.unmount();
+
+  ctx.CPHost.mount(doc.body, { sessionCode: 'BBB', authToken: 't2' });
+  assert.equal(ctx.CPHost.State.root, doc.body);
+  assert.equal(ctx.CPHost.State.AUTH_TOKEN, 't2');
+  assert.equal(doc.body.classList.contains('host-root'), true);
+});
+
+test('Share.applyHostedUI toggles is-hosted on State.root (not document.body)', () => {
+  const { ctx, doc } = loadHost();
+  ctx.CPHost.mount(doc.body, { sessionCode: 'X', authToken: 't' });
+  ctx.CPHost.Share.applyHostedUI(true);
+  assert.equal(doc.body.classList.contains('is-hosted'), true,
+    'is-hosted class should land on State.root');
+  ctx.CPHost.Share.applyHostedUI(false);
+  assert.equal(doc.body.classList.contains('is-hosted'), false);
+});
+
+// --- Sidebar shell in classpulse/index.html -------------------------------
+
+test('classpulse/index.html has a Sessões right-pane container with id host-mount-target', () => {
+  const idxPath = path.join(__dirname, 'index.html');
+  const html = fs.readFileSync(idxPath, 'utf8');
+  // Looking for an element with id="host-mount-target" inside a panel.
+  assert.match(html, /id=["']host-mount-target["']/,
+    'classpulse/index.html must contain a #host-mount-target element');
+});
+
+test('classpulse/index.html references the CPHost modules', () => {
+  const idxPath = path.join(__dirname, 'index.html');
+  const html = fs.readFileSync(idxPath, 'utf8');
+  for (const f of MODULE_FILES) {
+    const re = new RegExp('<script src="[^"]*' + f.replace('.', '\\.') + '[^"]*"');
+    assert.match(html, re, 'classpulse/index.html missing <script src> for ' + f);
+  }
+});
+
+test('classpulse/index.html links the host CSS partials', () => {
+  const idxPath = path.join(__dirname, 'index.html');
+  const html = fs.readFileSync(idxPath, 'utf8');
+  for (const f of CSS_FILES) {
+    const re = new RegExp('<link[^>]*href="[^"]*' + f.replace('.', '\\.') + '[^"]*"');
+    assert.match(html, re, 'classpulse/index.html missing <link> for ' + f);
+  }
 });
 
 // --- Runner ---------------------------------------------------------------

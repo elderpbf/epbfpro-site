@@ -169,32 +169,30 @@
   border-color: rgba(255, 255, 255, 0.28);
 }
 
-/* Divider above the password fallback toggle. */
+/* Bundle Q: divider between primary password sign-in and secondary Google
+   sign-in. The "ou" label sits centered over a horizontal hairline. */
 .bs-auth-divider {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
+  position: relative;
+  margin: 1.5rem 0 1rem;
   text-align: center;
-  border-top: 1px solid rgba(20, 184, 166, 0.12);
 }
-[data-theme="dark"] .bs-auth-divider {
-  border-top-color: rgba(255, 255, 255, 0.08);
+.bs-auth-divider::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: rgba(20, 184, 166, 0.18);
 }
-
-/* Subtle text-link toggle for revealing the password input. */
-.bs-auth-toggle {
-  background: none;
-  border: none;
+.bs-auth-divider-text {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.75rem;
+  background: var(--card-bg, #fff);
   color: var(--text-secondary);
-  font-family: inherit;
   font-size: 0.82rem;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color .15s;
 }
-.bs-auth-toggle:hover {
-  color: var(--text-primary);
+[data-theme="dark"] .bs-auth-divider::before {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* =========================================================
@@ -437,6 +435,7 @@
   width: 20px; height: 20px;
   color: var(--primary);
 }
+
 
 .bs-logout-btn {
   padding: 0.4rem 1rem;

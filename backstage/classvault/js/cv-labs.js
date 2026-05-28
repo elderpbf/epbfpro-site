@@ -27,6 +27,31 @@ window.CVLabs = (function() {
       key: 'k4',
       title: 'Perdido no meio',
       summary: 'Acurácia cai onde a atenção afrouxa'
+    },
+    {
+      key: 'k9',
+      title: 'Petição envenenada',
+      summary: 'Texto invisível vira instrução ao modelo'
+    },
+    {
+      key: 'k10',
+      title: 'Cápsula do GPT',
+      summary: 'Setup pinado uma vez, reutilizado em todo turno'
+    },
+    {
+      key: 'k11',
+      title: 'Confiança vs Fundamento',
+      summary: 'Soa convicto mesmo quando inventa'
+    },
+    {
+      key: 'k12',
+      title: 'Lavagem de informação',
+      summary: 'Repetição em escala vira "conhecimento" no peso'
+    },
+    {
+      key: 'k13',
+      title: 'Três velocidades',
+      summary: 'Tradicional, raciocínio e agêntico são formatos diferentes'
     }
   ];
 
