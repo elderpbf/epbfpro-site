@@ -750,6 +750,8 @@ body.cv-focus .cv-focus-hot {
   height: 48px;
   flex-shrink: 0;
   width: 100%;
+  box-sizing: border-box;   /* keep the 20px right padding inside 100% width so
+                               the rightmost action button isn't clipped */
   padding: 0 20px;
   border-top: 1px solid var(--border);
   background: var(--surface);
@@ -983,8 +985,7 @@ body.cv-focus .cv-focus-hot {
   width: 64px;
   height: 56px;
   background: var(--surface);
-  /* Absorb clicks so the masked Google control (Slides badge / preview pop-out)
-     can't be triggered through the mask. */
+  /* Absorb clicks so the masked "Open in Slides" badge can't be triggered. */
   pointer-events: auto;
   z-index: 1;
 }

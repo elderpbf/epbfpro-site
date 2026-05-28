@@ -135,7 +135,11 @@ CVTypes.register('slide', {
 CVTypes.register('drive_file', {
   textResize: false,
   actions: function(item) {
-    var url = (item.meta_json && item.meta_json.url) || '';
+    // Synthetic Drive items carry meta_json.file_id but often no meta_json.url;
+    // build the Drive "view" link from the id so ↗ Janela always reaches the bar.
+    var meta = (item && item.meta_json) || {};
+    var url = meta.url ||
+      (meta.file_id ? 'https://drive.google.com/file/d/' + meta.file_id + '/view' : '');
     if (!url) return [];
     return [{
       id: 'popup',
