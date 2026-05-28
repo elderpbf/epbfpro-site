@@ -698,6 +698,9 @@ var sessions = [];
 var presentations = [];
 var selectedSessionCode = null;
 var _hostBodyCache = null;
+// Sidebar starts pinned-open while no session is mounted. Selecting a session
+// flips this to false and the overlay/auto-hide behavior takes over.
+var _sidebarPinned = true;
 
 // Lazily fetch host.html, extract its body content (everything between <body>
 // and the first <script src=>), cache for subsequent mounts.
@@ -731,7 +734,9 @@ async function mountHostForSession(session) {
     } catch (_) {}
     // Refresh sidebar selection highlight (re-render is cheap and keeps state correct).
     renderSessions();
-    // Auto-close the overlay so the user can see the host immediately.
+    // First session pick: flip the sidebar from pinned-open to overlay mode
+    // (hides + reveals on left-edge hover from now on).
+    _sidebarPinned = false;
     _closeSidebarOverlay();
   } catch (e) {
     if (typeof showToastError === 'function') showToastError('Erro ao montar sessão: ' + e.message);
@@ -753,6 +758,8 @@ function _openSidebarOverlay() {
   var layout = document.getElementById('sessions-layout');
   if (!layout) return;
   layout.classList.add('cp-sm--open');
+  // Pinned mode (no session selected yet): leave it open, no hide timer.
+  if (_sidebarPinned) return;
   clearTimeout(_sidebarHideTimer);
   _sidebarHideTimer = setTimeout(_maybeHideSidebar, SIDEBAR_HIDE_DELAY);
 }
@@ -760,6 +767,9 @@ function _closeSidebarOverlay() {
   var layout = document.getElementById('sessions-layout');
   if (!layout) return;
   clearTimeout(_sidebarHideTimer);
+  // Pinned mode: refuse to close. The sidebar stays open until a session
+  // is selected.
+  if (_sidebarPinned) return;
   layout.classList.remove('cp-sm--open');
 }
 function _maybeHideSidebar() {
@@ -798,12 +808,15 @@ function _maybeHideSidebar() {
 })();
 
 // Restore the previously-selected session from ?session= on initial load.
+// Returns true when a session was found and mounted, false otherwise.
 function _restoreSessionFromUrl() {
   var params = new URLSearchParams(location.search);
   var code = params.get('session');
-  if (!code) return;
+  if (!code) return false;
   var match = sessions.find(function (s) { return s.code === code; });
-  if (match) mountHostForSession(match);
+  if (!match) return false;
+  mountHostForSession(match);
+  return true;
 }
 
 async function loadSessions() {
@@ -818,10 +831,13 @@ async function loadSessions() {
     sessions = [];
   }
   renderSessions();
-  // First-load only: if ?session=X is in the URL, mount that session.
+  // First-load only: if ?session=X is in the URL, mount that session. Otherwise
+  // pin the sidebar open so the user immediately sees the picker without
+  // having to point at the left edge.
   if (!_restoreSessionFromUrl._fired) {
     _restoreSessionFromUrl._fired = true;
-    _restoreSessionFromUrl();
+    var hadSession = _restoreSessionFromUrl();
+    if (!hadSession) _openSidebarOverlay();
   }
 }
 
