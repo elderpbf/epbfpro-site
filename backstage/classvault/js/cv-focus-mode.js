@@ -41,6 +41,7 @@ window.CVFocusMode = (function () {
     });
     if (_btn) _btn.id = 'cv-focus-btn';
 
+    _createHotZones();
     document.addEventListener('mousemove', _onMouseMove);
     document.addEventListener('keydown', _onKeyDown);
     _wireBarHover();
@@ -49,6 +50,24 @@ window.CVFocusMode = (function () {
     var stored = null;
     try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
     if (stored !== '0') enable();
+  }
+
+  // A cross-origin iframe (Google Drive / Slides preview) swallows all pointer
+  // events, so document mousemove never sees the cursor reach an edge while a
+  // full-bleed embed is showing. These thin fixed strips sit ABOVE the iframe
+  // (z below the bars) and capture mouseenter so the reveal still fires. They
+  // only capture in focus mode (pointer-events gated by body.cv-focus in CSS).
+  function _createHotZones() {
+    _makeHotZone('cv-focus-hot cv-focus-hot--top', _showTop);
+    _makeHotZone('cv-focus-hot cv-focus-hot--left', _showSide);
+    _makeHotZone('cv-focus-hot cv-focus-hot--bottom', _showBottom);
+  }
+  function _makeHotZone(cls, onEnter) {
+    var el = document.createElement('div');
+    el.className = cls;
+    el.setAttribute('aria-hidden', 'true');
+    el.addEventListener('mouseenter', function () { if (_on) onEnter(); });
+    document.body.appendChild(el);
   }
 
   function toggle() { if (_on) disable(); else enable(); }

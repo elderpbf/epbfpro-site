@@ -43,9 +43,10 @@
   }
 
   // isSlide=true adds the slide-clip shell (oversize + overflow:hidden hides
-  // Google's bottom control bar) and the corner mask (covers the "Open in
-  // Slides" badge). Non-slide Drive files keep the plain wrap so their /preview
-  // content is never cropped. Styles live in classvault.css.
+  // Google's bottom control bar) so slide content is never cropped. EVERY Drive
+  // embed gets the top-right corner mask, which covers Google's chrome there:
+  // the Slides "Open in Slides" badge and, on /preview files, the "open in new
+  // window" pop-out button. Styles live in classvault.css.
   function _buildIframeWrap(src, isSlide) {
     const wrap = document.createElement('div');
     wrap.className = isSlide ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
@@ -55,12 +56,10 @@
     iframe.setAttribute('allow', 'autoplay; encrypted-media; clipboard-write; fullscreen');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
     wrap.appendChild(iframe);
-    if (isSlide) {
-      const mask = document.createElement('div');
-      mask.className = 'cv-slides-corner-mask';
-      mask.setAttribute('aria-hidden', 'true');
-      wrap.appendChild(mask);
-    }
+    const mask = document.createElement('div');
+    mask.className = 'cv-slides-corner-mask';
+    mask.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(mask);
     return wrap;
   }
 

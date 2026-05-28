@@ -102,6 +102,21 @@ body.cv-focus.cv-focus--bottom .cv-main-crumb {
   opacity: 1;
 }
 
+/* Edge hot zones for focus-mode reveal. Transparent strips above the content
+   (and any cross-origin embed iframe), below the bars. pointer-events only
+   while focus mode is on, so they never block the iframe edges otherwise. */
+.cv-focus-hot {
+  position: fixed;
+  z-index: 9700;
+  pointer-events: none;
+}
+body.cv-focus .cv-focus-hot {
+  pointer-events: auto;
+}
+.cv-focus-hot--top    { top: 0; left: 0; right: 0; height: 8px; }
+.cv-focus-hot--left   { top: 0; bottom: 0; left: 0; width: 8px; }
+.cv-focus-hot--bottom { bottom: 0; left: 0; right: 0; height: 8px; }
+
 /* ── Sidebar (side menu) ──────────────────────────────────── */
 
 .cv-sm {
@@ -968,7 +983,10 @@ body.cv-focus.cv-focus--bottom .cv-main-crumb {
   width: 64px;
   height: 56px;
   background: var(--surface);
-  pointer-events: none;
+  /* Absorb clicks so the masked Google control (Slides badge / preview pop-out)
+     can't be triggered through the mask. */
+  pointer-events: auto;
+  z-index: 1;
 }
 /* Card: structural flex column. Header is a fixed sibling above the
    scrollable body — content does NOT scroll under it. */
