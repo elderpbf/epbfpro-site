@@ -915,18 +915,35 @@ body.cv-focus.cv-focus--side .cv-sm {
   letter-spacing: -0.02em;
 }
 
-/* Drive-Slides inline embed shell (matches generic .cv-renderer-iframe-wrap
-   sizing). Bundle D ditched the oversize-clip technique because it cropped
-   doc content; the popup launcher action moved into the bottom bar via
-   CVTypes. The corner mask covers Google's "Open in Slides" badge. */
-.cv-slides-inline {
+/* Slide embed shell. Google Slides /embed renders a persistent control bar
+   anchored to the very bottom edge of the iframe. We hide it by oversizing the
+   iframe height past the shell and clipping the overflow. The deck is
+   letterboxed inside the embed, so the extra height pushes only the bar out of
+   view; slide content stays fully visible.
+
+   Scoped to slide surfaces ONLY:
+     .cv-slides-inline                         Drive popup slides (_renderPopupCard)
+     .cv-renderer-iframe-wrap.cv-slides-clip   Drive presentation files (CVDriveViewer)
+                                               and slide-type published embeds (_mountIframe)
+   Drive *files* (/preview PDFs/Docs) keep the plain .cv-renderer-iframe-wrap so
+   their content is never cropped — this is why Bundle D dropped the old blanket
+   clip; restricting it to presentations resolves that conflict. The corner mask
+   covers Google's "Open in Slides" badge. */
+.cv-slides-inline,
+.cv-renderer-iframe-wrap.cv-slides-clip {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
-.cv-slides-inline .cv-renderer-iframe {
+.cv-slides-inline .cv-renderer-iframe,
+.cv-renderer-iframe-wrap.cv-slides-clip .cv-renderer-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 60px);
+  border: 0;
 }
 .cv-slides-corner-mask {
   position: absolute;

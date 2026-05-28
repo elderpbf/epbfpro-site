@@ -1476,7 +1476,10 @@ function _mountIframe(url, container, emptyMsg, opts) {
   }
   container.innerHTML = '';
   const wrap = document.createElement('div');
-  wrap.className = 'cv-renderer-iframe-wrap';
+  // opts.mask marks a slide embed: add cv-slides-clip so the oversize+clip rule
+  // (classvault.css) hides Google's bottom control bar. Non-slide iframes keep
+  // the plain wrap.
+  wrap.className = opts.mask ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
   const iframe = document.createElement('iframe');
   iframe.className = 'cv-renderer-iframe';
   iframe.src = url;

@@ -28,24 +28,39 @@
     return m ? m[1] : '';
   }
 
+  function _isSlide(item) {
+    const meta = (item && item.meta_json) || {};
+    return meta.mimeType === 'application/vnd.google-apps.presentation';
+  }
+
   function previewSrcFor(item) {
     const meta = (item && item.meta_json) || {};
-    if (meta.mimeType === 'application/vnd.google-apps.presentation' && meta.url) {
+    if (_isSlide(item) && meta.url) {
       return meta.url;
     }
     const id = meta.file_id || _extractFileId(meta.url);
     return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';
   }
 
-  function _buildIframeWrap(src) {
+  // isSlide=true adds the slide-clip shell (oversize + overflow:hidden hides
+  // Google's bottom control bar) and the corner mask (covers the "Open in
+  // Slides" badge). Non-slide Drive files keep the plain wrap so their /preview
+  // content is never cropped. Styles live in classvault.css.
+  function _buildIframeWrap(src, isSlide) {
     const wrap = document.createElement('div');
-    wrap.className = 'cv-renderer-iframe-wrap';
+    wrap.className = isSlide ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
     const iframe = document.createElement('iframe');
     iframe.className = 'cv-renderer-iframe';
     iframe.src = src;
     iframe.setAttribute('allow', 'autoplay; encrypted-media; clipboard-write; fullscreen');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
     wrap.appendChild(iframe);
+    if (isSlide) {
+      const mask = document.createElement('div');
+      mask.className = 'cv-slides-corner-mask';
+      mask.setAttribute('aria-hidden', 'true');
+      wrap.appendChild(mask);
+    }
     return wrap;
   }
 
@@ -57,7 +72,7 @@
       return;
     }
     container.innerHTML = '';
-    container.appendChild(_buildIframeWrap(src));
+    container.appendChild(_buildIframeWrap(src, _isSlide(item)));
   }
 
   function openModal(item) {
