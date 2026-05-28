@@ -957,10 +957,9 @@ body.cv-focus .cv-focus-hot {
    Scoped to slide surfaces ONLY:
      .cv-slides-inline                         Drive popup slides (_renderPopupCard)
      .cv-renderer-iframe-wrap.cv-slides-clip   Drive presentation files (CVDriveViewer)
-                                               and slide-type published embeds (_mountIframe)
-   All of these load the chrome-free /embed player (CVDriveViewer.slidesEmbedUrl),
-   so the only chrome is the bottom playbar, which this clip hides — no corner
-   mask needed. Drive *files* (/preview PDFs/Docs) keep the plain
+   Both load the chrome-free /embed player (CVDriveViewer.slidesEmbedUrl), so the
+   only chrome is the bottom playbar, which this clip hides — no corner mask
+   needed. Drive *files* (/preview PDFs/Docs) keep the plain
    .cv-renderer-iframe-wrap so their content is never cropped (the Bundle D
    reason); restricting the clip to presentations resolves that conflict. */
 .cv-slides-inline,

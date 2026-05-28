@@ -1478,18 +1478,14 @@ function _getRenderer(type) {
   return ClassVault.renderers[type] || { render: _renderFallback, cleanup: _cleanupClear };
 }
 
-function _mountIframe(url, container, emptyMsg, opts) {
-  opts = opts || {};
+function _mountIframe(url, container, emptyMsg) {
   if (!url) {
     container.innerHTML = '<div class="cv-renderer-empty">' + _esc(emptyMsg || 'URL não definida para este item.') + '</div>';
     return;
   }
   container.innerHTML = '';
   const wrap = document.createElement('div');
-  // opts.slide marks a Slides /embed: add cv-slides-clip so the oversize+clip
-  // rule (classvault.css) hides the bottom playbar. No corner mask — /embed has
-  // no top chrome to cover. Non-slide iframes keep the plain wrap.
-  wrap.className = opts.slide ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
+  wrap.className = 'cv-renderer-iframe-wrap';
   const iframe = document.createElement('iframe');
   iframe.className = 'cv-renderer-iframe';
   iframe.src = url;
@@ -1500,14 +1496,8 @@ function _mountIframe(url, container, emptyMsg, opts) {
 }
 
 function _renderIframe(item, container) {
-  let url = (item.meta_json && item.meta_json.url) || '';
-  const isSlide = item.type === 'slide';
-  // Presentations (any pasted Google Slides link) render chrome-free through the
-  // shared /embed contract + cv-slides-clip. lab/embed keep their host chrome.
-  if (isSlide && window.CVDriveViewer && CVDriveViewer.slidesEmbedUrl) {
-    url = CVDriveViewer.slidesEmbedUrl(url);
-  }
-  _mountIframe(url, container, undefined, { slide: isSlide });
+  const url = (item.meta_json && item.meta_json.url) || '';
+  _mountIframe(url, container);
 }
 
 function _renderDriveFolder(item, container) {
