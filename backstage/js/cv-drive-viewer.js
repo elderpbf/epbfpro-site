@@ -35,21 +35,25 @@
 
   function previewSrcFor(item) {
     const meta = (item && item.meta_json) || {};
-    if (_isSlide(item) && meta.url) {
-      return meta.url;
+    // Presentations render through the published Slides /embed player (what
+    // ClassForge used): chrome-free except a bottom playbar, which the
+    // cv-slides-clip shell clips. No top-right pop-out → no mask needed. The
+    // generic /file/d/<id>/preview viewer (used for Docs/PDFs) carries Google's
+    // pop-out and is only for non-presentation files.
+    if (_isSlide(item)) {
+      const sid = meta.file_id || _extractFileId(meta.url);
+      if (sid) return 'https://docs.google.com/presentation/d/' + encodeURIComponent(sid) + '/embed?start=false&loop=false';
+      if (meta.url) return meta.url;
     }
     const id = meta.file_id || _extractFileId(meta.url);
     return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';
   }
 
-  // isSlide=true: published Slides /embed renders chrome-free except a bottom
-  // playbar, so we add the slide-clip shell (oversize + overflow:hidden hides
-  // the playbar) plus the top-right corner mask for the small "Open in Slides"
-  // badge — which sits over the slide's own (usually light) corner, so the mask
-  // blends. Non-slide Drive files use Google's /preview viewer, whose pop-out
-  // toolbar auto-hides on its own; a permanent surface-coloured mask there reads
-  // as an ugly box over the grey preview margin, so we DON'T mask those — the
-  // bottom-bar ↗ Janela (CVTypes) is the clean open-in-window affordance instead.
+  // isSlide=true uses the slide-clip shell (oversize + overflow:hidden) to clip
+  // the Slides /embed bottom playbar. No corner mask: /embed has no top-right
+  // pop-out, so there's nothing to cover (the old mask is what showed as a white
+  // square). Non-slide Drive files (/preview) render plain; Google's pop-out
+  // there auto-hides and the bottom-bar ↗ Janela is the clean open affordance.
   function _buildIframeWrap(src, isSlide) {
     const wrap = document.createElement('div');
     wrap.className = isSlide ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
@@ -59,12 +63,6 @@
     iframe.setAttribute('allow', 'autoplay; encrypted-media; clipboard-write; fullscreen');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
     wrap.appendChild(iframe);
-    if (isSlide) {
-      const mask = document.createElement('div');
-      mask.className = 'cv-slides-corner-mask';
-      mask.setAttribute('aria-hidden', 'true');
-      wrap.appendChild(mask);
-    }
     return wrap;
   }
 
