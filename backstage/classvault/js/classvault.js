@@ -1549,9 +1549,25 @@ async function _copyDriveFileText(item) {
   const fileId = meta.file_id;
   const mimeType = meta.mimeType || '';
   if (!fileId) return;
-  if (!window.BS_GOOGLE || !window.BS_GOOGLE.isAuthed()) {
-    if (window.BSToast) BSToast.show('Conecte ao Drive para copiar texto.');
+  if (!window.BS_GOOGLE) {
+    if (window.BSToast) BSToast.show('Drive indisponível: BS_GOOGLE não carregado.');
     return;
+  }
+  // Inline-trigger pattern (Bundle Q follow-up): if not connected, prompt
+  // consent right here so the user doesn't have to find a separate Connect
+  // button. Toast only fires if consent fails or is cancelled.
+  if (!BS_GOOGLE.isAuthed()) {
+    try {
+      await BS_GOOGLE.requestToken({ prompt: 'consent' });
+      if (typeof BS_GOOGLE.init === 'function') BS_GOOGLE.init();
+    } catch (_) {
+      if (window.BSToast) BSToast.show('Conexão Google necessária para copiar texto.');
+      return;
+    }
+    if (!BS_GOOGLE.isAuthed()) {
+      if (window.BSToast) BSToast.show('Conexão Google necessária para copiar texto.');
+      return;
+    }
   }
   try {
     const text = await BS_GOOGLE.drive.getText(fileId, mimeType);

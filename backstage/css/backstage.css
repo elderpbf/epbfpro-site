@@ -436,37 +436,6 @@
   color: var(--primary);
 }
 
-/* Bundle Q: G dot Google connection indicator. Palette-aligned three-state
-   icon: red (--error) when disconnected, amber pulse while connecting, teal
-   (--primary) with a soft halo when connected. Background stays transparent
-   in every state so the dot reads as an icon, not a filled pill. */
-.bs-g-dot[data-g-status="disconnected"] {
-  color: var(--error);
-  border-color: rgba(239,68,68,.3);
-  opacity: 0.7;
-}
-.bs-g-dot[data-g-status="disconnected"]:hover {
-  opacity: 1;
-  border-color: var(--error);
-  background: rgba(239,68,68,.08);
-}
-.bs-g-dot[data-g-status="connecting"] {
-  color: #f59e0b;
-  border-color: rgba(245,158,11,.4);
-  animation: bs-g-dot-pulse 1.2s ease-in-out infinite;
-}
-.bs-g-dot[data-g-status="connected"] {
-  color: var(--primary);
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(20,184,166,.18);
-}
-.bs-g-dot[data-g-status="connected"]:hover {
-  background: rgba(20,184,166,.1);
-}
-@keyframes bs-g-dot-pulse {
-  0%, 100% { opacity: 0.7; }
-  50%      { opacity: 1; }
-}
 
 .bs-logout-btn {
   padding: 0.4rem 1rem;
