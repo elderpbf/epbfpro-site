@@ -340,6 +340,7 @@ window.Topbar = (function() {
       { key: 'apostila',   label: 'Apostila',   href: '/backstage/classtrail/?tab=apostila' },
       { key: 'tarefas',    label: 'Tarefas',    href: '/backstage/classtrail/?tab=tarefas' },
       { key: 'drive',      label: 'Drive',      href: '/backstage/classtrail/?tab=drive' },
+      { key: 'labs',       label: 'Labs',       href: '/backstage/classtrail/?tab=labs' },
       { key: 'presets',    label: 'Presets',    href: '/backstage/classtrail/?tab=presets' },
       { key: 'liberacoes', label: 'Liberações', href: '/backstage/classtrail/?tab=liberacoes' }
     ],

@@ -6,7 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Atenção! · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.0">
+<link rel="stylesheet" href="../css/labs.css?v=1.1">
+<script src="../js/lab-header.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -40,7 +41,7 @@
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
@@ -49,20 +50,40 @@
       font-family: var(--font-display);
     }
 
-    /* ── Header ───────────────────────────────────────────── */
-    .k1-header { text-align: center; }
-    .k1-header h1 {
-      font-size: clamp(32px, 3vw, 48px);
-      font-weight: 800;
+    /* ── Header (brand + title) — consistent across all labs ─ */
+    .k1-header {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 1.2rem;
+      align-items: center;
+    }
+    .k1-brand {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .lab-logo {
+      height: clamp(40px, 5vh, 60px);
+      width: auto;
+      display: block;
+    }
+    .lab-logo--dark { display: none; }
+    [data-theme="dark"] .lab-logo--light { display: none; }
+    [data-theme="dark"] .lab-logo--dark { display: block; }
+    .k1-title {
       margin: 0;
+      font-size: clamp(28px, 2.6vw, 44px);
+      font-weight: 800;
       letter-spacing: -0.01em;
       line-height: 1.05;
     }
-    .k1-header .subtitle {
-      font-size: clamp(17px, 1.3vw, 22px);
+    .k1-title-sub {
+      display: block;
+      font-size: clamp(14px, 1.1vw, 18px);
       color: var(--text-dim);
-      margin: 0.3rem 0 0;
       font-weight: 400;
+      letter-spacing: 0.01em;
+      margin-top: 0.2rem;
     }
 
     /* ── Section labels ───────────────────────────────────── */
@@ -398,7 +419,103 @@
       margin: 0;
       letter-spacing: 0.005em;
     }
+
+    /* ── Responsive: phone / narrow portrait ─────────────── */
+    @media (max-width: 700px) {
+      .k1-panel {
+        padding: 0.6rem 0.9rem 0.6rem;
+        gap: 0.55rem;
+      }
+      .k1-header {
+        column-gap: 0.6rem;
+      }
+      .lab-logo { height: clamp(28px, 9vw, 40px); }
+      .k1-title { font-size: 20px; }
+      .k1-title-sub { font-size: 12px; }
+      .k1-type-wrap { padding: 0.55rem 0.75rem 0.7rem; }
+      .k1-type-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+      }
+      .k1-type-input {
+        width: 100%;
+        font-size: 26px;
+        padding: 0.45rem 0.9rem;
+      }
+      .k1-type-suggestion {
+        font-size: 18px;
+        flex-wrap: wrap;
+      }
+      .k1-sug-chip { font-size: 22px; padding: 0.3rem 0.9rem; }
+      .k1-sug-keys { display: none; }
+      .k1-frase-wrap { padding: 0.5rem 0.75rem 0.6rem; }
+      .k1-frase {
+        gap: 0.45rem 0.5rem;
+        min-height: 52px;
+        padding: 0.25rem 0.35rem;
+      }
+      .k1-word-anchor {
+        font-size: 22px;
+        padding: 0.35rem 0.9rem;
+      }
+      .k1-word-active {
+        font-size: 18px;
+        padding: 0.35rem 0.55rem 0.35rem 0.85rem;
+      }
+      .k1-frase-placeholder { font-size: 17px; }
+
+      .k1-button-bar { gap: 0.4rem; padding: 0; }
+      .k1-btn-reset,
+      .k1-btn-suggest {
+        font-size: 14px;
+        padding: 0.65rem 0.5rem;
+        flex: 1 1 calc(50% - 0.2rem);
+        min-height: 44px;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .k1-type-input { font-size: 22px; }
+      .k1-sug-chip { font-size: 19px; }
+      .k1-word-anchor { font-size: 19px; }
+      .k1-word-active { font-size: 15px; }
+      .k1-btn-reset,
+      .k1-btn-suggest { font-size: 13px; padding: 0.6rem 0.35rem; }
+    }
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k1-panel {
+        padding: 0.4rem 1rem 0.35rem;
+        gap: 0.4rem;
+      }
+      .lab-logo { height: 28px; }
+      .k1-title { font-size: 18px; }
+      .k1-title-sub { font-size: 11px; }
+      .k1-type-row {
+        flex-direction: row;
+        gap: 0.7rem;
+      }
+      .k1-type-input { font-size: 22px; padding: 0.35rem 0.8rem; width: clamp(220px, 26vw, 360px); }
+      .k1-type-suggestion { font-size: 16px; }
+      .k1-sug-chip { font-size: 18px; padding: 0.25rem 0.7rem; }
+      .k1-frase-wrap { padding: 0.4rem 0.7rem 0.5rem; }
+      .k1-frase { min-height: 44px; gap: 0.35rem 0.4rem; }
+      .k1-word-anchor { font-size: 19px; padding: 0.3rem 0.8rem; }
+      .k1-word-active { font-size: 16px; padding: 0.3rem 0.5rem 0.3rem 0.75rem; }
+      .k1-btn-reset,
+      .k1-btn-suggest {
+        font-size: 12px;
+        padding: 0.4rem 0.75rem;
+        min-height: 32px;
+      }
+    }
   </style>
+
+  <div class="lab-header"
+       data-lab-title="Atenção!"
+       data-lab-subtitle="Como o contexto desambigua o sentido"></div>
 
   <div class="k1-type-wrap">
     <div class="k1-type-row">

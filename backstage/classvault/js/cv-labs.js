@@ -35,6 +35,21 @@ window.CVLabs = (function() {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // Reads the on/off map written by the Conteúdo > Labs subtab (CTLabsPanel).
+  // Default-on: a missing key = enabled. Disabled labs are filtered from the
+  // Aula index and from getAllItems so the Presets picker can't reach them.
+  function isLabEnabled(key) {
+    try {
+      var raw = localStorage.getItem('cv_labs_enabled');
+      if (!raw) return true;
+      var map = JSON.parse(raw);
+      return !map || map[key] !== false;
+    } catch (e) { return true; }
+  }
+  function _enabledLabs() {
+    return LABS.filter(function (l) { return isLabEnabled(l.key); });
+  }
+
   // Build the synthetic item shape ClassVault renderers expect.
   function labToItem(lab) {
     return {
@@ -63,15 +78,17 @@ window.CVLabs = (function() {
   function renderSection(collapsedSet) {
     const key = 'labs';
     const isCollapsed = collapsedSet && collapsedSet.has(key);
+    // Only render enabled labs. Disabled ones are hidden from Aula entirely.
+    const visible = _enabledLabs();
     const headerHtml =
       '<button type="button" class="cv-sm-section cv-sm-section--labs' + (isCollapsed ? ' is-collapsed' : '') + '" ' +
         'data-section="' + _esc(key) + '" aria-expanded="' + (!isCollapsed) + '">' +
         '<span class="cv-sm-section-glyph">' + LABS_GLYPH + '</span>' +
         '<span class="cv-sm-section-label">Labs</span>' +
-        '<span class="cv-sm-section-count">' + LABS.length + '</span>' +
+        '<span class="cv-sm-section-count">' + visible.length + '</span>' +
         '<span class="cv-sm-section-chev">▾</span>' +
       '</button>';
-    const bodyHtml = isCollapsed ? '' : LABS.map(_renderLabCard).join('');
+    const bodyHtml = isCollapsed ? '' : visible.map(_renderLabCard).join('');
     return headerHtml + bodyHtml;
   }
 
@@ -96,13 +113,14 @@ window.CVLabs = (function() {
   // editor (cv-presets-ui.js mountPresetEditor) so labs can be added to
   // presets alongside ct_items rows. Cheap synchronous accessor (no I/O).
   function getAllItems() {
-    return LABS.map(labToItem);
+    return _enabledLabs().map(labToItem);
   }
 
   return {
     LABS: LABS,
     findItem: findItem,
     renderSection: renderSection,
-    getAllItems: getAllItems
+    getAllItems: getAllItems,
+    isLabEnabled: isLabEnabled
   };
 })();
