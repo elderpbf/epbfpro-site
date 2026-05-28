@@ -681,13 +681,30 @@ test('Layout.saveLayout writes State.layoutState to localStorage as JSON', () =>
 
 // --- Integration: Page.init boot ------------------------------------------
 
-test('CPHost.Page.init wires Topbar, State, and the rest without crashing', () => {
-  const { ctx, calls } = loadHost();
-  ctx.CPHost.Page.init();
-  assert.ok(calls.topbarInit >= 1, 'Topbar.init must be called by Page.init');
-  assert.equal(ctx.CPHost.State.AUTH_TOKEN, 'test-token');
-  // Layout should have been applied (layoutState materialized).
+test('CPHost.mount on document.body wires Topbar, State, and the rest without crashing', () => {
+  // Standalone path: State.root === document.body. Page.init is allowed to
+  // call Topbar.init in this case (the page owns its own topbar).
+  const { ctx, doc, calls } = loadHost();
+  ctx.CPHost.mount(doc.body, { sessionCode: 'X', authToken: 'tok-x' });
+  assert.ok(calls.topbarInit >= 1, 'Topbar.init must be called when standalone-mounted');
+  assert.equal(ctx.CPHost.State.AUTH_TOKEN, 'tok-x');
   assert.ok(ctx.CPHost.State.layoutState, 'State.layoutState must be set by Page.init -> Layout.init');
+});
+
+test('CPHost.mount on a non-body root does NOT call Topbar.init (parent page owns it)', () => {
+  // Embedded path: State.root is a sidebar div. Page.init must skip Topbar.init
+  // to avoid stacking a second topbar over the parent page's existing one.
+  const { ctx, doc, calls } = loadHost();
+  // Use a scope that doesn't have the host markup; we don't care that
+  // downstream init() calls fail to find their elements -- we only assert
+  // that Topbar.init was skipped before init() did anything else.
+  let topbarBefore = calls.topbarInit;
+  try {
+    const scope = doc.createElement('div');
+    doc.body.appendChild(scope);
+    ctx.CPHost.mount(scope, { sessionCode: 'X', authToken: 't' });
+  } catch (_) { /* expected -- module inits crash on empty scope */ }
+  assert.equal(calls.topbarInit, topbarBefore, 'Topbar.init must NOT be called for embedded mounts');
 });
 
 // --- Sidebar architecture: scoped lookups + mount/unmount lifecycle -------

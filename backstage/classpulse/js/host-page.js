@@ -78,9 +78,16 @@
       BS_AUTH.guard();
     }
 
-    // Bundle F: host.html is the Sessões sub-tab of Perguntas. Wire the
-    // Codex topbar so navigation back to other Codex surfaces works.
-    if (typeof Topbar !== 'undefined' && Topbar) {
+    // Bundle F: host.html is the Sessões sub-tab of Perguntas. Wire the Codex
+    // topbar so navigation back to other Codex surfaces works.
+    //
+    // IMPORTANT: only init the topbar in the STANDALONE host.html context
+    // (State.root === document.body). When embedded in classpulse/index.html
+    // (State.root === a sidebar div), the parent page already owns the topbar
+    // -- calling Topbar.init again would stack a second topbar on top of the
+    // existing one and re-render the Perguntas sub-tabs into the wrong slot.
+    var isStandalone = (CPHost.State.root === document.body);
+    if (isStandalone && typeof Topbar !== 'undefined' && Topbar) {
       Topbar.init({
         title: 'PensoIA',
         subtitle: 'PensoCodex',
@@ -147,6 +154,10 @@
     if (CPHost.State.root) CPHost.unmount();
 
     rootEl.classList.add('host-root');
+    // host-embedded toggles CSS overrides that drop the standalone-only
+    // viewport-height + negative-margin chrome (which would otherwise bleed
+    // outside the panel and stack a second topbar's worth of space).
+    if (rootEl !== document.body) rootEl.classList.add('host-embedded');
     CPHost.State.root = rootEl;
     CPHost.State.urlCode = opts.sessionCode || null;
     CPHost.State.AUTH_TOKEN = opts.authToken || null;
@@ -178,6 +189,7 @@
     if (S.root) {
       try {
         S.root.classList.remove('host-root');
+        S.root.classList.remove('host-embedded');
         S.root.classList.remove('is-hosted');
       } catch (_) {}
     }
@@ -203,17 +215,15 @@
     S.formEls = null;
   };
 
-  // Standalone host.html: on DCL, mount to document.body with opts derived
-  // from the URL and BS_AUTH. This routes through the same lifecycle the
-  // sidebar uses (sets State.root + host-root class), so CSS rules that key
-  // off .host-root work uniformly in both consumers.
-  //
-  // Sidebar consumers (classpulse/index.html) call CPHost.mount() explicitly
-  // on a session click and do not rely on DOMContentLoaded.
+  // Standalone host.html: on DCL, mount to document.body. Detection is by
+  // pathname -- we only auto-mount when this script ran inside host.html, NOT
+  // when classpulse/index.html (which also loads the CPHost scripts to back
+  // the sidebar mount) is the host page. classpulse/index.html calls
+  // CPHost.mount() explicitly on session click and does not rely on this DCL
+  // handler.
   document.addEventListener('DOMContentLoaded', function () {
-    // Don't double-mount if a consumer already called CPHost.mount() between
-    // script load and DCL (rare but possible).
     if (CPHost.State.root) return;
+    if (!/\/host\.html(?:$|\?)/.test(location.pathname + location.search)) return;
     CPHost.mount(document.body, {
       sessionCode: new URLSearchParams(location.search).get('code'),
       authToken: (typeof BS_AUTH !== 'undefined' && BS_AUTH) ? BS_AUTH.TOKEN : null,

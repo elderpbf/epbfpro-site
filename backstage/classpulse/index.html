@@ -172,26 +172,35 @@
      reachable from the Perguntas > Estatísticas sub-tab. */
   .cp-sessions-sidebar .cp-session-actions { display: none; }
 
-  /* Trigger button: small floating chip at top-left. Hides when sidebar is open. */
-  .cp-sidebar-toggle {
-    position: absolute;
-    top: 12px; left: 12px;
-    z-index: 90;
-    width: 32px; height: 32px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    color: var(--text-primary);
-    transition: background 0.15s, opacity 0.2s;
-  }
-  .cp-sidebar-toggle:hover { background: rgba(20,184,166,.08); border-color: rgba(20,184,166,.4); }
-  .cp-sessions-layout.cp-sm--open .cp-sidebar-toggle { opacity: 0; pointer-events: none; }
-
   @media (max-width: 900px) {
     .cp-sessions-sidebar { width: 80vw; max-width: 320px; }
   }
+
+  /* Embedded-mode host overrides. The standalone host.html assumes it owns the
+     viewport (height: calc(100vh - 4px), negative margins on the session bar
+     to bleed edge-to-edge, etc). When mounted inside #host-mount-target the
+     host needs to behave as a normal block flow inside its container instead.
+     These rules fire only when .host-embedded is present on the mount root. */
+  .host-root.host-embedded .host-screen.host-screen-flex {
+    height: 100%;
+    padding: 0;
+  }
+  .host-root.host-embedded .host-session-bar {
+    margin: 0 0 0.5rem;
+    border-radius: 0;
+  }
+  .host-root.host-embedded .host-container.host-dashboard-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .host-root.host-embedded .host-dashboard {
+    padding-top: 0;
+  }
+  /* The Codex topbar is already rendered by the parent classpulse/index.html
+     in embedded mode; the host's own sub-tab strip (#live-bar-subtabs) is
+     left empty -- the parent's Perguntas sub-row stays the navigation surface. */
+  .host-root.host-embedded #live-bar-subtabs { display: none; }
 </style>
 </head>
 <body>
@@ -219,12 +228,9 @@
 
       <div class="cp-sessions-layout" id="sessions-layout">
 
-        <!-- Floating trigger: opens the sidebar overlay. Hidden when sidebar is open. -->
-        <button class="cp-sidebar-toggle" id="cp-sidebar-toggle-btn" type="button" title="Mostrar lista de sessões" aria-label="Mostrar lista de sessões">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-
-        <!-- Sidebar: session list + create form. Floating overlay; hidden by default. -->
+        <!-- Sidebar: session list + create form. Floating overlay; hidden by default.
+             Reveal is mouse-on-left-edge only, matching ClassVault Aula's cv-sm pattern.
+             No toggle button (Aula doesn't have one either). -->
         <aside class="cp-sessions-sidebar" id="cp-sessions-sidebar">
           <div class="cp-create-session">
             <h3>Nova sessão</h3>
@@ -599,7 +605,7 @@
 <script src="./js/host-sqa.js?v=1.1"></script>
 <script src="./js/host-history.js?v=1.1"></script>
 <script src="./js/host-layout.js?v=1.1"></script>
-<script src="./js/host-page.js?v=1.1"></script>
+<script src="./js/host-page.js?v=1.2"></script>
 <script>
 'use strict';
 
@@ -754,14 +760,8 @@ function _maybeHideSidebar() {
 
 (function _wireSidebarOverlay() {
   var sidebar = document.getElementById('cp-sessions-sidebar');
-  var toggleBtn = document.getElementById('cp-sidebar-toggle-btn');
   var panel = document.getElementById('panel-sessions');
-  if (!sidebar || !toggleBtn || !panel) return;
-
-  toggleBtn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    _openSidebarOverlay();
-  });
+  if (!sidebar || !panel) return;
 
   sidebar.addEventListener('mouseenter', function () {
     _overSidebar = true;
