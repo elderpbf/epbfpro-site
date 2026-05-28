@@ -62,22 +62,72 @@
   .cp-question-card.cp-search-result { cursor:pointer; }
   .cp-question-card.cp-search-result:hover { border-color:rgba(20,184,166,.4); background:rgba(20,184,166,.03); }
 
-  /* Sessões panel: sidebar (session list) + right pane (mount target). The
-     panel itself needs a vertical height anchor so the right pane can grow
-     to viewport; this is the documented fix from the 2026-05-25 attempt
-     (commit 647fb87) -- explicit flex layout + min-height so .cp-sessions-main
-     gets a height context for flex:1 to bite. */
-  #panel-sessions.cp-panel.active { display: flex; flex-direction: column; min-height: calc(100vh - 88px - 5rem); }
-  .cp-sessions-layout { display: flex; gap: 0; flex: 1; min-height: 0; }
-  .cp-sessions-sidebar { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); padding: 1rem; overflow-y: auto; box-sizing: border-box; }
-  .cp-sessions-sidebar .cp-create-session { margin-bottom: 1rem; }
-  .cp-sessions-main { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
-  #host-mount-target { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+  /* Sessões panel: host content fills the full pane. Sidebar (session list)
+     is a floating overlay that slides in from the left, mirrors the
+     ClassVault Aula focus-mode pattern. Default state: sidebar hidden, host
+     takes the full frame. */
+  #panel-sessions.cp-panel.active {
+    display: flex; flex-direction: column;
+    min-height: calc(100vh - 88px - 5rem);
+    position: relative;
+  }
+  .cp-sessions-layout {
+    flex: 1; min-height: 0;
+    position: relative;
+  }
+  .cp-sessions-main {
+    height: 100%;
+    display: flex; flex-direction: column;
+  }
+  #host-mount-target {
+    flex: 1; min-height: 0;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
   .cp-sessions-placeholder { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); font-size: 0.92rem; }
   .cp-session-card.is-selected { border-color: var(--primary); background: rgba(20,184,166,.06); }
+
+  /* Sidebar: floating overlay, hidden offscreen by default. .cp-sm--open on
+     the layout slides it in. Left-edge hover + the toggle button both flip it. */
+  .cp-sessions-sidebar {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 320px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1rem;
+    overflow-y: auto;
+    box-sizing: border-box;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cp-sessions-sidebar .cp-create-session { margin-bottom: 1rem; }
+  .cp-sessions-layout.cp-sm--open .cp-sessions-sidebar {
+    transform: translateX(0);
+    box-shadow: 4px 0 16px var(--shadow, rgba(0,0,0,.25));
+  }
+
+  /* Trigger button: small floating chip at top-left. Hides when sidebar is open. */
+  .cp-sidebar-toggle {
+    position: absolute;
+    top: 12px; left: 12px;
+    z-index: 90;
+    width: 32px; height: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.15s, opacity 0.2s;
+  }
+  .cp-sidebar-toggle:hover { background: rgba(20,184,166,.08); border-color: rgba(20,184,166,.4); }
+  .cp-sessions-layout.cp-sm--open .cp-sidebar-toggle { opacity: 0; pointer-events: none; }
+
   @media (max-width: 900px) {
-    .cp-sessions-layout { flex-direction: column; }
-    .cp-sessions-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 40vh; }
+    .cp-sessions-sidebar { width: 80vw; max-width: 320px; }
   }
 </style>
 </head>
@@ -104,10 +154,15 @@
          ============================================================ -->
     <div class="cp-panel active" id="panel-sessions">
 
-      <div class="cp-sessions-layout">
+      <div class="cp-sessions-layout" id="sessions-layout">
 
-        <!-- Sidebar: session list + create form -->
-        <aside class="cp-sessions-sidebar">
+        <!-- Floating trigger: opens the sidebar overlay. Hidden when sidebar is open. -->
+        <button class="cp-sidebar-toggle" id="cp-sidebar-toggle-btn" type="button" title="Mostrar lista de sessões" aria-label="Mostrar lista de sessões">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+
+        <!-- Sidebar: session list + create form. Floating overlay; hidden by default. -->
+        <aside class="cp-sessions-sidebar" id="cp-sessions-sidebar">
           <div class="cp-create-session">
             <h3>Nova sessão</h3>
             <div class="cp-row">
@@ -598,10 +653,77 @@ async function mountHostForSession(session) {
     } catch (_) {}
     // Refresh sidebar selection highlight (re-render is cheap and keeps state correct).
     renderSessions();
+    // Auto-close the overlay so the user can see the host immediately.
+    _closeSidebarOverlay();
   } catch (e) {
     if (typeof showToastError === 'function') showToastError('Erro ao montar sessão: ' + e.message);
   }
 }
+
+// --- Sidebar overlay (mirrors classvault cv-focus-mode pattern) ----------
+// Sidebar is hidden by default. Reveal via the toggle button or by pointing
+// the cursor at the left edge of the Sessões panel. Auto-hides 1.5s after
+// the cursor leaves the sidebar. Selecting a session also hides it. Esc
+// hides it.
+
+var SIDEBAR_REVEAL_ZONE = 6;     // px from left edge
+var SIDEBAR_HIDE_DELAY  = 1500;  // ms
+var _sidebarHideTimer = null;
+var _overSidebar = false;
+
+function _openSidebarOverlay() {
+  var layout = document.getElementById('sessions-layout');
+  if (!layout) return;
+  layout.classList.add('cp-sm--open');
+  clearTimeout(_sidebarHideTimer);
+  _sidebarHideTimer = setTimeout(_maybeHideSidebar, SIDEBAR_HIDE_DELAY);
+}
+function _closeSidebarOverlay() {
+  var layout = document.getElementById('sessions-layout');
+  if (!layout) return;
+  clearTimeout(_sidebarHideTimer);
+  layout.classList.remove('cp-sm--open');
+}
+function _maybeHideSidebar() {
+  if (_overSidebar) return;
+  _closeSidebarOverlay();
+}
+
+(function _wireSidebarOverlay() {
+  var sidebar = document.getElementById('cp-sessions-sidebar');
+  var toggleBtn = document.getElementById('cp-sidebar-toggle-btn');
+  var panel = document.getElementById('panel-sessions');
+  if (!sidebar || !toggleBtn || !panel) return;
+
+  toggleBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    _openSidebarOverlay();
+  });
+
+  sidebar.addEventListener('mouseenter', function () {
+    _overSidebar = true;
+    clearTimeout(_sidebarHideTimer);
+  });
+  sidebar.addEventListener('mouseleave', function () {
+    _overSidebar = false;
+    clearTimeout(_sidebarHideTimer);
+    _sidebarHideTimer = setTimeout(_maybeHideSidebar, SIDEBAR_HIDE_DELAY);
+  });
+
+  // Left-edge hover trigger. Only fires when the Sessões panel is active so
+  // it doesn't compete with hover on Banco / Estatísticas.
+  document.addEventListener('mousemove', function (e) {
+    if (!panel.classList.contains('active')) return;
+    if (e.clientX <= SIDEBAR_REVEAL_ZONE) _openSidebarOverlay();
+  });
+
+  // Esc closes (only when not typing in a host input).
+  document.addEventListener('keydown', function (e) {
+    var tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
+    if (e.key === 'Escape') _closeSidebarOverlay();
+  });
+})();
 
 // Restore the previously-selected session from ?session= on initial load.
 function _restoreSessionFromUrl() {
