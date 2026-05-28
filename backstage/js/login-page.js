@@ -68,10 +68,14 @@
       if (err) err.textContent = '';
       btn.disabled = true;
       try {
-        if (window.BS_GOOGLE && typeof window.BS_GOOGLE.init === 'function') {
-          await window.BS_GOOGLE.init();
-        }
+        // Single popup: requestToken ensures the GIS client itself. Calling
+        // BS_GOOGLE.init() here would silently fire prompt:'' first and
+        // surface a second account-picker window before consent.
         await window.BS_GOOGLE.requestToken({ prompt: 'consent' });
+        // Start the proactive refresher now that a token exists.
+        if (typeof window.BS_GOOGLE.init === 'function') {
+          window.BS_GOOGLE.init();
+        }
         try { sessionStorage.setItem(AUTH_KEY, '1'); } catch (_) {}
         _showApp();
       } catch (e) {

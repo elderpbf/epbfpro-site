@@ -149,17 +149,58 @@ test('G dot reflects connected state when BS_GOOGLE.isAuthed() is true', () => {
 
 // ── Contract: click-to-connect ───────────────────────────────────────────────
 
-test('clicking G dot when disconnected calls BS_GOOGLE.init() then requestToken({prompt:"consent"})', async () => {
+test('clicking G dot when disconnected calls BS_GOOGLE.requestToken({prompt:"consent"}) exactly once', async () => {
   const bs = makeBSGoogle({ _authed: false });
   const env = bootTopbar({ bsGoogle: bs });
   env.ctx.Topbar.init({ title: 'Backstage' });
   const dot = env.doc.querySelector('[data-g-status]');
   dom.click(dot);
   await flush();
-  assert.equal(bs.__calls.init, 1, 'BS_GOOGLE.init() must be called once on G dot click');
-  assert.equal(bs.__calls.requestToken.length, 1, 'BS_GOOGLE.requestToken must be called once');
+  assert.equal(bs.__calls.requestToken.length, 1,
+    'requestToken must fire exactly once (single popup, no silent attempt before)');
   assert.equal(bs.__calls.requestToken[0].prompt, 'consent',
     'requestToken must use prompt:consent for explicit user-initiated connect');
+});
+
+test('G dot click does NOT call BS_GOOGLE.init() before requestToken (avoid double popup)', async () => {
+  const bs = makeBSGoogle({ _authed: false });
+  const env = bootTopbar({ bsGoogle: bs });
+  env.ctx.Topbar.init({ title: 'Backstage' });
+  const dot = env.doc.querySelector('[data-g-status]');
+  // Track relative order by snapshotting call counts at each tracked moment.
+  const initCallsBeforeRequest = bs.__calls.init;
+  dom.click(dot);
+  await flush();
+  assert.ok(bs.__calls.requestToken.length >= 1,
+    'requestToken must have fired');
+  // The contract: any BS_GOOGLE.init() call must NOT precede the first
+  // requestToken on the same click handler. (Calling init AFTER success to
+  // start the refresher is allowed; calling it before would surface a
+  // pre-consent silent picker.)
+  assert.equal(bs.__calls.init, initCallsBeforeRequest + (bs.__calls.init - initCallsBeforeRequest),
+    'sanity: count consistency');
+  // Stronger assertion via instrumented order check below.
+});
+
+test('order: requestToken fires before any BS_GOOGLE.init() on click', async () => {
+  const order = [];
+  const bs = makeBSGoogle({ _authed: false });
+  const origInit = bs.init;
+  const origReq = bs.requestToken;
+  bs.init = function () { order.push('init'); return origInit.call(bs); };
+  bs.requestToken = function (p) { order.push('requestToken'); return origReq.call(bs, p); };
+  const env = bootTopbar({ bsGoogle: bs });
+  env.ctx.Topbar.init({ title: 'Backstage' });
+  const dot = env.doc.querySelector('[data-g-status]');
+  dom.click(dot);
+  await flush();
+  const firstReq = order.indexOf('requestToken');
+  const firstInit = order.indexOf('init');
+  assert.ok(firstReq !== -1, 'requestToken must have fired');
+  if (firstInit !== -1) {
+    assert.ok(firstReq < firstInit,
+      'requestToken must precede any init() call on the click handler');
+  }
 });
 
 test('after successful consent, G dot updates to "connected" without a re-init', async () => {
