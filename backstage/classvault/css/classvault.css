@@ -729,9 +729,50 @@ body.cv-focus.cv-focus--side .cv-sm {
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
+  transition: height 0.18s ease, padding 0.18s ease;
 }
 .cv-main-crumb:empty {
   display: none;
+}
+/* Collapsible like the sidebar: collapsed = slim handle that hides every child
+   except the chevron toggle, freeing the height for the content viewport. */
+.cv-main-crumb.is-collapsed {
+  height: 18px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.cv-main-crumb.is-collapsed > *:not(.cv-crumb-collapse) {
+  display: none;
+}
+.cv-crumb-collapse {
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.cv-crumb-collapse:hover {
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.cv-main-crumb.is-collapsed .cv-crumb-collapse {
+  height: 18px;
+}
+.cv-crumb-collapse-chev {
+  display: block;
+  transition: transform 0.15s ease;
+}
+.cv-main-crumb.is-collapsed .cv-crumb-collapse-chev {
+  transform: rotate(180deg);
 }
 .cv-main-crumb > span:not(.cv-main-crumb-sep),
 .cv-main-crumb > strong {
@@ -1045,32 +1086,17 @@ body.cv-focus.cv-focus--side .cv-sm {
   margin: 0 0 20px;
   line-height: 1.5;
 }
-.cv-popup-launcher-btn {
-  padding: 10px 22px;
-  background: var(--primary);
-  color: white;
-  border: 0;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 0.95rem;
+.cv-popup-launcher-hint {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
   font-weight: 600;
-  cursor: pointer;
+  color: var(--text-primary);
 }
-.cv-popup-launcher-btn:hover { background: var(--primary-dark); }
 .cv-popup-launcher-url {
   margin: 14px 0 0;
   font-size: 0.78rem;
   color: var(--text-secondary);
   word-break: break-all;
-}
-.cv-popup-launcher-warn {
-  margin: 12px 0 0;
-  padding: 10px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #b91c1c;
-  font-size: 0.85rem;
 }
 
 /* ── Phase 5: Drive section ───────────────────────────────────── */

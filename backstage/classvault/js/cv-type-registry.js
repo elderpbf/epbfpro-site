@@ -146,9 +146,21 @@ CVTypes.register('drive_file', {
   }
 });
 
-// External-launcher types (LLM / popup_url card): the in-card "Abrir em janela"
-// button is the primary call to action, no duplicate in the bar.
-CVTypes.register('popup_url', { actions: [] });
+// External-launcher types. The launch button lives in the bottom action bar
+// (not floating over the content viewport): popup_url surfaces "↗ Janela"
+// there. Non-Drive popup_url items show a describe-only card in the viewport.
+CVTypes.register('popup_url', {
+  actions: function(item) {
+    var url = (item.meta_json && item.meta_json.url) || '';
+    if (!url) return [];
+    return [{
+      id: 'popup',
+      label: '↗ Janela',
+      title: 'Abrir em janela',
+      handler: function() { _cvtOpenPopup(url); }
+    }];
+  }
+});
 CVTypes.register('llm', { actions: [] });
 
 // Embedded iframe (full chrome) and lab launchers have no extra bar actions.
@@ -171,6 +183,10 @@ function _cvtOpenPopup(url) {
     'toolbar=no', 'menubar=no', 'location=yes', 'resizable=yes', 'scrollbars=yes'
   ].join(',');
   var popup = window.open(url, '_blank', features);
-  if (popup && typeof popup.focus === 'function') popup.focus();
+  if (!popup) {
+    if (window.BSToast) BSToast.show('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
+    return null;
+  }
+  if (typeof popup.focus === 'function') popup.focus();
   return popup;
 }
