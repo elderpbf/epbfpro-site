@@ -445,10 +445,12 @@ window.Topbar = (function() {
     }
     _setGStatus('connecting');
     try {
-      if (typeof BS_GOOGLE.init === 'function') {
-        await BS_GOOGLE.init();
-      }
+      // Single popup: requestToken ensures the GIS client itself. Calling
+      // BS_GOOGLE.init() here would silently fire prompt:'' first and
+      // surface a second account-picker window before consent.
       await BS_GOOGLE.requestToken({ prompt: 'consent' });
+      // Start the proactive refresher now that a token exists.
+      if (typeof BS_GOOGLE.init === 'function') BS_GOOGLE.init();
       _setGStatus(BS_GOOGLE.isAuthed() ? 'connected' : 'disconnected');
     } catch (_) {
       _setGStatus('disconnected');

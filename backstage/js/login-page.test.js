@@ -214,16 +214,36 @@ test('password sign-in failure shows error and does NOT persist hash', async () 
 
 // ── Contract: Google sign-in path (still works, just no longer auto-attempted) ─
 
-test('bind() wires #login-google-btn click to BS_GOOGLE.requestToken({prompt:"consent"})', async () => {
+test('bind() wires #login-google-btn click to BS_GOOGLE.requestToken({prompt:"consent"}) exactly once', async () => {
   const bs = makeBSGoogle({ authed: false });
   const env = bootEnv({ bsGoogle: bs });
   env.ctx.LoginPage.bind();
   dom.click(env.doc.getElementById('login-google-btn'));
   await flush();
   assert.equal(bs.__calls.requestToken.length, 1,
-    'BS_GOOGLE.requestToken must be called exactly once');
+    'requestToken must fire exactly once (single popup, no silent attempt before)');
   assert.equal(bs.__calls.requestToken[0].prompt, 'consent',
     'requestToken must be called with prompt:consent for explicit sign-in');
+});
+
+test('order: requestToken precedes any BS_GOOGLE.init() on Google button click', async () => {
+  const order = [];
+  const bs = makeBSGoogle({ authed: false });
+  const origInit = bs.init;
+  const origReq = bs.requestToken;
+  bs.init = function () { order.push('init'); return origInit.call(bs); };
+  bs.requestToken = function (p) { order.push('requestToken'); return origReq.call(bs, p); };
+  const env = bootEnv({ bsGoogle: bs });
+  env.ctx.LoginPage.bind();
+  dom.click(env.doc.getElementById('login-google-btn'));
+  await flush();
+  const firstReq = order.indexOf('requestToken');
+  const firstInit = order.indexOf('init');
+  assert.ok(firstReq !== -1, 'requestToken must have fired');
+  if (firstInit !== -1) {
+    assert.ok(firstReq < firstInit,
+      'requestToken must precede any init() so only one popup surfaces');
+  }
 });
 
 test('Google sign-in success shows app screen', async () => {
