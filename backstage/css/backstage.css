@@ -455,12 +455,14 @@
   animation: bs-g-dot-pulse 1.2s ease-in-out infinite;
 }
 .bs-g-dot[data-g-status="connected"] {
-  color: #34a853;
-  border-color: rgba(52,168,83,.5);
+  color: #fff;
+  background: #34a853;
+  border-color: #34a853;
+  box-shadow: 0 0 0 1px rgba(52,168,83,.25);
 }
 .bs-g-dot[data-g-status="connected"]:hover {
-  background: rgba(52,168,83,.1);
-  border-color: #34a853;
+  background: #2e9648;
+  border-color: #2e9648;
 }
 @keyframes bs-g-dot-pulse {
   0%, 100% { opacity: 0.7; }
