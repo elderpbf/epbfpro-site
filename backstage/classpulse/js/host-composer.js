@@ -108,6 +108,10 @@
       };
       if (T && T.canMultiSelect) {
         payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select) : 1;
+      } else if (T && T.usesTextAnswers) {
+        // See Composer.launch for the rationale: worker default-to-1 plus
+        // options.length=0 trips the validation for text-answer types.
+        payload.max_select = 0;
       }
       var res = await callWorker(payload);
       S.activeQId = res.id;
@@ -177,16 +181,24 @@
       btn.textContent = 'Lançando...';
 
       try {
-        // Send max_select only when the type's readForm produced one (mc/poll).
-        // Text-answer types (open/wordcloud/rating/numeric) have options=[]; the
-        // worker rejects max_select > options.length, so the default-to-1 was
-        // the bug here.
+        // max_select handling per type:
+        //   - mc/poll: readForm returned one; use it
+        //   - tf: omit; worker default of 1 is correct for single-select V/F
+        //   - text-answer types (open/wordcloud/rating/numeric): send 0.
+        //     The worker defaults to 1 when omitted and rejects max_select >
+        //     options.length, but options.length=0 for these types (either []
+        //     or a non-array {min,max} object). max_select is semantically
+        //     unused for text answers; 0 bypasses the check.
         var payload = {
           action: 'launch_question', auth_token: S.AUTH_TOKEN,
           session_code: S.sessionCode, type: qType, text: text,
           options: read.options, correct_answer: read.correct_answer,
         };
-        if (read.max_select !== undefined) payload.max_select = read.max_select;
+        if (read.max_select !== undefined) {
+          payload.max_select = read.max_select;
+        } else if (T.usesTextAnswers) {
+          payload.max_select = 0;
+        }
         var res = await callWorker(payload);
         S.activeQId = res.id;
         CPHost.Session.onQuestionLaunched();
