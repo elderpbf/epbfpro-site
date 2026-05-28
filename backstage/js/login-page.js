@@ -91,21 +91,6 @@
     });
   }
 
-  function _bindPwToggle() {
-    var toggle = document.getElementById('login-pw-toggle');
-    if (!toggle) return;
-    toggle.addEventListener('click', function () {
-      var section = document.getElementById('login-pw-section');
-      if (!section) return;
-      var wasHidden = section.hidden;
-      section.hidden = !wasHidden;
-      var pw = document.getElementById('login-pw');
-      if (!pw) return;
-      if (wasHidden) pw.focus();
-      else           pw.value = '';
-    });
-  }
-
   function _bindPwBtn() {
     var btn = document.getElementById('login-btn');
     if (!btn) return;
@@ -150,7 +135,6 @@
   // re-binds are not handled here; call once per page load.
   function bind() {
     _bindGoogleBtn();
-    _bindPwToggle();
     _bindPwBtn();
     _bindPwEnter();
   }

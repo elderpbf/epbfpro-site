@@ -63,17 +63,16 @@ function makeStorage(initial) {
 
 function makeLoginDOM(doc) {
   // Build the minimal #screen-login / #screen-app pair plus the login form
-  // controls so bind() has something to attach to.
+  // controls so bind() has something to attach to. Bundle Q final UI:
+  // password field is the primary surface (always visible, autofocused);
+  // Google sign-in is the secondary button below a divider.
   const root = doc.body;
   const html = `
     <div id="screen-login" hidden>
-      <button id="login-google-btn"></button>
+      <input id="login-pw" type="password">
+      <button id="login-btn"></button>
       <p id="login-error"></p>
-      <button id="login-pw-toggle"></button>
-      <div id="login-pw-section" hidden>
-        <input id="login-pw" type="password">
-        <button id="login-btn"></button>
-      </div>
+      <button id="login-google-btn"></button>
     </div>
     <div id="screen-app" hidden></div>
   `;
@@ -246,17 +245,6 @@ test('Google sign-in failure shows error message', async () => {
   const err = env.doc.getElementById('login-error');
   assert.ok(err.textContent && err.textContent.length > 0,
     'error message must be shown on Google sign-in failure');
-});
-
-// ── Contract: password-section toggle ────────────────────────────────────────
-
-test('clicking #login-pw-toggle reveals the password section', () => {
-  const env = bootEnv();
-  env.ctx.LoginPage.bind();
-  const section = env.doc.getElementById('login-pw-section');
-  assert.ok(section.hidden, 'password section starts hidden');
-  dom.click(env.doc.getElementById('login-pw-toggle'));
-  assert.ok(!section.hidden, 'password section is visible after toggle');
 });
 
 // ── Contract: showApp honors bs_auth_return safely ───────────────────────────
