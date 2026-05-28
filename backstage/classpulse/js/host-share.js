@@ -17,29 +17,36 @@
       (t.token ? '?k=' + encodeURIComponent(t.token) : '');
   }
 
+  // The "is-hosted" class lives on State.root so CSS rules can scope to a
+  // sidebar mount instead of the whole page. Fallback to document.body for
+  // host.html's standalone case where State.root may not yet be set.
+  function _hostedRoot() {
+    return CPHost.State.root || document.body;
+  }
+
   // QR button visibility: shown only when session is being hosted AND a turma
   // is linked. QR image is generated on-demand by QRShareModal when clicked.
   function refreshShareSurface() {
     var hasTrilha = !!buildTrilhaUrl();
-    var isHosted = document.body.classList.contains('is-hosted');
-    document.getElementById('qr-btn').hidden = !(isHosted && hasTrilha);
+    var isHosted = _hostedRoot().classList.contains('is-hosted');
+    CPHost.$('qr-btn').hidden = !(isHosted && hasTrilha);
   }
 
   function applyHostedUI(isHosted) {
     var S = CPHost.State;
-    document.body.classList.toggle('is-hosted', isHosted);
-    document.getElementById('host-live-indicator').hidden = !isHosted;
-    document.getElementById('not-hosted-note').hidden = isHosted;
-    document.getElementById('qr-btn').hidden = !(isHosted && !!S._trailTurma);
-    document.getElementById('display-link').hidden = !isHosted;
-    document.getElementById('start-host-btn').hidden = isHosted;
-    document.getElementById('stop-host-btn').hidden = !isHosted;
-    document.getElementById('viewToggles').hidden = !isHosted;
-    document.getElementById('resetLayoutBtn').hidden = !isHosted;
-    document.getElementById('launch-q-card').style.display = isHosted ? '' : 'none';
+    _hostedRoot().classList.toggle('is-hosted', isHosted);
+    CPHost.$('host-live-indicator').hidden = !isHosted;
+    CPHost.$('not-hosted-note').hidden = isHosted;
+    CPHost.$('qr-btn').hidden = !(isHosted && !!S._trailTurma);
+    CPHost.$('display-link').hidden = !isHosted;
+    CPHost.$('start-host-btn').hidden = isHosted;
+    CPHost.$('stop-host-btn').hidden = !isHosted;
+    CPHost.$('viewToggles').hidden = !isHosted;
+    CPHost.$('resetLayoutBtn').hidden = !isHosted;
+    CPHost.$('launch-q-card').style.display = isHosted ? '' : 'none';
     if (!isHosted) {
-      document.getElementById('active-q-panel').style.display = 'none';
-      document.getElementById('qa-section').style.display = 'none';
+      CPHost.$('active-q-panel').style.display = 'none';
+      CPHost.$('qa-section').style.display = 'none';
       S.activeQId = null;
       S.activeQType = null;
       S.activeStudentQuestionId = null;
@@ -49,8 +56,8 @@
   function renderTrailLink() {
     var S = CPHost.State;
     var esc = (typeof escHtml === 'function') ? escHtml : function (s) { return s; };
-    var btn     = document.getElementById('trail-btn');
-    var content = document.getElementById('trail-modal-content');
+    var btn     = CPHost.$('trail-btn');
+    var content = CPHost.$('trail-modal-content');
     if (!btn || !content) return;
 
     btn.hidden = false;
@@ -69,7 +76,7 @@
         '<a class="host-pres-link" href="' + esc(trilhaUrl) + '" target="_blank" rel="noopener" style="margin-bottom:1.6rem">Abrir trilha ↗</a><br>' +
         '<a class="host-pres-link" href="' + esc(adminUrl) + '" target="_blank" rel="noopener">Abrir ClassTrail (admin) ↗</a>' +
         '<button class="host-btn host-btn-danger host-btn-full" id="trail-unlink-btn" style="margin-top:0.6rem">Desvincular turma</button>';
-      var unlinkBtn = document.getElementById('trail-unlink-btn');
+      var unlinkBtn = CPHost.$('trail-unlink-btn');
       if (unlinkBtn) unlinkBtn.addEventListener('click', doUnlinkTrail);
     } else if (S._trailAllTurmas.length > 0) {
       var opts = '<option value="">Selecione uma turma…</option>';
@@ -87,9 +94,9 @@
         '<div class="host-pres-status">Nenhuma turma vinculada</div>' +
         '<select id="trail-picker">' + opts + '</select>' +
         '<button class="host-btn host-btn-primary host-btn-full" id="trail-link-btn">Vincular turma</button>';
-      var linkBtn = document.getElementById('trail-link-btn');
+      var linkBtn = CPHost.$('trail-link-btn');
       if (linkBtn) linkBtn.addEventListener('click', async function () {
-        var v = document.getElementById('trail-picker').value;
+        var v = CPHost.$('trail-picker').value;
         if (!v) return;
         var parts = v.split('|');
         await doLinkTrail(parts[0], parts[1]);
@@ -117,7 +124,7 @@
       } catch (_) {}
       renderTrailLink();
       refreshShareSurface();
-      document.getElementById('trail-modal').classList.remove('open');
+      CPHost.$('trail-modal').classList.remove('open');
       if (typeof showToast === 'function') showToast('Turma vinculada.');
     } catch (e) {
       if (typeof showToastError === 'function') showToastError(e.message);
@@ -142,7 +149,7 @@
       } catch (_) {}
       renderTrailLink();
       refreshShareSurface();
-      document.getElementById('trail-modal').classList.remove('open');
+      CPHost.$('trail-modal').classList.remove('open');
       if (typeof showToast === 'function') showToast('Turma desvinculada.');
     } catch (e) {
       if (typeof showToastError === 'function') showToastError(e.message);
@@ -150,25 +157,25 @@
   }
 
   function init() {
-    var trailBtn = document.getElementById('trail-btn');
+    var trailBtn = CPHost.$('trail-btn');
     if (trailBtn) {
       trailBtn.addEventListener('click', function () {
-        document.getElementById('trail-modal').classList.add('open');
+        CPHost.$('trail-modal').classList.add('open');
       });
     }
-    var closeBtn = document.getElementById('trail-modal-close-btn');
+    var closeBtn = CPHost.$('trail-modal-close-btn');
     if (closeBtn) {
       closeBtn.addEventListener('click', function () {
-        document.getElementById('trail-modal').classList.remove('open');
+        CPHost.$('trail-modal').classList.remove('open');
       });
     }
-    var modal = document.getElementById('trail-modal');
+    var modal = CPHost.$('trail-modal');
     if (modal) {
       modal.addEventListener('click', function (e) {
         if (e.target === this) this.classList.remove('open');
       });
     }
-    var qrBtn = document.getElementById('qr-btn');
+    var qrBtn = CPHost.$('qr-btn');
     if (qrBtn) {
       qrBtn.addEventListener('click', function () {
         if (typeof QRShareModal !== 'undefined') QRShareModal.open({ joinUrl: buildTrilhaUrl() });

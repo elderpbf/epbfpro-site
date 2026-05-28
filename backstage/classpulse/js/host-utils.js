@@ -8,7 +8,7 @@
   var CPHost = window.CPHost = window.CPHost || {};
 
   function showScreen(id) {
-    document.querySelectorAll('.host-screen').forEach(function (el) {
+    CPHost.qsa('.host-screen').forEach(function (el) {
       el.classList.toggle('active', el.id === id);
     });
   }
@@ -18,14 +18,14 @@
       if (typeof showToastError === 'function') showToastError(msg);
       return;
     }
-    var el = document.getElementById('alert-' + type);
+    var el = CPHost.$('alert-' + type);
     if (!el) return;
     el.textContent = msg;
     el.classList.add('show');
   }
 
   function clearAlert() {
-    var el = document.getElementById('alert-success');
+    var el = CPHost.$('alert-success');
     if (!el) return;
     el.textContent = '';
     el.classList.remove('show');

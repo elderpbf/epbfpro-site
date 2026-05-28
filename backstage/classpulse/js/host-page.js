@@ -24,9 +24,9 @@
       S.activeQId = null;
       S.activeQType = null;
       S.activeStudentQuestionId = null;
-      document.getElementById('active-q-panel').style.display = 'none';
-      document.getElementById('active-standard').style.display = '';
-      document.getElementById('active-student-qa').style.display = 'none';
+      CPHost.$('active-q-panel').style.display = 'none';
+      CPHost.$('active-standard').style.display = '';
+      CPHost.$('active-student-qa').style.display = 'none';
       return;
     }
 
@@ -36,17 +36,17 @@
     if (S.activeQType === 'student_qa') {
       S.activeStudentQuestionId = q.student_question_id || null;
       CPHost.SQA.renderStudentQaActive(q);
-      document.getElementById('active-standard').style.display = 'none';
-      document.getElementById('active-student-qa').style.display = '';
-      document.getElementById('active-q-panel').style.display = 'block';
+      CPHost.$('active-standard').style.display = 'none';
+      CPHost.$('active-student-qa').style.display = '';
+      CPHost.$('active-q-panel').style.display = 'block';
       return;
     }
 
     S.activeStudentQuestionId = null;
-    document.getElementById('active-student-qa').style.display = 'none';
-    document.getElementById('active-standard').style.display = '';
+    CPHost.$('active-student-qa').style.display = 'none';
+    CPHost.$('active-standard').style.display = '';
 
-    document.getElementById('aq-text').textContent = q.text;
+    CPHost.$('aq-text').textContent = q.text;
     if (S.visToggle) S.visToggle.syncFromQuestion(q);
 
     var T = CPQuestionTypes.get(q.type || 'mc');
@@ -57,7 +57,7 @@
       var counts = q.answer_counts || [];
       total = counts.reduce(function (a, b) { return a + b; }, 0);
     }
-    document.getElementById('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
+    CPHost.$('aq-tally').textContent = total + ' resposta' + (total !== 1 ? 's' : '');
 
     // Polling: keep the checkbox enabled-state in sync with the type, but DO
     // NOT overwrite the user's checked-state. Stomping it every 3s is Bundle
@@ -65,7 +65,7 @@
     CPHost.Composer.syncChk('chk-reveal-answer', T.canReveal);
     CPHost.Composer.syncChk('chk-show-results',  T.canShowResults);
 
-    document.getElementById('active-q-panel').style.display = 'block';
+    CPHost.$('active-q-panel').style.display = 'block';
   }
 
   function _cpqRemoveAnswerHandler(e) {
@@ -87,7 +87,7 @@
         backLink: '/backstage/',
         tabs: Topbar.codexTabs('perguntas'),
       });
-      Topbar.renderSubTabsInto(document.getElementById('live-bar-subtabs'), 'perguntas', 'ao-vivo');
+      Topbar.renderSubTabsInto(CPHost.$('live-bar-subtabs'), 'perguntas', 'ao-vivo');
     }
 
     // Order matters: State seeds AUTH_TOKEN + urlCode; Composer builds formEls
@@ -100,14 +100,18 @@
     CPHost.Share.init();
     CPHost.Session.init();
 
-    // Redirect-on-missing-code: if the page is opened with no ?code=, kick
-    // back to the sessions list (mirrors the legacy inline boot).
+    // Redirect-on-missing-code is for the STANDALONE host.html only. In a
+    // mounted sidebar context (State.root set), no code = no session selected
+    // yet; just return without bootstrapping. The sidebar will re-mount with
+    // a sessionCode when the user picks one.
     if (!CPHost.State.urlCode) {
-      location.href = '/backstage/classpulse/';
+      if (!CPHost.State.root) {
+        location.href = '/backstage/classpulse/';
+      }
       return;
     }
 
-    var cpqEl = document.getElementById('cpq');
+    var cpqEl = CPHost.$('cpq');
     if (cpqEl) {
       cpqEl.addEventListener('cpq-data', _cpqDataHandler);
       cpqEl.addEventListener('cpq-remove-answer', _cpqRemoveAnswerHandler);
@@ -121,9 +125,98 @@
     init: init,
   };
 
-  // host.html loads these scripts at the end of body, so DCL has not fired
-  // yet by the time this IIFE executes. Defer init to DOMContentLoaded so
-  // tests (which run in a vm sandbox with a stub addEventListener) can call
-  // init() manually.
-  document.addEventListener('DOMContentLoaded', init);
+  // ---------- mount / unmount lifecycle ----------
+  // Two ways to bring CPHost online:
+  //
+  //   1) Standalone host.html: DOMContentLoaded fires `init` below. State.root
+  //      stays null, all DOM lookups resolve against `document`. The URL's
+  //      ?code= seeds State.urlCode.
+  //
+  //   2) Sidebar mount: classpulse/index.html (or any consumer) calls
+  //      CPHost.mount(rootEl, {sessionCode, authToken}). State.root scopes
+  //      every $() lookup to the rootEl. mount() must be paired with unmount()
+  //      before mounting a different session, to avoid stacked listeners and
+  //      stale state. mount() is idempotent: calling it twice in a row
+  //      tears down the previous mount first.
+
+  CPHost.mount = function (rootEl, opts) {
+    if (!rootEl) throw new Error('CPHost.mount: rootEl required');
+    opts = opts || {};
+
+    // If a previous mount is live, tear it down first.
+    if (CPHost.State.root) CPHost.unmount();
+
+    rootEl.classList.add('host-root');
+    CPHost.State.root = rootEl;
+    CPHost.State.urlCode = opts.sessionCode || null;
+    CPHost.State.AUTH_TOKEN = opts.authToken || null;
+    init();
+  };
+
+  CPHost.unmount = function () {
+    var S = CPHost.State;
+
+    // Stop the cpq element's poll loop (it owns its own timer).
+    try {
+      var cpq = CPHost.$('cpq');
+      if (cpq && typeof cpq.stopPolling === 'function') cpq.stopPolling();
+    } catch (_) {}
+
+    // Clear the SQA debounce.
+    if (S._sqaDebounce) {
+      try { clearTimeout(S._sqaDebounce); } catch (_) {}
+      S._sqaDebounce = null;
+    }
+
+    // Detach any document/window listeners that init paths registered.
+    S._docListeners.forEach(function (L) {
+      try { L.target.removeEventListener(L.type, L.fn); } catch (_) {}
+    });
+    S._docListeners = [];
+
+    // Strip mount-only classes from the root.
+    if (S.root) {
+      try {
+        S.root.classList.remove('host-root');
+        S.root.classList.remove('is-hosted');
+      } catch (_) {}
+    }
+
+    // Reset session/active state. layoutState is persisted in localStorage
+    // so it survives a mount cycle by design.
+    S.root = null;
+    S.sessionCode = null;
+    S.urlCode = null;
+    S.AUTH_TOKEN = null;
+    S.activeQId = null;
+    S.activeQType = null;
+    S.activeStudentQuestionId = null;
+    S._sqaLastServerAnswer = null;
+    S._sqaDraft = null;
+    S._sqaSaving = false;
+    S._historyMap = {};
+    S._currentSession = null;
+    S._trailTurma = null;
+    S._trailAllTurmas = [];
+    S.visToggle = null;
+    S.qaModule = null;
+    S.formEls = null;
+  };
+
+  // Standalone host.html: on DCL, mount to document.body with opts derived
+  // from the URL and BS_AUTH. This routes through the same lifecycle the
+  // sidebar uses (sets State.root + host-root class), so CSS rules that key
+  // off .host-root work uniformly in both consumers.
+  //
+  // Sidebar consumers (classpulse/index.html) call CPHost.mount() explicitly
+  // on a session click and do not rely on DOMContentLoaded.
+  document.addEventListener('DOMContentLoaded', function () {
+    // Don't double-mount if a consumer already called CPHost.mount() between
+    // script load and DCL (rare but possible).
+    if (CPHost.State.root) return;
+    CPHost.mount(document.body, {
+      sessionCode: new URLSearchParams(location.search).get('code'),
+      authToken: (typeof BS_AUTH !== 'undefined' && BS_AUTH) ? BS_AUTH.TOKEN : null,
+    });
+  });
 })();

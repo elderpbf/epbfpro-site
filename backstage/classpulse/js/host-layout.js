@@ -29,11 +29,11 @@
 
   function applyLayout() {
     var S = CPHost.State;
-    var leftEl   = document.getElementById('hdColLeft');
-    var centerEl = document.getElementById('hdColCenter');
-    var rightEl  = document.getElementById('hdColRight');
-    var rLC      = document.getElementById('hdResizerLC');
-    var rCR      = document.getElementById('hdResizerCR');
+    var leftEl   = CPHost.$('hdColLeft');
+    var centerEl = CPHost.$('hdColCenter');
+    var rightEl  = CPHost.$('hdColRight');
+    var rLC      = CPHost.$('hdResizerLC');
+    var rCR      = CPHost.$('hdResizerCR');
     if (!leftEl || !centerEl || !rightEl) return;
 
     leftEl.classList.toggle('is-hidden',   !S.layoutState.left.visible);
@@ -51,7 +51,7 @@
     leftEl.style.width  = S.layoutState.left.width  + 'px';
     rightEl.style.width = S.layoutState.right.width + 'px';
 
-    document.querySelectorAll('[data-toggle-col]').forEach(function (btn) {
+    CPHost.qsa('[data-toggle-col]').forEach(function (btn) {
       btn.classList.toggle('is-on', !!S.layoutState[btn.dataset.toggleCol].visible);
     });
   }
@@ -63,8 +63,8 @@
     handle.classList.add('dragging');
     var direction = handle.dataset.resize;
     var startX = e.clientX;
-    var leftCol = document.getElementById('hdColLeft');
-    var rightCol = document.getElementById('hdColRight');
+    var leftCol = CPHost.$('hdColLeft');
+    var rightCol = CPHost.$('hdColRight');
     var startLeftW  = leftCol.offsetWidth;
     var startRightW = rightCol.offsetWidth;
 
@@ -96,8 +96,8 @@
   }
 
   function _initHamburger() {
-    var btn = document.getElementById('hostBarMenuBtn');
-    var panel = document.getElementById('hostBarMenuPanel');
+    var btn = CPHost.$('hostBarMenuBtn');
+    var panel = CPHost.$('hostBarMenuPanel');
     if (!btn || !panel) return;
 
     function _addProxy(sourceEl, label) {
@@ -116,19 +116,19 @@
 
     function _rebuildPanel() {
       panel.innerHTML = '';
-      var subtabs = document.getElementById('live-bar-subtabs');
+      var subtabs = CPHost.$('live-bar-subtabs');
       if (subtabs) {
         var sc = subtabs.cloneNode(true);
         sc.removeAttribute('id');
         panel.appendChild(sc);
       }
-      _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="left"]'),   'Coluna Composer');
-      _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="center"]'), 'Coluna Pergunta ativa');
-      _addProxy(document.querySelector('.host-session-bar .view-toggle[data-toggle-col="right"]'),  'Coluna Q&A');
-      _addProxy(document.getElementById('resetLayoutBtn'), 'Restaurar layout');
-      _addProxy(document.getElementById('trail-btn'));
-      _addProxy(document.getElementById('qr-btn'));
-      _addProxy(document.getElementById('display-link'));
+      _addProxy(CPHost.qs('.host-session-bar .view-toggle[data-toggle-col="left"]'),   'Coluna Composer');
+      _addProxy(CPHost.qs('.host-session-bar .view-toggle[data-toggle-col="center"]'), 'Coluna Pergunta ativa');
+      _addProxy(CPHost.qs('.host-session-bar .view-toggle[data-toggle-col="right"]'),  'Coluna Q&A');
+      _addProxy(CPHost.$('resetLayoutBtn'), 'Restaurar layout');
+      _addProxy(CPHost.$('trail-btn'));
+      _addProxy(CPHost.$('qr-btn'));
+      _addProxy(CPHost.$('display-link'));
     }
 
     btn.addEventListener('click', function (e) {
@@ -137,7 +137,9 @@
       _rebuildPanel();
       panel.hidden = false;
     });
-    document.addEventListener('click', function (e) {
+    // Hamburger outside-click: long-lived document listener. Track for
+    // unmount cleanup so a sidebar swap doesn't leak it.
+    CPHost.addDocListener(document, 'click', function (e) {
       if (panel.hidden) return;
       if (panel.contains(e.target) || btn.contains(e.target)) return;
       panel.hidden = true;
@@ -148,7 +150,7 @@
     var S = CPHost.State;
     S.layoutState = loadLayout();
 
-    document.querySelectorAll('[data-toggle-col]').forEach(function (btn) {
+    CPHost.qsa('[data-toggle-col]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var col = btn.dataset.toggleCol;
         S.layoutState[col].visible = !S.layoutState[col].visible;
@@ -163,7 +165,7 @@
       });
     });
 
-    var resetBtn = document.getElementById('resetLayoutBtn');
+    var resetBtn = CPHost.$('resetLayoutBtn');
     if (resetBtn) {
       resetBtn.addEventListener('click', function () {
         S.layoutState = JSON.parse(JSON.stringify(S.DEFAULT_LAYOUT));
@@ -172,7 +174,7 @@
       });
     }
 
-    document.querySelectorAll('.hd-resizer').forEach(function (h) {
+    CPHost.qsa('.hd-resizer').forEach(function (h) {
       h.addEventListener('pointerdown', function (e) { startResize(e, h); });
     });
 

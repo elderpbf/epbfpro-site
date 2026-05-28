@@ -17,7 +17,17 @@
 <link rel="stylesheet" href="../css/classpulse.css?v=1.13">
 <link rel="stylesheet" href="../css/shared-components.css?v=1.6">
 <link rel="stylesheet" href="../css/question-types.css?v=1.9">
-<script src="../js/debug.js?v=2.5"></script>
+<link rel="stylesheet" href="../css/qr-share-modal.css?v=1.3">
+<!-- Host CSS partials (shared with standalone host.html via the CPHost.mount path) -->
+<link rel="stylesheet" href="./css/host-shell.css?v=1.0">
+<link rel="stylesheet" href="./css/host-session-bar.css?v=1.0">
+<link rel="stylesheet" href="./css/host-composer.css?v=1.0">
+<link rel="stylesheet" href="./css/host-active-q.css?v=1.0">
+<link rel="stylesheet" href="./css/host-history.css?v=1.1">
+<link rel="stylesheet" href="./css/host-sqa.css?v=1.0">
+<link rel="stylesheet" href="./css/host-layout.css?v=1.0">
+<link rel="stylesheet" href="./css/host-modal.css?v=1.0">
+<script src="../js/debug.js?v=2.6"></script>
 <style>
   .cp-session-card.is-clickable { cursor: pointer; transition: border-color .15s, background .15s; }
   .cp-session-card.is-clickable:hover { border-color: rgba(20,184,166,.4); background: rgba(20,184,166,.04); }
@@ -51,6 +61,24 @@
   .cp-search-result-set { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--primary); margin-bottom:0.3rem; opacity:0.8; }
   .cp-question-card.cp-search-result { cursor:pointer; }
   .cp-question-card.cp-search-result:hover { border-color:rgba(20,184,166,.4); background:rgba(20,184,166,.03); }
+
+  /* Sessões panel: sidebar (session list) + right pane (mount target). The
+     panel itself needs a vertical height anchor so the right pane can grow
+     to viewport; this is the documented fix from the 2026-05-25 attempt
+     (commit 647fb87) -- explicit flex layout + min-height so .cp-sessions-main
+     gets a height context for flex:1 to bite. */
+  #panel-sessions.cp-panel.active { display: flex; flex-direction: column; min-height: calc(100vh - 88px - 5rem); }
+  .cp-sessions-layout { display: flex; gap: 0; flex: 1; min-height: 0; }
+  .cp-sessions-sidebar { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); padding: 1rem; overflow-y: auto; box-sizing: border-box; }
+  .cp-sessions-sidebar .cp-create-session { margin-bottom: 1rem; }
+  .cp-sessions-main { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
+  #host-mount-target { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+  .cp-sessions-placeholder { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); font-size: 0.92rem; }
+  .cp-session-card.is-selected { border-color: var(--primary); background: rgba(20,184,166,.06); }
+  @media (max-width: 900px) {
+    .cp-sessions-layout { flex-direction: column; }
+    .cp-sessions-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 40vh; }
+  }
 </style>
 </head>
 <body>
@@ -76,24 +104,37 @@
          ============================================================ -->
     <div class="cp-panel active" id="panel-sessions">
 
-      <div class="cp-create-session">
-        <h3>Nova sessão</h3>
-        <div class="cp-row">
-          <div class="bs-field">
-            <label>Título da sessão</label>
-            <input type="text" id="session-title" placeholder="Ex: Aula 3 — Redes Neurais" autocomplete="off">
-          </div>
-          <button class="cp-btn-primary" id="create-session-btn">Criar sessão</button>
-        </div>
-        <p class="cp-form-error" id="session-error"></p>
-      </div>
+      <div class="cp-sessions-layout">
 
-      <div id="sessions-list-wrap">
-        <div class="cp-empty" id="sessions-empty" hidden>
-          <div class="cp-empty-icon">📋</div>
-          <p>Nenhuma sessão encontrada.<br>Crie uma sessão acima.</p>
-        </div>
-        <div class="cp-sessions-list" id="sessions-list"></div>
+        <!-- Sidebar: session list + create form -->
+        <aside class="cp-sessions-sidebar">
+          <div class="cp-create-session">
+            <h3>Nova sessão</h3>
+            <div class="cp-row">
+              <div class="bs-field">
+                <label>Título da sessão</label>
+                <input type="text" id="session-title" placeholder="Ex: Aula 3 — Redes Neurais" autocomplete="off">
+              </div>
+              <button class="cp-btn-primary" id="create-session-btn">Criar sessão</button>
+            </div>
+            <p class="cp-form-error" id="session-error"></p>
+          </div>
+
+          <div id="sessions-list-wrap">
+            <div class="cp-empty" id="sessions-empty" hidden>
+              <div class="cp-empty-icon">📋</div>
+              <p>Nenhuma sessão encontrada.<br>Crie uma sessão acima.</p>
+            </div>
+            <div class="cp-sessions-list" id="sessions-list"></div>
+          </div>
+        </aside>
+
+        <!-- Right pane: host content lives here when a session is selected. -->
+        <main class="cp-sessions-main">
+          <div id="host-mount-target">
+            <div class="cp-sessions-placeholder">Selecione uma sessão na lista para hospedá-la.</div>
+          </div>
+        </main>
       </div>
 
       <!-- ============================================================
@@ -423,6 +464,24 @@
 <script src="../js/classpulse-bank-edit.js?v=1.0"></script>
 <script src="../js/classpulse-bank-search.js?v=1.0"></script>
 <script src="js/cp-settings-section.js?v=1.0"></script>
+<!-- Additional deps needed by CPHost modules when the host mounts in the sidebar pane -->
+<script src="../js/question-renderer.js?v=2.6"></script>
+<script src="../js/classpulse-question-types.js?v=1.2"></script>
+<script src="../js/classpulse-question.min.js?v=1.8"></script>
+<script src="../js/classpulse-visibility-toggle.js?v=1.4"></script>
+<script src="../js/classpulse-checkbox-sync.js?v=1.0"></script>
+<script src="../js/classpulse-qa.js?v=2.4"></script>
+<script src="../js/qr-share-modal.js?v=1.3"></script>
+<!-- CPHost modules (shared between standalone host.html and the sidebar mount in panel-sessions) -->
+<script src="./js/host-state.js?v=1.1"></script>
+<script src="./js/host-utils.js?v=1.1"></script>
+<script src="./js/host-session.js?v=1.1"></script>
+<script src="./js/host-share.js?v=1.1"></script>
+<script src="./js/host-composer.js?v=1.2"></script>
+<script src="./js/host-sqa.js?v=1.1"></script>
+<script src="./js/host-history.js?v=1.1"></script>
+<script src="./js/host-layout.js?v=1.1"></script>
+<script src="./js/host-page.js?v=1.1"></script>
 <script>
 'use strict';
 
@@ -504,6 +563,54 @@ document.querySelectorAll('.cp-tab').forEach(function(btn) {
 
 var sessions = [];
 var presentations = [];
+var selectedSessionCode = null;
+var _hostBodyCache = null;
+
+// Lazily fetch host.html, extract its body content (everything between <body>
+// and the first <script src=>), cache for subsequent mounts.
+async function _loadHostBodyMarkup() {
+  if (_hostBodyCache) return _hostBodyCache;
+  var res = await fetch('host.html', { credentials: 'same-origin' });
+  if (!res.ok) throw new Error('Could not fetch host.html: ' + res.status);
+  var html = await res.text();
+  var m = html.match(/<body>([\s\S]*?)\s*<script\s+src=/i);
+  if (!m) throw new Error('Could not extract host body markup');
+  _hostBodyCache = m[1];
+  return _hostBodyCache;
+}
+
+// Mount the host UI in #host-mount-target for the given session. Replaces any
+// previously-mounted session via CPHost.unmount() first (lifecycle is
+// idempotent). Updates the URL via History API so ?session= survives a reload.
+async function mountHostForSession(session) {
+  var target = document.getElementById('host-mount-target');
+  if (!target) return;
+  try {
+    var bodyHtml = await _loadHostBodyMarkup();
+    if (window.CPHost && CPHost.State && CPHost.State.root) CPHost.unmount();
+    target.innerHTML = bodyHtml;
+    if (window.CPHost && typeof CPHost.mount === 'function') {
+      CPHost.mount(target, { sessionCode: session.code, authToken: AUTH_TOKEN });
+    }
+    selectedSessionCode = session.code;
+    try {
+      history.replaceState({ sessionCode: session.code }, '', '?session=' + encodeURIComponent(session.code));
+    } catch (_) {}
+    // Refresh sidebar selection highlight (re-render is cheap and keeps state correct).
+    renderSessions();
+  } catch (e) {
+    if (typeof showToastError === 'function') showToastError('Erro ao montar sessão: ' + e.message);
+  }
+}
+
+// Restore the previously-selected session from ?session= on initial load.
+function _restoreSessionFromUrl() {
+  var params = new URLSearchParams(location.search);
+  var code = params.get('session');
+  if (!code) return;
+  var match = sessions.find(function (s) { return s.code === code; });
+  if (match) mountHostForSession(match);
+}
 
 async function loadSessions() {
   try {
@@ -517,6 +624,11 @@ async function loadSessions() {
     sessions = [];
   }
   renderSessions();
+  // First-load only: if ?session=X is in the URL, mount that session.
+  if (!_restoreSessionFromUrl._fired) {
+    _restoreSessionFromUrl._fired = true;
+    _restoreSessionFromUrl();
+  }
 }
 
 function renderSessions() {
@@ -533,8 +645,12 @@ function renderSessions() {
   sessions.forEach(function(s) {
     var card = document.createElement('div');
     card.className = 'cp-session-card is-clickable';
+    if (selectedSessionCode && s.code === selectedSessionCode) {
+      card.classList.add('is-selected');
+    }
+    card.dataset.sessionCode = s.code;
     card.addEventListener('click', function() {
-      location.href = 'host.html?code=' + encodeURIComponent(s.code);
+      mountHostForSession(s);
     });
 
     var codeEl = document.createElement('div');

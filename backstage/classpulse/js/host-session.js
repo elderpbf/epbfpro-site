@@ -18,7 +18,7 @@
   // launch success) and light the Codex Perguntas tab dot immediately.
   function _kickCpqPoll() {
     try {
-      var cpq = document.getElementById('cpq');
+      var cpq = CPHost.$('cpq');
       if (cpq && typeof cpq.startPolling === 'function') cpq.startPolling();
     } catch (_) {}
   }
@@ -60,8 +60,8 @@
     S.sessionCode = s.code;
     S._currentSession = s;
 
-    document.getElementById('session-name-display').textContent = s.title || ('Sessão ' + s.code);
-    document.getElementById('display-link').href = '/go/display.html?code=' + encodeURIComponent(s.code);
+    CPHost.$('session-name-display').textContent = s.title || ('Sessão ' + s.code);
+    CPHost.$('display-link').href = '/go/display.html?code=' + encodeURIComponent(s.code);
 
     CPHost.Utils.clearAlert();
     CPHost.Share.renderTrailLink();
@@ -73,10 +73,10 @@
         sessionCode: s.code,
         authToken:   S.AUTH_TOKEN,
         callWorker:  callWorker,
-        containerEl: document.getElementById('qa-section'),
+        containerEl: CPHost.$('qa-section'),
         toggleEl:    null,
-        badgeEl:     document.getElementById('qa-badge'),
-        feedEl:      document.getElementById('qa-feed'),
+        badgeEl:     CPHost.$('qa-badge'),
+        feedEl:      CPHost.$('qa-feed'),
         onError:     function (msg) { CPHost.Utils.showAlert('error', msg); },
         onPromoted:  function () {
           // Ensure the center column is visible so the new student_qa active
@@ -94,7 +94,7 @@
     }
 
     // Always poll session state so history renders even when not hosted.
-    document.getElementById('cpq').setAttribute('session', s.code);
+    CPHost.$('cpq').setAttribute('session', s.code);
   }
 
   async function doStartHost(force) {
@@ -129,7 +129,7 @@
     var S = CPHost.State;
 
     S.visToggle = CPVisibilityToggle.attach({
-      buttonEl:       document.getElementById('toggle-bars-btn'),
+      buttonEl:       CPHost.$('toggle-bars-btn'),
       getActiveQId:   function () { return S.activeQId; },
       getSessionCode: function () { return S.sessionCode; },
       authToken:      S.AUTH_TOKEN,
@@ -137,7 +137,7 @@
       onError:        function (msg) { CPHost.Utils.showAlert('error', msg); },
     });
 
-    document.getElementById('start-host-btn').addEventListener('click', async function () {
+    CPHost.$('start-host-btn').addEventListener('click', async function () {
       var btn = this;
       btn.disabled = true;
       btn.textContent = 'Iniciando...';
@@ -149,7 +149,7 @@
       }
     });
 
-    document.getElementById('stop-host-btn').addEventListener('click', async function () {
+    CPHost.$('stop-host-btn').addEventListener('click', async function () {
       if (!confirm('Encerrar a sessão? Os alunos não poderão mais responder.')) return;
       var btn = this;
       btn.disabled = true;

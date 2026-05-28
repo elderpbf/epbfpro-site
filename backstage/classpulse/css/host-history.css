@@ -21,8 +21,11 @@
 .hi-btn-primary { border-color: var(--primary); color: var(--primary); }
 .hi-btn-primary:hover { background: var(--primary); color: #fff; }
 
-/* Hide history action buttons when not hosting (cannot relaunch/edit without an active host) */
-body:not(.is-hosted) .hi-actions { display: none; }
+/* Hide history action buttons when not hosting (cannot relaunch/edit without
+   an active host). Scoped via .host-root so the rule works regardless of
+   whether the host is mounted on body (standalone host.html) or in a sidebar
+   right-pane div (classpulse/index.html). */
+.host-root:not(.is-hosted) .hi-actions { display: none; }
 
 /* Per-history-item result bars */
 .hi-results { margin-top: 0.6rem; background: rgba(0,0,0,0.1); border-radius: 6px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
