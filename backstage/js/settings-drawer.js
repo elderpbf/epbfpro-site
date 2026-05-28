@@ -136,6 +136,61 @@ window.SettingsDrawer = (function() {
     });
   }
 
+  // ── Built-in: Google account ─────────────────────────────
+  //
+  // Bundle Q follow-up: the topbar G dot was removed (the inline connect
+  // prompts on Drive features make passive status unnecessary). This section
+  // is the deliberate, find-it-when-you-need-it entry point: shows current
+  // state and a single Conectar/Desconectar button.
+
+  function _googleSectionHtml() {
+    return (
+      '<div id="sd-google-state" style="margin-bottom:.6rem;font-size:.92rem"></div>' +
+      '<button class="bs-toggle-btn" id="sd-google-action" style="margin-bottom:.5rem"></button>' +
+      '<p class="bs-hint">Conexão necessária apenas para sincronizar pastas do Drive ou ' +
+      'copiar texto de documentos. Pré-visualizações usam sua sessão Google geral do navegador.</p>'
+    );
+  }
+
+  function _renderGoogleSection() {
+    var stateEl = document.getElementById('sd-google-state');
+    var btn = document.getElementById('sd-google-action');
+    if (!stateEl || !btn) return;
+    var bs = window.BS_GOOGLE;
+    var authed = !!(bs && bs.isAuthed && bs.isAuthed());
+    if (authed) {
+      var email = (bs.getEmail && bs.getEmail()) || '';
+      stateEl.innerHTML = '<strong style="color:var(--primary)">Conectado</strong>' +
+        (email ? '<br><span style="color:var(--text-secondary);font-size:.85rem">' + _esc(email) + '</span>' : '');
+      btn.textContent = 'Desconectar';
+    } else {
+      stateEl.innerHTML = '<span style="color:var(--text-secondary)">Não conectado</span>';
+      btn.textContent = 'Conectar Google';
+    }
+  }
+
+  function _initGoogleSection() {
+    var btn = document.getElementById('sd-google-action');
+    if (!btn) return;
+    _renderGoogleSection();
+    btn.addEventListener('click', async function () {
+      var bs = window.BS_GOOGLE;
+      if (!bs) return;
+      if (bs.isAuthed && bs.isAuthed()) {
+        try { bs.signOut(); } catch (_) {}
+        _renderGoogleSection();
+        return;
+      }
+      btn.disabled = true;
+      try {
+        await bs.requestToken({ prompt: 'consent' });
+        if (typeof bs.init === 'function') bs.init();
+      } catch (_) { /* render below reflects final state */ }
+      btn.disabled = false;
+      _renderGoogleSection();
+    });
+  }
+
   // ── Drawer shell ─────────────────────────────────────────
 
   var _overlay, _drawer;
@@ -239,6 +294,11 @@ window.SettingsDrawer = (function() {
       html += _buildSection(s.id, s.title, s.content || '', s.expanded === true);
     }
 
+    // Built-in: Google account (only if BS_GOOGLE is loaded on this page)
+    if (typeof window.BS_GOOGLE !== 'undefined') {
+      html += _buildSection('sd-google', 'Conta Google', _googleSectionHtml(), false);
+    }
+
     // Built-in: debug
     html += _buildSection('sd-debug', 'Desenvolvedor', _debugSectionHtml(), false);
 
@@ -248,8 +308,14 @@ window.SettingsDrawer = (function() {
     }
 
     _injectDrawer(html);
+    _initGoogleSection();
     _initDebugToggle();
     _initPwChange();
+    // Re-render the Google section each time the drawer opens, so it reflects
+    // any state change (e.g. user just connected via an inline Drive prompt).
+    if (typeof window.BS_GOOGLE !== 'undefined') {
+      _onOpenCallbacks.push(_renderGoogleSection);
+    }
 
     // Init custom section callbacks
     for (var j = 0; j < customSections.length; j++) {
