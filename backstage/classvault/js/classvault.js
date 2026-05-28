@@ -117,14 +117,6 @@ ClassVault.SECTION_KEYS = [
 ClassVault.collapsedSections = new Set();    // (re)populated by _resetAccordion()
 ClassVault._seededCollapsedKeys = new Set();
 
-// Bottom action bar (.cv-main-crumb) collapse state — collapsible like the
-// sidebar, persisted across sessions. Collapsed = slim handle, gives the
-// content viewport more room.
-const _BAR_COLLAPSED_KEY = 'cv_bar_collapsed';
-ClassVault.barCollapsed = (function() {
-  try { return localStorage.getItem(_BAR_COLLAPSED_KEY) === '1'; } catch (e) { return false; }
-})();
-
 // PensoNexo live-session state. null = nothing live (Worker hasn't returned
 // yet or no active session). Refreshed on boot and on demand via the refresh
 // button inside the pinned PensoNexo card — no background polling.
@@ -1357,9 +1349,7 @@ function _renderEditorBreadcrumb(item) {
   crumb.innerHTML =
     '<span>' + _esc(turmaName) + '</span>' +
     '<span class="cv-main-crumb-sep">/</span>' +
-    '<strong>' + _esc(label) + '</strong>' +
-    '<span class="cv-main-crumb-spacer"></span>';
-  _appendCrumbCollapse(crumb);
+    '<strong>' + _esc(label) + '</strong>';
 }
 
 function _dirtyCheckBeforeSwitch() {
@@ -1432,7 +1422,6 @@ function _renderBreadcrumb(item) {
         .addEventListener('click', () => _copyDriveFileText(item));
     }
     _wireCrumbActions(crumb, item, source);
-    _appendCrumbCollapse(crumb);
     return;
   }
 
@@ -1457,7 +1446,6 @@ function _renderBreadcrumb(item) {
   html += '<button type="button" class="cv-crumb-btn" data-action="edit" title="Editar item">✏️ Editar</button>';
   crumb.innerHTML = html;
   _wireCrumbActions(crumb, item, source);
-  _appendCrumbCollapse(crumb);
 }
 
 function _wireCrumbActions(crumb, item, source) {
@@ -1472,34 +1460,6 @@ function _wireCrumbActions(crumb, item, source) {
       }
     });
   });
-}
-
-// Collapse toggle for the bottom action bar. Appended as the last child of
-// every populated crumb so the chevron stays clickable even when collapsed
-// (CSS hides every sibling but this button). State persists in localStorage.
-function _appendCrumbCollapse(crumb) {
-  if (!crumb) return;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'cv-crumb-collapse';
-  btn.innerHTML = '<svg class="cv-crumb-collapse-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
-  btn.addEventListener('click', _toggleBarCollapsed);
-  crumb.appendChild(btn);
-  _applyBarCollapsed();
-}
-
-function _toggleBarCollapsed() {
-  ClassVault.barCollapsed = !ClassVault.barCollapsed;
-  try { localStorage.setItem(_BAR_COLLAPSED_KEY, ClassVault.barCollapsed ? '1' : '0'); } catch (e) {}
-  _applyBarCollapsed();
-}
-
-function _applyBarCollapsed() {
-  const crumb = document.querySelector('.cv-main-crumb');
-  if (!crumb) return;
-  crumb.classList.toggle('is-collapsed', !!ClassVault.barCollapsed);
-  const btn = crumb.querySelector('.cv-crumb-collapse');
-  if (btn) btn.title = ClassVault.barCollapsed ? 'Expandir barra de ações' : 'Recolher barra de ações';
 }
 
 // ── Renderers (registry keyed by item.type) ────────────────────

@@ -86,6 +86,22 @@ body.cv-focus.cv-focus--side .cv-sm {
   box-shadow: 4px 0 16px var(--shadow);
 }
 
+/* Bottom action bar tucks away in focus mode and slides back up when the
+   cursor reaches the bottom edge (cv-focus--bottom), mirroring the topbar.
+   position:fixed takes it out of flow so .cv-main-view fills the full height. */
+body.cv-focus .cv-main-crumb {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 9800;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cv-focus.cv-focus--bottom .cv-main-crumb {
+  transform: translateY(0);
+  opacity: 1;
+}
+
 /* ── Sidebar (side menu) ──────────────────────────────────── */
 
 .cv-sm {
@@ -729,50 +745,9 @@ body.cv-focus.cv-focus--side .cv-sm {
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
-  transition: height 0.18s ease, padding 0.18s ease;
 }
 .cv-main-crumb:empty {
   display: none;
-}
-/* Collapsible like the sidebar: collapsed = slim handle that hides every child
-   except the chevron toggle, freeing the height for the content viewport. */
-.cv-main-crumb.is-collapsed {
-  height: 18px;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-.cv-main-crumb.is-collapsed > *:not(.cv-crumb-collapse) {
-  display: none;
-}
-.cv-crumb-collapse {
-  flex-shrink: 0;
-  margin-left: auto;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.cv-crumb-collapse:hover {
-  background: var(--surface-soft);
-  color: var(--text-primary);
-  border-color: var(--border);
-}
-.cv-main-crumb.is-collapsed .cv-crumb-collapse {
-  height: 18px;
-}
-.cv-crumb-collapse-chev {
-  display: block;
-  transition: transform 0.15s ease;
-}
-.cv-main-crumb.is-collapsed .cv-crumb-collapse-chev {
-  transform: rotate(180deg);
 }
 .cv-main-crumb > span:not(.cv-main-crumb-sep),
 .cv-main-crumb > strong {
