@@ -28,6 +28,10 @@
   var probeVisible = false;
   var mounted      = false;
   var enabled      = localStorage.getItem('bs_debug') === '1';
+  // Monotonic counter so each entry has a stable identity. renderTab uses this
+  // to do an append-only DOM diff (preserves text selection across pushes).
+  var _seqCounter  = 0;
+  function nextSeq() { return _seqCounter++; }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -40,7 +44,7 @@
   // ── Public API ─────────────────────────────────────────────────────────────
 
   function bsLog(msg, level) {
-    logEntries.push({ ts: ts(), level: level || 'log', msg: String(msg) });
+    logEntries.push({ ts: ts(), level: level || 'log', msg: String(msg), _seq: nextSeq() });
     if (logEntries.length > 300) logEntries.shift();
     if (mounted) { renderTab('log'); updateBadges(); }
   }
@@ -51,7 +55,7 @@
   }
 
   function bsProbe(msg, level, header) {
-    probeEntries.push({ ts: ts(), level: level || 'log', msg: String(msg) });
+    probeEntries.push({ ts: ts(), level: level || 'log', msg: String(msg), _seq: nextSeq() });
     if (probeEntries.length > 300) probeEntries.shift();
     probeVisible = true;
     if (mounted) {
@@ -106,13 +110,13 @@
   window.addEventListener('error', function (e) {
     var msg = (e.message || 'Unknown error') +
               (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno : '');
-    errEntries.push({ ts: ts(), level: 'error', msg: msg });
+    errEntries.push({ ts: ts(), level: 'error', msg: msg, _seq: nextSeq() });
     if (mounted) { renderTab('errors'); updateBadges(); }
   });
 
   window.addEventListener('unhandledrejection', function (e) {
     var msg = 'Unhandled: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason));
-    errEntries.push({ ts: ts(), level: 'error', msg: msg });
+    errEntries.push({ ts: ts(), level: 'error', msg: msg, _seq: nextSeq() });
     if (mounted) { renderTab('errors'); updateBadges(); }
   });
 
@@ -275,7 +279,7 @@
     var el = document.getElementById('bsdp-content-' + tab);
     if (!el) return;
 
-    // Capture scroll position BEFORE clearing so we know if user was pinned to bottom
+    // Capture scroll position BEFORE mutating so we know if user was pinned to bottom
     var wasAtBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 30;
 
     // probe empty state
@@ -284,13 +288,27 @@
       if (empty) empty.style.display = entries.length === 0 ? '' : 'none';
     }
 
-    // clear and rebuild entries
+    // Append-only diff. We keep one DOM node per entry, identified by data-seq.
+    // Removing only the nodes that left `entries` (cap-shift or clear) preserves
+    // the user's text selection on every other entry.
+    var present = new Set();
+    entries.forEach(function (e) { present.add(e._seq); });
+
     var existing = el.querySelectorAll('.bsdp-entry');
-    existing.forEach(function (n) { n.remove(); });
+    existing.forEach(function (n) {
+      if (!present.has(parseInt(n.dataset.seq, 10))) n.remove();
+    });
+
+    var remaining = el.querySelectorAll('.bsdp-entry');
+    var lastSeq = remaining.length
+      ? parseInt(remaining[remaining.length - 1].dataset.seq, 10)
+      : -1;
 
     entries.forEach(function (entry) {
+      if (entry._seq <= lastSeq) return;
       var div = document.createElement('div');
       div.className = 'bsdp-entry ' + entry.level;
+      div.dataset.seq = entry._seq;
       div.innerHTML = '<span class="bsdp-ts">' + entry.ts + '</span>' +
                       '<span class="bsdp-msg">' + esc(entry.msg) + '</span>';
       el.appendChild(div);

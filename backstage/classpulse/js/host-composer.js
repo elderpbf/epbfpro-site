@@ -93,19 +93,23 @@
     btn.disabled = true;
     btn.textContent = 'Lançando...';
     try {
+      var qType = q.type || 'mc';
+      var T = CPQuestionTypes.get(qType);
       var opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
-      var maxSel = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select) : 1;
       var ca = (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '')
         ? q.correct_answer : null;
-      var res = await callWorker({
+      var payload = {
         action: 'launch_question', auth_token: S.AUTH_TOKEN,
         session_code: S.sessionCode,
-        type: q.type || 'mc',
+        type: qType,
         text: q.question,
         options: opts,
         correct_answer: ca,
-        max_select: maxSel,
-      });
+      };
+      if (T && T.canMultiSelect) {
+        payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select) : 1;
+      }
+      var res = await callWorker(payload);
       S.activeQId = res.id;
       CPHost.Session.onQuestionLaunched();
       CPHost.Utils.clearAlert();
@@ -173,12 +177,17 @@
       btn.textContent = 'Lançando...';
 
       try {
-        var res = await callWorker({
+        // Send max_select only when the type's readForm produced one (mc/poll).
+        // Text-answer types (open/wordcloud/rating/numeric) have options=[]; the
+        // worker rejects max_select > options.length, so the default-to-1 was
+        // the bug here.
+        var payload = {
           action: 'launch_question', auth_token: S.AUTH_TOKEN,
           session_code: S.sessionCode, type: qType, text: text,
           options: read.options, correct_answer: read.correct_answer,
-          max_select: read.max_select !== undefined ? read.max_select : 1,
-        });
+        };
+        if (read.max_select !== undefined) payload.max_select = read.max_select;
+        var res = await callWorker(payload);
         S.activeQId = res.id;
         CPHost.Session.onQuestionLaunched();
         if (S.visToggle) S.visToggle.reset();
