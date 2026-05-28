@@ -17,8 +17,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const JS_DIR = path.join(__dirname, 'js');
+const CSS_DIR = path.join(__dirname, 'css');
 const HOST_HTML = path.join(__dirname, 'host.html');
 function modPath(f) { return path.join(JS_DIR, f); }
+function cssPath(f) { return path.join(CSS_DIR, f); }
 
 // Modules load in this order. Page comes last because it consumes every other
 // namespace inside its DOMContentLoaded handler.
@@ -32,6 +34,20 @@ const MODULE_FILES = [
   'host-history.js',
   'host-layout.js',
   'host-page.js',
+];
+
+// CSS partials. Mirror the JS split: each *.css file owns the rules for the
+// matching JS module (plus host-shell.css for chrome / container / screen
+// states and host-modal.css for the trail modal overlay).
+const CSS_FILES = [
+  'host-shell.css',
+  'host-session-bar.css',
+  'host-composer.css',
+  'host-active-q.css',
+  'host-history.css',
+  'host-sqa.css',
+  'host-layout.css',
+  'host-modal.css',
 ];
 
 // --- DOM mock helpers (mirrors trilha.test.js shape) ----------------------
@@ -432,6 +448,34 @@ test('host.html references each host-*.js via <script src>', () => {
   for (const f of MODULE_FILES) {
     const re = new RegExp('<script src="[^"]*' + f.replace('.', '\\.') + '[^"]*"');
     assert.match(html, re, 'host.html missing <script src> for ' + f);
+  }
+});
+
+// --- Structural: CSS modularization ---------------------------------------
+
+test('all 8 CSS partials exist on disk', () => {
+  for (const f of CSS_FILES) {
+    assert.equal(fs.existsSync(cssPath(f)), true, 'missing ' + f);
+  }
+});
+
+test('host.html no longer carries a long inline <style> block', () => {
+  const html = fs.readFileSync(HOST_HTML, 'utf8');
+  const re = /<style[^>]*>([\s\S]*?)<\/style>/g;
+  let m;
+  let longest = 0;
+  while ((m = re.exec(html)) !== null) {
+    if (m[1].length > longest) longest = m[1].length;
+  }
+  // Allow tiny <style> blocks (under 200 chars) for one-off page-scoped rules.
+  assert.ok(longest < 200, 'host.html still has a large inline <style> block (' + longest + ' chars)');
+});
+
+test('host.html references each host-*.css via <link rel="stylesheet">', () => {
+  const html = fs.readFileSync(HOST_HTML, 'utf8');
+  for (const f of CSS_FILES) {
+    const re = new RegExp('<link[^>]*href="[^"]*' + f.replace('.', '\\.') + '[^"]*"');
+    assert.match(html, re, 'host.html missing <link> for ' + f);
   }
 });
 

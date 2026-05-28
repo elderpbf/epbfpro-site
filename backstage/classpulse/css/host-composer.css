@@ -1,0 +1,42 @@
+/* Composer card: launch-question form, type selector, option inputs,
+   action buttons, question-bank toggle. Owned by Composer module. */
+
+/* Cards */
+.host-card { background: var(--surface); border: 1px solid rgba(20,184,166,.15); border-radius: 14px; padding: 1.3rem; margin-bottom: 1.25rem; }
+.host-card-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 1rem; }
+
+/* Form elements */
+.host-label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.host-input { width: 100%; padding: 0.7rem 1rem; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.9rem; outline: none; transition: border-color .2s; box-sizing: border-box; }
+.host-input:focus { border-color: var(--primary); }
+textarea.host-input { resize: vertical; min-height: 72px; line-height: 1.5; }
+.host-form-group { margin-bottom: 0.9rem; }
+.host-select { width: 100%; padding: 0.65rem 1rem; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.88rem; outline: none; }
+
+/* Buttons */
+.host-btn { padding: 0.65rem 1.2rem; border: none; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+.host-btn:disabled { opacity: .4; cursor: not-allowed; }
+.host-btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+.host-btn-primary:hover:not(:disabled) { opacity: .88; }
+.host-btn-ghost { background: transparent; border: 1.5px solid rgba(20,184,166,.3); color: var(--primary); }
+.host-btn-ghost:hover:not(:disabled) { background: rgba(20,184,166,.08); }
+.host-btn-danger { background: transparent; border: 1.5px solid rgba(239,68,68,.3); color: #ef4444; }
+.host-btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.05); }
+.host-btn-full { width: 100%; }
+.host-btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+/* Option inputs */
+.opt-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+.opt-letter { font-size: 0.75rem; font-weight: 700; color: var(--primary); background: rgba(20,184,166,.12); border: 1px solid rgba(20,184,166,.2); border-radius: 6px; padding: 0.5rem 0.55rem; min-width: 32px; text-align: center; flex-shrink: 0; }
+.opt-row input { flex: 1; }
+
+/* Correct-answer radio buttons */
+.opt-correct-radio { display: flex; align-items: center; cursor: pointer; }
+.opt-correct-radio input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+
+/* Question bank collapsible */
+.bank-toggle-btn { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); cursor: pointer; margin-bottom: 0.9rem; }
+.bank-toggle-btn .bank-chevron { transition: transform .2s; font-style: normal; }
+.bank-toggle-btn.open .bank-chevron { transform: rotate(180deg); }
+.bank-panel { display: none; margin-bottom: 1.1rem; padding-bottom: 1.1rem; border-bottom: 1px solid rgba(20,184,166,.15); }
+.bank-panel.open { display: block; }
