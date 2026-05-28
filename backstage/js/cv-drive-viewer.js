@@ -33,17 +33,33 @@
     return meta.mimeType === 'application/vnd.google-apps.presentation';
   }
 
+  // slidesEmbedUrl(urlOrId): canonical Google Slides embed contract for the
+  // whole app. Returns the published /embed player URL (chrome-free except a
+  // bottom playbar, which cv-slides-clip clips) for ANY Slides input — a raw
+  // file id, a /presentation/d/<id>/* link, or a /presentation/d/e/<pubid>/*
+  // published link. Already-embed forms pass through. Unknown input returns
+  // as-is. This is what ClassForge effectively did; reuse it anywhere a Google
+  // Slides needs to render without Google's chrome.
+  function slidesEmbedUrl(urlOrId) {
+    const s = String(urlOrId == null ? '' : urlOrId).trim();
+    if (!s) return '';
+    if (/\/(embed|pubembed)\b/.test(s)) return s;
+    const pub = s.match(/\/presentation\/d\/e\/([a-zA-Z0-9_-]+)/);
+    if (pub) return 'https://docs.google.com/presentation/d/e/' + pub[1] + '/embed?start=false&loop=false';
+    const m = s.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/) ||
+      (/^[a-zA-Z0-9_-]{20,}$/.test(s) ? [null, s] : null);
+    if (m) return 'https://docs.google.com/presentation/d/' + m[1] + '/embed?start=false&loop=false';
+    return s;
+  }
+
   function previewSrcFor(item) {
     const meta = (item && item.meta_json) || {};
-    // Presentations render through the published Slides /embed player (what
-    // ClassForge used): chrome-free except a bottom playbar, which the
-    // cv-slides-clip shell clips. No top-right pop-out → no mask needed. The
-    // generic /file/d/<id>/preview viewer (used for Docs/PDFs) carries Google's
-    // pop-out and is only for non-presentation files.
+    // Presentations render through the chrome-free Slides /embed player (what
+    // ClassForge used); the generic /file/d/<id>/preview viewer (used for
+    // Docs/PDFs) carries Google's pop-out and is only for non-presentation files.
     if (_isSlide(item)) {
-      const sid = meta.file_id || _extractFileId(meta.url);
-      if (sid) return 'https://docs.google.com/presentation/d/' + encodeURIComponent(sid) + '/embed?start=false&loop=false';
-      if (meta.url) return meta.url;
+      const src = slidesEmbedUrl(meta.file_id || meta.url);
+      if (src) return src;
     }
     const id = meta.file_id || _extractFileId(meta.url);
     return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';
@@ -122,6 +138,7 @@
   }
 
   global.CVDriveViewer = {
+    slidesEmbedUrl:   slidesEmbedUrl,
     previewSrcFor:    previewSrcFor,
     mountInContainer: mountInContainer,
     openModal:        openModal

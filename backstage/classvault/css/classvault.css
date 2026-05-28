@@ -958,10 +958,11 @@ body.cv-focus .cv-focus-hot {
      .cv-slides-inline                         Drive popup slides (_renderPopupCard)
      .cv-renderer-iframe-wrap.cv-slides-clip   Drive presentation files (CVDriveViewer)
                                                and slide-type published embeds (_mountIframe)
-   Drive *files* (/preview PDFs/Docs) keep the plain .cv-renderer-iframe-wrap so
-   their content is never cropped — this is why Bundle D dropped the old blanket
-   clip; restricting it to presentations resolves that conflict. The corner mask
-   covers Google's "Open in Slides" badge. */
+   All of these load the chrome-free /embed player (CVDriveViewer.slidesEmbedUrl),
+   so the only chrome is the bottom playbar, which this clip hides — no corner
+   mask needed. Drive *files* (/preview PDFs/Docs) keep the plain
+   .cv-renderer-iframe-wrap so their content is never cropped (the Bundle D
+   reason); restricting the clip to presentations resolves that conflict. */
 .cv-slides-inline,
 .cv-renderer-iframe-wrap.cv-slides-clip {
   position: relative;
@@ -977,17 +978,6 @@ body.cv-focus .cv-focus-hot {
   width: 100%;
   height: calc(100% + 60px);
   border: 0;
-}
-.cv-slides-corner-mask {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 64px;
-  height: 56px;
-  background: var(--surface);
-  /* Absorb clicks so the masked "Open in Slides" badge can't be triggered. */
-  pointer-events: auto;
-  z-index: 1;
 }
 /* Card: structural flex column. Header is a fixed sibling above the
    scrollable body — content does NOT scroll under it. */

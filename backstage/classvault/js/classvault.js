@@ -1486,32 +1486,28 @@ function _mountIframe(url, container, emptyMsg, opts) {
   }
   container.innerHTML = '';
   const wrap = document.createElement('div');
-  // opts.mask marks a slide embed: add cv-slides-clip so the oversize+clip rule
-  // (classvault.css) hides Google's bottom control bar. Non-slide iframes keep
-  // the plain wrap.
-  wrap.className = opts.mask ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
+  // opts.slide marks a Slides /embed: add cv-slides-clip so the oversize+clip
+  // rule (classvault.css) hides the bottom playbar. No corner mask — /embed has
+  // no top chrome to cover. Non-slide iframes keep the plain wrap.
+  wrap.className = opts.slide ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
   const iframe = document.createElement('iframe');
   iframe.className = 'cv-renderer-iframe';
   iframe.src = url;
   iframe.setAttribute('allow', 'autoplay; encrypted-media; clipboard-write; fullscreen');
   iframe.setAttribute('referrerpolicy', 'no-referrer');
   wrap.appendChild(iframe);
-  if (opts.mask) {
-    // Surface-coloured corner mask covers Google's "Open in Slides" badge.
-    const mask = document.createElement('div');
-    mask.className = 'cv-slides-corner-mask';
-    mask.setAttribute('aria-hidden', 'true');
-    wrap.appendChild(mask);
-  }
   container.appendChild(wrap);
 }
 
 function _renderIframe(item, container) {
-  const url = (item.meta_json && item.meta_json.url) || '';
-  // Apply the corner mask for type=slide (Google Slides published embed) so
-  // the "Open in Slides" badge is hidden. For lab and embed types we keep the
-  // host chrome visible.
-  _mountIframe(url, container, undefined, { mask: item.type === 'slide' });
+  let url = (item.meta_json && item.meta_json.url) || '';
+  const isSlide = item.type === 'slide';
+  // Presentations (any pasted Google Slides link) render chrome-free through the
+  // shared /embed contract + cv-slides-clip. lab/embed keep their host chrome.
+  if (isSlide && window.CVDriveViewer && CVDriveViewer.slidesEmbedUrl) {
+    url = CVDriveViewer.slidesEmbedUrl(url);
+  }
+  _mountIframe(url, container, undefined, { slide: isSlide });
 }
 
 function _renderDriveFolder(item, container) {
@@ -1608,17 +1604,18 @@ function _renderPopupCard(item, container) {
   const url = (item.meta_json && item.meta_json.url) || '';
   const isDrive = String(item.id || '').startsWith('drive:');
 
-  // Drive Slides: render the /embed URL full-bleed inline. A surface-coloured
-  // corner mask covers Google's "Open in Slides" badge in the top-right of the
-  // iframe. The "↗ Janela" action lives in the bottom action bar via CVTypes.
+  // Drive Slides: render full-bleed inline through the chrome-free /embed
+  // contract (shared helper) + cv-slides-clip for the bottom playbar. No mask —
+  // /embed has no top chrome. "↗ Janela" lives in the bottom bar via CVTypes.
   // Falls back to the launcher card below when not a Drive item.
   if (isDrive && url) {
+    const embedUrl = (window.CVDriveViewer && CVDriveViewer.slidesEmbedUrl)
+      ? CVDriveViewer.slidesEmbedUrl(url) : url;
     container.innerHTML =
       '<div class="cv-slides-inline">' +
-        '<iframe class="cv-renderer-iframe" src="' + _esc(url) + '" ' +
+        '<iframe class="cv-renderer-iframe" src="' + _esc(embedUrl) + '" ' +
           'allow="autoplay; encrypted-media; clipboard-write; fullscreen" ' +
           'referrerpolicy="no-referrer"></iframe>' +
-        '<div class="cv-slides-corner-mask" aria-hidden="true"></div>' +
       '</div>';
     return;
   }
