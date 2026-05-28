@@ -438,6 +438,37 @@
   color: var(--primary);
 }
 
+/* Bundle Q: G dot Google connection indicator. The colour states are driven
+   by [data-g-status] so JS only sets one attribute. Disconnected = muted
+   grey, connecting = amber pulse, connected = brand accent. */
+.bs-g-dot[data-g-status="disconnected"] {
+  color: var(--text-secondary);
+  border-color: rgba(148,163,184,.3);
+  opacity: 0.7;
+}
+.bs-g-dot[data-g-status="disconnected"]:hover {
+  opacity: 1;
+  border-color: var(--text-secondary);
+  background: rgba(148,163,184,.1);
+}
+.bs-g-dot[data-g-status="connecting"] {
+  color: #f59e0b;
+  border-color: rgba(245,158,11,.4);
+  animation: bs-g-dot-pulse 1.2s ease-in-out infinite;
+}
+.bs-g-dot[data-g-status="connected"] {
+  color: #34a853;
+  border-color: rgba(52,168,83,.5);
+}
+.bs-g-dot[data-g-status="connected"]:hover {
+  background: rgba(52,168,83,.1);
+  border-color: #34a853;
+}
+@keyframes bs-g-dot-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+
 .bs-logout-btn {
   padding: 0.4rem 1rem;
   background: transparent;

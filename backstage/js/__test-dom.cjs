@@ -99,6 +99,27 @@ function makeNode(tag) {
       this.childNodes.push(child);
       return child;
     },
+    insertBefore(child, ref) {
+      child.parentNode = this;
+      if (!ref) {
+        this.children.push(child);
+        this.childNodes.push(child);
+        return child;
+      }
+      const i = this.children.indexOf(ref);
+      const j = this.childNodes.indexOf(ref);
+      if (i === -1) {
+        this.children.push(child);
+        this.childNodes.push(child);
+      } else {
+        this.children.splice(i, 0, child);
+        this.childNodes.splice(j === -1 ? this.childNodes.length : j, 0, child);
+      }
+      return child;
+    },
+    get firstChild() {
+      return this.childNodes[0] || null;
+    },
     removeChild(child) {
       this.children = this.children.filter((c) => c !== child);
       this.childNodes = this.childNodes.filter((c) => c !== child);

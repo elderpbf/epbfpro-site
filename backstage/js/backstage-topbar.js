@@ -20,10 +20,16 @@ window.Topbar = (function() {
 
   var GEAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
+  // Bundle Q: G dot. Bold "G" glyph for the Google connection indicator. The
+  // colour states (disconnected / connecting / connected) are driven via the
+  // [data-g-status] attribute in CSS.
+  var G_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a8 8 0 1 0 7.45 11"/><path d="M12 12h8"/></svg>';
+
   var _inner = null;
   var _itemsAnchor = null;
   var _tabsByKey = {};
   var _liveSessionTimer = null;
+  var _gDotBtn = null;
 
   // ── Auto-hide (presentation mode only) ────────────────────
 
@@ -196,6 +202,21 @@ window.Topbar = (function() {
 
     // Custom items insert before theme toggle
     _itemsAnchor = themeBtn;
+
+    // Bundle Q: G dot. Portal mode only; presentation overlays don't expose
+    // Google connection state. Click triggers lazy BS_GOOGLE.init() then a
+    // consent popup; success flips [data-g-status]. CSS owns the colour states.
+    if (!isPresentation && typeof BS_GOOGLE !== 'undefined') {
+      _gDotBtn = document.createElement('button');
+      _gDotBtn.className = 'bs-icon-btn bs-g-dot';
+      _gDotBtn.id = 'g-dot-btn';
+      _gDotBtn.setAttribute('aria-label', 'Conexão Google');
+      _gDotBtn.title = 'Conectar Google';
+      _gDotBtn.innerHTML = G_SVG;
+      _setGStatus(BS_GOOGLE && BS_GOOGLE.isAuthed() ? 'connected' : 'disconnected');
+      _gDotBtn.addEventListener('click', _onGDotClick);
+      _inner.appendChild(_gDotBtn);
+    }
 
     // Settings gear
     var settingsBtn = document.createElement('button');
@@ -401,6 +422,47 @@ window.Topbar = (function() {
     });
   }
 
+  // ── Bundle Q: G dot (Google connection indicator) ──────────
+
+  function _setGStatus(status) {
+    if (!_gDotBtn) return;
+    _gDotBtn.setAttribute('data-g-status', status);
+    if (status === 'connected') {
+      var email = (typeof BS_GOOGLE !== 'undefined' && BS_GOOGLE.getEmail) ? BS_GOOGLE.getEmail() : '';
+      _gDotBtn.title = email ? ('Google: ' + email) : 'Google conectado';
+    } else if (status === 'connecting') {
+      _gDotBtn.title = 'Conectando ao Google...';
+    } else {
+      _gDotBtn.title = 'Conectar Google';
+    }
+  }
+
+  async function _onGDotClick() {
+    if (typeof BS_GOOGLE === 'undefined') return;
+    if (BS_GOOGLE.isAuthed()) {
+      // Already connected. No-op for this bundle; Sair handles full sign-out.
+      return;
+    }
+    _setGStatus('connecting');
+    try {
+      if (typeof BS_GOOGLE.init === 'function') {
+        await BS_GOOGLE.init();
+      }
+      await BS_GOOGLE.requestToken({ prompt: 'consent' });
+      _setGStatus(BS_GOOGLE.isAuthed() ? 'connected' : 'disconnected');
+    } catch (_) {
+      _setGStatus('disconnected');
+    }
+  }
+
+  // Re-sync the G dot to the current BS_GOOGLE state. Call this after any
+  // other consent flow completes (e.g., a Drive feature triggered a connect
+  // inline) so the topbar reflects the new state without a full re-init.
+  function refreshGoogleStatus() {
+    if (!_gDotBtn || typeof BS_GOOGLE === 'undefined') return;
+    _setGStatus(BS_GOOGLE.isAuthed() ? 'connected' : 'disconnected');
+  }
+
   // Render the sub-tabs for a parent Codex key as inline links into an arbitrary
   // container element (live bar, page header, etc.). Lets pages absorb the
   // 30px sub-row into their own chrome instead of stacking another row.
@@ -427,7 +489,8 @@ window.Topbar = (function() {
     codexSubTabs: codexSubTabs,
     setTabDot: setTabDot,
     startLiveSessionPoll: startLiveSessionPoll,
-    renderSubTabsInto: renderSubTabsInto
+    renderSubTabsInto: renderSubTabsInto,
+    refreshGoogleStatus: refreshGoogleStatus
   };
 
 })();
