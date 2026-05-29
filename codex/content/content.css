@@ -4,66 +4,9 @@
  * color token is introduced (dark mode is inherited). Colors come only from
  * CSS custom properties, per the module contract. */
 
-/* ── Shell + sub-tab nav ─────────────────────────────────────────────────── */
-.cdx-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-/* Sub-tab bar: a full-bleed surface strip flush under the main topbar. The
-   negative margins break it out of the .cdx-view 1.5rem padding so it reads as
-   part of the chrome (like the legacy sub-tab row), not floating content. Only
-   tabs that declare sub-tabs render it (Cohorts never mounts .cdx-subtabs). */
-.cdx-subtabs {
-  flex-shrink: 0;
-  display: flex;
-  align-items: stretch;
-  gap: 0.1rem;
-  margin: -1.5rem -1.5rem 1.5rem;
-  padding: 0 1.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-}
-
-.cdx-subtab {
-  appearance: none;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.85rem 0.9rem;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.cdx-subtab:hover { color: var(--text-primary); }
-.cdx-subtab.active {
-  color: var(--codex-content);
-  border-bottom-color: var(--codex-content);
-}
-
-/* Legacy bridge sub-tabs link out to the not-yet-migrated ClassTrail page.
-   Dimmed + ↗ marker so it reads as "leaves Codex" until that sub-tab migrates. */
-.cdx-subtab--legacy {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  opacity: 0.72;
-}
-.cdx-subtab--legacy:hover { opacity: 1; color: var(--text-primary); }
-.cdx-subtab-ext { font-size: 0.7em; }
-
-.cdx-subview {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
+/* The sub-tab BAR is the legacy bs-topbar-subrow rendered by codex-topbar.js
+   (styled in backstage.css), so no sub-tab styles live here. This file styles
+   only the Items sub-tab content below. */
 
 /* ── Items toolbar ───────────────────────────────────────────────────────── */
 .cdx-items { display: flex; flex-direction: column; gap: 1rem; }

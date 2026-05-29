@@ -39,6 +39,9 @@ export function init(opts) {
   opts = opts || {};
   const active = opts.active || '';
   const sections = opts.sections || [];
+  // Sub-tabs for the active tab, rendered as the legacy bs-topbar-subrow chrome.
+  // Each entry: { label, href, active }. Empty/omitted -> no sub-row (collapses).
+  const subTabs = opts.subTabs || [];
   const container = document.querySelector('.bs-app') || document.body;
 
   const header = document.createElement('header');
@@ -142,6 +145,30 @@ export function init(opts) {
   inner.appendChild(logoutBtn);
 
   header.appendChild(inner);
+
+  // Sub-tab row: reuse the legacy bs-topbar-subrow chrome (styled in
+  // backstage.css). Only rendered when the active tab declares sub-tabs, so
+  // tabs without them (Cohorts) keep the 64px single-row topbar.
+  if (subTabs.length > 0) {
+    const subRow = document.createElement('div');
+    subRow.className = 'bs-topbar-subrow';
+    const subStrip = document.createElement('nav');
+    subStrip.className = 'bs-topbar-subtabs';
+    subStrip.setAttribute('role', 'tablist');
+    subStrip.setAttribute('aria-label', 'Sub-navegação');
+    subTabs.forEach((s) => {
+      const a = document.createElement('a');
+      a.className = 'bs-topbar-subtab' + (s.active ? ' active' : '');
+      a.href = s.href || '#';
+      a.setAttribute('role', 'tab');
+      if (s.active) a.setAttribute('aria-current', 'page');
+      a.textContent = s.label;
+      subStrip.appendChild(a);
+    });
+    subRow.appendChild(subStrip);
+    header.appendChild(subRow);
+  }
+
   container.insertBefore(header, container.firstChild);
 
   // Reuse shared shell services.

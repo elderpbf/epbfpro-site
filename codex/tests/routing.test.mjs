@@ -16,6 +16,7 @@ const read = (rel) => {
 const legacyTopbar = read('../../backstage/js/backstage-topbar.js');
 const codexTopbar = read('../js/codex-topbar.js');
 const contentJs = read('../content/content.js');
+const indexHtml = read('../index.html');
 
 test('legacy Backstage topbar routes migrated tabs to /codex/', () => {
   const block = legacyTopbar.match(/var CODEX_TABS\s*=\s*\[([\s\S]*?)\]/);
@@ -53,4 +54,24 @@ test('Content shell bridges un-migrated sub-tabs to legacy ClassTrail', () => {
     const re = new RegExp("key:\\s*'" + key + "'[\\s\\S]*?href:\\s*'/backstage/classtrail/\\?tab=" + tab + "'");
     assert.match(contentJs, re, `${key} bridges to ClassTrail ?tab=${tab}`);
   }
+});
+
+test('the sub-tab BAR is the legacy bs-topbar-subrow rendered by the Codex topbar', () => {
+  // Reuse the existing chrome, do not hand-roll a bar.
+  assert.match(codexTopbar, /opts\.subTabs/, 'topbar reads opts.subTabs');
+  assert.match(codexTopbar, /['"]bs-topbar-subrow['"]/, 'renders bs-topbar-subrow');
+  assert.match(codexTopbar, /['"]bs-topbar-subtab['"]/, 'renders bs-topbar-subtab links');
+  // Only when sub-tabs exist (Cohorts stays single-row).
+  assert.match(codexTopbar, /subTabs\.length\s*>\s*0/, 'sub-row only when sub-tabs exist');
+});
+
+test('content exposes subtabs() with native /codex routes + legacy bridges', () => {
+  assert.match(contentJs, /export\s+function\s+subtabs\s*\(/, 'content exports subtabs()');
+  assert.match(contentJs, /\/codex\/\?tab=content&sub=/, 'native sub-tabs route to /codex/?tab=content&sub=');
+});
+
+test('boot hands the Content sub-tabs to the topbar and the sub to mount', () => {
+  assert.match(indexHtml, /content\.subtabs\(/, 'boot builds sub-tabs from content.subtabs()');
+  assert.match(indexHtml, /topbar\(\s*\{\s*active:\s*tab,\s*subTabs\s*\}\s*\)/, 'boot passes subTabs to the topbar');
+  assert.match(indexHtml, /ctx\.sub\s*=\s*sub/, 'boot passes the active sub to mount');
 });
