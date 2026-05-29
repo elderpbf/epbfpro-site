@@ -13,10 +13,17 @@
 // Returns: { destroy() }
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CT_AI_SPEC  (../backstage/js/ct-ai-spec.js)  prompt-building logic
-//   window.BSToast     (../backstage/js/bs-toast.js)     optional toast
+//   window.CT_AI_SPEC      (../backstage/js/ct-ai-spec.js)  prompt-building logic
+//   window.BSToast         (../backstage/js/bs-toast.js)     optional toast
+//   window.bsLog/window.dbg (../backstage/js/debug.js)       optional debug pill
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+
+// AI action glyph (inline SVG sparkle, matches the cdx topbar icon style; no emoji).
+const AI_GLYPH = '<svg class="cdx-btn-glyph" width="15" height="15" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>' +
+  '<path d="M19 15l.7 1.8L21.5 17l-1.8.7L19 19.5l-.7-1.8L16.5 17l1.8-.7z"/></svg>';
 
 function _esc(s) {
   if (s == null) return '';
@@ -25,6 +32,14 @@ function _esc(s) {
 }
 function _toast(msg) {
   if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
+}
+// Surface AI failures to the debug pill (a client-side parse failure never
+// reaches callWorker's logging, so log it here with a response snippet).
+function _logAi(detail, res) {
+  const snippet = res && res.text ? String(res.text).slice(0, 400)
+    : (res == null ? 'null (rate-limited?)' : JSON.stringify(res).slice(0, 400));
+  if (typeof window.bsLog === 'function') window.bsLog('AI format | ' + detail + ' | response: ' + snippet, 'error');
+  if (typeof window.dbg === 'function') window.dbg('error', 'AI format: ' + detail);
 }
 
 export function mount(container, opts) {
@@ -76,7 +91,7 @@ export function mount(container, opts) {
         '<div class="cdx-modal-actions">' +
           '<button class="cdx-btn" id="cf-cancel">' + t('content.cancel') + '</button>' +
           '<button class="cdx-btn" id="cf-manual" type="button">' + t('creator.manual') + '</button>' +
-          '<button class="cdx-btn cdx-btn-primary" id="cf-ai" type="button">' + t('creator.ai_format') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" id="cf-ai" type="button">' + AI_GLYPH + ' ' + t('creator.ai_format') + '</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -121,7 +136,7 @@ export function mount(container, opts) {
     if (!raw) { _toast(t('creator.raw_required')); return; }
     const addEmojis = container.querySelector('#cf-emoji-toggle').checked;
     const btn = this;
-    const prev = btn.textContent;
+    const prev = btn.innerHTML;
     btn.disabled = true;
     btn.textContent = t('creator.ai_generating');
     try {
@@ -132,9 +147,9 @@ export function mount(container, opts) {
         temperature: 0.3,
         max_tokens: window.CT_AI_SPEC.MAX_TOKENS
       });
-      if (!res || !res.text) { _toast(t('creator.ai_no_content')); return; }
+      if (!res || !res.text) { _logAi('no content', res); _toast(t('creator.ai_no_content')); return; }
       let parsed = window.CT_AI_SPEC.parseModelJson(res.text);
-      if (!parsed || !parsed.body_md) { _toast(t('creator.ai_bad_format')); return; }
+      if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); _toast(t('creator.ai_bad_format')); return; }
       parsed = window.CT_AI_SPEC.enforcePromptVerbatim(parsed, raw);
       // Truncation guard. Deferred cleanup: convert to a cdx confirm modal.
       if (parsed.type !== 'prompt' && window.CT_AI_SPEC.looksTruncated(raw, parsed.body_md)) {
@@ -149,10 +164,11 @@ export function mount(container, opts) {
       const aiContext = { rawInput: raw, firstOutput: parsed, addEmojis };
       onAIComplete({ prefill, aiContext, tagLabels: parsed.tag_labels || [] });
     } catch (e) {
+      _logAi('exception', null);
       _toast(t('content.error') + ': ' + ((e && e.message) || e));
     } finally {
       btn.disabled = false;
-      btn.textContent = prev;
+      btn.innerHTML = prev;
     }
   });
 

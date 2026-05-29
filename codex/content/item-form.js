@@ -18,11 +18,18 @@
 // Returns: { isDirty(), getState(), destroy() }
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CT_AI_SPEC  (../backstage/js/ct-ai-spec.js)  prompt-building logic
-//   window.BSToast     (../backstage/js/bs-toast.js)     optional toast
-//   window.marked      (CDN, lazy)                       markdown preview
+//   window.CT_AI_SPEC      (../backstage/js/ct-ai-spec.js)  prompt-building logic
+//   window.BSToast         (../backstage/js/bs-toast.js)     optional toast
+//   window.bsLog/window.dbg (../backstage/js/debug.js)       optional debug pill
+//   window.marked          (CDN, lazy)                       markdown preview
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+
+// AI action glyph (inline SVG sparkle, matches the cdx topbar icon style; no emoji).
+const AI_GLYPH = '<svg class="cdx-btn-glyph" width="15" height="15" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>' +
+  '<path d="M19 15l.7 1.8L21.5 17l-1.8.7L19 19.5l-.7-1.8L16.5 17l1.8-.7z"/></svg>';
 
 function _esc(s) {
   if (s == null) return '';
@@ -34,6 +41,14 @@ function _toast(msg) {
   if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
 }
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
+// Surface AI failures to the debug pill (client-side parse failures never reach
+// callWorker's logging, so log them here with a response snippet).
+function _logAi(detail, res) {
+  const snippet = res && res.text ? String(res.text).slice(0, 400)
+    : (res == null ? 'null (rate-limited?)' : JSON.stringify(res).slice(0, 400));
+  if (typeof window.bsLog === 'function') window.bsLog('AI refine | ' + detail + ' | response: ' + snippet, 'error');
+  if (typeof window.dbg === 'function') window.dbg('error', 'AI refine: ' + detail);
+}
 
 function _readFileAsBase64(file) {
   return new Promise(function (resolve, reject) {
@@ -375,7 +390,7 @@ export function mount(container, opts) {
     : (isEdit && Array.isArray(item.tags) ? item.tags.map((tg) => tg.id) : []);
 
   const refazerBtn = aiContext
-    ? '<button class="cdx-btn" id="ie-refazer-btn" type="button">' + t('editor.refazer') + '</button>'
+    ? '<button class="cdx-btn" id="ie-refazer-btn" type="button">' + AI_GLYPH + ' ' + t('editor.refazer') + '</button>'
     : '';
   const closeBtn = closeLabel
     ? '<button class="cdx-btn cdx-btn-sm" id="ie-close">' + _esc(closeLabel) + '</button>'
@@ -472,7 +487,7 @@ export function mount(container, opts) {
   if (aiContext) {
     root.querySelector('#ie-refazer-btn').addEventListener('click', async function () {
       const btn = this;
-      const prev = btn.textContent;
+      const prev = btn.innerHTML;
       btn.disabled = true;
       btn.textContent = t('editor.refazer_loading');
       try {
@@ -499,9 +514,9 @@ export function mount(container, opts) {
           temperature: 0.3,
           max_tokens: window.CT_AI_SPEC.MAX_TOKENS
         });
-        if (!res || !res.text) { _toast(t('editor.ai_no_content')); return; }
+        if (!res || !res.text) { _logAi('no content', res); _toast(t('editor.ai_no_content')); return; }
         let parsed = window.CT_AI_SPEC.parseModelJson(res.text);
-        if (!parsed || !parsed.body_md) { _toast(t('editor.ai_bad_format')); return; }
+        if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); _toast(t('editor.ai_bad_format')); return; }
         parsed = window.CT_AI_SPEC.enforcePromptVerbatim(parsed, aiContext.rawInput);
 
         aiContext.firstOutput = parsed;
@@ -518,10 +533,11 @@ export function mount(container, opts) {
         markDirty();
         _toast(t('editor.item_redone'));
       } catch (e) {
+        _logAi('exception', null);
         _toast(_err(e));
       } finally {
         btn.disabled = false;
-        btn.textContent = prev;
+        btn.innerHTML = prev;
       }
     });
   }

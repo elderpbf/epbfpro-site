@@ -288,6 +288,9 @@
 
 .cdx-editor-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
+/* Inline SVG glyph inside a button (AI actions) */
+.cdx-btn-glyph { vertical-align: -2px; margin-right: 2px; }
+
 .cdx-preview-area {
   margin-top: 0.5rem;
   padding: 0.75rem 1rem;
