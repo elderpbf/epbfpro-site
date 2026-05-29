@@ -114,7 +114,13 @@ export const content = {
   // pool). Action names read from ct-admin.js.
   listSets:        (p) => call('ct_list_sets', p),
   getSet:          (p) => call('ct_get_set', p),            // { id } -> { set, items }
-  deleteSet:       (p) => call('ct_delete_set', p)          // { id } cascades to its items
+  deleteSet:       (p) => call('ct_delete_set', p),         // { id } cascades to its items
+  // Tarefas (assignments) authoring + student submissions. Action names read
+  // from ct-admin.js (Phase 5). listItemTurmas powers the "also released in"
+  // reuse label across turmas.
+  listItemTurmas:  (p) => call('ct_list_item_turmas', p),   // { item_id }
+  listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug }
+  deleteSubmission:(p) => call('ct_delete_submission', p)   // { id }
 };
 
 // Lesson presets — named bundles of library items, reused when planning a

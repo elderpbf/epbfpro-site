@@ -719,3 +719,60 @@
   border: 1px solid var(--cdx-chip-border);
   color: var(--text-secondary);
 }
+
+/* ── Tarefas sub-tab (assignments authoring + answers) ───────────────────── */
+.cdx-tarefas { display: flex; flex-direction: column; gap: 1rem; }
+.cdx-tarefas-toolbar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.cdx-tarefas-title { margin: 0; font-size: 1.15rem; color: var(--text-primary); flex: 1; }
+.cdx-tarefas-meta { font-size: 0.82rem; color: var(--text-secondary); }
+.cdx-tarefas-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.cdx-tarefa-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.cdx-tarefa-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.9rem; cursor: pointer; }
+.cdx-tarefa-head:hover { background: var(--cdx-card-hover-bg); }
+.cdx-tarefa-icon { flex-shrink: 0; display: inline-flex; color: var(--text-secondary); }
+.cdx-tarefa-icon svg, .cdx-tarefa-chev svg { display: block; }
+.cdx-tarefa-title-wrap { flex: 1; min-width: 0; }
+.cdx-tarefa-title { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.cdx-tarefa-sub { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.2rem; font-size: 0.78rem; color: var(--text-secondary); }
+.cdx-tarefa-dot { opacity: 0.5; }
+.cdx-tarefa-count.is-zero { opacity: 0.6; }
+.cdx-tarefa-anon-badge { color: var(--danger, #d33); }
+.cdx-tarefa-reuse.is-multi { color: var(--primary); cursor: help; }
+.cdx-tarefa-reuse.is-solo { opacity: 0.7; }
+.cdx-tarefa-chev { flex-shrink: 0; color: var(--text-secondary); transition: transform 0.15s; }
+.cdx-tarefa-row.is-expanded .cdx-tarefa-chev { transform: rotate(90deg); }
+.cdx-tarefa-body:empty { display: none; }
+
+.cdx-tarefa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 0.9rem; border-top: 1px solid var(--border); background: var(--background); }
+@media (max-width: 860px) { .cdx-tarefa-grid { grid-template-columns: 1fr; } }
+.cdx-tarefa-pane { min-width: 0; }
+.cdx-tarefa-pane-title { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--text-primary); }
+.cdx-tarefa-editor-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+
+.cdx-field-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.cdx-field-chip-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.35rem 0.7rem; font-size: 0.8rem; border-radius: 999px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--text-secondary); cursor: pointer; font-family: inherit;
+}
+.cdx-field-chip-btn.is-active { border-color: var(--primary); background: var(--cdx-card-sel-bg); color: var(--primary); font-weight: 600; }
+.cdx-field-chip-btn.is-disabled { opacity: 0.5; cursor: not-allowed; }
+.cdx-field-future { font-size: 0.65rem; padding: 0.05rem 0.3rem; border-radius: 4px; background: var(--cdx-chip-bg); }
+
+.cdx-tarefa-delete-quote { font-weight: 700; color: var(--text-primary); padding: 0.4rem 0.6rem; background: var(--cdx-card-sel-bg); border-radius: 6px; }
+.cdx-tf-del-input { width: 100%; box-sizing: border-box; margin-bottom: 1rem; }
+
+.cdx-resp-toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
+.cdx-resp-search { flex: 1; min-width: 0; }
+.cdx-resp-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 460px; overflow-y: auto; }
+.cdx-resp-empty { font-size: 0.85rem; color: var(--text-secondary); padding: 0.6rem 0; }
+.cdx-resp-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.7rem; background: var(--surface); }
+.cdx-resp-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; }
+.cdx-resp-who { font-weight: 600; font-size: 0.85rem; color: var(--text-primary); }
+.cdx-resp-who.is-anon { font-weight: 400; color: var(--text-secondary); }
+.cdx-resp-when { font-size: 0.74rem; color: var(--text-secondary); }
+.cdx-resp-content { font-size: 0.85rem; color: var(--text-primary); max-height: 4.5em; overflow: hidden; }
+.cdx-resp-card.is-expanded .cdx-resp-content { max-height: none; }
+.cdx-resp-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
