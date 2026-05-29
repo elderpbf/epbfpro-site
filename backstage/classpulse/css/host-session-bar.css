@@ -94,6 +94,16 @@
 .host-bar-visao-panel > .host-bar-visao-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.5rem; }
 .host-bar-visao-panel .view-toggle { display: flex; width: 100%; justify-content: flex-start; margin-bottom: 0.3rem; }
 .host-bar-visao-panel .view-toggle:last-child { margin-bottom: 0; }
+/* Reset/restore-layout action lives inside the Visão dropdown (full-width row,
+   separated from the column toggles), not as a standalone ↻ beside it. */
+.host-bar-visao-panel .reset-layout-btn {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; justify-content: flex-start;
+  margin: 0.45rem 0 0; padding: 0.55rem 0.4rem 0.2rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem; font-weight: 600;
+  border-radius: 0;
+}
 
 /* Responsive hamburger menu */
 .host-bar-menu { display: none; background: var(--background); border: 1.5px solid rgba(20,184,166,.25); border-radius: 7px; padding: 0.4rem 0.55rem; color: var(--text-primary); cursor: pointer; font-size: 1rem; line-height: 1; }

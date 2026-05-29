@@ -46,7 +46,7 @@
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
@@ -70,17 +70,16 @@
     }
     .k10-caption b { color: var(--cool); font-style: normal; font-weight: 700; }
 
-    /* Two columns: ChatGPT comum vs GPT customizado */
+    /* Two columns: chat avulso vs projeto pinado */
     .k10-main {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
       min-height: 0;
-      position: relative;
     }
     .k10-side {
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr);
       gap: 0.55rem;
       background: var(--surface);
       border: 1.5px solid var(--border);
@@ -97,7 +96,7 @@
     }
     .k10-side-title {
       font-family: var(--font-display);
-      font-size: clamp(16px, 1.3vw, 21px);
+      font-size: clamp(17px, 1.45vw, 23px);
       font-weight: 800;
       margin: 0;
       letter-spacing: -0.005em;
@@ -106,91 +105,77 @@
     .k10-side--gpt .k10-side-title { color: var(--cool); }
     .k10-side-badge {
       font-family: var(--font-mono);
-      font-size: clamp(10px, 0.75vw, 12px);
+      font-size: clamp(11px, 0.8vw, 13px);
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      padding: 0.2rem 0.55rem;
+      padding: 0.2rem 0.6rem;
       border-radius: 999px;
       font-weight: 700;
       border: 1px solid var(--border);
       color: var(--text-dim);
+      white-space: nowrap;
     }
 
-    /* Cápsula — pinned to the GPT side, lit by the active turn */
-    .k10-capsule {
+    /* Pinned-once banner (project side only) */
+    .k10-pinned {
       background: linear-gradient(135deg,
         rgba(var(--cool-rgb), 0.14),
         rgba(var(--focal-rgb), 0.10));
       border: 1.5px solid var(--cool);
       border-radius: 10px;
       padding: 0.55rem 0.75rem;
-      box-shadow: 0 0 18px rgba(var(--cool-rgb), 0.18);
-      cursor: pointer;
-      transition: box-shadow 220ms, transform 220ms;
+      box-shadow: 0 0 16px rgba(var(--cool-rgb), 0.16);
     }
-    .k10-capsule:hover { box-shadow: 0 0 24px rgba(var(--cool-rgb), 0.28); transform: translateY(-1px); }
-    .k10-cap-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-    }
-    .k10-cap-title {
+    .k10-pinned-label {
       font-family: var(--font-mono);
       font-size: clamp(11px, 0.85vw, 13px);
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
       color: var(--cool);
       font-weight: 700;
       text-transform: uppercase;
     }
-    .k10-cap-hint {
-      font-size: clamp(11px, 0.85vw, 13px);
-      color: var(--text-dim);
-      font-style: italic;
-    }
-    .k10-cap-chips {
+    .k10-pinned-chips {
       display: flex;
       flex-wrap: wrap;
       gap: 0.35rem;
-      margin-top: 0.45rem;
+      margin-top: 0.4rem;
     }
-    .k10-chip {
-      background: rgba(var(--cool-rgb), 0.16);
-      color: var(--cool);
-      font-size: clamp(12px, 0.95vw, 15px);
-      padding: 0.2rem 0.65rem;
-      border-radius: 999px;
-      font-family: var(--font-display);
-      font-weight: 600;
-      border: 1px solid rgba(var(--cool-rgb), 0.3);
-      transition: background 220ms, color 220ms, box-shadow 220ms, transform 220ms;
-    }
-    .k10-chip.is-lit {
-      background: var(--cool);
-      color: #fff;
-      box-shadow: 0 0 14px rgba(var(--cool-rgb), 0.5);
-      transform: scale(1.06);
-    }
-
-    /* Where the vanilla side would have a capsule, put a placeholder row
-       of equal height so the chat columns stay aligned. */
-    .k10-no-capsule {
+    /* placeholder so vanilla column header height matches the pinned banner */
+    .k10-no-pinned {
       background: transparent;
       border: 1.5px dashed var(--border);
       border-radius: 10px;
       padding: 0.55rem 0.75rem;
       color: var(--text-muted);
-      font-size: clamp(11px, 0.85vw, 13px);
+      font-size: clamp(12px, 0.9vw, 14px);
       font-style: italic;
       display: flex;
       align-items: center;
-      justify-content: center;
       letter-spacing: 0.02em;
     }
 
-    /* Chat scroll area */
-    .k10-chat {
+    .k10-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: rgba(var(--cool-rgb), 0.14);
+      color: var(--cool);
+      font-size: clamp(12px, 0.95vw, 15px);
+      padding: 0.18rem 0.6rem;
+      border-radius: 7px;
+      font-family: var(--font-display);
+      font-weight: 600;
+      border: 1px solid rgba(var(--cool-rgb), 0.28);
+      white-space: nowrap;
+    }
+    .k10-chip--reattach {
+      background: rgba(var(--bad-rgb), 0.12);
+      color: var(--bad);
+      border-color: rgba(var(--bad-rgb), 0.32);
+    }
+
+    /* Conversation list (both sides) */
+    .k10-convos {
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -198,113 +183,103 @@
       padding-right: 0.2rem;
       min-height: 0;
     }
-    .k10-msg {
-      padding: 0.55rem 0.75rem;
+    .k10-convo {
+      border: 1.5px solid var(--border);
       border-radius: 10px;
-      font-size: clamp(13px, 1.05vw, 17px);
-      line-height: 1.45;
-      max-width: 96%;
+      padding: 0.55rem 0.7rem;
+      background: rgba(var(--focal-rgb), 0.03);
+      opacity: 0.25;
+      transition: opacity 320ms, border-color 320ms, box-shadow 320ms;
     }
-    .k10-msg-user {
-      background: rgba(var(--cool-rgb), 0.10);
-      border: 1px solid rgba(var(--cool-rgb), 0.22);
-      align-self: flex-end;
+    .k10-convo.is-on { opacity: 1; }
+    .k10-convo.is-fresh {
+      border-color: var(--focal);
+      box-shadow: 0 0 14px rgba(var(--focal-rgb), 0.22);
+    }
+    .k10-convo-head {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 0.3rem;
+    }
+    .k10-convo-time {
+      font-family: var(--font-mono);
+      font-size: clamp(12px, 0.95vw, 15px);
+      font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+    .k10-convo-task {
+      font-size: clamp(14px, 1.1vw, 18px);
+      font-weight: 700;
       color: var(--text);
+      line-height: 1.25;
     }
-    .k10-msg-ia {
-      background: rgba(var(--focal-rgb), 0.08);
-      border-left: 3px solid var(--focal);
-      color: var(--text);
+    .k10-convo-attach {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      align-items: center;
     }
-    .k10-msg .setup {
-      color: var(--text-muted);
+    .k10-attach-tag {
+      font-size: clamp(11px, 0.85vw, 13px);
+      color: var(--bad);
       font-style: italic;
-      display: block;
-      margin-bottom: 0.35rem;
-      font-size: 0.92em;
-      padding-left: 0.5rem;
-      border-left: 2px solid rgba(var(--text-muted), 0.4);
+      font-weight: 600;
+      margin-right: 0.15rem;
     }
-    .k10-empty {
-      color: var(--text-muted);
-      font-style: italic;
+    .k10-reuse {
       font-size: clamp(13px, 1.0vw, 16px);
-      text-align: center;
-      padding: 1.2rem 0.6rem;
+      color: var(--good);
+      font-style: italic;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
     }
 
-    /* Token gauge */
-    .k10-gauge {
-      display: flex;
-      align-items: center;
-      gap: 0.55rem;
-      padding-top: 0.2rem;
+    /* Totals row */
+    .k10-totals {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.7rem;
     }
-    .k10-gauge-label {
+    .k10-total-box {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 0.55rem 0.85rem;
+    }
+    .k10-total-label {
+      font-size: clamp(11px, 0.85vw, 13px);
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .k10-total-pair {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin-top: 0.15rem;
+      flex-wrap: wrap;
+    }
+    .k10-total-val {
+      font-family: var(--font-mono);
+      font-size: clamp(22px, 2.4vw, 38px);
+      font-weight: 800;
+      line-height: 1.05;
+    }
+    .k10-total-val.bad { color: var(--bad); }
+    .k10-total-val.good { color: var(--good); }
+    .k10-total-vs {
+      font-size: clamp(12px, 0.9vw, 15px);
+      color: var(--text-dim);
+    }
+    .k10-total-sub {
       font-size: clamp(11px, 0.85vw, 14px);
       color: var(--text-dim);
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .k10-gauge-bar {
-      flex: 1;
-      height: clamp(10px, 1.0vw, 14px);
-      background: color-mix(in srgb, var(--text) 7%, transparent);
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
-    }
-    .k10-gauge-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 999px;
-      transition: width 700ms cubic-bezier(.4,0,.2,1), background 400ms;
-    }
-    .k10-gauge-val {
-      font-family: var(--font-mono);
-      font-size: clamp(13px, 1.0vw, 16px);
-      font-weight: 700;
-      min-width: 44px;
-      text-align: right;
-    }
-
-    /* Capsule ribbon — flows from capsule into prompt on demand. */
-    .k10-ribbon {
-      position: absolute;
-      top: 50px;
-      right: 25%;
-      width: 36%;
-      max-width: 360px;
-      background: linear-gradient(135deg, rgba(var(--cool-rgb), 0.94), rgba(var(--focal-rgb), 0.94));
-      color: #fff;
-      padding: 0.7rem 0.9rem;
-      border-radius: 10px;
-      font-size: clamp(13px, 1.0vw, 16px);
-      line-height: 1.45;
-      box-shadow: 0 16px 36px rgba(0,0,0,0.32);
-      opacity: 0;
-      transform: translateY(-12px) scale(0.96);
-      pointer-events: none;
-      z-index: 5;
       font-style: italic;
-    }
-    .k10-ribbon::before {
-      content: '↓ prefixo injetado em cada turno';
-      display: block;
-      font-family: var(--font-mono);
-      font-size: 0.78em;
-      letter-spacing: 0.08em;
-      color: rgba(255,255,255,0.92);
-      text-transform: uppercase;
-      margin-bottom: 0.35rem;
-      font-style: normal;
-      font-weight: 700;
-    }
-    .k10-ribbon.is-on {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      transition: opacity 360ms, transform 360ms;
+      margin-top: 0.1rem;
     }
 
     /* Operator bar */
@@ -355,335 +330,251 @@
       color: var(--focal);
       box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
     }
-    .k10-btn[disabled] {
-      opacity: 0.4;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
+    .k10-btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
     /* Responsive */
     @media (max-width: 700px) {
-      .k10-panel {
-        padding: 0.6rem 0.9rem 0.6rem;
-        gap: 0.55rem;
-      }
+      .k10-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
       .k10-caption p { font-size: 13px; line-height: 1.4; }
       .k10-caption { padding: 0.45rem 0.8rem; }
-      .k10-main {
-        grid-template-columns: 1fr;
-        grid-template-rows: 1fr 1fr;
-        gap: 0.55rem;
-      }
+      .k10-main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; gap: 0.55rem; }
       .k10-side { padding: 0.6rem 0.75rem; gap: 0.4rem; }
-      .k10-side-title { font-size: 15px; }
-      .k10-msg { font-size: 13px; line-height: 1.4; padding: 0.45rem 0.65rem; }
-      .k10-chip { font-size: 11px; padding: 0.15rem 0.5rem; }
-      .k10-gauge-val { font-size: 12px; }
+      .k10-side-title { font-size: 16px; }
+      .k10-convo-task { font-size: 14px; }
+      .k10-chip { font-size: 12px; padding: 0.15rem 0.5rem; }
+      .k10-totals { grid-template-columns: 1fr; gap: 0.4rem; }
+      .k10-total-val { font-size: 24px; }
       .k10-button-bar { flex-direction: column-reverse; align-items: stretch; gap: 0.4rem; }
       .k10-counter { text-align: center; font-size: 12px; }
-      .k10-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.4rem;
-      }
-      .k10-btn {
-        font-size: 13px;
-        padding: 0.6rem 0.5rem;
-        min-height: 44px;
-        text-align: center;
-      }
-      .k10-ribbon { top: auto; bottom: 80px; right: 6px; width: 88%; max-width: 88%; }
+      .k10-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+      .k10-btn { font-size: 13px; padding: 0.6rem 0.5rem; min-height: 44px; text-align: center; }
     }
     @media (max-width: 400px) {
-      .k10-side-title { font-size: 14px; }
-      .k10-msg { font-size: 12.5px; }
+      .k10-side-title { font-size: 15px; }
+      .k10-convo-task { font-size: 13px; }
       .k10-btn { font-size: 12.5px; padding: 0.55rem 0.4rem; }
     }
     @media (max-height: 500px) and (orientation: landscape) {
-      .k10-panel {
-        padding: 0.4rem 1rem 0.35rem;
-        gap: 0.4rem;
-      }
+      .k10-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
       .k10-caption p { font-size: 12px; line-height: 1.35; }
       .k10-caption { padding: 0.35rem 0.7rem; }
       .k10-side { padding: 0.55rem 0.7rem; gap: 0.35rem; }
-      .k10-side-title { font-size: 14px; }
-      .k10-msg { font-size: 12.5px; }
+      .k10-side-title { font-size: 15px; }
+      .k10-convo-task { font-size: 13px; }
+      .k10-total-val { font-size: 22px; }
       .k10-btn { font-size: 12px; padding: 0.4rem 0.75rem; min-height: 32px; }
     }
   </style>
 
   <div class="lab-header"
        data-lab-title="Cápsula do GPT"
-       data-lab-subtitle="Custom GPT = setup pinado uma vez"></div>
+       data-lab-subtitle="Setup pinado uma vez vale por todas as conversas"></div>
 
   <div class="k10-caption">
-    <p>Um GPT customizado não é produto premium. É o <b>mesmo parágrafo de setup</b> guardado uma única vez, mais arquivos pinados que o modelo lê em todo turno sem o advogado redigitar.</p>
+    <p>Um dia de trabalho com <b>o mesmo cliente</b>: cinco conversas com a IA. No chat avulso, os mesmos PDFs são <b>recolados em cada conversa</b>. No GPT do projeto, eles foram preparados uma vez e estão lá em todas.</p>
   </div>
 
   <div class="k10-main">
-    <!-- LEFT: vanilla ChatGPT — operator re-pastes the setup each turn -->
+    <!-- LEFT: chat avulso — re-attaches the documents every conversation -->
     <div class="k10-side k10-side--vanilla">
       <div class="k10-side-head">
-        <h2 class="k10-side-title">ChatGPT comum</h2>
-        <span class="k10-side-badge">sem cápsula</span>
+        <h2 class="k10-side-title">Chat avulso</h2>
+        <span class="k10-side-badge">reanexa a cada conversa</span>
       </div>
-      <div class="k10-no-capsule">setup colado no chat a cada turno</div>
-      <div class="k10-chat" id="k10-vanilla-chat">
-        <p class="k10-empty">— turno 0 de 5 — clique <b>Próximo turno</b> para começar.</p>
-      </div>
-      <div class="k10-gauge">
-        <span class="k10-gauge-label">janela</span>
-        <div class="k10-gauge-bar"><div class="k10-gauge-fill" id="k10-gauge-vanilla"></div></div>
-        <span class="k10-gauge-val" id="k10-gauge-vanilla-val">8%</span>
-      </div>
+      <div class="k10-no-pinned">documentos vivem no disco · arrastados de novo toda vez</div>
+      <div class="k10-convos" id="k10-convos-v"></div>
     </div>
 
-    <!-- RIGHT: customized GPT — capsule pre-pays the setup and rides every turn -->
+    <!-- RIGHT: projeto/GPT — documents pinned once, ride every conversation -->
     <div class="k10-side k10-side--gpt">
       <div class="k10-side-head">
-        <h2 class="k10-side-title">GPT "Minutar Trabalhista"</h2>
-        <span class="k10-side-badge" style="color: var(--cool); border-color: var(--cool);">com cápsula</span>
+        <h2 class="k10-side-title">GPT "Cliente Sr. R"</h2>
+        <span class="k10-side-badge" style="color: var(--cool); border-color: var(--cool);">pinado uma vez</span>
       </div>
-      <div class="k10-capsule" id="k10-capsule" title="Clique para ver o prefixo injetado">
-        <div class="k10-cap-row">
-          <span class="k10-cap-title">⚡ cápsula ativa</span>
-          <span class="k10-cap-hint">clique para ver o prefixo</span>
+      <div class="k10-pinned">
+        <span class="k10-pinned-label">⚡ preparado uma única vez (no início)</span>
+        <div class="k10-pinned-chips">
+          <span class="k10-chip">📎 Procuração.pdf</span>
+          <span class="k10-chip">📎 Contrato.pdf</span>
+          <span class="k10-chip">📎 CCT-2024.pdf</span>
+          <span class="k10-chip">📎 Modelo-base.docx</span>
+          <span class="k10-chip">📎 Súmulas TST.pdf</span>
         </div>
-        <div class="k10-cap-chips">
-          <span class="k10-chip" data-chip="instr">Instruções</span>
-          <span class="k10-chip" data-chip="model">Modelo-base.docx</span>
-          <span class="k10-chip" data-chip="sumulas">Súmulas TST 2024</span>
-        </div>
       </div>
-      <div class="k10-chat" id="k10-gpt-chat">
-        <p class="k10-empty">— turno 0 de 5 — clique <b>Próximo turno</b> para começar.</p>
-      </div>
-      <div class="k10-gauge">
-        <span class="k10-gauge-label">janela</span>
-        <div class="k10-gauge-bar"><div class="k10-gauge-fill" id="k10-gauge-gpt"></div></div>
-        <span class="k10-gauge-val" id="k10-gauge-gpt-val">24%</span>
-      </div>
+      <div class="k10-convos" id="k10-convos-p"></div>
     </div>
+  </div>
 
-    <!-- Ribbon overlay: the prefix the capsule silently prepends each turn. -->
-    <div class="k10-ribbon" id="k10-ribbon">
-      "Sou advogado trabalhista. Linguagem formal. Padrão TST. Antes de citar súmula, confirme se está vigente. Use o Modelo-base.docx como template estrutural."
+  <div class="k10-totals">
+    <div class="k10-total-box">
+      <div class="k10-total-label">anexos recolados hoje</div>
+      <div class="k10-total-pair">
+        <span class="k10-total-val bad" id="k10-attach-v">0</span>
+        <span class="k10-total-vs">vs</span>
+        <span class="k10-total-val good" id="k10-attach-p">0</span>
+      </div>
+      <div class="k10-total-sub">avulso recola · projeto reaproveita</div>
+    </div>
+    <div class="k10-total-box">
+      <div class="k10-total-label">tempo gasto recolando</div>
+      <div class="k10-total-pair">
+        <span class="k10-total-val bad" id="k10-time-v">0 min</span>
+        <span class="k10-total-vs">vs</span>
+        <span class="k10-total-val good">0 min</span>
+      </div>
+      <div class="k10-total-sub">≈ 3 min por reanexação manual</div>
+    </div>
+    <div class="k10-total-box">
+      <div class="k10-total-label">se o dia se repete</div>
+      <div class="k10-total-pair">
+        <span class="k10-total-val bad" id="k10-year-v">0 h</span>
+        <span class="k10-total-vs">/ ano</span>
+      </div>
+      <div class="k10-total-sub">estimativa em rotina contínua de cliente</div>
     </div>
   </div>
 
   <div class="k10-button-bar">
-    <span class="k10-counter">turno <b id="k10-turn">0</b> de 5</span>
+    <span class="k10-counter">conversa <b id="k10-turn">0</b> de 5</span>
     <div class="k10-actions">
-      <button class="k10-btn" id="k10-show-prefix" type="button">Mostrar prefixo da cápsula</button>
-      <button class="k10-btn k10-btn-primary" id="k10-next" type="button">Próximo turno</button>
+      <button class="k10-btn k10-btn-primary" id="k10-next" type="button">Próxima conversa</button>
+      <button class="k10-btn" id="k10-all" type="button">Mostrar o dia inteiro</button>
       <button class="k10-btn" id="k10-reset" type="button">Reiniciar</button>
     </div>
   </div>
 
   <script>
     (function() {
-      // ── Turns script ────────────────────────────────────
-      // Five-turn trabalhista flow with VERIFIED current súmulas (338 + 462 TST),
-      // an internally consistent salary base of R$ 3.200 / 4-year contract,
-      // and the post-Reforma Trabalhista callout for art. 58 §2º CLT
-      // (horas in itinere revogadas pela Lei 13.467/2017).
-      //
-      // Each turn lights one or more capsule chips: 'instr' for any answer,
-      // 'model' when the structure of the peça is touched, 'sumulas' when a
-      // súmula is cited. This makes "the capsule fired here" legible.
-      const TURNS = [
-        {
-          user:
-            'Cliente Sr. R., demitido sem justa causa em 28/03/2024. Contrato desde 02/02/2020. ' +
-            'Salário R$ 3.200,00. Aviso prévio indenizado. Quais verbas são devidas?',
-          ia:
-            'Verbas devidas no caso: <b>aviso prévio indenizado</b> (30 + 12 dias por tempo de serviço, ' +
-            'art. 1º Lei 12.506/2011); <b>saldo de salário</b> (28 dias de março); <b>13º proporcional</b> ' +
-            '(3/12); <b>férias proporcionais + 1/3</b> (3/12); <b>multa de 40%</b> sobre o saldo do FGTS; ' +
-            '<b>multa do art. 477 §8º CLT</b> caso o pagamento ultrapasse o prazo do §6º.',
-          chips: ['instr']
-        },
-        {
-          user: 'Pagamento das verbas saiu em 22/04/2024, 15 dias após a rescisão. Calcule a multa do art. 477.',
-          ia:
-            'Atraso configurado: o <b>art. 477 §6º CLT</b> exige pagamento em <b>10 dias</b> do término do ' +
-            'contrato. Penalidade do <b>§8º</b>: valor equivalente ao salário do empregado em favor do ' +
-            'trabalhador (R$ 3.200,00), <i>salvo se o empregado deu causa à mora</i> (<b>Súmula 462 TST</b>).',
-          chips: ['instr', 'sumulas']
-        },
-        {
-          user: 'Cliente alega 2h extras/dia, sem registro no cartão de ponto. Como pleitear?',
-          ia:
-            'Pedido: <b>horas extras com adicional de 50%</b> e <b>reflexos</b> em RSR, 13º, férias + 1/3 e FGTS. ' +
-            'Ônus da prova: <b>Súmula 338, I, TST</b> — empresa com mais de 20 empregados deve apresentar ' +
-            'controles de jornada; a não apresentação gera presunção <i>relativa</i> de veracidade da ' +
-            'jornada alegada na inicial. Prescrição quinquenal (art. 7º XXIX CF c/c art. 11 CLT).',
-          chips: ['instr', 'sumulas']
-        },
-        {
-          user: 'Empresa fica em zona rural, sem transporte público. Pleitear horas in itinere?',
-          ia:
-            '⚠ <b>Atenção:</b> o <b>art. 58 §2º da CLT</b>, que previa horas in itinere, foi <b>REVOGADO</b> ' +
-            'pela Lei 13.467/2017 (Reforma Trabalhista). O direito só subsiste se houver <b>ACT/CCT vigente</b> ' +
-            'que o mantenha por instrumento coletivo. Confirme com a convenção da categoria antes de incluir ' +
-            'o pedido.',
-          chips: ['instr']
-        },
-        {
-          user: 'Monte a estrutura final da reclamatória para protocolo.',
-          ia:
-            'Estrutura (modelo-base): (1) qualificação das partes; (2) histórico contratual; (3) fatos ' +
-            '(rescisão, atraso, jornada); (4) direito (CLT + Lei 12.506/2011 + Súmulas 338 e 462 TST); ' +
-            '(5) pedidos (verbas rescisórias, multa 477 §8º, horas extras + reflexos, honorários ' +
-            'sucumbenciais); (6) valor da causa; (7) rol de testemunhas. <b>Pronta para revisão.</b>',
-          chips: ['instr', 'model', 'sumulas']
-        }
+      // Five conversations across ONE working day, same client (Sr. R).
+      // The lesson: the avulso side re-attaches the relevant PDFs in every
+      // conversation; the project/GPT side pinned them once and reuses them.
+      // attach = the documents that conversation needs (and re-uploads on the
+      // avulso side). The project side never re-attaches — count stays 0.
+      const CONVOS = [
+        { time: '09h00', task: 'Parecer sobre a rescisão',      attach: ['Procuração', 'Contrato', 'CCT-2024'] },
+        { time: '10h30', task: 'Minutar a contestação',         attach: ['Procuração', 'Contrato', 'Modelo-base', 'Súmulas'] },
+        { time: '13h00', task: 'E-mail de retorno ao cliente',  attach: ['Procuração', 'Contrato'] },
+        { time: '15h00', task: 'Despacho para a audiência',     attach: ['Procuração', 'Contrato', 'CCT-2024'] },
+        { time: '17h00', task: 'Memorando interno do caso',     attach: ['Procuração', 'Modelo-base', 'Súmulas'] }
       ];
 
-      // The setup paragraph the vanilla side re-pastes every turn. Plausibly
-      // what a real lawyer would keep in a notes file and re-paste — short,
-      // not a contrived strawman.
-      const SETUP =
-        '[setup] Sou advogado trabalhista. Linguagem formal. Padrão TST. ' +
-        'Antes de citar súmula, confirme se está vigente. Use o Modelo-base.docx como template.';
+      const MIN_PER_ATTACH = 3;     // minutes lost re-uploading one document
+      const DAYS_PER_YEAR = 230;    // working days a recurring client touches
 
-      // Gauge curves:
-      //   vanilla: starts 8% (system prompt only), +15%/turn (setup + user + ia)
-      //   capsule: starts 24% (cápsula content pre-pays for pinned instr+files+súmulas),
-      //            +5%/turn  (user + ia only — setup is pinned, not re-charged)
-      // Crosses around turn 2; after 5 turns: vanilla 83%, capsule 49%.
-      function gaugeVanilla(turn) { return Math.min(100, 8 + turn * 15); }
-      function gaugeCapsule(turn) { return Math.min(100, 24 + turn * 5); }
-      function gaugeColor(pct) {
-        if (pct >= 85) return 'var(--bad)';
-        if (pct >= 60) return 'var(--warm)';
-        return 'var(--good)';
-      }
+      const convosV = document.getElementById('k10-convos-v');
+      const convosP = document.getElementById('k10-convos-p');
+      const turnEl  = document.getElementById('k10-turn');
+      const attachVEl = document.getElementById('k10-attach-v');
+      const attachPEl = document.getElementById('k10-attach-p');
+      const timeVEl   = document.getElementById('k10-time-v');
+      const yearVEl    = document.getElementById('k10-year-v');
+      const nextBtn = document.getElementById('k10-next');
+      const allBtn  = document.getElementById('k10-all');
+      const resetBtn = document.getElementById('k10-reset');
 
-      // ── State + DOM ─────────────────────────────────────
-      let turnIdx = 0;
-      const vanillaChat = document.getElementById('k10-vanilla-chat');
-      const gptChat     = document.getElementById('k10-gpt-chat');
-      const gVanFill    = document.getElementById('k10-gauge-vanilla');
-      const gGptFill    = document.getElementById('k10-gauge-gpt');
-      const gVanVal     = document.getElementById('k10-gauge-vanilla-val');
-      const gGptVal     = document.getElementById('k10-gauge-gpt-val');
-      const turnEl      = document.getElementById('k10-turn');
-      const ribbonEl    = document.getElementById('k10-ribbon');
-      const capsuleEl   = document.getElementById('k10-capsule');
-      const chipEls     = document.querySelectorAll('.k10-chip');
-      const nextBtn     = document.getElementById('k10-next');
-      const showBtn     = document.getElementById('k10-show-prefix');
-      const resetBtn    = document.getElementById('k10-reset');
+      // Pre-build both columns (all 5 conversations), hidden via opacity until
+      // revealed. Building once keeps scroll position and layout stable.
+      function buildColumns() {
+        convosV.innerHTML = '';
+        convosP.innerHTML = '';
+        CONVOS.forEach((c, i) => {
+          // Avulso side: task + re-attached chips
+          const v = document.createElement('div');
+          v.className = 'k10-convo';
+          v.dataset.i = i;
+          const chips = c.attach.map(a => '<span class="k10-chip k10-chip--reattach">📎 ' + a + '</span>').join('');
+          v.innerHTML =
+            '<div class="k10-convo-head">' +
+              '<span class="k10-convo-time">' + c.time + '</span>' +
+              '<span class="k10-convo-task">' + c.task + '</span>' +
+            '</div>' +
+            '<div class="k10-convo-attach">' +
+              '<span class="k10-attach-tag">recolar:</span>' + chips +
+            '</div>';
+          convosV.appendChild(v);
 
-      // ── Renderers ───────────────────────────────────────
-      function mountMsg(parent, cls, html) {
-        const m = document.createElement('div');
-        m.className = 'k10-msg ' + cls;
-        m.innerHTML = html;
-        parent.appendChild(m);
-      }
-      function clearEmpty(parent) {
-        const e = parent.querySelector('.k10-empty');
-        if (e) e.remove();
-      }
-
-      function lightChips(chipKeys) {
-        chipEls.forEach(c => {
-          const lit = chipKeys.includes(c.dataset.chip);
-          c.classList.toggle('is-lit', lit);
+          // Project side: task + "uses the pinned files" note
+          const p = document.createElement('div');
+          p.className = 'k10-convo';
+          p.dataset.i = i;
+          p.innerHTML =
+            '<div class="k10-convo-head">' +
+              '<span class="k10-convo-time">' + c.time + '</span>' +
+              '<span class="k10-convo-task">' + c.task + '</span>' +
+            '</div>' +
+            '<div class="k10-convo-attach">' +
+              '<span class="k10-reuse">✓ usa os arquivos fixados &uarr; sem recolar</span>' +
+            '</div>';
+          convosP.appendChild(p);
         });
-        // After 1.2s, dim them again so the next turn can re-light fresh.
-        setTimeout(() => {
-          chipEls.forEach(c => c.classList.remove('is-lit'));
-        }, 1400);
       }
 
-      function applyGauges() {
-        const vPct = gaugeVanilla(turnIdx);
-        const gPct = gaugeCapsule(turnIdx);
-        gVanFill.style.width = vPct + '%';
-        gGptFill.style.width = gPct + '%';
-        gVanFill.style.background = gaugeColor(vPct);
-        gGptFill.style.background = gaugeColor(gPct);
-        gVanVal.textContent = vPct + '%';
-        gGptVal.textContent = gPct + '%';
-      }
+      let turnIdx = 0;
+      let attachV = 0;
 
-      // ── Actions ─────────────────────────────────────────
-      function nextTurn() {
-        if (turnIdx >= TURNS.length) return;
-        const t = TURNS[turnIdx];
-
-        if (turnIdx === 0) { clearEmpty(vanillaChat); clearEmpty(gptChat); }
-
-        // VANILLA: setup paragraph riding the user message every single turn.
-        mountMsg(vanillaChat, 'k10-msg-user',
-          '<span class="setup">' + SETUP + '</span>' + escapeHtml(t.user));
-        mountMsg(vanillaChat, 'k10-msg-ia', t.ia);
-
-        // GPT: clean user message. Setup arrived via cápsula, not the textarea.
-        mountMsg(gptChat, 'k10-msg-user', escapeHtml(t.user));
-        mountMsg(gptChat, 'k10-msg-ia', t.ia);
-
-        lightChips(t.chips);
-
-        // Brief ribbon flash on the side of the GPT chat at every turn —
-        // shows the prefix that was just injected. Short (700ms) so it
-        // doesn't dominate; the explicit "Mostrar prefixo" button keeps it
-        // up for the operator's narration.
-        flashRibbon(700);
-
-        turnIdx += 1;
+      function refreshTotals() {
+        attachVEl.textContent = attachV;
+        attachPEl.textContent = '0';
+        const minLost = attachV * MIN_PER_ATTACH;
+        timeVEl.textContent = minLost + ' min';
+        const yearH = Math.round(minLost * DAYS_PER_YEAR / 60);
+        yearVEl.textContent = yearH + ' h';
         turnEl.textContent = String(turnIdx);
-        applyGauges();
-        vanillaChat.scrollTop = vanillaChat.scrollHeight;
-        gptChat.scrollTop = gptChat.scrollHeight;
+      }
 
-        if (turnIdx >= TURNS.length) {
-          nextBtn.setAttribute('disabled', 'true');
+      function reveal(i, fresh) {
+        const v = convosV.querySelector('.k10-convo[data-i="' + i + '"]');
+        const p = convosP.querySelector('.k10-convo[data-i="' + i + '"]');
+        [v, p].forEach(el => {
+          if (!el) return;
+          el.classList.add('is-on');
+          el.classList.toggle('is-fresh', !!fresh);
+        });
+        // dim previous "fresh" highlight
+        if (fresh) {
+          convosV.querySelectorAll('.k10-convo.is-fresh').forEach(el => {
+            if (el !== v) el.classList.remove('is-fresh');
+          });
+          convosP.querySelectorAll('.k10-convo.is-fresh').forEach(el => {
+            if (el !== p) el.classList.remove('is-fresh');
+          });
         }
       }
 
-      function flashRibbon(ms) {
-        ribbonEl.classList.add('is-on');
-        clearTimeout(flashRibbon._t);
-        flashRibbon._t = setTimeout(() => {
-          ribbonEl.classList.remove('is-on');
-        }, ms);
+      function nextTurn() {
+        if (turnIdx >= CONVOS.length) return;
+        const i = turnIdx;
+        reveal(i, true);
+        attachV += CONVOS[i].attach.length;
+        turnIdx += 1;
+        refreshTotals();
+        convosV.scrollTop = convosV.scrollHeight;
+        convosP.scrollTop = convosP.scrollHeight;
+        if (turnIdx >= CONVOS.length) nextBtn.setAttribute('disabled', 'true');
       }
 
-      function showPrefixToggle() {
-        // Pin the ribbon visible for a deliberate 3 seconds so the operator
-        // can read the prefix aloud while the audience sees it.
-        flashRibbon(3000);
+      function showAll() {
+        attachV = 0;
+        CONVOS.forEach((c, i) => { reveal(i, false); attachV += c.attach.length; });
+        turnIdx = CONVOS.length;
+        refreshTotals();
+        nextBtn.setAttribute('disabled', 'true');
       }
 
       function reset() {
         turnIdx = 0;
-        turnEl.textContent = '0';
-        vanillaChat.innerHTML = '<p class="k10-empty">— turno 0 de 5 — clique <b>Próximo turno</b> para começar.</p>';
-        gptChat.innerHTML     = '<p class="k10-empty">— turno 0 de 5 — clique <b>Próximo turno</b> para começar.</p>';
-        chipEls.forEach(c => c.classList.remove('is-lit'));
-        ribbonEl.classList.remove('is-on');
+        attachV = 0;
+        convosV.querySelectorAll('.k10-convo').forEach(el => el.classList.remove('is-on', 'is-fresh'));
+        convosP.querySelectorAll('.k10-convo').forEach(el => el.classList.remove('is-on', 'is-fresh'));
         nextBtn.removeAttribute('disabled');
-        applyGauges();
+        refreshTotals();
       }
 
-      function escapeHtml(s) {
-        return String(s).replace(/[&<>"']/g, c => ({
-          '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-        }[c]));
-      }
-
-      // ── Wire up ─────────────────────────────────────────
       nextBtn.addEventListener('click', nextTurn);
-      showBtn.addEventListener('click', showPrefixToggle);
-      capsuleEl.addEventListener('click', () => flashRibbon(3000));
+      allBtn.addEventListener('click', showAll);
       resetBtn.addEventListener('click', reset);
 
-      // ── Theme sync ──────────────────────────────────────
+      // Theme sync
       window.addEventListener('storage', e => {
         if (e.key !== 'bs_theme') return;
         const t = e.newValue;
@@ -692,8 +583,8 @@
         }
       });
 
-      // ── Init ────────────────────────────────────────────
-      applyGauges();
+      buildColumns();
+      refreshTotals();
     })();
   </script>
 </section>

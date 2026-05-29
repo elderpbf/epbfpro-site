@@ -86,6 +86,37 @@ body.cv-focus.cv-focus--side .cv-sm {
   box-shadow: 4px 0 16px var(--shadow);
 }
 
+/* Bottom action bar tucks away in focus mode and slides back up when the
+   cursor reaches the bottom edge (cv-focus--bottom), mirroring the topbar.
+   position:fixed takes it out of flow so .cv-main-view fills the full height. */
+body.cv-focus .cv-main-crumb {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 9800;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cv-focus.cv-focus--bottom .cv-main-crumb {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Edge hot zones for focus-mode reveal. Transparent strips above the content
+   (and any cross-origin embed iframe), below the bars. pointer-events only
+   while focus mode is on, so they never block the iframe edges otherwise. */
+.cv-focus-hot {
+  position: fixed;
+  z-index: 9700;
+  pointer-events: none;
+}
+body.cv-focus .cv-focus-hot {
+  pointer-events: auto;
+}
+.cv-focus-hot--top    { top: 0; left: 0; right: 0; height: 8px; }
+.cv-focus-hot--left   { top: 0; bottom: 0; left: 0; width: 8px; }
+.cv-focus-hot--bottom { bottom: 0; left: 0; right: 0; height: 8px; }
+
 /* ── Sidebar (side menu) ──────────────────────────────────── */
 
 .cv-sm {
@@ -719,6 +750,8 @@ body.cv-focus.cv-focus--side .cv-sm {
   height: 48px;
   flex-shrink: 0;
   width: 100%;
+  box-sizing: border-box;   /* keep the 20px right padding inside 100% width so
+                               the rightmost action button isn't clipped */
   padding: 0 20px;
   border-top: 1px solid var(--border);
   background: var(--surface);
@@ -729,50 +762,9 @@ body.cv-focus.cv-focus--side .cv-sm {
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
-  transition: height 0.18s ease, padding 0.18s ease;
 }
 .cv-main-crumb:empty {
   display: none;
-}
-/* Collapsible like the sidebar: collapsed = slim handle that hides every child
-   except the chevron toggle, freeing the height for the content viewport. */
-.cv-main-crumb.is-collapsed {
-  height: 18px;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-.cv-main-crumb.is-collapsed > *:not(.cv-crumb-collapse) {
-  display: none;
-}
-.cv-crumb-collapse {
-  flex-shrink: 0;
-  margin-left: auto;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.cv-crumb-collapse:hover {
-  background: var(--surface-soft);
-  color: var(--text-primary);
-  border-color: var(--border);
-}
-.cv-main-crumb.is-collapsed .cv-crumb-collapse {
-  height: 18px;
-}
-.cv-crumb-collapse-chev {
-  display: block;
-  transition: transform 0.15s ease;
-}
-.cv-main-crumb.is-collapsed .cv-crumb-collapse-chev {
-  transform: rotate(180deg);
 }
 .cv-main-crumb > span:not(.cv-main-crumb-sep),
 .cv-main-crumb > strong {
@@ -965,11 +957,11 @@ body.cv-focus.cv-focus--side .cv-sm {
    Scoped to slide surfaces ONLY:
      .cv-slides-inline                         Drive popup slides (_renderPopupCard)
      .cv-renderer-iframe-wrap.cv-slides-clip   Drive presentation files (CVDriveViewer)
-                                               and slide-type published embeds (_mountIframe)
-   Drive *files* (/preview PDFs/Docs) keep the plain .cv-renderer-iframe-wrap so
-   their content is never cropped — this is why Bundle D dropped the old blanket
-   clip; restricting it to presentations resolves that conflict. The corner mask
-   covers Google's "Open in Slides" badge. */
+   Both load the chrome-free /embed player (CVDriveViewer.slidesEmbedUrl), so the
+   only chrome is the bottom playbar, which this clip hides — no corner mask
+   needed. Drive *files* (/preview PDFs/Docs) keep the plain
+   .cv-renderer-iframe-wrap so their content is never cropped (the Bundle D
+   reason); restricting the clip to presentations resolves that conflict. */
 .cv-slides-inline,
 .cv-renderer-iframe-wrap.cv-slides-clip {
   position: relative;
@@ -985,15 +977,6 @@ body.cv-focus.cv-focus--side .cv-sm {
   width: 100%;
   height: calc(100% + 60px);
   border: 0;
-}
-.cv-slides-corner-mask {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 64px;
-  height: 56px;
-  background: var(--surface);
-  pointer-events: none;
 }
 /* Card: structural flex column. Header is a fixed sibling above the
    scrollable body — content does NOT scroll under it. */

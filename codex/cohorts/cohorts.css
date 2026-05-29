@@ -1,0 +1,604 @@
+/* =========================================================
+   Codex — Cohorts tab styles
+   cdx- prefix for all classes. Colors via CSS custom properties only.
+   New surface/text/border tokens have [data-theme="dark"] overrides below.
+   ========================================================= */
+
+/* ----- Three-pane layout ----- */
+
+.cdx-three-pane {
+  display: grid;
+  grid-template-columns: 280px 280px 1fr;
+  gap: 1.25rem;
+  min-height: calc(100vh - 220px);
+  align-items: stretch;
+}
+
+@media (max-width: 980px) {
+  .cdx-three-pane { grid-template-columns: 1fr; }
+}
+
+.cdx-pane {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cdx-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cdx-pane-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.cdx-pane-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  min-height: 0;
+}
+
+/* ----- Cards (clients / turmas) ----- */
+
+.cdx-card {
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  margin-bottom: 4px;
+}
+
+.cdx-card:hover { background: var(--cdx-card-hover-bg); border-color: var(--cdx-card-hover-border); }
+.cdx-card.selected { background: var(--cdx-card-sel-bg); border-color: var(--cdx-card-sel-border); }
+
+.cdx-card-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cdx-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.cdx-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+/* ----- Turma card extras ----- */
+
+.cdx-card-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.cdx-card-info-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.cdx-card-mini-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cdx-card-mini-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.12s;
+}
+
+.cdx-card-mini-icon.is-on {
+  color: var(--success);
+  border-color: var(--cdx-success-border);
+  background: var(--success-bg);
+}
+
+a.cdx-card-mini-icon.is-on:hover {
+  transform: scale(1.06);
+  border-color: var(--success);
+}
+
+.cdx-card-mini-icon.is-off { opacity: 0.55; }
+
+/* Turma URL row */
+
+.cdx-card-url-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.cdx-card-url-text {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cdx-card-url-text:hover {
+  background: var(--cdx-card-hover-bg);
+  color: var(--primary);
+}
+
+.cdx-card-url-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 0 6px;
+  border-left: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
+  background: transparent;
+  transition: background 0.12s, color 0.12s;
+}
+
+.cdx-card-url-open:hover {
+  background: var(--cdx-card-hover-bg);
+  color: var(--primary);
+}
+
+.cdx-card-url-row.is-disabled .cdx-card-url-text {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ----- Status badge ----- */
+
+.cdx-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 20px;
+  line-height: 1.4;
+}
+
+.cdx-badge-archived { background: var(--error-bg); color: var(--error); }
+
+/* ----- Buttons ----- */
+
+.cdx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.cdx-btn:hover { background: var(--cdx-card-hover-bg); border-color: var(--cdx-card-hover-border); }
+
+.cdx-btn-primary {
+  background: var(--cdx-btn-primary-bg);
+  border-color: var(--primary);
+  color: var(--cdx-btn-primary-text);
+}
+
+.cdx-btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+
+.cdx-btn-sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 5px;
+}
+
+.cdx-btn-danger { border-color: var(--error); color: var(--error); }
+.cdx-btn-danger:hover { background: var(--error-bg); }
+
+.cdx-btn:disabled, .cdx-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ----- Empty state ----- */
+
+.cdx-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* ----- Modal ----- */
+
+.cdx-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--cdx-backdrop);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.cdx-modal {
+  background: var(--surface);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 460px;
+  padding: 1.5rem;
+  box-shadow: 0 12px 48px var(--shadow);
+  box-sizing: border-box;
+}
+
+.cdx-modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1.2rem;
+}
+
+.cdx-field {
+  margin-bottom: 0.9rem;
+}
+
+.cdx-field label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cdx-field input,
+.cdx-field textarea,
+.cdx-field select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.cdx-field input[type="radio"],
+.cdx-field input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.cdx-field input:focus,
+.cdx-field textarea:focus,
+.cdx-field select:focus {
+  border-color: var(--primary);
+}
+
+.cdx-field input[type="file"] {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.cdx-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 1.25rem;
+}
+
+/* ----- Helper text ----- */
+
+.cdx-helper-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0 0;
+}
+
+/* ----- Danger zone (delete client) ----- */
+
+.cdx-danger-zone {
+  margin-top: 1.25rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px dashed var(--error);
+  border-radius: 10px;
+  background: var(--cdx-danger-bg);
+}
+
+.cdx-danger-zone-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--error);
+  margin-bottom: 0.5rem;
+}
+
+/* ----- Client icon picker ----- */
+
+.cdx-icon-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+.cdx-card .cdx-icon-preview {
+  width: 36px;
+  height: 36px;
+}
+
+.cdx-icon-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.cdx-icon-mode-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+}
+
+.cdx-icon-mode-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+}
+
+.cdx-file-error {
+  font-size: 0.78rem;
+  color: var(--error);
+  margin-top: 4px;
+}
+
+/* ----- Aulas column: toolbar + inline editor ----- */
+
+.cdx-aulas-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.cdx-aulas-col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cdx-aula-col-row {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.cdx-aula-col-row-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.cdx-aula-col-row-display:hover {
+  background: var(--cdx-card-hover-bg);
+}
+
+.cdx-aula-col-row.is-editing {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.cdx-aula-col-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cdx-aula-col-row-title {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cdx-aula-col-row-title .is-empty {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Aula label pill */
+.cdx-rel-aula-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  flex-shrink: 0;
+  background: var(--cdx-chip-bg);
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+/* Aula date badges */
+.cdx-rel-aula-date {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.cdx-rel-date-ocorreu  { background: var(--success-bg); color: var(--success); }
+.cdx-rel-date-agendada { background: var(--cdx-agendada-bg); color: var(--cdx-agendada-text); }
+.cdx-rel-date-remarcada { background: var(--cdx-remarcada-bg); color: var(--cdx-remarcada-text); }
+.cdx-rel-date-adefinir { background: var(--background); color: var(--text-secondary); border: 1px solid var(--border); }
+
+/* Aula inline editor */
+
+.cdx-aula-col-editor {
+  padding: 0.75rem 0.85rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cdx-aula-col-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.cdx-aula-col-editor .cdx-field { margin-bottom: 0; }
+
+.cdx-aula-col-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.cdx-aula-col-editor-actions-right {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* =========================================================
+   CSS custom-property tokens unique to cohorts
+   (all surface/text/border tokens have dark-theme overrides)
+   ========================================================= */
+
+:root {
+  --cdx-card-hover-bg:     rgba(20, 184, 166, 0.06);
+  --cdx-card-hover-border: rgba(20, 184, 166, 0.25);
+  --cdx-card-sel-bg:       rgba(20, 184, 166, 0.12);
+  --cdx-card-sel-border:   rgba(20, 184, 166, 0.4);
+  --cdx-chip-bg:           rgba(20, 184, 166, 0.08);
+  --cdx-chip-border:       rgba(20, 184, 166, 0.18);
+  --cdx-success-border:    rgba(22, 163, 74, 0.35);
+  --cdx-backdrop:          rgba(0, 0, 0, 0.45);
+  --cdx-danger-bg:         rgba(239, 68, 68, 0.04);
+  --cdx-btn-primary-text:  #ffffff;
+  --cdx-btn-primary-bg:    var(--primary);
+  --cdx-agendada-bg:       rgba(59, 130, 246, 0.1);
+  --cdx-agendada-text:     #3b82f6;
+  --cdx-remarcada-bg:      rgba(245, 158, 11, 0.1);
+  --cdx-remarcada-text:    #d97706;
+}
+
+[data-theme="dark"] {
+  --cdx-card-hover-bg:     rgba(20, 184, 166, 0.1);
+  --cdx-card-hover-border: rgba(20, 184, 166, 0.3);
+  --cdx-card-sel-bg:       rgba(20, 184, 166, 0.18);
+  --cdx-card-sel-border:   rgba(20, 184, 166, 0.55);
+  --cdx-chip-bg:           rgba(20, 184, 166, 0.12);
+  --cdx-chip-border:       rgba(20, 184, 166, 0.25);
+  --cdx-success-border:    rgba(52, 211, 153, 0.4);
+  --cdx-backdrop:          rgba(0, 0, 0, 0.65);
+  --cdx-danger-bg:         rgba(248, 113, 113, 0.08);
+  --cdx-btn-primary-text:  #ffffff;
+  --cdx-btn-primary-bg:    #0d9488;
+  --cdx-agendada-bg:       rgba(59, 130, 246, 0.15);
+  --cdx-agendada-text:     #93c5fd;
+  --cdx-remarcada-bg:      rgba(245, 158, 11, 0.15);
+  --cdx-remarcada-text:    #fcd34d;
+}

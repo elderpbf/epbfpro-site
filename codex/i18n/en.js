@@ -1,0 +1,200 @@
+// EN dictionary — mirror of pt.js. Every key added to pt.js MUST be added here
+// too, in the same change. Selectable via the topbar language toggle; PT-BR is
+// the default. "Aula" maps to "Lesson" everywhere (matches the Lessons tab).
+export default {
+  'app.title':     'Codex',
+  'nav.lessons':   'Lessons',
+  'nav.content':   'Content',
+  'nav.cohorts':   'Cohorts',
+  'nav.questions': 'Questions',
+  'nav.logout':    'Log out',
+
+  // Cohorts tab — general
+  'cohorts.loading':              'Loading...',
+  'cohorts.error_loading':        'Error loading.',
+  'cohorts.error':                'Error',
+  'cohorts.cancel':               'Cancel',
+  'cohorts.save':                 'Save',
+  'cohorts.create':               'Create',
+  'cohorts.edit':                 'Edit',
+  'cohorts.archive':              'Archive',
+  'cohorts.delete':               'Delete',
+  'cohorts.close':                'Close',
+  'cohorts.none':                 '(none)',
+  'cohorts.archived':             'Archived',
+  'cohorts.danger_zone':          'Danger zone',
+  'cohorts.name_required':        'Name is required.',
+  'cohorts.slug_invalid':         'Name is invalid for generating a slug.',
+  'cohorts.confirm_type_name':    'To confirm, type the internal name:',
+  'cohorts.delete_confirm_btn':   'Delete permanently',
+  'cohorts.defined':              'set',
+  'cohorts.not_defined':          'not set',
+  'cohorts.link_copied':          'Link copied!',
+  'cohorts.copy_failed':          'Could not copy. URL:',
+
+  // Cohorts — columns
+  'cohorts.col_clients':          'Clients',
+  'cohorts.col_turmas':           'Cohorts',
+  'cohorts.col_aulas':            'Lessons',
+  'cohorts.select_client_prompt': 'Select a client to see its cohorts.',
+  'cohorts.select_turma_prompt':  'Select a cohort to see its lessons.',
+
+  // Cohorts — clients
+  'cohorts.no_clients':            'No clients registered.',
+  'cohorts.new_client':            '+ New',
+  'cohorts.new_client_title':      'New client',
+  'cohorts.edit_client':           'Edit client',
+  'cohorts.client_created':        'Client created.',
+  'cohorts.client_updated':        'Client updated.',
+  'cohorts.client_archived':       'Client archived.',
+  'cohorts.client_deleted':        'Client deleted.',
+  'cohorts.archive_client_title':  'Archive client',
+  'cohorts.archive_client_msg':    'Existing cohorts will remain accessible until archived individually.',
+  'cohorts.delete_client_btn':     'Delete client permanently',
+  'cohorts.delete_client_warning': 'Deletes the client, all its cohorts and each cohort\'s releases. Library items are not affected. This action cannot be undone.',
+
+  // Cohorts — client form fields
+  'cohorts.field_name_internal':   'Internal name',
+  'cohorts.field_display_name':    'Student-facing name (optional)',
+  'cohorts.field_icon':            'Icon',
+  'cohorts.field_name_placeholder':'E.g. Acme Ltd',
+  'cohorts.field_display_placeholder': 'Defaults to internal name if blank',
+  'cohorts.icon_current':          'Current',
+  'cohorts.icon_new':              'New',
+  'cohorts.icon_preview':          'Preview',
+  'cohorts.icon_mode_url':         'External URL',
+  'cohorts.icon_mode_upload':      'Upload image',
+  'cohorts.icon_too_large':        'File exceeds 1 MB. Choose a smaller image.',
+
+  // Cohorts — turmas (cohorts)
+  'cohorts.no_turmas':             'No cohorts registered.',
+  'cohorts.new_turma':             '+ New cohort',
+  'cohorts.new_turma_title':       'New cohort',
+  'cohorts.edit_turma':            'Edit cohort',
+  'cohorts.turma_created':         'Cohort created.',
+  'cohorts.turma_updated':         'Cohort updated.',
+  'cohorts.turma_archived':        'Cohort archived.',
+  'cohorts.archive_turma_title':   'Archive cohort',
+  'cohorts.archive_turma_msg':     'The student access link will stop working.',
+  'cohorts.regen_token_title':     'Regenerate URL token',
+  'cohorts.regen_token_msg':       'The current student link will stop working immediately. Share the new link after regenerating.',
+  'cohorts.token_regenerated':     'Token regenerated. Share the new link with students.',
+  'cohorts.copy_url':              'Copy URL',
+  'cohorts.open_url':              'Open URL in new tab',
+  'cohorts.url_unavailable':       'URL unavailable',
+  'cohorts.display_name_prefix':   'For students:',
+  'cohorts.aula_singular':         'lesson',
+  'cohorts.aula_plural':           'lessons',
+  'cohorts.whatsapp_open':         'Open WhatsApp group',
+  'cohorts.whatsapp_none':         'WhatsApp not set',
+  'cohorts.classpulse':            'ClassPulse',
+
+  // Cohorts — turma form fields
+  'cohorts.turma_name_placeholder': 'E.g. Group A',
+  'cohorts.field_whatsapp':         'WhatsApp group URL (optional)',
+  'cohorts.field_classpulse':       'ClassPulse session',
+
+  // Cohorts — aulas (lessons)
+  'cohorts.loading_aulas':          'Loading lessons...',
+  'cohorts.no_aulas':               'No lessons registered. Click "+ New lesson" to create one.',
+  'cohorts.new_aula':               '+ New lesson',
+  'cohorts.aula_label':             'Lesson',
+  'cohorts.aula_no_title':          'no title',
+  'cohorts.aula_saved':             'Lesson saved.',
+  'cohorts.aula_deleted':           'Lesson deleted.',
+  'cohorts.delete_aula_title':      'Delete Lesson',
+  'cohorts.delete_aula_msg':        'Items released for this lesson will lose their association.',
+  'cohorts.aula_field_title':       'Title',
+  'cohorts.aula_title_placeholder': 'Lesson title',
+  'cohorts.aula_field_scheduled':   'Scheduled for (empty = no date set)',
+  'cohorts.aula_field_happened':    'Happened on',
+  'cohorts.aula_field_rescheduled_from': 'Rescheduled from (original date)',
+  'cohorts.aula_field_rescheduled_note': 'Reschedule note (optional)',
+  'cohorts.aula_note_placeholder':  'E.g. holiday, waiting for new date',
+
+  // Cohorts — aula date status
+  'cohorts.date_happened':   'happened on',
+  'cohorts.date_scheduled':  'scheduled for',
+  'cohorts.date_rescheduled':'rescheduled →',
+  'cohorts.date_tbd':        'to be defined',
+
+  // Content tab — sub-tab nav (Items native; the rest bridge to the legacy
+  // ClassTrail page until each is migrated)
+  'content.sub_items':        'Items',
+  'content.sub_apostila':     'Workbook',
+  'content.sub_tarefas':      'Assignments',
+  'content.sub_drive':        'Drive',
+  'content.sub_labs':         'Labs',
+  'content.sub_presets':      'Presets',
+  'content.sub_releases':     'Releases',
+
+  // Content → Items — toolbar
+  'content.items_title':      'Item Library',
+  'content.new_item':         '+ New item',
+  'content.manage_tags':      'Manage tags',
+  'content.select':           'Select',
+  'content.exit_select':      'Exit selection',
+  'content.selected_suffix':  'selected',
+  'content.bulk_delete':      'Delete selected',
+  'content.bulk_cancel':      'Cancel',
+
+  // Content → Items — grid + rows
+  'content.loading':          'Loading...',
+  'content.error_loading':    'Error loading items.',
+  'content.empty_library':    'No items in the library.',
+  'content.empty_filter':     'No items in this filter.',
+  'content.duplicate':        'Duplicate',
+  'content.duplicate_title':  'Duplicate item',
+  'content.delete':           'Delete',
+  'content.set_badge':        'Course content',
+  'content.set_badge_title':  'This item is part of imported course content; manual edits may be overwritten on future syncs.',
+
+  // Content → Items — toasts
+  'content.error':            'Error',
+  'content.item_created':     'Item created.',
+  'content.item_updated':     'Item updated.',
+  'content.item_deleted':     'Item deleted.',
+  'content.item_duplicated':  'Item duplicated.',
+  'content.items_deleted_suffix': 'item(s) deleted.',
+  'content.no_selection':     'No items selected.',
+
+  // Content → Items — delete confirm
+  'content.delete_item_title':   'Delete item',
+  'content.delete_items_title':  'Delete items',
+  'content.confirm_delete_item': 'Delete this item? It will be removed from every cohort where it is released.',
+  'content.confirm_bulk_delete': 'The items will be removed from every cohort where they are released.',
+  'content.cancel':              'Cancel',
+  'content.confirm_delete_btn':  'Delete',
+
+  // Content → Items — editor labels (passed to the shared item form)
+  'content.new_item_step1':   'New item · 1 of 2',
+  'content.new_item_step2':   'New item · 2 of 2',
+  'content.edit_item':        'Edit item',
+  'content.save':             'Save',
+  'content.create':           'Create',
+  'content.close':            'Close',
+
+  // Content → Items — tags manager
+  'content.tags_title':           'Manage tags',
+  'content.tag_new_placeholder':  'New tag name',
+  'content.add':                  'Add',
+  'content.no_tags':              'No tags yet.',
+  'content.rename':               'Rename',
+  'content.tag_added':            'Tag added.',
+  'content.tag_renamed':          'Tag renamed.',
+  'content.tag_deleted':          'Tag deleted.',
+  'content.tag_rename_title':     'Rename tag',
+  'content.tag_name':             'Name',
+  'content.delete_tag_title':     'Delete tag',
+  'content.confirm_delete_tag':   'Delete this tag? It will be removed from every item.',
+
+  // Content → Items — inline type create
+  'content.new_type_title':       'New type',
+  'content.type_name':            'Name',
+  'content.type_name_placeholder':'e.g. Activity',
+  'content.type_slug':            'Identifier (slug, optional)',
+  'content.type_slug_placeholder':'auto-generated if empty',
+  'content.type_icon':            'Icon (emoji, optional)',
+  'content.type_created':         'Type created.',
+  'content.name_required':        'Name required.'
+};

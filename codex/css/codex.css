@@ -1,0 +1,77 @@
+/* Codex-specific styles.
+ *
+ * Codex reuses Backstage's theme.css (color tokens), backstage.css (shell
+ * chrome), and shared-components.css. Add ONLY Codex-only rules here. Surface/
+ * text/border values come from theme.css variables, never hex literals. */
+
+/* Per-functionality accent colors. These are brand accents, intentionally the
+ * same in light and dark (they tint a tab glyph + active underline), so they
+ * need no [data-theme="dark"] override. Any future surface/text/border var
+ * added here MUST get a dark override, per the project rule. */
+:root {
+  --codex-lessons:   #6366f1;
+  --codex-content:   #14b8a6;
+  --codex-cohorts:   #f59e0b;
+  --codex-questions: #ec4899;
+}
+
+/* ── Rich tab strip in the Codex topbar ─────────────────────── */
+.cdx-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: 1rem;
+  min-width: 0;
+  overflow-x: auto;
+}
+.cdx-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-muted, #9ca3af);
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.cdx-tab:hover {
+  color: var(--text, #e5e7eb);
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+}
+.cdx-tab-icon { display: inline-flex; color: var(--accent-color); }
+.cdx-tab:not(.active) .cdx-tab-icon { opacity: 0.8; }
+.cdx-tab.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+}
+
+/* Bind each functional tab to its accent token. */
+.cdx-tab--lessons   { --accent-color: var(--codex-lessons); }
+.cdx-tab--content   { --accent-color: var(--codex-content); }
+.cdx-tab--cohorts   { --accent-color: var(--codex-cohorts); }
+.cdx-tab--questions { --accent-color: var(--codex-questions); }
+
+/* ── Tab content host ───────────────────────────────────────── */
+.cdx-view { padding: 1.5rem; }
+
+/* Language toggle button (PT/EN). The topbar renders it only when more than
+ * one dictionary is loaded; it shows the language you'd switch TO. */
+.cdx-lang-btn {
+  background: transparent;
+  color: var(--text-muted, #9ca3af);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  margin-right: 0.25rem;
+}
+.cdx-lang-btn:hover {
+  color: var(--text, #e5e7eb);
+  border-color: var(--text-muted, #9ca3af);
+}

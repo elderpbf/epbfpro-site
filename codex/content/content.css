@@ -1,0 +1,214 @@
+/* Codex Content tab (sub-tab nav + Items sub-tab).
+ * Reuses the cdx- primitives from cohorts.css (.cdx-btn, .cdx-modal*,
+ * .cdx-field, .cdx-empty) and the tokens from codex.css / theme.css, so no new
+ * color token is introduced (dark mode is inherited). Colors come only from
+ * CSS custom properties, per the module contract. */
+
+/* ── Shell + sub-tab nav ─────────────────────────────────────────────────── */
+.cdx-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.cdx-subtabs {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 0 0.75rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.cdx-subtab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+}
+.cdx-subtab:hover { color: var(--text-primary); background: var(--cdx-card-hover-bg); }
+.cdx-subtab.active {
+  color: var(--codex-content);
+  border-bottom-color: var(--codex-content);
+}
+
+/* Legacy bridge sub-tabs link out to the not-yet-migrated ClassTrail page.
+   Dimmed + ↗ marker so it reads as "leaves Codex" until that sub-tab migrates. */
+.cdx-subtab--legacy {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0.72;
+}
+.cdx-subtab--legacy:hover { opacity: 1; }
+.cdx-subtab-ext { font-size: 0.7em; }
+
+.cdx-subview {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── Items toolbar ───────────────────────────────────────────────────────── */
+.cdx-items { display: flex; flex-direction: column; gap: 1rem; }
+
+.cdx-items-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.cdx-items-toolbar-title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  flex: 1;
+}
+.cdx-items-toolbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ── Bulk bar ────────────────────────────────────────────────────────────── */
+.cdx-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--cdx-card-sel-bg);
+  border: 1px solid var(--cdx-card-sel-border);
+  border-radius: 8px;
+}
+.cdx-bulk-bar > span { color: var(--text-secondary); font-size: 0.85rem; flex: 1; }
+
+/* ── Filter row ──────────────────────────────────────────────────────────── */
+.cdx-filter-row { display: flex; align-items: center; gap: 0.5rem; }
+
+/* ── Items grid ──────────────────────────────────────────────────────────── */
+.cdx-items-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cdx-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-item-row:hover {
+  background: var(--cdx-card-hover-bg);
+  border-color: var(--cdx-card-hover-border);
+}
+.cdx-item-row.is-selected {
+  background: var(--cdx-card-sel-bg);
+  border-color: var(--cdx-card-sel-border);
+}
+
+.cdx-item-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--cdx-chip-border);
+  border-radius: 4px;
+  display: inline-block;
+  position: relative;
+}
+.cdx-item-check.is-checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.cdx-item-check.is-checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 5px;
+  height: 10px;
+  border: solid var(--cdx-btn-primary-text);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.cdx-item-type-icon {
+  flex-shrink: 0;
+  font-size: 1.2rem;
+  width: 1.6rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.cdx-item-info { flex: 1; min-width: 0; }
+.cdx-item-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+.cdx-item-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+.cdx-item-tags { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
+
+.cdx-tag-chip {
+  font-size: 0.72rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+  color: var(--text-secondary);
+}
+
+.cdx-set-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ── Tags manager modal ──────────────────────────────────────────────────── */
+.cdx-tag-manager-create { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.cdx-tag-manager-create input { flex: 1; }
+
+.cdx-tag-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.cdx-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.cdx-tag-row-label { flex: 1; color: var(--text-primary); font-size: 0.88rem; }
+.cdx-tag-row-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--cdx-chip-bg);
+}

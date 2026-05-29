@@ -38,8 +38,6 @@
       --good: var(--lab-good);
       --bad: var(--lab-bad);
       --bad-rgb: var(--lab-bad-rgb);
-      --amber: #d4a017;
-      --amber-rgb: 212, 160, 23;
       --font-display: var(--lab-font-display);
       --font-mono: var(--lab-font-mono);
 
@@ -72,123 +70,133 @@
     }
     .k11-caption b { color: var(--cool); font-style: normal; font-weight: 700; }
 
-    /* Main split: source petição left, IA panel right */
     .k11-main {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
       gap: 1rem;
       min-height: 0;
     }
 
-    /* Source — clickable paragraphs */
+    /* Source petição — cream paper, fixed (not editable) */
     .k11-source {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 0.85rem 1rem;
-      overflow-y: auto;
-      min-height: 0;
       display: flex;
       flex-direction: column;
-    }
-    .k11-source-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 0.4rem;
-      gap: 0.6rem;
-    }
-    .k11-source-title {
-      margin: 0;
-      font-size: clamp(13px, 1.0vw, 16px);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      font-weight: 700;
-    }
-    .k11-source-hint {
-      font-size: clamp(11px, 0.85vw, 13px);
-      color: var(--text-muted);
-      font-style: italic;
-    }
-    .k11-source-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      flex: 1;
-    }
-    .k11-src-p {
-      font-size: clamp(13px, 1.05vw, 17px);
-      line-height: 1.5;
-      padding: 0.45rem 0.6rem 0.45rem 1.7rem;
-      margin: 0.18rem 0;
-      border-radius: 6px;
-      cursor: pointer;
-      position: relative;
-      transition: background 180ms, opacity 220ms;
-      user-select: none;
-      color: var(--text);
-    }
-    .k11-src-p::before {
-      content: '✕';
-      position: absolute;
-      left: 0.45rem;
-      top: 0.45rem;
-      font-family: var(--font-mono);
-      font-size: 0.85em;
-      color: var(--text-muted);
-      opacity: 0.45;
-      transition: opacity 180ms, color 180ms;
-      font-weight: 700;
-    }
-    .k11-src-p:hover { background: rgba(var(--bad-rgb), 0.05); }
-    .k11-src-p:hover::before { opacity: 1; color: var(--bad); }
-    .k11-src-p.is-struck {
-      text-decoration: line-through;
-      opacity: 0.4;
-      background: rgba(var(--bad-rgb), 0.05);
-    }
-    .k11-src-p.is-struck::before {
-      content: '↺';
-      opacity: 0.7;
-      color: var(--bad);
-    }
-
-    /* RIGHT: question + answer + meters */
-    .k11-right {
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr) auto;
-      gap: 0.6rem;
+      background: #f6f3ec;
+      color: #1a1a1a;
+      border-radius: 10px;
+      padding: 0.9rem 1.2rem;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.16), 0 0 0 1px rgba(0,0,0,0.07);
+      overflow-y: auto;
       min-height: 0;
     }
-    .k11-question {
+    .k11-source-head {
+      font-size: clamp(12px, 0.9vw, 15px);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8a6a2a;
+      font-weight: 800;
+      font-family: var(--font-mono);
+    }
+    .k11-source-hint {
+      font-size: clamp(11px, 0.85vw, 14px);
+      color: #7a7568;
+      font-style: italic;
+      margin: 0.1rem 0 0.6rem 0;
+    }
+    .k11-source p {
+      margin: 0.4rem 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(14px, 1.15vw, 18px);
+      line-height: 1.5;
+      text-align: justify;
+    }
+    .k11-source .pp {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #8a6a2a;
+      font-size: 0.92em;
+    }
+    .k11-source .hit {
+      background: rgba(34, 160, 90, 0.22);
+      border-radius: 3px;
+      padding: 0 2px;
+      box-shadow: inset 0 0 0 1px rgba(34,160,90,0.4);
+      transition: background 240ms;
+    }
+
+    /* Right column: pills + answer + controls */
+    .k11-right {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 0.7rem;
+      min-height: 0;
+    }
+    .k11-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .k11-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 10px;
-      padding: 0.55rem 0.9rem;
-      font-size: clamp(13px, 1.05vw, 17px);
+      padding: 0.55rem 0.85rem;
+      cursor: pointer;
+      transition: border-color 160ms, background 160ms, transform 140ms;
+      text-align: left;
+      font-family: var(--font-display);
       color: var(--text);
-      font-style: italic;
     }
-    .k11-question b { color: var(--cool); font-style: normal; font-weight: 700; }
+    .k11-pill:hover { border-color: var(--cool); transform: translateY(-1px); }
+    .k11-pill.is-active { background: rgba(var(--cool-rgb), 0.14); border-color: var(--cool); }
+    .k11-pill-q {
+      font-size: clamp(14px, 1.1vw, 18px);
+      font-weight: 600;
+      line-height: 1.25;
+    }
+    .k11-pill-mark {
+      font-family: var(--font-mono);
+      font-size: clamp(10px, 0.78vw, 12px);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .k11-pill-mark.in {
+      background: rgba(34, 197, 94, 0.16);
+      color: var(--good);
+      border: 1px solid var(--good);
+    }
+    .k11-pill-mark.out {
+      background: rgba(var(--bad-rgb), 0.16);
+      color: var(--bad);
+      border: 1px solid var(--bad);
+    }
 
+    /* Answer box */
     .k11-answer-wrap {
+      display: flex;
+      flex-direction: column;
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 12px;
       padding: 0.9rem 1.05rem;
-      overflow-y: auto;
       min-height: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      overflow: hidden;
     }
     .k11-answer-head {
       display: flex;
       align-items: center;
-      gap: 0.55rem;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
     }
-    .k11-answer-robot {
+    .k11-robot {
       width: clamp(28px, 2vw, 36px);
       height: clamp(28px, 2vw, 36px);
       border-radius: 50%;
@@ -201,131 +209,106 @@
       font-weight: 700;
     }
     .k11-answer-label {
-      font-size: clamp(11px, 0.85vw, 13px);
+      font-size: clamp(12px, 0.95vw, 16px);
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .k11-stamp {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: clamp(10px, 0.8vw, 12px);
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--text-dim);
-      font-weight: 600;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      white-space: nowrap;
     }
+    .k11-stamp.fab { background: rgba(var(--bad-rgb), 0.16); color: var(--bad); border: 1px solid var(--bad); }
+    .k11-stamp.ok  { background: rgba(34, 197, 94, 0.16); color: var(--good); border: 1px solid var(--good); }
+    .k11-stamp.hidden { display: none; }
+
+    .k11-answer-body { flex: 1; overflow-y: auto; min-height: 0; }
     .k11-answer {
-      font-size: clamp(15px, 1.2vw, 19px);
+      font-size: clamp(15px, 1.25vw, 20px);
       line-height: 1.55;
       color: var(--text);
-      flex: 1;
+      margin: 0;
     }
-    /* Each .tok is a token whose color reflects whether its source
-       paragraph(s) are still present. */
-    .k11-answer .tok {
-      transition: color 280ms, background 280ms;
-      border-radius: 3px;
-      padding: 0 1px;
-      font-weight: 600;
+    .k11-answer.is-empty { color: var(--text-muted); font-style: italic; }
+    .k11-answer.is-fab {
+      border-left: 3px solid var(--bad);
+      padding-left: 0.75rem;
+      background: rgba(var(--bad-rgb), 0.04);
+      border-radius: 0 4px 4px 0;
     }
-    .k11-answer .tok.is-grounded { color: var(--good); }
-    .k11-answer .tok.is-fabricated {
-      color: var(--bad);
-      background: rgba(var(--bad-rgb), 0.10);
-      font-weight: 700;
+    .k11-answer.is-ok {
+      border-left: 3px solid var(--good);
+      padding-left: 0.75rem;
+      background: rgba(34, 197, 94, 0.05);
+      border-radius: 0 4px 4px 0;
     }
-    /* Tokens that pretend to be grounded but read odd to a careful lawyer
-       (e.g. a wrong-súmula citation in confident prose). */
-    .k11-answer .tok.is-fabricated::after {
-      content: ' ⚠';
-      font-weight: 700;
-    }
-    .k11-answer .abstain {
-      color: var(--text-muted);
+    .k11-answer.is-abst {
+      border-left: 3px solid var(--text-dim);
+      padding-left: 0.75rem;
       font-style: italic;
-      font-size: 0.95em;
-    }
-
-    /* Meters */
-    .k11-meters {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 0.7rem 0.9rem;
-      display: grid;
-      gap: 0.55rem;
-    }
-    .k11-meter-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    .k11-meter-label {
-      font-size: clamp(12px, 0.95vw, 15px);
-      font-weight: 600;
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      gap: 0.1rem;
-    }
-    .k11-meter-label .sub {
-      font-size: 0.78em;
-      font-weight: 400;
       color: var(--text-dim);
-      font-style: italic;
-      letter-spacing: 0.02em;
     }
-    .k11-meter-val {
+    .k11-tok-green { color: var(--good); font-weight: 700; }
+    .k11-tok-red   { color: var(--bad); font-weight: 700; background: rgba(var(--bad-rgb), 0.10); border-radius: 3px; padding: 0 2px; }
+    .k11-tok-red::after { content: ' ⚠'; }
+
+    .k11-verify-btn {
+      margin-top: 0.7rem;
+      align-self: flex-start;
+      font-family: var(--font-display);
+      font-size: clamp(13px, 0.95vw, 15px);
+      font-weight: 600;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1.5px solid var(--bad);
+      color: var(--bad);
+      background: transparent;
+      transition: background 160ms, transform 140ms;
+    }
+    .k11-verify-btn:hover { background: rgba(var(--bad-rgb), 0.10); transform: translateY(-1px); }
+    .k11-verify-btn.hidden { display: none; }
+    .k11-verify-pop {
+      margin-top: 0.6rem;
+      padding: 0.6rem 0.8rem;
+      background: rgba(var(--bad-rgb), 0.07);
+      border: 1.5px solid var(--bad);
+      border-radius: 8px;
       font-family: var(--font-mono);
-      font-size: clamp(15px, 1.3vw, 22px);
-      font-weight: 700;
-      min-width: 56px;
-      text-align: right;
+      font-size: clamp(13px, 1.0vw, 16px);
+      line-height: 1.4;
+      color: var(--bad);
     }
-    .k11-meter-bar {
-      grid-column: 1 / -1;
-      height: clamp(10px, 1.0vw, 14px);
-      background: color-mix(in srgb, var(--text) 7%, transparent);
-      border-radius: 999px;
-      position: relative;
-      overflow: visible;
-    }
-    .k11-meter-fill {
-      height: 100%;
-      border-radius: 999px;
-      transition: width 600ms cubic-bezier(.4,0,.2,1), background 360ms;
-    }
-    .k11-meter-shadow {
-      position: absolute;
-      top: -2px;
-      bottom: -2px;
-      width: 2px;
-      background: rgba(255,255,255,0.5);
-      border-radius: 1px;
-      pointer-events: none;
-    }
-    .k11-meter--flu .k11-meter-fill { background: var(--good); }
-    .k11-meter--flu .k11-meter-val { color: var(--good); }
-    .k11-meter--fund .k11-meter-val { color: var(--cool); }
+    .k11-verify-pop.hidden { display: none; }
 
     /* Operator bar */
     .k11-button-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
       padding: 0 0.2rem;
       flex-wrap: wrap;
     }
     .k11-toggle {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      font-size: clamp(12px, 0.95vw, 14px);
+      gap: 0.5rem;
+      font-size: clamp(13px, 1.0vw, 16px);
       color: var(--text-dim);
       cursor: pointer;
       user-select: none;
     }
-    .k11-toggle input { accent-color: var(--cool); width: 16px; height: 16px; }
-    .k11-actions {
-      display: inline-flex;
-      gap: 0.45rem;
-      flex-wrap: wrap;
-    }
+    .k11-toggle input { width: 20px; height: 20px; accent-color: var(--focal); cursor: pointer; }
+    .k11-toggle b { color: var(--text); font-weight: 700; }
     .k11-btn {
       font-family: var(--font-display);
       font-size: clamp(13px, 0.95vw, 15px);
@@ -333,144 +316,99 @@
       padding: 0.4rem 1rem;
       border-radius: 999px;
       cursor: pointer;
-      transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
-      letter-spacing: 0.02em;
-      line-height: 1.15;
+      transition: background 180ms, color 180ms, border-color 180ms, transform 150ms;
       border: 1.5px solid var(--border);
       background: transparent;
       color: var(--text-dim);
     }
     .k11-btn:hover { border-color: var(--warm); color: var(--warm); transform: translateY(-1px); }
-    .k11-btn-primary {
-      border-color: var(--bad);
-      background: rgba(var(--bad-rgb), 0.14);
-      color: var(--bad);
-      box-shadow: 0 0 10px rgba(var(--bad-rgb), 0.18);
-    }
-    .k11-btn-primary:hover {
-      background: rgba(var(--bad-rgb), 0.24);
-      border-color: var(--bad);
-      color: var(--bad);
-      box-shadow: 0 0 18px rgba(var(--bad-rgb), 0.3);
-    }
 
     /* Responsive */
     @media (max-width: 700px) {
-      .k11-panel {
-        padding: 0.6rem 0.9rem 0.6rem;
-        gap: 0.55rem;
-      }
+      .k11-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
       .k11-caption p { font-size: 13px; line-height: 1.4; }
       .k11-caption { padding: 0.45rem 0.8rem; }
-      .k11-main {
-        grid-template-columns: 1fr;
-        grid-template-rows: minmax(160px, 1fr) minmax(180px, 1fr);
-        gap: 0.55rem;
-      }
-      .k11-src-p { font-size: 13px; padding: 0.4rem 0.6rem 0.4rem 1.4rem; }
-      .k11-answer { font-size: 14px; line-height: 1.5; }
-      .k11-question { font-size: 13px; padding: 0.45rem 0.7rem; }
-      .k11-meter-val { font-size: 14px; }
-      .k11-button-bar { flex-direction: column-reverse; align-items: stretch; gap: 0.4rem; }
+      .k11-main { grid-template-columns: 1fr; grid-template-rows: minmax(150px, 0.9fr) minmax(0, 1.1fr); gap: 0.6rem; }
+      .k11-source { padding: 0.7rem 0.9rem; }
+      .k11-source p { font-size: 13.5px; line-height: 1.45; }
+      .k11-pill-q { font-size: 14px; }
+      .k11-answer { font-size: 15px; line-height: 1.45; }
+      .k11-button-bar { flex-direction: column; align-items: stretch; gap: 0.45rem; }
       .k11-toggle { justify-content: center; }
-      .k11-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.4rem;
-      }
       .k11-btn { font-size: 13px; padding: 0.6rem 0.5rem; min-height: 44px; text-align: center; }
     }
     @media (max-width: 400px) {
-      .k11-src-p { font-size: 12.5px; }
-      .k11-answer { font-size: 13px; }
-      .k11-btn { font-size: 12.5px; padding: 0.55rem 0.4rem; }
+      .k11-source p { font-size: 12.5px; }
+      .k11-pill-q { font-size: 13px; }
+      .k11-answer { font-size: 14px; }
+      .k11-btn { font-size: 12.5px; }
     }
     @media (max-height: 500px) and (orientation: landscape) {
       .k11-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
       .k11-caption p { font-size: 12px; line-height: 1.35; }
       .k11-caption { padding: 0.35rem 0.7rem; }
-      .k11-src-p { font-size: 13px; padding: 0.35rem 0.55rem 0.35rem 1.3rem; }
-      .k11-answer { font-size: 13.5px; }
-      .k11-meter-val { font-size: 13px; }
+      .k11-source { padding: 0.6rem 0.8rem; }
+      .k11-source p { font-size: 13px; }
+      .k11-answer { font-size: 14px; }
       .k11-btn { font-size: 12px; padding: 0.4rem 0.75rem; min-height: 32px; }
     }
   </style>
 
   <div class="lab-header"
        data-lab-title="Confiança vs Fundamento"
-       data-lab-subtitle="Soa convicto. Pode estar inventando."></div>
+       data-lab-subtitle="O tom é o mesmo; o que muda é se a fonte cobre a pergunta"></div>
 
   <div class="k11-caption">
-    <p>O modelo escreve com a <b>mesma cadência confiante</b> quando cita e quando inventa. Risque parágrafos da fonte e veja: o medidor de Fundamento despenca, mas a Fluência permanece pinada perto de 95%.</p>
+    <p>A petição da esquerda é a <b>única fonte</b>. Pergunte algo que ela responde &rarr; resposta ancorada num parágrafo. Pergunte <b>além do que ela cobre</b> &rarr; o modelo inventa com a mesma firmeza, em vez de admitir que não sabe.</p>
   </div>
 
   <div class="k11-main">
-    <div class="k11-source">
-      <div class="k11-source-head">
-        <h2 class="k11-source-title">Fonte (peças anexadas)</h2>
-        <span class="k11-source-hint">clique para remover do contexto</span>
-      </div>
-      <ul class="k11-source-list" id="k11-src-list">
-        <li class="k11-src-p" data-pidx="1">
-          O Reclamante, José da Silva, foi admitido em 14/02/2020 e demitido sem justa causa em 28/03/2024, percebendo último salário de R$ 3.200,00.
-        </li>
-        <li class="k11-src-p" data-pidx="2">
-          O Reclamante cumpria jornada de segunda a sexta, das 8h às 19h, com 1h de intervalo, totalizando 2h extras diárias não registradas.
-        </li>
-        <li class="k11-src-p" data-pidx="3">
-          O valor da causa é de R$ 32.450,00, conforme cálculo de verbas rescisórias, horas extras e reflexos em anexo.
-        </li>
-        <li class="k11-src-p" data-pidx="4">
-          A Reclamada não comprovou pagamento das verbas rescisórias dentro do prazo do art. 477 §6º da CLT.
-        </li>
-        <li class="k11-src-p" data-pidx="5">
-          Pleiteia-se a condenação ao pagamento de horas extras, reflexos em DSR/13º/férias/FGTS, multa do art. 477 §8º CLT e demais verbas rescisórias.
-        </li>
-        <li class="k11-src-p" data-pidx="6">
-          Indicam-se as testemunhas Maria Souza e João Pereira, ambas qualificadas em rol anexo.
-        </li>
-        <li class="k11-src-p" data-pidx="7">
-          Requer-se a aplicação da Súmula 338 do TST quanto ao ônus da prova da jornada de trabalho.
-        </li>
-      </ul>
+    <div class="k11-source" id="k11-source">
+      <div class="k11-source-head">Fonte · petição trabalhista</div>
+      <p class="k11-source-hint">fixa e não-editável — esta é toda a informação disponível ao modelo</p>
+      <p data-pp="1"><span class="pp">¶1</span> O Reclamante, José da Silva, foi admitido em 14/02/2020 e demitido sem justa causa em 28/03/2024, com último salário de R$ 3.200,00.</p>
+      <p data-pp="2"><span class="pp">¶2</span> Cumpria jornada de segunda a sexta, das 8h às 19h, com 1h de intervalo, totalizando 2h extras diárias não registradas.</p>
+      <p data-pp="3"><span class="pp">¶3</span> O valor da causa é de R$ 32.450,00, conforme cálculo das verbas rescisórias, horas extras e reflexos em anexo.</p>
+      <p data-pp="4"><span class="pp">¶4</span> A Reclamada não comprovou o pagamento das verbas rescisórias dentro do prazo do art. 477, §6º, da CLT.</p>
+      <p data-pp="5"><span class="pp">¶5</span> Pleiteia-se a condenação ao pagamento de horas extras, reflexos em DSR/13º/férias/FGTS, multa do art. 477, §8º, e demais verbas.</p>
+      <p data-pp="6"><span class="pp">¶6</span> Indicam-se as testemunhas Maria Souza e João Pereira, ambas qualificadas em rol anexo.</p>
+      <p data-pp="7"><span class="pp">¶7</span> Requer-se a aplicação da Súmula 338 do TST quanto ao ônus da prova da jornada de trabalho.</p>
     </div>
 
     <div class="k11-right">
-      <div class="k11-question">
-        <b>Pergunta:</b> "Qual o valor da causa, a data da rescisão e a súmula aplicável quanto ao ônus da prova da jornada?"
+      <div class="k11-pills" id="k11-pills">
+        <button class="k11-pill" data-q="valor" type="button">
+          <span class="k11-pill-q">Qual o valor da causa?</span>
+          <span class="k11-pill-mark in">na fonte</span>
+        </button>
+        <button class="k11-pill" data-q="data" type="button">
+          <span class="k11-pill-q">Qual a data da rescisão?</span>
+          <span class="k11-pill-mark in">na fonte</span>
+        </button>
+        <button class="k11-pill" data-q="sumula" type="button">
+          <span class="k11-pill-q">Qual súmula trata do ônus da jornada?</span>
+          <span class="k11-pill-mark in">na fonte</span>
+        </button>
+        <button class="k11-pill" data-q="cct" type="button">
+          <span class="k11-pill-q">Qual a CCT vigente da categoria?</span>
+          <span class="k11-pill-mark out">fora da fonte</span>
+        </button>
+        <button class="k11-pill" data-q="sum489" type="button">
+          <span class="k11-pill-q">Resuma a Súmula 489 do TST.</span>
+          <span class="k11-pill-mark out">não existe</span>
+        </button>
       </div>
+
       <div class="k11-answer-wrap">
         <div class="k11-answer-head">
-          <div class="k11-answer-robot">IA</div>
-          <div class="k11-answer-label">Resposta gerada</div>
+          <div class="k11-robot">IA</div>
+          <div class="k11-answer-label">resposta gerada</div>
+          <span class="k11-stamp hidden" id="k11-stamp"></span>
         </div>
-        <div class="k11-answer" id="k11-answer"></div>
-      </div>
-      <div class="k11-meters">
-        <div class="k11-meter k11-meter--flu">
-          <div class="k11-meter-row">
-            <span class="k11-meter-label">
-              Fluência
-              <span class="sub">como soa, ritmo, postura</span>
-            </span>
-            <span class="k11-meter-val" id="k11-flu-val">94%</span>
-          </div>
-          <div class="k11-meter-bar">
-            <div class="k11-meter-fill" id="k11-flu-fill" style="width:94%"></div>
-          </div>
-        </div>
-        <div class="k11-meter k11-meter--fund">
-          <div class="k11-meter-row">
-            <span class="k11-meter-label">
-              Fundamento
-              <span class="sub">apoio real na fonte</span>
-            </span>
-            <span class="k11-meter-val" id="k11-fund-val">100%</span>
-          </div>
-          <div class="k11-meter-bar">
-            <div class="k11-meter-fill" id="k11-fund-fill" style="width:100%; background: var(--cool);"></div>
-            <div class="k11-meter-shadow" id="k11-fund-shadow" style="left:100%;"></div>
-          </div>
+        <div class="k11-answer-body">
+          <p class="k11-answer is-empty" id="k11-answer">Clique numa pergunta acima.</p>
+          <button class="k11-verify-btn hidden" id="k11-verify-btn" type="button">Verificar no STJ/TST</button>
+          <div class="k11-verify-pop hidden" id="k11-verify-pop"></div>
         </div>
       </div>
     </div>
@@ -478,154 +416,151 @@
 
   <div class="k11-button-bar">
     <label class="k11-toggle">
-      <input type="checkbox" id="k11-allow-naosei">
-      <span>Permitir "não sei" (desliga o "forçar resposta")</span>
+      <input type="checkbox" id="k11-naosei">
+      <span>Permitir <b>"não sei"</b> (modelo pode abster-se)</span>
     </label>
-    <div class="k11-actions">
-      <button class="k11-btn" id="k11-reset" type="button">Restaurar tudo</button>
-      <button class="k11-btn k11-btn-primary" id="k11-strike-all" type="button">Riscar tudo</button>
-    </div>
+    <button class="k11-btn" id="k11-reset" type="button">Limpar</button>
   </div>
 
   <script>
     (function() {
-      // ── Source paragraph weights ────────────────────────
-      // Each paragraph contributes a fixed share to Fundamento. Sum = 1.00.
-      // pidx 1..7, in document order.
-      const WEIGHTS = { 1: 0.18, 2: 0.16, 3: 0.16, 4: 0.14, 5: 0.12, 6: 0.12, 7: 0.12 };
-
-      // ── Answer template ─────────────────────────────────
-      // Each token has:
-      //   - a comma-separated list of source paragraph IDs it depends on,
-      //   - a "good" rendering (when all sources still present),
-      //   - a "bad"  rendering (fabricated drift when sources are gone).
-      //
-      // Critical pedagogical moment: when paragraph 7 (Súmula 338 TST about
-      // jornada) is struck, the model FABRICATES "Súmula 244 TST" — a real
-      // súmula about gestante stability that has zero connection to a male
-      // reclamante's jornada question. Lawyers in the audience read 244 and
-      // recognize the hallucination instantly. The point lands.
-      const TOKENS = [
-        { id: 'val',   src: [3], good: 'R$ 32.450,00',                          bad: 'R$ 28.000,00' },
-        { id: 'basis', src: [3, 5], good: 'verbas rescisórias, horas extras e reflexos', bad: 'verbas rescisórias e adicional' },
-        { id: 'date',  src: [1], good: '28 de março de 2024',                   bad: '15 de abril de 2024' },
-        { id: 'name',  src: [1], good: 'José da Silva',                         bad: 'Sr. Reclamante' },
-        { id: 'sum',   src: [7], good: 'Súmula 338 do TST',                     bad: 'Súmula 244 do TST' }
-      ];
-
-      // Layout sentence — token IDs in slot order. Plain text in between.
-      function renderAnswer(stricken, allowAbstain, fundPct) {
-        if (allowAbstain && fundPct < 35) {
-          return '<p class="abstain">Não tenho fundamento suficiente nas peças anexadas para responder com segurança esta consulta. Sugiro completar a documentação antes de prosseguir.</p>';
+      // Each question carries: whether the source covers it (in), the confident
+      // answer the model produces (real — green tokens when grounded, red tokens
+      // when fabricated), an honest abstention (abst), and — for the two
+      // out-of-source questions — the verify text that exposes the fabrication.
+      // CCT SINDPD/SE and Súmula 489 are both NOT in the petição: the first is
+      // invented wholesale, the second cites a súmula that does not exist (TST
+      // súmulas go to 463). The lesson lands because the fabricated answers read
+      // exactly as confidently as the grounded ones.
+      const QS = {
+        valor: {
+          in: true, pp: 3,
+          real: 'O valor da causa é de <span class="k11-tok-green">R$ 32.450,00</span> (¶3), conforme o cálculo de verbas rescisórias, horas extras e reflexos.',
+          abst: 'Localizado na fonte: R$ 32.450,00 (¶3).'
+        },
+        data: {
+          in: true, pp: 1,
+          real: 'A rescisão ocorreu em <span class="k11-tok-green">28 de março de 2024</span> (¶1), data da demissão sem justa causa do Reclamante.',
+          abst: 'Localizado na fonte: 28/03/2024 (¶1).'
+        },
+        sumula: {
+          in: true, pp: 7,
+          real: 'Aplica-se a <span class="k11-tok-green">Súmula 338 do TST</span> (¶7), quanto ao ônus da prova da jornada de trabalho.',
+          abst: 'Localizado na fonte: Súmula 338 do TST (¶7).'
+        },
+        cct: {
+          in: false, pp: null,
+          real: 'Aplica-se a <span class="k11-tok-red">CCT 2024 do SINDPD/SE</span>, com vigência de 01/05/2024 a 30/04/2025, registrada no MTE sob o nº <span class="k11-tok-red">SE-000123/2024</span>.',
+          abst: 'A petição não informa a convenção coletiva da categoria. Não posso afirmar qual CCT está vigente sem consultar o cadastro de instrumentos coletivos do MTE.',
+          verify: 'Nenhuma CCT com sigla "SINDPD/SE" e esse registro consta no cadastro do MTE. O número e as datas foram fabricados.'
+        },
+        sum489: {
+          in: false, pp: null,
+          real: 'A <span class="k11-tok-red">Súmula 489 do TST</span> trata, em síntese, da incidência de adicional noturno sobre horas extras, consolidando entendimento da SDI-1 desde 2018.',
+          abst: 'A Súmula 489 do TST não existe — a numeração das súmulas do TST vai até a 463. Não há o que resumir.',
+          verify: 'As súmulas do TST vão até a 463. A Súmula 489 não consta no repositório oficial — a ementa acima foi inventada.'
         }
-        const tok = id => {
-          const t = TOKENS.find(x => x.id === id);
-          const allGone = t.src.every(s => stricken.has(s));
-          const cls = allGone ? 'is-fabricated' : 'is-grounded';
-          const txt = allGone ? t.bad : t.good;
-          return '<span class="tok ' + cls + '" data-src="' + t.src.join(',') + '">' + txt + '</span>';
-        };
-        return (
-          'O valor da causa é de ' + tok('val') + ', calculado com base em ' + tok('basis') + '. ' +
-          'A rescisão contratual ocorreu em ' + tok('date') + ', data da demissão sem justa causa do Reclamante ' + tok('name') + '. ' +
-          'Aplica-se, ainda, ' + tok('sum') + ' quanto ao ônus da prova da jornada.'
-        );
-      }
+      };
 
-      // ── DOM refs ────────────────────────────────────────
-      const srcParas    = document.querySelectorAll('.k11-src-p');
-      const answerEl    = document.getElementById('k11-answer');
-      const fluFill     = document.getElementById('k11-flu-fill');
-      const fluVal      = document.getElementById('k11-flu-val');
-      const fundFill    = document.getElementById('k11-fund-fill');
-      const fundVal     = document.getElementById('k11-fund-val');
-      const fundShadow  = document.getElementById('k11-fund-shadow');
-      const naoSei      = document.getElementById('k11-allow-naosei');
-      const resetBtn    = document.getElementById('k11-reset');
-      const strikeAll   = document.getElementById('k11-strike-all');
+      const source   = document.getElementById('k11-source');
+      const pills     = document.querySelectorAll('.k11-pill');
+      const answerEl  = document.getElementById('k11-answer');
+      const stampEl    = document.getElementById('k11-stamp');
+      const verifyBtn  = document.getElementById('k11-verify-btn');
+      const verifyPop  = document.getElementById('k11-verify-pop');
+      const naoSei     = document.getElementById('k11-naosei');
+      const resetBtn   = document.getElementById('k11-reset');
+      let curQ = null;
 
-      // ── State ───────────────────────────────────────────
-      const stricken = new Set();   // set of pidx
-      let fluTimer = null;          // jitter interval
-
-      // ── Recompute + render ──────────────────────────────
-      function recompute() {
-        let support = 0;
-        srcParas.forEach(p => {
-          const pidx = parseInt(p.dataset.pidx, 10);
-          if (!stricken.has(pidx)) support += WEIGHTS[pidx];
+      function clearHighlights() {
+        source.querySelectorAll('.k11-source p .hit').forEach(span => {
+          const txt = document.createTextNode(span.textContent);
+          span.parentNode.replaceChild(txt, span);
         });
-        const fund = Math.round(support * 100);
-        // Fundamento color: green > 60, amber 30-60, red < 30
-        let fundColor = 'var(--cool)';
-        if (fund < 30) fundColor = 'var(--bad)';
-        else if (fund < 60) fundColor = 'var(--amber)';
-        fundFill.style.width = fund + '%';
-        fundFill.style.background = fundColor;
-        fundVal.textContent = fund + '%';
-        fundVal.style.color = fundColor;
-
-        answerEl.innerHTML = renderAnswer(stricken, naoSei.checked, fund);
+        // re-merge adjacent text nodes so a second highlight pass works
+        source.querySelectorAll('.k11-source p').forEach(p => p.normalize());
+      }
+      function highlight(pp) {
+        clearHighlights();
+        if (!pp) return;
+        const p = source.querySelector('p[data-pp="' + pp + '"]');
+        if (!p) return;
+        const mark = p.querySelector('.pp');
+        if (!mark) return;
+        const rest = mark.nextSibling;
+        if (rest && rest.nodeType === 3) {
+          const span = document.createElement('span');
+          span.className = 'hit';
+          span.textContent = rest.textContent;
+          p.replaceChild(span, rest);
+        }
+        p.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
 
-      // ── Fluência jitter ─────────────────────────────────
-      // Subtle: 89-97% oscillation every 800ms. Just enough that the audience
-      // sees the bar twitch — it is NOT a static prop. When abstain mode is on
-      // AND fund is below 35 the answer collapses; Fluência drops to ~22-28
-      // (the "não sei" output is short and flat).
-      function tickFluencia() {
-        // Read current state to know if we should be in low or high regime.
-        const fundPctText = fundVal.textContent.replace('%','');
-        const fund = parseInt(fundPctText, 10) || 0;
-        const low = naoSei.checked && fund < 35;
-        const target = low
-          ? 22 + Math.floor(Math.random() * 7)
-          : 89 + Math.floor(Math.random() * 9);  // 89..97
-        fluFill.style.width = target + '%';
-        fluFill.style.background = low ? 'var(--text-muted)' : 'var(--good)';
-        fluVal.textContent = target + '%';
-        fluVal.style.color = low ? 'var(--text-muted)' : 'var(--good)';
+      function render() {
+        if (!curQ) return;
+        const cfg = QS[curQ];
+        answerEl.classList.remove('is-empty', 'is-fab', 'is-ok', 'is-abst');
+        verifyPop.classList.add('hidden');
+
+        if (naoSei.checked && !cfg.in) {
+          // Honest abstention path
+          answerEl.classList.add('is-abst');
+          answerEl.innerHTML = cfg.abst;
+          stampEl.className = 'k11-stamp ok';
+          stampEl.textContent = '✓ admitiu não saber';
+          verifyBtn.classList.add('hidden');
+          highlight(null);
+          return;
+        }
+
+        if (cfg.in) {
+          answerEl.classList.add('is-ok');
+          answerEl.innerHTML = cfg.real;
+          stampEl.className = 'k11-stamp ok';
+          stampEl.textContent = '✓ ancorado · ¶' + cfg.pp;
+          verifyBtn.classList.add('hidden');
+          highlight(cfg.pp);
+        } else {
+          answerEl.classList.add('is-fab');
+          answerEl.innerHTML = cfg.real;
+          stampEl.className = 'k11-stamp fab';
+          stampEl.textContent = '⚠ fabricado';
+          verifyBtn.classList.remove('hidden');
+          highlight(null);
+        }
       }
 
-      // ── Interactions ────────────────────────────────────
-      srcParas.forEach(p => {
-        p.addEventListener('click', () => {
-          const pidx = parseInt(p.dataset.pidx, 10);
-          if (stricken.has(pidx)) {
-            stricken.delete(pidx);
-            p.classList.remove('is-struck');
-          } else {
-            stricken.add(pidx);
-            p.classList.add('is-struck');
-          }
-          recompute();
-          // Snap fluência tick immediately so the audience sees the *answer*
-          // wobble together with the source change, not 800ms later.
-          tickFluencia();
-        });
+      pills.forEach(p => p.addEventListener('click', () => {
+        pills.forEach(x => x.classList.remove('is-active'));
+        p.classList.add('is-active');
+        curQ = p.dataset.q;
+        stampEl.classList.remove('hidden');
+        render();
+      }));
+
+      verifyBtn.addEventListener('click', () => {
+        const cfg = QS[curQ];
+        if (!cfg || !cfg.verify) return;
+        verifyPop.textContent = '⚠ ' + cfg.verify;
+        verifyPop.classList.remove('hidden');
       });
+
+      naoSei.addEventListener('change', render);
 
       resetBtn.addEventListener('click', () => {
-        stricken.clear();
-        srcParas.forEach(p => p.classList.remove('is-struck'));
+        pills.forEach(x => x.classList.remove('is-active'));
+        curQ = null;
+        answerEl.className = 'k11-answer is-empty';
+        answerEl.textContent = 'Clique numa pergunta acima.';
+        stampEl.classList.add('hidden');
+        verifyBtn.classList.add('hidden');
+        verifyPop.classList.add('hidden');
         naoSei.checked = false;
-        recompute();
-        tickFluencia();
+        clearHighlights();
       });
 
-      strikeAll.addEventListener('click', () => {
-        srcParas.forEach(p => {
-          const pidx = parseInt(p.dataset.pidx, 10);
-          stricken.add(pidx);
-          p.classList.add('is-struck');
-        });
-        recompute();
-        tickFluencia();
-      });
-
-      naoSei.addEventListener('change', () => { recompute(); tickFluencia(); });
-
-      // ── Theme sync ──────────────────────────────────────
+      // Theme sync
       window.addEventListener('storage', e => {
         if (e.key !== 'bs_theme') return;
         const t = e.newValue;
@@ -633,11 +568,6 @@
           document.documentElement.setAttribute('data-theme', t);
         }
       });
-
-      // ── Init ────────────────────────────────────────────
-      recompute();
-      fluTimer = setInterval(tickFluencia, 800);
-      tickFluencia();
     })();
   </script>
 </section>

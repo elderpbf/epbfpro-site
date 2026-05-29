@@ -92,6 +92,20 @@
             '<div class="cp-sqa-answer-text" id="sqa-answer"></div>' +
           '</div>' +
         '</div>' +
+
+        // Private "your question was answered" card. Shown only on the asking
+        // student's own phone, between instructor questions, whenever the
+        // teacher has answered one of their Q&A questions -- regardless of
+        // whether it was promoted to the display.
+        '<div id="state-my-answer" class="nx-state cp-sqa-card" style="display:none">' +
+          '<div class="cp-sqa-label">Sua pergunta</div>' +
+          '<div class="cp-sqa-text" id="mya-text"></div>' +
+          '<div class="cp-sqa-answer">' +
+            '<div class="cp-sqa-answer-label">Resposta do instrutor</div>' +
+            '<div class="cp-sqa-answer-text" id="mya-answer"></div>' +
+          '</div>' +
+          '<div class="state-sub" style="margin-top:16px">Aguardando próxima pergunta…</div>' +
+        '</div>' +
       '</div>';
     host.appendChild(root);
 
@@ -134,6 +148,8 @@
       sqaText:       document.getElementById('sqa-text'),
       sqaAnsWrap:    document.getElementById('sqa-answer-wrap'),
       sqaAns:        document.getElementById('sqa-answer'),
+      myaText:       document.getElementById('mya-text'),
+      myaAns:        document.getElementById('mya-answer'),
       qaBar:         qaBar,
       qaBackdrop:    backdrop,
       qaCollapsed:   document.getElementById('qa-bar-collapsed'),
@@ -157,15 +173,28 @@
       activeQuestion: null,
       els: els,
       listeners: [],
+      current: null,
+      myAnswer: null,        // {id, text, answer} latest answered question of mine
+      lastSeenAnsKey: null,  // de-dupes the toast across polls/reloads
+      inboxTimer: null,
     };
+    try { _state.lastSeenAnsKey = localStorage.getItem('nx_seen_ans_' + sessionCode) || null; } catch (_) {}
 
     _wireEvents();
     _showState('waiting');
+
+    // Poll the asker's private inbox for answered questions (independent of the
+    // active-question polling the cpq element drives).
+    _pollInbox();
+    _state.inboxTimer = setInterval(_pollInbox, 4000);
   }
 
   function unmount() {
     if (!_state) return;
     var s = _state;
+
+    // Stop the inbox poll.
+    if (s.inboxTimer) { try { clearInterval(s.inboxTimer); } catch (_) {} s.inboxTimer = null; }
 
     // Detach listeners.
     s.listeners.forEach(function (l) {
@@ -208,10 +237,24 @@
 
   function _showState(name) {
     if (!_state) return;
-    ['waiting', 'cpq', 'answered', 'closed', 'student-qa'].forEach(function (s) {
+    _state.current = name;
+    ['waiting', 'cpq', 'answered', 'closed', 'student-qa', 'my-answer'].forEach(function (s) {
       var el = document.getElementById('state-' + s);
       if (el) el.style.display = (s === name) ? '' : 'none';
     });
+  }
+
+  // True when a name matches this device's student. Identity is the stored
+  // student_name (bs_anon_id) -- the same handle answers are submitted under.
+  function _isMine(name) {
+    return !!(_state && name && _state.studentName &&
+              String(name).trim() === String(_state.studentName).trim());
+  }
+
+  // Idle = between instructor questions. If the teacher has answered one of my
+  // Q&A questions, surface it here; otherwise show the plain waiting screen.
+  function _showIdle() {
+    _showState((_state && _state.myAnswer) ? 'my-answer' : 'waiting');
   }
 
   function _pulseDot(id) {
@@ -250,7 +293,7 @@
 
     // cpq-idle: no active question (between questions).
     _on(els.cpq, 'cpq-idle', function () {
-      _showState('waiting');
+      _showIdle();
       if (_state) _state.activeQuestion = null;
     });
 
@@ -335,6 +378,15 @@
     var els = _state.els;
     var aq = data.active_question;
     if (aq && aq.type === 'student_qa') {
+      // Privacy: a promoted student question only renders on its asker's own
+      // phone. Other students stay idle -- the shared projector (display.html)
+      // is where the room sees it. Identity matches on student_name.
+      if (!_isMine(aq.student_name)) {
+        var elx = document.getElementById('state-student-qa');
+        if (elx && elx.style.display !== 'none') elx.style.display = 'none';
+        _showIdle();
+        return;
+      }
       var metaParts = [aq.student_name || 'Anônimo', _fmtTime(aq.student_time)].filter(Boolean);
       if (els.sqaMeta) els.sqaMeta.textContent = metaParts.join(' · ');
       if (els.sqaText) els.sqaText.textContent = aq.text || '';
@@ -379,12 +431,45 @@
     if (els.qaEdErr) els.qaEdErr.classList.remove('visible');
   }
 
-  function _showToast() {
+  function _showToast(msg) {
     if (!_state) return;
     var toast = _state.els.qaToast;
     if (!toast) return;
+    if (msg) toast.textContent = msg;
     toast.classList.add('visible');
     setTimeout(function () { toast.classList.remove('visible'); }, 2500);
+  }
+
+  // Poll the asker's private inbox: their own Q&A questions that the teacher
+  // has answered (whether promoted to the display or answered inline). The
+  // answer surfaces on the asker's phone only -- non-intrusively, on the idle
+  // screen, with a one-time toast -- never interrupting a live question.
+  async function _pollInbox() {
+    if (!_state) return;
+    try {
+      var res = await callWorker({
+        action: 'cp_student_inbox',
+        session_code: _state.sessionCode,
+        student_name: _state.studentName,
+        _silent: true,
+      });
+      if (!_state || !res || !res.ok || !Array.isArray(res.questions)) return;
+      var answered = res.questions.filter(function (q) { return q.answer && String(q.answer).trim(); });
+      if (!answered.length) return;
+      var latest = answered[answered.length - 1]; // ORDER BY created_at ASC
+      _state.myAnswer = { id: latest.id, text: latest.text || '', answer: latest.answer || '' };
+      if (_state.els.myaText) _state.els.myaText.textContent = _state.myAnswer.text;
+      if (_state.els.myaAns)  _state.els.myaAns.textContent  = _state.myAnswer.answer;
+
+      var key = String(latest.id) + ':' + String(latest.answer);
+      if (key !== _state.lastSeenAnsKey) {
+        _state.lastSeenAnsKey = key;
+        try { localStorage.setItem('nx_seen_ans_' + _state.sessionCode, key); } catch (_) {}
+        _showToast('Sua pergunta foi respondida.');
+      }
+      // Surface the card now only if we're idle -- never over a live question.
+      if (_state.current === 'waiting' || _state.current === 'my-answer') _showState('my-answer');
+    } catch (_) {}
   }
 
   async function _submitStudentQ() {
@@ -405,7 +490,7 @@
         if (els.qaEditorIn) els.qaEditorIn.value = '';
         if (els.qaCharCount) els.qaCharCount.textContent = '0/200';
         _collapseQa();
-        _showToast();
+        _showToast('Pergunta enviada.');
       } else {
         if (els.qaEdErr) {
           els.qaEdErr.textContent = (res && res.error) || STRINGS.errSubmit;

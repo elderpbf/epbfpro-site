@@ -33,19 +33,43 @@
     return meta.mimeType === 'application/vnd.google-apps.presentation';
   }
 
+  // slidesEmbedUrl(urlOrId): canonical Google Slides embed contract for the
+  // whole app. Returns the published /embed player URL (chrome-free except a
+  // bottom playbar, which cv-slides-clip clips) for ANY Slides input — a raw
+  // file id, a /presentation/d/<id>/* link, or a /presentation/d/e/<pubid>/*
+  // published link. Already-embed forms pass through. Unknown input returns
+  // as-is. This is what ClassForge effectively did; reuse it anywhere a Google
+  // Slides needs to render without Google's chrome.
+  function slidesEmbedUrl(urlOrId) {
+    const s = String(urlOrId == null ? '' : urlOrId).trim();
+    if (!s) return '';
+    if (/\/(embed|pubembed)\b/.test(s)) return s;
+    const pub = s.match(/\/presentation\/d\/e\/([a-zA-Z0-9_-]+)/);
+    if (pub) return 'https://docs.google.com/presentation/d/e/' + pub[1] + '/embed?start=false&loop=false';
+    const m = s.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/) ||
+      (/^[a-zA-Z0-9_-]{20,}$/.test(s) ? [null, s] : null);
+    if (m) return 'https://docs.google.com/presentation/d/' + m[1] + '/embed?start=false&loop=false';
+    return s;
+  }
+
   function previewSrcFor(item) {
     const meta = (item && item.meta_json) || {};
-    if (_isSlide(item) && meta.url) {
-      return meta.url;
+    // Presentations render through the chrome-free Slides /embed player (what
+    // ClassForge used); the generic /file/d/<id>/preview viewer (used for
+    // Docs/PDFs) carries Google's pop-out and is only for non-presentation files.
+    if (_isSlide(item)) {
+      const src = slidesEmbedUrl(meta.file_id || meta.url);
+      if (src) return src;
     }
     const id = meta.file_id || _extractFileId(meta.url);
     return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/preview' : '';
   }
 
-  // isSlide=true adds the slide-clip shell (oversize + overflow:hidden hides
-  // Google's bottom control bar) and the corner mask (covers the "Open in
-  // Slides" badge). Non-slide Drive files keep the plain wrap so their /preview
-  // content is never cropped. Styles live in classvault.css.
+  // isSlide=true uses the slide-clip shell (oversize + overflow:hidden) to clip
+  // the Slides /embed bottom playbar. No corner mask: /embed has no top-right
+  // pop-out, so there's nothing to cover (the old mask is what showed as a white
+  // square). Non-slide Drive files (/preview) render plain; Google's pop-out
+  // there auto-hides and the bottom-bar ↗ Janela is the clean open affordance.
   function _buildIframeWrap(src, isSlide) {
     const wrap = document.createElement('div');
     wrap.className = isSlide ? 'cv-renderer-iframe-wrap cv-slides-clip' : 'cv-renderer-iframe-wrap';
@@ -55,12 +79,6 @@
     iframe.setAttribute('allow', 'autoplay; encrypted-media; clipboard-write; fullscreen');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
     wrap.appendChild(iframe);
-    if (isSlide) {
-      const mask = document.createElement('div');
-      mask.className = 'cv-slides-corner-mask';
-      mask.setAttribute('aria-hidden', 'true');
-      wrap.appendChild(mask);
-    }
     return wrap;
   }
 
@@ -120,6 +138,7 @@
   }
 
   global.CVDriveViewer = {
+    slidesEmbedUrl:   slidesEmbedUrl,
     previewSrcFor:    previewSrcFor,
     mountInContainer: mountInContainer,
     openModal:        openModal
