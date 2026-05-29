@@ -6,6 +6,7 @@ export default {
   'nav.content':   'Conteúdo',
   'nav.cohorts':   'Turmas',
   'nav.questions': 'Perguntas',
+  'nav.logout':    'Sair',
 
   // Cohorts tab — general
   'cohorts.loading':              'Carregando...',

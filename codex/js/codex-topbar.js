@@ -97,25 +97,21 @@ export function init(opts) {
   spacer.className = 'bs-topbar-spacer';
   inner.appendChild(spacer);
 
-  // Language selector — appears only when more than one dictionary is loaded.
-  // Switching persists the choice and reloads (clean, no live re-render).
+  // Language toggle — appears only when more than one dictionary is loaded.
+  // Two languages, so it's a single button showing the language you'd switch
+  // TO ("EN" while in PT-BR, "BR" while in EN). Click persists + reloads.
   const langs = languages();
   if (langs.length > 1) {
-    const langSel = document.createElement('select');
-    langSel.className = 'cdx-lang-select';
-    langSel.setAttribute('aria-label', 'Idioma / Language');
-    const LABELS = { 'pt-BR': 'PT', 'en': 'EN' };
     let current = 'pt-BR';
     try { current = localStorage.getItem('codex_lang') || 'pt-BR'; } catch (_) {}
-    langs.forEach((code) => {
-      const opt = document.createElement('option');
-      opt.value = code;
-      opt.textContent = LABELS[code] || code;
-      if (code === current) opt.selected = true;
-      langSel.appendChild(opt);
-    });
-    langSel.addEventListener('change', () => { setLang(langSel.value); location.reload(); });
-    inner.appendChild(langSel);
+    const target = current === 'pt-BR' ? 'en' : 'pt-BR';
+    const LABEL = { 'en': 'EN', 'pt-BR': 'BR' };
+    const langBtn = document.createElement('button');
+    langBtn.className = 'cdx-lang-btn';
+    langBtn.textContent = LABEL[target];
+    langBtn.title = target === 'en' ? 'Switch to English' : 'Mudar para Português';
+    langBtn.addEventListener('click', () => { setLang(target); location.reload(); });
+    inner.appendChild(langBtn);
   }
 
   // Theme toggle (wired by ThemeManager).
@@ -141,7 +137,7 @@ export function init(opts) {
   const logoutBtn = document.createElement('button');
   logoutBtn.className = 'bs-logout-btn';
   logoutBtn.id = 'logout-btn';
-  logoutBtn.textContent = 'Sair';
+  logoutBtn.textContent = t('nav.logout');
   logoutBtn.addEventListener('click', BS_AUTH.logout);
   inner.appendChild(logoutBtn);
 

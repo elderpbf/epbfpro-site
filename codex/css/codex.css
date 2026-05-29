@@ -57,17 +57,21 @@
 /* ── Tab content host ───────────────────────────────────────── */
 .cdx-view { padding: 1.5rem; }
 
-/* Language selector (PT/EN). The topbar renders it only when more than one
- * dictionary is loaded; switching persists the choice and reloads. */
-.cdx-lang-select {
+/* Language toggle button (PT/EN). The topbar renders it only when more than
+ * one dictionary is loaded; it shows the language you'd switch TO. */
+.cdx-lang-btn {
   background: transparent;
   color: var(--text-muted, #9ca3af);
   border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
   border-radius: 8px;
-  padding: 0.25rem 0.4rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   cursor: pointer;
   margin-right: 0.25rem;
 }
-.cdx-lang-select:hover { color: var(--text, #e5e7eb); }
+.cdx-lang-btn:hover {
+  color: var(--text, #e5e7eb);
+  border-color: var(--text-muted, #9ca3af);
+}
