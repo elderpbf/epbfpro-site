@@ -60,7 +60,9 @@ window.CT_AI_SPEC = (function() {
     var addEmojis = opts.addEmojis !== false;
 
     var typeList = types.map(function(t) {
-      var icon = t.icon ? t.icon + ' ' : '';
+      // A glyph:<key> is a UI render token, not an emoji — never feed it to the
+      // model (it would echo "glyph:video" as an icon). Legacy emojis still pass.
+      var icon = (t.icon && t.icon.indexOf('glyph:') !== 0) ? t.icon + ' ' : '';
       return '- ' + t.slug + ': ' + icon + t.label;
     }).join('\n');
     var tagList = tags.length

@@ -77,7 +77,8 @@ window.CTItemForm = (function() {
       : types;
     var opts = visible.map(function(t) {
       var sel = t.slug === selectedSlug ? ' selected' : '';
-      var icon = t.icon ? t.icon + ' ' : '';
+      // <option> can't hold an SVG, so show a legacy emoji icon but not a glyph key.
+      var icon = (t.icon && t.icon.indexOf('glyph:') !== 0) ? t.icon + ' ' : '';
       return '<option value="' + _esc(t.slug) + '"' + sel + '>' + _esc(icon + t.label) + '</option>';
     }).join('');
     var isExcludedSlug = excluded && excluded.indexOf(selectedSlug) >= 0;

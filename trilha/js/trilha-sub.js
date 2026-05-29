@@ -21,16 +21,27 @@
     if (opts.isTarefa) zoneClass += ' sub-zone--tarefa';
     else if (opts.isApostila) zoneClass += ' sub-zone--apostila';
 
-    var icon = opts.isTarefa
-      ? (window.BSTypeIcon ? window.BSTypeIcon('tarefa', '✓') : '✓')
-      : (window.BSTypeIcon ? window.BSTypeIcon(item.type, item.type_icon || '•') : (item.type_icon || '•'));
+    // A content item's icon comes from its type (item.type_icon: a "glyph:<key>"
+    // resolved to an SVG by the Codex glyph library, or a legacy emoji), rendered
+    // through the window.CdxGlyphs global. The Tarefa zone keeps its dedicated
+    // check mark (a UI affordance, not a content type). Falls back to the legacy
+    // escaped text when CdxGlyphs is not loaded.
+    var iconHtml;
+    if (opts.isTarefa) {
+      iconHtml = esc(window.BSTypeIcon ? window.BSTypeIcon('tarefa', '✓') : '✓');
+    } else if (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && item.type_icon) {
+      iconHtml = window.CdxGlyphs.iconHtml(item.type_icon, { size: 20 });
+    } else {
+      var legacyIcon = window.BSTypeIcon ? window.BSTypeIcon(item.type, item.type_icon || '•') : (item.type_icon || '•');
+      iconHtml = esc(legacyIcon);
+    }
     var typeLabel = opts.isTarefa ? 'Tarefa' : (item.type_label || item.type || '');
 
     var isFresh = !!(Trilha.Freshness && Trilha.Freshness.isFresh(item));
     var novoPill = isFresh ? '<span class="novo-pill">NOVO</span>' : '';
 
     sub.innerHTML =
-      '<div class="' + zoneClass + '">' + esc(icon) + '</div>' +
+      '<div class="' + zoneClass + '">' + iconHtml + '</div>' +
       '<div class="sub-meta">' +
         '<span class="sub-type">' + esc(typeLabel) + novoPill + '</span>' +
         '<span class="sub-title">' + esc(item.title) + '</span>' +

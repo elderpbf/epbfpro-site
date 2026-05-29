@@ -555,6 +555,10 @@
   justify-content: center;
   font-size: 1.55rem;
 }
+/* A type whose icon is a Codex glyph renders as an inline SVG (currentColor). */
+.ct-item-type-icon svg { display: block; width: 26px; height: 26px; }
+.ct-rel-count svg { display: inline-block; vertical-align: -0.15em; width: 13px; height: 13px; }
+.ct-comp-item span svg { display: inline-block; vertical-align: -0.15em; width: 15px; height: 15px; }
 
 .ct-item-info { flex: 1; min-width: 0; }
 
@@ -855,7 +859,11 @@
 .ct-tf-icon {
   font-size: 1rem;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
+/* A type whose icon is a Codex glyph renders as an inline SVG (currentColor). */
+.ct-tf-icon svg { display: block; width: 15px; height: 15px; }
 
 .ct-tf-count {
   font-size: 0.74rem;

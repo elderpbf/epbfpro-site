@@ -58,7 +58,14 @@ export const links = {
 // AI helpers (provider fallback chain lives in the Worker).
 export const ai = {
   question: (p) => call('ai_question', p),
-  theme:    (p) => call('ai_theme', p)
+  theme:    (p) => call('ai_theme', p),
+  // Generic chat used by the item editor/creator. Mirrors the legacy
+  // AIClient.generate: a rate-limit (429/503) resolves to null so callers can
+  // surface a friendly "try again" instead of throwing.
+  chat:     (p) => call('ai_chat', p).catch((e) => {
+    if (e && e.data && e.data.rate_limited) return null;
+    throw e;
+  })
 };
 
 // Cohorts — clients -> turmas -> aulas. Action names read from ct-admin.js;
@@ -92,12 +99,40 @@ export const content = {
   deleteItem:      (p) => call('ct_delete_item', p),        // { id }
   duplicateItem:   (p) => call('ct_duplicate_item', p),     // { id }
   bulkDeleteItems: (p) => call('ct_delete_items_bulk', p),  // { ids }
+  uploadAsset:     (p) => call('ct_upload_asset', p),       // { item_id, filename, content_b64 }
+  ingestGdoc:      (p) => call('ct_ingest_gdoc', p),        // { url, mode }
   listTypes:       (p) => call('ct_list_types', p),
   createType:      (p) => call('ct_create_type', p),        // { slug, label, icon? }
+  updateType:      (p) => call('ct_update_type', p),        // { slug, label?, icon? } icon = "glyph:<key>"
+  deleteType:      (p) => call('ct_delete_type', p),        // { slug } -> { error:'type_in_use', count } if used
   listTags:        (p) => call('ct_list_tags', p),
   createTag:       (p) => call('ct_create_tag', p),         // { label }
   renameTag:       (p) => call('ct_rename_tag', p),         // { id, label }
-  deleteTag:       (p) => call('ct_delete_tag', p)          // { id }
+  deleteTag:       (p) => call('ct_delete_tag', p),         // { id }
+  // Apostila sets (imported course content). Shared by Apostila + the Releases
+  // composer (which surfaces the current set's items as the "Conteúdo do curso"
+  // pool). Action names read from ct-admin.js.
+  listSets:        (p) => call('ct_list_sets', p),
+  getSet:          (p) => call('ct_get_set', p),            // { id } -> { set, items }
+  deleteSet:       (p) => call('ct_delete_set', p),         // { id } cascades to its items
+  // Tarefas (assignments) authoring + student submissions. Action names read
+  // from ct-admin.js (Phase 5). listItemTurmas powers the "also released in"
+  // reuse label across turmas.
+  listItemTurmas:  (p) => call('ct_list_item_turmas', p),   // { item_id }
+  listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug }
+  deleteSubmission:(p) => call('ct_delete_submission', p)   // { id }
+};
+
+// Lesson presets — named bundles of library items, reused when planning a
+// lesson. A Content sub-tab (Presets) and, later, the Lessons sidebar consume
+// these. Action names read from cv-presets-api.js (cv_*_preset, frozen); the
+// list/single responses unwrap to { presets } / { preset } in the caller.
+export const presets = {
+  list:   (p) => call('cv_list_presets', p),
+  get:    (p) => call('cv_get_preset', p),     // { id }
+  create: (p) => call('cv_create_preset', p),  // { name, item_ids }
+  update: (p) => call('cv_update_preset', p),  // { id, name?, item_ids? }
+  remove: (p) => call('cv_delete_preset', p)   // { id }
 };
 
 // Releases (liberações) of items to a turma. (Lives in Content, kept here as
@@ -105,5 +140,8 @@ export const content = {
 export const releases = {
   release:   (p) => call('ct_release_item', p),     // { client_slug, turma_slug, item_id }
   unrelease: (p) => call('ct_unrelease_item', p),
-  setAula:   (p) => call('ct_set_release_aula', p)  // { ..., aula_number_or_null }
+  setAula:   (p) => call('ct_set_release_aula', p), // { ..., aula_number_or_null }
+  // Aggregate student-view payload for a turma: the released items with their
+  // aula_number binding. Needs the turma token (read from ct_list_turmas).
+  turmaView: (p) => call('ct_get_turma_view', p)    // { client_slug, turma_slug, token }
 };

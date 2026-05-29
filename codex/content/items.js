@@ -9,12 +9,17 @@
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.CT_TYPE_FILTER  (../backstage/js/ct-type-filter.js)  type filter chips
-//   window.CTItemForm      (../backstage/js/ct-item-form.js)     full item editor
-//   window.CTItemCreator   (../backstage/js/ct-item-creator.js)  content-first step 1
-//   window.BSTypeIcon      (../backstage/js/utils.js)            per-type glyph
+//   window.CTRenderer      (../backstage/js/ct-renderer.js)     preview renderer
 //   window.BSToast         (../backstage/js/bs-toast.js)         optional toast
+// Type icons now come from the Codex glyph library (js/glyphs.js), not BSTypeIcon.
+// The item editor and content-first creator are now Codex-native modules
+// (item-form.js / item-creator.js), no longer the legacy window globals.
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import * as itemForm from './item-form.js';
+import * as itemCreator from './item-creator.js';
+import { iconHtml as typeIconHtml, glyphSvg, glyphKeys, GLYPH_PREFIX } from '../js/glyphs.js';
+import * as notice from '../js/notice.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -24,6 +29,9 @@ let _tags = [];
 let _selectedTypeFilter = null;
 let _selectMode = false;
 let _selectedIds = new Set();
+let _selectedId = null;          // master-detail: id of the item shown in the preview
+let _detailCache = new Map();    // id -> full item (with body_md) from getItem
+let _previewReq = 0;             // monotonic token: only the latest fetch renders
 let _cleanup = [];
 
 // ── Pure rule (exported for tests) ──────────────────────────────────────────
@@ -32,6 +40,28 @@ let _cleanup = [];
 export function filterLibraryItems(items) {
   return (items || []).filter((it) =>
     !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo' && it.type !== 'drive_file');
+}
+
+// Master-detail selection (exported for tests). The preview always shows a
+// valid item: keep the current selection if it survives the visible list, else
+// fall back to the first item, else nothing.
+export function resolveSelection(list, currentId) {
+  if (!list || !list.length) return null;
+  if (currentId != null && list.some((it) => Number(it.id) === Number(currentId))) {
+    return Number(currentId);
+  }
+  return Number(list[0].id);
+}
+
+// After removing removedId, pick the neighbour that takes selection: the item
+// that shifts into the freed slot, clamped to the new last item; null if empty.
+export function selectionAfterRemoval(list, removedId) {
+  const arr = list || [];
+  const idx = arr.findIndex((it) => Number(it.id) === Number(removedId));
+  const remaining = arr.filter((it) => Number(it.id) !== Number(removedId));
+  if (!remaining.length) return null;
+  if (idx < 0) return Number(remaining[0].id);
+  return Number(remaining[Math.min(idx, remaining.length - 1)].id);
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -50,15 +80,16 @@ function _slugify(s) {
 function _toast(msg) {
   if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
 }
-function _toastError(msg) { _toast(msg); }
+// Internal/dev errors go to the debug pill only, never a user toast (Elder's
+// rule). Actionable cases call notice.warn/error directly instead.
+function _toastError(msg) { notice.internal(msg); }
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 
 function _typeMeta(slug) {
   const ty = _types.find((x) => x.slug === slug);
   const label = ty ? ty.label : (slug || 'item');
-  const dbIcon = ty && ty.icon;
-  const icon = window.BSTypeIcon ? window.BSTypeIcon(slug, dbIcon) : (dbIcon || '•');
-  return { label, icon };
+  // iconHtml resolves "glyph:<key>" to an SVG, or a legacy emoji to its char.
+  return { label, iconHtml: typeIconHtml(ty && ty.icon, { size: 18 }) };
 }
 
 function _fmtDate(ts) {
@@ -78,7 +109,13 @@ function _openModal(html, opts) {
     bd.addEventListener('click', (e) => { if (e.target === bd) _closeModal(bd); });
   }
   const escHandler = (e) => {
-    if (e.key === 'Escape') { _closeModal(bd); document.removeEventListener('keydown', escHandler); }
+    if (e.key !== 'Escape') return;
+    // Only the topmost modal responds to ESC, so a nested picker/confirm closing
+    // doesn't also close the modal beneath it.
+    const all = document.querySelectorAll('.cdx-modal-backdrop');
+    if (all.length && all[all.length - 1] !== bd) return;
+    _closeModal(bd);
+    document.removeEventListener('keydown', escHandler);
   };
   document.addEventListener('keydown', escHandler);
   _cleanup.push(() => document.removeEventListener('keydown', escHandler));
@@ -140,6 +177,7 @@ function _renderShell() {
         '<div class="cdx-items-toolbar-actions">' +
           '<button class="cdx-btn cdx-btn-primary" id="cdx-btn-new-item">' + t('content.new_item') + '</button>' +
           '<button class="cdx-btn" id="cdx-btn-manage-tags">' + t('content.manage_tags') + '</button>' +
+          '<button class="cdx-btn" id="cdx-btn-manage-types">' + t('content.manage_types') + '</button>' +
           '<button class="cdx-btn" id="cdx-btn-select">' + t('content.select') + '</button>' +
         '</div>' +
       '</div>' +
@@ -149,18 +187,25 @@ function _renderShell() {
         '<button class="cdx-btn cdx-btn-sm" id="cdx-btn-bulk-cancel">' + t('content.bulk_cancel') + '</button>' +
       '</div>' +
       '<div id="cdx-items-filter"></div>' +
-      '<div class="cdx-items-grid" id="cdx-items-grid">' +
-        '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+      '<div class="cdx-items-split" id="cdx-items-split">' +
+        '<div class="cdx-items-list" id="cdx-items-grid">' +
+          '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+        '</div>' +
+        '<div class="cdx-item-preview" id="cdx-item-preview">' +
+          '<div class="cdx-preview-empty">' + t('content.preview_empty') + '</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
 
   _q('cdx-btn-new-item').addEventListener('click', _newItem);
   _q('cdx-btn-manage-tags').addEventListener('click', _openTagManager);
+  _q('cdx-btn-manage-types').addEventListener('click', _openTypeManager);
   _q('cdx-btn-select').addEventListener('click', _toggleSelectMode);
   _q('cdx-btn-bulk-delete').addEventListener('click', _bulkDelete);
   _q('cdx-btn-bulk-cancel').addEventListener('click', _exitSelectMode);
-  // One delegated listener for the whole grid (survives innerHTML re-renders).
-  _q('cdx-items-grid').addEventListener('click', _onGridClick);
+  // Delegated listeners survive innerHTML re-renders of the list / preview.
+  _q('cdx-items-grid').addEventListener('click', _onListClick);
+  _q('cdx-item-preview').addEventListener('click', _onPreviewClick);
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -194,54 +239,134 @@ function _loadTypes() {
 }
 
 // ── Render grid ─────────────────────────────────────────────────────────────
+function _visibleItems() {
+  const library = filterLibraryItems(_items);
+  return window.CT_TYPE_FILTER
+    ? window.CT_TYPE_FILTER.apply(library, _selectedTypeFilter)
+    : library;
+}
+
 function _renderItems() {
   const library = filterLibraryItems(_items);
   _renderFilter(library);
   const grid = _q('cdx-items-grid');
+  const split = _q('cdx-items-split');
+  if (split) split.classList.toggle('is-bulk', _selectMode);
   if (!grid) return;
   if (!library.length) {
+    _selectedId = null;
     grid.innerHTML = '<div class="cdx-empty">' + t('content.empty_library') + '</div>';
+    _renderPreview(null);
     return;
   }
   const filtered = window.CT_TYPE_FILTER
     ? window.CT_TYPE_FILTER.apply(library, _selectedTypeFilter)
     : library;
   if (!filtered.length) {
+    _selectedId = null;
     grid.innerHTML = '<div class="cdx-empty">' + t('content.empty_filter') + '</div>';
+    _renderPreview(null);
     return;
   }
+  _selectedId = resolveSelection(filtered, _selectedId);
   grid.innerHTML = filtered.map(_renderRow).join('');
+  if (_selectMode) _renderPreview(null);
+  else _showPreview(_selectedId);
 }
 
 function _renderRow(item) {
   const meta = _typeMeta(item.type);
   const selected = _selectedIds.has(Number(item.id));
-  const tagsHtml = (item.tags && item.tags.length)
-    ? '<span class="cdx-item-tags">' + item.tags.map((tg) =>
-        '<span class="cdx-tag-chip">' + _esc(tg.label) + '</span>').join('') + '</span>'
-    : '';
+  const active = !_selectMode && Number(item.id) === Number(_selectedId);
   const setBadge = item.set_id
     ? '<span class="cdx-set-badge" title="' + t('content.set_badge_title') + '">' + t('content.set_badge') + '</span>'
     : '';
   const checkHtml = _selectMode
     ? '<span class="cdx-item-check' + (selected ? ' is-checked' : '') + '" aria-hidden="true"></span>'
     : '';
-  const actionsHtml = _selectMode
-    ? ''
-    : '<button class="cdx-btn cdx-btn-sm" data-action="duplicate" title="' + t('content.duplicate_title') + '">' + t('content.duplicate') + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete">' + t('content.delete') + '</button>';
   return (
-    '<div class="cdx-item-row' + (selected ? ' is-selected' : '') + '" data-item-id="' + _esc(item.id) + '">' +
+    '<div class="cdx-item-row' + (selected ? ' is-selected' : '') + (active ? ' is-active' : '') +
+        '" data-item-id="' + _esc(item.id) + '">' +
       checkHtml +
-      '<span class="cdx-item-type-icon">' + _esc(meta.icon) + '</span>' +
+      '<span class="cdx-item-type-icon">' + meta.iconHtml + '</span>' +
       '<div class="cdx-item-info">' +
         '<div class="cdx-item-title">' + _esc(item.title) + setBadge + '</div>' +
         '<div class="cdx-item-sub">' + _esc(meta.label) + ' · ' + _esc(_fmtDate(item.updated_at)) + '</div>' +
-        tagsHtml +
       '</div>' +
-      actionsHtml +
     '</div>'
   );
+}
+
+// ── Preview pane (master-detail) ─────────────────────────────────────────────
+// Set the active selection, highlight its row, and render the preview. The full
+// item (with body_md) comes from getItem and is cached; the light list item is
+// shown immediately as a header while the body loads.
+function _showPreview(id) {
+  _selectedId = id == null ? null : Number(id);
+  if (_viewEl) {
+    _viewEl.querySelectorAll('.cdx-item-row').forEach((r) => {
+      r.classList.toggle('is-active', Number(r.dataset.itemId) === Number(_selectedId));
+    });
+  }
+  if (_selectedId == null) { _renderPreview(null); return; }
+  const cached = _detailCache.get(_selectedId);
+  if (cached) { _renderPreview(cached); return; }
+  const light = _items.find((it) => Number(it.id) === Number(_selectedId));
+  _renderPreview(light, { loading: true });
+  const reqId = ++_previewReq;
+  const wantId = _selectedId;
+  api.getItem({ id: wantId }).then((d) => {
+    if (reqId !== _previewReq) return;           // a newer selection superseded this fetch
+    const full = (d && d.item) || light;
+    if (full && full.id != null) _detailCache.set(Number(full.id), full);
+    if (full && Number(full.id) === Number(_selectedId)) _renderPreview(full);
+  }).catch((e) => { if (reqId === _previewReq) _toastError(_err(e)); });
+}
+
+function _renderPreview(item, opts) {
+  opts = opts || {};
+  const pane = _q('cdx-item-preview');
+  if (!pane) return;
+  if (!item) {
+    pane.innerHTML = '<div class="cdx-preview-empty">' + t('content.preview_empty') + '</div>';
+    return;
+  }
+  const meta = _typeMeta(item.type);
+  const tagsHtml = (item.tags && item.tags.length)
+    ? '<div class="cdx-item-tags">' + item.tags.map((tg) =>
+        '<span class="cdx-tag-chip">' + _esc(tg.label) + '</span>').join('') + '</div>'
+    : '';
+  const setBadge = item.set_id
+    ? '<span class="cdx-set-badge" title="' + t('content.set_badge_title') + '">' + t('content.set_badge') + '</span>'
+    : '';
+  pane.innerHTML =
+    '<div class="cdx-preview-head">' +
+      '<span class="cdx-item-type-icon">' + meta.iconHtml + '</span>' +
+      '<div class="cdx-preview-head-info">' +
+        '<div class="cdx-preview-title">' + _esc(item.title) + setBadge + '</div>' +
+        '<span class="cdx-preview-type">' + _esc(meta.label) + ' · ' + _esc(_fmtDate(item.updated_at)) + '</span>' +
+      '</div>' +
+      '<div class="cdx-preview-actions">' +
+        '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-pv-action="edit">' + t('content.edit') + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm" data-pv-action="duplicate" title="' + t('content.duplicate_title') + '">' + t('content.duplicate') + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-pv-action="delete">' + t('content.delete') + '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cdx-preview-body">' +
+      tagsHtml +
+      '<div class="cdx-preview-render" id="cdx-preview-render"></div>' +
+    '</div>';
+  const host = pane.querySelector('#cdx-preview-render');
+  if (opts.loading) {
+    host.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
+    return;
+  }
+  if (window.CTRenderer && window.CTRenderer.render) {
+    try { window.CTRenderer.render(item, host, {}); }
+    catch (_) { host.textContent = item.body_md || ''; }
+  } else {
+    host.textContent = item.body_md || '';
+  }
 }
 
 function _renderFilter(library) {
@@ -258,20 +383,25 @@ function _renderFilter(library) {
   });
 }
 
-// ── Grid interaction (delegated) ────────────────────────────────────────────
-function _onGridClick(e) {
+// ── List + preview interaction (delegated) ──────────────────────────────────
+// List click: in select mode toggle the checkbox; otherwise select the item for
+// the preview pane (the editor opens from the preview's Editar button, not here).
+function _onListClick(e) {
   const row = e.target.closest('.cdx-item-row');
   if (!row) return;
   const id = Number(row.dataset.itemId);
   if (_selectMode) { _toggleSelection(id); return; }
-  const actionBtn = e.target.closest('[data-action]');
-  if (actionBtn) {
-    const a = actionBtn.dataset.action;
-    if (a === 'duplicate') _duplicateItem(id);
-    else if (a === 'delete') _deleteItem(id);
-    return;
-  }
-  _openItem(id);
+  _showPreview(id);
+}
+
+// Preview actions operate on the currently selected item.
+function _onPreviewClick(e) {
+  const btn = e.target.closest('[data-pv-action]');
+  if (!btn || _selectedId == null) return;
+  const a = btn.dataset.pvAction;
+  if (a === 'edit') _openItem(_selectedId);
+  else if (a === 'duplicate') _duplicateItem(_selectedId);
+  else if (a === 'delete') _deleteItem(_selectedId);
 }
 
 // ── Select mode + bulk ──────────────────────────────────────────────────────
@@ -329,7 +459,9 @@ function _bulkDelete() {
       ids.forEach((id) => {
         const idx = _items.findIndex((it) => Number(it.id) === Number(id));
         if (idx >= 0) _items.splice(idx, 1);
+        _detailCache.delete(Number(id));
       });
+      if (ids.some((id) => Number(id) === Number(_selectedId))) _selectedId = null;
       _selectedIds.clear();
       _selectMode = false;
       _renderItems();
@@ -348,14 +480,20 @@ function _deleteItem(id) {
     message: t('content.confirm_delete_item'),
     danger: true,
     onConfirm() {
+      // Move selection to a neighbour in the currently visible list first.
+      const nextId = selectionAfterRemoval(_visibleItems(), id);
       const idx = _items.findIndex((it) => Number(it.id) === Number(id));
-      const snapshot = idx >= 0 ? _items[idx] : null;
-      if (idx >= 0) { _items.splice(idx, 1); _renderItems(); }
+      if (idx >= 0) _items.splice(idx, 1);
+      _detailCache.delete(Number(id));
+      if (Number(_selectedId) === Number(id)) _selectedId = nextId;
+      _renderItems();
       api.deleteItem({ id, _silent: true }).then(() => {
         _toast(t('content.item_deleted'));
       }).catch((e) => {
-        if (snapshot) { _items.splice(idx, 0, snapshot); _renderItems(); }
+        // The item still exists server-side; resync truth rather than guess the slot.
         _toastError(_err(e));
+        _selectedId = Number(id);
+        _loadItems();
       });
     },
   });
@@ -365,6 +503,10 @@ function _duplicateItem(id) {
   api.duplicateItem({ id, _silent: true }).then((d) => {
     if (d && d.item) {
       _items.push(d.item);
+      if (d.item.id != null) {
+        _detailCache.set(Number(d.item.id), d.item);
+        _selectedId = Number(d.item.id);   // jump the preview to the new copy
+      }
       _renderItems();
       _toast(t('content.item_duplicated'));
     }
@@ -379,9 +521,8 @@ function _openItem(id) {
 
 // New item: content-first creator (step 1) → full editor (step 2).
 function _newItem() {
-  if (!window.CTItemCreator) { _openItemEditorFull(null, null, null); return; }
   const bd = _openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
-  window.CTItemCreator.mount(bd.querySelector('.cdx-modal-body'), {
+  itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
     types: _types,
     tags: _tags,
     titleLabel: t('content.new_item_step1'),
@@ -399,10 +540,9 @@ function _newItem() {
 }
 
 function _openItemEditorFull(item, prefill, aiContext) {
-  if (!window.CTItemForm) return;
   const isEdit = !!item;
   const bd = _openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
-  window.CTItemForm.mount(bd.querySelector('.cdx-modal-body'), {
+  itemForm.mount(bd.querySelector('.cdx-modal-body'), {
     item,
     prefill,
     aiContext,
@@ -416,6 +556,7 @@ function _openItemEditorFull(item, prefill, aiContext) {
     onSave: () => {
       _closeModal(bd);
       _toast(isEdit ? t('content.item_updated') : t('content.item_created'));
+      _detailCache.clear();   // edited content is stale; preview re-fetches
       _loadItems({ silent: true });
       _loadTags();
     },
@@ -446,6 +587,7 @@ async function _tagsByLabels(labels) {
 
 // ── Inline "new type" form (invoked by the item editor) ─────────────────────
 function _openTypeCreateForm(callback) {
+  let chosenIcon = GLYPH_PREFIX + 'file-text';
   const html =
     '<div class="cdx-modal" style="max-width:380px">' +
       '<div class="cdx-modal-title">' + t('content.new_type_title') + '</div>' +
@@ -454,7 +596,10 @@ function _openTypeCreateForm(callback) {
       '<div class="cdx-field"><label>' + t('content.type_slug') + '</label>' +
         '<input type="text" data-fld="slug" placeholder="' + t('content.type_slug_placeholder') + '"></div>' +
       '<div class="cdx-field"><label>' + t('content.type_icon') + '</label>' +
-        '<input type="text" data-fld="icon" maxlength="4" placeholder="📌"></div>' +
+        '<button type="button" class="cdx-btn cdx-glyph-choose" data-fld="icon-btn">' +
+          '<span class="cdx-glyph-choose-icon">' + typeIconHtml(chosenIcon, { size: 20 }) + '</span>' +
+          '<span>' + t('content.choose_glyph') + '</span>' +
+        '</button></div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
         '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('content.create') + '</button>' +
@@ -462,17 +607,133 @@ function _openTypeCreateForm(callback) {
     '</div>';
   const bd = _openModal(html, { disableBackdropClose: true });
   const done = (slug) => { _closeModal(bd); if (callback) callback(slug); };
+  const iconBtn = bd.querySelector('[data-fld="icon-btn"]');
+  iconBtn.addEventListener('click', () => {
+    _openGlyphPicker(chosenIcon, (val) => {
+      chosenIcon = val;
+      iconBtn.querySelector('.cdx-glyph-choose-icon').innerHTML = typeIconHtml(chosenIcon, { size: 20 });
+    });
+  });
   bd.querySelector('[data-act="cancel"]').addEventListener('click', () => done(null));
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
     const label = bd.querySelector('[data-fld="label"]').value.trim();
     const slug = bd.querySelector('[data-fld="slug"]').value.trim() || _slugify(label);
-    const icon = bd.querySelector('[data-fld="icon"]').value.trim();
     if (!label || !slug) { _toast(t('content.name_required')); return; }
-    api.createType({ slug, label, icon: icon || null }).then(() => _loadTypes()).then(() => {
+    api.createType({ slug, label, icon: chosenIcon }).then(() => _loadTypes()).then(() => {
       _toast(t('content.type_created'));
       done(slug);
     }).catch((e) => _toastError(_err(e)));
   });
+}
+
+// Reusable glyph picker: a grid of the shared glyph library. onPick gets the
+// chosen "glyph:<key>" string.
+function _openGlyphPicker(currentIcon, onPick) {
+  const cur = (typeof currentIcon === 'string' && currentIcon.indexOf(GLYPH_PREFIX) === 0)
+    ? currentIcon.slice(GLYPH_PREFIX.length) : null;
+  const grid = glyphKeys().map((k) =>
+    '<button type="button" class="cdx-glyph-option' + (k === cur ? ' is-active' : '') +
+      '" data-glyph="' + _esc(k) + '" title="' + _esc(k) + '">' + glyphSvg(k, { size: 22 }) + '</button>'
+  ).join('');
+  const html =
+    '<div class="cdx-modal" style="max-width:440px">' +
+      '<div class="cdx-modal-title">' + t('content.pick_glyph') + '</div>' +
+      '<div class="cdx-glyph-grid">' + grid + '</div>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = _openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('.cdx-glyph-grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-glyph]');
+    if (!btn) return;
+    _closeModal(bd);
+    onPick(GLYPH_PREFIX + btn.dataset.glyph);
+  });
+}
+
+// ── Types manager modal (glyph / rename / delete; create via the inline form) ──
+function _openTypeManager() {
+  const html =
+    '<div class="cdx-modal" style="max-width:560px">' +
+      '<div class="cdx-modal-title">' + t('content.types_title') + '</div>' +
+      '<div class="cdx-type-manager-actions">' +
+        '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-act="new">' + t('content.new_type_btn') + '</button>' +
+      '</div>' +
+      '<div class="cdx-type-manager-list" data-list></div>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn cdx-btn-primary" data-act="close">' + t('content.close') + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = _openModal(html, { disableBackdropClose: true });
+  const listEl = bd.querySelector('[data-list]');
+
+  function render() {
+    if (!_types.length) {
+      listEl.innerHTML = '<div class="cdx-empty">' + t('content.no_types') + '</div>';
+      return;
+    }
+    listEl.innerHTML = _types.map((ty) =>
+      '<div class="cdx-type-row" data-slug="' + _esc(ty.slug) + '">' +
+        '<button type="button" class="cdx-type-glyph-btn" data-action="glyph" title="' + t('content.change_glyph') + '">' +
+          typeIconHtml(ty.icon, { size: 20 }) + '</button>' +
+        '<span class="cdx-type-row-label">' + _esc(ty.label) + '</span>' +
+        '<span class="cdx-type-row-slug">' + _esc(ty.slug) + '</span>' +
+        '<button class="cdx-btn cdx-btn-sm" data-action="rename">' + t('content.rename') + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete">' + t('content.delete') + '</button>' +
+      '</div>').join('');
+  }
+
+  bd.querySelector('[data-act="new"]').addEventListener('click', () => {
+    _openTypeCreateForm((slug) => { if (slug) render(); });
+  });
+  bd.querySelector('[data-act="close"]').addEventListener('click', () => _closeModal(bd));
+
+  listEl.addEventListener('click', (e) => {
+    const row = e.target.closest('.cdx-type-row');
+    if (!row) return;
+    const slug = row.dataset.slug;
+    const ty = _types.find((x) => x.slug === slug);
+    if (!ty) return;
+    const action = e.target.closest('[data-action]') && e.target.closest('[data-action]').dataset.action;
+    if (action === 'glyph') {
+      _openGlyphPicker(ty.icon, (iconVal) => {
+        api.updateType({ slug, icon: iconVal }).then(() => _loadTypes()).then(() => {
+          render(); _renderItems(); _toast(t('content.type_updated'));
+        }).catch((er) => _toastError(_err(er)));
+      });
+    } else if (action === 'rename') {
+      _openPrompt({
+        title: t('content.type_rename_title'), label: t('content.type_name'), value: ty.label,
+        onSubmit(n) {
+          if (!n || n === ty.label) return;
+          api.updateType({ slug, label: n }).then(() => _loadTypes()).then(() => {
+            render(); _renderItems(); _toast(t('content.type_updated'));
+          }).catch((er) => _toastError(_err(er)));
+        },
+      });
+    } else if (action === 'delete') {
+      _openConfirm({
+        title: t('content.delete_type_title'), message: t('content.confirm_delete_type'), danger: true,
+        onConfirm() {
+          // Not _silent: let api-client log the failure to the pill. type_in_use
+          // is user-actionable, so it surfaces as a persistent warn notice.
+          api.deleteType({ slug }).then(() => _loadTypes()).then(() => {
+            render(); _renderItems(); _toast(t('content.type_deleted'));
+          }).catch((er) => {
+            if (er && er.data && er.data.error === 'type_in_use') {
+              notice.warn(t('content.type_in_use').replace('{n}', er.data.count));
+            } else {
+              notice.internal(er);
+            }
+          });
+        },
+      });
+    }
+  });
+
+  render();
 }
 
 // ── Tags manager modal ──────────────────────────────────────────────────────
@@ -562,6 +823,9 @@ export function mount(viewEl, ctx) {
   _selectedTypeFilter = null;
   _selectMode = false;
   _selectedIds = new Set();
+  _selectedId = null;
+  _detailCache = new Map();
+  _previewReq = 0;
   _cleanup = [];
   _renderShell();
   _load();
@@ -570,6 +834,8 @@ export function mount(viewEl, ctx) {
 export function unmount() {
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
+  _selectedId = null;
+  _detailCache = new Map();
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   document.querySelectorAll('.cdx-modal-backdrop').forEach((bd) => bd.parentNode && bd.parentNode.removeChild(bd));

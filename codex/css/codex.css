@@ -55,7 +55,7 @@
 .cdx-tab--questions { --accent-color: var(--codex-questions); }
 
 /* ── Tab content host ───────────────────────────────────────── */
-.cdx-view { padding: 1.5rem; }
+.cdx-view { padding: 0.5rem 1.5rem 1.5rem; }
 
 /* Language toggle button (PT/EN). The topbar renders it only when more than
  * one dictionary is loaded; it shows the language you'd switch TO. */
@@ -75,3 +75,52 @@
   color: var(--text, #e5e7eb);
   border-color: var(--text-muted, #9ca3af);
 }
+
+/* ── Notices (js/notice.js) ─────────────────────────────────────────────────
+ * Persistent actionable warnings/errors (user closes them) and transient
+ * confirmations. Colors come only from themed tokens, so dark is inherited. */
+.cdx-notice-host {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 360px;
+}
+.cdx-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--codex-content);
+  border-radius: 10px;
+  box-shadow: 0 6px 22px var(--shadow);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.cdx-notice-glyph { flex-shrink: 0; display: inline-flex; color: var(--codex-content); margin-top: 1px; }
+.cdx-notice-msg { flex: 1; min-width: 0; }
+.cdx-notice-close {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 0.3rem;
+}
+.cdx-notice-close:hover { color: var(--text-primary); }
+.cdx-notice--ok    { border-left-color: var(--success); }
+.cdx-notice--ok    .cdx-notice-glyph { color: var(--success); }
+.cdx-notice--info  { border-left-color: var(--codex-lessons); }
+.cdx-notice--info  .cdx-notice-glyph { color: var(--codex-lessons); }
+.cdx-notice--warn  { border-left-color: var(--codex-cohorts); }
+.cdx-notice--warn  .cdx-notice-glyph { color: var(--codex-cohorts); }
+.cdx-notice--error { border-left-color: var(--error); }
+.cdx-notice--error .cdx-notice-glyph { color: var(--error); }

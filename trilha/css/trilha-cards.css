@@ -71,6 +71,8 @@
   font-size: 1.65rem;
   line-height: 1;
 }
+/* A type whose icon is a Codex glyph renders as an SVG (inherits the zone color). */
+.zone-icon svg { display: block; width: 26px; height: 26px; }
 
 .zone-label {
   font-size: 0.6rem;
@@ -309,6 +311,9 @@
 
 .sub-zone--apostila { background: var(--primary-dark); }
 .sub-zone--tarefa   { background: var(--task); }
+/* A type whose icon is a Codex glyph renders as an SVG; it inherits the zone's
+   white text color via currentColor. */
+.sub-zone svg { display: block; width: 22px; height: 22px; }
 
 .sub-meta {
   flex: 1;
@@ -508,7 +513,8 @@
   color: #0f1419;
 }
 
-.tr-type-filter .ct-tf-icon { font-size: 1rem; line-height: 1; }
+.tr-type-filter .ct-tf-icon { font-size: 1rem; line-height: 1; display: inline-flex; align-items: center; }
+.tr-type-filter .ct-tf-icon svg { display: block; width: 15px; height: 15px; }
 .tr-type-filter .ct-tf-count {
   font-size: 0.74rem;
   opacity: 0.8;

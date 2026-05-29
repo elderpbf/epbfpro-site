@@ -38,7 +38,6 @@
       --good: var(--lab-good);
       --bad: var(--lab-bad);
       --bad-rgb: var(--lab-bad-rgb);
-      --gold: #b8860b;
       --font-display: var(--lab-font-display);
       --font-mono: var(--lab-font-mono);
 
@@ -47,7 +46,7 @@
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto minmax(0, 1.15fr) minmax(0, 0.85fr) auto;
+      grid-template-rows: auto minmax(0, 1.1fr) minmax(0, 0.9fr) auto;
       gap: 0.6rem;
       padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
@@ -55,7 +54,6 @@
       color: var(--text);
       font-family: var(--font-display);
     }
-    [data-theme="dark"] .k12-panel { --gold: #facc15; }
 
     .k12-caption {
       background: var(--surface);
@@ -66,15 +64,15 @@
     }
     .k12-caption p {
       margin: 0;
-      font-size: clamp(14px, 1.1vw, 18px);
-      line-height: 1.4;
+      font-size: clamp(16px, 1.35vw, 22px);
+      line-height: 1.42;
       font-style: italic;
     }
     .k12-caption b { color: var(--cool); font-style: normal; font-weight: 700; }
 
     .k12-top {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
       gap: 0.9rem;
       min-height: 0;
     }
@@ -82,7 +80,7 @@
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 12px;
-      padding: 0.7rem 0.9rem;
+      padding: 0.75rem 0.95rem;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -92,53 +90,78 @@
       justify-content: space-between;
       align-items: baseline;
       gap: 0.5rem;
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.4rem;
     }
     .k12-card-title {
-      font-size: clamp(12px, 0.95vw, 15px);
+      font-size: clamp(13px, 1.0vw, 16px);
       color: var(--text-dim);
       letter-spacing: 0.06em;
       text-transform: uppercase;
       font-weight: 700;
     }
-    .k12-stock-name {
-      font-family: var(--font-mono);
-      font-size: clamp(13px, 1.1vw, 17px);
-      font-weight: 700;
-      color: var(--text);
-    }
-    .k12-stock-price {
-      font-family: var(--font-mono);
-      font-size: clamp(22px, 2.3vw, 34px);
-      font-weight: 800;
-      transition: color 400ms;
-      color: var(--good);
-    }
-    .k12-stock-price.is-peak { color: var(--gold); }
     .k12-counter {
       font-family: var(--font-mono);
-      font-size: clamp(13px, 1.05vw, 16px);
+      font-size: clamp(14px, 1.15vw, 18px);
       color: var(--bad);
       font-weight: 700;
     }
-    .k12-svg { width: 100%; flex: 1; min-height: 0; display: block; }
-    .k12-stock-meta {
+
+    /* Claim card */
+    .k12-claim {
+      font-size: clamp(18px, 1.7vw, 28px);
+      line-height: 1.3;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0.1rem 0 0.5rem 0;
+    }
+    .k12-claim .q { color: var(--bad); }
+    .k12-noprime {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: var(--font-mono);
+      font-size: clamp(12px, 0.95vw, 15px);
+      color: var(--bad);
+      background: rgba(var(--bad-rgb), 0.10);
+      border: 1px solid rgba(var(--bad-rgb), 0.34);
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-weight: 700;
+      align-self: flex-start;
+    }
+    .k12-weight { margin-top: auto; }
+    .k12-weight-label {
       display: flex;
       justify-content: space-between;
-      font-size: clamp(11px, 0.85vw, 13px);
+      align-items: baseline;
+      font-size: clamp(13px, 1.0vw, 16px);
       color: var(--text-dim);
-      font-family: var(--font-mono);
-      margin-top: 0.2rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+    .k12-weight-label b { color: var(--text); font-family: var(--font-mono); font-size: clamp(15px, 1.3vw, 20px); }
+    .k12-weight-bar {
+      height: clamp(16px, 1.5vw, 22px);
+      background: color-mix(in srgb, var(--text) 8%, transparent);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .k12-weight-fill {
+      height: 100%;
+      width: 4%;
+      border-radius: 999px;
+      background: var(--good);
+      transition: width 700ms cubic-bezier(.4,0,.2,1), background 500ms;
+    }
+    .k12-weight-state {
+      font-size: clamp(13px, 1.05vw, 17px);
+      font-weight: 700;
+      margin-top: 0.3rem;
     }
 
-    /* SVG element styling via CSS so theme switches recolor live */
-    .k12-axis { stroke: var(--border); stroke-width: 1; }
-    .k12-stock-line { stroke: var(--good); stroke-width: 2.5; fill: none; transition: stroke 500ms; }
-    .k12-stock-line.is-peak { stroke: var(--gold); }
-    .k12-stock-area { fill: rgba(34,197,94,0.12); transition: fill 500ms; }
-    .k12-stock-area.is-peak { fill: rgba(184,134,11,0.18); }
-    [data-theme="dark"] .k12-stock-area.is-peak { fill: rgba(250,204,21,0.16); }
+    .k12-svg { width: 100%; flex: 1; min-height: 0; display: block; }
 
+    /* SVG element styling via CSS so theme switches recolor live */
     .k12-origin-box { fill: var(--bad); stroke: var(--bad); opacity: 0.92; }
     .k12-origin-txt { fill: #fff; font-weight: 700; font-family: var(--font-mono); }
     .k12-outlet { fill: var(--surface); stroke: var(--text-dim); stroke-width: 1.6; transition: fill 320ms, stroke 320ms; }
@@ -150,107 +173,84 @@
     .k12-edge.reverse { stroke: var(--cool); stroke-dasharray: 3 3; }
     @keyframes k12dash { to { stroke-dashoffset: -18; } }
 
-    /* Bottom: LLM answer + winner */
+    /* Bottom: LLM answer + antidote */
     .k12-bottom {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0.9rem;
       min-height: 0;
     }
-    .k12-llm {
+    .k12-box {
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 12px;
-      padding: 0.7rem 0.9rem;
+      padding: 0.75rem 0.95rem;
       display: flex;
       flex-direction: column;
       min-height: 0;
       overflow: hidden;
     }
-    .k12-llm-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+    .k12-box-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
     .k12-robot {
-      width: clamp(26px, 1.9vw, 34px);
-      height: clamp(26px, 1.9vw, 34px);
+      width: clamp(28px, 2vw, 38px);
+      height: clamp(28px, 2vw, 38px);
       border-radius: 50%;
       background: var(--focal);
       color: #fff;
       display: grid;
       place-items: center;
       font-family: var(--font-mono);
-      font-size: clamp(10px, 0.8vw, 13px);
+      font-size: clamp(11px, 0.85vw, 14px);
       font-weight: 700;
     }
-    .k12-llm-label {
-      font-size: clamp(11px, 0.85vw, 14px);
+    .k12-box-label {
+      font-size: clamp(12px, 0.95vw, 15px);
       color: var(--text-dim);
       letter-spacing: 0.05em;
       text-transform: uppercase;
       font-weight: 600;
     }
-    .k12-llm-q {
-      font-size: clamp(13px, 1.0vw, 16px);
+    .k12-q {
+      font-size: clamp(14px, 1.1vw, 18px);
       color: var(--text-dim);
       font-style: italic;
-      margin: 0 0 0.35rem 0;
+      margin: 0 0 0.4rem 0;
     }
-    .k12-llm-q b { color: var(--text); font-style: normal; }
-    .k12-llm-body { flex: 1; overflow-y: auto; min-height: 0; }
-    .k12-llm-answer {
-      font-size: clamp(14px, 1.1vw, 17px);
+    .k12-q b { color: var(--text); font-style: normal; }
+    .k12-body { flex: 1; overflow-y: auto; min-height: 0; }
+    .k12-answer {
+      font-size: clamp(16px, 1.4vw, 24px);
       line-height: 1.5;
       margin: 0;
       color: var(--text);
     }
-    .k12-llm-answer.is-empty { color: var(--text-muted); font-style: italic; }
-    .k12-llm-answer.is-poisoned {
+    .k12-answer.is-empty { color: var(--text-muted); font-style: italic; }
+    .k12-answer.is-poisoned {
       border-left: 3px solid var(--bad);
       padding-left: 0.7rem;
       background: rgba(var(--bad-rgb), 0.04);
       border-radius: 0 4px 4px 0;
     }
-    .k12-llm-answer.is-clean {
+    .k12-answer.is-clean {
       border-left: 3px solid var(--good);
       padding-left: 0.7rem;
       background: rgba(34,197,94,0.05);
       border-radius: 0 4px 4px 0;
     }
-    .k12-llm-answer b { color: var(--text); font-weight: 700; }
-    .k12-llm-answer .crossed {
+    .k12-answer b { color: var(--text); font-weight: 700; }
+    .k12-answer .crossed {
       display: block;
       text-decoration: line-through;
       color: var(--text-muted);
       margin-bottom: 0.4rem;
       font-size: 0.9em;
     }
-
-    .k12-winner {
-      background: linear-gradient(135deg, rgba(184,134,11,0.10), rgba(var(--warm-rgb), 0.08));
-      border: 1.5px solid var(--gold);
-      border-radius: 12px;
-      padding: 0.7rem 0.9rem;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
-    }
-    .k12-winner h4 {
-      margin: 0 0 0.3rem 0;
-      font-size: clamp(12px, 0.95vw, 15px);
-      color: var(--gold);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      font-weight: 800;
-    }
-    .k12-winner-body { flex: 1; overflow-y: auto; min-height: 0; font-size: clamp(14px, 1.1vw, 17px); line-height: 1.5; }
-    .k12-winner-body.is-empty { color: var(--text-muted); font-style: italic; }
-    .k12-winner-body b { color: var(--text); font-weight: 700; }
-    .k12-profit {
-      font-family: var(--font-mono);
-      font-size: clamp(18px, 1.8vw, 26px);
-      color: var(--gold);
-      font-weight: 800;
+    .k12-answer .prime {
       display: inline-block;
-      margin: 0.15rem 0;
+      margin-top: 0.3rem;
+      font-family: var(--font-mono);
+      font-size: 0.82em;
+      color: var(--good);
     }
 
     /* Operator bar */
@@ -278,58 +278,62 @@
     .k12-btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
     .k12-btn-danger { border-color: var(--bad); color: var(--bad); background: rgba(var(--bad-rgb), 0.10); }
     .k12-btn-danger:hover { background: rgba(var(--bad-rgb), 0.2); border-color: var(--bad); color: var(--bad); }
-    .k12-btn-gold { border-color: var(--gold); color: var(--gold); }
-    .k12-btn-gold:hover { background: rgba(184,134,11,0.14); border-color: var(--gold); color: var(--gold); }
     .k12-btn-primary { border-color: var(--focal); color: var(--focal); background: rgba(var(--focal-rgb), 0.14); }
     .k12-btn-primary:hover { background: rgba(var(--focal-rgb), 0.26); border-color: var(--focal); color: var(--focal); }
 
     /* Responsive */
     @media (max-width: 700px) {
       .k12-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.5rem; grid-template-rows: auto auto auto auto; overflow-y: auto; }
-      .k12-caption p { font-size: 12.5px; line-height: 1.35; }
+      .k12-caption p { font-size: 14px; line-height: 1.35; }
       .k12-caption { padding: 0.4rem 0.75rem; }
       .k12-top { grid-template-columns: 1fr; gap: 0.6rem; }
-      .k12-svg { height: 180px; flex: none; }
+      .k12-claim { font-size: 18px; }
+      .k12-svg { height: 200px; flex: none; }
       .k12-bottom { grid-template-columns: 1fr; gap: 0.6rem; }
-      .k12-llm-answer, .k12-winner-body { font-size: 14px; }
+      .k12-answer { font-size: 16px; }
       .k12-button-bar { justify-content: stretch; display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
       .k12-btn { font-size: 13px; padding: 0.6rem 0.5rem; min-height: 44px; text-align: center; }
     }
     @media (max-width: 400px) {
-      .k12-stock-price { font-size: 22px; }
+      .k12-claim { font-size: 16px; }
       .k12-btn { font-size: 12px; padding: 0.55rem 0.35rem; }
     }
     @media (max-height: 500px) and (orientation: landscape) {
       .k12-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
-      .k12-caption p { font-size: 11.5px; line-height: 1.3; }
+      .k12-caption p { font-size: 13px; line-height: 1.3; }
       .k12-caption { padding: 0.3rem 0.65rem; }
-      .k12-llm-answer, .k12-winner-body { font-size: 13px; }
+      .k12-claim { font-size: 17px; }
+      .k12-answer { font-size: 15px; }
       .k12-btn { font-size: 12px; padding: 0.4rem 0.7rem; min-height: 32px; }
     }
   </style>
 
   <div class="lab-header"
        data-lab-title="Lavagem de informação"
-       data-lab-subtitle="Boato repetido em escala vira 'consenso' — e alguém lucra"></div>
+       data-lab-subtitle="Repetir em escala não torna verdade, mas o modelo aprende como se tornasse"></div>
+
+  <div class="k12-caption">
+    <p>Uma afirmação <b>sem fonte primária</b> é copiada de um lugar para outro. A cada cópia ela parece mais sólida. O modelo treina nesse corpus e passa a tratá-la como <b>fato consolidado</b>, porque viu muitas vezes, não porque alguém a verificou.</p>
+  </div>
 
   <div class="k12-top">
     <div class="k12-card">
       <div class="k12-card-head">
-        <span class="k12-stock-name">NORDX3 · Nordeste Energia</span>
-        <span class="k12-stock-price" id="k12-price">R$ 12,40</span>
+        <span class="k12-card-title">afirmação em circulação</span>
       </div>
-      <svg class="k12-svg" id="k12-stock-svg" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-        <line class="k12-axis" x1="0" y1="180" x2="600" y2="180"/>
-        <path class="k12-stock-area" id="k12-stock-area" d="M 0 140 L 600 140 L 600 200 L 0 200 Z"/>
-        <path class="k12-stock-line" id="k12-stock-line" d="M 0 140 L 600 140"/>
-      </svg>
-      <div class="k12-stock-meta"><span>09h05</span><span>10h30</span><span>fechamento</span></div>
+      <p class="k12-claim">"Todo Pix acima de R$ 5.000 é <span class="q">automaticamente tributado como renda</span>."</p>
+      <span class="k12-noprime">⚠ fonte primária: nenhuma</span>
+      <div class="k12-weight">
+        <div class="k12-weight-label"><span>peso como "fato" no modelo</span><b id="k12-weight-val">4%</b></div>
+        <div class="k12-weight-bar"><div class="k12-weight-fill" id="k12-weight-fill"></div></div>
+        <div class="k12-weight-state" id="k12-weight-state" style="color:var(--good);">não confirmado</div>
+      </div>
     </div>
 
     <div class="k12-card">
       <div class="k12-card-head">
-        <span class="k12-card-title">propagação do boato</span>
-        <span class="k12-counter" id="k12-counter">12 veículos · 0 citações</span>
+        <span class="k12-card-title">cópia em cadeia (sem verificar)</span>
+        <span class="k12-counter" id="k12-counter">0 de 12 fontes repetiram</span>
       </div>
       <svg class="k12-svg" id="k12-map-svg" viewBox="0 0 600 230" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -345,27 +349,31 @@
   </div>
 
   <div class="k12-bottom">
-    <div class="k12-llm">
-      <div class="k12-llm-head">
+    <div class="k12-box">
+      <div class="k12-box-head">
         <div class="k12-robot">LLM</div>
-        <div class="k12-llm-label">após reciclagem do corpus de notícias</div>
+        <div class="k12-box-label">resposta após treinar no corpus</div>
       </div>
-      <p class="k12-llm-q"><b>Pergunta:</b> "Vale a pena comprar NORDX3?"</p>
-      <div class="k12-llm-body">
-        <p class="k12-llm-answer is-empty" id="k12-answer">— aguardando ingestão do corpus —</p>
+      <p class="k12-q"><b>Pergunta:</b> "Preciso declarar Pix acima de R$ 5 mil como renda tributável?"</p>
+      <div class="k12-body">
+        <p class="k12-answer is-empty" id="k12-answer">aguardando a cópia em cadeia</p>
       </div>
     </div>
 
-    <div class="k12-winner">
-      <h4>🏆 quem ganhou com isso</h4>
-      <div class="k12-winner-body is-empty" id="k12-winner">— clique em "Quem ganhou?" depois de plantar o boato —</div>
+    <div class="k12-box">
+      <div class="k12-box-head">
+        <div class="k12-robot" style="background:var(--cool);">🔎</div>
+        <div class="k12-box-label">o que a propagação esconde</div>
+      </div>
+      <div class="k12-body">
+        <p class="k12-answer is-empty" id="k12-trace-body">clique em "Rastrear a origem" para ver de onde vem</p>
+      </div>
     </div>
   </div>
 
   <div class="k12-button-bar">
-    <button class="k12-btn k12-btn-danger" id="k12-plant" type="button">Plantar boato e avançar 6 meses</button>
+    <button class="k12-btn k12-btn-danger" id="k12-plant" type="button">Plantar e propagar</button>
     <button class="k12-btn" id="k12-trace" type="button">Rastrear a origem</button>
-    <button class="k12-btn k12-btn-gold" id="k12-who" type="button">Quem ganhou?</button>
     <button class="k12-btn k12-btn-primary" id="k12-cure" type="button">Versão com curadoria</button>
     <button class="k12-btn" id="k12-reset" type="button">Reiniciar</button>
   </div>
@@ -373,30 +381,31 @@
   <script>
     (function() {
       const SVGNS = 'http://www.w3.org/2000/svg';
-      // 3-tier propagation: 2 anonymous tier-1 sources → 3 tier-2 channels →
-      // 2 tier-3 mainstream portals. `from` indexes the parent outlet.
+      // 3-tier copy chain: 2 anonymous origins → 3 channels → 2 mainstream
+      // portals. The point is that EVERY node just copies its parent. None
+      // checks a primary source. Frequency, not verification, drives the
+      // model's confidence (the weight gauge).
       const OUTLETS = [
-        { x: 140, y: 55,  tier: 1, name: '@infomarket',   from: null },
-        { x: 140, y: 120, tier: 1, name: '@insiderXP',    from: null },
-        { x: 300, y: 38,  tier: 2, name: 'TubeBolsa BR',  from: 0 },
-        { x: 300, y: 100, tier: 2, name: 'CanalAções',    from: 1 },
-        { x: 300, y: 165, tier: 2, name: 'StockTalk',     from: 1 },
-        { x: 470, y: 65,  tier: 3, name: 'NewsFinance',   from: 2 },
-        { x: 470, y: 140, tier: 3, name: 'PortalInveste', from: 3 }
+        { x: 140, y: 55,  tier: 1, name: 'post viral',    from: null },
+        { x: 140, y: 120, tier: 1, name: 'grupo de zap',  from: null },
+        { x: 300, y: 38,  tier: 2, name: 'blog de dicas', from: 0 },
+        { x: 300, y: 100, tier: 2, name: 'perfil financeiro', from: 1 },
+        { x: 300, y: 165, tier: 2, name: 'agregador',     from: 1 },
+        { x: 470, y: 65,  tier: 3, name: 'portal popular', from: 2 },
+        { x: 470, y: 140, tier: 3, name: 'site de notícia', from: 3 }
       ];
 
       const outG    = document.getElementById('k12-outlets');
       const edgesG  = document.getElementById('k12-edges');
       const origG   = document.getElementById('k12-origin');
       const counter = document.getElementById('k12-counter');
-      const priceEl = document.getElementById('k12-price');
-      const lineEl  = document.getElementById('k12-stock-line');
-      const areaEl  = document.getElementById('k12-stock-area');
+      const weightFill = document.getElementById('k12-weight-fill');
+      const weightVal  = document.getElementById('k12-weight-val');
+      const weightState = document.getElementById('k12-weight-state');
       const answerEl = document.getElementById('k12-answer');
-      const winnerEl = document.getElementById('k12-winner');
+      const traceEl  = document.getElementById('k12-trace-body');
       const plantBtn = document.getElementById('k12-plant');
       const traceBtn = document.getElementById('k12-trace');
-      const whoBtn   = document.getElementById('k12-who');
       const cureBtn  = document.getElementById('k12-cure');
       const resetBtn = document.getElementById('k12-reset');
       const timers = [];
@@ -411,9 +420,8 @@
 
       function drawMap() {
         outG.innerHTML = ''; edgesG.innerHTML = ''; origG.innerHTML = '';
-        // Origin "BOATO" box at the far left
-        origG.appendChild(el('rect', { class: 'k12-origin-box', x: 18, y: 95, width: 78, height: 40, rx: 7 }));
-        origG.appendChild(el('text', { class: 'k12-origin-txt', x: 57, y: 120, 'font-size': 13, 'text-anchor': 'middle' }, 'BOATO'));
+        origG.appendChild(el('rect', { class: 'k12-origin-box', x: 14, y: 95, width: 84, height: 40, rx: 7 }));
+        origG.appendChild(el('text', { class: 'k12-origin-txt', x: 56, y: 120, 'font-size': 13, 'text-anchor': 'middle' }, 'BOATO'));
         OUTLETS.forEach((o, i) => {
           const r = o.tier === 1 ? 13 : (o.tier === 2 ? 10 : 8);
           const c = el('circle', { class: 'k12-outlet', cx: o.x, cy: o.y, r: r });
@@ -423,6 +431,14 @@
           t.dataset.i = i;
           outG.appendChild(t);
         });
+      }
+
+      function setWeight(pct, state, color) {
+        weightFill.style.width = pct + '%';
+        weightFill.style.background = color;
+        weightVal.textContent = pct + '%';
+        weightState.textContent = state;
+        weightState.style.color = color;
       }
 
       function infect(i, fromX, fromY) {
@@ -441,36 +457,28 @@
         if (c) c.classList.add('is-hit');
         if (t) t.classList.add('is-hit');
         const hit = outG.querySelectorAll('circle.is-hit').length;
-        counter.textContent = '12 veículos · ' + hit + ' citações';
+        counter.textContent = hit + ' de 12 fontes repetiram';
+        // weight climbs with frequency, even with zero primary sources
+        const pct = Math.min(96, 4 + Math.round(hit / 7 * 88));
+        if (pct < 35) setWeight(pct, 'não confirmado', 'var(--good)');
+        else if (pct < 70) setWeight(pct, 'parece consenso', 'var(--warm)');
+        else setWeight(pct, 'tratado como fato', 'var(--bad)');
       }
 
       function plant() {
         plantBtn.setAttribute('disabled', 'true');
-        counter.textContent = '12 veículos · 0 citações';
-        // Wave 1: origin → tier 1
-        [0, 1].forEach((idx, k) => timers.push(setTimeout(() => infect(idx, 57, 115), 300 + k * 600)));
-        // Wave 2: tier1 → tier 2
+        counter.textContent = '0 de 12 fontes repetiram';
+        [0, 1].forEach((idx, k) => timers.push(setTimeout(() => infect(idx, 56, 115), 300 + k * 600)));
         [2, 3, 4].forEach((idx, k) => timers.push(setTimeout(() => {
           const par = OUTLETS[OUTLETS[idx].from]; infect(idx, par.x, par.y);
         }, 1500 + k * 450)));
-        // Wave 3: tier2 → tier 3
         [5, 6].forEach((idx, k) => timers.push(setTimeout(() => {
           const par = OUTLETS[OUTLETS[idx].from]; infect(idx, par.x, par.y);
         }, 3000 + k * 450)));
-        // Stock pumps up
         timers.push(setTimeout(() => {
-          lineEl.setAttribute('d', 'M 0 140 L 100 138 L 180 132 L 260 110 L 340 78 L 420 50 L 500 32 L 600 22');
-          areaEl.setAttribute('d', 'M 0 140 L 100 138 L 180 132 L 260 110 L 340 78 L 420 50 L 500 32 L 600 22 L 600 200 L 0 200 Z');
-          lineEl.classList.add('is-peak');
-          areaEl.classList.add('is-peak');
-          priceEl.textContent = 'R$ 18,90 (+52%)';
-          priceEl.classList.add('is-peak');
-        }, 3800));
-        // LLM ingests the corpus and parrots it
-        timers.push(setTimeout(() => {
-          answerEl.className = 'k12-llm-answer is-poisoned';
-          answerEl.innerHTML = '<b>NORDX3:</b> sentimento de mercado positivo. Fontes indicam <b>contrato iminente com a Petrobras</b>. Recomendação de compra, conforme analistas citados na imprensa especializada.';
-        }, 5200));
+          answerEl.className = 'k12-answer is-poisoned';
+          answerEl.innerHTML = '<b>Sim.</b> É um entendimento consolidado: transferências via Pix acima de R$ 5 mil são tributadas como renda. Diversas fontes confirmam.';
+        }, 4600));
       }
 
       function trace() {
@@ -486,52 +494,36 @@
           edgesG.appendChild(path);
           timers.push(setTimeout(() => path.classList.add('on'), 100 + i * 120));
         });
-        timers.push(setTimeout(() => {
-          const labels = outG.querySelectorAll('text');
-          if (labels[0]) labels[0].textContent = '@infomarket (sem autor)';
-          if (labels[1]) labels[1].textContent = '@insiderXP (sem autor)';
-        }, 1100));
-      }
-
-      function who() {
-        winnerEl.classList.remove('is-empty');
-        winnerEl.innerHTML =
-          'Os perfis tier-1 <b>@infomarket</b> e <b>@insiderXP</b> compraram NORDX3 às 09h05, a R$ 12,40, e venderam às 10h30, a R$ 18,90.' +
-          '<span class="k12-profit">+ R$ 2,3 milhões</span> em ~85 minutos.<br>' +
-          'Vítimas: pequenos investidores que entraram <b>depois</b> do "consenso de mercado".';
+        traceEl.className = 'k12-answer is-clean';
+        traceEl.innerHTML = 'Cada fonte só cita <b>a anterior</b>. Seguindo as setas até o fim, não há documento oficial, lei ou norma: a cadeia inteira nasce de <b>um post sem autor</b>. Doze repetições, <b>zero verificação</b>.';
       }
 
       function cure() {
-        answerEl.className = 'k12-llm-answer is-clean';
+        answerEl.className = 'k12-answer is-clean';
         answerEl.innerHTML =
-          '<span class="crossed">Sentimento positivo, contrato iminente, recomendação de compra.</span>' +
-          '<b>Resposta com curadoria (exige 2 fontes independentes e identificadas):</b> a NORDX3 não publicou fato relevante na CVM. As citações partiram de perfis anônimos, sem identificação corporativa. <b>Sem confirmação oficial — não recomendo decisão de compra com base nisso.</b>';
+          '<span class="crossed">Sim, é consolidado, diversas fontes confirmam.</span>' +
+          '<b>Não.</b> Pix é meio de pagamento, não fato gerador de imposto. Não há tributo novo sobre transferências; a obrigação de declarar depende da origem do valor, como em qualquer movimentação.' +
+          '<span class="prime">fonte primária: Receita Federal, regras de IRPF. As 12 cópias não eram fontes independentes.</span>';
+        setWeight(4, 'derrubado pela fonte primária', 'var(--good)');
       }
 
       function reset() {
         clearTimers();
         drawMap();
-        counter.textContent = '12 veículos · 0 citações';
-        lineEl.setAttribute('d', 'M 0 140 L 600 140');
-        areaEl.setAttribute('d', 'M 0 140 L 600 140 L 600 200 L 0 200 Z');
-        lineEl.classList.remove('is-peak');
-        areaEl.classList.remove('is-peak');
-        priceEl.textContent = 'R$ 12,40';
-        priceEl.classList.remove('is-peak');
-        answerEl.className = 'k12-llm-answer is-empty';
-        answerEl.textContent = '— aguardando ingestão do corpus —';
-        winnerEl.className = 'k12-winner-body is-empty';
-        winnerEl.textContent = '— clique em "Quem ganhou?" depois de plantar o boato —';
+        counter.textContent = '0 de 12 fontes repetiram';
+        setWeight(4, 'não confirmado', 'var(--good)');
+        answerEl.className = 'k12-answer is-empty';
+        answerEl.textContent = 'aguardando a cópia em cadeia';
+        traceEl.className = 'k12-answer is-empty';
+        traceEl.textContent = 'clique em "Rastrear a origem" para ver de onde vem';
         plantBtn.removeAttribute('disabled');
       }
 
       plantBtn.addEventListener('click', plant);
       traceBtn.addEventListener('click', trace);
-      whoBtn.addEventListener('click', who);
       cureBtn.addEventListener('click', cure);
       resetBtn.addEventListener('click', reset);
 
-      // Theme sync
       window.addEventListener('storage', e => {
         if (e.key !== 'bs_theme') return;
         const t = e.newValue;

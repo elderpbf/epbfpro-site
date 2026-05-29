@@ -44,16 +44,20 @@ test('Codex topbar routes migrated tabs to /codex/, un-migrated to legacy', () =
   assert.match(questions[0], /href:\s*'\/backstage\/classpulse\//, 'questions still legacy');
 });
 
-test('Content shell bridges un-migrated sub-tabs to legacy ClassTrail', () => {
-  // Items is native (module); the rest are legacy hrefs so they are reachable.
-  assert.match(contentJs, /key:\s*'items',\s*labelKey:\s*'content\.sub_items',\s*module:/, 'Items is native');
-  for (const [key, tab] of [
-    ['apostila', 'apostila'], ['tarefas', 'tarefas'], ['drive', 'drive'],
-    ['labs', 'labs'], ['presets', 'presets'], ['releases', 'liberacoes'],
+test('every Content sub-tab is now a native module (no ClassTrail bridges left)', () => {
+  // Task D complete: all six remaining sub-tabs migrated. Items/Presets/Releases/
+  // Apostila/Tarefas are full native; Labs/Drive are native wrappers around a
+  // deferred legacy global (tracked debt). None bridges to the old page.
+  for (const [key, labelKey] of [
+    ['items', 'content.sub_items'], ['apostila', 'content.sub_apostila'],
+    ['tarefas', 'content.sub_tarefas'], ['drive', 'content.sub_drive'],
+    ['labs', 'content.sub_labs'], ['presets', 'content.sub_presets'],
+    ['releases', 'content.sub_releases'],
   ]) {
-    const re = new RegExp("key:\\s*'" + key + "'[\\s\\S]*?href:\\s*'/backstage/classtrail/\\?tab=" + tab + "'");
-    assert.match(contentJs, re, `${key} bridges to ClassTrail ?tab=${tab}`);
+    const re = new RegExp("key:\\s*'" + key + "',\\s*labelKey:\\s*'" + labelKey.replace('.', '\\.') + "',\\s*module:");
+    assert.match(contentJs, re, `${key} is a native module`);
   }
+  assert.ok(!/href:\s*'\/backstage\/classtrail/.test(contentJs), 'no SUBTABS entry bridges to ClassTrail');
 });
 
 test('the sub-tab BAR is the legacy bs-topbar-subrow rendered by the Codex topbar', () => {
