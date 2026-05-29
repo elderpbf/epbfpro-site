@@ -24,6 +24,9 @@ let _tags = [];
 let _selectedTypeFilter = null;
 let _selectMode = false;
 let _selectedIds = new Set();
+let _selectedId = null;          // master-detail: id of the item shown in the preview
+let _detailCache = new Map();    // id -> full item (with body_md) from getItem
+let _previewReq = 0;             // monotonic token: only the latest fetch renders
 let _cleanup = [];
 
 // ── Pure rule (exported for tests) ──────────────────────────────────────────
@@ -32,6 +35,28 @@ let _cleanup = [];
 export function filterLibraryItems(items) {
   return (items || []).filter((it) =>
     !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo' && it.type !== 'drive_file');
+}
+
+// Master-detail selection (exported for tests). The preview always shows a
+// valid item: keep the current selection if it survives the visible list, else
+// fall back to the first item, else nothing.
+export function resolveSelection(list, currentId) {
+  if (!list || !list.length) return null;
+  if (currentId != null && list.some((it) => Number(it.id) === Number(currentId))) {
+    return Number(currentId);
+  }
+  return Number(list[0].id);
+}
+
+// After removing removedId, pick the neighbour that takes selection: the item
+// that shifts into the freed slot, clamped to the new last item; null if empty.
+export function selectionAfterRemoval(list, removedId) {
+  const arr = list || [];
+  const idx = arr.findIndex((it) => Number(it.id) === Number(removedId));
+  const remaining = arr.filter((it) => Number(it.id) !== Number(removedId));
+  if (!remaining.length) return null;
+  if (idx < 0) return Number(remaining[0].id);
+  return Number(remaining[Math.min(idx, remaining.length - 1)].id);
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -149,8 +174,13 @@ function _renderShell() {
         '<button class="cdx-btn cdx-btn-sm" id="cdx-btn-bulk-cancel">' + t('content.bulk_cancel') + '</button>' +
       '</div>' +
       '<div id="cdx-items-filter"></div>' +
-      '<div class="cdx-items-grid" id="cdx-items-grid">' +
-        '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+      '<div class="cdx-items-split" id="cdx-items-split">' +
+        '<div class="cdx-items-list" id="cdx-items-grid">' +
+          '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+        '</div>' +
+        '<div class="cdx-item-preview" id="cdx-item-preview">' +
+          '<div class="cdx-preview-empty">' + t('content.preview_empty') + '</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
 
@@ -159,8 +189,9 @@ function _renderShell() {
   _q('cdx-btn-select').addEventListener('click', _toggleSelectMode);
   _q('cdx-btn-bulk-delete').addEventListener('click', _bulkDelete);
   _q('cdx-btn-bulk-cancel').addEventListener('click', _exitSelectMode);
-  // One delegated listener for the whole grid (survives innerHTML re-renders).
-  _q('cdx-items-grid').addEventListener('click', _onGridClick);
+  // Delegated listeners survive innerHTML re-renders of the list / preview.
+  _q('cdx-items-grid').addEventListener('click', _onListClick);
+  _q('cdx-item-preview').addEventListener('click', _onPreviewClick);
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -194,54 +225,134 @@ function _loadTypes() {
 }
 
 // ── Render grid ─────────────────────────────────────────────────────────────
+function _visibleItems() {
+  const library = filterLibraryItems(_items);
+  return window.CT_TYPE_FILTER
+    ? window.CT_TYPE_FILTER.apply(library, _selectedTypeFilter)
+    : library;
+}
+
 function _renderItems() {
   const library = filterLibraryItems(_items);
   _renderFilter(library);
   const grid = _q('cdx-items-grid');
+  const split = _q('cdx-items-split');
+  if (split) split.classList.toggle('is-bulk', _selectMode);
   if (!grid) return;
   if (!library.length) {
+    _selectedId = null;
     grid.innerHTML = '<div class="cdx-empty">' + t('content.empty_library') + '</div>';
+    _renderPreview(null);
     return;
   }
   const filtered = window.CT_TYPE_FILTER
     ? window.CT_TYPE_FILTER.apply(library, _selectedTypeFilter)
     : library;
   if (!filtered.length) {
+    _selectedId = null;
     grid.innerHTML = '<div class="cdx-empty">' + t('content.empty_filter') + '</div>';
+    _renderPreview(null);
     return;
   }
+  _selectedId = resolveSelection(filtered, _selectedId);
   grid.innerHTML = filtered.map(_renderRow).join('');
+  if (_selectMode) _renderPreview(null);
+  else _showPreview(_selectedId);
 }
 
 function _renderRow(item) {
   const meta = _typeMeta(item.type);
   const selected = _selectedIds.has(Number(item.id));
-  const tagsHtml = (item.tags && item.tags.length)
-    ? '<span class="cdx-item-tags">' + item.tags.map((tg) =>
-        '<span class="cdx-tag-chip">' + _esc(tg.label) + '</span>').join('') + '</span>'
-    : '';
+  const active = !_selectMode && Number(item.id) === Number(_selectedId);
   const setBadge = item.set_id
     ? '<span class="cdx-set-badge" title="' + t('content.set_badge_title') + '">' + t('content.set_badge') + '</span>'
     : '';
   const checkHtml = _selectMode
     ? '<span class="cdx-item-check' + (selected ? ' is-checked' : '') + '" aria-hidden="true"></span>'
     : '';
-  const actionsHtml = _selectMode
-    ? ''
-    : '<button class="cdx-btn cdx-btn-sm" data-action="duplicate" title="' + t('content.duplicate_title') + '">' + t('content.duplicate') + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete">' + t('content.delete') + '</button>';
   return (
-    '<div class="cdx-item-row' + (selected ? ' is-selected' : '') + '" data-item-id="' + _esc(item.id) + '">' +
+    '<div class="cdx-item-row' + (selected ? ' is-selected' : '') + (active ? ' is-active' : '') +
+        '" data-item-id="' + _esc(item.id) + '">' +
       checkHtml +
       '<span class="cdx-item-type-icon">' + _esc(meta.icon) + '</span>' +
       '<div class="cdx-item-info">' +
         '<div class="cdx-item-title">' + _esc(item.title) + setBadge + '</div>' +
         '<div class="cdx-item-sub">' + _esc(meta.label) + ' · ' + _esc(_fmtDate(item.updated_at)) + '</div>' +
-        tagsHtml +
       '</div>' +
-      actionsHtml +
     '</div>'
   );
+}
+
+// ── Preview pane (master-detail) ─────────────────────────────────────────────
+// Set the active selection, highlight its row, and render the preview. The full
+// item (with body_md) comes from getItem and is cached; the light list item is
+// shown immediately as a header while the body loads.
+function _showPreview(id) {
+  _selectedId = id == null ? null : Number(id);
+  if (_viewEl) {
+    _viewEl.querySelectorAll('.cdx-item-row').forEach((r) => {
+      r.classList.toggle('is-active', Number(r.dataset.itemId) === Number(_selectedId));
+    });
+  }
+  if (_selectedId == null) { _renderPreview(null); return; }
+  const cached = _detailCache.get(_selectedId);
+  if (cached) { _renderPreview(cached); return; }
+  const light = _items.find((it) => Number(it.id) === Number(_selectedId));
+  _renderPreview(light, { loading: true });
+  const reqId = ++_previewReq;
+  const wantId = _selectedId;
+  api.getItem({ id: wantId }).then((d) => {
+    if (reqId !== _previewReq) return;           // a newer selection superseded this fetch
+    const full = (d && d.item) || light;
+    if (full && full.id != null) _detailCache.set(Number(full.id), full);
+    if (full && Number(full.id) === Number(_selectedId)) _renderPreview(full);
+  }).catch((e) => { if (reqId === _previewReq) _toastError(_err(e)); });
+}
+
+function _renderPreview(item, opts) {
+  opts = opts || {};
+  const pane = _q('cdx-item-preview');
+  if (!pane) return;
+  if (!item) {
+    pane.innerHTML = '<div class="cdx-preview-empty">' + t('content.preview_empty') + '</div>';
+    return;
+  }
+  const meta = _typeMeta(item.type);
+  const tagsHtml = (item.tags && item.tags.length)
+    ? '<div class="cdx-item-tags">' + item.tags.map((tg) =>
+        '<span class="cdx-tag-chip">' + _esc(tg.label) + '</span>').join('') + '</div>'
+    : '';
+  const setBadge = item.set_id
+    ? '<span class="cdx-set-badge" title="' + t('content.set_badge_title') + '">' + t('content.set_badge') + '</span>'
+    : '';
+  pane.innerHTML =
+    '<div class="cdx-preview-head">' +
+      '<span class="cdx-item-type-icon">' + _esc(meta.icon) + '</span>' +
+      '<div class="cdx-preview-head-info">' +
+        '<div class="cdx-preview-title">' + _esc(item.title) + setBadge + '</div>' +
+        '<span class="cdx-preview-type">' + _esc(meta.label) + ' · ' + _esc(_fmtDate(item.updated_at)) + '</span>' +
+      '</div>' +
+      '<div class="cdx-preview-actions">' +
+        '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-pv-action="edit">' + t('content.edit') + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm" data-pv-action="duplicate" title="' + t('content.duplicate_title') + '">' + t('content.duplicate') + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-pv-action="delete">' + t('content.delete') + '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cdx-preview-body">' +
+      tagsHtml +
+      '<div class="cdx-preview-render" id="cdx-preview-render"></div>' +
+    '</div>';
+  const host = pane.querySelector('#cdx-preview-render');
+  if (opts.loading) {
+    host.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
+    return;
+  }
+  if (window.CTRenderer && window.CTRenderer.render) {
+    try { window.CTRenderer.render(item, host, {}); }
+    catch (_) { host.textContent = item.body_md || ''; }
+  } else {
+    host.textContent = item.body_md || '';
+  }
 }
 
 function _renderFilter(library) {
@@ -258,20 +369,25 @@ function _renderFilter(library) {
   });
 }
 
-// ── Grid interaction (delegated) ────────────────────────────────────────────
-function _onGridClick(e) {
+// ── List + preview interaction (delegated) ──────────────────────────────────
+// List click: in select mode toggle the checkbox; otherwise select the item for
+// the preview pane (the editor opens from the preview's Editar button, not here).
+function _onListClick(e) {
   const row = e.target.closest('.cdx-item-row');
   if (!row) return;
   const id = Number(row.dataset.itemId);
   if (_selectMode) { _toggleSelection(id); return; }
-  const actionBtn = e.target.closest('[data-action]');
-  if (actionBtn) {
-    const a = actionBtn.dataset.action;
-    if (a === 'duplicate') _duplicateItem(id);
-    else if (a === 'delete') _deleteItem(id);
-    return;
-  }
-  _openItem(id);
+  _showPreview(id);
+}
+
+// Preview actions operate on the currently selected item.
+function _onPreviewClick(e) {
+  const btn = e.target.closest('[data-pv-action]');
+  if (!btn || _selectedId == null) return;
+  const a = btn.dataset.pvAction;
+  if (a === 'edit') _openItem(_selectedId);
+  else if (a === 'duplicate') _duplicateItem(_selectedId);
+  else if (a === 'delete') _deleteItem(_selectedId);
 }
 
 // ── Select mode + bulk ──────────────────────────────────────────────────────
@@ -329,7 +445,9 @@ function _bulkDelete() {
       ids.forEach((id) => {
         const idx = _items.findIndex((it) => Number(it.id) === Number(id));
         if (idx >= 0) _items.splice(idx, 1);
+        _detailCache.delete(Number(id));
       });
+      if (ids.some((id) => Number(id) === Number(_selectedId))) _selectedId = null;
       _selectedIds.clear();
       _selectMode = false;
       _renderItems();
@@ -348,14 +466,20 @@ function _deleteItem(id) {
     message: t('content.confirm_delete_item'),
     danger: true,
     onConfirm() {
+      // Move selection to a neighbour in the currently visible list first.
+      const nextId = selectionAfterRemoval(_visibleItems(), id);
       const idx = _items.findIndex((it) => Number(it.id) === Number(id));
-      const snapshot = idx >= 0 ? _items[idx] : null;
-      if (idx >= 0) { _items.splice(idx, 1); _renderItems(); }
+      if (idx >= 0) _items.splice(idx, 1);
+      _detailCache.delete(Number(id));
+      if (Number(_selectedId) === Number(id)) _selectedId = nextId;
+      _renderItems();
       api.deleteItem({ id, _silent: true }).then(() => {
         _toast(t('content.item_deleted'));
       }).catch((e) => {
-        if (snapshot) { _items.splice(idx, 0, snapshot); _renderItems(); }
+        // The item still exists server-side; resync truth rather than guess the slot.
         _toastError(_err(e));
+        _selectedId = Number(id);
+        _loadItems();
       });
     },
   });
@@ -365,6 +489,10 @@ function _duplicateItem(id) {
   api.duplicateItem({ id, _silent: true }).then((d) => {
     if (d && d.item) {
       _items.push(d.item);
+      if (d.item.id != null) {
+        _detailCache.set(Number(d.item.id), d.item);
+        _selectedId = Number(d.item.id);   // jump the preview to the new copy
+      }
       _renderItems();
       _toast(t('content.item_duplicated'));
     }
@@ -416,6 +544,7 @@ function _openItemEditorFull(item, prefill, aiContext) {
     onSave: () => {
       _closeModal(bd);
       _toast(isEdit ? t('content.item_updated') : t('content.item_created'));
+      _detailCache.clear();   // edited content is stale; preview re-fetches
       _loadItems({ silent: true });
       _loadTags();
     },
@@ -562,6 +691,9 @@ export function mount(viewEl, ctx) {
   _selectedTypeFilter = null;
   _selectMode = false;
   _selectedIds = new Set();
+  _selectedId = null;
+  _detailCache = new Map();
+  _previewReq = 0;
   _cleanup = [];
   _renderShell();
   _load();
@@ -570,6 +702,8 @@ export function mount(viewEl, ctx) {
 export function unmount() {
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
+  _selectedId = null;
+  _detailCache = new Map();
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   document.querySelectorAll('.cdx-modal-backdrop').forEach((bd) => bd.parentNode && bd.parentNode.removeChild(bd));

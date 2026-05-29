@@ -146,6 +146,8 @@ export default {
   'content.duplicate':        'Duplicate',
   'content.duplicate_title':  'Duplicate item',
   'content.delete':           'Delete',
+  'content.edit':             'Edit',
+  'content.preview_empty':    'Select an item to see the preview.',
   'content.set_badge':        'Course content',
   'content.set_badge_title':  'This item is part of imported course content; manual edits may be overwritten on future syncs.',
 

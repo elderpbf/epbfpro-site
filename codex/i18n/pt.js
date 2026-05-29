@@ -145,6 +145,8 @@ export default {
   'content.duplicate':        'Duplicar',
   'content.duplicate_title':  'Duplicar item',
   'content.delete':           'Excluir',
+  'content.edit':             'Editar',
+  'content.preview_empty':    'Selecione um item para ver a prévia.',
   'content.set_badge':        'Conteúdo do curso',
   'content.set_badge_title':  'Item faz parte do conteúdo importado; edições manuais podem ser sobrescritas em sincronizações futuras.',
 
