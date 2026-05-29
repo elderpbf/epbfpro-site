@@ -345,5 +345,30 @@ export default {
   'releases.empty_outros':    'No items in the library.',
   'releases.empty_outros_solo': 'No items available.',
   'releases.saving':          'Saving...',
-  'releases.saved':           'Saved.'
+  'releases.saved':           'Saved.',
+
+  // Content → Apostila (imported course content)
+  'apostila.title_default':   'Course content',
+  'apostila.import_btn':      '+ Import content',
+  'apostila.delete_set_btn':  'Delete content',
+  'apostila.empty':           'No content imported yet. Use the button above to import from a Google Doc.',
+  'apostila.empty_sections':  'The content has no sections.',
+  'apostila.error_loading':   'Error loading the content.',
+  'apostila.no_summary':      'no summary',
+  'apostila.section_deleted': 'Section deleted.',
+  'apostila.set_deleted':     'Content deleted.',
+  'apostila.delete_section_title':   'Delete section',
+  'apostila.confirm_delete_section': 'Delete this content section? It will be removed from every cohort where it is released.',
+  'apostila.delete_set_title':       'Delete content',
+  'apostila.confirm_delete_set':     'Delete the entire content? All sections will be removed from the library and from every cohort where they are released.',
+  'apostila.import_title':      'Import course content',
+  'apostila.import_help':       'Content is shared across all clients. After importing, every cohort gets access to the same material.',
+  'apostila.import_url_label':  'Document URL',
+  'apostila.import_marker_label': 'Section marker',
+  'apostila.marker_h2':         'Heading 2 (h2)',
+  'apostila.marker_h1':         'Heading 1 (h1)',
+  'apostila.marker_hr':         'Horizontal rule',
+  'apostila.importing':         'Importing...',
+  'apostila.import_confirm':    'Import',
+  'apostila.imported':          'Content imported, {n} sections created.'
 };

@@ -344,5 +344,30 @@ export default {
   'releases.empty_outros':    'Nenhum item na biblioteca.',
   'releases.empty_outros_solo': 'Nenhum item disponível.',
   'releases.saving':          'Salvando...',
-  'releases.saved':           'Salvo.'
+  'releases.saved':           'Salvo.',
+
+  // Content → Apostila (imported course content)
+  'apostila.title_default':   'Conteúdo do curso',
+  'apostila.import_btn':      '+ Importar conteúdo',
+  'apostila.delete_set_btn':  'Excluir conteúdo',
+  'apostila.empty':           'Nenhum conteúdo importado ainda. Use o botão acima para importar a partir de um Google Docs.',
+  'apostila.empty_sections':  'O conteúdo não tem seções.',
+  'apostila.error_loading':   'Erro ao carregar o conteúdo.',
+  'apostila.no_summary':      'sem resumo',
+  'apostila.section_deleted': 'Seção excluída.',
+  'apostila.set_deleted':     'Conteúdo excluído.',
+  'apostila.delete_section_title':   'Excluir seção',
+  'apostila.confirm_delete_section': 'Excluir esta seção do conteúdo? Ela será removida de todas as turmas onde está liberada.',
+  'apostila.delete_set_title':       'Excluir conteúdo',
+  'apostila.confirm_delete_set':     'Excluir o conteúdo completo? Todas as seções serão removidas da biblioteca e de todas as turmas onde estão liberadas.',
+  'apostila.import_title':      'Importar conteúdo do curso',
+  'apostila.import_help':       'O conteúdo é compartilhado entre todos os clientes. Após importar, todas as turmas terão acesso ao mesmo material.',
+  'apostila.import_url_label':  'URL do documento',
+  'apostila.import_marker_label': 'Marcador de seção',
+  'apostila.marker_h2':         'Título 2 (h2)',
+  'apostila.marker_h1':         'Título 1 (h1)',
+  'apostila.marker_hr':         'Linha horizontal',
+  'apostila.importing':         'Importando...',
+  'apostila.import_confirm':    'Importar',
+  'apostila.imported':          'Conteúdo importado, {n} seções criadas.'
 };

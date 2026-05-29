@@ -113,7 +113,8 @@ export const content = {
   // composer (which surfaces the current set's items as the "Conteúdo do curso"
   // pool). Action names read from ct-admin.js.
   listSets:        (p) => call('ct_list_sets', p),
-  getSet:          (p) => call('ct_get_set', p)             // { id } -> { set, items }
+  getSet:          (p) => call('ct_get_set', p),            // { id } -> { set, items }
+  deleteSet:       (p) => call('ct_delete_set', p)          // { id } cascades to its items
 };
 
 // Lesson presets — named bundles of library items, reused when planning a

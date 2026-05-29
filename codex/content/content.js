@@ -10,10 +10,11 @@ import { t } from '../js/i18n.js';
 import * as items from './items.js';
 import * as presets from './presets.js';
 import * as releases from './releases.js';
+import * as apostila from './apostila.js';
 
 export const SUBTABS = [
   { key: 'items',    labelKey: 'content.sub_items',    module: items },
-  { key: 'apostila', labelKey: 'content.sub_apostila', href: '/backstage/classtrail/?tab=apostila' },
+  { key: 'apostila', labelKey: 'content.sub_apostila', module: apostila },
   { key: 'tarefas',  labelKey: 'content.sub_tarefas',  href: '/backstage/classtrail/?tab=tarefas' },
   { key: 'drive',    labelKey: 'content.sub_drive',    href: '/backstage/classtrail/?tab=drive' },
   { key: 'labs',     labelKey: 'content.sub_labs',     href: '/backstage/classtrail/?tab=labs' },

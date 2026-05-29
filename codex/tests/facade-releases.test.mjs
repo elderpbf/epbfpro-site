@@ -22,6 +22,7 @@ test('releases + set facade methods map to the frozen action strings', () => {
     [() => api.releases.turmaView({ token: 'x' }), 'ct_get_turma_view'],
     [() => api.content.listSets(),                 'ct_list_sets'],
     [() => api.content.getSet({ id: 7 }),          'ct_get_set'],
+    [() => api.content.deleteSet({ id: 7 }),       'ct_delete_set'],
   ];
   for (const [fn, action] of cases) {
     assert.equal(fn().action, action, `maps to ${action}`);

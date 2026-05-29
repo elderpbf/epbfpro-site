@@ -16,12 +16,14 @@ const itemsJs = read('../content/items.js');
 const contentJs = read('../content/content.js');
 const presetsJs = read('../content/presets.js');
 const releasesJs = read('../content/releases.js');
+const apostilaJs = read('../content/apostila.js');
 const turmaPickerJs = read('../content/turma-picker.js');
 const indexHtml = read('../index.html');
 const topbarJs = read('../js/codex-topbar.js');
 // Tab/sub-tab modules: full contract incl. mount/unmount.
 const moduleFiles = {
-  'content.js': contentJs, 'items.js': itemsJs, 'presets.js': presetsJs, 'releases.js': releasesJs,
+  'content.js': contentJs, 'items.js': itemsJs, 'presets.js': presetsJs,
+  'releases.js': releasesJs, 'apostila.js': apostilaJs,
 };
 // Helper modules: same source rules, but not tabs (no mount/unmount contract).
 const helperFiles = { 'turma-picker.js': turmaPickerJs };

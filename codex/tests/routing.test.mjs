@@ -45,12 +45,13 @@ test('Codex topbar routes migrated tabs to /codex/, un-migrated to legacy', () =
 });
 
 test('Content shell bridges un-migrated sub-tabs to legacy ClassTrail', () => {
-  // Items + Presets + Releases are native (module); the rest are legacy hrefs.
+  // Items + Presets + Releases + Apostila are native (module); the rest are legacy hrefs.
   assert.match(contentJs, /key:\s*'items',\s*labelKey:\s*'content\.sub_items',\s*module:/, 'Items is native');
   assert.match(contentJs, /key:\s*'presets',\s*labelKey:\s*'content\.sub_presets',\s*module:/, 'Presets is native');
   assert.match(contentJs, /key:\s*'releases',\s*labelKey:\s*'content\.sub_releases',\s*module:/, 'Releases is native');
+  assert.match(contentJs, /key:\s*'apostila',\s*labelKey:\s*'content\.sub_apostila',\s*module:/, 'Apostila is native');
   for (const [key, tab] of [
-    ['apostila', 'apostila'], ['tarefas', 'tarefas'], ['drive', 'drive'], ['labs', 'labs'],
+    ['tarefas', 'tarefas'], ['drive', 'drive'], ['labs', 'labs'],
   ]) {
     const re = new RegExp("key:\\s*'" + key + "'[\\s\\S]*?href:\\s*'/backstage/classtrail/\\?tab=" + tab + "'");
     assert.match(contentJs, re, `${key} bridges to ClassTrail ?tab=${tab}`);
