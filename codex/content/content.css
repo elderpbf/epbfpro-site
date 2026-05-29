@@ -4,59 +4,9 @@
  * color token is introduced (dark mode is inherited). Colors come only from
  * CSS custom properties, per the module contract. */
 
-/* ── Shell + sub-tab nav ─────────────────────────────────────────────────── */
-.cdx-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-.cdx-subtabs {
-  flex-shrink: 0;
-  display: flex;
-  gap: 0.25rem;
-  padding: 0 0 0.75rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1rem;
-}
-
-.cdx-subtab {
-  appearance: none;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.4rem 0.75rem;
-  cursor: pointer;
-  border-radius: 6px 6px 0 0;
-}
-.cdx-subtab:hover { color: var(--text-primary); background: var(--cdx-card-hover-bg); }
-.cdx-subtab.active {
-  color: var(--codex-content);
-  border-bottom-color: var(--codex-content);
-}
-
-/* Legacy bridge sub-tabs link out to the not-yet-migrated ClassTrail page.
-   Dimmed + ↗ marker so it reads as "leaves Codex" until that sub-tab migrates. */
-.cdx-subtab--legacy {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  opacity: 0.72;
-}
-.cdx-subtab--legacy:hover { opacity: 1; }
-.cdx-subtab-ext { font-size: 0.7em; }
-
-.cdx-subview {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
+/* The sub-tab BAR is the legacy bs-topbar-subrow rendered by codex-topbar.js
+   (styled in backstage.css), so no sub-tab styles live here. This file styles
+   only the Items sub-tab content below. */
 
 /* ── Items toolbar ───────────────────────────────────────────────────────── */
 .cdx-items { display: flex; flex-direction: column; gap: 1rem; }
