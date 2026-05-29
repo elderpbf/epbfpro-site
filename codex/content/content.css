@@ -12,13 +12,20 @@
   min-height: 0;
 }
 
+/* Sub-tab bar: a full-bleed surface strip flush under the main topbar. The
+   negative margins break it out of the .cdx-view 1.5rem padding so it reads as
+   part of the chrome (like the legacy sub-tab row), not floating content. Only
+   tabs that declare sub-tabs render it (Cohorts never mounts .cdx-subtabs). */
 .cdx-subtabs {
   flex-shrink: 0;
   display: flex;
-  gap: 0.25rem;
-  padding: 0 0 0.75rem;
+  align-items: stretch;
+  gap: 0.1rem;
+  margin: -1.5rem -1.5rem 1.5rem;
+  padding: 0 1.5rem;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
-  margin-bottom: 1rem;
+  overflow-x: auto;
 }
 
 .cdx-subtab {
@@ -30,11 +37,11 @@
   font: inherit;
   font-weight: 600;
   font-size: 0.9rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.85rem 0.9rem;
   cursor: pointer;
-  border-radius: 6px 6px 0 0;
+  white-space: nowrap;
 }
-.cdx-subtab:hover { color: var(--text-primary); background: var(--cdx-card-hover-bg); }
+.cdx-subtab:hover { color: var(--text-primary); }
 .cdx-subtab.active {
   color: var(--codex-content);
   border-bottom-color: var(--codex-content);
@@ -49,7 +56,7 @@
   gap: 0.25rem;
   opacity: 0.72;
 }
-.cdx-subtab--legacy:hover { opacity: 1; }
+.cdx-subtab--legacy:hover { opacity: 1; color: var(--text-primary); }
 .cdx-subtab-ext { font-size: 0.7em; }
 
 .cdx-subview {
