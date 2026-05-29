@@ -554,26 +554,27 @@
         verdict.className = 'k9-ia-verdict is-bad';
         verdict.textContent = '⚠ pedidos (b), (c) e (d) omitidos';
       }
-      function showCompare() {
+      // After "Higienizar", the cleaned analysis stands ALONE in the IA box.
+      // No side-by-side stack against the poisoned read — the contrast is
+      // temporal (the operator runs análise, then higieniza), not a split
+      // screen. Elder's feedback: the maculated version must not linger next
+      // to the clean one.
+      function showClean() {
         body.innerHTML =
           '<div class="k9-ia-section">' +
-            '<p class="k9-ia-section-title">Análise <b style="color:var(--bad)">com</b> texto oculto</p>' +
-            '<div class="k9-ia-answer is-poisoned">' + POISONED + '</div>' +
-          '</div>' +
-          '<div class="k9-ia-section">' +
-            '<p class="k9-ia-section-title">Análise <b style="color:var(--good)">sem</b> texto oculto (higienizada)</p>' +
+            '<p class="k9-ia-section-title">Análise após higienização (texto oculto removido)</p>' +
             '<div class="k9-ia-answer is-clean">' + CLEAN + '</div>' +
           '</div>';
         verdict.className = 'k9-ia-verdict is-good';
-        verdict.textContent = '✓ texto higienizado';
+        verdict.textContent = '✓ texto higienizado · 4 pedidos';
       }
 
       // ── Actions ─────────────────────────────────────────
       askBtn.addEventListener('click', () => {
         // First click runs the poisoned analysis. If the user has already
-        // higienizado, "Pedir análise" returns to the side-by-side compare
-        // (so the operator can re-emphasize the difference without resetting).
-        if (hasClean) { showCompare(); return; }
+        // higienizado, "Pedir análise" re-shows the clean analysis alone
+        // (so the operator can return to it without resetting).
+        if (hasClean) { showClean(); return; }
         hasAsked = true;
         showPoisoned();
       });
@@ -585,7 +586,7 @@
         document.querySelectorAll('.k9-payload').forEach(el => {
           el.style.display = 'none';
         });
-        showCompare();
+        showClean();
       });
 
       resetBtn.addEventListener('click', () => {
