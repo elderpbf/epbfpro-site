@@ -1,6 +1,6 @@
 // EN dictionary — mirror of pt.js. Every key added to pt.js MUST be added here
-// too, in the same change. Not the active language yet (selector hidden until
-// the user can switch), but kept current so English is one toggle away.
+// too, in the same change. Selectable via the topbar language toggle; PT-BR is
+// the default. "Aula" maps to "Lesson" everywhere (matches the Lessons tab).
 export default {
   'app.title':     'Codex',
   'nav.lessons':   'Lessons',
@@ -34,9 +34,9 @@ export default {
   // Cohorts — columns
   'cohorts.col_clients':          'Clients',
   'cohorts.col_turmas':           'Cohorts',
-  'cohorts.col_aulas':            'Classes',
+  'cohorts.col_aulas':            'Lessons',
   'cohorts.select_client_prompt': 'Select a client to see its cohorts.',
-  'cohorts.select_turma_prompt':  'Select a cohort to see its classes.',
+  'cohorts.select_turma_prompt':  'Select a cohort to see its lessons.',
 
   // Cohorts — clients
   'cohorts.no_clients':            'No clients registered.',
@@ -65,7 +65,7 @@ export default {
   'cohorts.icon_mode_upload':      'Upload image',
   'cohorts.icon_too_large':        'File exceeds 1 MB. Choose a smaller image.',
 
-  // Cohorts — turmas
+  // Cohorts — turmas (cohorts)
   'cohorts.no_turmas':             'No cohorts registered.',
   'cohorts.new_turma':             '+ New cohort',
   'cohorts.new_turma_title':       'New cohort',
@@ -82,8 +82,8 @@ export default {
   'cohorts.open_url':              'Open URL in new tab',
   'cohorts.url_unavailable':       'URL unavailable',
   'cohorts.display_name_prefix':   'For students:',
-  'cohorts.aula_singular':         'class',
-  'cohorts.aula_plural':           'classes',
+  'cohorts.aula_singular':         'lesson',
+  'cohorts.aula_plural':           'lessons',
   'cohorts.whatsapp_open':         'Open WhatsApp group',
   'cohorts.whatsapp_none':         'WhatsApp not set',
   'cohorts.classpulse':            'ClassPulse',
@@ -93,18 +93,18 @@ export default {
   'cohorts.field_whatsapp':         'WhatsApp group URL (optional)',
   'cohorts.field_classpulse':       'ClassPulse session',
 
-  // Cohorts — aulas
-  'cohorts.loading_aulas':          'Loading classes...',
-  'cohorts.no_aulas':               'No classes registered. Click "+ New class" to create one.',
-  'cohorts.new_aula':               '+ New class',
-  'cohorts.aula_label':             'Class',
+  // Cohorts — aulas (lessons)
+  'cohorts.loading_aulas':          'Loading lessons...',
+  'cohorts.no_aulas':               'No lessons registered. Click "+ New lesson" to create one.',
+  'cohorts.new_aula':               '+ New lesson',
+  'cohorts.aula_label':             'Lesson',
   'cohorts.aula_no_title':          'no title',
-  'cohorts.aula_saved':             'Class saved.',
-  'cohorts.aula_deleted':           'Class deleted.',
-  'cohorts.delete_aula_title':      'Delete Class',
-  'cohorts.delete_aula_msg':        'Items released for this class will lose their association.',
+  'cohorts.aula_saved':             'Lesson saved.',
+  'cohorts.aula_deleted':           'Lesson deleted.',
+  'cohorts.delete_aula_title':      'Delete Lesson',
+  'cohorts.delete_aula_msg':        'Items released for this lesson will lose their association.',
   'cohorts.aula_field_title':       'Title',
-  'cohorts.aula_title_placeholder': 'Class title',
+  'cohorts.aula_title_placeholder': 'Lesson title',
   'cohorts.aula_field_scheduled':   'Scheduled for (empty = no date set)',
   'cohorts.aula_field_happened':    'Happened on',
   'cohorts.aula_field_rescheduled_from': 'Rescheduled from (original date)',

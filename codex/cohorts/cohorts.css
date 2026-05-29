@@ -244,7 +244,7 @@ a.cdx-card-mini-icon.is-on:hover {
 .cdx-btn:hover { background: var(--cdx-card-hover-bg); border-color: var(--cdx-card-hover-border); }
 
 .cdx-btn-primary {
-  background: var(--primary);
+  background: var(--cdx-btn-primary-bg);
   border-color: var(--primary);
   color: var(--cdx-btn-primary-text);
 }
@@ -578,6 +578,7 @@ a.cdx-card-mini-icon.is-on:hover {
   --cdx-backdrop:          rgba(0, 0, 0, 0.45);
   --cdx-danger-bg:         rgba(239, 68, 68, 0.04);
   --cdx-btn-primary-text:  #ffffff;
+  --cdx-btn-primary-bg:    var(--primary);
   --cdx-agendada-bg:       rgba(59, 130, 246, 0.1);
   --cdx-agendada-text:     #3b82f6;
   --cdx-remarcada-bg:      rgba(245, 158, 11, 0.1);
@@ -595,6 +596,7 @@ a.cdx-card-mini-icon.is-on:hover {
   --cdx-backdrop:          rgba(0, 0, 0, 0.65);
   --cdx-danger-bg:         rgba(248, 113, 113, 0.08);
   --cdx-btn-primary-text:  #ffffff;
+  --cdx-btn-primary-bg:    #0d9488;
   --cdx-agendada-bg:       rgba(59, 130, 246, 0.15);
   --cdx-agendada-text:     #93c5fd;
   --cdx-remarcada-bg:      rgba(245, 158, 11, 0.15);

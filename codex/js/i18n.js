@@ -10,7 +10,13 @@ import pt from '../i18n/pt.js';
 import en from '../i18n/en.js';
 
 const DICTS = { 'pt-BR': pt, 'en': en };
+const LANG_KEY = 'codex_lang';
+
 let active = 'pt-BR';
+try {
+  const saved = localStorage.getItem(LANG_KEY);
+  if (saved && DICTS[saved]) active = saved;
+} catch (_) {}
 
 export function t(key) {
   const d = DICTS[active] || {};
@@ -19,7 +25,13 @@ export function t(key) {
 
 export function languages() { return Object.keys(DICTS); }
 
-export function setLang(lang) { if (DICTS[lang]) active = lang; return active; }
+export function setLang(lang) {
+  if (DICTS[lang]) {
+    active = lang;
+    try { localStorage.setItem(LANG_KEY, lang); } catch (_) {}
+  }
+  return active;
+}
 
 export function apply(root) {
   root = root || document;
