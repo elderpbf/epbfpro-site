@@ -15,9 +15,16 @@ const read = (rel) => {
 const itemsJs = read('../content/items.js');
 const contentJs = read('../content/content.js');
 const presetsJs = read('../content/presets.js');
+const releasesJs = read('../content/releases.js');
+const turmaPickerJs = read('../content/turma-picker.js');
 const indexHtml = read('../index.html');
 const topbarJs = read('../js/codex-topbar.js');
-const moduleFiles = { 'content.js': contentJs, 'items.js': itemsJs, 'presets.js': presetsJs };
+// Tab/sub-tab modules: full contract incl. mount/unmount.
+const moduleFiles = {
+  'content.js': contentJs, 'items.js': itemsJs, 'presets.js': presetsJs, 'releases.js': releasesJs,
+};
+// Helper modules: same source rules, but not tabs (no mount/unmount contract).
+const helperFiles = { 'turma-picker.js': turmaPickerJs };
 
 test('backend reached ONLY through the facade (no direct callWorker)', () => {
   for (const [name, src] of Object.entries(moduleFiles)) {
@@ -56,6 +63,18 @@ test('tab contract: items + content export mount/unmount', () => {
   for (const [name, src] of Object.entries(moduleFiles)) {
     assert.match(src, /export\s+function\s+mount\s*\(/, `${name} exports mount`);
     assert.match(src, /export\s+function\s+unmount\s*\(/, `${name} exports unmount`);
+  }
+});
+
+test('helper modules obey the source rules (facade-only, no inline, cdx-, i18n, no em dash)', () => {
+  for (const [name, src] of Object.entries(helperFiles)) {
+    assert.ok(!/\bcallWorker\s*\(/.test(src), `${name} makes no direct callWorker() call`);
+    assert.ok(!/onclick\s*=/.test(src), `${name} authors no inline onclick`);
+    assert.ok(/cdx-/.test(src), `${name} authors cdx- classes`);
+    assert.ok(!/class="ct-/.test(src) && !/class="cv-/.test(src), `${name} authors no ct-/cv- classes`);
+    assert.match(src, /from\s+['"]\.\.\/js\/i18n\.js['"]/, `${name} imports t()`);
+    assert.match(src, /from\s+['"]\.\.\/js\/codex-api\.js['"]/, `${name} imports the facade`);
+    assert.ok(!/—/.test(src), `${name} has no em dashes`);
   }
 });
 

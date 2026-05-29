@@ -9,6 +9,7 @@
 import { t } from '../js/i18n.js';
 import * as items from './items.js';
 import * as presets from './presets.js';
+import * as releases from './releases.js';
 
 export const SUBTABS = [
   { key: 'items',    labelKey: 'content.sub_items',    module: items },
@@ -17,7 +18,7 @@ export const SUBTABS = [
   { key: 'drive',    labelKey: 'content.sub_drive',    href: '/backstage/classtrail/?tab=drive' },
   { key: 'labs',     labelKey: 'content.sub_labs',     href: '/backstage/classtrail/?tab=labs' },
   { key: 'presets',  labelKey: 'content.sub_presets',  module: presets },
-  { key: 'releases', labelKey: 'content.sub_releases', href: '/backstage/classtrail/?tab=liberacoes' },
+  { key: 'releases', labelKey: 'content.sub_releases', module: releases },
 ];
 
 function _native() { return SUBTABS.filter((s) => s.module); }

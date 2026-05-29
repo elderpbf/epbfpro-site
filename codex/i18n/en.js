@@ -318,5 +318,32 @@ export default {
   'presets.group_external':   'External links',
   'presets.group_lab':        'Labs',
   'presets.group_drive':      'Drive',
-  'presets.group_outros':     'Other items'
+  'presets.group_outros':     'Other items',
+
+  // Shared turma pill picker (Releases + Tarefas)
+  'picker.loading':           'Loading cohorts...',
+  'picker.no_clients':        'No clients registered.',
+  'picker.no_turmas':         'No cohorts yet. Create one in the Cohorts tab.',
+  'picker.error':             'Error loading cohorts.',
+
+  // Content → Releases (Liberações)
+  'releases.select_prompt':   'Select a cohort above to manage releases.',
+  'releases.error_loading':   'Error loading data.',
+  'releases.turma_not_found': 'Cohort not found.',
+  'releases.no_aulas':        'No lessons yet. Add lessons in the Cohorts tab (edit cohort).',
+  'releases.empty_chip':      'empty',
+  'releases.outros_label':    'Other',
+  'releases.outros_sub':      'Materials without a lesson',
+  'releases.section_apostila':    'Course content',
+  'releases.section_tarefas':     'Assignments',
+  'releases.section_outros':      'Other items',
+  'releases.section_drive':       'Drive',
+  'releases.section_outros_solo': 'Items without a lesson',
+  'releases.search_placeholder':  'Search...',
+  'releases.empty_apostila':  'No imported content.',
+  'releases.empty_tarefa':    'No assignments in the library. Create a "tarefa" item in the Items tab.',
+  'releases.empty_outros':    'No items in the library.',
+  'releases.empty_outros_solo': 'No items available.',
+  'releases.saving':          'Saving...',
+  'releases.saved':           'Saved.'
 };

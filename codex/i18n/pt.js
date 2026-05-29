@@ -317,5 +317,32 @@ export default {
   'presets.group_external':   'Links externos',
   'presets.group_lab':        'Labs',
   'presets.group_drive':      'Drive',
-  'presets.group_outros':     'Outros itens'
+  'presets.group_outros':     'Outros itens',
+
+  // Shared turma pill picker (Releases + Tarefas)
+  'picker.loading':           'Carregando turmas...',
+  'picker.no_clients':        'Nenhum cliente cadastrado.',
+  'picker.no_turmas':         'Nenhuma turma cadastrada. Crie uma turma na aba Turmas.',
+  'picker.error':             'Erro ao carregar turmas.',
+
+  // Content → Releases (Liberações)
+  'releases.select_prompt':   'Selecione uma turma acima para gerenciar as liberações.',
+  'releases.error_loading':   'Erro ao carregar dados.',
+  'releases.turma_not_found': 'Turma não encontrada.',
+  'releases.no_aulas':        'Nenhuma aula cadastrada. Adicione aulas na aba Turmas (editar turma).',
+  'releases.empty_chip':      'vazio',
+  'releases.outros_label':    'Outros',
+  'releases.outros_sub':      'Materiais sem aula',
+  'releases.section_apostila':    'Conteúdo do curso',
+  'releases.section_tarefas':     'Tarefas',
+  'releases.section_outros':      'Outros itens',
+  'releases.section_drive':       'Drive',
+  'releases.section_outros_solo': 'Itens sem aula',
+  'releases.search_placeholder':  'Buscar...',
+  'releases.empty_apostila':  'Nenhum conteúdo importado.',
+  'releases.empty_tarefa':    'Nenhuma tarefa cadastrada na biblioteca. Crie um item de tipo "tarefa" na aba Itens.',
+  'releases.empty_outros':    'Nenhum item na biblioteca.',
+  'releases.empty_outros_solo': 'Nenhum item disponível.',
+  'releases.saving':          'Salvando...',
+  'releases.saved':           'Salvo.'
 };

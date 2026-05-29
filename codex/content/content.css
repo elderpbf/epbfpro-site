@@ -589,3 +589,104 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── Shared turma pill picker (Releases + Tarefas) ────────────────────────── */
+.cdx-turma-picker { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.cdx-turma-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+}
+.cdx-turma-pill:hover { border-color: var(--cdx-card-hover-border); color: var(--text-primary); }
+.cdx-turma-pill.is-active { border-color: var(--primary); background: var(--cdx-card-sel-bg); color: var(--primary); font-weight: 600; }
+.cdx-turma-pill-client { font-weight: 600; }
+.cdx-turma-pill-sep { opacity: 0.5; }
+
+/* ── Releases (Liberações) aula accordion ────────────────────────────────── */
+.cdx-releases { display: flex; flex-direction: column; gap: 1rem; }
+.cdx-releases-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.cdx-rel-aula {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.cdx-rel-aula-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+}
+.cdx-rel-aula-header:hover { background: var(--cdx-card-hover-bg); }
+.cdx-rel-aula-info { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; min-width: 0; }
+.cdx-rel-aula-label { font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+.cdx-rel-outros-label { color: var(--text-secondary); }
+.cdx-rel-aula-title { font-size: 0.85rem; color: var(--text-secondary); }
+.cdx-rel-aula-date { font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--cdx-chip-bg); border: 1px solid var(--cdx-chip-border); color: var(--text-secondary); }
+.cdx-rel-aula-date.is-happened { color: var(--primary); }
+.cdx-rel-aula-date.is-tbd { opacity: 0.7; }
+.cdx-rel-aula-meta { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+.cdx-rel-aula-counts { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
+.cdx-rel-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.74rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+  color: var(--text-secondary);
+}
+.cdx-rel-count svg { display: block; }
+.cdx-rel-count-empty { opacity: 0.6; font-style: italic; }
+.cdx-rel-aula-chevron { font-size: 1.2rem; color: var(--text-secondary); transition: transform 0.15s; }
+.cdx-rel-aula-header.is-open .cdx-rel-aula-chevron { transform: rotate(90deg); }
+.cdx-rel-aula-composer:empty { display: none; }
+
+/* Composer body */
+.cdx-rel-composer-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 0.9rem;
+  border-top: 1px solid var(--border);
+  background: var(--background);
+}
+.cdx-comp-section { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+.cdx-comp-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.cdx-comp-search { width: 100%; box-sizing: border-box; }
+.cdx-comp-list { display: flex; flex-direction: column; gap: 0.1rem; max-height: 240px; overflow-y: auto; }
+.cdx-comp-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.cdx-comp-item:hover { background: var(--cdx-card-hover-bg); }
+.cdx-comp-item span { display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; }
+.cdx-comp-item svg { display: block; flex-shrink: 0; }
+.cdx-comp-cb { flex-shrink: 0; accent-color: var(--primary); }
+.cdx-comp-empty { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
+.cdx-comp-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }

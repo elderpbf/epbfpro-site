@@ -108,7 +108,12 @@ export const content = {
   listTags:        (p) => call('ct_list_tags', p),
   createTag:       (p) => call('ct_create_tag', p),         // { label }
   renameTag:       (p) => call('ct_rename_tag', p),         // { id, label }
-  deleteTag:       (p) => call('ct_delete_tag', p)          // { id }
+  deleteTag:       (p) => call('ct_delete_tag', p),         // { id }
+  // Apostila sets (imported course content). Shared by Apostila + the Releases
+  // composer (which surfaces the current set's items as the "Conteúdo do curso"
+  // pool). Action names read from ct-admin.js.
+  listSets:        (p) => call('ct_list_sets', p),
+  getSet:          (p) => call('ct_get_set', p)             // { id } -> { set, items }
 };
 
 // Lesson presets — named bundles of library items, reused when planning a
@@ -128,5 +133,8 @@ export const presets = {
 export const releases = {
   release:   (p) => call('ct_release_item', p),     // { client_slug, turma_slug, item_id }
   unrelease: (p) => call('ct_unrelease_item', p),
-  setAula:   (p) => call('ct_set_release_aula', p)  // { ..., aula_number_or_null }
+  setAula:   (p) => call('ct_set_release_aula', p), // { ..., aula_number_or_null }
+  // Aggregate student-view payload for a turma: the released items with their
+  // aula_number binding. Needs the turma token (read from ct_list_turmas).
+  turmaView: (p) => call('ct_get_turma_view', p)    // { client_slug, turma_slug, token }
 };
