@@ -19,6 +19,7 @@ import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
 import * as itemCreator from './item-creator.js';
 import { iconHtml as typeIconHtml, glyphSvg, glyphKeys, GLYPH_PREFIX } from '../js/glyphs.js';
+import * as notice from '../js/notice.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -79,7 +80,9 @@ function _slugify(s) {
 function _toast(msg) {
   if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
 }
-function _toastError(msg) { _toast(msg); }
+// Internal/dev errors go to the debug pill only, never a user toast (Elder's
+// rule). Actionable cases call notice.warn/error directly instead.
+function _toastError(msg) { notice.internal(msg); }
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 
 function _typeMeta(slug) {
@@ -714,13 +717,15 @@ function _openTypeManager() {
       _openConfirm({
         title: t('content.delete_type_title'), message: t('content.confirm_delete_type'), danger: true,
         onConfirm() {
-          api.deleteType({ slug, _silent: true }).then(() => _loadTypes()).then(() => {
+          // Not _silent: let api-client log the failure to the pill. type_in_use
+          // is user-actionable, so it surfaces as a persistent warn notice.
+          api.deleteType({ slug }).then(() => _loadTypes()).then(() => {
             render(); _renderItems(); _toast(t('content.type_deleted'));
           }).catch((er) => {
             if (er && er.data && er.data.error === 'type_in_use') {
-              _toastError(t('content.type_in_use').replace('{n}', er.data.count));
+              notice.warn(t('content.type_in_use').replace('{n}', er.data.count));
             } else {
-              _toastError(_err(er));
+              notice.internal(er);
             }
           });
         },

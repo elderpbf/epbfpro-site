@@ -283,6 +283,7 @@ export default {
   'creator.gdoc_imported':        'Content imported. Review and format with AI.',
   'creator.gdoc_empty':           'Document imported, but no recognizable content.',
   'creator.gdoc_error':           'Import error:',
+  'creator.gdoc_not_shared':      'The document is not accessible. Share it as "anyone with the link can view" and try again.',
   'creator.raw_required':         'Paste or type your content first.',
   'creator.ai_no_content':        'AI returned no content. Try continuing manually.',
   'creator.ai_bad_format':        'AI returned an unexpected format. Try continuing manually.',

@@ -19,6 +19,7 @@
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg } from '../js/glyphs.js';
+import * as notice from '../js/notice.js';
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
@@ -121,7 +122,9 @@ export function mount(container, opts) {
     }).catch((err) => {
       btn.disabled = false;
       btn.textContent = t('creator.load');
-      _toast(t('creator.gdoc_error') + ' ' + ((err && err.message) || err));
+      // api-client already logged the failure to the pill; show the user the
+      // actionable fix (the common cause is the doc not being shared publicly).
+      notice.warn(t('creator.gdoc_not_shared'));
     });
   });
 

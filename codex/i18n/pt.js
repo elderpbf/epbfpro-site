@@ -282,6 +282,7 @@ export default {
   'creator.gdoc_imported':        'Conteúdo importado. Revise e formate com IA.',
   'creator.gdoc_empty':           'Documento importado, mas sem conteúdo reconhecível.',
   'creator.gdoc_error':           'Erro ao importar:',
+  'creator.gdoc_not_shared':      'O documento não está acessível. Compartilhe como "qualquer pessoa com o link pode visualizar" e tente de novo.',
   'creator.raw_required':         'Cole ou digite seu conteúdo primeiro.',
   'creator.ai_no_content':        'IA não retornou conteúdo. Tente continuar manualmente.',
   'creator.ai_bad_format':        'IA retornou em formato inesperado. Tente continuar manualmente.',
