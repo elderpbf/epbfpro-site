@@ -116,5 +116,78 @@ export default {
   'cohorts.date_happened':   'happened on',
   'cohorts.date_scheduled':  'scheduled for',
   'cohorts.date_rescheduled':'rescheduled →',
-  'cohorts.date_tbd':        'to be defined'
+  'cohorts.date_tbd':        'to be defined',
+
+  // Content tab — sub-tab nav
+  'content.sub_items':        'Items',
+
+  // Content → Items — toolbar
+  'content.items_title':      'Item Library',
+  'content.new_item':         '+ New item',
+  'content.manage_tags':      'Manage tags',
+  'content.select':           'Select',
+  'content.exit_select':      'Exit selection',
+  'content.selected_suffix':  'selected',
+  'content.bulk_delete':      'Delete selected',
+  'content.bulk_cancel':      'Cancel',
+
+  // Content → Items — grid + rows
+  'content.loading':          'Loading...',
+  'content.error_loading':    'Error loading items.',
+  'content.empty_library':    'No items in the library.',
+  'content.empty_filter':     'No items in this filter.',
+  'content.duplicate':        'Duplicate',
+  'content.duplicate_title':  'Duplicate item',
+  'content.delete':           'Delete',
+  'content.set_badge':        'Course content',
+  'content.set_badge_title':  'This item is part of imported course content; manual edits may be overwritten on future syncs.',
+
+  // Content → Items — toasts
+  'content.error':            'Error',
+  'content.item_created':     'Item created.',
+  'content.item_updated':     'Item updated.',
+  'content.item_deleted':     'Item deleted.',
+  'content.item_duplicated':  'Item duplicated.',
+  'content.items_deleted_suffix': 'item(s) deleted.',
+  'content.no_selection':     'No items selected.',
+
+  // Content → Items — delete confirm
+  'content.delete_item_title':   'Delete item',
+  'content.delete_items_title':  'Delete items',
+  'content.confirm_delete_item': 'Delete this item? It will be removed from every cohort where it is released.',
+  'content.confirm_bulk_delete': 'The items will be removed from every cohort where they are released.',
+  'content.cancel':              'Cancel',
+  'content.confirm_delete_btn':  'Delete',
+
+  // Content → Items — editor labels (passed to the shared item form)
+  'content.new_item_step1':   'New item · 1 of 2',
+  'content.new_item_step2':   'New item · 2 of 2',
+  'content.edit_item':        'Edit item',
+  'content.save':             'Save',
+  'content.create':           'Create',
+  'content.close':            'Close',
+
+  // Content → Items — tags manager
+  'content.tags_title':           'Manage tags',
+  'content.tag_new_placeholder':  'New tag name',
+  'content.add':                  'Add',
+  'content.no_tags':              'No tags yet.',
+  'content.rename':               'Rename',
+  'content.tag_added':            'Tag added.',
+  'content.tag_renamed':          'Tag renamed.',
+  'content.tag_deleted':          'Tag deleted.',
+  'content.tag_rename_title':     'Rename tag',
+  'content.tag_name':             'Name',
+  'content.delete_tag_title':     'Delete tag',
+  'content.confirm_delete_tag':   'Delete this tag? It will be removed from every item.',
+
+  // Content → Items — inline type create
+  'content.new_type_title':       'New type',
+  'content.type_name':            'Name',
+  'content.type_name_placeholder':'e.g. Activity',
+  'content.type_slug':            'Identifier (slug, optional)',
+  'content.type_slug_placeholder':'auto-generated if empty',
+  'content.type_icon':            'Icon (emoji, optional)',
+  'content.type_created':         'Type created.',
+  'content.name_required':        'Name required.'
 };

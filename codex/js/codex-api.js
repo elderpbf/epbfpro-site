@@ -82,6 +82,24 @@ export const cohorts = {
   deleteAula:      (p) => call('ct_delete_aula', p)            // { id }
 };
 
+// Content — the item library (Items sub-tab) plus the shared types/tags it
+// depends on. Action names read from ct-admin.js; param shapes noted inline.
+export const content = {
+  listItems:       (p) => call('ct_list_items', p),         // { type? }
+  getItem:         (p) => call('ct_get_item', p),           // { id }
+  createItem:      (p) => call('ct_create_item', p),
+  updateItem:      (p) => call('ct_update_item', p),
+  deleteItem:      (p) => call('ct_delete_item', p),        // { id }
+  duplicateItem:   (p) => call('ct_duplicate_item', p),     // { id }
+  bulkDeleteItems: (p) => call('ct_delete_items_bulk', p),  // { ids }
+  listTypes:       (p) => call('ct_list_types', p),
+  createType:      (p) => call('ct_create_type', p),        // { slug, label, icon? }
+  listTags:        (p) => call('ct_list_tags', p),
+  createTag:       (p) => call('ct_create_tag', p),         // { label }
+  renameTag:       (p) => call('ct_rename_tag', p),         // { id, label }
+  deleteTag:       (p) => call('ct_delete_tag', p)          // { id }
+};
+
 // Releases (liberações) of items to a turma. (Lives in Content, kept here as
 // the cross-cutting turma<->item binding.)
 export const releases = {

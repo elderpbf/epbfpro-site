@@ -115,5 +115,78 @@ export default {
   'cohorts.date_happened':   'ocorreu em',
   'cohorts.date_scheduled':  'agendada para',
   'cohorts.date_rescheduled':'remarcada →',
-  'cohorts.date_tbd':        'a definir'
+  'cohorts.date_tbd':        'a definir',
+
+  // Content tab — sub-tab nav
+  'content.sub_items':        'Itens',
+
+  // Content → Items — toolbar
+  'content.items_title':      'Biblioteca de Itens',
+  'content.new_item':         '+ Novo item',
+  'content.manage_tags':      'Gerenciar tags',
+  'content.select':           'Selecionar',
+  'content.exit_select':      'Sair da seleção',
+  'content.selected_suffix':  'selecionado(s)',
+  'content.bulk_delete':      'Apagar selecionados',
+  'content.bulk_cancel':      'Cancelar',
+
+  // Content → Items — grid + rows
+  'content.loading':          'Carregando...',
+  'content.error_loading':    'Erro ao carregar itens.',
+  'content.empty_library':    'Nenhum item na biblioteca.',
+  'content.empty_filter':     'Nenhum item neste filtro.',
+  'content.duplicate':        'Duplicar',
+  'content.duplicate_title':  'Duplicar item',
+  'content.delete':           'Excluir',
+  'content.set_badge':        'Conteúdo do curso',
+  'content.set_badge_title':  'Item faz parte do conteúdo importado; edições manuais podem ser sobrescritas em sincronizações futuras.',
+
+  // Content → Items — toasts
+  'content.error':            'Erro',
+  'content.item_created':     'Item criado.',
+  'content.item_updated':     'Item atualizado.',
+  'content.item_deleted':     'Item excluído.',
+  'content.item_duplicated':  'Item duplicado.',
+  'content.items_deleted_suffix': 'item(ns) excluído(s).',
+  'content.no_selection':     'Nenhum item selecionado.',
+
+  // Content → Items — delete confirm
+  'content.delete_item_title':   'Excluir item',
+  'content.delete_items_title':  'Excluir itens',
+  'content.confirm_delete_item': 'Excluir este item? Ele será removido de todas as turmas onde está liberado.',
+  'content.confirm_bulk_delete': 'Os itens serão removidos de todas as turmas onde estão liberados.',
+  'content.cancel':              'Cancelar',
+  'content.confirm_delete_btn':  'Excluir',
+
+  // Content → Items — editor labels (passed to the shared item form)
+  'content.new_item_step1':   'Novo item · 1 de 2',
+  'content.new_item_step2':   'Novo item · 2 de 2',
+  'content.edit_item':        'Editar item',
+  'content.save':             'Salvar',
+  'content.create':           'Criar',
+  'content.close':            'Fechar',
+
+  // Content → Items — tags manager
+  'content.tags_title':           'Gerenciar tags',
+  'content.tag_new_placeholder':  'Nome da nova tag',
+  'content.add':                  'Adicionar',
+  'content.no_tags':              'Nenhuma tag cadastrada.',
+  'content.rename':               'Renomear',
+  'content.tag_added':            'Tag adicionada.',
+  'content.tag_renamed':          'Tag renomeada.',
+  'content.tag_deleted':          'Tag excluída.',
+  'content.tag_rename_title':     'Renomear tag',
+  'content.tag_name':             'Nome',
+  'content.delete_tag_title':     'Excluir tag',
+  'content.confirm_delete_tag':   'Excluir esta tag? Ela será removida de todos os itens.',
+
+  // Content → Items — inline type create
+  'content.new_type_title':       'Novo tipo',
+  'content.type_name':            'Nome',
+  'content.type_name_placeholder':'Ex: Atividade',
+  'content.type_slug':            'Identificador (slug, opcional)',
+  'content.type_slug_placeholder':'auto-gerado se vazio',
+  'content.type_icon':            'Ícone (emoji, opcional)',
+  'content.type_created':         'Tipo criado.',
+  'content.name_required':        'Nome obrigatório.'
 };
