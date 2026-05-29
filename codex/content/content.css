@@ -243,3 +243,190 @@
   border-radius: 999px;
   background: var(--cdx-chip-bg);
 }
+
+/* ── Shared item editor / creator (item-form.js, item-creator.js) ─────────── */
+/* Codex-native port of the legacy ct-editor chrome. Reuses .cdx-field,
+   .cdx-modal-backdrop, .cdx-modal-actions, .cdx-btn from cohorts.css; colors
+   come only from existing tokens (dark mode inherited). The editor mounts into
+   .cdx-modal-body, used exclusively by these two modules. */
+.cdx-modal-body { width: 100%; max-width: 760px; box-sizing: border-box; }
+
+.cdx-editor {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%;
+  max-height: calc(100vh - 2rem);
+  box-shadow: 0 12px 48px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.cdx-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cdx-editor-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.cdx-editor-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.cdx-editor-footer {
+  padding: 0.9rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.cdx-editor textarea { resize: vertical; min-height: 80px; }
+
+.cdx-editor-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+.cdx-preview-area {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  max-height: 320px;
+  overflow-y: auto;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+.cdx-preview-area h1, .cdx-preview-area h2, .cdx-preview-area h3 { margin-top: 0.5em; margin-bottom: 0.25em; }
+.cdx-preview-area p { margin: 0 0 0.5em; }
+.cdx-preview-area code { background: var(--cdx-card-sel-bg); padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
+.cdx-preview-area pre { background: var(--cdx-card-sel-bg); padding: 0.75rem; border-radius: 7px; overflow-x: auto; }
+.cdx-preview-area pre code { background: none; padding: 0; }
+
+.cdx-type-block {
+  margin-top: 0.5rem;
+  padding: 0.9rem;
+  background: var(--cdx-card-sel-bg);
+  border: 1px solid var(--cdx-card-sel-border);
+  border-radius: 10px;
+}
+.cdx-platform-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+.cdx-platform-tabs .cdx-field { margin-bottom: 0; }
+
+.cdx-upload-row { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; margin-top: 6px; }
+.cdx-upload-filename {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+.cdx-upload-progress { font-size: 0.78rem; color: var(--primary); }
+
+/* Tag chip picker (inline "+ tag") */
+.cdx-tag-picker { display: block; }
+.cdx-tag-chip-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cdx-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 11px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.cdx-tag-chip:hover { border-color: var(--cdx-card-hover-border); color: var(--text-primary); }
+.cdx-tag-chip.active {
+  background: var(--cdx-card-sel-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+.cdx-tag-add-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1.5px dashed var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, color 0.12s;
+}
+.cdx-tag-add-chip:hover { border-color: var(--primary); color: var(--primary); }
+.cdx-tag-add-input {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  font-size: 0.78rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--primary);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  outline: none;
+  width: 140px;
+  box-sizing: border-box;
+}
+
+/* Toggle switch (guide platform tabs, emoji toggle) */
+.cdx-toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+.cdx-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.cdx-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 22px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.cdx-toggle-slider:before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  background: var(--cdx-btn-primary-text);
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.cdx-toggle input:checked + .cdx-toggle-slider { background: var(--primary); }
+.cdx-toggle input:checked + .cdx-toggle-slider:before { transform: translateX(16px); }
+.cdx-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.cdx-toggle-text { line-height: 22px; }
+
+/* Content-first creator extras */
+.cdx-gdoc-row { margin-bottom: 0.75rem; }
+.cdx-gdoc-inline { display: flex; gap: 0.5rem; margin-top: 0.35rem; }
+.cdx-helper-text { font-size: 0.78rem; color: var(--text-secondary); margin: 0.5rem 0 0; }
+.cdx-emoji-toggle-row {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--cdx-card-sel-bg);
+  border: 1px solid var(--cdx-card-sel-border);
+  border-radius: 10px;
+}

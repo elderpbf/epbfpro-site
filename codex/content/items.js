@@ -9,12 +9,15 @@
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.CT_TYPE_FILTER  (../backstage/js/ct-type-filter.js)  type filter chips
-//   window.CTItemForm      (../backstage/js/ct-item-form.js)     full item editor
-//   window.CTItemCreator   (../backstage/js/ct-item-creator.js)  content-first step 1
+//   window.CTRenderer      (../backstage/js/ct-renderer.js)     preview renderer
 //   window.BSTypeIcon      (../backstage/js/utils.js)            per-type glyph
 //   window.BSToast         (../backstage/js/bs-toast.js)         optional toast
+// The item editor and content-first creator are now Codex-native modules
+// (item-form.js / item-creator.js), no longer the legacy window globals.
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import * as itemForm from './item-form.js';
+import * as itemCreator from './item-creator.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -507,9 +510,8 @@ function _openItem(id) {
 
 // New item: content-first creator (step 1) → full editor (step 2).
 function _newItem() {
-  if (!window.CTItemCreator) { _openItemEditorFull(null, null, null); return; }
   const bd = _openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
-  window.CTItemCreator.mount(bd.querySelector('.cdx-modal-body'), {
+  itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
     types: _types,
     tags: _tags,
     titleLabel: t('content.new_item_step1'),
@@ -527,10 +529,9 @@ function _newItem() {
 }
 
 function _openItemEditorFull(item, prefill, aiContext) {
-  if (!window.CTItemForm) return;
   const isEdit = !!item;
   const bd = _openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
-  window.CTItemForm.mount(bd.querySelector('.cdx-modal-body'), {
+  itemForm.mount(bd.querySelector('.cdx-modal-body'), {
     item,
     prefill,
     aiContext,

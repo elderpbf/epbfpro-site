@@ -58,7 +58,14 @@ export const links = {
 // AI helpers (provider fallback chain lives in the Worker).
 export const ai = {
   question: (p) => call('ai_question', p),
-  theme:    (p) => call('ai_theme', p)
+  theme:    (p) => call('ai_theme', p),
+  // Generic chat used by the item editor/creator. Mirrors the legacy
+  // AIClient.generate: a rate-limit (429/503) resolves to null so callers can
+  // surface a friendly "try again" instead of throwing.
+  chat:     (p) => call('ai_chat', p).catch((e) => {
+    if (e && e.data && e.data.rate_limited) return null;
+    throw e;
+  })
 };
 
 // Cohorts — clients -> turmas -> aulas. Action names read from ct-admin.js;
@@ -92,6 +99,8 @@ export const content = {
   deleteItem:      (p) => call('ct_delete_item', p),        // { id }
   duplicateItem:   (p) => call('ct_duplicate_item', p),     // { id }
   bulkDeleteItems: (p) => call('ct_delete_items_bulk', p),  // { ids }
+  uploadAsset:     (p) => call('ct_upload_asset', p),       // { item_id, filename, content_b64 }
+  ingestGdoc:      (p) => call('ct_ingest_gdoc', p),        // { url, mode }
   listTypes:       (p) => call('ct_list_types', p),
   createType:      (p) => call('ct_create_type', p),        // { slug, label, icon? }
   listTags:        (p) => call('ct_list_tags', p),

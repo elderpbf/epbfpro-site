@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="../backstage/classtrail/css/classtrail.css?v=3.9">
 <link rel="stylesheet" href="css/codex.css?v=1.4">
 <link rel="stylesheet" href="cohorts/cohorts.css?v=1.1">
-<link rel="stylesheet" href="content/content.css?v=1.3">
+<link rel="stylesheet" href="content/content.css?v=1.4">
 <script src="../backstage/js/debug.js?v=2.5"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -52,16 +52,15 @@
 <script src="../backstage/js/auth.js?v=1.4"></script>
 <script src="../backstage/js/settings-drawer.js?v=1.2"></script>
 <script src="../backstage/js/brand-logos.js?v=1.0"></script>
-<!-- Shared item-editor stack (window globals) used by Content → Items until
-     CTItemForm/CTItemCreator get their own Codex migration. -->
+<!-- Shared helpers (window globals) still used by Content → Items: the type
+     filter chips, the preview renderer, and the prompt-building AI spec. The
+     item editor + creator are now Codex-native ES modules (content/item-form.js,
+     content/item-creator.js); the legacy CTItemForm/CTItemCreator globals are no
+     longer loaded here. -->
 <script src="../backstage/js/bs-toast.js?v=1.0"></script>
-<script src="../backstage/js/ai-client.js?v=1.0"></script>
 <script src="../backstage/js/ct-ai-spec.js?v=1.2"></script>
 <script src="../backstage/js/ct-type-filter.js?v=1.0"></script>
 <script src="../backstage/js/ct-renderer.js?v=1.0"></script>
-<script src="../backstage/js/ct-tarefa-fields.js?v=1.0"></script>
-<script src="../backstage/js/ct-item-form.js?v=1.3"></script>
-<script src="../backstage/js/ct-item-creator.js?v=1.0"></script>
 
 <!-- Codex is ES modules. One boot imports, routes by ?tab=, and mounts the
      active tab; no logic inline beyond the wiring. -->
