@@ -55,7 +55,7 @@
 .cdx-tab--questions { --accent-color: var(--codex-questions); }
 
 /* ── Tab content host ───────────────────────────────────────── */
-.cdx-view { padding: 1.5rem; }
+.cdx-view { padding: 0.5rem 1.5rem 1.5rem; }
 
 /* Language toggle button (PT/EN). The topbar renders it only when more than
  * one dictionary is loaded; it shows the language you'd switch TO. */

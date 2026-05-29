@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Codex · Itens — 3 layouts (mock)</title>
+<style>
+  :root {
+    --bg: #d4f4ed;            /* brand mint (theme.css --background) */
+    --surface: #ffffff;
+    --surface-2: #f3faf8;
+    --text: #0e2e29;
+    --text-2: #5d7d77;
+    --border: #cbe7df;
+    --teal: #14b8a6;          /* --codex-content */
+    --teal-dark: #0d9488;
+    /* per-type accents */
+    --t-prompt: #14b8a6;
+    --t-exemplo: #6366f1;
+    --t-dica: #f59e0b;
+    --t-link: #0ea5e9;
+    --t-config: #8b5cf6;
+    --shadow: 0 1px 2px rgba(13,79,71,.06), 0 4px 16px rgba(13,79,71,.06);
+    --shadow-lift: 0 6px 22px rgba(13,79,71,.14);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Topbar (replica of the glow'd chrome) ───────────────────── */
+  .top { background: var(--surface); box-shadow: var(--shadow); position: sticky; top: 0; z-index: 5; }
+  .top-row { display: flex; align-items: center; gap: 1.5rem; padding: 0 1.5rem; height: 60px; }
+  .brand { display: flex; align-items: center; gap: .5rem; font-weight: 800; font-size: 1.15rem; }
+  .brand .dot { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, var(--teal), #34d399); }
+  .brand .sub { color: var(--text); font-weight: 700; }
+  .tabs { display: flex; gap: .3rem; }
+  .tab { display: inline-flex; align-items: center; gap: .45rem; padding: .4rem .7rem; border-radius: 8px;
+         color: var(--text-2); font-weight: 600; font-size: .9rem; text-decoration: none; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+  .tab .g { font-size: 1.05rem; }
+  .top-spacer { flex: 1; }
+  .icon-btn { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface);
+              color: var(--text-2); cursor: pointer; }
+  .subrow { display: flex; align-items: center; padding: 0 1.5rem 0 56px; border-top: 1px solid #eef6f4; min-height: 34px; }
+  .subtabs { display: flex; align-items: center; gap: .15rem; }
+  .subtab { padding: .25rem .65rem; font-size: .78rem; font-weight: 600; color: var(--text-2); text-decoration: none;
+            border-radius: 6px; cursor: pointer; white-space: nowrap; transition: background .12s, color .12s, border-color .12s; }
+  .subtab--bridge { opacity: .7; }
+  .subtab--bridge:hover { opacity: 1; }
+
+  /* Subrow option A — Pills */
+  .subrow--pills { background: rgba(20,184,166,.035); }
+  .subrow--pills .subtab { border-radius: 999px; }
+  .subrow--pills .subtab:hover { background: rgba(20,184,166,.10); color: var(--text); }
+  .subrow--pills .subtab.active { background: var(--teal); color: #fff; }
+  .subrow--pills .subtab--bridge { border: 1px solid var(--border); }
+
+  /* Subrow option B — Underline (taller, prominent) */
+  .subrow--underline { background: var(--surface); min-height: 44px; box-shadow: inset 0 -1px 0 var(--border); }
+  .subrow--underline .subtabs { gap: .35rem; }
+  .subrow--underline .subtab { font-size: .86rem; padding: .6rem .7rem; border-radius: 0; border-bottom: 2px solid transparent; }
+  .subrow--underline .subtab:hover { color: var(--text); }
+  .subrow--underline .subtab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  /* Subrow option C — Segmented control */
+  .subrow--segmented { background: var(--surface); min-height: 42px; }
+  .subrow--segmented .subtabs { background: rgba(20,184,166,.08); border-radius: 10px; padding: 3px; gap: 2px; }
+  .subrow--segmented .subtab { border-radius: 7px; }
+  .subrow--segmented .subtab:hover { color: var(--text); }
+  .subrow--segmented .subtab.active { background: #fff; color: var(--teal); box-shadow: var(--shadow); }
+
+  /* ── Switcher ────────────────────────────────────────────────── */
+  .stage { padding: 1.5rem; max-width: 1280px; margin: 0 auto; }
+  .controls { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .ctl { display: flex; flex-direction: column; gap: .4rem; }
+  .ctl-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
+  .switch { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+            padding: 4px; gap: 4px; box-shadow: var(--shadow); }
+  .switch button { border: none; background: transparent; color: var(--text-2); font: inherit; font-weight: 700; font-size: .85rem;
+                   padding: .5rem .9rem; border-radius: 9px; cursor: pointer; }
+  .switch button.on { background: var(--teal); color: #fff; }
+
+  /* ── Shared toolbar ──────────────────────────────────────────── */
+  .toolbar { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .toolbar h2 { margin: 0; font-size: 1.2rem; flex: 1; }
+  .btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 9px;
+         padding: .5rem .85rem; font: inherit; font-weight: 600; font-size: .85rem; cursor: pointer; }
+  .btn.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .btn.sm { padding: .3rem .6rem; font-size: .78rem; }
+  .btn.danger { color: #dc2626; }
+  .filters { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+  .chip { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 999px;
+          background: var(--surface); border: 1px solid var(--border); font-size: .8rem; font-weight: 600; color: var(--text-2); cursor: pointer; }
+  .chip.on { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .chip .n { background: rgba(0,0,0,.08); border-radius: 999px; padding: 0 .4rem; font-size: .72rem; }
+  .chip.on .n { background: rgba(255,255,255,.25); }
+  .tag { font-size: .72rem; padding: .12rem .5rem; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); }
+  .ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff; font-size: .95rem; flex-shrink: 0; }
+  .hide { display: none !important; }
+
+  /* ── Option 1: Gallery ───────────────────────────────────────── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+          box-shadow: var(--shadow); transition: transform .14s, box-shadow .14s; position: relative; }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  .card .stripe { height: 4px; }
+  .card .body { padding: 1rem; }
+  .card .head { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; }
+  .card .type { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .card .title { font-weight: 700; font-size: .98rem; line-height: 1.3; margin: 0 0 .55rem; }
+  .card .tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-bottom: .7rem; }
+  .card .foot { display: flex; align-items: center; justify-content: space-between; }
+  .card .date { font-size: .75rem; color: var(--text-2); }
+  .card .actions { display: flex; gap: .35rem; opacity: 0; transition: opacity .14s; }
+  .card:hover .actions { opacity: 1; }
+
+  /* ── Option 2: List + Preview ────────────────────────────────── */
+  .split { display: grid; grid-template-columns: 380px 1fr; gap: 1rem; align-items: start; }
+  .list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .row { display: flex; align-items: center; gap: .7rem; padding: .7rem .85rem; border-bottom: 1px solid #eef6f4; cursor: pointer; }
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: var(--surface-2); }
+  .row.sel { background: rgba(20,184,166,.08); box-shadow: inset 3px 0 0 var(--teal); }
+  .row .meta { min-width: 0; }
+  .row .rt { font-size: .7rem; color: var(--text-2); font-weight: 600; }
+  .row .rtitle { font-weight: 600; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .detail { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); min-height: 420px; }
+  .detail .dhead { display: flex; align-items: flex-start; gap: .8rem; padding: 1.1rem 1.2rem; border-bottom: 1px solid #eef6f4; }
+  .detail .dtitle { font-size: 1.15rem; font-weight: 800; margin: 0; flex: 1; }
+  .detail .dbody { padding: 1.2rem; color: #163d37; line-height: 1.6; }
+  .detail .dbody h4 { margin: 0 0 .4rem; }
+  .detail .dbody pre { background: #0e2e29; color: #c7f3ea; padding: .8rem 1rem; border-radius: 10px; overflow: auto; font-size: .82rem; }
+  .detail .dbody p { margin: 0 0 .9rem; }
+  .badge { font-size: .72rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; color: #fff; }
+
+  /* ── Option 3: Board ─────────────────────────────────────────── */
+  .board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: .5rem; }
+  .col { flex: 0 0 280px; background: rgba(255,255,255,.55); border: 1px solid var(--border); border-radius: 14px; padding: .7rem; }
+  .col .colhead { display: flex; align-items: center; gap: .5rem; font-weight: 700; font-size: .85rem; margin: .2rem .2rem .7rem; }
+  .col .colhead .n { margin-left: auto; color: var(--text-2); font-size: .78rem; }
+  .bcard { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: .7rem .8rem; margin-bottom: .6rem; box-shadow: var(--shadow); cursor: grab; }
+  .bcard:hover { box-shadow: var(--shadow-lift); }
+  .bcard .bt { font-weight: 600; font-size: .87rem; margin-bottom: .4rem; }
+  .note { margin-top: 1.6rem; color: var(--text-2); font-size: .8rem; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand"><span class="dot"></span> <span class="sub">Codex</span></div>
+    <nav class="tabs">
+      <a class="tab"><span class="g">🖥️</span> Aula</a>
+      <a class="tab active"><span class="g">📚</span> Conteúdo</a>
+      <a class="tab"><span class="g">👥</span> Turmas</a>
+      <a class="tab"><span class="g">💬</span> Perguntas</a>
+    </nav>
+    <div class="top-spacer"></div>
+    <button class="icon-btn">EN</button>
+    <button class="icon-btn">🌙</button>
+    <button class="icon-btn">⚙</button>
+  </div>
+  <div class="subrow subrow--pills" id="subrow">
+    <nav class="subtabs">
+      <a class="subtab active">Itens</a>
+      <a class="subtab subtab--bridge">Apostila ↗</a>
+      <a class="subtab subtab--bridge">Tarefas ↗</a>
+      <a class="subtab subtab--bridge">Drive ↗</a>
+      <a class="subtab subtab--bridge">Labs ↗</a>
+      <a class="subtab subtab--bridge">Presets ↗</a>
+      <a class="subtab subtab--bridge">Liberações ↗</a>
+    </nav>
+  </div>
+</header>
+
+<div class="stage">
+  <div class="controls">
+    <div class="ctl">
+      <span class="ctl-label">Barra de subtabs ← o pedido</span>
+      <div class="switch" id="subswitch">
+        <button data-sub="pills" class="on">Pills</button>
+        <button data-sub="underline">Sublinhado</button>
+        <button data-sub="segmented">Segmentada</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span class="ctl-label">Layout do conteúdo</span>
+      <div class="switch" id="contentswitch">
+        <button data-opt="gallery">Galeria</button>
+        <button data-opt="split" class="on">Lista + Prévia</button>
+        <button data-opt="board">Quadro</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <h2>Biblioteca de Itens</h2>
+    <button class="btn primary">+ Novo item</button>
+    <button class="btn">Gerenciar tags</button>
+    <button class="btn">Selecionar</button>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div id="view"></div>
+
+  <p class="note">Mock · <strong>Barra de subtabs</strong>: 3 estilos (Pills / Sublinhado / Segmentada) — alterne acima e veja a barra logo abaixo do topo mudar. <strong>Layout do conteúdo</strong>: Lista + Prévia (v2) como padrão. Dados de exemplo.</p>
+</div>
+
+<script>
+  const TYPES = {
+    prompt:  { label: 'Prompt para IA',  color: 'var(--t-prompt)',  glyph: '¶' },
+    exemplo: { label: 'Exemplo',         color: 'var(--t-exemplo)', glyph: '✦' },
+    dica:    { label: 'Dica',            color: 'var(--t-dica)',    glyph: '★' },
+    link:    { label: 'Link / Recurso',  color: 'var(--t-link)',    glyph: '🔗' },
+    config:  { label: 'Configuração',    color: 'var(--t-config)',  glyph: '⚙' },
+  };
+  const ITEMS = [
+    { type:'exemplo', title:'Exemplo de contrato para testes', date:'26/05/2026', tags:['exemplo','fundamentos','prática'] },
+    { type:'config',  title:'Configurando um Contexto Personalizado para IAs', date:'26/05/2026', tags:['avançado','contexto','fundamentos','prática'] },
+    { type:'dica',    title:'Markdowns e Formatações Úteis para LLMs', date:'26/05/2026', tags:['dica','engenharia-de-prompt','fundamentos'] },
+    { type:'prompt',  title:'Prompt: Análise Processual Jurídica Detalhada', date:'11/05/2026', tags:['prompt','jurídico'] },
+    { type:'dica',    title:'Guia rápido de temperatura e amostragem', date:'08/05/2026', tags:['fundamentos'] },
+    { type:'link',    title:'Documentação oficial da OpenAI', date:'02/05/2026', tags:['recurso','referência'] },
+    { type:'prompt',  title:'Prompt: Resumo de audiência', date:'28/04/2026', tags:['prompt','jurídico','resumo'] },
+    { type:'exemplo', title:'Petição inicial anotada', date:'20/04/2026', tags:['exemplo','prática','jurídico'] },
+  ];
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const tagsHtml = (t) => t.map(x => `<span class="tag">${esc(x)}</span>`).join('');
+  const ico = (ty) => `<span class="ico" style="background:${TYPES[ty].color}">${TYPES[ty].glyph}</span>`;
+
+  // Filters (shared, cosmetic)
+  function renderFilters() {
+    const counts = {};
+    ITEMS.forEach(i => counts[i.type] = (counts[i.type]||0)+1);
+    let html = `<span class="chip on">Todos <span class="n">${ITEMS.length}</span></span>`;
+    for (const k in TYPES) if (counts[k]) html += `<span class="chip">${TYPES[k].glyph} ${TYPES[k].label} <span class="n">${counts[k]}</span></span>`;
+    document.getElementById('filters').innerHTML = html;
+  }
+
+  function gallery() {
+    return `<div class="grid">` + ITEMS.map(i => `
+      <div class="card">
+        <div class="stripe" style="background:${TYPES[i.type].color}"></div>
+        <div class="body">
+          <div class="head">${ico(i.type)}<span class="type" style="color:${TYPES[i.type].color}">${TYPES[i.type].label}</span></div>
+          <h3 class="title">${esc(i.title)}</h3>
+          <div class="tags">${tagsHtml(i.tags)}</div>
+          <div class="foot">
+            <span class="date">${i.date}</span>
+            <span class="actions"><button class="btn sm">Duplicar</button><button class="btn sm danger">Excluir</button></span>
+          </div>
+        </div>
+      </div>`).join('') + `</div>`;
+  }
+
+  function split() {
+    const rows = ITEMS.map((i, idx) => `
+      <div class="row ${idx===0?'sel':''}" data-i="${idx}">
+        ${ico(i.type)}
+        <div class="meta"><div class="rt">${TYPES[i.type].label}</div><div class="rtitle">${esc(i.title)}</div></div>
+      </div>`).join('');
+    return `<div class="split">
+      <div class="list">${rows}</div>
+      <div class="detail" id="detail"></div>
+    </div>`;
+  }
+  function detail(i) {
+    return `<div class="dhead">
+        ${ico(i.type)}
+        <h3 class="dtitle">${esc(i.title)}</h3>
+        <span class="badge" style="background:${TYPES[i.type].color}">${TYPES[i.type].label}</span>
+      </div>
+      <div class="dbody">
+        <div class="tags" style="margin-bottom:1rem">${tagsHtml(i.tags)}</div>
+        <h4>Visão geral</h4>
+        <p>Prévia renderizada do item, exatamente como o aluno/professor veria em aula. Edição inline sem abrir modal.</p>
+        <pre>{
+  "papel": "assistente jurídico",
+  "contexto": "análise processual",
+  "tom": "técnico e objetivo"
+}</pre>
+        <p>Atualizado em ${i.date}.</p>
+        <div style="display:flex; gap:.5rem; margin-top:1.2rem">
+          <button class="btn primary">Editar</button>
+          <button class="btn">Duplicar</button>
+          <button class="btn danger">Excluir</button>
+        </div>
+      </div>`;
+  }
+
+  function board() {
+    let cols = '';
+    for (const k in TYPES) {
+      const items = ITEMS.filter(i => i.type === k);
+      if (!items.length) continue;
+      cols += `<div class="col">
+        <div class="colhead">${ico(k)} ${TYPES[k].label} <span class="n">${items.length}</span></div>
+        ${items.map(i => `<div class="bcard"><div class="bt">${esc(i.title)}</div><div class="tags">${tagsHtml(i.tags)}</div></div>`).join('')}
+      </div>`;
+    }
+    return `<div class="board">${cols}</div>`;
+  }
+
+  function render(opt) {
+    const view = document.getElementById('view');
+    if (opt === 'gallery') view.innerHTML = gallery();
+    else if (opt === 'split') {
+      view.innerHTML = split();
+      document.getElementById('detail').innerHTML = detail(ITEMS[0]);
+      view.querySelectorAll('.row').forEach(r => r.addEventListener('click', () => {
+        view.querySelectorAll('.row').forEach(x => x.classList.remove('sel'));
+        r.classList.add('sel');
+        document.getElementById('detail').innerHTML = detail(ITEMS[+r.dataset.i]);
+      }));
+    } else view.innerHTML = board();
+  }
+
+  renderFilters();
+  render('split');
+
+  // Subrow style switcher (the actual request)
+  const subswitch = document.getElementById('subswitch');
+  subswitch.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    subswitch.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    const sr = document.getElementById('subrow');
+    sr.classList.remove('subrow--pills', 'subrow--underline', 'subrow--segmented');
+    sr.classList.add('subrow--' + b.dataset.sub);
+  }));
+
+  // Content layout switcher
+  const contentswitch = document.getElementById('contentswitch');
+  contentswitch.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    contentswitch.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    render(b.dataset.opt);
+  }));
+</script>
+</body>
+</html>
