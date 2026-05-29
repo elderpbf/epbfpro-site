@@ -23,7 +23,7 @@ test('every t() key used by the Content modules exists in both dictionaries', ()
   const files = [
     '../content/content.js', '../content/items.js', '../content/presets.js',
     '../content/releases.js', '../content/turma-picker.js', '../content/apostila.js',
-    '../content/tarefas.js', '../content/labs.js',
+    '../content/tarefas.js', '../content/labs.js', '../content/drive.js',
   ];
   const used = new Set();
   for (const rel of files) {

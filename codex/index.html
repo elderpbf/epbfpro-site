@@ -21,6 +21,8 @@
      Prefix-scoped, so they do not collide with Codex's cdx- styles. -->
 <link rel="stylesheet" href="../backstage/css/ct-renderer.css?v=1.0">
 <link rel="stylesheet" href="../backstage/classtrail/css/classtrail.css?v=4.0">
+<!-- Drive sub-tab (deferred-global wrapper): cv- scoped styles for CVDriveSyncUI. -->
+<link rel="stylesheet" href="../backstage/css/cv-drive.css?v=1.3">
 <link rel="stylesheet" href="css/codex.css?v=1.5">
 <link rel="stylesheet" href="cohorts/cohorts.css?v=1.1">
 <link rel="stylesheet" href="content/content.css?v=2.0">
@@ -73,6 +75,15 @@
 <script src="../backstage/classvault/js/cv-labs.js?v=1.4"></script>
 <script src="../backstage/js/cv-lab-viewer.js?v=1.0"></script>
 <script src="../backstage/classtrail/js/ct-labs-panel.js?v=1.0"></script>
+<!-- Drive sub-tab: deferred-global wrapper. CVDriveSyncUI (+ its cv-drive-*
+     folder API/cache/UI/viewer helpers) loads as globals; content/drive.js mounts
+     CVDriveSyncUI behind the tab contract. Full nativization is tracked debt
+     (manifest/FUTURE.md). Auth comes from the already-loaded bs-google/auth. -->
+<script src="../backstage/js/cv-drive-folders-api.js?v=1.0"></script>
+<script src="../backstage/js/cv-drive-cache.js?v=1.0"></script>
+<script src="../backstage/js/cv-drive-folders-ui.js?v=1.1"></script>
+<script src="../backstage/js/cv-drive-viewer.js?v=1.0"></script>
+<script src="../backstage/js/cv-drive-sync-ui.js?v=2.0"></script>
 
 <!-- Codex is ES modules. One boot imports, routes by ?tab=, and mounts the
      active tab; no logic inline beyond the wiring. -->

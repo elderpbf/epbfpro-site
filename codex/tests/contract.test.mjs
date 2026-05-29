@@ -19,6 +19,7 @@ const releasesJs = read('../content/releases.js');
 const apostilaJs = read('../content/apostila.js');
 const tarefasJs = read('../content/tarefas.js');
 const labsJs = read('../content/labs.js');
+const driveJs = read('../content/drive.js');
 const turmaPickerJs = read('../content/turma-picker.js');
 const indexHtml = read('../index.html');
 const topbarJs = read('../js/codex-topbar.js');
@@ -26,7 +27,7 @@ const topbarJs = read('../js/codex-topbar.js');
 const moduleFiles = {
   'content.js': contentJs, 'items.js': itemsJs, 'presets.js': presetsJs,
   'releases.js': releasesJs, 'apostila.js': apostilaJs, 'tarefas.js': tarefasJs,
-  'labs.js': labsJs,
+  'labs.js': labsJs, 'drive.js': driveJs,
 };
 // Helper modules: same source rules, but not tabs (no mount/unmount contract).
 const helperFiles = { 'turma-picker.js': turmaPickerJs };
