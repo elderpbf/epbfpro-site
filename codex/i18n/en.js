@@ -196,9 +196,24 @@ export default {
   'content.type_name_placeholder':'e.g. Activity',
   'content.type_slug':            'Identifier (slug, optional)',
   'content.type_slug_placeholder':'auto-generated if empty',
-  'content.type_icon':            'Icon (emoji, optional)',
+  'content.type_icon':            'Icon',
   'content.type_created':         'Type created.',
   'content.name_required':        'Name required.',
+
+  // Content → Items — types manager + glyph picker
+  'content.manage_types':         'Manage types',
+  'content.types_title':          'Manage types',
+  'content.new_type_btn':         '+ New type',
+  'content.no_types':             'No types yet.',
+  'content.change_glyph':         'Change icon',
+  'content.choose_glyph':         'Choose icon',
+  'content.pick_glyph':           'Pick an icon',
+  'content.type_rename_title':    'Rename type',
+  'content.type_updated':         'Type updated.',
+  'content.delete_type_title':    'Delete type',
+  'content.confirm_delete_type':  'Delete this type? Items using it must be reassigned first.',
+  'content.type_deleted':         'Type deleted.',
+  'content.type_in_use':          'Type in use by {n} item(s). Reassign them before deleting.',
 
   // Content → Items — shared item editor (item-form.js)
   'editor.title_label':           'Title',

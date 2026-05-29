@@ -195,9 +195,24 @@ export default {
   'content.type_name_placeholder':'Ex: Atividade',
   'content.type_slug':            'Identificador (slug, opcional)',
   'content.type_slug_placeholder':'auto-gerado se vazio',
-  'content.type_icon':            'Ícone (emoji, opcional)',
+  'content.type_icon':            'Ícone',
   'content.type_created':         'Tipo criado.',
   'content.name_required':        'Nome obrigatório.',
+
+  // Content → Items — types manager + glyph picker
+  'content.manage_types':         'Gerenciar tipos',
+  'content.types_title':          'Gerenciar tipos',
+  'content.new_type_btn':         '+ Novo tipo',
+  'content.no_types':             'Nenhum tipo cadastrado.',
+  'content.change_glyph':         'Mudar ícone',
+  'content.choose_glyph':         'Escolher ícone',
+  'content.pick_glyph':           'Escolha um ícone',
+  'content.type_rename_title':    'Renomear tipo',
+  'content.type_updated':         'Tipo atualizado.',
+  'content.delete_type_title':    'Excluir tipo',
+  'content.confirm_delete_type':  'Excluir este tipo? Itens que o usam precisam ser reatribuídos antes.',
+  'content.type_deleted':         'Tipo excluído.',
+  'content.type_in_use':          'Tipo em uso por {n} item(ns). Reatribua-os antes de excluir.',
 
   // Content → Items — shared item editor (item-form.js)
   'editor.title_label':           'Título',

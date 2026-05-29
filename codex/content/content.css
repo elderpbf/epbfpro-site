@@ -433,3 +433,66 @@
   border: 1px solid var(--cdx-card-sel-border);
   border-radius: 10px;
 }
+
+/* ── Glyph picker + types manager ────────────────────────────────────────── */
+.cdx-item-type-icon svg { display: block; }
+.cdx-type-emoji { font-size: 1.1em; line-height: 1; }
+
+.cdx-glyph-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-bottom: 1.2rem;
+}
+.cdx-glyph-option {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.cdx-glyph-option:hover { border-color: var(--primary); color: var(--primary); }
+.cdx-glyph-option.is-active { border-color: var(--primary); color: var(--primary); background: var(--cdx-card-sel-bg); }
+
+.cdx-glyph-choose { display: inline-flex; align-items: center; gap: 0.45rem; }
+.cdx-glyph-choose-icon { display: inline-flex; }
+
+.cdx-type-manager-actions { margin-bottom: 0.85rem; }
+.cdx-type-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.cdx-type-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.cdx-type-glyph-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.cdx-type-glyph-btn:hover { border-color: var(--primary); color: var(--primary); }
+.cdx-type-row-label { flex: 1; color: var(--text-primary); font-size: 0.88rem; }
+.cdx-type-row-slug { font-size: 0.72rem; color: var(--text-secondary); font-family: monospace; }

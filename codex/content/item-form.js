@@ -24,12 +24,10 @@
 //   window.marked          (CDN, lazy)                       markdown preview
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { glyphSvg } from '../js/glyphs.js';
 
-// AI action glyph (inline SVG sparkle, matches the cdx topbar icon style; no emoji).
-const AI_GLYPH = '<svg class="cdx-btn-glyph" width="15" height="15" viewBox="0 0 24 24" fill="none" ' +
-  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-  '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>' +
-  '<path d="M19 15l.7 1.8L21.5 17l-1.8.7L19 19.5l-.7-1.8L16.5 17l1.8-.7z"/></svg>';
+// AI action glyph (shared sparkle from the Codex glyph library; no emoji).
+const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
 
 function _esc(s) {
   if (s == null) return '';
@@ -79,7 +77,8 @@ export function renderTypeOptions(types, selectedSlug, includeNewOption, exclude
     : types;
   let opts = visible.map((ty) => {
     const sel = ty.slug === selectedSlug ? ' selected' : '';
-    const icon = ty.icon ? ty.icon + ' ' : '';
+    // <option> can't hold an SVG, so show a legacy emoji icon but not a glyph key.
+    const icon = (ty.icon && ty.icon.indexOf('glyph:') !== 0) ? ty.icon + ' ' : '';
     return '<option value="' + _esc(ty.slug) + '"' + sel + '>' + _esc(icon + ty.label) + '</option>';
   }).join('');
   const isExcludedSlug = excluded && excluded.indexOf(selectedSlug) >= 0;
