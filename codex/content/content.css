@@ -496,3 +496,96 @@
 .cdx-type-glyph-btn:hover { border-color: var(--primary); color: var(--primary); }
 .cdx-type-row-label { flex: 1; color: var(--text-primary); font-size: 0.88rem; }
 .cdx-type-row-slug { font-size: 0.72rem; color: var(--text-secondary); font-family: monospace; }
+
+/* ── Presets sub-tab (list + editor + item picker) ───────────────────────────
+   Full-native port of the legacy CVPresetsUI + CVItemPicker. Reuses .cdx-btn,
+   .cdx-modal*, .cdx-field, .cdx-empty and existing tokens; no new color token,
+   so dark mode is inherited. */
+.cdx-presets { display: flex; flex-direction: column; gap: 1rem; }
+.cdx-presets-toolbar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.cdx-presets-title { margin: 0; font-size: 1.15rem; color: var(--text-primary); flex: 1; }
+
+.cdx-preset-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.cdx-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cdx-preset-name { flex: 1; font-weight: 600; font-size: 0.92rem; color: var(--text-primary); }
+.cdx-preset-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+}
+.cdx-preset-row-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+
+/* Wider modal for the editor (name + picker). */
+.cdx-modal--wide { max-width: 640px; width: 100%; box-sizing: border-box; }
+
+.cdx-field--picker { display: flex; flex-direction: column; }
+.cdx-field-error { font-size: 0.78rem; color: var(--danger, #d33); margin-top: 0.3rem; min-height: 1em; }
+.cdx-field input.is-invalid, input.is-invalid { border-color: var(--danger, #d33); }
+
+/* ── Item picker (grouped multi-select) ──────────────────────────────────── */
+.cdx-picker {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  max-height: 48vh;
+  overflow: hidden;
+}
+.cdx-picker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cdx-picker-search { flex: 1; min-width: 0; }
+.cdx-picker-count { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
+.cdx-picker-list { overflow-y: auto; padding: 0.4rem; flex: 1; min-height: 0; }
+.cdx-picker-empty { padding: 1.5rem; text-align: center; color: var(--text-secondary); font-size: 0.88rem; }
+
+.cdx-picker-group { margin-bottom: 0.5rem; }
+.cdx-picker-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  padding: 0.3rem 0.4rem;
+}
+.cdx-picker-group-rows { display: flex; flex-direction: column; gap: 0.15rem; }
+.cdx-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.cdx-picker-row:hover { background: var(--cdx-card-hover-bg); border-color: var(--cdx-card-hover-border); }
+.cdx-picker-row.is-selected { background: var(--cdx-card-sel-bg); border-color: var(--cdx-card-sel-border); }
+.cdx-picker-check { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--primary); }
+.cdx-picker-icon { flex-shrink: 0; display: inline-flex; color: var(--text-secondary); }
+.cdx-picker-icon svg { display: block; }
+.cdx-picker-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

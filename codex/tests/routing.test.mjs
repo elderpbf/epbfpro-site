@@ -45,11 +45,12 @@ test('Codex topbar routes migrated tabs to /codex/, un-migrated to legacy', () =
 });
 
 test('Content shell bridges un-migrated sub-tabs to legacy ClassTrail', () => {
-  // Items is native (module); the rest are legacy hrefs so they are reachable.
+  // Items + Presets are native (module); the rest are legacy hrefs so they are reachable.
   assert.match(contentJs, /key:\s*'items',\s*labelKey:\s*'content\.sub_items',\s*module:/, 'Items is native');
+  assert.match(contentJs, /key:\s*'presets',\s*labelKey:\s*'content\.sub_presets',\s*module:/, 'Presets is native');
   for (const [key, tab] of [
     ['apostila', 'apostila'], ['tarefas', 'tarefas'], ['drive', 'drive'],
-    ['labs', 'labs'], ['presets', 'presets'], ['releases', 'liberacoes'],
+    ['labs', 'labs'], ['releases', 'liberacoes'],
   ]) {
     const re = new RegExp("key:\\s*'" + key + "'[\\s\\S]*?href:\\s*'/backstage/classtrail/\\?tab=" + tab + "'");
     assert.match(contentJs, re, `${key} bridges to ClassTrail ?tab=${tab}`);

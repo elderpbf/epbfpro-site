@@ -286,5 +286,36 @@ export default {
   'creator.raw_required':         'Cole ou digite seu conteúdo primeiro.',
   'creator.ai_no_content':        'IA não retornou conteúdo. Tente continuar manualmente.',
   'creator.ai_bad_format':        'IA retornou em formato inesperado. Tente continuar manualmente.',
-  'creator.ai_truncated_confirm': 'A IA parece ter encurtado o texto significativamente. Usar mesmo assim? Cancele para tentar de novo ou continuar manualmente.'
+  'creator.ai_truncated_confirm': 'A IA parece ter encurtado o texto significativamente. Usar mesmo assim? Cancele para tentar de novo ou continuar manualmente.',
+
+  // Content → Presets — list + editor
+  'presets.title':            'Presets de aula',
+  'presets.new':              '+ Novo preset',
+  'presets.empty':            'Nenhum preset salvo. Clique em "+ Novo preset" para criar.',
+  'presets.error_loading':    'Erro ao carregar presets.',
+  'presets.item_count_suffix':'item(ns)',
+  'presets.unnamed':          '(sem nome)',
+  'presets.new_title':        'Novo preset',
+  'presets.edit_title':       'Editar preset',
+  'presets.name_label':       'Nome do preset',
+  'presets.name_placeholder': 'Ex: Aula 1 - introdução',
+  'presets.items_label':      'Itens incluídos',
+  'presets.name_required':    'Digite um nome para o preset.',
+  'presets.create_btn':       'Criar preset',
+  'presets.created':          'Preset criado.',
+  'presets.updated':          'Preset atualizado.',
+  'presets.deleted':          'Preset excluído.',
+  'presets.delete_title':     'Excluir preset',
+  'presets.confirm_delete':   'Excluir o preset "{name}"? Esta ação não pode ser desfeita.',
+
+  // Content → Presets — item picker
+  'presets.picker_search':    'Buscar itens...',
+  'presets.picker_empty':     'Nenhum item encontrado.',
+  'presets.group_apostila':   'Conteúdo do curso',
+  'presets.group_tarefa':     'Tarefas',
+  'presets.group_llm':        'LLMs',
+  'presets.group_external':   'Links externos',
+  'presets.group_lab':        'Labs',
+  'presets.group_drive':      'Drive',
+  'presets.group_outros':     'Outros itens'
 };

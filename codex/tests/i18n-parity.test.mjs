@@ -20,7 +20,7 @@ test('pt.js and en.js have identical key sets', () => {
 });
 
 test('every t() key used by the Content modules exists in both dictionaries', () => {
-  const files = ['../content/content.js', '../content/items.js'];
+  const files = ['../content/content.js', '../content/items.js', '../content/presets.js'];
   const used = new Set();
   for (const rel of files) {
     const p = here(rel);

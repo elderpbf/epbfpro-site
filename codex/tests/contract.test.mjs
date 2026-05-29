@@ -14,9 +14,10 @@ const read = (rel) => {
 
 const itemsJs = read('../content/items.js');
 const contentJs = read('../content/content.js');
+const presetsJs = read('../content/presets.js');
 const indexHtml = read('../index.html');
 const topbarJs = read('../js/codex-topbar.js');
-const moduleFiles = { 'content.js': contentJs, 'items.js': itemsJs };
+const moduleFiles = { 'content.js': contentJs, 'items.js': itemsJs, 'presets.js': presetsJs };
 
 test('backend reached ONLY through the facade (no direct callWorker)', () => {
   for (const [name, src] of Object.entries(moduleFiles)) {

@@ -287,5 +287,36 @@ export default {
   'creator.raw_required':         'Paste or type your content first.',
   'creator.ai_no_content':        'AI returned no content. Try continuing manually.',
   'creator.ai_bad_format':        'AI returned an unexpected format. Try continuing manually.',
-  'creator.ai_truncated_confirm': 'The AI seems to have shortened the text significantly. Use it anyway? Cancel to try again or continue manually.'
+  'creator.ai_truncated_confirm': 'The AI seems to have shortened the text significantly. Use it anyway? Cancel to try again or continue manually.',
+
+  // Content → Presets — list + editor
+  'presets.title':            'Lesson Presets',
+  'presets.new':              '+ New preset',
+  'presets.empty':            'No presets saved. Click "+ New preset" to create one.',
+  'presets.error_loading':    'Error loading presets.',
+  'presets.item_count_suffix':'item(s)',
+  'presets.unnamed':          '(unnamed)',
+  'presets.new_title':        'New preset',
+  'presets.edit_title':       'Edit preset',
+  'presets.name_label':       'Preset name',
+  'presets.name_placeholder': 'E.g. Lesson 1 - introduction',
+  'presets.items_label':      'Included items',
+  'presets.name_required':    'Enter a name for the preset.',
+  'presets.create_btn':       'Create preset',
+  'presets.created':          'Preset created.',
+  'presets.updated':          'Preset updated.',
+  'presets.deleted':          'Preset deleted.',
+  'presets.delete_title':     'Delete preset',
+  'presets.confirm_delete':   'Delete the preset "{name}"? This action cannot be undone.',
+
+  // Content → Presets — item picker
+  'presets.picker_search':    'Search items...',
+  'presets.picker_empty':     'No items found.',
+  'presets.group_apostila':   'Course content',
+  'presets.group_tarefa':     'Assignments',
+  'presets.group_llm':        'LLMs',
+  'presets.group_external':   'External links',
+  'presets.group_lab':        'Labs',
+  'presets.group_drive':      'Drive',
+  'presets.group_outros':     'Other items'
 };

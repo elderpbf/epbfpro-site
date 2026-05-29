@@ -111,6 +111,18 @@ export const content = {
   deleteTag:       (p) => call('ct_delete_tag', p)          // { id }
 };
 
+// Lesson presets — named bundles of library items, reused when planning a
+// lesson. A Content sub-tab (Presets) and, later, the Lessons sidebar consume
+// these. Action names read from cv-presets-api.js (cv_*_preset, frozen); the
+// list/single responses unwrap to { presets } / { preset } in the caller.
+export const presets = {
+  list:   (p) => call('cv_list_presets', p),
+  get:    (p) => call('cv_get_preset', p),     // { id }
+  create: (p) => call('cv_create_preset', p),  // { name, item_ids }
+  update: (p) => call('cv_update_preset', p),  // { id, name?, item_ids? }
+  remove: (p) => call('cv_delete_preset', p)   // { id }
+};
+
 // Releases (liberações) of items to a turma. (Lives in Content, kept here as
 // the cross-cutting turma<->item binding.)
 export const releases = {
