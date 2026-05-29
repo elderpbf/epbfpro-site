@@ -51,8 +51,9 @@ test('Content shell bridges un-migrated sub-tabs to legacy ClassTrail', () => {
   assert.match(contentJs, /key:\s*'releases',\s*labelKey:\s*'content\.sub_releases',\s*module:/, 'Releases is native');
   assert.match(contentJs, /key:\s*'apostila',\s*labelKey:\s*'content\.sub_apostila',\s*module:/, 'Apostila is native');
   assert.match(contentJs, /key:\s*'tarefas',\s*labelKey:\s*'content\.sub_tarefas',\s*module:/, 'Tarefas is native');
+  assert.match(contentJs, /key:\s*'labs',\s*labelKey:\s*'content\.sub_labs',\s*module:/, 'Labs is native (wrapper)');
   for (const [key, tab] of [
-    ['drive', 'drive'], ['labs', 'labs'],
+    ['drive', 'drive'],
   ]) {
     const re = new RegExp("key:\\s*'" + key + "'[\\s\\S]*?href:\\s*'/backstage/classtrail/\\?tab=" + tab + "'");
     assert.match(contentJs, re, `${key} bridges to ClassTrail ?tab=${tab}`);

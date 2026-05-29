@@ -427,5 +427,9 @@ export default {
   'tarefas.aula_placeholder': 'Número da aula, em branco se não aplicável',
   'tarefas.new_body_placeholder': 'O que o aluno deve fazer...',
   'tarefas.create_release':   'Criar e liberar',
-  'tarefas.created':          'Tarefa criada e liberada.'
+  'tarefas.created':          'Tarefa criada e liberada.',
+
+  // Content → Labs / Drive (deferred-global wrappers)
+  'labs.unavailable':         'Painel de Labs indisponível.',
+  'drive.unavailable':        'Painel do Drive indisponível.'
 };

@@ -428,5 +428,9 @@ export default {
   'tarefas.aula_placeholder': 'Lesson number, leave blank if not applicable',
   'tarefas.new_body_placeholder': 'What the student should do...',
   'tarefas.create_release':   'Create and release',
-  'tarefas.created':          'Assignment created and released.'
+  'tarefas.created':          'Assignment created and released.',
+
+  // Content → Labs / Drive (deferred-global wrappers)
+  'labs.unavailable':         'Labs panel unavailable.',
+  'drive.unavailable':        'Drive panel unavailable.'
 };

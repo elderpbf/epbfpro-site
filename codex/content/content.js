@@ -12,13 +12,14 @@ import * as presets from './presets.js';
 import * as releases from './releases.js';
 import * as apostila from './apostila.js';
 import * as tarefas from './tarefas.js';
+import * as labs from './labs.js';
 
 export const SUBTABS = [
   { key: 'items',    labelKey: 'content.sub_items',    module: items },
   { key: 'apostila', labelKey: 'content.sub_apostila', module: apostila },
   { key: 'tarefas',  labelKey: 'content.sub_tarefas',  module: tarefas },
   { key: 'drive',    labelKey: 'content.sub_drive',    href: '/backstage/classtrail/?tab=drive' },
-  { key: 'labs',     labelKey: 'content.sub_labs',     href: '/backstage/classtrail/?tab=labs' },
+  { key: 'labs',     labelKey: 'content.sub_labs',     module: labs },
   { key: 'presets',  labelKey: 'content.sub_presets',  module: presets },
   { key: 'releases', labelKey: 'content.sub_releases', module: releases },
 ];

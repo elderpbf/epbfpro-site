@@ -65,6 +65,14 @@
      and CSV serialization). Shared leaf helper, used as a global by the native
      Tarefas sub-tab, same pattern as ct-renderer above. -->
 <script src="../backstage/js/ct-tarefa-fields.js?v=1.0"></script>
+<!-- Labs sub-tab: deferred-global wrapper. The lab registry (CVLabs), the
+     full-screen preview (CVLabViewer), and the on/off grid (CTLabsPanel) load as
+     globals; content/labs.js mounts CTLabsPanel behind the tab contract. Full
+     nativization is tracked debt (manifest/FUTURE.md). CVLabs.getAllItems also
+     feeds the Presets picker's Labs group. -->
+<script src="../backstage/classvault/js/cv-labs.js?v=1.4"></script>
+<script src="../backstage/js/cv-lab-viewer.js?v=1.0"></script>
+<script src="../backstage/classtrail/js/ct-labs-panel.js?v=1.0"></script>
 
 <!-- Codex is ES modules. One boot imports, routes by ?tab=, and mounts the
      active tab; no logic inline beyond the wiring. -->
