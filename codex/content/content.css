@@ -40,6 +40,18 @@
   border-bottom-color: var(--codex-content);
 }
 
+/* Legacy bridge sub-tabs link out to the not-yet-migrated ClassTrail page.
+   Dimmed + ↗ marker so it reads as "leaves Codex" until that sub-tab migrates. */
+.cdx-subtab--legacy {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0.72;
+}
+.cdx-subtab--legacy:hover { opacity: 1; }
+.cdx-subtab-ext { font-size: 0.7em; }
+
 .cdx-subview {
   flex: 1;
   min-height: 0;

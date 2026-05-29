@@ -118,8 +118,15 @@ export default {
   'cohorts.date_rescheduled':'rescheduled →',
   'cohorts.date_tbd':        'to be defined',
 
-  // Content tab — sub-tab nav
+  // Content tab — sub-tab nav (Items native; the rest bridge to the legacy
+  // ClassTrail page until each is migrated)
   'content.sub_items':        'Items',
+  'content.sub_apostila':     'Workbook',
+  'content.sub_tarefas':      'Assignments',
+  'content.sub_drive':        'Drive',
+  'content.sub_labs':         'Labs',
+  'content.sub_presets':      'Presets',
+  'content.sub_releases':     'Releases',
 
   // Content → Items — toolbar
   'content.items_title':      'Item Library',

@@ -117,8 +117,15 @@ export default {
   'cohorts.date_rescheduled':'remarcada →',
   'cohorts.date_tbd':        'a definir',
 
-  // Content tab — sub-tab nav
+  // Content tab — sub-tab nav (Items native; the rest bridge to the legacy
+  // ClassTrail page until each is migrated)
   'content.sub_items':        'Itens',
+  'content.sub_apostila':     'Apostila',
+  'content.sub_tarefas':      'Tarefas',
+  'content.sub_drive':        'Drive',
+  'content.sub_labs':         'Labs',
+  'content.sub_presets':      'Presets',
+  'content.sub_releases':     'Liberações',
 
   // Content → Items — toolbar
   'content.items_title':      'Biblioteca de Itens',
