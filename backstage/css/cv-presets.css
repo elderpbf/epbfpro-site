@@ -382,6 +382,8 @@
   flex-shrink: 0;
   color: var(--text-secondary);
 }
+/* A type whose icon is a Codex glyph renders as an SVG (currentColor). */
+.cv-item-picker-icon svg { display: inline-block; vertical-align: -0.15em; width: 16px; height: 16px; }
 
 .cv-item-picker-title {
   flex: 1;

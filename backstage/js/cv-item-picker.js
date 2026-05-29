@@ -42,14 +42,18 @@
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Unified on BSTypeIcon (utils.js) so the picker, the ClassVault Aula
-  // sidebar, the ClassTrail Itens grid + Liberacoes composer, and the public
-  // trilha all paint the same glyph for the same type. Special-case 'lab'
-  // because it's a synthetic picker-only type, not a real ct_types slug.
-  function _typeIcon(item) {
+  // A type's icon comes from the type itself (item.type_icon: a "glyph:<key>"
+  // resolved to an inline SVG by the Codex glyph library, or a legacy emoji),
+  // rendered through the window.CdxGlyphs global so the picker paints the same
+  // glyph for the same type as every other surface. 'lab' is a synthetic
+  // picker-only type (no real ct_types slug), so it keeps a fixed glyph.
+  function _typeIconHtml(item) {
     var t = item && item.type;
-    if (t === 'lab') return '◈';
-    return window.BSTypeIcon ? window.BSTypeIcon(t, '•') : '•';
+    var icon = (t === 'lab') ? 'glyph:flask' : (item && item.type_icon) || '';
+    if (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && icon) {
+      return window.CdxGlyphs.iconHtml(icon, { size: 16 });
+    }
+    return _esc(icon || '•');
   }
 
   // Order matters: items are placed in the FIRST matching group. Apostila is
@@ -122,7 +126,7 @@
       return '<label class="cv-item-picker-row' + (isSel ? ' is-selected' : '') +
                '" data-id="' + _esc(idStr) + '">' +
         '<input type="checkbox" class="cv-item-picker-check"' + (isSel ? ' checked' : '') + '>' +
-        '<span class="cv-item-picker-icon">' + _esc(_typeIcon(item)) + '</span>' +
+        '<span class="cv-item-picker-icon">' + _typeIconHtml(item) + '</span>' +
         '<span class="cv-item-picker-title">' + _esc((item && item.title) || '(sem titulo)') + '</span>' +
       '</label>';
     }

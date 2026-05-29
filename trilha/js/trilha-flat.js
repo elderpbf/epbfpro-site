@@ -104,7 +104,12 @@
     card.classList.add('card');
     card.dataset.itemId = item.id;
 
-    var icon = window.BSTypeIcon ? window.BSTypeIcon(item.type, item.type_icon || '•') : (item.type_icon || '•');
+    // The icon comes from the item's type (item.type_icon: a "glyph:<key>"
+    // resolved to an SVG by the Codex glyph library, or a legacy emoji), rendered
+    // through the window.CdxGlyphs global. Falls back to escaped text.
+    var iconHtml = (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && item.type_icon)
+      ? window.CdxGlyphs.iconHtml(item.type_icon, { size: 20 })
+      : esc(item.type_icon || '•');
     var typeLabel = item.type_label || item.type || '';
     var zoneClass = 'zone' + (opts.isApostila ? ' zone--apostila' : '');
 
@@ -122,7 +127,7 @@
     card.innerHTML =
       '<div class="card-header" role="button" tabindex="0" aria-expanded="false">' +
         '<div class="' + zoneClass + '">' +
-          '<span class="zone-icon">' + esc(icon) + '</span>' +
+          '<span class="zone-icon">' + iconHtml + '</span>' +
           '<span class="zone-label">' + esc(typeLabel) + '</span>' +
         '</div>' +
         '<div class="meta">' +

@@ -690,6 +690,9 @@ body.cv-focus .cv-focus-hot {
   justify-content: center;
   font-size: 0.95rem;
 }
+/* A type whose icon is a Codex glyph renders as an SVG; it inherits the zone's
+   white text color via currentColor. */
+.cv-sm .sub-zone svg { display: block; width: 18px; height: 18px; }
 .cv-sm .sub-zone--tarefa   { background: var(--task); }
 .cv-sm .sub-zone--llm      { background: var(--llm); }
 .cv-sm .sub-zone--recurso  { background: var(--recurso); }

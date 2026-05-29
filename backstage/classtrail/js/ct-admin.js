@@ -47,26 +47,39 @@ window.CT_ADMIN = (function() {
 
   // ---- Type / tag helpers ----
 
-  // Icon source unified on BSTypeIcon (utils.js) so the same item renders the
-  // same glyph in every Backstage surface (Aula sidebar, Itens grid, Liberacoes
-  // composer, preset picker, public trilha). DB ct_types.icon stays as a second
-  // fallback so legacy types without a BSTypeIcon entry still paint.
+  // A type's icon comes from the type itself (ct_types.icon): a "glyph:<key>"
+  // resolved to an inline SVG by the Codex glyph library, or a legacy emoji.
+  // _typeMeta carries the raw stored icon; _typeIconHtml renders it through the
+  // window.CdxGlyphs global so the same type paints the same glyph in every
+  // surface (Itens grid, Liberacoes composer, public trilha).
   function _typeMeta(slug) {
     var t = _types.find(function(x) { return x.slug === slug; });
     var label = t ? t.label : (slug || 'item');
-    var dbIcon = t && t.icon;
-    var icon = window.BSTypeIcon ? BSTypeIcon(slug, dbIcon) : (dbIcon || '•');
-    return { label: label, icon: icon };
+    return { label: label, icon: (t && t.icon) || '' };
   }
 
-  // Glyph for the Liberacoes aula-card count chips. Apostila/outros are
-  // section pseudo-types (no real ct_types slug), so they get an explicit
-  // mapping; tarefa/drive_file flow through BSTypeIcon so they match the
-  // glyph used everywhere else.
-  function _countGlyph(key) {
-    if (key === 'apostila') return '¶';
-    if (key === 'outros')   return '◆';
-    return window.BSTypeIcon ? BSTypeIcon(key, '•') : '•';
+  // Resolve a stored type icon to display HTML via the Codex glyph library.
+  // Falls back to escaped text (so a legacy emoji still paints) when the global
+  // is not loaded.
+  function _typeIconHtml(icon, size) {
+    if (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && icon) {
+      return window.CdxGlyphs.iconHtml(icon, { size: size || 18 });
+    }
+    return _esc(icon || '•');
+  }
+
+  // Glyph HTML for the Liberacoes aula-card count chips. Apostila/outros are
+  // section pseudo-types (no real ct_types slug), so they map to a fixed glyph
+  // key; real slugs draw their own ct_types.icon. Rendered through CdxGlyphs.
+  function _countGlyphHtml(key) {
+    var icon;
+    if (key === 'apostila')    icon = 'glyph:book';
+    else if (key === 'outros') icon = 'glyph:layers';
+    else {
+      var t = _types.find(function(x) { return x.slug === key; });
+      icon = (t && t.icon) || '';
+    }
+    return _typeIconHtml(icon, 13);
   }
 
   function _turmaUrl(clientSlug, turmaSlug, token) {
@@ -828,7 +841,7 @@ window.CT_ADMIN = (function() {
       var rowSelectedClass = _selectedIds.has(Number(item.id)) ? ' ct-item-row-selected' : '';
       return '<div class="ct-item-row' + rowSelectedClass + '" data-item-id="' + item.id + '" onclick="' + rowOnclick + '">' +
         checkboxHtml +
-        '<span class="ct-item-type-icon">' + meta.icon + '</span>' +
+        '<span class="ct-item-type-icon">' + _typeIconHtml(meta.icon, 26) + '</span>' +
         '<div class="ct-item-info">' +
           '<div class="ct-item-title">' + _esc(item.title) + setBadge + '</div>' +
           '<div class="ct-item-sub">' + _esc(meta.label) +
@@ -1369,10 +1382,10 @@ window.CT_ADMIN = (function() {
       }).length;
 
       var counts = '';
-      if (apostilaCount) counts += '<span class="ct-rel-count">' + _esc(_countGlyph('apostila')) + ' ' + apostilaCount + '</span>';
-      if (tarefaCount)   counts += '<span class="ct-rel-count">' + _esc(_countGlyph('tarefa'))   + ' ' + tarefaCount + '</span>';
-      if (outrosCount)   counts += '<span class="ct-rel-count">' + _esc(_countGlyph('outros'))   + ' ' + outrosCount + '</span>';
-      if (driveCount)    counts += '<span class="ct-rel-count">' + _esc(_countGlyph('drive_file')) + ' ' + driveCount + '</span>';
+      if (apostilaCount) counts += '<span class="ct-rel-count">' + _countGlyphHtml('apostila') + ' ' + apostilaCount + '</span>';
+      if (tarefaCount)   counts += '<span class="ct-rel-count">' + _countGlyphHtml('tarefa')   + ' ' + tarefaCount + '</span>';
+      if (outrosCount)   counts += '<span class="ct-rel-count">' + _countGlyphHtml('outros')   + ' ' + outrosCount + '</span>';
+      if (driveCount)    counts += '<span class="ct-rel-count">' + _countGlyphHtml('drive_file') + ' ' + driveCount + '</span>';
       if (!counts)       counts  = '<span class="ct-rel-count ct-rel-count-empty">vazio</span>';
 
       html +=
@@ -1405,8 +1418,8 @@ window.CT_ADMIN = (function() {
     }).length;
 
     var outrosSoloCounts = '';
-    if (outrosSolo) outrosSoloCounts += '<span class="ct-rel-count">' + _esc(_countGlyph('outros'))     + ' ' + outrosSolo + '</span>';
-    if (driveSolo)  outrosSoloCounts += '<span class="ct-rel-count">' + _esc(_countGlyph('drive_file')) + ' ' + driveSolo  + '</span>';
+    if (outrosSolo) outrosSoloCounts += '<span class="ct-rel-count">' + _countGlyphHtml('outros')     + ' ' + outrosSolo + '</span>';
+    if (driveSolo)  outrosSoloCounts += '<span class="ct-rel-count">' + _countGlyphHtml('drive_file') + ' ' + driveSolo  + '</span>';
     if (!outrosSoloCounts) outrosSoloCounts = '<span class="ct-rel-count ct-rel-count-empty">vazio</span>';
 
     html +=
@@ -1469,8 +1482,8 @@ window.CT_ADMIN = (function() {
              String((_relReleasedMeta[id] || {}).aula_number) === String(aulaNum);
     }
 
-    var tarefaGlyph = _countGlyph('tarefa');
-    var driveGlyph  = _countGlyph('drive_file');
+    var tarefaGlyph = _countGlyphHtml('tarefa');
+    var driveGlyph  = _countGlyphHtml('drive_file');
 
     var apostilaHtml = _apostilaItems.length
       ? _apostilaItems.map(function(i) {
@@ -1485,7 +1498,7 @@ window.CT_ADMIN = (function() {
       ? tarefaItems.map(function(i) {
           return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
             '<input type="checkbox" class="ct-comp-tarefa-cb" value="' + i.id + '"' + (isBound(i.id) ? ' checked' : '') + '>' +
-            '<span>' + _esc(tarefaGlyph) + ' ' + _esc(i.title) + '</span>' +
+            '<span>' + tarefaGlyph + ' ' + _esc(i.title) + '</span>' +
           '</label>';
         }).join('')
       : '<div class="ct-comp-empty">Nenhuma tarefa cadastrada na biblioteca. Crie um item de tipo \'tarefa\' na aba Itens.</div>';
@@ -1495,7 +1508,7 @@ window.CT_ADMIN = (function() {
           var m = _typeMeta(i.type);
           return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
             '<input type="checkbox" class="ct-comp-outros-cb" value="' + i.id + '"' + (isBound(i.id) ? ' checked' : '') + '>' +
-            '<span>' + _esc(m.icon) + ' ' + _esc(i.title) + '</span>' +
+            '<span>' + _typeIconHtml(m.icon, 15) + ' ' + _esc(i.title) + '</span>' +
           '</label>';
         }).join('')
       : '<div class="ct-comp-empty">Nenhum item na biblioteca.</div>';
@@ -1505,7 +1518,7 @@ window.CT_ADMIN = (function() {
       var driveHtml = driveItems.map(function(i) {
         return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
           '<input type="checkbox" class="ct-comp-drive-cb" value="' + i.id + '"' + (isBound(i.id) ? ' checked' : '') + '>' +
-          '<span>' + _esc(driveGlyph) + ' ' + _esc(i.title) + '</span>' +
+          '<span>' + driveGlyph + ' ' + _esc(i.title) + '</span>' +
         '</label>';
       }).join('');
       driveSectionHtml =
@@ -1583,7 +1596,7 @@ window.CT_ADMIN = (function() {
       var inOtros = _relReleased.indexOf(i.id) !== -1 && !(_relReleasedMeta[i.id] || {}).aula_number;
       return '<label class="ct-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
         '<input type="checkbox" class="' + cls + '" value="' + i.id + '"' + (inOtros ? ' checked' : '') + '>' +
-        '<span>' + _esc(m.icon) + ' ' + _esc(i.title) + '</span>' +
+        '<span>' + _typeIconHtml(m.icon, 15) + ' ' + _esc(i.title) + '</span>' +
       '</label>';
     }
 

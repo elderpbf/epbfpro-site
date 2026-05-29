@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="/trilha/css/trilha-base.css?v=4.2">
 <link rel="stylesheet" href="/trilha/css/trilha-hero-tabs.css?v=4.1">
 <link rel="stylesheet" href="/trilha/css/trilha-timeline.css?v=4.1">
-<link rel="stylesheet" href="/trilha/css/trilha-cards.css?v=4.3">
+<link rel="stylesheet" href="/trilha/css/trilha-cards.css?v=4.4">
 <link rel="stylesheet" href="/trilha/css/trilha-tarefa-modal.css?v=4.2">
 <link rel="stylesheet" href="/trilha/css/trilha-nexo.css?v=4.1">
 <link rel="stylesheet" href="/trilha/css/trilha-mobile.css?v=4.1">
@@ -105,10 +105,16 @@
 <script src="/backstage/js/api-client.js?v=1.2"></script>
 <script src="/backstage/js/pensoia-header.js?v=1.4"></script>
 <script src="/backstage/js/ct-renderer.js?v=1.2"></script>
-<script src="/backstage/js/ct-type-filter.js?v=1.0"></script>
+<script src="/backstage/js/ct-type-filter.js?v=1.1"></script>
+<!-- Codex owns the glyph library; expose it as a global so the shared type-icon
+     renderers (ct-type-filter, trilha-sub) draw a type's icon from the type. -->
+<script type="module">
+  import * as glyphs from '/codex/js/glyphs.js';
+  window.CdxGlyphs = glyphs;
+</script>
 <script src="/backstage/js/ct-tarefa-fields.js?v=1.0"></script>
 <script src="/backstage/js/ct-tarefa-submit-modal.js?v=1.0"></script>
-<script src="/backstage/js/utils.js?v=1.4"></script>
+<script src="/backstage/js/utils.js?v=1.5"></script>
 <script src="/backstage/js/question-renderer.js?v=2.6"></script>
 <script src="/backstage/js/classpulse-question.min.js?v=1.8"></script>
 <script src="/backstage/js/nexo-answer.js?v=1.2"></script>
@@ -116,9 +122,9 @@
 <script src="/trilha/js/trilha-utils.js?v=1.0"></script>
 <script src="/trilha/js/trilha-freshness.js?v=1.0"></script>
 <script src="/trilha/js/trilha-actions.js?v=1.0"></script>
-<script src="/trilha/js/trilha-sub.js?v=1.1"></script>
+<script src="/trilha/js/trilha-sub.js?v=1.2"></script>
 <script src="/trilha/js/trilha-aulas.js?v=1.1"></script>
-<script src="/trilha/js/trilha-flat.js?v=1.1"></script>
+<script src="/trilha/js/trilha-flat.js?v=1.2"></script>
 <script src="/trilha/js/trilha-page.js?v=1.0"></script>
 <script src="/trilha/js/trilha-nexo.js?v=2.0"></script>
 

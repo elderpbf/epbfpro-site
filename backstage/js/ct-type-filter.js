@@ -48,10 +48,23 @@ window.CT_TYPE_FILTER = (function() {
     });
   }
 
+  // A type's icon is owned by the type itself, stored as "glyph:<key>" (resolved
+  // to an inline SVG by the Codex glyph library) or a legacy emoji. We reach that
+  // library through the window.CdxGlyphs global so this shared chip strip renders
+  // identically wherever it is mounted (Codex, Trilha, ClassVault). When the global
+  // is absent we fall back to escaped text, so an emoji still renders.
+  function _iconHtml(icon) {
+    if (!icon) return '';
+    var inner = (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function')
+      ? window.CdxGlyphs.iconHtml(icon, { size: 15 })
+      : _esc(icon);
+    return '<span class="ct-tf-icon">' + inner + '</span>';
+  }
+
   function _chip(slug, label, icon, count, active) {
     return '<button type="button" class="ct-tf-chip' + (active ? ' active' : '') +
       '" data-slug="' + (slug == null ? '' : _esc(slug)) + '">' +
-        (icon ? '<span class="ct-tf-icon">' + _esc(icon) + '</span>' : '') +
+        _iconHtml(icon) +
         '<span class="ct-tf-label">' + _esc(label) + '</span>' +
         '<span class="ct-tf-count">' + count + '</span>' +
       '</button>';

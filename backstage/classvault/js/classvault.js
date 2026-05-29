@@ -938,14 +938,18 @@ function _detectNexoCramp() {
 
 function _renderSubCard(item) {
   const zoneClass = _zoneClassFor(item.type);
-  // BSTypeIcon (utils.js) returns a text-presentation Unicode glyph for known
-  // types so the icon inherits the zone color via CSS, instead of clashing as
-  // a multi-color emoji from the legacy ct_types.icon DB values. Falls back to
-  // the DB icon (or _zoneIconFor) for any type without an override.
-  const icon = (window.BSTypeIcon ? BSTypeIcon(item.type, item.type_icon || _zoneIconFor(item.type)) : (item.type_icon || _zoneIconFor(item.type)));
+  // A type's icon comes from the type itself (item.type_icon: a "glyph:<key>"
+  // resolved to an inline SVG by the Codex glyph library, or a legacy emoji),
+  // rendered through the window.CdxGlyphs global. The SVG inherits the zone color
+  // via currentColor. Falls back to the escaped DB icon (or _zoneIconFor) when the
+  // glyph library is not loaded.
+  const fallbackIcon = item.type_icon || _zoneIconFor(item.type) || '•';
+  const iconHtml = (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && item.type_icon)
+    ? window.CdxGlyphs.iconHtml(item.type_icon, { size: 18 })
+    : _esc(fallbackIcon);
   return (
     '<div class="sub" data-item-id="' + _esc(String(item.id)) + '">' +
-      '<div class="sub-zone' + (zoneClass ? ' ' + zoneClass : '') + '">' + _esc(icon || '•') + '</div>' +
+      '<div class="sub-zone' + (zoneClass ? ' ' + zoneClass : '') + '">' + iconHtml + '</div>' +
       '<div class="sub-meta">' +
         '<span class="sub-type">' + _esc(item.type_label || item.type) + '</span>' +
         '<span class="sub-title">' + _esc(item.title) + '</span>' +
