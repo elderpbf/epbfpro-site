@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="css/codex.css?v=1.5">
 <link rel="stylesheet" href="cohorts/cohorts.css?v=1.1">
 <link rel="stylesheet" href="content/content.css?v=2.0">
+<link rel="stylesheet" href="lessons/lessons.css?v=1.0">
 <script src="../backstage/js/debug.js?v=2.5"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -93,12 +94,13 @@
   import * as glyphs from './js/glyphs.js';
   import * as cohorts from './cohorts/cohorts.js';
   import * as content from './content/content.js';
+  import * as lessons from './lessons/lessons.js';
 
   // The Codex glyph library is owned here. Shared window-global consumers
   // (the ct-type-filter chip strip) reach it through this global.
   window.CdxGlyphs = glyphs;
 
-  const TABS = { cohorts, content };
+  const TABS = { cohorts, content, lessons };
   const params = new URLSearchParams(location.search);
   const tab = TABS[params.get('tab')] ? params.get('tab') : 'cohorts';
   const sub = params.get('sub') || undefined;

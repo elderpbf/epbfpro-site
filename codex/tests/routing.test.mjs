@@ -74,6 +74,12 @@ test('content exposes subtabs() with native /codex routes + legacy bridges', () 
   assert.match(contentJs, /\/codex\/\?tab=content&sub=/, 'native sub-tabs route to /codex/?tab=content&sub=');
 });
 
+test('boot imports + routes the native Lessons tab (?tab=lessons)', () => {
+  assert.match(indexHtml, /import \* as lessons from '\.\/lessons\/lessons\.js'/, 'boot imports the lessons module');
+  assert.match(indexHtml, /const TABS = \{[^}]*lessons[^}]*\}/, 'lessons is in the TABS routing map');
+  assert.match(indexHtml, /lessons\/lessons\.css/, 'lessons CSS linked');
+});
+
 test('boot hands the Content sub-tabs to the topbar and the sub to mount', () => {
   assert.match(indexHtml, /content\.subtabs\(/, 'boot builds sub-tabs from content.subtabs()');
   assert.match(indexHtml, /topbar\(\s*\{\s*active:\s*tab,\s*subTabs\s*\}\s*\)/, 'boot passes subTabs to the topbar');

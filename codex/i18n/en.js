@@ -432,5 +432,23 @@ export default {
 
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Labs panel unavailable.',
-  'drive.unavailable':        'Drive panel unavailable.'
+  'drive.unavailable':        'Drive panel unavailable.',
+
+  // Lessons (Aula) tab
+  'lessons.turma_label':       'Cohort',
+  'lessons.search_placeholder':'Search...',
+  'lessons.loading_turmas':    'Loading cohorts...',
+  'lessons.no_turmas':         'No cohorts registered.',
+  'lessons.error_turmas':      'Error loading cohorts.',
+  'lessons.loading_items':     'Loading items...',
+  'lessons.error_items':       'Error loading items.',
+  'lessons.empty_section':     'No items here.',
+  'lessons.welcome':           'Select an item in the sidebar to start the lesson.',
+  'lessons.open_external':     'Open',
+  'lessons.section_llm':       'LLMs',
+  'lessons.section_external':  'External links',
+  'lessons.section_drive':     'Drive',
+  'lessons.section_items':     'Items',
+  'lessons.section_apostila':  'Course content',
+  'lessons.section_tarefas':   'Assignments'
 };

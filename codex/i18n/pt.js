@@ -431,5 +431,23 @@ export default {
 
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Painel de Labs indisponível.',
-  'drive.unavailable':        'Painel do Drive indisponível.'
+  'drive.unavailable':        'Painel do Drive indisponível.',
+
+  // Lessons (Aula) tab
+  'lessons.turma_label':       'Turma',
+  'lessons.search_placeholder':'Buscar...',
+  'lessons.loading_turmas':    'Carregando turmas...',
+  'lessons.no_turmas':         'Nenhuma turma cadastrada.',
+  'lessons.error_turmas':      'Erro ao carregar turmas.',
+  'lessons.loading_items':     'Carregando itens...',
+  'lessons.error_items':       'Erro ao carregar itens.',
+  'lessons.empty_section':     'Nenhum item aqui.',
+  'lessons.welcome':           'Selecione um item na barra lateral para começar a aula.',
+  'lessons.open_external':     'Abrir',
+  'lessons.section_llm':       'LLMs',
+  'lessons.section_external':  'Links externos',
+  'lessons.section_drive':     'Drive',
+  'lessons.section_items':     'Itens',
+  'lessons.section_apostila':  'Conteúdo do curso',
+  'lessons.section_tarefas':   'Tarefas'
 };
