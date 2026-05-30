@@ -20,7 +20,7 @@ const GEAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" st
 // are CSS tokens in codex.css. href points to the old page until the tab is
 // migrated to /codex/.
 export const TABS = [
-  { key: 'lessons',   labelKey: 'nav.lessons',   href: '/backstage/classvault/',
+  { key: 'lessons',   labelKey: 'nav.lessons',   href: '/codex/?tab=lessons',
     glyph: '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line>' },
   { key: 'content',   labelKey: 'nav.content',   href: '/codex/?tab=content',
     glyph: '<polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline>' },
