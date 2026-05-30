@@ -40,7 +40,7 @@ test('Codex topbar routes migrated tabs to /codex/, un-migrated to legacy', () =
   const questions = codexTopbar.match(/key:\s*'questions'[\s\S]*?\}/);
   assert.match(cohorts[0], /href:\s*'\/codex\/'/, 'cohorts -> /codex/');
   assert.match(content[0], /href:\s*'\/codex\/\?tab=content'/, 'content -> /codex/?tab=content');
-  assert.match(lessons[0], /href:\s*'\/backstage\/classvault\//, 'lessons still legacy');
+  assert.match(lessons[0], /href:\s*'\/codex\/\?tab=lessons'/, 'lessons -> /codex/?tab=lessons');
   assert.match(questions[0], /href:\s*'\/backstage\/classpulse\//, 'questions still legacy');
 });
 
