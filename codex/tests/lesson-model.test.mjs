@@ -81,6 +81,43 @@ test('driveItemCanCopyText: Google Docs / text only', () => {
   assert.equal(m.driveItemCanCopyText('application/octet-stream', 'notes.md'), true, 'by extension');
 });
 
+test('popupUrlFor: slide/popup_url use meta.url, drive_file falls back to file_id', () => {
+  assert.equal(m.popupUrlFor({ type: 'slide', meta_json: { url: 'https://x/s' } }), 'https://x/s');
+  assert.equal(m.popupUrlFor({ type: 'popup_url', meta_json: { url: 'https://x/p' } }), 'https://x/p');
+  assert.equal(m.popupUrlFor({ type: 'drive_file', meta_json: { url: 'https://x/d' } }), 'https://x/d');
+  assert.equal(m.popupUrlFor({ type: 'drive_file', meta_json: { file_id: 'FID' } }),
+    'https://drive.google.com/file/d/FID/view', 'drive_file builds /view from file_id');
+  assert.equal(m.popupUrlFor({ type: 'slide', meta_json: {} }), '', 'no url -> empty');
+  assert.equal(m.popupUrlFor({ type: 'prompt', meta_json: { url: 'x' } }), '', 'non-popup type -> empty');
+  assert.equal(m.popupUrlFor(null), '');
+});
+
+test('crumbActions: popup for slide/drive_file/popup_url, copy for body_md, none for inert types', () => {
+  assert.deepEqual(m.crumbActions({ type: 'slide', meta_json: { url: 'u' } }), [{ id: 'popup', url: 'u' }]);
+  assert.deepEqual(m.crumbActions({ type: 'popup_url', meta_json: { url: 'u' } }), [{ id: 'popup', url: 'u' }]);
+  assert.deepEqual(m.crumbActions({ type: 'slide', meta_json: {} }), [], 'popup type without url -> none');
+  assert.deepEqual(m.crumbActions({ type: 'llm', body_md: 'x' }), [], 'llm registered with no actions');
+  assert.deepEqual(m.crumbActions({ type: 'embed' }), []);
+  assert.deepEqual(m.crumbActions({ type: 'video' }), []);
+  assert.deepEqual(m.crumbActions({ type: 'drive_folder' }), []);
+  assert.deepEqual(m.crumbActions({ type: 'prompt', body_md: 'hello' }), [{ id: 'copy' }], 'body_md -> copy');
+  assert.deepEqual(m.crumbActions({ type: 'prompt', body_md: '   ' }), [], 'blank body -> none');
+  assert.deepEqual(m.crumbActions(null), []);
+});
+
+test('makeTextScale clamps, defaults to 1, and persists via injected storage', () => {
+  const store = new Map();
+  const storage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, v) };
+  const ts = m.makeTextScale(storage);
+  assert.equal(ts.get(), 1, 'default 1 when unset');
+  assert.equal(ts.set(1.2), 1.2, 'set returns clamped value');
+  assert.equal(ts.get(), 1.2, 'persisted');
+  assert.equal(ts.set(9), ts.MAX, 'clamps above max');
+  assert.equal(ts.set(0.1), ts.MIN, 'clamps below min');
+  assert.equal(ts.bump(1, ts.STEP), 1.1, 'bump up by step');
+  assert.equal(ts.bump(ts.MIN, -ts.STEP), ts.MIN, 'bump cannot go below min');
+});
+
 test('makeFavorites toggles + persists via injected storage', () => {
   const store = new Map();
   const storage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, v) };

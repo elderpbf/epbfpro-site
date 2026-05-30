@@ -449,5 +449,22 @@ export default {
   'lessons.section_drive':     'Drive',
   'lessons.section_items':     'Itens',
   'lessons.section_apostila':  'Conteúdo do curso',
-  'lessons.section_tarefas':   'Tarefas'
+  'lessons.section_tarefas':   'Tarefas',
+  // Renderers + bottom action bar (Phase 3A-ii)
+  'lessons.embed_no_url':         'URL não definida para este item.',
+  'lessons.drive_no_folder':      'Pasta do Drive sem ID (ou URL inválida).',
+  'lessons.drive_no_file':        'Arquivo do Drive sem ID (ou URL inválida).',
+  'lessons.video_unrecognized':   'URL de vídeo não reconhecida (esperado YouTube ou TikTok).',
+  'lessons.popup_hint':           'Use Abrir em janela na barra inferior para abrir.',
+  'lessons.open_window':          'Abrir em janela',
+  'lessons.copy':                 'Copiar',
+  'lessons.copied':               'Copiado.',
+  'lessons.copy_drive_text':      'Copiar texto',
+  'lessons.copy_drive_done':      'Texto copiado.',
+  'lessons.copy_drive_need_google':'Conexão Google necessária para copiar texto.',
+  'lessons.copy_drive_error':     'Erro ao copiar texto',
+  'lessons.drive_unavailable':    'Drive indisponível: conexão Google não carregada.',
+  'lessons.popup_blocked':        'O navegador bloqueou o popup. Permita popups para este site e tente novamente.',
+  'lessons.text_bigger':          'Aumentar texto',
+  'lessons.text_smaller':         'Diminuir texto'
 };

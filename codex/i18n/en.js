@@ -450,5 +450,22 @@ export default {
   'lessons.section_drive':     'Drive',
   'lessons.section_items':     'Items',
   'lessons.section_apostila':  'Course content',
-  'lessons.section_tarefas':   'Assignments'
+  'lessons.section_tarefas':   'Assignments',
+  // Renderers + bottom action bar (Phase 3A-ii)
+  'lessons.embed_no_url':         'No URL set for this item.',
+  'lessons.drive_no_folder':      'Drive folder without an ID (or invalid URL).',
+  'lessons.drive_no_file':        'Drive file without an ID (or invalid URL).',
+  'lessons.video_unrecognized':   'Unrecognized video URL (expected YouTube or TikTok).',
+  'lessons.popup_hint':           'Use Open in window in the bottom bar to launch it.',
+  'lessons.open_window':          'Open in window',
+  'lessons.copy':                 'Copy',
+  'lessons.copied':               'Copied.',
+  'lessons.copy_drive_text':      'Copy text',
+  'lessons.copy_drive_done':      'Text copied.',
+  'lessons.copy_drive_need_google':'Google connection required to copy text.',
+  'lessons.copy_drive_error':     'Error copying text',
+  'lessons.drive_unavailable':    'Drive unavailable: Google connection not loaded.',
+  'lessons.popup_blocked':        'The browser blocked the popup. Allow popups for this site and try again.',
+  'lessons.text_bigger':          'Increase text size',
+  'lessons.text_smaller':         'Decrease text size'
 };

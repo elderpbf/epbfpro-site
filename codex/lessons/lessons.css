@@ -131,9 +131,37 @@
 }
 .cdx-lessons-crumb-sep { opacity: 0.5; }
 .cdx-lessons-crumb-current { color: var(--text-primary); font-weight: 600; }
-.cdx-lessons-content { flex: 1; min-height: 0; overflow-y: auto; padding: 1.2rem; color: var(--text-primary); }
+.cdx-lessons-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.2rem;
+  color: var(--text-primary);
+  /* +A/-A text-resize: the bar sets --cdx-content-scale on this host (resizable
+   * items only); em-based renderer text scales with it. */
+  font-size: calc(1rem * var(--cdx-content-scale, 1));
+}
+/* Embed types (iframe / Drive / video) fill the host edge-to-edge, no scroll. */
+.cdx-lessons-content--embed { padding: 0; overflow: hidden; display: flex; }
+.cdx-lessons-iframe-wrap { flex: 1; min-height: 0; display: flex; }
+.cdx-lessons-iframe { flex: 1; width: 100%; min-height: 0; border: 0; }
 
-.cdx-lessons-fallback { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; max-width: 560px; }
-.cdx-lessons-fallback-icon { display: inline-flex; color: var(--text-secondary); }
-.cdx-lessons-fallback-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
-.cdx-lessons-fallback-sum { margin: 0; font-size: 0.9rem; color: var(--text-secondary); }
+/* popup_url launcher card (describe-only; launch lives in the bottom bar) */
+.cdx-lessons-launcher { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; max-width: 560px; }
+.cdx-lessons-launcher-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+.cdx-lessons-launcher-sum { margin: 0; font-size: 0.9rem; color: var(--text-secondary); }
+.cdx-lessons-launcher-hint { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+.cdx-lessons-launcher-url { margin: 0; font-size: 0.78rem; color: var(--text-secondary); word-break: break-all; }
+
+/* Bottom action bar: fixed footer sibling of the scrolling content. */
+.cdx-lessons-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-top: 1px solid var(--border);
+}
+.cdx-lessons-bar-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.cdx-lessons-bar-resize { display: flex; gap: 0.35rem; }

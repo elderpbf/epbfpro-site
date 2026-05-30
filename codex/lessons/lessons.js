@@ -5,20 +5,26 @@
 // selector + search + the turma's released items grouped into collapsible
 // sections) and a main view that renders the selected item.
 //
-// 3A scope: navigator + content-type render (Markdown via the shared renderer)
-// + a graceful fallback card for link/embed/drive/video types. The full per-type
-// renderers, focus mode, presets, favorites, and editing land in 3A-ii / 3B
-// (see manifest/FUTURE.md). The sidebar shell is kept structurally thin until the
-// layout-contract session formalizes it.
+// 3A-i scope: navigator + content-type render (Markdown via the shared renderer).
+// 3A-ii (this layer): the real per-type renderers (iframe slide/embed/lab, Drive
+// folder/file, video, popup launcher), the bottom action bar (Abrir em janela /
+// Copiar / Copiar texto), and the +A/-A text-resize. Focus mode, presets,
+// favorites, and editing land in 3B (see manifest/FUTURE.md). The sidebar shell
+// is kept structurally thin until the layout-contract session formalizes it.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CTRenderer  (../backstage/js/ct-renderer.js)  Markdown/content render
-//   window.BSToast     (../backstage/js/bs-toast.js)      optional transient toast
+//   window.CTRenderer    (../backstage/js/ct-renderer.js)     Markdown/content render
+//   window.CVDriveViewer (../backstage/js/cv-drive-viewer.js) Drive file embed (preferred)
+//   window.BS_GOOGLE     (../backstage/js/bs-google.js)       Drive text extraction
 import { lessons as api, content as contentApi, cohorts as cohortsApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
-import { classifyVault, sidebarSections, SECTION_ORDER, rendererStrategy } from './lesson-model.js';
+import {
+  classifyVault, sidebarSections, SECTION_ORDER, rendererStrategy,
+  crumbActions, supportsTextResize, makeTextScale,
+  driveFolderEmbedUrl, driveFileEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
+} from './lesson-model.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -30,6 +36,8 @@ let _collapsed = new Set();      // section keys currently collapsed
 let _detailCache = new Map();    // id -> full item (with body_md)
 let _previewReq = 0;
 let _cleanup = [];
+// Text-resize store: localStorage-backed, clamp/default in the pure model.
+const _scale = makeTextScale(typeof localStorage !== 'undefined' ? localStorage : null);
 
 // Vault classification, section order, and renderer dispatch are pure logic in
 // ./lesson-model.js (imported above) so they can be unit-tested without the DOM.
@@ -142,13 +150,12 @@ function _renderBreadcrumb(item) {
   '</div>';
 }
 
-// 3A renders Markdown-card types (rendererStrategy 'fallback') through the shared
-// renderer; iframe/drive/video/popup types get a simple open-card placeholder
-// until 3A-ii ports their full renderers (built on lesson-model's embed helpers).
+// rendererStrategy 'fallback' (content/body_md) renders through the shared
+// Markdown renderer; iframe/drive/video/popup types render via the helpers
+// below, built on lesson-model's embed helpers (ported from classvault.js).
 function _isContentType(type) { return rendererStrategy(type) === 'fallback'; }
-function _externalUrl(item) {
-  return item && (item.url || item.popup_url || item.embed_url || item.external_url || item.href) || '';
-}
+// Strategies that fill the content host with an embed (no padding, no scroll).
+const _EMBED_STRATEGIES = new Set(['iframe', 'drive_folder', 'drive_file', 'video']);
 
 function _renderItem(id) {
   _activeItemId = id;
@@ -184,22 +191,166 @@ function _paintItem(main, item, opts) {
   const host = main.querySelector('#cdx-lessons-content');
   if (opts.loading) { host.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>'; return; }
 
-  if (_isContentType(item.type) && window.CTRenderer && window.CTRenderer.render) {
+  const strategy = rendererStrategy(item.type);
+  if (_EMBED_STRATEGIES.has(strategy)) host.classList.add('cdx-lessons-content--embed');
+
+  const meta = item.meta_json || {};
+  if (strategy === 'iframe') _renderIframe(host, meta.url || '', t('lessons.embed_no_url'));
+  else if (strategy === 'drive_folder') _renderIframe(host, driveFolderEmbedUrl(meta), t('lessons.drive_no_folder'));
+  else if (strategy === 'drive_file') _renderDriveFile(host, item, meta);
+  else if (strategy === 'video') _renderIframe(host, toVideoEmbedUrl(meta.url || ''), t('lessons.video_unrecognized'));
+  else if (strategy === 'popup') _renderPopupCard(host, item, meta);
+  else _renderContent(host, item);
+
+  _renderBar(main, item);
+  if (supportsTextResize(item)) host.style.setProperty('--cdx-content-scale', String(_scale.get()));
+}
+
+// ── Per-type renderers (ported from classvault.js ClassVault.renderers) ──────
+function _renderIframe(host, url, emptyMsg) {
+  if (!url) { host.innerHTML = '<div class="cdx-empty">' + emptyMsg + '</div>'; return; }
+  host.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'cdx-lessons-iframe-wrap';
+  const iframe = document.createElement('iframe');
+  iframe.className = 'cdx-lessons-iframe';
+  iframe.src = url;
+  iframe.setAttribute('allow', 'autoplay; encrypted-media; clipboard-write; fullscreen');
+  iframe.setAttribute('referrerpolicy', 'no-referrer');
+  wrap.appendChild(iframe);
+  host.appendChild(wrap);
+}
+
+// Prefer the shared Drive viewer (same embed contract as the Drive sub-tab);
+// fall back to the plain /preview iframe when it is not loaded.
+function _renderDriveFile(host, item, meta) {
+  if (window.CVDriveViewer && typeof window.CVDriveViewer.mountInContainer === 'function') {
+    host.innerHTML = '';
+    window.CVDriveViewer.mountInContainer(item, host);
+    return;
+  }
+  _renderIframe(host, driveFileEmbedUrl(meta), t('lessons.drive_no_file'));
+}
+
+// popup_url items: a describe-only launcher card. The launch lives in the bottom
+// bar (Abrir em janela), not as a button floating over the viewport.
+function _renderPopupCard(host, item, meta) {
+  const url = meta.url || '';
+  host.innerHTML =
+    '<div class="cdx-lessons-launcher">' +
+      '<div class="cdx-lessons-launcher-title">' + _esc(item.title) + '</div>' +
+      (item.summary ? '<p class="cdx-lessons-launcher-sum">' + _esc(item.summary) + '</p>' : '') +
+      '<p class="cdx-lessons-launcher-hint">' + t('lessons.popup_hint') + '</p>' +
+      (url ? '<p class="cdx-lessons-launcher-url">' + _esc(url) + '</p>' : '') +
+    '</div>';
+}
+
+function _renderContent(host, item) {
+  if (window.CTRenderer && window.CTRenderer.render) {
     try { window.CTRenderer.render(item, host, {}); return; }
     catch (_) { host.textContent = item.body_md || ''; return; }
   }
-  // Fallback card for link/embed/drive/video (full renderers arrive in 3A-ii).
-  const url = _externalUrl(item);
-  const openBtn = url
-    ? '<a class="cdx-btn cdx-btn-primary" href="' + _esc(url) + '" target="_blank" rel="noopener">' + t('lessons.open_external') + '</a>'
+  host.textContent = item.body_md || '';
+}
+
+// ── Bottom action bar (Abrir em janela / Copiar / Copiar texto + A-/A+) ──────
+// Structural footer sibling of the scrolling content (no sticky-over-content).
+// Editing (Editar) is wired in Phase 3B alongside the native editor.
+function _renderBar(main, item) {
+  const actions = crumbActions(item);
+  const meta = item.meta_json || {};
+  const canCopyDrive = item.type === 'drive_file' && driveItemCanCopyText(meta.mimeType, item.title);
+  const resizable = supportsTextResize(item);
+  if (!actions.length && !canCopyDrive && !resizable) return;
+
+  let left = '';
+  for (const a of actions) {
+    if (a.id === 'popup') left += '<button type="button" class="cdx-btn cdx-btn-sm" data-act="popup">' + t('lessons.open_window') + '</button>';
+    else if (a.id === 'copy') left += '<button type="button" class="cdx-btn cdx-btn-sm" data-act="copy">' + t('lessons.copy') + '</button>';
+  }
+  if (canCopyDrive) left += '<button type="button" class="cdx-btn cdx-btn-sm" data-act="copy-drive">' + t('lessons.copy_drive_text') + '</button>';
+
+  const right = resizable
+    ? '<button type="button" class="cdx-btn cdx-btn-sm" data-resize="-1" aria-label="' + _esc(t('lessons.text_smaller')) + '">A−</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-sm" data-resize="1" aria-label="' + _esc(t('lessons.text_bigger')) + '">A+</button>'
     : '';
-  host.innerHTML =
-    '<div class="cdx-lessons-fallback">' +
-      '<span class="cdx-lessons-fallback-icon">' + _itemIcon(item) + '</span>' +
-      '<div class="cdx-lessons-fallback-title">' + _esc(item.title) + '</div>' +
-      (item.summary ? '<p class="cdx-lessons-fallback-sum">' + _esc(item.summary) + '</p>' : '') +
-      openBtn +
-    '</div>';
+
+  const bar = document.createElement('div');
+  bar.className = 'cdx-lessons-bar';
+  bar.innerHTML = '<div class="cdx-lessons-bar-actions">' + left + '</div>' +
+    '<div class="cdx-lessons-bar-resize">' + right + '</div>';
+  main.appendChild(bar);
+
+  bar.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const act = btn.dataset.act;
+    if (act === 'popup') _openPopup(crumbActions(item).find((a) => a.id === 'popup').url);
+    else if (act === 'copy') _copyText(item.body_md || '');
+    else if (act === 'copy-drive') _copyDriveText(item);
+    else if (btn.dataset.resize) _bumpScale(Number(btn.dataset.resize) * _scale.STEP);
+  });
+}
+
+function _bumpScale(delta) {
+  const next = _scale.set(_scale.bump(_scale.get(), delta));
+  const host = _q('#cdx-lessons-content');
+  if (host) host.style.setProperty('--cdx-content-scale', String(next));
+}
+
+// Open a chrome-light popup window (ported from cv-type-registry _cvtOpenPopup).
+function _openPopup(url) {
+  if (!url) return null;
+  const w = Math.max(800, Math.floor((window.outerWidth || window.innerWidth) - 80));
+  const h = Math.max(600, Math.floor((window.outerHeight || window.innerHeight) - 80));
+  const left = (typeof window.screenX === 'number' ? window.screenX : 0) + 40;
+  const top = (typeof window.screenY === 'number' ? window.screenY : 0) + 40;
+  const features = ['popup=yes', 'width=' + w, 'height=' + h, 'left=' + left, 'top=' + top,
+    'toolbar=no', 'menubar=no', 'location=yes', 'resizable=yes', 'scrollbars=yes'].join(',');
+  const popup = window.open(url, '_blank', features);
+  if (!popup) { notice.warn(t('lessons.popup_blocked')); return null; }
+  if (typeof popup.focus === 'function') popup.focus();
+  return popup;
+}
+
+function _copyText(text) {
+  if (!text) return;
+  const done = () => notice.ok(t('lessons.copied'));
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => _fallbackCopy(text, done));
+  } else { _fallbackCopy(text, done); }
+}
+function _fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (_) { /* ignore */ }
+  document.body.removeChild(ta);
+  done();
+}
+
+// Copy a Drive file's text (Google Docs / .txt / .md) via BS_GOOGLE. Prompts
+// Google consent inline if not yet connected (ported from classvault.js).
+async function _copyDriveText(item) {
+  const meta = item.meta_json || {};
+  const fileId = meta.file_id;
+  if (!fileId) return;
+  if (!window.BS_GOOGLE) { notice.warn(t('lessons.drive_unavailable')); return; }
+  if (!BS_GOOGLE.isAuthed()) {
+    try {
+      await BS_GOOGLE.requestToken({ prompt: 'consent' });
+      if (typeof BS_GOOGLE.init === 'function') BS_GOOGLE.init();
+    } catch (_) { notice.warn(t('lessons.copy_drive_need_google')); return; }
+    if (!BS_GOOGLE.isAuthed()) { notice.warn(t('lessons.copy_drive_need_google')); return; }
+  }
+  try {
+    const text = await BS_GOOGLE.drive.getText(fileId, meta.mimeType || '');
+    await navigator.clipboard.writeText(text);
+    notice.ok(t('lessons.copy_drive_done'));
+  } catch (err) {
+    notice.error(t('lessons.copy_drive_error') + ': ' + ((err && err.message) || err));
+  }
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────

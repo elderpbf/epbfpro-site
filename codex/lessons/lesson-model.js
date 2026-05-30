@@ -109,6 +109,63 @@ export function driveItemCanCopyText(mimeType, fileName) {
   return false;
 }
 
+// ── Bottom-bar actions (mirrors cv-type-registry.js + the classvault crumb) ──
+// The launch URL for the popup ("Abrir em janela") action, by type. slide and
+// popup_url use meta_json.url verbatim; drive_file falls back to a /view link
+// built from file_id (matching the legacy drive_file registry entry). '' = no
+// launch available. meta_json is read as an object, as the cv_get_codex_view
+// vault delivers it (same as the legacy renderers).
+export function popupUrlFor(item) {
+  if (!item) return '';
+  const meta = item.meta_json || {};
+  if (item.type === 'slide' || item.type === 'popup_url') return meta.url || '';
+  if (item.type === 'drive_file') {
+    return meta.url || (meta.file_id ? 'https://drive.google.com/file/d/' + meta.file_id + '/view' : '');
+  }
+  return '';
+}
+
+const _POPUP_TYPES = new Set(['slide', 'drive_file', 'popup_url']);
+const _NO_ACTION_TYPES = new Set(['llm', 'embed', 'lab', 'video', 'drive_folder']);
+// Ordered action descriptors for the item's bottom bar. 'popup' carries its
+// resolved url; 'copy' copies body_md (any unregistered type that has body
+// content). Editing is wired in Phase 3B, so 'edit' is intentionally not emitted
+// here. Drive "Copiar texto" is gated separately by driveItemCanCopyText.
+export function crumbActions(item) {
+  if (!item) return [];
+  if (_POPUP_TYPES.has(item.type)) {
+    const url = popupUrlFor(item);
+    return url ? [{ id: 'popup', url }] : [];
+  }
+  if (_NO_ACTION_TYPES.has(item.type)) return [];
+  return (item.body_md && String(item.body_md).trim()) ? [{ id: 'copy' }] : [];
+}
+
+// ── Text-scale store (localStorage-backed; storage injected for testability) ──
+// Mirrors the legacy +A/-A control: clamps to [0.75, 1.6] at 2-decimal
+// precision, default 1. Shares the legacy 'cv_content_scale' key so the
+// preference carries across the cutover.
+export function makeTextScale(storage, key) {
+  key = key || 'cv_content_scale';
+  const MIN = 0.75, MAX = 1.6, STEP = 0.1;
+  const clamp = (s) => Math.max(MIN, Math.min(MAX, +Number(s).toFixed(2)));
+  return {
+    MIN, MAX, STEP,
+    get() {
+      let raw = null;
+      try { raw = storage && storage.getItem(key); } catch (_) { /* ignore */ }
+      const n = parseFloat(raw);
+      return Number.isFinite(n) ? clamp(n) : 1;
+    },
+    set(v) {
+      const c = clamp(v);
+      try { if (storage) storage.setItem(key, String(c)); } catch (_) { /* ignore */ }
+      return c;
+    },
+    bump(cur, delta) { return clamp(cur + delta); },
+  };
+}
+
 // ── Favorites store (localStorage-backed; storage injected for testability) ──
 // Stored as a JSON array of stringified ids (numeric, 'drive:<id>', 'lab:<key>').
 export function makeFavorites(storage, key) {
