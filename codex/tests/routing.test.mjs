@@ -18,19 +18,20 @@ const codexTopbar = read('../js/codex-topbar.js');
 const contentJs = read('../content/content.js');
 const indexHtml = read('../index.html');
 
-test('legacy Backstage topbar routes migrated tabs to /codex/', () => {
+test('legacy Backstage topbar keeps the old platform self-contained (all tabs legacy)', () => {
+  // The old working platform is standalone again, separate from the /codex/
+  // refactor: every old tab links to its legacy page.
   const block = legacyTopbar.match(/var CODEX_TABS\s*=\s*\[([\s\S]*?)\]/);
   assert.ok(block, 'CODEX_TABS found');
   const tabs = block[1];
-  assert.match(tabs, /key:\s*'turmas',\s*label:\s*'Turmas',\s*href:\s*'\/codex\/'/, 'Turmas -> /codex/');
-  assert.match(tabs, /key:\s*'conteudo'[\s\S]*?href:\s*'\/codex\/\?tab=content'/, 'Conteúdo -> /codex/?tab=content');
-  // Un-migrated tabs stay legacy.
-  assert.match(tabs, /key:\s*'aula'[\s\S]*?href:\s*'\/backstage\/classvault\//, 'Aula still legacy');
-  assert.match(tabs, /key:\s*'perguntas'[\s\S]*?href:\s*'\/backstage\/classpulse\//, 'Perguntas still legacy');
+  assert.match(tabs, /key:\s*'turmas'[\s\S]*?href:\s*'\/backstage\/classtrail\/\?tab=turmas'/, 'Turmas -> ClassTrail');
+  assert.match(tabs, /key:\s*'conteudo'[\s\S]*?href:\s*'\/backstage\/classtrail\/\?tab=conteudo'/, 'Conteúdo -> ClassTrail');
+  assert.match(tabs, /key:\s*'aula'[\s\S]*?href:\s*'\/backstage\/classvault\//, 'Aula -> ClassVault');
+  assert.match(tabs, /key:\s*'perguntas'[\s\S]*?href:\s*'\/backstage\/classpulse\//, 'Perguntas -> ClassPulse');
 });
 
-test('legacy Content sub-tab row points Items at the migrated page', () => {
-  assert.match(legacyTopbar, /label:\s*'Items',\s*href:\s*'\/codex\/\?tab=content'/, 'Items sub-tab -> /codex/?tab=content');
+test('legacy Content sub-tab row points Items at ClassTrail (old platform)', () => {
+  assert.match(legacyTopbar, /label:\s*'Items',\s*href:\s*'\/backstage\/classtrail\/\?tab=conteudo'/, 'Items sub-tab -> ClassTrail');
 });
 
 test('Codex topbar routes migrated tabs to /codex/, un-migrated to legacy', () => {

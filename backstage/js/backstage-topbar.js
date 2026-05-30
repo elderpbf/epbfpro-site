@@ -323,14 +323,13 @@ window.Topbar = (function() {
   //   - Conteúdo → ClassTrail admin (Conteúdo/Apostila/Tarefas/Drive/Presets sub-tabs)
   //   - Turmas   → ClassTrail Turmas tab (becomes three-column in Bundle G)
   //   - Perguntas → ClassPulse (Ao vivo/Banco/Estatísticas/Configurações sub-tabs)
-  // Migrated tabs route to Codex (/codex/); un-migrated stay on their legacy
-  // page. Turmas is fully migrated -> Cohorts at /codex/. Conteúdo is partially
-  // migrated -> the Codex Content shell, which bridges its un-migrated sub-tabs
-  // back to ClassTrail. Aula/Perguntas remain legacy until they migrate.
+  // Old working platform: every tab points at its legacy page so the old tools
+  // (ClassTrail / ClassVault / ClassPulse) connect to each other, standalone
+  // from the separate /codex/ refactor.
   var CODEX_TABS = [
     { key: 'aula',      label: 'Aula',      href: '/backstage/classvault/' },
-    { key: 'conteudo',  label: 'Conteúdo',  href: '/codex/?tab=content' },
-    { key: 'turmas',    label: 'Turmas',    href: '/codex/' },
+    { key: 'conteudo',  label: 'Conteúdo',  href: '/backstage/classtrail/?tab=conteudo' },
+    { key: 'turmas',    label: 'Turmas',    href: '/backstage/classtrail/?tab=turmas' },
     { key: 'perguntas', label: 'Perguntas', href: '/backstage/classpulse/' }
   ];
 
@@ -340,7 +339,7 @@ window.Topbar = (function() {
   var CODEX_SUBTABS = {
     aula: [],
     conteudo: [
-      { key: 'conteudo',   label: 'Items',      href: '/codex/?tab=content' },
+      { key: 'conteudo',   label: 'Items',      href: '/backstage/classtrail/?tab=conteudo' },
       { key: 'apostila',   label: 'Apostila',   href: '/backstage/classtrail/?tab=apostila' },
       { key: 'tarefas',    label: 'Tarefas',    href: '/backstage/classtrail/?tab=tarefas' },
       { key: 'drive',      label: 'Drive',      href: '/backstage/classtrail/?tab=drive' },
