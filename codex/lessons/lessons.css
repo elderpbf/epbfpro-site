@@ -1,0 +1,26 @@
+/* Codex Lessons (Aula) tab: integration glue only.
+ *
+ * The Aula UI itself is the reused ClassVault, styled entirely by the linked
+ * backstage/classvault/css/classvault.css. This file only bridges the Codex
+ * shell to Aula's full-window layout.
+ *
+ * Aula expects `bs-app--classvault` on #screen-app, which gives:
+ *   .bs-app--classvault          { height: 100vh; overflow: hidden; }
+ *   .bs-app--classvault .bs-main { height: 100%; padding: 0; }
+ *   .cv-shell                    { height: 100%; }
+ * The wrapper (lessons.js) sets that class on mount. But Codex nests the shell
+ * one extra level deeper than the standalone page: .bs-main > #codex-view
+ * (.cdx-view, centered + max-width + padded) > .cdx-lessons-aula > .cv-shell.
+ * Without bridging, the height:100% chain breaks at .cdx-view and the shell
+ * collapses to a narrow "sleeve". These rules drop the .cdx-view constraints
+ * and carry height:100% down to .cv-shell, but ONLY while Lessons is active
+ * (scoped under .bs-app--classvault), so the other tabs keep their layout. */
+.bs-app--classvault .cdx-view {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+.bs-app--classvault .cdx-lessons-aula {
+  height: 100%;
+}

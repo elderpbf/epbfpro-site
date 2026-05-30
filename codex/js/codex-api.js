@@ -36,7 +36,14 @@ export const slides = {
 
 // ClassPulse sessions list — shared by Cohorts (turma form) and Questions.
 export const cp = {
-  listSessions: (p) => call('cp_list_sessions', p)
+  listSessions: (p) => call('cp_list_sessions', p),
+  liveSession:  (p) => call('cp_get_live_session', p)   // currently-live session banner (Lessons)
+};
+
+// Lessons (Aula) — the in-class content-run surface. cv_get_codex_view returns
+// the released-item "vault" for a turma; action read from classvault.js.
+export const lessons = {
+  getCodexView: (p) => call('cv_get_codex_view', p)     // { client_slug, turma_slug } -> { vault }
 };
 
 // Questions — live sessions, banks, stats.
@@ -78,6 +85,7 @@ export const cohorts = {
   archiveClient:   (p) => call('ct_archive_client', p),        // { slug }
   setClientIcon:   (p) => call('ct_set_client_icon', p),       // { slug, mode, value, filename? }
   listTurmas:      (p) => call('ct_list_turmas', p),           // { client_slug }
+  listAllTurmas:   (p) => call('ct_list_all_turmas', p),       // every turma across clients (Lessons sidebar)
   createTurma:     (p) => call('ct_create_turma', p),
   updateTurma:     (p) => call('ct_update_turma', p),          // { client_slug, slug, name, display_name? }
   updateTurmaMeta: (p) => call('ct_update_turma_meta', p),
