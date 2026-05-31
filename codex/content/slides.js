@@ -1,17 +1,16 @@
 // content/slides.js
 // Codex Content tab, Slides sub-tab: the authored-deck library.
-// Master-detail, modeled on items.js: a list of presentations on the left, an
-// info card on the right, and an "Editar" action that mounts the full deck
-// editor (the self-contained Slides component copied under ./slides/, its CSS
-// scoped to .cdx-deck-editor) bound to a codexStore. This sub-tab owns ONLY our
-// authored decks (engine tag DECK_ENGINE); the Google Slides embed (`slide`
-// type) is untouched and renders in Lessons, not here.
+// The landing reuses the EXACT Items sub-tab structure/classes (cdx-items,
+// cdx-items-toolbar, cdx-items-split, cdx-item-row, cdx-item-preview, ...) so it
+// inherits the Items look; only the data differs. The "Editar" action mounts the
+// full deck editor (the self-contained component copied under ./slides/, its CSS
+// scoped to .cdx-deck-editor) bound to a codexStore, breaking out of the page
+// padding to fill the window. This sub-tab owns ONLY our authored decks (engine
+// tag DECK_ENGINE); the Google Slides embed (`slide` type) is untouched and
+// renders in Lessons, not here.
 //
-// The list is filtered by engine tag so it shows only our authored decks, not
-// the legacy presentations that share the same backend table.
-//
-// Backend is reached ONLY through the codex-api slides facade. Every string
-// goes through t(). No inline JS in markup; events are delegated.
+// Backend is reached ONLY through the codex-api slides facade. Every string goes
+// through t(). No inline JS in markup; events are delegated.
 import { slides as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
@@ -25,9 +24,10 @@ const DECK_ENGINE = 'codex-deck';
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
 let _decks = [];
-let _selectedSlug = null;     // master-detail: slug shown in the info card
+let _selectedSlug = null;     // master-detail: slug shown in the preview
 let _editorHandles = null;    // active editor mount handles ({ app, unmount }), or null
 let _saveTimer = null;
+let _onWinResize = null;
 let _cleanup = [];
 
 // ── Pure rules (exported for tests) ─────────────────────────────────────────
@@ -60,7 +60,6 @@ function _slugify(s) {
 
 function _fmtDate(ts) {
   if (!ts) return '';
-  // Accept an ISO date string, epoch seconds, or epoch millis.
   if (typeof ts === 'string') { const d = new Date(ts); return isNaN(d) ? '' : d.toLocaleDateString('pt-BR'); }
   const ms = ts < 1e12 ? ts * 1000 : ts;
   try { return new Date(ms).toLocaleDateString('pt-BR'); } catch (_) { return ''; }
@@ -69,77 +68,87 @@ function _fmtDate(ts) {
 function _deckBySlug(slug) { return _decks.find((d) => d.slug === slug) || null; }
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 
-// ── Rendering (master-detail list view) ─────────────────────────────────────
+// ── Rendering (master-detail, Items sub-tab structure) ──────────────────────
 function _render() {
   _viewEl.innerHTML =
-    '<div class="cdx-slides">' +
-      '<div class="cdx-slides-list">' +
-        '<div class="cdx-slides-toolbar">' +
-          '<h2 class="cdx-title">' + _esc(t('content.sub_slides')) + '</h2>' +
+    '<div class="cdx-items">' +
+      '<div class="cdx-items-toolbar">' +
+        '<h2 class="cdx-items-toolbar-title">' + _esc(t('content.sub_slides')) + '</h2>' +
+        '<div class="cdx-items-toolbar-actions">' +
           '<button class="cdx-btn cdx-btn-primary" data-act="new">' + _esc(t('slides.new')) + '</button>' +
         '</div>' +
-        '<div class="cdx-slides-rows" id="cdx-slides-rows"></div>' +
       '</div>' +
-      '<div class="cdx-slides-detail" id="cdx-slides-detail"></div>' +
+      '<div class="cdx-items-split">' +
+        '<div class="cdx-items-list" id="cdx-slides-grid">' +
+          '<div class="cdx-empty">' + _esc(t('slides.loading')) + '</div>' +
+        '</div>' +
+        '<div class="cdx-item-preview" id="cdx-slides-preview">' +
+          '<div class="cdx-preview-empty">' + _esc(t('slides.select_prompt')) + '</div>' +
+        '</div>' +
+      '</div>' +
     '</div>';
   _renderRows();
-  _renderDetail();
+  _renderPreview();
 }
 
 function _renderRows() {
-  const box = _q('#cdx-slides-rows');
-  if (!box) return;
+  const grid = _q('#cdx-slides-grid');
+  if (!grid) return;
   if (!_decks.length) {
-    box.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.empty')) + '</div>';
+    grid.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.empty')) + '</div>';
     return;
   }
-  box.innerHTML = _decks.map((d) => {
-    const sel = d.slug === _selectedSlug ? ' cdx-sel' : '';
+  grid.innerHTML = _decks.map((d) => {
+    const active = d.slug === _selectedSlug ? ' is-active' : '';
     const title = _esc(d.title || t('slides.untitled'));
     const sub = _fmtDate(d.updated_at || d.updated || d.created_at);
-    return '<div class="cdx-item-row' + sel + '" data-slug="' + _esc(d.slug) + '">' +
-      '<div><div class="cdx-row-title">' + title + '</div>' +
-      (sub ? '<div class="cdx-row-sub">' + _esc(t('slides.modified')) + ' ' + _esc(sub) + '</div>' : '') +
-      '</div></div>';
+    return '<div class="cdx-item-row' + active + '" data-slug="' + _esc(d.slug) + '" role="button" tabindex="0">' +
+      '<div class="cdx-item-info">' +
+        '<div class="cdx-item-title">' + title + '</div>' +
+        (sub ? '<div class="cdx-item-sub">' + _esc(t('slides.modified')) + ' ' + _esc(sub) + '</div>' : '') +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
-function _renderDetail() {
-  const pane = _q('#cdx-slides-detail');
+function _renderPreview() {
+  const pane = _q('#cdx-slides-preview');
   if (!pane) return;
   const d = _deckBySlug(_selectedSlug);
   if (!d) {
-    pane.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.select_prompt')) + '</div>';
+    pane.innerHTML = '<div class="cdx-preview-empty">' + _esc(t('slides.select_prompt')) + '</div>';
     return;
   }
   const count = (typeof d.slide_count === 'number') ? d.slide_count : null;
   pane.innerHTML =
-    '<div class="cdx-slides-card">' +
-      '<h3 class="cdx-slides-card-title">' + _esc(d.title || t('slides.untitled')) + '</h3>' +
-      '<dl class="cdx-slides-meta">' +
-        (count != null
-          ? '<div><dt>' + _esc(t('slides.slide_count')) + '</dt><dd>' + count + '</dd></div>'
-          : '') +
-        '<div><dt>' + _esc(t('slides.modified')) + '</dt><dd>' +
-          _esc(_fmtDate(d.updated_at || d.updated || d.created_at) || '-') + '</dd></div>' +
-      '</dl>' +
-      '<button class="cdx-btn cdx-btn-primary" data-act="edit" data-slug="' + _esc(d.slug) + '">' +
-        _esc(t('slides.edit')) + '</button>' +
-    '</div>';
+    '<div class="cdx-preview-head">' +
+      '<div class="cdx-preview-head-info">' +
+        '<div class="cdx-preview-title">' + _esc(d.title || t('slides.untitled')) + '</div>' +
+        '<div class="cdx-preview-type">' +
+          (count != null ? count + ' ' + _esc(t('slides.slide_count')) + ' · ' : '') +
+          _esc(t('slides.modified')) + ' ' + _esc(_fmtDate(d.updated_at || d.updated || d.created_at) || '-') +
+        '</div>' +
+      '</div>' +
+      '<div class="cdx-preview-actions">' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="edit" data-slug="' + _esc(d.slug) + '">' +
+          _esc(t('slides.edit')) + '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cdx-preview-body"><div class="cdx-preview-empty">' + _esc(t('slides.preview_hint')) + '</div></div>';
 }
 
 // ── Data ────────────────────────────────────────────────────────────────────
 async function _loadDecks() {
-  const box = _q('#cdx-slides-rows');
-  if (box) box.innerHTML = '<div class="cdx-loading">' + _esc(t('slides.loading')) + '</div>';
+  const grid = _q('#cdx-slides-grid');
+  if (grid) grid.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.loading')) + '</div>';
   try {
     const res = await api.list();
     _decks = ourDecks(res && res.presentations);
     _selectedSlug = resolveDeckSelection(_decks, _selectedSlug);
     _renderRows();
-    _renderDetail();
+    _renderPreview();
   } catch (e) {
-    if (box) box.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
+    if (grid) grid.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
 }
 
@@ -151,11 +160,11 @@ async function _createDeck() {
     await _loadDecks();
     _selectedSlug = slug;
     _renderRows();
-    _renderDetail();
+    _renderPreview();
     _openEditor(slug, /* fresh */ true);
   } catch (e) {
-    const box = _q('#cdx-slides-rows');
-    if (box) box.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
+    const grid = _q('#cdx-slides-grid');
+    if (grid) grid.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
 }
 
@@ -163,7 +172,6 @@ async function _createDeck() {
 async function _openEditor(slug, fresh) {
   const store = createCodexStore({ slug });
 
-  // Put a deck in place first.
   if (fresh) {
     store.setDeck(newDeck());
   } else {
@@ -183,15 +191,31 @@ async function _openEditor(slug, fresh) {
   _viewEl.innerHTML =
     '<div class="cdx-slides-editor">' +
       '<div class="cdx-slides-editorbar">' +
-        '<button class="cdx-btn" data-act="back">' + _esc(t('slides.back')) + '</button>' +
+        '<button class="cdx-btn" data-act="back">‹ ' + _esc(t('slides.back')) + '</button>' +
       '</div>' +
       '<div class="cdx-slides-stage cdx-deck-editor" id="cdx-slides-stage"></div>' +
     '</div>';
   _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store });
+  _sizeEditor();
+  _onWinResize = () => _sizeEditor();
+  window.addEventListener('resize', _onWinResize);
+}
+
+// Make the editor stage fill from its top edge to the bottom of the viewport, so
+// the deck editor occupies all available window with no wasted margin.
+function _sizeEditor() {
+  const stage = _q('#cdx-slides-stage');
+  if (!stage) return;
+  const top = stage.getBoundingClientRect().top;
+  stage.style.height = Math.max(360, window.innerHeight - top - 8) + 'px';
+  if (_editorHandles && _editorHandles.app) {
+    try { _editorHandles.app.syncChrome(); _editorHandles.app.fit(); _editorHandles.app.renderNav(); } catch (_) { /* ignore */ }
+  }
 }
 
 function _teardownEditor() {
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
+  if (_onWinResize) { window.removeEventListener('resize', _onWinResize); _onWinResize = null; }
   if (_editorHandles) {
     // mount() returns { app, unmount }; call its own teardown (closes the
     // BroadcastChannel, removes the resize + keydown listeners, clears the DOM).
@@ -223,7 +247,7 @@ export function mount(viewEl, ctx) {
     if (row) {
       _selectedSlug = row.getAttribute('data-slug');
       _renderRows();
-      _renderDetail();
+      _renderPreview();
     }
   };
   _viewEl.addEventListener('click', onClick);

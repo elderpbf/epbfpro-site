@@ -13,46 +13,61 @@ import { initEditing } from "./edit/editor.js";
 import { initFreeform } from "./edit/freeform.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
+import { t } from "../../../js/i18n.js";
 
 const themeIcon = (mode) => (mode === "dark" ? "☀" : "☾");
 
-const SHELL = `
+// Layout display label by id, translated. Layout modules keep a PT fallback in
+// their own `label`; here we map the id to an i18n key so the add-slide menu
+// follows the active language.
+const LAYOUT_LABEL_KEY = {
+  cover:  "slides.layout_cover",
+  split:  "slides.layout_split",
+  topics: "slides.layout_topics",
+  bleed:  "slides.layout_bleed",
+  cards:  "slides.layout_cards",
+};
+const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) : L.label);
+
+// SHELL is built per-mount so every user-facing string resolves through t() in
+// the active language (the dictionary may switch between mounts).
+const shellHTML = () => `
 <div id="chrome">
   <span class="title">Slides</span>
   <button id="prev">‹</button><span id="counter">1 / 1</span><button id="next">›</button>
-  <div class="menu" id="addMenu"><button id="addBtn">＋ slide</button><div class="pop" id="addPop"></div></div>
-  <button id="dupBtn">⧉ duplicar</button>
-  <button id="flip">⇄ inverter</button>
-  <div class="menu" id="insertMenu"><button id="insertBtn">＋ inserir</button><div class="pop" id="insertPop">
-    <button data-insert="text">Texto</button>
-    <button data-insert="title">Título</button>
-    <button data-insert="image">Imagem</button>
-    <button data-insert="photo">Foto</button>
-    <button data-insert="video">Vídeo</button>
+  <div class="menu" id="addMenu"><button id="addBtn">＋ ${t("slides.ed_slide")}</button><div class="pop" id="addPop"></div></div>
+  <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
+  <button id="flip">⇄ ${t("slides.ed_flip")}</button>
+  <div class="menu" id="insertMenu"><button id="insertBtn">＋ ${t("slides.ed_insert")}</button><div class="pop" id="insertPop">
+    <button data-insert="text">${t("slides.ed_text")}</button>
+    <button data-insert="title">${t("slides.ed_title")}</button>
+    <button data-insert="image">${t("slides.ed_image")}</button>
+    <button data-insert="photo">${t("slides.ed_photo")}</button>
+    <button data-insert="video">${t("slides.ed_video")}</button>
   </div></div>
   <span class="spacer"></span>
-  <label>Fonte <input type="range" id="fontScale" min="0.7" max="1.5" step="0.05" value="1"></label>
-  <button id="fontScope" title="a fonte se aplica a">tudo</button>
-  <label>Destaque <input type="color" id="accent" value="#14b8a6"></label>
-  <label>Texto <input type="color" id="ink" value="#134e4a"></label>
-  <label>Arte <input type="color" id="motifColor" value="#14b8a6"></label>
-  <label>Animação <select id="anim"><option value="fade-up">subir + fade</option><option value="fade">fade</option><option value="none">imediato</option></select></label>
-  <button id="themeToggle" title="claro / escuro">☀</button>
-  <button id="present" class="primary">▶ Apresentar</button>
+  <label>${t("slides.ed_font")} <input type="range" id="fontScale" min="0.7" max="1.5" step="0.05" value="1"></label>
+  <button id="fontScope" title="${t("slides.ed_font_scope_title")}">${t("slides.ed_scope_all")}</button>
+  <label>${t("slides.ed_accent")} <input type="color" id="accent" value="#14b8a6"></label>
+  <label>${t("slides.ed_text_color")} <input type="color" id="ink" value="#134e4a"></label>
+  <label>${t("slides.ed_art")} <input type="color" id="motifColor" value="#14b8a6"></label>
+  <label>${t("slides.ed_anim")} <select id="anim"><option value="fade-up">${t("slides.ed_anim_fadeup")}</option><option value="fade">${t("slides.ed_anim_fade")}</option><option value="none">${t("slides.ed_anim_none")}</option></select></label>
+  <button id="themeToggle" title="${t("slides.ed_theme_toggle")}">☀</button>
+  <button id="present" class="primary">▶ ${t("slides.ed_present")}</button>
 </div>
 
 <div id="fmt">
   <button data-fs="-3">A−</button><button data-fs="3">A＋</button>
   <button id="bold"><b>B</b></button>
-  <label>Cor <input type="color" id="color" value="#134e4a"></label>
-  <span class="hint">editando · clique fora pra sair</span>
+  <label>${t("slides.ed_color")} <input type="color" id="color" value="#134e4a"></label>
+  <span class="hint">${t("slides.ed_editing_hint")}</span>
 </div>
 
 <div id="maskpop">
-  <div class="mp-types"><button data-mtype="none">nenhuma</button><button data-mtype="color">cor</button><button data-mtype="gradient">gradiente</button></div>
-  <label>Cor <input type="color" id="mc1" value="#14b8a6"></label>
-  <label class="mp-g">Cor 2 <input type="color" id="mc2" value="#0d9488"></label>
-  <label class="mp-g">Ângulo <input type="range" id="mang" min="0" max="360" value="45"></label>
+  <div class="mp-types"><button data-mtype="none">${t("slides.ed_mask_none")}</button><button data-mtype="color">${t("slides.ed_mask_color")}</button><button data-mtype="gradient">${t("slides.ed_mask_gradient")}</button></div>
+  <label>${t("slides.ed_color")} <input type="color" id="mc1" value="#14b8a6"></label>
+  <label class="mp-g">${t("slides.ed_color2")} <input type="color" id="mc2" value="#0d9488"></label>
+  <label class="mp-g">${t("slides.ed_angle")} <input type="range" id="mang" min="0" max="360" value="45"></label>
 </div>
 
 <div id="nav"></div>
@@ -60,15 +75,15 @@ const SHELL = `
 
 <div id="pv">
   <div class="bar"><span class="timer" id="pvTimer">00:00</span><span class="clock" id="pvClock">--:--</span><span class="pos" id="pvPos">1 / 1</span></div>
-  <div class="now"><div class="label">Slide atual</div><div class="mini"><div class="scale" id="pvNow"></div></div></div>
-  <div class="next"><div class="label">Próximo slide</div><div class="mini"><div class="scale" id="pvNext"></div></div></div>
+  <div class="now"><div class="label">${t("slides.ed_current_slide")}</div><div class="mini"><div class="scale" id="pvNow"></div></div></div>
+  <div class="next"><div class="label">${t("slides.ed_next_slide")}</div><div class="mini"><div class="scale" id="pvNext"></div></div></div>
   <div class="notes" id="pvNotes"></div>
-  <div class="hintbar">Setas ← → controlam as duas janelas · clique seleciona, 2 cliques edita, arraste move</div>
+  <div class="hintbar">${t("slides.ed_presenter_hint")}</div>
 </div>`;
 
 export function mount(root, ctx = {}) {
   const isPresenter = new URLSearchParams(location.search).get("presenter") === "1";
-  root.innerHTML = SHELL;
+  root.innerHTML = shellHTML();
   const $ = (sel) => root.querySelector(sel);
   const store = ctx.store || createMemoryStore(newDeck());
 
@@ -203,7 +218,7 @@ export function mount(root, ctx = {}) {
         };
         inp.click();
       } else {
-        base.text = type === "title" ? "Título" : "Texto";
+        base.text = type === "title" ? t("slides.ed_title") : t("slides.ed_text");
         this.record();
         this.deck().assets.push(base);
         this.refresh();
@@ -322,7 +337,7 @@ function wireChrome(app, root) {
   };
 
   const addPop = $("#addPop");
-  addPop.innerHTML = registry.list().map((L) => `<button data-layout="${L.id}">${L.label}</button>`).join("");
+  addPop.innerHTML = registry.list().map((L) => `<button data-layout="${L.id}">${layoutLabel(L)}</button>`).join("");
   $("#addBtn").onclick = (e) => { e.stopPropagation(); $("#addMenu").classList.toggle("open"); };
   addPop.querySelectorAll("[data-layout]").forEach((b) => (b.onclick = () => { app.addSlide(b.dataset.layout); $("#addMenu").classList.remove("open"); }));
   document.addEventListener("click", (e) => {

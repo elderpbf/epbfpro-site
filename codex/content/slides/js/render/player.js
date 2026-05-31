@@ -4,6 +4,11 @@
 // registry for the slide's layout and calls render()).
 import * as registry from "../layouts/registry.js";
 import { maskOverlay } from "./helpers.js";
+import { t } from "../../../../js/i18n.js";
+
+// The logo lives next to the editor modules, not at the page root, so resolve it
+// against this module's URL (works the same standalone or mounted inside Codex).
+const LOGO_URL = new URL("../../codex-logo.png", import.meta.url).href;
 
 export function layoutOf(slide) {
   return registry.get(slide.layout);
@@ -36,11 +41,11 @@ function assetMedia(a) {
 
 function assetCtl(a) {
   const sc = (v, l) => `<option value="${v}"${a.scope === v ? " selected" : ""}>${l}</option>`;
-  const mask = isImageType(a) ? `<button data-asmask="${a.id}">máscara</button>` : "";
+  const mask = isImageType(a) ? `<button data-asmask="${a.id}">${t("slides.ed_mask")}</button>` : "";
   return (
-    `<div class="assetctl editoronly"><select data-ascope="${a.id}">${sc("slide", "só este")}${sc("all", "todos")}${sc(
+    `<div class="assetctl editoronly"><select data-ascope="${a.id}">${sc("slide", t("slides.ed_asset_slide"))}${sc("all", t("slides.ed_asset_all"))}${sc(
       "layout",
-      "este layout"
+      t("slides.ed_asset_layout")
     )}</select>${mask}<button data-asrot="${a.id}:-15">↺</button><button data-asrot="${a.id}:15">↻</button>` +
     `<button data-asdel="${a.id}">✕</button></div>`
   );
@@ -61,16 +66,16 @@ function assetsHTML(deck, slide) {
 // top, not removable (only hideable per slide), with readability variants.
 function logoHTML(deck, slide) {
   const lg = deck.logo || { x: 40, y: 30, h: 40 };
-  if (slide.hideLogo) return `<div class="logoshow editoronly" data-logoshow>logo oculto · mostrar</div>`;
+  if (slide.hideLogo) return `<div class="logoshow editoronly" data-logoshow>${t("slides.ed_logo_show")}</div>`;
   const v = slide.logoVariant || "normal";
   const opt = (val, l) => `<option value="${val}"${v === val ? " selected" : ""}>${l}</option>`;
   return (
     `<div class="logo logo-${v}" data-logo style="left:${lg.x}px;top:${lg.y}px;height:${lg.h}px">` +
-    `<img src="codex-logo.png" alt="PensoIA">` +
-    `<div class="logoctl editoronly"><select data-logovar>${opt("normal", "normal")}${opt("claro", "claro")}${opt(
+    `<img src="${LOGO_URL}" alt="PensoIA">` +
+    `<div class="logoctl editoronly"><select data-logovar>${opt("normal", t("slides.ed_logo_normal"))}${opt("claro", t("slides.ed_logo_light"))}${opt(
       "escuro",
-      "escuro"
-    )}${opt("scrim", "com fundo")}</select><button data-logohide>ocultar</button></div></div>`
+      t("slides.ed_logo_dark")
+    )}${opt("scrim", t("slides.ed_logo_scrim"))}</select><button data-logohide>${t("slides.ed_logo_hide")}</button></div></div>`
   );
 }
 

@@ -3,6 +3,7 @@
 // All listeners are DELEGATED on the persistent #stage element and wired ONCE,
 // so they survive every re-render (no per-render rewiring, no leaks).
 import { getByPath, setPath } from "../core/schema.js";
+import { t } from "../../../../js/i18n.js";
 
 /* ---------- format toolbar (the v7 vanish-on-release bug lived here) ---------- */
 // Old model hid the toolbar from a document-level "click outside" heuristic, which
@@ -152,7 +153,7 @@ export function initEditing(app) {
     if ((m = t.closest("[data-add]"))) {
       e.stopPropagation();
       app.record();
-      app.cur().slots[m.dataset.add].push("Novo tópico");
+      app.cur().slots[m.dataset.add].push(t("slides.ed_new_topic"));
       app.step = app.maxStep();
       return app.refresh();
     }
@@ -160,7 +161,7 @@ export function initEditing(app) {
     if ((m = t.closest("[data-addcard]"))) {
       e.stopPropagation();
       app.record();
-      app.cur().slots.cards.push({ mode: "text", text: "Novo card" });
+      app.cur().slots.cards.push({ mode: "text", text: t("slides.ed_new_card") });
       return app.refresh();
     }
     if ((m = t.closest("[data-carddel]"))) {
@@ -168,7 +169,7 @@ export function initEditing(app) {
       app.record();
       const cs = app.cur().slots.cards;
       cs.splice(+m.dataset.carddel, 1);
-      if (!cs.length) cs.push({ mode: "text", text: "Card" });
+      if (!cs.length) cs.push({ mode: "text", text: t("slides.ed_card") });
       app.step = Math.min(app.step, app.maxStep());
       return app.refresh();
     }
