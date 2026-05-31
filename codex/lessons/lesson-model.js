@@ -64,6 +64,41 @@ export function rendererStrategy(type) {
   return _STRATEGY[type] || 'fallback';
 }
 
+// ── Items grouped by content type (mirrors the legacy Items section) ─────────
+// The Items bucket is sub-grouped by item.type in an opinionated order matching
+// how the teacher thinks about a lesson (tasks, then content, then visual aids,
+// then the rest). Unknown types are appended in encounter order.
+export const TYPE_ORDER = ['tarefa', 'conteudo', 'slide', 'prompt', 'material', 'paper'];
+export function groupItemsByType(items) {
+  const groups = new Map();
+  for (const it of (items || [])) {
+    const k = it.type || '__other__';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(it);
+  }
+  const ordered = [];
+  for (const k of TYPE_ORDER) if (groups.has(k)) ordered.push(k);
+  for (const k of groups.keys()) if (ordered.indexOf(k) === -1) ordered.push(k);
+  return ordered.map((k) => ({ typeKey: k, items: groups.get(k) }));
+}
+
+// Coloured icon "zone" class for an item by type (mirrors classvault _zoneClassFor).
+// '' = the default primary-coloured zone. Colours live in lessons.css
+// (--task / --llm / --recurso / --material).
+export function zoneClassFor(type) {
+  switch (type) {
+    case 'tarefa':     return 'tarefa';
+    case 'prompt':     return 'material';
+    case 'guide':      return 'recurso';
+    case 'material':   return 'material';
+    case 'paper':      return 'recurso';
+    case 'model_info': return 'recurso';
+    case 'embed':      return 'recurso';
+    case 'popup_url':  return 'llm';
+    default:           return '';
+  }
+}
+
 // Iframe types control their own font, so the +A/-A text-resize is off for them;
 // any item with body_md (rendered by the Markdown card) is resizable.
 const _IFRAME_TYPES = new Set(['slide', 'embed', 'lab', 'video', 'drive_file', 'drive_folder']);

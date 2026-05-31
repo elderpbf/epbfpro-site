@@ -24,6 +24,7 @@ import {
   classifyVault, sidebarSections, SECTION_ORDER, rendererStrategy,
   crumbActions, supportsTextResize, makeTextScale,
   driveFolderEmbedUrl, driveFileEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
+  groupItemsByType, zoneClassFor,
 } from './lesson-model.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
@@ -76,9 +77,21 @@ function _renderTurmaSelector() {
   '</div>';
 }
 
+// Per-section glyph (SVG, coloured by --sec in lessons.css), mirroring the legacy
+// neon-glow section headers. Keyed by the section keys from lesson-model.
+const SECTION_GLYPHS = {
+  llm:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9 14 11l-2 5-2-5-4.5-2 4.7-1.4z"/><path d="M5 17l.7 1.8L7.5 19.5l-1.8.7L5 22l-.7-1.8L2.5 19.5l1.8-.7z"/></svg>',
+  external: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg>',
+  drive:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
+  items:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/></svg>',
+  apostila: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4z"/><path d="M4 4v16"/></svg>',
+  tarefas:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+};
+
 function _renderSubCard(item) {
+  const zone = zoneClassFor(item.type);
   return '<div class="cdx-lesson-sub' + (String(item.id) === String(_activeItemId) ? ' is-active' : '') + '" data-item-id="' + _esc(String(item.id)) + '">' +
-    '<span class="cdx-lesson-sub-icon">' + _itemIcon(item) + '</span>' +
+    '<span class="cdx-lesson-sub-zone' + (zone ? ' cdx-lesson-sub-zone--' + zone : '') + '">' + _itemIcon(item) + '</span>' +
     '<span class="cdx-lesson-sub-meta">' +
       '<span class="cdx-lesson-sub-type">' + _esc(item.type_label || item.type) + '</span>' +
       '<span class="cdx-lesson-sub-title">' + _esc(item.title) + '</span>' +
@@ -87,18 +100,39 @@ function _renderSubCard(item) {
   '</div>';
 }
 
+// A type group inside the Items section (e.g. Conteúdo / Slides / Tarefas), an
+// independently-collapsible subsection. Mirrors the legacy _renderItemsByType.
+function _renderTypeGroup(group) {
+  const subKey = 'type:' + group.typeKey;
+  const collapsed = _collapsed.has(subKey);
+  const label = (group.items[0] && group.items[0].type_label) || group.typeKey;
+  return '<button type="button" class="cdx-lesson-subsection' + (collapsed ? ' is-collapsed' : '') + '" data-section="' + _esc(subKey) + '" aria-expanded="' + (!collapsed) + '">' +
+      '<span class="cdx-lesson-subsection-chev">▾</span>' +
+      '<span class="cdx-lesson-subsection-label">' + _esc(label) + '</span>' +
+      '<span class="cdx-lesson-subsection-count">' + group.items.length + '</span>' +
+    '</button>' +
+    (collapsed ? '' : group.items.map(_renderSubCard).join(''));
+}
+
 function _renderSection(section) {
   const collapsed = _collapsed.has(section.key);
-  const rows = section.items.length
-    ? section.items.map(_renderSubCard).join('')
-    : '<div class="cdx-empty cdx-empty--inline">' + t('lessons.empty_section') + '</div>';
-  return '<div class="cdx-lesson-section' + (collapsed ? ' is-collapsed' : '') + '">' +
+  const empty = '<div class="cdx-empty cdx-empty--inline">' + t('lessons.empty_section') + '</div>';
+  let body = '';
+  if (!collapsed) {
+    if (section.key === 'items') {
+      body = section.items.length ? groupItemsByType(section.items).map(_renderTypeGroup).join('') : empty;
+    } else {
+      body = section.items.length ? section.items.map(_renderSubCard).join('') : empty;
+    }
+  }
+  return '<div class="cdx-lesson-section cdx-lesson-section--' + _esc(section.key) + (collapsed ? ' is-collapsed' : '') + '">' +
     '<button type="button" class="cdx-lesson-section-head" data-section="' + _esc(section.key) + '" aria-expanded="' + (!collapsed) + '">' +
-      '<span class="cdx-lesson-section-chev">' + (collapsed ? '›' : '⌄') + '</span>' +
+      '<span class="cdx-lesson-section-glyph">' + (SECTION_GLYPHS[section.key] || '') + '</span>' +
       '<span class="cdx-lesson-section-label">' + _sectionLabel(section.key) + '</span>' +
       '<span class="cdx-lesson-section-count">' + section.items.length + '</span>' +
+      '<span class="cdx-lesson-section-chev">▾</span>' +
     '</button>' +
-    (collapsed ? '' : '<div class="cdx-lesson-section-body">' + rows + '</div>') +
+    (collapsed ? '' : '<div class="cdx-lesson-section-body">' + body + '</div>') +
   '</div>';
 }
 
@@ -395,11 +429,26 @@ function _renderShell() {
   });
   head.querySelector('.cdx-lessons-search').addEventListener('input', _applySearch);
 
-  // Delegated sidebar clicks: section accordion toggle + item select.
+  // Delegated sidebar clicks: top-level accordion (exclusive, like the legacy
+  // Aula) + independent type-subsection toggle + item select.
   _q('.cdx-lessons-sidebar-body').addEventListener('click', (e) => {
     const secHead = e.target.closest('.cdx-lesson-section-head');
     if (secHead) {
       const key = secHead.dataset.section;
+      // Exclusive: opening a section collapses every other top-level section;
+      // closing just collapses it.
+      if (_collapsed.has(key)) {
+        SECTION_ORDER.forEach((k) => _collapsed.add(k));
+        _collapsed.delete(key);
+      } else {
+        _collapsed.add(key);
+      }
+      _renderSidebar();
+      return;
+    }
+    const subHead = e.target.closest('.cdx-lesson-subsection');
+    if (subHead) {
+      const key = subHead.dataset.section;   // 'type:<typeKey>' (not a top-level key)
       if (_collapsed.has(key)) _collapsed.delete(key); else _collapsed.add(key);
       _renderSidebar();
       return;
