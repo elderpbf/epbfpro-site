@@ -1,0 +1,48 @@
+/* tokens.css — two token sets.
+   Deck tokens (slide colours/scale) live on :root and are overwritten at runtime
+   by applyDeckTheme(). Chrome tokens flip with [data-theme] (dark default), exactly
+   like Codex/Backstage. The slide canvas (--paper) stays white in both themes. */
+
+:root {
+  /* deck / slide tokens (runtime-overwritten by the deck theme) */
+  --teal: #14b8a6; --teal-d: #0d9488; --teal-l: #5eead4;
+  --ink: #134e4a; --ink2: #115e59; --paper: #ffffff; --motif: #14b8a6;
+  --fontScale: 1;
+  --canvas-w: 1280px; --canvas-h: 720px;
+}
+
+/* ---- dark chrome (default) ---- */
+:root, [data-theme="dark"] {
+  --bg: #0e1413;
+  --panel: #10201d;
+  --panel-2: #0d1a18;
+  --border: #1d3531;
+  --btn-bg: #16302c;
+  --btn-bd: #235048;
+  --btn-hover: #1d3f39;
+  --text: #dfeae8;
+  --muted: #8fcabf;
+  --muted-2: #6fafa3;
+  --pop-bd: #2c3450;
+  --stage-grad-1: #13201d;
+  --stage-grad-2: #0e1413;
+  --overlay-strong: rgba(0, 0, 0, .45);
+}
+
+/* ---- light chrome ---- */
+[data-theme="light"] {
+  --bg: #eef2f1;
+  --panel: #ffffff;
+  --panel-2: #f4f8f7;
+  --border: #d8e3e0;
+  --btn-bg: #f1f6f5;
+  --btn-bd: #cfe0db;
+  --btn-hover: #e4efec;
+  --text: #134e4a;
+  --muted: #5b7c76;
+  --muted-2: #6b8b85;
+  --pop-bd: #cfe0db;
+  --stage-grad-1: #e7efed;
+  --stage-grad-2: #dde7e4;
+  --overlay-strong: rgba(0, 0, 0, .25);
+}

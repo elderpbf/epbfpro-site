@@ -124,6 +124,7 @@ export default {
   'content.sub_apostila':     'Workbook',
   'content.sub_tarefas':      'Assignments',
   'content.sub_drive':        'Drive',
+  'content.sub_slides':       'Presentations',
   'content.sub_labs':         'Labs',
   'content.sub_presets':      'Presets',
   'content.sub_releases':     'Releases',
@@ -467,5 +468,18 @@ export default {
   'lessons.drive_unavailable':    'Drive unavailable: Google connection not loaded.',
   'lessons.popup_blocked':        'The browser blocked the popup. Allow popups for this site and try again.',
   'lessons.text_bigger':          'Increase text size',
-  'lessons.text_smaller':         'Decrease text size'
+  'lessons.text_smaller':         'Decrease text size',
+
+  // Content -> Slides (Presentations) -- authored deck library
+  'slides.new':               '+ New presentation',
+  'slides.new_default_title': 'New presentation',
+  'slides.empty':             'No presentations yet. Click "+ New presentation" to create one.',
+  'slides.loading':           'Loading presentations...',
+  'slides.error_loading':     'Error loading presentations.',
+  'slides.select_prompt':     'Select a presentation to see its details.',
+  'slides.untitled':          '(untitled)',
+  'slides.modified':          'Modified',
+  'slides.slide_count':       'Slides',
+  'slides.edit':              'Edit',
+  'slides.back':              'Back'
 };

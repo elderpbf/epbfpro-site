@@ -1,0 +1,29 @@
+/* content/slides.css — Slides sub-tab (Apresentações) chrome.
+   Master-detail layout mirrors the Items sub-tab. Uses only existing theme
+   tokens (--surface, --surface-2, --border, --text-primary, --text-secondary,
+   --primary), which already carry their own [data-theme="dark"] overrides, so
+   no new variables are introduced here. The deck editor under ./slides/ ships
+   its own styles; this file only styles the list, the info card, and the
+   editor frame. */
+
+.cdx-slides { display: flex; gap: 18px; height: 100%; min-height: 0; }
+.cdx-slides-list { flex: 1 1 60%; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.cdx-slides-detail { flex: 1 1 40%; min-width: 0; border-left: 1px solid var(--border); padding-left: 18px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+.cdx-slides-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; flex-shrink: 0; }
+.cdx-slides-toolbar .cdx-title { margin: 0; margin-right: auto; }
+
+.cdx-slides-rows { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+
+/* Info card (right pane) */
+.cdx-slides-card { padding: 4px 2px; }
+.cdx-slides-card-title { margin: 0 0 14px; font-size: 18px; font-weight: 800; color: var(--text-primary); }
+.cdx-slides-meta { margin: 0 0 18px; display: flex; flex-direction: column; gap: 10px; }
+.cdx-slides-meta div { display: flex; gap: 8px; align-items: baseline; }
+.cdx-slides-meta dt { color: var(--text-secondary); font-size: 13px; min-width: 90px; }
+.cdx-slides-meta dd { margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 600; }
+
+/* Editor frame (when a deck is open) */
+.cdx-slides-editor { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.cdx-slides-editorbar { flex-shrink: 0; margin-bottom: 12px; }
+.cdx-slides-stage { flex: 1; min-height: 0; position: relative; }

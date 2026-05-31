@@ -123,6 +123,7 @@ export default {
   'content.sub_apostila':     'Apostila',
   'content.sub_tarefas':      'Tarefas',
   'content.sub_drive':        'Drive',
+  'content.sub_slides':       'Apresentações',
   'content.sub_labs':         'Labs',
   'content.sub_presets':      'Presets',
   'content.sub_releases':     'Liberações',
@@ -466,5 +467,18 @@ export default {
   'lessons.drive_unavailable':    'Drive indisponível: conexão Google não carregada.',
   'lessons.popup_blocked':        'O navegador bloqueou o popup. Permita popups para este site e tente novamente.',
   'lessons.text_bigger':          'Aumentar texto',
-  'lessons.text_smaller':         'Diminuir texto'
+  'lessons.text_smaller':         'Diminuir texto',
+
+  // Content → Slides (Apresentações) — authored deck library
+  'slides.new':               '+ Nova apresentação',
+  'slides.new_default_title': 'Nova apresentação',
+  'slides.empty':             'Nenhuma apresentação ainda. Clique em "+ Nova apresentação" para criar.',
+  'slides.loading':           'Carregando apresentações...',
+  'slides.error_loading':     'Erro ao carregar apresentações.',
+  'slides.select_prompt':     'Selecione uma apresentação para ver os detalhes.',
+  'slides.untitled':          '(sem título)',
+  'slides.modified':          'Modificada em',
+  'slides.slide_count':       'Slides',
+  'slides.edit':              'Editar',
+  'slides.back':              'Voltar'
 };
