@@ -35,6 +35,7 @@ let _active = null;
 let _vault = [];
 let _activeItemId = null;
 let _collapsed = new Set();      // section keys currently collapsed
+let _seeded = new Set();         // subsection keys already seeded (collapsed-by-default once)
 let _detailCache = new Map();    // id -> full item (with body_md)
 let _previewReq = 0;
 let _cleanup = [];
@@ -111,8 +112,16 @@ function _renderSubCard(item) {
 
 // A type group inside the Items section (e.g. Conteúdo / Slides / Tarefas), an
 // independently-collapsible subsection. Mirrors the legacy _renderItemsByType.
+// Subsections start collapsed on first encounter (seeded once), then persist the
+// user's toggle, mirroring the legacy Aula. Only the open top-level section's
+// subsections are visible at all, so this keeps the sidebar tidy.
+function _seedCollapsed(key) {
+  if (!_seeded.has(key)) { _seeded.add(key); _collapsed.add(key); }
+}
+
 function _renderTypeGroup(group) {
   const subKey = 'type:' + group.typeKey;
+  _seedCollapsed(subKey);
   const collapsed = _collapsed.has(subKey);
   const label = (group.items[0] && group.items[0].type_label) || group.typeKey;
   return '<button type="button" class="cdx-lesson-subsection' + (collapsed ? ' is-collapsed' : '') + '" data-section="' + _esc(subKey) + '" aria-expanded="' + (!collapsed) + '">' +
@@ -189,6 +198,7 @@ function _renderDriveSection(driveItems) {
     body = driveItems.length
       ? groupDriveByFolder(driveItems).map((g) => {
           const subKey = 'drive:' + g.folder;
+          _seedCollapsed(subKey);
           const c = _collapsed.has(subKey);
           return '<button type="button" class="cdx-lesson-subsection' + (c ? ' is-collapsed' : '') + '" data-section="' + _esc(subKey) + '" aria-expanded="' + (!c) + '">' +
               '<span class="cdx-lesson-subsection-chev">▾</span>' +
@@ -636,6 +646,7 @@ export function mount(viewEl) {
   // the rest, like the legacy Aula's exclusive accordion.
   const openKey = _favs.all().length ? 'favorites' : 'items';
   _collapsed = new Set(['favorites', ...SECTION_ORDER].filter((k) => k !== openKey));
+  _seeded = new Set();
   _detailCache = new Map();
   _previewReq = 0;
   _cleanup = [];

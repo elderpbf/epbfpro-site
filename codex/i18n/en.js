@@ -446,6 +446,7 @@ export default {
   'lessons.empty_section':     'No items here.',
   'lessons.welcome':           'Select an item in the sidebar to start the lesson.',
   'lessons.open_external':     'Open',
+  'lessons.section_favorites': 'Favorites',
   'lessons.section_llm':       'LLMs',
   'lessons.section_external':  'External links',
   'lessons.section_drive':     'Drive',
