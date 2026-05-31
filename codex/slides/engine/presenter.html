@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<!-- slides/engine/presenter.html — Codex-owned presenter view for the html-slides
+     engine. Moved from classforge/html-slides/presenter.html. Opened by engine.js
+     (press P during a deck); receives slide state over the 'panels-presenter'
+     BroadcastChannel. Self-contained: no external scripts. -->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presenter View</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0d0d0d;
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, sans-serif;
+    height: 100vh;
+    display: grid;
+    grid-template-areas:
+      "timer  timer"
+      "current next"
+      "notes  notes";
+    grid-template-rows: 2.5rem 1fr 200px;
+    grid-template-columns: 2fr 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  /* Timer bar */
+  #timer-bar {
+    grid-area: timer;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 0.5rem;
+    background: #1a1a1a;
+    border-radius: 6px;
+  }
+
+  #timer-bar .pv-counter { font-size: 0.85rem; opacity: 0.6; }
+  #timer-bar #elapsed    { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; color: #f59e0b; }
+
+  /* Panel previews */
+  .pv-panel-wrap {
+    border-radius: 8px;
+    overflow: hidden;
+    background: #111;
+    border: 1px solid #2a2a2a;
+    position: relative;
+  }
+
+  .pv-label {
+    position: absolute; top: 0.4rem; left: 0.6rem;
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; opacity: 0.45;
+    z-index: 1;
+  }
+
+  #current-wrap { grid-area: current; }
+  #next-wrap    { grid-area: next; }
+
+  .pv-preview {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+    font-size: 0.7rem;
+    overflow: hidden;
+  }
+
+  #current-wrap .pv-preview { font-size: 0.85rem; }
+
+  /* Notes */
+  #notes-wrap {
+    grid-area: notes;
+    background: #111;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    overflow-y: auto;
+  }
+
+  #notes-wrap h3 {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; opacity: 0.4; margin-bottom: 0.5rem;
+  }
+
+  #notes-text {
+    font-size: 1rem; line-height: 1.6;
+    white-space: pre-wrap; color: #e2e8f0;
+  }
+
+  #waiting {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #0d0d0d;
+    font-size: 1rem; opacity: 0.4;
+  }
+</style>
+</head>
+<body>
+
+<div id="waiting">Aguardando apresentação...</div>
+
+<div id="timer-bar" hidden>
+  <span class="pv-counter" id="slide-counter">1 / 1</span>
+  <span id="elapsed">00:00</span>
+</div>
+
+<div class="pv-panel-wrap" id="current-wrap" hidden>
+  <span class="pv-label">Atual</span>
+  <div class="pv-preview" id="current-preview"></div>
+</div>
+
+<div class="pv-panel-wrap" id="next-wrap" hidden>
+  <span class="pv-label">Próximo</span>
+  <div class="pv-preview" id="next-preview"></div>
+</div>
+
+<div id="notes-wrap" hidden>
+  <h3>Notas</h3>
+  <div id="notes-text"></div>
+</div>
+
+<script>
+  const channel = new BroadcastChannel('panels-presenter');
+
+  let startTime = null;
+  let timerInterval = null;
+
+  function startTimer() {
+    if (timerInterval) return;
+    startTime = Date.now();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  function updateTimer() {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('elapsed').textContent = m + ':' + s;
+  }
+
+  function showUI() {
+    document.getElementById('waiting').hidden = true;
+    document.getElementById('timer-bar').hidden = false;
+    document.getElementById('current-wrap').hidden = false;
+    document.getElementById('next-wrap').hidden = false;
+    document.getElementById('notes-wrap').hidden = false;
+  }
+
+  channel.addEventListener('message', (e) => {
+    const { type, index, total, notes, panelHTML, nextHTML } = e.data;
+    if (type !== 'slide') return;
+
+    showUI();
+    startTimer();
+
+    document.getElementById('slide-counter').textContent = (index + 1) + ' / ' + total;
+    document.getElementById('current-preview').innerHTML = panelHTML || '';
+    document.getElementById('next-preview').innerHTML = nextHTML || '<span style="opacity:.3">Fim</span>';
+    document.getElementById('notes-text').textContent = notes || '';
+  });
+</script>
+</body>
+</html>

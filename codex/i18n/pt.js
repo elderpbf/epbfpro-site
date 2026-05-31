@@ -123,6 +123,7 @@ export default {
   'content.sub_apostila':     'Apostila',
   'content.sub_tarefas':      'Tarefas',
   'content.sub_drive':        'Drive',
+  'content.sub_slides':       'Slides',
   'content.sub_labs':         'Labs',
   'content.sub_presets':      'Presets',
   'content.sub_releases':     'Liberações',
@@ -432,6 +433,18 @@ export default {
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Painel de Labs indisponível.',
   'drive.unavailable':        'Painel do Drive indisponível.',
+
+  // Content → Slides (deck manager)
+  'slides.title':             'Apresentações',
+  'slides.refresh':           'Atualizar',
+  'slides.loading':           'Carregando apresentações...',
+  'slides.error':             'Erro ao carregar apresentações.',
+  'slides.empty':             'Nenhuma apresentação encontrada.',
+  'slides.present':           'Apresentar',
+  'slides.open_pending':      'Abertura no Codex disponível após a migração do deck.',
+  'slides.engine_legacy':     'Engine legada',
+  'slides.modified':          'Modificado',
+  'slides.untitled':          'Sem título',
 
   // Lessons (Aula) tab
   'lessons.turma_label':       'Turma',

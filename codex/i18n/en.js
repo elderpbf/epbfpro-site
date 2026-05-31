@@ -124,6 +124,7 @@ export default {
   'content.sub_apostila':     'Workbook',
   'content.sub_tarefas':      'Assignments',
   'content.sub_drive':        'Drive',
+  'content.sub_slides':       'Slides',
   'content.sub_labs':         'Labs',
   'content.sub_presets':      'Presets',
   'content.sub_releases':     'Releases',
@@ -433,6 +434,18 @@ export default {
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Labs panel unavailable.',
   'drive.unavailable':        'Drive panel unavailable.',
+
+  // Content → Slides (deck manager)
+  'slides.title':             'Presentations',
+  'slides.refresh':           'Refresh',
+  'slides.loading':           'Loading presentations...',
+  'slides.error':             'Error loading presentations.',
+  'slides.empty':             'No presentations found.',
+  'slides.present':           'Present',
+  'slides.open_pending':      'Opening in Codex will be available after the deck is migrated.',
+  'slides.engine_legacy':     'Legacy engine',
+  'slides.modified':          'Modified',
+  'slides.untitled':          'Untitled',
 
   // Lessons (Aula) tab
   'lessons.turma_label':       'Cohort',
