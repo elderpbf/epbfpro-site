@@ -1,31 +1,179 @@
-/* Codex Lessons (Aula) tab: integration glue only.
- *
- * The Aula UI itself is the reused ClassVault, styled entirely by the linked
- * backstage/classvault/css/classvault.css. This file only bridges the Codex
- * shell to Aula's full-window layout.
- *
- * Aula expects `bs-app--classvault` on #screen-app, which gives:
- *   .bs-app--classvault          { height: 100vh; overflow: hidden; }
- *   .bs-app--classvault .bs-main { height: 100%; padding: 0; }
- *   .cv-shell                    { height: 100%; }
- * The wrapper (lessons.js) sets that class on mount. But Codex nests the shell
- * one extra level deeper than the standalone page: .bs-main > #codex-view
- * (.cdx-view, centered + max-width + padded) > .cdx-lessons-aula > .cv-shell.
- * Without bridging, the shell collapses to a narrow "sleeve" pinned to the left:
- * .cdx-view is the flex child of .bs-main but lacks `flex`, so it shrink-wraps to
- * its content instead of growing, and the grid never gets room. These rules make
- * the two Codex wrappers grow and pass the fill (width + height) down to .cv-shell
- * (which already has flex:1), replicating where .cv-shell sits directly in
- * .bs-main on the standalone page. Scoped under .bs-app--classvault, so the other
- * Codex tabs keep their normal layout.
- *
- * Lessons also goes TRUE full-window: the shared .bs-main caps at max-width:1200px
- * and centers. We drop that cap here. This file is Codex-only, so the standalone
- * Backstage page is unaffected; the scope keeps it to the Lessons tab. */
-.bs-app--classvault .bs-main {
-  max-width: none;
-  margin: 0;
+/* Codex Lessons (Aula) tab. Two-pane in-class surface: a left sidebar navigator
+ * + a main content view. cdx- prefix, colours only from existing tokens (dark
+ * inherited). The sidebar + main shells are kept structurally thin on purpose:
+ * the layout-contract session will formalize the persistent-sidebar shell, after
+ * which a token pass adopts it (see manifest/FUTURE.md, Lessons 3B). */
+
+.cdx-lessons {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  height: calc(100vh - 150px);
+  min-height: 460px;
 }
+@media (max-width: 860px) {
+  .cdx-lessons { flex-direction: column; height: auto; }
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+.cdx-lessons-sidebar {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cdx-lessons-sidebar-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.cdx-lessons-sidebar-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0.5rem; }
+
+.cdx-lessons-turma { display: flex; align-items: center; gap: 0.5rem; }
+.cdx-lessons-turma-avatar {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 8px;
+  background: var(--cdx-card-sel-bg);
+  border: 1px solid var(--cdx-card-sel-border);
+  color: var(--primary);
+}
+.cdx-lessons-turma-select { flex: 1; min-width: 0; }
+.cdx-lessons-search-wrap { display: flex; }
+.cdx-lessons-search { width: 100%; box-sizing: border-box; }
+
+/* Accordion sections */
+.cdx-lesson-section { margin-bottom: 0.25rem; }
+.cdx-lesson-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.cdx-lesson-section-head:hover { background: var(--cdx-card-hover-bg); color: var(--text-primary); }
+.cdx-lesson-section-chev { width: 1rem; text-align: center; }
+.cdx-lesson-section-label { flex: 1; text-align: left; }
+.cdx-lesson-section-count {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+}
+.cdx-lesson-section-body { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.15rem 0 0.35rem; }
+
+/* Item sub-cards */
+.cdx-lesson-sub {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-lesson-sub:hover { background: var(--cdx-card-hover-bg); border-color: var(--cdx-card-hover-border); }
+.cdx-lesson-sub.is-active { background: var(--cdx-card-sel-bg); border-color: var(--cdx-card-sel-border); }
+.cdx-lesson-sub-icon { flex-shrink: 0; display: inline-flex; color: var(--text-secondary); margin-top: 0.1rem; }
+.cdx-lesson-sub-icon svg { display: block; }
+.cdx-lesson-sub-meta { display: flex; flex-direction: column; min-width: 0; }
+.cdx-lesson-sub-type { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); }
+.cdx-lesson-sub-title { font-size: 0.88rem; color: var(--text-primary); font-weight: 600; }
+.cdx-lesson-sub-sum { font-size: 0.76rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cdx-empty--inline { padding: 0.4rem 0.5rem; font-size: 0.8rem; }
+
+/* ── Main view ────────────────────────────────────────────────────────────── */
+.cdx-lessons-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cdx-lessons-welcome { margin: auto; padding: 2rem; color: var(--text-secondary); font-size: 0.95rem; text-align: center; }
+.cdx-lessons-crumb {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.cdx-lessons-crumb-sep { opacity: 0.5; }
+.cdx-lessons-crumb-current { color: var(--text-primary); font-weight: 600; }
+.cdx-lessons-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.2rem;
+  color: var(--text-primary);
+  /* +A/-A text-resize: the bar sets --cdx-content-scale on this host (resizable
+   * items only); em-based renderer text scales with it. */
+  font-size: calc(1rem * var(--cdx-content-scale, 1));
+}
+/* Embed types (iframe / Drive / video) fill the host edge-to-edge, no scroll. */
+.cdx-lessons-content--embed { padding: 0; overflow: hidden; display: flex; }
+.cdx-lessons-iframe-wrap { flex: 1; min-height: 0; display: flex; }
+.cdx-lessons-iframe { flex: 1; width: 100%; min-height: 0; border: 0; }
+
+/* popup_url launcher card (describe-only; launch lives in the bottom bar) */
+.cdx-lessons-launcher { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; max-width: 560px; }
+.cdx-lessons-launcher-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+.cdx-lessons-launcher-sum { margin: 0; font-size: 0.9rem; color: var(--text-secondary); }
+.cdx-lessons-launcher-hint { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+.cdx-lessons-launcher-url { margin: 0; font-size: 0.78rem; color: var(--text-secondary); word-break: break-all; }
+
+/* Bottom action bar: fixed footer sibling of the scrolling content. */
+.cdx-lessons-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-top: 1px solid var(--border);
+}
+.cdx-lessons-bar-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.cdx-lessons-bar-resize { display: flex; gap: 0.35rem; }
+
+/* ── Full-window (mount adds .bs-app--classvault on #screen-app) ──────────────
+ * Like the standalone Aula, Lessons fills the viewport edge-to-edge. classvault.css
+ * already gives the height chain (.bs-app--classvault{height:100vh} + >.bs-main
+ * {flex:1;display:flex}); here we drop the shared 1200px .bs-main cap, let the
+ * Codex view + the two-pane grow, and flush the panes (no outer radius/padding/gap)
+ * so it reads as one immersive surface, not a centered card. Scoped to the class,
+ * so the other Codex tabs are untouched. */
+.bs-app--classvault .bs-main { max-width: none; margin: 0; }
 .bs-app--classvault .cdx-view {
   flex: 1;
   min-width: 0;
@@ -34,106 +182,39 @@
   padding: 0;
   display: flex;
 }
-.bs-app--classvault .cdx-lessons-aula {
+.bs-app--classvault .cdx-lessons {
   flex: 1;
   min-width: 0;
-  display: flex;
+  height: auto;       /* was calc(100vh - 150px); now fills the flex parent */
+  gap: 0;             /* flush panes */
 }
+.bs-app--classvault .cdx-lessons-sidebar {
+  border-radius: 0;
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 0;     /* keep the right edge as the divider to the main pane */
+}
+.bs-app--classvault .cdx-lessons-main { border-radius: 0; border: 0; }
 
-/* ── Sidebar "Aa" display controls (Codex Lessons only) ───────────────────────
- * The text-size (-A/+A) and width slider are view-global, persisted reading
- * settings. On the standalone page they sit in the Backstage topbar; Codex has
- * no inner topbar, so they live in the Lessons sidebar head (the Lessons-scoped
- * chrome), behind one "Aa" button that opens the popover below. All colours come
- * from themed tokens, so dark mode is inherited. */
-.cv-sm-head-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* ── Content rendering parity (prompt de-box + working text-resize) ───────────
+ * CTRenderer emits ctr- markup into .cdx-lessons-content. Two fixes so it matches
+ * the rest and the +A/-A actually scales:
+ *  - prompt: neutralize the ctr-prompt-verbatim card (bg/border/inner scroll) from
+ *    ct-renderer.css so a prompt flows like every other item; monospace + pre-wrap
+ *    (inherited) keep it copy-exact.
+ *  - both body + verbatim re-declare a fixed font-size in ct-renderer.css, which
+ *    overrode the scale; tie them to --cdx-content-scale so A-/A+ works. */
+.cdx-lessons-content .ctr-prompt-body {
+  font-size: calc(0.95rem * var(--cdx-content-scale, 1));
 }
-.cv-sm-head-row .cv-sm-search-wrap {
-  flex: 1;
-  min-width: 0;
+.cdx-lessons-content .ctr-prompt-verbatim {
+  font-size: calc(0.95rem * var(--cdx-content-scale, 1));
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
 }
-.cv-aula-aa-btn {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font: 700 0.82rem/1 'Inter', system-ui, sans-serif;
-  letter-spacing: 0.01em;
-  color: var(--text-secondary);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-.cv-aula-aa-btn:hover {
-  color: var(--text-primary);
-  border-color: var(--primary-light);
-}
-
-.cv-aula-display-pop {
-  position: fixed;
-  z-index: 9850;
-  min-width: 220px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px var(--shadow);
-}
-.cv-aula-display-pop[hidden] { display: none; }
-.cv-aula-pop-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.cv-aula-pop-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-}
-.cv-aula-pop-fontbtns { display: inline-flex; gap: 6px; }
-.cv-aula-pop-fbtn {
-  min-width: 34px;
-  height: 30px;
-  padding: 0 8px;
-  font: 600 0.85rem/1 'Inter', system-ui, sans-serif;
-  color: var(--text-primary);
-  background: var(--surface-soft, var(--surface));
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-}
-.cv-aula-pop-fbtn:hover { border-color: var(--primary-light); }
-.cv-aula-pop-width {
-  flex: 1;
-  min-width: 96px;
-  accent-color: var(--primary);
-  cursor: pointer;
-}
-.cv-aula-pop-reset {
-  margin-top: 2px;
-  padding: 7px 10px;
-  font: 600 0.78rem/1 'Inter', system-ui, sans-serif;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-.cv-aula-pop-reset:hover {
-  color: var(--text-primary);
-  border-color: var(--primary-light);
-}
+/* The native bottom bar owns Copy; hide CTRenderer's own copy button. */
+.cdx-lessons-content .ctr-copy-btn { display: none; }
