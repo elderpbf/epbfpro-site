@@ -56,3 +56,33 @@ test('content.js registers the slides sub-tab in SUBTABS', () => {
   assert.match(src, /content\.sub_slides/, 'slides entry uses content.sub_slides labelKey');
   assert.match(src, /import \* as slides/, 'content.js imports the slides module');
 });
+
+// Regression guard for the "editor rendered with no CSS loaded" bug: the three
+// editor stylesheets must actually be linked in index.html, and each must exist.
+test('the editor stylesheets are linked in index.html and exist on disk', () => {
+  const html = read('../index.html');
+  for (const f of ['tokens', 'slide', 'ui']) {
+    assert.match(html, new RegExp('content/slides/css/' + f + '\\.css'),
+      `index.html links content/slides/css/${f}.css`);
+    read('../content/slides/css/' + f + '.css'); // throws if missing
+  }
+});
+
+// The editor stylesheets MUST be scoped under .cdx-deck-editor so they cannot
+// leak into the Codex page (the exact failure mode of the standalone mock CSS).
+test('editor stylesheets are scoped to .cdx-deck-editor (no global leak)', () => {
+  for (const f of ['ui', 'slide']) {
+    const css = read('../content/slides/css/' + f + '.css');
+    // No bare top-level structural selectors that would hit the whole document.
+    assert.ok(!/^\s*\*\s*\{/m.test(css), `${f}.css has no bare universal (*) rule`);
+    assert.ok(!/^\s*body\s*[,{]/m.test(css), `${f}.css has no bare body rule`);
+    assert.ok(!/^\s*#(stage|chrome|nav)\b/m.test(css), `${f}.css has no unscoped #stage/#chrome/#nav`);
+    assert.ok(/\.cdx-deck-editor/.test(css), `${f}.css scopes under .cdx-deck-editor`);
+  }
+});
+
+// The sub-tab must mount the editor inside a .cdx-deck-editor container so the
+// scoped styles apply.
+test('slides.js mounts the editor in a .cdx-deck-editor container', () => {
+  assert.match(read('../content/slides.js'), /cdx-deck-editor/, 'editor host carries cdx-deck-editor');
+});

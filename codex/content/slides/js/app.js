@@ -18,7 +18,7 @@ const themeIcon = (mode) => (mode === "dark" ? "☀" : "☾");
 
 const SHELL = `
 <div id="chrome">
-  <span class="title">Slides</span><span class="tag">v8 · prototype</span>
+  <span class="title">Slides</span>
   <button id="prev">‹</button><span id="counter">1 / 1</span><button id="next">›</button>
   <div class="menu" id="addMenu"><button id="addBtn">＋ slide</button><div class="pop" id="addPop"></div></div>
   <button id="dupBtn">⧉ duplicar</button>

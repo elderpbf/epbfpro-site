@@ -123,7 +123,7 @@ export default {
   'content.sub_apostila':     'Apostila',
   'content.sub_tarefas':      'Tarefas',
   'content.sub_drive':        'Drive',
-  'content.sub_slides':       'Apresentações',
+  'content.sub_slides':       'Slides',
   'content.sub_labs':         'Labs',
   'content.sub_presets':      'Presets',
   'content.sub_releases':     'Liberações',

@@ -124,7 +124,7 @@ export default {
   'content.sub_apostila':     'Workbook',
   'content.sub_tarefas':      'Assignments',
   'content.sub_drive':        'Drive',
-  'content.sub_slides':       'Presentations',
+  'content.sub_slides':       'Slides',
   'content.sub_labs':         'Labs',
   'content.sub_presets':      'Presets',
   'content.sub_releases':     'Releases',

@@ -1,10 +1,14 @@
 // content/slides.js
-// Codex Content tab, Slides sub-tab: the authored-deck library ("Apresentações").
+// Codex Content tab, Slides sub-tab: the authored-deck library.
 // Master-detail, modeled on items.js: a list of presentations on the left, an
 // info card on the right, and an "Editar" action that mounts the full deck
-// editor (the self-contained Slides component copied under ./slides/) bound to
-// a codexStore. This sub-tab owns ONLY our authored `deck`s; the Google Slides
-// embed (`slide` type) is untouched and renders in Lessons, not here.
+// editor (the self-contained Slides component copied under ./slides/, its CSS
+// scoped to .cdx-deck-editor) bound to a codexStore. This sub-tab owns ONLY our
+// authored decks (engine tag DECK_ENGINE); the Google Slides embed (`slide`
+// type) is untouched and renders in Lessons, not here.
+//
+// The list is filtered by engine tag so it shows only our authored decks, not
+// the legacy presentations that share the same backend table.
 //
 // Backend is reached ONLY through the codex-api slides facade. Every string
 // goes through t(). No inline JS in markup; events are delegated.
@@ -14,21 +18,31 @@ import { createCodexStore } from './slides/adapters/codexStore.js';
 import { newDeck } from './slides/js/core/deck.js';
 import * as editor from './slides/js/app.js';
 
+// Engine tag that marks a presentation row as one of OUR authored decks, so the
+// list shows only these (not the legacy decks sharing the backend table).
+const DECK_ENGINE = 'codex-deck';
+
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
 let _decks = [];
 let _selectedSlug = null;     // master-detail: slug shown in the info card
-let _editorHandles = null;    // active editor mount handles, or null
+let _editorHandles = null;    // active editor mount handles ({ app, unmount }), or null
 let _saveTimer = null;
 let _cleanup = [];
 
-// ── Pure rule (exported for tests) ──────────────────────────────────────────
+// ── Pure rules (exported for tests) ─────────────────────────────────────────
 // Master-detail selection, keyed by slug: keep the current selection if it
 // survives the visible list, else fall back to the first deck, else nothing.
 export function resolveDeckSelection(list, currentSlug) {
   if (!list || !list.length) return null;
   if (currentSlug != null && list.some((d) => d.slug === currentSlug)) return currentSlug;
   return list[0].slug;
+}
+
+// Keep only our authored decks (exported for tests). list_presentations returns
+// every presentation row; we show the ones tagged with our engine.
+export function ourDecks(presentations) {
+  return (presentations || []).filter((p) => p.engine === DECK_ENGINE);
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -46,14 +60,16 @@ function _slugify(s) {
 
 function _fmtDate(ts) {
   if (!ts) return '';
-  const ms = ts < 1e12 ? ts * 1000 : ts; // accept seconds or millis
+  // Accept an ISO date string, epoch seconds, or epoch millis.
+  if (typeof ts === 'string') { const d = new Date(ts); return isNaN(d) ? '' : d.toLocaleDateString('pt-BR'); }
+  const ms = ts < 1e12 ? ts * 1000 : ts;
   try { return new Date(ms).toLocaleDateString('pt-BR'); } catch (_) { return ''; }
 }
 
 function _deckBySlug(slug) { return _decks.find((d) => d.slug === slug) || null; }
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 
-// ── Rendering ───────────────────────────────────────────────────────────────
+// ── Rendering (master-detail list view) ─────────────────────────────────────
 function _render() {
   _viewEl.innerHTML =
     '<div class="cdx-slides">' +
@@ -118,7 +134,7 @@ async function _loadDecks() {
   if (box) box.innerHTML = '<div class="cdx-loading">' + _esc(t('slides.loading')) + '</div>';
   try {
     const res = await api.list();
-    _decks = (res && res.data) || [];
+    _decks = ourDecks(res && res.presentations);
     _selectedSlug = resolveDeckSelection(_decks, _selectedSlug);
     _renderRows();
     _renderDetail();
@@ -131,7 +147,7 @@ async function _createDeck() {
   const title = t('slides.new_default_title');
   const slug = _slugify(title) + '-' + String(Date.now()).slice(-6);
   try {
-    await api.register({ slug, title });
+    await api.register({ slug, title, engine: DECK_ENGINE });
     await _loadDecks();
     _selectedSlug = slug;
     _renderRows();
@@ -143,20 +159,25 @@ async function _createDeck() {
   }
 }
 
-// ── Editor (the copied Slides component) ────────────────────────────────────
+// ── Editor (the copied, CSS-scoped Slides component) ─────────────────────────
 async function _openEditor(slug, fresh) {
   const store = createCodexStore({ slug });
+
+  // Put a deck in place first.
   if (fresh) {
-    store.setDeck(newDeck({ title: (_deckBySlug(slug) || {}).title }));
+    store.setDeck(newDeck());
   } else {
     await store.load();
-    if (!store.getDeck()) store.setDeck(newDeck({ title: (_deckBySlug(slug) || {}).title }));
+    if (!store.getDeck()) store.setDeck(newDeck());
   }
-  // Debounced autosave on any deck change (the unproven R2 path; verified on staging).
+
+  // Debounced autosave on any later deck change (the R2 path).
   store.on('change', () => {
     if (_saveTimer) clearTimeout(_saveTimer);
     _saveTimer = setTimeout(() => { store.save().catch(() => {}); }, 800);
   });
+  // Persist the initial deck for a fresh presentation so it survives a reload.
+  if (fresh) { try { await store.save(); } catch (_) { /* surfaced on next edit */ } }
 
   _teardownEditor();
   _viewEl.innerHTML =
@@ -164,7 +185,7 @@ async function _openEditor(slug, fresh) {
       '<div class="cdx-slides-editorbar">' +
         '<button class="cdx-btn" data-act="back">' + _esc(t('slides.back')) + '</button>' +
       '</div>' +
-      '<div class="cdx-slides-stage" id="cdx-slides-stage"></div>' +
+      '<div class="cdx-slides-stage cdx-deck-editor" id="cdx-slides-stage"></div>' +
     '</div>';
   _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store });
 }
@@ -172,7 +193,9 @@ async function _openEditor(slug, fresh) {
 function _teardownEditor() {
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
   if (_editorHandles) {
-    try { editor.unmount(_editorHandles); } catch (_) { /* ignore */ }
+    // mount() returns { app, unmount }; call its own teardown (closes the
+    // BroadcastChannel, removes the resize + keydown listeners, clears the DOM).
+    try { _editorHandles.unmount(); } catch (_) { /* ignore */ }
     _editorHandles = null;
   }
 }
@@ -180,6 +203,7 @@ function _teardownEditor() {
 function _backToList() {
   _teardownEditor();
   _render();
+  _loadDecks();
 }
 
 // ── Tab contract ────────────────────────────────────────────────────────────
