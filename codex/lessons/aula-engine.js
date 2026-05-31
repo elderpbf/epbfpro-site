@@ -155,6 +155,48 @@ function _updateTopbarPin() {
   };
 })();
 
+// Content WIDTH control (Codex Lessons). Global + persisted, same model as
+// CVTextResize. Stored as a fraction [0,1]: 0 = comfortable 760px measure,
+// 1 = full window (card chrome dropped via .is-full-width on .cv-main-view).
+// Applies --cv-content-width (px) to .cv-main-view, which .cv-renderer-fallback
+// reads. Reapplied on resize. The standalone Aula never instantiates the slider,
+// so it keeps the 760px default (daily driver unchanged).
+(function() {
+  var WIDTH_KEY = 'cv_content_width';
+  var MIN_PX = 760;          // comfortable reading measure (the default card)
+  var DEFAULT_FRAC = 0.35;   // out-of-box: wider than 760, not full
+  function clamp(f) { return Math.max(0, Math.min(1, f)); }
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(WIDTH_KEY); } catch (e) {}
+    var n = parseFloat(raw);
+    return Number.isFinite(n) ? clamp(n) : DEFAULT_FRAC;
+  }
+  function save(f) { try { localStorage.setItem(WIDTH_KEY, String(f)); } catch (e) {} }
+  function apply(f) {
+    var view = document.querySelector('.cv-main-view');
+    if (!view) return;
+    var full = f >= 0.999;
+    view.classList.toggle('is-full-width', full);
+    if (full) {
+      view.style.setProperty('--cv-content-width', 'none');
+      return;
+    }
+    var avail = view.clientWidth;
+    if (!avail || avail < MIN_PX) avail = window.innerWidth || 1200;
+    var px = Math.round(MIN_PX + f * Math.max(0, avail - MIN_PX));
+    view.style.setProperty('--cv-content-width', px + 'px');
+  }
+  window.CVContentWidth = {
+    get: load,
+    set: function(f) { f = clamp(f); save(f); apply(f); },
+    apply: function() { apply(load()); }
+  };
+  window.addEventListener('resize', function() {
+    if (document.querySelector('.cv-main-view')) window.CVContentWidth.apply();
+  });
+})();
+
 window.ClassVault = window.ClassVault || {};
 ClassVault.active = null;
 ClassVault.turmas = [];
@@ -255,8 +297,17 @@ function _aulaMount(rootEl) {
     ClassVault._aulaPinObserver = obs;
   })();
   _updateTopbarPin();
-  if (typeof window._aulaMountTextResizeButtons === 'function') {
-    window._aulaMountTextResizeButtons();
+  // Reading controls (text size + width) live in the sidebar "Aa" popover, wired
+  // by _renderSearchInput. Apply the persisted scale + width to the freshly
+  // mounted .cv-main-view (rAF so layout has settled and clientWidth is real).
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function() {
+      if (window.CVTextResize) CVTextResize.apply();
+      if (window.CVContentWidth) CVContentWidth.apply();
+    });
+  } else {
+    if (window.CVTextResize) CVTextResize.apply();
+    if (window.CVContentWidth) CVContentWidth.apply();
   }
 
   // Former (async function boot())() body, run in the same order:
@@ -688,23 +739,98 @@ function _renderItemsByType(items) {
 function _renderSearchInput() {
   const head = document.querySelector('.cv-sm-head');
   if (!head) return;
+  // Search + the "Aa" display button share one row. The Aa button is rebuilt
+  // here every time the head re-renders, so it survives (unlike the old
+  // topbar-shim buttons, which this head.innerHTML reset used to wipe).
   head.innerHTML =
-    '<div class="cv-sm-search-wrap">' +
-      '<span class="cv-sm-search-icon" aria-hidden="true">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
-      '</span>' +
-      '<input type="search" class="cv-sm-search" placeholder="Buscar..." autocomplete="off" spellcheck="false">' +
+    '<div class="cv-sm-head-row">' +
+      '<div class="cv-sm-search-wrap">' +
+        '<span class="cv-sm-search-icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
+        '</span>' +
+        '<input type="search" class="cv-sm-search" placeholder="Buscar..." autocomplete="off" spellcheck="false">' +
+      '</div>' +
+      '<button type="button" class="cv-aula-aa-btn" title="Exibição: tamanho do texto e largura" aria-label="Ajustar exibição">Aa</button>' +
     '</div>';
   const input = head.querySelector('.cv-sm-search');
-  if (!input) return;
-  input.addEventListener('input', () => _applySearchFilter(input.value));
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && input.value) {
-      input.value = '';
-      _applySearchFilter('');
-      e.stopPropagation();
-    }
-  });
+  if (input) {
+    input.addEventListener('input', () => _applySearchFilter(input.value));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && input.value) {
+        input.value = '';
+        _applySearchFilter('');
+        e.stopPropagation();
+      }
+    });
+  }
+  _wireDisplayControls(head.querySelector('.cv-aula-aa-btn'));
+}
+
+// "Aa" display popover: holds the global text-size (-A/+A) and width slider.
+// Both settings are view-global and persisted (CVTextResize / CVContentWidth),
+// not per-document. The popover is built once and reused; the button is rewired
+// on each head render. Positioned under the button (appended to body so the
+// sidebar's overflow doesn't clip it), closes on outside click / Escape.
+function _wireDisplayControls(btn) {
+  if (!btn) return;
+  let pop = document.getElementById('cv-aula-display-pop');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'cv-aula-display-pop';
+    pop.className = 'cv-aula-display-pop';
+    pop.hidden = true;
+    pop.innerHTML =
+      '<div class="cv-aula-pop-row">' +
+        '<span class="cv-aula-pop-label">Texto</span>' +
+        '<div class="cv-aula-pop-fontbtns">' +
+          '<button type="button" class="cv-aula-pop-fbtn" data-act="font-down" title="Diminuir texto">−A</button>' +
+          '<button type="button" class="cv-aula-pop-fbtn" data-act="font-up" title="Aumentar texto">+A</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cv-aula-pop-row">' +
+        '<span class="cv-aula-pop-label">Largura</span>' +
+        '<input type="range" class="cv-aula-pop-width" min="0" max="100" step="1" aria-label="Largura do conteúdo">' +
+      '</div>';
+    document.body.appendChild(pop);
+
+    pop.querySelector('[data-act="font-down"]').addEventListener('click', function() {
+      if (window.CVTextResize) CVTextResize.bump(-0.1);
+    });
+    pop.querySelector('[data-act="font-up"]').addEventListener('click', function() {
+      if (window.CVTextResize) CVTextResize.bump(0.1);
+    });
+    const range = pop.querySelector('.cv-aula-pop-width');
+    range.addEventListener('input', function() {
+      if (window.CVContentWidth) CVContentWidth.set(parseInt(range.value, 10) / 100);
+    });
+  }
+
+  function position() {
+    const r = btn.getBoundingClientRect();
+    pop.style.top = (r.bottom + 6) + 'px';
+    // Right-align to the button so it doesn't overflow the viewport edge.
+    pop.style.left = Math.max(8, r.right - pop.offsetWidth) + 'px';
+  }
+  function onDocClick(e) {
+    if (btn.contains(e.target) || pop.contains(e.target)) return;
+    close();
+  }
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function open() {
+    // Sync the slider to the current persisted width before showing.
+    const range = pop.querySelector('.cv-aula-pop-width');
+    if (range && window.CVContentWidth) range.value = String(Math.round(CVContentWidth.get() * 100));
+    pop.hidden = false;
+    position();
+    document.addEventListener('click', onDocClick, true);
+    document.addEventListener('keydown', onKey, true);
+  }
+  function close() {
+    pop.hidden = true;
+    document.removeEventListener('click', onDocClick, true);
+    document.removeEventListener('keydown', onKey, true);
+  }
+  btn.addEventListener('click', function() { pop.hidden ? open() : close(); });
 }
 
 function _applySearchFilter(rawQuery) {

@@ -39,3 +39,86 @@
   min-width: 0;
   display: flex;
 }
+
+/* ── Sidebar "Aa" display controls (Codex Lessons only) ───────────────────────
+ * The text-size (-A/+A) and width slider are view-global, persisted reading
+ * settings. On the standalone page they sit in the Backstage topbar; Codex has
+ * no inner topbar, so they live in the Lessons sidebar head (the Lessons-scoped
+ * chrome), behind one "Aa" button that opens the popover below. All colours come
+ * from themed tokens, so dark mode is inherited. */
+.cv-sm-head-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cv-sm-head-row .cv-sm-search-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.cv-aula-aa-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 0.82rem/1 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cv-aula-aa-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-light);
+}
+
+.cv-aula-display-pop {
+  position: fixed;
+  z-index: 9850;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px var(--shadow);
+}
+.cv-aula-display-pop[hidden] { display: none; }
+.cv-aula-pop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cv-aula-pop-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.cv-aula-pop-fontbtns { display: inline-flex; gap: 6px; }
+.cv-aula-pop-fbtn {
+  min-width: 34px;
+  height: 30px;
+  padding: 0 8px;
+  font: 600 0.85rem/1 'Inter', system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--surface-soft, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cv-aula-pop-fbtn:hover { border-color: var(--primary-light); }
+.cv-aula-pop-width {
+  flex: 1;
+  min-width: 96px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
