@@ -307,11 +307,12 @@
 .cdx-lessons-bar-resize { display: flex; gap: 0.35rem; }
 
 /* ── Full-window (mount adds .bs-app--classvault on #screen-app) ──────────────
- * Like the standalone Aula, Lessons fills the viewport edge-to-edge. classvault.css
- * gives the height chain (.bs-app--classvault{height:100vh} + >.bs-main{flex:1;
- * display:flex}); here we drop the shared 1200px .bs-main cap, let the Codex view
- * + the two-pane grow, and flush the panes. Scoped to the class, so other Codex
- * tabs are untouched. */
+ * Like the legacy Lessons, the two-pane fills the viewport but keeps a small
+ * inset from the edges (not dead-flush) and a gap between the panes, which keep
+ * their rounded cards. classvault.css gives the height chain
+ * (.bs-app--classvault{height:100vh} + >.bs-main{flex:1;display:flex}); here we
+ * drop the shared 1200px .bs-main cap and let the Codex view + two-pane grow.
+ * Scoped to the class, so other Codex tabs are untouched. */
 .bs-app--classvault .bs-main { max-width: none; margin: 0; }
 .bs-app--classvault .cdx-view {
   flex: 1;
@@ -324,16 +325,128 @@
 .bs-app--classvault .cdx-lessons {
   flex: 1;
   min-width: 0;
-  height: auto;       /* was calc(100vh - 150px); now fills the flex parent */
-  gap: 0;             /* flush panes */
+  height: auto;          /* was calc(100vh - 150px); now fills the flex parent */
+  gap: 0.75rem;
+  padding: 0.6rem;       /* the little margin from the edges, like the monolith */
 }
-.bs-app--classvault .cdx-lessons-sidebar {
+
+/* ── Sidebar head row: search + the "Aa" display button ─────────────────────── */
+.cdx-lessons-head-row { display: flex; align-items: center; gap: 8px; }
+.cdx-lessons-head-row .cdx-lessons-search-wrap { flex: 1; min-width: 0; }
+.cdx-lessons-aa-btn {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: 700 0.82rem/1 'Inter', system-ui, sans-serif;
+  color: var(--text-secondary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cdx-lessons-aa-btn:hover { color: var(--text-primary); border-color: var(--primary); }
+
+/* ── "Aa" display popover (text size + width + reset) ───────────────────────── */
+.cdx-lessons-display-pop {
+  position: fixed;
+  z-index: 9850;
+  min-width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px var(--shadow);
+}
+.cdx-lessons-display-pop[hidden] { display: none; }
+.cdx-lessons-pop-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cdx-lessons-pop-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); }
+.cdx-lessons-pop-fontbtns { display: inline-flex; gap: 6px; }
+.cdx-lessons-pop-fbtn {
+  min-width: 34px; height: 30px; padding: 0 8px;
+  font: 600 0.85rem/1 'Inter', system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-lessons-pop-fbtn:hover { border-color: var(--primary); }
+.cdx-lessons-pop-width { flex: 1; min-width: 96px; accent-color: var(--primary); cursor: pointer; }
+.cdx-lessons-pop-reset {
+  margin-top: 2px; padding: 7px 10px;
+  font: 600 0.78rem/1 'Inter', system-ui, sans-serif;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-lessons-pop-reset:hover { color: var(--text-primary); border-color: var(--primary); }
+
+/* ── Favourite star on item cards ───────────────────────────────────────────── */
+.cdx-lesson-sub { position: relative; }
+.cdx-lesson-sub-fav {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin: 4px 6px 0 0;
+  padding: 2px;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--text-dim, var(--text-secondary));
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s;
+}
+.cdx-lesson-sub:hover .cdx-lesson-sub-fav { opacity: 0.55; }
+.cdx-lesson-sub-fav:hover { opacity: 1; color: #eab308; }
+.cdx-lesson-sub-fav.is-on { opacity: 1; color: #eab308; }
+
+/* ── LLM launcher rows ──────────────────────────────────────────────────────── */
+.cdx-lesson-llm {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; margin-bottom: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+.cdx-lesson-llm:hover { border-color: var(--primary-light); box-shadow: 0 3px 10px -5px var(--shadow); }
+.cdx-lesson-llm-favicon { width: 18px; height: 18px; flex-shrink: 0; border-radius: 4px; }
+.cdx-lesson-llm-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Favourites section accent (gold), mirroring the legacy --sec. */
+.cdx-lesson-section--favorites { --sec: #eab308; }
+
+/* ── Empty-state notice (select an item + F focus hint) ─────────────────────── */
+.cdx-lessons-welcome { margin: auto; padding: 2rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.1rem; }
+.cdx-lessons-welcome-hint { margin: 0; color: var(--text-secondary); font-size: 0.95rem; max-width: 360px; line-height: 1.45; }
+.cdx-lessons-welcome-keys { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-dim, var(--text-secondary)); }
+.cdx-lessons-kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  font: 600 0.74rem/1 'Inter', sans-serif;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+/* Content width = full window: drop the card chrome so it reads edge-to-edge. */
+.cdx-lessons-content.is-full-width {
+  margin: 0;
+  background: none;
+  border: 0;
   border-radius: 0;
-  border-top: 0;
-  border-bottom: 0;
-  border-left: 0;     /* keep the right edge as the divider to the main pane */
+  box-shadow: none;
 }
-.bs-app--classvault .cdx-lessons-main { border-radius: 0; border: 0; }
 
 /* ── Content rendering parity (prompt de-box + working text-resize) ───────────
  * CTRenderer emits ctr- markup into .cdx-lessons-content. Prompt verbatim drops

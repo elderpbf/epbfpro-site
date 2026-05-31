@@ -25,6 +25,7 @@ import {
   crumbActions, supportsTextResize, makeTextScale,
   driveFolderEmbedUrl, driveFileEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
   groupItemsByType, zoneClassFor,
+  makeFavorites, makeContentWidth, groupDriveByFolder, LLM_LAUNCHERS,
 } from './lesson-model.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
@@ -37,8 +38,11 @@ let _collapsed = new Set();      // section keys currently collapsed
 let _detailCache = new Map();    // id -> full item (with body_md)
 let _previewReq = 0;
 let _cleanup = [];
-// Text-resize store: localStorage-backed, clamp/default in the pure model.
-const _scale = makeTextScale(typeof localStorage !== 'undefined' ? localStorage : null);
+// Reading-preference stores: localStorage-backed, clamp/default in the pure model.
+const _ls = typeof localStorage !== 'undefined' ? localStorage : null;
+const _scale = makeTextScale(_ls);
+const _width = makeContentWidth(_ls);
+const _favs = makeFavorites(_ls);
 
 // Vault classification, section order, and renderer dispatch are pure logic in
 // ./lesson-model.js (imported above) so they can be unit-tested without the DOM.
@@ -80,6 +84,7 @@ function _renderTurmaSelector() {
 // Per-section glyph (SVG, coloured by --sec in lessons.css), mirroring the legacy
 // neon-glow section headers. Keyed by the section keys from lesson-model.
 const SECTION_GLYPHS = {
+  favorites: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>',
   llm:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9 14 11l-2 5-2-5-4.5-2 4.7-1.4z"/><path d="M5 17l.7 1.8L7.5 19.5l-1.8.7L5 22l-.7-1.8L2.5 19.5l1.8-.7z"/></svg>',
   external: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg>',
   drive:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
@@ -90,13 +95,17 @@ const SECTION_GLYPHS = {
 
 function _renderSubCard(item) {
   const zone = zoneClassFor(item.type);
-  return '<div class="cdx-lesson-sub' + (String(item.id) === String(_activeItemId) ? ' is-active' : '') + '" data-item-id="' + _esc(String(item.id)) + '">' +
+  const id = String(item.id);
+  const faved = _favs.has(id);
+  return '<div class="cdx-lesson-sub' + (id === String(_activeItemId) ? ' is-active' : '') + '" data-item-id="' + _esc(id) + '">' +
     '<span class="cdx-lesson-sub-zone' + (zone ? ' cdx-lesson-sub-zone--' + zone : '') + '">' + _itemIcon(item) + '</span>' +
     '<span class="cdx-lesson-sub-meta">' +
       '<span class="cdx-lesson-sub-type">' + _esc(item.type_label || item.type) + '</span>' +
       '<span class="cdx-lesson-sub-title">' + _esc(item.title) + '</span>' +
       (item.summary ? '<span class="cdx-lesson-sub-sum">' + _esc(item.summary) + '</span>' : '') +
     '</span>' +
+    '<button type="button" class="cdx-lesson-sub-fav' + (faved ? ' is-on' : '') + '" data-fav="' + _esc(id) + '" ' +
+      'title="' + _esc(t('lessons.favorite')) + '" aria-label="' + _esc(t('lessons.favorite')) + '" aria-pressed="' + faved + '">★</button>' +
   '</div>';
 }
 
@@ -114,33 +123,99 @@ function _renderTypeGroup(group) {
     (collapsed ? '' : group.items.map(_renderSubCard).join(''));
 }
 
+// Shared neon section card: header (glyph + label + count + chevron) + body.
+function _sectionCard(key, count, bodyHtml) {
+  const collapsed = _collapsed.has(key);
+  return '<div class="cdx-lesson-section cdx-lesson-section--' + _esc(key) + (collapsed ? ' is-collapsed' : '') + '">' +
+    '<button type="button" class="cdx-lesson-section-head" data-section="' + _esc(key) + '" aria-expanded="' + (!collapsed) + '">' +
+      '<span class="cdx-lesson-section-glyph">' + (SECTION_GLYPHS[key] || '') + '</span>' +
+      '<span class="cdx-lesson-section-label">' + _sectionLabel(key) + '</span>' +
+      '<span class="cdx-lesson-section-count">' + count + '</span>' +
+      '<span class="cdx-lesson-section-chev">▾</span>' +
+    '</button>' +
+    (collapsed ? '' : '<div class="cdx-lesson-section-body">' + bodyHtml + '</div>') +
+  '</div>';
+}
+function _emptyInline() { return '<div class="cdx-empty cdx-empty--inline">' + t('lessons.empty_section') + '</div>'; }
+
+// Bucket sections: Items is type-grouped; the rest are flat sub-card lists.
 function _renderSection(section) {
   const collapsed = _collapsed.has(section.key);
-  const empty = '<div class="cdx-empty cdx-empty--inline">' + t('lessons.empty_section') + '</div>';
   let body = '';
   if (!collapsed) {
     if (section.key === 'items') {
-      body = section.items.length ? groupItemsByType(section.items).map(_renderTypeGroup).join('') : empty;
+      body = section.items.length ? groupItemsByType(section.items).map(_renderTypeGroup).join('') : _emptyInline();
     } else {
-      body = section.items.length ? section.items.map(_renderSubCard).join('') : empty;
+      body = section.items.length ? section.items.map(_renderSubCard).join('') : _emptyInline();
     }
   }
-  return '<div class="cdx-lesson-section cdx-lesson-section--' + _esc(section.key) + (collapsed ? ' is-collapsed' : '') + '">' +
-    '<button type="button" class="cdx-lesson-section-head" data-section="' + _esc(section.key) + '" aria-expanded="' + (!collapsed) + '">' +
-      '<span class="cdx-lesson-section-glyph">' + (SECTION_GLYPHS[section.key] || '') + '</span>' +
-      '<span class="cdx-lesson-section-label">' + _sectionLabel(section.key) + '</span>' +
-      '<span class="cdx-lesson-section-count">' + section.items.length + '</span>' +
-      '<span class="cdx-lesson-section-chev">▾</span>' +
-    '</button>' +
-    (collapsed ? '' : '<div class="cdx-lesson-section-body">' + body + '</div>') +
-  '</div>';
+  return _sectionCard(section.key, section.items.length, body);
+}
+
+// Favorites: resolves favorited ids against the loaded vault; renders nothing
+// when none resolve (no empty card). First section, like the legacy Aula.
+function _renderFavoritesSection() {
+  const ids = new Set(_favs.all());
+  if (!ids.size) return '';
+  const items = _vault.filter((it) => ids.has(String(it.id)));
+  if (!items.length) return '';
+  const collapsed = _collapsed.has('favorites');
+  const body = collapsed ? '' : items.map(_renderSubCard).join('');
+  return _sectionCard('favorites', items.length, body);
+}
+
+// LLMs: hardcoded launchers (open in a new tab) + any DB llm items. Always shown.
+function _renderLLMSection(dbItems) {
+  dbItems = dbItems || [];
+  const collapsed = _collapsed.has('llm');
+  let body = '';
+  if (!collapsed) {
+    body = LLM_LAUNCHERS.map((l) =>
+      '<a class="cdx-lesson-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
+        '<img class="cdx-lesson-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
+        '<span class="cdx-lesson-llm-name">' + _esc(l.name) + '</span>' +
+      '</a>').join('') +
+      dbItems.map(_renderSubCard).join('');
+  }
+  return _sectionCard('llm', LLM_LAUNCHERS.length + dbItems.length, body);
+}
+
+// Drive: grouped into folder subsections (mirrors the legacy folder grouping).
+function _renderDriveSection(driveItems) {
+  driveItems = driveItems || [];
+  const collapsed = _collapsed.has('drive');
+  let body = '';
+  if (!collapsed) {
+    body = driveItems.length
+      ? groupDriveByFolder(driveItems).map((g) => {
+          const subKey = 'drive:' + g.folder;
+          const c = _collapsed.has(subKey);
+          return '<button type="button" class="cdx-lesson-subsection' + (c ? ' is-collapsed' : '') + '" data-section="' + _esc(subKey) + '" aria-expanded="' + (!c) + '">' +
+              '<span class="cdx-lesson-subsection-chev">▾</span>' +
+              '<span class="cdx-lesson-subsection-label">' + _esc(g.folder) + '</span>' +
+              '<span class="cdx-lesson-subsection-count">' + g.items.length + '</span>' +
+            '</button>' +
+            (c ? '' : g.items.map(_renderSubCard).join(''));
+        }).join('')
+      : _emptyInline();
+  }
+  return _sectionCard('drive', driveItems.length, body);
 }
 
 function _renderSidebar() {
   const body = _q('.cdx-lessons-sidebar-body');
   if (!body) return;
-  const sections = sidebarSections(classifyVault(_vault));
-  body.innerHTML = sections.map(_renderSection).join('');
+  const buckets = classifyVault(_vault);
+  const html = [];
+  const fav = _renderFavoritesSection();
+  if (fav) html.push(fav);
+  html.push(_renderLLMSection(buckets.llm));
+  if (buckets.external.length) html.push(_renderSection({ key: 'external', items: buckets.external }));
+  if (buckets.drive.length) html.push(_renderDriveSection(buckets.drive));
+  html.push(_renderSection({ key: 'items', items: buckets.items }));
+  if (buckets.apostila.length) html.push(_renderSection({ key: 'apostila', items: buckets.apostila }));
+  if (buckets.tarefas.length) html.push(_renderSection({ key: 'tarefas', items: buckets.tarefas }));
+  body.innerHTML = html.join('');
   _applySearch();
 }
 
@@ -172,7 +247,26 @@ function _applySearch() {
 // ── Main view ──────────────────────────────────────────────────────────────
 function _renderEmptyMain() {
   const main = _q('.cdx-lessons-main');
-  if (main) main.innerHTML = '<div class="cdx-lessons-welcome">' + t('lessons.welcome') + '</div>';
+  if (!main) return;
+  main.innerHTML =
+    '<div class="cdx-lessons-welcome">' +
+      '<p class="cdx-lessons-welcome-hint">' + t('lessons.welcome') + '</p>' +
+      '<div class="cdx-lessons-welcome-keys">' +
+        '<kbd class="cdx-lessons-kbd">F</kbd><span>' + t('lessons.focus_hint') + '</span>' +
+      '</div>' +
+    '</div>';
+}
+
+// Apply the persisted content-width fraction to the content host card. Resolves
+// to a px max-width against the available pane width; the far end = full window
+// (cap dropped, host class toggled so the card chrome can go edge-to-edge).
+function _applyWidth(host) {
+  host = host || _q('#cdx-lessons-content');
+  if (!host || host.classList.contains('cdx-lessons-content--embed')) return;
+  const avail = host.clientWidth || (_q('.cdx-lessons-main') || {}).clientWidth || 0;
+  const px = _width.toMaxWidthPx(_width.get(), avail);
+  host.classList.toggle('is-full-width', px === null);
+  host.style.maxWidth = px === null ? 'none' : px + 'px';
 }
 
 function _renderBreadcrumb(item) {
@@ -238,6 +332,7 @@ function _paintItem(main, item, opts) {
 
   _renderBar(main, item);
   if (supportsTextResize(item)) host.style.setProperty('--cdx-content-scale', String(_scale.get()));
+  _applyWidth(host);
 }
 
 // ── Per-type renderers (ported from classvault.js ClassVault.renderers) ──────
@@ -405,6 +500,66 @@ function _loadVault() {
     .catch(() => { if (body) body.innerHTML = '<div class="cdx-empty">' + t('lessons.error_items') + '</div>'; });
 }
 
+// ── Reading controls ("Aa" popover: text size + width + reset) ────────────────
+// View-global, persisted reading prefs (not per-document), in one "Aa" popover.
+// Built once, appended to body so the sidebar overflow does not clip it.
+function _wireReadingControls(btn) {
+  if (!btn) return;
+  let pop = document.getElementById('cdx-lessons-display-pop');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'cdx-lessons-display-pop';
+    pop.className = 'cdx-lessons-display-pop';
+    pop.hidden = true;
+    pop.innerHTML =
+      '<div class="cdx-lessons-pop-row">' +
+        '<span class="cdx-lessons-pop-label">' + _esc(t('lessons.text_size')) + '</span>' +
+        '<div class="cdx-lessons-pop-fontbtns">' +
+          '<button type="button" class="cdx-lessons-pop-fbtn" data-act="font-down" title="' + _esc(t('lessons.text_smaller')) + '">A&minus;</button>' +
+          '<button type="button" class="cdx-lessons-pop-fbtn" data-act="font-up" title="' + _esc(t('lessons.text_bigger')) + '">A+</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cdx-lessons-pop-row">' +
+        '<span class="cdx-lessons-pop-label">' + _esc(t('lessons.width')) + '</span>' +
+        '<input type="range" class="cdx-lessons-pop-width" min="0" max="100" step="1" aria-label="' + _esc(t('lessons.width')) + '">' +
+      '</div>' +
+      '<button type="button" class="cdx-lessons-pop-reset" data-act="reset">' + _esc(t('lessons.reset_default')) + '</button>';
+    document.body.appendChild(pop);
+    const range = pop.querySelector('.cdx-lessons-pop-width');
+    pop.querySelector('[data-act="font-down"]').addEventListener('click', () => _bumpScale(-_scale.STEP));
+    pop.querySelector('[data-act="font-up"]').addEventListener('click', () => _bumpScale(_scale.STEP));
+    range.addEventListener('input', () => { _width.set(parseInt(range.value, 10) / 100); _applyWidth(); });
+    pop.querySelector('[data-act="reset"]').addEventListener('click', () => {
+      _scale.set(1);
+      const h = _q('#cdx-lessons-content');
+      if (h) h.style.setProperty('--cdx-content-scale', '1');
+      _width.set(_width.DEFAULT);
+      _applyWidth();
+      range.value = String(Math.round(_width.get() * 100));
+    });
+  }
+  function position() {
+    const r = btn.getBoundingClientRect();
+    pop.style.top = (r.bottom + 6) + 'px';
+    pop.style.left = Math.max(8, r.right - pop.offsetWidth) + 'px';
+  }
+  function onDoc(e) { if (btn.contains(e.target) || pop.contains(e.target)) return; close(); }
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  function open() {
+    pop.querySelector('.cdx-lessons-pop-width').value = String(Math.round(_width.get() * 100));
+    pop.hidden = false;
+    position();
+    document.addEventListener('click', onDoc, true);
+    document.addEventListener('keydown', onKey, true);
+  }
+  function close() {
+    pop.hidden = true;
+    document.removeEventListener('click', onDoc, true);
+    document.removeEventListener('keydown', onKey, true);
+  }
+  btn.addEventListener('click', () => (pop.hidden ? open() : close()));
+}
+
 // ── Shell + wiring ────────────────────────────────────────────────────────────
 function _renderShell() {
   _viewEl.innerHTML =
@@ -415,30 +570,34 @@ function _renderShell() {
       '</aside>' +
       '<section class="cdx-lessons-main"></section>' +
     '</div>';
+  // Head: search + the "Aa" display button (no turma selector, like the legacy Aula).
   const head = _q('#cdx-lessons-head');
-  head.innerHTML = _renderTurmaSelector() +
-    '<div class="cdx-lessons-search-wrap">' +
-      '<input type="search" class="cdx-lessons-search" placeholder="' + _esc(t('lessons.search_placeholder')) + '" autocomplete="off" spellcheck="false">' +
+  head.innerHTML =
+    '<div class="cdx-lessons-head-row">' +
+      '<div class="cdx-lessons-search-wrap">' +
+        '<input type="search" class="cdx-lessons-search" placeholder="' + _esc(t('lessons.search_placeholder')) + '" autocomplete="off" spellcheck="false">' +
+      '</div>' +
+      '<button type="button" class="cdx-lessons-aa-btn" title="' + _esc(t('lessons.display_controls')) + '" aria-label="' + _esc(t('lessons.display_controls')) + '">Aa</button>' +
     '</div>';
-
-  head.querySelector('.cdx-lessons-turma-select').addEventListener('change', (e) => {
-    const u = new URL(location.href);
-    u.searchParams.set('tab', 'lessons');
-    u.searchParams.set('turma', e.target.value);
-    location.href = u.toString();
-  });
   head.querySelector('.cdx-lessons-search').addEventListener('input', _applySearch);
+  _wireReadingControls(head.querySelector('.cdx-lessons-aa-btn'));
 
-  // Delegated sidebar clicks: top-level accordion (exclusive, like the legacy
-  // Aula) + independent type-subsection toggle + item select.
+  // Delegated sidebar clicks: favourite toggle, exclusive top-level accordion,
+  // independent subsection toggle, item select.
   _q('.cdx-lessons-sidebar-body').addEventListener('click', (e) => {
+    const fav = e.target.closest('.cdx-lesson-sub-fav');
+    if (fav) {
+      e.stopPropagation();
+      _favs.toggle(fav.dataset.fav);
+      _renderSidebar();
+      return;
+    }
     const secHead = e.target.closest('.cdx-lesson-section-head');
     if (secHead) {
       const key = secHead.dataset.section;
-      // Exclusive: opening a section collapses every other top-level section;
-      // closing just collapses it.
+      // Exclusive: opening a section collapses every other top-level section.
       if (_collapsed.has(key)) {
-        SECTION_ORDER.forEach((k) => _collapsed.add(k));
+        ['favorites', ...SECTION_ORDER].forEach((k) => _collapsed.add(k));
         _collapsed.delete(key);
       } else {
         _collapsed.add(key);
@@ -448,7 +607,7 @@ function _renderShell() {
     }
     const subHead = e.target.closest('.cdx-lesson-subsection');
     if (subHead) {
-      const key = subHead.dataset.section;   // 'type:<typeKey>' (not a top-level key)
+      const key = subHead.dataset.section;   // 'type:<k>' / 'drive:<folder>' (not top-level)
       if (_collapsed.has(key)) _collapsed.delete(key); else _collapsed.add(key);
       _renderSidebar();
       return;
@@ -473,8 +632,10 @@ export function mount(viewEl) {
   _active = null;
   _vault = [];
   _activeItemId = null;
-  // Every load collapses all sections except the first content section ("items").
-  _collapsed = new Set(SECTION_ORDER.filter((k) => k !== 'items'));
+  // Every load opens Favoritos (if any favourites exist) else Items, and collapses
+  // the rest, like the legacy Aula's exclusive accordion.
+  const openKey = _favs.all().length ? 'favorites' : 'items';
+  _collapsed = new Set(['favorites', ...SECTION_ORDER].filter((k) => k !== openKey));
   _detailCache = new Map();
   _previewReq = 0;
   _cleanup = [];
@@ -501,6 +662,9 @@ export function unmount() {
   _detailCache = new Map();
   const app = document.getElementById('screen-app');
   if (app) app.classList.remove(APP_CLASS);
+  // The reading-controls popover is appended to <body>; remove it on unmount.
+  const pop = document.getElementById('cdx-lessons-display-pop');
+  if (pop) pop.remove();
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
 }

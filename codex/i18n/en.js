@@ -469,6 +469,12 @@ export default {
   'lessons.popup_blocked':        'The browser blocked the popup. Allow popups for this site and try again.',
   'lessons.text_bigger':          'Increase text size',
   'lessons.text_smaller':         'Decrease text size',
+  'lessons.favorite':             'Favorite',
+  'lessons.focus_hint':           'Focus mode',
+  'lessons.text_size':            'Text',
+  'lessons.width':                'Width',
+  'lessons.reset_default':        'Reset to default',
+  'lessons.display_controls':     'Display: text size and width',
 
   // Content -> Slides (Presentations) -- authored deck library
   'slides.new':               '+ New presentation',
