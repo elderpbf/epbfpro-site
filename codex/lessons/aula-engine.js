@@ -1425,20 +1425,13 @@ function _restoreLastRendered() {
 function _renderEmptyMainView() {
   const view = document.querySelector('.cv-main-view');
   if (view) {
+    // Codex: no brand wordmark/icon here (the whole app is the Codex now, not a
+    // "PensoCodex" page). Just the select-an-item notice + the F focus toggle.
     view.innerHTML =
       '<div class="cv-empty-welcome">' +
-        '<div class="cv-empty-icon" aria-hidden="true">' +
-          '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
-            '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>' +
-            '<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>' +
-          '</svg>' +
-        '</div>' +
-        '<h2 class="cv-empty-title">PensoCodex</h2>' +
         '<p class="cv-empty-hint">Selecione um item na barra lateral para começar.</p>' +
         '<div class="cv-empty-shortcuts">' +
           '<kbd class="cv-empty-kbd">F</kbd><span class="cv-empty-kbd-label">Modo foco</span>' +
-          '<span class="cv-empty-sep">·</span>' +
-          '<kbd class="cv-empty-kbd">Esc</kbd><span class="cv-empty-kbd-label">Sair do foco</span>' +
         '</div>' +
       '</div>';
   }

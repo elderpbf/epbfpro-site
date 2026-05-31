@@ -31,14 +31,14 @@
   padding: 0.4rem 0.7rem;
   border-radius: 8px;
   text-decoration: none;
-  color: var(--text-muted, #9ca3af);
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.9rem;
   white-space: nowrap;
   border-bottom: 2px solid transparent;
 }
 .cdx-tab:hover {
-  color: var(--text, #e5e7eb);
+  color: var(--text-primary);
   background: var(--surface-hover, rgba(127, 127, 127, 0.12));
 }
 .cdx-tab-icon { display: inline-flex; color: var(--accent-color); }
@@ -61,7 +61,7 @@
  * one dictionary is loaded; it shows the language you'd switch TO. */
 .cdx-lang-btn {
   background: transparent;
-  color: var(--text-muted, #9ca3af);
+  color: var(--text-secondary);
   border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
   border-radius: 8px;
   padding: 0.3rem 0.5rem;
@@ -72,8 +72,8 @@
   margin-right: 0.25rem;
 }
 .cdx-lang-btn:hover {
-  color: var(--text, #e5e7eb);
-  border-color: var(--text-muted, #9ca3af);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 /* ── Notices (js/notice.js) ─────────────────────────────────────────────────
