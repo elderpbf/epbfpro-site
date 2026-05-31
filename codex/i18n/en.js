@@ -488,6 +488,8 @@ export default {
   'slides.modified':          'Modified',
   'slides.slide_count':       'Slides',
   'slides.edit':              'Edit',
+  'slides.delete':            'Delete',
+  'slides.confirm_delete':    'Delete the presentation "{name}"? This action cannot be undone.',
   'slides.back':              'Back',
   'slides.preview_hint':      'Click Edit to open this presentation.',
 

@@ -487,6 +487,8 @@ export default {
   'slides.modified':          'Modificada em',
   'slides.slide_count':       'Slides',
   'slides.edit':              'Editar',
+  'slides.delete':            'Excluir',
+  'slides.confirm_delete':    'Excluir a apresentação "{name}"? Esta ação não pode ser desfeita.',
   'slides.back':              'Voltar',
   'slides.preview_hint':      'Clique em Editar para abrir esta apresentação.',
 

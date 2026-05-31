@@ -340,11 +340,19 @@ function wireChrome(app, root) {
   addPop.innerHTML = registry.list().map((L) => `<button data-layout="${L.id}">${layoutLabel(L)}</button>`).join("");
   $("#addBtn").onclick = (e) => { e.stopPropagation(); $("#addMenu").classList.toggle("open"); };
   addPop.querySelectorAll("[data-layout]").forEach((b) => (b.onclick = () => { app.addSlide(b.dataset.layout); $("#addMenu").classList.remove("open"); }));
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest("#addMenu")) $("#addMenu").classList.remove("open");
-    if (!e.target.closest("#insertMenu")) $("#insertMenu").classList.remove("open");
-    if (!e.target.closest("#maskpop") && !e.target.closest("[data-mask]") && !e.target.closest("[data-asmask]")) maskpop.style.display = "none";
-  });
+  // Close the menus/popover on any outside click. Stored on app and removed in
+  // unmount(): this is a DOCUMENT-level listener, so leaving it attached after
+  // teardown means it fires against a detached DOM and throws on null elements
+  // (the repeated "classList of null" seen when reopening the editor). Each $()
+  // is null-guarded as a second line of defence.
+  const onDocClick = (e) => {
+    const addMenu = $("#addMenu"), insertMenu = $("#insertMenu"), mp = $("#maskpop");
+    if (addMenu && !e.target.closest("#addMenu")) addMenu.classList.remove("open");
+    if (insertMenu && !e.target.closest("#insertMenu")) insertMenu.classList.remove("open");
+    if (mp && !e.target.closest("#maskpop") && !e.target.closest("[data-mask]") && !e.target.closest("[data-asmask]")) mp.style.display = "none";
+  };
+  document.addEventListener("click", onDocClick);
+  app._onDocClick = onDocClick;
 
   const insertPop = $("#insertPop");
   $("#insertBtn").onclick = (e) => { e.stopPropagation(); $("#insertMenu").classList.toggle("open"); };
@@ -413,8 +421,10 @@ function wireChrome(app, root) {
     if (e.key === "ArrowLeft") app.go(-1);
   };
   document.addEventListener("keydown", onKey);
-  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && app.presenting) app.setPresenting(false); });
+  const onFs = () => { if (!document.fullscreenElement && app.presenting) app.setPresenting(false); };
+  document.addEventListener("fullscreenchange", onFs);
   app._onKey = onKey;
+  app._onFs = onFs;
 }
 
 function commitText(app, el) {
@@ -428,5 +438,7 @@ export function unmount(app, root) {
   try { app.channel.close(); } catch (e) { /* noop */ }
   if (app._onResize) window.removeEventListener("resize", app._onResize);
   if (app._onKey) document.removeEventListener("keydown", app._onKey);
+  if (app._onDocClick) document.removeEventListener("click", app._onDocClick);
+  if (app._onFs) document.removeEventListener("fullscreenchange", app._onFs);
   if (root) root.innerHTML = "";
 }

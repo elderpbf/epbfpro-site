@@ -132,6 +132,8 @@ function _renderPreview() {
       '<div class="cdx-preview-actions">' +
         '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="edit" data-slug="' + _esc(d.slug) + '">' +
           _esc(t('slides.edit')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delete" data-slug="' + _esc(d.slug) + '">' +
+          _esc(t('slides.delete')) + '</button>' +
       '</div>' +
     '</div>' +
     '<div class="cdx-preview-body"><div class="cdx-preview-empty">' + _esc(t('slides.preview_hint')) + '</div></div>';
@@ -148,6 +150,21 @@ async function _loadDecks() {
     _renderRows();
     _renderPreview();
   } catch (e) {
+    if (grid) grid.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
+  }
+}
+
+async function _deleteDeck(slug) {
+  const d = _deckBySlug(slug);
+  const name = (d && d.title) || t('slides.untitled');
+  // eslint-disable-next-line no-alert -- lightweight guard; modal parity is a follow-up
+  if (!window.confirm(t('slides.confirm_delete').replace('{name}', name))) return;
+  try {
+    await api.remove({ slug });
+    if (_selectedSlug === slug) _selectedSlug = null;
+    await _loadDecks();
+  } catch (e) {
+    const grid = _q('#cdx-slides-grid');
     if (grid) grid.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
 }
@@ -241,6 +258,7 @@ export function mount(viewEl, ctx) {
       const a = act.getAttribute('data-act');
       if (a === 'new') return _createDeck();
       if (a === 'edit') return _openEditor(act.getAttribute('data-slug'), false);
+      if (a === 'delete') return _deleteDeck(act.getAttribute('data-slug'));
       if (a === 'back') return _backToList();
     }
     const row = e.target.closest('.cdx-item-row[data-slug]');
