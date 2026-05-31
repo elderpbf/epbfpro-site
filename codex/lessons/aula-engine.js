@@ -115,6 +115,7 @@ function _updateTopbarPin() {
   }
   window.CVTextResize = {
     apply: function() { apply(load()); },
+    reset: function() { save(1); apply(1); },   // default scale = 1
     bump: function(delta) {
       var next = clamp(load() + delta);
       save(next);
@@ -189,7 +190,9 @@ function _updateTopbarPin() {
   }
   window.CVContentWidth = {
     get: load,
+    DEFAULT: DEFAULT_FRAC,
     set: function(f) { f = clamp(f); save(f); apply(f); },
+    reset: function() { save(DEFAULT_FRAC); apply(DEFAULT_FRAC); },
     apply: function() { apply(load()); }
   };
   window.addEventListener('resize', function() {
@@ -790,7 +793,8 @@ function _wireDisplayControls(btn) {
       '<div class="cv-aula-pop-row">' +
         '<span class="cv-aula-pop-label">Largura</span>' +
         '<input type="range" class="cv-aula-pop-width" min="0" max="100" step="1" aria-label="Largura do conteúdo">' +
-      '</div>';
+      '</div>' +
+      '<button type="button" class="cv-aula-pop-reset" data-act="reset">Restaurar padrão</button>';
     document.body.appendChild(pop);
 
     pop.querySelector('[data-act="font-down"]').addEventListener('click', function() {
@@ -802,6 +806,13 @@ function _wireDisplayControls(btn) {
     const range = pop.querySelector('.cv-aula-pop-width');
     range.addEventListener('input', function() {
       if (window.CVContentWidth) CVContentWidth.set(parseInt(range.value, 10) / 100);
+    });
+    pop.querySelector('[data-act="reset"]').addEventListener('click', function() {
+      if (window.CVTextResize) CVTextResize.reset();
+      if (window.CVContentWidth) {
+        CVContentWidth.reset();
+        range.value = String(Math.round(CVContentWidth.get() * 100));
+      }
     });
   }
 

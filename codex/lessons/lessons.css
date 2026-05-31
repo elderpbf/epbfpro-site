@@ -122,3 +122,18 @@
   accent-color: var(--primary);
   cursor: pointer;
 }
+.cv-aula-pop-reset {
+  margin-top: 2px;
+  padding: 7px 10px;
+  font: 600 0.78rem/1 'Inter', system-ui, sans-serif;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cv-aula-pop-reset:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-light);
+}
