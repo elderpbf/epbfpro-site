@@ -24,7 +24,7 @@
 //   window.marked          (CDN, lazy)                       markdown preview
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
-import { glyphSvg } from '../js/glyphs.js';
+import { glyphSvg, iconHtml } from '../js/glyphs.js';
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
@@ -90,6 +90,30 @@ export function renderTypeOptions(types, selectedSlug, includeNewOption, exclude
     opts += '<option value="__new__">' + _esc(t('editor.new_type_option')) + '</option>';
   }
   return opts;
+}
+
+function _buildTypeOptsHtml(types, selectedSlug, includeNewOption, excludeTypes) {
+  const excluded = excludeTypes && excludeTypes.length ? excludeTypes : null;
+  const visible = excluded ? types.filter((ty) => excluded.indexOf(ty.slug) < 0) : types;
+  let html = visible.map((ty) => {
+    const active = ty.slug === selectedSlug ? ' is-active' : '';
+    return '<button type="button" class="cdx-type-opt' + active + '" data-val="' + _esc(ty.slug) + '">' +
+      '<span class="cdx-type-opt-icon">' + iconHtml(ty.icon, { size: 14 }) + '</span>' +
+      '<span>' + _esc(ty.label) + '</span>' +
+    '</button>';
+  }).join('');
+  const isExcludedSlug = excluded && excluded.indexOf(selectedSlug) >= 0;
+  if (selectedSlug && !isExcludedSlug && !visible.find((ty) => ty.slug === selectedSlug)) {
+    html = '<button type="button" class="cdx-type-opt is-active" data-val="' + _esc(selectedSlug) + '">' +
+      '<span>' + _esc(selectedSlug + t('editor.unregistered_suffix')) + '</span>' +
+    '</button>' + html;
+  }
+  if (includeNewOption) {
+    html += '<button type="button" class="cdx-type-opt cdx-type-opt-new" data-val="__new__">' +
+      '<span>' + _esc(t('editor.new_type_option')) + '</span>' +
+    '</button>';
+  }
+  return html;
 }
 
 function _buildTypeBlock(typeSlug, body_md, meta) {
@@ -191,7 +215,7 @@ function _buildTypeBlock(typeSlug, body_md, meta) {
   return '<div class="cdx-type-block">' + hasBody + '</div>';
 }
 
-function _wireTypeBlockEvents(block, onFileSelected) {
+function _wireTypeBlockEvents(block, typeSlug, onFileSelected) {
   const previewBtn = block.querySelector('#ie-preview-btn');
   if (previewBtn) {
     previewBtn.addEventListener('click', function () {
@@ -200,7 +224,13 @@ function _wireTypeBlockEvents(block, onFileSelected) {
       if (!pre || !bodyEl) return;
       if (pre.style.display === 'none') {
         pre.style.display = '';
-        _renderMarkdown(bodyEl.value, pre);
+        // Prompts render verbatim on the student page (CTRenderer.renderPrompt);
+        // mirror that here so the preview matches reality instead of formatting markdown.
+        if (typeSlug === 'prompt') {
+          pre.innerHTML = '<div class="cdx-preview-verbatim">' + _esc(bodyEl.value) + '</div>';
+        } else {
+          _renderMarkdown(bodyEl.value, pre);
+        }
         previewBtn.textContent = t('editor.preview_hide');
       } else {
         pre.style.display = 'none';
@@ -405,7 +435,8 @@ export function mount(container, opts) {
         '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="' + _esc(t('editor.title_placeholder')) + '">' +
       '</div>' +
       '<div class="cdx-field"><label>' + t('editor.type_label') + '</label>' +
-        '<select id="ie-type">' + renderTypeOptions(types, initialType, !!onCreateType, excludeTypes) + '</select>' +
+        '<input type="hidden" id="ie-type" value="' + _esc(initialType) + '">' +
+        '<div class="cdx-type-opts" id="ie-type-opts"></div>' +
       '</div>' +
       '<div class="cdx-field"><label>' + t('editor.summary_label') + '</label>' +
         '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="' + _esc(t('editor.summary_placeholder')) + '">' +
@@ -429,16 +460,29 @@ export function mount(container, opts) {
   let _pendingAssetFile = null;
   let _pendingAssetField = null;
   const typeSel = root.querySelector('#ie-type');
+  const typeOptsEl = root.querySelector('#ie-type-opts');
   let lastTypeValue = initialType;
   let isDirty = false;
 
   function markDirty() { if (!isDirty) { isDirty = true; onDirtyChange(true); } }
   function clearDirty() { if (isDirty) { isDirty = false; onDirtyChange(false); } }
 
+  function _refreshPicker(slug) {
+    typeOptsEl.innerHTML = _buildTypeOptsHtml(types, slug, !!onCreateType, excludeTypes);
+  }
+  _refreshPicker(initialType);
+
+  typeOptsEl.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-val]');
+    if (!btn) return;
+    typeSel.value = btn.dataset.val;
+    typeSel.dispatchEvent(new Event('change'));
+  });
+
   function renderTypeBlock(typeSlug) {
     const block = root.querySelector('#ie-type-block');
     block.innerHTML = _buildTypeBlock(typeSlug, initialBody, initialMeta);
-    _wireTypeBlockEvents(block, function (file, field) {
+    _wireTypeBlockEvents(block, typeSlug, function (file, field) {
       _pendingAssetFile = file;
       _pendingAssetField = field;
       markDirty();
@@ -456,16 +500,19 @@ export function mount(container, opts) {
       if (onCreateType) {
         onCreateType(function (newSlug) {
           if (newSlug) {
-            typeSel.innerHTML = renderTypeOptions(types, newSlug, !!onCreateType, excludeTypes);
+            typeSel.value = newSlug;
+            _refreshPicker(newSlug);
             lastTypeValue = newSlug;
             renderTypeBlock(newSlug);
             markDirty();
           } else {
             typeSel.value = lastTypeValue;
+            _refreshPicker(lastTypeValue);
           }
         });
       } else {
         typeSel.value = lastTypeValue;
+        _refreshPicker(lastTypeValue);
       }
       return;
     }
@@ -521,7 +568,7 @@ export function mount(container, opts) {
         aiContext.firstOutput = parsed;
         root.querySelector('#ie-title').value = parsed.title || '';
         root.querySelector('#ie-summary').value = parsed.summary || '';
-        if (parsed.type) root.querySelector('#ie-type').value = parsed.type;
+        if (parsed.type) { root.querySelector('#ie-type').value = parsed.type; _refreshPicker(parsed.type); }
         if (bodyEl) bodyEl.value = parsed.body_md || '';
         const newTagIds = await _tagsByLabels(tags, parsed.tag_labels || []);
         selectedTagIds.clear();

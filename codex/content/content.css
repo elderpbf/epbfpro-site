@@ -308,6 +308,8 @@
 .cdx-preview-area code { background: var(--cdx-card-sel-bg); padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
 .cdx-preview-area pre { background: var(--cdx-card-sel-bg); padding: 0.75rem; border-radius: 7px; overflow-x: auto; }
 .cdx-preview-area pre code { background: none; padding: 0; }
+/* Prompt preview: verbatim, matches CTRenderer.renderPrompt on the student page. */
+.cdx-preview-verbatim { white-space: pre-wrap; word-break: break-word; font-family: monospace; font-size: 0.85em; }
 
 .cdx-type-block {
   margin-top: 0.5rem;
@@ -329,6 +331,34 @@
   max-width: 220px;
 }
 .cdx-upload-progress { font-size: 0.78rem; color: var(--primary); }
+
+/* Type option picker (replaces native <select> in item editor) */
+.cdx-type-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+.cdx-type-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.cdx-type-opt:hover { border-color: var(--primary); background: var(--cdx-card-hover-bg); color: var(--text-primary); }
+.cdx-type-opt.is-active { border-color: var(--primary); background: var(--cdx-card-sel-bg); color: var(--primary); font-weight: 600; }
+.cdx-type-opt-icon { display: inline-flex; flex-shrink: 0; }
+.cdx-type-opt-icon svg { display: block; }
+.cdx-type-opt-new { border-style: dashed; }
 
 /* Tag chip picker (inline "+ tag") */
 .cdx-tag-picker { display: block; }
