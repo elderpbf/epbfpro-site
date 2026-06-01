@@ -457,11 +457,11 @@
   border-radius: 5px;
 }
 
-/* Content width = full window: drop the card chrome so it reads edge-to-edge. */
+/* Content width = full window: keep the white surface but drop the floating-card
+ * chrome (margin, rounding, shadow) so it reads edge-to-edge. The surface fill
+ * stays, otherwise the page --background shows through behind the text. */
 .cdx-lessons-content.is-full-width {
   margin: 0;
-  background: none;
-  border: 0;
   border-radius: 0;
   box-shadow: none;
 }
