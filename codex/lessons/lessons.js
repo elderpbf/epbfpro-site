@@ -453,7 +453,7 @@ function _renderLiveCard() {
   card.addEventListener('click', (e) => {
     if (e.target && e.target.closest && e.target.closest('[data-live-action="refresh"]')) return;
     const url = card.getAttribute('data-href');
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    if (url) window.location.href = url;
   });
   card.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
@@ -492,7 +492,11 @@ function _renderEmptyMain() {
 function _applyWidth(host) {
   host = host || _q('#cdx-lessons-content');
   if (!host || host.classList.contains('cdx-lessons-content--embed')) return;
-  const avail = host.clientWidth || (_q('.cdx-lessons-main') || {}).clientWidth || 0;
+  // Available width must come from the PARENT pane (uncapped), never the host:
+  // the host already carries a max-width from the prior call, so reading its
+  // own clientWidth would ratchet it ever-narrower and never widen back.
+  const pane = _q('.cdx-lessons-main');
+  const avail = (pane && pane.clientWidth) || host.clientWidth || 0;
   const px = _width.toMaxWidthPx(_width.get(), avail);
   host.classList.toggle('is-full-width', px === null);
   host.style.maxWidth = px === null ? 'none' : px + 'px';
