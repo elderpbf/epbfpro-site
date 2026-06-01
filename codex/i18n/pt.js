@@ -498,6 +498,7 @@ export default {
   'slides.confirm_delete':    'Excluir a apresentação "{name}"? Esta ação não pode ser desfeita.',
   'slides.back':              'Voltar',
   'slides.preview_hint':      'Clique em Editar para abrir esta apresentação.',
+  'slides.placeholder':       'Selecione uma apresentação na barra lateral, ou crie uma nova.',
 
   // Content -> Slides -- the deck editor chrome (copied component, strings via t())
   'slides.ed_slide':          'slide',

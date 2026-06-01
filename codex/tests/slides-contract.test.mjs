@@ -106,7 +106,7 @@ test('editor fills the window via position:fixed, no JS sizing, no shell hacks',
   // Strip /* comments */ so prose mentioning the shell does not trip the guard;
   // only real rules are inspected.
   const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.match(rules, /\.cdx-slides-editor[^}]*position:\s*fixed/s, 'editor wrapper is position:fixed');
+  assert.match(rules, /\.cdx-slides-shell[^}]*position:\s*fixed/s, 'editor shell is position:fixed');
   assert.ok(!/\.bs-main|\.cdx-view\b/.test(rules), 'slides.css does not reach up and restyle the shell');
   assert.ok(!/--cdx-breakout/.test(rules), 'slides.css does not depend on a JS-set variable');
 });

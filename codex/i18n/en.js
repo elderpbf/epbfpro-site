@@ -499,6 +499,7 @@ export default {
   'slides.confirm_delete':    'Delete the presentation "{name}"? This action cannot be undone.',
   'slides.back':              'Back',
   'slides.preview_hint':      'Click Edit to open this presentation.',
+  'slides.placeholder':       'Select a presentation from the sidebar, or create a new one.',
 
   // Content -> Slides -- the deck editor chrome (copied component, strings via t())
   'slides.ed_slide':          'slide',

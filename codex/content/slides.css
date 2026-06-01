@@ -1,35 +1,103 @@
-/* content/slides.css - Slides sub-tab.
-   The landing reuses the Items sub-tab classes (cdx-items, cdx-items-split,
-   cdx-item-row, cdx-item-preview, ...) from content.css, so it needs no list
-   styles of its own. This file makes the deck editor fill the window.
+/* content/slides.css - Slides sub-tab: auto-hide sidebar + full-window editor.
 
-   WHY position:fixed (Codex-native, no shell hacks, no JS): the editor's parts
-   (#chrome/#nav/#stagewrap) are position:absolute and give .cdx-deck-editor no
-   intrinsic height, and the editor is mounted THREE wrappers deep
-   (.bs-main > .cdx-view > #cdx-subview > here), several of which are height:auto.
-   Threading a height down that chain is brittle (a stale-JS variable or any
-   height:auto link collapses it to 0 -> only the Back bar shows). Instead the
-   editor claims its own viewport region with position:fixed, anchored below the
-   Codex chrome (topbar 65px + sub-tab row 31px = 96px), exactly the way the
-   Lessons tab owns a viewport-relative height. It depends on NOTHING upstream
-   and on NO JavaScript, so it cannot desync. The fixed layer is torn down with
-   the sub-tab (Back / unmount clears the view), so it never leaks to other tabs. */
+   WHY position:fixed (Codex-native, no shell hacks, no JS sizing): the editor's
+   parts (#chrome/#nav/#stagewrap) are position:absolute and give .cdx-deck-editor
+   no intrinsic height, and the sub-tab is mounted three wrappers deep
+   (.bs-main > .cdx-view > #cdx-subview, all height:auto). So the shell claims its
+   own viewport region with position:fixed below the Codex chrome (topbar 65 +
+   sub-tab row 31 = 96px), the way the Lessons tab owns a viewport-relative
+   height. It depends on NOTHING upstream and on NO JavaScript, so it cannot
+   cache-desync or collapse. Torn down with the sub-tab on unmount (the view is
+   cleared), so the fixed layer never leaks to other tabs.
 
-:root { --cdx-chrome-h: 96px; }   /* topbar (65) + sub-tab row (31) */
+   Sidebar model: with no deck open the sidebar is pinned (.is-open). Open a deck
+   (.deck-open on the shell) and the sidebar slides off-canvas; reaching the left
+   edge re-adds .is-open (JS), leaving it removes .is-open (mouseleave). The
+   editor region always fills the whole shell underneath. */
 
-.cdx-slides-editor {
+:root { --cdx-chrome-h: 96px; --cdx-slides-side-w: 320px; }
+
+.cdx-slides-shell {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 0; right: 0;
   top: var(--cdx-chrome-h);
   bottom: 0;
   z-index: 5;
+  background: var(--bg, #0e1413);
+  overflow: hidden;
+}
+
+/* Editor region: always the full shell. */
+.cdx-slides-region { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.cdx-slides-stage { flex: 1 1 auto; min-height: 0; }
+.cdx-slides-stage.cdx-deck-editor { border: 0; border-radius: 0; }
+
+/* Placeholder shown when no deck is open (the sidebar is pinned beside it). */
+.cdx-slides-placeholder {
+  margin: auto;
+  padding: 2rem;
+  max-width: 28rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* Left hot-strip: a thin always-present zone + chevron hint while a deck is open
+   (the mousemove handler is the real trigger; this is just an affordance). */
+.cdx-slides-edge { position: absolute; left: 0; top: 0; bottom: 0; width: 16px; z-index: 20; }
+.cdx-slides-shell.deck-open .cdx-slides-edge::after {
+  content: "\203A";
+  position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+  color: var(--text-secondary); opacity: 0.5; font-size: 1.4rem; line-height: 1;
+}
+
+/* Sidebar: overlays the editor region, slides in/out from the left. */
+.cdx-slides-sidebar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: var(--cdx-slides-side-w);
+  z-index: 30;
   display: flex;
   flex-direction: column;
-  background: var(--bg, #0e1413);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  box-shadow: 4px 0 18px -8px var(--shadow, rgba(0,0,0,0.3));
+  transform: translateX(-100%);
+  transition: transform 0.18s ease;
 }
-.cdx-slides-editorbar { flex: 0 0 auto; padding: 0.5rem 1.5rem; }
-.cdx-slides-stage { flex: 1 1 auto; min-height: 0; }
+.cdx-slides-sidebar.is-open { transform: translateX(0); }
 
-/* Edge-to-edge: no rounded card, no border on the editor region. */
-.cdx-slides-stage.cdx-deck-editor { border: 0; border-radius: 0; }
+.cdx-slides-side-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.cdx-slides-side-title { margin: 0; margin-right: auto; font-size: 1.05rem; color: var(--text-primary); }
+
+.cdx-slides-side-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
+
+.cdx-slides-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-slides-row:hover { background: var(--cdx-card-hover-bg, rgba(127,127,127,0.08)); }
+.cdx-slides-row.is-active { background: var(--cdx-card-sel-bg, rgba(20,184,166,0.12)); border-color: var(--cdx-card-sel-border, rgba(20,184,166,0.4)); }
+.cdx-slides-row-info { flex: 1; min-width: 0; }
+.cdx-slides-row-title { color: var(--text-primary); font-weight: 600; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-slides-row-sub { color: var(--text-secondary); font-size: 0.76rem; margin-top: 0.1rem; }
+.cdx-slides-row-del {
+  flex: 0 0 auto;
+  border: 0; background: none; cursor: pointer;
+  color: var(--text-secondary); font-size: 1.1rem; line-height: 1;
+  padding: 0 0.2rem; border-radius: 6px; opacity: 0;
+}
+.cdx-slides-row:hover .cdx-slides-row-del { opacity: 0.7; }
+.cdx-slides-row-del:hover { opacity: 1; color: var(--danger, #ef4444); }
