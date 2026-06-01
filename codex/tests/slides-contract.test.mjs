@@ -87,17 +87,26 @@ test('slides.js mounts the editor in a .cdx-deck-editor container', () => {
   assert.match(read('../content/slides.js'), /cdx-deck-editor/, 'editor host carries cdx-deck-editor');
 });
 
-// Regression guard for the cache-desync layout loop: the editor's full-window
-// sizing MUST be pure CSS (the shell flex chain via :has), with NO JavaScript
-// geometry. slides.js is an unversioned ES module that caches independently of
-// the versioned slides.css; routing height through JS produced a stale-JS /
-// fresh-CSS combo where the editor collapsed to 0 (only the Back button showed).
-test('editor sizing is pure CSS, not JS (no cache-desync collapse)', () => {
+// Regression guard for the blank-editor loop. The editor is mounted three
+// wrappers deep (.bs-main > .cdx-view > #cdx-subview, all height:auto) and its
+// internals are position:absolute, so it has NO intrinsic height. Two failed
+// approaches both collapsed it to 0 (only the Back bar showed): (a) routing a
+// height through a JS-set CSS variable, which desynced because slides.js is an
+// unversioned ES module cached independently of the versioned slides.css; and
+// (b) a :has() flex chain that skipped the #cdx-subview wrapper. The fix is
+// Codex-native: the editor claims its own viewport region with position:fixed
+// below the chrome, depending on NO ancestor height, NO shell override, and NO
+// JavaScript. This guard locks all three properties in.
+test('editor fills the window via position:fixed, no JS sizing, no shell hacks', () => {
   const js = read('../content/slides.js');
   assert.ok(!/_sizeEditor/.test(js), 'slides.js has no JS sizing function');
   assert.ok(!/innerHeight/.test(js), 'slides.js does not compute height in JS');
   assert.ok(!/--cdx-breakout/.test(js), 'slides.js sets no breakout CSS variable');
   const css = read('../content/slides.css');
-  assert.match(css, /:has\(\.cdx-slides-editor\)/, 'slides.css drives layout via the :has flex chain');
-  assert.ok(!/--cdx-breakout/.test(css), 'slides.css does not depend on a JS-set variable');
+  // Strip /* comments */ so prose mentioning the shell does not trip the guard;
+  // only real rules are inspected.
+  const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(rules, /\.cdx-slides-editor[^}]*position:\s*fixed/s, 'editor wrapper is position:fixed');
+  assert.ok(!/\.bs-main|\.cdx-view\b/.test(rules), 'slides.css does not reach up and restyle the shell');
+  assert.ok(!/--cdx-breakout/.test(rules), 'slides.css does not depend on a JS-set variable');
 });
