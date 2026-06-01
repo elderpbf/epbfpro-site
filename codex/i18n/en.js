@@ -481,6 +481,8 @@ export default {
   'lessons.edit':                 'Edit',
   'lessons.unfavorite':           'Unfavorite',
   'lessons.live_refresh':         'Refresh session',
+  'lessons.live_open_sessions':   'Open sessions',
+  'lessons.live_on':              'Live session',
 
   // Content -> Slides (Presentations) -- authored deck library
   'slides.new':               '+ New presentation',

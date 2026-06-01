@@ -47,20 +47,24 @@ const _favs = makeFavorites(_ls);
 let _presetId = null;
 let _presetItems = [];
 let _presetLoader = null;
-// Live session (Perguntas)
+// Live session (Perguntas) - loaded once on mount + on refresh click (no polling)
 let _liveSession = null;
-let _liveTimer = null;
+let _liveLoading = false;
 // Editor (lazy-loaded types + tags)
 let _types = [];
 let _tags = [];
 let _typesLoaded = false;
 // Context menu
 let _contextMenu = null;
-// Focus mode
+// Focus mode (faithful port of cv-focus-mode.js semantics)
 let _focusOn = false;
 let _focusHotZones = [];
 let _focusTopTimer = null;
 let _focusSideTimer = null;
+let _focusBottomTimer = null;
+let _overTop = false;
+let _overSide = false;
+let _overBottom = false;
 
 // All accordion section keys: used in mount reset + exclusive-open logic.
 const ALL_SECTION_KEYS = ['favorites', 'preset', ...SECTION_ORDER, 'labs'];
@@ -85,26 +89,83 @@ function _findItem(id) {
 }
 
 // ── Focus mode ────────────────────────────────────────────────────────────────
+// Faithful port of cv-focus-mode.js: body.cdx-lessons-focus hides the topbar +
+// sidebar + bottom bar; each reveals when the cursor approaches its edge, then
+// tucks away ~1.5s after the cursor leaves. The hide timer is cancelled while
+// the cursor is OVER the revealed element (_overTop/_overSide/_overBottom), so it
+// never collapses out from under the mouse. F toggles, Esc exits, default ON.
 const _FOCUS_DELAY = 1500;
+const _TOP_ZONE = 6, _LEFT_ZONE = 6, _BOTTOM_ZONE = 6;
 
 function _focusEnable() {
   if (_focusOn) return;
   _focusOn = true;
   document.body.classList.add('cdx-lessons-focus');
+  _updateTopbarPin();
   try { if (_ls) _ls.setItem('cv_focus_mode', '1'); } catch (_) {}
 }
 
 function _focusDisable() {
   if (!_focusOn) return;
   _focusOn = false;
-  document.body.classList.remove('cdx-lessons-focus', 'cdx-lessons-focus--top', 'cdx-lessons-focus--side');
+  document.body.classList.remove(
+    'cdx-lessons-focus', 'cdx-lessons-focus--top', 'cdx-lessons-focus--side',
+    'cdx-lessons-focus--bottom', 'cdx-lessons-topbar-pin');
   clearTimeout(_focusTopTimer); _focusTopTimer = null;
   clearTimeout(_focusSideTimer); _focusSideTimer = null;
+  clearTimeout(_focusBottomTimer); _focusBottomTimer = null;
   try { if (_ls) _ls.setItem('cv_focus_mode', '0'); } catch (_) {}
 }
 
 function _focusToggle() { if (_focusOn) _focusDisable(); else _focusEnable(); }
 
+// Pin the topbar while focus is on AND no item is selected AND the sidebar is
+// not revealed, so an empty Aula in focus mode still shows the chrome (Bundle L).
+function _updateTopbarPin() {
+  const shouldPin = _focusOn && !_activeItemId &&
+    !document.body.classList.contains('cdx-lessons-focus--side');
+  document.body.classList.toggle('cdx-lessons-topbar-pin', shouldPin);
+}
+
+function _showTop() {
+  document.body.classList.add('cdx-lessons-focus--top');
+  clearTimeout(_focusTopTimer);
+  _focusTopTimer = setTimeout(_maybeHideTop, _FOCUS_DELAY);
+}
+function _maybeHideTop() {
+  if (_overTop) return;
+  document.body.classList.remove('cdx-lessons-focus--top');
+}
+function _showSide() {
+  document.body.classList.add('cdx-lessons-focus--side');
+  _updateTopbarPin();
+  clearTimeout(_focusSideTimer);
+  _focusSideTimer = setTimeout(_maybeHideSide, _FOCUS_DELAY);
+}
+function _maybeHideSide() {
+  if (_overSide) return;
+  document.body.classList.remove('cdx-lessons-focus--side');
+  _updateTopbarPin();
+}
+function _showBottom() {
+  document.body.classList.add('cdx-lessons-focus--bottom');
+  clearTimeout(_focusBottomTimer);
+  _focusBottomTimer = setTimeout(_maybeHideBottom, _FOCUS_DELAY);
+}
+function _maybeHideBottom() {
+  if (_overBottom) return;
+  document.body.classList.remove('cdx-lessons-focus--bottom');
+}
+
+function _onFocusMouseMove(e) {
+  if (!_focusOn) return;
+  if (e.clientY <= _TOP_ZONE) _showTop();
+  if (e.clientX <= _LEFT_ZONE) _showSide();
+  if (e.clientY >= (window.innerHeight - _BOTTOM_ZONE)) _showBottom();
+}
+
+// Thin fixed strips above any cross-origin embed iframe so the reveal still
+// fires when the cursor reaches an edge over a full-bleed Drive/Slides preview.
 function _focusMountHotZones() {
   const make = (extraCls, onEnter) => {
     const el = document.createElement('div');
@@ -114,18 +175,11 @@ function _focusMountHotZones() {
     document.body.appendChild(el);
     _focusHotZones.push(el);
   };
-  make('cdx-lessons-focus-hot--top', () => {
-    document.body.classList.add('cdx-lessons-focus--top');
-    clearTimeout(_focusTopTimer);
-    _focusTopTimer = setTimeout(
-      () => document.body.classList.remove('cdx-lessons-focus--top'), _FOCUS_DELAY);
-  });
-  make('cdx-lessons-focus-hot--side', () => {
-    document.body.classList.add('cdx-lessons-focus--side');
-    clearTimeout(_focusSideTimer);
-    _focusSideTimer = setTimeout(
-      () => document.body.classList.remove('cdx-lessons-focus--side'), _FOCUS_DELAY);
-  });
+  make('cdx-lessons-focus-hot--top', _showTop);
+  make('cdx-lessons-focus-hot--side', _showSide);
+  make('cdx-lessons-focus-hot--bottom', _showBottom);
+  document.addEventListener('mousemove', _onFocusMouseMove);
+  _cleanup.push(() => document.removeEventListener('mousemove', _onFocusMouseMove));
 }
 
 function _focusUnmountHotZones() {
@@ -133,6 +187,22 @@ function _focusUnmountHotZones() {
   _focusHotZones = [];
   clearTimeout(_focusTopTimer); _focusTopTimer = null;
   clearTimeout(_focusSideTimer); _focusSideTimer = null;
+  clearTimeout(_focusBottomTimer); _focusBottomTimer = null;
+}
+
+// Wire mouseenter/leave on a revealed element so its hide timer pauses while the
+// cursor is over it (mirrors cv-focus-mode.js _wireBarHover). setOver flips the
+// flag; restartTimer reschedules the hide once the cursor leaves.
+function _wireFocusHover(el, getOver, setOver, restartHide) {
+  if (!el) return;
+  const onEnter = () => { setOver(true); };
+  const onLeave = () => { setOver(false); if (_focusOn) restartHide(); };
+  el.addEventListener('mouseenter', onEnter);
+  el.addEventListener('mouseleave', onLeave);
+  _cleanup.push(() => {
+    el.removeEventListener('mouseenter', onEnter);
+    el.removeEventListener('mouseleave', onLeave);
+  });
 }
 
 // ── Sidebar sections ──────────────────────────────────────────────────────────
@@ -347,29 +417,63 @@ function _mountPresetLoader() {
 }
 
 // ── Live session (Perguntas card) ─────────────────────────────────────────────
+// Faithful port of the monolith's _renderPinnedNexo: an ALWAYS-present launcher
+// pinned at the sidebar bottom. No live session -> "Perguntas \xb7 Abrir sessoes",
+// clicking opens the Questions home. Live -> "Perguntas \xb7 <name>" with a pulsing
+// red dot, clicking opens the host view. A refresh button reloads on demand. No
+// background polling: loaded once on mount + on refresh click.
+const _NEXO_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>';
+
 function _renderLiveCard() {
   const el = _q('.cdx-lessons-live-card');
   if (!el) return;
-  if (!_liveSession) { el.hidden = true; el.innerHTML = ''; return; }
-  el.hidden = false;
-  const code = _liveSession.code || _liveSession.session_code || '';
-  const label = code ? (t('nav.questions') + ' \xb7 ' + _esc(code)) : t('nav.questions');
-  const refreshTitle = _esc(t('lessons.live_refresh'));
+  const live = _liveSession;
+  const tail = live ? live.name : t('lessons.live_open_sessions');
+  const titleAttr = _esc(t('nav.questions') + ' \xb7 ' + (live ? live.name : t('lessons.live_open_sessions')));
+  const href = live
+    ? '/backstage/classpulse/host.html?code=' + encodeURIComponent(live.id)
+    : '/backstage/classpulse/';
+  // role="button" wrapper (not <button>) so the inner refresh <button> is valid.
   el.innerHTML =
-    '<div class="cdx-lessons-live-inner">' +
-      '<span class="cdx-lessons-live-dot" aria-hidden="true"></span>' +
-      '<span class="cdx-lessons-live-label">' + label + '</span>' +
-      '<button type="button" class="cdx-lessons-live-btn" title="' + refreshTitle + '" aria-label="' + refreshTitle + '">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>' +
+    '<div role="button" tabindex="0" class="cdx-lessons-live cdx-lesson-section--preset" ' +
+      'data-href="' + _esc(href) + '" title="' + titleAttr + '">' +
+      '<span class="cdx-lessons-live-glyph">' + _NEXO_GLYPH + '</span>' +
+      '<span class="cdx-lessons-live-label">' +
+        '<span class="cdx-lessons-live-brand">' + _esc(t('nav.questions')) + '</span>' +
+        ' \xb7 ' + _esc(tail) +
+      '</span>' +
+      '<button type="button" class="cdx-lessons-live-refresh' + (_liveLoading ? ' is-loading' : '') + '" ' +
+        'data-live-action="refresh" title="' + _esc(t('lessons.live_refresh')) + '" aria-label="' + _esc(t('lessons.live_refresh')) + '">' +
+        '<span class="cdx-lessons-live-spin">&#8635;</span>' +
       '</button>' +
+      (live ? '<span class="cdx-lessons-live-dot" aria-label="' + _esc(t('lessons.live_on')) + '"></span>' : '') +
     '</div>';
-  el.querySelector('.cdx-lessons-live-btn').addEventListener('click', _pollLiveSession, { once: true });
+
+  const card = el.querySelector('.cdx-lessons-live');
+  card.addEventListener('click', (e) => {
+    if (e.target && e.target.closest && e.target.closest('[data-live-action="refresh"]')) return;
+    const url = card.getAttribute('data-href');
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  });
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+  });
+  const btn = el.querySelector('[data-live-action="refresh"]');
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (_liveLoading) return;
+    _loadLiveSession();
+  });
 }
 
-function _pollLiveSession() {
+function _loadLiveSession() {
+  _liveLoading = true;
+  _renderLiveCard();
   cpApi.liveSession({ _silent: true })
-    .then((d) => { _liveSession = (d && (d.session || d.live_session)) || null; _renderLiveCard(); })
-    .catch(() => { _liveSession = null; _renderLiveCard(); });
+    .then((d) => { _liveSession = (d && d.session) || null; })
+    .catch(() => { /* keep prior state on error */ })
+    .then(() => { _liveLoading = false; _renderLiveCard(); });
 }
 
 // ── Main view ─────────────────────────────────────────────────────────────────
@@ -399,6 +503,7 @@ const _EMBED_STRATEGIES = new Set(['iframe', 'drive_folder', 'drive_file', 'vide
 
 function _renderItem(id) {
   _activeItemId = id;
+  _updateTopbarPin();
   if (_viewEl) {
     _viewEl.querySelectorAll('.cdx-lesson-sub').forEach((el) =>
       el.classList.toggle('is-active', String(el.dataset.itemId) === String(id)));
@@ -537,6 +642,14 @@ function _renderBar(main, item) {
     else if (act === 'copy-drive') _copyDriveText(item);
     else if (act === 'edit') _openEditor(item);
     else if (btn.dataset.resize) _bumpScale(Number(btn.dataset.resize) * _scale.STEP);
+  });
+
+  // Focus-mode: pause the bottom-bar hide timer while the cursor is over it.
+  // The bar is recreated each paint, so this re-wires per item (cleaned on unmount).
+  bar.addEventListener('mouseenter', () => { _overBottom = true; });
+  bar.addEventListener('mouseleave', () => {
+    _overBottom = false;
+    if (_focusOn) { clearTimeout(_focusBottomTimer); _focusBottomTimer = setTimeout(_maybeHideBottom, _FOCUS_DELAY); }
   });
 }
 
@@ -767,7 +880,7 @@ function _renderShell() {
       '<aside class="cdx-lessons-sidebar">' +
         '<div class="cdx-lessons-sidebar-head" id="cdx-lessons-head"></div>' +
         '<div class="cdx-lessons-sidebar-body"><div class="cdx-empty">' + t('lessons.loading_items') + '</div></div>' +
-        '<div class="cdx-lessons-live-card" hidden></div>' +
+        '<div class="cdx-lessons-live-card"></div>' +
       '</aside>' +
       '<section class="cdx-lessons-main"></section>' +
     '</div>';
@@ -797,6 +910,12 @@ function _renderShell() {
   };
   document.addEventListener('keydown', onKey);
   _cleanup.push(() => document.removeEventListener('keydown', onKey));
+
+  // Focus-mode hover: pause each element's hide timer while the cursor is over it.
+  _wireFocusHover(document.querySelector('.bs-topbar'),
+    () => _overTop, (v) => { _overTop = v; }, () => { clearTimeout(_focusTopTimer); _focusTopTimer = setTimeout(_maybeHideTop, _FOCUS_DELAY); });
+  _wireFocusHover(_q('.cdx-lessons-sidebar'),
+    () => _overSide, (v) => { _overSide = v; }, () => { clearTimeout(_focusSideTimer); _focusSideTimer = setTimeout(_maybeHideSide, _FOCUS_DELAY); });
 
   // Restore persisted focus-mode preference (default: on)
   let storedFocus = null;
@@ -860,7 +979,9 @@ export function mount(viewEl) {
   _presetId = null;
   _presetItems = [];
   _liveSession = null;
+  _liveLoading = false;
   _typesLoaded = false;
+  _overTop = _overSide = _overBottom = false;
   const openKey = _favs.all().length ? 'favorites' : 'items';
   _collapsed = new Set(ALL_SECTION_KEYS.filter((k) => k !== openKey));
   _seeded = new Set();
@@ -869,8 +990,6 @@ export function mount(viewEl) {
   _cleanup = [];
   _focusMountHotZones();
   _renderShellLoading();
-  _pollLiveSession();
-  _liveTimer = setInterval(_pollLiveSession, 30000);
   cohortsApi.listAllTurmas().then((d) => {
     _turmas = (d && d.turmas) || [];
     if (!_turmas.length) {
@@ -879,6 +998,8 @@ export function mount(viewEl) {
     }
     _active = _pickActive(_turmas);
     _renderShell();
+    _renderLiveCard();
+    _loadLiveSession();
     _loadVault();
   }).catch(() => {
     _viewEl.innerHTML = '<div class="cdx-empty">' + t('lessons.error_turmas') + '</div>';
@@ -894,10 +1015,11 @@ export function unmount() {
   _cleanup = [];
   _activeItemId = null;
   _detailCache = new Map();
-  clearInterval(_liveTimer); _liveTimer = null;
   _liveSession = null;
+  _liveLoading = false;
   _focusDisable();
   _focusUnmountHotZones();
+  _overTop = _overSide = _overBottom = false;
   if (_presetLoader) { _presetLoader.destroy(); _presetLoader = null; }
   _presetId = null;
   _presetItems = [];

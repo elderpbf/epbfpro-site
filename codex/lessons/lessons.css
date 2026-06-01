@@ -307,13 +307,20 @@
 .cdx-lessons-bar-resize { display: flex; gap: 0.35rem; }
 
 /* ── Full-window (mount adds .bs-app--classvault on #screen-app) ──────────────
- * Like the legacy Lessons, the two-pane fills the viewport but keeps a small
- * inset from the edges (not dead-flush) and a gap between the panes, which keep
- * their rounded cards. classvault.css gives the height chain
- * (.bs-app--classvault{height:100vh} + >.bs-main{flex:1;display:flex}); here we
- * drop the shared 1200px .bs-main cap and let the Codex view + two-pane grow.
- * Scoped to the class, so other Codex tabs are untouched. */
-.bs-app--classvault .bs-main { max-width: none; margin: 0; }
+ * Edge-to-edge two-pane filling the viewport, flush against the topbar and the
+ * window edges, exactly like the legacy Aula (.cv-shell): no inset, no gap, no
+ * rounded card chrome. classvault.css gives .bs-app--classvault{height:100vh;
+ * overflow:hidden}; here we make the .bs-main + view chain fill (mirroring
+ * .bs-app--classvault > .bs-main {flex:1;min-height:0;padding:0;display:flex})
+ * and drop the shared 1200px cap. Scoped to the class, so other tabs untouched. */
+.bs-app--classvault .bs-main {
+  flex: 1;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
 .bs-app--classvault .cdx-view {
   flex: 1;
   min-width: 0;
@@ -325,9 +332,20 @@
 .bs-app--classvault .cdx-lessons {
   flex: 1;
   min-width: 0;
-  height: auto;          /* was calc(100vh - 150px); now fills the flex parent */
-  gap: 0.75rem;
-  padding: 0.6rem;       /* the little margin from the edges, like the monolith */
+  height: 100%;          /* fills the flex parent up to the topbar */
+  gap: 0;                /* flush: no gap between the panes */
+  padding: 0;            /* flush: no inset from the edges/topbar */
+}
+/* Flush panes: sidebar separated by a border-right only, main borderless, no
+ * rounding, so the sidebar top touches the topbar's bottom edge. */
+.bs-app--classvault .cdx-lessons-sidebar {
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+}
+.bs-app--classvault .cdx-lessons-main {
+  border: none;
+  border-radius: 0;
 }
 
 /* ── Sidebar head row: search + the "Aa" display button ─────────────────────── */
@@ -532,46 +550,92 @@
 }
 .cdx-lessons-sidebar-head .cv-preset-loader-reset:hover { color: var(--text-primary); border-color: var(--primary); }
 
-/* ── Perguntas live card (pinned at sidebar bottom) ─────────────────────────── */
+/* ── Perguntas live card (always-present launcher, pinned at sidebar bottom) ───
+ * Mirrors the monolith's _renderPinnedNexo: indigo section card with a glyph,
+ * "Perguntas \xb7 <tail>" label, a refresh button, and a pulsing red dot when a
+ * session is live. Outside .cdx-sm-body so it never scrolls away. */
 .cdx-lessons-live-card {
   flex-shrink: 0;
-  border-top: 1px solid var(--border);
+  padding: 6px 12px 10px;
   background: var(--surface);
-  padding: 8px 12px;
+  border-top: 1px solid var(--border);
 }
-.cdx-lessons-live-inner {
+.cdx-lessons-live {
+  --sec: #6366f1;        /* indigo, matches the legacy nexo card */
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec) 6%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec) 35%, transparent);
+  border-radius: 10px;
+  padding: 9px 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  gap: 10px;
+  transition: box-shadow 0.18s, border-color 0.15s, transform 0.15s;
 }
-.cdx-lessons-live-dot {
+.cdx-lessons-live:hover {
+  border-color: var(--sec);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--sec) 25%, transparent),
+              0 6px 22px -10px var(--sec);
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .cdx-lessons-live {
+  background: color-mix(in oklab, var(--sec) 10%, var(--surface));
+  box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec) 60%, transparent);
+}
+.cdx-lessons-live-glyph {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--sec);
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
+}
+.cdx-lessons-live-glyph svg {
+  width: 18px; height: 18px;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--sec) 50%, transparent));
+}
+.cdx-lessons-live-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-lessons-live-refresh {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: color-mix(in oklab, var(--sec) 14%, transparent);
+  color: var(--sec);
+  font-size: 0.85rem;
+  line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cdx-lessons-live-refresh:hover {
+  background: color-mix(in oklab, var(--sec) 25%, transparent);
+  border-color: var(--sec);
+}
+.cdx-lessons-live-spin { display: inline-block; line-height: 1; }
+.cdx-lessons-live-refresh.is-loading .cdx-lessons-live-spin { animation: cdx-lessons-spin 0.8s linear infinite; }
+@keyframes cdx-lessons-spin { to { transform: rotate(360deg); } }
+.cdx-lessons-live-dot {
+  width: 12px; height: 12px;
   border-radius: 50%;
   background: #ef4444;
-  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-  animation: cdx-lessons-pulse 1.6s infinite;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  flex-shrink: 0;
+  animation: cdx-lessons-pulse-dot 1.4s ease-in-out infinite;
 }
-@keyframes cdx-lessons-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  60%  { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+@keyframes cdx-lessons-pulse-dot {
+  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  70%  { box-shadow: 0 0 0 9px rgba(239, 68, 68, 0); }
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
-.cdx-lessons-live-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text-primary); }
-.cdx-lessons-live-btn {
-  flex-shrink: 0;
-  width: 26px; height: 26px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.cdx-lessons-live-btn:hover { color: var(--text-primary); border-color: var(--primary); }
 
 /* ── Context menu ────────────────────────────────────────────────────────────── */
 .cdx-lessons-ctx {
@@ -607,41 +671,58 @@
   padding: 1rem 1.25rem;
 }
 
-/* ── Focus mode ──────────────────────────────────────────────────────────────── */
-/* Topbar hides; sidebar hides. Both reveal on hover via their hot-zones. */
+/* ── Focus mode ───────────────────────────────────────────────────────────────
+ * Faithful port of the legacy cv-focus block. body.cdx-lessons-focus tucks the
+ * topbar (up), sidebar (left, position:fixed out of flow so the main fills),
+ * and bottom bar (down). Reveal classes (--top/--side/--bottom) slide each one
+ * back in; --topbar-pin keeps the topbar shown while no item is selected. */
 body.cdx-lessons-focus .bs-topbar {
-  opacity: 0;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9900;
   transform: translateY(-100%);
-  pointer-events: none;
-  transition: opacity 0.2s, transform 0.22s;
-}
-body.cdx-lessons-focus--top .bs-topbar {
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-}
-body.cdx-lessons-focus .cdx-lessons-sidebar {
-  max-width: 0;
-  min-width: 0;
-  flex: 0 0 0 !important;
   opacity: 0;
-  overflow: hidden;
-  pointer-events: none;
-  transition: max-width 0.22s, flex 0.22s, opacity 0.18s;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
-body.cdx-lessons-focus--side .cdx-lessons-sidebar {
-  max-width: 340px;
-  flex: 0 0 340px !important;
+body.cdx-lessons-focus.cdx-lessons-focus--top .bs-topbar,
+body.cdx-lessons-focus.cdx-lessons-topbar-pin .bs-topbar {
+  transform: translateY(0);
   opacity: 1;
-  overflow: hidden;
-  pointer-events: auto;
 }
-/* Thin fixed strips that stay above iframes and capture mouse at the edges. */
+/* Sidebar leaves flow (position:fixed) so .cdx-lessons-main fills the row. */
+body.cdx-lessons-focus .cdx-lessons-sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  width: 340px;
+  z-index: 9800;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+body.cdx-lessons-focus.cdx-lessons-focus--side .cdx-lessons-sidebar {
+  transform: translateX(0);
+  box-shadow: 4px 0 16px var(--shadow);
+}
+/* Bottom action bar tucks down, reveals on the bottom edge. */
+body.cdx-lessons-focus .cdx-lessons-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 9800;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cdx-lessons-focus.cdx-lessons-focus--bottom .cdx-lessons-bar {
+  transform: translateY(0);
+  opacity: 1;
+}
+/* Thin fixed strips above any cross-origin iframe so the reveal still fires. */
 .cdx-lessons-focus-hot {
   position: fixed;
-  z-index: 8900;
+  z-index: 9700;
   pointer-events: none;
 }
 body.cdx-lessons-focus .cdx-lessons-focus-hot { pointer-events: auto; }
-.cdx-lessons-focus-hot--top  { top: 0; left: 0; right: 0; height: 6px; }
-.cdx-lessons-focus-hot--side { top: 0; left: 0; bottom: 0; width: 6px; }
+.cdx-lessons-focus-hot--top    { top: 0; left: 0; right: 0; height: 8px; }
+.cdx-lessons-focus-hot--side   { top: 0; bottom: 0; left: 0; width: 8px; }
+.cdx-lessons-focus-hot--bottom { bottom: 0; left: 0; right: 0; height: 8px; }

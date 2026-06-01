@@ -221,10 +221,16 @@ async function _openEditor(slug, fresh) {
 // Make the editor stage fill from its top edge to the bottom of the viewport, so
 // the deck editor occupies all available window with no wasted margin.
 function _sizeEditor() {
-  const stage = _q('#cdx-slides-stage');
-  if (!stage) return;
-  const top = stage.getBoundingClientRect().top;
-  stage.style.height = Math.max(360, window.innerHeight - top - 8) + 'px';
+  const wrap = _q('.cdx-slides-editor');
+  if (!wrap) return;
+  // Fill from the wrapper's top edge to the viewport bottom. The stage is a
+  // flex:1 child of this wrapper, so it inherits the real height. Setting the
+  // height on the stage directly does NOT work: it is a flex item with
+  // flex-basis:0%, so an explicit height collapses when the wrapper has none
+  // (the wrapper's ancestor .cdx-view is height:auto). This was the blank-editor
+  // bug (stage offsetHeight 0 despite an inline height).
+  const top = wrap.getBoundingClientRect().top;
+  wrap.style.height = Math.max(420, window.innerHeight - top - 8) + 'px';
   if (_editorHandles && _editorHandles.app) {
     try { _editorHandles.app.syncChrome(); _editorHandles.app.fit(); _editorHandles.app.renderNav(); } catch (_) { /* ignore */ }
   }

@@ -480,6 +480,8 @@ export default {
   'lessons.edit':                 'Editar',
   'lessons.unfavorite':           'Desfavoritar',
   'lessons.live_refresh':         'Atualizar sessão',
+  'lessons.live_open_sessions':   'Abrir sessões',
+  'lessons.live_on':              'Sessão ao vivo',
 
   // Content → Slides (Apresentações) — authored deck library
   'slides.new':               '+ Nova apresentação',
