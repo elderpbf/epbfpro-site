@@ -115,12 +115,30 @@ function _renderList() {
 function _showPlaceholder() {
   _teardownEditor();
   _openSlug = null;
+  _writeDeckParam(null);
   const region = _q('#cdx-slides-region');
   if (region) {
     region.innerHTML = '<div class="cdx-slides-placeholder">' + _esc(t('slides.placeholder')) + '</div>';
   }
   _setDeckOpen(false);
   _renderList();
+}
+
+// Mirror the open deck into the URL (?...&deck=<slug>) without navigating, so a
+// reload (e.g. the topbar language toggle calls location.reload()) reopens the
+// same presentation instead of dropping back to the list. Uses replaceState so
+// it adds no history entry.
+function _writeDeckParam(slug) {
+  try {
+    const url = new URL(window.location.href);
+    if (slug) url.searchParams.set('deck', slug);
+    else url.searchParams.delete('deck');
+    window.history.replaceState(null, '', url);
+  } catch (_) { /* ignore */ }
+}
+function _readDeckParam() {
+  try { return new URL(window.location.href).searchParams.get('deck') || null; }
+  catch (_) { return null; }
 }
 
 // ── Sidebar visibility ───────────────────────────────────────────────────────
@@ -204,6 +222,7 @@ async function _openDeck(slug, fresh) {
   // its own canvas fit + window-resize internally. No sizing JS here.
   _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store });
   _openSlug = slug;
+  _writeDeckParam(slug);
   _setDeckOpen(true);
   _renderList();
 }
@@ -260,8 +279,13 @@ export function mount(viewEl, ctx) {
     _cleanup.push(() => side.removeEventListener('mouseleave', onLeave));
   }
 
-  // Start with the deck list visible and the editor area empty.
-  _loadDecks().then(() => _showPlaceholder());
+  // Restore the deck named in the URL (?deck=<slug>) if it still exists, so a
+  // reload (language toggle, refresh) reopens it; otherwise show the list.
+  _loadDecks().then(() => {
+    const wanted = _readDeckParam();
+    if (wanted && _deckBySlug(wanted)) _openDeck(wanted, false);
+    else _showPlaceholder();
+  });
 }
 
 export function unmount() {
