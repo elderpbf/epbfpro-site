@@ -6,13 +6,20 @@
    window. The editor itself is styled by content/slides/css/{tokens,slide,ui}.css
    scoped under .cdx-deck-editor. */
 
-/* Break out of .cdx-view's padding (0.5rem 1.5rem 1.5rem) so the editor spans
-   the full content width and reaches the bottom edge, no wasted margin. */
 .cdx-slides-editor {
   display: flex;
   flex-direction: column;
-  margin: -0.5rem -1.5rem -1.5rem;
+  /* Break out of EVERY ancestor gutter so the editor spans the whole window:
+     .cdx-view padding AND .bs-main padding + max-width:1200px + margin:0 auto.
+     width:100vw + a left shift (set by _sizeEditor to this element's own
+     viewport-left offset) lands it flush against both edges. Height is set the
+     same way (viewport-bottom minus top). */
+  width: 100vw;
+  margin-left: var(--cdx-breakout-left, 0px);
+  height: var(--cdx-breakout-h, 80vh);
+  box-sizing: border-box;
 }
 .cdx-slides-editorbar { flex-shrink: 0; padding: 0.5rem 1.5rem; }
-/* Height is set inline by _sizeEditor() to fill to the viewport bottom. */
-.cdx-slides-stage { flex: 1; min-height: 0; }
+.cdx-slides-stage { flex: 1 1 auto; min-height: 0; }
+/* Edge-to-edge in Codex: no rounded card, no border on the editor region. */
+.cdx-slides-stage.cdx-deck-editor { border: 0; border-radius: 0; }

@@ -229,8 +229,13 @@ function _sizeEditor() {
   // flex-basis:0%, so an explicit height collapses when the wrapper has none
   // (the wrapper's ancestor .cdx-view is height:auto). This was the blank-editor
   // bug (stage offsetHeight 0 despite an inline height).
-  const top = wrap.getBoundingClientRect().top;
-  wrap.style.height = Math.max(420, window.innerHeight - top - 8) + 'px';
+  // Neutralise the left shift to measure this element's natural left edge, then
+  // shift it left by exactly that to reach the viewport's left edge (width:100vw
+  // does the right edge). This cancels .cdx-view + .bs-main gutters/centering.
+  wrap.style.setProperty('--cdx-breakout-left', '0px');
+  const rect = wrap.getBoundingClientRect();
+  wrap.style.setProperty('--cdx-breakout-left', (-rect.left) + 'px');
+  wrap.style.setProperty('--cdx-breakout-h', Math.max(420, window.innerHeight - rect.top) + 'px');
   if (_editorHandles && _editorHandles.app) {
     try { _editorHandles.app.syncChrome(); _editorHandles.app.fit(); _editorHandles.app.renderNav(); } catch (_) { /* ignore */ }
   }
