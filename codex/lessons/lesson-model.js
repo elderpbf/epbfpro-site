@@ -182,7 +182,8 @@ export function crumbActions(item) {
 // preference carries across the cutover.
 export function makeTextScale(storage, key) {
   key = key || 'cv_content_scale';
-  const MIN = 0.75, MAX = 1.6, STEP = 0.1;
+  // MAX raised to 3.0 (Elder, 2026-06-01): big rooms sometimes need huge text.
+  const MIN = 0.75, MAX = 3.0, STEP = 0.1;
   const clamp = (s) => Math.max(MIN, Math.min(MAX, +Number(s).toFixed(2)));
   return {
     MIN, MAX, STEP,

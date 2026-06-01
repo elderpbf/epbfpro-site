@@ -17,7 +17,7 @@
 //   window.CVPresetsUI   (../backstage/js/cv-presets-ui.js)
 import { lessons as api, content as contentApi, cohorts as cohortsApi, presets as presetsApi, cp as cpApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
-import { iconHtml as typeIconHtml } from '../js/glyphs.js';
+import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as itemForm from '../content/item-form.js';
 import {
@@ -353,14 +353,17 @@ function _renderSidebar() {
   if (preset) html.push(preset);
   const fav = _renderFavoritesSection();
   if (fav) html.push(fav);
+  // Section order (Elder, 2026-06-01): LLMs, Labs, Items, Drive, Course content
+  // (apostila), Assignments (tarefas). External links stay right after LLMs
+  // (conditional, only when present).
   html.push(_renderLLMSection(buckets.llm));
   if (buckets.external.length) html.push(_renderSection({ key: 'external', items: buckets.external }));
-  if (buckets.drive.length) html.push(_renderDriveSection(buckets.drive));
-  html.push(_renderSection({ key: 'items', items: buckets.items }));
-  if (buckets.apostila.length) html.push(_renderSection({ key: 'apostila', items: buckets.apostila }));
-  if (buckets.tarefas.length) html.push(_renderSection({ key: 'tarefas', items: buckets.tarefas }));
   const labs = _renderLabsSection();
   if (labs) html.push(labs);
+  html.push(_renderSection({ key: 'items', items: buckets.items }));
+  if (buckets.drive.length) html.push(_renderDriveSection(buckets.drive));
+  if (buckets.apostila.length) html.push(_renderSection({ key: 'apostila', items: buckets.apostila }));
+  if (buckets.tarefas.length) html.push(_renderSection({ key: 'tarefas', items: buckets.tarefas }));
   body.innerHTML = html.join('');
   _applySearch();
 }
@@ -422,7 +425,8 @@ function _mountPresetLoader() {
 // clicking opens the Questions home. Live -> "Perguntas \xb7 <name>" with a pulsing
 // red dot, clicking opens the host view. A refresh button reloads on demand. No
 // background polling: loaded once on mount + on refresh click.
-const _NEXO_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>';
+// Lightning bolt from the shared glyph library (the Perguntas / live-session mark).
+const _NEXO_GLYPH = glyphSvg('zap', { size: 18 });
 
 function _renderLiveCard() {
   const el = _q('.cdx-lessons-live-card');
