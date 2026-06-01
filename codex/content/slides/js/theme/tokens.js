@@ -18,6 +18,12 @@ export function applyDeckTheme(deck, stage) {
 }
 
 export function initChromeTheme() {
+  // Respect a theme the host already set on <html> (Codex manages data-theme via
+  // the same bs_theme key). Only fall back to localStorage / dark when the host
+  // has set nothing, so the editor never hijacks the page theme on mount. This
+  // was turning the Codex page near-black on open inside the Slides sub-tab.
+  const existing = document.documentElement.getAttribute("data-theme");
+  if (existing) return existing;
   const saved = localStorage.getItem(THEME_KEY) || "dark";
   setChromeTheme(saved);
   return saved;
