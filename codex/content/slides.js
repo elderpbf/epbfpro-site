@@ -27,7 +27,6 @@ let _decks = [];
 let _selectedSlug = null;     // master-detail: slug shown in the preview
 let _editorHandles = null;    // active editor mount handles ({ app, unmount }), or null
 let _saveTimer = null;
-let _onWinResize = null;
 let _cleanup = [];
 
 // ── Pure rules (exported for tests) ─────────────────────────────────────────
@@ -212,38 +211,14 @@ async function _openEditor(slug, fresh) {
       '</div>' +
       '<div class="cdx-slides-stage cdx-deck-editor" id="cdx-slides-stage"></div>' +
     '</div>';
+  // Geometry is 100% CSS (slides.css, :has() flex chain); the editor mounts into
+  // a stage that already has its height, and the editor handles its own canvas
+  // fit + window-resize internally. No sizing JS here = nothing to cache-desync.
   _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store });
-  _sizeEditor();
-  _onWinResize = () => _sizeEditor();
-  window.addEventListener('resize', _onWinResize);
-}
-
-// Make the editor stage fill from its top edge to the bottom of the viewport, so
-// the deck editor occupies all available window with no wasted margin.
-function _sizeEditor() {
-  const wrap = _q('.cdx-slides-editor');
-  if (!wrap) return;
-  // Fill from the wrapper's top edge to the viewport bottom. The stage is a
-  // flex:1 child of this wrapper, so it inherits the real height. Setting the
-  // height on the stage directly does NOT work: it is a flex item with
-  // flex-basis:0%, so an explicit height collapses when the wrapper has none
-  // (the wrapper's ancestor .cdx-view is height:auto). This was the blank-editor
-  // bug (stage offsetHeight 0 despite an inline height).
-  // Neutralise the left shift to measure this element's natural left edge, then
-  // shift it left by exactly that to reach the viewport's left edge (width:100vw
-  // does the right edge). This cancels .cdx-view + .bs-main gutters/centering.
-  wrap.style.setProperty('--cdx-breakout-left', '0px');
-  const rect = wrap.getBoundingClientRect();
-  wrap.style.setProperty('--cdx-breakout-left', (-rect.left) + 'px');
-  wrap.style.setProperty('--cdx-breakout-h', Math.max(420, window.innerHeight - rect.top) + 'px');
-  if (_editorHandles && _editorHandles.app) {
-    try { _editorHandles.app.syncChrome(); _editorHandles.app.fit(); _editorHandles.app.renderNav(); } catch (_) { /* ignore */ }
-  }
 }
 
 function _teardownEditor() {
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
-  if (_onWinResize) { window.removeEventListener('resize', _onWinResize); _onWinResize = null; }
   if (_editorHandles) {
     // mount() returns { app, unmount }; call its own teardown (closes the
     // BroadcastChannel, removes the resize + keydown listeners, clears the DOM).

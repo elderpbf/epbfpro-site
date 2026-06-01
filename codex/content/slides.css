@@ -1,25 +1,45 @@
-/* content/slides.css — Slides sub-tab.
+/* content/slides.css - Slides sub-tab.
    The landing reuses the Items sub-tab classes (cdx-items, cdx-items-split,
-   cdx-item-row, cdx-item-preview, ...) straight from content.css, so it needs no
-   list/card styles of its own. This file styles ONLY the editor frame: when a
-   deck is open the editor breaks out of the .cdx-view padding and fills the
-   window. The editor itself is styled by content/slides/css/{tokens,slide,ui}.css
-   scoped under .cdx-deck-editor. */
+   cdx-item-row, cdx-item-preview, ...) from content.css, so it needs no list
+   styles of its own. This file makes the deck editor fill the whole window.
 
-.cdx-slides-editor {
+   WHY PURE CSS (no JS sizing): the editor's internals (#chrome/#nav/#stagewrap)
+   are position:absolute, so .cdx-deck-editor has NO intrinsic height; it must be
+   given one. Earlier versions routed that height through a JS-set CSS variable,
+   but slides.js is an unversioned ES module that the CDN caches independently of
+   this (versioned) file, so a stale-JS / fresh-CSS combo left the variable unset
+   and the editor collapsed to 0 (only the Back button, a separate bar, showed).
+   This version depends on NO JavaScript: it extends the shell's existing flex
+   chain (.bs-app is min-height:100vh flex-column, .bs-main is flex:1) down to the
+   stage, so the height resolves from the viewport with CSS alone. Scoped with
+   :has(.cdx-slides-editor) so it activates ONLY while the editor is open and
+   every other tab is untouched; it reverts automatically on Back. */
+
+/* Cancel the shell gutters + centering only while the editor is open. */
+.bs-main:has(.cdx-slides-editor) {
+  max-width: none;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  /* Break out of EVERY ancestor gutter so the editor spans the whole window:
-     .cdx-view padding AND .bs-main padding + max-width:1200px + margin:0 auto.
-     width:100vw + a left shift (set by _sizeEditor to this element's own
-     viewport-left offset) lands it flush against both edges. Height is set the
-     same way (viewport-bottom minus top). */
-  width: 100vw;
-  margin-left: var(--cdx-breakout-left, 0px);
-  height: var(--cdx-breakout-h, 80vh);
-  box-sizing: border-box;
+  min-height: 0;
 }
-.cdx-slides-editorbar { flex-shrink: 0; padding: 0.5rem 1.5rem; }
+.cdx-view:has(.cdx-slides-editor) {
+  padding: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The editor wrapper + its parts fill the chain via flexbox. */
+.cdx-slides-editor {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.cdx-slides-editorbar { flex: 0 0 auto; padding: 0.5rem 1.5rem; }
 .cdx-slides-stage { flex: 1 1 auto; min-height: 0; }
+
 /* Edge-to-edge in Codex: no rounded card, no border on the editor region. */
 .cdx-slides-stage.cdx-deck-editor { border: 0; border-radius: 0; }

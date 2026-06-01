@@ -86,3 +86,18 @@ test('editor stylesheets are scoped to .cdx-deck-editor (no global leak)', () =>
 test('slides.js mounts the editor in a .cdx-deck-editor container', () => {
   assert.match(read('../content/slides.js'), /cdx-deck-editor/, 'editor host carries cdx-deck-editor');
 });
+
+// Regression guard for the cache-desync layout loop: the editor's full-window
+// sizing MUST be pure CSS (the shell flex chain via :has), with NO JavaScript
+// geometry. slides.js is an unversioned ES module that caches independently of
+// the versioned slides.css; routing height through JS produced a stale-JS /
+// fresh-CSS combo where the editor collapsed to 0 (only the Back button showed).
+test('editor sizing is pure CSS, not JS (no cache-desync collapse)', () => {
+  const js = read('../content/slides.js');
+  assert.ok(!/_sizeEditor/.test(js), 'slides.js has no JS sizing function');
+  assert.ok(!/innerHeight/.test(js), 'slides.js does not compute height in JS');
+  assert.ok(!/--cdx-breakout/.test(js), 'slides.js sets no breakout CSS variable');
+  const css = read('../content/slides.css');
+  assert.match(css, /:has\(\.cdx-slides-editor\)/, 'slides.css drives layout via the :has flex chain');
+  assert.ok(!/--cdx-breakout/.test(css), 'slides.css does not depend on a JS-set variable');
+});
