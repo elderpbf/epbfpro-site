@@ -476,6 +476,11 @@ export default {
   'lessons.width':                'Width',
   'lessons.reset_default':        'Reset to default',
   'lessons.display_controls':     'Display: text size and width',
+  'lessons.section_labs':         'Labs',
+  'lessons.section_preset':       'Preset',
+  'lessons.edit':                 'Edit',
+  'lessons.unfavorite':           'Unfavorite',
+  'lessons.live_refresh':         'Refresh session',
 
   // Content -> Slides (Presentations) -- authored deck library
   'slides.new':               '+ New presentation',

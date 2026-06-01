@@ -475,6 +475,11 @@ export default {
   'lessons.width':                'Largura',
   'lessons.reset_default':        'Restaurar padrão',
   'lessons.display_controls':     'Exibição: tamanho do texto e largura',
+  'lessons.section_labs':         'Labs',
+  'lessons.section_preset':       'Preset',
+  'lessons.edit':                 'Editar',
+  'lessons.unfavorite':           'Desfavoritar',
+  'lessons.live_refresh':         'Atualizar sessão',
 
   // Content → Slides (Apresentações) — authored deck library
   'slides.new':               '+ Nova apresentação',
