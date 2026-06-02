@@ -98,10 +98,12 @@ test('bank is a faithful re-port of the legacy cp-banks-layout', () => {
   assert.match(src, /cdx-bank-movebar/, 'renders the move-between-sets bar');
   assert.match(src, /cdx-bank-bulk/, 'renders the bulk-generate modal');
   assert.match(src, /addQuestionsBulk/, 'bulk save goes through the facade');
-  // Import / Export sharing one canonical format.
-  assert.match(src, /data-act="export"/, 'has an export action');
-  assert.match(src, /data-act="import"/, 'has an import action');
-  assert.match(src, /codex_questions/, 'export uses the canonical JSON envelope');
+  // Import / Export hub (collection-level) sharing one canonical envelope.
+  assert.match(src, /data-act="hub"/, 'sidebar opens the import/export hub');
+  assert.match(src, /data-hub="import"/, 'hub has an import tab');
+  assert.match(src, /data-scope="choose"/, 'export scope offers current/all/choose');
+  assert.match(src, /codex_questions/, 'export uses the canonical multi-bank envelope');
+  assert.match(src, /banks:/, 'export builds a multi-bank envelope');
   assert.match(src, /ai\.chat/, 'text import organizes the paste via ai.chat');
 });
 
@@ -128,10 +130,12 @@ test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
     'questions.bank_bulk_title', 'questions.bank_bulk_count', 'questions.bank_bulk_theme',
     'questions.bank_bulk_generate_btn', 'questions.bank_bulk_review_hint',
     'questions.bank_bulk_save', 'questions.bank_bulk_discard', 'questions.bank_correct_tag',
-    // Import / Export
+    // Import / Export hub
     'questions.bank_export', 'questions.bank_import', 'questions.bank_copy',
     'questions.bank_download', 'questions.bank_import_tab_text', 'questions.bank_import_tab_json',
-    'questions.bank_import_organize',
+    'questions.bank_import_organize', 'questions.bank_hub', 'questions.bank_scope',
+    'questions.bank_scope_current', 'questions.bank_scope_all', 'questions.bank_scope_choose',
+    'questions.bank_target',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);

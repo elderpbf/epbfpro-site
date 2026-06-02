@@ -360,19 +360,32 @@
 .cdx-bank-bulk-item-opts { margin: 0.4rem 0 0 1rem; padding: 0; color: var(--text-secondary); font-size: 0.82rem; }
 .cdx-bank-bulk-item-opts .cdx-q-opt--correct { color: var(--primary); font-weight: 600; }
 
-/* Export / Import modals */
-.cdx-bank-export-card, .cdx-bank-import-card { max-width: 620px; }
-.cdx-bank-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.8rem; }
-.cdx-bank-export-tab, .cdx-bank-import-tab {
+/* Import / Export hub modal */
+.cdx-bank-sets-header-actions { display: flex; align-items: center; gap: 0.3rem; }
+.cdx-bank-hub-card { max-width: 640px; }
+.cdx-bank-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+.cdx-bank-hub-tab, .cdx-bank-scope-btn, .cdx-bank-export-tab, .cdx-bank-import-tab {
   background: transparent;
   border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
   border-radius: 7px; padding: 0.35rem 0.85rem;
   font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
 }
-.cdx-bank-export-tab:hover, .cdx-bank-import-tab:hover { color: var(--text-primary); }
-.cdx-bank-export-tab.active, .cdx-bank-import-tab.active { color: var(--primary); border-color: var(--primary); }
+.cdx-bank-hub-tab:hover, .cdx-bank-scope-btn:hover, .cdx-bank-export-tab:hover, .cdx-bank-import-tab:hover { color: var(--text-primary); }
+.cdx-bank-hub-tab.active, .cdx-bank-scope-btn.active, .cdx-bank-export-tab.active, .cdx-bank-import-tab.active { color: var(--primary); border-color: var(--primary); }
+.cdx-bank-hub-tabs { border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.3)); padding-bottom: 0.6rem; }
+.cdx-bank-hub-scope { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.cdx-bank-hub-scope .cdx-comp-label { margin: 0; }
+.cdx-bank-hub-scope .cdx-bank-tabs { margin-bottom: 0; }
+.cdx-bank-hub-checklist {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  max-height: 9rem; overflow-y: auto; margin-bottom: 0.7rem;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3)); border-radius: 8px; padding: 0.5rem 0.7rem;
+}
+.cdx-bank-check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-primary); cursor: pointer; }
+.cdx-bank-check input { accent-color: var(--primary); }
 .cdx-bank-export-out { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; line-height: 1.4; }
 .cdx-bank-import-in { resize: vertical; }
+.cdx-bank-import-target-row { max-width: 22rem; }
 
 /* Inputs/selects used by Questions (search, rename, new-set, composer). These
  * class names are Questions-local, not a shared primitive defined elsewhere. */
