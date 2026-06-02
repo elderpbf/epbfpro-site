@@ -36,7 +36,14 @@ function answersLabel(n) {
   return n + ' ' + (n === 1 ? t('questions.qr_answer') : t('questions.qr_answers'));
 }
 
-export class QuestionElement extends HTMLElement {
+// Resolve the superclass at module load so importing this file never throws in a
+// non-DOM context (Node test runs that touch it transitively, e.g. via the
+// Sessions module). In the browser it is the real HTMLElement (a true custom
+// element); under the test harness it is the stubbed element; with neither it
+// degrades to a plain base that is simply never instantiated.
+const ElementBase = (typeof HTMLElement !== 'undefined') ? HTMLElement : class {};
+
+export class QuestionElement extends ElementBase {
   static get observedAttributes() {
     return ['session', 'mode', 'question-id', 'slug', 'poll-interval'];
   }
@@ -125,6 +132,16 @@ export class QuestionElement extends HTMLElement {
 
   stopPolling() {
     if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+  }
+
+  // Explicit start for a programmatic host (live-host.js): point the element at a
+  // session and begin polling, without depending on the browser-only attribute /
+  // connected lifecycle. Idempotent (startPolling stops any prior loop first).
+  start(sessionCode) {
+    if (sessionCode) this.setAttribute('session', sessionCode);
+    this._updateConfig();
+    this._forceNextRender();
+    this.startPolling();
   }
 
   // ----- Inactivity pause + Page Visibility (student mode only) -----

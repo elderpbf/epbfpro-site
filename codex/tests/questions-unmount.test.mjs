@@ -132,3 +132,49 @@ test('the element source replaces the cpq-data document bus with scoped callback
   assert.match(src, /from\s+['"]\.\.\/js\/codex-api\.js['"]/, 'imports the codex-api facade');
   assert.ok(!/—/.test(src), 'no em dashes');
 });
+
+// ── Q2.2 live host: the dashboard owns the embedded element poll, the Q&A feed
+//    poll, the SQA debounce, and the layout/document listeners. unmount() must
+//    leave nothing live. This is the live-engine half of the release blocker. ──
+const OPEN_STATE = { session: { status: 'open' }, qa_enabled: true, active_question: null, history: [] };
+
+function hostWorker(state) {
+  return async (p) => {
+    if (p && p.action === 'get_session_state') return state;
+    return { ok: true, questions: [] };
+  };
+}
+
+test('live-host: mount arms the element poll + the Q&A poll + a document listener', async () => {
+  const h = install();
+  try {
+    h.setWorker(hostWorker(OPEN_STATE));
+    const mod = await import('../questions/live-host.js');
+    const container = h.el('div');
+    mod.mount(container, { session: { code: 'ABCD', status: 'open', title: 'Aula 1' } });
+    assert.ok(h.intervals.size >= 2, 'the embedded element poll AND the Q&A feed poll are armed');
+    assert.ok(h.docListenerCount() >= 1, 'live-host registered a document listener');
+    mod.unmount();
+    assert.equal(h.liveTimers(), 0, 'no live timers after unmount');
+    assert.equal(h.docListenerCount(), 0, 'no document listeners after unmount');
+  } finally { h.restore(); }
+});
+
+test('live-host: unmount is idempotent and safe when never mounted', async () => {
+  const h = install();
+  try {
+    const mod = await import('../questions/live-host.js');
+    mod.unmount();
+    mod.unmount();
+    assert.equal(h.liveTimers(), 0, 'no timers');
+    assert.equal(h.docListenerCount(), 0, 'no document listeners');
+  } finally { h.restore(); }
+});
+
+test('live-host source: facade-only, scoped callbacks, no cpq-data bus, no em dashes', () => {
+  const src = read('../questions/live-host.js');
+  assert.ok(!/\bcallWorker\s*\(/.test(src), 'no direct callWorker (facade only)');
+  assert.ok(!/['"]cpq-data['"]/.test(src), 'no cpq-data event bus');
+  assert.match(src, /\.onData\s*=/, 'drives the element through its scoped onData callback');
+  assert.ok(!/—/.test(src), 'no em dashes');
+});

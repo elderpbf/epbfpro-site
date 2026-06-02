@@ -10,6 +10,7 @@
 import { questions as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import * as liveHost from './live-host.js';
 
 let _viewEl = null;
 let _cleanup = [];
@@ -117,8 +118,13 @@ async function _load() {
   _renderMain();
 }
 
+// The native live host owns poll timers + listeners, so it MUST be unmounted
+// before the detail re-renders (which would otherwise orphan its loops).
+function _teardownLiveHost() { try { liveHost.unmount(); } catch (_) { /* ignore */ } }
+
 // ── Main area: placeholder, or the selected session's host surface ──
 function _renderMain() {
+  _teardownLiveHost();
   const main = _viewEl && _viewEl.querySelector('#cdx-sessions-detail');
   if (!main) return;
   const s = _sessions.find((x) => x.code === _selectedCode);
@@ -145,11 +151,21 @@ function _renderMain() {
         '<a class="cdx-btn" href="' + hostHref(s.code) + '">' + t('questions.sessions_host') + '</a>' +
         '<button class="cdx-btn" data-act="stats" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_stats') + '</button>' +
       '</div>' +
+      // The native live host fills the main area for an OPEN session; a closed
+      // session shows the prompt to start hosting (Iniciar above).
+      (open
+        ? '<div class="cdx-live-host-mount" id="cdx-live-host"></div>'
+        : '<div class="cdx-host-not-hosted">' + t('questions.host_not_hosted') + '</div>') +
       // Protected delete, pushed to the bottom of the page, out of the way.
       '<div class="cdx-session-danger" id="cdx-session-danger">' +
         '<button class="cdx-btn cdx-btn-danger" data-act="delete" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_delete') + '</button>' +
       '</div>' +
     '</div>';
+
+  if (open) {
+    const mountEl = main.querySelector('#cdx-live-host');
+    if (mountEl) liveHost.mount(mountEl, { session: s });
+  }
 }
 
 // ── Per-session stats overlay (legacy openStats) ────────────
@@ -182,6 +198,7 @@ function _statsHead(s) {
 }
 
 async function _openStats(code) {
+  _teardownLiveHost();
   const main = _viewEl && _viewEl.querySelector('#cdx-sessions-detail');
   if (!main) return;
   const s = _sessions.find((x) => x.code === code) || { code };
@@ -333,6 +350,7 @@ export function mount(viewEl, ctx) {
 }
 
 export function unmount() {
+  _teardownLiveHost();
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
   clearTimeout(_hideTimer);

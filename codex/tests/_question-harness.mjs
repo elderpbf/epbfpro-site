@@ -31,6 +31,7 @@ export class FakeElement {
     this.children = [];
     this.classList = new FakeClassList();
     this.style = {};
+    this.dataset = {};
     this._attrs = {};
     this._listeners = [];
     this._html = '';
@@ -38,6 +39,11 @@ export class FakeElement {
     this.isConnected = false;
     this.parentNode = null;
     this.textContent = '';
+    this.value = '';
+    this.checked = false;
+    this.open = false;
+    this.disabled = false;
+    this.offsetWidth = 0;
   }
   set innerHTML(v) { this._html = String(v); this.children = []; }
   get innerHTML() { return this._html; }
@@ -48,9 +54,15 @@ export class FakeElement {
   appendChild(c) { if (c) { c.parentNode = this; this.children.push(c); } return c; }
   removeChild(c) { const i = this.children.indexOf(c); if (i >= 0) this.children.splice(i, 1); return c; }
   remove() { if (this.parentNode) this.parentNode.removeChild(this); }
-  querySelector() { return null; }
+  insertAdjacentHTML() { /* no-op: stub has no live subtree */ }
+  // Return a fresh stub node rather than null so querySelector-driven modules
+  // (the composer, the Q&A feed) mount without crashing. Live host holds the
+  // element / feed / composer by reference for teardown, so DOM identity across
+  // queries is irrelevant to the leak assertions these tests make.
+  querySelector() { return new FakeElement(); }
   querySelectorAll() { return []; }
   closest() { return null; }
+  focus() { /* no-op */ }
   addEventListener(t, f, o) { this._listeners.push({ t, f, o }); }
   removeEventListener(t, f) {
     const i = this._listeners.findIndex((L) => L.t === t && L.f === f);
@@ -101,7 +113,13 @@ export function install() {
   const docListeners = [];
   globalThis.document = {
     visibilityState: 'visible',
-    createElement: (tag) => new FakeElement(tag),
+    // Mimic the browser's custom-element upgrade: a registered tag is
+    // instantiated through its constructor, so live-host's
+    // document.createElement('codex-question') yields a real element under test.
+    createElement: (tag) => {
+      const Ctor = registry.get(String(tag).toLowerCase());
+      return Ctor ? new Ctor() : new FakeElement(tag);
+    },
     addEventListener(t, f, o) { docListeners.push({ t, f, o }); },
     removeEventListener(t, f) {
       const i = docListeners.findIndex((L) => L.t === t && L.f === f);
