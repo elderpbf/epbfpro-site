@@ -75,14 +75,35 @@ test('questions shell + stats obey the module source rules', () => {
   assert.match(read('../questions/stats.js'), /from\s+['"]\.\.\/js\/codex-api\.js['"]/, 'stats imports the facade');
 });
 
+// ---- Stats is GLOBAL-only, faithfully re-ported from the legacy
+//      panel-global-stats (the invented per-session/global toggle is gone;
+//      per-session stats are an overlay in the Q2 live-host flow). ----
+test('stats is global-only and mirrors the legacy panel-global-stats', () => {
+  const src = read('../questions/stats.js');
+  // The invented per-session/global view toggle must be gone.
+  assert.ok(!/cdx-stats-mode/.test(src), 'no view-mode toggle markup');
+  assert.ok(!/stats_view_session|stats_view_global/.test(src), 'no view-toggle i18n keys');
+  // Legacy global layout: date-range filter, KPIs via the facade, a toughest
+  // list and the participation-per-session TABLE.
+  assert.match(src, /globalStats/, 'calls the global_stats facade method');
+  assert.match(src, /cdx-stats-filter/, 'renders the date-range filter');
+  assert.match(src, /type="date"/, 'filter has date inputs');
+  assert.match(src, /cdx-stats-table/, 'renders the participation-per-session table');
+});
+
 // ---- i18n: every new key in BOTH dictionaries ----
 test('questions sub-tab + stats i18n keys exist in BOTH dictionaries', async () => {
   const pt = (await import('../i18n/pt.js')).default;
   const en = (await import('../i18n/en.js')).default;
   const keys = [
     'questions.sub_sessions', 'questions.sub_bank', 'questions.sub_stats',
-    'questions.stats_total_questions', 'questions.stats_unique_students',
-    'questions.stats_most_missed', 'questions.stats_empty',
+    'questions.stats_total_sessions', 'questions.stats_total_questions',
+    'questions.stats_total_students', 'questions.stats_empty',
+    'questions.stats_from', 'questions.stats_to', 'questions.stats_apply',
+    'questions.stats_clear', 'questions.stats_empty_period',
+    'questions.stats_toughest', 'questions.stats_trend', 'questions.stats_answers',
+    'questions.stats_col_session', 'questions.stats_col_date',
+    'questions.stats_col_students', 'questions.stats_col_answers',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);

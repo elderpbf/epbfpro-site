@@ -1,9 +1,11 @@
 // questions/stats.js
-// Codex Questions -> Stats sub-tab (native, read-only). Two views: per-session
-// (pick a session -> KPIs + most-missed + per-question accuracy bars) and global
-// (KPIs + toughest questions + participation trend, with an optional date
-// range). All data comes through the facade; all strings through t(). No polling,
-// so unmount just drops the listeners it registered and clears the view.
+// Codex Questions -> Stats sub-tab (native, read-only). GLOBAL stats only, a
+// faithful re-port of the legacy ClassPulse panel-global-stats: a date-range
+// filter (De / Ate / Limpar / Filtrar), three KPI boxes (sessions / questions /
+// unique students), a "toughest questions" list and a "participation per
+// session" table. Per-session stats are an overlay in the live-host flow (Q2),
+// not a sub-tab here. All data comes through the facade; all strings through
+// t(). No polling, so unmount just drops the listeners it registered.
 import { questions as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 
@@ -24,8 +26,17 @@ function _esc(s) {
 }
 
 function _on(el, evt, fn) {
+  if (!el) return;
   el.addEventListener(evt, fn);
   _cleanup.push(() => el.removeEventListener(evt, fn));
+}
+
+// Mirror the legacy date column: locale date, blank for missing/invalid.
+function _fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('pt-BR');
 }
 
 function _kpi(value, labelKey) {
@@ -43,62 +54,27 @@ function _accuracyBar(accuracy, totalAnswers) {
     '%"></div><span class="cdx-stats-bar-text">' + p + '% ' + t('questions.stats_accuracy') + '</span></div>';
 }
 
-// ---- Per-session view ----
-function _renderSessionStats(el, st) {
-  if (!st || !st.ok) {
-    el.innerHTML = '<div class="cdx-stats-empty">' + t('questions.stats_empty') + '</div>';
-    return;
-  }
-  const kpis = '<div class="cdx-stats-kpis">' +
-    _kpi(st.total_questions, 'questions.stats_total_questions') +
-    _kpi(st.unique_students, 'questions.stats_unique_students') + '</div>';
-  const mm = st.most_missed
-    ? '<div class="cdx-stats-mostmissed"><span class="cdx-stats-mostmissed-label">' +
-      t('questions.stats_most_missed') + '</span> ' + _esc(st.most_missed.text) +
-      ' (' + pct(st.most_missed.accuracy) + '% ' + t('questions.stats_accuracy') + ')</div>'
-    : '';
-  const scored = (st.questions || []).filter((q) => q.type === 'mc' || q.type === 'tf');
-  const list = scored.length
-    ? scored.map((q) => '<div class="cdx-stats-q"><div class="cdx-stats-q-text">' +
-        _esc(q.text) + '</div>' + _accuracyBar(q.accuracy, q.total_answers) + '</div>').join('')
-    : '<div class="cdx-stats-empty">' + t('questions.stats_empty') + '</div>';
-  el.innerHTML = kpis + mm + '<div class="cdx-stats-qlist">' + list + '</div>';
+// Toughest card: question text + "<session> · N respostas" meta + accuracy bar.
+function _toughestCard(q) {
+  const meta = _esc(q.session_title || '') + ' · ' +
+    (q.total_answers || 0) + ' ' + t('questions.stats_answers');
+  return '<div class="cdx-stats-q">' +
+    '<div class="cdx-stats-q-text">' + _esc(q.text) + '</div>' +
+    '<div class="cdx-stats-q-meta">' + meta + '</div>' +
+    _accuracyBar(q.accuracy, q.total_answers) +
+  '</div>';
 }
 
-async function _renderSession(body) {
-  body.innerHTML =
-    '<div class="cdx-stats-picker">' +
-      '<label class="cdx-stats-label" for="cdx-stats-session">' + t('questions.stats_pick_session') + '</label>' +
-      '<select class="cdx-select" id="cdx-stats-session"><option value="">' + t('questions.stats_loading') + '</option></select>' +
-    '</div>' +
-    '<div class="cdx-stats-result" id="cdx-stats-result"></div>';
-  const sel = body.querySelector('#cdx-stats-session');
-  const result = body.querySelector('#cdx-stats-result');
-
-  let res;
-  try { res = await api.listSessions(); } catch (_) { res = null; }
-  if (sel !== body.querySelector('#cdx-stats-session')) return; // view changed mid-await
-  const sessions = (res && res.sessions) || [];
-  if (!sessions.length) {
-    sel.innerHTML = '<option value="">' + t('questions.stats_no_sessions') + '</option>';
-    return;
-  }
-  sel.innerHTML = '<option value="">' + t('questions.stats_pick_session') + '</option>' +
-    sessions.map((s) => '<option value="' + _esc(s.code) + '">' +
-      _esc(s.title || s.code) + ' (' + _esc(s.code) + ')</option>').join('');
-
-  _on(sel, 'change', async () => {
-    const code = sel.value;
-    if (!code) { result.innerHTML = ''; return; }
-    result.innerHTML = '<div class="cdx-stats-loading">' + t('questions.stats_loading') + '</div>';
-    let st;
-    try { st = await api.sessionStats({ code }); } catch (_) { st = null; }
-    _renderSessionStats(result, st);
-  });
+function _trendRow(s) {
+  return '<tr>' +
+    '<td>' + _esc(s.title || s.code) + '</td>' +
+    '<td>' + _fmtDate(s.created_at) + '</td>' +
+    '<td class="cdx-stats-num cdx-stats-hl">' + (s.students || 0) + '</td>' +
+    '<td class="cdx-stats-num">' + (s.answers || 0) + '</td>' +
+  '</tr>';
 }
 
-// ---- Global view ----
-function _renderGlobalStats(el, gs) {
+function _renderResult(el, gs) {
   if (!gs || !gs.ok) {
     el.innerHTML = '<div class="cdx-stats-empty">' + t('questions.stats_empty') + '</div>';
     return;
@@ -106,76 +82,75 @@ function _renderGlobalStats(el, gs) {
   const kpis = '<div class="cdx-stats-kpis">' +
     _kpi(gs.total_sessions, 'questions.stats_total_sessions') +
     _kpi(gs.total_questions, 'questions.stats_total_questions') +
-    _kpi(gs.total_students, 'questions.stats_total_students') + '</div>';
-  // The Worker only returns toughest questions that have a computed accuracy.
+    _kpi(gs.total_students, 'questions.stats_total_students') +
+  '</div>';
+
+  // No sessions in range: KPIs (all zero) + a period-empty notice, no sections.
+  if (!gs.total_sessions) {
+    el.innerHTML = kpis + '<div class="cdx-stats-empty">' + t('questions.stats_empty_period') + '</div>';
+    return;
+  }
+
   const toughest = (gs.toughest || []).length
-    ? '<div class="cdx-stats-section"><div class="cdx-stats-section-title">' +
-      t('questions.stats_toughest') + '</div>' +
-      gs.toughest.map((q) => '<div class="cdx-stats-q"><div class="cdx-stats-q-text">' +
-        _esc(q.text) + '</div>' + _accuracyBar(q.accuracy, q.total_answers) + '</div>').join('') +
-      '</div>'
-    : '';
-  const trend = (gs.trend || []).length
-    ? '<div class="cdx-stats-section"><div class="cdx-stats-section-title">' +
-      t('questions.stats_trend') + '</div>' +
-      gs.trend.map((s) => '<div class="cdx-stats-trend-row"><span class="cdx-stats-trend-name">' +
-        _esc(s.title || s.code) + '</span><span class="cdx-stats-trend-val">' +
-        (s.students || 0) + ' ' + t('questions.stats_unique_students') + ', ' +
-        (s.answers || 0) + ' ' + t('questions.stats_answers') + '</span></div>').join('') +
-      '</div>'
-    : '';
-  el.innerHTML = kpis + toughest + trend;
+    ? gs.toughest.map(_toughestCard).join('')
+    : '<div class="cdx-stats-empty">' + t('questions.stats_empty') + '</div>';
+
+  const rows = (gs.trend || []).map(_trendRow).join('');
+  const table =
+    '<div class="cdx-stats-table-wrap"><table class="cdx-stats-table"><thead><tr>' +
+      '<th>' + t('questions.stats_col_session') + '</th>' +
+      '<th>' + t('questions.stats_col_date') + '</th>' +
+      '<th class="cdx-stats-num">' + t('questions.stats_col_students') + '</th>' +
+      '<th class="cdx-stats-num">' + t('questions.stats_col_answers') + '</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+
+  el.innerHTML = kpis +
+    '<h3 class="cdx-stats-section-title">' + t('questions.stats_toughest') + '</h3>' +
+    '<div class="cdx-stats-qlist">' + toughest + '</div>' +
+    '<h3 class="cdx-stats-section-title">' + t('questions.stats_trend') + '</h3>' +
+    table;
 }
 
-function _renderGlobal(body) {
-  body.innerHTML =
-    '<div class="cdx-stats-filter">' +
-      '<label class="cdx-stats-label">' + t('questions.stats_from') +
-        ' <input type="date" class="cdx-input" id="cdx-gs-from"></label>' +
-      '<label class="cdx-stats-label">' + t('questions.stats_to') +
-        ' <input type="date" class="cdx-input" id="cdx-gs-to"></label>' +
-      '<button class="cdx-btn" id="cdx-gs-apply" type="button">' + t('questions.stats_apply') + '</button>' +
-    '</div>' +
-    '<div class="cdx-stats-result" id="cdx-gs-result"><div class="cdx-stats-loading">' +
-      t('questions.stats_loading') + '</div></div>';
-  const result = body.querySelector('#cdx-gs-result');
-  const from = body.querySelector('#cdx-gs-from');
-  const to = body.querySelector('#cdx-gs-to');
-
-  const load = async () => {
-    result.innerHTML = '<div class="cdx-stats-loading">' + t('questions.stats_loading') + '</div>';
-    const p = {};
-    if (from.value && to.value) { p.date_from = from.value; p.date_to = to.value; }
-    let gs;
-    try { gs = await api.globalStats(p); } catch (_) { gs = null; }
-    _renderGlobalStats(result, gs);
-  };
-  _on(body.querySelector('#cdx-gs-apply'), 'click', load);
-  load();
+async function _load(result, from, to) {
+  result.innerHTML = '<div class="cdx-stats-loading">' + t('questions.stats_loading') + '</div>';
+  const p = {};
+  if (from && to) { p.date_from = from; p.date_to = to; }
+  let gs;
+  try { gs = await api.globalStats(p); } catch (_) { gs = null; }
+  if (!_viewEl) return; // view changed mid-await
+  _renderResult(result, gs);
 }
 
 export function mount(viewEl, ctx) {
   _viewEl = viewEl;
   viewEl.innerHTML =
     '<div class="cdx-stats">' +
-      '<div class="cdx-stats-modes" role="tablist">' +
-        '<button class="cdx-stats-mode active" data-mode="session" type="button">' +
-          t('questions.stats_view_session') + '</button>' +
-        '<button class="cdx-stats-mode" data-mode="global" type="button">' +
-          t('questions.stats_view_global') + '</button>' +
+      '<div class="cdx-stats-filter">' +
+        '<div class="cdx-stats-filter-dates">' +
+          '<label class="cdx-stats-flabel" for="cdx-gs-from">' + t('questions.stats_from') + '</label>' +
+          '<input type="date" class="cdx-stats-date" id="cdx-gs-from">' +
+          '<label class="cdx-stats-flabel" for="cdx-gs-to">' + t('questions.stats_to') + '</label>' +
+          '<input type="date" class="cdx-stats-date" id="cdx-gs-to">' +
+        '</div>' +
+        '<div class="cdx-stats-filter-actions">' +
+          '<button class="cdx-stats-clear" id="cdx-gs-clear" type="button">' + t('questions.stats_clear') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" id="cdx-gs-apply" type="button">' + t('questions.stats_apply') + '</button>' +
+        '</div>' +
       '</div>' +
-      '<div class="cdx-stats-body" id="cdx-stats-body"></div>' +
+      '<div class="cdx-stats-result" id="cdx-gs-result"></div>' +
     '</div>';
-  const body = viewEl.querySelector('#cdx-stats-body');
-  const modes = Array.prototype.slice.call(viewEl.querySelectorAll('.cdx-stats-mode'));
 
-  function setMode(mode) {
-    modes.forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
-    if (mode === 'global') _renderGlobal(body);
-    else _renderSession(body);
-  }
-  modes.forEach((b) => _on(b, 'click', () => setMode(b.dataset.mode)));
-  setMode('session');
+  const result = viewEl.querySelector('#cdx-gs-result');
+  const from = viewEl.querySelector('#cdx-gs-from');
+  const to = viewEl.querySelector('#cdx-gs-to');
+
+  _on(viewEl.querySelector('#cdx-gs-apply'), 'click', () => _load(result, from.value, to.value));
+  _on(viewEl.querySelector('#cdx-gs-clear'), 'click', () => {
+    from.value = ''; to.value = '';
+    _load(result, '', '');
+  });
+
+  _load(result, '', '');
 }
 
 export function unmount() {
