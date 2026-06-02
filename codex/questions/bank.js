@@ -34,6 +34,9 @@ let _editBank = false;
 let _selected = new Set();
 let _dragId = null;
 let _bulkItems = [];
+let _exportFormat = 'json';
+let _importMode = 'text';
+let _importItems = [];
 
 // Pure: move an item up/down, immutable, clamped at the ends.
 export function moveInArray(arr, index, dir) {
@@ -108,6 +111,120 @@ function _composerInitial(q) {
     max_select: (q.max_select != null ? Number(q.max_select) : 1),
   };
 }
+
+// ---- Canonical exchange format (import + export share one shape) ----
+function _canonicalCorrect(q) {
+  const raw = q.correct_answer;
+  if (raw === null || raw === undefined || raw === '') return '';
+  if (typeof raw === 'number') return raw;
+  const s = String(raw).trim();
+  if (s[0] === '[') { try { return JSON.parse(s).map(Number); } catch (_) { return ''; } }
+  const n = parseInt(s, 10);
+  return Number.isInteger(n) ? n : '';
+}
+function _canonicalOptions(q) {
+  const type = q.type || 'mc';
+  if (type === 'rating' || type === 'numeric') {
+    let o = q.options;
+    if (typeof o === 'string') { try { o = JSON.parse(o); } catch (_) { o = {}; } }
+    return (o && !Array.isArray(o)) ? o : {};
+  }
+  if (type === 'open' || type === 'wordcloud') return [];
+  return _optionList(q);
+}
+function _toCanonical(q) {
+  const c = {
+    type: q.type || 'mc',
+    question: q.question || '',
+    options: _canonicalOptions(q),
+    correct_answer: _canonicalCorrect(q),
+  };
+  if (q.max_select != null) c.max_select = Number(q.max_select);
+  return c;
+}
+
+function _exportJSON() {
+  return JSON.stringify({ codex_questions: 1, list_name: _currentSet, questions: _questions.map(_toCanonical) }, null, 2);
+}
+function _exportMarkdown() {
+  let out = '# ' + (_currentSet || '') + '\n\n';
+  _questions.forEach((q, i) => {
+    const c = _toCanonical(q);
+    out += (i + 1) + '. [' + String(c.type || 'mc').toUpperCase() + '] ' + c.question + '\n';
+    if (Array.isArray(c.options) && c.options.length) {
+      const correct = new Set(Array.isArray(c.correct_answer) ? c.correct_answer : (c.correct_answer === '' ? [] : [c.correct_answer]));
+      c.options.forEach((o, oi) => {
+        out += '   - ' + (_LETTERS[oi] || (oi + 1)) + '. ' + o + (correct.has(oi) ? ' (' + t('questions.bank_correct_tag') + ')' : '') + '\n';
+      });
+    } else if (c.options && !Array.isArray(c.options) && (c.options.min != null || c.options.max != null)) {
+      out += '   - ' + (c.options.min != null ? c.options.min : '') + '..' + (c.options.max != null ? c.options.max : '') + '\n';
+    }
+    out += '\n';
+  });
+  return out;
+}
+function _csvCell(s) {
+  const v = String(s == null ? '' : s);
+  return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+function _exportCSV() {
+  let out = 'type,question,options,correct,max_select\n';
+  _questions.forEach((q) => {
+    const c = _toCanonical(q);
+    const opts = Array.isArray(c.options) ? c.options.join(' | ')
+      : (c.options && (c.options.min != null || c.options.max != null) ? (c.options.min + '..' + c.options.max) : '');
+    const correct = Array.isArray(c.correct_answer) ? c.correct_answer.join(';') : (c.correct_answer === '' ? '' : c.correct_answer);
+    out += [_csvCell(c.type), _csvCell(c.question), _csvCell(opts), _csvCell(correct), _csvCell(c.max_select != null ? c.max_select : '')].join(',') + '\n';
+  });
+  return out;
+}
+
+// Shared review list (bulk generate + import both render to this).
+function _reviewItemsHTML(items) {
+  return items.map((q, i) => {
+    const raw = q.correct_answer;
+    const correct = new Set(Array.isArray(raw) ? raw.map(Number) : (raw === '' || raw == null ? [] : [Number(raw)]));
+    const opts = Array.isArray(q.options) ? q.options.map((o, oi) =>
+      '<li' + (correct.has(oi) ? ' class="cdx-q-opt--correct"' : '') + '>' + _esc(o) +
+      (correct.has(oi) ? ' (' + t('questions.bank_correct_tag') + ')' : '') + '</li>').join('') : '';
+    return '<label class="cdx-bank-bulk-item">' +
+      '<input type="checkbox" data-i="' + i + '" checked>' +
+      '<div class="cdx-bank-bulk-item-body">' +
+        '<div class="cdx-bank-bulk-item-q">' + _esc(q.question) + '</div>' +
+        (opts ? '<ul class="cdx-bank-bulk-item-opts">' + opts + '</ul>' : '') +
+      '</div>' +
+    '</label>';
+  }).join('');
+}
+
+// Clipboard + file download.
+function _copy(text) {
+  try { if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text); } catch (_) { /* ignore */ }
+  return Promise.resolve();
+}
+function _download(filename, text, mime) {
+  try {
+    const blob = new Blob([text], { type: mime || 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) { /* ignore */ } }, 1000);
+  } catch (_) { /* ignore */ }
+}
+
+// Import: the AI system prompt that turns pasted text into the canonical schema.
+const _IMPORT_SYS =
+  'Você organiza texto em questões para um banco de questões. Receberá um texto ' +
+  '(conteúdo de aula ou questões em prosa). Devolva APENAS um array JSON estrito, ' +
+  'sem markdown, no formato: [{"type":"mc|tf|poll|open|wordcloud|rating|numeric",' +
+  '"question":"...","options":["..."] (ou {"min":1,"max":5} para rating/numeric, ' +
+  'ou [] para open/wordcloud),"correct_answer": índice base-0 (mc/tf), array de ' +
+  'índices (mc múltipla), ou "" (sem correta),"max_select": inteiro}]. Para mc use ' +
+  '4 opções e correct_answer com o índice da correta. Para tf use options ' +
+  '["Verdadeiro","Falso"]. Preserve as questões já presentes no texto; se for ' +
+  'conteúdo, gere questões de múltipla escolha cobrindo os pontos principais. ' +
+  'NUNCA inclua a letra (ex: "A)") no texto das opções.';
 
 // ---- Sets sidebar ----
 function _setRow(b) {
@@ -200,6 +317,7 @@ function _conjuntoHeader() {
     '<div class="cdx-bank-conjunto-actions">' +
       '<button class="cdx-btn cdx-btn-sm' + (_editBank ? ' cdx-btn-primary' : '') + '" data-act="edit-bank" type="button">' +
         t(_editBank ? 'questions.bank_edit_bank_done' : 'questions.bank_edit_bank') + '</button>' +
+      '<button class="cdx-btn cdx-btn-sm" data-act="export" type="button">' + t('questions.bank_export') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm" data-act="rename" type="button">' + t('questions.bank_edit_name') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delset" type="button">' + t('questions.bank_delete_set') + '</button>' +
     '</div>' +
@@ -219,6 +337,7 @@ function _qHeader() {
   return '<div class="cdx-bank-qheader">' +
     '<span class="cdx-bank-qheader-label">' + t('questions.bank_questions_label') + '</span>' +
     '<div class="cdx-bank-qheader-actions">' +
+      '<button class="cdx-btn cdx-btn-sm" data-act="import" type="button">' + t('questions.bank_import') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm" data-act="bulk" type="button">' + t('questions.bank_bulk_generate') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="addq" type="button">' + t('questions.bank_new_question') + '</button>' +
     '</div>' +
@@ -422,21 +541,7 @@ function _renderBulkReview() {
   _q('[data-act="bulk-cancel"]').hidden = true;
   _q('[data-act="bulk-discard"]').hidden = false;
   _q('[data-act="bulk-save"]').hidden = false;
-  const list = _q('#cdx-bank-bulk-list');
-  list.innerHTML = _bulkItems.map((q, i) => {
-    const opts = (q.options || []).map((o, oi) => {
-      const correct = String(oi) === q.correct_answer;
-      return '<li' + (correct ? ' class="cdx-q-opt--correct"' : '') + '>' + _esc(o) +
-        (correct ? ' (' + t('questions.bank_correct_tag') + ')' : '') + '</li>';
-    }).join('');
-    return '<label class="cdx-bank-bulk-item">' +
-      '<input type="checkbox" data-i="' + i + '" checked>' +
-      '<div class="cdx-bank-bulk-item-body">' +
-        '<div class="cdx-bank-bulk-item-q">' + _esc(q.question) + '</div>' +
-        (opts ? '<ul class="cdx-bank-bulk-item-opts">' + opts + '</ul>' : '') +
-      '</div>' +
-    '</label>';
-  }).join('');
+  _q('#cdx-bank-bulk-list').innerHTML = _reviewItemsHTML(_bulkItems);
 }
 
 async function _bulkSave() {
@@ -451,6 +556,134 @@ async function _bulkSave() {
   if (!_viewEl) return;
   btn.disabled = false; btn.textContent = orig;
   _closeBulk();
+  await _loadQuestions();
+  _loadSets();
+}
+
+// ---- Export (JSON / Markdown / CSV; clipboard + download) ----
+function _openExport() {
+  if (!_currentSet) return;
+  const modal = _q('#cdx-bank-export');
+  if (!modal) return;
+  _exportFormat = 'json';
+  _q('.cdx-bank-export-title').textContent = t('questions.bank_export_title') + ' · ' + _currentSet;
+  _renderExport();
+  modal.hidden = false;
+}
+function _renderExport() {
+  if (!_viewEl) return;
+  _viewEl.querySelectorAll('.cdx-bank-export-tab').forEach((b) => b.classList.toggle('active', b.getAttribute('data-fmt') === _exportFormat));
+  const out = _q('.cdx-bank-export-out');
+  if (out) out.value = _exportText();
+}
+function _exportText() {
+  return _exportFormat === 'md' ? _exportMarkdown() : (_exportFormat === 'csv' ? _exportCSV() : _exportJSON());
+}
+function _closeExport() { const m = _q('#cdx-bank-export'); if (m) m.hidden = true; }
+
+// ---- Import (paste text -> AI organizes; paste canonical JSON -> direct) ----
+function _openImport() {
+  if (!_currentSet) return;
+  const modal = _q('#cdx-bank-import');
+  if (!modal) return;
+  _importMode = 'text'; _importItems = [];
+  _q('.cdx-bank-import-title').textContent = t('questions.bank_import_title') + ' · ' + _currentSet;
+  _q('#cdx-bank-import-config').hidden = false;
+  _q('#cdx-bank-import-review').hidden = true;
+  _q('.cdx-bank-import-err').textContent = '';
+  _q('.cdx-bank-import-in').value = '';
+  _syncImportTabs();
+  _q('[data-act="import-process"]').hidden = false;
+  _q('[data-act="import-cancel"]').hidden = false;
+  _q('[data-act="import-discard"]').hidden = true;
+  _q('[data-act="import-save"]').hidden = true;
+  modal.hidden = false;
+}
+function _syncImportTabs() {
+  if (!_viewEl) return;
+  _viewEl.querySelectorAll('.cdx-bank-import-tab').forEach((b) => b.classList.toggle('active', b.getAttribute('data-mode') === _importMode));
+  const inp = _q('.cdx-bank-import-in');
+  if (inp) inp.placeholder = t(_importMode === 'json' ? 'questions.bank_import_json_ph' : 'questions.bank_import_text_ph');
+  const proc = _q('[data-act="import-process"]');
+  if (proc) proc.textContent = t(_importMode === 'json' ? 'questions.bank_import_load' : 'questions.bank_import_organize');
+}
+function _closeImport() { const m = _q('#cdx-bank-import'); if (m) m.hidden = true; _importItems = []; }
+
+function _parseQuestionsJson(text) {
+  const cleaned = String(text || '').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  let data; try { data = JSON.parse(cleaned); } catch (_) { return null; }
+  return Array.isArray(data) ? data : (data && Array.isArray(data.questions) ? data.questions : null);
+}
+function _normalizeImported(arr) {
+  return (arr || []).filter((q) => q && q.question).map((q) => ({
+    type: q.type || 'mc',
+    question: String(q.question),
+    options: Array.isArray(q.options) ? q.options.map(_stripEnum) : ((q.options && typeof q.options === 'object') ? q.options : []),
+    correct_answer: (q.correct_answer !== undefined ? q.correct_answer : (q.correct !== undefined ? q.correct : '')),
+    max_select: (q.max_select != null ? Number(q.max_select) : 1),
+  }));
+}
+
+async function _importProcess() {
+  const inp = _q('.cdx-bank-import-in');
+  const errEl = _q('.cdx-bank-import-err');
+  const raw = inp ? inp.value.trim() : '';
+  if (errEl) errEl.textContent = '';
+  if (!raw) { if (errEl) errEl.textContent = t('questions.bank_import_empty'); return; }
+
+  if (_importMode === 'json') {
+    const arr = _parseQuestionsJson(raw);
+    if (arr === null) { if (errEl) errEl.textContent = t('questions.bank_import_json_invalid'); return; }
+    const items = _normalizeImported(arr);
+    if (!items.length) { if (errEl) errEl.textContent = t('questions.bank_import_none'); return; }
+    _importItems = items;
+    _renderImportReview();
+    return;
+  }
+
+  const btn = _q('[data-act="import-process"]');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = t('questions.bank_import_organizing');
+  let res; try { res = await ai.chat({ system: _IMPORT_SYS, messages: [{ role: 'user', content: raw }] }); } catch (e) { notice.internal(e); res = null; }
+  if (!_viewEl) return;
+  btn.disabled = false; btn.textContent = orig;
+  const arr = res && res.text ? _parseQuestionsJson(res.text) : null;
+  const items = _normalizeImported(arr);
+  if (!items.length) { if (errEl) errEl.textContent = t('questions.bank_import_ai_error'); return; }
+  _importItems = items;
+  _renderImportReview();
+}
+
+function _renderImportReview() {
+  _q('#cdx-bank-import-config').hidden = true;
+  _q('#cdx-bank-import-review').hidden = false;
+  _q('[data-act="import-process"]').hidden = true;
+  _q('[data-act="import-cancel"]').hidden = true;
+  _q('[data-act="import-discard"]').hidden = false;
+  _q('[data-act="import-save"]').hidden = false;
+  _q('#cdx-bank-import-list').innerHTML = _reviewItemsHTML(_importItems);
+}
+
+async function _importSave() {
+  const listEl = _q('#cdx-bank-import-list');
+  const checks = Array.prototype.slice.call(listEl.querySelectorAll('input[type="checkbox"]:checked'));
+  const errEl = _q('.cdx-bank-import-err');
+  if (!checks.length) { if (errEl) errEl.textContent = t('questions.bank_bulk_no_selection'); return; }
+  const items = checks.map((c) => _importItems[parseInt(c.getAttribute('data-i'), 10)]);
+  const btn = _q('[data-act="import-save"]');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = t('questions.bank_bulk_saving');
+  // add_question (not bulk) so max_select + correct serialization round-trip faithfully.
+  for (const q of items) {
+    try {
+      await api.addQuestion({
+        list_name: _currentSet, question: q.question, type: q.type || 'mc',
+        options: q.options || [], correct_answer: q.correct_answer,
+        max_select: (q.max_select != null ? q.max_select : 1),
+      });
+    } catch (e) { notice.internal(e); }
+  }
+  if (!_viewEl) return;
+  btn.disabled = false; btn.textContent = orig;
+  _closeImport();
   await _loadQuestions();
   _loadSets();
 }
@@ -498,6 +731,7 @@ export function mount(viewEl, ctx) {
   _currentSet = null; _banks = []; _questions = []; _editingOriginal = null;
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _exportFormat = 'json'; _importMode = 'text'; _importItems = [];
 
   viewEl.innerHTML =
     '<div class="cdx-bank">' +
@@ -558,6 +792,45 @@ export function mount(viewEl, ctx) {
           '<button class="cdx-btn cdx-btn-primary" data-act="bulk-save" type="button" hidden>' + t('questions.bank_bulk_save') + '</button>' +
         '</div>' +
       '</div>' +
+    '</div>' +
+    '<div class="cdx-modal-backdrop cdx-bank-modal" id="cdx-bank-export" hidden>' +
+      '<div class="cdx-modal cdx-bank-export-card">' +
+        '<div class="cdx-modal-title cdx-bank-export-title"></div>' +
+        '<div class="cdx-bank-tabs">' +
+          '<button class="cdx-bank-export-tab active" data-fmt="json" type="button">JSON</button>' +
+          '<button class="cdx-bank-export-tab" data-fmt="md" type="button">Markdown</button>' +
+          '<button class="cdx-bank-export-tab" data-fmt="csv" type="button">CSV</button>' +
+        '</div>' +
+        '<textarea class="cdx-input cdx-bank-export-out" readonly rows="12"></textarea>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" data-act="export-close" type="button">' + t('questions.bank_close') + '</button>' +
+          '<button class="cdx-btn" data-act="export-download" type="button">' + t('questions.bank_download') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="export-copy" type="button">' + t('questions.bank_copy') + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cdx-modal-backdrop cdx-bank-modal" id="cdx-bank-import" hidden>' +
+      '<div class="cdx-modal cdx-bank-import-card">' +
+        '<div class="cdx-modal-title cdx-bank-import-title"></div>' +
+        '<div id="cdx-bank-import-config">' +
+          '<div class="cdx-bank-tabs">' +
+            '<button class="cdx-bank-import-tab active" data-mode="text" type="button">' + t('questions.bank_import_tab_text') + '</button>' +
+            '<button class="cdx-bank-import-tab" data-mode="json" type="button">' + t('questions.bank_import_tab_json') + '</button>' +
+          '</div>' +
+          '<textarea class="cdx-input cdx-bank-import-in" rows="8"></textarea>' +
+        '</div>' +
+        '<div id="cdx-bank-import-review" hidden>' +
+          '<p class="cdx-bank-bulk-hint">' + t('questions.bank_bulk_review_hint') + '</p>' +
+          '<div class="cdx-bank-bulk-list" id="cdx-bank-import-list"></div>' +
+        '</div>' +
+        '<p class="cdx-bank-modal-err cdx-bank-import-err"></p>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" data-act="import-cancel" type="button">' + t('questions.bank_cancel') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="import-process" type="button">' + t('questions.bank_import_organize') + '</button>' +
+          '<button class="cdx-btn" data-act="import-discard" type="button" hidden>' + t('questions.bank_bulk_discard') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="import-save" type="button" hidden>' + t('questions.bank_bulk_save') + '</button>' +
+        '</div>' +
+      '</div>' +
     '</div>';
 
   const search = viewEl.querySelector('.cdx-bank-search-input');
@@ -600,6 +873,8 @@ export function mount(viewEl, ctx) {
     const act = btn.getAttribute('data-act');
     if (act === 'addq') { _confirmDelQ = null; _openModal(null); }
     else if (act === 'bulk') { _openBulk(); }
+    else if (act === 'export') { _openExport(); }
+    else if (act === 'import') { _openImport(); }
     else if (act === 'edit-bank') { _toggleEditBank(); }
     else if (act === 'select') {
       const qid = btn.getAttribute('data-qid');
@@ -703,9 +978,47 @@ export function mount(viewEl, ctx) {
     else if (act === 'bulk-save') _bulkSave();
   });
 
+  // Export modal (delegated): format tabs + copy/download.
+  _on(viewEl.querySelector('#cdx-bank-export'), 'click', (e) => {
+    if (e.target === viewEl.querySelector('#cdx-bank-export')) { _closeExport(); return; }
+    const btn = e.target.closest('[data-act], [data-fmt]');
+    if (!btn) return;
+    const fmt = btn.getAttribute('data-fmt');
+    if (fmt) { _exportFormat = fmt; _renderExport(); return; }
+    const act = btn.getAttribute('data-act');
+    if (act === 'export-close') _closeExport();
+    else if (act === 'export-copy') {
+      const b = btn; const orig = b.textContent;
+      _copy(_exportText()).then(() => { b.textContent = t('questions.bank_copied'); setTimeout(() => { b.textContent = orig; }, 1500); });
+    }
+    else if (act === 'export-download') {
+      const ext = _exportFormat === 'md' ? 'md' : _exportFormat;
+      const mime = _exportFormat === 'json' ? 'application/json' : (_exportFormat === 'csv' ? 'text/csv' : 'text/markdown');
+      const base = (_currentSet || 'questoes').replace(/[^a-z0-9_-]+/gi, '_');
+      _download(base + '.' + ext, _exportText(), mime);
+    }
+  });
+
+  // Import modal (delegated): mode tabs + process/save.
+  _on(viewEl.querySelector('#cdx-bank-import'), 'click', (e) => {
+    if (e.target === viewEl.querySelector('#cdx-bank-import')) { _closeImport(); return; }
+    const btn = e.target.closest('[data-act], [data-mode]');
+    if (!btn) return;
+    const mode = btn.getAttribute('data-mode');
+    if (mode) { _importMode = mode; const err = _q('.cdx-bank-import-err'); if (err) err.textContent = ''; _syncImportTabs(); return; }
+    const act = btn.getAttribute('data-act');
+    if (act === 'import-cancel' || act === 'import-discard') _closeImport();
+    else if (act === 'import-process') _importProcess();
+    else if (act === 'import-save') _importSave();
+  });
+
   // Escape closes whichever modal is open (when not mid-typing in a field).
   _on(document, 'keydown', (e) => {
     if (e.key !== 'Escape') return;
+    const ex = _q('#cdx-bank-export');
+    if (ex && !ex.hidden) { _closeExport(); return; }
+    const im = _q('#cdx-bank-import');
+    if (im && !im.hidden) { _closeImport(); return; }
     const bulk = _q('#cdx-bank-bulk');
     if (bulk && !bulk.hidden) { _closeBulk(); return; }
     const modal = _q('#cdx-bank-modal');
@@ -740,4 +1053,5 @@ export function unmount() {
   _viewEl = null; _currentSet = null; _banks = []; _questions = [];
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _exportFormat = 'json'; _importMode = 'text'; _importItems = [];
 }

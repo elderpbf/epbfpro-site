@@ -360,6 +360,20 @@
 .cdx-bank-bulk-item-opts { margin: 0.4rem 0 0 1rem; padding: 0; color: var(--text-secondary); font-size: 0.82rem; }
 .cdx-bank-bulk-item-opts .cdx-q-opt--correct { color: var(--primary); font-weight: 600; }
 
+/* Export / Import modals */
+.cdx-bank-export-card, .cdx-bank-import-card { max-width: 620px; }
+.cdx-bank-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.8rem; }
+.cdx-bank-export-tab, .cdx-bank-import-tab {
+  background: transparent;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 7px; padding: 0.35rem 0.85rem;
+  font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+}
+.cdx-bank-export-tab:hover, .cdx-bank-import-tab:hover { color: var(--text-primary); }
+.cdx-bank-export-tab.active, .cdx-bank-import-tab.active { color: var(--primary); border-color: var(--primary); }
+.cdx-bank-export-out { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; line-height: 1.4; }
+.cdx-bank-import-in { resize: vertical; }
+
 /* Inputs/selects used by Questions (search, rename, new-set, composer). These
  * class names are Questions-local, not a shared primitive defined elsewhere. */
 .cdx-input, .cdx-select, textarea.cdx-input {

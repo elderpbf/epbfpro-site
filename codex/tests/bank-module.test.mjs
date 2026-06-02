@@ -98,6 +98,11 @@ test('bank is a faithful re-port of the legacy cp-banks-layout', () => {
   assert.match(src, /cdx-bank-movebar/, 'renders the move-between-sets bar');
   assert.match(src, /cdx-bank-bulk/, 'renders the bulk-generate modal');
   assert.match(src, /addQuestionsBulk/, 'bulk save goes through the facade');
+  // Import / Export sharing one canonical format.
+  assert.match(src, /data-act="export"/, 'has an export action');
+  assert.match(src, /data-act="import"/, 'has an import action');
+  assert.match(src, /codex_questions/, 'export uses the canonical JSON envelope');
+  assert.match(src, /ai\.chat/, 'text import organizes the paste via ai.chat');
 });
 
 test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
@@ -123,6 +128,10 @@ test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
     'questions.bank_bulk_title', 'questions.bank_bulk_count', 'questions.bank_bulk_theme',
     'questions.bank_bulk_generate_btn', 'questions.bank_bulk_review_hint',
     'questions.bank_bulk_save', 'questions.bank_bulk_discard', 'questions.bank_correct_tag',
+    // Import / Export
+    'questions.bank_export', 'questions.bank_import', 'questions.bank_copy',
+    'questions.bank_download', 'questions.bank_import_tab_text', 'questions.bank_import_tab_json',
+    'questions.bank_import_organize',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);
