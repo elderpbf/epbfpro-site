@@ -73,6 +73,33 @@ function _correctSet(q) {
   return new Set(Number.isInteger(n) ? [n] : []);
 }
 
+// A stored question persists options as a JSON string and correctness as
+// correct_answer (scalar index or JSON-array string). The composer expects an
+// options ARRAY (or {min,max} for rating/numeric) and a correct INDEX array.
+// Normalize so the edit modal pre-fills options + the correct selection.
+function _composerInitial(q) {
+  if (!q) return null;
+  const type = q.type || 'mc';
+  let options;
+  if (type === 'rating' || type === 'numeric') {
+    let o = q.options;
+    if (typeof o === 'string') { try { o = JSON.parse(o); } catch (_) { o = {}; } }
+    options = (o && !Array.isArray(o)) ? o : {};
+  } else {
+    options = _optionList(q);
+  }
+  const correct = Array.from(_correctSet(q));
+  return {
+    _original: q.question,
+    type: type,
+    question: q.question,
+    options: options,
+    correct: correct,
+    correct_answers: correct,
+    max_select: (q.max_select != null ? Number(q.max_select) : 1),
+  };
+}
+
 // ---- Sets sidebar ----
 function _setRow(b) {
   const name = b.list_name;
@@ -575,7 +602,7 @@ export function mount(viewEl, ctx) {
     else if (act === 'edit') {
       const qid = btn.getAttribute('data-qid');
       const qq = _questions.find((x) => String(x.id) === String(qid));
-      if (qq) _openModal(qq);
+      if (qq) _openModal(_composerInitial(qq));
     }
     else if (act === 'delq') { _confirmDelQ = btn.getAttribute('data-qid'); _renderConjunto(); }
     else if (act === 'delq-no') { _confirmDelQ = null; _renderConjunto(); }
