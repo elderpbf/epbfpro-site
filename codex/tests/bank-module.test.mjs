@@ -79,6 +79,22 @@ test('bank + composer obey the module source rules', () => {
   assert.match(bankSrc, /from\s+['"]\.\.\/js\/codex-api\.js['"]/, 'bank imports the facade');
 });
 
+// Faithful re-port of the legacy cp-banks-layout: a Conjuntos sidebar, a
+// question area whose conjunto header carries [Editar banco | Editar nome |
+// Excluir conjunto], a Questoes header with [+ Gerar em Lote | + Nova questao],
+// question cards that PREVIEW the options (A/B/C/D, correct highlighted), and a
+// native modal editor that reuses the shared composer plus AI generate/improve.
+test('bank is a faithful re-port of the legacy cp-banks-layout', () => {
+  const src = read('../questions/bank.js');
+  assert.match(src, /data-act="edit-bank"/, 'renders the Editar banco action');
+  assert.match(src, /data-act="bulk"/, 'renders the Gerar em Lote action');
+  assert.match(src, /data-act="addq"/, 'renders the Nova questao action');
+  assert.match(src, /cdx-q-opt/, 'question cards preview the options');
+  assert.match(src, /cdx-modal/, 'editor uses a native modal');
+  assert.match(src, /ai\.question/, 'wires AI generate/improve through the facade');
+  assert.match(src, /mountComposer/, 'reuses the shared composer inside the modal');
+});
+
 test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
   const pt = (await import('../i18n/pt.js')).default;
   const en = (await import('../i18n/en.js')).default;
@@ -91,6 +107,12 @@ test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
     'questions.bank_option', 'questions.bank_add_option', 'questions.bank_loading',
     'questions.type_mc', 'questions.type_tf', 'questions.type_poll', 'questions.type_open',
     'questions.type_wordcloud', 'questions.type_rating', 'questions.type_numeric',
+    // faithful re-port additions
+    'questions.bank_sets_header', 'questions.bank_new_set_btn', 'questions.bank_edit_bank',
+    'questions.bank_edit_name', 'questions.bank_questions_label', 'questions.bank_bulk_generate',
+    'questions.bank_new_question', 'questions.bank_generate', 'questions.bank_improve',
+    'questions.bank_ai_prompt', 'questions.bank_modal_new', 'questions.bank_modal_edit',
+    'questions.bank_goto_set',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);
