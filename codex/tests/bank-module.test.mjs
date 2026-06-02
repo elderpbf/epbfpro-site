@@ -93,6 +93,11 @@ test('bank is a faithful re-port of the legacy cp-banks-layout', () => {
   assert.match(src, /cdx-modal/, 'editor uses a native modal');
   assert.match(src, /ai\.question/, 'wires AI generate/improve through the facade');
   assert.match(src, /mountComposer/, 'reuses the shared composer inside the modal');
+  // Deploy 2: reorder/move mode + bulk-generate modal.
+  assert.match(src, /draggable="true"/, 'edit-bank mode makes cards draggable');
+  assert.match(src, /cdx-bank-movebar/, 'renders the move-between-sets bar');
+  assert.match(src, /cdx-bank-bulk/, 'renders the bulk-generate modal');
+  assert.match(src, /addQuestionsBulk/, 'bulk save goes through the facade');
 });
 
 test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
@@ -113,6 +118,11 @@ test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
     'questions.bank_new_question', 'questions.bank_generate', 'questions.bank_improve',
     'questions.bank_ai_prompt', 'questions.bank_modal_new', 'questions.bank_modal_edit',
     'questions.bank_goto_set',
+    // Deploy 2: reorder/move + bulk
+    'questions.bank_move', 'questions.bank_move_to', 'questions.bank_move_selected',
+    'questions.bank_bulk_title', 'questions.bank_bulk_count', 'questions.bank_bulk_theme',
+    'questions.bank_bulk_generate_btn', 'questions.bank_bulk_review_hint',
+    'questions.bank_bulk_save', 'questions.bank_bulk_discard', 'questions.bank_correct_tag',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);

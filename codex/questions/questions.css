@@ -321,10 +321,44 @@
 .cdx-q--result:hover { border-color: var(--primary); }
 .cdx-bank-result-set { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--primary); }
 
-/* Editor modal (reuses cohorts .cdx-modal-backdrop / .cdx-modal) */
+/* Editor + bulk modals (reuse cohorts .cdx-modal-backdrop / .cdx-modal) */
 .cdx-bank-modal[hidden] { display: none; }
 .cdx-bank-ai-row { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
 .cdx-bank-modal-err { font-size: 0.8rem; color: var(--error); min-height: 1rem; margin: 0.5rem 0 0; }
+
+/* Reorder / move mode (Editar banco) */
+.cdx-bank-movebar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+  padding: 0.55rem 0.75rem; border-radius: 8px;
+  background: var(--surface-hover, rgba(127, 127, 127, 0.1));
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  font-size: 0.82rem; color: var(--text-secondary);
+}
+.cdx-bank-movebar-count { font-weight: 700; color: var(--text-primary); }
+.cdx-bank-move-dest { width: auto; min-width: 8rem; }
+.cdx-q--edit { flex-direction: row; align-items: center; gap: 0.6rem; cursor: grab; }
+.cdx-q-drag { color: var(--text-secondary); font-size: 1.1rem; line-height: 1; cursor: grab; user-select: none; flex-shrink: 0; }
+.cdx-q-select { width: 1rem; height: 1rem; accent-color: var(--primary); flex-shrink: 0; }
+.cdx-q-editbody { flex: 1; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+.cdx-q-editbody .cdx-q-text { flex: 1; min-width: 8rem; }
+
+/* Bulk generate modal */
+.cdx-bank-bulk-card { max-width: 600px; }
+.cdx-bank-bulk-row { display: flex; gap: 1rem; }
+.cdx-bank-bulk-type-field { flex: 2; }
+.cdx-bank-bulk-count-field { flex: 1; }
+.cdx-bank-bulk-hint { font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 0.8rem; }
+.cdx-bank-bulk-list { display: flex; flex-direction: column; gap: 0.8rem; max-height: 50vh; overflow-y: auto; }
+.cdx-bank-bulk-item {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  padding: 0.7rem 0.8rem; border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px; background: var(--background); cursor: pointer;
+}
+.cdx-bank-bulk-item > input { margin-top: 0.2rem; accent-color: var(--primary); flex-shrink: 0; }
+.cdx-bank-bulk-item-body { flex: 1; min-width: 0; font-size: 0.85rem; }
+.cdx-bank-bulk-item-q { font-weight: 600; color: var(--text-primary); }
+.cdx-bank-bulk-item-opts { margin: 0.4rem 0 0 1rem; padding: 0; color: var(--text-secondary); font-size: 0.82rem; }
+.cdx-bank-bulk-item-opts .cdx-q-opt--correct { color: var(--primary); font-weight: 600; }
 
 /* Inputs/selects used by Questions (search, rename, new-set, composer). These
  * class names are Questions-local, not a shared primitive defined elsewhere. */
