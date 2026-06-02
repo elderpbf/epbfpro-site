@@ -217,7 +217,15 @@ export function initEditing(app) {
     let m;
     if ((m = t.closest("[data-logovar]"))) {
       app.record();
-      app.cur().logoVariant = t.value;
+      const perSlide = m.closest(".logoctl").querySelector("[data-logoperslide]").checked;
+      if (perSlide) app.cur().logoVariant = t.value;                                  // this slide only
+      else { (app.deck().logo = app.deck().logo || { x: 40, y: 30, h: 40 }).variant = t.value; delete app.cur().logoVariant; } // all slides
+      return app.refresh();
+    }
+    if ((m = t.closest("[data-logoperslide]"))) {
+      app.record();
+      if (t.checked) app.cur().logoVariant = (app.deck().logo && app.deck().logo.variant) || "light"; // seed from the deck choice
+      else delete app.cur().logoVariant;                                             // back to following the deck
       return app.refresh();
     }
     if ((m = t.closest("[data-cardmode]"))) {

@@ -8,7 +8,9 @@ import { t } from "../../../../js/i18n.js";
 
 // The logo lives next to the editor modules, not at the page root, so resolve it
 // against this module's URL (works the same standalone or mounted inside Codex).
-const LOGO_URL = new URL("../../codex-logo.png", import.meta.url).href;
+// The 4 available logos live in ../../assets (relative to this module). Each variant
+// maps to a brand SVG already coloured for its background, so no CSS filters are needed.
+const logoAsset = (v) => new URL(`../../assets/logo-${["light", "dark", "teal", "mark"].includes(v) ? v : "light"}.png`, import.meta.url).href;
 
 export function layoutOf(slide) {
   return registry.get(slide.layout);
@@ -67,15 +69,18 @@ function assetsHTML(deck, slide) {
 function logoHTML(deck, slide) {
   const lg = deck.logo || { x: 40, y: 30, h: 40 };
   if (slide.hideLogo) return `<div class="logoshow editoronly" data-logoshow>${t("slides.ed_logo_show")}</div>`;
-  const v = slide.logoVariant || "normal";
+  const deckVar = (deck.logo && deck.logo.variant) || "light";   // the deck-wide choice (applies to all slides)
+  const perSlide = slide.logoVariant != null;                    // checkbox on = this slide overrides that choice
+  const v = perSlide ? slide.logoVariant : deckVar;
   const opt = (val, l) => `<option value="${val}"${v === val ? " selected" : ""}>${l}</option>`;
   return (
-    `<div class="logo logo-${v}" data-logo style="left:${lg.x}px;top:${lg.y}px;height:${lg.h}px">` +
-    `<img src="${LOGO_URL}" alt="PensoIA">` +
-    `<div class="logoctl editoronly"><select data-logovar>${opt("normal", t("slides.ed_logo_normal"))}${opt("claro", t("slides.ed_logo_light"))}${opt(
-      "escuro",
-      t("slides.ed_logo_dark")
-    )}${opt("scrim", t("slides.ed_logo_scrim"))}</select><button data-logohide>${t("slides.ed_logo_hide")}</button></div></div>`
+    `<div class="logo" data-logo style="left:${lg.x}px;top:${lg.y}px;height:${lg.h}px">` +
+    `<img src="${logoAsset(v)}" alt="PensoIA">` +
+    `<div class="logoctl editoronly">` +
+    `<select data-logovar>${opt("light", t("slides.ed_logo_light"))}${opt("dark", t("slides.ed_logo_dark"))}${opt("teal", t("slides.ed_logo_teal"))}${opt("mark", t("slides.ed_logo_mark"))}</select>` +
+    `<label class="logoslide"><input type="checkbox" data-logoperslide${perSlide ? " checked" : ""}>${t("slides.ed_logo_thisslide")}</label>` +
+    `<button data-logohide>${t("slides.ed_logo_hide")}</button>` +
+    `</div></div>`
   );
 }
 
