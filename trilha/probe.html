@@ -168,9 +168,9 @@
 <div id="px-bar">
   <button id="px-min-toggle" type="button">ocultar</button>
   <h3>🔬 Diagnóstico de conexão (iPhone)</h3>
-  <p class="px-instr">Toque em <b>Rodar testes</b> e aguarde cerca de 1 minuto. O resultado é enviado automaticamente, você não precisa copiar nada. <b>Só</b> tire um print se aparecer a barra cinza de privacidade no topo do Safari. Se der, repita numa aba anônima.</p>
+  <p class="px-instr">Toque em <b>Rodar testes</b> (leva alguns segundos). O resultado é enviado automaticamente, você não precisa copiar nada. <b>Só</b> tire um print se aparecer a barra cinza de privacidade no topo do Safari. Depois, se puder, repita numa aba anônima.</p>
   <div class="px-btns">
-    <button class="px-btn" id="px-run" type="button">Rodar testes (~1 min)</button>
+    <button class="px-btn" id="px-run" type="button">Rodar testes</button>
     <button class="px-btn sec" id="px-copy" type="button">Copiar</button>
   </div>
   <div id="px-sent"></div>
@@ -300,32 +300,44 @@
     log('--- iniciando testes ---', 'i');
     env();
 
-    var d1 = await direct();
-    var p  = await proxy();
-
-    // Sustained burst so Safari's privacy classifier has repeated cross-site
-    // traffic to react to and surface the grey banner. ~50s total.
-    log('--- monitorando ~50s (pode fazer a barra de privacidade aparecer) ---', 'i');
-    var ok = d1 ? 1 : 0, fail = d1 ? 0 : 1, total = 1;
-    for (var i = 1; i <= 10; i++) {
-      await new Promise(function (res){ setTimeout(res, 5000); });
-      var r = await direct();
-      total++; if (r) ok++; else fail++;
-      log('   monitorando ' + i + '/10 — ok=' + ok + ' falhas=' + fail, r ? 'o' : 'e');
+    // localStorage: the answer flow + theme depend on it; some private/locked
+    // modes block it independently of the network.
+    var lsOk = true;
+    try {
+      localStorage.setItem('__px_ls__', '1');
+      lsOk = localStorage.getItem('__px_ls__') === '1';
+      localStorage.removeItem('__px_ls__');
+      log(lsOk ? '✅ localStorage: ok (respostas e tema salvam)' : '⚠️ localStorage: leitura inconsistente', lsOk ? 'o' : 'w');
+    } catch (e) {
+      lsOk = false;
+      log('❌ localStorage bloqueado: respostas/tema podem não salvar (' + (e && e.message ? e.message : e) + ')', 'e');
     }
 
+    // Direct cross-site worker calls (3x, quick) -- reachable vs blocked.
+    log('--- conexão direta com o worker (3x) ---', 'i');
+    var ok = 0, fail = 0, total = 0;
+    for (var i = 1; i <= 3; i++) {
+      var r = await direct();
+      total++; if (r) ok++; else fail++;
+      if (i < 3) await new Promise(function (res){ setTimeout(res, 1200); });
+    }
+
+    // Same-origin proxy candidate.
+    var p = await proxy();
+
+    var lsNote = lsOk ? '' : '\n⚠️ localStorage bloqueado neste modo (pode afetar salvar resposta/tema).';
     var v;
     if (fail === 0) {
-      v = '✅ Conexão com o worker FUNCIONA neste iPhone (' + ok + '/' + total + ').\nA barra de privacidade é só um aviso, a página real funciona.';
-      verdict(v, 'ok');
+      v = '✅ Conexão com o worker FUNCIONA neste iPhone (' + ok + '/' + total + ').\nA barra de privacidade é só um aviso, a página real funciona.' + lsNote;
+      verdict(v, lsOk ? 'ok' : 'warn');
     } else if (ok === 0 && p === 'ok') {
-      v = '❌ O iPhone BLOQUEIA a conexão direta (0/' + total + ').\n✅ O proxy no mesmo domínio RESOLVE. (Confirma a solução do proxy.)';
+      v = '❌ O iPhone BLOQUEIA a conexão direta (0/' + total + ').\n✅ O proxy no mesmo domínio RESOLVE. (Confirma a solução do proxy.)' + lsNote;
       verdict(v, 'bad');
     } else if (ok === 0) {
-      v = '❌ Conexão direta bloqueada (0/' + total + ') E o proxy com problema (' + p + ').\nPrecisamos de outra abordagem.';
+      v = '❌ Conexão direta bloqueada (0/' + total + ') E o proxy com problema (' + p + ').\nPrecisamos de outra abordagem.' + lsNote;
       verdict(v, 'bad');
     } else {
-      v = '⚠️ Bloqueio INTERMITENTE: ' + ok + '/' + total + ' passaram.\nProxy: ' + (p === 'ok' ? 'funciona ✅' : 'problema (' + p + ')') + '.';
+      v = '⚠️ Bloqueio INTERMITENTE: ' + ok + '/' + total + ' passaram.\nProxy: ' + (p === 'ok' ? 'funciona ✅' : 'problema (' + p + ')') + '.' + lsNote;
       verdict(v, 'warn');
     }
     log('--- fim ---', 'i');
