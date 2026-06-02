@@ -239,6 +239,12 @@ body.guest-mode .topbar::before {
 const isAuthenticated = () => window.BS_AUTH ? BS_AUTH.isAuthedLocal() : false;
 
 const MOCKS = {
+  slides: {
+    label: 'Slides (editor · estudos de UI)',
+    items: [
+      { name: 'Barra de seleção · 3 posicionamentos', file: 'slides-selection-bar.html' }
+    ]
+  },
   brand: {
     label: 'Brand',
     items: [
