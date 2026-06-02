@@ -1,5 +1,8 @@
-/* Codex Questions tab styles. Surface/text/border values come from theme.css
- * tokens (so dark mode is inherited); the per-tab accent is --codex-questions.
+/* Codex Questions tab styles. Surface/text/border/accent values come from
+ * theme.css tokens (so dark mode is inherited). The accent is the SHARED theme
+ * --primary, NOT a per-tab accent: the UI is reusable and reused, so page color
+ * stays uniform across tabs. (A per-tab accent was considered but not adopted;
+ * if ever adopted it must apply to every tab at once.)
  * cdx- prefix only, no hex literals in rules. */
 
 /* Stats sub-tab is GLOBAL-only, a faithful re-port of the legacy
@@ -52,7 +55,7 @@
   outline: none;
   transition: border-color 0.12s;
 }
-.cdx-stats-date:focus { border-color: var(--codex-questions); }
+.cdx-stats-date:focus { border-color: var(--primary); }
 .cdx-stats-clear {
   background: transparent;
   border: none;
@@ -79,7 +82,7 @@
   font-weight: 700;
   line-height: 1.1;
   margin-bottom: 0.3rem;
-  color: var(--codex-questions);
+  color: var(--primary);
 }
 .cdx-kpi-label {
   font-size: 0.72rem;
@@ -122,7 +125,7 @@
 .cdx-stats-bar-fill {
   position: absolute;
   inset: 0 auto 0 0;
-  background: var(--codex-questions);
+  background: var(--primary);
   opacity: 0.35;
 }
 .cdx-stats-bar-text {
@@ -170,7 +173,7 @@
 }
 .cdx-stats-table tr:last-child td { border-bottom: none; }
 .cdx-stats-num { text-align: center; }
-.cdx-stats-table td.cdx-stats-hl { font-weight: 700; color: var(--codex-questions); }
+.cdx-stats-table td.cdx-stats-hl { font-weight: 700; color: var(--primary); }
 
 /* ── Sessions sub-tab ───────────────────────────────────────── */
 .cdx-sessions { display: flex; flex-direction: column; gap: 1rem; }
@@ -190,7 +193,7 @@
   border-radius: 10px;
   padding: 0.7rem 0.9rem;
 }
-.cdx-session--open { border-left: 4px solid var(--codex-questions); }
+.cdx-session--open { border-left: 4px solid var(--primary); }
 .cdx-session-title { font-weight: 600; color: var(--text-primary); }
 .cdx-session-meta {
   display: flex;
@@ -208,7 +211,7 @@
   color: var(--text-primary);
 }
 .cdx-session-status { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
-.cdx-session-status--open { color: var(--codex-questions); }
+.cdx-session-status--open { color: var(--primary); }
 .cdx-session-status--closed { color: var(--text-secondary); }
 .cdx-session-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
 
@@ -229,7 +232,7 @@
   padding: 0.25rem 0.4rem;
   background: var(--surface);
 }
-.cdx-bank-set.active { border-color: var(--codex-questions); }
+.cdx-bank-set.active { border-color: var(--primary); }
 .cdx-bank-set-pick {
   flex: 1;
   display: flex;
@@ -297,8 +300,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--codex-questions);
-  border: 1px solid var(--codex-questions);
+  color: var(--primary);
+  border: 1px solid var(--primary);
   border-radius: 999px;
   padding: 0.05rem 0.5rem;
 }
@@ -321,7 +324,7 @@
 .cdx-comp-optlist { display: flex; flex-direction: column; gap: 0.35rem; }
 .cdx-comp-optrow { display: flex; align-items: center; gap: 0.45rem; }
 .cdx-comp-opt { flex: 1; min-width: 0; }
-.cdx-comp-correct { flex-shrink: 0; width: 1.1rem; height: 1.1rem; accent-color: var(--codex-questions); }
+.cdx-comp-correct { flex-shrink: 0; width: 1.1rem; height: 1.1rem; accent-color: var(--primary); }
 .cdx-comp-optdel {
   background: transparent;
   border: none;
