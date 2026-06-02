@@ -64,6 +64,10 @@ test('sessions i18n keys exist in BOTH dictionaries', async () => {
     'questions.sessions_stats_kpi_q', 'questions.sessions_stats_kpi_s',
     'questions.sessions_stats_most_missed', 'questions.sessions_stats_empty',
     'questions.sessions_stats_close', 'questions.sessions_stats_loading',
+    // Faithful re-port: sidebar picker + main host area
+    'questions.sessions_sidebar_heading', 'questions.sessions_title_label',
+    'questions.sessions_placeholder', 'questions.sessions_start',
+    'questions.sessions_live_label',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);
@@ -77,6 +81,24 @@ test('sessions re-ports the faithful card layout (cp-session-card -> cdx-session
   assert.match(src, /cdx-live/, 'renders the legacy live indicator on open sessions');
 });
 
+test('sessions re-ports the floating sidebar picker + main host area', () => {
+  const src = read('../questions/sessions.js');
+  assert.match(src, /cdx-sessions-sidebar/, 'has the floating left-edge sidebar');
+  assert.match(src, /cdx-sm--open/, 'toggles the cv-sm reveal class');
+  assert.match(src, /mousemove/, 'reveals on left-edge hover');
+  assert.match(src, /clientX/, 'uses the cursor left-edge zone');
+  assert.match(src, /cdx-sessions-(main|detail)/, 'has the main host area');
+  assert.match(src, /sessions_placeholder/, 'shows the empty-selection placeholder');
+});
+
+test('sessions lifecycle is Iniciar/Encerrar (no Reabrir) on the selected session', () => {
+  const src = read('../questions/sessions.js');
+  assert.match(src, /sessions_start/, 'uses the Iniciar label');
+  assert.match(src, /data-act=["']start["']|act === ['"]start['"]/, 'has a start action');
+  assert.match(src, /\.reopenSession\s*\(/, 'Iniciar maps to reopen under the hood');
+  assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
+});
+
 test('sessions wires the per-session stats overlay through the facade', () => {
   const src = read('../questions/sessions.js');
   assert.match(src, /\.sessionStats\s*\(/, 'calls api.sessionStats for the overlay');
@@ -85,9 +107,17 @@ test('sessions wires the per-session stats overlay through the facade', () => {
   assert.match(src, /cdx-stats-bar/, 'overlay reuses the accuracy bar primitive');
 });
 
-test('sessions wires delete_session through the facade with an inline confirm', () => {
+test('sessions puts delete in a bottom danger zone behind an inline confirm', () => {
   const src = read('../questions/sessions.js');
   assert.match(src, /\.deleteSession\s*\(/, 'calls api.deleteSession');
   assert.match(src, /data-act=["']delete["']|act === ['"]delete['"]/, 'has a delete action');
+  assert.match(src, /cdx-session-danger/, 'delete lives in a bottom danger zone');
   assert.match(src, /sessions_delete_confirm/, 'guards delete behind an inline confirm');
+});
+
+test('sessions unmount tears down the document-level reveal listeners', () => {
+  const src = read('../questions/sessions.js');
+  // mousemove/keydown are bound on document, so they MUST be cleaned up to
+  // avoid leaking across tab switches. Assert they go through the tracked _on.
+  assert.match(src, /_on\(\s*document/, 'document listeners are registered via the tracked helper');
 });
