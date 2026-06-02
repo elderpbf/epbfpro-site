@@ -40,27 +40,11 @@
   font-weight: 600;
   color: var(--text-secondary);
 }
-.cdx-select,
-.cdx-input {
-  background: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.88rem;
-  min-width: 0;
-}
-.cdx-select { min-width: 16rem; }
-.cdx-btn {
-  background: transparent;
-  color: var(--codex-questions);
-  border: 1px solid var(--codex-questions);
-  border-radius: 8px;
-  padding: 0.45rem 0.9rem;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
+/* Buttons, inputs and selects REUSE the shared cdx- primitives from cohorts.css
+ * (.cdx-btn, .cdx-btn-primary, .cdx-btn-danger, .cdx-btn-sm). This stylesheet is
+ * loaded site-wide, so Questions must NEVER redefine those global primitives
+ * here: doing so repaints every other tab. Questions-only classes are unique
+ * (cdx-stats-*, cdx-session-*, cdx-bank-*, etc.). */
 
 .cdx-stats-loading,
 .cdx-stats-empty {
@@ -201,15 +185,7 @@
 .cdx-session-status--closed { color: var(--text-secondary); }
 .cdx-session-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
 
-.cdx-btn--danger { color: var(--error); border-color: var(--error); }
-.cdx-btn--ghost {
-  color: var(--text-secondary);
-  border-color: var(--border, rgba(127, 127, 127, 0.3));
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-}
-.cdx-btn--ghost:hover { color: var(--text-primary); }
+/* (danger/ghost buttons use the shared .cdx-btn-danger / .cdx-btn-sm primitives) */
 
 /* ── Bank sub-tab ───────────────────────────────────────────── */
 .cdx-bank { display: grid; grid-template-columns: 18rem 1fr; gap: 1rem; align-items: start; }
