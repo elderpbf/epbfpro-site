@@ -67,7 +67,8 @@
 .cdx-deck-editor #maskpop .mp-types { display: flex; gap: 4px; }
 .cdx-deck-editor #maskpop button { font: inherit; font-size: 12px; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 4px 8px; cursor: pointer; }
 .cdx-deck-editor #maskpop button:hover { background: var(--btn-hover); }
-.cdx-deck-editor #maskpop label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.cdx-deck-editor #maskpop .mp-field { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.cdx-deck-editor #maskpop .mp-field > span { cursor: default; }
 .cdx-deck-editor #maskpop input[type=color] { width: 22px; height: 22px; border: 0; background: none; cursor: pointer; padding: 0; }
 .cdx-deck-editor #maskpop input[type=range] { width: 110px; }
 .cdx-deck-editor #maskpop .mp-g { display: none; }

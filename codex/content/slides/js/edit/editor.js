@@ -275,16 +275,21 @@ export function initEditing(app) {
     if (app.presenting) return;
     const sc = app.scaleNow();
 
-    // logo: deck-level drag (repositions the logo on every slide)
+    // logo: deck-level drag (repositions on every slide); a no-move click toggles its menu
     const lg = e.target.closest(".logo[data-logo]");
     if (lg && !e.target.closest(".logoctl")) {
-      app.record("logo");
       const L = (app.deck().logo = app.deck().logo || { x: 40, y: 30, h: 40 });
       const sx = e.clientX, sy = e.clientY, ox = L.x, oy = L.y;
-      lg.classList.add("dragging");
+      let moved = false;
       return onDrag(
-        (ev) => { L.x = ox + (ev.clientX - sx) / sc; L.y = oy + (ev.clientY - sy) / sc; lg.style.left = L.x + "px"; lg.style.top = L.y + "px"; },
-        () => { lg.classList.remove("dragging"); app.renderNav(); app.commit(); app.broadcast(); }
+        (ev) => {
+          if (!moved) { moved = true; app.record("logo"); lg.classList.add("dragging"); } // snapshot only once movement starts
+          L.x = ox + (ev.clientX - sx) / sc; L.y = oy + (ev.clientY - sy) / sc; lg.style.left = L.x + "px"; lg.style.top = L.y + "px";
+        },
+        () => {
+          if (moved) { lg.classList.remove("dragging"); app.renderNav(); app.commit(); app.broadcast(); }
+          else lg.classList.toggle("menu-open"); // pure click → open/close the variant + hide menu
+        }
       );
     }
 

@@ -65,9 +65,9 @@ const shellHTML = () => `
 
 <div id="maskpop">
   <div class="mp-types"><button data-mtype="none">${t("slides.ed_mask_none")}</button><button data-mtype="color">${t("slides.ed_mask_color")}</button><button data-mtype="gradient">${t("slides.ed_mask_gradient")}</button></div>
-  <label>${t("slides.ed_color")} <input type="color" id="mc1" value="#14b8a6"></label>
-  <label class="mp-g">${t("slides.ed_color2")} <input type="color" id="mc2" value="#0d9488"></label>
-  <label class="mp-g">${t("slides.ed_angle")} <input type="range" id="mang" min="0" max="360" value="45"></label>
+  <div class="mp-field"><span>${t("slides.ed_color")}</span><input type="color" id="mc1" value="#14b8a6"></div>
+  <div class="mp-field mp-g"><span>${t("slides.ed_color2")}</span><input type="color" id="mc2" value="#0d9488"></div>
+  <div class="mp-field mp-g"><span>${t("slides.ed_angle")}</span><input type="range" id="mang" min="0" max="360" value="45"></div>
 </div>
 
 <div id="nav"></div>
@@ -350,6 +350,7 @@ function wireChrome(app, root) {
     if (addMenu && !e.target.closest("#addMenu")) addMenu.classList.remove("open");
     if (insertMenu && !e.target.closest("#insertMenu")) insertMenu.classList.remove("open");
     if (mp && !e.target.closest("#maskpop") && !e.target.closest("[data-mask]") && !e.target.closest("[data-asmask]")) mp.style.display = "none";
+    if (!e.target.closest(".logo")) { const lm = $(".logo.menu-open"); if (lm) lm.classList.remove("menu-open"); }
   };
   document.addEventListener("click", onDocClick);
   app._onDocClick = onDocClick;
