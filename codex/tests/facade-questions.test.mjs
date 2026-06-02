@@ -23,7 +23,7 @@ test('questions facade exposes the host/admin methods', () => {
     'toggleQa', 'listStudentQuestions', 'updateStudentQuestion',
     'pinStudentQuestion', 'unpinStudentQuestion', 'promoteStudentQuestion',
     'deleteStudentQuestion',
-    'sessionStats', 'globalStats', 'deleteAnswer',
+    'sessionStats', 'globalStats', 'deleteAnswer', 'deleteSession',
   ];
   for (const m of expected) {
     assert.equal(typeof api.questions[m], 'function', `questions.${m} is a function`);
@@ -61,6 +61,7 @@ test('questions facade maps methods to the frozen action strings', () => {
     [() => q.sessionStats({ code: 'AAAA' }),          'session_stats'],
     [() => q.globalStats({}),                         'global_stats'],
     [() => q.deleteAnswer({ answer_id: 1 }),          'delete_answer'],
+    [() => q.deleteSession({ code: 'AAAA' }),         'delete_session'],
     // student plane, kept on the facade for the live banner
     [() => q.activeForCohort({ client_slug: 'c', turma_slug: 't' }), 'cp_get_active_for_turma'],
   ];

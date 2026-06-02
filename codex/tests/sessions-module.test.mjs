@@ -58,9 +58,36 @@ test('sessions i18n keys exist in BOTH dictionaries', async () => {
     'questions.sessions_empty', 'questions.sessions_host', 'questions.sessions_close',
     'questions.sessions_reopen', 'questions.sessions_status_open', 'questions.sessions_status_closed',
     'questions.sessions_reopen_blocked', 'questions.sessions_create_error',
+    // Batch 3: per-session stats overlay + delete
+    'questions.sessions_stats', 'questions.sessions_delete', 'questions.sessions_delete_confirm',
+    'questions.sessions_delete_error', 'questions.sessions_untitled',
+    'questions.sessions_stats_kpi_q', 'questions.sessions_stats_kpi_s',
+    'questions.sessions_stats_most_missed', 'questions.sessions_stats_empty',
+    'questions.sessions_stats_close', 'questions.sessions_stats_loading',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);
     assert.ok(k in en, `en.js has ${k}`);
   }
+});
+
+test('sessions re-ports the faithful card layout (cp-session-card -> cdx-session-card)', () => {
+  const src = read('../questions/sessions.js');
+  assert.match(src, /cdx-session-card/, 'renders faithful session cards');
+  assert.match(src, /cdx-live/, 'renders the legacy live indicator on open sessions');
+});
+
+test('sessions wires the per-session stats overlay through the facade', () => {
+  const src = read('../questions/sessions.js');
+  assert.match(src, /\.sessionStats\s*\(/, 'calls api.sessionStats for the overlay');
+  assert.match(src, /cdx-session-stats/, 'renders a per-session stats overlay panel');
+  // overlay shows the legacy KPIs + per-question accuracy bars (reuse cdx-stats-bar)
+  assert.match(src, /cdx-stats-bar/, 'overlay reuses the accuracy bar primitive');
+});
+
+test('sessions wires delete_session through the facade with an inline confirm', () => {
+  const src = read('../questions/sessions.js');
+  assert.match(src, /\.deleteSession\s*\(/, 'calls api.deleteSession');
+  assert.match(src, /data-act=["']delete["']|act === ['"]delete['"]/, 'has a delete action');
+  assert.match(src, /sessions_delete_confirm/, 'guards delete behind an inline confirm');
 });
