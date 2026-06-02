@@ -1,26 +1,728 @@
-/* Codex Lessons (Aula) tab: integration glue only.
- *
- * The Aula UI itself is the reused ClassVault, styled entirely by the linked
- * backstage/classvault/css/classvault.css. This file only bridges the Codex
- * shell to Aula's full-window layout.
- *
- * Aula expects `bs-app--classvault` on #screen-app, which gives:
- *   .bs-app--classvault          { height: 100vh; overflow: hidden; }
- *   .bs-app--classvault .bs-main { height: 100%; padding: 0; }
- *   .cv-shell                    { height: 100%; }
- * The wrapper (lessons.js) sets that class on mount. But Codex nests the shell
- * one extra level deeper than the standalone page: .bs-main > #codex-view
- * (.cdx-view, centered + max-width + padded) > .cdx-lessons-aula > .cv-shell.
- * Without bridging, the height:100% chain breaks at .cdx-view and the shell
- * collapses to a narrow "sleeve". These rules drop the .cdx-view constraints
- * and carry height:100% down to .cv-shell, but ONLY while Lessons is active
- * (scoped under .bs-app--classvault), so the other tabs keep their layout. */
-.bs-app--classvault .cdx-view {
+/* Codex Lessons (Aula) tab. Two-pane in-class surface: a left sidebar navigator
+ * + a main content view. Native cdx- port of the legacy ClassVault look: coloured
+ * neon section cards, 42px coloured item "zones", a --background main holding a
+ * centred content card, exclusive accordion. Section accent + zone colours are
+ * brand accents (intentionally the same light/dark, like the legacy --sec), so
+ * they need no [data-theme="dark"] override; everything else uses themed tokens. */
+
+.cdx-lessons {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  height: calc(100vh - 150px);
+  min-height: 460px;
+}
+@media (max-width: 860px) {
+  .cdx-lessons { flex-direction: column; height: auto; }
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+.cdx-lessons-sidebar {
+  flex: 0 0 340px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cdx-lessons-sidebar-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.cdx-lessons-sidebar-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 12px 14px; }
+.cdx-lessons-sidebar-body::-webkit-scrollbar { width: 6px; }
+.cdx-lessons-sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.cdx-lessons-turma { display: flex; align-items: center; gap: 0.5rem; }
+.cdx-lessons-turma-avatar {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 8px;
+  background: var(--cdx-card-sel-bg);
+  border: 1px solid var(--cdx-card-sel-border);
+  color: var(--primary);
+}
+.cdx-lessons-turma-select {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cdx-lessons-search-wrap { display: flex; }
+.cdx-lessons-search {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  outline: none;
+}
+.cdx-lessons-search:focus { border-color: var(--primary); }
+
+/* ── Top-level section headers (neon-glow card, per-section colour) ──────────
+ * --sec is set per .cdx-lesson-section--<key>; the head is the coloured card. */
+.cdx-lesson-section--llm      { --sec: #8b5cf6; }   /* violet */
+.cdx-lesson-section--external { --sec: #f97316; }   /* orange */
+.cdx-lesson-section--drive    { --sec: #3b82f6; }   /* blue */
+.cdx-lesson-section--items    { --sec: #14b8a6; }   /* teal */
+.cdx-lesson-section--apostila { --sec: #f59e0b; }   /* amber */
+.cdx-lesson-section--tarefas  { --sec: #ef4444; }   /* red */
+
+.cdx-lesson-section { margin-bottom: 7px; }
+.cdx-lesson-section-body { display: flex; flex-direction: column; gap: 0; padding: 0 0 4px; }
+
+.cdx-lesson-section-head {
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec, var(--primary)) 6%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec, var(--primary)) 35%, transparent);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin: 8px 0 7px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: box-shadow 0.18s, border-color 0.15s, transform 0.15s;
+}
+.cdx-lesson-section-head:hover {
+  border-color: var(--sec, var(--primary));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--sec, var(--primary)) 25%, transparent),
+              0 6px 22px -10px var(--sec, var(--primary));
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .cdx-lesson-section-head {
+  background: color-mix(in oklab, var(--sec, var(--primary)) 10%, var(--surface));
+  box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec, var(--primary)) 60%, transparent);
+}
+[data-theme="dark"] .cdx-lesson-section-head:hover { box-shadow: 0 0 24px -6px var(--sec, var(--primary)); }
+.cdx-lesson-section:first-child .cdx-lesson-section-head { margin-top: 0; }
+
+.cdx-lesson-section-glyph {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--sec, var(--primary));
+  flex-shrink: 0;
+}
+.cdx-lesson-section-glyph svg {
+  width: 18px; height: 18px;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--sec, var(--primary)) 50%, transparent));
+}
+.cdx-lesson-section-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-lesson-section-count {
+  min-width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 800;
+  color: #fff;
+  background: var(--sec, var(--primary));
+  border-radius: 999px;
+  padding: 0 7px;
+  box-shadow: 0 0 8px -2px color-mix(in oklab, var(--sec, var(--primary)) 80%, transparent);
+}
+.cdx-lesson-section-chev {
+  font-size: 0.8rem;
+  color: var(--sec, var(--primary));
+  opacity: 0.7;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+}
+.cdx-lesson-section.is-collapsed .cdx-lesson-section-chev { transform: rotate(-90deg); }
+
+/* ── Type subsections inside the Items section ──────────────────────────────── */
+.cdx-lesson-subsection {
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 8px 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cdx-lesson-subsection:hover { color: var(--text-primary); }
+.cdx-lesson-subsection-chev { font-size: 0.8rem; opacity: 0.6; transition: transform 0.18s; flex-shrink: 0; }
+.cdx-lesson-subsection.is-collapsed .cdx-lesson-subsection-chev { transform: rotate(-90deg); }
+.cdx-lesson-subsection-label { flex: 1; min-width: 0; }
+.cdx-lesson-subsection-count {
+  font-size: 0.6rem; font-weight: 700;
+  padding: 1px 7px;
+  background: var(--background);
+  color: var(--text-secondary);
+  border-radius: 999px;
+}
+
+/* ── Item sub-cards (coloured 42px zone + meta) ─────────────────────────────── */
+.cdx-lesson-sub {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  min-height: 58px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: border-color 0.12s, box-shadow 0.15s;
+}
+.cdx-lesson-sub:hover { border-color: var(--primary-light); box-shadow: 0 3px 10px -5px var(--shadow); }
+.cdx-lesson-sub.is-active { border-color: var(--primary); box-shadow: 0 4px 14px -6px rgba(20, 184, 166, 0.32); }
+.cdx-lesson-sub-zone {
+  width: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #fff;
+}
+.cdx-lesson-sub-zone svg { display: block; width: 18px; height: 18px; }
+.cdx-lesson-sub-zone--tarefa   { background: #ef4444; }
+.cdx-lesson-sub-zone--llm      { background: #8b5cf6; }
+.cdx-lesson-sub-zone--recurso  { background: #3b82f6; }
+.cdx-lesson-sub-zone--material { background: #14b8a6; }
+.cdx-lesson-sub-meta {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+.cdx-lesson-sub-type { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.cdx-lesson-sub-title {
+  font-size: 0.81rem; font-weight: 700; color: var(--text-primary); line-height: 1.25;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.cdx-lesson-sub-sum { font-size: 0.68rem; color: var(--text-secondary); margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.cdx-empty--inline { padding: 10px 12px 14px; font-size: 0.78rem; color: var(--text-dim, var(--text-secondary)); }
+
+/* ── Main view ────────────────────────────────────────────────────────────── */
+.cdx-lessons-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cdx-lessons-welcome { margin: auto; padding: 2rem; color: var(--text-secondary); font-size: 0.95rem; text-align: center; }
+.cdx-lessons-crumb {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.cdx-lessons-crumb-sep { opacity: 0.5; }
+.cdx-lessons-crumb-current { color: var(--text-primary); font-weight: 600; }
+
+/* Scroll region (on the --background main). Non-embed content sits in a centred
+ * surface card, like the legacy renderer card; embeds fill edge-to-edge. */
+.cdx-lessons-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  color: var(--text-primary);
+  /* +A/-A text-resize: the bar sets --cdx-content-scale on this host; em-based
+   * renderer text scales with it. */
+  font-size: calc(0.95rem * var(--cdx-content-scale, 1));
+  line-height: 1.55;
+}
+.cdx-lessons-content:not(.cdx-lessons-content--embed) {
+  max-width: 760px;
+  margin: 1.5rem auto;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px -12px var(--shadow);
+  padding: 24px 36px 32px;
+}
+/* Embed types (iframe / Drive / video) fill the host edge-to-edge, no card. */
+.cdx-lessons-content--embed { padding: 0; margin: 0; max-width: none; overflow: hidden; display: flex; background: none; border: 0; }
+.cdx-lessons-iframe-wrap { flex: 1; min-height: 0; display: flex; }
+.cdx-lessons-iframe { flex: 1; width: 100%; min-height: 0; border: 0; }
+
+/* popup_url launcher card (describe-only; launch lives in the bottom bar) */
+.cdx-lessons-launcher { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; max-width: 560px; }
+.cdx-lessons-launcher-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+.cdx-lessons-launcher-sum { margin: 0; font-size: 0.9rem; color: var(--text-secondary); }
+.cdx-lessons-launcher-hint { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+.cdx-lessons-launcher-url { margin: 0; font-size: 0.78rem; color: var(--text-secondary); word-break: break-all; }
+
+/* Bottom action bar: fixed footer sibling of the scrolling content. */
+.cdx-lessons-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.cdx-lessons-bar-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.cdx-lessons-bar-resize { display: flex; gap: 0.35rem; }
+
+/* ── Full-window (mount adds .bs-app--classvault on #screen-app) ──────────────
+ * Edge-to-edge two-pane filling the viewport, flush against the topbar and the
+ * window edges, exactly like the legacy Aula (.cv-shell): no inset, no gap, no
+ * rounded card chrome. classvault.css gives .bs-app--classvault{height:100vh;
+ * overflow:hidden}; here we make the .bs-main + view chain fill (mirroring
+ * .bs-app--classvault > .bs-main {flex:1;min-height:0;padding:0;display:flex})
+ * and drop the shared 1200px cap. Scoped to the class, so other tabs untouched. */
+.bs-app--classvault .bs-main {
+  flex: 1;
+  min-height: 0;
   max-width: none;
   margin: 0;
   padding: 0;
-  height: 100%;
+  display: flex;
 }
-.bs-app--classvault .cdx-lessons-aula {
-  height: 100%;
+.bs-app--classvault .cdx-view {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
 }
+.bs-app--classvault .cdx-lessons {
+  flex: 1;
+  min-width: 0;
+  height: 100%;          /* fills the flex parent up to the topbar */
+  gap: 0;                /* flush: no gap between the panes */
+  padding: 0;            /* flush: no inset from the edges/topbar */
+}
+/* Flush panes: sidebar separated by a border-right only, main borderless, no
+ * rounding, so the sidebar top touches the topbar's bottom edge. */
+.bs-app--classvault .cdx-lessons-sidebar {
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+}
+.bs-app--classvault .cdx-lessons-main {
+  border: none;
+  border-radius: 0;
+}
+
+/* ── Sidebar head row: search + the "Aa" display button ─────────────────────── */
+.cdx-lessons-head-row { display: flex; align-items: center; gap: 8px; }
+.cdx-lessons-head-row .cdx-lessons-search-wrap { flex: 1; min-width: 0; }
+.cdx-lessons-aa-btn {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: 700 0.82rem/1 'Inter', system-ui, sans-serif;
+  color: var(--text-secondary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cdx-lessons-aa-btn:hover { color: var(--text-primary); border-color: var(--primary); }
+
+/* ── "Aa" display popover (text size + width + reset) ───────────────────────── */
+.cdx-lessons-display-pop {
+  position: fixed;
+  z-index: 9850;
+  min-width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px var(--shadow);
+}
+.cdx-lessons-display-pop[hidden] { display: none; }
+.cdx-lessons-pop-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cdx-lessons-pop-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); }
+.cdx-lessons-pop-fontbtns { display: inline-flex; gap: 6px; }
+.cdx-lessons-pop-fbtn {
+  min-width: 34px; height: 30px; padding: 0 8px;
+  font: 600 0.85rem/1 'Inter', system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-lessons-pop-fbtn:hover { border-color: var(--primary); }
+.cdx-lessons-pop-width { flex: 1; min-width: 96px; accent-color: var(--primary); cursor: pointer; }
+.cdx-lessons-pop-reset {
+  margin-top: 2px; padding: 7px 10px;
+  font: 600 0.78rem/1 'Inter', system-ui, sans-serif;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-lessons-pop-reset:hover { color: var(--text-primary); border-color: var(--primary); }
+
+/* ── Favourite star on item cards ───────────────────────────────────────────── */
+.cdx-lesson-sub { position: relative; }
+.cdx-lesson-sub-fav {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin: 4px 6px 0 0;
+  padding: 2px;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--text-dim, var(--text-secondary));
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s;
+}
+.cdx-lesson-sub:hover .cdx-lesson-sub-fav { opacity: 0.55; }
+.cdx-lesson-sub-fav:hover { opacity: 1; color: #eab308; }
+.cdx-lesson-sub-fav.is-on { opacity: 1; color: #eab308; }
+
+/* ── LLM launcher rows ──────────────────────────────────────────────────────── */
+.cdx-lesson-llm {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; margin-bottom: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+.cdx-lesson-llm:hover { border-color: var(--primary-light); box-shadow: 0 3px 10px -5px var(--shadow); }
+.cdx-lesson-llm-favicon { width: 18px; height: 18px; flex-shrink: 0; border-radius: 4px; }
+.cdx-lesson-llm-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Favourites section accent (gold), mirroring the legacy --sec. */
+.cdx-lesson-section--favorites { --sec: #eab308; }
+
+/* ── Empty-state notice (select an item + F focus hint) ─────────────────────── */
+.cdx-lessons-welcome { margin: auto; padding: 2rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.1rem; }
+.cdx-lessons-welcome-hint { margin: 0; color: var(--text-secondary); font-size: 0.95rem; max-width: 360px; line-height: 1.45; }
+.cdx-lessons-welcome-keys { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-dim, var(--text-secondary)); }
+.cdx-lessons-kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  font: 600 0.74rem/1 'Inter', sans-serif;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+/* Content width = full window: keep the white surface but drop the floating-card
+ * chrome (margin, rounding, shadow) so it reads edge-to-edge. The surface fill
+ * stays, otherwise the page --background shows through behind the text. */
+.cdx-lessons-content.is-full-width {
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── Content rendering parity (prompt de-box + working text-resize) ───────────
+ * CTRenderer emits ctr- markup into .cdx-lessons-content. Prompt verbatim drops
+ * its inner card (so it flows like other items; monospace + pre-wrap stay), and
+ * both body + verbatim tie their font-size to --cdx-content-scale so A-/A+ works. */
+.cdx-lessons-content .ctr-prompt-body { font-size: calc(0.95rem * var(--cdx-content-scale, 1)); }
+.cdx-lessons-content .ctr-prompt-verbatim {
+  font-size: calc(0.95rem * var(--cdx-content-scale, 1));
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
+}
+/* The native bottom bar owns Copy; hide CTRenderer's own copy button. */
+.cdx-lessons-content .ctr-copy-btn { display: none; }
+
+/* ── Bottom bar: crumb on the left, actions center, resize right ─────────────
+ * Replaces the old top-mounted crumb (G21). Crumb collapses gracefully. */
+.cdx-lessons-bar-crumb {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  overflow: hidden;
+}
+.cdx-lessons-bar-crumb-turma {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+  flex-shrink: 0;
+}
+.cdx-lessons-bar-crumb-sep { color: var(--text-secondary); opacity: 0.45; flex-shrink: 0; }
+.cdx-lessons-bar-crumb-item {
+  color: var(--text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Labs section (pink accent) ─────────────────────────────────────────────── */
+.cdx-lesson-section--labs { --sec: #ec4899; }
+
+/* ── Preset section (indigo accent) ────────────────────────────────────────── */
+.cdx-lesson-section--preset { --sec: #6366f1; }
+
+/* ── Preset loader (CVPresetsUI.mountPresetLoader renders cv- classes into the
+ * sidebar head; override to match sidebar visual language) ─────────────────── */
+.cdx-lessons-preset-wrap { padding: 0; }
+.cdx-lessons-preset-wrap:empty { display: none; }
+.cdx-lessons-sidebar-head .cv-preset-loader-select {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-lessons-sidebar-head .cv-preset-loader-select:focus { outline: none; border-color: var(--primary); }
+.cdx-lessons-sidebar-head .cv-preset-loader-reset {
+  margin-left: 6px;
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 5px 9px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cdx-lessons-sidebar-head .cv-preset-loader-reset:hover { color: var(--text-primary); border-color: var(--primary); }
+
+/* ── Perguntas live card (always-present launcher, pinned at sidebar bottom) ───
+ * Mirrors the monolith's _renderPinnedNexo: indigo section card with a glyph,
+ * "Perguntas \xb7 <tail>" label, a refresh button, and a pulsing red dot when a
+ * session is live. Outside .cdx-sm-body so it never scrolls away. */
+.cdx-lessons-live-card {
+  flex-shrink: 0;
+  padding: 6px 12px 10px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.cdx-lessons-live {
+  --sec: #6366f1;        /* indigo, matches the legacy nexo card */
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec) 6%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec) 35%, transparent);
+  border-radius: 10px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: box-shadow 0.18s, border-color 0.15s, transform 0.15s;
+}
+.cdx-lessons-live:hover {
+  border-color: var(--sec);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--sec) 25%, transparent),
+              0 6px 22px -10px var(--sec);
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .cdx-lessons-live {
+  background: color-mix(in oklab, var(--sec) 10%, var(--surface));
+  box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec) 60%, transparent);
+}
+.cdx-lessons-live-glyph {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--sec);
+  flex-shrink: 0;
+}
+.cdx-lessons-live-glyph svg {
+  width: 18px; height: 18px;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--sec) 50%, transparent));
+}
+.cdx-lessons-live-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-lessons-live-refresh {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: color-mix(in oklab, var(--sec) 14%, transparent);
+  color: var(--sec);
+  font-size: 0.85rem;
+  line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cdx-lessons-live-refresh:hover {
+  background: color-mix(in oklab, var(--sec) 25%, transparent);
+  border-color: var(--sec);
+}
+.cdx-lessons-live-spin { display: inline-block; line-height: 1; }
+.cdx-lessons-live-refresh.is-loading .cdx-lessons-live-spin { animation: cdx-lessons-spin 0.8s linear infinite; }
+@keyframes cdx-lessons-spin { to { transform: rotate(360deg); } }
+.cdx-lessons-live-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  flex-shrink: 0;
+  animation: cdx-lessons-pulse-dot 1.4s ease-in-out infinite;
+}
+@keyframes cdx-lessons-pulse-dot {
+  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  70%  { box-shadow: 0 0 0 9px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* ── Context menu ────────────────────────────────────────────────────────────── */
+.cdx-lessons-ctx {
+  z-index: 9900;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px var(--shadow);
+  min-width: 140px;
+  overflow: hidden;
+  padding: 4px 0;
+}
+[data-theme="dark"] .cdx-lessons-ctx { box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.cdx-lessons-ctx-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.cdx-lessons-ctx-item:hover { background: var(--background); }
+
+/* ── Item editor host ────────────────────────────────────────────────────────── */
+.cdx-lessons-editor-host {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+}
+
+/* ── Focus mode ───────────────────────────────────────────────────────────────
+ * Faithful port of the legacy cv-focus block. body.cdx-lessons-focus tucks the
+ * topbar (up), sidebar (left, position:fixed out of flow so the main fills),
+ * and bottom bar (down). Reveal classes (--top/--side/--bottom) slide each one
+ * back in; --topbar-pin keeps the topbar shown while no item is selected. */
+body.cdx-lessons-focus .bs-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9900;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cdx-lessons-focus.cdx-lessons-focus--top .bs-topbar,
+body.cdx-lessons-focus.cdx-lessons-topbar-pin .bs-topbar {
+  transform: translateY(0);
+  opacity: 1;
+}
+/* Sidebar leaves flow (position:fixed) so .cdx-lessons-main fills the row. */
+body.cdx-lessons-focus .cdx-lessons-sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  width: 340px;
+  z-index: 9800;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+body.cdx-lessons-focus.cdx-lessons-focus--side .cdx-lessons-sidebar {
+  transform: translateX(0);
+  box-shadow: 4px 0 16px var(--shadow);
+}
+/* Bottom action bar tucks down, reveals on the bottom edge. */
+body.cdx-lessons-focus .cdx-lessons-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 9800;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cdx-lessons-focus.cdx-lessons-focus--bottom .cdx-lessons-bar {
+  transform: translateY(0);
+  opacity: 1;
+}
+/* Thin fixed strips above any cross-origin iframe so the reveal still fires. */
+.cdx-lessons-focus-hot {
+  position: fixed;
+  z-index: 9700;
+  pointer-events: none;
+}
+body.cdx-lessons-focus .cdx-lessons-focus-hot { pointer-events: auto; }
+.cdx-lessons-focus-hot--top    { top: 0; left: 0; right: 0; height: 8px; }
+.cdx-lessons-focus-hot--side   { top: 0; bottom: 0; left: 0; width: 8px; }
+.cdx-lessons-focus-hot--bottom { bottom: 0; left: 0; right: 0; height: 8px; }

@@ -29,6 +29,22 @@
 
   --lab-font-display: 'Inter', 'Segoe UI', Tahoma, sans-serif;
   --lab-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* ── Fluid type scale (shared across all labs) ───────────
+     clamp(phone-floor, fluid-vw, auditorium-max). The floor is the
+     phone-readable minimum; the max is the projector size. Labs
+     reference these tokens instead of hardcoding px, so a single
+     edit re-tunes every demo and mobile text never falls below the
+     floor. This replaces the per-lab @media overrides that used to
+     shrink text to 12-13px just to fit a no-scroll stage — with the
+     fixed-stage + internally-scrolling-panel model, the floor holds
+     and overflow scrolls inside the panel, not the page. */
+  --lab-fs-audience: clamp(22px, 2.6vw, 44px);  /* big focal labels / headlines */
+  --lab-fs-answer:   clamp(16px, 1.4vw, 23px);  /* model output, verdicts */
+  --lab-fs-doc:      clamp(15px, 1.4vw, 24px);  /* document body (petição, etc.) */
+  --lab-fs-body:     clamp(15px, 1.35vw, 22px); /* captions, explanatory prose */
+  --lab-fs-ui:       clamp(12px, 0.9vw, 15px);  /* small labels, chips, meta */
+  --lab-fs-btn:      clamp(14px, 1vw, 16px);    /* operator buttons */
 }
 
 [data-theme="dark"] {
@@ -49,12 +65,61 @@
    theme variables flow through. ClassVault iframes them at 100% w/h. */
 .lab-page {
   margin: 0;
-  min-height: 100vh;
+  /* dvh, not vh: on mobile browsers 100vh sits behind the URL bar and
+     hides the bottom button row. dvh tracks the visible viewport. */
+  min-height: 100dvh;
   background: var(--lab-bg);
   color: var(--lab-text);
   font-family: var(--lab-font-display);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* ── Shared operator button ──────────────────────────────────
+   The audience watches the visualization; operator buttons are
+   compact but must stay finger-sized on touch. 44px min target on
+   desktop, 48px on phones (WCAG 2.5.5 / Material 48dp). Labs use
+   `.lab-btn` (+ `.lab-btn--primary`) instead of per-lab button CSS. */
+.lab-btn {
+  font-family: var(--lab-font-display);
+  font-size: var(--lab-fs-btn);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  padding: 0.5rem 1.1rem;
+  min-height: 44px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--lab-border);
+  background: transparent;
+  color: var(--lab-text-dim);
+  cursor: pointer;
+  transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
+}
+.lab-btn:hover {
+  border-color: var(--lab-context-a);
+  color: var(--lab-context-a);
+  transform: translateY(-1px);
+}
+.lab-btn--primary {
+  border-color: var(--lab-focal);
+  background: rgba(var(--lab-focal-rgb), 0.16);
+  color: var(--lab-focal);
+  box-shadow: 0 0 10px rgba(var(--lab-focal-rgb), 0.18);
+}
+.lab-btn--primary:hover {
+  background: rgba(var(--lab-focal-rgb), 0.28);
+  border-color: var(--lab-focal);
+  color: var(--lab-focal);
+  box-shadow: 0 0 16px rgba(var(--lab-focal-rgb), 0.3);
+}
+@media (max-width: 700px) {
+  .lab-btn { min-height: 48px; font-size: 15px; }
 }
 
 /* =========================================================

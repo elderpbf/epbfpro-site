@@ -1,0 +1,512 @@
+/* Codex Questions tab styles. Surface/text/border/accent values come from
+ * theme.css tokens (so dark mode is inherited). The accent is the SHARED theme
+ * --primary, NOT a per-tab accent: the UI is reusable and reused, so page color
+ * stays uniform across tabs. (A per-tab accent was considered but not adopted;
+ * if ever adopted it must apply to every tab at once.)
+ * cdx- prefix only, no hex literals in rules. */
+
+/* Stats sub-tab is GLOBAL-only, a faithful re-port of the legacy
+ * panel-global-stats: a date-range filter, three KPI boxes, a toughest-questions
+ * list and a participation-per-session table.
+ *
+ * Buttons REUSE the shared cdx- primitives from cohorts.css (.cdx-btn,
+ * .cdx-btn-primary, .cdx-btn-danger, .cdx-btn-sm). This stylesheet is loaded
+ * site-wide, so Questions must NEVER redefine those global primitives here:
+ * doing so repaints every other tab. Questions-only classes are unique
+ * (cdx-stats-*, cdx-session-*, cdx-bank-*, etc.). */
+.cdx-stats { display: flex; flex-direction: column; gap: 1rem; }
+
+.cdx-stats-loading,
+.cdx-stats-empty {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  padding: 0.75rem 0;
+}
+
+/* Date-range filter bar (legacy .cp-global-stats-filter) */
+.cdx-stats-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+}
+.cdx-stats-filter-dates,
+.cdx-stats-filter-actions { display: flex; align-items: center; gap: 0.6rem; }
+.cdx-stats-flabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.cdx-stats-date {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1.5px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.cdx-stats-date:focus { border-color: var(--primary); }
+.cdx-stats-clear {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  padding: 0;
+}
+.cdx-stats-clear:hover { color: var(--text-primary); }
+
+/* KPI boxes (legacy .kpi-box: centered, big accent value) */
+.cdx-stats-kpis { display: flex; flex-wrap: wrap; gap: 1rem; }
+.cdx-kpi {
+  flex: 1 1 9rem;
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 12px;
+  padding: 1.2rem 1rem;
+  text-align: center;
+}
+.cdx-kpi-val {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 0.3rem;
+  color: var(--primary);
+}
+.cdx-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+/* Section titles (legacy .cp-global-stats-section) */
+.cdx-stats-section-title {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+/* Toughest-questions list */
+.cdx-stats-qlist { display: flex; flex-direction: column; gap: 0.6rem; }
+.cdx-stats-q {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+.cdx-stats-q-text { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+.cdx-stats-q-meta { font-size: 0.75rem; color: var(--text-secondary); }
+.cdx-stats-bar {
+  position: relative;
+  height: 1.4rem;
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+  border-radius: 6px;
+  overflow: hidden;
+}
+.cdx-stats-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--primary);
+  opacity: 0.35;
+}
+.cdx-stats-bar-text {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.cdx-stats-bar--na {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+}
+
+/* Participation-per-session table (legacy .cp-global-stats-table) */
+.cdx-stats-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cdx-stats-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.cdx-stats-table th {
+  text-align: left;
+  padding: 0.8rem 1.1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  background: var(--surface-hover, rgba(127, 127, 127, 0.06));
+  border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+}
+.cdx-stats-table td {
+  padding: 0.8rem 1.1rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.15));
+}
+.cdx-stats-table tr:last-child td { border-bottom: none; }
+.cdx-stats-num { text-align: center; }
+.cdx-stats-table td.cdx-stats-hl { font-weight: 700; color: var(--primary); }
+
+/* ── Sessions sub-tab (faithful panel-sessions) ─────────────────
+ * A blatant re-port of the legacy ClassPulse layout: a floating left-edge rail
+ * (the ClassVault cv-sm pattern) as the session picker, plus a main area that
+ * hosts the selected session. Live hosting is Q2; the main area carries the
+ * lifecycle, a host bridge, the per-session stats overlay, and a bottom-of-page
+ * protected delete. All colors are theme tokens (dark inherited). */
+.cdx-sessions-layout { position: relative; min-height: 60vh; }
+
+/* Floating rail: hidden offscreen, .cdx-sm--open slides it in. Fixed to the
+ * viewport so it runs full height under the chrome (top padding clears the
+ * ~64px topbar + ~30px Perguntas sub-row). z-index sits below the topbar. */
+.cdx-sessions-sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  width: 320px;
+  background: var(--surface);
+  border-right: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  padding: 1rem;
+  padding-top: calc(94px + 1rem);
+  overflow-y: auto;
+  box-sizing: border-box;
+  z-index: 80;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.cdx-sessions-layout.cdx-sm--open .cdx-sessions-sidebar {
+  transform: translateX(0);
+  box-shadow: 4px 0 16px var(--shadow, rgba(0, 0, 0, 0.25));
+}
+@media (max-width: 900px) {
+  .cdx-sessions-sidebar { width: 80vw; max-width: 320px; }
+}
+
+/* Create-session form (compact, mirrors cv-sm density). */
+.cdx-create-session {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  background: var(--background);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 0.7rem;
+}
+.cdx-create-session-heading {
+  margin: 0;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.cdx-create-session-label { font-size: 0.68rem; color: var(--text-secondary); }
+.cdx-create-session .cdx-input { padding: 0.45rem 0.65rem; font-size: 0.82rem; }
+.cdx-create-session .cdx-btn-primary { font-size: 0.82rem; }
+
+/* Session list + cards (the picker). */
+.cdx-sessions-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.cdx-sessions-loading { color: var(--text-secondary); font-size: 0.82rem; padding: 0.75rem 0.5rem; }
+.cdx-sessions-empty { text-align: center; color: var(--text-secondary); font-size: 0.82rem; padding: 1rem 0.5rem; }
+.cdx-sessions-empty-icon { font-size: 1.4rem; margin-bottom: 0.3rem; }
+
+.cdx-session-card {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.55rem 0.7rem; border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  cursor: pointer;
+}
+.cdx-session-card:hover { border-color: var(--primary); }
+.cdx-session-card.is-selected { border-color: var(--primary); background: var(--surface-hover, rgba(127, 127, 127, 0.08)); }
+.cdx-session-code {
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+.cdx-session-info { flex: 1; min-width: 0; }
+.cdx-session-title {
+  font-size: 0.8rem; font-weight: 600; line-height: 1.25; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cdx-session-meta { font-size: 0.66rem; color: var(--text-secondary); }
+
+/* Live indicator: RED pulsing dot + label, matching the original. */
+.cdx-live { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
+.cdx-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--error); animation: cdx-live-pulse 2s ease-in-out infinite; }
+.cdx-live-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--error); }
+@keyframes cdx-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Main host area: placeholder until a session is selected. */
+.cdx-sessions-main { min-height: 60vh; display: flex; flex-direction: column; }
+.cdx-sessions-placeholder { margin: auto; text-align: center; padding: 4rem 2rem; color: var(--text-secondary); font-size: 0.92rem; }
+
+/* Selected-session detail (the host surface). */
+.cdx-session-detail { flex: 1; display: flex; flex-direction: column; gap: 1rem; max-width: 60rem; }
+.cdx-session-detail-head {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  padding-bottom: 0.75rem; border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+}
+.cdx-session-detail-title { margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); }
+.cdx-session-status { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.cdx-session-status--open { color: var(--error); }
+.cdx-session-status--closed { color: var(--text-secondary); }
+.cdx-session-detail-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Protected delete, pushed to the bottom of the page. */
+.cdx-session-danger {
+  margin-top: auto;
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--border, rgba(127, 127, 127, 0.3));
+}
+.cdx-session-confirm { font-size: 0.82rem; font-weight: 600; color: var(--error); }
+
+/* Per-session stats overlay (legacy openStats panel). Reuses the .cdx-kpi /
+ * .cdx-stats-bar / .cdx-stats-q primitives from the global-stats section above. */
+.cdx-session-stats { display: flex; flex-direction: column; gap: 1rem; max-width: 60rem; }
+.cdx-session-stats-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding-bottom: 0.75rem; border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+}
+.cdx-session-stats-title { margin: 0 0 0.2rem; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+.cdx-session-stats-mm { font-size: 0.88rem; color: var(--text-primary); }
+.cdx-session-stats-mm strong { color: var(--error); }
+
+/* ── Bank sub-tab (faithful cp-banks-layout) ────────────────── */
+.cdx-bank { display: grid; grid-template-columns: 16rem 1fr; gap: 1.25rem; align-items: start; }
+
+/* Sets sidebar (a bordered card: header + list) */
+.cdx-bank-sets {
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cdx-bank-sets-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.cdx-bank-setlist { display: flex; flex-direction: column; padding: 0.4rem; gap: 0.15rem; }
+.cdx-bank-set {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  width: 100%; min-width: 0;
+  background: transparent; border: none; border-left: 3px solid transparent; border-radius: 8px;
+  padding: 0.5rem 0.6rem; cursor: pointer; text-align: left;
+  color: var(--text-primary); font-weight: 600; font-size: 0.85rem;
+}
+.cdx-bank-set:hover { background: var(--surface-hover, rgba(127, 127, 127, 0.08)); }
+.cdx-bank-set.active { background: var(--surface-hover, rgba(127, 127, 127, 0.12)); border-left-color: var(--primary); }
+.cdx-bank-set-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-bank-set-count {
+  flex-shrink: 0; font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12)); border-radius: 999px; padding: 0.05rem 0.45rem;
+}
+.cdx-bank-newset-row { display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem; }
+.cdx-bank-newset-input { flex: 1; min-width: 0; }
+.cdx-bank-iconbtn {
+  background: transparent; border: none; cursor: pointer; color: var(--text-secondary);
+  font-size: 0.95rem; line-height: 1; padding: 0.25rem 0.4rem; border-radius: 6px;
+}
+.cdx-bank-iconbtn:hover:not([disabled]) { color: var(--text-primary); background: var(--surface-hover, rgba(127, 127, 127, 0.12)); }
+.cdx-bank-iconbtn[disabled] { opacity: 0.35; cursor: default; }
+.cdx-bank-empty,
+.cdx-bank-loading { color: var(--text-secondary); font-size: 0.88rem; padding: 1rem 0.6rem; }
+
+/* Question area: a white surface card so the search bar + header buttons do not
+ * sit teal-on-teal against the page background (--background is a pale teal). */
+.cdx-bank-main {
+  display: flex; flex-direction: column; gap: 1rem; min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+}
+.cdx-bank-search-bar { display: flex; align-items: center; gap: 0.5rem; }
+.cdx-bank-search-input { flex: 1; }
+.cdx-bank-search-clear { flex-shrink: 0; }
+.cdx-bank-body { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+
+.cdx-bank-conjunto-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding-bottom: 0.75rem; border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+}
+.cdx-bank-conjunto-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+.cdx-bank-conjunto-actions { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.cdx-bank-confirm-text { font-size: 0.82rem; font-weight: 600; color: var(--error); }
+
+.cdx-bank-rename-row { display: flex; align-items: center; gap: 0.5rem; }
+.cdx-bank-rename-input { flex: 1; min-width: 0; }
+
+.cdx-bank-qheader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.cdx-bank-qheader-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+.cdx-bank-qheader-actions { display: flex; align-items: center; gap: 0.4rem; }
+
+.cdx-bank-qlist { display: flex; flex-direction: column; gap: 0.75rem; }
+
+/* Question card (text + options preview + footer) */
+.cdx-q {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3)); border-radius: 10px;
+  padding: 0.9rem 1rem; background: var(--background);
+}
+.cdx-q-text { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+.cdx-q-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
+.cdx-q-opt { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem; }
+.cdx-q-opt-letter { font-weight: 700; }
+.cdx-q-opt--correct { color: var(--primary); font-weight: 600; }
+.cdx-q-opt--correct .cdx-q-opt-letter { color: var(--primary); }
+.cdx-q-foot {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding-top: 0.6rem; border-top: 1px solid var(--border, rgba(127, 127, 127, 0.15));
+}
+.cdx-q-type {
+  margin-right: auto;
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--primary); background: var(--surface-hover, rgba(127, 127, 127, 0.1));
+  border-radius: 999px; padding: 0.1rem 0.5rem;
+}
+.cdx-q-confirm { font-size: 0.82rem; font-weight: 600; color: var(--error); }
+
+/* Cross-set search results */
+.cdx-bank-search-head { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); }
+.cdx-q--result { cursor: pointer; }
+.cdx-q--result:hover { border-color: var(--primary); }
+.cdx-bank-result-set { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--primary); }
+
+/* Editor + bulk modals (reuse cohorts .cdx-modal-backdrop / .cdx-modal) */
+.cdx-bank-modal[hidden] { display: none; }
+.cdx-bank-ai-row { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+.cdx-bank-modal-err { font-size: 0.8rem; color: var(--error); min-height: 1rem; margin: 0.5rem 0 0; }
+
+/* Reorder / move mode (Editar banco) */
+.cdx-bank-movebar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+  padding: 0.55rem 0.75rem; border-radius: 8px;
+  background: var(--surface-hover, rgba(127, 127, 127, 0.1));
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  font-size: 0.82rem; color: var(--text-secondary);
+}
+.cdx-bank-movebar-count { font-weight: 700; color: var(--text-primary); }
+.cdx-bank-move-dest { width: auto; min-width: 8rem; }
+.cdx-q--edit { flex-direction: row; align-items: center; gap: 0.6rem; cursor: grab; }
+.cdx-q-drag { color: var(--text-secondary); font-size: 1.1rem; line-height: 1; cursor: grab; user-select: none; flex-shrink: 0; }
+.cdx-q-select { width: 1rem; height: 1rem; accent-color: var(--primary); flex-shrink: 0; }
+.cdx-q-editbody { flex: 1; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+.cdx-q-editbody .cdx-q-text { flex: 1; min-width: 8rem; }
+
+/* Bulk generate modal */
+.cdx-bank-bulk-card { max-width: 600px; }
+.cdx-bank-bulk-row { display: flex; gap: 1rem; }
+.cdx-bank-bulk-type-field { flex: 2; }
+.cdx-bank-bulk-count-field { flex: 1; }
+.cdx-bank-bulk-hint { font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 0.8rem; }
+.cdx-bank-bulk-list { display: flex; flex-direction: column; gap: 0.8rem; max-height: 50vh; overflow-y: auto; }
+.cdx-bank-bulk-item {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  padding: 0.7rem 0.8rem; border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px; background: var(--background); cursor: pointer;
+}
+.cdx-bank-bulk-item > input { margin-top: 0.2rem; accent-color: var(--primary); flex-shrink: 0; }
+.cdx-bank-bulk-item-body { flex: 1; min-width: 0; font-size: 0.85rem; }
+.cdx-bank-bulk-item-q { font-weight: 600; color: var(--text-primary); }
+.cdx-bank-bulk-item-opts { margin: 0.4rem 0 0 1rem; padding: 0; color: var(--text-secondary); font-size: 0.82rem; }
+.cdx-bank-bulk-item-opts .cdx-q-opt--correct { color: var(--primary); font-weight: 600; }
+
+/* Import / Export hub modal */
+.cdx-bank-sets-header-actions { display: flex; align-items: center; gap: 0.3rem; }
+.cdx-bank-hub-card { max-width: 640px; }
+.cdx-bank-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+.cdx-bank-hub-tab, .cdx-bank-scope-btn, .cdx-bank-export-tab, .cdx-bank-import-tab {
+  background: transparent;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 7px; padding: 0.35rem 0.85rem;
+  font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+}
+.cdx-bank-hub-tab:hover, .cdx-bank-scope-btn:hover, .cdx-bank-export-tab:hover, .cdx-bank-import-tab:hover { color: var(--text-primary); }
+.cdx-bank-hub-tab.active, .cdx-bank-scope-btn.active, .cdx-bank-export-tab.active, .cdx-bank-import-tab.active { color: var(--primary); border-color: var(--primary); }
+.cdx-bank-hub-tabs { border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.3)); padding-bottom: 0.6rem; }
+.cdx-bank-hub-scope { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.cdx-bank-hub-scope .cdx-comp-label { margin: 0; }
+.cdx-bank-hub-scope .cdx-bank-tabs { margin-bottom: 0; }
+.cdx-bank-hub-checklist {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  max-height: 9rem; overflow-y: auto; margin-bottom: 0.7rem;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3)); border-radius: 8px; padding: 0.5rem 0.7rem;
+}
+.cdx-bank-check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-primary); cursor: pointer; }
+.cdx-bank-check input { accent-color: var(--primary); }
+.cdx-bank-export-out { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; line-height: 1.4; }
+.cdx-bank-import-in { resize: vertical; }
+.cdx-bank-import-target-row { max-width: 22rem; }
+
+/* Inputs/selects used by Questions (search, rename, new-set, composer). These
+ * class names are Questions-local, not a shared primitive defined elsewhere. */
+.cdx-input, .cdx-select, textarea.cdx-input {
+  width: 100%; padding: 0.5rem 0.75rem; box-sizing: border-box;
+  border: 1.5px solid var(--border, rgba(127, 127, 127, 0.3)); border-radius: 8px;
+  background: var(--background); color: var(--text-primary);
+  font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.12s;
+}
+.cdx-input:focus, .cdx-select:focus { border-color: var(--primary); }
+
+/* Question composer (shared with the Q2 live launch form) */
+.cdx-comp { display: flex; flex-direction: column; gap: 0.7rem; }
+.cdx-comp-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.cdx-comp-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.cdx-comp-text { resize: vertical; }
+.cdx-comp-opts { display: flex; flex-direction: column; gap: 0.4rem; }
+.cdx-comp-optlist { display: flex; flex-direction: column; gap: 0.35rem; }
+.cdx-comp-optrow { display: flex; align-items: center; gap: 0.45rem; }
+.cdx-comp-opt { flex: 1; min-width: 0; }
+.cdx-comp-correct { flex-shrink: 0; width: 1.1rem; height: 1.1rem; accent-color: var(--primary); }
+.cdx-comp-optdel {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.3rem;
+}
+.cdx-comp-optdel:hover { color: var(--error); }
+.cdx-comp-addopt { align-self: flex-start; }
+.cdx-comp-maxsel-field { max-width: 12rem; }
+.cdx-comp-scale { display: flex; gap: 0.6rem; }
+.cdx-comp-hint { color: var(--text-secondary); font-size: 0.85rem; }

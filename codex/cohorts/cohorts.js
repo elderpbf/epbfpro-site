@@ -4,8 +4,7 @@
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.callWorker   (../backstage/js/api-client.js)
 //   window.BSToast      (../backstage/js/bs-toast.js)  — optional, graceful fallback
-//   window.WORKER_URL   (set by api-client or auth.js)
-import { cohorts as api, cp as cpApi } from '../js/codex-api.js';
+import { cohorts as api, cp as cpApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
@@ -57,7 +56,7 @@ function _turmaUrl(clientSlug, turmaSlug, token) {
 function _iconSrc(iconPath) {
   if (!iconPath) return null;
   if (iconPath.startsWith('http')) return iconPath;
-  return (window.WORKER_URL || '') + '/r2/' + iconPath;
+  return assetUrl('/r2/' + iconPath);
 }
 
 function _fmtDate(iso) {

@@ -984,7 +984,10 @@ body.cv-focus .cv-focus-hot {
 /* Card: structural flex column. Header is a fixed sibling above the
    scrollable body — content does NOT scroll under it. */
 .cv-renderer-fallback {
-  max-width: 760px;
+  /* Width control: --cv-content-width is set on .cv-main-view by the Lessons
+     "Aa" popover and inherits here. Standalone Aula never sets it, so its
+     default stays 760px (daily driver unchanged). */
+  max-width: var(--cv-content-width, 760px);
   height: 100%;
   margin: 0 auto;
   display: flex;
@@ -995,6 +998,13 @@ body.cv-focus .cv-focus-hot {
   box-shadow: 0 8px 24px -12px var(--shadow);
   color: var(--text-primary);
   overflow: hidden;
+}
+/* Far end of the width slider: true full-bleed. Drop the card chrome so it
+   reads as the whole window, not a card stretched to the edges. */
+.cv-main-view.is-full-width .cv-renderer-fallback {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 .cv-renderer-scroll {
   flex: 1;
@@ -1039,9 +1049,25 @@ body.cv-focus .cv-focus-hot {
   white-space: pre-wrap;
   word-break: break-word;
   font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
-  font-size: 0.88rem;
+  /* Honour the +A/-A scale (was a fixed size, which is why resize did nothing). */
+  font-size: calc(0.88rem * var(--cv-content-scale, 1));
+  /* No inner card: a prompt flows inside the same renderer card as every other
+     content type (Items/Apostila/Tarefas/conteudo/...). The verbatim box from
+     ct-renderer.css (background/border/max-height inner scroll) is neutralized
+     here so prompt is visually consistent; monospace + pre-wrap keep the text
+     copy-exact. Scoped to .cv-renderer-scroll, so the public ClassTrail page
+     and the editor preview keep their boxed verbatim style. */
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
 }
-.cv-renderer-scroll .ctr-prompt-body { font-size: 0.95rem; line-height: 1.55; }
+.cv-renderer-scroll .ctr-prompt-body {
+  font-size: calc(0.95rem * var(--cv-content-scale, 1));
+  line-height: 1.55;
+}
 
 /* CTRenderer mounts its own .ctr-copy-btn inside the scroll area for some
    types; classvault.js hides it after render because the bottom action bar
