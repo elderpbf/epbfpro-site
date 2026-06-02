@@ -57,10 +57,19 @@ function _typeBadge(type) { return '<span class="cdx-q-type">' + t('questions.ty
 const _LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const _BULK_TYPES = ['mc', 'tf', 'poll', 'open', 'wordcloud'];
 
+// Strip a leading option enumerator ("A) ", "B. ", "1) ", ...) from an option
+// string. The UI supplies the A/B/C/D letter chip, so an AI that bakes the
+// letter into the option text would otherwise render it twice ("A  A) ...").
+// Requires a single alnum char + ) or . + whitespace, so it never eats a real
+// option like "Paris" or a numeric answer like "3.14".
+function _stripEnum(s) {
+  return String(s == null ? '' : s).replace(/^\s*[A-Za-z0-9][).]\s+/, '');
+}
+
 function _optionList(q) {
   let opts = q.options;
   if (typeof opts === 'string') { try { opts = JSON.parse(opts || '[]'); } catch (_) { opts = []; } }
-  return Array.isArray(opts) ? opts : [];
+  return Array.isArray(opts) ? opts.map(_stripEnum) : [];
 }
 
 function _correctSet(q) {
@@ -353,7 +362,7 @@ async function _aiFill(kind) {
     _original: _editingOriginal,
     type: type,
     question: out.question || '',
-    options: Array.isArray(out.options) ? out.options : [],
+    options: Array.isArray(out.options) ? out.options.map(_stripEnum) : [],
     correct: correct,
     correct_answers: correct,
     max_select: maxSel,
@@ -400,7 +409,7 @@ async function _bulkGenerate() {
   _bulkItems = arr.map((q) => ({
     question: q.question || '',
     type: q.type || type,
-    options: q.options || [],
+    options: (q.options || []).map(_stripEnum),
     correct_answer: (typeof q.correct === 'number') ? String(q.correct) : '',
   }));
   _renderBulkReview();
