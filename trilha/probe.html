@@ -155,6 +155,9 @@
   #px-verdict.ok{color:#34d399;border:1px solid #166}
   #px-verdict.bad{color:#fca5a5;border:1px solid #642}
   #px-verdict.warn{color:#fcd34d;border:1px solid #653}
+  #px-sent{font-size:13px;font-weight:700;margin-bottom:8px}
+  #px-sent.ok-s{color:#34d399}
+  #px-sent.warn-s{color:#fcd34d}
   #px-log{font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.5;max-height:34vh;
     overflow-y:auto;background:#0a1818;border-radius:8px;padding:6px 8px;white-space:pre-wrap;word-break:break-word}
   #px-log .e{color:#fca5a5}#px-log .o{color:#34d399}#px-log .i{color:#9fc4c0}#px-log .w{color:#fcd34d}
@@ -165,12 +168,12 @@
 <div id="px-bar">
   <button id="px-min-toggle" type="button">ocultar</button>
   <h3>🔬 Diagnóstico de conexão (iPhone)</h3>
-  <p class="px-instr">Toque em <b>Rodar testes</b>. Se aparecer a barra cinza de privacidade no topo do Safari, tire um print dela. Depois toque em <b>Copiar</b> e me envie o resultado. Faça o mesmo numa aba anônima.</p>
+  <p class="px-instr">Toque em <b>Rodar testes</b> e aguarde cerca de 1 minuto. O resultado é enviado automaticamente, você não precisa copiar nada. <b>Só</b> tire um print se aparecer a barra cinza de privacidade no topo do Safari. Se der, repita numa aba anônima.</p>
   <div class="px-btns">
-    <button class="px-btn" id="px-run" type="button">Rodar testes</button>
-    <button class="px-btn sec" id="px-poll" type="button">Polling 60s</button>
+    <button class="px-btn" id="px-run" type="button">Rodar testes (~1 min)</button>
     <button class="px-btn sec" id="px-copy" type="button">Copiar</button>
   </div>
+  <div id="px-sent"></div>
   <div id="px-verdict"></div>
   <div id="px-log"></div>
 </div>
@@ -181,6 +184,7 @@
     ? WORKER_URL : 'https://backstage-api.pensoia.workers.dev';
   var PROXY  = './probe-proxy.php';
   var DUMMY  = { action: 'cp_get_active_for_turma', client_slug: '__probe__', turma_slug: '__probe__', _silent: true };
+  var RUN_ID = Math.random().toString(36).slice(2, 8) + '-' + Date.now();
 
   var logEl     = document.getElementById('px-log');
   var verdictEl = document.getElementById('px-verdict');
@@ -251,36 +255,82 @@
     }
   }
 
+  function setSent(msg, cls){
+    var el = document.getElementById('px-sent');
+    el.textContent = msg;
+    el.className = cls || '';
+  }
+
+  // POST the collected results to the same-origin collector so they reach us
+  // automatically. First-party call, never blocked by Safari's protection.
+  async function send(verdictText){
+    try {
+      var body = JSON.stringify({
+        run: RUN_ID,
+        ua: navigator.userAgent || '',
+        origin: location.origin,
+        verdict: verdictText,
+        log: lines,
+      });
+      var r = await fetch('./probe-collect.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: body,
+        cache: 'no-store',
+      });
+      if (r.ok) {
+        setSent('✅ Resultado enviado automaticamente. Obrigado!', 'ok-s');
+        log('resultado enviado ao servidor', 'o');
+      } else {
+        setSent('⚠️ Não consegui enviar sozinho. Toque em Copiar e me mande.', 'warn-s');
+        log('envio falhou: HTTP ' + r.status, 'e');
+      }
+    } catch (e) {
+      setSent('⚠️ Não consegui enviar sozinho. Toque em Copiar e me mande.', 'warn-s');
+      log('envio falhou: ' + (e && e.message ? e.message : e), 'e');
+    }
+  }
+
   async function runAll(){
+    var btn = document.getElementById('px-run');
+    btn.disabled = true;
+    setSent('', '');
     verdictEl.style.display = 'none';
     lines = []; logEl.innerHTML = '';
     log('--- iniciando testes ---', 'i');
     env();
-    var d = await direct();
-    var p = await proxy();
-    if (d) {
-      verdict('✅ A conexão com o worker FUNCIONA neste iPhone.\nA barra de privacidade é só um aviso, a página real funciona. (Confirma a opção "deixar como está".)', 'ok');
-    } else if (p === 'ok') {
-      verdict('❌ O iPhone BLOQUEIA a conexão direta com o worker.\n✅ O proxy no mesmo domínio RESOLVE. (Confirma a opção 3, o proxy.)', 'bad');
+
+    var d1 = await direct();
+    var p  = await proxy();
+
+    // Sustained burst so Safari's privacy classifier has repeated cross-site
+    // traffic to react to and surface the grey banner. ~50s total.
+    log('--- monitorando ~50s (pode fazer a barra de privacidade aparecer) ---', 'i');
+    var ok = d1 ? 1 : 0, fail = d1 ? 0 : 1, total = 1;
+    for (var i = 1; i <= 10; i++) {
+      await new Promise(function (res){ setTimeout(res, 5000); });
+      var r = await direct();
+      total++; if (r) ok++; else fail++;
+      log('   monitorando ' + i + '/10 — ok=' + ok + ' falhas=' + fail, r ? 'o' : 'e');
+    }
+
+    var v;
+    if (fail === 0) {
+      v = '✅ Conexão com o worker FUNCIONA neste iPhone (' + ok + '/' + total + ').\nA barra de privacidade é só um aviso, a página real funciona.';
+      verdict(v, 'ok');
+    } else if (ok === 0 && p === 'ok') {
+      v = '❌ O iPhone BLOQUEIA a conexão direta (0/' + total + ').\n✅ O proxy no mesmo domínio RESOLVE. (Confirma a solução do proxy.)';
+      verdict(v, 'bad');
+    } else if (ok === 0) {
+      v = '❌ Conexão direta bloqueada (0/' + total + ') E o proxy com problema (' + p + ').\nPrecisamos de outra abordagem.';
+      verdict(v, 'bad');
     } else {
-      verdict('❌ Conexão direta bloqueada E o proxy não respondeu certo (' + p + ').\nPrecisamos pensar noutra abordagem.', 'bad');
+      v = '⚠️ Bloqueio INTERMITENTE: ' + ok + '/' + total + ' passaram.\nProxy: ' + (p === 'ok' ? 'funciona ✅' : 'problema (' + p + ')') + '.';
+      verdict(v, 'warn');
     }
     log('--- fim ---', 'i');
-  }
-
-  async function poll(){
-    verdictEl.style.display = 'none';
-    log('--- polling: 12 chamadas, 1 a cada 5s ---', 'i');
-    var ok = 0, fail = 0;
-    for (var i = 1; i <= 12; i++) {
-      var r = await direct();
-      if (r) ok++; else fail++;
-      log('   (' + i + '/12) ok=' + ok + ' falhas=' + fail, r ? 'o' : 'e');
-      if (i < 12) await new Promise(function (res){ setTimeout(res, 5000); });
-    }
-    if (fail === 0) verdict('✅ 12/12 chamadas passaram. Worker estável neste aparelho.', 'ok');
-    else if (ok === 0) verdict('❌ 0/12 passaram. O worker está totalmente bloqueado neste aparelho.', 'bad');
-    else verdict('⚠️ ' + ok + '/12 passaram, ' + fail + ' falharam. Bloqueio intermitente.', 'warn');
+    await send(v);
+    btn.disabled = false;
   }
 
   function copy(){
@@ -300,7 +350,6 @@
   }
 
   document.getElementById('px-run').addEventListener('click', runAll);
-  document.getElementById('px-poll').addEventListener('click', poll);
   document.getElementById('px-copy').addEventListener('click', copy);
   document.getElementById('px-min-toggle').addEventListener('click', function () {
     var bar = document.getElementById('px-bar');
