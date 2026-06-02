@@ -1,0 +1,335 @@
+/* Codex Questions tab styles. Surface/text/border values come from theme.css
+ * tokens (so dark mode is inherited); the per-tab accent is --codex-questions.
+ * cdx- prefix only, no hex literals in rules. */
+
+.cdx-stats { display: flex; flex-direction: column; gap: 1rem; }
+
+/* View toggle (per-session / global) */
+.cdx-stats-modes { display: flex; gap: 0.4rem; }
+.cdx-stats-mode {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px;
+  padding: 0.4rem 0.9rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.cdx-stats-mode:hover { color: var(--text-primary); }
+.cdx-stats-mode.active {
+  color: var(--codex-questions);
+  border-color: var(--codex-questions);
+}
+
+.cdx-stats-body { display: flex; flex-direction: column; gap: 1rem; }
+
+/* Session picker + global date filter */
+.cdx-stats-picker,
+.cdx-stats-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+.cdx-stats-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.cdx-select,
+.cdx-input {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.88rem;
+  min-width: 0;
+}
+.cdx-select { min-width: 16rem; }
+.cdx-btn {
+  background: transparent;
+  color: var(--codex-questions);
+  border: 1px solid var(--codex-questions);
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.cdx-stats-loading,
+.cdx-stats-empty {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  padding: 0.75rem 0;
+}
+
+/* KPI cards */
+.cdx-stats-kpis { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.cdx-kpi {
+  flex: 1 1 9rem;
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+}
+.cdx-kpi-val { font-size: 1.6rem; font-weight: 700; color: var(--text-primary); }
+.cdx-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+/* Most-missed banner */
+.cdx-stats-mostmissed {
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-left: 4px solid var(--codex-questions);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+.cdx-stats-mostmissed-label {
+  font-weight: 700;
+  color: var(--codex-questions);
+  margin-right: 0.35rem;
+}
+
+/* Per-question accuracy list */
+.cdx-stats-qlist { display: flex; flex-direction: column; gap: 0.6rem; }
+.cdx-stats-q { display: flex; flex-direction: column; gap: 0.3rem; }
+.cdx-stats-q-text { font-size: 0.9rem; color: var(--text-primary); }
+.cdx-stats-bar {
+  position: relative;
+  height: 1.4rem;
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+  border-radius: 6px;
+  overflow: hidden;
+}
+.cdx-stats-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--codex-questions);
+  opacity: 0.35;
+}
+.cdx-stats-bar-text {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.cdx-stats-bar--na {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+}
+
+/* Global sections (toughest, trend) */
+.cdx-stats-section { display: flex; flex-direction: column; gap: 0.5rem; }
+.cdx-stats-section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.cdx-stats-trend-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.cdx-stats-trend-name { color: var(--text-primary); font-weight: 600; }
+.cdx-stats-trend-val { color: var(--text-secondary); white-space: nowrap; }
+
+/* ── Sessions sub-tab ───────────────────────────────────────── */
+.cdx-sessions { display: flex; flex-direction: column; gap: 1rem; }
+.cdx-sessions-create { display: flex; gap: 0.6rem; }
+.cdx-sessions-create .cdx-input { flex: 1; max-width: 28rem; }
+.cdx-sessions-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.cdx-sessions-loading,
+.cdx-sessions-empty { color: var(--text-secondary); font-size: 0.88rem; padding: 0.75rem 0; }
+
+.cdx-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+}
+.cdx-session--open { border-left: 4px solid var(--codex-questions); }
+.cdx-session-title { font-weight: 600; color: var(--text-primary); }
+.cdx-session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.cdx-session-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+.cdx-session-status { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.cdx-session-status--open { color: var(--codex-questions); }
+.cdx-session-status--closed { color: var(--text-secondary); }
+.cdx-session-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+
+.cdx-btn--danger { color: var(--error); border-color: var(--error); }
+.cdx-btn--ghost {
+  color: var(--text-secondary);
+  border-color: var(--border, rgba(127, 127, 127, 0.3));
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.cdx-btn--ghost:hover { color: var(--text-primary); }
+
+/* ── Bank sub-tab ───────────────────────────────────────────── */
+.cdx-bank { display: grid; grid-template-columns: 18rem 1fr; gap: 1rem; align-items: start; }
+.cdx-bank-sets { display: flex; flex-direction: column; gap: 0.6rem; }
+.cdx-bank-newset { display: flex; gap: 0.4rem; }
+.cdx-bank-newset-name { flex: 1; min-width: 0; }
+.cdx-bank-setlist { display: flex; flex-direction: column; gap: 0.3rem; }
+.cdx-bank-set {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px;
+  padding: 0.25rem 0.4rem;
+  background: var(--surface);
+}
+.cdx-bank-set.active { border-color: var(--codex-questions); }
+.cdx-bank-set-pick {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-align: left;
+  padding: 0.25rem 0.3rem;
+}
+.cdx-bank-set-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-bank-set-count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+}
+.cdx-bank-iconbtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+  border-radius: 6px;
+}
+.cdx-bank-iconbtn:hover:not([disabled]) {
+  color: var(--text-primary);
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+}
+.cdx-bank-iconbtn[disabled] { opacity: 0.35; cursor: default; }
+.cdx-bank-rename-input { flex: 1; min-width: 0; }
+.cdx-bank-confirm-text { flex: 1; font-size: 0.8rem; font-weight: 600; color: var(--error); }
+.cdx-bank-empty,
+.cdx-bank-loading { color: var(--text-secondary); font-size: 0.88rem; padding: 0.75rem 0; }
+
+.cdx-bank-main { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.cdx-bank-main-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.cdx-bank-main-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.cdx-bank-qlist { display: flex; flex-direction: column; gap: 0.5rem; }
+.cdx-q {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+}
+.cdx-q-order { display: flex; flex-direction: column; gap: 0.1rem; }
+.cdx-q-body { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.cdx-q-text { flex: 1; min-width: 8rem; font-size: 0.9rem; color: var(--text-primary); }
+.cdx-q-type {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--codex-questions);
+  border: 1px solid var(--codex-questions);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+.cdx-q-inset { font-size: 0.72rem; color: var(--text-secondary); }
+.cdx-q-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
+.cdx-bank-composer-actions { display: flex; gap: 0.5rem; }
+
+/* Question composer (shared with the Q2 live launch form) */
+.cdx-comp { display: flex; flex-direction: column; gap: 0.7rem; }
+.cdx-comp-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.cdx-comp-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.cdx-comp-text { resize: vertical; }
+.cdx-comp-opts { display: flex; flex-direction: column; gap: 0.4rem; }
+.cdx-comp-optlist { display: flex; flex-direction: column; gap: 0.35rem; }
+.cdx-comp-optrow { display: flex; align-items: center; gap: 0.45rem; }
+.cdx-comp-opt { flex: 1; min-width: 0; }
+.cdx-comp-correct { flex-shrink: 0; width: 1.1rem; height: 1.1rem; accent-color: var(--codex-questions); }
+.cdx-comp-optdel {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.3rem;
+}
+.cdx-comp-optdel:hover { color: var(--error); }
+.cdx-comp-addopt { align-self: flex-start; }
+.cdx-comp-maxsel-field { max-width: 12rem; }
+.cdx-comp-scale { display: flex; gap: 0.6rem; }
+.cdx-comp-hint { color: var(--text-secondary); font-size: 0.85rem; }

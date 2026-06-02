@@ -34,6 +34,7 @@
 <link rel="stylesheet" href="content/slides/css/slide.css?v=1.0">
 <link rel="stylesheet" href="content/slides/css/ui.css?v=1.0">
 <link rel="stylesheet" href="lessons/lessons.css?v=2.1">
+<link rel="stylesheet" href="questions/questions.css?v=1.0">
 <script src="../backstage/js/debug.js?v=2.5"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -116,12 +117,13 @@
   import * as cohorts from './cohorts/cohorts.js';
   import * as content from './content/content.js';
   import * as lessons from './lessons/lessons.js';
+  import * as questions from './questions/questions.js';
 
   // The Codex glyph library is owned here. Shared window-global consumers
   // (the ct-type-filter chip strip) reach it through this global.
   window.CdxGlyphs = glyphs;
 
-  const TABS = { cohorts, content, lessons };
+  const TABS = { cohorts, content, lessons, questions };
   const params = new URLSearchParams(location.search);
   const tab = TABS[params.get('tab')] ? params.get('tab') : 'cohorts';
   const sub = params.get('sub') || undefined;
@@ -130,12 +132,14 @@
   BS_AUTH.clearPasswordInputs();
   applyI18n();
 
-  // Content owns its sub-tab registry; the topbar renders them as the sub-row.
-  const subTabs = (tab === 'content' && content.subtabs) ? content.subtabs(sub) : [];
+  // Content and Questions own sub-tab registries; the topbar renders the sub-row.
+  let subTabs = [];
+  if (tab === 'content' && content.subtabs) subTabs = content.subtabs(sub);
+  else if (tab === 'questions' && questions.subtabs) subTabs = questions.subtabs(sub);
   topbar({ active: tab, subTabs });
 
   const ctx = {};
-  if (tab === 'content') ctx.sub = sub;
+  if (tab === 'content' || tab === 'questions') ctx.sub = sub;
   TABS[tab].mount(document.getElementById('codex-view'), ctx);
 </script>
 </body>

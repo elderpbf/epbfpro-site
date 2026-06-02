@@ -8,7 +8,8 @@
 // Worker-action legend (historical codenames, do NOT rename — frozen contract):
 //   ct_*  -> Content + Cohorts          (was "ClassTrail")
 //   cv_*  -> Lesson surface + Drive       (was "ClassVault")
-//   cp_*  -> Questions / live sessions    (was "ClassPulse")
+//   (no prefix)  -> Questions host/admin core (sessions, bank, Q&A, stats)
+//   cp_*  -> Questions public student/trilha path   (was "ClassPulse")
 //   *_presentation, presentations table, R2 classforge/{slug}/ -> Slides (decks)
 //
 // Methods take an optional params object passed straight through; param shapes
@@ -21,6 +22,15 @@ export function call(action, params) {
   const p = Object.assign({}, params || {});
   p.action = action;
   return callWorker(p);
+}
+
+// Asset/src URLs for files the Worker serves (e.g. images from R2 at /r2/<path>).
+// These go through the facade too, so the backend base is referenced in ONE
+// place for BOTH action calls AND asset URLs; a future Worker move repoints here,
+// not in tab modules. Pass the full path including any prefix, e.g.
+// assetUrl('/r2/' + iconPath). Output is identical to the old inline form.
+export function assetUrl(path) {
+  return (window.WORKER_URL || '') + (path || '');
 }
 
 // Slides — authored decks (Slides sub-tab + deck editor). Deck JSON in R2 via
@@ -46,13 +56,49 @@ export const lessons = {
   getCodexView: (p) => call('cv_get_codex_view', p)     // { client_slug, turma_slug } -> { vault }
 };
 
-// Questions — live sessions, banks, stats.
+// Questions (host/admin plane): live sessions, bank, student Q&A, stats. The
+// core actions carry NO prefix (the original pre-prefix ClassPulse actions);
+// cp_* is the public student/trilha path (see `cp` above), out of the host
+// scope. Action strings are FROZEN (Backstage Worker `actions/sessions.js`);
+// param shapes pinned inline.
 export const questions = {
-  listSessions:    (p) => call('list_sessions', p),
-  listSets:        (p) => call('list_question_sets', p),
-  getQuestions:    (p) => call('get_questions', p),
-  sessionState:    (p) => call('get_session_state', p),
-  activeForCohort: (p) => call('cp_get_active_for_turma', p)
+  // Sessions
+  listSessions:    (p) => call('list_sessions', p),            // -> { sessions }
+  createSession:   (p) => call('create_session', p),           // { title } -> { code }
+  closeSession:    (p) => call('close_session', p),            // { code }
+  reopenSession:   (p) => call('reopen_session', p),           // { code } (rejects if another session is open)
+  // Live polling
+  launchQuestion:  (p) => call('launch_question', p),          // { session_code, text, options, correct_answer?, type?, max_select? } -> { id }
+  closeQuestion:   (p) => call('close_question', p),           // { id, show_results?, reveal_answer? }
+  setVisibility:   (p) => call('set_question_visibility', p),  // { id, session_code, show_results }
+  sessionState:    (p) => call('get_session_state', p),        // { code } -> { session, qa_enabled, pinned_question, active_question, history } (public)
+  // Bank (sets + questions)
+  listSets:        (p) => call('list_question_sets', p),       // -> { banks }
+  getQuestions:    (p) => call('get_questions', p),            // { list_name } -> { questions }
+  addQuestion:     (p) => call('add_question', p),             // { list_name, question, options, correct_answer?, type?, max_select?, presentation_id? }
+  addQuestionsBulk:(p) => call('add_questions_bulk', p),       // { list_name, questions[] }
+  updateQuestion:  (p) => call('update_question', p),          // { list_name, original_question, question, type?, options?, correct_answer?, max_select?, new_list_name? }
+  deleteQuestion:  (p) => call('delete_question', p),          // { list_name, question }
+  updateSet:       (p) => call('update_question_set', p),      // { original_name, new_name }
+  deleteSet:       (p) => call('delete_question_set', p),      // { list_name }
+  reorder:         (p) => call('reorder_questions', p),        // { list_name, ordered_ids }
+  search:          (p) => call('search_questions', p),         // { q } (>= 2 chars)
+  // Student Q&A (instructor side)
+  toggleQa:               (p) => call('toggle_qa', p),                // { code, enabled }
+  listStudentQuestions:   (p) => call('list_student_questions', p),   // { session_code } -> { questions }
+  updateStudentQuestion:  (p) => call('update_student_question', p),  // { id, status, answer? }
+  pinStudentQuestion:     (p) => call('pin_student_question', p),     // { id, session_code }
+  unpinStudentQuestion:   (p) => call('unpin_student_question', p),   // { session_code }
+  promoteStudentQuestion: (p) => call('promote_student_question', p), // { session_code, id } -> { id }
+  deleteStudentQuestion:  (p) => call('delete_student_question', p),  // { id }
+  // Stats
+  sessionStats:    (p) => call('session_stats', p),            // { code }
+  globalStats:     (p) => call('global_stats', p),             // { date_from?, date_to? }
+  // Answer moderation
+  deleteAnswer:    (p) => call('delete_answer', p),            // { answer_id }
+  // Student plane (public; consumed by Trilha, not the host UI). Kept for the
+  // cohorts/lessons live banner; out of the host/admin Questions scope.
+  activeForCohort: (p) => call('cp_get_active_for_turma', p)   // { client_slug, turma_slug }
 };
 
 // Session <-> deck linking (shared by Lessons + Questions surfaces).
