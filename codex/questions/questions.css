@@ -181,18 +181,15 @@
  * hosts the selected session. Live hosting is Q2; the main area carries the
  * lifecycle, a host bridge, the per-session stats overlay, and a bottom-of-page
  * protected delete. All colors are theme tokens (dark inherited). */
-/* Sessions fills the content area edge-to-edge like the standalone host page,
- * escaping the Codex shell's centered max-width (.bs-main 1200px) and its side
- * padding (.bs-main + .cdx-view). Scoped to Sessions only; Bank/Stats keep the
- * normal padded layout, and the position:fixed sidebar is unaffected. The host
- * content is re-inset 18px below (matching host.html's screen padding); the
- * session bar bleeds back out to the full width as a surface strip. */
+/* Sessions fills the content area edge-to-edge like the host page. Negative
+ * margins negate the shell's top + side padding (.bs-main 2.5rem/1.5rem +
+ * .cdx-view 0.5rem/1.5rem = 3rem each) so the surface reaches the content edges
+ * WITHOUT width:100vw, which would overflow by the scrollbar gutter and add a
+ * horizontal scrollbar. Scoped to Sessions only; the position:fixed sidebar is
+ * unaffected. The host content is re-inset 18px below; the bar bleeds back out. */
 .cdx-sessions-layout {
   position: relative; min-height: 60vh;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  margin-top: -3rem;
+  margin: -3rem -3rem 0;
 }
 
 /* Floating rail: hidden offscreen, .cdx-sm--open slides it in. Fixed to the
@@ -767,15 +764,10 @@
 .cdx-host-reset { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: flex-start; margin: 0.45rem 0 0; padding: 0.55rem 0.4rem 0.2rem; border: none; border-top: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; font-family: inherit; cursor: pointer; }
 .cdx-host-reset:hover { color: var(--text-primary); }
 
-/* 3-column layout */
-/* The three columns scroll TOGETHER: the dashboard is the single scroll
-   container; the columns themselves do not scroll independently (no per-panel
-   scrollbars). */
-.cdx-host-dashboard { display: flex; gap: 0; flex: 1; min-height: 0; max-height: calc(100vh - 190px); overflow-y: auto; scrollbar-width: thin; }
-/* Thin, subtle scrollbar like the legacy host (host-layout.css .hd-col bar). */
-.cdx-host-dashboard::-webkit-scrollbar { width: 6px; }
-.cdx-host-dashboard::-webkit-scrollbar-track { background: transparent; }
-.cdx-host-dashboard::-webkit-scrollbar-thumb { background: rgba(127,127,127,.25); border-radius: 3px; }
+/* 3-column layout. The dashboard is NOT a bounded scroll box: it grows with its
+   content and the page (browser chrome) scrolls, so there is no inner vertical
+   scrollbar and no per-column scrollbars. The columns scroll together. */
+.cdx-host-dashboard { display: flex; gap: 0; flex: 1; min-height: 0; }
 .cdx-hd-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: visible; padding: 0 10px 16px; }
 .cdx-hd-col-left { width: 360px; flex-shrink: 0; min-width: 260px; max-width: 600px; padding-left: 0; }
 .cdx-hd-col-center { flex: 1; min-width: 280px; }
@@ -897,10 +889,17 @@
 
 /* Session name (left of the bar) is a button: clicking it reveals the protected
    Excluir, per Elder. Stats sits first in the actions group (left of Visao). */
-.cdx-host-titlewrap { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
-.cdx-host-name { background: none; border: none; padding: 0; font-family: inherit; font-size: 0.78rem; color: var(--text-secondary); cursor: pointer; text-align: left; max-width: 40ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-host-titlewrap { position: relative; display: flex; align-items: center; min-width: 0; }
+.cdx-host-name { display: inline-flex; align-items: center; gap: 4px; background: none; border: none; padding: 0; font-family: inherit; font-size: 0.78rem; color: var(--text-secondary); cursor: pointer; text-align: left; max-width: 40ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cdx-host-name:hover { color: var(--primary); }
-.cdx-host-del { flex-shrink: 0; }
+.cdx-host-name-caret { font-style: normal; font-size: 0.7em; opacity: 0.7; }
+/* Dropdown off the session name: Renomear + Excluir. */
+.cdx-host-name-menu { position: absolute; top: calc(100% + 0.3rem); left: 0; min-width: 180px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 0.4rem; z-index: 60; display: flex; flex-direction: column; gap: 0.2rem; }
+.cdx-host-menu-item { width: 100%; text-align: left; padding: 0.5rem 0.7rem; background: var(--background); border: 1px solid var(--border); border-radius: 7px; color: var(--text-primary); font-family: inherit; font-size: 0.85rem; cursor: pointer; }
+.cdx-host-menu-item:hover:not(:disabled) { background: rgba(20,184,166,.06); border-color: rgba(20,184,166,.35); }
+.cdx-host-menu-item:disabled { opacity: 0.45; cursor: not-allowed; }
+.cdx-host-menu-item--danger { color: var(--error); }
+.cdx-host-menu-item--danger:hover { background: rgba(239,68,68,.06); border-color: rgba(239,68,68,.35); }
 .cdx-host-note { background: rgba(20,184,166,.08); border: 1px solid rgba(20,184,166,.2); border-radius: 10px; padding: 1rem 1.25rem; color: var(--text-secondary); font-size: 0.88rem; text-align: center; margin-bottom: 1rem; }
 
 /* Trilha button + linked dot */

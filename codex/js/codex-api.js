@@ -68,6 +68,7 @@ export const questions = {
   closeSession:    (p) => call('close_session', p),            // { code }
   reopenSession:   (p) => call('reopen_session', p),           // { code } (rejects if another session is open)
   deleteSession:   (p) => call('delete_session', p),           // { code } -> cascade-deletes answers + questions + student_questions + the session row
+  renameSession:   (p) => call('rename_session', p),           // { code, title } -> updates the session title
   // Live polling
   launchQuestion:  (p) => call('launch_question', p),          // { session_code, text, options, correct_answer?, type?, max_select? } -> { id }
   closeQuestion:   (p) => call('close_question', p),           // { id, show_results?, reveal_answer? }

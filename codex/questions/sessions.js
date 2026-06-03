@@ -133,13 +133,23 @@ function _renderMain() {
     main.innerHTML = '<div class="cdx-sessions-placeholder">' + t('questions.sessions_placeholder') + '</div>';
     return;
   }
-  // The host bar owns the Estatisticas button (left of Visao) and reveals the
-  // delete via its session-name button; both call back into these handlers.
+  // The host bar owns the Estatisticas button (left of Visao) and a session-name
+  // dropdown (Renomear / Excluir); each calls back into these handlers.
   liveHost.mount(main, {
     session: s,
     onStats: () => _openStats(s.code),
     onDelete: () => _confirmDelete(s.code),
+    onRename: (title) => _renameSession(s.code, title),
   });
+}
+
+// Rename a session via the frozen Worker's rename_session action, then reload so
+// the picker + the host bar pick up the new title.
+async function _renameSession(code, title) {
+  let res;
+  try { res = await api.renameSession({ code, title }); } catch (e) { notice.internal(e); res = null; }
+  if (!res || res.error) { notice.error(t('questions.sessions_rename_error')); return; }
+  _load();
 }
 
 // ── Per-session stats overlay (legacy openStats) ────────────

@@ -43,6 +43,7 @@ let _trailTurma = null;
 let _trailAllTurmas = [];
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
 let _onDelete = null;  // sessions.js callback: delete this session (revealed via the name)
+let _onRename = null;  // sessions.js callback: rename this session (title) via the name menu
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -71,11 +72,14 @@ function _render() {
 function _barMarkup() {
   return '<div class="cdx-host-bar">' +
     '<div class="cdx-host-titlewrap">' +
-      '<button class="cdx-host-name" data-act="name" type="button" title="' + _esc(t('questions.sessions_delete')) + '">' + _esc(_session.title || ('' + t('questions.sessions_untitled'))) + '</button>' +
-      '<button class="cdx-btn cdx-btn-danger cdx-host-del" data-act="delete" type="button" hidden>' + _esc(t('questions.sessions_delete')) + '</button>' +
+      '<button class="cdx-host-name" data-act="name" type="button">' + _esc(_session.title || ('' + t('questions.sessions_untitled'))) + ' <i class="cdx-host-name-caret">▾</i></button>' +
+      '<div class="cdx-host-name-menu" id="cdx-host-name-menu" hidden>' +
+        '<button class="cdx-host-menu-item" data-act="rename" type="button">' + _esc(t('questions.host_rename')) + '</button>' +
+        '<button class="cdx-host-menu-item cdx-host-menu-item--danger" data-act="delete" type="button">' + _esc(t('questions.sessions_delete')) + '</button>' +
+      '</div>' +
     '</div>' +
     '<div class="cdx-host-bar-actions">' +
-      '<button class="cdx-btn cdx-host-stats" data-act="stats" type="button">' + _esc(t('questions.sessions_stats')) + '</button>' +
+      '<button class="cdx-btn cdx-host-stats" data-act="stats" type="button">' + _esc(t('questions.host_stats')) + '</button>' +
       '<details class="cdx-host-visao" id="cdx-host-visao" hidden><summary>' + _esc(t('questions.host_view')) + ' ▾</summary>' +
         '<div class="cdx-host-visao-panel">' +
           '<div class="cdx-host-visao-label">' + _esc(t('questions.host_columns')) + '</div>' +
@@ -592,6 +596,7 @@ export function mount(containerEl, ctx) {
   _trailTurma = null; _trailAllTurmas = [];
   _onStats = (ctx && ctx.onStats) || null;
   _onDelete = (ctx && ctx.onDelete) || null;
+  _onRename = (ctx && ctx.onRename) || null;
 
   registerQuestionEl();
   _render();
@@ -612,12 +617,21 @@ export function mount(containerEl, ctx) {
 
   const host = _q('#cdx-host');
   _on(host, 'click', (e) => {
+    // Any click outside the session-name menu closes it.
+    if (!e.target.closest('.cdx-host-titlewrap')) { const nm = _q('#cdx-host-name-menu'); if (nm && !nm.hidden) nm.hidden = true; }
     const btn = e.target.closest('[data-act]');
     if (btn) {
       const act = btn.getAttribute('data-act');
       if (act === 'stats') { if (_onStats) _onStats(); return; }
-      if (act === 'name') { const del = _q('.cdx-host-del'); if (del) del.hidden = !del.hidden; return; }
-      if (act === 'delete') { if (typeof confirm !== 'function' || confirm(t('questions.sessions_delete_confirm'))) { if (_onDelete) _onDelete(); } return; }
+      if (act === 'name') { const nm = _q('#cdx-host-name-menu'); if (nm) nm.hidden = !nm.hidden; return; }
+      if (act === 'rename') {
+        const nm = _q('#cdx-host-name-menu'); if (nm) nm.hidden = true;
+        const cur = (_session && _session.title) || '';
+        const v = (typeof prompt === 'function') ? prompt(t('questions.host_rename_prompt'), cur) : null;
+        if (v != null && v.trim() && _onRename) _onRename(v.trim());
+        return;
+      }
+      if (act === 'delete') { const nm = _q('#cdx-host-name-menu'); if (nm) nm.hidden = true; if (typeof confirm !== 'function' || confirm(t('questions.sessions_delete_confirm'))) { if (_onDelete) _onDelete(); } return; }
       if (act === 'start') return _startHost(false);
       if (act === 'stop') return _stopHost();
       if (act === 'launch') return _launch();
@@ -687,5 +701,5 @@ export function unmount() {
   _container = null; _session = null;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
-  _onStats = null; _onDelete = null;
+  _onStats = null; _onDelete = null; _onRename = null;
 }
