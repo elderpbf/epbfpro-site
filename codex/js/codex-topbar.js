@@ -36,15 +36,8 @@ function _svg(inner) {
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
 }
 
-// ── Sub-tabs (5c) ────────────────────────────────────────────
-// One sub-navigation, two display modes chosen by a persisted GLOBAL pref (the
-// toggle lives in the Settings drawer, below). Applies to every tab that
-// declares sub-tabs (Content, Questions, ...). Positioning reuses the lifted
-// anchored.js, the same mechanic as the Slides editor context bar.
-//   'pill' (default): hovering the active tab reveals a floating pill of its
-//      sub-tabs, centered under the tab, receding on mouse-out (a hover bridge
-//      keeps it open while the cursor is on it). The topbar stays one row.
-//   'bar': a persistent strip centered under the active tab.
+// Sub-tabs (5c): two display modes (hover pill default, persistent bar) via a
+// global pref; positioning reuses the lifted anchored.js.
 const SUBTAB_MODE_KEY = 'codex_subtab_mode';
 
 export function resolveSubtabMode(stored) {
@@ -84,11 +77,8 @@ function renderSubBar(header, anchorTab, subTabs) {
   window.addEventListener('resize', place);
 }
 
-// 'pill' mode: hovering ANY main tab reveals THAT tab's sub-tabs in a floating
-// pill under it (a hover bridge keeps it open while the cursor is on it). Tabs
-// with no sub-tabs show no pill, so you just click the main tab. One pill,
-// repopulated per hovered tab, so you can jump straight to any sub-tab, skipping
-// the click-the-tab-then-click-the-sub-tab two-step.
+// 'pill' mode: hovering ANY tab shows THAT tab's sub-tabs under it (one pill,
+// repopulated per hover), so you jump straight to a sub-tab. None -> no pill.
 function renderSubPill(header, strip, subTabsByTab) {
   const pill = document.createElement('div');
   pill.className = 'cdx-subpill';
@@ -120,9 +110,7 @@ function renderSubPill(header, strip, subTabsByTab) {
   pill.addEventListener('mouseleave', scheduleHide);
 }
 
-// The pill/bar toggle, injected into the Settings drawer (the global config
-// panel). Flipping it persists the pref and reloads (same as the language
-// toggle), so the next render picks up the chosen mode.
+// The pill/bar toggle for the Settings drawer; persists the pref and reloads.
 function subtabModeSection() {
   return {
     id: 'cdx-subtabs',
@@ -148,15 +136,11 @@ export function init(opts) {
   opts = opts || {};
   const active = opts.active || '';
   const sections = opts.sections || [];
-  // Sub-tabs for the active tab, rendered as the hover-pill / persistent-bar
-  // chrome (5c, see the helpers above). Each entry: { label, href, active }.
-  // Empty/omitted -> no sub-navigation (single-row topbar).
+  // active tab's sub-tabs ({ label, href, active }); subTabsByTab keys all tabs
+  // so pill mode can reveal any tab's sub-tabs on hover.
   const subTabs = opts.subTabs || [];
-  // Per-tab sub-tab map (keyed by tab key): pill mode reveals ANY tab's sub-tabs
-  // on hover, so you jump straight to a sub-tab. Seed the active tab from subTabs
-  // for callers that pass only the active list.
   const subTabsByTab = opts.subTabsByTab || {};
-  if (subTabs.length && !subTabsByTab[active]) subTabsByTab[active] = subTabs;
+  if (subTabs.length && !subTabsByTab[active]) subTabsByTab[active] = subTabs; // seed active
   const container = document.querySelector('.bs-app') || document.body;
 
   const header = document.createElement('header');
@@ -264,9 +248,8 @@ export function init(opts) {
 
   container.insertBefore(header, container.firstChild);
 
-  // Sub-tabs (5c): rendered into the LIVE header (after insert) so the positioner
-  // can measure. Bar mode is the active section's persistent strip; pill mode
-  // reveals ANY tab's sub-tabs on hover, so it renders whenever any tab has them.
+  // rendered after insert so the positioner can measure; pill renders if any tab
+  // has sub-tabs, bar only for the active tab.
   if (subtabMode() === 'bar') {
     if (subTabs.length > 0) {
       const anchorTab = strip.querySelector('.cdx-tab.active') || strip;
@@ -276,8 +259,7 @@ export function init(opts) {
     renderSubPill(header, strip, subTabsByTab);
   }
 
-  // Reuse shared shell services. The pill/bar toggle is a global Codex pref, so
-  // it leads the Settings drawer sections (before any page-injected ones).
+  // Shared shell services; the global pill/bar toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });
   ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
   SettingsDrawer.init({ sections: [subtabModeSection(), ...sections] });
