@@ -98,25 +98,6 @@ export function mount(root, ctx = {}) {
       const ch = root.querySelector("#chrome");
       document.documentElement.style.setProperty("--chrome-h", (ch ? ch.offsetHeight : 52) + "px");
     },
-    // reflect the font slider / its scope label for the current slide
-    syncFontSlider() {
-      const el = root.querySelector("#fontScale");
-      if (!el) return;
-      const d = this.deck();
-      el.value = this.fontScope === "slide" ? player.effFontScale(d, this.cur()) : d.theme.fontScale;
-      const btn = root.querySelector("#fontScope");
-      if (btn) btn.textContent = this.fontScope === "slide" ? "este" : "tudo";
-    },
-    // push deck theme values back into the chrome inputs (after undo/redo)
-    syncThemeControls() {
-      const d = this.deck();
-      const set = (id, v) => { const el = root.querySelector(id); if (el) el.value = v; };
-      set("#accent", d.theme.accent);
-      set("#ink", d.theme.ink);
-      set("#motifColor", d.theme.motif);
-      set("#anim", d.theme.anim);
-      this.syncFontSlider();
-    },
     renderSlide() {
       const d = this.deck(), s = this.cur();
       this.stage.style.setProperty("--fontScale", player.effFontScale(d, s));
@@ -147,7 +128,7 @@ export function mount(root, ctx = {}) {
       this.step = d < 0 ? this.effMax() : 0;
       if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
-      this.renderSlide(); this.renderNav(); this.syncFontSlider(); this.broadcast();
+      this.renderSlide(); this.renderNav(); this.broadcast();
     },
     // jump to slide i. NOT named `select`: wiring.js owns app.select (the selection
     // object), so this nav method must not collide with it.
@@ -155,7 +136,7 @@ export function mount(root, ctx = {}) {
       this.index = i; this.step = 0;
       if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
-      this.renderSlide(); this.renderNav(); this.syncFontSlider(); this.broadcast();
+      this.renderSlide(); this.renderNav(); this.broadcast();
     },
 
     // Deck-wide look, opened into the context bar (menus.js supplies the control
@@ -253,7 +234,6 @@ export function mount(root, ctx = {}) {
       if (app.freeform) app.freeform.clear();
       if (app.select) app.select.clear();
       applyDeckTheme(app.deck(), app.stage);
-      app.syncThemeControls();
       app.renderSlide();
       app.renderNav();
       app.broadcast();

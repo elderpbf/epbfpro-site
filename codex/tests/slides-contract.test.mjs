@@ -158,6 +158,16 @@ test('the mask popover is a self-contained edit/maskpanel.js, drained from app.j
   assert.ok(!/\[data-mtype\]/.test(appjs), 'app.js no longer wires the mask type buttons');
 });
 
+// 4a: the old floating #fmt toolbar was replaced by the context bar, so the sync
+// methods that pushed values into its now-absent inputs (#fontScale, #fontScope,
+// #accent, #ink, #motifColor, #anim) are dead. app.js must not carry them.
+test('app.js carries no dead #fmt toolbar sync code (context bar replaced it) (4a)', () => {
+  const src = read('../content/slides/js/app.js');
+  assert.ok(!/syncFontSlider/.test(src), 'no dead syncFontSlider (the #fmt slider is gone)');
+  assert.ok(!/syncThemeControls/.test(src), 'no dead syncThemeControls (the #fmt theme inputs are gone)');
+  assert.ok(!/#fontScale|#fontScope|#motifColor/.test(src), 'no lookups of retired #fmt element ids');
+});
+
 // The unified selection model lives in its own js/select/ folder and carries a
 // loud scope banner: it is SLIDES-EDITOR-INTERNAL ONLY and must not be adopted
 // by other Codex tabs.
