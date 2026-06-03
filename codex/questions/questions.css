@@ -837,3 +837,36 @@
   .cdx-hd-col, .cdx-hd-col-left, .cdx-hd-col-center, .cdx-hd-col-right { width: 100% !important; max-width: none !important; overflow-y: visible; padding: 0 0 14px; }
   .cdx-hd-resizer { display: none; }
 }
+
+/* =========================================================
+   Q2 faithful host port: session bar extras (name, Trilha,
+   not-hosted note, Trilha modal) + session-card actions.
+   ========================================================= */
+
+.cdx-host-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.1rem; }
+.cdx-host-note { background: rgba(20,184,166,.08); border: 1px solid rgba(20,184,166,.2); border-radius: 10px; padding: 1rem 1.25rem; color: var(--text-secondary); font-size: 0.88rem; text-align: center; margin-bottom: 1rem; }
+
+/* Trilha button + linked dot */
+.cdx-host-trail { display: inline-flex; align-items: center; gap: 6px; }
+.cdx-host-trail-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(127,127,127,.4); flex-shrink: 0; transition: background 0.15s; }
+.cdx-host-trail.is-linked .cdx-host-trail-dot { background: var(--success); box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
+
+/* Trilha modal */
+.cdx-trail-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }
+.cdx-trail-modal.open { display: flex; }
+.cdx-trail-box { background: var(--surface); border-radius: 16px; padding: 1.6rem; max-width: 420px; width: 90%; text-align: left; }
+.cdx-trail-box h3 { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
+.cdx-trail-status { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+.cdx-trail-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
+.cdx-trail-engine { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.9rem; }
+.cdx-trail-link { display: inline-block; font-size: 0.85rem; color: var(--primary); text-decoration: none; margin-bottom: 0.9rem; }
+.cdx-trail-link:hover { text-decoration: underline; }
+.cdx-trail-box select { width: 100%; margin-bottom: 0.9rem; }
+.cdx-trail-empty { color: var(--text-secondary); font-size: 0.85rem; padding: 0.6rem 0; }
+
+/* Session-card actions (Estatisticas / Excluir), per the legacy card */
+.cdx-session-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; align-items: center; }
+.cdx-session-act { font-size: 0.72rem; font-weight: 600; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.cdx-session-act:hover { border-color: var(--primary); color: var(--primary); }
+.cdx-session-act--danger:hover { border-color: var(--error); color: var(--error); }
+.cdx-session-confirm { font-size: 0.74rem; color: var(--text-secondary); }

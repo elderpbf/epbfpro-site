@@ -1,20 +1,19 @@
 // questions/live-host.js
-// Codex-native live host dashboard (Q2): a faithful port of the legacy
-// ClassPulse 3-column host (host.html + host-composer/history/sqa/layout). It
-// mounts into the Sessions detail for the selected OPEN session and gives the
-// instructor the live teaching surface: a launch composer (left), the active
-// question with live results + the closed-question history (center), and the
-// student Q&A feed (right), over a resizable 3-column layout.
+// Codex-native live host: a faithful PORT of the legacy ClassPulse host page
+// (backstage/classpulse/host.html + host-* modules), mounted into the Sessions
+// main area for the selected session. It looks like host.html, element for
+// element, but is ported to the Codex contract (native ES module, codex-api
+// facade only, strings via t(), cdx- classes, mount/unmount).
 //
-// Contract: backend ONLY through the codex-api facade; the active question is
-// rendered by the Codex-owned <codex-question> element (question-element.js),
-// driven through its SCOPED callbacks (no document event bus); the Q&A feed is
-// live-qa.js. Strings via t(); cdx- classes; no inline handlers.
+// Layout (exactly host.html): a sticky session bar (code + LIVE, Visao column
+// toggles, Trilha, QR, Display, Iniciar/Encerrar), a "not hosted" note, and the
+// 3-column dashboard (launch composer / active question + history / student
+// Q&A). applyHostedUI() toggles the hosting chrome just like the legacy.
 //
-// unmount() is the release-gated teardown (tests/questions-unmount.test.mjs): it
-// tears down the embedded element's poll timer, the Q&A feed's poll timer, the
-// student-Q&A answer debounce, and every layout/resizer/document listener.
-import { questions as api } from '../js/codex-api.js';
+// unmount() is release-gated (tests/questions-unmount.test.mjs): it tears down
+// the embedded element's poll, the Q&A feed's poll, the SQA debounce, and every
+// layout/resizer/document/modal listener.
+import { questions as api, cohorts, ai } from '../js/codex-api.js';
 import { mountComposer } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
@@ -38,118 +37,61 @@ let _sqaDebounce = null;
 let _sqaLastServerAnswer = null;
 let _sqaSaving = false;
 let _layout = null;
+let _historyMap = {};
+let _bankMap = {};
+let _trailTurma = null;
+let _trailAllTurmas = [];
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
-
-function _on(el, evt, fn, opts) {
-  if (!el) return;
-  el.addEventListener(evt, fn, opts);
-  _cleanup.push(() => el.removeEventListener(evt, fn, opts));
-}
-
+function _on(el, evt, fn, opts) { if (!el) return; el.addEventListener(evt, fn, opts); _cleanup.push(() => el.removeEventListener(evt, fn, opts)); }
 function _q(sel) { return _container && _container.querySelector(sel); }
+function _isOpen() { return _session && _session.status === 'open'; }
 
-// ── Layout persistence (port of host-layout.js) ──────────────
-function _loadLayout() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY));
-    if (!saved) return JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
-    ['left', 'center', 'right'].forEach((k) => {
-      if (!saved[k]) saved[k] = JSON.parse(JSON.stringify(DEFAULT_LAYOUT[k]));
-      if (typeof saved[k].visible !== 'boolean') saved[k].visible = true;
-    });
-    return saved;
-  } catch (e) { return JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); }
-}
-
-function _saveLayout() {
-  try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(_layout)); } catch (e) { /* ignore */ }
-}
-
-function _applyLayout() {
-  const left = _q('#cdx-hd-left'), center = _q('#cdx-hd-center'), right = _q('#cdx-hd-right');
-  const rLC = _q('#cdx-hd-rlc'), rCR = _q('#cdx-hd-rcr');
-  if (!left || !center || !right) return;
-  left.classList.toggle('cdx-hd-hidden', !_layout.left.visible);
-  center.classList.toggle('cdx-hd-hidden', !_layout.center.visible);
-  right.classList.toggle('cdx-hd-hidden', !_layout.right.visible);
-  if (rLC) rLC.classList.toggle('cdx-hd-hidden', !(_layout.left.visible && (_layout.center.visible || _layout.right.visible)));
-  if (rCR) rCR.classList.toggle('cdx-hd-hidden', !(_layout.right.visible && (_layout.center.visible || _layout.left.visible)));
-  const maxW = Math.min(600, Math.max(280, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 320));
-  _layout.left.width = Math.max(260, Math.min(maxW, _layout.left.width || 360));
-  _layout.right.width = Math.max(280, Math.min(maxW, _layout.right.width || 380));
-  left.style.width = _layout.left.width + 'px';
-  right.style.width = _layout.right.width + 'px';
-  _container.querySelectorAll('[data-toggle-col]').forEach((btn) => {
-    btn.classList.toggle('is-on', !!_layout[btn.dataset.toggleCol].visible);
-  });
-}
-
-function _startResize(e, handle) {
-  e.preventDefault();
-  handle.classList.add('cdx-hd-dragging');
-  const direction = handle.dataset.resize;
-  const startX = e.clientX;
-  const leftCol = _q('#cdx-hd-left'), rightCol = _q('#cdx-hd-right');
-  const startLeftW = leftCol.offsetWidth || _layout.left.width;
-  const startRightW = rightCol.offsetWidth || _layout.right.width;
-  const maxW = Math.min(600, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 320);
-
-  const onMove = (ev) => {
-    const delta = ev.clientX - startX;
-    if (direction === 'left-center') {
-      const w = Math.max(260, Math.min(maxW, startLeftW + delta));
-      leftCol.style.width = w + 'px'; _layout.left.width = w;
-    } else {
-      const w2 = Math.max(280, Math.min(maxW, startRightW - delta));
-      rightCol.style.width = w2 + 'px'; _layout.right.width = w2;
-    }
-  };
-  const onUp = () => {
-    handle.classList.remove('cdx-hd-dragging');
-    document.removeEventListener('pointermove', onMove);
-    document.removeEventListener('pointerup', onUp);
-    _saveLayout();
-  };
-  document.addEventListener('pointermove', onMove);
-  document.addEventListener('pointerup', onUp);
-  // Track for unmount in case teardown happens mid-drag.
-  _cleanup.push(() => { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); });
-}
-
-// ── Markup ───────────────────────────────────────────────────
+// ── Markup (mirrors host.html) ───────────────────────────────
 function _render() {
-  const open = _session.status === 'open';
   _container.innerHTML =
     '<div class="cdx-host" id="cdx-host">' +
-      '<div class="cdx-host-bar">' +
-        '<div class="cdx-host-bar-left">' +
-          (open ? '<span class="cdx-host-live"><span class="cdx-host-live-dot"></span><span class="cdx-host-live-label">' + _esc(t('questions.qr_live')) + '</span></span>' : '') +
-          '<span class="cdx-host-code">' + _esc(_session.code) + '</span>' +
-        '</div>' +
-        '<div class="cdx-host-bar-actions">' +
-          '<details class="cdx-host-visao"><summary>' + _esc(t('questions.host_view')) + ' ▾</summary>' +
-            '<div class="cdx-host-visao-panel">' +
-              '<div class="cdx-host-visao-label">' + _esc(t('questions.host_columns')) + '</div>' +
-              '<button class="cdx-host-vt is-on" data-toggle-col="left" type="button">' + _esc(t('questions.host_col_composer')) + '</button>' +
-              '<button class="cdx-host-vt is-on" data-toggle-col="center" type="button">' + _esc(t('questions.host_col_active')) + '</button>' +
-              '<button class="cdx-host-vt is-on" data-toggle-col="right" type="button">' + _esc(t('questions.host_col_qa')) + '</button>' +
-              '<button class="cdx-host-reset" data-act="reset-layout" type="button">' + _esc(t('questions.host_reset_layout')) + '</button>' +
-            '</div>' +
-          '</details>' +
-          '<a class="cdx-btn cdx-host-display" href="' + _esc(_displayHref()) + '" target="_blank" rel="noopener">' + _esc(t('questions.host_display')) + '</a>' +
-        '</div>' +
-      '</div>' +
-      '<div class="cdx-host-dashboard">' +
+      _barMarkup() +
+      '<div class="cdx-host-note" id="cdx-host-note" hidden>' + _esc(t('questions.host_not_hosted')) + '</div>' +
+      '<div class="cdx-host-dashboard" id="cdx-host-dashboard">' +
         '<section class="cdx-hd-col cdx-hd-col-left" id="cdx-hd-left">' + _composerCardMarkup() + '</section>' +
         '<div class="cdx-hd-resizer" data-resize="left-center" id="cdx-hd-rlc"></div>' +
         '<section class="cdx-hd-col cdx-hd-col-center" id="cdx-hd-center">' + _centerMarkup() + '</section>' +
         '<div class="cdx-hd-resizer" data-resize="center-right" id="cdx-hd-rcr"></div>' +
         '<section class="cdx-hd-col cdx-hd-col-right" id="cdx-hd-right">' + _qaMarkup() + '</section>' +
       '</div>' +
-    '</div>';
+    '</div>' +
+    _trailModalMarkup();
+}
+
+function _barMarkup() {
+  return '<div class="cdx-host-bar">' +
+    '<div>' +
+      '<div class="cdx-host-code">' +
+        '<span class="cdx-host-live" id="cdx-host-live" hidden><span class="cdx-host-live-dot"></span><span class="cdx-host-live-label">' + _esc(t('questions.qr_live')) + '</span></span>' +
+        _esc(_session.code) +
+      '</div>' +
+      '<div class="cdx-host-name">' + _esc(_session.title || ('' + t('questions.sessions_untitled'))) + '</div>' +
+    '</div>' +
+    '<div class="cdx-host-bar-actions">' +
+      '<details class="cdx-host-visao" id="cdx-host-visao" hidden><summary>' + _esc(t('questions.host_view')) + ' ▾</summary>' +
+        '<div class="cdx-host-visao-panel">' +
+          '<div class="cdx-host-visao-label">' + _esc(t('questions.host_columns')) + '</div>' +
+          '<button class="cdx-host-vt is-on" data-toggle-col="left" type="button">' + _esc(t('questions.host_col_composer')) + '</button>' +
+          '<button class="cdx-host-vt is-on" data-toggle-col="center" type="button">' + _esc(t('questions.host_col_active')) + '</button>' +
+          '<button class="cdx-host-vt is-on" data-toggle-col="right" type="button">' + _esc(t('questions.host_col_qa')) + '</button>' +
+          '<button class="cdx-host-reset" data-act="reset-layout" type="button">' + _esc(t('questions.host_reset_layout')) + '</button>' +
+        '</div>' +
+      '</details>' +
+      '<button class="cdx-btn cdx-host-trail" id="cdx-host-trail" data-act="trail" type="button" hidden><span class="cdx-host-trail-dot" id="cdx-host-trail-dot"></span>' + _esc(t('questions.host_trail')) + '</button>' +
+      '<button class="cdx-btn cdx-host-qr" id="cdx-host-qr" data-act="qr" type="button" hidden>' + _esc(t('questions.host_qr')) + '</button>' +
+      '<a class="cdx-btn cdx-host-display" id="cdx-host-display" href="' + _esc(_displayHref()) + '" target="_blank" rel="noopener" hidden>' + _esc(t('questions.host_display')) + '</a>' +
+      '<button class="cdx-btn cdx-btn-primary cdx-host-start" id="cdx-host-start" data-act="start" type="button" hidden>' + _esc(t('questions.host_start')) + '</button>' +
+      '<button class="cdx-btn cdx-btn-danger cdx-host-stop" id="cdx-host-stop" data-act="stop" type="button" hidden>' + _esc(t('questions.host_stop')) + '</button>' +
+    '</div>' +
+  '</div>';
 }
 
 function _displayHref() { return '/go/display.html?code=' + encodeURIComponent(_session.code); }
@@ -163,11 +105,15 @@ function _composerCardMarkup() {
       '<div class="cdx-bank-list" id="cdx-bank-list"><div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div></div>' +
     '</div>' +
     '<div class="cdx-host-composer" id="cdx-host-composer"></div>' +
+    '<div class="cdx-host-btn-row">' +
+      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-generate" type="button">' + _esc(t('questions.host_ai_generate')) + '</button>' +
+      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-improve" type="button">' + _esc(t('questions.host_ai_improve')) + '</button>' +
+    '</div>' +
+    '<p class="cdx-host-error" id="cdx-host-error"></p>' +
     '<div class="cdx-close-options">' +
       '<label><input type="checkbox" id="cdx-chk-show" checked> ' + _esc(t('questions.host_show_results')) + '</label>' +
       '<label><input type="checkbox" id="cdx-chk-reveal"> ' + _esc(t('questions.host_reveal_answer')) + '</label>' +
     '</div>' +
-    '<p class="cdx-host-error" id="cdx-host-error"></p>' +
     '<div class="cdx-host-btn-row">' +
       '<button class="cdx-btn cdx-btn-primary" data-act="launch" type="button">' + _esc(t('questions.host_launch_btn')) + '</button>' +
       '<button class="cdx-btn" data-act="clear" type="button">' + _esc(t('questions.host_clear')) + '</button>' +
@@ -216,17 +162,163 @@ function _qaMarkup() {
   '</section>';
 }
 
+function _trailModalMarkup() {
+  return '<div class="cdx-trail-modal" id="cdx-trail-modal">' +
+    '<div class="cdx-trail-box">' +
+      '<h3>' + _esc(t('questions.host_trail_modal_title')) + '</h3>' +
+      '<div id="cdx-trail-content"></div>' +
+      '<button class="cdx-btn cdx-btn--ghost cdx-btn-full" data-act="trail-close" type="button">' + _esc(t('questions.host_trail_close')) + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── Hosting chrome (port of host-share applyHostedUI) ────────
+function _applyHostedUI(open) {
+  const live = _q('#cdx-host-live'), note = _q('#cdx-host-note'), launch = _q('#cdx-launch-card');
+  const qa = _q('#cdx-qa-section'), start = _q('#cdx-host-start'), stop = _q('#cdx-host-stop');
+  const visao = _q('#cdx-host-visao'), display = _q('#cdx-host-display'), panel = _q('#cdx-active-panel');
+  if (live) live.hidden = !open;
+  if (note) note.hidden = open;
+  if (launch) launch.style.display = open ? '' : 'none';
+  if (qa) qa.style.display = open ? '' : 'none';
+  if (start) start.hidden = open;
+  if (stop) stop.hidden = !open;
+  if (visao) visao.hidden = !open;
+  if (display) display.hidden = !open;
+  _refreshShareSurface(open);
+  if (!open) {
+    if (panel) panel.style.display = 'none';
+    _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
+  }
+}
+
+function _refreshShareSurface(open) {
+  const hasTrail = !!_buildTrailUrl();
+  const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr');
+  if (trail) { trail.hidden = !open; trail.classList.toggle('is-linked', !!_trailTurma); }
+  if (qr) qr.hidden = !(open && hasTrail);
+}
+
+// ── Trilha turma link (port of host-share.js) ────────────────
+function _buildTrailUrl() {
+  const tt = _trailTurma;
+  if (!tt) return null;
+  return 'https://pensoia.com/trilha/' + encodeURIComponent(tt.client_slug) + '/' + encodeURIComponent(tt.turma_slug) + (tt.token ? '?k=' + encodeURIComponent(tt.token) : '');
+}
+
+async function _loadTrail() {
+  try {
+    const res = await cohorts.lookupTurmaBySession({ session_id: _session.code });
+    _trailTurma = (res && res.turma) || null;
+  } catch (e) { _trailTurma = null; }
+  try {
+    const list = await cohorts.listAllTurmas();
+    _trailAllTurmas = (list && list.turmas) || [];
+  } catch (e) { _trailAllTurmas = []; }
+  _renderTrailContent();
+  _refreshShareSurface(_isOpen());
+}
+
+function _renderTrailContent() {
+  const content = _q('#cdx-trail-content');
+  if (!content) return;
+  if (_trailTurma) {
+    const tt = _trailTurma;
+    const turmaName = tt.display_name || tt.name || tt.turma_slug;
+    const clientName = tt.client_display_name || tt.client_slug;
+    const url = '/trilha/' + encodeURIComponent(tt.client_slug) + '/' + encodeURIComponent(tt.turma_slug) + (tt.token ? '?k=' + encodeURIComponent(tt.token) : '');
+    content.innerHTML =
+      '<div class="cdx-trail-status">' + _esc(t('questions.host_trail_linked')) + '</div>' +
+      '<div class="cdx-trail-title">' + _esc(turmaName) + '</div>' +
+      '<div class="cdx-trail-engine">' + _esc(clientName) + '</div>' +
+      '<a class="cdx-trail-link" href="' + _esc(url) + '" target="_blank" rel="noopener">' + _esc(t('questions.host_trail_open')) + '</a>' +
+      '<button class="cdx-btn cdx-btn-danger cdx-btn-full" data-act="trail-unlink" type="button">' + _esc(t('questions.host_trail_unlink')) + '</button>';
+  } else if (_trailAllTurmas.length) {
+    const opts = '<option value="">' + _esc(t('questions.host_trail_pick')) + '</option>' + _trailAllTurmas.map((tt) => {
+      const name = tt.display_name || tt.name || tt.turma_slug;
+      const client = tt.client_display_name || tt.client_slug;
+      const inUse = tt.classpulse_session_id && tt.classpulse_session_id !== _session.code;
+      const value = tt.client_slug + '|' + tt.turma_slug;
+      return '<option value="' + _esc(value) + '"' + (inUse ? ' disabled' : '') + '>' + _esc(client + ' / ' + name + (inUse ? ' (' + tt.classpulse_session_id + ')' : '')) + '</option>';
+    }).join('');
+    content.innerHTML =
+      '<div class="cdx-trail-status">' + _esc(t('questions.host_trail_none')) + '</div>' +
+      '<select class="cdx-select" id="cdx-trail-picker">' + opts + '</select>' +
+      '<button class="cdx-btn cdx-btn-primary cdx-btn-full" data-act="trail-link" type="button">' + _esc(t('questions.host_trail_link')) + '</button>';
+  } else {
+    content.innerHTML = '<div class="cdx-trail-empty">' + _esc(t('questions.host_trail_no_turmas')) + '</div>';
+  }
+}
+
+async function _linkTrail(clientSlug, turmaSlug) {
+  try {
+    await cohorts.updateTurmaMeta({ client_slug: clientSlug, slug: turmaSlug, classpulse_session_id: _session.code });
+    await _loadTrail();
+    const modal = _q('#cdx-trail-modal'); if (modal) modal.classList.remove('open');
+  } catch (e) { notice.internal(e); }
+}
+
+async function _unlinkTrail() {
+  if (!_trailTurma) return;
+  try {
+    await cohorts.updateTurmaMeta({ client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug, classpulse_session_id: null });
+    _trailTurma = null;
+    await _loadTrail();
+    const modal = _q('#cdx-trail-modal'); if (modal) modal.classList.remove('open');
+  } catch (e) { notice.internal(e); }
+}
+
+function _openQr() {
+  if (typeof window !== 'undefined' && window.QRShareModal && typeof window.QRShareModal.open === 'function') {
+    window.QRShareModal.open({ joinUrl: _buildTrailUrl() });
+  }
+}
+
+// ── Lifecycle: Iniciar / Encerrar (port of host-session.js) ──
+async function _startHost(force) {
+  let res, err;
+  try { res = await api.reopenSession({ code: _session.code }); }
+  catch (e) { err = e; res = null; }
+  const blocker = (res && res.error && res.data) || (err && err.data) || (res && res.data) || null;
+  if ((res && res.error) || err) {
+    const activeCode = blocker && blocker.active_code;
+    if (!force && activeCode) {
+      const name = (blocker.active_title || activeCode);
+      if (typeof confirm === 'function' && confirm(t('questions.host_start_conflict').replace('{name}', name))) {
+        try { await api.closeSession({ code: activeCode }); await _startHost(true); return; }
+        catch (e2) { notice.internal(e2); return; }
+      }
+      return;
+    }
+    notice.warn(t('questions.sessions_reopen_blocked'));
+    return;
+  }
+  _session.status = 'open';
+  _applyHostedUI(true);
+  if (_qEl) _qEl.startPolling();
+}
+
+async function _stopHost() {
+  if (typeof confirm === 'function' && !confirm(t('questions.host_stop_confirm'))) return;
+  try {
+    if (_activeQId) { try { await api.closeQuestion({ id: _activeQId, session_code: _session.code, show_results: false, reveal_answer: false }); } catch (_) { /* ignore */ } }
+    await api.closeSession({ code: _session.code });
+    _session.status = 'closed';
+    _applyHostedUI(false);
+  } catch (e) { notice.internal(e); }
+}
+
 // ── History (port of host-history.js renderHistory) ──────────
 const TYPE_TAGS = { mc: 'MC', tf: 'V/F', poll: 'Enquete', open: 'Aberta', wordcloud: 'Nuvem', rating: 'Avaliação', numeric: 'Número' };
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 function _renderHistory(closedQs) {
-  const card = _q('#cdx-history-card');
-  const list = _q('#cdx-history-list');
+  const card = _q('#cdx-history-card'), list = _q('#cdx-history-list');
   if (!card || !list) return;
   if (!closedQs || !closedQs.length) { card.style.display = 'none'; return; }
-
+  _historyMap = {};
   list.innerHTML = closedQs.map((q) => {
+    _historyMap[q.id] = q;
     let resultsHtml = '';
     if (q.options && q.answer_counts && q.options.length > 0) {
       const hTotal = q.answer_counts.reduce((a, b) => a + b, 0);
@@ -235,13 +327,9 @@ function _renderHistory(closedQs) {
       resultsHtml = '<div class="cdx-hi-results">' + q.options.map((opt, i) => {
         const pct = hDenom > 0 ? Math.round(q.answer_counts[i] / hDenom * 100) : 0;
         const isCorrect = q.reveal_answer && hCorrect.indexOf(i) !== -1;
-        return '<div class="cdx-hi-bar">' +
-          '<div class="cdx-hi-bar-label"><span class="cdx-hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' +
-            LETTERS[i] + (isCorrect ? ' ✓' : '') + '</span>' +
-            '<span class="cdx-hi-bar-text">' + _esc(opt) + '</span></div>' +
-          '<div class="cdx-hi-bar-pct">' + pct + '%</div>' +
-          '<div class="cdx-hi-bar-count">' + q.answer_counts[i] + '</div>' +
-        '</div>';
+        return '<div class="cdx-hi-bar"><div class="cdx-hi-bar-label"><span class="cdx-hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' +
+          LETTERS[i] + (isCorrect ? ' ✓' : '') + '</span><span class="cdx-hi-bar-text">' + _esc(opt) + '</span></div>' +
+          '<div class="cdx-hi-bar-pct">' + pct + '%</div><div class="cdx-hi-bar-count">' + q.answer_counts[i] + '</div></div>';
       }).join('') + '</div>';
     }
     const tag = TYPE_TAGS[q.type || 'mc'] || (q.type || 'mc');
@@ -249,8 +337,7 @@ function _renderHistory(closedQs) {
     return '<div class="cdx-history-item" data-qid="' + _esc(q.id) + '">' +
       '<div class="cdx-hi-text">' + _esc(q.text || '') + '</div>' +
       '<span class="cdx-hi-type cdx-hi-type-' + (q.type || 'mc') + '">' + _esc(tag) + '</span>' +
-      '<div class="cdx-hi-meta">' + _esc(when) + '</div>' +
-      resultsHtml +
+      '<div class="cdx-hi-meta">' + _esc(when) + '</div>' + resultsHtml +
       '<div class="cdx-hi-actions">' +
         '<button class="cdx-hi-btn cdx-hi-btn-primary" data-hi-act="relaunch" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_relaunch')) + '</button>' +
         '<button class="cdx-hi-btn" data-hi-act="edit" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_edit')) + '</button>' +
@@ -258,23 +345,15 @@ function _renderHistory(closedQs) {
     '</div>';
   }).join('');
   card.style.display = 'block';
-  // keep a map for relaunch/edit
-  _historyMap = {};
-  closedQs.forEach((q) => { _historyMap[q.id] = q; });
 }
 
-let _historyMap = {};
-
-// ── Active question panel + Q&A sync (port of host-page _cpqDataHandler) ──
+// ── Active panel + Q&A sync (port of host-page _cpqDataHandler) ──
 function _onData(data) {
   if (!_container) return;
   if (_qa) _qa.syncFromState(data);
   _renderHistory(data.history || []);
-
   const q = data.active_question;
-  const panel = _q('#cdx-active-panel');
-  const std = _q('#cdx-active-standard');
-  const sqa = _q('#cdx-active-sqa');
+  const panel = _q('#cdx-active-panel'), std = _q('#cdx-active-standard'), sqa = _q('#cdx-active-sqa');
   if (!q) {
     _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
     if (panel) panel.style.display = 'none';
@@ -282,9 +361,7 @@ function _onData(data) {
     if (sqa) sqa.style.display = 'none';
     return;
   }
-  _activeQId = q.id;
-  _activeQType = q.type || 'mc';
-
+  _activeQId = q.id; _activeQType = q.type || 'mc';
   if (_activeQType === 'student_qa') {
     _activeStudentQuestionId = q.student_question_id || null;
     _renderSqaActive(q);
@@ -293,36 +370,28 @@ function _onData(data) {
     if (panel) panel.style.display = 'block';
     return;
   }
-
   _activeStudentQuestionId = null;
   if (sqa) sqa.style.display = 'none';
   if (std) std.style.display = '';
   const textEl = _q('#cdx-active-text');
   if (textEl) textEl.textContent = q.text;
-
   const usesText = TEXT_TYPES.includes(q.type);
   const total = usesText ? (q.text_answers || []).length : (q.answer_counts || []).reduce((a, b) => a + b, 0);
   const tally = _q('#cdx-active-tally');
   if (tally) tally.textContent = total + ' ' + (total === 1 ? t('questions.qr_answer') : t('questions.qr_answers'));
-
   if (panel) panel.style.display = 'block';
 }
 
 // ── Student-Q&A active card debounce (port of host-sqa.js) ───
 function _renderSqaActive(q) {
-  const metaEl = _q('#cdx-sqa-meta');
-  const textEl = _q('#cdx-sqa-text');
-  const inputEl = _q('#cdx-sqa-response');
-  const statusEl = _q('#cdx-sqa-status');
+  const metaEl = _q('#cdx-sqa-meta'), textEl = _q('#cdx-sqa-text'), inputEl = _q('#cdx-sqa-response'), statusEl = _q('#cdx-sqa-status');
   if (!metaEl || !textEl || !inputEl || !statusEl) return;
   let when = '';
   try { when = q.student_time ? new Date(q.student_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''; } catch (_) { when = ''; }
   metaEl.textContent = (q.student_name || t('questions.qr_anonymous')) + (when ? ' · ' + when : '');
   textEl.textContent = q.text || '';
   const serverAnswer = q.student_answer || '';
-  if ((typeof document === 'undefined' || document.activeElement !== inputEl) && serverAnswer !== _sqaLastServerAnswer) {
-    inputEl.value = serverAnswer;
-  }
+  if ((typeof document === 'undefined' || document.activeElement !== inputEl) && serverAnswer !== _sqaLastServerAnswer) inputEl.value = serverAnswer;
   _sqaLastServerAnswer = serverAnswer;
   statusEl.textContent = _sqaSaving ? t('questions.host_sqa_saving') : '';
 }
@@ -366,6 +435,7 @@ async function _launch() {
   try { res = await api.launchQuestion(_payloadToLaunch(payload)); } catch (e) { notice.internal(e); res = null; }
   if (!res || res.error) { if (errEl) errEl.textContent = (res && res.error) || t('questions.host_err_launch'); return; }
   _activeQId = res.id;
+  if (_qEl) _qEl.startPolling();
   _remountComposer(null);
 }
 
@@ -387,15 +457,37 @@ function _remountComposer(initial) {
   _composer = mountComposer(host, initial);
 }
 
-// ── Bank picker (set select + question list -> prefill composer) ──
+// ── AI generate / improve (Gerar / Melhorar) ─────────────────
+async function _aiQuestion(mode) {
+  if (!_composer) return;
+  const errEl = _q('#cdx-host-error');
+  const current = _composer.read();
+  const topic = String(current.question || '').trim();
+  if (mode === 'improve' && !topic) { if (errEl) errEl.textContent = t('questions.host_err_no_text'); return; }
+  if (errEl) errEl.textContent = '';
+  let res;
+  try { res = await ai.question({ mode, type: current.type, topic, text: topic }); }
+  catch (e) { notice.internal(e); res = null; }
+  if (!res || res.error || !res.question) { if (errEl) errEl.textContent = t('questions.host_err_ai'); return; }
+  _remountComposer({
+    type: res.type || current.type,
+    text: res.question,
+    options: res.options || [],
+    correct_answers: Array.isArray(res.correct_answers) ? res.correct_answers
+      : (res.correct_answer !== undefined && res.correct_answer !== null && res.correct_answer !== '' ? [res.correct_answer] : []),
+    correct_answer: res.correct_answer,
+    max_select: res.max_select !== undefined ? res.max_select : 1,
+  });
+}
+
+// ── Bank picker ──────────────────────────────────────────────
 async function _loadBankSets() {
   const sel = _q('#cdx-bank-set');
   if (!sel) return;
   let res;
   try { res = await api.listSets(); } catch (e) { notice.internal(e); res = null; }
   const banks = (res && res.banks) || [];
-  sel.innerHTML = '<option value="">' + _esc(t('questions.host_bank_pick')) + '</option>' +
-    banks.map((b) => '<option value="' + _esc(b.name || b) + '">' + _esc(b.name || b) + '</option>').join('');
+  sel.innerHTML = '<option value="">' + _esc(t('questions.host_bank_pick')) + '</option>' + banks.map((b) => '<option value="' + _esc(b.name || b) + '">' + _esc(b.name || b) + '</option>').join('');
 }
 
 async function _loadBankQuestions(listName) {
@@ -410,30 +502,19 @@ async function _loadBankQuestions(listName) {
   _bankMap = {};
   list.innerHTML = qs.map((q, i) => {
     _bankMap[i] = q;
-    return '<div class="cdx-bank-item" data-bank-i="' + i + '">' +
-      '<span class="cdx-bank-item-text">' + _esc(q.question || q.text || '') + '</span>' +
-      '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button>' +
-    '</div>';
+    return '<div class="cdx-bank-item" data-bank-i="' + i + '"><span class="cdx-bank-item-text">' + _esc(q.question || q.text || '') + '</span>' +
+      '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button></div>';
   }).join('');
 }
 
-let _bankMap = {};
+function _safeParse(s) { try { return JSON.parse(s); } catch (_) { return []; } }
 
 function _prefillFromBank(q) {
   const opts = (typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []);
   const correct = Array.isArray(q.correct_answers) ? q.correct_answers
     : (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '' ? [parseInt(q.correct_answer, 10)] : []);
-  _remountComposer({
-    type: q.type || 'mc',
-    text: q.question || q.text || '',
-    options: opts,
-    correct_answers: correct,
-    correct_answer: q.correct_answer,
-    max_select: q.max_select !== undefined ? q.max_select : 1,
-  });
+  _remountComposer({ type: q.type || 'mc', text: q.question || q.text || '', options: opts, correct_answers: correct, correct_answer: q.correct_answer, max_select: q.max_select !== undefined ? q.max_select : 1 });
 }
-
-function _safeParse(s) { try { return JSON.parse(s); } catch (_) { return []; } }
 
 async function _launchFromBank(q) {
   const opts = (typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []);
@@ -441,24 +522,69 @@ async function _launchFromBank(q) {
     correct_answer: (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '') ? q.correct_answer : null };
   if (TEXT_TYPES.includes(q.type)) payload.max_select = 0;
   else payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select, 10) : 1;
-  try { await api.launchQuestion(payload); _activeQId = null; } catch (e) { notice.internal(e); }
+  try { await api.launchQuestion(payload); if (_qEl) _qEl.startPolling(); } catch (e) { notice.internal(e); }
+}
+
+// ── Layout (port of host-layout.js) ──────────────────────────
+function _loadLayout() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY));
+    if (!saved) return JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+    ['left', 'center', 'right'].forEach((k) => { if (!saved[k]) saved[k] = JSON.parse(JSON.stringify(DEFAULT_LAYOUT[k])); if (typeof saved[k].visible !== 'boolean') saved[k].visible = true; });
+    return saved;
+  } catch (e) { return JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); }
+}
+function _saveLayout() { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(_layout)); } catch (e) { /* ignore */ } }
+function _applyLayout() {
+  const left = _q('#cdx-hd-left'), center = _q('#cdx-hd-center'), right = _q('#cdx-hd-right'), rLC = _q('#cdx-hd-rlc'), rCR = _q('#cdx-hd-rcr');
+  if (!left || !center || !right) return;
+  left.classList.toggle('cdx-hd-hidden', !_layout.left.visible);
+  center.classList.toggle('cdx-hd-hidden', !_layout.center.visible);
+  right.classList.toggle('cdx-hd-hidden', !_layout.right.visible);
+  if (rLC) rLC.classList.toggle('cdx-hd-hidden', !(_layout.left.visible && (_layout.center.visible || _layout.right.visible)));
+  if (rCR) rCR.classList.toggle('cdx-hd-hidden', !(_layout.right.visible && (_layout.center.visible || _layout.left.visible)));
+  const maxW = Math.min(600, Math.max(280, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 320));
+  _layout.left.width = Math.max(260, Math.min(maxW, _layout.left.width || 360));
+  _layout.right.width = Math.max(280, Math.min(maxW, _layout.right.width || 380));
+  left.style.width = _layout.left.width + 'px';
+  right.style.width = _layout.right.width + 'px';
+  _container.querySelectorAll('[data-toggle-col]').forEach((btn) => btn.classList.toggle('is-on', !!_layout[btn.dataset.toggleCol].visible));
+}
+function _startResize(e, handle) {
+  e.preventDefault();
+  handle.classList.add('cdx-hd-dragging');
+  const direction = handle.dataset.resize;
+  const startX = e.clientX;
+  const leftCol = _q('#cdx-hd-left'), rightCol = _q('#cdx-hd-right');
+  const startLeftW = leftCol.offsetWidth || _layout.left.width;
+  const startRightW = rightCol.offsetWidth || _layout.right.width;
+  const maxW = Math.min(600, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 320);
+  const onMove = (ev) => {
+    const delta = ev.clientX - startX;
+    if (direction === 'left-center') { const w = Math.max(260, Math.min(maxW, startLeftW + delta)); leftCol.style.width = w + 'px'; _layout.left.width = w; }
+    else { const w2 = Math.max(280, Math.min(maxW, startRightW - delta)); rightCol.style.width = w2 + 'px'; _layout.right.width = w2; }
+  };
+  const onUp = () => { handle.classList.remove('cdx-hd-dragging'); document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); _saveLayout(); };
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  _cleanup.push(() => { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); });
 }
 
 // ── Mount / unmount ──────────────────────────────────────────
 export function mount(containerEl, ctx) {
   _container = containerEl;
-  _session = (ctx && ctx.session) || { code: '', status: 'open', title: '' };
+  _session = (ctx && ctx.session) || { code: '', status: 'closed', title: '' };
   _cleanup = [];
   _layout = _loadLayout();
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _sqaLastServerAnswer = null; _sqaSaving = false; _historyMap = {}; _bankMap = {};
+  _trailTurma = null; _trailAllTurmas = [];
 
   registerQuestionEl();
   _render();
   _remountComposer(null);
   _applyLayout();
 
-  // Embed the Codex-owned render element and drive it through scoped callbacks.
   const renderHost = _q('#cdx-active-render');
   _qEl = document.createElement(QTAG);
   _qEl.setAttribute('mode', 'host');
@@ -466,31 +592,26 @@ export function mount(containerEl, ctx) {
   if (renderHost) renderHost.appendChild(_qEl);
   _qEl.start(_session.code);
 
-  // Q&A feed (right column) owns its own poll.
-  _qa = createQaFeed({
-    sessionCode: _session.code,
-    feedEl: _q('#cdx-qa-feed'),
-    badgeEl: _q('#cdx-qa-badge'),
-    onError: (msg) => notice.error(msg),
-  });
+  _qa = createQaFeed({ sessionCode: _session.code, feedEl: _q('#cdx-qa-feed'), badgeEl: _q('#cdx-qa-badge'), onError: (msg) => notice.error(msg) });
 
-  // Delegated dashboard actions.
+  _applyHostedUI(_isOpen());
+  _loadTrail();
+
   const host = _q('#cdx-host');
   _on(host, 'click', (e) => {
     const btn = e.target.closest('[data-act]');
     if (btn) {
       const act = btn.getAttribute('data-act');
+      if (act === 'start') return _startHost(false);
+      if (act === 'stop') return _stopHost();
       if (act === 'launch') return _launch();
       if (act === 'clear') return _remountComposer(null);
-      if (act === 'close-q') return _closeQuestion();
-      if (act === 'sqa-close') return _closeQuestion();
-      if (act === 'bank-toggle') {
-        const panel = _q('#cdx-bank-panel');
-        const open = panel.classList.toggle('open');
-        btn.classList.toggle('open', open);
-        if (open) _loadBankSets();
-        return;
-      }
+      if (act === 'close-q' || act === 'sqa-close') return _closeQuestion();
+      if (act === 'ai-generate') return _aiQuestion('generate');
+      if (act === 'ai-improve') return _aiQuestion('improve');
+      if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
+      if (act === 'qr') return _openQr();
+      if (act === 'bank-toggle') { const p = _q('#cdx-bank-panel'); const open = p.classList.toggle('open'); btn.classList.toggle('open', open); if (open) _loadBankSets(); return; }
       if (act === 'bank-launch') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _launchFromBank(q); return; }
       if (act === 'reset-layout') { _layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); _applyLayout(); _saveLayout(); return; }
     }
@@ -498,10 +619,8 @@ export function mount(containerEl, ctx) {
     if (col) {
       const key = col.dataset.toggleCol;
       const next = !_layout[key].visible;
-      const visibleCount = ['left', 'center', 'right'].filter((k) => (k === key ? next : _layout[k].visible)).length;
-      if (visibleCount === 0) return;
-      _layout[key].visible = next;
-      _applyLayout(); _saveLayout();
+      if (['left', 'center', 'right'].filter((k) => (k === key ? next : _layout[k].visible)).length === 0) return;
+      _layout[key].visible = next; _applyLayout(); _saveLayout();
       return;
     }
     const histBtn = e.target.closest('[data-hi-act]');
@@ -513,28 +632,31 @@ export function mount(containerEl, ctx) {
     }
   });
 
-  // Bank set change + question pick.
+  // Trilha modal actions.
+  const trailModal = _q('#cdx-trail-modal');
+  _on(trailModal, 'click', (e) => {
+    if (e.target === trailModal) { trailModal.classList.remove('open'); return; }
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.getAttribute('data-act');
+    if (act === 'trail-close') trailModal.classList.remove('open');
+    else if (act === 'trail-unlink') _unlinkTrail();
+    else if (act === 'trail-link') { const v = (_q('#cdx-trail-picker') || {}).value; if (v) { const parts = v.split('|'); _linkTrail(parts[0], parts[1]); } }
+  });
+
   _on(_q('#cdx-bank-set'), 'change', (e) => _loadBankQuestions(e.target.value));
   _on(_q('#cdx-bank-list'), 'click', (e) => {
     const item = e.target.closest('[data-bank-i]');
-    if (item && !e.target.closest('[data-act="bank-launch"]')) {
-      const q = _bankMap[item.getAttribute('data-bank-i')];
-      if (q) _prefillFromBank(q);
-    }
+    if (item && !e.target.closest('[data-act="bank-launch"]')) { const q = _bankMap[item.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); }
   });
-
-  // Student-Q&A live answer typing (debounced).
   _on(_q('#cdx-sqa-response'), 'input', _scheduleSqaSave);
-
-  // Resizers.
   _container.querySelectorAll('.cdx-hd-resizer').forEach((h) => _on(h, 'pointerdown', (e) => _startResize(e, h)));
 
-  // A persistent document listener (Escape closes the Visão dropdown); tracked
-  // so it never leaks across a tab switch.
+  // Escape closes the Visao dropdown / Trilha modal; tracked document listener.
   _on(document, 'keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const d = _q('.cdx-host-visao');
-    if (d && d.open) d.open = false;
+    const d = _q('#cdx-host-visao'); if (d && d.open) d.open = false;
+    const m = _q('#cdx-trail-modal'); if (m) m.classList.remove('open');
   });
 }
 
@@ -546,8 +668,7 @@ export function unmount() {
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
   if (_container) _container.innerHTML = '';
-  _container = null;
-  _session = null;
+  _container = null; _session = null;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
-  _historyMap = {}; _bankMap = {};
+  _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
 }

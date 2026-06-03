@@ -133,6 +133,7 @@ export const cohorts = {
   setClientIcon:   (p) => call('ct_set_client_icon', p),       // { slug, mode, value, filename? }
   listTurmas:      (p) => call('ct_list_turmas', p),           // { client_slug }
   listAllTurmas:   (p) => call('ct_list_all_turmas', p),       // every turma across clients (Lessons sidebar)
+  lookupTurmaBySession: (p) => call('ct_lookup_turma_by_session', p), // { session_id } -> { turma } (live host Trilha link)
   createTurma:     (p) => call('ct_create_turma', p),
   updateTurma:     (p) => call('ct_update_turma', p),          // { client_slug, slug, name, display_name? }
   updateTurmaMeta: (p) => call('ct_update_turma_meta', p),

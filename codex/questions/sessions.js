@@ -1,12 +1,13 @@
 // questions/sessions.js
 // Codex Questions -> Sessions sub-tab (native, host/admin). A faithful re-port of
 // the legacy ClassPulse `panel-sessions`: a floating left-edge sidebar picker
-// (hidden by default, revealed by pointing at the left edge, the ClassVault
-// cv-sm pattern) listing session cards, plus a main area that hosts the selected
-// session. Live hosting itself is the Q2 surface; here the main area carries the
-// session lifecycle (Iniciar/Encerrar), a bridge to the legacy host, the
-// per-session stats overlay, and a protected delete at the bottom of the page.
-// All data through the facade; strings through t(); errors through notice.
+// (the ClassVault cv-sm pattern) of session cards, and a main area that, when a
+// session is picked, mounts the native live host (live-host.js), which is itself
+// a faithful port of the legacy `host.html`. Per the legacy panel-sessions, each
+// card carries an Estatisticas action (opens the per-session stats overlay) and
+// a protected delete; the lifecycle (Iniciar/Encerrar) lives on the host's own
+// session bar, exactly like the legacy. Data through the facade; strings via
+// t(); errors via notice.
 import { questions as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
@@ -22,12 +23,6 @@ let _hideTimer = null;
 
 const REVEAL_ZONE = 6;     // px from the left edge that triggers the reveal
 const HIDE_DELAY = 1500;   // ms after the cursor leaves the rail before it hides
-
-// Bridge to the standalone legacy host for a session. Temporary until the native
-// live host lands (Q2). A plain navigation link, never an iframe.
-export function hostHref(code) {
-  return '/backstage/classpulse/host.html?code=' + encodeURIComponent(code || '');
-}
 
 // Server accuracy is a 0..1 ratio (or null when unscored). Render as a rounded
 // integer percent, or null so callers can show a non-numeric state.
@@ -85,13 +80,17 @@ function _card(s) {
   const live = open
     ? '<span class="cdx-live"><span class="cdx-live-dot"></span><span class="cdx-live-label">' + t('questions.sessions_live_label') + '</span></span>'
     : '';
-  return '<div class="cdx-session-card' + sel + '" data-act="select" data-code="' + _esc(s.code) + '">' +
+  return '<div class="cdx-session-card' + sel + '" data-code="' + _esc(s.code) + '">' +
     '<div class="cdx-session-code">' + _esc(s.code) + '</div>' +
     '<div class="cdx-session-info">' +
       '<div class="cdx-session-title">' + _esc(s.title || t('questions.sessions_untitled')) + '</div>' +
       '<div class="cdx-session-meta">' + _fmtDate(s.created_at) + '</div>' +
     '</div>' +
     live +
+    '<div class="cdx-session-actions">' +
+      '<button class="cdx-session-act" data-act="stats" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_stats') + '</button>' +
+      '<button class="cdx-session-act cdx-session-act--danger" data-act="delete" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_delete') + '</button>' +
+    '</div>' +
   '</div>';
 }
 
@@ -119,10 +118,13 @@ async function _load() {
 }
 
 // The native live host owns poll timers + listeners, so it MUST be unmounted
-// before the detail re-renders (which would otherwise orphan its loops).
+// before the main area re-renders (which would otherwise orphan its loops).
 function _teardownLiveHost() { try { liveHost.unmount(); } catch (_) { /* ignore */ } }
 
-// ── Main area: placeholder, or the selected session's host surface ──
+// ── Main area: placeholder, or the selected session's live host ──
+// Selecting a session turns the whole main area into the native live host (a
+// faithful port of host.html). The host owns its own session bar (Iniciar/
+// Encerrar, Trilha, QR, Display, Visao), the not-hosted note, and the dashboard.
 function _renderMain() {
   _teardownLiveHost();
   const main = _viewEl && _viewEl.querySelector('#cdx-sessions-detail');
@@ -132,40 +134,7 @@ function _renderMain() {
     main.innerHTML = '<div class="cdx-sessions-placeholder">' + t('questions.sessions_placeholder') + '</div>';
     return;
   }
-  const open = s.status === 'open';
-  const statusKey = open ? 'questions.sessions_status_open' : 'questions.sessions_status_closed';
-  // No "Reabrir": Iniciar when closed, Encerrar when live, where they live now
-  // (the host bar). Iniciar maps to reopen_session under the hood.
-  const lifecycle = open
-    ? '<button class="cdx-btn cdx-btn-danger" data-act="close" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_close') + '</button>'
-    : '<button class="cdx-btn cdx-btn-primary" data-act="start" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_start') + '</button>';
-  main.innerHTML =
-    '<div class="cdx-session-detail">' +
-      '<div class="cdx-session-detail-head">' +
-        '<h2 class="cdx-session-detail-title">' + _esc(s.title || t('questions.sessions_untitled')) + '</h2>' +
-        '<span class="cdx-session-code">' + _esc(s.code) + '</span>' +
-        '<span class="cdx-session-status cdx-session-status--' + (open ? 'open' : 'closed') + '">' + t(statusKey) + '</span>' +
-      '</div>' +
-      '<div class="cdx-session-detail-actions">' +
-        lifecycle +
-        '<a class="cdx-btn" href="' + hostHref(s.code) + '">' + t('questions.sessions_host') + '</a>' +
-        '<button class="cdx-btn" data-act="stats" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_stats') + '</button>' +
-      '</div>' +
-      // The native live host fills the main area for an OPEN session; a closed
-      // session shows the prompt to start hosting (Iniciar above).
-      (open
-        ? '<div class="cdx-live-host-mount" id="cdx-live-host"></div>'
-        : '<div class="cdx-host-not-hosted">' + t('questions.host_not_hosted') + '</div>') +
-      // Protected delete, pushed to the bottom of the page, out of the way.
-      '<div class="cdx-session-danger" id="cdx-session-danger">' +
-        '<button class="cdx-btn cdx-btn-danger" data-act="delete" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_delete') + '</button>' +
-      '</div>' +
-    '</div>';
-
-  if (open) {
-    const mountEl = main.querySelector('#cdx-live-host');
-    if (mountEl) liveHost.mount(mountEl, { session: s });
-  }
+  liveHost.mount(main, { session: s });
 }
 
 // ── Per-session stats overlay (legacy openStats) ────────────
@@ -197,6 +166,7 @@ function _statsHead(s) {
   '</div>';
 }
 
+// Stats overlays the main area; Fechar returns to the live host (or placeholder).
 async function _openStats(code) {
   _teardownLiveHost();
   const main = _viewEl && _viewEl.querySelector('#cdx-sessions-detail');
@@ -229,11 +199,11 @@ async function _openStats(code) {
   main.innerHTML = '<div class="cdx-session-stats">' + _statsHead(s) + body + '</div>';
 }
 
-// ── Delete (bottom danger zone, inline confirm) ─────────────
-function _askDelete(code) {
-  const zone = _viewEl && _viewEl.querySelector('#cdx-session-danger');
-  if (!zone) return;
-  zone.innerHTML =
+// ── Delete (card action, inline confirm) ────────────────────
+function _askDelete(card, code) {
+  const actions = card && card.querySelector('.cdx-session-actions');
+  if (!actions) return;
+  actions.innerHTML =
     '<span class="cdx-session-confirm">' + t('questions.sessions_delete_confirm') + '</span>' +
     '<button class="cdx-btn cdx-btn-danger" data-act="delete-confirm" data-code="' + _esc(code) + '" type="button">' + t('questions.bank_yes') + '</button>' +
     '<button class="cdx-btn" data-act="delete-cancel" type="button">' + t('questions.bank_no') + '</button>';
@@ -242,10 +212,12 @@ function _askDelete(code) {
 async function _confirmDelete(code) {
   let res;
   try { res = await api.deleteSession({ code }); } catch (e) { notice.internal(e); res = null; }
-  if (!res || res.error) { notice.error(t('questions.sessions_delete_error')); _renderMain(); return; }
-  _selectedCode = null;
-  _sidebarPinned = true;        // back to the pinned picker once nothing is selected
-  _openSidebar();
+  if (!res || res.error) { notice.error(t('questions.sessions_delete_error')); _renderList(); return; }
+  if (_selectedCode === code) {
+    _selectedCode = null;
+    _sidebarPinned = true;        // back to the pinned picker once nothing is selected
+    _openSidebar();
+  }
   _load();
 }
 
@@ -293,41 +265,34 @@ export function mount(viewEl, ctx) {
     try { res = await api.createSession({ title }); } catch (err) { notice.internal(err); res = null; }
     if (!res || res.error || !res.code) { notice.error(t('questions.sessions_create_error')); return; }
     titleInput.value = '';
+    // Like the legacy create flow, jump straight into hosting the new session.
+    _selectedCode = res.code;
+    _sidebarPinned = false;
+    _closeSidebar();
     _load();
   });
 
-  // Picker: select a session.
+  // Picker: clicking a card body selects + mounts the host; the card actions
+  // (Estatisticas / Excluir) are handled separately, never selecting.
   _on(list, 'click', (e) => {
-    const card = e.target.closest('[data-act="select"]');
-    if (!card) return;
-    _select(card.getAttribute('data-code'));
+    const actBtn = e.target.closest('[data-act]');
+    if (actBtn) {
+      const act = actBtn.getAttribute('data-act');
+      const code = actBtn.getAttribute('data-code');
+      if (act === 'stats') _openStats(code);
+      else if (act === 'delete') _askDelete(actBtn.closest('.cdx-session-card'), code);
+      else if (act === 'delete-confirm') _confirmDelete(code);
+      else if (act === 'delete-cancel') _renderList();
+      return;
+    }
+    const card = e.target.closest('.cdx-session-card');
+    if (card) _select(card.getAttribute('data-code'));
   });
 
-  // Main area: lifecycle / stats / delete (delegated, no inline onclick).
-  _on(main, 'click', async (e) => {
-    const btn = e.target.closest('[data-act]');
-    if (!btn) return;
-    const act = btn.getAttribute('data-act');
-    const code = btn.getAttribute('data-code');
-    if (act === 'start') {
-      let res;
-      try { res = await api.reopenSession({ code }); } catch (err) { notice.internal(err); res = null; }
-      if (res && res.error) { notice.warn(t('questions.sessions_reopen_blocked')); return; }
-      _load();
-    } else if (act === 'close') {
-      try { await api.closeSession({ code }); } catch (err) { notice.internal(err); }
-      _load();
-    } else if (act === 'stats') {
-      _openStats(code);
-    } else if (act === 'stats-close') {
-      _renderMain();
-    } else if (act === 'delete') {
-      _askDelete(code);
-    } else if (act === 'delete-confirm') {
-      _confirmDelete(code);
-    } else if (act === 'delete-cancel') {
-      _renderMain();
-    }
+  // Main area only owns the stats overlay's Fechar; the live host (mounted here
+  // when a session is selected) owns its own buttons.
+  _on(main, 'click', (e) => {
+    if (e.target.closest('[data-act="stats-close"]')) _renderMain();
   });
 
   // Sidebar hover-reveal (cv-sm). Document-level listeners are tracked so they

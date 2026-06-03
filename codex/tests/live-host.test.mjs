@@ -42,6 +42,31 @@ test('live-host ports the faithful 3-column dashboard', () => {
   assert.match(src, /createElement\(QTAG\)/, 'embeds the codex-question render element');
 });
 
+test('live-host renders the faithful host session bar + not-hosted note', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /cdx-host-bar/, 'session bar');
+  assert.match(src, /cdx-host-live/, 'LIVE indicator');
+  assert.match(src, /data-act=["']start["']/, 'Iniciar button');
+  assert.match(src, /data-act=["']stop["']/, 'Encerrar button');
+  assert.match(src, /cdx-host-trail/, 'Trilha button');
+  assert.match(src, /cdx-host-qr/, 'QR button');
+  assert.match(src, /cdx-host-display/, 'Display link');
+  assert.match(src, /cdx-host-visao/, 'Visao column toggles');
+  assert.match(src, /cdx-host-note/, 'not-hosted note');
+  assert.match(src, /_applyHostedUI/, 'toggles hosting chrome like the legacy');
+});
+
+test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared globals', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /\.reopenSession\s*\(/, 'Iniciar reopens the session');
+  assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
+  assert.match(src, /\.lookupTurmaBySession\s*\(/, 'Trilha looks up the linked turma');
+  assert.match(src, /\.updateTurmaMeta\s*\(/, 'Trilha links/unlinks via turma meta');
+  assert.match(src, /QRShareModal/, 'QR reuses the shared modal global');
+  assert.match(src, /ai\.question\s*\(/, 'AI Gerar/Melhorar via the ai facade');
+  assert.match(read('../js/codex-api.js'), /lookupTurmaBySession:\s*\(p\)\s*=>\s*call\('ct_lookup_turma_by_session'/, 'facade maps the lookup to the frozen action');
+});
+
 test('live-host launches/closes via the facade and drives the element through scoped callbacks', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /\.launchQuestion\s*\(/, 'launches via the facade');
@@ -85,6 +110,13 @@ test('live host + Q&A i18n keys exist in BOTH dictionaries', async () => {
     'questions.qa_answer_here', 'questions.qa_dismiss', 'questions.qa_delete',
     'questions.qa_close_on_display', 'questions.qa_delete_confirm', 'questions.qa_promote_confirm',
     'questions.qa_err_delete', 'questions.qa_err_update', 'questions.qa_err_promote', 'questions.qa_err_close',
+    // Faithful host bar + lifecycle + Trilha modal + AI
+    'questions.host_not_hosted', 'questions.host_start', 'questions.host_stop', 'questions.host_stop_confirm',
+    'questions.host_start_conflict', 'questions.host_trail', 'questions.host_qr',
+    'questions.host_ai_generate', 'questions.host_ai_improve', 'questions.host_err_ai',
+    'questions.host_trail_modal_title', 'questions.host_trail_close', 'questions.host_trail_linked',
+    'questions.host_trail_open', 'questions.host_trail_unlink', 'questions.host_trail_pick',
+    'questions.host_trail_none', 'questions.host_trail_link', 'questions.host_trail_no_turmas',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);
