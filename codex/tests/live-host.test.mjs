@@ -45,7 +45,9 @@ test('live-host ports the faithful 3-column dashboard', () => {
 test('live-host renders the faithful host session bar + not-hosted note', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /cdx-host-bar/, 'session bar');
-  assert.match(src, /cdx-host-live/, 'LIVE indicator');
+  // The session code + LIVE dot were intentionally removed from the bar (the
+  // sidebar and topbar already show the code); only the session name remains.
+  assert.match(src, /cdx-host-name/, 'session name');
   assert.match(src, /data-act=["']start["']/, 'Iniciar button');
   assert.match(src, /data-act=["']stop["']/, 'Encerrar button');
   assert.match(src, /cdx-host-trail/, 'Trilha button');

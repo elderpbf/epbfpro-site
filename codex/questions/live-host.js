@@ -68,13 +68,7 @@ function _render() {
 
 function _barMarkup() {
   return '<div class="cdx-host-bar">' +
-    '<div>' +
-      '<div class="cdx-host-code">' +
-        '<span class="cdx-host-live" id="cdx-host-live" hidden><span class="cdx-host-live-dot"></span><span class="cdx-host-live-label">' + _esc(t('questions.qr_live')) + '</span></span>' +
-        _esc(_session.code) +
-      '</div>' +
-      '<div class="cdx-host-name">' + _esc(_session.title || ('' + t('questions.sessions_untitled'))) + '</div>' +
-    '</div>' +
+    '<div class="cdx-host-name">' + _esc(_session.title || ('' + t('questions.sessions_untitled'))) + '</div>' +
     '<div class="cdx-host-bar-actions">' +
       '<details class="cdx-host-visao" id="cdx-host-visao" hidden><summary>' + _esc(t('questions.host_view')) + ' ▾</summary>' +
         '<div class="cdx-host-visao-panel">' +
@@ -186,10 +180,9 @@ function _trailModalMarkup() {
 
 // ── Hosting chrome (port of host-share applyHostedUI) ────────
 function _applyHostedUI(open) {
-  const live = _q('#cdx-host-live'), note = _q('#cdx-host-note'), launch = _q('#cdx-launch-card');
+  const note = _q('#cdx-host-note'), launch = _q('#cdx-launch-card');
   const qa = _q('#cdx-qa-section'), start = _q('#cdx-host-start'), stop = _q('#cdx-host-stop');
   const visao = _q('#cdx-host-visao'), display = _q('#cdx-host-display'), panel = _q('#cdx-active-panel');
-  if (live) live.hidden = !open;
   if (note) note.hidden = open;
   if (launch) launch.style.display = open ? '' : 'none';
   if (qa) qa.style.display = open ? '' : 'none';
