@@ -181,7 +181,19 @@
  * hosts the selected session. Live hosting is Q2; the main area carries the
  * lifecycle, a host bridge, the per-session stats overlay, and a bottom-of-page
  * protected delete. All colors are theme tokens (dark inherited). */
-.cdx-sessions-layout { position: relative; min-height: 60vh; }
+/* Sessions fills the content area edge-to-edge like the standalone host page,
+ * escaping the Codex shell's centered max-width (.bs-main 1200px) and its side
+ * padding (.bs-main + .cdx-view). Scoped to Sessions only; Bank/Stats keep the
+ * normal padded layout, and the position:fixed sidebar is unaffected. The host
+ * content is re-inset 18px below (matching host.html's screen padding); the
+ * session bar bleeds back out to the full width as a surface strip. */
+.cdx-sessions-layout {
+  position: relative; min-height: 60vh;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: -2rem;
+}
 
 /* Floating rail: hidden offscreen, .cdx-sm--open slides it in. Fixed to the
  * viewport so it runs full height under the chrome (top padding clears the
@@ -264,8 +276,9 @@
   50%      { opacity: 0.4; transform: scale(0.75); }
 }
 
-/* Main host area: placeholder until a session is selected. */
-.cdx-sessions-main { min-height: 60vh; display: flex; flex-direction: column; }
+/* Main host area: placeholder until a session is selected. The 18px side inset
+ * matches host.html's screen padding; the host bar bleeds back out (below). */
+.cdx-sessions-main { min-height: 60vh; display: flex; flex-direction: column; padding: 0 18px; }
 .cdx-sessions-placeholder { margin: auto; text-align: center; padding: 4rem 2rem; color: var(--text-secondary); font-size: 0.92rem; }
 
 /* Selected-session detail (the host surface). */
@@ -709,7 +722,7 @@
    so the bar stays put without position:sticky, per the no-sticky-bar rule. A
    faithful look of the legacy .host-session-bar; the Sessions main area has no
    padding, so the strip already spans edge-to-edge. */
-.cdx-host-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.9rem; flex-wrap: wrap; flex-shrink: 0; background: var(--surface); border-bottom: 1px solid rgba(20,184,166,.18); padding: 0.5rem 1.1rem; margin-bottom: 0.6rem; }
+.cdx-host-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.9rem; flex-wrap: wrap; flex-shrink: 0; background: var(--surface); border-bottom: 1px solid rgba(20,184,166,.18); padding: 0.5rem 1.1rem; margin: 0 -18px 0.6rem; }
 .cdx-host-bar-left { display: flex; align-items: center; gap: 0.6rem; }
 .cdx-host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
 .cdx-host-code { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; color: var(--primary); }
