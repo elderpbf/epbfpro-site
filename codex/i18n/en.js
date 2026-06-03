@@ -433,6 +433,11 @@ export default {
 
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Labs panel unavailable.',
+  'labs.title':               'Labs',
+  'labs.hint':                'Enable or disable each lab. Disabled ones are hidden in Aula and Trilha (even if already released). Click "Preview" to open it fullscreen.',
+  'labs.preview':             'Preview',
+  'labs.toggle':              'Enable / disable',
+  'labs.lab_prefix':          'Lab',
   'drive.unavailable':        'Drive panel unavailable.',
 
   // Lessons (Aula) tab

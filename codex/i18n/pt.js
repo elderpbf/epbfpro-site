@@ -432,6 +432,11 @@ export default {
 
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Painel de Labs indisponível.',
+  'labs.title':               'Labs',
+  'labs.hint':                'Ative ou desative cada lab. Desativados ficam invisíveis em Aula e Trilha (mesmo se já liberados). Clique em "Pré-visualizar" para abrir em tela cheia.',
+  'labs.preview':             'Pré-visualizar',
+  'labs.toggle':              'Ativar / desativar',
+  'labs.lab_prefix':          'Lab',
   'drive.unavailable':        'Painel do Drive indisponível.',
 
   // Lessons (Aula) tab

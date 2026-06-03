@@ -806,3 +806,28 @@
 .cdx-resp-content { font-size: 0.85rem; color: var(--text-primary); max-height: 4.5em; overflow: hidden; }
 .cdx-resp-card.is-expanded .cdx-resp-content { max-height: none; }
 .cdx-resp-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
+
+/* ── Labs sub-tab (native): lab on/off grid + fullscreen preview ──────────────
+   Ported value-for-value from the legacy ct-labs-panel injected styles, renamed
+   to cdx-. All theme tokens (no literal surface/text/border colours), so dark
+   mode flips automatically with the active theme. */
+.cdx-labs { padding: 1rem 1.4rem 2rem; }
+.cdx-labs-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.cdx-labs-title { margin: 0; font-size: 1.4rem; color: var(--text-primary); }
+.cdx-labs-hint { color: var(--text-secondary); font-size: 0.95rem; max-width: 560px; }
+.cdx-labs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.9rem; }
+.cdx-lab-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; transition: opacity 200ms; }
+.cdx-lab-card.is-off { opacity: 0.55; }
+.cdx-lab-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.cdx-lab-key { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; }
+.cdx-lab-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.2; }
+.cdx-lab-summary { font-size: 0.9rem; color: var(--text-secondary); margin: 0; line-height: 1.35; }
+.cdx-lab-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.3rem; }
+.cdx-lab-preview { font: inherit; font-size: 0.85rem; font-weight: 600; padding: 0.4rem 0.9rem; border-radius: 999px; background: rgba(20, 184, 166, 0.16); border: 1.5px solid var(--primary, #14b8a6); color: var(--primary, #14b8a6); cursor: pointer; transition: background 160ms; }
+.cdx-lab-preview:hover { background: rgba(20, 184, 166, 0.28); }
+.cdx-lab-switch { position: relative; width: 44px; height: 24px; display: inline-block; flex-shrink: 0; cursor: pointer; }
+.cdx-lab-switch input { opacity: 0; width: 0; height: 0; }
+.cdx-lab-switch-track { position: absolute; inset: 0; border-radius: 999px; background: color-mix(in srgb, var(--text-primary) 18%, transparent); transition: background 160ms; }
+.cdx-lab-switch-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left 160ms, background 160ms; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
+.cdx-lab-switch input:checked + .cdx-lab-switch-track { background: var(--primary, #14b8a6); }
+.cdx-lab-switch input:checked + .cdx-lab-switch-track .cdx-lab-switch-thumb { left: 23px; }
