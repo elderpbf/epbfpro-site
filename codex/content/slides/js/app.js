@@ -11,6 +11,7 @@ import { applyDeckTheme, initChromeTheme, toggleChromeTheme, currentChromeTheme 
 import * as player from "./render/player.js";
 import { initEditing } from "./edit/editor.js";
 import { initFreeform } from "./edit/freeform.js";
+import { initSelect } from "./select/wiring.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
@@ -175,6 +176,7 @@ export function mount(root, ctx = {}) {
       player.applyOverrides(this.stage, s);
       player.applySteps(this.stage, this.step, this.presenting);
       if (this.freeform) this.freeform.afterRender();
+      if (this.select) this.select.afterRender();
       const c = root.querySelector("#counter");
       if (c) c.textContent = `${this.index + 1} / ${d.slides.length}`;
     },
@@ -192,11 +194,13 @@ export function mount(root, ctx = {}) {
       this.index = ni;
       this.step = d < 0 ? this.effMax() : 0;
       if (this.freeform) this.freeform.clear();
+      if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.syncFontSlider(); this.broadcast();
     },
     select(i) {
       this.index = i; this.step = 0;
       if (this.freeform) this.freeform.clear();
+      if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.syncFontSlider(); this.broadcast();
     },
 
@@ -205,6 +209,7 @@ export function mount(root, ctx = {}) {
       const c = this.deck().canvas;
       const base = { id: uid(), type, x: c.w / 2 - 110, y: c.h / 2 - 70, w: type === "title" ? 420 : 240, rot: 0, scope: "slide", slideId: this.cur().id };
       if (type === "image" || type === "photo" || type === "video") {
+        if (type === "video") base.h = 140; // a <video> has no intrinsic box before metadata (D2)
         const inp = document.createElement("input");
         inp.type = "file";
         inp.accept = type === "video" ? "video/*" : "image/*"; // image/* includes gif (animates)
@@ -249,6 +254,7 @@ export function mount(root, ctx = {}) {
       document.body.classList.toggle("presenting", on);
       this.step = 0;
       if (this.freeform) this.freeform.clear();
+      if (this.select) this.select.clear();
       this.syncChrome(); this.fit(); this.renderSlide(); this.renderNav();
       try {
         if (on) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
@@ -266,6 +272,7 @@ export function mount(root, ctx = {}) {
       app.editing = false;
       app.activeEditable = null;
       if (app.freeform) app.freeform.clear();
+      if (app.select) app.select.clear();
       applyDeckTheme(app.deck(), app.stage);
       app.syncThemeControls();
       app.renderSlide();
@@ -288,6 +295,7 @@ export function mount(root, ctx = {}) {
 
   initEditing(app);
   initFreeform(app);
+  initSelect(app); // unified selection model (asset + logo); after freeform so it can clear it
   app.renderNav = createNavigator(app).render;
   app.broadcast = createSync(app).broadcast;
 

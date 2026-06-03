@@ -90,6 +90,31 @@
 .cdx-deck-editor .fh.frot { left: 50%; top: 0; margin-top: calc(var(--hs) * -2.4); border-radius: 50%; background: var(--teal); cursor: grab; }
 .cdx-deck-editor .freset { position: absolute; right: 0; top: 0; transform: translate(60%, -130%); width: calc(var(--hs) * 1.6); height: calc(var(--hs) * 1.6); line-height: 1; font-size: calc(var(--hs) * 1.1); border: 0; border-radius: 50%; background: var(--teal); color: #06302b; cursor: pointer; pointer-events: auto; padding: 0; }
 
+/* unified selection model (js/select/): the stage-docked contextual bar + the
+   selection frame. Both live in #stagebox (UNSCALED), above the stage. The bar
+   is "a barra na lâmina": docked to the top edge of the slide, shown only while
+   something is selected. SLIDES-EDITOR-INTERNAL; do not reuse in other tabs. */
+.cdx-deck-editor .selbar { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 12; display: none; align-items: center; gap: 6px; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 10px; padding: 5px 8px; box-shadow: 0 10px 30px var(--overlay-strong); white-space: nowrap; max-width: calc(100% - 16px); }
+.cdx-deck-editor .selbar-ctl { font: inherit; font-size: 12px; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 4px 8px; cursor: pointer; }
+.cdx-deck-editor .selbar-ctl:hover { background: var(--btn-hover); }
+.cdx-deck-editor .selbar-danger { color: #f4a3a3; }
+.cdx-deck-editor .selbar-toggle { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.cdx-deck-editor .selbar-toggle input { cursor: pointer; }
+
+.cdx-deck-editor .sellayer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+.cdx-deck-editor .selscale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; pointer-events: none; }
+.cdx-deck-editor .selbox { position: absolute; border: 1px solid var(--teal); pointer-events: none; box-sizing: border-box; --hs: 11px; }
+.cdx-deck-editor .selh { position: absolute; width: var(--hs); height: var(--hs); background: #fff; border: 1.5px solid var(--teal); border-radius: 3px; transform: translate(-50%, -50%); pointer-events: auto; }
+.cdx-deck-editor .selh[data-h="-1,-1"] { left: 0; top: 0; cursor: nwse-resize; }
+.cdx-deck-editor .selh[data-h="0,-1"]  { left: 50%; top: 0; cursor: ns-resize; }
+.cdx-deck-editor .selh[data-h="1,-1"]  { left: 100%; top: 0; cursor: nesw-resize; }
+.cdx-deck-editor .selh[data-h="-1,0"]  { left: 0; top: 50%; cursor: ew-resize; }
+.cdx-deck-editor .selh[data-h="1,0"]   { left: 100%; top: 50%; cursor: ew-resize; }
+.cdx-deck-editor .selh[data-h="-1,1"]  { left: 0; top: 100%; cursor: nesw-resize; }
+.cdx-deck-editor .selh[data-h="0,1"]   { left: 50%; top: 100%; cursor: ns-resize; }
+.cdx-deck-editor .selh[data-h="1,1"]   { left: 100%; top: 100%; cursor: nwse-resize; }
+.cdx-deck-editor .selh.selrot { left: 50%; top: 0; margin-top: calc(var(--hs) * -2.4); border-radius: 50%; background: var(--teal); cursor: grab; }
+
 /* presenter view (rendered in a separate popup window; kept scoped for parity) */
 .cdx-deck-editor.presenter { background: #0a1211; color: #dfeae8; overflow: auto; }
 .cdx-deck-editor #pv { display: none; height: 100vh; grid-template-columns: 1.4fr 1fr; grid-template-rows: auto 1fr auto; gap: 18px; padding: 22px; }

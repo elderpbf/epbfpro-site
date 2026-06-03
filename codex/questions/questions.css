@@ -704,10 +704,12 @@
 
 .cdx-host { display: flex; flex-direction: column; min-height: 0; }
 
-/* Session bar: sticky surface strip with the code/name + action buttons, a
-   faithful port of the legacy .host-session-bar. The Sessions main area has no
-   padding, so the bar already spans edge-to-edge (no negative margins needed). */
-.cdx-host-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.9rem; flex-wrap: wrap; background: var(--surface); border-bottom: 1px solid rgba(20,184,166,.18); padding: 0.5rem 1.1rem; margin-bottom: 0.6rem; position: sticky; top: 0; z-index: 30; }
+/* Session bar: a fixed surface-strip HEADER sibling (flex-shrink:0), not a
+   sticky overlay. The dashboard columns below own the scrolling (overflow-y),
+   so the bar stays put without position:sticky, per the no-sticky-bar rule. A
+   faithful look of the legacy .host-session-bar; the Sessions main area has no
+   padding, so the strip already spans edge-to-edge. */
+.cdx-host-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.9rem; flex-wrap: wrap; flex-shrink: 0; background: var(--surface); border-bottom: 1px solid rgba(20,184,166,.18); padding: 0.5rem 1.1rem; margin-bottom: 0.6rem; }
 .cdx-host-bar-left { display: flex; align-items: center; gap: 0.6rem; }
 .cdx-host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
 .cdx-host-code { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; color: var(--primary); }

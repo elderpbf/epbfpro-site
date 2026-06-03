@@ -14,6 +14,7 @@ export function createSync(app) {
       step: app.step,
       theme: app.deck().theme,
       assets: app.deck().assets,
+      logo: app.deck().logo, // deck-level logo (per-slide slide.logo rides inside deck) (D4)
       deck: JSON.stringify(app.deck().slides),
     });
   }
@@ -49,6 +50,7 @@ export function initPresenter(app) {
     const deck = app.deck();
     if (m.deck) deck.slides = JSON.parse(m.deck);
     if (m.assets) deck.assets = m.assets;
+    if (m.logo) deck.logo = m.logo; // keep the deck logo in sync (D4)
     if (m.theme) {
       deck.theme = m.theme;
       applyDeckTheme(deck, app.stage);

@@ -110,6 +110,7 @@ export function initFreeform(app) {
   function selectEl(el) {
     selFkey = el.dataset.fkey;
     app.selected = { fkey: selFkey };
+    if (app.selectClear) app.selectClear(); // transitional: keep one visible selection (Slice 3 removes this)
     placeBox();
   }
   function clear() {
