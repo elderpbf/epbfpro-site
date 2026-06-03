@@ -1,15 +1,5 @@
-// edit/maskpanel.js — the recolour-mask sub-panel (#maskpop), extracted from the
-// app shell so app.js stays a thin composition root (5d). A bar-opened popover:
-// the context bar's "máscara" compound control (select/kinds.js) and the slot
-// data-mask button (edit/editor.js) call app.openMask(target, anchorEl); the panel
-// positions itself under the anchor and edits the targeted image object's `mask`.
-//
-//   target { kind:"asset", id }   -> deck.assets[id]
-//   target { kind:"slot",  path } -> getByPath(cur().slots, path)
-//
-// The panel owns its markup (maskPanelHTML, injected by the shell), the type/colour
-// wiring, and its own outside-click close listener (cleaned up in app.unmount via
-// app._onMaskDocClick).
+// edit/maskpanel.js — the recolour-mask popover (#maskpop), extracted from app.js
+// (5d). The bar's "máscara" control + the slot data-mask button call app.openMask.
 import { getByPath } from "../core/schema.js";
 import { t } from "../../../../js/i18n.js";
 
@@ -29,7 +19,6 @@ export function initMaskPanel(app, root) {
   const $ = (sel) => root.querySelector(sel);
   let maskTarget = null;
 
-  // the image object the panel currently targets (slot or asset)
   const maskObj = () => {
     if (!maskTarget) return null;
     return maskTarget.kind === "asset"
@@ -37,7 +26,6 @@ export function initMaskPanel(app, root) {
       : getByPath(app.cur().slots, maskTarget.path);
   };
 
-  // public entry: the bar's compound control + the slot data-mask button call this
   app.openMask = (target, anchorEl) => {
     maskTarget = target;
     const pop = $("#maskpop");
@@ -58,7 +46,6 @@ export function initMaskPanel(app, root) {
     pop.style.top = r.bottom + 8 + "px";
   };
 
-  // type buttons + live colour/angle, operating on maskObj()
   const maskpop = $("#maskpop");
   maskpop.querySelectorAll("[data-mtype]").forEach((b) => (b.onclick = () => {
     const obj = maskObj();
@@ -81,8 +68,7 @@ export function initMaskPanel(app, root) {
   };
   ["#mc1", "#mc2", "#mang"].forEach((id) => $(id).addEventListener("input", liveMask));
 
-  // outside-click closes the popover (data-mask / data-asmask openers keep it open
-  // via their own stopPropagation). Stored on app and removed in unmount().
+  // outside-click closes it (openers stopPropagation to stay open); removed in unmount.
   const onMaskDocClick = (e) => {
     const mp = $("#maskpop");
     if (mp && !e.target.closest("#maskpop") && !e.target.closest("[data-mask]") && !e.target.closest("[data-asmask]")) {

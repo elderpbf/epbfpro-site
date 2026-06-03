@@ -13,6 +13,7 @@
 //   window.ThemeManager, window.SettingsDrawer, window.BS_AUTH,
 //   window.glyphWordmark, window.stdColors
 import { t, languages, setLang } from './i18n.js';
+import { anchorLeft, placePill } from './anchored.js';
 
 const GEAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
@@ -35,13 +36,111 @@ function _svg(inner) {
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
 }
 
+// Sub-tabs (5c): two display modes (hover pill default, persistent bar) via a
+// global pref; positioning reuses the lifted anchored.js.
+const SUBTAB_MODE_KEY = 'codex_subtab_mode';
+
+export function resolveSubtabMode(stored) {
+  return stored === 'bar' ? 'bar' : 'pill';
+}
+function subtabMode() {
+  let stored = null;
+  try { stored = localStorage.getItem(SUBTAB_MODE_KEY); } catch (_) {}
+  return resolveSubtabMode(stored);
+}
+
+function _subtabLinks(subTabs) {
+  return subTabs.map((s) => {
+    const a = document.createElement('a');
+    a.className = 'cdx-subtab' + (s.active ? ' active' : '');
+    a.href = s.href || '#';
+    a.setAttribute('role', 'tab');
+    if (s.active) a.setAttribute('aria-current', 'page');
+    a.textContent = s.label;
+    return a;
+  });
+}
+
+// 'bar' mode: a persistent strip, centered under the active tab via placePill.
+function renderSubBar(header, anchorTab, subTabs) {
+  const row = document.createElement('div');
+  row.className = 'cdx-subrow';
+  const strip = document.createElement('nav');
+  strip.className = 'cdx-substrip';
+  strip.setAttribute('role', 'tablist');
+  strip.setAttribute('aria-label', 'Sub-navegação');
+  _subtabLinks(subTabs).forEach((a) => strip.appendChild(a));
+  row.appendChild(strip);
+  header.appendChild(row);
+  const place = () => placePill(row, strip, { anchorEl: anchorTab, mode: 'under' });
+  requestAnimationFrame(place);
+  window.addEventListener('resize', place);
+}
+
+// 'pill' mode: hovering ANY tab shows THAT tab's sub-tabs under it (one pill,
+// repopulated per hover), so you jump straight to a sub-tab. None -> no pill.
+function renderSubPill(header, strip, subTabsByTab) {
+  const pill = document.createElement('div');
+  pill.className = 'cdx-subpill';
+  pill.setAttribute('role', 'tablist');
+  pill.setAttribute('aria-label', 'Sub-navegação');
+  header.appendChild(pill);
+  let hideT = null;
+  const hide = () => pill.classList.remove('on');
+  const scheduleHide = () => { hideT = setTimeout(hide, 180); };
+  const showFor = (tabEl, items) => {
+    clearTimeout(hideT);
+    if (!items || !items.length) return hide(); // no sub-tabs -> click the main tab
+    pill.innerHTML = '';
+    _subtabLinks(items).forEach((a) => pill.appendChild(a));
+    pill.classList.add('on');
+    const hr = header.getBoundingClientRect();
+    const ar = tabEl.getBoundingClientRect();
+    pill.style.top = (ar.bottom - hr.top + 4) + 'px';
+    pill.style.left = anchorLeft({
+      containerW: hr.width, contentW: pill.offsetWidth,
+      anchorCenter: ar.left + ar.width / 2 - hr.left, mode: 'under',
+    }) + 'px';
+  };
+  strip.querySelectorAll('.cdx-tab').forEach((tabEl) => {
+    tabEl.addEventListener('mouseenter', () => showFor(tabEl, subTabsByTab[tabEl.dataset.tab]));
+    tabEl.addEventListener('mouseleave', scheduleHide);
+  });
+  pill.addEventListener('mouseenter', () => clearTimeout(hideT)); // hover bridge
+  pill.addEventListener('mouseleave', scheduleHide);
+}
+
+// The pill/bar toggle for the Settings drawer; persists the pref and reloads.
+function subtabModeSection() {
+  return {
+    id: 'cdx-subtabs',
+    title: 'Sub-abas',
+    content:
+      '<button class="bs-toggle-btn" id="sd-subtab-mode"></button>' +
+      '<p class="bs-hint">Como as sub-abas (Conteúdo, Perguntas) aparecem: pílula flutuante ao passar o mouse na aba, ou barra fixa abaixo dela.</p>',
+    onInit() {
+      const btn = document.getElementById('sd-subtab-mode');
+      if (!btn) return;
+      const sync = () => { btn.textContent = subtabMode() === 'pill' ? 'Pílula ao passar o mouse' : 'Barra fixa'; };
+      sync();
+      btn.addEventListener('click', () => {
+        const next = subtabMode() === 'pill' ? 'bar' : 'pill';
+        try { localStorage.setItem(SUBTAB_MODE_KEY, next); } catch (_) {}
+        location.reload();
+      });
+    },
+  };
+}
+
 export function init(opts) {
   opts = opts || {};
   const active = opts.active || '';
   const sections = opts.sections || [];
-  // Sub-tabs for the active tab, rendered as the legacy bs-topbar-subrow chrome.
-  // Each entry: { label, href, active }. Empty/omitted -> no sub-row (collapses).
+  // active tab's sub-tabs ({ label, href, active }); subTabsByTab keys all tabs
+  // so pill mode can reveal any tab's sub-tabs on hover.
   const subTabs = opts.subTabs || [];
+  const subTabsByTab = opts.subTabsByTab || {};
+  if (subTabs.length && !subTabsByTab[active]) subTabsByTab[active] = subTabs; // seed active
   const container = document.querySelector('.bs-app') || document.body;
 
   const header = document.createElement('header');
@@ -81,6 +180,7 @@ export function init(opts) {
   TABS.forEach((tab) => {
     const a = document.createElement('a');
     a.className = 'cdx-tab cdx-tab--' + tab.key + (tab.key === active ? ' active' : '');
+    a.dataset.tab = tab.key; // key for the pill's per-tab sub-tab lookup
     a.href = tab.href || '#';
     a.setAttribute('role', 'tab');
     if (tab.key === active) a.setAttribute('aria-current', 'page');
@@ -146,33 +246,21 @@ export function init(opts) {
 
   header.appendChild(inner);
 
-  // Sub-tab row: reuse the legacy bs-topbar-subrow chrome (styled in
-  // backstage.css). Only rendered when the active tab declares sub-tabs, so
-  // tabs without them (Cohorts) keep the 64px single-row topbar.
-  if (subTabs.length > 0) {
-    const subRow = document.createElement('div');
-    subRow.className = 'bs-topbar-subrow';
-    const subStrip = document.createElement('nav');
-    subStrip.className = 'bs-topbar-subtabs';
-    subStrip.setAttribute('role', 'tablist');
-    subStrip.setAttribute('aria-label', 'Sub-navegação');
-    subTabs.forEach((s) => {
-      const a = document.createElement('a');
-      a.className = 'bs-topbar-subtab' + (s.active ? ' active' : '');
-      a.href = s.href || '#';
-      a.setAttribute('role', 'tab');
-      if (s.active) a.setAttribute('aria-current', 'page');
-      a.textContent = s.label;
-      subStrip.appendChild(a);
-    });
-    subRow.appendChild(subStrip);
-    header.appendChild(subRow);
-  }
-
   container.insertBefore(header, container.firstChild);
 
-  // Reuse shared shell services.
+  // rendered after insert so the positioner can measure; pill renders if any tab
+  // has sub-tabs, bar only for the active tab.
+  if (subtabMode() === 'bar') {
+    if (subTabs.length > 0) {
+      const anchorTab = strip.querySelector('.cdx-tab.active') || strip;
+      renderSubBar(header, anchorTab, subTabs);
+    }
+  } else if (Object.keys(subTabsByTab).some((k) => (subTabsByTab[k] || []).length)) {
+    renderSubPill(header, strip, subTabsByTab);
+  }
+
+  // Shared shell services; the global pill/bar toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });
   ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
-  SettingsDrawer.init({ sections: sections });
+  SettingsDrawer.init({ sections: [subtabModeSection(), ...sections] });
 }

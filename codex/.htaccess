@@ -1,12 +1,7 @@
-<IfModule mod_expires.c>
-  ExpiresActive On
-  ExpiresByType text/css "access plus 1 hour"
-  ExpiresByType application/javascript "access plus 1 hour"
-  ExpiresByType text/javascript "access plus 1 hour"
-</IfModule>
-
+# Revalidate every load (no-cache) so a deploy lands on the next page load, no
+# hard-refresh, covers ES sub-imports, keeps CSS+JS in sync. max-age=60 to trim 304s.
 <IfModule mod_headers.c>
-  <FilesMatch "\.(js|css)$">
-    Header set Cache-Control "public, max-age=3600"
+  <FilesMatch "\.(html|js|mjs|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
 </IfModule>
