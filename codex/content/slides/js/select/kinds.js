@@ -11,6 +11,7 @@
 // A new kind = a new register() block; a new control = one array entry.
 import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
 import { getByPath } from "../core/schema.js";
+import { formatControls } from "../edit/textstyle.js";
 
 // "voltar ao layout": clears the slot's freeform override so it returns to the
 // layout's flow. Shared by the text + image slot descriptors; only offered while
@@ -50,6 +51,7 @@ export function matchKind(el) {
 }
 
 const isImageAsset = (a) => a && (a.type === "image" || a.type === "photo" || a.type == null);
+const isTextAsset = (a) => a && (a.type === "text" || a.type === "title");
 
 /* ---------- asset (free-placed image / photo / video / text) ---------- */
 register({
@@ -62,36 +64,42 @@ register({
   el(app, sel) {
     return app.stage.querySelector(`.asset[data-asset="${sel.ref}"]`);
   },
+  // the editable text inside a text asset (the format controls + activeEditable
+  // target the .atext, not the wrapper). null for media assets.
+  editEl(app, sel) {
+    return app.stage.querySelector(`.asset[data-asset="${sel.ref}"] [data-aid]`);
+  },
   target(app, sel) {
     return app.deck().assets.find((a) => a.id === sel.ref) || null;
   },
   controls(app, sel, a) {
     if (!a) return [];
-    const ctrls = [
-      {
-        type: "select",
-        id: "scope",
-        value: a.scope || "slide",
-        options: [
-          { v: "slide", labelKey: "slides.ed_asset_slide" },
-          { v: "all", labelKey: "slides.ed_asset_all" },
-          { v: "layout", labelKey: "slides.ed_asset_layout" },
-        ],
-        write(app2, sel2, v) {
-          const obj = app2.deck().assets.find((x) => x.id === sel2.ref);
-          if (!obj) return;
-          obj.scope = v;
-          if (v === "slide") obj.slideId = app2.cur().id;
-          if (v === "layout") obj.layout = app2.cur().layout;
-        },
+    const ctrls = isTextAsset(a) ? [...formatControls(), { type: "sep" }] : [];
+    ctrls.push({
+      type: "choice",
+      id: "scope",
+      value: a.scope || "slide",
+      options: [
+        { v: "slide", labelKey: "slides.ed_asset_slide" },
+        { v: "all", labelKey: "slides.ed_asset_all" },
+        { v: "layout", labelKey: "slides.ed_asset_layout" },
+      ],
+      write(app2, sel2, v) {
+        app2.record("ctx:scope");
+        const obj = app2.deck().assets.find((x) => x.id === sel2.ref);
+        if (!obj) return;
+        obj.scope = v;
+        if (v === "slide") obj.slideId = app2.cur().id;
+        if (v === "layout") obj.layout = app2.cur().layout;
+        app2.refresh();
       },
-    ];
+    });
     if (isImageAsset(a)) {
       ctrls.push({
         type: "button",
         id: "mask",
         labelKey: "slides.ed_mask",
-        compound: true, // opens the mask sub-panel; reuses the existing popover in Slice 1
+        compound: true, // opens the mask sub-panel; reuses the existing popover
         run(app2, sel2, anchorEl) {
           app2.openMask({ kind: "asset", id: sel2.ref }, anchorEl);
         },
@@ -135,7 +143,7 @@ register({
     const eff = resolveLogo(app.deck(), slide);
     return [
       {
-        type: "select",
+        type: "choice",
         id: "variant",
         value: eff.variant,
         options: [
@@ -145,9 +153,11 @@ register({
           { v: "mark", labelKey: "slides.ed_logo_mark" },
         ],
         write(app2, sel2, v) {
+          app2.record("ctx:variant");
           const s = app2.cur();
           if (s.logo) s.logo.variant = v;
           else (app2.deck().logo = app2.deck().logo || { ...DEFAULT_LOGO }).variant = v;
+          app2.refresh();
         },
       },
       {
@@ -158,6 +168,7 @@ register({
         labelKey: "slides.ed_logo_thisslide",
         on: perSlide,
         write(app2, sel2, checked) {
+          app2.record("ctx:perslide");
           const s = app2.cur();
           if (checked) {
             const e = resolveLogo(app2.deck(), s);
@@ -166,6 +177,7 @@ register({
           } else {
             delete s.logo;
           }
+          app2.refresh();
         },
       },
       {
@@ -199,11 +211,17 @@ register({
   el(app, sel) {
     return app.stage.querySelector(`[data-fkey="${sel.ref}"]`);
   },
+  // a free text slot IS its own editable element; the format controls target it.
+  editEl(app, sel) {
+    return app.stage.querySelector(`[data-fkey="${sel.ref}"]`);
+  },
   target(app, sel) {
     return (app.cur().overrides || {})[sel.ref] || null;
   },
   controls(app, sel) {
-    return (app.cur().overrides || {})[sel.ref] ? [resetCtrl()] : [];
+    const ctrls = [...formatControls()];
+    if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
+    return ctrls;
   },
 });
 

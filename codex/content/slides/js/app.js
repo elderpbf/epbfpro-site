@@ -12,6 +12,7 @@ import * as player from "./render/player.js";
 import { initEditing } from "./edit/editor.js";
 import { initFreeform } from "./edit/freeform.js";
 import { initSelect } from "./select/wiring.js";
+import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from "./edit/menus.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
@@ -33,32 +34,14 @@ const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) :
 const shellHTML = () => `
 <div id="chrome">
   <button id="prev">‹</button><span id="counter">1 / 1</span><button id="next">›</button>
-  <div class="menu" id="addMenu"><button id="addBtn">＋ ${t("slides.ed_slide")}</button><div class="pop" id="addPop"></div></div>
+  <button id="addBtn">＋ ${t("slides.ed_slide")} ▾</button>
   <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
-  <div class="menu" id="insertMenu"><button id="insertBtn">＋ ${t("slides.ed_insert")}</button><div class="pop" id="insertPop">
-    <button data-insert="text">${t("slides.ed_text")}</button>
-    <button data-insert="title">${t("slides.ed_title")}</button>
-    <button data-insert="image">${t("slides.ed_image")}</button>
-    <button data-insert="photo">${t("slides.ed_photo")}</button>
-    <button data-insert="video">${t("slides.ed_video")}</button>
-  </div></div>
+  <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
+  <button id="appearBtn">${t("slides.ed_appearance")} ▾</button>
+  <button id="animBtn">${t("slides.ed_anim")} ▾</button>
   <span class="spacer"></span>
-  <div class="menu" id="appearMenu"><button id="appearBtn">${t("slides.ed_appearance")} ▾</button><div class="pop" id="appearPop">
-    <label>${t("slides.ed_font")} <input type="range" id="fontScale" min="0.7" max="1.5" step="0.05" value="1"></label>
-    <button id="fontScope" title="${t("slides.ed_font_scope_title")}">${t("slides.ed_scope_all")}</button>
-    <label>${t("slides.ed_accent")} <input type="color" id="accent" value="#14b8a6"></label>
-    <label>${t("slides.ed_text_color")} <input type="color" id="ink" value="#134e4a"></label>
-    <label>${t("slides.ed_art")} <input type="color" id="motifColor" value="#14b8a6"></label>
-  </div></div>
-  <label class="anim-ctl"><select id="anim" title="${t("slides.ed_anim")}"><option value="fade-up">${t("slides.ed_anim_fadeup")}</option><option value="fade">${t("slides.ed_anim_fade")}</option><option value="none">${t("slides.ed_anim_none")}</option></select></label>
   <button id="present" class="primary">▶ ${t("slides.ed_present")}</button>
-</div>
-
-<div id="fmt">
-  <button data-fs="-3">A−</button><button data-fs="3">A＋</button>
-  <button id="bold"><b>B</b></button>
-  <label>${t("slides.ed_color")} <input type="color" id="color" value="#134e4a"></label>
 </div>
 
 <div id="maskpop">
@@ -104,7 +87,6 @@ export function mount(root, ctx = {}) {
     stagebox: $("#stagebox"),
     stagewrap: $("#stagewrap"),
     nav: $("#nav"),
-    fmt: $("#fmt"),
     root,
 
     deck() { return store.getDeck(); },
@@ -198,12 +180,36 @@ export function mount(root, ctx = {}) {
       if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.syncFontSlider(); this.broadcast();
     },
-    select(i) {
+    // jump to slide i. NOT named `select`: wiring.js owns app.select (the selection
+    // object), so this nav method must not collide with it.
+    goTo(i) {
       this.index = i; this.step = 0;
       if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.syncFontSlider(); this.broadcast();
     },
+
+    // Deck-wide look, opened into the context bar (menus.js supplies the control
+    // DATA; these apply it). Each owns its full effect (record + mutate + render).
+    setTheme(key, v) {
+      this.record("theme:" + key);
+      this.deck().theme[key] = v;
+      applyDeckTheme(this.deck(), this.stage);
+      this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+    },
+    setFontScale(v) {
+      this.record("font:" + this.fontScope);
+      if (this.fontScope === "slide") this.cur().fontScale = v;
+      else this.deck().theme.fontScale = v;
+      applyDeckTheme(this.deck(), this.stage);
+      this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+    },
+    toggleFontScope() { this.fontScope = this.fontScope === "all" ? "slide" : "all"; this.reopenAppearance(); },
+    openAppearance(btn) {
+      if (btn) this._appearBtn = btn;
+      this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope), this._appearBtn);
+    },
+    reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
 
     // insert a free element (movable on any slide) of the given type
     insertElement(type) {
@@ -230,8 +236,8 @@ export function mount(root, ctx = {}) {
         this.refresh();
       }
     },
-    addSlide(layoutId) { this.record(); this.deck().slides.splice(this.index + 1, 0, newSlide(layoutId)); this.select(this.index + 1); },
-    duplicate() { this.record(); this.deck().slides.splice(this.index + 1, 0, duplicateSlide(this.cur())); this.select(this.index + 1); },
+    addSlide(layoutId) { this.record(); this.deck().slides.splice(this.index + 1, 0, newSlide(layoutId)); this.goTo(this.index + 1); },
+    duplicate() { this.record(); this.deck().slides.splice(this.index + 1, 0, duplicateSlide(this.cur())); this.goTo(this.index + 1); },
     removeSlide(i) {
       this.record();
       const sl = this.deck().slides;
@@ -316,37 +322,6 @@ export function mount(root, ctx = {}) {
 
 function wireChrome(app, root) {
   const $ = (sel) => root.querySelector(sel);
-  const fmt = app.fmt;
-
-  // format toolbar: act on the active editable; mousedown+preventDefault keeps focus.
-  // Each change records (undo-coalesced per element) and persists the resulting
-  // inline style onto the model so a re-render keeps it (see persistTextStyle).
-  const styleLabel = (el) => "style:" + (el.dataset.aid || el.dataset.path || "?");
-  fmt.querySelectorAll("[data-fs]").forEach((b) =>
-    b.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      const el = app.activeEditable;
-      if (!el) return;
-      app.record(styleLabel(el));
-      el.style.fontSize = parseFloat(getComputedStyle(el).fontSize) + +b.dataset.fs + "px";
-      persistTextStyle(app, el);
-    })
-  );
-  $("#bold").addEventListener("mousedown", (e) => {
-    e.preventDefault();
-    const el = app.activeEditable;
-    if (!el) return;
-    app.record(styleLabel(el));
-    el.style.fontWeight = getComputedStyle(el).fontWeight >= 700 ? "400" : "900";
-    persistTextStyle(app, el);
-  });
-  $("#color").addEventListener("input", (e) => {
-    const el = app.activeEditable;
-    if (!el) return;
-    app.record(styleLabel(el) + ":color");
-    el.style.color = e.target.value;
-    persistTextStyle(app, el);
-  });
 
   $("#prev").onclick = () => app.go(-1);
   $("#next").onclick = () => app.go(1);
@@ -356,54 +331,35 @@ function wireChrome(app, root) {
     if ("flip" in s) { app.record(); s.flip = !s.flip; app.refresh(); }
   };
 
-  const addPop = $("#addPop");
-  addPop.innerHTML = registry.list().map((L) => `<button data-layout="${L.id}">${layoutLabel(L)}</button>`).join("");
-  $("#addBtn").onclick = (e) => { e.stopPropagation(); $("#addMenu").classList.toggle("open"); };
-  addPop.querySelectorAll("[data-layout]").forEach((b) => (b.onclick = () => { app.addSlide(b.dataset.layout); $("#addMenu").classList.remove("open"); }));
-  // Close the menus/popover on any outside click. Stored on app and removed in
-  // unmount(): this is a DOCUMENT-level listener, so leaving it attached after
-  // teardown means it fires against a detached DOM and throws on null elements
-  // (the repeated "classList of null" seen when reopening the editor). Each $()
-  // is null-guarded as a second line of defence.
+  // Menu buttons open their options INTO the context bar (centered under the
+  // button), not into a bespoke dropdown. Clicking the same open menu closes it.
+  const menuBtn = (sel, build) => {
+    const btn = $(sel);
+    if (!btn) return;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const cur = app.select.current();
+      if (cur && cur.menu && app._openMenuBtn === btn) { app.select.clear(); app._openMenuBtn = null; return; }
+      app._openMenuBtn = btn;
+      build(btn);
+    };
+  };
+  menuBtn("#addBtn", (btn) => app.select.openMenu(addSlideMenu(registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }))), btn));
+  menuBtn("#insertBtn", (btn) => app.select.openMenu(insertMenu(), btn));
+  menuBtn("#appearBtn", (btn) => app.openAppearance(btn));
+  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim), btn));
+
+  // Outside-click closes the mask popover and any open context-bar menu. Stored on
+  // app and removed in unmount() (a DOCUMENT-level listener). Each $() is null-guarded.
   const onDocClick = (e) => {
-    const addMenu = $("#addMenu"), insertMenu = $("#insertMenu"), appearMenu = $("#appearMenu"), mp = $("#maskpop");
-    if (addMenu && !e.target.closest("#addMenu")) addMenu.classList.remove("open");
-    if (insertMenu && !e.target.closest("#insertMenu")) insertMenu.classList.remove("open");
-    if (appearMenu && !e.target.closest("#appearMenu")) appearMenu.classList.remove("open");
+    const mp = $("#maskpop");
     if (mp && !e.target.closest("#maskpop") && !e.target.closest("[data-mask]") && !e.target.closest("[data-asmask]")) mp.style.display = "none";
+    const cur = app.select.current();
+    if (cur && cur.menu && !e.target.closest(".ctxbar") && !e.target.closest("#chrome")) { app.select.clear(); app._openMenuBtn = null; }
     if (!e.target.closest(".logo")) { const lm = $(".logo.menu-open"); if (lm) lm.classList.remove("menu-open"); }
   };
   document.addEventListener("click", onDocClick);
   app._onDocClick = onDocClick;
-
-  const insertPop = $("#insertPop");
-  $("#insertBtn").onclick = (e) => { e.stopPropagation(); $("#insertMenu").classList.toggle("open"); };
-  insertPop.querySelectorAll("[data-insert]").forEach((b) => (b.onclick = () => { app.insertElement(b.dataset.insert); $("#insertMenu").classList.remove("open"); }));
-
-  // Aparência / Appearance: the deck-wide look controls (font, scope, accent, ink,
-  // motif) collapse behind one dropdown so the bar stays a single row.
-  $("#appearBtn").onclick = (e) => { e.stopPropagation(); $("#appearMenu").classList.toggle("open"); };
-
-  $("#fontScale").addEventListener("input", (e) => {
-    app.record("font:" + app.fontScope);
-    const v = +e.target.value;
-    if (app.fontScope === "slide") app.cur().fontScale = v;
-    else app.deck().theme.fontScale = v;
-    applyDeckTheme(app.deck(), app.stage);
-    app.renderSlide();
-    app.renderNav();
-    app.commit();
-    app.broadcast();
-  });
-  $("#fontScope").onclick = () => {
-    app.fontScope = app.fontScope === "all" ? "slide" : "all";
-    app.syncFontSlider();
-  };
-  $("#accent").addEventListener("input", (e) => { app.record("theme:accent"); app.deck().theme.accent = e.target.value; applyDeckTheme(app.deck(), app.stage); app.commit(); app.broadcast(); });
-  $("#ink").addEventListener("input", (e) => { app.record("theme:ink"); app.deck().theme.ink = e.target.value; applyDeckTheme(app.deck(), app.stage); app.commit(); app.broadcast(); });
-  $("#motifColor").addEventListener("input", (e) => { app.record("theme:motif"); app.deck().theme.motif = e.target.value; applyDeckTheme(app.deck(), app.stage); app.commit(); app.broadcast(); });
-  $("#anim").value = app.deck().theme.anim;
-  $("#anim").addEventListener("change", (e) => { app.record("theme:anim"); app.deck().theme.anim = e.target.value; applyDeckTheme(app.deck(), app.stage); app.commit(); app.broadcast(); });
 
   // mask popover: type buttons + live colour/angle, operating on app.maskObj()
   const maskpop = $("#maskpop");
@@ -449,27 +405,6 @@ function wireChrome(app, root) {
   document.addEventListener("fullscreenchange", onFs);
   app._onKey = onKey;
   app._onFs = onFs;
-}
-
-// Persist the editable's block-level inline style ({fontSize, fontWeight, color})
-// onto the model so it survives a re-render: per-asset in asset.style, per-slot in
-// slide.textStyle[path]. player.applyTextStyles re-applies it after each render.
-// (Replaces the old commitText no-op, which only touched the store and dropped the
-// style the moment the slide re-rendered.)
-function persistTextStyle(app, el) {
-  const st = {
-    fs: parseFloat(el.style.fontSize) || undefined,
-    fw: el.style.fontWeight || undefined,
-    color: el.style.color || undefined,
-  };
-  if (el.dataset.aid) {
-    const a = app.deck().assets.find((x) => x.id === el.dataset.aid);
-    if (a) a.style = st;
-  } else if (el.dataset.path) {
-    (app.cur().textStyle = app.cur().textStyle || {})[el.dataset.path] = st;
-  } else return;
-  app.commit();
-  app.broadcast();
 }
 
 export function unmount(app, root) {

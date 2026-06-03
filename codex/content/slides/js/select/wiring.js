@@ -110,28 +110,46 @@ export function initSelect(app) {
     });
   }
 
+  // The element the format controls act on: a text kind's editEl (the editable
+  // text node), else null. Mirrors editor.js focusin, so formatting works whether
+  // you single-click-select a text element or double-click to type in it.
+  function setActiveEditable() {
+    const d = desc();
+    app.activeEditable = d && d.editEl ? d.editEl(app, sel.get()) : null;
+  }
+
   function selectRef(rec) {
     sel.set(rec);
     if (app.freeform) app.freeform.clear(); // transitional: one visible selection
-    bar.render(rec);
+    setActiveEditable();
+    bar.render(rec); // selection: controls centered in the bar
     placeBox();
+  }
+  function openMenu(ctrls, btn) {
+    clear(); // a selection and an open menu are mutually exclusive
+    bar.openMenu(ctrls, btn); // menu: options centered under the menu button
   }
   function clear() {
     sel.clear();
     box.style.display = "none";
     bar.hide();
+    if (!app.editing) app.activeEditable = null;
   }
   function afterRender() {
     syncScale();
-    if (!sel.get()) return;
-    const el = curEl();
-    if (!el) return clear(); // element gone (deleted / logo hidden / slide changed)
-    bar.render(sel.get());
-    placeBox();
+    if (sel.get()) {
+      const el = curEl();
+      if (!el) return clear(); // element gone (deleted / logo hidden / slide changed)
+      setActiveEditable();
+      bar.render(sel.get());
+      placeBox();
+    } else {
+      bar.reposition(); // keep an open menu correctly placed across re-renders
+    }
   }
 
   // public surface used by app.js + descriptors
-  app.select = { afterRender, clear, current: () => sel.get(), selectRef };
+  app.select = { afterRender, clear, current: () => sel.get(), selectRef, openMenu, currentEl: () => curEl() };
   app.selectClear = clear;
 
   function canvasPoint(ev) {

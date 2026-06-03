@@ -22,7 +22,7 @@
 }
 
 /* chrome (was position:fixed to the viewport; now absolute within container) */
-.cdx-deck-editor #chrome { position: absolute; inset: 0 0 auto 0; min-height: 52px; z-index: 50; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 14px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.cdx-deck-editor #chrome { position: absolute; inset: 0 0 auto 0; min-height: 52px; z-index: 50; display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding: 7px 14px; background: var(--panel); border-bottom: 1px solid var(--border); }
 .cdx-deck-editor #chrome .title { font-weight: 700; }
 .cdx-deck-editor #chrome .tag { font-size: 11px; color: var(--muted); border: 1px solid var(--btn-bd); border-radius: 999px; padding: 2px 8px; }
 .cdx-deck-editor #chrome .spacer { flex: 1; }
@@ -98,16 +98,26 @@
 .cdx-deck-editor .fh.frot { left: 50%; top: 0; margin-top: calc(var(--hs) * -2.4); border-radius: 50%; background: var(--teal); cursor: grab; }
 .cdx-deck-editor .freset { position: absolute; right: 0; top: 0; transform: translate(60%, -130%); width: calc(var(--hs) * 1.6); height: calc(var(--hs) * 1.6); line-height: 1; font-size: calc(var(--hs) * 1.1); border: 0; border-radius: 50%; background: var(--teal); color: #06302b; cursor: pointer; pointer-events: auto; padding: 0; }
 
-/* unified selection model (js/select/): the stage-docked contextual bar + the
-   selection frame. Both live in #stagebox (UNSCALED), above the stage. The bar
-   is "a barra na lâmina": docked to the top edge of the slide, shown only while
-   something is selected. SLIDES-EDITOR-INTERNAL; do not reuse in other tabs. */
-.cdx-deck-editor .selbar { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 12; display: none; align-items: center; gap: 6px; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 10px; padding: 5px 8px; box-shadow: 0 10px 30px var(--overlay-strong); white-space: nowrap; max-width: calc(100% - 16px); }
-.cdx-deck-editor .selbar-ctl { font: inherit; font-size: 12px; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 4px 8px; cursor: pointer; }
-.cdx-deck-editor .selbar-ctl:hover { background: var(--btn-hover); }
-.cdx-deck-editor .selbar-danger { color: #f4a3a3; }
-.cdx-deck-editor .selbar-toggle { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
-.cdx-deck-editor .selbar-toggle input { cursor: pointer; }
+/* unified selection model (js/select/): THE context bar + the selection frame.
+   The context bar is one lean, content-width PILL overlaying the top of the stage
+   (no reflow): menus open their options into it (centered under the menu button),
+   and selecting an element fills it with that element's controls (centered). It is
+   leaner than the menu bar and scrolls horizontally when crowded. The frame lives
+   in #stagebox (UNSCALED), above the stage. SLIDES-EDITOR-INTERNAL. */
+.cdx-deck-editor .ctxbar { position: absolute; top: 8px; left: 0; right: 0; z-index: 14; pointer-events: none; overflow-x: auto; overflow-y: visible; scrollbar-width: thin; }
+.cdx-deck-editor .ctxpill { display: inline-flex; align-items: center; gap: 6px; pointer-events: auto; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 10px; padding: 4px 8px; box-shadow: 0 8px 24px var(--overlay-strong); white-space: nowrap; }
+.cdx-deck-editor .ctl { font: inherit; font-size: 12px; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 4px 8px; cursor: pointer; line-height: 1.4; white-space: nowrap; }
+.cdx-deck-editor .ctl:hover { background: var(--btn-hover); }
+.cdx-deck-editor .ctl.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+.cdx-deck-editor .ctl.ctl-danger { color: #f4a3a3; }
+.cdx-deck-editor .ctl.bold { font-weight: 900; }
+.cdx-deck-editor .ctx-choice { display: inline-flex; gap: 3px; }
+.cdx-deck-editor .ctx-toggle { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.cdx-deck-editor .ctx-toggle input { cursor: pointer; }
+.cdx-deck-editor .ctx-lab { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
+.cdx-deck-editor .ctx-lab input[type=color] { width: 20px; height: 20px; border: 0; background: none; cursor: pointer; padding: 0; }
+.cdx-deck-editor .ctx-lab input[type=range] { width: 88px; }
+.cdx-deck-editor .ctx-sep { width: 1px; height: 18px; background: var(--btn-bd); margin: 0 2px; flex: 0 0 auto; }
 
 .cdx-deck-editor .sellayer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
 .cdx-deck-editor .selscale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; pointer-events: none; }

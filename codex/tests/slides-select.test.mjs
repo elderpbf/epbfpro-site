@@ -86,17 +86,17 @@ test('asset.target / asset.controls return the model object and primitive data',
   const ctrls = kinds.get('asset').controls(app, sel, asset);
   assert.ok(Array.isArray(ctrls) && ctrls.length, 'controls is a non-empty array');
   const types = ctrls.map((c) => c.type);
-  assert.ok(types.includes('select'), 'has a scope select');
+  assert.ok(types.includes('choice'), 'has a scope choice (no dropdown)');
   assert.ok(types.includes('button'), 'has a delete (and/or mask) button');
   for (const c of ctrls) assert.equal(typeof c.type, 'string', 'every primitive is typed data');
 });
 
-test('logo.controls exposes variant select, per-slide toggle, hide', () => {
+test('logo.controls exposes variant choice, per-slide toggle, hide', () => {
   const app = stubApp();
   const sel = { kind: 'logo', ref: 'logo', slideId: 's1' };
   const ctrls = kinds.get('logo').controls(app, sel, kinds.get('logo').target(app, sel));
   const types = ctrls.map((c) => c.type);
-  assert.ok(types.includes('select'), 'variant select');
+  assert.ok(types.includes('choice'), 'variant choice (no dropdown)');
   assert.ok(types.includes('toggle'), 'per-slide toggle');
   assert.ok(types.includes('button'), 'hide button');
 });
@@ -196,13 +196,15 @@ test('textSlot.match resolves an ed() text slot to its fkey, excluding card-inte
   assert.equal(kinds.get('textSlot').match(stubEl({})), null);
 });
 
-test('textSlot.controls offers back-to-layout only when an override exists', () => {
-  const withOv = { cur: () => ({ overrides: { title: { x: 1, y: 1, w: 1, h: 1 } } }) };
-  assert.ok(kinds.get('textSlot').controls(withOv, { kind: 'textSlot', ref: 'title' }).some((c) => c.type === 'button'),
-    'reset button when freed');
-  const noOv = { cur: () => ({ overrides: {} }) };
-  assert.equal(kinds.get('textSlot').controls(noOv, { kind: 'textSlot', ref: 'title' }).length, 0,
-    'no bar when in flow (text formatting is the caret-anchored #fmt)');
+test('textSlot.controls always carries the format controls, plus back-to-layout when freed', () => {
+  const freed = kinds.get('textSlot').controls(
+    { cur: () => ({ overrides: { title: { x: 1, y: 1, w: 1, h: 1 } } }) }, { kind: 'textSlot', ref: 'title' });
+  assert.ok(freed.some((c) => c.id === 'bold'), 'has the format controls (A-/A+/B/Cor)');
+  assert.ok(freed.some((c) => c.id === 'reset'), 'reset appears when the slot is freed');
+  const inFlow = kinds.get('textSlot').controls(
+    { cur: () => ({ overrides: {} }) }, { kind: 'textSlot', ref: 'title' });
+  assert.ok(inFlow.some((c) => c.id === 'bold'), 'still has format controls while in flow');
+  assert.ok(!inFlow.some((c) => c.id === 'reset'), 'no reset while in flow');
 });
 
 /* ---------- imageSlot descriptor (+ folded mask) ---------- */

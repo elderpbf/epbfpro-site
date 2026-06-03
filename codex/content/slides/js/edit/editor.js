@@ -6,26 +6,10 @@ import { setPath } from "../core/schema.js";
 import { strategies } from "../select/geometry.js";
 import { t } from "../../../../js/i18n.js";
 
-/* ---------- format toolbar (the v7 vanish-on-release bug lived here) ---------- */
-// Old model hid the toolbar from a document-level "click outside" heuristic, which
-// fired on mouse-up and killed it. New model: show on focusin of an editable, hide
-// on focusout UNLESS focus moved into the toolbar (checked via relatedTarget).
-
-function showFmt(app, el) {
-  const fmt = app.fmt;
-  fmt.style.display = "flex";
-  const r = el.getBoundingClientRect();
-  const fw = fmt.offsetWidth || 240;
-  let left = r.left + r.width / 2 - fw / 2;
-  left = Math.max(8, Math.min(window.innerWidth - fw - 8, left));
-  let top = r.top - fmt.offsetHeight - 10;
-  if (top < 56) top = r.bottom + 10; // not enough room above → drop below
-  fmt.style.left = left + "px";
-  fmt.style.top = top + "px";
-}
-function hideFmt(app) {
-  app.fmt.style.display = "none";
-}
+// Text formatting (A− A＋ B Cor) now lives in the context bar as descriptor
+// primitives (see edit/textstyle.js + select/kinds.js) and acts on the selected
+// editable; there is no floating #fmt toolbar. The editor still owns entering /
+// leaving contenteditable and persisting the typed text content.
 
 function enterEdit(app, el) {
   el.setAttribute("contenteditable", "true");
@@ -92,15 +76,12 @@ export function initEditing(app) {
   stage.addEventListener("focusin", (e) => {
     const el = e.target.closest('[data-edit="1"]');
     if (!el) return;
-    app.activeEditable = el;
-    showFmt(app, el);
+    app.activeEditable = el; // the element the context-bar format controls act on
   });
   stage.addEventListener("focusout", (e) => {
     const el = e.target.closest('[data-edit="1"]');
     if (!el) return;
-    if (e.relatedTarget && app.fmt.contains(e.relatedTarget)) return; // into the toolbar → keep
     exitEdit(app, el);
-    hideFmt(app);
     app.renderNav();
   });
   stage.addEventListener("input", (e) => {
@@ -284,5 +265,3 @@ export function initEditing(app) {
     { passive: false }
   );
 }
-
-export { showFmt, hideFmt };

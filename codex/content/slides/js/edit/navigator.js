@@ -25,7 +25,7 @@ export function createNavigator(app) {
       });
       t.addEventListener("click", (e) => {
         if (e.target.closest("button")) return;
-        app.select(i);
+        app.goTo(i);
       });
       nav.appendChild(t);
     });
