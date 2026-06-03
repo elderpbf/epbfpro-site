@@ -140,12 +140,19 @@ function _scalePreview() {
   const vh = window.innerHeight || 800;
   const cs = window.getComputedStyle(body);
   const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
   const availW = Math.max(0, body.clientWidth - padX);
-  const scale = availW > 0 ? availW / vw : 1;
+  const availH = Math.max(0, body.clientHeight - padY);
+  // CONTAIN: scale to fit BOTH width and height so the mini-preview always fits
+  // the pane with no overflow (no scrollbars), responsive to any window size.
+  // The wrap is sized to the scaled frame (border-box, so its white border is
+  // counted in and can never push the box past the available space).
+  const scale = (availW > 0 && availH > 0) ? Math.min(availW / vw, availH / vh)
+    : (availW > 0 ? availW / vw : 1);
   frame.style.width = vw + 'px';
   frame.style.height = vh + 'px';
   frame.style.transform = 'scale(' + scale + ')';
-  wrap.style.width = availW + 'px';
+  wrap.style.width = (vw * scale) + 'px';
   wrap.style.height = (vh * scale) + 'px';
 }
 
