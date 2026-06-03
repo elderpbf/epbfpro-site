@@ -12,7 +12,7 @@ export default {
     <div class="hero">${
       s.icon && s.icon.src
         ? `<div class="heroicon dropzone filled" data-img="icon" data-fkey="icon">${imgInner("icon", s.icon)}</div>`
-        : `<div class="heroicon dropzone" data-img="icon">${BRAIN}</div>`
+        : `<div class="heroicon dropzone" data-img="icon" data-fkey="icon">${BRAIN}</div>`
     }
       ${ed("h1", "title", s.title)}</div>
     ${ed("div", "sub", s.sub, "sub")}</div>`,

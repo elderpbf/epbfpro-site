@@ -207,7 +207,10 @@ export function mount(root, ctx = {}) {
     toggleFontScope() { this.fontScope = this.fontScope === "all" ? "slide" : "all"; this.reopenAppearance(); },
     openAppearance(btn) {
       if (btn) this._appearBtn = btn;
-      this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope), this._appearBtn);
+      // seed the slider with the EFFECTIVE scale: the per-slide override in "slide"
+      // scope, the deck default in "all" scope (5b).
+      const fv = this.fontScope === "slide" ? player.effFontScale(this.deck(), this.cur()) : this.deck().theme.fontScale;
+      this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope, fv), this._appearBtn);
     },
     reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
 

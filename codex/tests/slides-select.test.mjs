@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { resolveLogo, DEFAULT_LOGO, textStyleProps } from '../content/slides/js/render/player.js';
 import * as kinds from '../content/slides/js/select/kinds.js';
 import { geometryCaps, strategies } from '../content/slides/js/select/geometry.js';
+import { imgslot } from '../content/slides/js/render/helpers.js';
 
 /* ---------- stubs ---------- */
 // A minimal element whose closest(sel) returns a preset node per selector.
@@ -208,14 +209,14 @@ test('textSlot.controls always carries the format controls, plus back-to-layout 
 });
 
 /* ---------- imageSlot descriptor (+ folded mask) ---------- */
-test('imageSlot is registered with freeformSlot geometry and matches filled slots, excluding cards', () => {
+test('imageSlot is registered with freeformSlot geometry and matches image slots, excluding cards', () => {
   const d = kinds.get('imageSlot');
   assert.ok(d, 'imageSlot is registered');
   assert.equal(d.geometry, 'freeformSlot');
   const free = { dataset: { fkey: 'image' }, closest: () => null };
-  assert.deepEqual(d.match(stubEl({ '.dropzone.filled[data-fkey]': free })), { kind: 'imageSlot', ref: 'image' });
+  assert.deepEqual(d.match(stubEl({ '.dropzone[data-fkey]': free })), { kind: 'imageSlot', ref: 'image' });
   const inCard = { dataset: { fkey: 'cards.0.image' }, closest: (s) => (s === '.card' ? {} : null) };
-  assert.equal(d.match(stubEl({ '.dropzone.filled[data-fkey]': inCard })), null, 'card images stay on freeform (Slice 3)');
+  assert.equal(d.match(stubEl({ '.dropzone[data-fkey]': inCard })), null, 'card images stay on freeform (Slice 3)');
 });
 
 test('imageSlot.target returns the slot image object; controls expose replace + a compound mask', () => {
@@ -228,6 +229,34 @@ test('imageSlot.target returns the slot image object; controls expose replace + 
   assert.ok(ids.includes('replace'), 'has replace');
   assert.ok(ids.includes('mask'), 'has mask (folded #maskpop)');
   assert.ok(ctrls.find((c) => c.id === 'mask').compound, 'mask is a compound opener');
+});
+
+/* ---------- image box (item a): empty slots are selectable, not auto-pickers ---------- */
+test('imgslot tags BOTH empty and filled slots with data-fkey (empty = selectable image box)', () => {
+  const empty = imgslot('icon', null, 'foto');
+  assert.match(empty, /data-fkey="icon"/, 'empty slot is selectable');
+  assert.ok(!/\bfilled\b/.test(empty), 'empty slot is not marked filled');
+  assert.match(imgslot('image', { src: 'x' }), /data-fkey="image"/, 'filled slot still selectable');
+});
+
+test('imageSlot.match also matches an EMPTY image box (data-fkey on an unfilled dropzone), excluding cards', () => {
+  const d = kinds.get('imageSlot');
+  const empty = { dataset: { fkey: 'icon' }, closest: () => null };
+  assert.deepEqual(d.match(stubEl({ '.dropzone[data-fkey]': empty })), { kind: 'imageSlot', ref: 'icon' });
+  const inCard = { dataset: { fkey: 'cards.0.image' }, closest: (s) => (s === '.card' ? {} : null) };
+  assert.equal(d.match(stubEl({ '.dropzone[data-fkey]': inCard })), null, 'empty card image boxes stay on freeform');
+});
+
+test('imageSlot.controls on an EMPTY box offers exactly one add-image button that picks into the slot', () => {
+  let picked = null;
+  const app = { cur: () => ({ slots: {} }), pickImage: (ref) => { picked = ref; } };
+  const sel = { kind: 'imageSlot', ref: 'icon' };
+  const ctrls = kinds.get('imageSlot').controls(app, sel, null); // empty -> target is null
+  assert.equal(ctrls.length, 1, 'just the add-image button while empty');
+  assert.equal(ctrls[0].type, 'button');
+  assert.ok(!ctrls.some((c) => c.id === 'replace' || c.id === 'mask'), 'no replace/mask while empty');
+  ctrls[0].run(app, sel);
+  assert.equal(picked, 'icon', 'add-image picks straight into the slot path');
 });
 
 /* ---------- text-style persistence ---------- */

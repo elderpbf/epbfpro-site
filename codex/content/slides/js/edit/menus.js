@@ -25,11 +25,14 @@ export function addSlideMenu(layouts) {
   }));
 }
 
-export function appearanceMenu(theme, fontScope) {
+// fontValue: the EFFECTIVE scale the slider should show. In "slide" scope this is
+// the slide's per-slide override (player.effFontScale), not the deck default, so the
+// slider reflects what's actually applied (5b). Omitted -> falls back to the deck.
+export function appearanceMenu(theme, fontScope, fontValue) {
   return [
     {
       type: "range", id: "font", labelKey: "slides.ed_font",
-      value: theme.fontScale, min: 0.7, max: 1.5, step: 0.05,
+      value: fontValue != null ? fontValue : theme.fontScale, min: 0.7, max: 1.5, step: 0.05,
       input(app, sel, v) { app.setFontScale(+v); },
     },
     {

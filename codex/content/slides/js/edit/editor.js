@@ -160,12 +160,8 @@ export function initEditing(app) {
       [cs[i], cs[j]] = [cs[j], cs[i]];
       return app.refresh();
     }
-    // empty image slot → pick
-    const slot = t.closest(".dropzone:not(.filled)");
-    if (slot && !t.closest("button")) {
-      e.stopPropagation();
-      return pickImage(app, slot.dataset.img);
-    }
+    // (empty image slots are now selectable "image boxes": single-click selects via
+    // the selection layer and the context bar offers "add image" — no auto-pick here)
     // replace a filled image
     if ((m = t.closest("[data-replace]"))) {
       e.stopPropagation();

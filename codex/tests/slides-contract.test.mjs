@@ -122,6 +122,23 @@ test('player.js no longer emits .assetctl or .logoctl (controls moved to the sel
   assert.match(src, /DEFAULT_LOGO/, 'player.js surfaces the shared DEFAULT_LOGO');
 });
 
+// Image box (item a): empty image slots are SELECTABLE boxes, not click-to-pick
+// auto-openers. The editor no longer opens the OS file picker on an empty-slot
+// click (the context bar's "add image" button does it instead), and the cover
+// hero is a selectable box (its empty icon slot carries data-fkey) rather than a
+// BRAIN that auto-picks on click.
+test('editor.js does not auto-open the file picker on an empty-slot click', () => {
+  const src = read('../content/slides/js/edit/editor.js');
+  assert.ok(!/\.dropzone:not\(\.filled\)/.test(src),
+    'no click-to-pick on empty dropzones (the image box selects instead)');
+});
+
+test('cover hero is a selectable image box: its empty icon slot carries data-fkey', () => {
+  const src = read('../content/slides/js/layouts/cover.js');
+  assert.ok(!/heroicon dropzone"\s+data-img="icon">/.test(src),
+    'the empty hero box carries data-fkey (selectable), not a bare auto-pick box');
+});
+
 // The unified selection model lives in its own js/select/ folder and carries a
 // loud scope banner: it is SLIDES-EDITOR-INTERNAL ONLY and must not be adopted
 // by other Codex tabs.

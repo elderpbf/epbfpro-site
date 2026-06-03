@@ -225,27 +225,41 @@ register({
   },
 });
 
-/* ---------- imageSlot (Slice 2): a filled image slot (imgslot() output) ---------- */
-// A filled .dropzone (split/bleed images, the cover icon) carrying data-fkey. Card
-// images live inside a .card and stay on freeform until Slice 3. The box geometry
-// is freeformSlot; pan/zoom is the separate imageFraming strategy. The mask popover
-// is folded into the bar as a compound control (the same #maskpop the asset reuses),
-// and "trocar" replaces the photo.
+/* ---------- imageSlot (Slice 2 + image box): an image slot (imgslot() output) ---------- */
+// Any top-level .dropzone (split/bleed images, the cover icon) carrying data-fkey,
+// EMPTY or FILLED. An empty slot is a selectable "image box": single-click selects
+// it (handles + bar), and the bar offers a single "add image" button instead of the
+// old click-to-open-OS-picker. A filled slot offers trocar/máscara (+ back-to-layout
+// once freed). Card images live inside a .card and stay on freeform until Slice 3.
+// The box geometry is freeformSlot; pan/zoom is the separate imageFraming strategy.
 register({
   id: "imageSlot",
   geometry: "freeformSlot",
   match(el) {
-    const im = el.closest && el.closest(".dropzone.filled[data-fkey]");
+    const im = el.closest && el.closest(".dropzone[data-fkey]");
     if (!im || (im.closest && im.closest(".card"))) return null;
     return { kind: "imageSlot", ref: im.dataset.fkey };
   },
   el(app, sel) {
-    return app.stage.querySelector(`.dropzone.filled[data-fkey="${sel.ref}"]`);
+    return app.stage.querySelector(`.dropzone[data-fkey="${sel.ref}"]`);
   },
   target(app, sel) {
     return getByPath(app.cur().slots, sel.ref) || null;
   },
   controls(app, sel, img) {
+    // Empty box: a single "adicionar imagem" that picks straight into the slot path.
+    if (!img || !img.src) {
+      return [
+        {
+          type: "button",
+          id: "addimage",
+          labelKey: "slides.ed_add_image",
+          run(app2, sel2) {
+            app2.pickImage(sel2.ref);
+          },
+        },
+      ];
+    }
     const ctrls = [
       {
         type: "button",

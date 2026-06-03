@@ -30,13 +30,15 @@ export function imgInner(path, img, tools = false) {
   );
 }
 
-/** A drop-target image slot. `path` is the deck path the image lives at. A filled
- *  slot also carries data-fkey so it can be reshaped (move/resize/rotate). `tools`
- *  is forwarded to imgInner (cards keep in-place tools; converted slots use the bar). */
+/** A drop-target image slot. `path` is the deck path the image lives at. Both empty
+ *  and filled slots carry data-fkey so the selection layer can pick them: an empty
+ *  slot is a selectable "image box" (single-click selects, the bar's "add image"
+ *  fills it), a filled slot can also be reshaped (move/resize/rotate). `tools` is
+ *  forwarded to imgInner (cards keep in-place tools; converted slots use the bar). */
 export function imgslot(path, img, label, tools = false) {
   const filled = img && img.src;
   return (
-    `<div class="imgslot dropzone ${filled ? "filled" : ""}" data-img="${path}"${filled ? ` data-fkey="${path}"` : ""}>` +
+    `<div class="imgslot dropzone ${filled ? "filled" : ""}" data-img="${path}" data-fkey="${path}">` +
     (filled ? imgInner(path, img, tools) : `<span class="drop">${label || "arraste ou clique p/ foto"} ↧</span>`) +
     `</div>`
   );

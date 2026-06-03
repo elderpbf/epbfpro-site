@@ -43,6 +43,15 @@ test('appearanceMenu seeds current theme values and uses NO dropdown', () => {
   assert.ok(!types.includes('choice') && !types.includes('select'), 'no dropdown in appearance');
   assert.equal(m.find((c) => c.id === 'accent').value, '#14b8a6');
 });
+test('appearanceMenu seeds the font range with the effective value when given, else theme.fontScale (5b)', () => {
+  const theme = { fontScale: 1, accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' };
+  // in 'slide' scope the slider must reflect the slide's EFFECTIVE scale, not the deck's
+  assert.equal(appearanceMenu(theme, 'slide', 1.25).find((c) => c.id === 'font').value, 1.25,
+    'slider reflects the passed effective value');
+  // back-compat: no explicit value falls back to the deck theme scale
+  assert.equal(appearanceMenu(theme, 'all').find((c) => c.id === 'font').value, 1,
+    'falls back to theme.fontScale when no value passed');
+});
 test('animMenu is a single choice with three options seeded with the current value', () => {
   const m = animMenu('fade');
   assert.equal(m.length, 1);
