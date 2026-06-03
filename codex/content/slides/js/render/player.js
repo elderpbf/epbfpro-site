@@ -115,6 +115,37 @@ export function freedStyle(el, g, origin) {
 }
 
 /**
+ * Map a stored text style ({fs,fw,color}) to inline CSS props, dropping empties.
+ * Block-level formatting from the #fmt toolbar is persisted on the model (per-slot
+ * in slide.textStyle[path], per-asset in asset.style) and re-applied on render, so
+ * a re-render no longer drops the user's bold / size / colour. Pure: testable.
+ */
+export function textStyleProps(st) {
+  const p = {};
+  if (!st) return p;
+  if (st.fs != null) p.fontSize = st.fs + "px";
+  if (st.fw) p.fontWeight = st.fw;
+  if (st.color) p.color = st.color;
+  return p;
+}
+
+/**
+ * Re-apply persisted text styles after a fresh render. Walks editable slots
+ * (data-path) and text assets (data-aid) and sets the stored inline style. The
+ * element was rebuilt from the model HTML, so it carries no inline style until now.
+ */
+export function applyTextStyles(scopeEl, deck, slide) {
+  const ts = slide.textStyle || {};
+  scopeEl.querySelectorAll('[data-path][data-edit="1"]').forEach((el) => {
+    Object.assign(el.style, textStyleProps(ts[el.getAttribute("data-path")]));
+  });
+  scopeEl.querySelectorAll("[data-aid]").forEach((el) => {
+    const a = deck.assets.find((x) => x.id === el.getAttribute("data-aid"));
+    if (a) Object.assign(el.style, textStyleProps(a.style));
+  });
+}
+
+/**
  * Apply per-slide freeform geometry. Any element carrying data-fkey that has an
  * override is lifted out of flow into absolute canvas coordinates; the rest stay
  * in the layout's flow (layouts are seeds, not cages).
@@ -160,6 +191,7 @@ export function renderInto(el, deck, slide) {
   el.style.setProperty("--fontScale", effFontScale(deck, slide));
   el.innerHTML = slideHTML(deck, slide);
   applyOverrides(el, slide);
+  applyTextStyles(el, deck, slide);
   el.querySelectorAll(".reveal").forEach((r) => r.classList.add("shown"));
 }
 

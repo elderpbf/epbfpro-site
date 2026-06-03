@@ -790,6 +790,8 @@ export default {
   'slides.ed_angle':          'Angle',
   'slides.ed_editing_hint':   'editing · click outside to exit',
   'slides.ed_mask':           'mask',
+  'slides.ed_replace':        'replace',
+  'slides.ed_to_layout':      'back to layout',
   'slides.ed_mask_none':      'none',
   'slides.ed_mask_color':     'color',
   'slides.ed_mask_gradient':  'gradient',

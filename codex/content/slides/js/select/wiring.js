@@ -170,7 +170,7 @@ export function initSelect(app) {
         }
         const g = { ...g0, x: g0.x + (ev.clientX - sx) / sc, y: g0.y + (ev.clientY - sy) / sc };
         st.write(app, sel.get(), g); // live: mutate model
-        st.patch(el, g); //               + patch the one element (no full render)
+        st.patch(el, g, app); //            + patch the one element (no full render)
         placeBox();
       },
       () => {
@@ -211,7 +211,7 @@ export function initSelect(app) {
           if (ev.shiftKey) deg = Math.round(deg / 15) * 15;
           const g = { ...g0, rot: Math.round(deg) };
           st.write(app, sel.get(), g);
-          st.patch(el, g);
+          st.patch(el, g, app);
           placeBox();
         },
         () => { app.commit(); app.renderNav(); app.broadcast(); }

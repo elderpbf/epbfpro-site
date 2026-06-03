@@ -5,12 +5,15 @@
 // never switches on a kind id: it asks geometryCaps which handles to show and
 // calls the strategy's read / write / patch.
 //
-//   read(app, sel, el)  -> { x, y, w, h, rot } in canvas coords (measures the
-//                          live element for dimensions the model does not store)
-//   write(app, sel, g)  -> commit geometry back to the model object
-//   patch(el, g)        -> live inline-style patch of the one element (per tick,
-//                          so a drag never triggers a full stage re-render)
-import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
+//   read(app, sel, el)   -> { x, y, w, h, rot } in canvas coords (measures the
+//                           live element for dimensions the model does not store)
+//   write(app, sel, g)   -> commit geometry back to the model object
+//   patch(el, g, app)    -> live inline-style patch of the one element (per tick,
+//                           so a drag never triggers a full stage re-render). `app`
+//                           is passed so flow-rooted slots can use freedStyle's
+//                           offset-parent walk; absolute kinds ignore it.
+import { resolveLogo, DEFAULT_LOGO, freedStyle } from "../render/player.js";
+import { getByPath } from "../core/schema.js";
 
 /** Which transform handles a strategy supports (drives the selection frame). */
 export function geometryCaps(name) {
@@ -92,5 +95,54 @@ export const strategies = {
       el.style.top = g.y + "px";
       el.style.height = g.h + "px";
     },
+  },
+
+  // Slot box (text + image slots, Slice 2): move / resize / rotate written to the
+  // slide's `overrides` map keyed by fkey (= the slot path) — the SAME storage the
+  // old freeform layer used, so existing decks keep their freed slots. A slot only
+  // leaves the layout's flow once it is actually dragged: until an absolute override
+  // exists, read() measures the live in-flow element. The mask/replace controls are
+  // bar primitives (see kinds.js); the box geometry is here.
+  freeformSlot: {
+    read(app, sel, el) {
+      const o = (app.cur().overrides || {})[sel.ref];
+      if (o && !o.flow) return { x: o.x, y: o.y, w: o.w, h: o.h, rot: o.rot || 0 };
+      if (el) {
+        const m = measure(el, app);
+        return { x: m.x, y: m.y, w: m.w, h: m.h, rot: 0 };
+      }
+      return { x: 0, y: 0, w: 0, h: 0, rot: 0 };
+    },
+    write(app, sel, g) {
+      const ov = (app.cur().overrides = app.cur().overrides || {});
+      ov[sel.ref] = { x: g.x, y: g.y, w: g.w, h: g.h, rot: g.rot || 0 };
+    },
+    patch(el, g, app) {
+      freedStyle(el, g, app.stage); // offset-parent-correct, since slots live in flow
+    },
+  },
+};
+
+// Image framing: pan (tx/ty) + zoom inside the slot's fixed box. Deliberately
+// SEPARATE from the box geometry above — reframing the photo never moves the box,
+// and the box transform never touches the photo. Keyed by the slot path (`ref`),
+// not by a selection record, so the wheel-zoom handler can drive it directly.
+strategies.imageFraming = {
+  obj(app, ref) {
+    return getByPath(app.cur().slots, ref) || null;
+  },
+  read(app, ref) {
+    const o = this.obj(app, ref) || {};
+    return { tx: o.tx || 0, ty: o.ty || 0, zoom: o.zoom || 1 };
+  },
+  write(app, ref, f) {
+    const o = this.obj(app, ref);
+    if (!o) return;
+    o.tx = f.tx;
+    o.ty = f.ty;
+    o.zoom = f.zoom;
+  },
+  patch(el, f) {
+    el.style.transform = `translate(${f.tx || 0}px,${f.ty || 0}px) scale(${f.zoom || 1})`;
   },
 };

@@ -13,25 +13,31 @@ export function maskOverlay(src, mask) {
   return `<div class="maskfill" style="background:${fillCss(mask)};-webkit-mask-image:url('${src}');mask-image:url('${src}')"></div>`;
 }
 
-/** Inner markup of a filled image slot: the image (in a transform wrapper) + tools. */
-export function imgInner(path, img) {
+/** Inner markup of a filled image slot: the image (in a transform wrapper) + tools.
+ *  `tools` keeps the in-place trocar/máscara buttons. Converted top-level slots
+ *  (Slice 2) pass false and drive replace/mask from the stage-docked selection bar;
+ *  card images still pass true until Slice 3 migrates them off freeform. */
+export function imgInner(path, img, tools = false) {
   const t = `translate(${img.tx || 0}px,${img.ty || 0}px) scale(${img.zoom || 1})`;
   return (
     `<div class="slotimg" data-img="${path}" style="transform:${t}">` +
     `<img src="${img.src}" draggable="false">${maskOverlay(img.src, img.mask)}</div>` +
-    `<div class="imgtools editoronly"><button data-replace="${path}">trocar</button>` +
-    `<button data-mask="${path}">máscara</button></div>` +
+    (tools
+      ? `<div class="imgtools editoronly"><button data-replace="${path}">trocar</button>` +
+        `<button data-mask="${path}">máscara</button></div>`
+      : "") +
     `<div class="panhint editoronly">scroll = zoom · arraste a moldura</div>`
   );
 }
 
 /** A drop-target image slot. `path` is the deck path the image lives at. A filled
- *  slot also carries data-fkey so it can be reshaped (move/resize/rotate). */
-export function imgslot(path, img, label) {
+ *  slot also carries data-fkey so it can be reshaped (move/resize/rotate). `tools`
+ *  is forwarded to imgInner (cards keep in-place tools; converted slots use the bar). */
+export function imgslot(path, img, label, tools = false) {
   const filled = img && img.src;
   return (
     `<div class="imgslot dropzone ${filled ? "filled" : ""}" data-img="${path}"${filled ? ` data-fkey="${path}"` : ""}>` +
-    (filled ? imgInner(path, img) : `<span class="drop">${label || "arraste ou clique p/ foto"} ↧</span>`) +
+    (filled ? imgInner(path, img, tools) : `<span class="drop">${label || "arraste ou clique p/ foto"} ↧</span>`) +
     `</div>`
   );
 }

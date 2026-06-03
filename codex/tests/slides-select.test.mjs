@@ -5,7 +5,7 @@
 // staging (visual confirmation), matching the existing test philosophy.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveLogo, DEFAULT_LOGO } from '../content/slides/js/render/player.js';
+import { resolveLogo, DEFAULT_LOGO, textStyleProps } from '../content/slides/js/render/player.js';
 import * as kinds from '../content/slides/js/select/kinds.js';
 import { geometryCaps, strategies } from '../content/slides/js/select/geometry.js';
 
@@ -136,4 +136,102 @@ test('deckLogo.write targets deck.logo, or slide.logo when per-slide is active',
   strategies.deckLogo.write(app, sel, { x: 7, y: 8, h: 70 });
   assert.deepEqual([app._slide.logo.x, app._slide.logo.y, app._slide.logo.h], [7, 8, 70]);
   assert.equal(app._deck.logo.x, 5, 'deck logo untouched while per-slide is active');
+});
+
+/* ============================ SLICE 2 ============================ */
+/* ---------- freeformSlot geometry (text + image slot boxes) ---------- */
+test('geometryCaps: freeformSlot allows move + resize(W/H) + rotate', () => {
+  const c = geometryCaps('freeformSlot');
+  assert.deepEqual([c.move, c.resizeW, c.resizeH, c.rotate], [true, true, true, true]);
+});
+
+test('freeformSlot.write stores absolute geometry in slide.overrides[ref] (no flow)', () => {
+  const slide = { id: 's1', overrides: {} };
+  const app = { cur: () => slide };
+  strategies.freeformSlot.write(app, { ref: 'title' }, { x: 10, y: 20, w: 200, h: 80, rot: 15 });
+  assert.deepEqual(slide.overrides.title, { x: 10, y: 20, w: 200, h: 80, rot: 15 });
+});
+
+test('freeformSlot.read returns the stored override (absolute) when present', () => {
+  const slide = { overrides: { title: { x: 1, y: 2, w: 3, h: 4, rot: 5 } } };
+  const app = { cur: () => slide };
+  assert.deepEqual(strategies.freeformSlot.read(app, { ref: 'title' }, null), { x: 1, y: 2, w: 3, h: 4, rot: 5 });
+});
+
+test('freeformSlot.read does NOT treat a flow override as absolute (slot stays in layout flow)', () => {
+  const slide = { overrides: { title: { x: 1, y: 2, w: 3, h: 4, flow: true } } };
+  const app = { cur: () => slide };
+  assert.notDeepEqual(strategies.freeformSlot.read(app, { ref: 'title' }, null), { x: 1, y: 2, w: 3, h: 4, rot: 0 });
+});
+
+/* ---------- imageFraming (pan/zoom inside the box, separate from geometry) ---------- */
+test('imageFraming.write/read round-trips tx/ty/zoom on the slot image object', () => {
+  const slide = { slots: { image: { src: 'x', tx: 0, ty: 0, zoom: 1 } } };
+  const app = { cur: () => slide };
+  strategies.imageFraming.write(app, 'image', { tx: 5, ty: -3, zoom: 1.5 });
+  assert.deepEqual(strategies.imageFraming.read(app, 'image'), { tx: 5, ty: -3, zoom: 1.5 });
+  assert.equal(slide.slots.image.zoom, 1.5);
+});
+
+test('imageFraming.read defaults to tx0/ty0/zoom1 for a bare image', () => {
+  const app = { cur: () => ({ slots: { image: { src: 'x' } } }) };
+  assert.deepEqual(strategies.imageFraming.read(app, 'image'), { tx: 0, ty: 0, zoom: 1 });
+});
+
+/* ---------- textSlot descriptor ---------- */
+test('textSlot is registered with freeformSlot geometry and the descriptor contract', () => {
+  const d = kinds.get('textSlot');
+  assert.ok(d, 'textSlot is registered');
+  assert.equal(d.geometry, 'freeformSlot');
+  for (const m of ['match', 'el', 'target', 'controls']) assert.equal(typeof d[m], 'function', `textSlot.${m}`);
+});
+
+test('textSlot.match resolves an ed() text slot to its fkey, excluding card-internal text', () => {
+  const free = { dataset: { fkey: 'title' }, closest: () => null };               // not inside a card
+  assert.deepEqual(kinds.get('textSlot').match(stubEl({ '.editable[data-fkey][data-path][data-edit="1"]': free })),
+    { kind: 'textSlot', ref: 'title' });
+  const inCard = { dataset: { fkey: 'cards.0.text' }, closest: (s) => (s === '.card' ? {} : null) };
+  assert.equal(kinds.get('textSlot').match(stubEl({ '.editable[data-fkey][data-path][data-edit="1"]': inCard })), null,
+    'card-internal text stays on freeform (Slice 3)');
+  assert.equal(kinds.get('textSlot').match(stubEl({})), null);
+});
+
+test('textSlot.controls offers back-to-layout only when an override exists', () => {
+  const withOv = { cur: () => ({ overrides: { title: { x: 1, y: 1, w: 1, h: 1 } } }) };
+  assert.ok(kinds.get('textSlot').controls(withOv, { kind: 'textSlot', ref: 'title' }).some((c) => c.type === 'button'),
+    'reset button when freed');
+  const noOv = { cur: () => ({ overrides: {} }) };
+  assert.equal(kinds.get('textSlot').controls(noOv, { kind: 'textSlot', ref: 'title' }).length, 0,
+    'no bar when in flow (text formatting is the caret-anchored #fmt)');
+});
+
+/* ---------- imageSlot descriptor (+ folded mask) ---------- */
+test('imageSlot is registered with freeformSlot geometry and matches filled slots, excluding cards', () => {
+  const d = kinds.get('imageSlot');
+  assert.ok(d, 'imageSlot is registered');
+  assert.equal(d.geometry, 'freeformSlot');
+  const free = { dataset: { fkey: 'image' }, closest: () => null };
+  assert.deepEqual(d.match(stubEl({ '.dropzone.filled[data-fkey]': free })), { kind: 'imageSlot', ref: 'image' });
+  const inCard = { dataset: { fkey: 'cards.0.image' }, closest: (s) => (s === '.card' ? {} : null) };
+  assert.equal(d.match(stubEl({ '.dropzone.filled[data-fkey]': inCard })), null, 'card images stay on freeform (Slice 3)');
+});
+
+test('imageSlot.target returns the slot image object; controls expose replace + a compound mask', () => {
+  const slide = { slots: { image: { src: 'x', mask: null } } };
+  const app = { cur: () => slide, openMask() {}, pickImage() {} };
+  const sel = { kind: 'imageSlot', ref: 'image' };
+  assert.equal(kinds.get('imageSlot').target(app, sel), slide.slots.image);
+  const ctrls = kinds.get('imageSlot').controls(app, sel, kinds.get('imageSlot').target(app, sel));
+  const ids = ctrls.map((c) => c.id);
+  assert.ok(ids.includes('replace'), 'has replace');
+  assert.ok(ids.includes('mask'), 'has mask (folded #maskpop)');
+  assert.ok(ctrls.find((c) => c.id === 'mask').compound, 'mask is a compound opener');
+});
+
+/* ---------- text-style persistence ---------- */
+test('textStyleProps maps a stored text style to inline CSS, dropping empties', () => {
+  assert.deepEqual(textStyleProps({ fs: 32, fw: '900', color: '#abc' }),
+    { fontSize: '32px', fontWeight: '900', color: '#abc' });
+  assert.deepEqual(textStyleProps(null), {});
+  assert.deepEqual(textStyleProps({ fw: '700' }), { fontWeight: '700' });
 });

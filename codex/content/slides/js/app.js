@@ -172,6 +172,7 @@ export function mount(root, ctx = {}) {
       this.stage.style.setProperty("--fontScale", player.effFontScale(d, s));
       this.stage.innerHTML = player.slideHTML(d, s);
       player.applyOverrides(this.stage, s);
+      player.applyTextStyles(this.stage, d, s);
       player.applySteps(this.stage, this.step, this.presenting);
       if (this.freeform) this.freeform.afterRender();
       if (this.select) this.select.afterRender();
@@ -318,23 +319,35 @@ function wireChrome(app, root) {
   const $ = (sel) => root.querySelector(sel);
   const fmt = app.fmt;
 
-  // format toolbar: act on the active editable; mousedown+preventDefault keeps focus
+  // format toolbar: act on the active editable; mousedown+preventDefault keeps focus.
+  // Each change records (undo-coalesced per element) and persists the resulting
+  // inline style onto the model so a re-render keeps it (see persistTextStyle).
+  const styleLabel = (el) => "style:" + (el.dataset.aid || el.dataset.path || "?");
   fmt.querySelectorAll("[data-fs]").forEach((b) =>
     b.addEventListener("mousedown", (e) => {
       e.preventDefault();
       const el = app.activeEditable;
       if (!el) return;
+      app.record(styleLabel(el));
       el.style.fontSize = parseFloat(getComputedStyle(el).fontSize) + +b.dataset.fs + "px";
-      if (el.dataset.path) commitText(app, el);
+      persistTextStyle(app, el);
     })
   );
   $("#bold").addEventListener("mousedown", (e) => {
     e.preventDefault();
     const el = app.activeEditable;
     if (!el) return;
+    app.record(styleLabel(el));
     el.style.fontWeight = getComputedStyle(el).fontWeight >= 700 ? "400" : "900";
+    persistTextStyle(app, el);
   });
-  $("#color").addEventListener("input", (e) => { if (app.activeEditable) app.activeEditable.style.color = e.target.value; });
+  $("#color").addEventListener("input", (e) => {
+    const el = app.activeEditable;
+    if (!el) return;
+    app.record(styleLabel(el) + ":color");
+    el.style.color = e.target.value;
+    persistTextStyle(app, el);
+  });
 
   $("#prev").onclick = () => app.go(-1);
   $("#next").onclick = () => app.go(1);
@@ -439,11 +452,25 @@ function wireChrome(app, root) {
   app._onFs = onFs;
 }
 
-function commitText(app, el) {
-  // font-size/style writes are inline styles on the element; the text content is
-  // already persisted via the editor's input handler. Nothing extra to store now
-  // (in-memory deck holds the HTML on next render only for text, not inline css).
+// Persist the editable's block-level inline style ({fontSize, fontWeight, color})
+// onto the model so it survives a re-render: per-asset in asset.style, per-slot in
+// slide.textStyle[path]. player.applyTextStyles re-applies it after each render.
+// (Replaces the old commitText no-op, which only touched the store and dropped the
+// style the moment the slide re-rendered.)
+function persistTextStyle(app, el) {
+  const st = {
+    fs: parseFloat(el.style.fontSize) || undefined,
+    fw: el.style.fontWeight || undefined,
+    color: el.style.color || undefined,
+  };
+  if (el.dataset.aid) {
+    const a = app.deck().assets.find((x) => x.id === el.dataset.aid);
+    if (a) a.style = st;
+  } else if (el.dataset.path) {
+    (app.cur().textStyle = app.cur().textStyle || {})[el.dataset.path] = st;
+  } else return;
   app.commit();
+  app.broadcast();
 }
 
 export function unmount(app, root) {

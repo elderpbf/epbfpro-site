@@ -10,6 +10,24 @@
 // The bar and frame read ONLY this contract; they never switch on a kind id.
 // A new kind = a new register() block; a new control = one array entry.
 import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
+import { getByPath } from "../core/schema.js";
+
+// "voltar ao layout": clears the slot's freeform override so it returns to the
+// layout's flow. Shared by the text + image slot descriptors; only offered while
+// an absolute override actually exists.
+function resetCtrl() {
+  return {
+    type: "button",
+    id: "reset",
+    labelKey: "slides.ed_to_layout",
+    run(app, sel) {
+      app.record();
+      const ov = app.cur().overrides;
+      if (ov) delete ov[sel.ref];
+      app.refresh();
+    },
+  };
+}
 
 const _kinds = new Map();
 export function register(d) {
@@ -162,5 +180,74 @@ register({
         },
       },
     ];
+  },
+});
+
+/* ---------- textSlot (Slice 2): a layout's free text slot (ed() output) ---------- */
+// An .editable carrying BOTH data-fkey and data-path is a free text slot. Card
+// text uses edPlain (no data-fkey) and stays on freeform until Slice 3, so a match
+// inside a .card is rejected. Text FORMATTING stays in the caret-anchored #fmt
+// toolbar; the bar only carries "voltar ao layout" once the slot has been freed.
+register({
+  id: "textSlot",
+  geometry: "freeformSlot",
+  match(el) {
+    const t = el.closest && el.closest('.editable[data-fkey][data-path][data-edit="1"]');
+    if (!t || (t.closest && t.closest(".card"))) return null;
+    return { kind: "textSlot", ref: t.dataset.fkey };
+  },
+  el(app, sel) {
+    return app.stage.querySelector(`[data-fkey="${sel.ref}"]`);
+  },
+  target(app, sel) {
+    return (app.cur().overrides || {})[sel.ref] || null;
+  },
+  controls(app, sel) {
+    return (app.cur().overrides || {})[sel.ref] ? [resetCtrl()] : [];
+  },
+});
+
+/* ---------- imageSlot (Slice 2): a filled image slot (imgslot() output) ---------- */
+// A filled .dropzone (split/bleed images, the cover icon) carrying data-fkey. Card
+// images live inside a .card and stay on freeform until Slice 3. The box geometry
+// is freeformSlot; pan/zoom is the separate imageFraming strategy. The mask popover
+// is folded into the bar as a compound control (the same #maskpop the asset reuses),
+// and "trocar" replaces the photo.
+register({
+  id: "imageSlot",
+  geometry: "freeformSlot",
+  match(el) {
+    const im = el.closest && el.closest(".dropzone.filled[data-fkey]");
+    if (!im || (im.closest && im.closest(".card"))) return null;
+    return { kind: "imageSlot", ref: im.dataset.fkey };
+  },
+  el(app, sel) {
+    return app.stage.querySelector(`.dropzone.filled[data-fkey="${sel.ref}"]`);
+  },
+  target(app, sel) {
+    return getByPath(app.cur().slots, sel.ref) || null;
+  },
+  controls(app, sel, img) {
+    const ctrls = [
+      {
+        type: "button",
+        id: "replace",
+        labelKey: "slides.ed_replace",
+        run(app2, sel2) {
+          app2.pickImage(sel2.ref);
+        },
+      },
+      {
+        type: "button",
+        id: "mask",
+        labelKey: "slides.ed_mask",
+        compound: true, // reuses the existing #maskpop popover
+        run(app2, sel2, anchorEl) {
+          app2.openMask({ kind: "slot", path: sel2.ref }, anchorEl);
+        },
+      },
+    ];
+    if ((app.cur().overrides || {})[sel.ref]) ctrls.push(resetCtrl());
+    return ctrls;
   },
 });

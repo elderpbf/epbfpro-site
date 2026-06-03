@@ -2,7 +2,8 @@
 // toolbar, image pan/zoom, split divider, drop targets, and card/topic controls.
 // All listeners are DELEGATED on the persistent #stage element and wired ONCE,
 // so they survive every re-render (no per-render rewiring, no leaks).
-import { getByPath, setPath } from "../core/schema.js";
+import { setPath } from "../core/schema.js";
+import { strategies } from "../select/geometry.js";
 import { t } from "../../../../js/i18n.js";
 
 /* ---------- format toolbar (the v7 vanish-on-release bug lived here) ---------- */
@@ -78,6 +79,9 @@ function pickImage(app, path) {
 export function initEditing(app) {
   if (app.isPresenter) return;
   const stage = app.stage;
+
+  // The image-slot selection bar's "trocar" reuses the editor's file picker.
+  app.pickImage = (path) => pickImage(app, path);
 
   /* --- text editing --- */
   stage.addEventListener("dblclick", (e) => {
@@ -260,17 +264,19 @@ export function initEditing(app) {
     }
   });
 
-  /* --- wheel: slot image zoom (logo + asset resize now via the selection frame) --- */
+  /* --- wheel: slot image zoom via the imageFraming strategy (framing != box) --- */
   stage.addEventListener(
     "wheel",
     (e) => {
       const im = e.target.closest(".slotimg");
       if (im) {
         e.preventDefault();
-        app.record("zoom:" + im.dataset.img);
-        const g = getByPath(app.cur().slots, im.dataset.img);
-        g.zoom = Math.min(4, Math.max(0.2, (g.zoom || 1) + (e.deltaY < 0 ? 0.08 : -0.08)));
-        im.style.transform = `translate(${g.tx || 0}px,${g.ty || 0}px) scale(${g.zoom})`;
+        const ref = im.dataset.img;
+        app.record("zoom:" + ref);
+        const f = strategies.imageFraming.read(app, ref);
+        f.zoom = Math.min(4, Math.max(0.2, f.zoom + (e.deltaY < 0 ? 0.08 : -0.08)));
+        strategies.imageFraming.write(app, ref, f);
+        strategies.imageFraming.patch(im, f);
         app.commit();
         app.broadcast();
       }
