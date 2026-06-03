@@ -51,7 +51,7 @@ const shellHTML = () => `
     <label>${t("slides.ed_text_color")} <input type="color" id="ink" value="#134e4a"></label>
     <label>${t("slides.ed_art")} <input type="color" id="motifColor" value="#14b8a6"></label>
   </div></div>
-  <label class="anim-ctl">${t("slides.ed_anim")} <select id="anim"><option value="fade-up">${t("slides.ed_anim_fadeup")}</option><option value="fade">${t("slides.ed_anim_fade")}</option><option value="none">${t("slides.ed_anim_none")}</option></select></label>
+  <label class="anim-ctl"><select id="anim" title="${t("slides.ed_anim")}"><option value="fade-up">${t("slides.ed_anim_fadeup")}</option><option value="fade">${t("slides.ed_anim_fade")}</option><option value="none">${t("slides.ed_anim_none")}</option></select></label>
   <button id="present" class="primary">▶ ${t("slides.ed_present")}</button>
 </div>
 
