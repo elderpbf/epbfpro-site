@@ -232,11 +232,16 @@ test('imageSlot.target returns the slot image object; controls expose replace + 
 });
 
 /* ---------- image box (item a): empty slots are selectable, not auto-pickers ---------- */
-test('imgslot tags BOTH empty and filled slots with data-fkey (empty = selectable image box)', () => {
-  const empty = imgslot('icon', null, 'foto');
+test('imgslot tags BOTH empty and filled with data-fkey; empty shows the unified cue (option 3)', () => {
+  const empty = imgslot('icon', null);
   assert.match(empty, /data-fkey="icon"/, 'empty slot is selectable');
   assert.ok(!/\bfilled\b/.test(empty), 'empty slot is not marked filled');
-  assert.match(imgslot('image', { src: 'x' }), /data-fkey="image"/, 'filled slot still selectable');
+  assert.match(empty, /imgcue/, 'empty box shows the unified add-image cue');
+  assert.match(empty, /adicionar imagem/, 'cue carries the "adicionar imagem" label');
+  assert.ok(!/arraste ou clique/.test(empty), 'the old drag/click pill is gone');
+  const full = imgslot('image', { src: 'x' });
+  assert.match(full, /data-fkey="image"/, 'filled slot still selectable');
+  assert.ok(!/imgcue/.test(full), 'filled slot shows the image, not the cue');
 });
 
 test('imageSlot.match also matches an EMPTY image box (data-fkey on an unfilled dropzone), excluding cards', () => {

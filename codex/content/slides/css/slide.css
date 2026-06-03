@@ -48,10 +48,15 @@
 .cdx-deck-editor .mini .editoronly, .cdx-deck-editor.presenter .editoronly { display: none !important; }
 .cdx-deck-editor .mini .asset, .cdx-deck-editor.presenter .asset { pointer-events: none !important; }
 
-/* image slot */
-.cdx-deck-editor .imgslot { position: relative; overflow: hidden; background: linear-gradient(135deg, #d6f4ee, #a7e7db 45%, var(--teal-d)); display: grid; place-items: center; }
+/* image slot: the unified "image box". empty = outline ghost (transparent fill +
+   hairline frame + add-image cue); filled = neutral bg so transparent images
+   composite cleanly. Same look on every layout (capa, split, bleed, cards). */
+.cdx-deck-editor .imgslot { position: relative; overflow: hidden; display: grid; place-items: center; border-radius: inherit; }
+.cdx-deck-editor .imgslot:not(.filled) { background: transparent; border: 1.5px solid color-mix(in srgb, var(--ink) 28%, transparent); }
 .cdx-deck-editor .imgslot.filled { background: #eef2f1; }
-.cdx-deck-editor .imgslot .drop { font-size: calc(15px * var(--fontScale)); color: #06302b; background: rgba(255, 255, 255, .7); padding: 7px 13px; border-radius: 999px; cursor: pointer; text-align: center; }
+.cdx-deck-editor .imgcue { display: flex; flex-direction: column; align-items: center; gap: 7px; color: color-mix(in srgb, var(--ink) 60%, #fff); padding: 8px; text-align: center; pointer-events: none; }
+.cdx-deck-editor .imgcue svg { width: calc(30px * var(--fontScale)); height: calc(30px * var(--fontScale)); opacity: .9; }
+.cdx-deck-editor .imgcue-lbl { font-size: calc(13px * var(--fontScale)); font-weight: 700; letter-spacing: .2px; }
 .cdx-deck-editor .slotimg { position: absolute; inset: 0; cursor: grab; user-select: none; }
 .cdx-deck-editor .slotimg img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
 .cdx-deck-editor .slotimg.dragging { cursor: grabbing; }
@@ -71,6 +76,7 @@
 .cdx-deck-editor .L-cover { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 0 80px; gap: 4px; }
 .cdx-deck-editor .L-cover .hero { display: flex; align-items: center; justify-content: center; gap: 36px; }
 .cdx-deck-editor .L-cover .heroicon { width: 200px; height: 200px; flex: 0 0 auto; color: var(--teal); border-radius: 18px; overflow: hidden; position: relative; display: grid; place-items: center; }
+.cdx-deck-editor .L-cover .heroicon .imgslot { position: absolute; inset: 0; }
 .cdx-deck-editor .L-cover h1 { font-size: calc(78px * var(--fontScale)); font-weight: 900; color: var(--ink); line-height: 1.0; text-align: left; }
 .cdx-deck-editor .L-cover .sub { font-size: calc(32px * var(--fontScale)); color: var(--ink2); margin-top: 20px; font-weight: 400; }
 

@@ -133,10 +133,10 @@ test('editor.js does not auto-open the file picker on an empty-slot click', () =
     'no click-to-pick on empty dropzones (the image box selects instead)');
 });
 
-test('cover hero is a selectable image box: its empty icon slot carries data-fkey', () => {
+test('cover hero is the SAME unified image box (uses imgslot, no BRAIN special-case)', () => {
   const src = read('../content/slides/js/layouts/cover.js');
-  assert.ok(!/heroicon dropzone"\s+data-img="icon">/.test(src),
-    'the empty hero box carries data-fkey (selectable), not a bare auto-pick box');
+  assert.match(src, /imgslot\(\s*["']icon["']/, 'cover hero renders the shared imgslot for the icon slot');
+  assert.ok(!/BRAIN/.test(src), 'cover no longer special-cases the BRAIN as the empty hero (consistency)');
 });
 
 // 5d: the recolour-mask popover (#maskpop) is extracted into a self-contained

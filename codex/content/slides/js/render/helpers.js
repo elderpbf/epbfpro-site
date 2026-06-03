@@ -30,16 +30,30 @@ export function imgInner(path, img, tools = false) {
   );
 }
 
-/** A drop-target image slot. `path` is the deck path the image lives at. Both empty
- *  and filled slots carry data-fkey so the selection layer can pick them: an empty
- *  slot is a selectable "image box" (single-click selects, the bar's "add image"
- *  fills it), a filled slot can also be reshaped (move/resize/rotate). `tools` is
- *  forwarded to imgInner (cards keep in-place tools; converted slots use the bar). */
-export function imgslot(path, img, label, tools = false) {
+// The empty-state cue shared by EVERY image box (one look everywhere, "outline
+// ghost"): a photo glyph + "adicionar imagem". The box is a transparent,
+// hairline-framed region (styled in slide.css). The box itself selects on
+// single-click; the context bar's "adicionar imagem" button does the pick.
+const IMG_GLYPH =
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">` +
+  `<rect x="3" y="5" width="18" height="14" rx="2.4" stroke="currentColor" stroke-width="1.6"/>` +
+  `<circle cx="8.5" cy="10" r="1.9" fill="currentColor"/>` +
+  `<path d="M5 17.5l4.7-5.2 3.2 3.4L16.3 11l3.2 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+export function imgCue() {
+  return `<div class="imgcue">${IMG_GLYPH}<span class="imgcue-lbl">adicionar imagem</span></div>`;
+}
+
+/** A drop-target image slot, the unified "image box". `path` is the deck path the
+ *  image lives at. Empty and filled both carry data-fkey so the selection layer can
+ *  pick them: empty renders the shared add-image cue (single-click selects, the bar's
+ *  "adicionar imagem" fills it); filled renders the image and can be reshaped. `tools`
+ *  is forwarded to imgInner (cards keep in-place tools; converted slots use the bar). */
+export function imgslot(path, img, tools = false) {
   const filled = img && img.src;
   return (
     `<div class="imgslot dropzone ${filled ? "filled" : ""}" data-img="${path}" data-fkey="${path}">` +
-    (filled ? imgInner(path, img, tools) : `<span class="drop">${label || "arraste ou clique p/ foto"} ↧</span>`) +
+    (filled ? imgInner(path, img, tools) : imgCue()) +
     `</div>`
   );
 }
