@@ -82,8 +82,9 @@ test('boot imports + routes the native Lessons tab (?tab=lessons)', () => {
   assert.match(indexHtml, /lessons\/lessons\.css/, 'lessons CSS linked');
 });
 
-test('boot hands the Content sub-tabs to the topbar and the sub to mount', () => {
-  assert.match(indexHtml, /content\.subtabs\(/, 'boot builds sub-tabs from content.subtabs()');
-  assert.match(indexHtml, /topbar\(\s*\{\s*active:\s*tab,\s*subTabs\s*\}\s*\)/, 'boot passes subTabs to the topbar');
+test('boot builds the per-tab sub-tab map, hands it to the topbar, and passes the sub to mount', () => {
+  assert.match(indexHtml, /\.subtabs\(/, "boot builds sub-tabs from each tab module's subtabs()");
+  assert.match(indexHtml, /subTabsByTab/, 'boot builds the per-tab map (pill hover-all)');
+  assert.match(indexHtml, /topbar\(\s*\{\s*active:\s*tab,\s*subTabs,\s*subTabsByTab\s*\}\s*\)/, 'boot passes subTabs + the map to the topbar');
   assert.match(indexHtml, /ctx\.sub\s*=\s*sub/, 'boot passes the active sub to mount');
 });

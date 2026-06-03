@@ -84,29 +84,38 @@ function renderSubBar(header, anchorTab, subTabs) {
   window.addEventListener('resize', place);
 }
 
-// 'pill' mode: a floating pill, hidden until the active tab is hovered.
-function renderSubPill(header, anchorTab, subTabs) {
+// 'pill' mode: hovering ANY main tab reveals THAT tab's sub-tabs in a floating
+// pill under it (a hover bridge keeps it open while the cursor is on it). Tabs
+// with no sub-tabs show no pill, so you just click the main tab. One pill,
+// repopulated per hovered tab, so you can jump straight to any sub-tab, skipping
+// the click-the-tab-then-click-the-sub-tab two-step.
+function renderSubPill(header, strip, subTabsByTab) {
   const pill = document.createElement('div');
   pill.className = 'cdx-subpill';
   pill.setAttribute('role', 'tablist');
   pill.setAttribute('aria-label', 'Sub-navegação');
-  _subtabLinks(subTabs).forEach((a) => pill.appendChild(a));
   header.appendChild(pill);
   let hideT = null;
-  const show = () => {
+  const hide = () => pill.classList.remove('on');
+  const scheduleHide = () => { hideT = setTimeout(hide, 180); };
+  const showFor = (tabEl, items) => {
     clearTimeout(hideT);
+    if (!items || !items.length) return hide(); // no sub-tabs -> click the main tab
+    pill.innerHTML = '';
+    _subtabLinks(items).forEach((a) => pill.appendChild(a));
     pill.classList.add('on');
     const hr = header.getBoundingClientRect();
-    const ar = anchorTab.getBoundingClientRect();
+    const ar = tabEl.getBoundingClientRect();
     pill.style.top = (ar.bottom - hr.top + 4) + 'px';
     pill.style.left = anchorLeft({
       containerW: hr.width, contentW: pill.offsetWidth,
       anchorCenter: ar.left + ar.width / 2 - hr.left, mode: 'under',
     }) + 'px';
   };
-  const scheduleHide = () => { hideT = setTimeout(() => pill.classList.remove('on'), 180); };
-  anchorTab.addEventListener('mouseenter', show);
-  anchorTab.addEventListener('mouseleave', scheduleHide);
+  strip.querySelectorAll('.cdx-tab').forEach((tabEl) => {
+    tabEl.addEventListener('mouseenter', () => showFor(tabEl, subTabsByTab[tabEl.dataset.tab]));
+    tabEl.addEventListener('mouseleave', scheduleHide);
+  });
   pill.addEventListener('mouseenter', () => clearTimeout(hideT)); // hover bridge
   pill.addEventListener('mouseleave', scheduleHide);
 }
@@ -143,6 +152,11 @@ export function init(opts) {
   // chrome (5c, see the helpers above). Each entry: { label, href, active }.
   // Empty/omitted -> no sub-navigation (single-row topbar).
   const subTabs = opts.subTabs || [];
+  // Per-tab sub-tab map (keyed by tab key): pill mode reveals ANY tab's sub-tabs
+  // on hover, so you jump straight to a sub-tab. Seed the active tab from subTabs
+  // for callers that pass only the active list.
+  const subTabsByTab = opts.subTabsByTab || {};
+  if (subTabs.length && !subTabsByTab[active]) subTabsByTab[active] = subTabs;
   const container = document.querySelector('.bs-app') || document.body;
 
   const header = document.createElement('header');
@@ -182,6 +196,7 @@ export function init(opts) {
   TABS.forEach((tab) => {
     const a = document.createElement('a');
     a.className = 'cdx-tab cdx-tab--' + tab.key + (tab.key === active ? ' active' : '');
+    a.dataset.tab = tab.key; // key for the pill's per-tab sub-tab lookup
     a.href = tab.href || '#';
     a.setAttribute('role', 'tab');
     if (tab.key === active) a.setAttribute('aria-current', 'page');
@@ -250,12 +265,15 @@ export function init(opts) {
   container.insertBefore(header, container.firstChild);
 
   // Sub-tabs (5c): rendered into the LIVE header (after insert) so the positioner
-  // can measure the active tab. Two modes chosen by the global pref; only the
-  // active tab declares sub-tabs, so tabs without them keep the single-row topbar.
-  if (subTabs.length > 0) {
-    const anchorTab = strip.querySelector('.cdx-tab.active') || strip;
-    if (subtabMode() === 'bar') renderSubBar(header, anchorTab, subTabs);
-    else renderSubPill(header, anchorTab, subTabs);
+  // can measure. Bar mode is the active section's persistent strip; pill mode
+  // reveals ANY tab's sub-tabs on hover, so it renders whenever any tab has them.
+  if (subtabMode() === 'bar') {
+    if (subTabs.length > 0) {
+      const anchorTab = strip.querySelector('.cdx-tab.active') || strip;
+      renderSubBar(header, anchorTab, subTabs);
+    }
+  } else if (Object.keys(subTabsByTab).some((k) => (subTabsByTab[k] || []).length)) {
+    renderSubPill(header, strip, subTabsByTab);
   }
 
   // Reuse shared shell services. The pill/bar toggle is a global Codex pref, so

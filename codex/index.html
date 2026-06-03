@@ -131,11 +131,16 @@
   BS_AUTH.clearPasswordInputs();
   applyI18n();
 
-  // Content and Questions own sub-tab registries; the topbar renders the sub-row.
-  let subTabs = [];
-  if (tab === 'content' && content.subtabs) subTabs = content.subtabs(sub);
-  else if (tab === 'questions' && questions.subtabs) subTabs = questions.subtabs(sub);
-  topbar({ active: tab, subTabs });
+  // Each tab may own a sub-tab registry. Build the FULL map so the topbar's pill
+  // mode can reveal ANY tab's sub-tabs on hover (jump straight to a sub-tab, one
+  // less click). The active tab also drives the persistent-bar mode. Only the
+  // active tab passes the current `sub`, so only its current sub-tab highlights.
+  const subTabsByTab = {};
+  for (const key of Object.keys(TABS)) {
+    if (TABS[key].subtabs) subTabsByTab[key] = TABS[key].subtabs(key === tab ? sub : undefined);
+  }
+  const subTabs = subTabsByTab[tab] || [];
+  topbar({ active: tab, subTabs, subTabsByTab });
 
   const ctx = {};
   if (tab === 'content' || tab === 'questions') ctx.sub = sub;

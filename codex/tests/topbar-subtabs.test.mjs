@@ -40,3 +40,13 @@ test('codex-topbar wires the lifted positioner, the mode pref, the chrome, and t
   assert.match(src, /sd-subtab-mode/, 'offers the pill/bar toggle in the settings drawer');
   assert.ok(!/bs-topbar-subrow/.test(src), 'the legacy left-aligned subrow is gone');
 });
+
+test('pill mode reveals ANY tab\'s sub-tabs on hover (per-tab map = one-less-click)', () => {
+  const src = read('../js/codex-topbar.js');
+  assert.match(src, /subTabsByTab/, 'topbar consumes a per-tab sub-tab map');
+  assert.match(src, /querySelectorAll\(\s*['"]\.cdx-tab['"]\s*\)/, 'pill hover binds to EVERY main tab');
+  assert.match(src, /dataset\.tab/, 'each tab carries its key for the per-tab lookup');
+  const idx = read('../index.html');
+  assert.match(idx, /subTabsByTab/, 'index.html builds + passes the per-tab map');
+  assert.match(idx, /\.subtabs\(/, "index.html calls each tab module's subtabs registry");
+});
