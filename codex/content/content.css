@@ -833,8 +833,12 @@
 .cdx-lab-ptitle { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
 .cdx-lab-psub { font-size: 0.8rem; color: var(--text-secondary); }
 .cdx-lab-preview-actions { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
-.cdx-lab-preview-body { flex: 1; min-height: 0; display: flex; }
-.cdx-lab-frame { flex: 1; width: 100%; border: 0; display: block; background: #0a0e1a; }
+.cdx-lab-preview-body { flex: 1; min-height: 0; overflow: auto; padding: 0.9rem; display: flex; justify-content: center; align-items: flex-start; }
+/* The lab is rendered at full viewport size then transform-scaled (in labs.js)
+   so the small preview looks like the fullscreen view. White line delimits it;
+   pointer-events off so only the fullscreen button is interactive. */
+.cdx-lab-frame-wrap { position: relative; overflow: hidden; border: 2px solid #fff; border-radius: 4px; background: #0a0e1a; flex-shrink: 0; }
+.cdx-lab-frame { position: absolute; top: 0; left: 0; border: 0; display: block; transform-origin: top left; pointer-events: none; background: #0a0e1a; }
 
 /* ── Drive sub-tab (native, master-detail like Items) ────────────────────────
    Reuses the Items split shell. Toolbar + connection status + folder rows +

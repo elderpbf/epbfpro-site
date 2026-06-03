@@ -23,6 +23,11 @@ test('labs is a native cdx- module, not a CTLabsPanel wrapper', () => {
   assert.match(src, /cdx-item-preview|cdx-labs-preview/, 'has a preview pane');
   assert.match(src, /cdx-item-row/, 'renders the list as cdx- rows (not a per-tab card grid)');
   assert.match(src, /cdx-lab-switch/, 'native on/off switch');
+  // The right-pane preview is the lab rendered at viewport size then scaled down
+  // (looks like fullscreen, small), boxed and non-interactive.
+  assert.match(src, /cdx-lab-frame-wrap/, 'preview is a boxed frame');
+  assert.match(src, /scale\(/, 'preview is transform-scaled to look like fullscreen');
+  assert.match(read('../content/content.css'), /\.cdx-lab-frame[^-][^{]*\{[^}]*pointer-events:\s*none/, 'small preview is non-interactive');
   assert.match(src, /from\s+['"]\.\.\/js\/i18n\.js['"]/, 'imports t()');
   assert.ok(!/—/.test(src), 'no em dashes');
   assert.ok(!/class="ct-/.test(src) && !/class="cv-/.test(src), 'authors no ct-/cv- markup');

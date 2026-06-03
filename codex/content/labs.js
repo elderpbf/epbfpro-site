@@ -27,6 +27,7 @@ let _viewEl = null;
 let _selectedKey = null;
 let _onClick = null;
 let _onChange = null;
+let _onResize = null;
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -101,10 +102,12 @@ function _previewHtml(lab) {
         '<button type="button" class="cdx-btn cdx-btn-sm" data-action="fullscreen">' + _esc(t('labs.preview')) + '</button>' +
       '</div>' +
     '</div>' +
-    '<div class="cdx-lab-preview-body">' +
-      '<iframe class="cdx-lab-frame" title="' + _esc(lab.title) + '" loading="lazy"' +
-        ' allow="autoplay; encrypted-media; clipboard-write; fullscreen"' +
-        ' src="/backstage/labs/' + encodeURIComponent(lab.key) + '/"></iframe>' +
+    '<div class="cdx-lab-preview-body" id="cdx-lab-preview-body">' +
+      '<div class="cdx-lab-frame-wrap">' +
+        '<iframe class="cdx-lab-frame" title="' + _esc(lab.title) + '" loading="lazy" scrolling="no"' +
+          ' allow="autoplay; encrypted-media; clipboard-write; fullscreen"' +
+          ' src="/backstage/labs/' + encodeURIComponent(lab.key) + '/"></iframe>' +
+      '</div>' +
     '</div>';
 }
 
@@ -119,6 +122,31 @@ function _renderPreview() {
   const pane = _viewEl.querySelector('#cdx-labs-preview');
   if (!pane) return;
   pane.innerHTML = _previewHtml(_labByKey(_selectedKey));
+  _scalePreview();
+}
+
+// Render the lab at the real page (viewport) size, then transform-scale it down
+// to fit the preview pane, so the small preview looks exactly like the fullscreen
+// view, only smaller. The iframe is non-interactive (pointer-events off in CSS);
+// only the fullscreen button gives a usable lab.
+function _scalePreview() {
+  if (typeof window === 'undefined') return;
+  const body = _viewEl && _viewEl.querySelector('#cdx-lab-preview-body');
+  if (!body) return;
+  const wrap = body.querySelector('.cdx-lab-frame-wrap');
+  const frame = body.querySelector('.cdx-lab-frame');
+  if (!wrap || !frame) return;
+  const vw = window.innerWidth || 1280;
+  const vh = window.innerHeight || 800;
+  const cs = window.getComputedStyle(body);
+  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const availW = Math.max(0, body.clientWidth - padX);
+  const scale = availW > 0 ? availW / vw : 1;
+  frame.style.width = vw + 'px';
+  frame.style.height = vh + 'px';
+  frame.style.transform = 'scale(' + scale + ')';
+  wrap.style.width = availW + 'px';
+  wrap.style.height = (vh * scale) + 'px';
 }
 
 function _select(key) {
@@ -190,9 +218,12 @@ export function mount(viewEl) {
   };
   viewEl.addEventListener('click', _onClick);
   viewEl.addEventListener('change', _onChange);
+  _onResize = () => _scalePreview();
+  window.addEventListener('resize', _onResize);
 }
 
 export function unmount() {
+  if (_onResize && typeof window !== 'undefined') window.removeEventListener('resize', _onResize);
   if (_viewEl) {
     if (_onClick) _viewEl.removeEventListener('click', _onClick);
     if (_onChange) _viewEl.removeEventListener('change', _onChange);
@@ -201,4 +232,5 @@ export function unmount() {
   _viewEl = null;
   _onClick = null;
   _onChange = null;
+  _onResize = null;
 }
