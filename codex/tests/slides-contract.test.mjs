@@ -139,6 +139,25 @@ test('cover hero is a selectable image box: its empty icon slot carries data-fke
     'the empty hero box carries data-fkey (selectable), not a bare auto-pick box');
 });
 
+// 5d: the recolour-mask popover (#maskpop) is extracted into a self-contained
+// edit/maskpanel.js (markup + wiring + outside-click close), draining app.js so it
+// stays a thin composition root. app.openMask stays the public entry the bar's
+// compound control and the slot data-mask button call.
+test('the mask popover is a self-contained edit/maskpanel.js, drained from app.js (5d)', () => {
+  const panel = read('../content/slides/js/edit/maskpanel.js');
+  assert.match(panel, /export\s+function\s+maskPanelHTML\s*\(/, 'maskpanel exports maskPanelHTML');
+  assert.match(panel, /export\s+function\s+initMaskPanel\s*\(/, 'maskpanel exports initMaskPanel');
+  assert.match(panel, /id="maskpop"/, 'maskpanel owns the #maskpop markup');
+  assert.match(panel, /data-mtype="gradient"/, 'maskpanel owns the mask type buttons');
+
+  const appjs = read('../content/slides/js/app.js');
+  assert.match(appjs, /initMaskPanel\s*\(/, 'app.js wires the panel via initMaskPanel');
+  assert.match(appjs, /maskPanelHTML\s*\(/, 'app.js injects the panel HTML via maskPanelHTML()');
+  assert.ok(!/id="maskpop"/.test(appjs), 'app.js no longer inlines the #maskpop markup');
+  assert.ok(!/maskObj/.test(appjs), 'app.js no longer owns maskObj (moved into the panel)');
+  assert.ok(!/\[data-mtype\]/.test(appjs), 'app.js no longer wires the mask type buttons');
+});
+
 // The unified selection model lives in its own js/select/ folder and carries a
 // loud scope banner: it is SLIDES-EDITOR-INTERNAL ONLY and must not be adopted
 // by other Codex tabs.

@@ -5,11 +5,12 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { getByPath, uid } from "./core/schema.js";
+import { uid } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
 import { initEditing } from "./edit/editor.js";
+import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
 import { initFreeform } from "./edit/freeform.js";
 import { initSelect } from "./select/wiring.js";
 import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from "./edit/menus.js";
@@ -44,12 +45,7 @@ const shellHTML = () => `
   <button id="present" class="primary">▶ ${t("slides.ed_present")}</button>
 </div>
 
-<div id="maskpop">
-  <div class="mp-types"><button data-mtype="none">${t("slides.ed_mask_none")}</button><button data-mtype="color">${t("slides.ed_mask_color")}</button><button data-mtype="gradient">${t("slides.ed_mask_gradient")}</button></div>
-  <div class="mp-field"><span>${t("slides.ed_color")}</span><input type="color" id="mc1" value="#14b8a6"></div>
-  <div class="mp-field mp-g"><span>${t("slides.ed_color2")}</span><input type="color" id="mc2" value="#0d9488"></div>
-  <div class="mp-field mp-g"><span>${t("slides.ed_angle")}</span><input type="range" id="mang" min="0" max="360" value="45"></div>
-</div>
+${maskPanelHTML()}
 
 <div id="nav"></div>
 <div id="stagewrap"><div id="stagebox"><div id="stage"></div></div></div>
@@ -78,7 +74,6 @@ export function mount(root, ctx = {}) {
     activeEditable: null,
     selected: null,
     fontScope: "all", // "all" = deck.theme.fontScale · "slide" = per-slide override
-    maskTarget: null,
     record() {}, // assigned once history exists (below)
     undo() {},
     redo() {},
@@ -122,32 +117,6 @@ export function mount(root, ctx = {}) {
       set("#anim", d.theme.anim);
       this.syncFontSlider();
     },
-    // the image object a mask popover is currently targeting (slot or asset)
-    maskObj() {
-      const t = this.maskTarget;
-      if (!t) return null;
-      return t.kind === "asset" ? this.deck().assets.find((a) => a.id === t.id) : getByPath(this.cur().slots, t.path);
-    },
-    openMask(target, anchorEl) {
-      this.maskTarget = target;
-      const pop = root.querySelector("#maskpop");
-      const obj = this.maskObj();
-      const mask = obj && obj.mask;
-      if (mask) {
-        root.querySelector("#mc1").value = mask.c1 || "#14b8a6";
-        if (mask.type === "gradient") {
-          root.querySelector("#mc2").value = mask.c2 || "#0d9488";
-          root.querySelector("#mang").value = mask.angle || 45;
-        }
-      }
-      pop.classList.toggle("grad", !!mask && mask.type === "gradient");
-      const r = anchorEl.getBoundingClientRect();
-      pop.style.display = "flex";
-      const pw = pop.offsetWidth || 220;
-      pop.style.left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left)) + "px";
-      pop.style.top = r.bottom + 8 + "px";
-    },
-
     renderSlide() {
       const d = this.deck(), s = this.cur();
       this.stage.style.setProperty("--fontScale", player.effFontScale(d, s));
@@ -305,6 +274,7 @@ export function mount(root, ctx = {}) {
   initEditing(app);
   initFreeform(app);
   initSelect(app); // unified selection model (asset + logo); after freeform so it can clear it
+  initMaskPanel(app, root); // the recolour-mask popover (#maskpop): owns app.openMask
   app.renderNav = createNavigator(app).render;
   app.broadcast = createSync(app).broadcast;
 
@@ -355,37 +325,12 @@ function wireChrome(app, root) {
   // Outside-click closes the mask popover and any open context-bar menu. Stored on
   // app and removed in unmount() (a DOCUMENT-level listener). Each $() is null-guarded.
   const onDocClick = (e) => {
-    const mp = $("#maskpop");
-    if (mp && !e.target.closest("#maskpop") && !e.target.closest("[data-mask]") && !e.target.closest("[data-asmask]")) mp.style.display = "none";
     const cur = app.select.current();
     if (cur && cur.menu && !e.target.closest(".ctxbar") && !e.target.closest("#chrome")) { app.select.clear(); app._openMenuBtn = null; }
     if (!e.target.closest(".logo")) { const lm = $(".logo.menu-open"); if (lm) lm.classList.remove("menu-open"); }
   };
   document.addEventListener("click", onDocClick);
   app._onDocClick = onDocClick;
-
-  // mask popover: type buttons + live colour/angle, operating on app.maskObj()
-  const maskpop = $("#maskpop");
-  maskpop.querySelectorAll("[data-mtype]").forEach((b) => (b.onclick = () => {
-    const obj = app.maskObj();
-    if (!obj) return;
-    app.record("mask");
-    const type = b.dataset.mtype;
-    if (type === "none") obj.mask = null;
-    else if (type === "color") obj.mask = { type: "color", c1: $("#mc1").value };
-    else obj.mask = { type: "gradient", c1: $("#mc1").value, c2: $("#mc2").value, angle: +$("#mang").value };
-    maskpop.classList.toggle("grad", type === "gradient");
-    app.refresh();
-  }));
-  const liveMask = () => {
-    const obj = app.maskObj();
-    if (!obj || !obj.mask) return;
-    app.record("mask:live");
-    obj.mask.c1 = $("#mc1").value;
-    if (obj.mask.type === "gradient") { obj.mask.c2 = $("#mc2").value; obj.mask.angle = +$("#mang").value; }
-    app.refresh();
-  };
-  ["#mc1", "#mc2", "#mang"].forEach((id) => $(id).addEventListener("input", liveMask));
 
   $("#present").onclick = () => {
     app.setPresenting(true);
@@ -415,6 +360,7 @@ export function unmount(app, root) {
   if (app._onResize) window.removeEventListener("resize", app._onResize);
   if (app._onKey) document.removeEventListener("keydown", app._onKey);
   if (app._onDocClick) document.removeEventListener("click", app._onDocClick);
+  if (app._onMaskDocClick) document.removeEventListener("click", app._onMaskDocClick);
   if (app._onFs) document.removeEventListener("fullscreenchange", app._onFs);
   if (root) root.innerHTML = "";
 }
