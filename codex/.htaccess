@@ -1,12 +1,20 @@
-<IfModule mod_expires.c>
-  ExpiresActive On
-  ExpiresByType text/css "access plus 1 hour"
-  ExpiresByType application/javascript "access plus 1 hour"
-  ExpiresByType text/javascript "access plus 1 hour"
-</IfModule>
-
+# Codex assets: revalidate on every load instead of caching for an hour, so a
+# production merge lands on the NEXT page load with no hard-refresh and no
+# per-deploy step.
+#
+# "no-cache" does not mean "never cache". It means "cache, but always check with
+# the server before reusing": the server returns a tiny 304 Not Modified when a
+# file is unchanged (~free), or the new file ONCE when it actually changed. So the
+# real re-download happens exactly once per deploy, automatically.
+#
+# Why this and not a ?v query on the scripts: a version query on an entry module
+# does NOT refresh its ES `import`ed sub-files; revalidation covers every file,
+# and keeps CSS + JS in lockstep (no "new CSS / old JS" window).
+#
+# To trade the per-load 304 pings for an up-to-60s staleness window after a
+# deploy, swap "no-cache" for "max-age=60".
 <IfModule mod_headers.c>
-  <FilesMatch "\.(js|css)$">
-    Header set Cache-Control "public, max-age=3600"
+  <FilesMatch "\.(html|js|mjs|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
 </IfModule>
