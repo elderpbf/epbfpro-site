@@ -9,6 +9,7 @@
 // Layouts stay seeds, not cages — exactly the end-state in ARCHITECTURE / SCRATCH.
 
 import { freedStyle, flowStyle } from "../render/player.js";
+import * as kinds from "../select/kinds.js";
 
 const DEG = Math.PI / 180;
 const MIN_W = 30;
@@ -110,6 +111,7 @@ export function initFreeform(app) {
   function selectEl(el) {
     selFkey = el.dataset.fkey;
     app.selected = { fkey: selFkey };
+    if (app.selectClear) app.selectClear(); // transitional: keep one visible selection (Slice 3 removes this)
     placeBox();
   }
   function clear() {
@@ -121,8 +123,12 @@ export function initFreeform(app) {
   /* ---------- selection + move (on the stage) ---------- */
   app.stage.addEventListener("pointerdown", (e) => {
     if (e.target.closest(".fbox")) return; // handled by the handle listener below
-    if (e.target.closest("button,select,input,.assetctl,.cardctl,.imgtools,.panhint,.divider,.asset"))
-      return; // editor owns these (filled image frames ARE selectable, via data-fkey)
+    // Slice 2: asset/logo/textSlot/imageSlot are owned by the unified selection
+    // model. Freeform now only handles what is NOT yet converted (cards/topics/
+    // divider). Slice 3 deletes the rest of this layer.
+    if (kinds.matchKind(e.target)) return;
+    if (e.target.closest("button,select,input,.cardctl,.imgtools,.panhint,.divider"))
+      return; // editor owns these (card images keep in-place tools until Slice 3)
     const el = e.target.closest("[data-fkey]");
     if (!el) {
       clear();

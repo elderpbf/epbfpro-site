@@ -6,8 +6,8 @@ import { imgslot, ed, edPlain } from "../render/helpers.js";
 function cardBody(c, i) {
   if (c.mode === "title") return edPlain("div", `cards.${i}.title`, c.title, "c-title");
   if (c.mode === "text") return edPlain("div", `cards.${i}.text`, c.text, "c-text");
-  if (c.mode === "image") return `<div class="c-img">${imgslot(`cards.${i}.image`, c.image, "foto")}</div>`;
-  return `<div class="c-img">${imgslot(`cards.${i}.image`, c.image, "foto")}</div>` + edPlain("div", `cards.${i}.text`, c.text, "c-text");
+  if (c.mode === "image") return `<div class="c-img">${imgslot(`cards.${i}.image`, c.image, true)}</div>`;
+  return `<div class="c-img">${imgslot(`cards.${i}.image`, c.image, true)}</div>` + edPlain("div", `cards.${i}.text`, c.text, "c-text");
 }
 
 function cardCtl(c, i) {

@@ -68,9 +68,11 @@ export const questions = {
   closeSession:    (p) => call('close_session', p),            // { code }
   reopenSession:   (p) => call('reopen_session', p),           // { code } (rejects if another session is open)
   deleteSession:   (p) => call('delete_session', p),           // { code } -> cascade-deletes answers + questions + student_questions + the session row
+  renameSession:   (p) => call('rename_session', p),           // { code, title } -> updates the session title
   // Live polling
   launchQuestion:  (p) => call('launch_question', p),          // { session_code, text, options, correct_answer?, type?, max_select? } -> { id }
   closeQuestion:   (p) => call('close_question', p),           // { id, show_results?, reveal_answer? }
+  deleteSessionQuestion: (p) => call('delete_session_question', p), // { id } -> delete one launched question + its answers (drops it from history AND stats)
   setVisibility:   (p) => call('set_question_visibility', p),  // { id, session_code, show_results }
   sessionState:    (p) => call('get_session_state', p),        // { code } -> { session, qa_enabled, pinned_question, active_question, history } (public)
   // Bank (sets + questions)
@@ -133,6 +135,7 @@ export const cohorts = {
   setClientIcon:   (p) => call('ct_set_client_icon', p),       // { slug, mode, value, filename? }
   listTurmas:      (p) => call('ct_list_turmas', p),           // { client_slug }
   listAllTurmas:   (p) => call('ct_list_all_turmas', p),       // every turma across clients (Lessons sidebar)
+  lookupTurmaBySession: (p) => call('ct_lookup_turma_by_session', p), // { session_id } -> { turma } (live host Trilha link)
   createTurma:     (p) => call('ct_create_turma', p),
   updateTurma:     (p) => call('ct_update_turma', p),          // { client_slug, slug, name, display_name? }
   updateTurmaMeta: (p) => call('ct_update_turma_meta', p),
@@ -176,6 +179,20 @@ export const content = {
   listItemTurmas:  (p) => call('ct_list_item_turmas', p),   // { item_id }
   listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug }
   deleteSubmission:(p) => call('ct_delete_submission', p)   // { id }
+};
+
+// Drive sync (Content -> Drive sub-tab). Configured Drive root folders + the
+// synced file index. The actual Google Drive read happens client-side through
+// window.BS_GOOGLE (auth-bound, Backstage-owned); these are the Worker actions
+// that persist the folder config + the synced item index. Action names cv_*
+// (frozen). The native Drive module reaches the backend ONLY through here.
+export const drive = {
+  listFolders:  (p) => call('cv_list_drive_folders', p),   // -> { folders }
+  addFolder:    (p) => call('cv_add_drive_folder', p),     // { name, folder_id } -> { folder }
+  updateFolder: (p) => call('cv_update_drive_folder', p),  // { id, name?, folder_id? } -> { folder }
+  deleteFolder: (p) => call('cv_delete_drive_folder', p),  // { id } -> { ok }
+  listItems:    (p) => call('cv_list_drive_items', p),     // -> { ok, items, last_sync }
+  syncItems:    (p) => call('cv_sync_drive_items', p)      // { items } -> { ok }
 };
 
 // Lesson presets — named bundles of library items, reused when planning a

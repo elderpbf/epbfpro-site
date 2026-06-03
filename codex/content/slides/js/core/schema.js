@@ -5,6 +5,9 @@ export const uid = () => Math.random().toString(36).slice(2, 9);
 /** Design canvas: all coordinates (assets + freeform overrides) live in this space. */
 export const CANVAS = { w: 1280, h: 720 };
 
+/** Deck-level logo default (top-left). Single source so deck/render/geometry agree. */
+export const DEFAULT_LOGO = { x: 40, y: 30, h: 40 };
+
 /** Read a dotted path from an object (safe). */
 export function getByPath(obj, path) {
   return path.split(".").reduce((x, k) => (x == null ? x : x[k]), obj);

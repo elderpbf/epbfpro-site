@@ -6,6 +6,6 @@ export default {
   label: "Imagem cheia",
   defaults: () => ({ image: null, caption: "Frase de impacto" }),
   reveals: () => 0,
-  render: (s) => `<div class="L-bleed">${imgslot("image", s.image, "foto de tela cheia")}
+  render: (s) => `<div class="L-bleed">${imgslot("image", s.image)}
     <div class="scrim">${ed("div", "caption", s.caption, "line")}</div></div>`,
 };

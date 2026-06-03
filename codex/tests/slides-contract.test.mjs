@@ -110,3 +110,71 @@ test('editor fills the window via position:fixed, no JS sizing, no shell hacks',
   assert.ok(!/\.bs-main|\.cdx-view\b/.test(rules), 'slides.css does not reach up and restyle the shell');
   assert.ok(!/--cdx-breakout/.test(rules), 'slides.css does not depend on a JS-set variable');
 });
+
+// Slice 1 of the unified selection model: asset + logo controls are no longer
+// emitted by the renderer; they live in the stage-docked selection bar. Guards
+// the plugin-contract leak (H7/H8) the contract dissolves stays dissolved.
+test('player.js no longer emits .assetctl or .logoctl (controls moved to the selection bar)', () => {
+  const src = read('../content/slides/js/render/player.js');
+  assert.ok(!/assetctl/.test(src), 'player.js emits no .assetctl');
+  assert.ok(!/logoctl/.test(src), 'player.js emits no .logoctl');
+  assert.match(src, /export\s+function\s+resolveLogo\s*\(/, 'player.js exports resolveLogo (A1)');
+  assert.match(src, /DEFAULT_LOGO/, 'player.js surfaces the shared DEFAULT_LOGO');
+});
+
+// Image box (item a): empty image slots are SELECTABLE boxes, not click-to-pick
+// auto-openers. The editor no longer opens the OS file picker on an empty-slot
+// click (the context bar's "add image" button does it instead), and the cover
+// hero is a selectable box (its empty icon slot carries data-fkey) rather than a
+// BRAIN that auto-picks on click.
+test('editor.js does not auto-open the file picker on an empty-slot click', () => {
+  const src = read('../content/slides/js/edit/editor.js');
+  assert.ok(!/\.dropzone:not\(\.filled\)/.test(src),
+    'no click-to-pick on empty dropzones (the image box selects instead)');
+});
+
+test('cover hero is the SAME unified image box (uses imgslot, no BRAIN special-case)', () => {
+  const src = read('../content/slides/js/layouts/cover.js');
+  assert.match(src, /imgslot\(\s*["']icon["']/, 'cover hero renders the shared imgslot for the icon slot');
+  assert.ok(!/BRAIN/.test(src), 'cover no longer special-cases the BRAIN as the empty hero (consistency)');
+});
+
+// 5d: the recolour-mask popover (#maskpop) is extracted into a self-contained
+// edit/maskpanel.js (markup + wiring + outside-click close), draining app.js so it
+// stays a thin composition root. app.openMask stays the public entry the bar's
+// compound control and the slot data-mask button call.
+test('the mask popover is a self-contained edit/maskpanel.js, drained from app.js (5d)', () => {
+  const panel = read('../content/slides/js/edit/maskpanel.js');
+  assert.match(panel, /export\s+function\s+maskPanelHTML\s*\(/, 'maskpanel exports maskPanelHTML');
+  assert.match(panel, /export\s+function\s+initMaskPanel\s*\(/, 'maskpanel exports initMaskPanel');
+  assert.match(panel, /id="maskpop"/, 'maskpanel owns the #maskpop markup');
+  assert.match(panel, /data-mtype="gradient"/, 'maskpanel owns the mask type buttons');
+
+  const appjs = read('../content/slides/js/app.js');
+  assert.match(appjs, /initMaskPanel\s*\(/, 'app.js wires the panel via initMaskPanel');
+  assert.match(appjs, /maskPanelHTML\s*\(/, 'app.js injects the panel HTML via maskPanelHTML()');
+  assert.ok(!/id="maskpop"/.test(appjs), 'app.js no longer inlines the #maskpop markup');
+  assert.ok(!/maskObj/.test(appjs), 'app.js no longer owns maskObj (moved into the panel)');
+  assert.ok(!/\[data-mtype\]/.test(appjs), 'app.js no longer wires the mask type buttons');
+});
+
+// 4a: the old floating #fmt toolbar was replaced by the context bar, so the sync
+// methods that pushed values into its now-absent inputs (#fontScale, #fontScope,
+// #accent, #ink, #motifColor, #anim) are dead. app.js must not carry them.
+test('app.js carries no dead #fmt toolbar sync code (context bar replaced it) (4a)', () => {
+  const src = read('../content/slides/js/app.js');
+  assert.ok(!/syncFontSlider/.test(src), 'no dead syncFontSlider (the #fmt slider is gone)');
+  assert.ok(!/syncThemeControls/.test(src), 'no dead syncThemeControls (the #fmt theme inputs are gone)');
+  assert.ok(!/#fontScale|#fontScope|#motifColor/.test(src), 'no lookups of retired #fmt element ids');
+});
+
+// The unified selection model lives in its own js/select/ folder and carries a
+// loud scope banner: it is SLIDES-EDITOR-INTERNAL ONLY and must not be adopted
+// by other Codex tabs.
+test('the js/select selection model exists and is scoped to the slides editor', () => {
+  for (const f of ['selection', 'kinds', 'geometry', 'bar', 'wiring']) {
+    read('../content/slides/js/select/' + f + '.js'); // throws if missing
+  }
+  const spine = read('../content/slides/js/select/selection.js');
+  assert.match(spine, /SLIDES-EDITOR/i, 'selection.js carries the scope-lock banner');
+});

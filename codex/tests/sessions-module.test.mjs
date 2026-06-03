@@ -18,11 +18,12 @@ test('sessions module satisfies the tab contract', async () => {
   assert.equal(typeof s.unmount, 'function', 'exports unmount');
 });
 
-test('sessions hostHref() builds a legacy host bridge URL carrying the code', async () => {
+test('sessions no longer bridges to the legacy host (native live host now)', async () => {
   const s = await import('../questions/sessions.js');
-  const url = s.hostHref('AB12');
-  assert.match(url, /\/backstage\/classpulse\/host\.html/, 'points at the legacy host page');
-  assert.match(url, /code=AB12/, 'carries the session code');
+  assert.equal(typeof s.hostHref, 'undefined', 'the legacy host bridge helper is gone');
+  const src = read('../questions/sessions.js');
+  assert.ok(!/backstage\/classpulse\/host\.html/.test(src), 'no link to the legacy host page');
+  assert.match(src, /from\s+['"]\.\/live-host\.js['"]/, 'mounts the native live host instead');
 });
 
 test('questions shell now registers Sessions as a NATIVE module', async () => {
@@ -91,12 +92,16 @@ test('sessions re-ports the floating sidebar picker + main host area', () => {
   assert.match(src, /sessions_placeholder/, 'shows the empty-selection placeholder');
 });
 
-test('sessions lifecycle is Iniciar/Encerrar (no Reabrir) on the selected session', () => {
-  const src = read('../questions/sessions.js');
-  assert.match(src, /sessions_start/, 'uses the Iniciar label');
-  assert.match(src, /data-act=["']start["']|act === ['"]start['"]/, 'has a start action');
-  assert.match(src, /\.reopenSession\s*\(/, 'Iniciar maps to reopen under the hood');
-  assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
+test('lifecycle (Iniciar/Encerrar) lives on the host bar, not the sessions detail', () => {
+  const sessionsSrc = read('../questions/sessions.js');
+  const hostSrc = read('../questions/live-host.js');
+  // The Codex-invented detail header is gone; selecting a session mounts the host.
+  assert.match(sessionsSrc, /liveHost\.mount\s*\(/, 'sessions mounts the native live host');
+  // Iniciar/Encerrar (reopen/close) are the host's, exactly like host.html.
+  assert.match(hostSrc, /\.reopenSession\s*\(/, 'host owns Iniciar (reopen)');
+  assert.match(hostSrc, /\.closeSession\s*\(/, 'host owns Encerrar (close)');
+  assert.match(hostSrc, /data-act=["']start["']/, 'host bar has the Iniciar button');
+  assert.match(hostSrc, /data-act=["']stop["']/, 'host bar has the Encerrar button');
 });
 
 test('sessions wires the per-session stats overlay through the facade', () => {
@@ -105,14 +110,18 @@ test('sessions wires the per-session stats overlay through the facade', () => {
   assert.match(src, /cdx-session-stats/, 'renders a per-session stats overlay panel');
   // overlay shows the legacy KPIs + per-question accuracy bars (reuse cdx-stats-bar)
   assert.match(src, /cdx-stats-bar/, 'overlay reuses the accuracy bar primitive');
+  // Opened from the host bar's Estatisticas button via the onStats callback.
+  assert.match(src, /onStats:\s*\(\)\s*=>\s*_openStats/, 'host bar opens the overlay via onStats');
 });
 
-test('sessions puts delete in a bottom danger zone behind an inline confirm', () => {
+test('per-session delete is wired from the host (onDelete -> deleteSession), not a sidebar-card action', () => {
   const src = read('../questions/sessions.js');
-  assert.match(src, /\.deleteSession\s*\(/, 'calls api.deleteSession');
-  assert.match(src, /data-act=["']delete["']|act === ['"]delete['"]/, 'has a delete action');
-  assert.match(src, /cdx-session-danger/, 'delete lives in a bottom danger zone');
-  assert.match(src, /sessions_delete_confirm/, 'guards delete behind an inline confirm');
+  // Delete is triggered by the host bar (name-click reveals Excluir, confirmed
+  // there); sessions just executes it via the onDelete callback.
+  assert.match(src, /onDelete:\s*\(\)\s*=>\s*_confirmDelete/, 'sessions passes onDelete -> _confirmDelete to the host');
+  assert.match(src, /\.deleteSession\s*\(/, 'delete goes through api.deleteSession');
+  assert.ok(!/cdx-session-actions/.test(src), 'no per-card action row: the sidebar cards stay bare');
+  assert.ok(!/data-act=["']delete["']/.test(src), 'delete is not a sidebar-card action in sessions.js');
 });
 
 test('sessions unmount tears down the document-level reveal listeners', () => {

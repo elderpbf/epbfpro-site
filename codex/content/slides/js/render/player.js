@@ -4,7 +4,10 @@
 // registry for the slide's layout and calls render()).
 import * as registry from "../layouts/registry.js";
 import { maskOverlay } from "./helpers.js";
+import { DEFAULT_LOGO } from "../core/schema.js";
 import { t } from "../../../../js/i18n.js";
+
+export { DEFAULT_LOGO };
 
 // The logo lives next to the editor modules, not at the page root, so resolve it
 // against this module's URL (works the same standalone or mounted inside Codex).
@@ -30,8 +33,6 @@ function assetsFor(deck, slide) {
   );
 }
 
-const isImageType = (a) => a.type === "image" || a.type === "photo" || a.type == null;
-
 // the media inside a free element, by type (image/photo = <img>, video = <video>,
 // text/title = inline-editable block). GIFs animate natively in <img>.
 function assetMedia(a) {
@@ -41,46 +42,45 @@ function assetMedia(a) {
   return `<img src="${a.src}" draggable="false">${maskOverlay(a.src, a.mask)}`;
 }
 
-function assetCtl(a) {
-  const sc = (v, l) => `<option value="${v}"${a.scope === v ? " selected" : ""}>${l}</option>`;
-  const mask = isImageType(a) ? `<button data-asmask="${a.id}">${t("slides.ed_mask")}</button>` : "";
-  return (
-    `<div class="assetctl editoronly"><select data-ascope="${a.id}">${sc("slide", t("slides.ed_asset_slide"))}${sc("all", t("slides.ed_asset_all"))}${sc(
-      "layout",
-      t("slides.ed_asset_layout")
-    )}</select>${mask}<button data-asrot="${a.id}:-15">↺</button><button data-asrot="${a.id}:15">↻</button>` +
-    `<button data-asdel="${a.id}">✕</button></div>`
-  );
-}
-
+// Free-placed assets: content only. Selection, scope, mask, rotate and delete are
+// owned by the unified selection bar (js/select/), not emitted here. A video keeps
+// an explicit height since it has no intrinsic box before its metadata loads.
 function assetsHTML(deck, slide) {
   return `<div class="assetlayer">${assetsFor(deck, slide)
-    .map(
-      (a) =>
-        `<div class="asset a-${a.type || "image"}" data-asset="${a.id}" style="left:${a.x}px;top:${a.y}px;width:${a.w}px;transform:rotate(${
-          a.rot || 0
-        }deg)">${assetMedia(a)}${assetCtl(a)}</div>`
-    )
+    .map((a) => {
+      const hcss = a.type === "video" && a.h ? `height:${a.h}px;` : "";
+      return `<div class="asset a-${a.type || "image"}" data-asset="${a.id}" style="left:${a.x}px;top:${a.y}px;width:${a.w}px;${hcss}transform:rotate(${a.rot || 0}deg)">${assetMedia(a)}</div>`;
+    })
     .join("")}</div>`;
 }
 
+/**
+ * Effective logo for a slide (A1). Per-slide `slide.logo` overrides the deck-level
+ * `deck.logo` for geometry and variant; legacy `slide.logoVariant` is honoured for
+ * back-compat; everything falls back to DEFAULT_LOGO / "light".
+ */
+export function resolveLogo(deck, slide) {
+  const base = (deck && deck.logo) || DEFAULT_LOGO;
+  const per = (slide && slide.logo) || {};
+  const deckVar = deck && deck.logo ? deck.logo.variant : undefined;
+  return {
+    x: per.x != null ? per.x : base.x,
+    y: per.y != null ? per.y : base.y,
+    h: per.h != null ? per.h : base.h,
+    variant: per.variant ?? (slide && slide.logoVariant) ?? deckVar ?? "light",
+  };
+}
+
 // The logo is its own thing: deck-level position (same on every slide), always on
-// top, not removable (only hideable per slide), with readability variants.
+// top, not removable (only hideable per slide), with readability variants. A1:
+// per-slide geometry/variant via slide.logo, resolved centrally by resolveLogo.
+// Its controls live in the selection bar, not here.
 function logoHTML(deck, slide) {
-  const lg = deck.logo || { x: 40, y: 30, h: 40 };
   if (slide.hideLogo) return `<div class="logoshow editoronly" data-logoshow>${t("slides.ed_logo_show")}</div>`;
-  const deckVar = (deck.logo && deck.logo.variant) || "light";   // the deck-wide choice (applies to all slides)
-  const perSlide = slide.logoVariant != null;                    // checkbox on = this slide overrides that choice
-  const v = perSlide ? slide.logoVariant : deckVar;
-  const opt = (val, l) => `<option value="${val}"${v === val ? " selected" : ""}>${l}</option>`;
+  const lg = resolveLogo(deck, slide);
   return (
     `<div class="logo" data-logo style="left:${lg.x}px;top:${lg.y}px;height:${lg.h}px">` +
-    `<img src="${logoAsset(v)}" alt="PensoIA">` +
-    `<div class="logoctl editoronly">` +
-    `<select data-logovar>${opt("light", t("slides.ed_logo_light"))}${opt("dark", t("slides.ed_logo_dark"))}${opt("teal", t("slides.ed_logo_teal"))}${opt("mark", t("slides.ed_logo_mark"))}</select>` +
-    `<label class="logoslide"><input type="checkbox" data-logoperslide${perSlide ? " checked" : ""}>${t("slides.ed_logo_thisslide")}</label>` +
-    `<button data-logohide>${t("slides.ed_logo_hide")}</button>` +
-    `</div></div>`
+    `<img src="${logoAsset(lg.variant)}" alt="PensoIA"></div>`
   );
 }
 
@@ -112,6 +112,37 @@ export function freedStyle(el, g, origin) {
   el.style.width = g.w + "px";
   if (g.h != null) el.style.height = g.h + "px";
   el.style.transform = `rotate(${g.rot || 0}deg)`;
+}
+
+/**
+ * Map a stored text style ({fs,fw,color}) to inline CSS props, dropping empties.
+ * Block-level formatting from the #fmt toolbar is persisted on the model (per-slot
+ * in slide.textStyle[path], per-asset in asset.style) and re-applied on render, so
+ * a re-render no longer drops the user's bold / size / colour. Pure: testable.
+ */
+export function textStyleProps(st) {
+  const p = {};
+  if (!st) return p;
+  if (st.fs != null) p.fontSize = st.fs + "px";
+  if (st.fw) p.fontWeight = st.fw;
+  if (st.color) p.color = st.color;
+  return p;
+}
+
+/**
+ * Re-apply persisted text styles after a fresh render. Walks editable slots
+ * (data-path) and text assets (data-aid) and sets the stored inline style. The
+ * element was rebuilt from the model HTML, so it carries no inline style until now.
+ */
+export function applyTextStyles(scopeEl, deck, slide) {
+  const ts = slide.textStyle || {};
+  scopeEl.querySelectorAll('[data-path][data-edit="1"]').forEach((el) => {
+    Object.assign(el.style, textStyleProps(ts[el.getAttribute("data-path")]));
+  });
+  scopeEl.querySelectorAll("[data-aid]").forEach((el) => {
+    const a = deck.assets.find((x) => x.id === el.getAttribute("data-aid"));
+    if (a) Object.assign(el.style, textStyleProps(a.style));
+  });
 }
 
 /**
@@ -160,6 +191,7 @@ export function renderInto(el, deck, slide) {
   el.style.setProperty("--fontScale", effFontScale(deck, slide));
   el.innerHTML = slideHTML(deck, slide);
   applyOverrides(el, slide);
+  applyTextStyles(el, deck, slide);
   el.querySelectorAll(".reveal").forEach((r) => r.classList.add("shown"));
 }
 

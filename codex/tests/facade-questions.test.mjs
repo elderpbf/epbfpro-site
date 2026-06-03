@@ -16,7 +16,7 @@ test('questions facade exposes the host/admin methods', () => {
   assert.ok(api.questions, 'codex-api exports a `questions` group');
   const expected = [
     'listSessions', 'createSession', 'closeSession', 'reopenSession',
-    'launchQuestion', 'closeQuestion', 'setVisibility', 'sessionState',
+    'launchQuestion', 'closeQuestion', 'deleteSessionQuestion', 'setVisibility', 'sessionState',
     'listSets', 'getQuestions', 'addQuestion', 'addQuestionsBulk',
     'updateQuestion', 'deleteQuestion', 'updateSet', 'deleteSet',
     'reorder', 'search',
@@ -39,6 +39,7 @@ test('questions facade maps methods to the frozen action strings', () => {
     [() => q.reopenSession({ code: 'AAAA' }),         'reopen_session'],
     [() => q.launchQuestion({ session_code: 'AAAA', text: 'q', options: [] }), 'launch_question'],
     [() => q.closeQuestion({ id: 'q1' }),             'close_question'],
+    [() => q.deleteSessionQuestion({ id: 'q1' }),     'delete_session_question'],
     [() => q.setVisibility({ id: 'q1', session_code: 'AAAA', show_results: true }), 'set_question_visibility'],
     [() => q.sessionState({ code: 'AAAA' }),          'get_session_state'],
     [() => q.listSets(),                              'list_question_sets'],

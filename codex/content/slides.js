@@ -22,8 +22,10 @@ import * as editor from './slides/js/app.js';
 // Engine tag that marks a presentation row as one of OUR authored decks, so the
 // list shows only these (not the legacy decks sharing the backend table).
 const DECK_ENGINE = 'codex-deck';
-// How close (px) the cursor must get to the left edge to reveal the sidebar.
-const EDGE_ZONE = 16;
+// How close (px) the cursor must get to an edge to reveal hidden chrome. Narrow,
+// "the very edge", matching the Lessons focus mode (its zones are 6px).
+const EDGE_ZONE = 6; // left edge -> deck-list sidebar
+const TOP_ZONE = 6;  // top edge  -> Codex topbar + sub-tab row
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -32,6 +34,7 @@ let _openSlug = null;         // slug of the deck currently open in the editor
 let _editorHandles = null;    // active editor mount handles ({ app, unmount }), or null
 let _deckOpen = false;        // true while a deck is open (sidebar auto-hides)
 let _saveTimer = null;
+let _topChromeTimer = null;   // focus-mode hide timer for the Codex topbar reveal
 let _cleanup = [];
 
 // ── Pure rules (exported for tests) ─────────────────────────────────────────
@@ -147,6 +150,14 @@ function _setDeckOpen(on) {
   const shell = _q('#cdx-slides-shell');
   const side = _q('#cdx-slides-sidebar');
   if (shell) shell.classList.toggle('deck-open', on);
+  // Focus mode: an open deck recedes the Codex topbar + sub-tab row (both live in
+  // .bs-topbar) so the editor reclaims that vertical space; the top edge slides
+  // them back. Mirrors the Lessons focus mode.
+  document.body.classList.toggle('cdx-slides-focus', on);
+  if (!on) {
+    document.body.classList.remove('cdx-slides-focus--top');
+    if (_topChromeTimer) { clearTimeout(_topChromeTimer); _topChromeTimer = null; }
+  }
   // No deck open => sidebar pinned visible. Deck open => start hidden (reveals on
   // left-edge hover, hides on mouseleave).
   if (side) side.classList.toggle('is-open', !on);
@@ -154,6 +165,22 @@ function _setDeckOpen(on) {
 
 function _showSidebar() { const s = _q('#cdx-slides-sidebar'); if (s) s.classList.add('is-open'); }
 function _hideSidebar() { if (!_deckOpen) return; const s = _q('#cdx-slides-sidebar'); if (s) s.classList.remove('is-open'); }
+
+// Top-edge reveal of the receded Codex chrome. Shown while the cursor is within
+// the revealed band (~104px: topbar 65 + sub-tab row 31 + slack), hidden shortly
+// after it leaves, so it never collapses out from under a click on the bar.
+function _showTopChrome() {
+  document.body.classList.add('cdx-slides-focus--top');
+  if (_topChromeTimer) { clearTimeout(_topChromeTimer); _topChromeTimer = null; }
+}
+function _scheduleHideTopChrome(clientY) {
+  if (clientY <= 104) return;
+  if (_topChromeTimer) return;
+  _topChromeTimer = setTimeout(() => {
+    document.body.classList.remove('cdx-slides-focus--top');
+    _topChromeTimer = null;
+  }, 450);
+}
 
 // ── Data ────────────────────────────────────────────────────────────────────
 async function _loadDecks() {
@@ -262,6 +289,10 @@ export function mount(viewEl, ctx) {
   // never leave it stuck open; mouseleave is a redundant safety net.
   const onMove = (e) => {
     if (!_deckOpen) return;
+    // top edge: slide the Codex topbar + sub-tab row back in
+    if (e.clientY <= TOP_ZONE) _showTopChrome();
+    else _scheduleHideTopChrome(e.clientY);
+    // left edge: reveal the deck-list sidebar
     const side = _q('#cdx-slides-sidebar');
     if (!side) return;
     if (e.clientX <= EDGE_ZONE) { _showSidebar(); return; }
@@ -292,6 +323,9 @@ export function unmount() {
   _teardownEditor();
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
+  // Leave no focus-mode residue on the shared shell when the tab is torn down.
+  document.body.classList.remove('cdx-slides-focus', 'cdx-slides-focus--top');
+  if (_topChromeTimer) { clearTimeout(_topChromeTimer); _topChromeTimer = null; }
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   _decks = [];

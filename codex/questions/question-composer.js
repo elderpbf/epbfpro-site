@@ -74,9 +74,10 @@ function _renderOpts(optsEl, type, initial) {
       '</div>' +
       '<button class="cdx-btn cdx-btn--ghost cdx-comp-addopt" data-act="add-opt" type="button">' +
         t('questions.bank_add_option') + '</button>' +
-      '<label class="cdx-comp-field cdx-comp-maxsel-field"><span class="cdx-comp-label">max_select</span>' +
+      '<label class="cdx-comp-field cdx-comp-maxsel-field"><span class="cdx-comp-label">' + t('questions.comp_max_select') + '</span>' +
         '<input type="number" class="cdx-input cdx-comp-maxsel" min="0" step="1" value="' +
-        ((initial && initial.max_select != null) ? Number(initial.max_select) : 1) + '"></label>';
+        ((initial && initial.max_select != null) ? Number(initial.max_select) : 1) + '">' +
+        '<span class="cdx-comp-hint">' + t('questions.comp_max_select_hint') + '</span></label>';
   } else if (type === 'tf') {
     const labels = (opts && opts.length >= 2) ? opts : [t('questions.tf_true'), t('questions.tf_false')];
     optsEl.innerHTML = '<div class="cdx-comp-optlist">' +

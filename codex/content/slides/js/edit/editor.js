@@ -2,29 +2,14 @@
 // toolbar, image pan/zoom, split divider, drop targets, and card/topic controls.
 // All listeners are DELEGATED on the persistent #stage element and wired ONCE,
 // so they survive every re-render (no per-render rewiring, no leaks).
-import { getByPath, setPath } from "../core/schema.js";
+import { setPath } from "../core/schema.js";
+import { strategies } from "../select/geometry.js";
 import { t } from "../../../../js/i18n.js";
 
-/* ---------- format toolbar (the v7 vanish-on-release bug lived here) ---------- */
-// Old model hid the toolbar from a document-level "click outside" heuristic, which
-// fired on mouse-up and killed it. New model: show on focusin of an editable, hide
-// on focusout UNLESS focus moved into the toolbar (checked via relatedTarget).
-
-function showFmt(app, el) {
-  const fmt = app.fmt;
-  fmt.style.display = "flex";
-  const r = el.getBoundingClientRect();
-  const fw = fmt.offsetWidth || 240;
-  let left = r.left + r.width / 2 - fw / 2;
-  left = Math.max(8, Math.min(window.innerWidth - fw - 8, left));
-  let top = r.top - fmt.offsetHeight - 10;
-  if (top < 56) top = r.bottom + 10; // not enough room above → drop below
-  fmt.style.left = left + "px";
-  fmt.style.top = top + "px";
-}
-function hideFmt(app) {
-  app.fmt.style.display = "none";
-}
+// Text formatting (A− A＋ B Cor) now lives in the context bar as descriptor
+// primitives (see edit/textstyle.js + select/kinds.js) and acts on the selected
+// editable; there is no floating #fmt toolbar. The editor still owns entering /
+// leaving contenteditable and persisting the typed text content.
 
 function enterEdit(app, el) {
   el.setAttribute("contenteditable", "true");
@@ -79,6 +64,9 @@ export function initEditing(app) {
   if (app.isPresenter) return;
   const stage = app.stage;
 
+  // The image-slot selection bar's "trocar" reuses the editor's file picker.
+  app.pickImage = (path) => pickImage(app, path);
+
   /* --- text editing --- */
   stage.addEventListener("dblclick", (e) => {
     const el = e.target.closest('[data-edit="1"]');
@@ -88,15 +76,12 @@ export function initEditing(app) {
   stage.addEventListener("focusin", (e) => {
     const el = e.target.closest('[data-edit="1"]');
     if (!el) return;
-    app.activeEditable = el;
-    showFmt(app, el);
+    app.activeEditable = el; // the element the context-bar format controls act on
   });
   stage.addEventListener("focusout", (e) => {
     const el = e.target.closest('[data-edit="1"]');
     if (!el) return;
-    if (e.relatedTarget && app.fmt.contains(e.relatedTarget)) return; // into the toolbar → keep
     exitEdit(app, el);
-    hideFmt(app);
     app.renderNav();
   });
   stage.addEventListener("input", (e) => {
@@ -118,27 +103,19 @@ export function initEditing(app) {
   stage.addEventListener("click", (e) => {
     const t = e.target;
     let m;
-    // logo hide / show (per slide)
-    if ((m = t.closest("[data-logohide]"))) {
-      e.stopPropagation();
-      app.record();
-      app.cur().hideLogo = true;
-      return app.refresh();
-    }
+    // logo show (un-hide); the logo's hide/variant/per-slide controls now live in
+    // the unified selection bar (js/select/), not in an emitted .logoctl.
     if ((m = t.closest("[data-logoshow]"))) {
       e.stopPropagation();
       app.record();
       app.cur().hideLogo = false;
       return app.refresh();
     }
-    // mask popovers (no mutation here; opens the picker)
+    // slot mask popover (no mutation here; opens the picker). Asset mask is a
+    // selection-bar control now.
     if ((m = t.closest("[data-mask]"))) {
       e.stopPropagation();
       return app.openMask({ kind: "slot", path: m.dataset.mask }, m);
-    }
-    if ((m = t.closest("[data-asmask]"))) {
-      e.stopPropagation();
-      return app.openMask({ kind: "asset", id: m.dataset.asmask }, m);
     }
     // remove a topic
     if ((m = t.closest("[data-del]"))) {
@@ -183,51 +160,20 @@ export function initEditing(app) {
       [cs[i], cs[j]] = [cs[j], cs[i]];
       return app.refresh();
     }
-    // empty image slot → pick
-    const slot = t.closest(".dropzone:not(.filled)");
-    if (slot && !t.closest("button")) {
-      e.stopPropagation();
-      return pickImage(app, slot.dataset.img);
-    }
+    // (empty image slots are now selectable "image boxes": single-click selects via
+    // the selection layer and the context bar offers "add image" — no auto-pick here)
     // replace a filled image
     if ((m = t.closest("[data-replace]"))) {
       e.stopPropagation();
       return pickImage(app, m.dataset.replace);
     }
-    // assets
-    if ((m = t.closest("[data-asdel]"))) {
-      e.stopPropagation();
-      app.record();
-      app.deck().assets = app.deck().assets.filter((x) => x.id !== m.dataset.asdel);
-      return app.refresh();
-    }
-    if ((m = t.closest("[data-asrot]"))) {
-      e.stopPropagation();
-      app.record("asrot:" + m.dataset.asrot.split(":")[0]);
-      const [id, d] = m.dataset.asrot.split(":");
-      const a = app.deck().assets.find((x) => x.id === id);
-      a.rot = ((a.rot || 0) + Number(d)) % 360;
-      return app.refresh();
-    }
+    // (asset scope/mask/rotate/delete now live in the selection bar, js/select/)
   });
 
   /* --- delegated change (card mode, reveal, asset scope) --- */
   stage.addEventListener("change", (e) => {
     const t = e.target;
     let m;
-    if ((m = t.closest("[data-logovar]"))) {
-      app.record();
-      const perSlide = m.closest(".logoctl").querySelector("[data-logoperslide]").checked;
-      if (perSlide) app.cur().logoVariant = t.value;                                  // this slide only
-      else { (app.deck().logo = app.deck().logo || { x: 40, y: 30, h: 40 }).variant = t.value; delete app.cur().logoVariant; } // all slides
-      return app.refresh();
-    }
-    if ((m = t.closest("[data-logoperslide]"))) {
-      app.record();
-      if (t.checked) app.cur().logoVariant = (app.deck().logo && app.deck().logo.variant) || "light"; // seed from the deck choice
-      else delete app.cur().logoVariant;                                             // back to following the deck
-      return app.refresh();
-    }
     if ((m = t.closest("[data-cardmode]"))) {
       app.record();
       app.cur().slots.cards[+m.dataset.cardmode].mode = t.value;
@@ -237,14 +183,6 @@ export function initEditing(app) {
       app.record();
       app.cur().slots.reveal = t.checked;
       app.step = 0;
-      return app.refresh();
-    }
-    if ((m = t.closest("[data-ascope]"))) {
-      app.record();
-      const a = app.deck().assets.find((x) => x.id === m.dataset.ascope);
-      a.scope = t.value;
-      if (t.value === "slide") a.slideId = app.cur().id;
-      if (t.value === "layout") a.layout = app.cur().layout;
       return app.refresh();
     }
   });
@@ -278,28 +216,9 @@ export function initEditing(app) {
     app.refresh();
   });
 
-  /* --- pointer drags: logo, divider, asset move (slot images move via freeform now) --- */
+  /* --- pointer drags: divider (logo + asset move now via the selection model) --- */
   stage.addEventListener("pointerdown", (e) => {
     if (app.presenting) return;
-    const sc = app.scaleNow();
-
-    // logo: deck-level drag (repositions on every slide); a no-move click toggles its menu
-    const lg = e.target.closest(".logo[data-logo]");
-    if (lg && !e.target.closest(".logoctl")) {
-      const L = (app.deck().logo = app.deck().logo || { x: 40, y: 30, h: 40 });
-      const sx = e.clientX, sy = e.clientY, ox = L.x, oy = L.y;
-      let moved = false;
-      return onDrag(
-        (ev) => {
-          if (!moved) { moved = true; app.record("logo"); lg.classList.add("dragging"); } // snapshot only once movement starts
-          L.x = ox + (ev.clientX - sx) / sc; L.y = oy + (ev.clientY - sy) / sc; lg.style.left = L.x + "px"; lg.style.top = L.y + "px";
-        },
-        () => {
-          if (moved) { lg.classList.remove("dragging"); app.renderNav(); app.commit(); app.broadcast(); }
-          else lg.classList.toggle("menu-open"); // pure click → open/close the variant + hide menu
-        }
-      );
-    }
 
     const dv = e.target.closest(".divider");
     if (dv) {
@@ -320,68 +239,21 @@ export function initEditing(app) {
         }
       );
     }
-
-    const as = e.target.closest(".asset");
-    if (as && !e.target.closest(".assetctl") && !e.target.closest('[contenteditable="true"]')) {
-      app.record("amove:" + as.dataset.asset);
-      const a = app.deck().assets.find((x) => x.id === as.dataset.asset);
-      const sx = e.clientX,
-        sy = e.clientY,
-        ox = a.x,
-        oy = a.y;
-      as.classList.add("dragging");
-      return onDrag(
-        (ev) => {
-          a.x = ox + (ev.clientX - sx) / sc;
-          a.y = oy + (ev.clientY - sy) / sc;
-          as.style.left = a.x + "px";
-          as.style.top = a.y + "px";
-        },
-        () => {
-          as.classList.remove("dragging");
-          app.renderNav();
-          app.commit();
-          app.broadcast();
-        }
-      );
-    }
   });
 
-  /* --- wheel: image zoom, asset resize --- */
+  /* --- wheel: slot image zoom via the imageFraming strategy (framing != box) --- */
   stage.addEventListener(
     "wheel",
     (e) => {
-      const lg = e.target.closest(".logo[data-logo]");
-      if (lg) {
-        e.preventDefault();
-        app.record("logosize");
-        const L = (app.deck().logo = app.deck().logo || { x: 40, y: 30, h: 40 });
-        L.h = Math.max(16, Math.min(160, (L.h || 40) + (e.deltaY < 0 ? 3 : -3)));
-        lg.style.height = L.h + "px";
-        app.renderNav();
-        app.commit();
-        app.broadcast();
-        return;
-      }
       const im = e.target.closest(".slotimg");
       if (im) {
         e.preventDefault();
-        app.record("zoom:" + im.dataset.img);
-        const g = getByPath(app.cur().slots, im.dataset.img);
-        g.zoom = Math.min(4, Math.max(0.2, (g.zoom || 1) + (e.deltaY < 0 ? 0.08 : -0.08)));
-        im.style.transform = `translate(${g.tx || 0}px,${g.ty || 0}px) scale(${g.zoom})`;
-        app.commit();
-        app.broadcast();
-        return;
-      }
-      const as = e.target.closest(".asset");
-      if (as) {
-        e.preventDefault();
-        app.record("aresize:" + as.dataset.asset);
-        const a = app.deck().assets.find((x) => x.id === as.dataset.asset);
-        a.w = Math.max(40, Math.min(900, a.w + (e.deltaY < 0 ? 14 : -14)));
-        as.style.width = a.w + "px";
-        app.renderNav();
+        const ref = im.dataset.img;
+        app.record("zoom:" + ref);
+        const f = strategies.imageFraming.read(app, ref);
+        f.zoom = Math.min(4, Math.max(0.2, f.zoom + (e.deltaY < 0 ? 0.08 : -0.08)));
+        strategies.imageFraming.write(app, ref, f);
+        strategies.imageFraming.patch(im, f);
         app.commit();
         app.broadcast();
       }
@@ -389,5 +261,3 @@ export function initEditing(app) {
     { passive: false }
   );
 }
-
-export { showFmt, hideFmt };
