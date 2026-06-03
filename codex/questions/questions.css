@@ -842,6 +842,8 @@
 .cdx-hi-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(20,184,166,0.05); }
 .cdx-hi-btn-primary { border-color: var(--primary); color: var(--primary); }
 .cdx-hi-btn-primary:hover { background: var(--primary); color: #fff; }
+.cdx-hi-btn-danger { border-color: rgba(239,68,68,.35); color: var(--error); }
+.cdx-hi-btn-danger:hover { background: var(--error); color: #fff; border-color: var(--error); }
 .cdx-hi-results { margin-top: 0.6rem; background: rgba(0,0,0,0.06); border-radius: 6px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
 [data-theme="dark"] .cdx-hi-results { background: rgba(255,255,255,0.06); }
 .cdx-hi-bar { display: flex; align-items: center; font-size: 0.72rem; gap: 0.5rem; }

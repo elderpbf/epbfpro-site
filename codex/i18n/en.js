@@ -704,6 +704,8 @@ export default {
   'questions.host_qa_title':             'Student questions',
   'questions.host_relaunch':             'Reopen',
   'questions.host_edit':                 'Edit',
+  'questions.host_delete':               'Delete',
+  'questions.host_delete_confirm':       'Delete this question from the history and stats?',
   'questions.host_err_no_text':          'Write the question.',
   'questions.host_err_launch':           'Error launching the question.',
   'questions.host_not_hosted':           'This session is not being hosted. Click Iniciar to begin.',

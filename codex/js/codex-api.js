@@ -72,6 +72,7 @@ export const questions = {
   // Live polling
   launchQuestion:  (p) => call('launch_question', p),          // { session_code, text, options, correct_answer?, type?, max_select? } -> { id }
   closeQuestion:   (p) => call('close_question', p),           // { id, show_results?, reveal_answer? }
+  deleteSessionQuestion: (p) => call('delete_session_question', p), // { id } -> delete one launched question + its answers (drops it from history AND stats)
   setVisibility:   (p) => call('set_question_visibility', p),  // { id, session_code, show_results }
   sessionState:    (p) => call('get_session_state', p),        // { code } -> { session, qa_enabled, pinned_question, active_question, history } (public)
   // Bank (sets + questions)

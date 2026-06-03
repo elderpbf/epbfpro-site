@@ -356,10 +356,22 @@ function _renderHistory(closedQs) {
       '<div class="cdx-hi-actions">' +
         '<button class="cdx-hi-btn cdx-hi-btn-primary" data-hi-act="relaunch" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_relaunch')) + '</button>' +
         '<button class="cdx-hi-btn" data-hi-act="edit" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_edit')) + '</button>' +
+        '<button class="cdx-hi-btn cdx-hi-btn-danger" data-hi-act="delete" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_delete')) + '</button>' +
       '</div>' +
     '</div>';
   }).join('');
   card.style.display = 'block';
+}
+
+// Delete a launched question from history: removes the question row + its
+// answers via the facade, which also drops it from every stats surface. A
+// re-poll refreshes the history (and the active panel) right away.
+async function _deleteHistoryQuestion(q) {
+  if (typeof confirm === 'function' && !confirm(t('questions.host_delete_confirm'))) return;
+  try { await api.deleteSessionQuestion({ id: q.id }); }
+  catch (e) { notice.internal(e); return; }
+  delete _historyMap[q.id];
+  if (_qEl) _qEl.startPolling();
 }
 
 // ── Active panel + Q&A sync (port of host-page _cpqDataHandler) ──
@@ -657,7 +669,9 @@ export function mount(containerEl, ctx) {
     if (histBtn) {
       const q = _historyMap[histBtn.getAttribute('data-qid')];
       if (!q) return;
-      if (histBtn.getAttribute('data-hi-act') === 'relaunch') _launchFromBank(q);
+      const hiAct = histBtn.getAttribute('data-hi-act');
+      if (hiAct === 'relaunch') _launchFromBank(q);
+      else if (hiAct === 'delete') _deleteHistoryQuestion(q);
       else _prefillFromBank(q);
     }
   });

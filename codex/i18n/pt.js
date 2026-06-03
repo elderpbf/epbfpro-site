@@ -703,6 +703,8 @@ export default {
   'questions.host_qa_title':             'Perguntas dos alunos',
   'questions.host_relaunch':             'Reabrir',
   'questions.host_edit':                 'Editar',
+  'questions.host_delete':               'Excluir',
+  'questions.host_delete_confirm':       'Excluir esta pergunta do histórico e das estatísticas?',
   'questions.host_err_no_text':          'Escreva a pergunta.',
   'questions.host_err_launch':           'Erro ao lançar a pergunta.',
   'questions.host_not_hosted':           'Sessão não está sendo hospedada. Clique em Iniciar para começar.',

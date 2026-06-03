@@ -107,6 +107,16 @@ test('live-host launches/closes via the facade and drives the element through sc
   assert.ok(!/['"]cpq-data['"]/.test(src), 'no legacy cpq-data document bus');
 });
 
+test('history cards expose a delete-from-history action wired to the facade', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /data-hi-act="delete"/, 'history card carries an Excluir button');
+  assert.match(src, /host_delete\b/, 'uses the host_delete label');
+  assert.match(src, /\.deleteSessionQuestion\s*\(/, 'delete removes the launched question via the facade');
+  assert.match(src, /host_delete_confirm/, 'confirms before deleting');
+  // facade maps the method to the new (net-new, owner-approved) Worker action.
+  assert.match(read('../js/codex-api.js'), /deleteSessionQuestion:\s*\(p\)\s*=>\s*call\('delete_session_question'/, 'facade maps to delete_session_question');
+});
+
 test('live-qa feed wires the full instructor Q&A surface through the facade', () => {
   const src = read('../questions/live-qa.js');
   assert.match(src, /\.toggleQa\s*\(/, 'Q&A enable');
@@ -135,6 +145,7 @@ test('live host + Q&A i18n keys exist in BOTH dictionaries', async () => {
     'questions.host_reveal_answer', 'questions.host_launch_btn', 'questions.host_clear',
     'questions.host_active_q', 'questions.host_close_q', 'questions.host_history',
     'questions.host_qa_title', 'questions.host_relaunch', 'questions.host_edit',
+    'questions.host_delete', 'questions.host_delete_confirm',
     'questions.host_not_hosted', 'questions.host_sqa_badge', 'questions.host_sqa_answer_label',
     'questions.host_sqa_answer_placeholder', 'questions.host_sqa_saving', 'questions.host_sqa_saved',
     'questions.host_err_no_text', 'questions.host_err_launch',
