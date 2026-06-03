@@ -60,7 +60,7 @@
 .cdx-subtab {
   display: inline-flex;
   align-items: center;
-  padding: 0.35rem 0.8rem;
+  padding: 0.28rem 0.8rem;
   border-radius: 7px;
   text-decoration: none;
   color: var(--text-secondary);
@@ -69,17 +69,19 @@
   white-space: nowrap;
   transition: background 0.12s, color 0.12s;
 }
-.cdx-subtab:hover { color: var(--text-primary); background: var(--surface-hover, rgba(127, 127, 127, 0.12)); }
-.cdx-subtab.active { color: var(--primary); background: var(--surface-hover, rgba(127, 127, 127, 0.12)); }
+.cdx-subtab:hover { color: var(--text-primary); background: var(--cdx-card-hover-bg); }
+/* active = the Codex highlight idiom: default (dark) text on faint teal, matching
+ * #cdx-items-grid rows (.cdx-item-row.is-selected), not a teal-on-surface tone. */
+.cdx-subtab.active { color: var(--text-primary); background: var(--cdx-card-sel-bg); }
 
-/* 'bar' mode: a persistent row; the strip centers under the active tab. */
+/* 'bar' mode: a persistent, slim row; the strip centers under the active tab. */
 .cdx-subrow {
   position: relative;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
 }
-.cdx-substrip { display: inline-flex; gap: 0.15rem; padding: 0.3rem 0; }
+.cdx-substrip { display: inline-flex; gap: 0.15rem; padding: 0.12rem 0; }
 
 /* 'pill' mode: a floating pill, hidden until the active tab is hovered. */
 .cdx-subpill {
