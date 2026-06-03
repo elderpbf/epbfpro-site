@@ -13,6 +13,7 @@
 //   window.ThemeManager, window.SettingsDrawer, window.BS_AUTH,
 //   window.glyphWordmark, window.stdColors
 import { t, languages, setLang } from './i18n.js';
+import { anchorLeft, placePill } from './anchored.js';
 
 const GEAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
@@ -35,12 +36,112 @@ function _svg(inner) {
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
 }
 
+// ── Sub-tabs (5c) ────────────────────────────────────────────
+// One sub-navigation, two display modes chosen by a persisted GLOBAL pref (the
+// toggle lives in the Settings drawer, below). Applies to every tab that
+// declares sub-tabs (Content, Questions, ...). Positioning reuses the lifted
+// anchored.js, the same mechanic as the Slides editor context bar.
+//   'pill' (default): hovering the active tab reveals a floating pill of its
+//      sub-tabs, centered under the tab, receding on mouse-out (a hover bridge
+//      keeps it open while the cursor is on it). The topbar stays one row.
+//   'bar': a persistent strip centered under the active tab.
+const SUBTAB_MODE_KEY = 'codex_subtab_mode';
+
+export function resolveSubtabMode(stored) {
+  return stored === 'bar' ? 'bar' : 'pill';
+}
+function subtabMode() {
+  let stored = null;
+  try { stored = localStorage.getItem(SUBTAB_MODE_KEY); } catch (_) {}
+  return resolveSubtabMode(stored);
+}
+
+function _subtabLinks(subTabs) {
+  return subTabs.map((s) => {
+    const a = document.createElement('a');
+    a.className = 'cdx-subtab' + (s.active ? ' active' : '');
+    a.href = s.href || '#';
+    a.setAttribute('role', 'tab');
+    if (s.active) a.setAttribute('aria-current', 'page');
+    a.textContent = s.label;
+    return a;
+  });
+}
+
+// 'bar' mode: a persistent strip, centered under the active tab via placePill.
+function renderSubBar(header, anchorTab, subTabs) {
+  const row = document.createElement('div');
+  row.className = 'cdx-subrow';
+  const strip = document.createElement('nav');
+  strip.className = 'cdx-substrip';
+  strip.setAttribute('role', 'tablist');
+  strip.setAttribute('aria-label', 'Sub-navegação');
+  _subtabLinks(subTabs).forEach((a) => strip.appendChild(a));
+  row.appendChild(strip);
+  header.appendChild(row);
+  const place = () => placePill(row, strip, { anchorEl: anchorTab, mode: 'under' });
+  requestAnimationFrame(place);
+  window.addEventListener('resize', place);
+}
+
+// 'pill' mode: a floating pill, hidden until the active tab is hovered.
+function renderSubPill(header, anchorTab, subTabs) {
+  const pill = document.createElement('div');
+  pill.className = 'cdx-subpill';
+  pill.setAttribute('role', 'tablist');
+  pill.setAttribute('aria-label', 'Sub-navegação');
+  _subtabLinks(subTabs).forEach((a) => pill.appendChild(a));
+  header.appendChild(pill);
+  let hideT = null;
+  const show = () => {
+    clearTimeout(hideT);
+    pill.classList.add('on');
+    const hr = header.getBoundingClientRect();
+    const ar = anchorTab.getBoundingClientRect();
+    pill.style.top = (ar.bottom - hr.top + 4) + 'px';
+    pill.style.left = anchorLeft({
+      containerW: hr.width, contentW: pill.offsetWidth,
+      anchorCenter: ar.left + ar.width / 2 - hr.left, mode: 'under',
+    }) + 'px';
+  };
+  const scheduleHide = () => { hideT = setTimeout(() => pill.classList.remove('on'), 180); };
+  anchorTab.addEventListener('mouseenter', show);
+  anchorTab.addEventListener('mouseleave', scheduleHide);
+  pill.addEventListener('mouseenter', () => clearTimeout(hideT)); // hover bridge
+  pill.addEventListener('mouseleave', scheduleHide);
+}
+
+// The pill/bar toggle, injected into the Settings drawer (the global config
+// panel). Flipping it persists the pref and reloads (same as the language
+// toggle), so the next render picks up the chosen mode.
+function subtabModeSection() {
+  return {
+    id: 'cdx-subtabs',
+    title: 'Sub-abas',
+    content:
+      '<button class="bs-toggle-btn" id="sd-subtab-mode"></button>' +
+      '<p class="bs-hint">Como as sub-abas (Conteúdo, Perguntas) aparecem: pílula flutuante ao passar o mouse na aba, ou barra fixa abaixo dela.</p>',
+    onInit() {
+      const btn = document.getElementById('sd-subtab-mode');
+      if (!btn) return;
+      const sync = () => { btn.textContent = subtabMode() === 'pill' ? 'Pílula ao passar o mouse' : 'Barra fixa'; };
+      sync();
+      btn.addEventListener('click', () => {
+        const next = subtabMode() === 'pill' ? 'bar' : 'pill';
+        try { localStorage.setItem(SUBTAB_MODE_KEY, next); } catch (_) {}
+        location.reload();
+      });
+    },
+  };
+}
+
 export function init(opts) {
   opts = opts || {};
   const active = opts.active || '';
   const sections = opts.sections || [];
-  // Sub-tabs for the active tab, rendered as the legacy bs-topbar-subrow chrome.
-  // Each entry: { label, href, active }. Empty/omitted -> no sub-row (collapses).
+  // Sub-tabs for the active tab, rendered as the hover-pill / persistent-bar
+  // chrome (5c, see the helpers above). Each entry: { label, href, active }.
+  // Empty/omitted -> no sub-navigation (single-row topbar).
   const subTabs = opts.subTabs || [];
   const container = document.querySelector('.bs-app') || document.body;
 
@@ -146,33 +247,20 @@ export function init(opts) {
 
   header.appendChild(inner);
 
-  // Sub-tab row: reuse the legacy bs-topbar-subrow chrome (styled in
-  // backstage.css). Only rendered when the active tab declares sub-tabs, so
-  // tabs without them (Cohorts) keep the 64px single-row topbar.
-  if (subTabs.length > 0) {
-    const subRow = document.createElement('div');
-    subRow.className = 'bs-topbar-subrow';
-    const subStrip = document.createElement('nav');
-    subStrip.className = 'bs-topbar-subtabs';
-    subStrip.setAttribute('role', 'tablist');
-    subStrip.setAttribute('aria-label', 'Sub-navegação');
-    subTabs.forEach((s) => {
-      const a = document.createElement('a');
-      a.className = 'bs-topbar-subtab' + (s.active ? ' active' : '');
-      a.href = s.href || '#';
-      a.setAttribute('role', 'tab');
-      if (s.active) a.setAttribute('aria-current', 'page');
-      a.textContent = s.label;
-      subStrip.appendChild(a);
-    });
-    subRow.appendChild(subStrip);
-    header.appendChild(subRow);
-  }
-
   container.insertBefore(header, container.firstChild);
 
-  // Reuse shared shell services.
+  // Sub-tabs (5c): rendered into the LIVE header (after insert) so the positioner
+  // can measure the active tab. Two modes chosen by the global pref; only the
+  // active tab declares sub-tabs, so tabs without them keep the single-row topbar.
+  if (subTabs.length > 0) {
+    const anchorTab = strip.querySelector('.cdx-tab.active') || strip;
+    if (subtabMode() === 'bar') renderSubBar(header, anchorTab, subTabs);
+    else renderSubPill(header, anchorTab, subTabs);
+  }
+
+  // Reuse shared shell services. The pill/bar toggle is a global Codex pref, so
+  // it leads the Settings drawer sections (before any page-injected ones).
   ThemeManager.init({ storageKey: 'bs_theme' });
   ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
-  SettingsDrawer.init({ sections: sections });
+  SettingsDrawer.init({ sections: [subtabModeSection(), ...sections] });
 }

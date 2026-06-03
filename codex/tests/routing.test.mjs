@@ -61,13 +61,14 @@ test('every Content sub-tab is now a native module (no ClassTrail bridges left)'
   assert.ok(!/href:\s*'\/backstage\/classtrail/.test(contentJs), 'no SUBTABS entry bridges to ClassTrail');
 });
 
-test('the sub-tab BAR is the legacy bs-topbar-subrow rendered by the Codex topbar', () => {
-  // Reuse the existing chrome, do not hand-roll a bar.
+test('the Codex topbar renders sub-tabs as the pill/bar chrome (5c), only when they exist', () => {
+  // 5c superseded the legacy bs-topbar-subrow with the hover-pill / persistent-bar
+  // chrome (a global pref). Detailed contract lives in topbar-subtabs.test.mjs.
   assert.match(codexTopbar, /opts\.subTabs/, 'topbar reads opts.subTabs');
-  assert.match(codexTopbar, /['"]bs-topbar-subrow['"]/, 'renders bs-topbar-subrow');
-  assert.match(codexTopbar, /['"]bs-topbar-subtab['"]/, 'renders bs-topbar-subtab links');
+  assert.match(codexTopbar, /cdx-subpill/, 'renders the hover-pill chrome');
+  assert.match(codexTopbar, /cdx-subrow|cdx-substrip/, 'renders the persistent-bar chrome');
   // Only when sub-tabs exist (Cohorts stays single-row).
-  assert.match(codexTopbar, /subTabs\.length\s*>\s*0/, 'sub-row only when sub-tabs exist');
+  assert.match(codexTopbar, /subTabs\.length\s*>\s*0/, 'sub-nav only when sub-tabs exist');
 });
 
 test('content exposes subtabs() with native /codex routes + legacy bridges', () => {

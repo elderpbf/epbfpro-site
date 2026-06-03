@@ -54,6 +54,48 @@
 .cdx-tab--cohorts   { --accent-color: var(--codex-cohorts); }
 .cdx-tab--questions { --accent-color: var(--codex-questions); }
 
+/* ── Sub-tabs (5c): one nav, two modes, positioned under the active tab ──────
+ * by js/anchored.js. The mode is a global pref toggled in the Settings drawer:
+ * 'pill' floats on hover of the active tab; 'bar' is a persistent strip. */
+.cdx-subtab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  border-radius: 7px;
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.cdx-subtab:hover { color: var(--text-primary); background: var(--surface-hover, rgba(127, 127, 127, 0.12)); }
+.cdx-subtab.active { color: var(--primary); background: var(--surface-hover, rgba(127, 127, 127, 0.12)); }
+
+/* 'bar' mode: a persistent row; the strip centers under the active tab. */
+.cdx-subrow {
+  position: relative;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.cdx-substrip { display: inline-flex; gap: 0.15rem; padding: 0.3rem 0; }
+
+/* 'pill' mode: a floating pill, hidden until the active tab is hovered. */
+.cdx-subpill {
+  position: absolute;
+  z-index: 60;
+  display: none;
+  gap: 0.15rem;
+  align-items: center;
+  padding: 0.3rem 0.4rem;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 28px var(--shadow);
+}
+.cdx-subpill.on { display: inline-flex; }
+
 /* ── Tab content host ───────────────────────────────────────── */
 .cdx-view { padding: 0.5rem 1.5rem 1.5rem; }
 
