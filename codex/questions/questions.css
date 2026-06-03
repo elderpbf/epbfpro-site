@@ -524,6 +524,25 @@
 .cdx-comp-scale { display: flex; gap: 0.6rem; }
 .cdx-comp-hint { color: var(--text-secondary); font-size: 0.85rem; }
 
+/* Launch panel only: make the shared composer read like the legacy host launch
+   form, lettered option rows (A/B/C...) with the correct-toggle on the right,
+   exactly like host.html's .opt-row / .opt-letter / .opt-correct-radio. Scoped
+   to .cdx-host-composer so the Bank / Content composer is untouched. */
+.cdx-host-composer .cdx-comp { gap: 0.9rem; }
+.cdx-host-composer .cdx-comp-optlist { counter-reset: cdx-opt; gap: 0.5rem; }
+.cdx-host-composer .cdx-comp-optrow { gap: 0.7rem; }
+.cdx-host-composer .cdx-comp-optrow::before {
+  counter-increment: cdx-opt;
+  content: counter(cdx-opt, upper-alpha);
+  flex-shrink: 0; min-width: 32px; text-align: center;
+  font-size: 0.75rem; font-weight: 700; color: var(--primary);
+  background: rgba(20,184,166,.12); border: 1px solid rgba(20,184,166,.2);
+  border-radius: 6px; padding: 0.5rem 0.55rem;
+}
+.cdx-host-composer .cdx-comp-opt { order: 1; }
+.cdx-host-composer .cdx-comp-correct { order: 2; }
+.cdx-host-composer .cdx-comp-optdel { order: 3; }
+
 /* =========================================================
    Q2 live host: render element + question renderer
    Faithful port of question-types.css (qr- -> cdx-qr-) + the
@@ -752,7 +771,11 @@
 /* The three columns scroll TOGETHER: the dashboard is the single scroll
    container; the columns themselves do not scroll independently (no per-panel
    scrollbars). */
-.cdx-host-dashboard { display: flex; gap: 0; flex: 1; min-height: 0; max-height: calc(100vh - 190px); overflow-y: auto; }
+.cdx-host-dashboard { display: flex; gap: 0; flex: 1; min-height: 0; max-height: calc(100vh - 190px); overflow-y: auto; scrollbar-width: thin; }
+/* Thin, subtle scrollbar like the legacy host (host-layout.css .hd-col bar). */
+.cdx-host-dashboard::-webkit-scrollbar { width: 6px; }
+.cdx-host-dashboard::-webkit-scrollbar-track { background: transparent; }
+.cdx-host-dashboard::-webkit-scrollbar-thumb { background: rgba(127,127,127,.25); border-radius: 3px; }
 .cdx-hd-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: visible; padding: 0 10px 16px; }
 .cdx-hd-col-left { width: 360px; flex-shrink: 0; min-width: 260px; max-width: 600px; padding-left: 0; }
 .cdx-hd-col-center { flex: 1; min-width: 280px; }
@@ -872,7 +895,12 @@
    not-hosted note, Trilha modal) + session-card actions.
    ========================================================= */
 
-.cdx-host-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.1rem; }
+/* Session name (left of the bar) is a button: clicking it reveals the protected
+   Excluir, per Elder. Stats sits first in the actions group (left of Visao). */
+.cdx-host-titlewrap { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.cdx-host-name { background: none; border: none; padding: 0; font-family: inherit; font-size: 0.78rem; color: var(--text-secondary); cursor: pointer; text-align: left; max-width: 40ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-host-name:hover { color: var(--primary); }
+.cdx-host-del { flex-shrink: 0; }
 .cdx-host-note { background: rgba(20,184,166,.08); border: 1px solid rgba(20,184,166,.2); border-radius: 10px; padding: 1rem 1.25rem; color: var(--text-secondary); font-size: 0.88rem; text-align: center; margin-bottom: 1rem; }
 
 /* Trilha button + linked dot */

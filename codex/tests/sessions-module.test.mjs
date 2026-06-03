@@ -110,17 +110,18 @@ test('sessions wires the per-session stats overlay through the facade', () => {
   assert.match(src, /cdx-session-stats/, 'renders a per-session stats overlay panel');
   // overlay shows the legacy KPIs + per-question accuracy bars (reuse cdx-stats-bar)
   assert.match(src, /cdx-stats-bar/, 'overlay reuses the accuracy bar primitive');
+  // Opened from the host bar's Estatisticas button via the onStats callback.
+  assert.match(src, /onStats:\s*\(\)\s*=>\s*_openStats/, 'host bar opens the overlay via onStats');
 });
 
-test('per-session delete is retained but NOT a sidebar-card action (placement pending post-port)', () => {
+test('per-session delete is wired from the host (onDelete -> deleteSession), not a sidebar-card action', () => {
   const src = read('../questions/sessions.js');
-  // The delete implementation stays ready (api call + inline confirm); it is
-  // simply not wired to any trigger yet. Where it is surfaced is a post-port
-  // decision that must NOT land back on the cards.
-  assert.match(src, /\.deleteSession\s*\(/, 'keeps the api.deleteSession call');
-  assert.match(src, /sessions_delete_confirm/, 'keeps the inline delete confirm');
+  // Delete is triggered by the host bar (name-click reveals Excluir, confirmed
+  // there); sessions just executes it via the onDelete callback.
+  assert.match(src, /onDelete:\s*\(\)\s*=>\s*_confirmDelete/, 'sessions passes onDelete -> _confirmDelete to the host');
+  assert.match(src, /\.deleteSession\s*\(/, 'delete goes through api.deleteSession');
   assert.ok(!/cdx-session-actions/.test(src), 'no per-card action row: the sidebar cards stay bare');
-  assert.ok(!/data-act=["']delete["']/.test(src), 'delete is not wired as a card action');
+  assert.ok(!/data-act=["']delete["']/.test(src), 'delete is not a sidebar-card action in sessions.js');
 });
 
 test('sessions unmount tears down the document-level reveal listeners', () => {

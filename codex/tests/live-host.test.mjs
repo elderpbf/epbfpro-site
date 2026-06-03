@@ -74,6 +74,17 @@ test('live-host matches host.html fidelity (close-options in the active foot, ic
   assert.match(src, /host_sqa_hint/, 'student-Q&A card shows the hint line');
 });
 
+test('host bar exposes Stats (left of Visao) + a name-click Delete, wired via callbacks', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /data-act="stats"/, 'Estatisticas button in the bar');
+  assert.match(src, /data-act="name"/, 'the session name is a clickable button');
+  assert.match(src, /data-act="delete"/, 'Excluir button (revealed by the name)');
+  assert.match(src, /_onStats/, 'wires the onStats callback');
+  assert.match(src, /_onDelete/, 'wires the onDelete callback');
+  // Stats sits before the Visao dropdown in source order (to its left).
+  assert.ok(src.indexOf('data-act="stats"') < src.indexOf('cdx-host-visao'), 'Stats is left of Visao');
+});
+
 test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared globals', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /\.reopenSession\s*\(/, 'Iniciar reopens the session');

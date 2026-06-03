@@ -133,12 +133,18 @@ function _renderMain() {
     main.innerHTML = '<div class="cdx-sessions-placeholder">' + t('questions.sessions_placeholder') + '</div>';
     return;
   }
-  liveHost.mount(main, { session: s });
+  // The host bar owns the Estatisticas button (left of Visao) and reveals the
+  // delete via its session-name button; both call back into these handlers.
+  liveHost.mount(main, {
+    session: s,
+    onStats: () => _openStats(s.code),
+    onDelete: () => _confirmDelete(s.code),
+  });
 }
 
 // ── Per-session stats overlay (legacy openStats) ────────────
-// RETAINED, NOT WIRED. The overlay implementation is kept ready; no control
-// opens it yet. Where Stats/Delete are surfaced is a post-port decision.
+// Opened from the host bar's Estatisticas button (via the onStats callback);
+// Fechar returns to the live host.
 function _accBar(accuracy, totalAnswers) {
   const p = pct(accuracy);
   if (p === null) {
@@ -200,19 +206,9 @@ async function _openStats(code) {
   main.innerHTML = '<div class="cdx-session-stats">' + _statsHead(s) + body + '</div>';
 }
 
-// ── Delete (retained, NOT wired; inline confirm) ────────────
-// Renders the inline confirm into a #cdx-session-danger zone when one exists.
-// No control invokes this yet; placement is the post-port decision. Never wire
-// it onto the sidebar cards.
-function _askDelete(code) {
-  const zone = _viewEl && _viewEl.querySelector('#cdx-session-danger');
-  if (!zone) return;
-  zone.innerHTML =
-    '<span class="cdx-session-confirm">' + t('questions.sessions_delete_confirm') + '</span>' +
-    '<button class="cdx-btn cdx-btn-danger" data-act="delete-confirm" data-code="' + _esc(code) + '" type="button">' + t('questions.bank_yes') + '</button>' +
-    '<button class="cdx-btn" data-act="delete-cancel" type="button">' + t('questions.bank_no') + '</button>';
-}
-
+// ── Delete (triggered from the host's session-name button) ──
+// The host bar reveals an Excluir button on the session name and confirms there
+// (window.confirm); on confirm it calls back to _confirmDelete via onDelete.
 async function _confirmDelete(code) {
   let res;
   try { res = await api.deleteSession({ code }); } catch (e) { notice.internal(e); res = null; }

@@ -41,6 +41,8 @@ let _historyMap = {};
 let _bankMap = {};
 let _trailTurma = null;
 let _trailAllTurmas = [];
+let _onStats = null;   // sessions.js callback: open the per-session stats overlay
+let _onDelete = null;  // sessions.js callback: delete this session (revealed via the name)
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -68,8 +70,12 @@ function _render() {
 
 function _barMarkup() {
   return '<div class="cdx-host-bar">' +
-    '<div class="cdx-host-name">' + _esc(_session.title || ('' + t('questions.sessions_untitled'))) + '</div>' +
+    '<div class="cdx-host-titlewrap">' +
+      '<button class="cdx-host-name" data-act="name" type="button" title="' + _esc(t('questions.sessions_delete')) + '">' + _esc(_session.title || ('' + t('questions.sessions_untitled'))) + '</button>' +
+      '<button class="cdx-btn cdx-btn-danger cdx-host-del" data-act="delete" type="button" hidden>' + _esc(t('questions.sessions_delete')) + '</button>' +
+    '</div>' +
     '<div class="cdx-host-bar-actions">' +
+      '<button class="cdx-btn cdx-host-stats" data-act="stats" type="button">' + _esc(t('questions.sessions_stats')) + '</button>' +
       '<details class="cdx-host-visao" id="cdx-host-visao" hidden><summary>' + _esc(t('questions.host_view')) + ' ▾</summary>' +
         '<div class="cdx-host-visao-panel">' +
           '<div class="cdx-host-visao-label">' + _esc(t('questions.host_columns')) + '</div>' +
@@ -584,6 +590,8 @@ export function mount(containerEl, ctx) {
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _sqaLastServerAnswer = null; _sqaSaving = false; _historyMap = {}; _bankMap = {};
   _trailTurma = null; _trailAllTurmas = [];
+  _onStats = (ctx && ctx.onStats) || null;
+  _onDelete = (ctx && ctx.onDelete) || null;
 
   registerQuestionEl();
   _render();
@@ -607,6 +615,9 @@ export function mount(containerEl, ctx) {
     const btn = e.target.closest('[data-act]');
     if (btn) {
       const act = btn.getAttribute('data-act');
+      if (act === 'stats') { if (_onStats) _onStats(); return; }
+      if (act === 'name') { const del = _q('.cdx-host-del'); if (del) del.hidden = !del.hidden; return; }
+      if (act === 'delete') { if (typeof confirm !== 'function' || confirm(t('questions.sessions_delete_confirm'))) { if (_onDelete) _onDelete(); } return; }
       if (act === 'start') return _startHost(false);
       if (act === 'stop') return _stopHost();
       if (act === 'launch') return _launch();
@@ -676,4 +687,5 @@ export function unmount() {
   _container = null; _session = null;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
+  _onStats = null; _onDelete = null;
 }
