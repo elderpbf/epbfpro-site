@@ -56,6 +56,22 @@ test('live-host renders the faithful host session bar + not-hosted note', () => 
   assert.match(src, /_applyHostedUI/, 'toggles hosting chrome like the legacy');
 });
 
+test('live-host matches host.html fidelity (close-options in the active foot, icons, bank label, sqa hint)', () => {
+  const src = read('../questions/live-host.js');
+  // Close-options belong with the active question (center column), exactly like
+  // host.html, NOT in the left composer card.
+  assert.match(src, /cdx-active-foot-right/, 'close-options share the active foot group with the close button');
+  assert.ok(
+    src.indexOf('cdx-close-options') > src.indexOf('cdx-active-standard'),
+    'close-options render inside the center active panel, not the composer card',
+  );
+  // Legacy inline SVG glyphs on Banco de questões / Gerar / Melhorar.
+  assert.match(src, /<svg/, 'ports the host icon glyphs');
+  // Faithful bank "Conjunto" label row + student-Q&A hint line.
+  assert.match(src, /host_bank_set_label/, 'bank set carries the Conjunto label');
+  assert.match(src, /host_sqa_hint/, 'student-Q&A card shows the hint line');
+});
+
 test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared globals', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /\.reopenSession\s*\(/, 'Iniciar reopens the session');
@@ -98,7 +114,8 @@ test('live host + Q&A i18n keys exist in BOTH dictionaries', async () => {
     'questions.host_view', 'questions.host_columns', 'questions.host_col_composer',
     'questions.host_col_active', 'questions.host_col_qa', 'questions.host_reset_layout',
     'questions.host_display', 'questions.host_launch', 'questions.host_bank',
-    'questions.host_bank_pick', 'questions.host_bank_launch', 'questions.host_show_results',
+    'questions.host_bank_pick', 'questions.host_bank_launch', 'questions.host_bank_set_label',
+    'questions.host_sqa_hint', 'questions.host_show_results',
     'questions.host_reveal_answer', 'questions.host_launch_btn', 'questions.host_clear',
     'questions.host_active_q', 'questions.host_close_q', 'questions.host_history',
     'questions.host_qa_title', 'questions.host_relaunch', 'questions.host_edit',

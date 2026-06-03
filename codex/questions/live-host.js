@@ -96,24 +96,29 @@ function _barMarkup() {
 
 function _displayHref() { return '/go/display.html?code=' + encodeURIComponent(_session.code); }
 
+// Inline SVG glyphs copied node-for-node from host.html (bank hamburger, AI
+// "Gerar" star, AI "Melhorar" expand) so the composer card reads like the legacy.
+const _ICON_BANK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>';
+const _ICON_AI_GEN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+const _ICON_AI_IMP = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
+
 function _composerCardMarkup() {
   return '<div class="cdx-host-card" id="cdx-launch-card">' +
     '<div class="cdx-host-card-title">' + _esc(t('questions.host_launch')) + '</div>' +
-    '<button class="cdx-bank-toggle" data-act="bank-toggle" type="button">' + _esc(t('questions.host_bank')) + ' <i class="cdx-bank-chevron">▾</i></button>' +
+    '<button class="cdx-bank-toggle" data-act="bank-toggle" type="button">' + _ICON_BANK + ' ' + _esc(t('questions.host_bank')) + ' <i class="cdx-bank-chevron">▾</i></button>' +
     '<div class="cdx-bank-panel" id="cdx-bank-panel">' +
-      '<select class="cdx-select" id="cdx-bank-set"><option value="">' + _esc(t('questions.host_bank_pick')) + '</option></select>' +
+      '<div class="cdx-bank-set-row">' +
+        '<label class="cdx-bank-set-label" for="cdx-bank-set">' + _esc(t('questions.host_bank_set_label')) + '</label>' +
+        '<select class="cdx-select" id="cdx-bank-set"><option value="">' + _esc(t('questions.host_bank_pick')) + '</option></select>' +
+      '</div>' +
       '<div class="cdx-bank-list" id="cdx-bank-list"><div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div></div>' +
     '</div>' +
     '<div class="cdx-host-composer" id="cdx-host-composer"></div>' +
     '<div class="cdx-host-btn-row">' +
-      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-generate" type="button">' + _esc(t('questions.host_ai_generate')) + '</button>' +
-      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-improve" type="button">' + _esc(t('questions.host_ai_improve')) + '</button>' +
+      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-generate" type="button">' + _ICON_AI_GEN + ' ' + _esc(t('questions.host_ai_generate')) + '</button>' +
+      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-improve" type="button">' + _ICON_AI_IMP + ' ' + _esc(t('questions.host_ai_improve')) + '</button>' +
     '</div>' +
     '<p class="cdx-host-error" id="cdx-host-error"></p>' +
-    '<div class="cdx-close-options">' +
-      '<label><input type="checkbox" id="cdx-chk-show" checked> ' + _esc(t('questions.host_show_results')) + '</label>' +
-      '<label><input type="checkbox" id="cdx-chk-reveal"> ' + _esc(t('questions.host_reveal_answer')) + '</label>' +
-    '</div>' +
     '<div class="cdx-host-btn-row">' +
       '<button class="cdx-btn cdx-btn-primary" data-act="launch" type="button">' + _esc(t('questions.host_launch_btn')) + '</button>' +
       '<button class="cdx-btn" data-act="clear" type="button">' + _esc(t('questions.host_clear')) + '</button>' +
@@ -129,7 +134,13 @@ function _centerMarkup() {
         '<div id="cdx-active-render"></div>' +
         '<div class="cdx-active-foot">' +
           '<span class="cdx-active-tally" id="cdx-active-tally"></span>' +
-          '<button class="cdx-btn cdx-btn-danger" data-act="close-q" type="button">' + _esc(t('questions.host_close_q')) + '</button>' +
+          '<div class="cdx-active-foot-right">' +
+            '<div class="cdx-close-options">' +
+              '<label><input type="checkbox" id="cdx-chk-show" checked> ' + _esc(t('questions.host_show_results')) + '</label>' +
+              '<label><input type="checkbox" id="cdx-chk-reveal"> ' + _esc(t('questions.host_reveal_answer')) + '</label>' +
+            '</div>' +
+            '<button class="cdx-btn cdx-btn-danger" data-act="close-q" type="button">' + _esc(t('questions.host_close_q')) + '</button>' +
+          '</div>' +
         '</div>' +
       '</div>' +
       '<div id="cdx-active-sqa" style="display:none">' +
@@ -140,6 +151,7 @@ function _centerMarkup() {
           '<div class="cdx-sqa-answer-label">' + _esc(t('questions.host_sqa_answer_label')) + '</div>' +
           '<textarea class="cdx-sqa-answer-input" id="cdx-sqa-response" rows="3" placeholder="' + _esc(t('questions.host_sqa_answer_placeholder')) + '"></textarea>' +
           '<div class="cdx-sqa-status" id="cdx-sqa-status"></div>' +
+          '<div class="cdx-sqa-hint">' + _esc(t('questions.host_sqa_hint')) + '</div>' +
         '</div>' +
         '<div class="cdx-host-btn-row cdx-host-btn-row--end">' +
           '<button class="cdx-btn cdx-btn-danger" data-act="sqa-close" type="button">' + _esc(t('questions.host_close_q')) + '</button>' +

@@ -704,8 +704,10 @@
 
 .cdx-host { display: flex; flex-direction: column; min-height: 0; }
 
-/* Slim action bar (live indicator, code, Visão, Display) */
-.cdx-host-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.9rem; flex-wrap: wrap; padding: 0.4rem 0 0.6rem; border-bottom: 1px solid rgba(20,184,166,.18); margin-bottom: 0.6rem; }
+/* Session bar: sticky surface strip with the code/name + action buttons, a
+   faithful port of the legacy .host-session-bar. The Sessions main area has no
+   padding, so the bar already spans edge-to-edge (no negative margins needed). */
+.cdx-host-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.9rem; flex-wrap: wrap; background: var(--surface); border-bottom: 1px solid rgba(20,184,166,.18); padding: 0.5rem 1.1rem; margin-bottom: 0.6rem; position: sticky; top: 0; z-index: 30; }
 .cdx-host-bar-left { display: flex; align-items: center; gap: 0.6rem; }
 .cdx-host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
 .cdx-host-code { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; color: var(--primary); }
@@ -748,8 +750,8 @@
 .cdx-host-error { font-size: 0.82rem; color: var(--error); margin: 0.4rem 0 0; min-height: 1.2em; }
 .cdx-host-btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
 .cdx-host-btn-row--end { justify-content: flex-end; }
-.cdx-close-options { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.75rem; }
-.cdx-close-options label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; }
+.cdx-close-options { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+.cdx-close-options label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; font-weight: 500; }
 .cdx-close-options input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
 
 /* Bank picker */
@@ -758,6 +760,8 @@
 .cdx-bank-toggle.open .cdx-bank-chevron { transform: rotate(180deg); }
 .cdx-bank-panel { display: none; margin-bottom: 1.1rem; padding-bottom: 1.1rem; border-bottom: 1px solid rgba(20,184,166,.15); }
 .cdx-bank-panel.open { display: block; }
+.cdx-bank-set-row { margin-bottom: 0.6rem; }
+.cdx-bank-set-label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
 .cdx-bank-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; max-height: 220px; overflow-y: auto; }
 .cdx-bank-msg { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
 .cdx-bank-item { display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; padding: 0.45rem 0.6rem; border: 1px solid rgba(20,184,166,.12); border-radius: 8px; background: var(--background); cursor: pointer; }
@@ -770,8 +774,11 @@
 .cdx-active-badge { display: inline-block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: rgba(20,184,166,.15); color: var(--primary); border-radius: 4px; padding: 0.2rem 0.6rem; margin-bottom: 0.75rem; }
 .cdx-active-badge--sqa { background: rgba(245,158,11,.18); color: #b45309; }
 .cdx-active-text { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; line-height: 1.4; }
-.cdx-active-foot { margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+.cdx-active-foot { margin-top: 1rem; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
 .cdx-active-tally { font-size: 0.82rem; color: var(--text-secondary); }
+/* Close-options + the Encerrar button share the right side of the active foot,
+   exactly like host.html (the checkboxes sit above the close button). */
+.cdx-active-foot-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; }
 
 /* Student-Q&A active card */
 .cdx-sqa-meta { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 8px; }
@@ -780,6 +787,7 @@
 .cdx-sqa-answer-input { width: 100%; padding: 10px 12px; font-size: 0.92rem; font-family: inherit; line-height: 1.45; background: var(--surface); color: var(--text-primary); border: 1px solid rgba(245,158,11,.35); border-radius: 8px; outline: none; resize: vertical; min-height: 70px; box-sizing: border-box; }
 .cdx-sqa-answer-input:focus { border-color: #f59e0b; }
 .cdx-sqa-status { font-size: 0.74rem; color: var(--text-light); margin-top: 6px; }
+.cdx-sqa-hint { font-size: 0.76rem; color: var(--text-light); margin-top: 6px; }
 
 /* History card */
 .cdx-history-item { padding: 0.75rem 0; border-bottom: 1px solid rgba(20,184,166,.08); }
@@ -864,9 +872,7 @@
 .cdx-trail-box select { width: 100%; margin-bottom: 0.9rem; }
 .cdx-trail-empty { color: var(--text-secondary); font-size: 0.85rem; padding: 0.6rem 0; }
 
-/* Session-card actions (Estatisticas / Excluir), per the legacy card */
-.cdx-session-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; align-items: center; }
-.cdx-session-act { font-size: 0.72rem; font-weight: 600; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: all 0.15s; }
-.cdx-session-act:hover { border-color: var(--primary); color: var(--primary); }
-.cdx-session-act--danger:hover { border-color: var(--error); color: var(--error); }
+/* Inline delete-confirm text (used by the retained, not-yet-wired session
+   delete). The rejected per-card action buttons are gone; the sidebar cards
+   are bare. */
 .cdx-session-confirm { font-size: 0.74rem; color: var(--text-secondary); }

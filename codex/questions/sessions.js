@@ -1,13 +1,16 @@
 // questions/sessions.js
 // Codex Questions -> Sessions sub-tab (native, host/admin). A faithful re-port of
 // the legacy ClassPulse `panel-sessions`: a floating left-edge sidebar picker
-// (the ClassVault cv-sm pattern) of session cards, and a main area that, when a
-// session is picked, mounts the native live host (live-host.js), which is itself
-// a faithful port of the legacy `host.html`. Per the legacy panel-sessions, each
-// card carries an Estatisticas action (opens the per-session stats overlay) and
-// a protected delete; the lifecycle (Iniciar/Encerrar) lives on the host's own
-// session bar, exactly like the legacy. Data through the facade; strings via
-// t(); errors via notice.
+// (the ClassVault cv-sm pattern) of bare session cards (code/title/date/live dot,
+// click-to-select), and a main area that, when a session is picked, mounts the
+// native live host (live-host.js), itself a faithful port of the legacy
+// `host.html`. The lifecycle (Iniciar/Encerrar) lives on the host's own session
+// bar, exactly like the legacy.
+//
+// The per-session Stats overlay and the protected session Delete are implemented
+// below but NOT wired to any trigger; their placement is pending a post-port
+// decision. They must NOT be put back on the sidebar cards (that was reviewed and
+// rejected). Data through the facade; strings via t(); errors via notice.
 import { questions as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
@@ -87,10 +90,6 @@ function _card(s) {
       '<div class="cdx-session-meta">' + _fmtDate(s.created_at) + '</div>' +
     '</div>' +
     live +
-    '<div class="cdx-session-actions">' +
-      '<button class="cdx-session-act" data-act="stats" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_stats') + '</button>' +
-      '<button class="cdx-session-act cdx-session-act--danger" data-act="delete" data-code="' + _esc(s.code) + '" type="button">' + t('questions.sessions_delete') + '</button>' +
-    '</div>' +
   '</div>';
 }
 
@@ -138,6 +137,8 @@ function _renderMain() {
 }
 
 // ── Per-session stats overlay (legacy openStats) ────────────
+// RETAINED, NOT WIRED. The overlay implementation is kept ready; no control
+// opens it yet. Where Stats/Delete are surfaced is a post-port decision.
 function _accBar(accuracy, totalAnswers) {
   const p = pct(accuracy);
   if (p === null) {
@@ -199,11 +200,14 @@ async function _openStats(code) {
   main.innerHTML = '<div class="cdx-session-stats">' + _statsHead(s) + body + '</div>';
 }
 
-// ── Delete (card action, inline confirm) ────────────────────
-function _askDelete(card, code) {
-  const actions = card && card.querySelector('.cdx-session-actions');
-  if (!actions) return;
-  actions.innerHTML =
+// ── Delete (retained, NOT wired; inline confirm) ────────────
+// Renders the inline confirm into a #cdx-session-danger zone when one exists.
+// No control invokes this yet; placement is the post-port decision. Never wire
+// it onto the sidebar cards.
+function _askDelete(code) {
+  const zone = _viewEl && _viewEl.querySelector('#cdx-session-danger');
+  if (!zone) return;
+  zone.innerHTML =
     '<span class="cdx-session-confirm">' + t('questions.sessions_delete_confirm') + '</span>' +
     '<button class="cdx-btn cdx-btn-danger" data-act="delete-confirm" data-code="' + _esc(code) + '" type="button">' + t('questions.bank_yes') + '</button>' +
     '<button class="cdx-btn" data-act="delete-cancel" type="button">' + t('questions.bank_no') + '</button>';
@@ -272,19 +276,10 @@ export function mount(viewEl, ctx) {
     _load();
   });
 
-  // Picker: clicking a card body selects + mounts the host; the card actions
-  // (Estatisticas / Excluir) are handled separately, never selecting.
+  // Picker: clicking a card selects it and mounts the host. The batch-3 sidebar
+  // is intentionally bare (no card actions); per-session Stats/Delete placement
+  // is a post-port decision (see the retained helpers above).
   _on(list, 'click', (e) => {
-    const actBtn = e.target.closest('[data-act]');
-    if (actBtn) {
-      const act = actBtn.getAttribute('data-act');
-      const code = actBtn.getAttribute('data-code');
-      if (act === 'stats') _openStats(code);
-      else if (act === 'delete') _askDelete(actBtn.closest('.cdx-session-card'), code);
-      else if (act === 'delete-confirm') _confirmDelete(code);
-      else if (act === 'delete-cancel') _renderList();
-      return;
-    }
     const card = e.target.closest('.cdx-session-card');
     if (card) _select(card.getAttribute('data-code'));
   });

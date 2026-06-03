@@ -112,12 +112,15 @@ test('sessions wires the per-session stats overlay through the facade', () => {
   assert.match(src, /cdx-stats-bar/, 'overlay reuses the accuracy bar primitive');
 });
 
-test('sessions deletes from the card action behind an inline confirm', () => {
+test('per-session delete is retained but NOT a sidebar-card action (placement pending post-port)', () => {
   const src = read('../questions/sessions.js');
-  assert.match(src, /\.deleteSession\s*\(/, 'calls api.deleteSession');
-  assert.match(src, /data-act=["']delete["']/, 'delete is a card action');
-  assert.match(src, /cdx-session-actions/, 'lives in the card action row (legacy panel-sessions style)');
-  assert.match(src, /sessions_delete_confirm/, 'guards delete behind an inline confirm');
+  // The delete implementation stays ready (api call + inline confirm); it is
+  // simply not wired to any trigger yet. Where it is surfaced is a post-port
+  // decision that must NOT land back on the cards.
+  assert.match(src, /\.deleteSession\s*\(/, 'keeps the api.deleteSession call');
+  assert.match(src, /sessions_delete_confirm/, 'keeps the inline delete confirm');
+  assert.ok(!/cdx-session-actions/.test(src), 'no per-card action row: the sidebar cards stay bare');
+  assert.ok(!/data-act=["']delete["']/.test(src), 'delete is not wired as a card action');
 });
 
 test('sessions unmount tears down the document-level reveal listeners', () => {
