@@ -19,7 +19,9 @@ test('labs module satisfies the tab contract', () => {
 test('labs is a native cdx- module, not a CTLabsPanel wrapper', () => {
   const src = read('../content/labs.js');
   assert.ok(!/window\.CTLabsPanel/.test(src), 'no longer accesses the legacy CTLabsPanel global');
-  assert.match(src, /cdx-lab-card/, 'renders native cdx- cards');
+  assert.match(src, /cdx-items-split/, 'reuses the Items master-detail split shell');
+  assert.match(src, /cdx-item-preview|cdx-labs-preview/, 'has a preview pane');
+  assert.match(src, /cdx-item-row/, 'renders the list as cdx- rows (not a per-tab card grid)');
   assert.match(src, /cdx-lab-switch/, 'native on/off switch');
   assert.match(src, /from\s+['"]\.\.\/js\/i18n\.js['"]/, 'imports t()');
   assert.ok(!/—/.test(src), 'no em dashes');
@@ -36,7 +38,7 @@ test('labs preserves the shared state + registry contract', () => {
 test('labs strings route through t() in both dictionaries', async () => {
   const pt = (await import('../i18n/pt.js')).default;
   const en = (await import('../i18n/en.js')).default;
-  for (const k of ['labs.title', 'labs.hint', 'labs.preview', 'labs.toggle', 'labs.lab_prefix', 'labs.unavailable']) {
+  for (const k of ['labs.title', 'labs.hint', 'labs.preview', 'labs.toggle', 'labs.lab_prefix', 'labs.select', 'labs.unavailable']) {
     assert.ok(k in pt, `pt.js has ${k}`);
     assert.ok(k in en, `en.js has ${k}`);
   }

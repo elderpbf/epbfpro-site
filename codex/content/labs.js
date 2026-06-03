@@ -1,8 +1,12 @@
 // content/labs.js
 // Codex Content tab, Labs sub-tab. NATIVE cdx- module (full nativization of the
 // legacy CTLabsPanel grid; the tracked debt in manifest/FUTURE.md, now done).
-// Renders the lab on/off grid with native cdx- classes and t() strings, and a
-// proper mount/unmount that tears its own listeners down.
+//
+// Master-detail layout, same shell as the Items sub-tab: a left list of labs
+// (each with an inline on/off switch) and a right preview pane that renders the
+// selected lab live in an iframe, with a fullscreen button. Reuses the Items
+// split classes (cdx-items-split / cdx-items-list / cdx-item-row /
+// cdx-item-preview) so there is one master-detail layout, not a per-tab copy.
 //
 // What stays a shared global (deliberately, not debt):
 //   window.CVLabs       (../backstage/classvault/js/cv-labs.js)  the registry
@@ -20,6 +24,7 @@ import { t } from '../js/i18n.js';
 const LS_KEY = 'cv_labs_enabled';
 
 let _viewEl = null;
+let _selectedKey = null;
 let _onClick = null;
 let _onChange = null;
 
@@ -50,23 +55,79 @@ function _setEnabled(key, on) {
 function _labs() {
   return (window.CVLabs && Array.isArray(window.CVLabs.LABS)) ? window.CVLabs.LABS : null;
 }
+function _labByKey(key) {
+  const labs = _labs();
+  return labs ? labs.find((l) => String(l.key) === String(key)) : null;
+}
 
-function _cardHtml(lab) {
+// Keep the current selection if it still exists, else fall back to the first lab.
+function _resolveSelection(labs, key) {
+  if (!labs || !labs.length) return null;
+  return labs.some((l) => String(l.key) === String(key)) ? key : labs[0].key;
+}
+
+function _switchHtml(on) {
+  return '<label class="cdx-lab-switch" title="' + _esc(t('labs.toggle')) + '">' +
+      '<input type="checkbox" class="cdx-lab-switch-input"' + (on ? ' checked' : '') + '>' +
+      '<span class="cdx-lab-switch-track"><span class="cdx-lab-switch-thumb"></span></span>' +
+    '</label>';
+}
+
+function _rowHtml(lab) {
   const on = _isEnabled(lab.key);
-  return '<div class="cdx-lab-card' + (on ? '' : ' is-off') + '" data-lab-key="' + _esc(lab.key) + '">' +
-      '<div class="cdx-lab-row">' +
-        '<span class="cdx-lab-key">' + _esc(t('labs.lab_prefix')) + ' · ' + _esc(String(lab.key).toUpperCase()) + '</span>' +
-        '<label class="cdx-lab-switch" title="' + _esc(t('labs.toggle')) + '">' +
-          '<input type="checkbox" class="cdx-lab-switch-input"' + (on ? ' checked' : '') + '>' +
-          '<span class="cdx-lab-switch-track"><span class="cdx-lab-switch-thumb"></span></span>' +
-        '</label>' +
+  const active = String(lab.key) === String(_selectedKey);
+  return '<div class="cdx-item-row' + (active ? ' is-active' : '') + (on ? '' : ' is-off') +
+      '" data-lab-key="' + _esc(lab.key) + '">' +
+      '<span class="cdx-item-type-icon cdx-lab-icon">&#9672;</span>' +
+      '<div class="cdx-item-info">' +
+        '<div class="cdx-item-title">' + _esc(lab.title) + '</div>' +
+        '<div class="cdx-item-sub">' + _esc(t('labs.lab_prefix')) + ' &middot; ' + _esc(String(lab.key).toUpperCase()) +
+          (lab.summary ? ' &middot; ' + _esc(lab.summary) : '') + '</div>' +
       '</div>' +
-      '<h3 class="cdx-lab-title">' + _esc(lab.title) + '</h3>' +
-      (lab.summary ? '<p class="cdx-lab-summary">' + _esc(lab.summary) + '</p>' : '') +
-      '<div class="cdx-lab-actions">' +
-        '<button type="button" class="cdx-lab-preview" data-action="preview">' + _esc(t('labs.preview')) + '</button>' +
-      '</div>' +
+      _switchHtml(on) +
     '</div>';
+}
+
+function _previewHtml(lab) {
+  if (!lab) return '<div class="cdx-preview-empty">' + _esc(t('labs.select')) + '</div>';
+  const on = _isEnabled(lab.key);
+  return '<div class="cdx-lab-preview-head">' +
+      '<div class="cdx-lab-preview-meta">' +
+        '<div class="cdx-lab-ptitle">' + _esc(lab.title) + '</div>' +
+        '<div class="cdx-lab-psub">' + _esc(t('labs.lab_prefix')) + ' &middot; ' + _esc(String(lab.key).toUpperCase()) + '</div>' +
+      '</div>' +
+      '<div class="cdx-lab-preview-actions">' +
+        _switchHtml(on) +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-action="fullscreen">' + _esc(t('labs.preview')) + '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cdx-lab-preview-body">' +
+      '<iframe class="cdx-lab-frame" title="' + _esc(lab.title) + '" loading="lazy"' +
+        ' allow="autoplay; encrypted-media; clipboard-write; fullscreen"' +
+        ' src="/backstage/labs/' + encodeURIComponent(lab.key) + '/"></iframe>' +
+    '</div>';
+}
+
+function _renderList() {
+  const list = _viewEl.querySelector('#cdx-labs-list');
+  const labs = _labs();
+  if (!list) return;
+  list.innerHTML = (labs || []).map(_rowHtml).join('');
+}
+
+function _renderPreview() {
+  const pane = _viewEl.querySelector('#cdx-labs-preview');
+  if (!pane) return;
+  pane.innerHTML = _previewHtml(_labByKey(_selectedKey));
+}
+
+function _select(key) {
+  _selectedKey = key;
+  // Re-highlight rows without rebuilding them (keeps the iframe load to the pane).
+  _viewEl.querySelectorAll('.cdx-item-row').forEach((r) => {
+    r.classList.toggle('is-active', String(r.dataset.labKey) === String(key));
+  });
+  _renderPreview();
 }
 
 function _render() {
@@ -75,19 +136,24 @@ function _render() {
     _viewEl.innerHTML = '<div class="cdx-empty">' + _esc(t('labs.unavailable')) + '</div>';
     return;
   }
+  _selectedKey = _resolveSelection(labs, _selectedKey);
   _viewEl.innerHTML =
     '<div class="cdx-labs">' +
       '<div class="cdx-labs-head">' +
         '<h2 class="cdx-labs-title">' + _esc(t('labs.title')) + '</h2>' +
         '<div class="cdx-labs-hint">' + _esc(t('labs.hint')) + '</div>' +
       '</div>' +
-      '<div class="cdx-labs-grid">' + labs.map(_cardHtml).join('') + '</div>' +
+      '<div class="cdx-items-split cdx-labs-split">' +
+        '<div class="cdx-items-list" id="cdx-labs-list"></div>' +
+        '<div class="cdx-item-preview" id="cdx-labs-preview"></div>' +
+      '</div>' +
     '</div>';
+  _renderList();
+  _renderPreview();
 }
 
-function _preview(key) {
-  const labs = _labs();
-  const lab = labs && labs.find((l) => l.key === key);
+function _openFullscreen(key) {
+  const lab = _labByKey(key);
   if (window.CVLabViewer && typeof window.CVLabViewer.openModal === 'function') {
     window.CVLabViewer.openModal({ key, title: lab && lab.title });
   } else if (typeof window !== 'undefined' && typeof window.open === 'function') {
@@ -98,22 +164,29 @@ function _preview(key) {
 export function mount(viewEl) {
   _viewEl = viewEl;
   _render();
+
   _onClick = (e) => {
-    const card = e.target.closest('.cdx-lab-card');
-    if (!card) return;
-    const key = card.getAttribute('data-lab-key');
-    if (!key) return;
-    if (e.target.closest('[data-action="preview"]')) { e.preventDefault(); _preview(key); }
+    if (e.target.closest('.cdx-lab-switch')) return; // toggles are handled by change, not selection
+    if (e.target.closest('[data-action="fullscreen"]')) { e.preventDefault(); if (_selectedKey) _openFullscreen(_selectedKey); return; }
+    const row = e.target.closest('.cdx-item-row');
+    if (row && row.dataset.labKey) _select(row.dataset.labKey);
   };
   _onChange = (e) => {
     const input = e.target.closest('.cdx-lab-switch-input');
     if (!input) return;
-    const card = input.closest('.cdx-lab-card');
-    if (!card) return;
-    const key = card.getAttribute('data-lab-key');
+    // The switch can live in a row (data-lab-key on the row) or in the preview
+    // head (no row; it targets the selected lab).
+    const row = input.closest('.cdx-item-row');
+    const key = row ? row.dataset.labKey : _selectedKey;
     if (!key) return;
     _setEnabled(key, input.checked);
-    card.classList.toggle('is-off', !input.checked);
+    if (row) row.classList.toggle('is-off', !input.checked);
+    // Keep the row switch and the preview head switch in sync for the same lab.
+    if (String(key) === String(_selectedKey)) {
+      _viewEl.querySelectorAll('.cdx-lab-switch-input').forEach((sw) => { sw.checked = input.checked; });
+      const r = _viewEl.querySelector('.cdx-item-row[data-lab-key="' + key + '"]');
+      if (r) r.classList.toggle('is-off', !input.checked);
+    }
   };
   viewEl.addEventListener('click', _onClick);
   viewEl.addEventListener('change', _onChange);

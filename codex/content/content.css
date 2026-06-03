@@ -807,27 +807,72 @@
 .cdx-resp-card.is-expanded .cdx-resp-content { max-height: none; }
 .cdx-resp-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
 
-/* ── Labs sub-tab (native): lab on/off grid + fullscreen preview ──────────────
-   Ported value-for-value from the legacy ct-labs-panel injected styles, renamed
-   to cdx-. All theme tokens (no literal surface/text/border colours), so dark
-   mode flips automatically with the active theme. */
-.cdx-labs { padding: 1rem 1.4rem 2rem; }
-.cdx-labs-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+/* ── Labs sub-tab (native, master-detail like Items) ─────────────────────────
+   Reuses the Items split shell (.cdx-items-split / .cdx-items-list /
+   .cdx-item-row / .cdx-item-preview). Only the lab-specific bits (header, on/off
+   switch, live preview iframe) live here. All theme tokens, so dark-safe. */
+.cdx-labs { display: flex; flex-direction: column; gap: 0.9rem; }
+.cdx-labs-head { display: flex; flex-direction: column; gap: 0.25rem; }
 .cdx-labs-title { margin: 0; font-size: 1.4rem; color: var(--text-primary); }
-.cdx-labs-hint { color: var(--text-secondary); font-size: 0.95rem; max-width: 560px; }
-.cdx-labs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.9rem; }
-.cdx-lab-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; transition: opacity 200ms; }
-.cdx-lab-card.is-off { opacity: 0.55; }
-.cdx-lab-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
-.cdx-lab-key { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; }
-.cdx-lab-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.2; }
-.cdx-lab-summary { font-size: 0.9rem; color: var(--text-secondary); margin: 0; line-height: 1.35; }
-.cdx-lab-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.3rem; }
-.cdx-lab-preview { font: inherit; font-size: 0.85rem; font-weight: 600; padding: 0.4rem 0.9rem; border-radius: 999px; background: rgba(20, 184, 166, 0.16); border: 1.5px solid var(--primary, #14b8a6); color: var(--primary, #14b8a6); cursor: pointer; transition: background 160ms; }
-.cdx-lab-preview:hover { background: rgba(20, 184, 166, 0.28); }
+.cdx-labs-hint { color: var(--text-secondary); font-size: 0.9rem; max-width: 640px; }
+.cdx-labs-split .cdx-item-info { flex: 1; min-width: 0; }
+.cdx-labs-split .cdx-item-row.is-off { opacity: 0.5; }
+.cdx-lab-icon { color: var(--codex-content); font-size: 1.2rem; }
+
+/* On/off switch (ported value-for-value from the legacy ct-lab-switch). */
 .cdx-lab-switch { position: relative; width: 44px; height: 24px; display: inline-block; flex-shrink: 0; cursor: pointer; }
 .cdx-lab-switch input { opacity: 0; width: 0; height: 0; }
 .cdx-lab-switch-track { position: absolute; inset: 0; border-radius: 999px; background: color-mix(in srgb, var(--text-primary) 18%, transparent); transition: background 160ms; }
 .cdx-lab-switch-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left 160ms, background 160ms; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
 .cdx-lab-switch input:checked + .cdx-lab-switch-track { background: var(--primary, #14b8a6); }
 .cdx-lab-switch input:checked + .cdx-lab-switch-track .cdx-lab-switch-thumb { left: 23px; }
+
+/* Preview pane: fixed head + full-bleed live iframe. */
+.cdx-lab-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cdx-lab-preview-meta { min-width: 0; }
+.cdx-lab-ptitle { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.cdx-lab-psub { font-size: 0.8rem; color: var(--text-secondary); }
+.cdx-lab-preview-actions { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+.cdx-lab-preview-body { flex: 1; min-height: 0; display: flex; }
+.cdx-lab-frame { flex: 1; width: 100%; border: 0; display: block; background: #0a0e1a; }
+
+/* ── Drive sub-tab (native, master-detail like Items) ────────────────────────
+   Reuses the Items split shell. Toolbar + connection status + folder rows +
+   file groups + the folder editor. All theme tokens, so dark-safe. */
+.cdx-drive { display: flex; flex-direction: column; gap: 0.9rem; }
+.cdx-drive-toolbar { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+.cdx-drive-title { margin: 0; font-size: 1.4rem; color: var(--text-primary); }
+.cdx-drive-statuswrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+.cdx-drive-status { font-size: 0.85rem; color: var(--text-secondary); }
+.cdx-drive-status.is-ok { color: var(--success, #16a34a); }
+.cdx-drive-status.is-warn { color: var(--error); }
+.cdx-drive-lastsync { font-size: 0.78rem; color: var(--text-secondary); }
+.cdx-drive-split .cdx-item-info { flex: 1; min-width: 0; }
+.cdx-drive-icon { color: var(--codex-content); font-size: 1.1rem; }
+.cdx-drive-add { align-self: flex-start; margin-bottom: 0.3rem; }
+.cdx-drive-fid { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; color: var(--text-secondary); word-break: break-all; }
+
+/* Preview head + file groups */
+.cdx-drive-preview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cdx-drive-preview-meta { min-width: 0; }
+.cdx-drive-preview-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+.cdx-drive-files { flex: 1; min-height: 0; overflow-y: auto; padding: 0.6rem 0.9rem 1rem; }
+.cdx-drive-files-empty { color: var(--text-secondary); font-size: 0.9rem; padding: 1.5rem 0.5rem; text-align: center; }
+.cdx-drive-subfolder { margin-bottom: 0.9rem; }
+.cdx-drive-subfolder-head { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.35rem; }
+.cdx-drive-count { color: var(--text-secondary); font-weight: 600; }
+.cdx-drive-subfolder-files { display: flex; flex-direction: column; gap: 0.25rem; }
+.cdx-drive-file { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; padding: 0.45rem 0.6rem; background: transparent; border: 1px solid transparent; border-radius: 7px; cursor: pointer; color: var(--text-primary); font: inherit; }
+.cdx-drive-file:hover { background: var(--cdx-card-hover-bg); border-color: var(--cdx-card-hover-border); }
+.cdx-drive-file-icon { flex-shrink: 0; }
+.cdx-drive-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
+.cdx-drive-file-label { flex-shrink: 0; font-size: 0.72rem; color: var(--text-secondary); }
+
+/* Folder editor (rendered in the preview pane) */
+.cdx-drive-editor { display: flex; flex-direction: column; gap: 0.8rem; padding: 1rem 1.1rem; }
+.cdx-drive-editor-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.cdx-drive-field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+.cdx-drive-field input { font: inherit; font-size: 0.9rem; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text-primary); }
+.cdx-drive-field input.is-invalid { border-color: var(--error); }
+.cdx-drive-editor-error { color: var(--error); font-size: 0.82rem; min-height: 1em; }
+.cdx-drive-editor-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }

@@ -181,6 +181,20 @@ export const content = {
   deleteSubmission:(p) => call('ct_delete_submission', p)   // { id }
 };
 
+// Drive sync (Content -> Drive sub-tab). Configured Drive root folders + the
+// synced file index. The actual Google Drive read happens client-side through
+// window.BS_GOOGLE (auth-bound, Backstage-owned); these are the Worker actions
+// that persist the folder config + the synced item index. Action names cv_*
+// (frozen). The native Drive module reaches the backend ONLY through here.
+export const drive = {
+  listFolders:  (p) => call('cv_list_drive_folders', p),   // -> { folders }
+  addFolder:    (p) => call('cv_add_drive_folder', p),     // { name, folder_id } -> { folder }
+  updateFolder: (p) => call('cv_update_drive_folder', p),  // { id, name?, folder_id? } -> { folder }
+  deleteFolder: (p) => call('cv_delete_drive_folder', p),  // { id } -> { ok }
+  listItems:    (p) => call('cv_list_drive_items', p),     // -> { ok, items, last_sync }
+  syncItems:    (p) => call('cv_sync_drive_items', p)      // { items } -> { ok }
+};
+
 // Lesson presets — named bundles of library items, reused when planning a
 // lesson. A Content sub-tab (Presets) and, later, the Lessons sidebar consume
 // these. Action names read from cv-presets-api.js (cv_*_preset, frozen); the
