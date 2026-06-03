@@ -23,6 +23,7 @@
   top: var(--cdx-chrome-h);
   bottom: 0;
   z-index: 5;
+  transition: top 0.2s ease;
   /* The shell backdrop uses the shared Codex page token (light: soft teal-steel,
      dark: deep slate), NOT the editor's internal --bg (which is only defined on
      .cdx-deck-editor and would fall back to near-black here). */
@@ -106,3 +107,17 @@
 }
 .cdx-slides-row:hover .cdx-slides-row-del { opacity: 0.7; }
 .cdx-slides-row-del:hover { opacity: 1; color: var(--danger, #ef4444); }
+
+/* ── Focus mode ───────────────────────────────────────────────────────────────
+   An open deck recedes the Codex topbar + sub-tab row (both inside .bs-topbar)
+   to reclaim vertical space; the shell fills from the very top. Cursor to the
+   top edge slides the chrome back over the editor (the Lessons focus pattern).
+   Scoped to body.cdx-slides-focus, which slides.js only sets while a deck is
+   open and clears on unmount, so other tabs are untouched. */
+body.cdx-slides-focus .cdx-slides-shell { top: 0; }
+body.cdx-slides-focus .bs-topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9900;
+  transform: translateY(-100%); opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cdx-slides-focus.cdx-slides-focus--top .bs-topbar { transform: translateY(0); opacity: 1; }

@@ -772,6 +772,7 @@ export default {
   'slides.ed_accent':         'Accent',
   'slides.ed_text_color':     'Text',
   'slides.ed_art':            'Art',
+  'slides.ed_appearance':     'Appearance',
   'slides.ed_anim':           'Animation',
   'slides.ed_anim_fadeup':    'rise + fade',
   'slides.ed_anim_fade':      'fade',

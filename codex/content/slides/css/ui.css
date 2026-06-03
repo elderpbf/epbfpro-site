@@ -38,6 +38,14 @@
 .cdx-deck-editor .menu.open .pop { display: flex; }
 .cdx-deck-editor .menu .pop button { text-align: left; background: var(--btn-bg); border: 1px solid var(--btn-bd); }
 
+/* Aparência / Appearance dropdown: the deck-wide look controls (font, scope,
+   accent, ink, motif) as rows. Right-aligned since this menu sits on the right
+   of the bar, so the panel never overflows the editor's right edge. */
+.cdx-deck-editor #appearPop { left: auto; right: 0; min-width: 215px; gap: 8px; padding: 10px; }
+.cdx-deck-editor #appearPop label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cdx-deck-editor #appearPop input[type=range] { width: 120px; }
+.cdx-deck-editor #appearPop #fontScope { align-self: flex-start; }
+
 /* nav (left thumbnail rail; absolute within container, below the chrome) */
 .cdx-deck-editor #nav { position: absolute; left: 0; top: var(--chrome-h, 52px); bottom: 0; width: 192px; z-index: 40; background: var(--panel-2); border-right: 1px solid var(--border); overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 10px; }
 .cdx-deck-editor .thumb { position: relative; border-radius: 8px; border: 2px solid transparent; cursor: pointer; }

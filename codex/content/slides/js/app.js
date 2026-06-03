@@ -7,7 +7,7 @@ import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
 import { getByPath, uid } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
-import { applyDeckTheme, initChromeTheme, toggleChromeTheme, currentChromeTheme } from "./theme/tokens.js";
+import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
 import { initEditing } from "./edit/editor.js";
 import { initFreeform } from "./edit/freeform.js";
@@ -15,8 +15,6 @@ import { initSelect } from "./select/wiring.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
-
-const themeIcon = (mode) => (mode === "dark" ? "☀" : "☾");
 
 // Layout display label by id, translated. Layout modules keep a PT fallback in
 // their own `label`; here we map the id to an i18n key so the add-slide menu
@@ -34,7 +32,6 @@ const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) :
 // the active language (the dictionary may switch between mounts).
 const shellHTML = () => `
 <div id="chrome">
-  <span class="title">Slides</span>
   <button id="prev">‹</button><span id="counter">1 / 1</span><button id="next">›</button>
   <div class="menu" id="addMenu"><button id="addBtn">＋ ${t("slides.ed_slide")}</button><div class="pop" id="addPop"></div></div>
   <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
@@ -47,13 +44,14 @@ const shellHTML = () => `
     <button data-insert="video">${t("slides.ed_video")}</button>
   </div></div>
   <span class="spacer"></span>
-  <label>${t("slides.ed_font")} <input type="range" id="fontScale" min="0.7" max="1.5" step="0.05" value="1"></label>
-  <button id="fontScope" title="${t("slides.ed_font_scope_title")}">${t("slides.ed_scope_all")}</button>
-  <label>${t("slides.ed_accent")} <input type="color" id="accent" value="#14b8a6"></label>
-  <label>${t("slides.ed_text_color")} <input type="color" id="ink" value="#134e4a"></label>
-  <label>${t("slides.ed_art")} <input type="color" id="motifColor" value="#14b8a6"></label>
-  <label>${t("slides.ed_anim")} <select id="anim"><option value="fade-up">${t("slides.ed_anim_fadeup")}</option><option value="fade">${t("slides.ed_anim_fade")}</option><option value="none">${t("slides.ed_anim_none")}</option></select></label>
-  <button id="themeToggle" title="${t("slides.ed_theme_toggle")}">☀</button>
+  <div class="menu" id="appearMenu"><button id="appearBtn">${t("slides.ed_appearance")} ▾</button><div class="pop" id="appearPop">
+    <label>${t("slides.ed_font")} <input type="range" id="fontScale" min="0.7" max="1.5" step="0.05" value="1"></label>
+    <button id="fontScope" title="${t("slides.ed_font_scope_title")}">${t("slides.ed_scope_all")}</button>
+    <label>${t("slides.ed_accent")} <input type="color" id="accent" value="#14b8a6"></label>
+    <label>${t("slides.ed_text_color")} <input type="color" id="ink" value="#134e4a"></label>
+    <label>${t("slides.ed_art")} <input type="color" id="motifColor" value="#14b8a6"></label>
+  </div></div>
+  <label class="anim-ctl">${t("slides.ed_anim")} <select id="anim"><option value="fade-up">${t("slides.ed_anim_fadeup")}</option><option value="fade">${t("slides.ed_anim_fade")}</option><option value="none">${t("slides.ed_anim_none")}</option></select></label>
   <button id="present" class="primary">▶ ${t("slides.ed_present")}</button>
 </div>
 
@@ -179,6 +177,9 @@ export function mount(root, ctx = {}) {
       if (this.select) this.select.afterRender();
       const c = root.querySelector("#counter");
       if (c) c.textContent = `${this.index + 1} / ${d.slides.length}`;
+      // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
+      const fb = root.querySelector("#flip");
+      if (fb) fb.style.display = "flip" in s.slots ? "" : "none";
     },
     renderNav() {}, // assigned below (navigator)
     broadcast() {}, // assigned below (sync)
@@ -286,7 +287,6 @@ export function mount(root, ctx = {}) {
 
   applyDeckTheme(app.deck(), app.stage);
   initChromeTheme();
-  document.getElementById("themeToggle") && (document.getElementById("themeToggle").textContent = themeIcon(currentChromeTheme()));
 
   if (isPresenter) {
     initPresenter(app);
@@ -354,9 +354,10 @@ function wireChrome(app, root) {
   // (the repeated "classList of null" seen when reopening the editor). Each $()
   // is null-guarded as a second line of defence.
   const onDocClick = (e) => {
-    const addMenu = $("#addMenu"), insertMenu = $("#insertMenu"), mp = $("#maskpop");
+    const addMenu = $("#addMenu"), insertMenu = $("#insertMenu"), appearMenu = $("#appearMenu"), mp = $("#maskpop");
     if (addMenu && !e.target.closest("#addMenu")) addMenu.classList.remove("open");
     if (insertMenu && !e.target.closest("#insertMenu")) insertMenu.classList.remove("open");
+    if (appearMenu && !e.target.closest("#appearMenu")) appearMenu.classList.remove("open");
     if (mp && !e.target.closest("#maskpop") && !e.target.closest("[data-mask]") && !e.target.closest("[data-asmask]")) mp.style.display = "none";
     if (!e.target.closest(".logo")) { const lm = $(".logo.menu-open"); if (lm) lm.classList.remove("menu-open"); }
   };
@@ -366,6 +367,10 @@ function wireChrome(app, root) {
   const insertPop = $("#insertPop");
   $("#insertBtn").onclick = (e) => { e.stopPropagation(); $("#insertMenu").classList.toggle("open"); };
   insertPop.querySelectorAll("[data-insert]").forEach((b) => (b.onclick = () => { app.insertElement(b.dataset.insert); $("#insertMenu").classList.remove("open"); }));
+
+  // Aparência / Appearance: the deck-wide look controls (font, scope, accent, ink,
+  // motif) collapse behind one dropdown so the bar stays a single row.
+  $("#appearBtn").onclick = (e) => { e.stopPropagation(); $("#appearMenu").classList.toggle("open"); };
 
   $("#fontScale").addEventListener("input", (e) => {
     app.record("font:" + app.fontScope);
@@ -410,8 +415,6 @@ function wireChrome(app, root) {
     app.refresh();
   };
   ["#mc1", "#mc2", "#mang"].forEach((id) => $(id).addEventListener("input", liveMask));
-
-  $("#themeToggle").onclick = (e) => { e.target.textContent = themeIcon(toggleChromeTheme()); };
 
   $("#present").onclick = () => {
     app.setPresenting(true);
