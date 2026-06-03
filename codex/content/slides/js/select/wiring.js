@@ -82,7 +82,11 @@ export function initSelect(app) {
   function placeBox() {
     const el = curEl();
     const st = strat();
-    if (!el || !st) return clear();
+    // Hide (do NOT clear) when the element is transiently unresolved. Clearing here
+    // nulled the live selection mid-drag, so the next gesture tick wrote geometry
+    // with a null ref (the geometry.js crash). afterRender owns the genuine
+    // "element is gone" clear; placeBox should only ever reposition or hide.
+    if (!el || !st) { box.style.display = "none"; return; }
     syncScale();
     const g = st.read(app, sel.get(), el);
     const sc = app.scaleNow();

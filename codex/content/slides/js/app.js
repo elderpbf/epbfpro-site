@@ -59,7 +59,6 @@ const shellHTML = () => `
   <button data-fs="-3">A−</button><button data-fs="3">A＋</button>
   <button id="bold"><b>B</b></button>
   <label>${t("slides.ed_color")} <input type="color" id="color" value="#134e4a"></label>
-  <span class="hint">${t("slides.ed_editing_hint")}</span>
 </div>
 
 <div id="maskpop">

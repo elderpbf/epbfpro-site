@@ -28,7 +28,7 @@
 .cdx-deck-editor #chrome .spacer { flex: 1; }
 .cdx-deck-editor #chrome button, .cdx-deck-editor #chrome select { font: inherit; font-size: 13px; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
 .cdx-deck-editor #chrome button:hover { background: var(--btn-hover); }
-.cdx-deck-editor #chrome button.primary { background: var(--teal); border: 0; color: #06302b; font-weight: 700; }
+.cdx-deck-editor #chrome button.primary { background: var(--teal); border: 0; color: #fff; font-weight: 700; }
 .cdx-deck-editor #chrome label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
 .cdx-deck-editor #chrome input[type=color] { width: 22px; height: 22px; border: 0; background: none; cursor: pointer; padding: 0; }
 .cdx-deck-editor #chrome input[type=range] { width: 90px; }

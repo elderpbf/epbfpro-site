@@ -105,7 +105,7 @@ export const strategies = {
   // bar primitives (see kinds.js); the box geometry is here.
   freeformSlot: {
     read(app, sel, el) {
-      const o = (app.cur().overrides || {})[sel.ref];
+      const o = sel && (app.cur().overrides || {})[sel.ref];
       if (o && !o.flow) return { x: o.x, y: o.y, w: o.w, h: o.h, rot: o.rot || 0 };
       if (el) {
         const m = measure(el, app);
@@ -114,6 +114,7 @@ export const strategies = {
       return { x: 0, y: 0, w: 0, h: 0, rot: 0 };
     },
     write(app, sel, g) {
+      if (!sel) return;
       const ov = (app.cur().overrides = app.cur().overrides || {});
       ov[sel.ref] = { x: g.x, y: g.y, w: g.w, h: g.h, rot: g.rot || 0 };
     },
