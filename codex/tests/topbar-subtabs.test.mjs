@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { anchorLeft, placePill } from '../js/anchored.js';
-import { resolveSubtabMode } from '../js/codex-topbar.js';
+import { resolveSubtabMode, pruneInactiveHighlights } from '../js/codex-topbar.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
@@ -39,6 +39,22 @@ test('codex-topbar wires the lifted positioner, the mode pref, the chrome, and t
   assert.match(src, /cdx-subrow|cdx-substrip/, 'renders the persistent-bar chrome');
   assert.match(src, /sd-subtab-mode/, 'offers the pill/bar toggle in the settings drawer');
   assert.ok(!/bs-topbar-subrow/.test(src), 'the legacy left-aligned subrow is gone');
+});
+
+test('only the active tab keeps a highlighted sub-tab; previews of other tabs show none', () => {
+  // A non-active tab's subtabs() resolved an undefined sub to its first entry,
+  // so its first item arrives active:true. Pruning must clear it.
+  const map = {
+    content:   [{ label: 'Items', active: true }, { label: 'Apostila', active: false }],
+    questions: [{ label: 'Bank', active: true },  { label: 'Live', active: false }],
+  };
+  const out = pruneInactiveHighlights(map, 'content');
+  assert.equal(out, map, 'returns the same map (mutates in place)');
+  assert.deepEqual(map.content.map((s) => s.active), [true, false], 'active tab keeps its current-page highlight');
+  assert.deepEqual(map.questions.map((s) => s.active), [false, false], 'previewed (non-active) tab shows no highlight');
+  // tolerates an empty/missing map without throwing
+  assert.doesNotThrow(() => pruneInactiveHighlights(undefined, 'content'));
+  assert.doesNotThrow(() => pruneInactiveHighlights({ lessons: undefined }, 'content'));
 });
 
 test('pill mode reveals ANY tab\'s sub-tabs on hover (per-tab map = one-less-click)', () => {

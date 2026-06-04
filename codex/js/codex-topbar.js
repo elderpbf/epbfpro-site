@@ -43,6 +43,19 @@ const SUBTAB_MODE_KEY = 'codex_subtab_mode';
 export function resolveSubtabMode(stored) {
   return stored === 'bar' ? 'bar' : 'pill';
 }
+
+// Pill mode previews EVERY tab's sub-tabs on hover, but only the tab you're
+// actually ON should show a highlighted (current-page) sub-tab. A tab's
+// `subtabs()` registry resolves an undefined sub to its FIRST entry, so a
+// previewed (non-active) tab would otherwise highlight its first sub-tab. Strip
+// the active flag from every non-active tab; the active tab keeps its highlight.
+export function pruneInactiveHighlights(subTabsByTab, active) {
+  for (const key of Object.keys(subTabsByTab || {})) {
+    if (key === active) continue;
+    for (const s of subTabsByTab[key] || []) s.active = false;
+  }
+  return subTabsByTab;
+}
 function subtabMode() {
   let stored = null;
   try { stored = localStorage.getItem(SUBTAB_MODE_KEY); } catch (_) {}
@@ -141,6 +154,7 @@ export function init(opts) {
   const subTabs = opts.subTabs || [];
   const subTabsByTab = opts.subTabsByTab || {};
   if (subTabs.length && !subTabsByTab[active]) subTabsByTab[active] = subTabs; // seed active
+  pruneInactiveHighlights(subTabsByTab, active); // only the active tab shows a highlight
   const container = document.querySelector('.bs-app') || document.body;
 
   const header = document.createElement('header');
