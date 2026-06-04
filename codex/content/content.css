@@ -206,6 +206,24 @@
   font-weight: 500;
 }
 
+/* ── Canonical off-Items chip (Phase 4) ──────────────────────────────────────
+   One pill skin shared by the static count/status chips OUTSIDE the frozen
+   Items surface. (Items' own .cdx-set-badge stays a 4px square; .cdx-tag-chip
+   stays the interactive pill; cohorts' .cdx-card-info-chip already matches this
+   pill.) Each chip below keeps only its own layout/icon specifics. */
+.cdx-tag-row-count,
+.cdx-rel-aula-date,
+.cdx-rel-count,
+.cdx-field-future {
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 /* ── Tags manager modal ──────────────────────────────────────────────────── */
 .cdx-tag-manager-create { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
 .cdx-tag-manager-create input { flex: 1; }
@@ -227,13 +245,7 @@
   border-radius: 6px;
 }
 .cdx-tag-row-label { flex: 1; color: var(--text-primary); font-size: 0.88rem; }
-.cdx-tag-row-count {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  background: var(--cdx-chip-bg);
-}
+/* .cdx-tag-row-count: skin via the canonical off-Items chip rule above. */
 
 /* ── Shared item editor / creator (item-form.js, item-creator.js) ─────────── */
 /* Codex-native port of the legacy ct-editor chrome. Reuses .cdx-field,
@@ -673,20 +685,15 @@
 }
 .cdx-rel-outros-icon { color: var(--codex-content); }
 .cdx-rel-aula-title { font-size: 0.85rem; color: var(--text-secondary); }
-.cdx-rel-aula-date { font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--cdx-chip-bg); border: 1px solid var(--cdx-chip-border); color: var(--text-secondary); }
+/* .cdx-rel-aula-date skin via the canonical off-Items chip rule; modifiers only here. */
 .cdx-rel-aula-date.is-happened { color: var(--primary); }
 .cdx-rel-aula-date.is-tbd { opacity: 0.7; }
 .cdx-rel-aula-counts { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
+/* .cdx-rel-count skin via the canonical off-Items chip rule; layout only here. */
 .cdx-rel-count {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  font-size: 0.74rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 6px;
-  background: var(--cdx-chip-bg);
-  border: 1px solid var(--cdx-chip-border);
-  color: var(--text-secondary);
 }
 .cdx-rel-count svg { display: block; }
 .cdx-rel-count-empty { opacity: 0.6; font-style: italic; }
@@ -718,16 +725,6 @@
 .cdx-apostila-toolbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 /* Master-detail (like Items): left = section list, right = section read-preview. */
 .cdx-apostila-split .cdx-item-info { flex: 1; min-width: 0; }
-.cdx-apostila-list { display: flex; flex-direction: column; gap: 0.3rem; }
-.cdx-apostila-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
 .cdx-apostila-pos {
   flex-shrink: 0;
   width: 1.8rem;
@@ -749,25 +746,17 @@
 .cdx-tarefas-meta { font-size: 0.82rem; color: var(--text-secondary); }
 .cdx-tarefas-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
-.cdx-tarefa-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.cdx-tarefa-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.9rem; cursor: pointer; }
-.cdx-tarefa-head:hover { background: var(--cdx-card-hover-bg); }
+/* Live Tarefas row bits (rendered inside the shared .cdx-item-row by tarefas.js).
+   The old accordion shell (.cdx-tarefa-row/-head/-grid/-chev/-body/-title*) was
+   removed 2026-06-04 after the master-detail migration left it dead. */
 .cdx-tarefa-icon { flex-shrink: 0; display: inline-flex; color: var(--text-secondary); }
-.cdx-tarefa-icon svg, .cdx-tarefa-chev svg { display: block; }
-.cdx-tarefa-title-wrap { flex: 1; min-width: 0; }
-.cdx-tarefa-title { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.cdx-tarefa-icon svg { display: block; }
 .cdx-tarefa-sub { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.2rem; font-size: 0.78rem; color: var(--text-secondary); }
 .cdx-tarefa-dot { opacity: 0.5; }
 .cdx-tarefa-count.is-zero { opacity: 0.6; }
 .cdx-tarefa-anon-badge { color: var(--danger); }
 .cdx-tarefa-reuse.is-multi { color: var(--primary); cursor: help; }
 .cdx-tarefa-reuse.is-solo { opacity: 0.7; }
-.cdx-tarefa-chev { flex-shrink: 0; color: var(--text-secondary); transition: transform 0.15s; }
-.cdx-tarefa-row.is-expanded .cdx-tarefa-chev { transform: rotate(90deg); }
-.cdx-tarefa-body:empty { display: none; }
-
-.cdx-tarefa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 0.9rem; border-top: 1px solid var(--border); background: var(--background); }
-@media (max-width: 860px) { .cdx-tarefa-grid { grid-template-columns: 1fr; } }
 .cdx-tarefa-pane { min-width: 0; }
 .cdx-tarefa-pane-title { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--text-primary); }
 .cdx-tarefa-editor-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
@@ -781,7 +770,7 @@
 }
 .cdx-field-chip-btn.is-active { border-color: var(--primary); background: var(--cdx-card-sel-bg); color: var(--primary); font-weight: 600; }
 .cdx-field-chip-btn.is-disabled { opacity: 0.5; cursor: not-allowed; }
-.cdx-field-future { font-size: 0.65rem; padding: 0.05rem 0.3rem; border-radius: 4px; background: var(--cdx-chip-bg); }
+/* .cdx-field-future: skin via the canonical off-Items chip rule above. */
 
 .cdx-tarefa-delete-quote { font-weight: 700; color: var(--text-primary); padding: 0.4rem 0.6rem; background: var(--cdx-card-sel-bg); border-radius: 6px; }
 .cdx-tf-del-input { width: 100%; box-sizing: border-box; margin-bottom: 1rem; }
