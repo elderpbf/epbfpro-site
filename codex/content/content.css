@@ -196,15 +196,6 @@
 }
 .cdx-item-tags { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
 
-.cdx-tag-chip {
-  font-size: 0.72rem;
-  padding: 0.12rem 0.45rem;
-  border-radius: 999px;
-  background: var(--cdx-chip-bg);
-  border: 1px solid var(--cdx-chip-border);
-  color: var(--text-secondary);
-}
-
 .cdx-set-badge {
   font-size: 0.7rem;
   padding: 0.1rem 0.4rem;
@@ -549,8 +540,8 @@
 .cdx-preset-actions-right { display: flex; gap: 0.5rem; }
 
 .cdx-field--picker { display: flex; flex-direction: column; }
-.cdx-field-error { font-size: 0.78rem; color: var(--danger, #d33); margin-top: 0.3rem; min-height: 1em; }
-.cdx-field input.is-invalid, input.is-invalid { border-color: var(--danger, #d33); }
+.cdx-field-error { font-size: 0.78rem; color: var(--danger); margin-top: 0.3rem; min-height: 1em; }
+.cdx-field input.is-invalid, input.is-invalid { border-color: var(--danger); }
 
 /* ── Item picker (grouped multi-select) ──────────────────────────────────── */
 .cdx-picker {
@@ -768,7 +759,7 @@
 .cdx-tarefa-sub { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.2rem; font-size: 0.78rem; color: var(--text-secondary); }
 .cdx-tarefa-dot { opacity: 0.5; }
 .cdx-tarefa-count.is-zero { opacity: 0.6; }
-.cdx-tarefa-anon-badge { color: var(--danger, #d33); }
+.cdx-tarefa-anon-badge { color: var(--danger); }
 .cdx-tarefa-reuse.is-multi { color: var(--primary); cursor: help; }
 .cdx-tarefa-reuse.is-solo { opacity: 0.7; }
 .cdx-tarefa-chev { flex-shrink: 0; color: var(--text-secondary); transition: transform 0.15s; }
