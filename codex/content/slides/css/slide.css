@@ -88,7 +88,7 @@
 .cdx-deck-editor .L-topics { position: absolute; inset: 0; padding: 92px 86px 70px; display: grid; align-content: start; }
 .cdx-deck-editor .L-topics h2 { font-size: calc(52px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 24px; line-height: 1.05; }
 .cdx-deck-editor .topiclist { list-style: none; }
-.cdx-deck-editor .topiclist li { display: flex; align-items: flex-start; gap: 14px; font-size: calc(30px * var(--fontScale)); color: var(--ink); margin: 18px 0; line-height: 1.28; }
+.cdx-deck-editor .topiclist li { position: relative; display: flex; align-items: flex-start; gap: 14px; font-size: calc(30px * var(--fontScale)); color: var(--ink); margin: 18px 0; line-height: 1.28; }
 .cdx-deck-editor .topiclist li::before { content: ""; flex: 0 0 auto; width: 14px; height: 14px; margin-top: 9px; border-radius: 3px; transform: rotate(45deg); background: var(--teal); }
 .cdx-deck-editor .li-x { margin-left: auto; border: 0; background: #e6f6f2; color: #3f8a7f; border-radius: 6px; cursor: pointer; font-size: 13px; padding: 3px 8px; }
 .cdx-deck-editor .addtopic { margin-top: 18px; justify-self: start; border: 1px dashed var(--teal); background: #effaf7; color: var(--teal-d); font: inherit; font-weight: 700; font-size: 16px; border-radius: 9px; padding: 8px 14px; cursor: pointer; }
@@ -114,6 +114,19 @@
 .cdx-deck-editor .cardadd { display: flex; gap: 14px; align-items: center; justify-content: center; }
 .cdx-deck-editor .cardadd button { border: 1px dashed var(--teal); background: #effaf7; color: var(--teal-d); font: inherit; font-weight: 700; border-radius: 9px; padding: 7px 14px; cursor: pointer; }
 .cdx-deck-editor .cardadd label { font-size: 14px; color: var(--ink2); display: flex; align-items: center; gap: 6px; }
+
+/* reorder grip: a hover-revealed drag handle injected per card/topic by
+   select/reorder.js (an editor affordance, not layout markup). Only the grip is
+   draggable, so reorder never collides with the card-resize / topic-freeform
+   pointer gestures. .dragging fades the moved item; .dragover marks the drop slot. */
+.cdx-deck-editor .reorder-grip { position: absolute; z-index: 8; cursor: grab; opacity: 0; transition: opacity .12s; font-size: 15px; line-height: 1; letter-spacing: -2px; color: var(--teal-d); background: rgba(255, 255, 255, .94); border: 1px solid #bfe9e0; border-radius: 6px; padding: 0 4px; user-select: none; }
+.cdx-deck-editor .reorder-grip:active { cursor: grabbing; }
+.cdx-deck-editor .card > .reorder-grip { top: 8px; left: 8px; }
+.cdx-deck-editor .topiclist li > .reorder-grip { top: 50%; left: -30px; transform: translateY(-50%); }
+.cdx-deck-editor .card:hover > .reorder-grip, .cdx-deck-editor .topiclist li:hover > .reorder-grip { opacity: .85; }
+.cdx-deck-editor .card.dragging, .cdx-deck-editor .topiclist li.dragging { opacity: .45; }
+.cdx-deck-editor .card.dragover { outline: 2px dashed var(--teal); outline-offset: 3px; }
+.cdx-deck-editor .topiclist li.dragover { box-shadow: inset 0 3px 0 -1px var(--teal); }
 
 /* free-placed assets */
 .cdx-deck-editor .assetlayer { position: absolute; inset: 0; z-index: 7; pointer-events: none; }

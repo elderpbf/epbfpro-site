@@ -436,3 +436,41 @@ test('layout defaults() seed the id-bearing shape (cards have ids; topics are {i
       `${L.id} seeds topics as {id,text} objects`);
   }
 });
+
+/* ============================ SLICE 4 ============================ */
+/* ---------- reorder: drag-and-drop + topic move buttons (id-keyed) ---------- */
+test('reorderItem moves an item to the drop target index by id, records once, refreshes', () => {
+  const slide = { slots: { cards: [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }] } };
+  let recorded = 0, refreshed = 0;
+  const app = { cur: () => slide, record: () => recorded++, refresh: () => refreshed++ };
+  kinds.reorderItem(app, 'cards.a', 'cards.c'); // drag A down onto C
+  assert.deepEqual(slide.slots.cards.map((c) => c.id), ['b', 'c', 'a', 'd'], 'A lands at C');
+  kinds.reorderItem(app, 'cards.d', 'cards.b'); // drag D up onto B (arr is b,c,a,d)
+  assert.deepEqual(slide.slots.cards.map((c) => c.id), ['d', 'b', 'c', 'a'], 'D lands at B');
+  assert.equal(recorded, 2);
+  assert.equal(refreshed, 2);
+});
+
+test('reorderItem is a no-op (no record) for same-ref, unknown id, or missing list', () => {
+  const slide = { slots: { topics: [{ id: 't1' }, { id: 't2' }] } };
+  let recorded = 0;
+  const app = { cur: () => slide, record: () => recorded++, refresh: () => {} };
+  kinds.reorderItem(app, 'topics.t1', 'topics.t1'); // same ref
+  kinds.reorderItem(app, 'topics.t1', 'topics.nope'); // unknown target
+  kinds.reorderItem(app, 'cards.x', 'cards.y'); // missing list
+  assert.deepEqual(slide.slots.topics.map((t) => t.id), ['t1', 't2'], 'order unchanged');
+  assert.equal(recorded, 0, 'never records a no-op (no spurious undo step)');
+});
+
+test('topic.controls add up/down move buttons (mirror the cards ◀ ▶, drive the shared moveItem)', () => {
+  const d = kinds.get('topic');
+  const slide = { slots: { topics: [{ id: 't1', text: 'x' }] }, overrides: {} };
+  const app = { cur: () => slide, stage: noStage };
+  const sel = { kind: 'topic', ref: 'topics.t1' };
+  const ctrls = d.controls(app, sel, d.target(app, sel));
+  assert.ok(ctrls.some((c) => c.id === 'move-up'), 'has move-up');
+  assert.ok(ctrls.some((c) => c.id === 'move-down'), 'has move-down');
+  // up/down precede add/delete so the bar reads format · move · add · remove
+  const ids = ctrls.map((c) => c.id);
+  assert.ok(ids.indexOf('move-up') < ids.indexOf('add'), 'move sits before add/remove');
+});

@@ -12,6 +12,7 @@ import * as player from "./render/player.js";
 import { initEditing } from "./edit/editor.js";
 import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
 import { initSelect } from "./select/wiring.js";
+import { initReorder } from "./select/reorder.js";
 import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from "./edit/menus.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
@@ -104,6 +105,7 @@ export function mount(root, ctx = {}) {
       player.applyTextStyles(this.stage, d, s);
       player.applySteps(this.stage, this.step, this.presenting);
       if (this.select) this.select.afterRender();
+      if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
       // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
       const fb = root.querySelector("#flip");
       if (fb) fb.style.display = "flip" in s.slots ? "" : "none";
@@ -250,6 +252,7 @@ export function mount(root, ctx = {}) {
 
   initEditing(app);
   initSelect(app); // unified selection model: every selectable kind + the one context bar
+  initReorder(app); // drag-and-drop reorder for cards + topics (grips injected post-render)
   initMaskPanel(app, root); // the recolour-mask popover (#maskpop): owns app.openMask
   app.renderNav = createNavigator(app).render;
   app.broadcast = createSync(app).broadcast;

@@ -307,6 +307,23 @@ function moveItem(app, ref, dir) {
   app.refresh();
 }
 
+// Drag-and-drop reorder: move the dragged item to the drop target's slot in the
+// SAME list. Like moveItem but to an arbitrary index; the id-keyed override + style
+// follow the item by identity (no remap). Used by select/reorder.js. Exported so the
+// drag layer drives the model through one shared mutation, never its own splice.
+export function reorderItem(app, fromRef, toRef) {
+  const list = fromRef.split(".")[0];
+  const arr = app.cur().slots[list];
+  if (!arr) return;
+  const from = refIndex(arr, fromRef);
+  const to = refIndex(arr, toRef);
+  if (from < 0 || to < 0 || from === to) return;
+  app.record();
+  const [item] = arr.splice(from, 1);
+  arr.splice(to, 0, item);
+  app.refresh();
+}
+
 function removeItem(app, ref, keepOne) {
   const list = ref.split(".")[0];
   const arr = app.cur().slots[list];
@@ -412,6 +429,8 @@ register({
   controls(app, sel) {
     const ctrls = [
       ...formatControls(),
+      { type: "button", id: "move-up", label: "▲", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
+      { type: "button", id: "move-down", label: "▼", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
       { type: "button", id: "add", label: "＋ tópico", run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "remover", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
     ];
