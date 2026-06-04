@@ -527,37 +527,25 @@
 .cdx-type-row-label { flex: 1; color: var(--text-primary); font-size: 0.88rem; }
 .cdx-type-row-slug { font-size: 0.72rem; color: var(--text-secondary); font-family: monospace; }
 
-/* ── Presets sub-tab (list + editor + item picker) ───────────────────────────
-   Full-native port of the legacy CVPresetsUI + CVItemPicker. Reuses .cdx-btn,
-   .cdx-modal*, .cdx-field, .cdx-empty and existing tokens; no new color token,
-   so dark mode is inherited. */
+/* ── Presets sub-tab (native, master-detail like Items) ──────────────────────
+   Full-native port of the legacy CVPresetsUI + CVItemPicker. Reuses the Items
+   split shell (.cdx-items-split / .cdx-items-list / .cdx-item-row /
+   .cdx-item-preview): left = selectable preset list, right = an inline editor
+   (name field + grouped item-picker). Reuses .cdx-btn, .cdx-field, .cdx-empty
+   and existing tokens; no new color token, so dark mode is inherited. */
 .cdx-presets { display: flex; flex-direction: column; gap: 1rem; }
 .cdx-presets-toolbar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .cdx-presets-title { margin: 0; font-size: 1.15rem; color: var(--text-primary); flex: 1; }
 
-.cdx-preset-list { display: flex; flex-direction: column; gap: 0.4rem; }
-.cdx-preset-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.cdx-preset-name { flex: 1; font-weight: 600; font-size: 0.92rem; color: var(--text-primary); }
-.cdx-preset-count {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: var(--cdx-chip-bg);
-  border: 1px solid var(--cdx-chip-border);
-}
-.cdx-preset-row-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
-
-/* Wider modal for the editor (name + picker). */
-.cdx-modal--wide { max-width: 640px; width: 100%; box-sizing: border-box; }
+.cdx-preset-icon { color: var(--codex-content); font-size: 1.1rem; }
+.cdx-presets-split .cdx-item-info { flex: 1; min-width: 0; }
+/* The inline editor fills the preview body: name field + actions are fixed, the
+   picker flexes to fill and scrolls internally (one scroll region, not nested). */
+.cdx-presets-split .cdx-preview-body { display: flex; flex-direction: column; }
+.cdx-presets-split .cdx-preset-editor { display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0; }
+.cdx-presets-split .cdx-field--picker { flex: 1; min-height: 0; }
+.cdx-presets-split .cdx-picker { max-height: none; height: 100%; }
+.cdx-preset-editor-actions { display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
 
 .cdx-field--picker { display: flex; flex-direction: column; }
 .cdx-field-error { font-size: 0.78rem; color: var(--danger, #d33); margin-top: 0.3rem; min-height: 1em; }

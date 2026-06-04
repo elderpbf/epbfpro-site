@@ -308,6 +308,7 @@ export default {
   'presets.deleted':          'Preset excluído.',
   'presets.delete_title':     'Excluir preset',
   'presets.confirm_delete':   'Excluir o preset "{name}"? Esta ação não pode ser desfeita.',
+  'presets.select':           'Selecione um preset ou clique em "+ Novo preset".',
 
   // Content → Presets — item picker
   'presets.picker_search':    'Buscar itens...',
