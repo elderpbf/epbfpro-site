@@ -33,7 +33,6 @@ const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) :
 // the active language (the dictionary may switch between mounts).
 const shellHTML = () => `
 <div id="chrome">
-  <button id="prev">‹</button><span id="counter">1 / 1</span><button id="next">›</button>
   <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
   <span class="spacer"></span>
@@ -105,8 +104,6 @@ export function mount(root, ctx = {}) {
       player.applyTextStyles(this.stage, d, s);
       player.applySteps(this.stage, this.step, this.presenting);
       if (this.select) this.select.afterRender();
-      const c = root.querySelector("#counter");
-      if (c) c.textContent = `${this.index + 1} / ${d.slides.length}`;
       // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
       const fb = root.querySelector("#flip");
       if (fb) fb.style.display = "flip" in s.slots ? "" : "none";
@@ -275,8 +272,6 @@ export function mount(root, ctx = {}) {
 function wireChrome(app, root) {
   const $ = (sel) => root.querySelector(sel);
 
-  $("#prev").onclick = () => app.go(-1);
-  $("#next").onclick = () => app.go(1);
   $("#dupBtn").onclick = () => app.duplicate();
   $("#flip").onclick = () => {
     const s = app.cur().slots;

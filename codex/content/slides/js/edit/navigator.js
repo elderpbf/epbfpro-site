@@ -8,6 +8,28 @@ export function createNavigator(app) {
   function render() {
     const deck = app.deck();
     nav.innerHTML = "";
+
+    // Pinned header at the top of the rail: slide navigator (◀ pos / total ▶) +
+    // "＋ slide", sticky so it stays visible while the thumbnails scroll below.
+    // prev/next are the editor's slide nav (moved out of the chrome); keyboard
+    // arrows still drive app.go independently. stopPropagation on "＋ slide" so the
+    // doc-click dismissal doesn't immediately close the menu it just opened.
+    const hdr = document.createElement("div");
+    hdr.className = "navhdr";
+    const atFirst = app.index <= 0;
+    const atLast = app.index >= deck.slides.length - 1;
+    hdr.innerHTML =
+      `<div class="navnav">` +
+        `<button class="navbtn" data-prev ${atFirst ? "disabled" : ""}>◀</button>` +
+        `<span class="pos">${app.index + 1} / ${deck.slides.length}</span>` +
+        `<button class="navbtn" data-next ${atLast ? "disabled" : ""}>▶</button>` +
+      `</div>` +
+      `<button class="navadd" data-add>＋ slide</button>`;
+    nav.appendChild(hdr);
+    hdr.querySelector("[data-prev]").onclick = (e) => { e.stopPropagation(); app.go(-1); };
+    hdr.querySelector("[data-next]").onclick = (e) => { e.stopPropagation(); app.go(1); };
+    hdr.querySelector("[data-add]").onclick = (e) => { e.stopPropagation(); app.openAddSlide(); };
+
     deck.slides.forEach((s, i) => {
       const t = document.createElement("div");
       t.className = "thumb" + (i === app.index ? " active" : "");
@@ -29,15 +51,6 @@ export function createNavigator(app) {
       });
       nav.appendChild(t);
     });
-
-    // "＋ slide" lives at the bottom of the rail (PowerPoint/Slides-style); it opens
-    // the layout picker into the context bar. stopPropagation so the doc-click
-    // dismissal doesn't immediately close the menu it just opened.
-    const add = document.createElement("button");
-    add.className = "navadd";
-    add.textContent = "＋ slide";
-    add.addEventListener("click", (e) => { e.stopPropagation(); app.openAddSlide(); });
-    nav.appendChild(add);
 
     nav.querySelectorAll("[data-up]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.move(+b.dataset.up, -1); }));
     nav.querySelectorAll("[data-down]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.move(+b.dataset.down, 1); }));
