@@ -310,6 +310,7 @@ export default {
   'presets.delete_title':     'Delete preset',
   'presets.confirm_delete':   'Delete the preset "{name}"? This action cannot be undone.',
   'presets.select':           'Select a preset, or click "+ New preset".',
+  'presets.edit_name':        'Edit name',
 
   // Content → Presets — item picker
   'presets.picker_search':    'Search items...',

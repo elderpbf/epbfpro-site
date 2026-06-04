@@ -246,42 +246,25 @@ function _renderList() {
 }
 
 // ── Right pane: empty prompt | the selected aula's (or Outros) composer ──────
-function _previewHeadAula(aula) {
-  const ds = aulaDateStatusKey(aula, _today());
-  const dateText = t('cohorts.date_' + ds.key) + (ds.date ? ' ' + _fmtDate(ds.date) : '');
-  const titleExtra = aula.title ? ' · ' + _esc(aula.title) : '';
-  return '<div class="cdx-preview-head">' +
-      '<div class="cdx-preview-head-info">' +
-        '<div class="cdx-preview-title">' + t('cohorts.aula_label') + ' ' + _esc(aula.aula_number) + titleExtra + '</div>' +
-        '<div class="cdx-preview-type"><span class="cdx-rel-aula-date is-' + ds.key + '">' + _esc(dateText) + '</span></div>' +
-      '</div>' +
-    '</div>';
-}
-
-function _previewHeadOutros() {
-  return '<div class="cdx-preview-head">' +
-      '<div class="cdx-preview-head-info">' +
-        '<div class="cdx-preview-title">' + t('releases.outros_label') + '</div>' +
-        '<div class="cdx-preview-type">' + t('releases.outros_sub') + '</div>' +
-      '</div>' +
-    '</div>';
-}
-
+// No header: the selected left card already names the aula and shows its date +
+// counts, so the pane is just the composer, maximising the picker.
 function _renderPreview() {
   const pane = _q('cdx-releases-preview');
   if (!pane) return;
-  if (_selectedAula === 'outros') {
-    pane.innerHTML = _previewHeadOutros() + '<div class="cdx-preview-body" data-composer></div>';
-    _renderOutrosComposer(pane.querySelector('[data-composer]'));
-    return;
-  }
-  const aula = _selectedAula != null ? _aulas.find((a) => String(a.id) === String(_selectedAula)) : null;
-  if (!aula) {
+  if (_selectedAula == null) {
     pane.innerHTML = '<div class="cdx-preview-empty">' + t('releases.select') + '</div>';
     return;
   }
-  pane.innerHTML = _previewHeadAula(aula) + '<div class="cdx-preview-body" data-composer></div>';
-  _renderAulaComposer(pane.querySelector('[data-composer]'), aula);
+  const isOutros = _selectedAula === 'outros';
+  const aula = isOutros ? null : _aulas.find((a) => String(a.id) === String(_selectedAula));
+  if (!isOutros && !aula) {
+    pane.innerHTML = '<div class="cdx-preview-empty">' + t('releases.select') + '</div>';
+    return;
+  }
+  pane.innerHTML = '<div class="cdx-preview-body" data-composer></div>';
+  const composer = pane.querySelector('[data-composer]');
+  if (isOutros) _renderOutrosComposer(composer);
+  else _renderAulaComposer(composer, aula);
 }
 
 function _onListClick(e) {
