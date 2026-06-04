@@ -5,6 +5,14 @@
 - **Mocks** (`backstage/mocks/**`): always `/deploy site production` directly. Do not ask "staging or production." Reason: Elder reviews mocks at `pensoia.com/backstage/mocks/...` (the production URL). Staging review adds friction with no benefit because mocks are iteration artifacts, not customer surfaces.
 - **Main site / app code** (`index.html`, app shells, anything users see): keep the normal `staging -> review -> production` flow; see `.ai/development-flow.md`.
 
+## Mocks lifecycle
+
+**Never delete a mock — archive it.** Mocks are kept as historical reference even when superseded or useless. To retire a mock, MOVE it into an `archive/` subfolder, never `git rm`:
+- A mock already under `backstage/mocks/...` moves to the nearest `archive/` (e.g. `backstage/mocks/archive/`, or `backstage/mocks/brand/archive/` for brand mocks).
+- A mock that lives inside a specific project folder relocates to the archive inside the central mocks folder (`backstage/mocks/archive/`).
+
+The gallery (`backstage/mocks/index.html`) keeps listing archived mocks under their `archive/` path; mocks it doesn't list just move. Archiving is a `backstage/mocks/**` change, so it still deploys to production per the Deploy-targets rule above.
+
 ## Cache busting
 
 Increment `?v=X.X` on CSS/JS files in `index.html` when pushing changes. Inline-script mocks (e.g. self-contained `backstage/mocks/brand/*.html`) don't need version bumps; the HTML itself isn't aggressively cached.
