@@ -16,10 +16,6 @@
 .cdx-deck-editor .logo { position: absolute; z-index: 20; cursor: move; } /* its own thing: on top, deck-positioned */
 .cdx-deck-editor .logo img { height: 100%; display: block; }
 .cdx-deck-editor .logo.dragging { opacity: .85; }
-.cdx-deck-editor .logoslide { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--ink); cursor: pointer; } /* per-slide override checkbox */
-.cdx-deck-editor .logoctl { position: absolute; top: 100%; left: 0; margin-top: 5px; display: none; align-items: center; gap: 4px; white-space: nowrap; }
-.cdx-deck-editor .logo.menu-open .logoctl { display: flex; } /* click the logo to toggle; no hover dead-zone */
-.cdx-deck-editor .logoctl select, .cdx-deck-editor .logoctl button { font: inherit; font-size: 11px; border: 1px solid #bfe9e0; background: #fff; color: var(--ink); border-radius: 6px; padding: 1px 5px; cursor: pointer; }
 .cdx-deck-editor .logoshow { position: absolute; left: 36px; top: 26px; z-index: 20; font-size: 11px; color: var(--ink); background: rgba(255, 255, 255, .85); border: 1px dashed var(--teal); border-radius: 8px; padding: 3px 8px; cursor: pointer; }
 .cdx-deck-editor .edgebar { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--teal); z-index: 6; }
 .cdx-deck-editor .motif { position: absolute; color: var(--motif); pointer-events: none; z-index: 1; }
@@ -130,5 +126,3 @@
 .cdx-deck-editor .asset.a-photo img { border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .28); }
 .cdx-deck-editor .atext { outline: none; font-size: calc(28px * var(--fontScale)); color: var(--ink); line-height: 1.3; min-width: 30px; }
 .cdx-deck-editor .atext.a-title { font-size: calc(52px * var(--fontScale)); font-weight: 900; }
-.cdx-deck-editor .assetctl { position: absolute; top: -26px; left: 0; display: flex; gap: 4px; white-space: nowrap; }
-.cdx-deck-editor .assetctl select, .cdx-deck-editor .assetctl button { font: inherit; font-size: 11px; border: 1px solid #bfe9e0; background: #fff; color: var(--ink); border-radius: 6px; padding: 1px 5px; cursor: pointer; }

@@ -11,7 +11,6 @@ import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
 import { initEditing } from "./edit/editor.js";
 import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
-import { initFreeform } from "./edit/freeform.js";
 import { initSelect } from "./select/wiring.js";
 import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from "./edit/menus.js";
 import { createNavigator } from "./edit/navigator.js";
@@ -73,7 +72,6 @@ export function mount(root, ctx = {}) {
     presenting: false,
     editing: false,
     activeEditable: null,
-    selected: null,
     fontScope: "all", // "all" = deck.theme.fontScale · "slide" = per-slide override
     record() {}, // assigned once history exists (below)
     undo() {},
@@ -106,7 +104,6 @@ export function mount(root, ctx = {}) {
       player.applyOverrides(this.stage, s);
       player.applyTextStyles(this.stage, d, s);
       player.applySteps(this.stage, this.step, this.presenting);
-      if (this.freeform) this.freeform.afterRender();
       if (this.select) this.select.afterRender();
       const c = root.querySelector("#counter");
       if (c) c.textContent = `${this.index + 1} / ${d.slides.length}`;
@@ -127,7 +124,6 @@ export function mount(root, ctx = {}) {
       if (ni < 0 || ni >= this.deck().slides.length) return;
       this.index = ni;
       this.step = d < 0 ? this.effMax() : 0;
-      if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.broadcast();
     },
@@ -135,7 +131,6 @@ export function mount(root, ctx = {}) {
     // object), so this nav method must not collide with it.
     goTo(i) {
       this.index = i; this.step = 0;
-      if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.broadcast();
     },
@@ -214,7 +209,6 @@ export function mount(root, ctx = {}) {
       this.presenting = on;
       document.body.classList.toggle("presenting", on);
       this.step = 0;
-      if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
       this.syncChrome(); this.fit(); this.renderSlide(); this.renderNav();
       try {
@@ -233,7 +227,6 @@ export function mount(root, ctx = {}) {
       app.step = 0;
       app.editing = false;
       app.activeEditable = null;
-      if (app.freeform) app.freeform.clear();
       if (app.select) app.select.clear();
       applyDeckTheme(app.deck(), app.stage);
       app.renderSlide();
@@ -254,8 +247,7 @@ export function mount(root, ctx = {}) {
   }
 
   initEditing(app);
-  initFreeform(app);
-  initSelect(app); // unified selection model (asset + logo); after freeform so it can clear it
+  initSelect(app); // unified selection model: every selectable kind + the one context bar
   initMaskPanel(app, root); // the recolour-mask popover (#maskpop): owns app.openMask
   app.renderNav = createNavigator(app).render;
   app.broadcast = createSync(app).broadcast;
@@ -268,7 +260,7 @@ export function mount(root, ctx = {}) {
   // recompute once more after fonts settle (wrapping can change the bar height)
   requestAnimationFrame(() => { app.syncChrome(); app.fit(); app.renderNav(); });
 
-  const onResize = () => { app.syncChrome(); app.fit(); app.renderNav(); if (app.freeform) app.freeform.afterRender(); };
+  const onResize = () => { app.syncChrome(); app.fit(); app.renderNav(); };
   window.addEventListener("resize", onResize);
   app._onResize = onResize;
 
@@ -309,7 +301,6 @@ function wireChrome(app, root) {
   const onDocClick = (e) => {
     const cur = app.select.current();
     if (cur && cur.menu && !e.target.closest(".ctxbar") && !e.target.closest("#chrome")) { app.select.clear(); app._openMenuBtn = null; }
-    if (!e.target.closest(".logo")) { const lm = $(".logo.menu-open"); if (lm) lm.classList.remove("menu-open"); }
   };
   document.addEventListener("click", onDocClick);
   app._onDocClick = onDocClick;
