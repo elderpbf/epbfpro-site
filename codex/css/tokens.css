@@ -1,0 +1,58 @@
+/* Codex design tokens — THE single token home.
+ *
+ * Per-functionality accent colors + the --cdx-* component/status tokens + the
+ * --danger alias, with their [data-theme="dark"] overrides. codex.css and every
+ * tab sheet CONSUME these; this file DEFINES them. Loaded before codex.css in
+ * index.html. (The separation track will later vendor the Backstage palette +
+ * font tokens here too, so this becomes the only token file — SEPARATION-PLAN §10.)
+ *
+ * Rule: any surface/text/border token added here MUST get a [data-theme="dark"]
+ * override. Brand accents (--codex-*) are intentionally theme-stable and exempt;
+ * --danger is an alias of --error and inherits its dark value. */
+
+/* Per-functionality accent colors. Brand accents, the same in light and dark
+ * (they tint a tab glyph + active underline), so they need no dark override. */
+:root {
+  --codex-lessons:   #6366f1;
+  --codex-content:   #14b8a6;
+  --codex-cohorts:   #f59e0b;
+  --codex-questions: #ec4899;
+}
+
+/* ── Component + status tokens ─────────────────────────────────────────────── */
+:root {
+  --cdx-card-hover-bg:     rgba(20, 184, 166, 0.06);
+  --cdx-card-hover-border: rgba(20, 184, 166, 0.25);
+  --cdx-card-sel-bg:       rgba(20, 184, 166, 0.12);
+  --cdx-card-sel-border:   rgba(20, 184, 166, 0.4);
+  --cdx-chip-bg:           rgba(20, 184, 166, 0.08);
+  --cdx-chip-border:       rgba(20, 184, 166, 0.18);
+  --cdx-success-border:    rgba(22, 163, 74, 0.35);
+  --cdx-backdrop:          rgba(0, 0, 0, 0.45);
+  --cdx-danger-bg:         rgba(239, 68, 68, 0.04);
+  --cdx-btn-primary-text:  #ffffff;
+  --cdx-btn-primary-bg:    var(--primary);
+  --cdx-agendada-bg:       rgba(59, 130, 246, 0.1);
+  --cdx-agendada-text:     #3b82f6;
+  --cdx-remarcada-bg:      rgba(245, 158, 11, 0.1);
+  --cdx-remarcada-text:    #d97706;
+  --danger:                var(--error);
+}
+
+[data-theme="dark"] {
+  --cdx-card-hover-bg:     rgba(20, 184, 166, 0.1);
+  --cdx-card-hover-border: rgba(20, 184, 166, 0.3);
+  --cdx-card-sel-bg:       rgba(20, 184, 166, 0.18);
+  --cdx-card-sel-border:   rgba(20, 184, 166, 0.55);
+  --cdx-chip-bg:           rgba(20, 184, 166, 0.12);
+  --cdx-chip-border:       rgba(20, 184, 166, 0.25);
+  --cdx-success-border:    rgba(52, 211, 153, 0.4);
+  --cdx-backdrop:          rgba(0, 0, 0, 0.65);
+  --cdx-danger-bg:         rgba(248, 113, 113, 0.08);
+  --cdx-btn-primary-text:  #ffffff;
+  --cdx-btn-primary-bg:    #0d9488;
+  --cdx-agendada-bg:       rgba(59, 130, 246, 0.15);
+  --cdx-agendada-text:     #93c5fd;
+  --cdx-remarcada-bg:      rgba(245, 158, 11, 0.15);
+  --cdx-remarcada-text:    #fcd34d;
+}
