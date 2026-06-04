@@ -156,11 +156,9 @@ function _select(id) {
 // ── Right pane: read-preview of the selected section (rendered like Items) ────
 function _previewHtml(item, opts) {
   opts = opts || {};
-  const posSub = item.set_position ? '<span class="cdx-preview-type">#' + _esc(item.set_position) + '</span>' : '';
   return '<div class="cdx-preview-head">' +
       '<div class="cdx-preview-head-info">' +
         '<div class="cdx-preview-title">' + _esc(item.title) + '</div>' +
-        posSub +
       '</div>' +
       '<div class="cdx-preview-actions">' +
         '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-act="edit">' + t('content.edit') + '</button>' +
