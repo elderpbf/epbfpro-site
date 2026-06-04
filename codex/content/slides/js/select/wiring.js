@@ -2,8 +2,8 @@
 //
 // Glue that turns the model + descriptors + bar into a working surface:
 //   - builds the selection FRAME (box + handles) in #stagebox, above the stage;
-//   - owns stage selection (match -> select, arm a move) for the kinds this slice
-//     converts (asset + logo); freeform.js still owns slot/card/text for now;
+//   - owns stage selection (match -> select, arm a move) for EVERY selectable kind
+//     (asset, logo, text/image slots, card, topic, container, divider);
 //   - dispatches geometry to per-kind STRATEGIES via begin/live/commit gestures
 //     (model mutate + one-element inline patch per tick, full re-render only on
 //     release) with a unique per-gesture undo token (no cross-drag coalescing);
@@ -120,7 +120,6 @@ export function initSelect(app) {
 
   function selectRef(rec) {
     sel.set(rec);
-    if (app.freeform) app.freeform.clear(); // transitional: one visible selection
     setActiveEditable();
     bar.render(rec); // selection: controls centered in the bar
     placeBox();
@@ -164,7 +163,7 @@ export function initSelect(app) {
     if (e.target.closest(".selbox") || e.target.closest(".selbar")) return; // own listeners
     const hit = kinds.matchKind(e.target);
     if (!hit) {
-      if (sel.get()) clear(); // empty / slot / card click: freeform owns those
+      if (sel.get()) clear(); // clicked empty space / non-selectable chrome
       return;
     }
     // let the caret work while editing a text asset in place
@@ -262,7 +261,7 @@ export function initSelect(app) {
         const off = rotate((-hx * w) / 2, (-hy * h) / 2, a);
         const g = { ...g0, w, h, x: anchor.x - off.x - w / 2, y: anchor.y - off.y - h / 2 };
         st.write(app, sel.get(), g);
-        st.patch(el, g);
+        st.patch(el, g, app); // app threaded so flowCard can mirror the symmetric sibling
         placeBox();
       },
       () => { app.commit(); app.renderNav(); app.broadcast(); }

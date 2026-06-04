@@ -12,7 +12,7 @@
 //                           so a drag never triggers a full stage re-render). `app`
 //                           is passed so flow-rooted slots can use freedStyle's
 //                           offset-parent walk; absolute kinds ignore it.
-import { resolveLogo, DEFAULT_LOGO, freedStyle } from "../render/player.js";
+import { resolveLogo, DEFAULT_LOGO, freedStyle, flowStyle } from "../render/player.js";
 import { getByPath } from "../core/schema.js";
 
 /** Which transform handles a strategy supports (drives the selection frame). */
@@ -25,9 +25,13 @@ export function geometryCaps(name) {
     case "freeformSlot":
       return { move: true, resizeW: true, resizeH: true, rotate: true };
     case "flowCard":
-      return { move: false, resizeW: true, resizeH: true, rotate: false };
-    case "ratio":
+      // width only: a card's height is content-driven, so a height handle could
+      // only ever grow (never shrink past content) — a false affordance. Resize
+      // the basis (width) in the row; neighbours conform.
       return { move: false, resizeW: true, resizeH: false, rotate: false };
+    case "ratio":
+      // the divider is dragged horizontally (a move along x); that x IS the split.
+      return { move: true, resizeW: false, resizeH: false, rotate: false };
     default:
       return { move: false, resizeW: false, resizeH: false, rotate: false };
   }
@@ -40,6 +44,21 @@ function measure(el, app) {
   const sr = app.stage.getBoundingClientRect();
   const r = el.getBoundingClientRect();
   return { x: (r.left - sr.left) / sc, y: (r.top - sr.top) / sc, w: r.width / sc, h: r.height / sc };
+}
+
+// Symmetric-resize mirror (card Toggles): with slots.symResize on, a card's
+// counterpart is the card at the opposite end (index N-1-i), so resizing one writes
+// the same basis to its mirror and the row stays left-right balanced. The centre
+// card on odd counts mirrors itself (no-op). Returns the mirror's override ref
+// ("cards.<id>"), or null when off / centre / not a card.
+function cardMirrorRef(app, ref) {
+  if (!ref || !app.cur().slots || !app.cur().slots.symResize) return null;
+  const cards = app.cur().slots.cards || [];
+  const i = cards.findIndex((c) => `cards.${c.id}` === ref);
+  if (i < 0) return null;
+  const j = cards.length - 1 - i;
+  if (j === i) return null;
+  return `cards.${cards[j].id}`;
 }
 
 export const strategies = {
@@ -120,6 +139,62 @@ export const strategies = {
     },
     patch(el, g, app) {
       freedStyle(el, g, app.stage); // offset-parent-correct, since slots live in flow
+    },
+  },
+
+  // Flow card (Slice 3): a card resizes WITHIN the flex stack — neighbours reflow
+  // and conform, the card never lifts out to absolute (caps: no move, no rotate).
+  // The override stores only the basis (w) + min-height (h) with flow:true, the
+  // SAME shape the old freeform flow branch produced, so existing freed cards keep
+  // resizing. read() measures the live element (its size is applied by flowStyle on
+  // render, so the rect is authoritative); the box just tracks it. Keyed by the
+  // card's stable id ref, so a resize survives reorder.
+  flowCard: {
+    read(app, sel, el) {
+      if (!el) return { x: 0, y: 0, w: 0, h: 0, rot: 0 };
+      const m = measure(el, app);
+      return { x: m.x, y: m.y, w: m.w, h: m.h, rot: 0 };
+    },
+    write(app, sel, g) {
+      if (!sel) return;
+      const ov = (app.cur().overrides = app.cur().overrides || {});
+      ov[sel.ref] = { w: g.w, flow: true }; // width only; height stays content-driven
+      const mref = cardMirrorRef(app, sel.ref); // symmetric mode: the counterpart card
+      if (mref) ov[mref] = { w: g.w, flow: true };
+    },
+    patch(el, g, app) {
+      flowStyle(el, g); // basis only (no h -> no min-height); siblings conform
+      // onUp doesn't re-render the stage, so the mirror must track live too.
+      const mref = app && el.dataset && cardMirrorRef(app, el.dataset.fkey);
+      if (mref) {
+        const mel = app.stage.querySelector(`.card[data-fkey="${mref}"]`);
+        if (mel) flowStyle(mel, { w: g.w });
+      }
+    },
+  },
+
+  // Ratio (split divider): a horizontal drag, not a box. The divider's position IS
+  // the column split (slots.ratio): read maps the ratio to a full-height line at
+  // canvas-x, write maps the dragged x back to a clamped ratio, and patch repaints
+  // the live .L-split grid + the divider. Dispatched as a move gesture (caps: move
+  // only) through the shared frame, replacing the bespoke editor.js divider handler.
+  ratio: {
+    clampX(app, x) {
+      return Math.min(0.8, Math.max(0.2, x / app.deck().canvas.w));
+    },
+    read(app, sel, el) {
+      const c = app.deck().canvas;
+      const r = app.cur().slots.ratio != null ? app.cur().slots.ratio : 0.5;
+      return { x: r * c.w, y: 0, w: 0, h: c.h, rot: 0 };
+    },
+    write(app, sel, g) {
+      app.cur().slots.ratio = this.clampX(app, g.x);
+    },
+    patch(el, g, app) {
+      const r = this.clampX(app, g.x);
+      const grid = app.stage.querySelector(".L-split");
+      if (grid) grid.style.gridTemplateColumns = `${r * 100}% ${(1 - r) * 100}%`;
+      el.style.left = r * 100 + "%";
     },
   },
 };

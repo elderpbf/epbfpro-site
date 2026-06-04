@@ -5,14 +5,14 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid } from "./core/schema.js";
+import { uid, migrateDeck } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
 import { initEditing } from "./edit/editor.js";
 import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
-import { initFreeform } from "./edit/freeform.js";
 import { initSelect } from "./select/wiring.js";
+import { initReorder } from "./select/reorder.js";
 import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from "./edit/menus.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
@@ -34,10 +34,9 @@ const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) :
 // the active language (the dictionary may switch between mounts).
 const shellHTML = () => `
 <div id="chrome">
-  <button id="prev">‹</button><span id="counter">1 / 1</span><button id="next">›</button>
-  <button id="addBtn">＋ ${t("slides.ed_slide")} ▾</button>
   <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
+  <span class="spacer"></span>
   <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
   <button id="appearBtn">${t("slides.ed_appearance")} ▾</button>
   <button id="animBtn">${t("slides.ed_anim")} ▾</button>
@@ -63,6 +62,7 @@ export function mount(root, ctx = {}) {
   root.innerHTML = shellHTML();
   const $ = (sel) => root.querySelector(sel);
   const store = ctx.store || createMemoryStore(newDeck());
+  migrateDeck(store.getDeck()); // D1: bring legacy decks (string topics, id-less cards) to current schema before first render
 
   const app = {
     isPresenter,
@@ -72,7 +72,6 @@ export function mount(root, ctx = {}) {
     presenting: false,
     editing: false,
     activeEditable: null,
-    selected: null,
     fontScope: "all", // "all" = deck.theme.fontScale · "slide" = per-slide override
     record() {}, // assigned once history exists (below)
     undo() {},
@@ -105,10 +104,8 @@ export function mount(root, ctx = {}) {
       player.applyOverrides(this.stage, s);
       player.applyTextStyles(this.stage, d, s);
       player.applySteps(this.stage, this.step, this.presenting);
-      if (this.freeform) this.freeform.afterRender();
       if (this.select) this.select.afterRender();
-      const c = root.querySelector("#counter");
-      if (c) c.textContent = `${this.index + 1} / ${d.slides.length}`;
+      if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
       // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
       const fb = root.querySelector("#flip");
       if (fb) fb.style.display = "flip" in s.slots ? "" : "none";
@@ -126,7 +123,6 @@ export function mount(root, ctx = {}) {
       if (ni < 0 || ni >= this.deck().slides.length) return;
       this.index = ni;
       this.step = d < 0 ? this.effMax() : 0;
-      if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.broadcast();
     },
@@ -134,7 +130,6 @@ export function mount(root, ctx = {}) {
     // object), so this nav method must not collide with it.
     goTo(i) {
       this.index = i; this.step = 0;
-      if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.broadcast();
     },
@@ -163,6 +158,11 @@ export function mount(root, ctx = {}) {
       this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope, fv), this._appearBtn);
     },
     reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
+    // add-slide layout picker, opened into the context bar from the thumbnail-rail
+    // "＋ slide" button (anchor null -> centered, since the rail sits left of the stage).
+    openAddSlide(anchor) {
+      this.select.openMenu(addSlideMenu(registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }))), anchor || null);
+    },
 
     // insert a free element (movable on any slide) of the given type
     insertElement(type) {
@@ -213,7 +213,6 @@ export function mount(root, ctx = {}) {
       this.presenting = on;
       document.body.classList.toggle("presenting", on);
       this.step = 0;
-      if (this.freeform) this.freeform.clear();
       if (this.select) this.select.clear();
       this.syncChrome(); this.fit(); this.renderSlide(); this.renderNav();
       try {
@@ -227,11 +226,11 @@ export function mount(root, ctx = {}) {
     getSnapshot: () => JSON.stringify(store.getDeck()),
     applySnapshot: (json) => {
       store.setDeck(JSON.parse(json));
+      migrateDeck(store.getDeck()); // idempotent: a pre-migration snapshot is upgraded on restore
       app.index = Math.min(app.index, app.deck().slides.length - 1);
       app.step = 0;
       app.editing = false;
       app.activeEditable = null;
-      if (app.freeform) app.freeform.clear();
       if (app.select) app.select.clear();
       applyDeckTheme(app.deck(), app.stage);
       app.renderSlide();
@@ -252,8 +251,8 @@ export function mount(root, ctx = {}) {
   }
 
   initEditing(app);
-  initFreeform(app);
-  initSelect(app); // unified selection model (asset + logo); after freeform so it can clear it
+  initSelect(app); // unified selection model: every selectable kind + the one context bar
+  initReorder(app); // drag-and-drop reorder for cards + topics (grips injected post-render)
   initMaskPanel(app, root); // the recolour-mask popover (#maskpop): owns app.openMask
   app.renderNav = createNavigator(app).render;
   app.broadcast = createSync(app).broadcast;
@@ -266,7 +265,7 @@ export function mount(root, ctx = {}) {
   // recompute once more after fonts settle (wrapping can change the bar height)
   requestAnimationFrame(() => { app.syncChrome(); app.fit(); app.renderNav(); });
 
-  const onResize = () => { app.syncChrome(); app.fit(); app.renderNav(); if (app.freeform) app.freeform.afterRender(); };
+  const onResize = () => { app.syncChrome(); app.fit(); app.renderNav(); };
   window.addEventListener("resize", onResize);
   app._onResize = onResize;
 
@@ -276,8 +275,6 @@ export function mount(root, ctx = {}) {
 function wireChrome(app, root) {
   const $ = (sel) => root.querySelector(sel);
 
-  $("#prev").onclick = () => app.go(-1);
-  $("#next").onclick = () => app.go(1);
   $("#dupBtn").onclick = () => app.duplicate();
   $("#flip").onclick = () => {
     const s = app.cur().slots;
@@ -297,17 +294,25 @@ function wireChrome(app, root) {
       build(btn);
     };
   };
-  menuBtn("#addBtn", (btn) => app.select.openMenu(addSlideMenu(registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }))), btn));
   menuBtn("#insertBtn", (btn) => app.select.openMenu(insertMenu(), btn));
   menuBtn("#appearBtn", (btn) => app.openAppearance(btn));
-  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim), btn));
+  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim, app.cur().slots.reveal, "reveal" in app.cur().slots), btn));
 
   // Outside-click closes the mask popover and any open context-bar menu. Stored on
   // app and removed in unmount() (a DOCUMENT-level listener). Each $() is null-guarded.
+  // Click-away dismissal. Never fires while editing text (guarded) or for clicks on
+  // the bar / selection frame / chrome. An open MENU closes on any other click
+  // (incl. the stage); a SELECTION closes only on a click fully outside the editor
+  // surfaces — the stage's own pointerdown already clears a selection on empty space.
   const onDocClick = (e) => {
     const cur = app.select.current();
-    if (cur && cur.menu && !e.target.closest(".ctxbar") && !e.target.closest("#chrome")) { app.select.clear(); app._openMenuBtn = null; }
-    if (!e.target.closest(".logo")) { const lm = $(".logo.menu-open"); if (lm) lm.classList.remove("menu-open"); }
+    if (!cur || app.editing) return;
+    const onChrome = e.target.closest(".ctxbar") || e.target.closest("#chrome") || e.target.closest(".selbox");
+    if (cur.menu) {
+      if (!onChrome) { app.select.clear(); app._openMenuBtn = null; }
+    } else if (!onChrome && !e.target.closest("#stage")) {
+      app.select.clear();
+    }
   };
   document.addEventListener("click", onDocClick);
   app._onDocClick = onDocClick;

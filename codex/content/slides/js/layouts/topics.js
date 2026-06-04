@@ -1,18 +1,15 @@
-// layouts/topics.js — Só tópicos.
+// layouts/topics.js — Só tópicos. Bullets render via the shared topicList helper
+// (id-keyed, each selectable as the `topic` kind); delete is a descriptor control
+// and add is the container kind, not layout-emitted HTML.
 import { bar, contentMotifs } from "../theme/art.js";
-import { ed } from "../render/helpers.js";
-
-const topic = (t, i) =>
-  `<li class="reveal" data-step="${i + 1}" data-fkey="topics.${i}">` +
-  `<span class="editable" data-path="topics.${i}" data-edit="1">${t}</span>` +
-  `<button class="li-x editoronly" data-del="topics.${i}">remover</button></li>`;
+import { ed, topicList } from "../render/helpers.js";
+import { uid } from "../core/schema.js";
 
 export default {
   id: "topics",
   label: "Só tópicos",
-  defaults: () => ({ title: "Título", topics: ["Tópico um", "Tópico dois", "Tópico três"] }),
+  defaults: () => ({ title: "Título", topics: ["Tópico um", "Tópico dois", "Tópico três"].map((text) => ({ id: uid(), text })) }),
   reveals: (s) => s.topics.length,
   render: (s) => `${bar}<div class="L-topics">${contentMotifs}${ed("h2", "title", s.title)}
-    <ul class="topiclist">${s.topics.map(topic).join("")}</ul>
-    <button class="addtopic editoronly" data-add="topics">+ tópico</button></div>`,
+    ${topicList(s.topics)}</div>`,
 };

@@ -1,8 +1,11 @@
 // edit/textstyle.js — the PERSIST side of text styling. (The render side stays in
 // player.js: textStyleProps + applyTextStyles.) Block-level format applied from
 // the context bar is stored on the model so it survives a re-render: per-asset in
-// asset.style, per-slot in slide.textStyle[path]. Pure model writers + captureStyle
-// are unit-tested; formatControls returns the bar's text-format primitives.
+// asset.style, per-LIST-ITEM (card/topic) on the item's own .style via its
+// data-style-ref (id-stable, survives reorder), and per-slot in slide.textStyle[path].
+// Pure model writers + captureStyle are unit-tested; formatControls returns the bar's
+// text-format primitives.
+import { resolveStyleObj } from "../core/schema.js";
 
 export function writeAssetStyle(asset, st) {
   asset.style = st;
@@ -30,6 +33,9 @@ function persist(app) {
   if (el.dataset.aid) {
     const a = app.deck().assets.find((x) => x.id === el.dataset.aid);
     if (a) writeAssetStyle(a, st);
+  } else if (el.dataset.styleRef) {
+    const obj = resolveStyleObj(app.cur().slots, el.dataset.styleRef); // card/topic item
+    if (obj) obj.style = st;
   } else if (el.dataset.path) {
     writeSlotStyle(app.cur(), el.dataset.path, st);
   } else return;

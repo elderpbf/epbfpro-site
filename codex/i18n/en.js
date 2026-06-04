@@ -309,6 +309,8 @@ export default {
   'presets.deleted':          'Preset deleted.',
   'presets.delete_title':     'Delete preset',
   'presets.confirm_delete':   'Delete the preset "{name}"? This action cannot be undone.',
+  'presets.select':           'Select a preset, or click "+ New preset".',
+  'presets.edit_name':        'Edit name',
 
   // Content → Presets — item picker
   'presets.picker_search':    'Search items...',
@@ -329,6 +331,7 @@ export default {
 
   // Content → Releases (Liberações)
   'releases.select_prompt':   'Select a cohort above to manage releases.',
+  'releases.select':          'Select a lesson (or Other) to release content.',
   'releases.error_loading':   'Error loading data.',
   'releases.turma_not_found': 'Cohort not found.',
   'releases.no_aulas':        'No lessons yet. Add lessons in the Cohorts tab (edit cohort).',
@@ -356,6 +359,7 @@ export default {
   'apostila.empty_sections':  'The content has no sections.',
   'apostila.error_loading':   'Error loading the content.',
   'apostila.no_summary':      'no summary',
+  'apostila.select':          'Select a section to view its content.',
   'apostila.section_deleted': 'Section deleted.',
   'apostila.set_deleted':     'Content deleted.',
   'apostila.delete_section_title':   'Delete section',
@@ -377,6 +381,7 @@ export default {
   'tarefas.title':            'Assignments by cohort',
   'tarefas.new_btn':          '+ New assignment',
   'tarefas.select_prompt':    'Select a cohort above to see its assignments.',
+  'tarefas.select':           'Select an assignment to edit it and see its answers.',
   'tarefas.loading':          'Loading assignments...',
   'tarefas.error_loading':    'Error loading assignments',
   'tarefas.empty':            'No assignments released for this cohort. Create one with "+ New assignment" or release an existing one in Releases.',

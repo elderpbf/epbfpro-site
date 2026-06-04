@@ -4,7 +4,7 @@
 // registry for the slide's layout and calls render()).
 import * as registry from "../layouts/registry.js";
 import { maskOverlay } from "./helpers.js";
-import { DEFAULT_LOGO } from "../core/schema.js";
+import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
 import { t } from "../../../../js/i18n.js";
 
 export { DEFAULT_LOGO };
@@ -137,7 +137,12 @@ export function textStyleProps(st) {
 export function applyTextStyles(scopeEl, deck, slide) {
   const ts = slide.textStyle || {};
   scopeEl.querySelectorAll('[data-path][data-edit="1"]').forEach((el) => {
+    if (el.dataset.styleRef) return; // a list item: its style is on the object (below)
     Object.assign(el.style, textStyleProps(ts[el.getAttribute("data-path")]));
+  });
+  scopeEl.querySelectorAll("[data-style-ref]").forEach((el) => {
+    const obj = resolveStyleObj(slide.slots, el.getAttribute("data-style-ref"));
+    if (obj) Object.assign(el.style, textStyleProps(obj.style));
   });
   scopeEl.querySelectorAll("[data-aid]").forEach((el) => {
     const a = deck.assets.find((x) => x.id === el.getAttribute("data-aid"));

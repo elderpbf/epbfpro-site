@@ -28,6 +28,7 @@ let _turma = null;
 let _items = [];
 let _itemTurmas = {};    // item_id -> [{ client_slug, turma_slug, ... }]
 let _submissions = {};   // item_id -> [submission]
+let _selectedId = null;  // selected tarefa id (master-detail)
 let _picker = null;
 let _cleanup = [];
 
@@ -106,11 +107,14 @@ function _closeModal(bd) {
 function _loadTarefas(clientSlug, turmaSlug) {
   _client = clientSlug;
   _turma = turmaSlug;
+  _selectedId = null;
   const listEl = _q('cdx-tarefas-list');
   const metaEl = _q('cdx-tarefas-meta');
   if (!listEl || !clientSlug || !turmaSlug) return;
   listEl.innerHTML = '<div class="cdx-empty">' + t('tarefas.loading') + '</div>';
   if (metaEl) metaEl.innerHTML = '';
+  const pv = _q('cdx-tarefas-preview');
+  if (pv) pv.innerHTML = '<div class="cdx-preview-empty">' + t('tarefas.select') + '</div>';
   _submissions = {};
 
   cohortsApi.listTurmas({ client_slug: clientSlug }).then((td) => {
@@ -164,26 +168,23 @@ function _rowHtml(item) {
   const countCls = subCount === 0 ? 'cdx-tarefa-count is-zero' : 'cdx-tarefa-count';
   const anonBlock = anonOk ? ''
     : '<span class="cdx-tarefa-dot">·</span><span class="cdx-tarefa-anon-badge">' + t('tarefas.anon_required') + '</span>';
-  return '<article class="cdx-tarefa-row" data-item-id="' + _esc(item.id) + '">' +
-    '<div class="cdx-tarefa-head">' +
-      '<span class="cdx-tarefa-icon">' + glyphSvg('clipboard', { size: 18 }) + '</span>' +
-      '<div class="cdx-tarefa-title-wrap">' +
-        '<h3 class="cdx-tarefa-title">' + _esc(item.title) + '</h3>' +
-        '<div class="cdx-tarefa-sub">' +
-          '<span>' + _esc(aulaLabel) + '</span>' +
-          '<span class="cdx-tarefa-dot">·</span>' +
-          '<span class="' + countCls + '" data-count="' + _esc(item.id) + '">' +
-            subCount + ' ' + _plural(subCount, t('tarefas.answer_one'), t('tarefas.answer_many')) +
-          '</span>' +
-          anonBlock +
-          '<span class="cdx-tarefa-dot">·</span>' +
-          '<span class="cdx-tarefa-reuse" data-reuse="' + _esc(item.id) + '">…</span>' +
-        '</div>' +
+  const active = Number(item.id) === Number(_selectedId);
+  return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-item-id="' + _esc(item.id) + '">' +
+    '<span class="cdx-item-type-icon cdx-tarefa-icon">' + glyphSvg('clipboard', { size: 18 }) + '</span>' +
+    '<div class="cdx-item-info">' +
+      '<div class="cdx-item-title">' + _esc(item.title) + '</div>' +
+      '<div class="cdx-item-sub cdx-tarefa-sub">' +
+        '<span>' + _esc(aulaLabel) + '</span>' +
+        '<span class="cdx-tarefa-dot">·</span>' +
+        '<span class="' + countCls + '" data-count="' + _esc(item.id) + '">' +
+          subCount + ' ' + _plural(subCount, t('tarefas.answer_one'), t('tarefas.answer_many')) +
+        '</span>' +
+        anonBlock +
+        '<span class="cdx-tarefa-dot">·</span>' +
+        '<span class="cdx-tarefa-reuse" data-reuse="' + _esc(item.id) + '">…</span>' +
       '</div>' +
-      '<span class="cdx-tarefa-chev">' + glyphSvg('list', { size: 16 }) + '</span>' +
     '</div>' +
-    '<div class="cdx-tarefa-body"></div>' +
-  '</article>';
+  '</div>';
 }
 
 function _fetchItemTurmas(itemId) {
@@ -225,36 +226,43 @@ function _updateSubmissionCount(itemId) {
   el.classList.toggle('is-zero', cnt === 0);
 }
 
-// ── Row expand: editor + answers panes ───────────────────────────────────────
+// ── Selection: render the editor + answers into the right pane ────────────────
 function _onListClick(e) {
-  const head = e.target.closest('.cdx-tarefa-head');
-  if (!head) return;
-  if (e.target.closest('button, a, input, textarea')) return;
-  const row = head.closest('.cdx-tarefa-row');
+  const row = e.target.closest('.cdx-item-row');
   if (!row) return;
-  _toggleRow(row, Number(row.dataset.itemId));
+  _select(Number(row.dataset.itemId));
 }
 
-function _toggleRow(row, itemId) {
-  const wasOpen = row.classList.contains('is-expanded');
-  (_viewEl ? _viewEl.querySelectorAll('.cdx-tarefa-row.is-expanded') : []).forEach((r) => {
-    r.classList.remove('is-expanded');
-    const b = r.querySelector('.cdx-tarefa-body');
-    if (b) b.innerHTML = '';
+function _select(itemId) {
+  _selectedId = itemId;
+  if (_viewEl) _viewEl.querySelectorAll('.cdx-item-row').forEach((r) => {
+    r.classList.toggle('is-active', Number(r.dataset.itemId) === Number(itemId));
   });
-  if (wasOpen) return;
-  row.classList.add('is-expanded');
-  const body = row.querySelector('.cdx-tarefa-body');
-  body.innerHTML =
-    '<div class="cdx-tarefa-grid">' +
+  _renderPreview();
+}
+
+// Right pane: the selected tarefa's editor stacked above its answers.
+function _renderPreview() {
+  const pane = _q('cdx-tarefas-preview');
+  if (!pane) return;
+  if (_selectedId == null) {
+    pane.innerHTML = '<div class="cdx-preview-empty">' + t('tarefas.select') + '</div>';
+    return;
+  }
+  const itemId = _selectedId;
+  pane.innerHTML =
+    '<div class="cdx-preview-body cdx-tarefa-panes">' +
       '<div class="cdx-tarefa-pane" data-pane="editor"><div class="cdx-empty">' + t('content.loading') + '</div></div>' +
       '<div class="cdx-tarefa-pane" data-pane="resp"><div class="cdx-empty">' + t('tarefas.loading_answers') + '</div></div>' +
     '</div>';
   api.getItem({ id: itemId }).then((res) => {
-    _renderEditor(body.querySelector('[data-pane="editor"]'), (res && res.item) || {});
+    if (Number(_selectedId) !== Number(itemId)) return;
+    const ed = pane.querySelector('[data-pane="editor"]');
+    if (ed) _renderEditor(ed, (res && res.item) || {});
   }).catch(() => {
-    const pane = body.querySelector('[data-pane="editor"]');
-    if (pane) pane.innerHTML = '<div class="cdx-empty">' + t('tarefas.error_content') + '</div>';
+    if (Number(_selectedId) !== Number(itemId)) return;
+    const ed = pane.querySelector('[data-pane="editor"]');
+    if (ed) ed.innerHTML = '<div class="cdx-empty">' + t('tarefas.error_content') + '</div>';
   });
   _loadSubmissions(itemId);
 }
@@ -295,10 +303,7 @@ function _renderEditor(container, item) {
     });
   });
   container.querySelector('.cdx-tf-save').addEventListener('click', () => _saveTarefa(container, item));
-  container.querySelector('.cdx-tf-cancel').addEventListener('click', () => {
-    const row = container.closest('.cdx-tarefa-row');
-    if (row) { row.classList.remove('is-expanded'); const b = row.querySelector('.cdx-tarefa-body'); if (b) b.innerHTML = ''; }
-  });
+  container.querySelector('.cdx-tf-cancel').addEventListener('click', () => _renderPreview());
   container.querySelector('.cdx-tf-delete').addEventListener('click', () => _deleteTarefa(item));
 }
 
@@ -357,13 +362,15 @@ function _loadSubmissions(itemId) {
     _renderSubmissions(itemId);
     _updateSubmissionCount(itemId);
   }).catch(() => {
-    const pane = _viewEl && _viewEl.querySelector('.cdx-tarefa-row[data-item-id="' + itemId + '"] [data-pane="resp"]');
+    if (Number(itemId) !== Number(_selectedId)) return;
+    const pane = _viewEl && _viewEl.querySelector('#cdx-tarefas-preview [data-pane="resp"]');
     if (pane) pane.innerHTML = '<div class="cdx-empty">' + t('tarefas.error_answers') + '</div>';
   });
 }
 
 function _renderSubmissions(itemId) {
-  const pane = _viewEl && _viewEl.querySelector('.cdx-tarefa-row[data-item-id="' + itemId + '"] [data-pane="resp"]');
+  if (Number(itemId) !== Number(_selectedId)) return;
+  const pane = _viewEl && _viewEl.querySelector('#cdx-tarefas-preview [data-pane="resp"]');
   if (!pane) return;
   const subs = _submissions[itemId] || [];
   const count = subs.length;
@@ -552,8 +559,13 @@ function _renderShell() {
       '</div>' +
       '<div class="cdx-turma-picker" id="cdx-tar-picker"></div>' +
       '<div class="cdx-tarefas-meta" id="cdx-tarefas-meta"></div>' +
-      '<div class="cdx-tarefas-list" id="cdx-tarefas-list">' +
-        '<div class="cdx-empty">' + t('tarefas.select_prompt') + '</div>' +
+      '<div class="cdx-items-split cdx-tarefas-split" id="cdx-tarefas-split">' +
+        '<div class="cdx-items-list" id="cdx-tarefas-list">' +
+          '<div class="cdx-empty">' + t('tarefas.select_prompt') + '</div>' +
+        '</div>' +
+        '<div class="cdx-item-preview" id="cdx-tarefas-preview">' +
+          '<div class="cdx-preview-empty">' + t('tarefas.select') + '</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
   _q('cdx-tarefa-new').addEventListener('click', _openNew);
@@ -568,6 +580,7 @@ export function mount(viewEl, ctx) {
   _items = [];
   _itemTurmas = {};
   _submissions = {};
+  _selectedId = null;
   _cleanup = [];
   _renderShell();
   _picker = turmaPicker.mount(_q('cdx-tar-picker'), {
@@ -584,5 +597,6 @@ export function unmount() {
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
+  _selectedId = null;
   document.querySelectorAll('.cdx-modal-backdrop').forEach((bd) => bd.parentNode && bd.parentNode.removeChild(bd));
 }

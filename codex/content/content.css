@@ -196,15 +196,6 @@
 }
 .cdx-item-tags { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
 
-.cdx-tag-chip {
-  font-size: 0.72rem;
-  padding: 0.12rem 0.45rem;
-  border-radius: 999px;
-  background: var(--cdx-chip-bg);
-  border: 1px solid var(--cdx-chip-border);
-  color: var(--text-secondary);
-}
-
 .cdx-set-badge {
   font-size: 0.7rem;
   padding: 0.1rem 0.4rem;
@@ -213,6 +204,24 @@
   border: 1px solid var(--cdx-chip-border);
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+/* ── Canonical off-Items chip (Phase 4) ──────────────────────────────────────
+   One pill skin shared by the static count/status chips OUTSIDE the frozen
+   Items surface. (Items' own .cdx-set-badge stays a 4px square; .cdx-tag-chip
+   stays the interactive pill; cohorts' .cdx-card-info-chip already matches this
+   pill.) Each chip below keeps only its own layout/icon specifics. */
+.cdx-tag-row-count,
+.cdx-rel-aula-date,
+.cdx-rel-count,
+.cdx-field-future {
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 /* ── Tags manager modal ──────────────────────────────────────────────────── */
@@ -236,13 +245,7 @@
   border-radius: 6px;
 }
 .cdx-tag-row-label { flex: 1; color: var(--text-primary); font-size: 0.88rem; }
-.cdx-tag-row-count {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  background: var(--cdx-chip-bg);
-}
+/* .cdx-tag-row-count: skin via the canonical off-Items chip rule above. */
 
 /* ── Shared item editor / creator (item-form.js, item-creator.js) ─────────── */
 /* Codex-native port of the legacy ct-editor chrome. Reuses .cdx-field,
@@ -527,41 +530,30 @@
 .cdx-type-row-label { flex: 1; color: var(--text-primary); font-size: 0.88rem; }
 .cdx-type-row-slug { font-size: 0.72rem; color: var(--text-secondary); font-family: monospace; }
 
-/* ── Presets sub-tab (list + editor + item picker) ───────────────────────────
-   Full-native port of the legacy CVPresetsUI + CVItemPicker. Reuses .cdx-btn,
-   .cdx-modal*, .cdx-field, .cdx-empty and existing tokens; no new color token,
-   so dark mode is inherited. */
+/* ── Presets sub-tab (native, master-detail like Items) ──────────────────────
+   Full-native port of the legacy CVPresetsUI + CVItemPicker. Reuses the Items
+   split shell (.cdx-items-split / .cdx-items-list / .cdx-item-row /
+   .cdx-item-preview): left = selectable preset list, right = an inline editor
+   (name field + grouped item-picker). Reuses .cdx-btn, .cdx-field, .cdx-empty
+   and existing tokens; no new color token, so dark mode is inherited. */
 .cdx-presets { display: flex; flex-direction: column; gap: 1rem; }
 .cdx-presets-toolbar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .cdx-presets-title { margin: 0; font-size: 1.15rem; color: var(--text-primary); flex: 1; }
 
-.cdx-preset-list { display: flex; flex-direction: column; gap: 0.4rem; }
-.cdx-preset-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.cdx-preset-name { flex: 1; font-weight: 600; font-size: 0.92rem; color: var(--text-primary); }
-.cdx-preset-count {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: var(--cdx-chip-bg);
-  border: 1px solid var(--cdx-chip-border);
-}
-.cdx-preset-row-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
-
-/* Wider modal for the editor (name + picker). */
-.cdx-modal--wide { max-width: 640px; width: 100%; box-sizing: border-box; }
+.cdx-preset-icon { color: var(--codex-content); font-size: 1.1rem; }
+.cdx-presets-split .cdx-item-info { flex: 1; min-width: 0; }
+/* No header: the picker fills the whole body, and the footer carries Edit name +
+   Delete on the left with Cancel/Save on the right, so the list goes higher. */
+.cdx-presets-split .cdx-preview-body { display: flex; flex-direction: column; }
+.cdx-presets-split .cdx-preset-picker-mount { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.cdx-presets-split .cdx-picker { flex: 1; min-height: 0; max-height: none; }
+.cdx-preset-editor-actions { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-shrink: 0; padding: 0.8rem 1.1rem; border-top: 1px solid var(--border); }
+.cdx-preset-actions-left { display: flex; gap: 0.5rem; }
+.cdx-preset-actions-right { display: flex; gap: 0.5rem; }
 
 .cdx-field--picker { display: flex; flex-direction: column; }
-.cdx-field-error { font-size: 0.78rem; color: var(--danger, #d33); margin-top: 0.3rem; min-height: 1em; }
-.cdx-field input.is-invalid, input.is-invalid { border-color: var(--danger, #d33); }
+.cdx-field-error { font-size: 0.78rem; color: var(--danger); margin-top: 0.3rem; min-height: 1em; }
+.cdx-field input.is-invalid, input.is-invalid { border-color: var(--danger); }
 
 /* ── Item picker (grouped multi-select) ──────────────────────────────────── */
 .cdx-picker {
@@ -581,21 +573,55 @@
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.cdx-picker-search { flex: 1; min-width: 0; }
+.cdx-picker-search {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.cdx-picker-search:focus { outline: none; border-color: var(--primary); }
 .cdx-picker-count { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
 .cdx-picker-list { overflow-y: auto; padding: 0.4rem; flex: 1; min-height: 0; }
 .cdx-picker-empty { padding: 1.5rem; text-align: center; color: var(--text-secondary); font-size: 0.88rem; }
 
 .cdx-picker-group { margin-bottom: 0.5rem; }
+/* Collapsible accordion header (single-open; toggled in presets.js). */
 .cdx-picker-group-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
-  padding: 0.3rem 0.4rem;
+  padding: 0.35rem 0.4rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
 }
+.cdx-picker-group-label:hover {
+  background: var(--cdx-card-hover-bg);
+  border-color: var(--cdx-card-hover-border);
+  color: var(--text-primary);
+}
+.cdx-picker-group-name { flex: 1; min-width: 0; }
+.cdx-picker-group-caret { display: inline-flex; font-size: 0.95rem; line-height: 1; transition: transform 120ms ease; }
+.cdx-picker-group-label[aria-expanded="true"] .cdx-picker-group-caret { transform: rotate(90deg); }
 .cdx-picker-group-rows { display: flex; flex-direction: column; gap: 0.15rem; }
+.cdx-picker-group-rows.is-collapsed { display: none; }
 .cdx-picker-row {
   display: flex;
   align-items: center;
@@ -640,70 +666,41 @@
 .cdx-turma-pill-client { font-weight: 600; }
 .cdx-turma-pill-sep { opacity: 0.5; }
 
-/* ── Releases (Liberações) aula accordion ────────────────────────────────── */
+/* ── Releases (Liberações) sub-tab (native, master-detail like Items) ────────
+   Reuses the Items split shell (.cdx-items-split / .cdx-items-list /
+   .cdx-item-row / .cdx-item-preview): left = aula list (+ an Outros bucket),
+   right = the composer for the selected aula. The composer markup, the diff
+   rules and the save paths are unchanged; only the host moved from an inline
+   accordion to the right pane. All theme tokens, so dark mode is inherited. */
 .cdx-releases { display: flex; flex-direction: column; gap: 1rem; }
-.cdx-releases-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.cdx-releases-split .cdx-item-info { flex: 1; min-width: 0; }
+.cdx-releases-split .cdx-item-sub { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 
-.cdx-rel-aula {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
+/* Aula number badge in the row icon slot (Outros uses a glyph instead). */
+.cdx-rel-aula-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px;
+  background: var(--cdx-chip-bg); border: 1px solid var(--cdx-chip-border);
+  font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);
 }
-.cdx-rel-aula-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.7rem 0.9rem;
-  cursor: pointer;
-}
-.cdx-rel-aula-header:hover { background: var(--cdx-card-hover-bg); }
-.cdx-rel-aula-info { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; min-width: 0; }
-.cdx-rel-aula-label { font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
-.cdx-rel-outros-label { color: var(--text-secondary); }
+.cdx-rel-outros-icon { color: var(--codex-content); }
 .cdx-rel-aula-title { font-size: 0.85rem; color: var(--text-secondary); }
-.cdx-rel-aula-date { font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--cdx-chip-bg); border: 1px solid var(--cdx-chip-border); color: var(--text-secondary); }
+/* .cdx-rel-aula-date skin via the canonical off-Items chip rule; modifiers only here. */
 .cdx-rel-aula-date.is-happened { color: var(--primary); }
 .cdx-rel-aula-date.is-tbd { opacity: 0.7; }
-.cdx-rel-aula-meta { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
 .cdx-rel-aula-counts { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
+/* .cdx-rel-count skin via the canonical off-Items chip rule; layout only here. */
 .cdx-rel-count {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  font-size: 0.74rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 6px;
-  background: var(--cdx-chip-bg);
-  border: 1px solid var(--cdx-chip-border);
-  color: var(--text-secondary);
 }
 .cdx-rel-count svg { display: block; }
 .cdx-rel-count-empty { opacity: 0.6; font-style: italic; }
-.cdx-rel-aula-chevron { font-size: 1.2rem; color: var(--text-secondary); transition: transform 0.15s; }
-.cdx-rel-aula-header.is-open .cdx-rel-aula-chevron { transform: rotate(90deg); }
-.cdx-rel-aula-composer:empty { display: none; }
-
-/* Composer body */
-.cdx-rel-composer-body {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  padding: 0.9rem;
-  border-top: 1px solid var(--border);
-  background: var(--background);
-}
-.cdx-comp-section { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
-.cdx-comp-section-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-.cdx-comp-search { width: 100%; box-sizing: border-box; }
-.cdx-comp-list { display: flex; flex-direction: column; gap: 0.1rem; max-height: 240px; overflow-y: auto; }
+/* Composer in the right pane: one search + a single-open accordion (the Presets
+   picker layout, .cdx-picker*), filling the body with the Save pinned below. */
+.cdx-releases-split .cdx-preview-body { display: flex; flex-direction: column; gap: 0.8rem; }
+.cdx-releases-split .cdx-rel-acc { flex: 1; min-height: 0; max-height: none; }
 .cdx-comp-item {
   display: flex;
   align-items: center;
@@ -719,23 +716,15 @@
 .cdx-comp-item svg { display: block; flex-shrink: 0; }
 .cdx-comp-cb { flex-shrink: 0; accent-color: var(--primary); }
 .cdx-comp-empty { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
-.cdx-comp-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+.cdx-comp-actions { display: flex; justify-content: flex-end; flex-shrink: 0; }
 
 /* ── Apostila sub-tab (imported course content) ──────────────────────────── */
 .cdx-apostila { display: flex; flex-direction: column; gap: 1rem; }
 .cdx-apostila-toolbar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .cdx-apostila-title { margin: 0; font-size: 1.15rem; color: var(--text-primary); flex: 1; }
 .cdx-apostila-toolbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.cdx-apostila-list { display: flex; flex-direction: column; gap: 0.3rem; }
-.cdx-apostila-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
+/* Master-detail (like Items): left = section list, right = section read-preview. */
+.cdx-apostila-split .cdx-item-info { flex: 1; min-width: 0; }
 .cdx-apostila-pos {
   flex-shrink: 0;
   width: 1.8rem;
@@ -757,25 +746,17 @@
 .cdx-tarefas-meta { font-size: 0.82rem; color: var(--text-secondary); }
 .cdx-tarefas-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
-.cdx-tarefa-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.cdx-tarefa-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.9rem; cursor: pointer; }
-.cdx-tarefa-head:hover { background: var(--cdx-card-hover-bg); }
+/* Live Tarefas row bits (rendered inside the shared .cdx-item-row by tarefas.js).
+   The old accordion shell (.cdx-tarefa-row/-head/-grid/-chev/-body/-title*) was
+   removed 2026-06-04 after the master-detail migration left it dead. */
 .cdx-tarefa-icon { flex-shrink: 0; display: inline-flex; color: var(--text-secondary); }
-.cdx-tarefa-icon svg, .cdx-tarefa-chev svg { display: block; }
-.cdx-tarefa-title-wrap { flex: 1; min-width: 0; }
-.cdx-tarefa-title { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.cdx-tarefa-icon svg { display: block; }
 .cdx-tarefa-sub { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.2rem; font-size: 0.78rem; color: var(--text-secondary); }
 .cdx-tarefa-dot { opacity: 0.5; }
 .cdx-tarefa-count.is-zero { opacity: 0.6; }
-.cdx-tarefa-anon-badge { color: var(--danger, #d33); }
+.cdx-tarefa-anon-badge { color: var(--danger); }
 .cdx-tarefa-reuse.is-multi { color: var(--primary); cursor: help; }
 .cdx-tarefa-reuse.is-solo { opacity: 0.7; }
-.cdx-tarefa-chev { flex-shrink: 0; color: var(--text-secondary); transition: transform 0.15s; }
-.cdx-tarefa-row.is-expanded .cdx-tarefa-chev { transform: rotate(90deg); }
-.cdx-tarefa-body:empty { display: none; }
-
-.cdx-tarefa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 0.9rem; border-top: 1px solid var(--border); background: var(--background); }
-@media (max-width: 860px) { .cdx-tarefa-grid { grid-template-columns: 1fr; } }
 .cdx-tarefa-pane { min-width: 0; }
 .cdx-tarefa-pane-title { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--text-primary); }
 .cdx-tarefa-editor-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
@@ -789,13 +770,27 @@
 }
 .cdx-field-chip-btn.is-active { border-color: var(--primary); background: var(--cdx-card-sel-bg); color: var(--primary); font-weight: 600; }
 .cdx-field-chip-btn.is-disabled { opacity: 0.5; cursor: not-allowed; }
-.cdx-field-future { font-size: 0.65rem; padding: 0.05rem 0.3rem; border-radius: 4px; background: var(--cdx-chip-bg); }
+/* .cdx-field-future: skin via the canonical off-Items chip rule above. */
 
 .cdx-tarefa-delete-quote { font-weight: 700; color: var(--text-primary); padding: 0.4rem 0.6rem; background: var(--cdx-card-sel-bg); border-radius: 6px; }
 .cdx-tf-del-input { width: 100%; box-sizing: border-box; margin-bottom: 1rem; }
 
 .cdx-resp-toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
-.cdx-resp-search { flex: 1; min-width: 0; }
+.cdx-resp-search {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.cdx-resp-search:focus { outline: none; border-color: var(--primary); }
 .cdx-resp-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 460px; overflow-y: auto; }
 .cdx-resp-empty { font-size: 0.85rem; color: var(--text-secondary); padding: 0.6rem 0; }
 .cdx-resp-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.7rem; background: var(--surface); }
@@ -806,6 +801,13 @@
 .cdx-resp-content { font-size: 0.85rem; color: var(--text-primary); max-height: 4.5em; overflow: hidden; }
 .cdx-resp-card.is-expanded .cdx-resp-content { max-height: none; }
 .cdx-resp-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
+
+/* ── Tarefas sub-tab (native, master-detail like Items) ──────────────────────
+   Reuses the Items split shell: left = tarefa list, right = the selected
+   tarefa's editor stacked above its answers. All theme tokens, dark-safe. */
+.cdx-tarefas-split .cdx-item-info { flex: 1; min-width: 0; }
+.cdx-tarefa-panes { display: flex; flex-direction: column; gap: 1.4rem; }
+.cdx-tarefas-split .cdx-resp-list { max-height: none; }
 
 /* ── Labs sub-tab (native, master-detail like Items) ─────────────────────────
    Reuses the Items split shell (.cdx-items-split / .cdx-items-list /

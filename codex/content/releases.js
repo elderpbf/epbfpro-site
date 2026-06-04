@@ -27,6 +27,7 @@ let _apostilaItems = [];
 let _released = [];                 // ordered array of released item ids
 let _releasedMeta = {};             // { item_id: { aula_number } }
 let _types = [];
+let _selectedAula = null;           // selected aula id (string) or 'outros' or null
 let _picker = null;
 let _cleanup = [];
 
@@ -130,8 +131,11 @@ function _loadReleases(clientSlug, turmaSlug) {
   _aulas = [];
   _releasedMeta = {};
   _apostilaItems = [];
+  _selectedAula = null;
   const el = _q('cdx-releases-list');
   if (el) el.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
+  const pv = _q('cdx-releases-preview');
+  if (pv) pv.innerHTML = '<div class="cdx-preview-empty">' + t('releases.select') + '</div>';
 
   const loadApostila = contentApi.listSets().then((data) => {
     const sets = ((data && data.sets) || []).filter((s) => (s.item_count || 0) > 0);
@@ -186,79 +190,92 @@ function _aulaCountsHtml(aulaNum) {
   return counts || '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';
 }
 
+// Outros (no-lesson) bucket count chips, mirrors _aulaCountsHtml for the bucket.
+function _outrosCountsHtml() {
+  const outrosSolo = _allItems.filter((i) => _isOutros(i) && _inOutros(i.id)).length;
+  const driveSolo = _allItems.filter((i) => _isDrive(i) && _inOutros(i.id)).length;
+  let counts = '';
+  if (outrosSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('outros') + ' ' + outrosSolo + '</span>';
+  if (driveSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('drive_file') + ' ' + driveSolo + '</span>';
+  return counts || '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';
+}
+
+// Left list: one selectable row per aula (number badge + title + date + count
+// chips) plus the Outros bucket row. Selecting a row drives the right pane.
 function _renderList() {
   const el = _q('cdx-releases-list');
   if (!el) return;
   let html = '';
   if (!_aulas.length) {
-    html += '<div class="cdx-empty" style="margin-bottom:1rem">' + t('releases.no_aulas') + '</div>';
+    html += '<div class="cdx-empty" style="margin-bottom:0.5rem">' + t('releases.no_aulas') + '</div>';
   }
 
   _aulas.forEach((aula) => {
     const n = aula.aula_number;
     const ds = aulaDateStatusKey(aula, _today());
     const dateText = t('cohorts.date_' + ds.key) + (ds.date ? ' ' + _fmtDate(ds.date) : '');
+    const active = String(_selectedAula) === String(aula.id);
+    const title = aula.title ? _esc(aula.title) : (t('cohorts.aula_label') + ' ' + _esc(n));
     html +=
-      '<div class="cdx-rel-aula" data-aula-id="' + _esc(aula.id) + '" data-aula-num="' + _esc(n) + '">' +
-        '<div class="cdx-rel-aula-header">' +
-          '<div class="cdx-rel-aula-info">' +
-            '<span class="cdx-rel-aula-label">' + t('cohorts.aula_label') + ' ' + _esc(n) + '</span>' +
-            (aula.title ? '<span class="cdx-rel-aula-title">' + _esc(aula.title) + '</span>' : '') +
+      '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-aula-id="' + _esc(aula.id) + '" data-aula-num="' + _esc(n) + '">' +
+        '<span class="cdx-rel-aula-num">' + _esc(n) + '</span>' +
+        '<div class="cdx-item-info">' +
+          '<div class="cdx-item-title">' + title + '</div>' +
+          '<div class="cdx-item-sub">' +
             '<span class="cdx-rel-aula-date is-' + ds.key + '">' + _esc(dateText) + '</span>' +
-          '</div>' +
-          '<div class="cdx-rel-aula-meta">' +
-            '<div class="cdx-rel-aula-counts">' + _aulaCountsHtml(n) + '</div>' +
-            '<span class="cdx-rel-aula-chevron">&#8250;</span>' +
+            '<span class="cdx-rel-aula-counts">' + _aulaCountsHtml(n) + '</span>' +
           '</div>' +
         '</div>' +
-        '<div class="cdx-rel-aula-composer"></div>' +
       '</div>';
   });
 
-  const outrosSolo = _allItems.filter((i) => _isOutros(i) && _inOutros(i.id)).length;
-  const driveSolo = _allItems.filter((i) => _isDrive(i) && _inOutros(i.id)).length;
-  let outrosCounts = '';
-  if (outrosSolo) outrosCounts += '<span class="cdx-rel-count">' + _countGlyph('outros') + ' ' + outrosSolo + '</span>';
-  if (driveSolo) outrosCounts += '<span class="cdx-rel-count">' + _countGlyph('drive_file') + ' ' + driveSolo + '</span>';
-  if (!outrosCounts) outrosCounts = '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';
-
+  const outrosActive = _selectedAula === 'outros';
   html +=
-    '<div class="cdx-rel-aula cdx-rel-outros">' +
-      '<div class="cdx-rel-aula-header">' +
-        '<div class="cdx-rel-aula-info">' +
-          '<span class="cdx-rel-aula-label cdx-rel-outros-label">' + t('releases.outros_label') + '</span>' +
+    '<div class="cdx-item-row cdx-rel-outros-row' + (outrosActive ? ' is-active' : '') + '" data-aula-id="outros">' +
+      '<span class="cdx-rel-aula-num cdx-rel-outros-icon">' + glyphSvg('layers', { size: 15 }) + '</span>' +
+      '<div class="cdx-item-info">' +
+        '<div class="cdx-item-title">' + t('releases.outros_label') + '</div>' +
+        '<div class="cdx-item-sub">' +
           '<span class="cdx-rel-aula-title">' + t('releases.outros_sub') + '</span>' +
-        '</div>' +
-        '<div class="cdx-rel-aula-meta">' +
-          '<div class="cdx-rel-aula-counts">' + outrosCounts + '</div>' +
-          '<span class="cdx-rel-aula-chevron">&#8250;</span>' +
+          '<span class="cdx-rel-aula-counts">' + _outrosCountsHtml() + '</span>' +
         '</div>' +
       '</div>' +
-      '<div class="cdx-rel-aula-composer"></div>' +
     '</div>';
 
   el.innerHTML = html;
-
-  el.querySelectorAll('.cdx-rel-aula').forEach((outer) => {
-    const header = outer.querySelector('.cdx-rel-aula-header');
-    const isOutros = outer.classList.contains('cdx-rel-outros');
-    header.addEventListener('click', () => {
-      const isOpen = header.classList.contains('is-open');
-      el.querySelectorAll('.cdx-rel-aula-header.is-open').forEach((h) => {
-        h.classList.remove('is-open');
-        h.parentElement.querySelector('.cdx-rel-aula-composer').innerHTML = '';
-      });
-      if (!isOpen) {
-        header.classList.add('is-open');
-        const composer = outer.querySelector('.cdx-rel-aula-composer');
-        if (isOutros) _renderOutrosComposer(composer);
-        else _renderAulaComposer(composer, outer);
-      }
-    });
-  });
 }
 
-// ── Composer rendering ───────────────────────────────────────────────────────
+// ── Right pane: empty prompt | the selected aula's (or Outros) composer ──────
+// No header: the selected left card already names the aula and shows its date +
+// counts, so the pane is just the composer, maximising the picker.
+function _renderPreview() {
+  const pane = _q('cdx-releases-preview');
+  if (!pane) return;
+  if (_selectedAula == null) {
+    pane.innerHTML = '<div class="cdx-preview-empty">' + t('releases.select') + '</div>';
+    return;
+  }
+  const isOutros = _selectedAula === 'outros';
+  const aula = isOutros ? null : _aulas.find((a) => String(a.id) === String(_selectedAula));
+  if (!isOutros && !aula) {
+    pane.innerHTML = '<div class="cdx-preview-empty">' + t('releases.select') + '</div>';
+    return;
+  }
+  pane.innerHTML = '<div class="cdx-preview-body" data-composer></div>';
+  const composer = pane.querySelector('[data-composer]');
+  if (isOutros) _renderOutrosComposer(composer);
+  else _renderAulaComposer(composer, aula);
+}
+
+function _onListClick(e) {
+  const row = e.target.closest('.cdx-item-row');
+  if (!row) return;
+  _selectedAula = row.dataset.aulaId;   // 'outros' or an aula id (string)
+  _renderList();
+  _renderPreview();
+}
+
+// ── Composer rendering (collapsible accordion, like the Presets picker) ──────
 function _rowHtml(item, pool, checked, glyphHtml) {
   return '<label class="cdx-comp-item" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
     '<input type="checkbox" class="cdx-comp-cb" data-pool="' + pool + '" value="' + _esc(item.id) + '"' + (checked ? ' checked' : '') + '>' +
@@ -266,68 +283,99 @@ function _rowHtml(item, pool, checked, glyphHtml) {
   '</label>';
 }
 
-function _sectionHtml(label, listHtml, opts) {
-  opts = opts || {};
-  const search = opts.searchable
-    ? '<input type="text" class="cdx-comp-search" data-search="' + opts.searchScope + '" placeholder="' + _esc(t('releases.search_placeholder')) + '">'
-    : '';
-  return '<div class="cdx-comp-section" data-scope="' + (opts.searchScope || '') + '">' +
-    '<div class="cdx-comp-section-label">' + label + '</div>' + search +
-    '<div class="cdx-comp-list">' + listHtml + '</div>' +
-  '</div>';
+// Render the item pools as one search + a single-open accordion of sections,
+// reusing the Presets picker classes (.cdx-picker*) so the layout is identical.
+// Rows stay in the DOM when a section collapses (the checked state lives in the
+// checkboxes, read at save time), so collapsing never drops an unsaved pick.
+function _renderComposerAccordion(container, sections) {
+  const groupsHtml = sections.map((s, idx) => {
+    const open = idx === 0;
+    return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +
+        '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+          '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
+          '<span class="cdx-picker-group-name">' + s.label + ' (' + s.count + ')</span>' +
+        '</button>' +
+        '<div class="cdx-picker-group-rows' + (open ? '' : ' is-collapsed') + '">' + s.rowsHtml + '</div>' +
+      '</div>';
+  }).join('');
+  container.innerHTML =
+    '<div class="cdx-picker cdx-rel-acc">' +
+      '<div class="cdx-picker-toolbar">' +
+        '<input type="search" class="cdx-picker-search cdx-comp-search-all" placeholder="' + _esc(t('releases.search_placeholder')) + '" autocomplete="off" spellcheck="false">' +
+      '</div>' +
+      '<div class="cdx-picker-list">' + groupsHtml + '</div>' +
+    '</div>' +
+    '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div>';
+  _wireComposerAccordion(container);
 }
 
-function _wireSearch(container) {
-  container.querySelectorAll('.cdx-comp-search').forEach((input) => {
-    input.addEventListener('input', () => {
-      const q = input.value.toLowerCase().trim();
-      const scope = input.dataset.search;
-      const section = container.querySelector('.cdx-comp-section[data-scope="' + scope + '"]');
-      if (!section) return;
-      section.querySelectorAll('.cdx-comp-item').forEach((row) => {
-        row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
-      });
+function _wireComposerAccordion(container) {
+  const list = container.querySelector('.cdx-picker-list');
+  const search = container.querySelector('.cdx-comp-search-all');
+  if (!list) return;
+  const groups = Array.from(list.querySelectorAll('.cdx-picker-group'));
+  let openGroup = groups.length ? groups[0].getAttribute('data-acc') : null;
+
+  function setOpen(g, open) {
+    const btn = g.querySelector('.cdx-picker-group-label');
+    const rows = g.querySelector('.cdx-picker-group-rows');
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (rows) rows.classList.toggle('is-collapsed', !open);
+  }
+
+  list.addEventListener('click', (e) => {
+    const tgl = e.target.closest('[data-acc-toggle]');
+    if (!tgl) return;
+    if (search && search.value.trim()) return; // all expanded during a search
+    const key = tgl.getAttribute('data-acc-toggle');
+    openGroup = (openGroup === key) ? null : key; // toggle; collapse if re-clicked
+    groups.forEach((g) => setOpen(g, g.getAttribute('data-acc') === openGroup));
+  });
+
+  if (search) search.addEventListener('input', () => {
+    const q = search.value.toLowerCase().trim();
+    container.querySelectorAll('.cdx-comp-item').forEach((row) => {
+      row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
     });
+    groups.forEach((g) => setOpen(g, q ? true : g.getAttribute('data-acc') === openGroup));
   });
 }
 
-function _renderAulaComposer(container, outer) {
-  const aulaNum = parseInt(outer.dataset.aulaNum, 10);
-  const aula = _aulas.find((a) => String(a.id) === outer.dataset.aulaId);
+function _renderAulaComposer(container, aula) {
   if (!aula) return;
+  const aulaNum = aula.aula_number;
 
   const tarefaItems = _allItems.filter(_isTarefa);
   const driveItems = _allItems.filter(_isDrive);
   const outrosItems = _allItems.filter(_isOutros);
 
-  const apostilaHtml = _apostilaItems.length
+  const apostilaRows = _apostilaItems.length
     ? _apostilaItems.map((i) =>
-        '<label class="cdx-comp-item"><input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (_isBoundTo(i.id, aulaNum) ? ' checked' : '') + '>' +
+        '<label class="cdx-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '"><input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (_isBoundTo(i.id, aulaNum) ? ' checked' : '') + '>' +
         '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) + '</span></label>').join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_apostila') + '</div>';
 
   const tarefaGlyph = _countGlyph('tarefa', 15);
-  const tarefaHtml = tarefaItems.length
+  const tarefaRows = tarefaItems.length
     ? tarefaItems.map((i) => _rowHtml(i, 'tarefa', _isBoundTo(i.id, aulaNum), tarefaGlyph)).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_tarefa') + '</div>';
 
-  const outrosHtml = outrosItems.length
+  const outrosRows = outrosItems.length
     ? outrosItems.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_outros') + '</div>';
 
-  let html = '<div class="cdx-rel-composer-body">' +
-    _sectionHtml(t('releases.section_apostila'), apostilaHtml, {}) +
-    _sectionHtml(t('releases.section_tarefas'), tarefaHtml, {}) +
-    _sectionHtml(t('releases.section_outros'), outrosHtml, { searchable: true, searchScope: 'outros' });
+  const sections = [
+    { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length, rowsHtml: apostilaRows },
+    { key: 'tarefa', label: t('releases.section_tarefas'), count: tarefaItems.length, rowsHtml: tarefaRows },
+    { key: 'outros', label: t('releases.section_outros'), count: outrosItems.length, rowsHtml: outrosRows },
+  ];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
-    const driveHtml = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph)).join('');
-    html += _sectionHtml(t('releases.section_drive'), driveHtml, { searchable: true, searchScope: 'drive' });
+    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph)).join('');
+    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
   }
-  html += '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div></div>';
-  container.innerHTML = html;
 
-  _wireSearch(container);
+  _renderComposerAccordion(container, sections);
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
     _saveAula(container, aulaNum, { tarefaItems, outrosItems, driveItems }));
 }
@@ -342,21 +390,20 @@ function _renderOutrosComposer(container) {
   const standalone = eligible.filter((i) => !_isDrive(i));
   const driveItems = eligible.filter(_isDrive);
 
-  const listHtml = standalone.length
+  const standaloneRows = standalone.length
     ? standalone.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>';
 
-  let html = '<div class="cdx-rel-composer-body">' +
-    _sectionHtml(t('releases.section_outros_solo'), listHtml, { searchable: true, searchScope: 'outros' });
+  const sections = [
+    { key: 'outros', label: t('releases.section_outros_solo'), count: standalone.length, rowsHtml: standaloneRows },
+  ];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
-    const driveHtml = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');
-    html += _sectionHtml(t('releases.section_drive'), driveHtml, { searchable: true, searchScope: 'drive' });
+    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');
+    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
   }
-  html += '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div></div>';
-  container.innerHTML = html;
 
-  _wireSearch(container);
+  _renderComposerAccordion(container, sections);
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
     _saveOutros(container, { standalone, driveItems }));
 }
@@ -395,6 +442,7 @@ function _saveAula(container, aulaNum, pools) {
       toDropAula.forEach((id) => { if (_releasedMeta[id]) _releasedMeta[id].aula_number = null; });
       _toast(t('releases.saved'));
       _renderList();
+      _renderPreview();
     }).catch((err) => {
       btn.disabled = false;
       btn.textContent = t('content.save');
@@ -425,6 +473,7 @@ function _saveOutros(container, pools) {
     });
     _toast(t('releases.saved'));
     _renderList();
+    _renderPreview();
   }).catch((err) => {
     btn.disabled = false;
     btn.textContent = t('content.save');
@@ -437,10 +486,16 @@ function _renderShell() {
   _viewEl.innerHTML =
     '<div class="cdx-releases">' +
       '<div class="cdx-turma-picker" id="cdx-rel-picker"></div>' +
-      '<div class="cdx-releases-list" id="cdx-releases-list">' +
-        '<div class="cdx-empty">' + t('releases.select_prompt') + '</div>' +
+      '<div class="cdx-items-split cdx-releases-split" id="cdx-releases-split">' +
+        '<div class="cdx-items-list" id="cdx-releases-list">' +
+          '<div class="cdx-empty">' + t('releases.select_prompt') + '</div>' +
+        '</div>' +
+        '<div class="cdx-item-preview" id="cdx-releases-preview">' +
+          '<div class="cdx-preview-empty">' + t('releases.select') + '</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
+  _q('cdx-releases-list').addEventListener('click', _onListClick);
 }
 
 // ── Tab contract ─────────────────────────────────────────────────────────────
@@ -454,6 +509,7 @@ export function mount(viewEl, ctx) {
   _released = [];
   _releasedMeta = {};
   _types = [];
+  _selectedAula = null;
   _cleanup = [];
   _renderShell();
   contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch(() => {});

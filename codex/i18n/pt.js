@@ -308,6 +308,8 @@ export default {
   'presets.deleted':          'Preset excluído.',
   'presets.delete_title':     'Excluir preset',
   'presets.confirm_delete':   'Excluir o preset "{name}"? Esta ação não pode ser desfeita.',
+  'presets.select':           'Selecione um preset ou clique em "+ Novo preset".',
+  'presets.edit_name':        'Editar nome',
 
   // Content → Presets — item picker
   'presets.picker_search':    'Buscar itens...',
@@ -328,6 +330,7 @@ export default {
 
   // Content → Releases (Liberações)
   'releases.select_prompt':   'Selecione uma turma acima para gerenciar as liberações.',
+  'releases.select':          'Selecione uma aula (ou Outros) para liberar conteúdo.',
   'releases.error_loading':   'Erro ao carregar dados.',
   'releases.turma_not_found': 'Turma não encontrada.',
   'releases.no_aulas':        'Nenhuma aula cadastrada. Adicione aulas na aba Turmas (editar turma).',
@@ -355,6 +358,7 @@ export default {
   'apostila.empty_sections':  'O conteúdo não tem seções.',
   'apostila.error_loading':   'Erro ao carregar o conteúdo.',
   'apostila.no_summary':      'sem resumo',
+  'apostila.select':          'Selecione uma seção para ver o conteúdo.',
   'apostila.section_deleted': 'Seção excluída.',
   'apostila.set_deleted':     'Conteúdo excluído.',
   'apostila.delete_section_title':   'Excluir seção',
@@ -376,6 +380,7 @@ export default {
   'tarefas.title':            'Tarefas por turma',
   'tarefas.new_btn':          '+ Nova tarefa',
   'tarefas.select_prompt':    'Selecione uma turma acima para ver suas tarefas.',
+  'tarefas.select':           'Selecione uma tarefa para editar e ver as respostas.',
   'tarefas.loading':          'Carregando tarefas...',
   'tarefas.error_loading':    'Erro ao carregar tarefas',
   'tarefas.empty':            'Nenhuma tarefa liberada para esta turma. Crie uma com "+ Nova tarefa" ou libere uma existente em Liberações.',

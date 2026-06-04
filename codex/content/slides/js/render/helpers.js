@@ -73,11 +73,51 @@ export function ed(tag, path, value, cls = "") {
 
 /**
  * Editable text that is NOT its own freeform unit — used inside a container that
- * already owns a data-fkey (e.g. a card). Clicking selects the container; the
- * text still edits in place on double-click.
+ * already owns a data-fkey (e.g. a card or a topic li). Clicking selects the
+ * container; the text edits in place on double-click. `styleRef` ("<list>.<id>")
+ * names the object whose `.style` stores this text's block format, so styling
+ * travels with the item across reorder (see schema.resolveStyleObj); omitted for
+ * layout slots that don't reorder (their style stays in slide.textStyle).
  */
-export function edPlain(tag, path, value, cls = "") {
+export function edPlain(tag, path, value, cls = "", styleRef = "") {
+  const sr = styleRef ? ` data-style-ref="${styleRef}"` : "";
+  return `<${tag} class="editable ${cls}" data-path="${path}" data-edit="1"${sr}>${value ?? ""}</${tag}>`;
+}
+
+/* ---------- id-keyed list items (cards + topics carry a stable identity) ----------
+ * The container element carries data-fkey="<list>.<id>" (the geometry override key,
+ * stable across reorder); the editable inside addresses CONTENT by the live index
+ * path and names its STYLE home via data-style-ref. Delete/add/mode/move are NOT
+ * emitted here — they are descriptor controls on the selection bar (Slice 3). These
+ * helpers are the single renderer, shared by the layouts AND inherited by the
+ * navigator thumbnails and the presenter window. */
+
+/** One topic bullet. `t` is a {id,text,style?} object; `i` is its current index. */
+export function topicItem(t, i) {
   return (
-    `<${tag} class="editable ${cls}" data-path="${path}" data-edit="1">${value ?? ""}</${tag}>`
+    `<li class="reveal" data-step="${i + 1}" data-fkey="topics.${t.id}">` +
+    edPlain("span", `topics.${i}.text`, t.text, "", `topics.${t.id}`) +
+    `</li>`
   );
+}
+
+/** The topic list (<ul>), shared by the topics and split layouts. */
+export function topicList(topics) {
+  return `<ul class="topiclist">${topics.map(topicItem).join("")}</ul>`;
+}
+
+/** Inner body of a card by its mode (title / text / image / image+text). */
+function cardBody(c, i) {
+  const ref = `cards.${c.id}`;
+  if (c.mode === "title") return edPlain("div", `cards.${i}.title`, c.title, "c-title", ref);
+  if (c.mode === "text") return edPlain("div", `cards.${i}.text`, c.text, "c-text", ref);
+  const img = `<div class="c-img">${imgslot(`cards.${i}.image`, c.image, true)}</div>`;
+  if (c.mode === "image") return img;
+  return img + edPlain("div", `cards.${i}.text`, c.text, "c-text", ref);
+}
+
+/** One card. `c` is a {id,mode,...,style?} object; `n` is the card count (drives the
+ *  reveal class). data-fkey is the stable id ref the flowCard strategy writes to. */
+export function cardItem(c, i, n) {
+  return `<div class="card ${n > 1 ? "reveal" : ""}" data-step="${i + 1}" data-fkey="cards.${c.id}">${cardBody(c, i)}</div>`;
 }

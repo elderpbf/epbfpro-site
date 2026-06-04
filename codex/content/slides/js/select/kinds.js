@@ -10,8 +10,9 @@
 // The bar and frame read ONLY this contract; they never switch on a kind id.
 // A new kind = a new register() block; a new control = one array entry.
 import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
-import { getByPath } from "../core/schema.js";
+import { getByPath, uid, resolveStyleObj } from "../core/schema.js";
 import { formatControls } from "../edit/textstyle.js";
+import { t } from "../../../../js/i18n.js";
 
 // "voltar ao layout": clears the slot's freeform override so it returns to the
 // layout's flow. Shared by the text + image slot descriptors; only offered while
@@ -281,5 +282,241 @@ register({
     ];
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push(resetCtrl());
     return ctrls;
+  },
+});
+
+/* ---------- shared list-control factories (cards + topics, Slice 3) ----------
+ * A ref is "<list>.<id>". The geometry-override key IS the ref, so a freed item's
+ * geometry follows it by identity and survives reorder with NO remap. Per-item
+ * text style lives on the object (.style), so it travels for free too. These are
+ * the reusable delete/move/add idioms the old editor.js hand-rolled per kind. */
+const newItem = (list) =>
+  list === "cards"
+    ? { id: uid(), mode: "text", text: t("slides.ed_new_card") }
+    : { id: uid(), text: t("slides.ed_new_topic") };
+
+const refIndex = (arr, ref) => arr.findIndex((x) => x && `${ref.split(".")[0]}.${x.id}` === ref);
+
+function moveItem(app, ref, dir) {
+  const arr = app.cur().slots[ref.split(".")[0]];
+  const i = refIndex(arr, ref);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  app.record();
+  [arr[i], arr[j]] = [arr[j], arr[i]]; // override is id-keyed, so it follows the item
+  app.refresh();
+}
+
+// Drag-and-drop reorder: move the dragged item to the drop target's slot in the
+// SAME list. Like moveItem but to an arbitrary index; the id-keyed override + style
+// follow the item by identity (no remap). Used by select/reorder.js. Exported so the
+// drag layer drives the model through one shared mutation, never its own splice.
+export function reorderItem(app, fromRef, toRef) {
+  const list = fromRef.split(".")[0];
+  const arr = app.cur().slots[list];
+  if (!arr) return;
+  const from = refIndex(arr, fromRef);
+  const to = refIndex(arr, toRef);
+  if (from < 0 || to < 0 || from === to) return;
+  app.record();
+  const [item] = arr.splice(from, 1);
+  arr.splice(to, 0, item);
+  app.refresh();
+}
+
+function removeItem(app, ref, keepOne) {
+  const list = ref.split(".")[0];
+  const arr = app.cur().slots[list];
+  const i = refIndex(arr, ref);
+  if (i < 0) return;
+  app.record();
+  arr.splice(i, 1);
+  const ov = app.cur().overrides;
+  if (ov) delete ov[ref];
+  if (keepOne && !arr.length) arr.push(newItem(list));
+  app.step = Math.min(app.step, app.maxStep());
+  app.selectClear();
+  app.refresh();
+}
+
+function addItem(app, list) {
+  app.record();
+  (app.cur().slots[list] = app.cur().slots[list] || []).push(newItem(list));
+  if (list === "topics") app.step = app.maxStep(); // reveal the new bullet
+  app.refresh();
+}
+
+// add a sibling immediately AFTER the selected item (ref = "<list>.<id>"), so
+// "＋" on a card/topic inserts to its right rather than at the end of the list.
+function addAfter(app, ref) {
+  const list = ref.split(".")[0];
+  const arr = (app.cur().slots[list] = app.cur().slots[list] || []);
+  const i = refIndex(arr, ref);
+  app.record();
+  arr.splice(i + 1, 0, newItem(list));
+  if (list === "topics") app.step = app.maxStep();
+  app.refresh();
+}
+
+// Card "Ajustes ▾" submenu (Slice 4): opens INTO the bar from the card descriptor,
+// the same menu-into-bar pattern as Appearance/Animation. Two row-wide modes + one
+// action, seeded from the slide's slots each open. It lives on the CARD bar (not the
+// container's) because selecting the bare stack means clicking the awkward gaps
+// between cards; two of the three act on the whole row even so (Elder's call,
+// 2026-06-03). symResize/stacked are plain per-slide flags read by geometry.flowCard
+// and the cards layout; reset clears every card width override (back to equal flex).
+export function cardTogglesMenu(slots) {
+  return [
+    {
+      type: "toggle", id: "sym", label: "Largura simétrica", on: !!slots.symResize,
+      write(app, sel, checked) { app.record(); app.cur().slots.symResize = checked; app.refresh(); },
+    },
+    {
+      type: "toggle", id: "stack", label: "Empilhar na vertical", on: !!slots.stacked,
+      write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
+    },
+    {
+      type: "button", id: "reset-widths", label: "Igualar larguras",
+      run(app) {
+        app.record();
+        const ov = app.cur().overrides;
+        if (ov) (app.cur().slots.cards || []).forEach((c) => delete ov[`cards.${c.id}`]);
+        app.refresh();
+      },
+    },
+  ];
+}
+
+/* ---------- card (Slice 3): flexible card; resizes in-stack (flowCard) ---------- */
+register({
+  id: "card",
+  geometry: "flowCard",
+  match(el) {
+    const c = el.closest && el.closest(".card");
+    return c ? { kind: "card", ref: c.dataset.fkey } : null;
+  },
+  el(app, sel) {
+    return app.stage.querySelector(`.card[data-fkey="${sel.ref}"]`);
+  },
+  // the card's text editable (the format controls target it); null for image-only.
+  editEl(app, sel) {
+    const c = this.el(app, sel);
+    return c ? c.querySelector('.editable[data-edit="1"]') : null;
+  },
+  target(app, sel) {
+    return resolveStyleObj(app.cur().slots, sel.ref);
+  },
+  controls(app, sel, card) {
+    if (!card) return [];
+    const ctrls = [];
+    if (this.editEl(app, sel)) ctrls.push(...formatControls(), { type: "sep" });
+    ctrls.push({
+      type: "choice",
+      id: "mode",
+      value: card.mode,
+      options: [
+        { v: "title", label: "Título" },
+        { v: "text", label: "Texto" },
+        { v: "image", label: "Imagem" },
+        { v: "image-text", label: "Imagem+texto" },
+      ],
+      write(app2, sel2, v) {
+        app2.record();
+        const c = resolveStyleObj(app2.cur().slots, sel2.ref);
+        if (c) c.mode = v;
+        app2.refresh();
+      },
+    });
+    ctrls.push(
+      { type: "button", id: "move-l", label: "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
+      { type: "button", id: "move-r", label: "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
+      { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addAfter(app2, sel2.ref); } },
+      { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
+      { type: "sep" },
+      { type: "button", id: "toggles", label: "Ajustes ▾", run(app2, sel2, btnEl) { app2.select.openMenu(cardTogglesMenu(app2.cur().slots), btnEl); } }
+    );
+    return ctrls;
+  },
+});
+
+/* ---------- topic (Slice 3): a bullet in a list; freed like a text slot ---------- */
+register({
+  id: "topic",
+  geometry: "freeformSlot",
+  match(el) {
+    const li = el.closest && el.closest("li[data-fkey]");
+    return li ? { kind: "topic", ref: li.dataset.fkey } : null;
+  },
+  el(app, sel) {
+    return app.stage.querySelector(`li[data-fkey="${sel.ref}"]`);
+  },
+  editEl(app, sel) {
+    const li = this.el(app, sel);
+    return li ? li.querySelector('.editable[data-edit="1"]') : null;
+  },
+  target(app, sel) {
+    return resolveStyleObj(app.cur().slots, sel.ref);
+  },
+  controls(app, sel) {
+    const ctrls = [
+      ...formatControls(),
+      { type: "button", id: "move-up", label: "▲", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
+      { type: "button", id: "move-down", label: "▼", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
+      { type: "button", id: "add", label: "＋ tópico", run(app2, sel2) { addAfter(app2, sel2.ref); } },
+      { type: "button", id: "delete", label: "remover", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
+    ];
+    if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
+    return ctrls;
+  },
+});
+
+/* ---------- container (Slice 3): the cards stack / topics list; carries add ----------
+ * Clicking the stack/list background selects the STRUCTURE; its bar offers "add".
+ * No geometry (no handles): it is a controls host, not a transform target. Registered
+ * AFTER card + topic so a click on a card/li resolves to that item, not the container. */
+register({
+  id: "container",
+  geometry: "none",
+  match(el) {
+    if (el.closest && el.closest(".cardrow")) return { kind: "container", ref: "cards" };
+    if (el.closest && el.closest(".topiclist")) return { kind: "container", ref: "topics" };
+    return null;
+  },
+  el(app, sel) {
+    return app.stage.querySelector(sel.ref === "cards" ? ".cardrow" : ".topiclist");
+  },
+  target(app, sel) {
+    return app.cur().slots[sel.ref] || null;
+  },
+  controls(app, sel) {
+    return [
+      {
+        type: "button",
+        id: "add",
+        label: sel.ref === "cards" ? "＋ card" : "＋ tópico",
+        run(app2, sel2) { addItem(app2, sel2.ref); },
+      },
+    ];
+  },
+});
+
+/* ---------- divider (Slice 3): the split's column-ratio handle (drag-only) ----------
+ * No controls: the divider element IS the handle, dragged horizontally to set
+ * slots.ratio via the `ratio` geometry. Replaces the bespoke editor.js drag. */
+register({
+  id: "divider",
+  geometry: "ratio",
+  match(el) {
+    const d = el.closest && el.closest(".divider");
+    return d ? { kind: "divider", ref: "ratio" } : null;
+  },
+  el(app) {
+    return app.stage.querySelector(".divider");
+  },
+  target(app) {
+    return app.cur().slots;
+  },
+  controls() {
+    return [];
   },
 });

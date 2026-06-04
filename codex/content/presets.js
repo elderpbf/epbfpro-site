@@ -1,8 +1,15 @@
 // content/presets.js
 // Codex Content tab, Presets sub-tab: named bundles of library items reused when
 // planning a lesson. Full-native port of the legacy CVPresetsUI (list + editor)
-// AND CVItemPicker: cdx- styling, facade-only backend, every string via t(). The
-// embedded multi-select picker is the same primitive Lessons (Phase 3) will reuse.
+// AND CVItemPicker: cdx- styling, facade-only backend, every string via t().
+//
+// Master-detail layout, same shell as the Items sub-tab: a left list of presets
+// and a right pane that holds the inline editor for the selected (or new) preset,
+// a name field plus the grouped multi-select item-picker. Reuses the Items split
+// classes (cdx-items-split / cdx-items-list / cdx-item-row / cdx-item-preview),
+// so there is one master-detail layout, not a per-tab copy. The editor is inline
+// in the right pane (no modal); only the delete confirmation stays a small modal.
+// The embedded picker is the same primitive Lessons (Phase 3) will reuse.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.BSToast   (../backstage/js/bs-toast.js)   optional transient toast
@@ -19,6 +26,10 @@ let _viewEl = null;
 let _presets = [];
 let _items = [];          // full ct_list_items result (NOT the filtered library)
 let _types = [];          // ct_types, for resolving each item's glyph
+let _selectedId = null;   // selected preset id (null when none / creating)
+let _creating = false;    // true when the right pane shows a blank new-preset editor
+let _editName = '';       // working preset name (edited via the header button, not inline)
+let _picker = null;       // the mounted item-picker instance (destroy on re-render)
 let _cleanup = [];
 
 // ── Pure rule (exported for tests) ──────────────────────────────────────────
@@ -76,7 +87,7 @@ function _pickerItems() {
   return _items.concat(labItems);
 }
 
-// ── Modal helpers (mirror the Items sub-tab) ─────────────────────────────────
+// ── Modal helpers (delete confirmation only; the editor is inline) ───────────
 function _openModal(html, opts) {
   opts = opts || {};
   const bd = document.createElement('div');
@@ -126,6 +137,7 @@ function _mountPicker(host, pickerItems, selectedIds) {
   const selected = new Set();
   for (const v of (selectedIds || [])) { if (v != null) selected.add(String(v)); }
   let query = '';
+  let openGroup;            // single-open accordion: a group key, null (none open), or undefined (pre-init)
 
   host.innerHTML =
     '<div class="cdx-picker">' +
@@ -163,11 +175,25 @@ function _mountPicker(host, pickerItems, selectedIds) {
       listEl.innerHTML = '<div class="cdx-picker-empty">' + t('presets.picker_empty') + '</div>';
       return;
     }
-    listEl.innerHTML = groups.map((grp) =>
-      '<div class="cdx-picker-group" data-group="' + grp.key + '">' +
-        '<div class="cdx-picker-group-label">' + t('presets.group_' + grp.key) + ' (' + grp.items.length + ')</div>' +
-        '<div class="cdx-picker-group-rows">' + grp.items.map(_renderRow).join('') + '</div>' +
-      '</div>').join('');
+    // Single-open accordion: at most one group expanded at a time. First render
+    // opens the first group; a live search overrides it and expands every group
+    // with matches, so a search never hides a hit inside a collapsed group.
+    const searching = q.length > 0;
+    if (openGroup === undefined) openGroup = groups[0].key;
+    listEl.innerHTML = groups.map((grp) => {
+      const isOpen = searching || grp.key === openGroup;
+      const rows = isOpen
+        ? '<div class="cdx-picker-group-rows">' + grp.items.map(_renderRow).join('') + '</div>'
+        : '';
+      return '<div class="cdx-picker-group' + (isOpen ? ' is-open' : '') + '" data-group="' + grp.key + '">' +
+          '<button type="button" class="cdx-picker-group-label" data-group-toggle="' + grp.key + '"' +
+            ' aria-expanded="' + (isOpen ? 'true' : 'false') + '">' +
+            '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
+            '<span class="cdx-picker-group-name">' + t('presets.group_' + grp.key) + ' (' + grp.items.length + ')</span>' +
+          '</button>' +
+          rows +
+        '</div>';
+    }).join('');
   }
 
   function _renderCount() {
@@ -175,6 +201,15 @@ function _mountPicker(host, pickerItems, selectedIds) {
   }
 
   function _onListClick(e) {
+    const toggle = e.target.closest('[data-group-toggle]');
+    if (toggle) {
+      e.preventDefault();
+      if (query.trim()) return; // groups are all expanded during a search
+      const key = toggle.getAttribute('data-group-toggle');
+      openGroup = (openGroup === key) ? null : key; // toggle; collapse if re-clicked
+      _renderList();
+      return;
+    }
     const row = e.target.closest('.cdx-picker-row');
     if (!row) return;
     e.preventDefault();
@@ -204,68 +239,12 @@ function _mountPicker(host, pickerItems, selectedIds) {
   };
 }
 
-// ── Editor (ported mountPresetEditor) ────────────────────────────────────────
-function _openEditor(preset) {
-  const isNew = !preset || !preset.id;
-  const initialName = (preset && preset.name) || '';
-  const initialItemIds = (preset && preset.item_ids) || [];
-
-  const html =
-    '<div class="cdx-modal cdx-modal--wide">' +
-      '<div class="cdx-modal-title">' + (isNew ? t('presets.new_title') : t('presets.edit_title')) + '</div>' +
-      '<form class="cdx-preset-editor" novalidate>' +
-        '<div class="cdx-field">' +
-          '<label for="cdx-preset-name">' + t('presets.name_label') + '</label>' +
-          '<input id="cdx-preset-name" type="text" maxlength="120" required value="' + _esc(initialName) + '" placeholder="' + _esc(t('presets.name_placeholder')) + '">' +
-          '<div class="cdx-field-error" data-error role="alert" aria-live="polite"></div>' +
-        '</div>' +
-        '<div class="cdx-field cdx-field--picker">' +
-          '<label>' + t('presets.items_label') + '</label>' +
-          '<div class="cdx-preset-picker-mount" data-picker></div>' +
-        '</div>' +
-        '<div class="cdx-modal-actions">' +
-          '<button type="button" class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-          '<button type="submit" class="cdx-btn cdx-btn-primary">' + (isNew ? t('presets.create_btn') : t('content.save')) + '</button>' +
-        '</div>' +
-      '</form>' +
-    '</div>';
-
-  const bd = _openModal(html, { disableBackdropClose: true });
-  const formEl = bd.querySelector('.cdx-preset-editor');
-  const nameEl = bd.querySelector('#cdx-preset-name');
-  const errorEl = bd.querySelector('[data-error]');
-  const picker = _mountPicker(bd.querySelector('[data-picker]'), _pickerItems(), initialItemIds);
-
-  const clearError = () => { errorEl.textContent = ''; nameEl.classList.remove('is-invalid'); };
-  nameEl.addEventListener('input', clearError);
-  setTimeout(() => nameEl.focus(), 60);
-
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => { picker.destroy(); _closeModal(bd); });
-
-  formEl.addEventListener('submit', (e) => {
-    e.preventDefault();
-    clearError();
-    const name = (nameEl.value || '').trim();
-    if (!name) {
-      errorEl.textContent = t('presets.name_required');
-      nameEl.classList.add('is-invalid');
-      nameEl.focus();
-      return;
-    }
-    const item_ids = picker.getSelected();
-    const saver = (preset && preset.id)
-      ? api.update({ id: preset.id, name, item_ids })
-      : api.create({ name, item_ids });
-    saver.then(() => {
-      picker.destroy();
-      _closeModal(bd);
-      _toast((preset && preset.id) ? t('presets.updated') : t('presets.created'));
-      _reload();
-    }).catch((err) => notice.internal(_err(err)));
-  });
+function _destroyPicker() {
+  if (_picker && _picker.destroy) { try { _picker.destroy(); } catch (_) { /* ignore */ } }
+  _picker = null;
 }
 
-// ── List ──────────────────────────────────────────────────────────────────────
+// ── Left list ────────────────────────────────────────────────────────────────
 function _renderList() {
   const el = _q('cdx-preset-list');
   if (!el) return;
@@ -275,27 +254,156 @@ function _renderList() {
   }
   el.innerHTML = _presets.map((p) => {
     const count = (p && p.item_ids && p.item_ids.length) || 0;
-    return '<div class="cdx-preset-row" data-id="' + _esc(p.id) + '">' +
-      '<span class="cdx-preset-name">' + _esc((p && p.name) || t('presets.unnamed')) + '</span>' +
-      '<span class="cdx-preset-count">' + count + ' ' + t('presets.item_count_suffix') + '</span>' +
-      '<div class="cdx-preset-row-actions">' +
-        '<button class="cdx-btn cdx-btn-sm" data-act="edit">' + t('content.edit') + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delete">' + t('content.delete') + '</button>' +
+    const active = !_creating && Number(p.id) === Number(_selectedId);
+    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-id="' + _esc(p.id) + '">' +
+      '<span class="cdx-item-type-icon cdx-preset-icon">' + glyphSvg('layers', { size: 18 }) + '</span>' +
+      '<div class="cdx-item-info">' +
+        '<div class="cdx-item-title">' + _esc((p && p.name) || t('presets.unnamed')) + '</div>' +
+        '<div class="cdx-item-sub">' + count + ' ' + t('presets.item_count_suffix') + '</div>' +
       '</div>' +
     '</div>';
   }).join('');
 }
 
+// ── Right pane: empty prompt | the picker editor ─────────────────────────────
+// The preset name + item count already show on the selected left card, so the
+// pane drops a header entirely: the item-picker fills the whole body, and the
+// footer holds Edit name + Delete on the left with Cancel/Save on the right.
+function _editorPaneHtml(preset) {
+  const isNew = !preset || !preset.id;
+  const delBtn = isNew ? ''
+    : '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delete">' + t('content.delete') + '</button>';
+  return '<div class="cdx-preview-body">' +
+      '<div class="cdx-preset-picker-mount" data-picker></div>' +
+    '</div>' +
+    '<div class="cdx-preset-editor-actions">' +
+      '<div class="cdx-preset-actions-left">' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="rename">' + t('presets.edit_name') + '</button>' +
+        delBtn +
+      '</div>' +
+      '<div class="cdx-preset-actions-right">' +
+        '<button type="button" class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary" data-act="save">' + (isNew ? t('presets.create_btn') : t('content.save')) + '</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function _renderPreview() {
+  _destroyPicker();
+  const pane = _q('cdx-preset-preview');
+  if (!pane) return;
+  const preset = _creating ? null : _presets.find((p) => Number(p.id) === Number(_selectedId));
+  if (!_creating && !preset) {
+    pane.innerHTML = '<div class="cdx-preview-empty">' + t('presets.select') + '</div>';
+    return;
+  }
+  if (preset) _editName = (preset.name || '');
+  pane.innerHTML = _editorPaneHtml(preset);
+  const initialItemIds = (preset && preset.item_ids) || [];
+  _picker = _mountPicker(pane.querySelector('[data-picker]'), _pickerItems(), initialItemIds);
+}
+
+// Rename modal: edits the working name. For an existing preset the rename is
+// persisted immediately (so the left card updates); for a new preset it is just
+// staged for the create on Save.
+function _openRename() {
+  const editing = !_creating && _selectedId != null;
+  const html =
+    '<div class="cdx-modal" style="max-width:440px">' +
+      '<div class="cdx-modal-title">' + t('presets.name_label') + '</div>' +
+      '<div class="cdx-field">' +
+        '<input id="cdx-preset-rename" type="text" maxlength="120" value="' + _esc(_editName) + '" placeholder="' + _esc(t('presets.name_placeholder')) + '">' +
+        '<div class="cdx-field-error" data-error role="alert" aria-live="polite"></div>' +
+      '</div>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+        '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('content.save') + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = _openModal(html, { disableBackdropClose: true });
+  const input = bd.querySelector('#cdx-preset-rename');
+  const errEl = bd.querySelector('[data-error]');
+  setTimeout(() => input.focus(), 60);
+  const submit = () => {
+    const name = (input.value || '').trim();
+    if (!name) { errEl.textContent = t('presets.name_required'); input.classList.add('is-invalid'); return; }
+    _editName = name;
+    _closeModal(bd);
+    if (editing) {
+      api.update({ id: _selectedId, name }).then(() => {
+        _toast(t('presets.updated'));
+        return _reload();
+      }).then(() => _renderList()).catch((err) => notice.internal(_err(err)));
+    }
+  };
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('[data-act="ok"]').addEventListener('click', submit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+}
+
+// ── Selection + actions ────────────────────────────────────────────────────────
+function _onNew() {
+  _creating = true;
+  _selectedId = null;
+  _editName = '';
+  _renderList();
+  _renderPreview();
+}
+
 function _onListClick(e) {
-  const row = e.target.closest('.cdx-preset-row');
+  const row = e.target.closest('.cdx-item-row');
   if (!row) return;
+  _creating = false;
+  _selectedId = Number(row.getAttribute('data-id'));
+  _renderList();
+  _renderPreview();
+}
+
+function _onPreviewClick(e) {
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
-  const id = Number(row.getAttribute('data-id'));
-  const preset = _presets.find((p) => Number(p.id) === id);
-  if (!preset) return;
-  if (btn.dataset.act === 'edit') _openEditor(preset);
-  else if (btn.dataset.act === 'delete') _confirmDelete(preset);
+  const act = btn.getAttribute('data-act');
+  if (act === 'rename') {
+    _openRename();
+  } else if (act === 'save') {
+    _save();
+  } else if (act === 'delete') {
+    const preset = _presets.find((p) => Number(p.id) === Number(_selectedId));
+    if (preset) _confirmDelete(preset);
+  } else if (act === 'cancel') {
+    _creating = false;
+    _renderList();
+    _renderPreview();
+  }
+}
+
+function _save() {
+  const name = (_editName || '').trim();
+  if (!name) { _openRename(); return; } // a preset needs a name; prompt for one
+  const item_ids = _picker ? _picker.getSelected() : [];
+  const editing = !_creating && _selectedId != null;
+  const saver = editing
+    ? api.update({ id: _selectedId, name, item_ids })
+    : api.create({ name, item_ids });
+  saver.then((res) => {
+    _toast(editing ? t('presets.updated') : t('presets.created'));
+    const createdId = (res && res.preset && res.preset.id != null) ? res.preset.id
+      : ((res && res.id != null) ? res.id : null);
+    _creating = false;
+    return _reload().then(() => {
+      if (editing) {
+        // _selectedId stays put.
+      } else if (createdId != null) {
+        _selectedId = Number(createdId);
+      } else {
+        // Fallback when create does not echo an id: newest preset with this name.
+        const matches = _presets.filter((p) => ((p && p.name) || '') === name);
+        if (matches.length) _selectedId = Number(matches.reduce((a, b) => (Number(b.id) > Number(a.id) ? b : a)).id);
+      }
+      _renderList();
+      _renderPreview();
+    });
+  }).catch((err) => notice.internal(_err(err)));
 }
 
 function _confirmDelete(preset) {
@@ -306,7 +414,8 @@ function _confirmDelete(preset) {
     onConfirm() {
       api.remove({ id: preset.id }).then(() => {
         _toast(t('presets.deleted'));
-        _reload();
+        if (Number(_selectedId) === Number(preset.id)) { _selectedId = null; _creating = false; }
+        return _reload().then(() => _renderPreview());
       }).catch((err) => notice.internal(_err(err)));
     },
   });
@@ -331,12 +440,18 @@ function _renderShell() {
         '<h2 class="cdx-presets-title">' + t('presets.title') + '</h2>' +
         '<button class="cdx-btn cdx-btn-primary" id="cdx-preset-new">' + t('presets.new') + '</button>' +
       '</div>' +
-      '<div class="cdx-preset-list" id="cdx-preset-list">' +
-        '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+      '<div class="cdx-items-split cdx-presets-split" id="cdx-presets-split">' +
+        '<div class="cdx-items-list" id="cdx-preset-list">' +
+          '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+        '</div>' +
+        '<div class="cdx-item-preview" id="cdx-preset-preview">' +
+          '<div class="cdx-preview-empty">' + t('presets.select') + '</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
-  _q('cdx-preset-new').addEventListener('click', () => _openEditor(null));
+  _q('cdx-preset-new').addEventListener('click', _onNew);
   _q('cdx-preset-list').addEventListener('click', _onListClick);
+  _q('cdx-preset-preview').addEventListener('click', _onPreviewClick);
 }
 
 // ── Tab contract ─────────────────────────────────────────────────────────────
@@ -345,6 +460,10 @@ export function mount(viewEl, ctx) {
   _presets = [];
   _items = [];
   _types = [];
+  _selectedId = null;
+  _creating = false;
+  _editName = '';
+  _picker = null;
   _cleanup = [];
   _renderShell();
   // Presets list paints first; types + items load in parallel for the editor's
@@ -357,9 +476,13 @@ export function mount(viewEl, ctx) {
 }
 
 export function unmount() {
+  _destroyPicker();
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
+  _selectedId = null;
+  _creating = false;
+  _editName = '';
   document.querySelectorAll('.cdx-modal-backdrop').forEach((bd) => bd.parentNode && bd.parentNode.removeChild(bd));
 }

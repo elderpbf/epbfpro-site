@@ -46,8 +46,13 @@ export function appearanceMenu(theme, fontScope, fontValue) {
   ];
 }
 
-export function animMenu(anim) {
-  return [{
+// `reveal`/`showReveal` carry the CURRENT slide's per-slide reveal flag (slots.reveal)
+// and whether the active layout supports it ("reveal" in slots, i.e. the cards layout).
+// "revelar 1 a 1" is a build/entrance behaviour, so it lives here with the entrance
+// animation rather than on any single element's bar. It is per-slide, so it must be
+// re-seeded each time the menu opens.
+export function animMenu(anim, reveal, showReveal) {
+  const ctrls = [{
     type: "choice", id: "anim", value: anim,
     options: [
       { v: "fade-up", labelKey: "slides.ed_anim_fadeup" },
@@ -56,4 +61,16 @@ export function animMenu(anim) {
     ],
     write(app, sel, v) { app.setTheme("anim", v); },
   }];
+  if (showReveal) {
+    ctrls.push({
+      type: "toggle", id: "reveal", label: "revelar 1 a 1", on: !!reveal,
+      write(app, sel, checked) {
+        app.record();
+        app.cur().slots.reveal = checked;
+        app.step = 0; // re-derive reveal steps from the new setting
+        app.refresh();
+      },
+    });
+  }
+  return ctrls;
 }

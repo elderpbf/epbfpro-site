@@ -27,6 +27,7 @@
   --text: #dfeae8;
   --muted: #8fcabf;
   --muted-2: #6fafa3;
+  --danger: #ff8f8f; /* destructive control text; readable on the dark chrome */
   --pop-bd: #2c3450;
   --stage-grad-1: #13201d;
   --stage-grad-2: #0e1413;
@@ -45,6 +46,7 @@
   --text: #134e4a;
   --muted: #5b7c76;
   --muted-2: #6b8b85;
+  --danger: #c0392b; /* darker red so destructive labels stay readable on light chrome */
   --pop-bd: #cfe0db;
   --stage-grad-1: #e7efed;
   --stage-grad-2: #dde7e4;
