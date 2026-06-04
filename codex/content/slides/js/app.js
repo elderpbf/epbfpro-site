@@ -34,9 +34,9 @@ const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) :
 const shellHTML = () => `
 <div id="chrome">
   <button id="prev">‹</button><span id="counter">1 / 1</span><button id="next">›</button>
-  <button id="addBtn">＋ ${t("slides.ed_slide")} ▾</button>
   <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
+  <span class="spacer"></span>
   <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
   <button id="appearBtn">${t("slides.ed_appearance")} ▾</button>
   <button id="animBtn">${t("slides.ed_anim")} ▾</button>
@@ -159,6 +159,11 @@ export function mount(root, ctx = {}) {
       this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope, fv), this._appearBtn);
     },
     reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
+    // add-slide layout picker, opened into the context bar from the thumbnail-rail
+    // "＋ slide" button (anchor null -> centered, since the rail sits left of the stage).
+    openAddSlide(anchor) {
+      this.select.openMenu(addSlideMenu(registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }))), anchor || null);
+    },
 
     // insert a free element (movable on any slide) of the given type
     insertElement(type) {
@@ -291,16 +296,25 @@ function wireChrome(app, root) {
       build(btn);
     };
   };
-  menuBtn("#addBtn", (btn) => app.select.openMenu(addSlideMenu(registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }))), btn));
   menuBtn("#insertBtn", (btn) => app.select.openMenu(insertMenu(), btn));
   menuBtn("#appearBtn", (btn) => app.openAppearance(btn));
   menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim, app.cur().slots.reveal, "reveal" in app.cur().slots), btn));
 
   // Outside-click closes the mask popover and any open context-bar menu. Stored on
   // app and removed in unmount() (a DOCUMENT-level listener). Each $() is null-guarded.
+  // Click-away dismissal. Never fires while editing text (guarded) or for clicks on
+  // the bar / selection frame / chrome. An open MENU closes on any other click
+  // (incl. the stage); a SELECTION closes only on a click fully outside the editor
+  // surfaces — the stage's own pointerdown already clears a selection on empty space.
   const onDocClick = (e) => {
     const cur = app.select.current();
-    if (cur && cur.menu && !e.target.closest(".ctxbar") && !e.target.closest("#chrome")) { app.select.clear(); app._openMenuBtn = null; }
+    if (!cur || app.editing) return;
+    const onChrome = e.target.closest(".ctxbar") || e.target.closest("#chrome") || e.target.closest(".selbox");
+    if (cur.menu) {
+      if (!onChrome) { app.select.clear(); app._openMenuBtn = null; }
+    } else if (!onChrome && !e.target.closest("#stage")) {
+      app.select.clear();
+    }
   };
   document.addEventListener("click", onDocClick);
   app._onDocClick = onDocClick;

@@ -45,6 +45,8 @@
 .cdx-deck-editor .thumb:hover .tctl { opacity: 1; }
 .cdx-deck-editor .thumb .tctl button { font: inherit; font-size: 11px; border: 0; border-radius: 6px; padding: 1px 6px; cursor: pointer; background: rgba(255, 255, 255, .92); color: #134e4a; }
 .cdx-deck-editor .thumb.dragover { border-color: var(--teal-l); }
+.cdx-deck-editor .navadd { flex: 0 0 auto; font: inherit; font-size: 13px; color: var(--text); background: var(--btn-bg); border: 1px dashed var(--btn-bd); border-radius: 8px; padding: 8px; cursor: pointer; }
+.cdx-deck-editor .navadd:hover { background: var(--btn-hover); border-style: solid; }
 
 /* stage (absolute within container, right of the nav) */
 .cdx-deck-editor #stagewrap { position: absolute; top: var(--chrome-h, 52px); right: 0; bottom: 0; left: 192px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(1200px 600px at 50% -10%, var(--stage-grad-1), var(--stage-grad-2)); }

@@ -30,6 +30,15 @@ export function createNavigator(app) {
       nav.appendChild(t);
     });
 
+    // "＋ slide" lives at the bottom of the rail (PowerPoint/Slides-style); it opens
+    // the layout picker into the context bar. stopPropagation so the doc-click
+    // dismissal doesn't immediately close the menu it just opened.
+    const add = document.createElement("button");
+    add.className = "navadd";
+    add.textContent = "＋ slide";
+    add.addEventListener("click", (e) => { e.stopPropagation(); app.openAddSlide(); });
+    nav.appendChild(add);
+
     nav.querySelectorAll("[data-up]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.move(+b.dataset.up, -1); }));
     nav.querySelectorAll("[data-down]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.move(+b.dataset.down, 1); }));
     nav.querySelectorAll("[data-rm]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.removeSlide(+b.dataset.rm); }));
