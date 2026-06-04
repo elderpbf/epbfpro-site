@@ -331,6 +331,37 @@ test('cardItem keys the .card by stable id; text declares a style-ref; no .cardc
   assert.ok(!/cardctl|data-cardmode|data-cardmove|data-carddel/.test(html), 'card controls are not emitted by the layout');
 });
 
+/* ---------- ratio geometry + divider descriptor (the split column handle) ---------- */
+test('geometryCaps: ratio is a horizontal drag (move only — the divider sets the split)', () => {
+  const c = geometryCaps('ratio');
+  assert.deepEqual([c.move, c.resizeW, c.resizeH, c.rotate], [true, false, false, false]);
+});
+
+test('ratio.read maps slots.ratio to a full-height divider line at canvas-x', () => {
+  const app = { deck: () => ({ canvas: { w: 1280, h: 720 } }), cur: () => ({ slots: { ratio: 0.5 } }) };
+  assert.deepEqual(strategies.ratio.read(app, { ref: 'ratio' }, null), { x: 640, y: 0, w: 0, h: 720, rot: 0 });
+});
+
+test('ratio.write maps a dragged x back to slots.ratio, clamped to 0.2..0.8', () => {
+  const slide = { slots: { ratio: 0.5 } };
+  const app = { deck: () => ({ canvas: { w: 1000, h: 720 } }), cur: () => slide };
+  strategies.ratio.write(app, { ref: 'ratio' }, { x: 300 });
+  assert.equal(slide.slots.ratio, 0.3);
+  strategies.ratio.write(app, { ref: 'ratio' }, { x: 50 });
+  assert.equal(slide.slots.ratio, 0.2, 'clamped low (min 0.2)');
+  strategies.ratio.write(app, { ref: 'ratio' }, { x: 950 });
+  assert.equal(slide.slots.ratio, 0.8, 'clamped high (max 0.8)');
+});
+
+test('divider descriptor: ratio geometry, matches .divider, drag-only (no bar controls)', () => {
+  const d = kinds.get('divider');
+  assert.ok(d, 'divider is registered');
+  assert.equal(d.geometry, 'ratio');
+  assert.deepEqual(d.match(stubEl({ '.divider': {} })), { kind: 'divider', ref: 'ratio' });
+  assert.equal(d.match(stubEl({})), null);
+  assert.deepEqual(d.controls(), [], 'no bar: the divider element is the handle');
+});
+
 /* ---------- card / topic / container descriptors (the conversion) ---------- */
 const noStage = { querySelector: () => null };
 

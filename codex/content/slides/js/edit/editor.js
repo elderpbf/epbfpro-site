@@ -30,18 +30,6 @@ function exitEdit(app, el) {
   app.editing = false;
 }
 
-/* ---------- generic drag helper ---------- */
-function onDrag(onMove, onUp) {
-  const move = (ev) => onMove(ev);
-  const up = (ev) => {
-    document.removeEventListener("pointermove", move);
-    document.removeEventListener("pointerup", up);
-    if (onUp) onUp(ev);
-  };
-  document.addEventListener("pointermove", move);
-  document.addEventListener("pointerup", up);
-}
-
 function pickImage(app, path) {
   const inp = document.createElement("input");
   inp.type = "file";
@@ -156,31 +144,6 @@ export function initEditing(app) {
       });
     }
     app.refresh();
-  });
-
-  /* --- pointer drags: divider (logo + asset move now via the selection model) --- */
-  stage.addEventListener("pointerdown", (e) => {
-    if (app.presenting) return;
-
-    const dv = e.target.closest(".divider");
-    if (dv) {
-      app.record("divider");
-      const r = stage.getBoundingClientRect();
-      return onDrag(
-        (ev) => {
-          const ratio = Math.min(0.8, Math.max(0.2, (ev.clientX - r.left) / r.width));
-          app.cur().slots.ratio = ratio;
-          const c = stage.querySelector(".L-split");
-          if (c) c.style.gridTemplateColumns = `${ratio * 100}% ${(1 - ratio) * 100}%`;
-          dv.style.left = ratio * 100 + "%";
-        },
-        () => {
-          app.renderNav();
-          app.commit();
-          app.broadcast();
-        }
-      );
-    }
   });
 
   /* --- wheel: slot image zoom via the imageFraming strategy (framing != box) --- */

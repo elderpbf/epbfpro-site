@@ -30,7 +30,8 @@ export function geometryCaps(name) {
       // the basis (width) in the row; neighbours conform.
       return { move: false, resizeW: true, resizeH: false, rotate: false };
     case "ratio":
-      return { move: false, resizeW: true, resizeH: false, rotate: false };
+      // the divider is dragged horizontally (a move along x); that x IS the split.
+      return { move: true, resizeW: false, resizeH: false, rotate: false };
     default:
       return { move: false, resizeW: false, resizeH: false, rotate: false };
   }
@@ -146,6 +147,31 @@ export const strategies = {
     },
     patch(el, g) {
       flowStyle(el, g); // basis only (no h -> no min-height); siblings conform
+    },
+  },
+
+  // Ratio (split divider): a horizontal drag, not a box. The divider's position IS
+  // the column split (slots.ratio): read maps the ratio to a full-height line at
+  // canvas-x, write maps the dragged x back to a clamped ratio, and patch repaints
+  // the live .L-split grid + the divider. Dispatched as a move gesture (caps: move
+  // only) through the shared frame, replacing the bespoke editor.js divider handler.
+  ratio: {
+    clampX(app, x) {
+      return Math.min(0.8, Math.max(0.2, x / app.deck().canvas.w));
+    },
+    read(app, sel, el) {
+      const c = app.deck().canvas;
+      const r = app.cur().slots.ratio != null ? app.cur().slots.ratio : 0.5;
+      return { x: r * c.w, y: 0, w: 0, h: c.h, rot: 0 };
+    },
+    write(app, sel, g) {
+      app.cur().slots.ratio = this.clampX(app, g.x);
+    },
+    patch(el, g, app) {
+      const r = this.clampX(app, g.x);
+      const grid = app.stage.querySelector(".L-split");
+      if (grid) grid.style.gridTemplateColumns = `${r * 100}% ${(1 - r) * 100}%`;
+      el.style.left = r * 100 + "%";
     },
   },
 };

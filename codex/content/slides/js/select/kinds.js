@@ -449,3 +449,24 @@ register({
     ];
   },
 });
+
+/* ---------- divider (Slice 3): the split's column-ratio handle (drag-only) ----------
+ * No controls: the divider element IS the handle, dragged horizontally to set
+ * slots.ratio via the `ratio` geometry. Replaces the bespoke editor.js drag. */
+register({
+  id: "divider",
+  geometry: "ratio",
+  match(el) {
+    const d = el.closest && el.closest(".divider");
+    return d ? { kind: "divider", ref: "ratio" } : null;
+  },
+  el(app) {
+    return app.stage.querySelector(".divider");
+  },
+  target(app) {
+    return app.cur().slots;
+  },
+  controls() {
+    return [];
+  },
+});
