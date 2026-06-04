@@ -267,24 +267,24 @@ function _renderList() {
 
 // ── Right pane: empty prompt | the picker editor ─────────────────────────────
 // The preset name + item count already show on the selected left card, so the
-// pane drops them: the header carries only the actions (Edit name / Delete) and
-// the item-picker fills the whole body, with Cancel/Save pinned below.
+// pane drops a header entirely: the item-picker fills the whole body, and the
+// footer holds Edit name + Delete on the left with Cancel/Save on the right.
 function _editorPaneHtml(preset) {
   const isNew = !preset || !preset.id;
   const delBtn = isNew ? ''
     : '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delete">' + t('content.delete') + '</button>';
-  return '<div class="cdx-preview-head cdx-preset-head">' +
-      '<div class="cdx-preview-actions">' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="rename">' + t('presets.edit_name') + '</button>' +
-        delBtn +
-      '</div>' +
-    '</div>' +
-    '<div class="cdx-preview-body">' +
+  return '<div class="cdx-preview-body">' +
       '<div class="cdx-preset-picker-mount" data-picker></div>' +
     '</div>' +
     '<div class="cdx-preset-editor-actions">' +
-      '<button type="button" class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-      '<button type="button" class="cdx-btn cdx-btn-primary" data-act="save">' + (isNew ? t('presets.create_btn') : t('content.save')) + '</button>' +
+      '<div class="cdx-preset-actions-left">' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="rename">' + t('presets.edit_name') + '</button>' +
+        delBtn +
+      '</div>' +
+      '<div class="cdx-preset-actions-right">' +
+        '<button type="button" class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary" data-act="save">' + (isNew ? t('presets.create_btn') : t('content.save')) + '</button>' +
+      '</div>' +
     '</div>';
 }
 

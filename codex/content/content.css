@@ -539,13 +539,14 @@
 
 .cdx-preset-icon { color: var(--codex-content); font-size: 1.1rem; }
 .cdx-presets-split .cdx-item-info { flex: 1; min-width: 0; }
-/* Name editing moved to a header button (next to Delete), so the picker fills
-   the whole body; the Cancel/Save footer is pinned below it. */
-.cdx-preset-head { justify-content: flex-end; }
+/* No header: the picker fills the whole body, and the footer carries Edit name +
+   Delete on the left with Cancel/Save on the right, so the list goes higher. */
 .cdx-presets-split .cdx-preview-body { display: flex; flex-direction: column; }
 .cdx-presets-split .cdx-preset-picker-mount { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .cdx-presets-split .cdx-picker { flex: 1; min-height: 0; max-height: none; }
-.cdx-preset-editor-actions { display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; padding: 0.8rem 1.1rem; border-top: 1px solid var(--border); }
+.cdx-preset-editor-actions { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-shrink: 0; padding: 0.8rem 1.1rem; border-top: 1px solid var(--border); }
+.cdx-preset-actions-left { display: flex; gap: 0.5rem; }
+.cdx-preset-actions-right { display: flex; gap: 0.5rem; }
 
 .cdx-field--picker { display: flex; flex-direction: column; }
 .cdx-field-error { font-size: 0.78rem; color: var(--danger, #d33); margin-top: 0.3rem; min-height: 1em; }
@@ -569,7 +570,21 @@
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.cdx-picker-search { flex: 1; min-width: 0; }
+.cdx-picker-search {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.cdx-picker-search:focus { outline: none; border-color: var(--primary); }
 .cdx-picker-count { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
 .cdx-picker-list { overflow-y: auto; padding: 0.4rem; flex: 1; min-height: 0; }
 .cdx-picker-empty { padding: 1.5rem; text-align: center; color: var(--text-secondary); font-size: 0.88rem; }
