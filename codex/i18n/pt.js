@@ -329,6 +329,7 @@ export default {
 
   // Content → Releases (Liberações)
   'releases.select_prompt':   'Selecione uma turma acima para gerenciar as liberações.',
+  'releases.select':          'Selecione uma aula (ou Outros) para liberar conteúdo.',
   'releases.error_loading':   'Erro ao carregar dados.',
   'releases.turma_not_found': 'Turma não encontrada.',
   'releases.no_aulas':        'Nenhuma aula cadastrada. Adicione aulas na aba Turmas (editar turma).',

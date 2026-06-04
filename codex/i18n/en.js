@@ -330,6 +330,7 @@ export default {
 
   // Content → Releases (Liberações)
   'releases.select_prompt':   'Select a cohort above to manage releases.',
+  'releases.select':          'Select a lesson (or Other) to release content.',
   'releases.error_loading':   'Error loading data.',
   'releases.turma_not_found': 'Cohort not found.',
   'releases.no_aulas':        'No lessons yet. Add lessons in the Cohorts tab (edit cohort).',
