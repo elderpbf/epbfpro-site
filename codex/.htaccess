@@ -1,5 +1,5 @@
 # Revalidate every load (no-cache) so a deploy lands on the next page load, no
-# hard-refresh, covers ES sub-imports, keeps CSS+JS in sync. max-age=60 to trim 304s.
+# hard-refresh, covers ES sub-imports, keeps CSS+JS in sync.
 <IfModule mod_headers.c>
   <FilesMatch "\.(html|js|mjs|css)$">
     Header set Cache-Control "no-cache, must-revalidate"
