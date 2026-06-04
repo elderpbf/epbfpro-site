@@ -12,7 +12,7 @@
 //                           so a drag never triggers a full stage re-render). `app`
 //                           is passed so flow-rooted slots can use freedStyle's
 //                           offset-parent walk; absolute kinds ignore it.
-import { resolveLogo, DEFAULT_LOGO, freedStyle } from "../render/player.js";
+import { resolveLogo, DEFAULT_LOGO, freedStyle, flowStyle } from "../render/player.js";
 import { getByPath } from "../core/schema.js";
 
 /** Which transform handles a strategy supports (drives the selection frame). */
@@ -120,6 +120,29 @@ export const strategies = {
     },
     patch(el, g, app) {
       freedStyle(el, g, app.stage); // offset-parent-correct, since slots live in flow
+    },
+  },
+
+  // Flow card (Slice 3): a card resizes WITHIN the flex stack — neighbours reflow
+  // and conform, the card never lifts out to absolute (caps: no move, no rotate).
+  // The override stores only the basis (w) + min-height (h) with flow:true, the
+  // SAME shape the old freeform flow branch produced, so existing freed cards keep
+  // resizing. read() measures the live element (its size is applied by flowStyle on
+  // render, so the rect is authoritative); the box just tracks it. Keyed by the
+  // card's stable id ref, so a resize survives reorder.
+  flowCard: {
+    read(app, sel, el) {
+      if (!el) return { x: 0, y: 0, w: 0, h: 0, rot: 0 };
+      const m = measure(el, app);
+      return { x: m.x, y: m.y, w: m.w, h: m.h, rot: 0 };
+    },
+    write(app, sel, g) {
+      if (!sel) return;
+      const ov = (app.cur().overrides = app.cur().overrides || {});
+      ov[sel.ref] = { w: g.w, h: g.h, flow: true };
+    },
+    patch(el, g) {
+      flowStyle(el, g); // basis + min-height; siblings conform
     },
   },
 };

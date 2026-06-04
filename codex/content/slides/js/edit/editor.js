@@ -4,7 +4,6 @@
 // so they survive every re-render (no per-render rewiring, no leaks).
 import { setPath } from "../core/schema.js";
 import { strategies } from "../select/geometry.js";
-import { t } from "../../../../js/i18n.js";
 
 // Text formatting (A− A＋ B Cor) now lives in the context bar as descriptor
 // primitives (see edit/textstyle.js + select/kinds.js) and acts on the selected
@@ -117,49 +116,9 @@ export function initEditing(app) {
       e.stopPropagation();
       return app.openMask({ kind: "slot", path: m.dataset.mask }, m);
     }
-    // remove a topic
-    if ((m = t.closest("[data-del]"))) {
-      e.stopPropagation();
-      app.record();
-      const [arr, i] = m.dataset.del.split(".");
-      app.cur().slots[arr].splice(+i, 1);
-      app.step = Math.min(app.step, app.maxStep());
-      return app.refresh();
-    }
-    // add a topic
-    if ((m = t.closest("[data-add]"))) {
-      e.stopPropagation();
-      app.record();
-      app.cur().slots[m.dataset.add].push(t("slides.ed_new_topic"));
-      app.step = app.maxStep();
-      return app.refresh();
-    }
-    // cards
-    if ((m = t.closest("[data-addcard]"))) {
-      e.stopPropagation();
-      app.record();
-      app.cur().slots.cards.push({ mode: "text", text: t("slides.ed_new_card") });
-      return app.refresh();
-    }
-    if ((m = t.closest("[data-carddel]"))) {
-      e.stopPropagation();
-      app.record();
-      const cs = app.cur().slots.cards;
-      cs.splice(+m.dataset.carddel, 1);
-      if (!cs.length) cs.push({ mode: "text", text: t("slides.ed_card") });
-      app.step = Math.min(app.step, app.maxStep());
-      return app.refresh();
-    }
-    if ((m = t.closest("[data-cardmove]"))) {
-      e.stopPropagation();
-      const [i, d] = m.dataset.cardmove.split(":").map(Number);
-      const cs = app.cur().slots.cards;
-      const j = i + d;
-      if (j < 0 || j >= cs.length) return;
-      app.record();
-      [cs[i], cs[j]] = [cs[j], cs[i]];
-      return app.refresh();
-    }
+    // (card mode/move/delete + topic delete are now `card`/`topic` descriptor
+    // controls; add card/topic is the `container` kind; reveal is the Animation
+    // menu — all on the selection bar, not stage-delegated data-* handlers.)
     // (empty image slots are now selectable "image boxes": single-click selects via
     // the selection layer and the context bar offers "add image" — no auto-pick here)
     // replace a filled image
@@ -168,23 +127,6 @@ export function initEditing(app) {
       return pickImage(app, m.dataset.replace);
     }
     // (asset scope/mask/rotate/delete now live in the selection bar, js/select/)
-  });
-
-  /* --- delegated change (card mode, reveal, asset scope) --- */
-  stage.addEventListener("change", (e) => {
-    const t = e.target;
-    let m;
-    if ((m = t.closest("[data-cardmode]"))) {
-      app.record();
-      app.cur().slots.cards[+m.dataset.cardmode].mode = t.value;
-      return app.refresh();
-    }
-    if ((m = t.closest("[data-cardreveal]"))) {
-      app.record();
-      app.cur().slots.reveal = t.checked;
-      app.step = 0;
-      return app.refresh();
-    }
   });
 
   /* --- image drop targets --- */

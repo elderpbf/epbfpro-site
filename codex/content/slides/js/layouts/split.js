@@ -1,11 +1,9 @@
-// layouts/split.js — Imagem + tópicos, with a draggable ratio divider.
+// layouts/split.js — Imagem + tópicos, with a draggable ratio divider. Topics use
+// the shared topicList helper (same id-keyed bullets as the topics layout); the
+// divider stays an editor-only handle the `ratio` geometry drives.
 import { bar, contentMotifs } from "../theme/art.js";
-import { imgslot, ed } from "../render/helpers.js";
-
-const topic = (t, i) =>
-  `<li class="reveal" data-step="${i + 1}" data-fkey="topics.${i}">` +
-  `<span class="editable" data-path="topics.${i}" data-edit="1">${t}</span>` +
-  `<button class="li-x editoronly" data-del="topics.${i}">remover</button></li>`;
+import { imgslot, ed, topicList } from "../render/helpers.js";
+import { uid } from "../core/schema.js";
 
 export default {
   id: "split",
@@ -15,7 +13,7 @@ export default {
     ratio: 0.5,
     title: "Título",
     image: null,
-    topics: ["Tópico um", "Tópico dois", "Tópico três"],
+    topics: ["Tópico um", "Tópico dois", "Tópico três"].map((text) => ({ id: uid(), text })),
   }),
   reveals: (s) => s.topics.length,
   render: (s) => `${bar}<div class="L-split ${s.flip ? "flip" : ""}" style="grid-template-columns:${
@@ -23,7 +21,6 @@ export default {
   }% ${(1 - (s.ratio || 0.5)) * 100}%">
     <div class="pic">${imgslot("image", s.image)}</div>
     <div class="content">${contentMotifs}${ed("h2", "title", s.title)}
-      <ul class="topiclist">${s.topics.map(topic).join("")}</ul>
-      <button class="addtopic editoronly" data-add="topics">+ tópico</button></div></div>
+      ${topicList(s.topics)}</div></div>
     <div class="divider editoronly" style="left:${(s.ratio || 0.5) * 100}%"></div>`,
 };

@@ -5,7 +5,7 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid } from "./core/schema.js";
+import { uid, migrateDeck } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
@@ -63,6 +63,7 @@ export function mount(root, ctx = {}) {
   root.innerHTML = shellHTML();
   const $ = (sel) => root.querySelector(sel);
   const store = ctx.store || createMemoryStore(newDeck());
+  migrateDeck(store.getDeck()); // D1: bring legacy decks (string topics, id-less cards) to current schema before first render
 
   const app = {
     isPresenter,
@@ -227,6 +228,7 @@ export function mount(root, ctx = {}) {
     getSnapshot: () => JSON.stringify(store.getDeck()),
     applySnapshot: (json) => {
       store.setDeck(JSON.parse(json));
+      migrateDeck(store.getDeck()); // idempotent: a pre-migration snapshot is upgraded on restore
       app.index = Math.min(app.index, app.deck().slides.length - 1);
       app.step = 0;
       app.editing = false;
@@ -300,7 +302,7 @@ function wireChrome(app, root) {
   menuBtn("#addBtn", (btn) => app.select.openMenu(addSlideMenu(registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }))), btn));
   menuBtn("#insertBtn", (btn) => app.select.openMenu(insertMenu(), btn));
   menuBtn("#appearBtn", (btn) => app.openAppearance(btn));
-  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim), btn));
+  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim, app.cur().slots.reveal, "reveal" in app.cur().slots), btn));
 
   // Outside-click closes the mask popover and any open context-bar menu. Stored on
   // app and removed in unmount() (a DOCUMENT-level listener). Each $() is null-guarded.
