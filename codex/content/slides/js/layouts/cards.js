@@ -14,5 +14,5 @@ export default {
   reveals: (s) => (s.reveal ? s.cards.length : 0),
   render: (s) => `${bar}${circuit("br")}<div class="L-cards">
     ${ed("h2", "title", s.title || "")}
-    <div class="cardrow">${s.cards.map((c, i) => cardItem(c, i, s.cards.length)).join("")}</div></div>`,
+    <div class="cardrow${s.stacked ? " col" : ""}">${s.cards.map((c, i) => cardItem(c, i, s.cards.length)).join("")}</div></div>`,
 };

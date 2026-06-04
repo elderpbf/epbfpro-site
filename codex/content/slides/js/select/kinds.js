@@ -358,6 +358,35 @@ function addAfter(app, ref) {
   app.refresh();
 }
 
+// Card "Ajustes ▾" submenu (Slice 4): opens INTO the bar from the card descriptor,
+// the same menu-into-bar pattern as Appearance/Animation. Two row-wide modes + one
+// action, seeded from the slide's slots each open. It lives on the CARD bar (not the
+// container's) because selecting the bare stack means clicking the awkward gaps
+// between cards; two of the three act on the whole row even so (Elder's call,
+// 2026-06-03). symResize/stacked are plain per-slide flags read by geometry.flowCard
+// and the cards layout; reset clears every card width override (back to equal flex).
+export function cardTogglesMenu(slots) {
+  return [
+    {
+      type: "toggle", id: "sym", label: "Largura simétrica", on: !!slots.symResize,
+      write(app, sel, checked) { app.record(); app.cur().slots.symResize = checked; app.refresh(); },
+    },
+    {
+      type: "toggle", id: "stack", label: "Empilhar na vertical", on: !!slots.stacked,
+      write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
+    },
+    {
+      type: "button", id: "reset-widths", label: "Igualar larguras",
+      run(app) {
+        app.record();
+        const ov = app.cur().overrides;
+        if (ov) (app.cur().slots.cards || []).forEach((c) => delete ov[`cards.${c.id}`]);
+        app.refresh();
+      },
+    },
+  ];
+}
+
 /* ---------- card (Slice 3): flexible card; resizes in-stack (flowCard) ---------- */
 register({
   id: "card",
@@ -402,7 +431,9 @@ register({
       { type: "button", id: "move-l", label: "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-r", label: "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
       { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addAfter(app2, sel2.ref); } },
-      { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } }
+      { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
+      { type: "sep" },
+      { type: "button", id: "toggles", label: "Ajustes ▾", run(app2, sel2, btnEl) { app2.select.openMenu(cardTogglesMenu(app2.cur().slots), btnEl); } }
     );
     return ctrls;
   },

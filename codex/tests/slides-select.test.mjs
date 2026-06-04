@@ -474,3 +474,68 @@ test('topic.controls add up/down move buttons (mirror the cards ◀ ▶, drive t
   const ids = ctrls.map((c) => c.id);
   assert.ok(ids.indexOf('move-up') < ids.indexOf('add'), 'move sits before add/remove');
 });
+
+/* ---------- card Toggles: symmetric resize, stack axis, reset widths ---------- */
+test('flowCard.write mirrors the basis to the opposite-end card when symResize is on (either side)', () => {
+  const four = () => ({ overrides: {}, slots: { symResize: true, cards: [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }] } });
+  let slide = four(); let app = { cur: () => slide };
+  strategies.flowCard.write(app, { ref: 'cards.a' }, { w: 300 });
+  assert.deepEqual(slide.overrides['cards.a'], { w: 300, flow: true });
+  assert.deepEqual(slide.overrides['cards.d'], { w: 300, flow: true }, 'left edge mirrors to the right edge');
+  slide = four(); app = { cur: () => slide };
+  strategies.flowCard.write(app, { ref: 'cards.c' }, { w: 260 });
+  assert.deepEqual(slide.overrides['cards.b'], { w: 260, flow: true }, 'inner-right mirrors to inner-left');
+});
+
+test('flowCard.write: the centre card on odd counts mirrors only itself', () => {
+  const slide = { overrides: {}, slots: { symResize: true, cards: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] } };
+  const app = { cur: () => slide };
+  strategies.flowCard.write(app, { ref: 'cards.b' }, { w: 250 });
+  assert.deepEqual(slide.overrides, { 'cards.b': { w: 250, flow: true } }, 'no sibling written for the centre');
+});
+
+test('flowCard.write does NOT mirror when symResize is off', () => {
+  const slide = { overrides: {}, slots: { cards: [{ id: 'a' }, { id: 'b' }] } };
+  const app = { cur: () => slide };
+  strategies.flowCard.write(app, { ref: 'cards.a' }, { w: 300 });
+  assert.deepEqual(slide.overrides, { 'cards.a': { w: 300, flow: true } }, 'only the resized card');
+});
+
+test('card.controls expose a Toggles opener (Ajustes ▾) after the move/add/delete cluster', () => {
+  const d = kinds.get('card');
+  const slide = { slots: { cards: [{ id: 'c1', mode: 'text', text: 'A' }] } };
+  const app = { cur: () => slide, stage: noStage };
+  const sel = { kind: 'card', ref: 'cards.c1' };
+  const ctrls = d.controls(app, sel, d.target(app, sel));
+  const toggles = ctrls.find((c) => c.id === 'toggles');
+  assert.ok(toggles && toggles.type === 'button', 'card bar carries a Toggles opener');
+  const ids = ctrls.map((c) => c.id);
+  assert.ok(ids.indexOf('toggles') > ids.indexOf('delete'), 'Toggles sits after the delete');
+});
+
+test('cardTogglesMenu seeds sym/stack toggles from slots + a reset-widths button', () => {
+  const m = kinds.cardTogglesMenu({ symResize: true, stacked: false });
+  const sym = m.find((c) => c.id === 'sym');
+  const stack = m.find((c) => c.id === 'stack');
+  assert.ok(sym && sym.type === 'toggle' && sym.on === true, 'symmetric toggle seeded on');
+  assert.ok(stack && stack.type === 'toggle' && stack.on === false, 'stack toggle seeded off');
+  assert.ok(m.some((c) => c.id === 'reset-widths' && c.type === 'button'), 'has reset-widths button');
+});
+
+test('cardTogglesMenu reset-widths clears every card width override, leaving others intact', () => {
+  const slide = { slots: { cards: [{ id: 'a' }, { id: 'b' }] }, overrides: { 'cards.a': { w: 300, flow: true }, 'cards.b': { w: 200, flow: true }, title: { x: 1 } } };
+  let recorded = 0;
+  const app = { cur: () => slide, record: () => recorded++, refresh: () => {} };
+  kinds.cardTogglesMenu(slide.slots).find((c) => c.id === 'reset-widths').run(app);
+  assert.ok(!('cards.a' in slide.overrides) && !('cards.b' in slide.overrides), 'card widths cleared');
+  assert.deepEqual(slide.overrides.title, { x: 1 }, 'non-card overrides untouched');
+  assert.equal(recorded, 1);
+});
+
+test('cards layout adds the .cardrow col class only when stacked', () => {
+  const flat = cardsLayout.render({ title: '', cards: [{ id: 'c1', mode: 'text', text: 'A' }] });
+  assert.match(flat, /class="cardrow"/, 'row by default');
+  assert.ok(!/cardrow col/.test(flat), 'no col class when not stacked');
+  const stacked = cardsLayout.render({ title: '', stacked: true, cards: [{ id: 'c1', mode: 'text', text: 'A' }] });
+  assert.match(stacked, /class="cardrow col"/, 'col class when stacked');
+});

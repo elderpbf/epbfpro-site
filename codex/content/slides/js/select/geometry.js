@@ -46,6 +46,21 @@ function measure(el, app) {
   return { x: (r.left - sr.left) / sc, y: (r.top - sr.top) / sc, w: r.width / sc, h: r.height / sc };
 }
 
+// Symmetric-resize mirror (card Toggles): with slots.symResize on, a card's
+// counterpart is the card at the opposite end (index N-1-i), so resizing one writes
+// the same basis to its mirror and the row stays left-right balanced. The centre
+// card on odd counts mirrors itself (no-op). Returns the mirror's override ref
+// ("cards.<id>"), or null when off / centre / not a card.
+function cardMirrorRef(app, ref) {
+  if (!ref || !app.cur().slots || !app.cur().slots.symResize) return null;
+  const cards = app.cur().slots.cards || [];
+  const i = cards.findIndex((c) => `cards.${c.id}` === ref);
+  if (i < 0) return null;
+  const j = cards.length - 1 - i;
+  if (j === i) return null;
+  return `cards.${cards[j].id}`;
+}
+
 export const strategies = {
   // Free asset: direct x / y / w / rot on the asset object; height stays auto.
   absoluteAsset: {
@@ -144,9 +159,17 @@ export const strategies = {
       if (!sel) return;
       const ov = (app.cur().overrides = app.cur().overrides || {});
       ov[sel.ref] = { w: g.w, flow: true }; // width only; height stays content-driven
+      const mref = cardMirrorRef(app, sel.ref); // symmetric mode: the counterpart card
+      if (mref) ov[mref] = { w: g.w, flow: true };
     },
-    patch(el, g) {
+    patch(el, g, app) {
       flowStyle(el, g); // basis only (no h -> no min-height); siblings conform
+      // onUp doesn't re-render the stage, so the mirror must track live too.
+      const mref = app && el.dataset && cardMirrorRef(app, el.dataset.fkey);
+      if (mref) {
+        const mel = app.stage.querySelector(`.card[data-fkey="${mref}"]`);
+        if (mel) flowStyle(mel, { w: g.w });
+      }
     },
   },
 

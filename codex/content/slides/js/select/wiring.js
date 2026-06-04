@@ -261,7 +261,7 @@ export function initSelect(app) {
         const off = rotate((-hx * w) / 2, (-hy * h) / 2, a);
         const g = { ...g0, w, h, x: anchor.x - off.x - w / 2, y: anchor.y - off.y - h / 2 };
         st.write(app, sel.get(), g);
-        st.patch(el, g);
+        st.patch(el, g, app); // app threaded so flowCard can mirror the symmetric sibling
         placeBox();
       },
       () => { app.commit(); app.renderNav(); app.broadcast(); }
