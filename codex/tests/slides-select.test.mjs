@@ -278,16 +278,16 @@ test('textStyleProps maps a stored text style to inline CSS, dropping empties', 
 
 /* ============================ SLICE 3 ============================ */
 /* ---------- flowCard geometry (cards resize in the flex stack) ---------- */
-test('geometryCaps: flowCard resizes W/H in the stack, never moves or rotates', () => {
+test('geometryCaps: flowCard resizes WIDTH only in the stack (height is content-driven)', () => {
   const c = geometryCaps('flowCard');
-  assert.deepEqual([c.move, c.resizeW, c.resizeH, c.rotate], [false, true, true, false]);
+  assert.deepEqual([c.move, c.resizeW, c.resizeH, c.rotate], [false, true, false, false]);
 });
 
-test('flowCard.write stores only basis+height as a flow override (no x/y/rot; card stays in flow)', () => {
+test('flowCard.write stores only the basis (width) as a flow override (no height/x/y/rot)', () => {
   const slide = { overrides: {} };
   const app = { cur: () => slide };
   strategies.flowCard.write(app, { ref: 'cards.abc' }, { x: 5, y: 6, w: 240, h: 160, rot: 0 });
-  assert.deepEqual(slide.overrides['cards.abc'], { w: 240, h: 160, flow: true });
+  assert.deepEqual(slide.overrides['cards.abc'], { w: 240, flow: true });
 });
 
 test('flowCard.read returns zeros when the element is unresolved (nothing live to measure)', () => {

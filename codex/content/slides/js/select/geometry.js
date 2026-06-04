@@ -25,7 +25,10 @@ export function geometryCaps(name) {
     case "freeformSlot":
       return { move: true, resizeW: true, resizeH: true, rotate: true };
     case "flowCard":
-      return { move: false, resizeW: true, resizeH: true, rotate: false };
+      // width only: a card's height is content-driven, so a height handle could
+      // only ever grow (never shrink past content) — a false affordance. Resize
+      // the basis (width) in the row; neighbours conform.
+      return { move: false, resizeW: true, resizeH: false, rotate: false };
     case "ratio":
       return { move: false, resizeW: true, resizeH: false, rotate: false };
     default:
@@ -139,10 +142,10 @@ export const strategies = {
     write(app, sel, g) {
       if (!sel) return;
       const ov = (app.cur().overrides = app.cur().overrides || {});
-      ov[sel.ref] = { w: g.w, h: g.h, flow: true };
+      ov[sel.ref] = { w: g.w, flow: true }; // width only; height stays content-driven
     },
     patch(el, g) {
-      flowStyle(el, g); // basis + min-height; siblings conform
+      flowStyle(el, g); // basis only (no h -> no min-height); siblings conform
     },
   },
 };

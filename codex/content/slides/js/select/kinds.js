@@ -329,6 +329,18 @@ function addItem(app, list) {
   app.refresh();
 }
 
+// add a sibling immediately AFTER the selected item (ref = "<list>.<id>"), so
+// "＋" on a card/topic inserts to its right rather than at the end of the list.
+function addAfter(app, ref) {
+  const list = ref.split(".")[0];
+  const arr = (app.cur().slots[list] = app.cur().slots[list] || []);
+  const i = refIndex(arr, ref);
+  app.record();
+  arr.splice(i + 1, 0, newItem(list));
+  if (list === "topics") app.step = app.maxStep();
+  app.refresh();
+}
+
 /* ---------- card (Slice 3): flexible card; resizes in-stack (flowCard) ---------- */
 register({
   id: "card",
@@ -372,6 +384,7 @@ register({
     ctrls.push(
       { type: "button", id: "move-l", label: "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-r", label: "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
+      { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } }
     );
     return ctrls;
@@ -399,6 +412,7 @@ register({
   controls(app, sel) {
     const ctrls = [
       ...formatControls(),
+      { type: "button", id: "add", label: "＋ tópico", run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "remover", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
     ];
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
