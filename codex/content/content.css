@@ -725,6 +725,8 @@
 .cdx-apostila-toolbar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .cdx-apostila-title { margin: 0; font-size: 1.15rem; color: var(--text-primary); flex: 1; }
 .cdx-apostila-toolbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+/* Master-detail (like Items): left = section list, right = section read-preview. */
+.cdx-apostila-split .cdx-item-info { flex: 1; min-width: 0; }
 .cdx-apostila-list { display: flex; flex-direction: column; gap: 0.3rem; }
 .cdx-apostila-row {
   display: flex;
@@ -794,7 +796,21 @@
 .cdx-tf-del-input { width: 100%; box-sizing: border-box; margin-bottom: 1rem; }
 
 .cdx-resp-toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
-.cdx-resp-search { flex: 1; min-width: 0; }
+.cdx-resp-search {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.cdx-resp-search:focus { outline: none; border-color: var(--primary); }
 .cdx-resp-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 460px; overflow-y: auto; }
 .cdx-resp-empty { font-size: 0.85rem; color: var(--text-secondary); padding: 0.6rem 0; }
 .cdx-resp-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.7rem; background: var(--surface); }
@@ -805,6 +821,13 @@
 .cdx-resp-content { font-size: 0.85rem; color: var(--text-primary); max-height: 4.5em; overflow: hidden; }
 .cdx-resp-card.is-expanded .cdx-resp-content { max-height: none; }
 .cdx-resp-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
+
+/* ── Tarefas sub-tab (native, master-detail like Items) ──────────────────────
+   Reuses the Items split shell: left = tarefa list, right = the selected
+   tarefa's editor stacked above its answers. All theme tokens, dark-safe. */
+.cdx-tarefas-split .cdx-item-info { flex: 1; min-width: 0; }
+.cdx-tarefa-panes { display: flex; flex-direction: column; gap: 1.4rem; }
+.cdx-tarefas-split .cdx-resp-list { max-height: none; }
 
 /* ── Labs sub-tab (native, master-detail like Items) ─────────────────────────
    Reuses the Items split shell (.cdx-items-split / .cdx-items-list /

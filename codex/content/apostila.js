@@ -27,6 +27,8 @@ let _set = null;
 let _items = [];
 let _types = [];
 let _tags = [];
+let _selectedId = null;        // selected section id (master-detail)
+let _detailCache = new Map();  // id -> full item (with body_md) from getItem
 let _cleanup = [];
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -100,6 +102,7 @@ function _load() {
 }
 
 // ── Render ──────────────────────────────────────────────────────────────────
+// Left list of sections. Selecting a row shows the section in the right pane.
 function _render() {
   const labelEl = _q('cdx-apostila-label');
   const delBtn = _q('cdx-apostila-delete-set');
@@ -110,6 +113,7 @@ function _render() {
     if (labelEl) labelEl.textContent = t('apostila.title_default');
     if (delBtn) delBtn.style.display = 'none';
     el.innerHTML = '<div class="cdx-empty">' + t('apostila.empty') + '</div>';
+    _renderPreview();
     return;
   }
   if (labelEl) labelEl.textContent = _set.category_label || t('apostila.title_default');
@@ -117,31 +121,103 @@ function _render() {
 
   if (!_items.length) {
     el.innerHTML = '<div class="cdx-empty">' + t('apostila.empty_sections') + '</div>';
+    _renderPreview();
     return;
   }
   // ct_get_set omits body_md (payload size), so the sub-line shows the summary.
   el.innerHTML = _items.map((item) => {
     const sub = item.summary && item.summary.trim() ? item.summary : t('apostila.no_summary');
-    return '<div class="cdx-apostila-row" data-id="' + _esc(item.id) + '">' +
+    const active = Number(item.id) === Number(_selectedId);
+    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-id="' + _esc(item.id) + '">' +
       '<span class="cdx-apostila-pos">' + _esc(item.set_position || '') + '</span>' +
       '<div class="cdx-item-info">' +
         '<div class="cdx-item-title">' + _esc(item.title) + '</div>' +
         '<div class="cdx-item-sub">' + _esc(sub) + '</div>' +
       '</div>' +
-      '<button class="cdx-btn cdx-btn-sm" data-act="edit">' + t('content.edit') + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delete">' + t('content.delete') + '</button>' +
     '</div>';
   }).join('');
+  _renderPreview();
 }
 
 function _onListClick(e) {
-  const row = e.target.closest('.cdx-apostila-row');
+  const row = e.target.closest('.cdx-item-row');
   if (!row) return;
+  _select(Number(row.dataset.id));
+}
+
+function _select(id) {
+  _selectedId = id;
+  if (_viewEl) _viewEl.querySelectorAll('.cdx-item-row').forEach((r) => {
+    r.classList.toggle('is-active', Number(r.dataset.id) === Number(id));
+  });
+  _renderPreview();
+}
+
+// ── Right pane: read-preview of the selected section (rendered like Items) ────
+function _previewHtml(item, opts) {
+  opts = opts || {};
+  const posSub = item.set_position ? '<span class="cdx-preview-type">#' + _esc(item.set_position) + '</span>' : '';
+  return '<div class="cdx-preview-head">' +
+      '<div class="cdx-preview-head-info">' +
+        '<div class="cdx-preview-title">' + _esc(item.title) + '</div>' +
+        posSub +
+      '</div>' +
+      '<div class="cdx-preview-actions">' +
+        '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-act="edit">' + t('content.edit') + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delete">' + t('content.delete') + '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cdx-preview-body"><div class="cdx-preview-render" id="cdx-apostila-render">' +
+      (opts.loading ? '<div class="cdx-empty">' + t('content.loading') + '</div>' : '') +
+    '</div></div>';
+}
+
+// Render the section body with the shared CTRenderer (same global Items uses).
+function _renderBody(item) {
+  const host = _q('cdx-apostila-render');
+  if (!host) return;
+  if (window.CTRenderer && window.CTRenderer.render) {
+    try { window.CTRenderer.render(item, host, {}); }
+    catch (_) { host.textContent = item.body_md || ''; }
+  } else {
+    host.textContent = item.body_md || '';
+  }
+}
+
+function _renderPreview() {
+  const pane = _q('cdx-apostila-preview');
+  if (!pane) return;
+  if (_selectedId == null) {
+    pane.innerHTML = '<div class="cdx-preview-empty">' + t('apostila.select') + '</div>';
+    return;
+  }
+  const itemId = _selectedId;
+  const cached = _detailCache.get(Number(itemId));
+  if (cached) {
+    pane.innerHTML = _previewHtml(cached, {});
+    _renderBody(cached);
+    return;
+  }
+  const light = _items.find((i) => Number(i.id) === Number(itemId)) || { title: '' };
+  pane.innerHTML = _previewHtml(light, { loading: true });
+  api.getItem({ id: itemId }).then((d) => {
+    if (Number(_selectedId) !== Number(itemId)) return;
+    const full = (d && d.item) || light;
+    if (full && full.id != null) _detailCache.set(Number(full.id), full);
+    pane.innerHTML = _previewHtml(full, {});
+    _renderBody(full);
+  }).catch(() => {
+    if (Number(_selectedId) !== Number(itemId)) return;
+    const host = _q('cdx-apostila-render');
+    if (host) host.innerHTML = '<div class="cdx-empty">' + t('apostila.error_loading') + '</div>';
+  });
+}
+
+function _onPreviewClick(e) {
   const btn = e.target.closest('[data-act]');
-  if (!btn) return;
-  const id = Number(row.dataset.id);
-  if (btn.dataset.act === 'edit') _editSection(id);
-  else if (btn.dataset.act === 'delete') _deleteSection(id);
+  if (!btn || _selectedId == null) return;
+  if (btn.dataset.act === 'edit') _editSection(_selectedId);
+  else if (btn.dataset.act === 'delete') _deleteSection(_selectedId);
 }
 
 // ── Section edit (reuses the native item editor) ─────────────────────────────
@@ -158,7 +234,7 @@ function _editSection(id) {
       saveLabel: t('content.save'),
       closeLabel: t('content.close'),
       // No onCreateType: editing imported course sections does not invent types.
-      onSave: () => { _closeModal(bd); _toast(t('content.item_updated')); _load(); },
+      onSave: () => { _closeModal(bd); _toast(t('content.item_updated')); _detailCache.delete(Number(id)); _load(); },
       onCancel: () => _closeModal(bd),
     });
   }).catch((e) => notice.internal(_err(e)));
@@ -170,6 +246,8 @@ function _deleteSection(id) {
     message: t('apostila.confirm_delete_section'),
     danger: true,
     onConfirm() {
+      if (Number(_selectedId) === Number(id)) _selectedId = null;
+      _detailCache.delete(Number(id));
       const idx = _items.findIndex((it) => Number(it.id) === Number(id));
       const snapshot = idx >= 0 ? _items[idx] : null;
       if (idx >= 0) { _items.splice(idx, 1); _render(); }
@@ -194,6 +272,8 @@ function _deleteSet() {
       api.deleteSet({ id: _set.id }).then(() => {
         _set = null;
         _items = [];
+        _selectedId = null;
+        _detailCache.clear();
         _render();
         _toast(t('apostila.set_deleted'));
       }).catch((err) => notice.internal(_err(err)));
@@ -260,13 +340,19 @@ function _renderShell() {
           '<button class="cdx-btn cdx-btn-danger" id="cdx-apostila-delete-set" style="display:none">' + t('apostila.delete_set_btn') + '</button>' +
         '</div>' +
       '</div>' +
-      '<div class="cdx-apostila-list" id="cdx-apostila-list">' +
-        '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+      '<div class="cdx-items-split cdx-apostila-split" id="cdx-apostila-split">' +
+        '<div class="cdx-items-list" id="cdx-apostila-list">' +
+          '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+        '</div>' +
+        '<div class="cdx-item-preview" id="cdx-apostila-preview">' +
+          '<div class="cdx-preview-empty">' + t('apostila.select') + '</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
   _q('cdx-apostila-import').addEventListener('click', _openImport);
   _q('cdx-apostila-delete-set').addEventListener('click', _deleteSet);
   _q('cdx-apostila-list').addEventListener('click', _onListClick);
+  _q('cdx-apostila-preview').addEventListener('click', _onPreviewClick);
 }
 
 // ── Tab contract ─────────────────────────────────────────────────────────────
@@ -276,6 +362,8 @@ export function mount(viewEl, ctx) {
   _items = [];
   _types = [];
   _tags = [];
+  _selectedId = null;
+  _detailCache = new Map();
   _cleanup = [];
   _renderShell();
   // Types + tags feed the editor opened from "Editar"; load in parallel.
@@ -291,5 +379,7 @@ export function unmount() {
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
+  _selectedId = null;
+  _detailCache = new Map();
   document.querySelectorAll('.cdx-modal-backdrop').forEach((bd) => bd.parentNode && bd.parentNode.removeChild(bd));
 }
