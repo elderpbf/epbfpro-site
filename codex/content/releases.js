@@ -292,7 +292,7 @@ function _onListClick(e) {
   _renderPreview();
 }
 
-// ── Composer rendering ───────────────────────────────────────────────────────
+// ── Composer rendering (collapsible accordion, like the Presets picker) ──────
 function _rowHtml(item, pool, checked, glyphHtml) {
   return '<label class="cdx-comp-item" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
     '<input type="checkbox" class="cdx-comp-cb" data-pool="' + pool + '" value="' + _esc(item.id) + '"' + (checked ? ' checked' : '') + '>' +
@@ -300,28 +300,61 @@ function _rowHtml(item, pool, checked, glyphHtml) {
   '</label>';
 }
 
-function _sectionHtml(label, listHtml, opts) {
-  opts = opts || {};
-  const search = opts.searchable
-    ? '<input type="text" class="cdx-comp-search" data-search="' + opts.searchScope + '" placeholder="' + _esc(t('releases.search_placeholder')) + '">'
-    : '';
-  return '<div class="cdx-comp-section" data-scope="' + (opts.searchScope || '') + '">' +
-    '<div class="cdx-comp-section-label">' + label + '</div>' + search +
-    '<div class="cdx-comp-list">' + listHtml + '</div>' +
-  '</div>';
+// Render the item pools as one search + a single-open accordion of sections,
+// reusing the Presets picker classes (.cdx-picker*) so the layout is identical.
+// Rows stay in the DOM when a section collapses (the checked state lives in the
+// checkboxes, read at save time), so collapsing never drops an unsaved pick.
+function _renderComposerAccordion(container, sections) {
+  const groupsHtml = sections.map((s, idx) => {
+    const open = idx === 0;
+    return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +
+        '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+          '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
+          '<span class="cdx-picker-group-name">' + s.label + ' (' + s.count + ')</span>' +
+        '</button>' +
+        '<div class="cdx-picker-group-rows' + (open ? '' : ' is-collapsed') + '">' + s.rowsHtml + '</div>' +
+      '</div>';
+  }).join('');
+  container.innerHTML =
+    '<div class="cdx-picker cdx-rel-acc">' +
+      '<div class="cdx-picker-toolbar">' +
+        '<input type="search" class="cdx-picker-search cdx-comp-search-all" placeholder="' + _esc(t('releases.search_placeholder')) + '" autocomplete="off" spellcheck="false">' +
+      '</div>' +
+      '<div class="cdx-picker-list">' + groupsHtml + '</div>' +
+    '</div>' +
+    '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div>';
+  _wireComposerAccordion(container);
 }
 
-function _wireSearch(container) {
-  container.querySelectorAll('.cdx-comp-search').forEach((input) => {
-    input.addEventListener('input', () => {
-      const q = input.value.toLowerCase().trim();
-      const scope = input.dataset.search;
-      const section = container.querySelector('.cdx-comp-section[data-scope="' + scope + '"]');
-      if (!section) return;
-      section.querySelectorAll('.cdx-comp-item').forEach((row) => {
-        row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
-      });
+function _wireComposerAccordion(container) {
+  const list = container.querySelector('.cdx-picker-list');
+  const search = container.querySelector('.cdx-comp-search-all');
+  if (!list) return;
+  const groups = Array.from(list.querySelectorAll('.cdx-picker-group'));
+  let openGroup = groups.length ? groups[0].getAttribute('data-acc') : null;
+
+  function setOpen(g, open) {
+    const btn = g.querySelector('.cdx-picker-group-label');
+    const rows = g.querySelector('.cdx-picker-group-rows');
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (rows) rows.classList.toggle('is-collapsed', !open);
+  }
+
+  list.addEventListener('click', (e) => {
+    const tgl = e.target.closest('[data-acc-toggle]');
+    if (!tgl) return;
+    if (search && search.value.trim()) return; // all expanded during a search
+    const key = tgl.getAttribute('data-acc-toggle');
+    openGroup = (openGroup === key) ? null : key; // toggle; collapse if re-clicked
+    groups.forEach((g) => setOpen(g, g.getAttribute('data-acc') === openGroup));
+  });
+
+  if (search) search.addEventListener('input', () => {
+    const q = search.value.toLowerCase().trim();
+    container.querySelectorAll('.cdx-comp-item').forEach((row) => {
+      row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
     });
+    groups.forEach((g) => setOpen(g, q ? true : g.getAttribute('data-acc') === openGroup));
   });
 }
 
@@ -333,34 +366,33 @@ function _renderAulaComposer(container, aula) {
   const driveItems = _allItems.filter(_isDrive);
   const outrosItems = _allItems.filter(_isOutros);
 
-  const apostilaHtml = _apostilaItems.length
+  const apostilaRows = _apostilaItems.length
     ? _apostilaItems.map((i) =>
-        '<label class="cdx-comp-item"><input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (_isBoundTo(i.id, aulaNum) ? ' checked' : '') + '>' +
+        '<label class="cdx-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '"><input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (_isBoundTo(i.id, aulaNum) ? ' checked' : '') + '>' +
         '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) + '</span></label>').join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_apostila') + '</div>';
 
   const tarefaGlyph = _countGlyph('tarefa', 15);
-  const tarefaHtml = tarefaItems.length
+  const tarefaRows = tarefaItems.length
     ? tarefaItems.map((i) => _rowHtml(i, 'tarefa', _isBoundTo(i.id, aulaNum), tarefaGlyph)).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_tarefa') + '</div>';
 
-  const outrosHtml = outrosItems.length
+  const outrosRows = outrosItems.length
     ? outrosItems.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_outros') + '</div>';
 
-  let html = '<div class="cdx-rel-composer-body">' +
-    _sectionHtml(t('releases.section_apostila'), apostilaHtml, {}) +
-    _sectionHtml(t('releases.section_tarefas'), tarefaHtml, {}) +
-    _sectionHtml(t('releases.section_outros'), outrosHtml, { searchable: true, searchScope: 'outros' });
+  const sections = [
+    { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length, rowsHtml: apostilaRows },
+    { key: 'tarefa', label: t('releases.section_tarefas'), count: tarefaItems.length, rowsHtml: tarefaRows },
+    { key: 'outros', label: t('releases.section_outros'), count: outrosItems.length, rowsHtml: outrosRows },
+  ];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
-    const driveHtml = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph)).join('');
-    html += _sectionHtml(t('releases.section_drive'), driveHtml, { searchable: true, searchScope: 'drive' });
+    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph)).join('');
+    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
   }
-  html += '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div></div>';
-  container.innerHTML = html;
 
-  _wireSearch(container);
+  _renderComposerAccordion(container, sections);
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
     _saveAula(container, aulaNum, { tarefaItems, outrosItems, driveItems }));
 }
@@ -375,21 +407,20 @@ function _renderOutrosComposer(container) {
   const standalone = eligible.filter((i) => !_isDrive(i));
   const driveItems = eligible.filter(_isDrive);
 
-  const listHtml = standalone.length
+  const standaloneRows = standalone.length
     ? standalone.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>';
 
-  let html = '<div class="cdx-rel-composer-body">' +
-    _sectionHtml(t('releases.section_outros_solo'), listHtml, { searchable: true, searchScope: 'outros' });
+  const sections = [
+    { key: 'outros', label: t('releases.section_outros_solo'), count: standalone.length, rowsHtml: standaloneRows },
+  ];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
-    const driveHtml = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');
-    html += _sectionHtml(t('releases.section_drive'), driveHtml, { searchable: true, searchScope: 'drive' });
+    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');
+    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
   }
-  html += '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div></div>';
-  container.innerHTML = html;
 
-  _wireSearch(container);
+  _renderComposerAccordion(container, sections);
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
     _saveOutros(container, { standalone, driveItems }));
 }
