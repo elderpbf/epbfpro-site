@@ -575,14 +575,33 @@
 .cdx-picker-empty { padding: 1.5rem; text-align: center; color: var(--text-secondary); font-size: 0.88rem; }
 
 .cdx-picker-group { margin-bottom: 0.5rem; }
+/* Collapsible accordion header (single-open; toggled in presets.js). */
 .cdx-picker-group-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
-  padding: 0.3rem 0.4rem;
+  padding: 0.35rem 0.4rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
 }
+.cdx-picker-group-label:hover {
+  background: var(--cdx-card-hover-bg);
+  border-color: var(--cdx-card-hover-border);
+  color: var(--text-primary);
+}
+.cdx-picker-group-name { flex: 1; min-width: 0; }
+.cdx-picker-group-caret { display: inline-flex; font-size: 0.95rem; line-height: 1; transition: transform 120ms ease; }
+.cdx-picker-group-label[aria-expanded="true"] .cdx-picker-group-caret { transform: rotate(90deg); }
 .cdx-picker-group-rows { display: flex; flex-direction: column; gap: 0.15rem; }
 .cdx-picker-row {
   display: flex;

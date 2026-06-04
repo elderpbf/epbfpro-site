@@ -136,6 +136,7 @@ function _mountPicker(host, pickerItems, selectedIds) {
   const selected = new Set();
   for (const v of (selectedIds || [])) { if (v != null) selected.add(String(v)); }
   let query = '';
+  let openGroup;            // single-open accordion: a group key, null (none open), or undefined (pre-init)
 
   host.innerHTML =
     '<div class="cdx-picker">' +
@@ -173,11 +174,25 @@ function _mountPicker(host, pickerItems, selectedIds) {
       listEl.innerHTML = '<div class="cdx-picker-empty">' + t('presets.picker_empty') + '</div>';
       return;
     }
-    listEl.innerHTML = groups.map((grp) =>
-      '<div class="cdx-picker-group" data-group="' + grp.key + '">' +
-        '<div class="cdx-picker-group-label">' + t('presets.group_' + grp.key) + ' (' + grp.items.length + ')</div>' +
-        '<div class="cdx-picker-group-rows">' + grp.items.map(_renderRow).join('') + '</div>' +
-      '</div>').join('');
+    // Single-open accordion: at most one group expanded at a time. First render
+    // opens the first group; a live search overrides it and expands every group
+    // with matches, so a search never hides a hit inside a collapsed group.
+    const searching = q.length > 0;
+    if (openGroup === undefined) openGroup = groups[0].key;
+    listEl.innerHTML = groups.map((grp) => {
+      const isOpen = searching || grp.key === openGroup;
+      const rows = isOpen
+        ? '<div class="cdx-picker-group-rows">' + grp.items.map(_renderRow).join('') + '</div>'
+        : '';
+      return '<div class="cdx-picker-group' + (isOpen ? ' is-open' : '') + '" data-group="' + grp.key + '">' +
+          '<button type="button" class="cdx-picker-group-label" data-group-toggle="' + grp.key + '"' +
+            ' aria-expanded="' + (isOpen ? 'true' : 'false') + '">' +
+            '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
+            '<span class="cdx-picker-group-name">' + t('presets.group_' + grp.key) + ' (' + grp.items.length + ')</span>' +
+          '</button>' +
+          rows +
+        '</div>';
+    }).join('');
   }
 
   function _renderCount() {
@@ -185,6 +200,15 @@ function _mountPicker(host, pickerItems, selectedIds) {
   }
 
   function _onListClick(e) {
+    const toggle = e.target.closest('[data-group-toggle]');
+    if (toggle) {
+      e.preventDefault();
+      if (query.trim()) return; // groups are all expanded during a search
+      const key = toggle.getAttribute('data-group-toggle');
+      openGroup = (openGroup === key) ? null : key; // toggle; collapse if re-clicked
+      _renderList();
+      return;
+    }
     const row = e.target.closest('.cdx-picker-row');
     if (!row) return;
     e.preventDefault();
