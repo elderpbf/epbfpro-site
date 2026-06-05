@@ -63,7 +63,7 @@ export function animMenu(anim, reveal, showReveal) {
   }];
   if (showReveal) {
     ctrls.push({
-      type: "toggle", id: "reveal", label: "revelar 1 a 1", on: !!reveal,
+      type: "toggle", id: "reveal", labelKey: "slides.ed_reveal_one", on: !!reveal,
       write(app, sel, checked) {
         app.record();
         app.cur().slots.reveal = checked;

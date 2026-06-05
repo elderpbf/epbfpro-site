@@ -13,6 +13,7 @@
 //     scale-agnostic (no canvas math) and the id-keyed override/style follow the
 //     moved item for free (schema D1). The model mutation is the shared reorderItem.
 import { reorderItem } from "./kinds.js";
+import { t } from "../../../../js/i18n.js";
 
 const GRIP_GLYPH = "⠿"; // ⠿ braille dots: the conventional drag-handle mark
 
@@ -30,7 +31,7 @@ export function initReorder(app) {
       const g = document.createElement("span");
       g.className = "reorder-grip editoronly";
       g.draggable = true;
-      g.title = "reordenar";
+      g.title = t("slides.ed_reorder");
       g.textContent = GRIP_GLYPH;
       item.appendChild(g);
     });

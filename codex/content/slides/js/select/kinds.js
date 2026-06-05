@@ -368,15 +368,15 @@ function addAfter(app, ref) {
 export function cardTogglesMenu(slots) {
   return [
     {
-      type: "toggle", id: "sym", label: "Largura simétrica", on: !!slots.symResize,
+      type: "toggle", id: "sym", labelKey: "slides.ed_sym_width", on: !!slots.symResize,
       write(app, sel, checked) { app.record(); app.cur().slots.symResize = checked; app.refresh(); },
     },
     {
-      type: "toggle", id: "stack", label: "Empilhar na vertical", on: !!slots.stacked,
+      type: "toggle", id: "stack", labelKey: "slides.ed_stack_v", on: !!slots.stacked,
       write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
     },
     {
-      type: "button", id: "reset-widths", label: "Igualar larguras",
+      type: "button", id: "reset-widths", labelKey: "slides.ed_equalize",
       run(app) {
         app.record();
         const ov = app.cur().overrides;
@@ -415,10 +415,10 @@ register({
       id: "mode",
       value: card.mode,
       options: [
-        { v: "title", label: "Título" },
-        { v: "text", label: "Texto" },
-        { v: "image", label: "Imagem" },
-        { v: "image-text", label: "Imagem+texto" },
+        { v: "title", labelKey: "slides.ed_title" },
+        { v: "text", labelKey: "slides.ed_text" },
+        { v: "image", labelKey: "slides.ed_image" },
+        { v: "image-text", labelKey: "slides.ed_image_text" },
       ],
       write(app2, sel2, v) {
         app2.record();
@@ -430,10 +430,10 @@ register({
     ctrls.push(
       { type: "button", id: "move-l", label: "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-r", label: "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
-      { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addAfter(app2, sel2.ref); } },
+      { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
       { type: "sep" },
-      { type: "button", id: "toggles", label: "Ajustes ▾", run(app2, sel2, btnEl) { app2.select.openMenu(cardTogglesMenu(app2.cur().slots), btnEl); } }
+      { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots), btnEl); } }
     );
     return ctrls;
   },
@@ -462,8 +462,8 @@ register({
       ...formatControls(),
       { type: "button", id: "move-up", label: "▲", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-down", label: "▼", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
-      { type: "button", id: "add", label: "＋ tópico", run(app2, sel2) { addAfter(app2, sel2.ref); } },
-      { type: "button", id: "delete", label: "remover", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
+      { type: "button", id: "add", label: `＋ ${t("slides.ed_topic")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
+      { type: "button", id: "delete", labelKey: "slides.ed_remove", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
     ];
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;

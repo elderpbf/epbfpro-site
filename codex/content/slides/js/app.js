@@ -307,7 +307,7 @@ function wireChrome(app, root) {
   const onDocClick = (e) => {
     const cur = app.select.current();
     if (!cur || app.editing) return;
-    const onChrome = e.target.closest(".ctxbar") || e.target.closest("#chrome") || e.target.closest(".selbox");
+    const onChrome = e.target.closest(".ctxbar") || e.target.closest("#chrome") || e.target.closest(".selbox") || e.target.closest(".cdx-dropdown");
     if (cur.menu) {
       if (!onChrome) { app.select.clear(); app._openMenuBtn = null; }
     } else if (!onChrome && !e.target.closest("#stage")) {
