@@ -12,10 +12,11 @@
 // All backend access goes through the facade (questions + ai); all strings
 // through t(); destructive actions use an inline confirm (no native confirm).
 // No polling, so unmount drops listeners, the search timer and the composer.
-import { questions as api, ai } from '../js/codex-api.js';
+import { questions as api, ai, audiences as audiencesApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
-import { mountComposer } from './question-composer.js';
+import { mountComposer, setAudienceConfig } from './question-composer.js';
+import { questionType, lintConfig } from '../js/audiences.js';
 
 let _viewEl = null;
 let _cleanup = [];
@@ -43,6 +44,20 @@ let _hubExportText = '';
 let _importMode = 'text';
 let _importItems = [];
 let _importTarget = '';
+let _audienceConfig = null;   // { version, variables[], audiences{} } for typed questions
+let _audTab = 'audiences';    // matrix-manager active tab
+
+const _DEFAULT_VARS = ['workspace', 'actor_role', 'deliverable', 'domain'];
+function _emptyConfig() { return { version: 1, variables: _DEFAULT_VARS.slice(), audiences: {} }; }
+function _audienceLabel(key) {
+  const auds = (_audienceConfig && _audienceConfig.audiences) || {};
+  return (auds[key] && auds[key].label) || key;
+}
+// Slug an audience label to an ascii key (strip accents, lowercase, underscores).
+function _slug(s) {
+  return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
 
 // Pure: move an item up/down, immutable, clamped at the ends.
 export function moveInArray(arr, index, dir) {
@@ -62,6 +77,14 @@ function _on(el, evt, fn) { if (!el) return; el.addEventListener(evt, fn); _clea
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 function _destroyComposer() { if (_composer) { try { _composer.destroy(); } catch (_) { /* ignore */ } } _composer = null; _editingOriginal = null; }
 function _typeBadge(type) { return '<span class="cdx-q-type">' + t('questions.type_' + (type || 'mc')) + '</span>'; }
+// Class/audience badge: nothing for generic, "Variável" for templated, and
+// "Única · <audience>" for audience-scoped questions.
+function _classBadge(q) {
+  const cls = questionType(q);
+  if (cls === 'generic') return '';
+  if (cls === 'unique') return '<span class="cdx-q-class cdx-q-class--unique">' + t('questions.qclass_unique') + ' · ' + _esc(_audienceLabel(q.audience)) + '</span>';
+  return '<span class="cdx-q-class cdx-q-class--variable">' + t('questions.qclass_variable') + '</span>';
+}
 
 const _LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const _BULK_TYPES = ['mc', 'tf', 'poll', 'open', 'wordcloud'];
@@ -115,6 +138,7 @@ function _composerInitial(q) {
     correct: correct,
     correct_answers: correct,
     max_select: (q.max_select != null ? Number(q.max_select) : 1),
+    audience: q.audience || null,
   };
 }
 
@@ -146,6 +170,7 @@ function _toCanonical(q) {
     correct_answer: _canonicalCorrect(q),
   };
   if (q.max_select != null) c.max_select = Number(q.max_select);
+  if (q.audience) c.audience = q.audience;
   return c;
 }
 
@@ -254,17 +279,17 @@ function _qCard(q) {
     return '<div class="cdx-q cdx-q--edit" draggable="true" data-qid="' + _esc(q.id) + '">' +
       '<span class="cdx-q-drag" aria-hidden="true">⠿</span>' +
       '<input type="checkbox" class="cdx-q-select" data-act="select" data-qid="' + _esc(q.id) + '"' + (checked ? ' checked' : '') + '>' +
-      '<div class="cdx-q-editbody"><div class="cdx-q-text">' + _esc(q.question) + '</div>' + _typeBadge(q.type) + '</div>' +
+      '<div class="cdx-q-editbody"><div class="cdx-q-text">' + _esc(q.question) + '</div>' + _typeBadge(q.type) + _classBadge(q) + '</div>' +
     '</div>';
   }
   const confirming = _confirmDelQ != null && String(_confirmDelQ) === String(q.id);
   const foot = confirming
-    ? '<div class="cdx-q-foot">' + _typeBadge(q.type) +
+    ? '<div class="cdx-q-foot">' + _typeBadge(q.type) + _classBadge(q) +
         '<span class="cdx-q-confirm">' + t('questions.bank_delete_q') + '</span>' +
         '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delq-yes" data-qid="' + _esc(q.id) + '" type="button">' + t('questions.bank_yes') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm" data-act="delq-no" type="button">' + t('questions.bank_no') + '</button>' +
       '</div>'
-    : '<div class="cdx-q-foot">' + _typeBadge(q.type) +
+    : '<div class="cdx-q-foot">' + _typeBadge(q.type) + _classBadge(q) +
         '<button class="cdx-btn cdx-btn-sm" data-act="edit" data-qid="' + _esc(q.id) + '" type="button">' + t('questions.bank_edit') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="delq" data-qid="' + _esc(q.id) + '" type="button">' + t('questions.bank_delete') + '</button>' +
       '</div>';
@@ -667,6 +692,7 @@ function _normOne(q, listName) {
     options: Array.isArray(q.options) ? q.options.map(_stripEnum) : ((q.options && typeof q.options === 'object') ? q.options : []),
     correct_answer: (q.correct_answer !== undefined ? q.correct_answer : (q.correct !== undefined ? q.correct : '')),
     max_select: (q.max_select != null ? Number(q.max_select) : 1),
+    audience: (q.audience != null ? q.audience : null),
   };
 }
 function _itemsFromJson(raw) {
@@ -736,6 +762,7 @@ async function _importSave() {
         list_name: listName, question: q.question, type: q.type || 'mc',
         options: q.options || [], correct_answer: q.correct_answer,
         max_select: (q.max_select != null ? q.max_select : 1),
+        audience: q.audience || null,
       });
     } catch (e) { notice.internal(e); }
   }
@@ -744,6 +771,135 @@ async function _importSave() {
   _closeHub();
   await _loadSets();
   await _loadQuestions();
+}
+
+// ---- Audience matrix manager (variables x audiences) ----
+// Edits mutate _audienceConfig in place (cell inputs via change handlers; add/
+// remove via re-render); Save persists the whole doc. Seeds the default variable
+// vocabulary when the config is empty so the grid is immediately usable.
+async function _loadAudienceConfig() {
+  let res; try { res = await audiencesApi.getConfig(); } catch (_) { res = null; }
+  if (!_viewEl) return;
+  _audienceConfig = (res && res.config) || _emptyConfig();
+  if (!Array.isArray(_audienceConfig.variables) || !_audienceConfig.variables.length) _audienceConfig.variables = _DEFAULT_VARS.slice();
+  if (!_audienceConfig.audiences) _audienceConfig.audiences = {};
+  setAudienceConfig(_audienceConfig);
+}
+function _openAudiences() {
+  const modal = _q('#cdx-bank-aud');
+  if (!modal) return;
+  _audTab = 'audiences';
+  const err = _q('.cdx-bank-aud-err'); if (err) err.textContent = '';
+  modal.hidden = false;
+  if (!_audienceConfig) _audienceConfig = _emptyConfig();
+  _renderAudContent();
+}
+function _closeAudiences() { const m = _q('#cdx-bank-aud'); if (m) m.hidden = true; }
+function _renderAudContent() {
+  if (!_viewEl) return;
+  _viewEl.querySelectorAll('.cdx-bank-aud-tab').forEach((b) => b.classList.toggle('active', b.getAttribute('data-audtab') === _audTab));
+  const content = _q('#cdx-bank-aud-content');
+  if (content) content.innerHTML = _audTab === 'variables' ? _renderVariablesTab() : _renderAudiencesTab();
+}
+function _renderAudiencesTab() {
+  const auds = _audienceConfig.audiences || {};
+  const keys = Object.keys(auds);
+  const rows = keys.length ? keys.map((k) =>
+    '<div class="cdx-aud-row">' +
+      '<input class="cdx-input cdx-aud-label" data-aud-label="' + _esc(k) + '" value="' + _esc(auds[k].label || k) + '">' +
+      '<span class="cdx-aud-key">' + _esc(k) + '</span>' +
+      '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="aud-del" data-aud="' + _esc(k) + '" type="button">' + t('questions.aud_delete') + '</button>' +
+    '</div>').join('')
+    : '<div class="cdx-bank-empty">' + t('questions.aud_empty') + '</div>';
+  return '<div class="cdx-aud-list">' + rows + '</div>' +
+    '<div class="cdx-aud-addrow">' +
+      '<input class="cdx-input cdx-aud-new-label" placeholder="' + _esc(t('questions.aud_label_ph')) + '">' +
+      '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="aud-add" type="button">' + t('questions.aud_add') + '</button>' +
+    '</div>';
+}
+function _varAddRow() {
+  return '<div class="cdx-aud-addrow">' +
+    '<input class="cdx-input cdx-var-new-key" placeholder="' + _esc(t('questions.aud_var_ph')) + '">' +
+    '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="var-add" type="button">' + t('questions.aud_var_add') + '</button>' +
+  '</div>';
+}
+function _gnSelect(which, audKey, varKey, val) {
+  const opts = which === 'g'
+    ? [['f', t('questions.aud_g_f')], ['m', t('questions.aud_g_m')]]
+    : [['sg', t('questions.aud_n_sg')], ['pl', t('questions.aud_n_pl')]];
+  return '<select class="cdx-select cdx-var-' + which + '" data-aud="' + _esc(audKey) + '" data-var="' + _esc(varKey) + '">' +
+    opts.map((o) => '<option value="' + o[0] + '"' + (o[0] === val ? ' selected' : '') + '>' + _esc(o[1]) + '</option>').join('') +
+  '</select>';
+}
+function _renderVariablesTab() {
+  const cfg = _audienceConfig;
+  const auds = cfg.audiences || {};
+  const audKeys = Object.keys(auds);
+  const vars = cfg.variables || [];
+  if (!audKeys.length) return '<div class="cdx-bank-empty">' + t('questions.aud_no_audiences_hint') + '</div>' + _varAddRow();
+  const issues = lintConfig(cfg);
+  const bad = new Set(issues.map((i) => i.audience + ' ' + i.variable));
+  const head = '<th>' + t('questions.aud_variable') + '</th>' + audKeys.map((k) => '<th>' + _esc(auds[k].label || k) + '</th>').join('');
+  const rows = vars.map((v) =>
+    '<tr><td class="cdx-var-key">' + _esc(v) +
+      ' <button class="cdx-bank-iconbtn" data-act="var-del" data-var="' + _esc(v) + '" type="button" aria-label="x">✗</button></td>' +
+      audKeys.map((k) => {
+        const cell = (auds[k].values && auds[k].values[v]) || {};
+        const isBad = bad.has(k + ' ' + v);
+        return '<td class="cdx-var-cell' + (isBad ? ' cdx-var-cell--bad' : '') + '">' +
+          '<input class="cdx-input cdx-var-text" data-aud="' + _esc(k) + '" data-var="' + _esc(v) + '" value="' + _esc(cell.text || '') + '" placeholder="' + _esc(t('questions.aud_value_ph')) + '">' +
+          '<div class="cdx-var-gn">' + _gnSelect('g', k, v, cell.g || 'f') + _gnSelect('n', k, v, cell.n || 'sg') + '</div>' +
+        '</td>';
+      }).join('') +
+    '</tr>').join('');
+  const lintMsg = issues.length ? '<div class="cdx-aud-lint">' + issues.length + ' ' + t('questions.aud_lint_issues') + '</div>' : '';
+  return '<div class="cdx-var-gridwrap"><table class="cdx-var-grid"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>' + lintMsg + _varAddRow();
+}
+function _ensureCell(audKey, varKey) {
+  const a = _audienceConfig.audiences[audKey];
+  if (!a.values) a.values = {};
+  if (!a.values[varKey]) a.values[varKey] = { text: '', g: 'f', n: 'sg' };
+  return a.values[varKey];
+}
+function _addAudience() {
+  const inp = _q('.cdx-aud-new-label');
+  const label = inp ? inp.value.trim() : '';
+  if (!label) return;
+  const key = _slug(label);
+  if (!key) return;
+  if (!_audienceConfig.audiences[key]) _audienceConfig.audiences[key] = { label: label, values: {} };
+  else _audienceConfig.audiences[key].label = label;
+  _renderAudContent();
+}
+function _delAudience(key) {
+  delete _audienceConfig.audiences[key];
+  _renderAudContent();
+}
+function _addVariable() {
+  const inp = _q('.cdx-var-new-key');
+  const key = _slug(inp ? inp.value.trim() : '');
+  if (!key) return;
+  if (_audienceConfig.variables.indexOf(key) === -1) _audienceConfig.variables.push(key);
+  _renderAudContent();
+}
+function _delVariable(key) {
+  _audienceConfig.variables = _audienceConfig.variables.filter((v) => v !== key);
+  const auds = _audienceConfig.audiences || {};
+  Object.keys(auds).forEach((k) => { if (auds[k].values) delete auds[k].values[key]; });
+  _renderAudContent();
+}
+async function _saveAudiences() {
+  const err = _q('.cdx-bank-aud-err');
+  if (err) err.textContent = '';
+  const btn = _q('[data-act="aud-save"]');
+  if (btn) btn.disabled = true;
+  let res; try { res = await audiencesApi.saveConfig({ config: _audienceConfig }); } catch (e) { notice.internal(e); res = null; }
+  if (!_viewEl) return;
+  if (btn) btn.disabled = false;
+  if (!res || res.error) { if (err) err.textContent = t('questions.aud_save_error'); return; }
+  setAudienceConfig(_audienceConfig);
+  notice.ok(t('questions.aud_saved'));
+  if (_currentSet && !_searching) _renderConjunto();
 }
 
 // ---- Cross-set search ----
@@ -798,6 +954,7 @@ export function mount(viewEl, ctx) {
         '<div class="cdx-bank-sets-header">' +
           '<span>' + t('questions.bank_sets_header') + '</span>' +
           '<div class="cdx-bank-sets-header-actions">' +
+            '<button class="cdx-bank-iconbtn" data-act="audiences" type="button" title="' + _esc(t('questions.bank_audiences')) + '" aria-label="' + _esc(t('questions.bank_audiences')) + '">⊞</button>' +
             '<button class="cdx-bank-iconbtn" data-act="hub" type="button" title="' + _esc(t('questions.bank_hub')) + '" aria-label="' + _esc(t('questions.bank_hub')) + '">⇅</button>' +
             '<button class="cdx-btn cdx-btn-sm" data-act="new-set" type="button">' + t('questions.bank_new_set_btn') + '</button>' +
           '</div>' +
@@ -909,6 +1066,21 @@ export function mount(viewEl, ctx) {
           '</div>' +
         '</div>' +
       '</div>' +
+    '</div>' +
+    '<div class="cdx-modal-backdrop cdx-bank-modal" id="cdx-bank-aud" hidden>' +
+      '<div class="cdx-modal cdx-bank-aud-card">' +
+        '<div class="cdx-modal-title">' + t('questions.bank_audiences') + '</div>' +
+        '<div class="cdx-bank-tabs">' +
+          '<button class="cdx-bank-aud-tab active" data-audtab="audiences" type="button">' + t('questions.aud_tab_audiences') + '</button>' +
+          '<button class="cdx-bank-aud-tab" data-audtab="variables" type="button">' + t('questions.aud_tab_variables') + '</button>' +
+        '</div>' +
+        '<div id="cdx-bank-aud-content"></div>' +
+        '<p class="cdx-bank-modal-err cdx-bank-aud-err"></p>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" data-act="aud-close" type="button">' + t('questions.bank_close') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="aud-save" type="button">' + t('questions.bank_save') + '</button>' +
+        '</div>' +
+      '</div>' +
     '</div>';
 
   const search = viewEl.querySelector('.cdx-bank-search-input');
@@ -938,6 +1110,37 @@ export function mount(viewEl, ctx) {
   _on(viewEl.querySelector('.cdx-bank-sets-header'), 'click', (e) => {
     if (e.target.closest('[data-act="new-set"]')) { _newSetActive = true; _confirmDelSet = false; _renaming = false; _renderSets(); }
     else if (e.target.closest('[data-act="hub"]')) { _openHub(); }
+    else if (e.target.closest('[data-act="audiences"]')) { _openAudiences(); }
+  });
+
+  // Audience matrix manager (delegated: tabs + add/remove + cell edits + save).
+  const audModal = viewEl.querySelector('#cdx-bank-aud');
+  _on(audModal, 'click', (e) => {
+    if (e.target === audModal) { _closeAudiences(); return; }
+    const tab = e.target.closest('[data-audtab]');
+    if (tab) { _audTab = tab.getAttribute('data-audtab'); _renderAudContent(); return; }
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.getAttribute('data-act');
+    if (act === 'aud-close') _closeAudiences();
+    else if (act === 'aud-save') _saveAudiences();
+    else if (act === 'aud-add') _addAudience();
+    else if (act === 'aud-del') _delAudience(btn.getAttribute('data-aud'));
+    else if (act === 'var-add') _addVariable();
+    else if (act === 'var-del') _delVariable(btn.getAttribute('data-var'));
+  });
+  // Cell edits mutate the in-memory config without a re-render (keep focus).
+  _on(audModal, 'input', (e) => {
+    const lbl = e.target.closest('.cdx-aud-label');
+    if (lbl) { const k = lbl.getAttribute('data-aud-label'); if (_audienceConfig.audiences[k]) _audienceConfig.audiences[k].label = lbl.value; return; }
+    const txt = e.target.closest('.cdx-var-text');
+    if (txt) { _ensureCell(txt.getAttribute('data-aud'), txt.getAttribute('data-var')).text = txt.value; }
+  });
+  _on(audModal, 'change', (e) => {
+    const g = e.target.closest('.cdx-var-g');
+    if (g) { _ensureCell(g.getAttribute('data-aud'), g.getAttribute('data-var')).g = g.value; return; }
+    const n = e.target.closest('.cdx-var-n');
+    if (n) { _ensureCell(n.getAttribute('data-aud'), n.getAttribute('data-var')).n = n.value; }
   });
 
   // Search clear
@@ -1097,11 +1300,14 @@ export function mount(viewEl, ctx) {
     if (bulk && !bulk.hidden) { _closeBulk(); return; }
     const modal = _q('#cdx-bank-modal');
     if (modal && !modal.hidden) { _closeModal(); return; }
+    const aud = _q('#cdx-bank-aud');
+    if (aud && !aud.hidden) { _closeAudiences(); return; }
     if (_editBank) { _editBank = false; _selected.clear(); _renderConjunto(); }
   });
 
   _loadSets();
   _loadQuestions();
+  _loadAudienceConfig();
 }
 
 function _submitNewSet() {
@@ -1129,4 +1335,5 @@ export function unmount() {
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
+  _audienceConfig = null; _audTab = 'audiences'; setAudienceConfig(null);
 }

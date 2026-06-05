@@ -6,9 +6,18 @@
 // the form to the frozen Worker shape; the facade/Worker serialize from there.
 // Strings via t(), no inline handlers, cdx- classes only.
 import { t } from '../js/i18n.js';
+import { resolve, isVariable, usedVars } from '../js/audiences.js';
 
 export const TYPES = ['mc', 'tf', 'poll', 'open', 'wordcloud', 'rating', 'numeric'];
+const CLASSES = ['generic', 'variable', 'unique'];
 const OPTION_TYPES = ['mc', 'tf', 'poll'];
+
+// The audience config (variables x audiences matrix) drives the "unique" audience
+// picker and the "variable" per-audience preview. The bank/live host load it once
+// and push it in here, so every later composer mount has it. Module-scoped on
+// purpose, this composer is a singleton-per-mount surface.
+let _audienceConfig = null;
+export function setAudienceConfig(config) { _audienceConfig = config || null; }
 
 // Pure: form -> frozen Worker question shape (options array + correct_answer +
 // max_select). Single-select correct is a scalar index; multi-select is an array.
@@ -35,6 +44,9 @@ export function buildPayload(form) {
     out.options = [];
     out.correct_answer = '';
   }
+  // audience tag: set only for the "unique" class; generic/variable carry null
+  // (variable-ness is conveyed by the {{}} tokens in the text, not a stored flag).
+  out.audience = (form.audience != null && form.audience !== '') ? form.audience : null;
   return out;
 }
 
@@ -98,26 +110,85 @@ function _renderOpts(optsEl, type, initial) {
   }
 }
 
+// Render the class-specific area below the text: for "unique" an audience picker;
+// for "variable" a token hint + a per-audience live preview; plus a non-blocking
+// warning when the chosen class and the text disagree.
+function _renderClassExtra(extraEl, cls, text, selectedAudience) {
+  const auds = (_audienceConfig && _audienceConfig.audiences) || {};
+  const audKeys = Object.keys(auds);
+  const label = (k) => (auds[k] && auds[k].label) || k;
+  let html = '';
+  let warn = '';
+  if (cls === 'unique') {
+    if (!audKeys.length) {
+      warn = t('questions.comp_class_warn_no_audiences');
+    } else {
+      html += '<label class="cdx-comp-field"><span class="cdx-comp-label">' + t('questions.comp_audience') + '</span>' +
+        '<select class="cdx-select cdx-comp-audience"><option value="">' + _esc(t('questions.comp_audience_pick')) + '</option>' +
+          audKeys.map((k) => '<option value="' + _esc(k) + '"' + (k === selectedAudience ? ' selected' : '') + '>' + _esc(label(k)) + '</option>').join('') +
+        '</select></label>';
+      if (!selectedAudience) warn = t('questions.comp_class_warn_no_audience');
+    }
+    if (!warn && isVariable(text)) warn = t('questions.comp_class_warn_has_tokens');
+  } else if (cls === 'variable') {
+    const vars = usedVars(text);
+    html += '<div class="cdx-comp-varhint">' + _esc(t('questions.comp_var_hint')) +
+      (vars.length ? ' <code>' + vars.map(_esc).join('</code> <code>') + '</code>' : '') + '</div>';
+    if (!isVariable(text)) {
+      warn = t('questions.comp_class_warn_no_tokens');
+    } else if (audKeys.length) {
+      html += '<div class="cdx-comp-preview">' + audKeys.map((k) =>
+        '<div class="cdx-comp-preview-row"><span class="cdx-comp-preview-aud">' + _esc(label(k)) + '</span>' +
+        '<span class="cdx-comp-preview-text">' + _esc(resolve(text, (auds[k] && auds[k].values) || {})) + '</span></div>').join('') + '</div>';
+    }
+  } else if (isVariable(text)) {
+    warn = t('questions.comp_class_warn_has_tokens');
+  }
+  if (warn) html += '<div class="cdx-comp-class-warn">' + _esc(warn) + '</div>';
+  extraEl.innerHTML = html;
+}
+
 // Render an editable composer into `container`. `initial` is an existing question
 // (to edit) or null (new). Returns { read(), destroy() }.
 export function mountComposer(container, initial) {
   const cleanup = [];
   const init = initial || {};
   const curType = init.type || 'mc';
+  const _initText = init.text || init.question || '';
+  const curClass = init.audience ? 'unique' : (isVariable(_initText) ? 'variable' : 'generic');
   container.innerHTML =
     '<div class="cdx-comp">' +
-      '<label class="cdx-comp-field"><span class="cdx-comp-label">' + t('questions.bank_type') + '</span>' +
-        '<select class="cdx-select cdx-comp-type">' +
-          TYPES.map((ty) => '<option value="' + ty + '"' + (ty === curType ? ' selected' : '') + '>' +
-            t('questions.type_' + ty) + '</option>').join('') +
-        '</select></label>' +
+      '<div class="cdx-comp-row2">' +
+        '<label class="cdx-comp-field"><span class="cdx-comp-label">' + t('questions.bank_type') + '</span>' +
+          '<select class="cdx-select cdx-comp-type">' +
+            TYPES.map((ty) => '<option value="' + ty + '"' + (ty === curType ? ' selected' : '') + '>' +
+              t('questions.type_' + ty) + '</option>').join('') +
+          '</select></label>' +
+        '<label class="cdx-comp-field"><span class="cdx-comp-label">' + t('questions.comp_class') + '</span>' +
+          '<select class="cdx-select cdx-comp-class">' +
+            CLASSES.map((c) => '<option value="' + c + '"' + (c === curClass ? ' selected' : '') + '>' +
+              t('questions.comp_class_' + c) + '</option>').join('') +
+          '</select></label>' +
+      '</div>' +
       '<label class="cdx-comp-field"><span class="cdx-comp-label">' + t('questions.bank_question_text') + '</span>' +
-        '<textarea class="cdx-input cdx-comp-text" rows="2">' + _esc(init.text || init.question || '') + '</textarea></label>' +
+        '<textarea class="cdx-input cdx-comp-text" rows="2">' + _esc(_initText) + '</textarea></label>' +
+      '<div class="cdx-comp-class-extra" id="cdx-comp-class-extra"></div>' +
       '<div class="cdx-comp-opts" id="cdx-comp-opts"></div>' +
     '</div>';
   const typeSel = container.querySelector('.cdx-comp-type');
+  const classSel = container.querySelector('.cdx-comp-class');
+  const textEl = container.querySelector('.cdx-comp-text');
+  const extraEl = container.querySelector('#cdx-comp-class-extra');
   const optsEl = container.querySelector('#cdx-comp-opts');
   _renderOpts(optsEl, curType, init);
+  _renderClassExtra(extraEl, classSel.value, textEl.value, init.audience || '');
+
+  const onClassOrText = () => _renderClassExtra(extraEl, classSel.value, textEl.value,
+    (extraEl.querySelector('.cdx-comp-audience') || {}).value || init.audience || '');
+  classSel.addEventListener('change', onClassOrText);
+  textEl.addEventListener('input', onClassOrText);
+  extraEl.addEventListener('change', (e) => { if (e.target.classList.contains('cdx-comp-audience')) onClassOrText(); });
+  cleanup.push(() => { classSel.removeEventListener('change', onClassOrText); textEl.removeEventListener('input', onClassOrText); });
 
   const onType = () => _renderOpts(optsEl, typeSel.value, null);
   typeSel.addEventListener('change', onType);
@@ -154,6 +225,8 @@ export function mountComposer(container, initial) {
       form.min = min ? min.value : '';
       form.max = max ? max.value : '';
     }
+    const cls = classSel.value;
+    form.audience = (cls === 'unique') ? ((extraEl.querySelector('.cdx-comp-audience') || {}).value || null) : null;
     return buildPayload(form);
   }
 
