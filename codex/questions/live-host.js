@@ -210,7 +210,10 @@ function _applyHostedUI(open) {
 function _refreshShareSurface(open) {
   const hasTrail = !!_buildTrailUrl();
   const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr');
-  if (trail) { trail.hidden = !open; trail.classList.toggle('is-linked', !!_trailTurma); }
+  // The Trilha button shows regardless of session state (Élder 2026-06-05): its
+  // panel links/views the turma trilha, which is useful before the session is
+  // started too. QR stays gated on a live, trail-linked session.
+  if (trail) { trail.hidden = false; trail.classList.toggle('is-linked', !!_trailTurma); }
   if (qr) qr.hidden = !(open && hasTrail);
 }
 
