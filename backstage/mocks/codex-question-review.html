@@ -86,9 +86,7 @@
     </span>
     <input id="search" type="search" placeholder="Filtrar por texto...">
   </div>
-  <div id="bank-filters" style="margin-top:8px;font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:8px;">
-    <span style="font-weight:600">Bancos:</span>
-  </div>
+  
   <div id="nav"></div>
 </header>
 <main id="main"></main>
@@ -120,28 +118,22 @@ function optsHtml(q){
 function metaHtml(q){if(!q)return '';const lens=(q.options||[]).map(o=>String(o).length);const mx=lens.length?Math.max(...lens):0;
   return '<div class="meta">'+(q.type==='poll'?'enquete \u00b7 ':'')+((q.options?q.options.length+' op\u00e7\u00f5es':''))+(mx?' \u00b7 maior '+mx+' car':'')+'</div>';}
 
-// populate bank checkboxes
-const bankFilters = document.getElementById('bank-filters');
-DATA.banks.forEach((b, bi) => {
-  const label = document.createElement('label');
-  label.style.cursor = 'pointer';
-  label.style.userSelect = 'none';
-  const chk = document.createElement('input');
-  chk.type = 'checkbox';
-  chk.id = 'b-chk-' + bi;
-  chk.checked = (b.name !== 'IA na advocacia'); // Default: unchecked for 'IA na advocacia'
-  chk.addEventListener('change', applyFilters);
-  label.appendChild(chk);
-  label.appendChild(document.createTextNode(' ' + b.name));
-  bankFilters.appendChild(label);
-});
-
 let reviewer = localStorage.getItem('codex_reviewer') || '';
 const main=document.getElementById('main'),nav=document.getElementById('nav');
 
 DATA.banks.forEach((b,bi)=>{
   const id='bank'+bi;
-  const a=document.createElement('a');a.href='#'+id;a.textContent=b.name+' ('+b.after+')';nav.appendChild(a);
+  const a=document.createElement('a');a.href='#'+id;
+  const chk = document.createElement('input');
+  chk.type = 'checkbox';
+  chk.id = 'b-chk-' + bi;
+  chk.checked = (b.name !== 'IA na advocacia');
+  chk.style.marginRight = '5px';
+  chk.addEventListener('click', e => e.stopPropagation());
+  chk.addEventListener('change', applyFilters);
+  a.appendChild(chk);
+  a.appendChild(document.createTextNode(b.name + ' (' + b.after + ')'));
+  nav.appendChild(a);
   const sec=document.createElement('section');sec.className='bank';sec.id=id;
   sec.innerHTML='<div class="bank-head"><h2>'+esc(b.name)+' <span class="counts">'+b.before+' \u2192 '+b.after+' \u00b7 mantidas '+b.kept+', ajustadas '+b.rewritten+', novas '+b.neu+'</span></h2><div class="cols-head"><div>Original</div><div>Proposta</div></div></div>';
   b.rows.forEach((row)=>{
@@ -233,8 +225,7 @@ function applyFilters(){
     const isChecked = cb ? cb.checked : true;
     if (sec) sec.classList.toggle('hidden', !isChecked);
     
-    const navLink = document.querySelector('a[href="#bank' + bi + '"]');
-    if (navLink) navLink.classList.toggle('hidden', !isChecked);
+    
   });
 }
 ['t-kept','t-rewritten','t-new'].forEach(id=>document.getElementById(id).addEventListener('change',applyFilters));
