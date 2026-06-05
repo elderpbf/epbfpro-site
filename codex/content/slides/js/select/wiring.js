@@ -73,7 +73,8 @@ export function initSelect(app) {
   }
   function caps() {
     const d = desc();
-    return geometryCaps(d ? d.geometry : null);
+    const s = app.cur().slots;
+    return geometryCaps(d ? d.geometry : null, s && s.stacked); // flowCard flips to vertical resize when stacked
   }
   function curEl() {
     const d = desc();

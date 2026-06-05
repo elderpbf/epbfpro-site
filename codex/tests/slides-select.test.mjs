@@ -539,3 +539,23 @@ test('cards layout adds the .cardrow col class only when stacked', () => {
   const stacked = cardsLayout.render({ title: '', stacked: true, cards: [{ id: 'c1', mode: 'text', text: 'A' }] });
   assert.match(stacked, /class="cardrow col"/, 'col class when stacked');
 });
+
+/* ---------- stacked cards: vertical resize axis + axis-aware labels ---------- */
+test('geometryCaps: flowCard flips to HEIGHT resize when the row is stacked', () => {
+  assert.deepEqual(geometryCaps('flowCard', true), { move: false, resizeW: false, resizeH: true, rotate: false }, 'stacked -> up/down handles');
+  assert.deepEqual(geometryCaps('flowCard', false), { move: false, resizeW: true, resizeH: false, rotate: false }, 'row -> left/right handles');
+});
+
+test('flowCard.write stores the HEIGHT as the basis when the row is stacked', () => {
+  const slide = { overrides: {}, slots: { stacked: true, cards: [{ id: 'a' }] } };
+  const app = { cur: () => slide };
+  strategies.flowCard.write(app, { ref: 'cards.a' }, { x: 0, y: 0, w: 300, h: 180, rot: 0 });
+  assert.deepEqual(slide.overrides['cards.a'], { w: 180, flow: true }, 'basis = height when stacked (kept under w)');
+});
+
+test('cardTogglesMenu labels follow the active axis (widths in a row, heights when stacked)', () => {
+  const row = kinds.cardTogglesMenu({ stacked: false });
+  const col = kinds.cardTogglesMenu({ stacked: true });
+  assert.notEqual(row.find((c) => c.id === 'reset-widths').label, col.find((c) => c.id === 'reset-widths').label, 'equalize label differs by axis');
+  assert.notEqual(row.find((c) => c.id === 'sym').label, col.find((c) => c.id === 'sym').label, 'symmetric label differs by axis');
+});

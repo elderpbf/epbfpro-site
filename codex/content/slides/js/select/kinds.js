@@ -366,9 +366,10 @@ function addAfter(app, ref) {
 // 2026-06-03). symResize/stacked are plain per-slide flags read by geometry.flowCard
 // and the cards layout; reset clears every card width override (back to equal flex).
 export function cardTogglesMenu(slots) {
+  const stacked = !!slots.stacked; // labels follow the active axis (width in a row, height when stacked)
   return [
     {
-      type: "toggle", id: "sym", labelKey: "slides.ed_sym_width", on: !!slots.symResize,
+      type: "toggle", id: "sym", label: stacked ? t("slides.ed_sym_height") : t("slides.ed_sym_width"), on: !!slots.symResize,
       write(app, sel, checked) { app.record(); app.cur().slots.symResize = checked; app.refresh(); },
     },
     {
@@ -376,7 +377,7 @@ export function cardTogglesMenu(slots) {
       write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
     },
     {
-      type: "button", id: "reset-widths", labelKey: "slides.ed_equalize",
+      type: "button", id: "reset-widths", label: stacked ? t("slides.ed_equalize_h") : t("slides.ed_equalize_w"),
       run(app) {
         app.record();
         const ov = app.cur().overrides;
@@ -408,6 +409,7 @@ register({
   },
   controls(app, sel, card) {
     if (!card) return [];
+    const stacked = !!(app.cur().slots && app.cur().slots.stacked); // ▲▼ + vertical resize when stacked
     const ctrls = [];
     if (this.editEl(app, sel)) ctrls.push(...formatControls(), { type: "sep" });
     ctrls.push({
@@ -428,8 +430,8 @@ register({
       },
     });
     ctrls.push(
-      { type: "button", id: "move-l", label: "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
-      { type: "button", id: "move-r", label: "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
+      { type: "button", id: "move-l", label: stacked ? "▲" : "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
+      { type: "button", id: "move-r", label: stacked ? "▼" : "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
       { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
       { type: "sep" },
