@@ -719,6 +719,8 @@ export default {
   'questions.host_bank_empty':           'Nenhuma questão neste conjunto.',
   'questions.host_bank_set_label':       'Conjunto',
   'questions.host_bank_launch':          'Lançar',
+  'questions.host_audience_none':        'Sem audiência',
+  'questions.host_audience_unresolved':  'Selecione a audiência: esta questão tem variáveis não preenchidas para ela.',
   'questions.host_show_results':         'Mostrar resultados',
   'questions.host_reveal_answer':        'Revelar resposta correta',
   'questions.host_launch_btn':           'Lançar pergunta',

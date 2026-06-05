@@ -720,6 +720,8 @@ export default {
   'questions.host_bank_empty':           'No questions in this set.',
   'questions.host_bank_set_label':       'Set',
   'questions.host_bank_launch':          'Launch',
+  'questions.host_audience_none':        'No audience',
+  'questions.host_audience_unresolved':  'Pick an audience: this question has variables not filled in for it.',
   'questions.host_show_results':         'Show results',
   'questions.host_reveal_answer':        'Reveal correct answer',
   'questions.host_launch_btn':           'Launch question',

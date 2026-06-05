@@ -13,12 +13,13 @@
 // unmount() is release-gated (tests/questions-unmount.test.mjs): it tears down
 // the embedded element's poll, the Q&A feed's poll, the SQA debounce, and every
 // layout/resizer/document/modal listener.
-import { questions as api, cohorts, ai } from '../js/codex-api.js';
+import { questions as api, cohorts, ai, audiences as audienceApi } from '../js/codex-api.js';
 import { mountComposer } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import { resolveQuestion, isVariable, questionType, visibleForAudience } from '../js/audiences.js';
 
 const LAYOUT_KEY = 'codex_host_layout';
 const DEFAULT_LAYOUT = { left: { visible: true, width: 360 }, center: { visible: true }, right: { visible: true, width: 380 } };
@@ -39,6 +40,8 @@ let _sqaSaving = false;
 let _layout = null;
 let _historyMap = {};
 let _bankMap = {};
+let _audienceConfig = null;   // { variables, audiences } loaded from the Worker config doc
+let _selectedAudience = '';   // audience key governing bank filter + launch resolution
 let _trailTurma = null;
 let _trailAllTurmas = [];
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
@@ -114,6 +117,7 @@ function _composerCardMarkup() {
       '<div class="cdx-bank-set-row">' +
         '<label class="cdx-bank-set-label" for="cdx-bank-set">' + _esc(t('questions.host_bank_set_label')) + '</label>' +
         '<select class="cdx-select" id="cdx-bank-set"><option value="">' + _esc(t('questions.host_bank_pick')) + '</option></select>' +
+        '<select class="cdx-select cdx-bank-audience" id="cdx-bank-audience" title="' + _esc(t('questions.host_audience_none')) + '" hidden></select>' +
       '</div>' +
       '<div class="cdx-bank-list" id="cdx-bank-list"><div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div></div>' +
     '</div>' +
@@ -520,6 +524,35 @@ async function _loadBankSets() {
   sel.innerHTML = '<option value="">' + _esc(t('questions.host_bank_pick')) + '</option>' + banks.map((b) => '<option value="' + _esc(b.name || b) + '">' + _esc(b.name || b) + '</option>').join('');
 }
 
+// The audience config (variables x audiences matrix) is loaded once per mount.
+// It governs which bank questions show (unique ones are audience-scoped) and how
+// variable {{...}} tokens resolve at launch.
+async function _loadAudienceConfig() {
+  let res;
+  try { res = await audienceApi.getConfig(); } catch (_) { res = null; }
+  _audienceConfig = (res && res.config) || null;
+  _populateAudiencePicker();
+}
+
+function _populateAudiencePicker() {
+  const sel = _q('#cdx-bank-audience');
+  if (!sel) return;
+  const auds = (_audienceConfig && _audienceConfig.audiences) || {};
+  const keys = Object.keys(auds);
+  if (!keys.length) { sel.hidden = true; sel.innerHTML = ''; return; }
+  sel.hidden = false;
+  sel.innerHTML = '<option value="">' + _esc(t('questions.host_audience_none')) + '</option>' +
+    keys.map((k) => '<option value="' + _esc(k) + '"' + (k === _selectedAudience ? ' selected' : '') + '>' +
+      _esc((auds[k] && auds[k].label) || k) + '</option>').join('');
+}
+
+// The value map of the currently selected audience, or null (no audience).
+function _audienceValues() {
+  if (!_audienceConfig || !_audienceConfig.audiences || !_selectedAudience) return null;
+  const a = _audienceConfig.audiences[_selectedAudience];
+  return (a && a.values) || null;
+}
+
 async function _loadBankQuestions(listName) {
   const list = _q('#cdx-bank-list');
   if (!list) return;
@@ -527,12 +560,17 @@ async function _loadBankQuestions(listName) {
   list.innerHTML = '<div class="cdx-bank-msg">' + _esc(t('questions.sessions_loading')) + '</div>';
   let res;
   try { res = await api.getQuestions({ list_name: listName }); } catch (e) { notice.internal(e); res = null; }
-  const qs = (res && res.questions) || [];
+  // Hide unique questions that belong to a different audience than the selected one.
+  const qs = ((res && res.questions) || []).filter((q) => visibleForAudience(q, _selectedAudience));
   if (!qs.length) { list.innerHTML = '<div class="cdx-bank-msg">' + _esc(t('questions.host_bank_empty')) + '</div>'; return; }
+  const vals = _audienceValues();
   _bankMap = {};
   list.innerHTML = qs.map((q, i) => {
     _bankMap[i] = q;
-    return '<div class="cdx-bank-item" data-bank-i="' + i + '"><span class="cdx-bank-item-text">' + _esc(q.question || q.text || '') + '</span>' +
+    // Show the resolved text for the selected audience so the host previews what
+    // students will see; the raw template stays in _bankMap for launch.
+    const shown = resolveQuestion(q, vals).question;
+    return '<div class="cdx-bank-item" data-bank-i="' + i + '"><span class="cdx-bank-item-text">' + _esc(shown) + '</span>' +
       '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button></div>';
   }).join('');
 }
@@ -540,15 +578,25 @@ async function _loadBankQuestions(listName) {
 function _safeParse(s) { try { return JSON.parse(s); } catch (_) { return []; } }
 
 function _prefillFromBank(q) {
-  const opts = (typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []);
+  const r = resolveQuestion(q, _audienceValues());
+  const opts = Array.isArray(r.options) ? r.options
+    : ((typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []));
   const correct = Array.isArray(q.correct_answers) ? q.correct_answers
     : (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '' ? [parseInt(q.correct_answer, 10)] : []);
-  _remountComposer({ type: q.type || 'mc', text: q.question || q.text || '', options: opts, correct_answers: correct, correct_answer: q.correct_answer, max_select: q.max_select !== undefined ? q.max_select : 1 });
+  _remountComposer({ type: q.type || 'mc', text: r.question, options: opts, correct_answers: correct, correct_answer: q.correct_answer, max_select: q.max_select !== undefined ? q.max_select : 1 });
 }
 
 async function _launchFromBank(q) {
-  const opts = (typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []);
-  const payload = { session_code: _session.code, type: q.type || 'mc', text: q.question || q.text, options: opts,
+  const r = resolveQuestion(q, _audienceValues());
+  // Never launch an unresolved template to students: a leftover {{...}} means no
+  // audience was picked, or the audience is missing a value for this variable.
+  if (isVariable(r.question) || (Array.isArray(r.options) && r.options.some((o) => isVariable(o)))) {
+    notice.error(t('questions.host_audience_unresolved'));
+    return;
+  }
+  const opts = Array.isArray(r.options) ? r.options
+    : ((typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []));
+  const payload = { session_code: _session.code, type: q.type || 'mc', text: r.question, options: opts,
     correct_answer: (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '') ? q.correct_answer : null };
   if (TEXT_TYPES.includes(q.type)) payload.max_select = 0;
   else payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select, 10) : 1;
@@ -608,6 +656,7 @@ export function mount(containerEl, ctx) {
   _layout = _loadLayout();
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _sqaLastServerAnswer = null; _sqaSaving = false; _historyMap = {}; _bankMap = {};
+  _audienceConfig = null; _selectedAudience = '';
   _trailTurma = null; _trailAllTurmas = [];
   _onStats = (ctx && ctx.onStats) || null;
   _onDelete = (ctx && ctx.onDelete) || null;
@@ -629,6 +678,7 @@ export function mount(containerEl, ctx) {
 
   _applyHostedUI(_isOpen());
   _loadTrail();
+  _loadAudienceConfig();
 
   const host = _q('#cdx-host');
   _on(host, 'click', (e) => {
@@ -692,6 +742,11 @@ export function mount(containerEl, ctx) {
   });
 
   _on(_q('#cdx-bank-set'), 'change', (e) => _loadBankQuestions(e.target.value));
+  _on(_q('#cdx-bank-audience'), 'change', (e) => {
+    _selectedAudience = e.target.value;
+    const setSel = _q('#cdx-bank-set');
+    _loadBankQuestions(setSel ? setSel.value : '');
+  });
   _on(_q('#cdx-bank-list'), 'click', (e) => {
     const item = e.target.closest('[data-bank-i]');
     if (item && !e.target.closest('[data-act="bank-launch"]')) { const q = _bankMap[item.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); }

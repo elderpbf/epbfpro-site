@@ -56,6 +56,14 @@ export const lessons = {
   getCodexView: (p) => call('cv_get_codex_view', p)     // { client_slug, turma_slug } -> { vault }
 };
 
+// Audience config (Codex variable-question matrix): one JSON doc in the Backstage
+// `config` table. Codex resolves variable questions client-side from it; the
+// Worker only persists it. New net-new actions (not part of the frozen set).
+export const audiences = {
+  getConfig:  () => call('get_audience_config'),      // -> { config }
+  saveConfig: (p) => call('save_audience_config', p)  // { config }
+};
+
 // Questions (host/admin plane): live sessions, bank, student Q&A, stats. The
 // core actions carry NO prefix (the original pre-prefix ClassPulse actions);
 // cp_* is the public student/trilha path (see `cp` above), out of the host
