@@ -239,6 +239,16 @@ body.guest-mode .topbar::before {
 const isAuthenticated = () => window.BS_AUTH ? BS_AUTH.isAuthedLocal() : false;
 
 const MOCKS = {
+  advradar: {
+    label: 'advradar (monitor de publicações · OAB)',
+    items: [
+      { name: 'Painel v2 · cockpit de triagem (abas-pasta · etiquetas · seleção) ★', file: 'advradar/painel-v2.html' },
+      { name: 'Painel · versão única refinada', file: 'advradar/painel.html' },
+      { name: 'Busca · palette desktop + barra inferior mobile', file: 'advradar/search.html' },
+      { name: 'App · 3 conceitos (estudo)', file: 'advradar/app-concepts.html' },
+      { name: 'Main + páginas · 3 opções de layout (v1)', file: 'advradar/main-layouts.html' }
+    ]
+  },
   slides: {
     label: 'Slides (editor · estudos de UI)',
     items: [
