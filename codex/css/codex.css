@@ -1,62 +1,9 @@
-/* Codex-specific styles.
+/* Codex-specific styles (components + chrome).
  *
- * Codex reuses Backstage's theme.css (color tokens), backstage.css (shell
- * chrome), and shared-components.css. Add ONLY Codex-only rules here. Surface/
- * text/border values come from theme.css variables, never hex literals. */
-
-/* Per-functionality accent colors. These are brand accents, intentionally the
- * same in light and dark (they tint a tab glyph + active underline), so they
- * need no [data-theme="dark"] override. Any future surface/text/border var
- * added here MUST get a dark override, per the project rule. */
-:root {
-  --codex-lessons:   #6366f1;
-  --codex-content:   #14b8a6;
-  --codex-cohorts:   #f59e0b;
-  --codex-questions: #ec4899;
-}
-
-/* ── Component + status tokens ───────────────────────────────────────────────
- * Moved here from cohorts.css (2026-06-04) so codex.css is the single token
- * home (ARCHITECTURE.md §8). Values byte-identical to the originals; every
- * surface/text/border token has the [data-theme="dark"] override below.
- * --danger is an alias of --error: it inherits --error's dark value, so it
- * needs no entry in the dark block. */
-:root {
-  --cdx-card-hover-bg:     rgba(20, 184, 166, 0.06);
-  --cdx-card-hover-border: rgba(20, 184, 166, 0.25);
-  --cdx-card-sel-bg:       rgba(20, 184, 166, 0.12);
-  --cdx-card-sel-border:   rgba(20, 184, 166, 0.4);
-  --cdx-chip-bg:           rgba(20, 184, 166, 0.08);
-  --cdx-chip-border:       rgba(20, 184, 166, 0.18);
-  --cdx-success-border:    rgba(22, 163, 74, 0.35);
-  --cdx-backdrop:          rgba(0, 0, 0, 0.45);
-  --cdx-danger-bg:         rgba(239, 68, 68, 0.04);
-  --cdx-btn-primary-text:  #ffffff;
-  --cdx-btn-primary-bg:    var(--primary);
-  --cdx-agendada-bg:       rgba(59, 130, 246, 0.1);
-  --cdx-agendada-text:     #3b82f6;
-  --cdx-remarcada-bg:      rgba(245, 158, 11, 0.1);
-  --cdx-remarcada-text:    #d97706;
-  --danger:                var(--error);
-}
-
-[data-theme="dark"] {
-  --cdx-card-hover-bg:     rgba(20, 184, 166, 0.1);
-  --cdx-card-hover-border: rgba(20, 184, 166, 0.3);
-  --cdx-card-sel-bg:       rgba(20, 184, 166, 0.18);
-  --cdx-card-sel-border:   rgba(20, 184, 166, 0.55);
-  --cdx-chip-bg:           rgba(20, 184, 166, 0.12);
-  --cdx-chip-border:       rgba(20, 184, 166, 0.25);
-  --cdx-success-border:    rgba(52, 211, 153, 0.4);
-  --cdx-backdrop:          rgba(0, 0, 0, 0.65);
-  --cdx-danger-bg:         rgba(248, 113, 113, 0.08);
-  --cdx-btn-primary-text:  #ffffff;
-  --cdx-btn-primary-bg:    #0d9488;
-  --cdx-agendada-bg:       rgba(59, 130, 246, 0.15);
-  --cdx-agendada-text:     #93c5fd;
-  --cdx-remarcada-bg:      rgba(245, 158, 11, 0.15);
-  --cdx-remarcada-text:    #fcd34d;
-}
+ * Design TOKENS live in css/tokens.css (the single token home), loaded before
+ * this file. Codex also reuses Backstage's theme.css palette, backstage.css
+ * shell chrome, and shared-components.css. Add ONLY Codex component rules here;
+ * surface/text/border values come from the tokens, never hex literals. */
 
 /* ── Rich tab strip in the Codex topbar ─────────────────────── */
 .cdx-tabs {

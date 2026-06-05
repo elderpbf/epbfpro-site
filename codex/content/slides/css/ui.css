@@ -34,12 +34,12 @@
 .cdx-deck-editor #chrome input[type=range] { width: 90px; }
 
 /* nav (left thumbnail rail; absolute within container, below the chrome) */
-.cdx-deck-editor #nav { position: absolute; left: 0; top: var(--chrome-h, 52px); bottom: 0; width: 192px; z-index: 40; background: var(--panel-2); border-right: 1px solid var(--border); overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 10px; }
+.cdx-deck-editor #nav { position: absolute; left: 0; top: var(--chrome-h, 52px); bottom: 0; width: 192px; z-index: 40; background: var(--panel-2); border-right: 1px solid var(--border); overflow-y: auto; padding: 0 10px 12px; display: flex; flex-direction: column; gap: 10px; }
 /* pinned rail header: slide navigator (◀ pos ▶) + "＋ slide" on ONE row, sticky atop
    the scrolling thumbs. Negative margins span it to the rail's inner edges (cancelling
    the rail's 12/10 padding); its own background covers thumbs sliding under it. The
    controls are compact so the whole row fits the 192px rail; ＋ slide sits at the end. */
-.cdx-deck-editor .navhdr { position: sticky; top: 0; z-index: 2; display: flex; flex-direction: row; align-items: center; gap: 6px; margin: -12px -10px 0; padding: 10px; background: var(--panel-2); border-bottom: 1px solid var(--border); }
+.cdx-deck-editor .navhdr { position: sticky; top: 0; z-index: 2; display: flex; flex-direction: row; align-items: center; gap: 6px; margin: 0 -10px 0; padding: 10px; background: var(--panel-2); border-bottom: 1px solid var(--border); }
 .cdx-deck-editor .navhdr .navnav { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
 .cdx-deck-editor .navhdr .pos { min-width: 30px; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }
 .cdx-deck-editor .navhdr .navbtn { font: inherit; font-size: 12px; line-height: 1; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 4px 7px; cursor: pointer; }

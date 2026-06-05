@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
+const tokens = read('../css/tokens.css');
 const codex = read('../css/codex.css');
 const cohorts = read('../cohorts/cohorts.css');
 const content = read('../content/content.css');
@@ -26,20 +27,21 @@ function blockVars(src, header) {
   return vars;
 }
 
-test('codex.css is the single token home (cohorts.css no longer defines --cdx-*)', () => {
-  assert.match(codex, /--cdx-card-sel-bg\s*:/, 'codex.css defines the --cdx-* tokens');
+test('tokens.css is the single token home (codex.css + cohorts.css no longer define --cdx-*)', () => {
+  assert.match(tokens, /--cdx-card-sel-bg\s*:/, 'tokens.css defines the --cdx-* tokens');
+  assert.ok(!/--cdx-card-sel-bg\s*:/.test(codex), 'codex.css must not redefine the moved tokens');
   assert.ok(!/--cdx-card-sel-bg\s*:/.test(cohorts), 'cohorts.css must not redefine the moved tokens');
 });
 
 test('--danger is a themed alias, not a hardcoded fallback', () => {
-  assert.match(codex, /--danger\s*:\s*var\(--error\)/, 'codex.css defines --danger: var(--error)');
+  assert.match(tokens, /--danger\s*:\s*var\(--error\)/, 'tokens.css defines --danger: var(--error)');
   assert.ok(!/var\(--danger,\s*#/.test(content), 'no var(--danger, #hex) fallback literals remain');
   assert.ok(!/#d33/.test(content), 'the old #d33 literal is gone');
 });
 
-test('every owned surface/text/border token in codex.css has a dark override', () => {
-  const light = blockVars(codex, ':root');
-  const dark = new Set(blockVars(codex, '\\[data-theme="dark"\\]'));
+test('every owned surface/text/border token has a dark override', () => {
+  const light = blockVars(tokens, ':root');
+  const dark = new Set(blockVars(tokens, '\\[data-theme="dark"\\]'));
   // Brand accents are intentionally theme-stable; --danger inherits via --error.
   const exempt = new Set([
     '--codex-lessons', '--codex-content', '--codex-cohorts', '--codex-questions', '--danger',
