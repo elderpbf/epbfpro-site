@@ -13,7 +13,7 @@
 // unmount() is release-gated (tests/questions-unmount.test.mjs): it tears down
 // the embedded element's poll, the Q&A feed's poll, the SQA debounce, and every
 // layout/resizer/document/modal listener.
-import { questions as api, cohorts, ai, audiences as audienceApi } from '../js/codex-api.js';
+import { questions as api, cohorts, audiences as audienceApi } from '../js/codex-api.js';
 import { mountComposer } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
@@ -103,11 +103,10 @@ function _barMarkup() {
 
 function _displayHref() { return '/go/display.html?code=' + encodeURIComponent(_session.code); }
 
-// Inline SVG glyphs copied node-for-node from host.html (bank hamburger, AI
-// "Gerar" star, AI "Melhorar" expand) so the composer card reads like the legacy.
+// Inline SVG glyph copied node-for-node from host.html (the bank hamburger). The
+// AI Gerar/Melhorar glyphs now live in the shared composer, which renders the AI
+// buttons itself so the Bank and the live host show the same controls.
 const _ICON_BANK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>';
-const _ICON_AI_GEN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-const _ICON_AI_IMP = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
 
 function _composerCardMarkup() {
   return '<div class="cdx-host-card" id="cdx-launch-card">' +
@@ -122,10 +121,6 @@ function _composerCardMarkup() {
       '<div class="cdx-bank-list" id="cdx-bank-list"><div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div></div>' +
     '</div>' +
     '<div class="cdx-host-composer" id="cdx-host-composer"></div>' +
-    '<div class="cdx-host-btn-row">' +
-      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-generate" type="button">' + _ICON_AI_GEN + ' ' + _esc(t('questions.host_ai_generate')) + '</button>' +
-      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-improve" type="button">' + _ICON_AI_IMP + ' ' + _esc(t('questions.host_ai_improve')) + '</button>' +
-    '</div>' +
     '<p class="cdx-host-error" id="cdx-host-error"></p>' +
     '<div class="cdx-host-btn-row">' +
       '<button class="cdx-btn cdx-btn-primary" data-act="launch" type="button">' + _esc(t('questions.host_launch_btn')) + '</button>' +
@@ -494,28 +489,6 @@ function _remountComposer(initial) {
   _composer = mountComposer(host, initial);
 }
 
-// ── AI generate / improve (Gerar / Melhorar) ─────────────────
-async function _aiQuestion(mode) {
-  if (!_composer) return;
-  const errEl = _q('#cdx-host-error');
-  const current = _composer.read();
-  const topic = String(current.question || '').trim();
-  if (mode === 'improve' && !topic) { if (errEl) errEl.textContent = t('questions.host_err_no_text'); return; }
-  if (errEl) errEl.textContent = '';
-  let res;
-  try { res = await ai.question({ mode, type: current.type, topic, text: topic }); }
-  catch (e) { notice.internal(e); res = null; }
-  if (!res || res.error || !res.question) { if (errEl) errEl.textContent = t('questions.host_err_ai'); return; }
-  _remountComposer({
-    type: res.type || current.type,
-    text: res.question,
-    options: res.options || [],
-    correct_answers: Array.isArray(res.correct_answers) ? res.correct_answers
-      : (res.correct_answer !== undefined && res.correct_answer !== null && res.correct_answer !== '' ? [res.correct_answer] : []),
-    correct_answer: res.correct_answer,
-    max_select: res.max_select !== undefined ? res.max_select : 1,
-  });
-}
 
 // ── Bank picker ──────────────────────────────────────────────
 async function _loadBankSets() {
@@ -705,8 +678,6 @@ export function mount(containerEl, ctx) {
       if (act === 'launch') return _launch();
       if (act === 'clear') return _remountComposer(null);
       if (act === 'close-q' || act === 'sqa-close') return _closeQuestion();
-      if (act === 'ai-generate') return _aiQuestion('generate');
-      if (act === 'ai-improve') return _aiQuestion('improve');
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
       if (act === 'qr') return _openQr();
       if (act === 'bank-toggle') { const p = _q('#cdx-bank-panel'); const open = p.classList.toggle('open'); btn.classList.toggle('open', open); if (open) _loadBankSets(); return; }

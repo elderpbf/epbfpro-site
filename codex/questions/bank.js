@@ -432,14 +432,6 @@ function _closeModal() {
   _destroyComposer();
 }
 
-function _remountComposer(initial) {
-  const host = _q('#cdx-bank-composer');
-  if (!host) return;
-  _destroyComposer();
-  _editingOriginal = (initial && initial._original != null) ? initial._original : _editingOriginal;
-  _composer = mountComposer(host, initial);
-}
-
 async function _saveQuestion() {
   if (!_composer || !_currentSet) return;
   const payload = _composer.read();
@@ -455,35 +447,6 @@ async function _saveQuestion() {
   _closeModal();
   await _loadQuestions();
   _loadSets();
-}
-
-async function _aiFill(kind) {
-  if (!_composer) return;
-  const cur = _composer.read();
-  const text = String(cur.question || '').trim();
-  const errEl = _q('.cdx-bank-modal-err');
-  if (errEl) errEl.textContent = '';
-  if (!text) { if (errEl) errEl.textContent = t(kind === 'improve' ? 'questions.bank_ai_improve_empty' : 'questions.bank_ai_empty'); return; }
-  const type = cur.type || 'mc';
-  const maxSel = (cur.max_select == null) ? 1 : cur.max_select;
-  const params = (kind === 'improve')
-    ? { improve_from: text, type: type, max_select: maxSel }
-    : { prompt: text, type: type, max_select: maxSel };
-  let res; try { res = await ai.question(params); } catch (e) { notice.internal(e); res = null; }
-  if (!_viewEl) return;
-  if (!res) { if (errEl) errEl.textContent = t('questions.bank_ai_error'); return; }
-  const out = res.ai || res;
-  const correct = Array.isArray(out.correct) ? out.correct.map(Number)
-    : (typeof out.correct === 'number' ? [out.correct] : []);
-  _remountComposer({
-    _original: _editingOriginal,
-    type: type,
-    question: out.question || '',
-    options: Array.isArray(out.options) ? out.options.map(_stripEnum) : [],
-    correct: correct,
-    correct_answers: correct,
-    max_select: maxSel,
-  });
 }
 
 // ---- Bulk generate modal (two steps: config -> review) ----
@@ -838,14 +801,14 @@ function _renderVariablesTab() {
   const vars = cfg.variables || [];
   if (!audKeys.length) return '<div class="cdx-bank-empty">' + t('questions.aud_no_audiences_hint') + '</div>' + _varAddRow();
   const issues = lintConfig(cfg);
-  const bad = new Set(issues.map((i) => i.audience + ' ' + i.variable));
+  const bad = new Set(issues.map((i) => i.audience + '|' + i.variable));
   const head = '<th>' + t('questions.aud_variable') + '</th>' + audKeys.map((k) => '<th>' + _esc(auds[k].label || k) + '</th>').join('');
   const rows = vars.map((v) =>
     '<tr><td class="cdx-var-key">' + _esc(v) +
       ' <button class="cdx-bank-iconbtn" data-act="var-del" data-var="' + _esc(v) + '" type="button" aria-label="x">✗</button></td>' +
       audKeys.map((k) => {
         const cell = (auds[k].values && auds[k].values[v]) || {};
-        const isBad = bad.has(k + ' ' + v);
+        const isBad = bad.has(k + '|' + v);
         return '<td class="cdx-var-cell' + (isBad ? ' cdx-var-cell--bad' : '') + '">' +
           '<input class="cdx-input cdx-var-text" data-aud="' + _esc(k) + '" data-var="' + _esc(v) + '" value="' + _esc(cell.text || '') + '" placeholder="' + _esc(t('questions.aud_value_ph')) + '">' +
           '<div class="cdx-var-gn">' + _gnSelect('g', k, v, cell.g || 'f') + _gnSelect('n', k, v, cell.n || 'sg') + '</div>' +
@@ -973,10 +936,6 @@ export function mount(viewEl, ctx) {
       '<div class="cdx-modal">' +
         '<div class="cdx-modal-title cdx-bank-modal-title"></div>' +
         '<div id="cdx-bank-composer"></div>' +
-        '<div class="cdx-bank-ai-row">' +
-          '<button class="cdx-btn cdx-btn-sm" data-act="ai-generate" type="button">' + t('questions.bank_generate') + '</button>' +
-          '<button class="cdx-btn cdx-btn-sm" data-act="ai-improve" type="button">' + t('questions.bank_improve') + '</button>' +
-        '</div>' +
         '<p class="cdx-bank-modal-err"></p>' +
         '<div class="cdx-modal-actions">' +
           '<button class="cdx-btn" data-act="cancel-q" type="button">' + t('questions.bank_cancel') + '</button>' +
@@ -1243,8 +1202,6 @@ export function mount(viewEl, ctx) {
     const act = btn.getAttribute('data-act');
     if (act === 'cancel-q') _closeModal();
     else if (act === 'save-q') _saveQuestion();
-    else if (act === 'ai-generate') _aiFill('generate');
-    else if (act === 'ai-improve') _aiFill('improve');
   });
 
   // Bulk modal (delegated)

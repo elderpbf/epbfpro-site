@@ -6,11 +6,18 @@
 // the form to the frozen Worker shape; the facade/Worker serialize from there.
 // Strings via t(), no inline handlers, cdx- classes only.
 import { t } from '../js/i18n.js';
+import { ai } from '../js/codex-api.js';
+import * as notice from '../js/notice.js';
 import { resolve, isVariable, usedVars } from '../js/audiences.js';
 
 export const TYPES = ['mc', 'tf', 'poll', 'open', 'wordcloud', 'rating', 'numeric'];
 const CLASSES = ['generic', 'variable', 'unique'];
 const OPTION_TYPES = ['mc', 'tf', 'poll'];
+
+// AI Gerar / Melhorar glyphs (node-for-node from host.html). Owned here so the
+// Bank editor and the live-host card render the SAME buttons from ONE source.
+const _AI_GEN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+const _AI_IMP = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
 
 // The audience config (variables x audiences matrix) drives the "unique" audience
 // picker and the "variable" per-audience preview. The bank/live host load it once
@@ -174,6 +181,10 @@ export function mountComposer(container, initial) {
         '<textarea class="cdx-input cdx-comp-text" rows="2">' + _esc(_initText) + '</textarea></label>' +
       '<div class="cdx-comp-class-extra" id="cdx-comp-class-extra"></div>' +
       '<div class="cdx-comp-opts" id="cdx-comp-opts"></div>' +
+      '<div class="cdx-comp-ai-row">' +
+        '<button class="cdx-btn cdx-btn--ghost cdx-comp-ai" data-act="ai-generate" type="button">' + _AI_GEN + ' ' + _esc(t('questions.host_ai_generate')) + '</button>' +
+        '<button class="cdx-btn cdx-btn--ghost cdx-comp-ai" data-act="ai-improve" type="button">' + _AI_IMP + ' ' + _esc(t('questions.host_ai_improve')) + '</button>' +
+      '</div>' +
     '</div>';
   const typeSel = container.querySelector('.cdx-comp-type');
   const classSel = container.querySelector('.cdx-comp-class');
@@ -208,6 +219,57 @@ export function mountComposer(container, initial) {
   };
   optsEl.addEventListener('click', onClick);
   cleanup.push(() => optsEl.removeEventListener('click', onClick));
+
+  // ── AI Gerar / Melhorar (shared by Bank + live host) ──────────
+  // Class-aware: Codex owns the prompt, we append instructions so "variable"
+  // questions come back as {{token}} templates and "unique" ones are tailored to
+  // the audience. The Worker action takes {prompt}|{improve_from}, never {mode}.
+  function _curMaxSel() { const ms = optsEl.querySelector('.cdx-comp-maxsel'); return ms ? Number(ms.value) : 1; }
+  function _augment(cls, audienceKey) {
+    const cfg = _audienceConfig;
+    if (cls === 'variable' && cfg && Array.isArray(cfg.variables) && cfg.variables.length) {
+      return '\n\n' + t('questions.comp_ai_variable_instr');
+    }
+    if (cls === 'unique' && cfg && cfg.audiences && cfg.audiences[audienceKey]) {
+      const a = cfg.audiences[audienceKey];
+      const v = a.values || {};
+      const ctx = (cfg.variables || []).map((k) => (v[k] && v[k].text) ? (k + '=' + v[k].text) : '').filter(Boolean).join(', ');
+      return '\n\n' + t('questions.comp_ai_unique_instr').replace('{label}', a.label || audienceKey).replace('{context}', ctx);
+    }
+    return '';
+  }
+  function _applyAi(res, maxSel) {
+    const out = (res && res.ai) || res;
+    if (!out || !out.question) { notice.error(t('questions.bank_ai_error')); return; }
+    textEl.value = out.question;
+    const correct = Array.isArray(out.correct) ? out.correct.map(Number)
+      : (out.correct !== undefined && out.correct !== null && out.correct !== '' ? [Number(out.correct)] : []);
+    _renderOpts(optsEl, typeSel.value, {
+      options: Array.isArray(out.options) ? out.options : (out.options || []),
+      correct_answers: correct, max_select: maxSel,
+    });
+    onClassOrText();
+  }
+  async function _aiFlow(kind) {
+    const cls = classSel.value;
+    const audienceKey = (extraEl.querySelector('.cdx-comp-audience') || {}).value || '';
+    const topic = String(textEl.value || '').trim();
+    if (!topic) { notice.info(t(kind === 'improve' ? 'questions.bank_ai_improve_empty' : 'questions.bank_ai_empty')); return; }
+    if (cls === 'unique' && !audienceKey) { notice.info(t('questions.comp_class_warn_no_audience')); return; }
+    const maxSel = _curMaxSel();
+    const aug = _augment(cls, audienceKey);
+    const params = { type: typeSel.value, max_select: maxSel };
+    if (kind === 'improve') params.improve_from = topic + aug; else params.prompt = topic + aug;
+    const btns = container.querySelectorAll('.cdx-comp-ai');
+    btns.forEach((b) => { b.disabled = true; });
+    let res; try { res = await ai.question(params); } catch (e) { notice.internal(e); res = null; }
+    btns.forEach((b) => { b.disabled = false; });
+    if (!res || res.error) { notice.error(t('questions.bank_ai_error')); return; }
+    _applyAi(res, maxSel);
+  }
+  const aiRow = container.querySelector('.cdx-comp-ai-row');
+  const onAi = (e) => { const b = e.target.closest('[data-act]'); if (!b) return; const a = b.getAttribute('data-act'); if (a === 'ai-generate') _aiFlow('generate'); else if (a === 'ai-improve') _aiFlow('improve'); };
+  if (aiRow) { aiRow.addEventListener('click', onAi); cleanup.push(() => aiRow.removeEventListener('click', onAi)); }
 
   function read() {
     const type = typeSel.value;

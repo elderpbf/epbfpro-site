@@ -734,6 +734,8 @@ export default {
   'questions.comp_class_warn_no_audience':  'Pick the audience for this question.',
   'questions.comp_class_warn_has_tokens':   'The text has {{...}} variables, but the class is not Variable.',
   'questions.comp_class_warn_no_tokens':    'Variable class with no {{...}} variable in the text.',
+  'questions.comp_ai_variable_instr':       'IMPORTANT: write the question as a reusable TEMPLATE. Instead of profession-specific terms (the document type, the professional role, the workplace), use {{...}} variables, e.g. {{deliverable:def}} (renders "the document"), {{deliverable:de}}, {{deliverable:em}}, {{actor_role}}, {{workspace}}, {{domain}}. Keep the {{...}} EXACTLY in that format in the stem and the options; they are substituted per audience.',
+  'questions.comp_ai_unique_instr':         'Context: write specifically for the audience "{label}" ({context}). Use that audience reality and write the final concrete text, with no {{}} variables.',
   'questions.qclass_variable':           'Variable',
   'questions.qclass_unique':             'Unique',
   'questions.bank_audiences':            'Audiences',

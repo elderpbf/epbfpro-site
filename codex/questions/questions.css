@@ -456,7 +456,10 @@
 
 /* Editor + bulk modals (reuse cohorts .cdx-modal-backdrop / .cdx-modal) */
 .cdx-bank-modal[hidden] { display: none; }
-.cdx-bank-ai-row { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+/* Cap bank modal height so tall content (typed-question composer, audience grid)
+   scrolls inside the modal instead of bleeding off the top/bottom of the screen. */
+.cdx-bank-modal .cdx-modal { max-height: 90vh; overflow-y: auto; }
+.cdx-comp-ai-row { display: flex; gap: 0.5rem; margin-top: 0.2rem; }
 .cdx-bank-modal-err { font-size: 0.8rem; color: var(--error); min-height: 1rem; margin: 0.5rem 0 0; }
 
 /* Reorder / move mode (Editar banco) */

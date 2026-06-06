@@ -733,6 +733,8 @@ export default {
   'questions.comp_class_warn_no_audience':  'Selecione a audiência desta questão.',
   'questions.comp_class_warn_has_tokens':   'O texto tem variáveis {{...}}, mas a classe não é Variável.',
   'questions.comp_class_warn_no_tokens':    'Classe Variável sem nenhuma variável {{...}} no texto.',
+  'questions.comp_ai_variable_instr':       'IMPORTANTE: escreva a questão como um TEMPLATE reutilizável. No lugar de termos específicos da profissão (o tipo de documento, o papel do profissional, o local de trabalho), use variáveis no formato {{...}}, por exemplo: {{deliverable:def}} (vira "a/o documento"), {{deliverable:de}} (da/do), {{deliverable:em}} (na/no), {{actor_role}}, {{workspace}}, {{domain}}. Mantenha os {{...}} EXATAMENTE nesse formato no enunciado e nas opções; serão substituídos conforme a audiência.',
+  'questions.comp_ai_unique_instr':         'Contexto: escreva especificamente para a audiência "{label}" ({context}). Use a realidade desse público e escreva o texto final concreto, sem variáveis {{}}.',
   'questions.qclass_variable':           'Variável',
   'questions.qclass_unique':             'Única',
   'questions.bank_audiences':            'Audiências',
