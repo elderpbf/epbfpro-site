@@ -214,11 +214,12 @@ function _applyHostedUI(open) {
 function _refreshShareSurface(open) {
   const hasTrail = !!_buildTrailUrl();
   const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr');
-  // The Trilha button shows regardless of session state (Élder 2026-06-05): its
-  // panel links/views the turma trilha, which is useful before the session is
-  // started too. QR stays gated on a live, trail-linked session.
+  // Trilha + QR show regardless of session state (Élder 2026-06-05): the trilha
+  // link is useful before the session starts too. Trilha is always available
+  // (its panel also links a turma); QR needs a join URL, so it shows once a
+  // turma is linked, started or not.
   if (trail) { trail.hidden = false; trail.classList.toggle('is-linked', !!_trailTurma); }
-  if (qr) qr.hidden = !(open && hasTrail);
+  if (qr) qr.hidden = !hasTrail;
 }
 
 // ── Trilha turma link (port of host-share.js) ────────────────
