@@ -215,11 +215,11 @@ function _refreshShareSurface(open) {
   const hasTrail = !!_buildTrailUrl();
   const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr');
   // Trilha + QR show regardless of session state (Élder 2026-06-05): the trilha
-  // link is useful before the session starts too. Trilha is always available
-  // (its panel also links a turma); QR needs a join URL, so it shows once a
-  // turma is linked, started or not.
+  // link is useful before the session starts too. Both are ALWAYS visible; the
+  // QR needs a join URL (a linked turma), so without one it reads as disabled and
+  // clicking explains why rather than vanishing from the bar (Élder 2026-06-06).
   if (trail) { trail.hidden = false; trail.classList.toggle('is-linked', !!_trailTurma); }
-  if (qr) qr.hidden = !hasTrail;
+  if (qr) { qr.hidden = false; qr.classList.toggle('is-disabled', !hasTrail); }
 }
 
 // ── Trilha turma link (port of host-share.js) ────────────────
@@ -292,8 +292,10 @@ async function _unlinkTrail() {
 }
 
 function _openQr() {
+  const joinUrl = _buildTrailUrl();
+  if (!joinUrl) { notice.info(t('questions.host_qr_no_turma')); return; }
   if (typeof window !== 'undefined' && window.QRShareModal && typeof window.QRShareModal.open === 'function') {
-    window.QRShareModal.open({ joinUrl: _buildTrailUrl() });
+    window.QRShareModal.open({ joinUrl: joinUrl });
   }
 }
 

@@ -948,6 +948,8 @@
 .cdx-host-trail { display: inline-flex; align-items: center; gap: 6px; }
 .cdx-host-trail-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(127,127,127,.4); flex-shrink: 0; transition: background 0.15s; }
 .cdx-host-trail.is-linked .cdx-host-trail-dot { background: var(--success); box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
+/* QR is always present; without a linked turma it reads as disabled (still clickable, explains why). */
+.cdx-host-qr.is-disabled { opacity: 0.45; }
 
 /* Trilha modal */
 .cdx-trail-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }

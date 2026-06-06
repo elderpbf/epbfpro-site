@@ -84,7 +84,6 @@ function _card(s) {
     ? '<span class="cdx-live"><span class="cdx-live-dot"></span><span class="cdx-live-label">' + t('questions.sessions_live_label') + '</span></span>'
     : '';
   return '<div class="cdx-session-card' + sel + '" data-code="' + _esc(s.code) + '">' +
-    '<div class="cdx-session-code">' + _esc(s.code) + '</div>' +
     '<div class="cdx-session-info">' +
       '<div class="cdx-session-title">' + _esc(s.title || t('questions.sessions_untitled')) + '</div>' +
       '<div class="cdx-session-meta">' + _fmtDate(s.created_at) + '</div>' +

@@ -719,6 +719,7 @@ export default {
   'questions.host_bank_empty':           'Nenhuma questão neste conjunto.',
   'questions.host_bank_set_label':       'Conjunto',
   'questions.host_bank_launch':          'Lançar',
+  'questions.host_qr_no_turma':          'Vincule uma turma (Trilha) a esta sessão para gerar o QR de acesso.',
   'questions.host_audience_none':        'Sem audiência',
   'questions.host_audience_unresolved':  'Selecione a audiência: esta questão tem variáveis não preenchidas para ela.',
   'questions.comp_class':                'Classe',
