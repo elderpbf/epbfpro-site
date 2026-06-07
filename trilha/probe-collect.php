@@ -59,8 +59,8 @@ $entry = [
     'run'       => isset($data['run'])     ? substr((string) $data['run'], 0, 40)     : '',
     'ua'        => isset($data['ua'])      ? substr((string) $data['ua'], 0, 400)     : '',
     'origin'    => isset($data['origin'])  ? substr((string) $data['origin'], 0, 100) : '',
-    'verdict'   => isset($data['verdict']) ? substr((string) $data['verdict'], 0, 800) : '',
-    'log'       => (isset($data['log']) && is_array($data['log'])) ? array_slice($data['log'], 0, 80) : [],
+    'verdict'   => isset($data['verdict']) ? substr((string) $data['verdict'], 0, 2500) : '',
+    'log'       => (isset($data['log']) && is_array($data['log'])) ? array_slice($data['log'], 0, 500) : [],
 ];
 
 $line = json_encode($entry, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";

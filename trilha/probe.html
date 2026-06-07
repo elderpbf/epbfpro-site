@@ -131,33 +131,50 @@
 <script src="/trilha/js/trilha-nexo.js?v=2.0"></script>
 
 <!-- =====================================================================
-     PROBE BOOTSTRAP (diagnostic only, not part of the real trilha).
-     Self-contained: no imports, only reads the global WORKER_URL from
-     api-client.js. Reproduces the cross-site worker call the real page
-     makes and tests the same-origin proxy candidate, surfacing a plain
-     verdict on screen. Delete probe.html + probe-proxy.php when done.
+     PROBE v2 (diagnostic only, NOT part of the real trilha).
+
+     Reproduces a REAL live-lesson's cross-site traffic against the live
+     test trail (teste/teste) in two phases, then asks the tester whether
+     iOS Safari's "Advanced Tracking & Fingerprinting Protection" banner
+     appeared in each:
+
+       Phase 1 DIRECT -> backstage-api.pensoia.workers.dev  (what production does)
+       Phase 2 PROXY  -> ./probe-proxy.php (same-origin candidate fix)
+
+     The v1 probe only fired a few cp_get_active_for_turma GETs and never
+     reached the session-open state, so it never produced the sustained
+     3s/4s/15s cross-site polling pattern that trips the banner. This
+     version runs that exact pattern (get_session_state 3s, cp_student_inbox
+     4s, cp_get_active_for_turma 15s, ct_get_turma_view, submit_answer,
+     submit_student_question, plus one >6KB POST to exercise the CORS
+     preflight). The banner is browser chrome with no JS hook, so the
+     tester reports it per phase; the verdict says whether routing
+     same-origin suppresses it. Delete probe.* when the diagnosis is done.
      ===================================================================== -->
 <style>
+  .tr-page{display:none !important;}
   #px-bar{position:fixed;top:0;left:0;right:0;z-index:100000;background:#0f1e1e;color:#cfeee8;
     font-family:system-ui,-apple-system,sans-serif;font-size:14px;box-shadow:0 2px 16px rgba(0,0,0,.4);
     padding:10px 12px calc(10px + env(safe-area-inset-top));padding-top:calc(10px + env(safe-area-inset-top))}
   #px-bar.px-min{padding:6px 12px;padding-top:calc(6px + env(safe-area-inset-top))}
   #px-bar h3{margin:0 0 4px;font-size:15px;color:#2dd4bf;display:flex;align-items:center;gap:8px}
   #px-bar .px-instr{margin:0 0 8px;font-size:12.5px;line-height:1.45;color:#a7cfca}
-  #px-bar.px-min .px-instr,#px-bar.px-min .px-btns,#px-bar.px-min #px-verdict,#px-bar.px-min #px-log{display:none}
+  #px-bar.px-min .px-instr,#px-bar.px-min .px-btns,#px-bar.px-min #px-verdict,
+  #px-bar.px-min #px-log,#px-bar.px-min #px-status,#px-bar.px-min #px-ask{display:none}
   .px-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
   .px-btn{flex:1 1 auto;min-width:120px;background:#0d9488;color:#022;border:none;border-radius:8px;
     padding:11px 12px;font-size:14px;font-weight:700;cursor:pointer}
   .px-btn.sec{background:#143030;color:#7fd9cd;border:1px solid #1d5050}
   .px-btn:active{opacity:.7}
+  #px-status{font-size:13px;font-weight:700;color:#7fd9cd;margin-bottom:8px;min-height:1em}
+  #px-ask{margin-bottom:8px}
+  #px-ask .px-ask-q{font-size:13.5px;font-weight:700;color:#fcd34d;line-height:1.4;margin-bottom:8px}
+  #px-ask .px-btns{margin-bottom:0}
   #px-verdict{font-size:13.5px;font-weight:700;line-height:1.4;padding:8px 10px;border-radius:8px;
     background:#0a1818;margin-bottom:8px;display:none;white-space:pre-wrap}
   #px-verdict.ok{color:#34d399;border:1px solid #166}
   #px-verdict.bad{color:#fca5a5;border:1px solid #642}
   #px-verdict.warn{color:#fcd34d;border:1px solid #653}
-  #px-sent{font-size:13px;font-weight:700;margin-bottom:8px}
-  #px-sent.ok-s{color:#34d399}
-  #px-sent.warn-s{color:#fcd34d}
   #px-log{font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.5;max-height:34vh;
     overflow-y:auto;background:#0a1818;border-radius:8px;padding:6px 8px;white-space:pre-wrap;word-break:break-word}
   #px-log .e{color:#fca5a5}#px-log .o{color:#34d399}#px-log .i{color:#9fc4c0}#px-log .w{color:#fcd34d}
@@ -167,109 +184,244 @@
 </style>
 <div id="px-bar">
   <button id="px-min-toggle" type="button">ocultar</button>
-  <h3>🔬 Diagnóstico de conexão (iPhone)</h3>
-  <p class="px-instr">Toque em <b>Rodar testes</b> (leva alguns segundos). O resultado é enviado automaticamente, você não precisa copiar nada. <b>Só</b> tire um print se aparecer a barra cinza de privacidade no topo do Safari. Depois, se puder, repita numa aba anônima.</p>
+  <h3>🔬 Diagnóstico de privacidade (iPhone)</h3>
+  <p class="px-instr">Este teste reproduz uma aula real em <b>2 fases</b> (~45s cada). Se a barra cinza
+    “…reduce advanced privacy protections” aparecer no topo do Safari, <b>NÃO toque em “Dismiss” nem
+    “Reduce Protections”</b> — só observe. Ao fim de cada fase eu pergunto se ela apareceu.
+    Toque em <b>Rodar diagnóstico</b>.</p>
   <div class="px-btns">
-    <button class="px-btn" id="px-run" type="button">Rodar testes</button>
+    <button class="px-btn" id="px-run" type="button">Rodar diagnóstico</button>
     <button class="px-btn sec" id="px-copy" type="button">Copiar</button>
   </div>
-  <div id="px-sent"></div>
+  <div id="px-status"></div>
+  <div id="px-ask"></div>
   <div id="px-verdict"></div>
   <div id="px-log"></div>
 </div>
 <script>
 (function () {
   'use strict';
-  var WORKER = (typeof WORKER_URL !== 'undefined' && WORKER_URL)
-    ? WORKER_URL : 'https://backstage-api.pensoia.workers.dev';
+
+  // Kill the real trilha pollers that loaded with this page so the only
+  // cross-site traffic is our instrumented loops (no duplicate noise).
+  try { if (window.TrilhaNexo && window.TrilhaNexo.stop) window.TrilhaNexo.stop(); } catch (e) {}
+
+  var qp     = new URLSearchParams(location.search);
+  var CLIENT = qp.get('c') || 'teste';
+  var TURMA  = qp.get('t') || 'teste';
+  var TOKEN  = qp.get('k') || 'yneyfe6s';
+
+  var WORKER = (typeof WORKER_URL !== 'undefined' && WORKER_URL) ? WORKER_URL
+                                                                 : 'https://backstage-api.pensoia.workers.dev';
   var PROXY  = './probe-proxy.php';
-  var DUMMY  = { action: 'cp_get_active_for_turma', client_slug: '__probe__', turma_slug: '__probe__', _silent: true };
-  var RUN_ID = Math.random().toString(36).slice(2, 8) + '-' + Date.now();
+
+  var PHASE_MS  = 45000; // duration of each phase
+  var SS_MS     = 3000;  // get_session_state cadence (matches classpulse-question.min.js)
+  var INBOX_MS  = 4000;  // cp_student_inbox cadence (matches nexo-answer.js)
+  var ACTIVE_MS = 15000; // cp_get_active_for_turma cadence (matches trilha-nexo.js)
+
+  var STUDENT = 'probe_' + Math.random().toString(36).slice(2, 7);
+  var RUN_ID  = Math.random().toString(36).slice(2, 8) + '-' + Date.now();
+
+  var lines        = [];
+  var sessionCode  = 'PROBE'; // replaced with a real code if the turma has a live session
+  var liveQId      = null;
+  var bannerDirect = null;
+  var bannerProxy  = null;
+  var stats        = { direct: newStat(), proxy: newStat() };
+  var timers       = [];
+
+  function newStat() { return { ok: 0, fail: 0, calls: 0 }; }
 
   var logEl     = document.getElementById('px-log');
   var verdictEl = document.getElementById('px-verdict');
-  var lines     = [];
+  var statusEl  = document.getElementById('px-status');
+  var askEl     = document.getElementById('px-ask');
 
-  function pad(n){ return (n < 10 ? '0' : '') + n; }
-  function stamp(){ var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
-  function log(msg, cls){
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function stamp() { var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+  function log(msg, cls) {
     var line = '[' + stamp() + '] ' + msg;
     lines.push(line);
-    var span = document.createElement('div');
-    span.className = cls || 'i';
-    span.textContent = line;
-    logEl.appendChild(span);
+    var s = document.createElement('div');
+    s.className = cls || 'i';
+    s.textContent = line;
+    logEl.appendChild(s);
     logEl.scrollTop = logEl.scrollHeight;
   }
-  function verdict(msg, cls){
+  function setStatus(msg) { if (statusEl) statusEl.textContent = msg; }
+  function verdict(msg, cls) {
     verdictEl.textContent = msg;
     verdictEl.className = '';
     verdictEl.classList.add(cls);
     verdictEl.style.display = 'block';
   }
-  function payloadUrl(base){ return base + '?payload=' + encodeURIComponent(JSON.stringify(DUMMY)); }
 
-  function env(){
+  function env() {
     var ua = navigator.userAgent || '';
     log('UA: ' + ua, 'i');
     var m = ua.match(/OS (\d+[_.]\d+)/);
     if (m) log('iOS ' + m[1].replace('_', '.'), 'i');
     log('origem: ' + location.origin, 'i');
-    log('worker: ' + WORKER, 'i');
+    log('alvo: ' + CLIENT + '/' + TURMA, 'i');
+    var c = navigator.connection || navigator.webkitConnection;
+    if (c) log('rede: ' + (c.type || '?') + ' / ' + (c.effectiveType || '?'), 'i');
+    try {
+      localStorage.setItem('__px__', '1');
+      var ok = localStorage.getItem('__px__') === '1';
+      localStorage.removeItem('__px__');
+      log(ok ? '✅ localStorage ok' : '⚠️ localStorage inconsistente', ok ? 'o' : 'w');
+    } catch (e) {
+      log('❌ localStorage bloqueado: ' + (e && e.message ? e.message : e), 'e');
+    }
   }
 
-  // One cross-site GET to the worker, mirroring api-client.js's GET ?payload= form.
-  // Resolved (any HTTP status) = reachable; thrown = blocked by the browser.
-  async function direct(){
+  function baseFor(phase) { return phase === 'proxy' ? PROXY : WORKER; }
+  function payloadUrl(b, params) { return b + '?payload=' + encodeURIComponent(JSON.stringify(params)); }
+
+  // One worker call mirroring api-client.js's GET ?payload= form (or POST when
+  // opts.post, to exercise the cross-site CORS preflight path). Resolved =
+  // reachable (any HTTP status); thrown = blocked by the browser.
+  async function call(phase, params, opts) {
+    opts = opts || {};
+    var b  = baseFor(phase);
+    var st = stats[phase];
+    st.calls++;
     var t0 = (performance && performance.now) ? performance.now() : Date.now();
     try {
-      var r = await fetch(payloadUrl(WORKER), { cache: 'no-store' });
+      var r;
+      if (opts.post) {
+        r = await fetch(b, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+          cache: 'no-store',
+          redirect: 'follow',
+        });
+      } else {
+        r = await fetch(payloadUrl(b, params), { cache: 'no-store', redirect: 'follow' });
+      }
       var txt = await r.text();
-      var dt = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
-      log('✅ Worker DIRETO: HTTP ' + r.status + ' em ' + dt + 'ms (' + txt.length + 'B)', 'o');
-      return true;
+      var dt  = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
+      st.ok++;
+      if (opts.verbose) log('✅ ' + params.action + (opts.post ? ' [POST]' : '') + ': HTTP ' + r.status + ' ' + dt + 'ms (' + txt.length + 'B)', 'o');
+      return { ok: true, status: r.status, ms: dt, txt: txt };
     } catch (e) {
       var dt2 = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
-      log('❌ Worker DIRETO bloqueado em ' + dt2 + 'ms: ' + (e && e.message ? e.message : e), 'e');
-      return false;
+      st.fail++;
+      log('❌ ' + params.action + (opts.post ? ' [POST]' : '') + ' FALHOU ' + dt2 + 'ms: ' + (e && e.message ? e.message : e), 'e');
+      return { ok: false, ms: dt2, err: (e && e.message ? e.message : String(e)) };
     }
   }
 
-  // Same-origin call through the PHP proxy (candidate fix B). JSON back = works.
-  async function proxy(){
-    var t0 = (performance && performance.now) ? performance.now() : Date.now();
-    try {
-      var r = await fetch(payloadUrl(PROXY), { cache: 'no-store' });
-      var txt = await r.text();
-      var dt = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
-      var looksJson = txt.charAt(0) === '{' || txt.charAt(0) === '[';
-      if (looksJson) {
-        log('✅ PROXY mesmo domínio: HTTP ' + r.status + ' em ' + dt + 'ms (' + txt.length + 'B)', 'o');
-        return 'ok';
-      }
-      log('⚠️ PROXY respondeu mas não é JSON (PHP desligado?): HTTP ' + r.status + ' — ' + txt.slice(0, 60), 'w');
-      return 'nophp';
-    } catch (e) {
-      log('❌ PROXY falhou: ' + (e && e.message ? e.message : e), 'e');
-      return 'fail';
+  // Discover a real open session for the turma so the writes hit a real
+  // question; harmless (test turma) if none is live.
+  async function discover(phase) {
+    var res = await call(phase, { action: 'cp_get_active_for_turma', client_slug: CLIENT, turma_slug: TURMA, _silent: true }, { verbose: true });
+    if (res.ok && res.txt && res.txt.charAt(0) === '{') {
+      try {
+        var d = JSON.parse(res.txt);
+        if (d && d.session && d.session.code) { sessionCode = d.session.code; log('sessão ao vivo: ' + sessionCode, 'o'); }
+        if (d && d.active_question && d.active_question.id) { liveQId = d.active_question.id; log('pergunta ativa: ' + liveQId, 'o'); }
+      } catch (_) {}
     }
   }
 
-  function setSent(msg, cls){
-    var el = document.getElementById('px-sent');
-    el.textContent = msg;
-    el.className = cls || '';
+  function clearTimers() {
+    timers.forEach(function (t) { try { clearInterval(t); } catch (_) {} try { clearTimeout(t); } catch (_) {} });
+    timers = [];
   }
 
-  // POST the collected results to the same-origin collector so they reach us
-  // automatically. First-party call, never blocked by Safari's protection.
-  async function send(verdictText){
+  async function runPhase(phase) {
+    stats[phase] = newStat();
+    var label = phase === 'proxy' ? '2 (PROXY mesmo domínio)' : '1 (DIRETA ao worker)';
+    log('=== FASE ' + label + ' ===', 'i');
+    setStatus('Rodando fase ' + label + '… observe se a barra cinza aparece.');
+
+    // Initial burst — mirrors a real page load entering an open session.
+    await call(phase, { action: 'ct_get_turma_view', client_slug: CLIENT, turma_slug: TURMA, token: TOKEN, _silent: true }, { verbose: true });
+    await discover(phase);
+    call(phase, { action: 'cp_student_inbox', session_code: sessionCode, student_name: STUDENT, _silent: true });
+    call(phase, { action: 'get_session_state', code: sessionCode, _silent: true });
+
+    // Sustained loops at the real cadences.
+    timers.push(setInterval(function () { call(phase, { action: 'get_session_state', code: sessionCode, _silent: true }); }, SS_MS));
+    timers.push(setInterval(function () { call(phase, { action: 'cp_student_inbox', session_code: sessionCode, student_name: STUDENT, _silent: true }); }, INBOX_MS));
+    timers.push(setInterval(function () { call(phase, { action: 'cp_get_active_for_turma', client_slug: CLIENT, turma_slug: TURMA, _silent: true }); }, ACTIVE_MS));
+
+    // Writes a few seconds in (real student actions).
+    timers.push(setTimeout(function () {
+      call(phase, { action: 'submit_student_question', session_code: sessionCode, student_name: STUDENT, text: '[probe] teste de conexão' }, { verbose: true });
+      call(phase, { action: 'submit_answer', question_id: liveQId || 'probe', session_code: sessionCode, student_name: STUDENT, answer_index: 0 }, { verbose: true });
+    }, 5000));
+
+    // One >6KB POST to exercise the cross-site CORS preflight path.
+    timers.push(setTimeout(function () {
+      var big = new Array(7000).join('x');
+      call(phase, { action: 'cp_get_active_for_turma', client_slug: CLIENT, turma_slug: TURMA, _probe_pad: big, _silent: true }, { post: true, verbose: true });
+    }, 8000));
+
+    // Countdown.
+    var left = Math.round(PHASE_MS / 1000);
+    timers.push(setInterval(function () {
+      left -= 1;
+      if (left >= 0) setStatus('Fase ' + (phase === 'proxy' ? '2 (proxy)' : '1 (direta)') + ': ' + left + 's restantes — observe a barra cinza.');
+    }, 1000));
+
+    await new Promise(function (res) { setTimeout(res, PHASE_MS); });
+    clearTimers();
+    var s = stats[phase];
+    log('fim fase ' + phase + ': ' + s.ok + ' ok / ' + s.fail + ' falhas em ' + s.calls + ' chamadas', 'i');
+  }
+
+  function ask(phaseLabel, cb) {
+    askEl.innerHTML = '';
+    var q = document.createElement('div');
+    q.className = 'px-ask-q';
+    q.textContent = 'A barra cinza de privacidade do Safari apareceu na Fase ' + phaseLabel + '?';
+    var btns = document.createElement('div');
+    btns.className = 'px-btns';
+    var yes = document.createElement('button'); yes.className = 'px-btn';     yes.type = 'button'; yes.textContent = 'Sim, apareceu';
+    var no  = document.createElement('button'); no.className  = 'px-btn sec'; no.type  = 'button'; no.textContent  = 'Não apareceu';
+    yes.addEventListener('click', function () { askEl.innerHTML = ''; cb(true); });
+    no.addEventListener('click',  function () { askEl.innerHTML = ''; cb(false); });
+    btns.appendChild(yes); btns.appendChild(no);
+    askEl.appendChild(q); askEl.appendChild(btns);
+  }
+
+  function computeVerdict() {
+    var v, cls;
+    if (bannerDirect && !bannerProxy) {
+      v = '✅ CONFIRMADO: a barra vem das chamadas cross-site ao worker. O proxy mesmo-domínio RESOLVE (sem barra na fase 2). Solução: rotear a API pelo proxy.';
+      cls = 'ok';
+    } else if (bannerDirect && bannerProxy) {
+      v = '❌ O proxy NÃO resolve: a barra apareceu nas DUAS fases. A causa não é só a rede cross-site (provável fingerprinting de script). Precisamos de outra abordagem.';
+      cls = 'bad';
+    } else if (!bannerDirect && !bannerProxy) {
+      v = '⚠️ Não reproduziu desta vez. Tente: (1) pelo link real da trilha, (2) em dados móveis (4G/5G), (3) com a proteção do Safari no padrão. Anote Wi-Fi/4G e se o Private Relay está ligado.';
+      cls = 'warn';
+    } else {
+      v = '⚠️ Resultado incomum: barra só no proxy. Reporte para análise.';
+      cls = 'warn';
+    }
+    verdict(v, cls);
+    return v;
+  }
+
+  function summary(extra) {
+    return 'banner_direta=' + bannerDirect + ' | banner_proxy=' + bannerProxy +
+           ' | direct=' + JSON.stringify(stats.direct) + ' proxy=' + JSON.stringify(stats.proxy) +
+           (extra ? ' | ' + extra : '');
+  }
+
+  // POST results to the same-origin collector (first-party, never blocked).
+  async function send(extra) {
     try {
       var body = JSON.stringify({
         run: RUN_ID,
         ua: navigator.userAgent || '',
         origin: location.origin,
-        verdict: verdictText,
+        verdict: summary(extra),
         log: lines,
       });
       var r = await fetch('./probe-collect.php', {
@@ -278,87 +430,59 @@
         body: body,
         cache: 'no-store',
       });
-      if (r.ok) {
-        setSent('✅ Resultado enviado automaticamente. Obrigado!', 'ok-s');
-        log('resultado enviado ao servidor', 'o');
-      } else {
-        setSent('⚠️ Não consegui enviar sozinho. Toque em Copiar e me mande.', 'warn-s');
-        log('envio falhou: HTTP ' + r.status, 'e');
-      }
+      if (r.ok) { log('resultado enviado ao servidor', 'o'); }
+      else { setStatus('⚠️ Não consegui enviar sozinho. Toque em Copiar e me mande.'); }
     } catch (e) {
-      setSent('⚠️ Não consegui enviar sozinho. Toque em Copiar e me mande.', 'warn-s');
-      log('envio falhou: ' + (e && e.message ? e.message : e), 'e');
+      setStatus('⚠️ Não consegui enviar sozinho. Toque em Copiar e me mande.');
     }
   }
 
-  async function runAll(){
-    var btn = document.getElementById('px-run');
-    btn.disabled = true;
-    setSent('', '');
-    verdictEl.style.display = 'none';
+  async function runAll() {
+    document.getElementById('px-run').disabled = true;
     lines = []; logEl.innerHTML = '';
-    log('--- iniciando testes ---', 'i');
+    verdictEl.style.display = 'none';
+    askEl.innerHTML = '';
+    log('--- início ---', 'i');
     env();
 
-    // localStorage: the answer flow + theme depend on it; some private/locked
-    // modes block it independently of the network.
-    var lsOk = true;
-    try {
-      localStorage.setItem('__px_ls__', '1');
-      lsOk = localStorage.getItem('__px_ls__') === '1';
-      localStorage.removeItem('__px_ls__');
-      log(lsOk ? '✅ localStorage: ok (respostas e tema salvam)' : '⚠️ localStorage: leitura inconsistente', lsOk ? 'o' : 'w');
-    } catch (e) {
-      lsOk = false;
-      log('❌ localStorage bloqueado: respostas/tema podem não salvar (' + (e && e.message ? e.message : e) + ')', 'e');
-    }
+    await runPhase('direct');
+    send('[parcial: fase 1]'); // partial save in case the page is killed
 
-    // Direct cross-site worker calls (3x, quick) -- reachable vs blocked.
-    log('--- conexão direta com o worker (3x) ---', 'i');
-    var ok = 0, fail = 0, total = 0;
-    for (var i = 1; i <= 3; i++) {
-      var r = await direct();
-      total++; if (r) ok++; else fail++;
-      if (i < 3) await new Promise(function (res){ setTimeout(res, 1200); });
-    }
-
-    // Same-origin proxy candidate.
-    var p = await proxy();
-
-    var lsNote = lsOk ? '' : '\n⚠️ localStorage bloqueado neste modo (pode afetar salvar resposta/tema).';
-    var v;
-    if (fail === 0) {
-      v = '✅ Conexão com o worker FUNCIONA neste iPhone (' + ok + '/' + total + ').\nA barra de privacidade é só um aviso, a página real funciona.' + lsNote;
-      verdict(v, lsOk ? 'ok' : 'warn');
-    } else if (ok === 0 && p === 'ok') {
-      v = '❌ O iPhone BLOQUEIA a conexão direta (0/' + total + ').\n✅ O proxy no mesmo domínio RESOLVE. (Confirma a solução do proxy.)' + lsNote;
-      verdict(v, 'bad');
-    } else if (ok === 0) {
-      v = '❌ Conexão direta bloqueada (0/' + total + ') E o proxy com problema (' + p + ').\nPrecisamos de outra abordagem.' + lsNote;
-      verdict(v, 'bad');
-    } else {
-      v = '⚠️ Bloqueio INTERMITENTE: ' + ok + '/' + total + ' passaram.\nProxy: ' + (p === 'ok' ? 'funciona ✅' : 'problema (' + p + ')') + '.' + lsNote;
-      verdict(v, 'warn');
-    }
-    log('--- fim ---', 'i');
-    await send(v);
-    btn.disabled = false;
+    ask('1 (direta)', function (b1) {
+      bannerDirect = b1;
+      log('tester: barra na fase 1 = ' + b1, b1 ? 'w' : 'o');
+      (async function () {
+        setStatus('Pausa de 3s, depois inicia a fase 2 (proxy)…');
+        await new Promise(function (r) { setTimeout(r, 3000); });
+        await runPhase('proxy');
+        ask('2 (proxy)', function (b2) {
+          bannerProxy = b2;
+          log('tester: barra na fase 2 = ' + b2, b2 ? 'w' : 'o');
+          var v = computeVerdict();
+          setStatus('Enviando resultado…');
+          send(v).then(function () { setStatus('✅ Resultado enviado. Obrigado!'); });
+          var runBtn = document.getElementById('px-run');
+          runBtn.disabled = false;
+          runBtn.textContent = 'Rodar de novo';
+        });
+      })();
+    });
   }
 
-  function copy(){
+  function copy() {
     var text = (verdictEl.style.display !== 'none' ? '== VEREDITO ==\n' + verdictEl.textContent + '\n\n' : '') +
-               '== LOG ==\n' + lines.join('\n');
+               '== RESUMO ==\n' + summary() + '\n\n== LOG ==\n' + lines.join('\n');
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(ok, fallback);
     } else { fallback(); }
-    function ok(){ flash('copiado!'); }
-    function fallback(){
+    function ok() { flash('copiado!'); }
+    function fallback() {
       var ta = document.createElement('textarea');
       ta.value = text; document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); flash('copiado!'); } catch (e) { flash('falhou'); }
       document.body.removeChild(ta);
     }
-    function flash(t){ var b = document.getElementById('px-copy'); var o = b.textContent; b.textContent = t; setTimeout(function(){ b.textContent = o; }, 1200); }
+    function flash(t) { var b = document.getElementById('px-copy'); var o = b.textContent; b.textContent = t; setTimeout(function () { b.textContent = o; }, 1200); }
   }
 
   document.getElementById('px-run').addEventListener('click', runAll);
@@ -369,7 +493,20 @@
     this.textContent = bar.classList.contains('px-min') ? 'mostrar' : 'ocultar';
   });
 
-  log('Pronto. Toque em "Rodar testes".', 'i');
+  // If the page gets killed mid-run, beacon what we have so far.
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && lines.length && navigator.sendBeacon) {
+      try {
+        var blob = new Blob([JSON.stringify({
+          run: RUN_ID, ua: navigator.userAgent || '', origin: location.origin,
+          verdict: summary('[parcial/visibility]'), log: lines,
+        })], { type: 'application/json' });
+        navigator.sendBeacon('./probe-collect.php', blob);
+      } catch (_) {}
+    }
+  });
+
+  log('Pronto. Toque em "Rodar diagnóstico".', 'i');
 })();
 </script>
 
