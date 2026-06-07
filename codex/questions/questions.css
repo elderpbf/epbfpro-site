@@ -408,6 +408,46 @@
 }
 .cdx-q-confirm { font-size: 0.82rem; font-weight: 600; color: var(--error); }
 
+/* Typed-question class badge + composer class controls + audience matrix */
+.cdx-q-class {
+  font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  border-radius: 999px; padding: 0.1rem 0.5rem; border: 1px solid var(--border);
+  color: var(--text-secondary); background: var(--surface-hover, rgba(127, 127, 127, 0.1));
+}
+.cdx-q-class--variable { color: var(--primary); border-color: var(--primary); }
+.cdx-q-class--unique { color: var(--success); border-color: var(--success); }
+
+.cdx-comp-row2 { display: flex; gap: 0.6rem; }
+.cdx-comp-row2 .cdx-comp-field { flex: 1; }
+.cdx-comp-class-extra:empty { display: none; }
+.cdx-comp-varhint { font-size: 0.78rem; color: var(--text-secondary); margin: 0.2rem 0; }
+.cdx-comp-varhint code { background: var(--surface-hover, rgba(127, 127, 127, 0.12)); border-radius: 4px; padding: 0 0.3rem; }
+.cdx-comp-preview { display: flex; flex-direction: column; gap: 0.25rem; margin: 0.3rem 0; padding: 0.4rem 0.5rem; background: var(--surface-hover, rgba(127, 127, 127, 0.08)); border-radius: 6px; }
+.cdx-comp-preview-row { display: flex; gap: 0.5rem; font-size: 0.82rem; }
+.cdx-comp-preview-aud { flex: 0 0 8rem; font-weight: 600; color: var(--text-secondary); }
+.cdx-comp-preview-text { color: var(--text-primary); }
+.cdx-comp-class-warn { font-size: 0.78rem; color: var(--error); margin-top: 0.2rem; }
+
+.cdx-bank-aud-card { max-width: 760px; width: 92vw; }
+.cdx-bank-aud-tab { border: none; background: none; cursor: pointer; padding: 0.3rem 0.2rem; border-bottom: 2px solid transparent; color: var(--text-secondary); font: inherit; }
+.cdx-bank-aud-tab.active { color: var(--primary); border-color: var(--primary); }
+.cdx-aud-list { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.6rem; }
+.cdx-aud-row { display: flex; align-items: center; gap: 0.5rem; }
+.cdx-aud-row .cdx-aud-label { flex: 1; }
+.cdx-aud-key { font-size: 0.74rem; color: var(--text-light); font-family: ui-monospace, monospace; }
+.cdx-aud-addrow { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.cdx-aud-addrow input { flex: 1; }
+.cdx-aud-lint { font-size: 0.78rem; color: var(--error); margin: 0.4rem 0; }
+.cdx-var-gridwrap { overflow-x: auto; }
+.cdx-var-grid { border-collapse: collapse; width: 100%; }
+.cdx-var-grid th, .cdx-var-grid td { border: 1px solid var(--border); padding: 0.35rem; text-align: left; vertical-align: top; }
+.cdx-var-grid th { font-size: 0.78rem; color: var(--text-secondary); background: var(--surface-hover, rgba(127, 127, 127, 0.08)); }
+.cdx-var-key { font-family: ui-monospace, monospace; font-size: 0.78rem; white-space: nowrap; }
+.cdx-var-cell--bad { background: var(--error-bg, rgba(220, 53, 69, 0.08)); }
+.cdx-var-cell .cdx-var-text { width: 100%; margin-bottom: 0.2rem; }
+.cdx-var-gn { display: flex; gap: 0.3rem; }
+.cdx-var-gn select { flex: 1; font-size: 0.74rem; }
+
 /* Cross-set search results */
 .cdx-bank-search-head { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); }
 .cdx-q--result { cursor: pointer; }
@@ -416,7 +456,10 @@
 
 /* Editor + bulk modals (reuse cohorts .cdx-modal-backdrop / .cdx-modal) */
 .cdx-bank-modal[hidden] { display: none; }
-.cdx-bank-ai-row { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+/* Cap bank modal height so tall content (typed-question composer, audience grid)
+   scrolls inside the modal instead of bleeding off the top/bottom of the screen. */
+.cdx-bank-modal .cdx-modal { max-height: 90vh; overflow-y: auto; }
+.cdx-comp-ai-row { display: flex; gap: 0.5rem; margin-top: 0.2rem; }
 .cdx-bank-modal-err { font-size: 0.8rem; color: var(--error); min-height: 1rem; margin: 0.5rem 0 0; }
 
 /* Reorder / move mode (Editar banco) */
@@ -908,6 +951,8 @@
 .cdx-host-trail { display: inline-flex; align-items: center; gap: 6px; }
 .cdx-host-trail-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(127,127,127,.4); flex-shrink: 0; transition: background 0.15s; }
 .cdx-host-trail.is-linked .cdx-host-trail-dot { background: var(--success); box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
+/* QR is always present; without a linked turma it reads as disabled (still clickable, explains why). */
+.cdx-host-qr.is-disabled { opacity: 0.45; }
 
 /* Trilha modal */
 .cdx-trail-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }

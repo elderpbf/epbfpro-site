@@ -95,7 +95,10 @@ test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared glo
   assert.match(src, /\.lookupTurmaBySession\s*\(/, 'Trilha looks up the linked turma');
   assert.match(src, /\.updateTurmaMeta\s*\(/, 'Trilha links/unlinks via turma meta');
   assert.match(src, /QRShareModal/, 'QR reuses the shared modal global');
-  assert.match(src, /ai\.question\s*\(/, 'AI Gerar/Melhorar via the ai facade');
+  // AI Gerar/Melhorar now lives in the shared composer (reused by Bank + host),
+  // so the host wires it by mounting the composer, not by its own ai.question call.
+  assert.match(src, /mountComposer\s*\(/, 'host renders the shared composer that owns AI Gerar/Melhorar');
+  assert.match(read('../questions/question-composer.js'), /ai\.question\s*\(/, 'the shared composer calls ai.question for Gerar/Melhorar');
   assert.match(read('../js/codex-api.js'), /lookupTurmaBySession:\s*\(p\)\s*=>\s*call\('ct_lookup_turma_by_session'/, 'facade maps the lookup to the frozen action');
 });
 

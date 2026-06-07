@@ -13,12 +13,13 @@
 // unmount() is release-gated (tests/questions-unmount.test.mjs): it tears down
 // the embedded element's poll, the Q&A feed's poll, the SQA debounce, and every
 // layout/resizer/document/modal listener.
-import { questions as api, cohorts, ai } from '../js/codex-api.js';
+import { questions as api, cohorts, audiences as audienceApi } from '../js/codex-api.js';
 import { mountComposer } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import { resolveQuestion, isVariable, questionType, visibleForAudience } from '../js/audiences.js';
 
 const LAYOUT_KEY = 'codex_host_layout';
 const DEFAULT_LAYOUT = { left: { visible: true, width: 360 }, center: { visible: true }, right: { visible: true, width: 380 } };
@@ -39,6 +40,8 @@ let _sqaSaving = false;
 let _layout = null;
 let _historyMap = {};
 let _bankMap = {};
+let _audienceConfig = null;   // { variables, audiences } loaded from the Worker config doc
+let _selectedAudience = '';   // audience key governing bank filter + launch resolution
 let _trailTurma = null;
 let _trailAllTurmas = [];
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
@@ -100,11 +103,10 @@ function _barMarkup() {
 
 function _displayHref() { return '/go/display.html?code=' + encodeURIComponent(_session.code); }
 
-// Inline SVG glyphs copied node-for-node from host.html (bank hamburger, AI
-// "Gerar" star, AI "Melhorar" expand) so the composer card reads like the legacy.
+// Inline SVG glyph copied node-for-node from host.html (the bank hamburger). The
+// AI Gerar/Melhorar glyphs now live in the shared composer, which renders the AI
+// buttons itself so the Bank and the live host show the same controls.
 const _ICON_BANK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>';
-const _ICON_AI_GEN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-const _ICON_AI_IMP = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
 
 function _composerCardMarkup() {
   return '<div class="cdx-host-card" id="cdx-launch-card">' +
@@ -114,14 +116,11 @@ function _composerCardMarkup() {
       '<div class="cdx-bank-set-row">' +
         '<label class="cdx-bank-set-label" for="cdx-bank-set">' + _esc(t('questions.host_bank_set_label')) + '</label>' +
         '<select class="cdx-select" id="cdx-bank-set"><option value="">' + _esc(t('questions.host_bank_pick')) + '</option></select>' +
+        '<select class="cdx-select cdx-bank-audience" id="cdx-bank-audience" title="' + _esc(t('questions.host_audience_none')) + '" hidden></select>' +
       '</div>' +
       '<div class="cdx-bank-list" id="cdx-bank-list"><div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div></div>' +
     '</div>' +
     '<div class="cdx-host-composer" id="cdx-host-composer"></div>' +
-    '<div class="cdx-host-btn-row">' +
-      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-generate" type="button">' + _ICON_AI_GEN + ' ' + _esc(t('questions.host_ai_generate')) + '</button>' +
-      '<button class="cdx-btn cdx-btn--ghost" data-act="ai-improve" type="button">' + _ICON_AI_IMP + ' ' + _esc(t('questions.host_ai_improve')) + '</button>' +
-    '</div>' +
     '<p class="cdx-host-error" id="cdx-host-error"></p>' +
     '<div class="cdx-host-btn-row">' +
       '<button class="cdx-btn cdx-btn-primary" data-act="launch" type="button">' + _esc(t('questions.host_launch_btn')) + '</button>' +
@@ -210,8 +209,12 @@ function _applyHostedUI(open) {
 function _refreshShareSurface(open) {
   const hasTrail = !!_buildTrailUrl();
   const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr');
-  if (trail) { trail.hidden = !open; trail.classList.toggle('is-linked', !!_trailTurma); }
-  if (qr) qr.hidden = !(open && hasTrail);
+  // Trilha + QR show regardless of session state (Élder 2026-06-05): the trilha
+  // link is useful before the session starts too. Both are ALWAYS visible; the
+  // QR needs a join URL (a linked turma), so without one it reads as disabled and
+  // clicking explains why rather than vanishing from the bar (Élder 2026-06-06).
+  if (trail) { trail.hidden = false; trail.classList.toggle('is-linked', !!_trailTurma); }
+  if (qr) { qr.hidden = false; qr.classList.toggle('is-disabled', !hasTrail); }
 }
 
 // ── Trilha turma link (port of host-share.js) ────────────────
@@ -284,8 +287,10 @@ async function _unlinkTrail() {
 }
 
 function _openQr() {
+  const joinUrl = _buildTrailUrl();
+  if (!joinUrl) { notice.info(t('questions.host_qr_no_turma')); return; }
   if (typeof window !== 'undefined' && window.QRShareModal && typeof window.QRShareModal.open === 'function') {
-    window.QRShareModal.open({ joinUrl: _buildTrailUrl() });
+    window.QRShareModal.open({ joinUrl: joinUrl });
   }
 }
 
@@ -484,28 +489,6 @@ function _remountComposer(initial) {
   _composer = mountComposer(host, initial);
 }
 
-// ── AI generate / improve (Gerar / Melhorar) ─────────────────
-async function _aiQuestion(mode) {
-  if (!_composer) return;
-  const errEl = _q('#cdx-host-error');
-  const current = _composer.read();
-  const topic = String(current.question || '').trim();
-  if (mode === 'improve' && !topic) { if (errEl) errEl.textContent = t('questions.host_err_no_text'); return; }
-  if (errEl) errEl.textContent = '';
-  let res;
-  try { res = await ai.question({ mode, type: current.type, topic, text: topic }); }
-  catch (e) { notice.internal(e); res = null; }
-  if (!res || res.error || !res.question) { if (errEl) errEl.textContent = t('questions.host_err_ai'); return; }
-  _remountComposer({
-    type: res.type || current.type,
-    text: res.question,
-    options: res.options || [],
-    correct_answers: Array.isArray(res.correct_answers) ? res.correct_answers
-      : (res.correct_answer !== undefined && res.correct_answer !== null && res.correct_answer !== '' ? [res.correct_answer] : []),
-    correct_answer: res.correct_answer,
-    max_select: res.max_select !== undefined ? res.max_select : 1,
-  });
-}
 
 // ── Bank picker ──────────────────────────────────────────────
 async function _loadBankSets() {
@@ -517,6 +500,35 @@ async function _loadBankSets() {
   sel.innerHTML = '<option value="">' + _esc(t('questions.host_bank_pick')) + '</option>' + banks.map((b) => '<option value="' + _esc(b.name || b) + '">' + _esc(b.name || b) + '</option>').join('');
 }
 
+// The audience config (variables x audiences matrix) is loaded once per mount.
+// It governs which bank questions show (unique ones are audience-scoped) and how
+// variable {{...}} tokens resolve at launch.
+async function _loadAudienceConfig() {
+  let res;
+  try { res = await audienceApi.getConfig(); } catch (_) { res = null; }
+  _audienceConfig = (res && res.config) || null;
+  _populateAudiencePicker();
+}
+
+function _populateAudiencePicker() {
+  const sel = _q('#cdx-bank-audience');
+  if (!sel) return;
+  const auds = (_audienceConfig && _audienceConfig.audiences) || {};
+  const keys = Object.keys(auds);
+  if (!keys.length) { sel.hidden = true; sel.innerHTML = ''; return; }
+  sel.hidden = false;
+  sel.innerHTML = '<option value="">' + _esc(t('questions.host_audience_none')) + '</option>' +
+    keys.map((k) => '<option value="' + _esc(k) + '"' + (k === _selectedAudience ? ' selected' : '') + '>' +
+      _esc((auds[k] && auds[k].label) || k) + '</option>').join('');
+}
+
+// The value map of the currently selected audience, or null (no audience).
+function _audienceValues() {
+  if (!_audienceConfig || !_audienceConfig.audiences || !_selectedAudience) return null;
+  const a = _audienceConfig.audiences[_selectedAudience];
+  return (a && a.values) || null;
+}
+
 async function _loadBankQuestions(listName) {
   const list = _q('#cdx-bank-list');
   if (!list) return;
@@ -524,12 +536,17 @@ async function _loadBankQuestions(listName) {
   list.innerHTML = '<div class="cdx-bank-msg">' + _esc(t('questions.sessions_loading')) + '</div>';
   let res;
   try { res = await api.getQuestions({ list_name: listName }); } catch (e) { notice.internal(e); res = null; }
-  const qs = (res && res.questions) || [];
+  // Hide unique questions that belong to a different audience than the selected one.
+  const qs = ((res && res.questions) || []).filter((q) => visibleForAudience(q, _selectedAudience));
   if (!qs.length) { list.innerHTML = '<div class="cdx-bank-msg">' + _esc(t('questions.host_bank_empty')) + '</div>'; return; }
+  const vals = _audienceValues();
   _bankMap = {};
   list.innerHTML = qs.map((q, i) => {
     _bankMap[i] = q;
-    return '<div class="cdx-bank-item" data-bank-i="' + i + '"><span class="cdx-bank-item-text">' + _esc(q.question || q.text || '') + '</span>' +
+    // Show the resolved text for the selected audience so the host previews what
+    // students will see; the raw template stays in _bankMap for launch.
+    const shown = resolveQuestion(q, vals).question;
+    return '<div class="cdx-bank-item" data-bank-i="' + i + '"><span class="cdx-bank-item-text">' + _esc(shown) + '</span>' +
       '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button></div>';
   }).join('');
 }
@@ -537,15 +554,25 @@ async function _loadBankQuestions(listName) {
 function _safeParse(s) { try { return JSON.parse(s); } catch (_) { return []; } }
 
 function _prefillFromBank(q) {
-  const opts = (typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []);
+  const r = resolveQuestion(q, _audienceValues());
+  const opts = Array.isArray(r.options) ? r.options
+    : ((typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []));
   const correct = Array.isArray(q.correct_answers) ? q.correct_answers
     : (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '' ? [parseInt(q.correct_answer, 10)] : []);
-  _remountComposer({ type: q.type || 'mc', text: q.question || q.text || '', options: opts, correct_answers: correct, correct_answer: q.correct_answer, max_select: q.max_select !== undefined ? q.max_select : 1 });
+  _remountComposer({ type: q.type || 'mc', text: r.question, options: opts, correct_answers: correct, correct_answer: q.correct_answer, max_select: q.max_select !== undefined ? q.max_select : 1 });
 }
 
 async function _launchFromBank(q) {
-  const opts = (typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []);
-  const payload = { session_code: _session.code, type: q.type || 'mc', text: q.question || q.text, options: opts,
+  const r = resolveQuestion(q, _audienceValues());
+  // Never launch an unresolved template to students: a leftover {{...}} means no
+  // audience was picked, or the audience is missing a value for this variable.
+  if (isVariable(r.question) || (Array.isArray(r.options) && r.options.some((o) => isVariable(o)))) {
+    notice.error(t('questions.host_audience_unresolved'));
+    return;
+  }
+  const opts = Array.isArray(r.options) ? r.options
+    : ((typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []));
+  const payload = { session_code: _session.code, type: q.type || 'mc', text: r.question, options: opts,
     correct_answer: (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '') ? q.correct_answer : null };
   if (TEXT_TYPES.includes(q.type)) payload.max_select = 0;
   else payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select, 10) : 1;
@@ -605,6 +632,7 @@ export function mount(containerEl, ctx) {
   _layout = _loadLayout();
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _sqaLastServerAnswer = null; _sqaSaving = false; _historyMap = {}; _bankMap = {};
+  _audienceConfig = null; _selectedAudience = '';
   _trailTurma = null; _trailAllTurmas = [];
   _onStats = (ctx && ctx.onStats) || null;
   _onDelete = (ctx && ctx.onDelete) || null;
@@ -626,6 +654,7 @@ export function mount(containerEl, ctx) {
 
   _applyHostedUI(_isOpen());
   _loadTrail();
+  _loadAudienceConfig();
 
   const host = _q('#cdx-host');
   _on(host, 'click', (e) => {
@@ -649,8 +678,6 @@ export function mount(containerEl, ctx) {
       if (act === 'launch') return _launch();
       if (act === 'clear') return _remountComposer(null);
       if (act === 'close-q' || act === 'sqa-close') return _closeQuestion();
-      if (act === 'ai-generate') return _aiQuestion('generate');
-      if (act === 'ai-improve') return _aiQuestion('improve');
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
       if (act === 'qr') return _openQr();
       if (act === 'bank-toggle') { const p = _q('#cdx-bank-panel'); const open = p.classList.toggle('open'); btn.classList.toggle('open', open); if (open) _loadBankSets(); return; }
@@ -689,6 +716,11 @@ export function mount(containerEl, ctx) {
   });
 
   _on(_q('#cdx-bank-set'), 'change', (e) => _loadBankQuestions(e.target.value));
+  _on(_q('#cdx-bank-audience'), 'change', (e) => {
+    _selectedAudience = e.target.value;
+    const setSel = _q('#cdx-bank-set');
+    _loadBankQuestions(setSel ? setSel.value : '');
+  });
   _on(_q('#cdx-bank-list'), 'click', (e) => {
     const item = e.target.closest('[data-bank-i]');
     if (item && !e.target.closest('[data-act="bank-launch"]')) { const q = _bankMap[item.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); }

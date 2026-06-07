@@ -366,17 +366,18 @@ function addAfter(app, ref) {
 // 2026-06-03). symResize/stacked are plain per-slide flags read by geometry.flowCard
 // and the cards layout; reset clears every card width override (back to equal flex).
 export function cardTogglesMenu(slots) {
+  const stacked = !!slots.stacked; // labels follow the active axis (width in a row, height when stacked)
   return [
     {
-      type: "toggle", id: "sym", label: "Largura simétrica", on: !!slots.symResize,
+      type: "toggle", id: "sym", label: stacked ? t("slides.ed_sym_height") : t("slides.ed_sym_width"), on: !!slots.symResize,
       write(app, sel, checked) { app.record(); app.cur().slots.symResize = checked; app.refresh(); },
     },
     {
-      type: "toggle", id: "stack", label: "Empilhar na vertical", on: !!slots.stacked,
+      type: "toggle", id: "stack", labelKey: "slides.ed_stack_v", on: !!slots.stacked,
       write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
     },
     {
-      type: "button", id: "reset-widths", label: "Igualar larguras",
+      type: "button", id: "reset-widths", label: stacked ? t("slides.ed_equalize_h") : t("slides.ed_equalize_w"),
       run(app) {
         app.record();
         const ov = app.cur().overrides;
@@ -408,6 +409,7 @@ register({
   },
   controls(app, sel, card) {
     if (!card) return [];
+    const stacked = !!(app.cur().slots && app.cur().slots.stacked); // ▲▼ + vertical resize when stacked
     const ctrls = [];
     if (this.editEl(app, sel)) ctrls.push(...formatControls(), { type: "sep" });
     ctrls.push({
@@ -415,10 +417,10 @@ register({
       id: "mode",
       value: card.mode,
       options: [
-        { v: "title", label: "Título" },
-        { v: "text", label: "Texto" },
-        { v: "image", label: "Imagem" },
-        { v: "image-text", label: "Imagem+texto" },
+        { v: "title", labelKey: "slides.ed_title" },
+        { v: "text", labelKey: "slides.ed_text" },
+        { v: "image", labelKey: "slides.ed_image" },
+        { v: "image-text", labelKey: "slides.ed_image_text" },
       ],
       write(app2, sel2, v) {
         app2.record();
@@ -428,12 +430,12 @@ register({
       },
     });
     ctrls.push(
-      { type: "button", id: "move-l", label: "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
-      { type: "button", id: "move-r", label: "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
-      { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addAfter(app2, sel2.ref); } },
+      { type: "button", id: "move-l", label: stacked ? "▲" : "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
+      { type: "button", id: "move-r", label: stacked ? "▼" : "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
+      { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
       { type: "sep" },
-      { type: "button", id: "toggles", label: "Ajustes ▾", run(app2, sel2, btnEl) { app2.select.openMenu(cardTogglesMenu(app2.cur().slots), btnEl); } }
+      { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots), btnEl); } }
     );
     return ctrls;
   },
@@ -462,8 +464,8 @@ register({
       ...formatControls(),
       { type: "button", id: "move-up", label: "▲", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-down", label: "▼", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
-      { type: "button", id: "add", label: "＋ tópico", run(app2, sel2) { addAfter(app2, sel2.ref); } },
-      { type: "button", id: "delete", label: "remover", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
+      { type: "button", id: "add", label: `＋ ${t("slides.ed_topic")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
+      { type: "button", id: "delete", labelKey: "slides.ed_remove", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
     ];
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;

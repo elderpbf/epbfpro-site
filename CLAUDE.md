@@ -2,7 +2,7 @@
 
 ## Deploy targets
 
-- **Mocks** (`backstage/mocks/**`): always `/deploy site production` directly. Do not ask "staging or production." Reason: Elder reviews mocks at `pensoia.com/backstage/mocks/...` (the production URL). Staging review adds friction with no benefit because mocks are iteration artifacts, not customer surfaces.
+- **Mocks** (`backstage/mocks/**`): always deploy to production directly via the **`production-mock`** path (`/deploy site production-mock`). Do not ask "staging or production." Reason: Elder reviews mocks at `pensoia.com/backstage/mocks/...` (the production URL). Staging review adds friction with no benefit because mocks are iteration artifacts, not customer surfaces. **Never use the plain `production` deploy for a mock change** — its full `dev -> master` merge ships every pending `dev` commit (Slides/Codex/portal work) to live. The `production-mock` env cherry-picks only `backstage/mocks/**`. (Learned 2026-06-04 the hard way.)
 - **Main site / app code** (`index.html`, app shells, anything users see): keep the normal `staging -> review -> production` flow; see `.ai/development-flow.md`.
 
 ## Mocks lifecycle

@@ -16,7 +16,7 @@ import { resolveLogo, DEFAULT_LOGO, freedStyle, flowStyle } from "../render/play
 import { getByPath } from "../core/schema.js";
 
 /** Which transform handles a strategy supports (drives the selection frame). */
-export function geometryCaps(name) {
+export function geometryCaps(name, stacked) {
   switch (name) {
     case "absoluteAsset":
       return { move: true, resizeW: true, resizeH: false, rotate: true };
@@ -25,10 +25,12 @@ export function geometryCaps(name) {
     case "freeformSlot":
       return { move: true, resizeW: true, resizeH: true, rotate: true };
     case "flowCard":
-      // width only: a card's height is content-driven, so a height handle could
-      // only ever grow (never shrink past content) — a false affordance. Resize
-      // the basis (width) in the row; neighbours conform.
-      return { move: false, resizeW: true, resizeH: false, rotate: false };
+      // Resize the card's MAIN-AXIS basis; neighbours conform. In a row that axis is
+      // width (left/right handles); when the row is stacked into a column it is height
+      // (up/down handles). move/rotate never apply (the card stays in the flex flow).
+      return stacked
+        ? { move: false, resizeW: false, resizeH: true, rotate: false }
+        : { move: false, resizeW: true, resizeH: false, rotate: false };
     case "ratio":
       // the divider is dragged horizontally (a move along x); that x IS the split.
       return { move: true, resizeW: false, resizeH: false, rotate: false };
@@ -59,6 +61,14 @@ function cardMirrorRef(app, ref) {
   const j = cards.length - 1 - i;
   if (j === i) return null;
   return `cards.${cards[j].id}`;
+}
+
+// The card override stores a single main-axis basis under `w` (flowStyle sets
+// flex-basis from it). In a row the main axis is width; when the row is stacked into a
+// column (slots.stacked) it is height — so a stacked resize stores g.h, a row resize g.w.
+function cardBasis(app, g) {
+  const stacked = app && app.cur().slots && app.cur().slots.stacked;
+  return stacked ? g.h : g.w;
 }
 
 export const strategies = {
@@ -158,17 +168,19 @@ export const strategies = {
     write(app, sel, g) {
       if (!sel) return;
       const ov = (app.cur().overrides = app.cur().overrides || {});
-      ov[sel.ref] = { w: g.w, flow: true }; // width only; height stays content-driven
+      const basis = cardBasis(app, g); // main-axis size: height when stacked, width otherwise
+      ov[sel.ref] = { w: basis, flow: true };
       const mref = cardMirrorRef(app, sel.ref); // symmetric mode: the counterpart card
-      if (mref) ov[mref] = { w: g.w, flow: true };
+      if (mref) ov[mref] = { w: basis, flow: true };
     },
     patch(el, g, app) {
-      flowStyle(el, g); // basis only (no h -> no min-height); siblings conform
+      const basis = cardBasis(app, g);
+      flowStyle(el, { w: basis }); // flex-basis = main axis (width in a row, height when stacked)
       // onUp doesn't re-render the stage, so the mirror must track live too.
       const mref = app && el.dataset && cardMirrorRef(app, el.dataset.fkey);
       if (mref) {
         const mel = app.stage.querySelector(`.card[data-fkey="${mref}"]`);
-        if (mel) flowStyle(mel, { w: g.w });
+        if (mel) flowStyle(mel, { w: basis });
       }
     },
   },

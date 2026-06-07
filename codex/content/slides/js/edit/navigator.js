@@ -1,6 +1,7 @@
 // edit/navigator.js — slide thumbnail strip: select, reorder (buttons + drag),
 // add/duplicate/remove are deck ops on the app controller.
 import { renderInto } from "../render/player.js";
+import { t } from "../../../../js/i18n.js";
 
 export function createNavigator(app) {
   const nav = app.nav;
@@ -24,7 +25,7 @@ export function createNavigator(app) {
         `<span class="pos">${app.index + 1} / ${deck.slides.length}</span>` +
         `<button class="navbtn" data-next ${atLast ? "disabled" : ""}>▶</button>` +
       `</div>` +
-      `<button class="navadd" data-add>＋ slide</button>`;
+      `<button class="navadd" data-add>＋ ${t("slides.ed_slide")}</button>`;
     nav.appendChild(hdr);
     hdr.querySelector("[data-prev]").onclick = (e) => { e.stopPropagation(); app.go(-1); };
     hdr.querySelector("[data-next]").onclick = (e) => { e.stopPropagation(); app.go(1); };

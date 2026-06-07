@@ -20,12 +20,55 @@ export function createBar(app) {
   let anchorEl = null;
   let pill = null;
 
+  // A dropdown popover that hangs UNDER a trigger button (the card "Ajustes" menu),
+  // kept visually attached to its button instead of replacing the selection pill the
+  // way openMenu does. Viewport-fixed + JS-anchored like #maskpop; reuses widget().
+  const drop = document.createElement("div");
+  drop.className = "cdx-dropdown";
+  app.root.appendChild(drop);
+  let dropBtn = null, onDropDoc = null;
+
   function recOf() { return current && current.menu ? null : current; }
 
   function hide() {
     current = null; anchorEl = null; pill = null;
     layer.classList.remove("on");
     layer.innerHTML = "";
+    hideDropdown(); // a cleared selection takes its dropdown with it
+  }
+
+  function hideDropdown() {
+    drop.classList.remove("on");
+    drop.innerHTML = "";
+    dropBtn = null;
+    if (onDropDoc) { document.removeEventListener("mousedown", onDropDoc, true); onDropDoc = null; }
+  }
+
+  // Open the control list as a dropdown anchored under `btn`, WITHOUT clearing the
+  // selection (the card bar stays). Re-clicking the same trigger closes it.
+  function openDropdown(ctrls, btn) {
+    if (dropBtn === btn) { hideDropdown(); return; }
+    hideDropdown();
+    if (!ctrls || !ctrls.length || !btn) return;
+    const rec = recOf();
+    ctrls.forEach((c) => drop.appendChild(widget(c, rec)));
+    dropBtn = btn;
+    drop.classList.add("on");
+    drop.style.visibility = "hidden"; // measure before placing
+    requestAnimationFrame(() => {
+      const r = btn.getBoundingClientRect();
+      const vw = document.documentElement.clientWidth;
+      let left = r.left;
+      if (left + drop.offsetWidth > vw - 8) left = Math.max(8, vw - drop.offsetWidth - 8);
+      drop.style.left = left + "px";
+      drop.style.top = (r.bottom + 6) + "px";
+      drop.style.visibility = "";
+    });
+    onDropDoc = (e) => {
+      if (drop.contains(e.target) || btn.contains(e.target)) return;
+      hideDropdown();
+    };
+    document.addEventListener("mousedown", onDropDoc, true);
   }
 
   function build(ctrls) {
@@ -118,5 +161,5 @@ export function createBar(app) {
     return b;
   }
 
-  return { el: layer, render, openMenu, hide, reposition, current: () => current };
+  return { el: layer, render, openMenu, openDropdown, hide, hideDropdown, reposition, current: () => current };
 }

@@ -12,6 +12,7 @@ import { createSelection } from "./selection.js";
 import { createBar } from "./bar.js";
 import * as kinds from "./kinds.js";
 import { strategies, geometryCaps } from "./geometry.js";
+import { t } from "../../../../js/i18n.js";
 
 const DEG = Math.PI / 180;
 const MIN_W = 24;
@@ -55,7 +56,7 @@ export function initSelect(app) {
       [-1, 1], [0, 1], [1, 1],
     ]
       .map(([x, y]) => `<div class="selh" data-h="${x},${y}"></div>`)
-      .join("") + `<div class="selh selrot" data-h="rot" title="girar"></div>`;
+      .join("") + `<div class="selh selrot" data-h="rot" title="${t("slides.ed_rotate")}"></div>`;
   scale.appendChild(box);
   layer.appendChild(scale);
   app.stagebox.appendChild(layer); // persists across stage re-renders
@@ -72,7 +73,8 @@ export function initSelect(app) {
   }
   function caps() {
     const d = desc();
-    return geometryCaps(d ? d.geometry : null);
+    const s = app.cur().slots;
+    return geometryCaps(d ? d.geometry : null, s && s.stacked); // flowCard flips to vertical resize when stacked
   }
   function curEl() {
     const d = desc();
@@ -148,7 +150,9 @@ export function initSelect(app) {
   }
 
   // public surface used by app.js + descriptors
-  app.select = { afterRender, clear, current: () => sel.get(), selectRef, openMenu, currentEl: () => curEl() };
+  // openDropdown keeps the current selection (unlike openMenu, which clears it): the
+  // card bar stays put and the menu hangs off its trigger button.
+  app.select = { afterRender, clear, current: () => sel.get(), selectRef, openMenu, openDropdown: (ctrls, btn) => bar.openDropdown(ctrls, btn), currentEl: () => curEl() };
   app.selectClear = clear;
 
   function canvasPoint(ev) {
