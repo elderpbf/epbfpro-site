@@ -81,6 +81,18 @@
 .cdx-deck-editor .cdx-dropdown { position: fixed; z-index: 62; display: none; flex-direction: column; align-items: flex-start; gap: 8px; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 10px; padding: 8px; box-shadow: 0 10px 30px var(--overlay-strong); }
 .cdx-deck-editor .cdx-dropdown.on { display: flex; }
 
+/* AI-fill overlay: a centered modal above the whole editor (z above chrome=50 and
+   the popovers=61/62). Hidden via inline display:none in the markup; openAiOverlay()
+   clears that so the CSS flex layout reveals it. */
+.cdx-deck-editor #ai-fill-overlay { position: absolute; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; background: var(--overlay-strong, rgba(0, 0, 0, .5)); padding: 24px; }
+.cdx-deck-editor #ai-fill-box { display: flex; flex-direction: column; gap: 10px; width: 480px; max-width: 100%; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 12px; padding: 16px; box-shadow: 0 16px 48px var(--overlay-strong); }
+.cdx-deck-editor #ai-fill-box textarea { font: inherit; font-size: 14px; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 8px 10px; resize: vertical; min-height: 64px; width: 100%; }
+.cdx-deck-editor #ai-fill-box .ai-fill-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.cdx-deck-editor #ai-fill-box button { font: inherit; font-size: 13px; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+.cdx-deck-editor #ai-fill-box button:hover { background: var(--btn-hover); }
+.cdx-deck-editor #ai-fill-box button#ai-fill-go { background: var(--teal); border: 0; color: #fff; font-weight: 700; }
+.cdx-deck-editor #ai-fill-box .ai-fill-error { color: var(--danger); font-size: 12px; min-height: 14px; }
+
 /* unified selection model (js/select/): THE context bar + the selection frame.
    The context bar is one lean, content-width PILL overlaying the top of the stage
    (no reflow): menus open their options into it (centered under the menu button),

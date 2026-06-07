@@ -374,6 +374,8 @@ function wireChrome(app, root) {
   const aiFillBtn = $("#aiFillBtn");
   if (aiFillBtn) aiFillBtn.onclick = (e) => { e.stopPropagation(); openAiOverlay(); };
   if (aiCancelBtn) aiCancelBtn.onclick = closeAiOverlay;
+  // Click the dim backdrop (outside the box) to dismiss the overlay.
+  if (aiOverlay) aiOverlay.addEventListener("mousedown", (e) => { if (e.target === aiOverlay) closeAiOverlay(); });
   if (aiGoBtn) aiGoBtn.onclick = async () => {
     const intent = aiIntent.value.trim();
     if (!intent) return;
