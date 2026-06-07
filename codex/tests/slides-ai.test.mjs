@@ -115,7 +115,7 @@ test('parseFillResponse: null -> {error}', () => {
 
 test('makeWorkerAi.fill: fakeChat returning valid JSON -> resolves {slots}', async () => {
   const fakeReply = '{"slots":{"title":"T","topics":[{"text":"a"}]}}';
-  const fakeChat = async (_p) => ({ ok: true, reply: fakeReply, provider: 'fake' });
+  const fakeChat = async (_p) => ({ ok: true, text: fakeReply, provider: 'fake' });
   const svc = makeWorkerAi(fakeChat);
   const result = await svc.fill(topicsLayout, 'tres bullets');
   assert.ok('slots' in result, 'must resolve with slots');
@@ -123,7 +123,7 @@ test('makeWorkerAi.fill: fakeChat returning valid JSON -> resolves {slots}', asy
 });
 
 test('makeWorkerAi.fill: fakeChat returning junk reply -> resolves {error}', async () => {
-  const fakeChat = async (_p) => ({ ok: true, reply: 'not json', provider: 'fake' });
+  const fakeChat = async (_p) => ({ ok: true, text: 'not json', provider: 'fake' });
   const svc = makeWorkerAi(fakeChat);
   const result = await svc.fill(topicsLayout, 'x');
   assert.ok('error' in result, 'must resolve with error for junk reply');
@@ -147,7 +147,7 @@ test('makeWorkerAi.fill: passes system and messages to fakeChat', async () => {
   let captured;
   const fakeChat = async (p) => {
     captured = p;
-    return { ok: true, reply: '{"slots":{"title":"T","topics":[]}}' };
+    return { ok: true, text: '{"slots":{"title":"T","topics":[]}}' };
   };
   const svc = makeWorkerAi(fakeChat);
   await svc.fill(topicsLayout, 'minha intencao');

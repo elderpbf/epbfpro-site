@@ -60,7 +60,7 @@ export function parseFillResponse(replyText, layout) {
   try {
     parsed = JSON.parse(raw);
   } catch (_) {
-    return { error: 'json parse failed' };
+    return { error: 'json parse failed: ' + raw.slice(0, 120) };
   }
 
   if (!parsed || typeof parsed.slots !== 'object' || Array.isArray(parsed.slots)) {
@@ -90,10 +90,16 @@ export function makeWorkerAi(aiChat) {
       } catch (e) {
         return { error: 'ai call failed: ' + ((e && e.message) || String(e)) };
       }
-      if (!res || !res.reply) {
+      if (!res) {
         return { error: 'no reply from AI (rate-limited or empty)' };
       }
-      return parseFillResponse(res.reply, layout);
+      // The live ai_chat response carries the model text in `text` (see
+      // content/item-creator.js); `reply` kept only as a defensive fallback.
+      const replyText = res.text != null ? res.text : res.reply;
+      if (!replyText) {
+        return { error: 'no reply from AI (rate-limited or empty)' };
+      }
+      return parseFillResponse(replyText, layout);
     }
   };
 }

@@ -387,6 +387,8 @@ function wireChrome(app, root) {
       const res = await app.fillSlideWithAI(intent);
       if (res && res.error) {
         if (errEl) errEl.textContent = t("slides.ai_error");
+        // Surface the real cause to the debug/error pill (every error must reach it).
+        if (window.bsLog) window.bsLog("AI-fill: " + res.error, "error");
       } else {
         closeAiOverlay();
       }
