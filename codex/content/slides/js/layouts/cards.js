@@ -11,7 +11,7 @@ export default {
   id: "cards",
   label: "Cards",
   defaults: () => ({ title: "", reveal: false, cards: [{ id: uid(), mode: "text", text: "Texto do card" }] }),
-  reveals: (s) => (s.reveal ? s.cards.length : 0),
+  reveals: (s) => (s.reveal ? Math.max(0, ...s.cards.map((c, i) => c.step != null ? c.step : (i + 1))) : 0),
   render: (s) => `${bar}${circuit("br")}<div class="L-cards">
     ${ed("h2", "title", s.title || "")}
     <div class="cardrow${s.stacked ? " col" : ""}">${s.cards.map((c, i) => cardItem(c, i, s.cards.length)).join("")}</div></div>`,

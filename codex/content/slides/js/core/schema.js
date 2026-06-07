@@ -46,8 +46,11 @@ export function resolveStyleObj(slots, ref) {
  * run a one-time upgrade and never re-run it. v2 = D1 stable identity:
  * cards carry an id, topics are {id,text}, geometry overrides + per-item text
  * style are keyed/stored by identity, not array position.
+ * v3 = explicit step field on revealable items (topics + cards): integer where
+ * 0 = always shown and 1..N = reveal order; derived from array position on first
+ * migration so existing decks render identically.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Upgrade a deck in place to the current schema (idempotent, version-gated).
@@ -66,6 +69,7 @@ export function migrateDeck(deck) {
   if (!deck) return deck;
   const from = deck.schemaVersion || 1;
   const repoint = from < 2; // the one-shot positional -> identity remap
+  const addSteps = from < 3; // one-shot: assign step=i+1 to items lacking it
 
   for (const slide of deck.slides || []) {
     const slots = slide.slots || {};
@@ -80,6 +84,7 @@ export function migrateDeck(deck) {
           moveKey(ov, `cards.${i}`, `cards.${c.id}`);
           moveStyle(ts, `cards.${i}.text`, c);
         }
+        if (addSteps && c.step == null) c.step = i + 1;
       });
     }
 
@@ -91,6 +96,7 @@ export function migrateDeck(deck) {
           moveKey(ov, `topics.${i}`, `topics.${obj.id}`);
           moveStyle(ts, `topics.${i}`, obj);
         }
+        if (addSteps && obj.step == null) obj.step = i + 1;
         return obj;
       });
     }

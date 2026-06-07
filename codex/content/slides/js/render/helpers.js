@@ -92,10 +92,12 @@ export function edPlain(tag, path, value, cls = "", styleRef = "") {
  * helpers are the single renderer, shared by the layouts AND inherited by the
  * navigator thumbnails and the presenter window. */
 
-/** One topic bullet. `t` is a {id,text,style?} object; `i` is its current index. */
+/** One topic bullet. `t` is a {id,text,style?,step?} object; `i` is its current index. */
 export function topicItem(t, i) {
+  const step = t.step != null ? t.step : (i + 1);
+  const cls = step > 0 ? "reveal" : "";
   return (
-    `<li class="reveal" data-step="${i + 1}" data-fkey="topics.${t.id}">` +
+    `<li class="${cls}" data-step="${step}" data-fkey="topics.${t.id}">` +
     edPlain("span", `topics.${i}.text`, t.text, "", `topics.${t.id}`) +
     `</li>`
   );
@@ -116,8 +118,10 @@ function cardBody(c, i) {
   return img + edPlain("div", `cards.${i}.text`, c.text, "c-text", ref);
 }
 
-/** One card. `c` is a {id,mode,...,style?} object; `n` is the card count (drives the
+/** One card. `c` is a {id,mode,...,style?,step?} object; `n` is the card count (drives the
  *  reveal class). data-fkey is the stable id ref the flowCard strategy writes to. */
 export function cardItem(c, i, n) {
-  return `<div class="card ${n > 1 ? "reveal" : ""}" data-step="${i + 1}" data-fkey="cards.${c.id}">${cardBody(c, i)}</div>`;
+  const step = c.step != null ? c.step : (i + 1);
+  const cls = n > 1 && step > 0 ? "card reveal" : "card";
+  return `<div class="${cls}" data-step="${step}" data-fkey="cards.${c.id}">${cardBody(c, i)}</div>`;
 }
