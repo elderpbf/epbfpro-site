@@ -907,5 +907,12 @@ export default {
   'slides.layout_split':      'Image + topics',
   'slides.layout_topics':     'Topics only',
   'slides.layout_bleed':      'Full image',
-  'slides.layout_cards':      'Cards'
+  'slides.layout_cards':      'Cards',
+
+  // Slides AI-fill overlay
+  'slides.ai_fill':           'AI',
+  'slides.ai_intent_ph':      'e.g. 3 bullets on why lawyers fear AI',
+  'slides.ai_fill_go':        'Fill',
+  'slides.ai_cancel':         'Cancel',
+  'slides.ai_error':          'Error filling with AI. Please try again.'
 };

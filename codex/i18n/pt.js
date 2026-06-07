@@ -906,5 +906,12 @@ export default {
   'slides.layout_split':      'Imagem + tópicos',
   'slides.layout_topics':     'Só tópicos',
   'slides.layout_bleed':      'Imagem cheia',
-  'slides.layout_cards':      'Cards'
+  'slides.layout_cards':      'Cards',
+
+  // Slides AI-fill overlay
+  'slides.ai_fill':           'IA',
+  'slides.ai_intent_ph':      'Ex: 3 tópicos sobre por que advogados temem a IA',
+  'slides.ai_fill_go':        'Preencher',
+  'slides.ai_cancel':         'Cancelar',
+  'slides.ai_error':          'Erro ao preencher com IA. Tente novamente.'
 };

@@ -17,6 +17,7 @@ import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from "./edit/menus
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
+import { makeStubAi } from "./ai/aiService.js";
 
 // Layout display label by id, translated. Layout modules keep a PT fallback in
 // their own `label`; here we map the id to an i18n key so the add-slide menu
@@ -40,8 +41,20 @@ const shellHTML = () => `
   <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
   <button id="appearBtn">${t("slides.ed_appearance")} ▾</button>
   <button id="animBtn">${t("slides.ed_anim")} ▾</button>
+  <button id="aiFillBtn">${t("slides.ai_fill")}</button>
   <span class="spacer"></span>
   <button id="present" class="primary">▶ ${t("slides.ed_present")}</button>
+</div>
+
+<div id="ai-fill-overlay" style="display:none">
+  <div id="ai-fill-box">
+    <textarea id="ai-fill-intent" rows="3" placeholder="${t("slides.ai_intent_ph")}"></textarea>
+    <div class="ai-fill-actions">
+      <button id="ai-fill-go" class="cdx-btn cdx-btn-primary" type="button">${t("slides.ai_fill_go")}</button>
+      <button id="ai-fill-cancel" class="cdx-btn" type="button">${t("slides.ai_cancel")}</button>
+    </div>
+    <div class="ai-fill-error" aria-live="polite"></div>
+  </div>
 </div>
 
 ${maskPanelHTML()}
@@ -63,10 +76,14 @@ export function mount(root, ctx = {}) {
   const $ = (sel) => root.querySelector(sel);
   const store = ctx.store || createMemoryStore(newDeck());
   migrateDeck(store.getDeck()); // D1: bring legacy decks (string topics, id-less cards) to current schema before first render
+  // ctx.aiService: injected by content/slides.js (the integration wrapper) so the
+  // vendored core never imports the codex-api facade directly. Falls back to a stub.
+  const aiService = ctx.aiService || null;
 
   const app = {
     isPresenter,
     store,
+    _aiService: aiService,
     index: 0,
     step: 0,
     presenting: false,
@@ -220,6 +237,26 @@ export function mount(root, ctx = {}) {
         else if (document.fullscreenElement) document.exitFullscreen();
       } catch (e) { /* ignore */ }
     },
+
+    // fillSlideWithAI — calls the AI service for the current slide's layout +
+    // the user's intent, then merges the returned slots and refreshes.
+    // Mirrors the record-then-mutate-then-refresh pattern used by all app.* methods.
+    // ctx.aiService (injected by the integration layer) drives the real AI call;
+    // falls back to makeStubAi() so the standalone dev build still works.
+    // Returns { ok: true } or { error } so the overlay caller can report errors
+    // without this module needing to import notice.js.
+    async fillSlideWithAI(intent) {
+      const svc = this._aiService || makeStubAi();
+      const layout = this.layoutOf(this.cur());
+      const result = await svc.fill(layout, intent);
+      if (result.error) {
+        return { error: result.error };
+      }
+      this.record("ai-fill");
+      Object.assign(this.cur().slots, result.slots);
+      this.refresh();
+      return { ok: true };
+    },
   };
 
   const history = createHistory({
@@ -321,6 +358,42 @@ function wireChrome(app, root) {
     app.setPresenting(true);
     window.open(location.href.split("?")[0] + "?presenter=1", "slides-presenter", "width=1100,height=720");
   };
+
+  // AI-fill overlay: the "IA" button in the chrome bar shows a small overlay
+  // with a textarea for the user's intent. "Preencher" calls app.fillSlideWithAI.
+  const aiOverlay = $("#ai-fill-overlay");
+  const aiIntent = $("#ai-fill-intent");
+  const aiGoBtn = $("#ai-fill-go");
+  const aiCancelBtn = $("#ai-fill-cancel");
+  const openAiOverlay = () => {
+    aiIntent.value = "";
+    aiOverlay.style.display = "";
+    aiIntent.focus();
+  };
+  const closeAiOverlay = () => { aiOverlay.style.display = "none"; };
+  const aiFillBtn = $("#aiFillBtn");
+  if (aiFillBtn) aiFillBtn.onclick = (e) => { e.stopPropagation(); openAiOverlay(); };
+  if (aiCancelBtn) aiCancelBtn.onclick = closeAiOverlay;
+  if (aiGoBtn) aiGoBtn.onclick = async () => {
+    const intent = aiIntent.value.trim();
+    if (!intent) return;
+    const errEl = aiOverlay.querySelector(".ai-fill-error");
+    if (errEl) errEl.textContent = "";
+    aiGoBtn.disabled = true;
+    aiGoBtn.textContent = "...";
+    try {
+      const res = await app.fillSlideWithAI(intent);
+      if (res && res.error) {
+        if (errEl) errEl.textContent = t("slides.ai_error");
+      } else {
+        closeAiOverlay();
+      }
+    } finally {
+      aiGoBtn.disabled = false;
+      aiGoBtn.textContent = t("slides.ai_fill_go");
+    }
+  };
+  if (aiIntent) aiIntent.addEventListener("keydown", (e) => { if (e.key === "Enter") e.stopPropagation(); });
 
   const onKey = (e) => {
     if (e.key === "Escape" && app.presenting) { app.setPresenting(false); return; }

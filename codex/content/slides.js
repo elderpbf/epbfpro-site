@@ -13,11 +13,12 @@
 // Slides embed (`slide` type) is untouched and renders in Lessons, not here.
 // Backend is reached ONLY through the codex-api slides facade. Every string goes
 // through t(). No inline JS in markup; events are delegated.
-import { slides as api } from '../js/codex-api.js';
+import { slides as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { newDeck } from './slides/js/core/deck.js';
 import * as editor from './slides/js/app.js';
+import { makeWorkerAi } from './slides/js/ai/aiService.js';
 
 // Engine tag that marks a presentation row as one of OUR authored decks, so the
 // list shows only these (not the legacy decks sharing the backend table).
@@ -247,7 +248,7 @@ async function _openDeck(slug, fresh) {
   region.innerHTML = '<div class="cdx-slides-stage cdx-deck-editor" id="cdx-slides-stage"></div>';
   // Geometry is 100% CSS (slides.css, position:fixed region); the editor handles
   // its own canvas fit + window-resize internally. No sizing JS here.
-  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store });
+  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat) });
   _openSlug = slug;
   _writeDeckParam(slug);
   _setDeckOpen(true);
