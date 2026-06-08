@@ -823,6 +823,11 @@ export default {
   // Content → Slides (Apresentações) — authored deck library
   'slides.new':               '+ Nova apresentação',
   'slides.new_default_title': 'Nova apresentação',
+  'slides.import':            'Importar .pptx',
+  'slides.import_default_title': 'Apresentação importada',
+  'slides.importing':         'Importando apresentação… isso pode levar alguns segundos.',
+  'slides.import_empty':      'Nenhum slide encontrado no arquivo. Confira se é um .pptx válido.',
+  'slides.import_error':      'Falha ao importar. Verifique se o arquivo é um .pptx válido e tente de novo.',
   'slides.empty':             'Nenhuma apresentação ainda. Clique em "+ Nova apresentação" para criar.',
   'slides.loading':           'Carregando apresentações...',
   'slides.error_loading':     'Erro ao carregar apresentações.',

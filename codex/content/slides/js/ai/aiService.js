@@ -9,7 +9,10 @@
 //   makeWorkerAi(aiChat)                    -> { fill(layout, intent, lang) }
 //   makeStubAi()                            -> same shape, canned valid slots
 
-import { uid } from '../core/schema.js';
+// Slot coercion (normalizeSlots) + the per-item shape helper (itemTemplate) are
+// shared with the pptx importer, so they live in core/slots.js. This module owns
+// only the AI-prompt-specific pieces: building the prompt and parsing the reply.
+import { normalizeSlots, itemTemplate } from '../core/slots.js';
 
 // Derive the slot keys for a layout: prefer layout.slots (an explicit
 // descriptor), fall back to Object.keys(layout.defaults()).
@@ -19,21 +22,6 @@ function slotKeys(layout) {
   }
   const d = layout.defaults();
   return Object.keys(d);
-}
-
-// Fields the model never sets: identity, build-order, and the structural card
-// `mode` (AI fills text cards; image/title cards are set by hand). These keep
-// their template defaults so the renderer always gets a shape it can draw.
-const FIXED_ITEM_KEYS = new Set(['id', 'step', 'mode']);
-
-// The per-item content shape for a list slot, derived from its default first
-// item (e.g. topics -> {text}, cards -> {text}). Drops the fixed keys above.
-function itemTemplate(defItem) {
-  const src = defItem && typeof defItem === 'object' ? defItem : { text: '' };
-  const tpl = {};
-  for (const k of Object.keys(src)) if (!FIXED_ITEM_KEYS.has(k)) tpl[k] = src[k];
-  if (!Object.keys(tpl).length) tpl.text = '';
-  return tpl;
 }
 
 // slotShapeGuide — turn layout.defaults() into a concrete JSON template + a
@@ -121,70 +109,6 @@ export function parseFillResponse(replyText, layout) {
   }
 
   return { slots: normalizeSlots(parsed.slots, layout) };
-}
-
-// normalizeSlots — coerce the model's slots into the exact shape the renderer
-// needs, driven by layout.defaults() (never by a layout id). This is the half of
-// the fix that makes cards/topics actually FILL: the model supplies the content,
-// we fix the structure.
-//   - LIST slots  -> array of well-formed items, each with a fresh id (mirrors
-//                    the schema.js migrate idiom); a stray string becomes {text}.
-//   - STRING slots -> passed through (coerced to string defensively).
-//   - everything else (boolean/number control flags, image/object slots) is
-//     dropped, so the AI can never clobber geometry or a hand-placed image.
-function normalizeSlots(slots, layout) {
-  const d = layout.defaults();
-  const out = {};
-  for (const [key, val] of Object.entries(slots)) {
-    const def = d[key];
-    if (Array.isArray(def)) {
-      out[key] = normalizeList(val, def[0]);
-    } else if (typeof def === 'string') {
-      out[key] = typeof val === 'string' ? val : String(val == null ? '' : val);
-    }
-    // boolean/number/object defaults: not AI-filled — skip.
-  }
-  return out;
-}
-
-function normalizeList(val, defItem) {
-  const arr = Array.isArray(val) ? val : val == null ? [] : [val];
-  return arr.map((raw) => normalizeItem(raw, defItem)).filter(Boolean);
-}
-
-// Build one list item from the model's raw value. Start from the DEFAULT item
-// (minus identity/sequence) so structural fields like the card `mode` keep a
-// renderable value, then let the model set only the text-like content fields
-// (everything except id/step/mode). A fresh id is always assigned on our side.
-function normalizeItem(raw, defItem) {
-  const src = defItem && typeof defItem === 'object' ? defItem : { text: '' };
-  const item = {};
-  for (const k of Object.keys(src)) {
-    if (k === 'id' || k === 'step') continue;
-    item[k] = src[k]; // keeps mode + content defaults
-  }
-  let contentKeys = Object.keys(src).filter((k) => !FIXED_ITEM_KEYS.has(k));
-  if (!contentKeys.length) { item.text = ''; contentKeys = ['text']; }
-  const textKey = contentKeys.find((k) => typeof src[k] === 'string') || contentKeys[0];
-
-  if (typeof raw === 'string') {
-    if (!raw.trim()) return null;
-    item[textKey] = raw;
-  } else if (raw && typeof raw === 'object') {
-    for (const k of contentKeys) {
-      if (k in raw && typeof raw[k] === typeof src[k]) item[k] = raw[k];
-    }
-    // Robustness: if the text field is still the default but raw carries some
-    // other string, use it (covers the model naming the field differently).
-    if (item[textKey] === src[textKey]) {
-      const anyStr = Object.values(raw).find((v) => typeof v === 'string' && v.trim());
-      if (anyStr) item[textKey] = anyStr;
-    }
-  } else {
-    return null;
-  }
-  item.id = uid();
-  return item;
 }
 
 // makeWorkerAi — production factory.

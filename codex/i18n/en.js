@@ -824,6 +824,11 @@ export default {
   // Content -> Slides (Presentations) -- authored deck library
   'slides.new':               '+ New presentation',
   'slides.new_default_title': 'New presentation',
+  'slides.import':            'Import .pptx',
+  'slides.import_default_title': 'Imported presentation',
+  'slides.importing':         'Importing presentation… this can take a few seconds.',
+  'slides.import_empty':      'No slides found in the file. Make sure it is a valid .pptx.',
+  'slides.import_error':      'Import failed. Check that the file is a valid .pptx and try again.',
   'slides.empty':             'No presentations yet. Click "+ New presentation" to create one.',
   'slides.loading':           'Loading presentations...',
   'slides.error_loading':     'Error loading presentations.',

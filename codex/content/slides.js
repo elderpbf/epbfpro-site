@@ -19,6 +19,10 @@ import { createCodexStore } from './slides/adapters/codexStore.js';
 import { newDeck } from './slides/js/core/deck.js';
 import * as editor from './slides/js/app.js';
 import { makeWorkerAi } from './slides/js/ai/aiService.js';
+import * as registry from './slides/js/layouts/registry.js';
+import { parsePptx } from './slides/js/import/pptx.js';
+import { classifyAll } from './slides/js/import/classify.js';
+import { buildDeck } from './slides/js/import/build.js';
 
 // Engine tag that marks a presentation row as one of OUR authored decks, so the
 // list shows only these (not the legacy decks sharing the backend table).
@@ -85,7 +89,11 @@ function _render() {
       '<aside class="cdx-slides-sidebar is-open" id="cdx-slides-sidebar">' +
         '<div class="cdx-slides-side-head">' +
           '<h2 class="cdx-slides-side-title">' + _esc(t('content.sub_slides')) + '</h2>' +
-          '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-act="new">' + _esc(t('slides.new')) + '</button>' +
+          '<div class="cdx-slides-side-actions" style="display:inline-flex;gap:6px">' +
+            '<button class="cdx-btn cdx-btn-sm" data-act="import" title="' + _esc(t('slides.import')) + '">' + _esc(t('slides.import')) + '</button>' +
+            '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-act="new">' + _esc(t('slides.new')) + '</button>' +
+          '</div>' +
+          '<input type="file" id="cdx-slides-import-file" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="display:none">' +
         '</div>' +
         '<div class="cdx-slides-side-list" id="cdx-slides-list"></div>' +
       '</aside>' +
@@ -224,11 +232,55 @@ async function _createDeck() {
   }
 }
 
-// ── Editor (the copied, CSS-scoped Slides component) ─────────────────────────
-async function _openDeck(slug, fresh) {
-  const store = createCodexStore({ slug });
+// Open the OS file picker for a .pptx (the hidden input lives in the side head).
+function _pickPptx() {
+  const inp = _q('#cdx-slides-import-file');
+  if (inp) { inp.value = ''; inp.click(); }
+}
 
-  if (fresh) {
+// Show a transient status line in the editor region while the import runs.
+function _importStatus(msg) {
+  const region = _q('#cdx-slides-region');
+  if (region) region.innerHTML = '<div class="cdx-slides-placeholder">' + _esc(msg) + '</div>';
+}
+
+// _importDeck, parse a .pptx, classify each slide (heuristics + live-AI
+// fallback via aiApi.chat / OpenRouter), rebuild as our deck JSON, register it,
+// then open it in the editor for review/editing. Text-first: image slots are left
+// empty for Élder to fill. All persistence stays on the frozen Worker contract.
+async function _importDeck(file) {
+  if (!file) return;
+  const title = (file.name || '').replace(/\.pptx$/i, '').trim() || t('slides.import_default_title');
+  _importStatus(t('slides.importing'));
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const { slides } = parsePptx(bytes);
+    if (!slides.length) { _importStatus(t('slides.import_empty')); return; }
+
+    const layoutIds = registry.list().map((l) => l.id);
+    const classified = await classifyAll(slides, { ai: aiApi.chat, layoutIds });
+    const deck = buildDeck(classified, { title });
+
+    const slug = _slugify(title) + '-' + String(Date.now()).slice(-6);
+    await api.register({ slug, title, engine: DECK_ENGINE });
+    await _loadDecks();
+    await _openDeck(slug, /* fresh */ false, deck);
+  } catch (e) {
+    if (window.bsLog) window.bsLog('Slides import: ' + ((e && e.message) || e), 'error');
+    _importStatus(t('slides.import_error'));
+  }
+}
+
+// ── Editor (the copied, CSS-scoped Slides component) ─────────────────────────
+// initialDeck (optional): a deck object to seed the store with (e.g. a freshly
+// imported pptx). When given, it is treated like a fresh deck, set + persisted.
+async function _openDeck(slug, fresh, initialDeck) {
+  const store = createCodexStore({ slug });
+  const seeded = !!initialDeck;
+
+  if (initialDeck) {
+    store.setDeck(initialDeck);
+  } else if (fresh) {
     store.setDeck(newDeck());
   } else {
     await store.load();
@@ -240,8 +292,8 @@ async function _openDeck(slug, fresh) {
     if (_saveTimer) clearTimeout(_saveTimer);
     _saveTimer = setTimeout(() => { store.save().catch(() => {}); }, 800);
   });
-  // Persist the initial deck for a fresh presentation so it survives a reload.
-  if (fresh) { try { await store.save(); } catch (_) { /* surfaced on next edit */ } }
+  // Persist the initial deck (fresh OR imported) so it survives a reload.
+  if (fresh || seeded) { try { await store.save(); } catch (_) { /* surfaced on next edit */ } }
 
   _teardownEditor();
   const region = _q('#cdx-slides-region');
@@ -275,6 +327,7 @@ export function mount(viewEl, ctx) {
     if (act) {
       const a = act.getAttribute('data-act');
       if (a === 'new') return _createDeck();
+      if (a === 'import') return _pickPptx();
       if (a === 'del') { e.stopPropagation(); return _deleteDeck(act.getAttribute('data-slug')); }
     }
     const row = e.target.closest('.cdx-slides-row[data-slug]');
@@ -282,6 +335,14 @@ export function mount(viewEl, ctx) {
   };
   _viewEl.addEventListener('click', onClick);
   _cleanup.push(() => _viewEl.removeEventListener('click', onClick));
+
+  // The .pptx file picker (hidden input in the side head) -> import pipeline.
+  const fileInput = _q('#cdx-slides-import-file');
+  if (fileInput) {
+    const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (f) _importDeck(f); };
+    fileInput.addEventListener('change', onFile);
+    _cleanup.push(() => fileInput.removeEventListener('change', onFile));
+  }
 
   // Edge reveal (mirrors lessons.js focus mode): while a deck is open, the cursor
   // reaching the left edge slides the sidebar in. It hides again as soon as the
