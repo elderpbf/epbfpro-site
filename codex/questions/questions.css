@@ -437,6 +437,8 @@
 .cdx-aud-key { font-size: 0.74rem; color: var(--text-light); font-family: ui-monospace, monospace; }
 .cdx-aud-addrow { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
 .cdx-aud-addrow input { flex: 1; }
+.cdx-aud-ai-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.cdx-aud-ai-row input { flex: 1; }
 .cdx-aud-lint { font-size: 0.78rem; color: var(--error); margin: 0.4rem 0; }
 .cdx-var-gridwrap { overflow-x: auto; }
 .cdx-var-grid { border-collapse: collapse; width: 100%; }

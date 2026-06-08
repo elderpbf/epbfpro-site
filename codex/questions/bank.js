@@ -16,7 +16,7 @@ import { questions as api, ai, audiences as audiencesApi } from '../js/codex-api
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
 import { mountComposer, setAudienceConfig } from './question-composer.js';
-import { questionType, lintConfig } from '../js/audiences.js';
+import { questionType, lintConfig, parseAudienceDraft, slug } from '../js/audiences.js';
 
 let _viewEl = null;
 let _cleanup = [];
@@ -53,11 +53,8 @@ function _audienceLabel(key) {
   const auds = (_audienceConfig && _audienceConfig.audiences) || {};
   return (auds[key] && auds[key].label) || key;
 }
-// Slug an audience label to an ascii key (strip accents, lowercase, underscores).
-function _slug(s) {
-  return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-}
+// Audience-label -> ascii key is the shared `slug` from js/audiences.js (same
+// key for manual add and AI add).
 
 // Pure: move an item up/down, immutable, clamped at the ends.
 export function moveInArray(arr, index, dir) {
@@ -778,6 +775,10 @@ function _renderAudiencesTab() {
     '<div class="cdx-aud-addrow">' +
       '<input class="cdx-input cdx-aud-new-label" placeholder="' + _esc(t('questions.aud_label_ph')) + '">' +
       '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="aud-add" type="button">' + t('questions.aud_add') + '</button>' +
+    '</div>' +
+    '<div class="cdx-aud-ai-row">' +
+      '<input class="cdx-input cdx-aud-ai-input" placeholder="' + _esc(t('questions.aud_ai_ph')) + '">' +
+      '<button class="cdx-btn cdx-btn-sm" data-act="aud-ai" type="button">' + t('questions.aud_ai_create') + '</button>' +
     '</div>';
 }
 function _varAddRow() {
@@ -824,11 +825,51 @@ function _ensureCell(audKey, varKey) {
   if (!a.values[varKey]) a.values[varKey] = { text: '', g: 'f', n: 'sg' };
   return a.values[varKey];
 }
+// AI-audience-create: strict-JSON system prompt. The model gets a name/
+// description of a público and returns ONE audience object the matrix can stage.
+// Strict JSON (no markdown) is load-bearing for the cheap fallback models; one
+// worked example anchors the schema. Fills only the existing variable vocabulary.
+function _audSysPrompt(variables) {
+  const list = (variables || []).join(', ');
+  return 'Você cria a configuração de uma audiência (público-alvo) para um banco de questões. ' +
+    'Receberá o nome/descrição de um público. Devolva APENAS um objeto JSON estrito, sem markdown, no formato: ' +
+    '{"label":"<nome curto do público>","values":{"<variável>":{"text":"<termo concreto em PT-BR>","g":"m|f","n":"sg|pl"}}}. ' +
+    'Use EXATAMENTE estas variáveis como chaves, todas preenchidas: ' + list + '. ' +
+    'Para cada variável, "text" é o termo que esse público realmente usa, "g" é o gênero gramatical do termo ("m" ou "f") e "n" o número ("sg" ou "pl"). ' +
+    'Não invente outras chaves nem inclua texto fora do JSON. ' +
+    'Exemplo para "Advocacia" com variáveis workspace, actor_role, deliverable, domain: ' +
+    '{"label":"IA na Advocacia","values":{"workspace":{"text":"escritório","g":"m","n":"sg"},"actor_role":{"text":"advogado","g":"m","n":"sg"},"deliverable":{"text":"petição","g":"f","n":"sg"},"domain":{"text":"Direito","g":"m","n":"sg"}}}.';
+}
+
+// Generate a whole audience from a typed name/description via ai.chat. The result
+// is a REVIEWABLE DRAFT staged in memory only (never auto-saved): it lands in the
+// config and we switch to the variables grid so Élder can edit; lint + Salvar own
+// persistence. Errors route to notice (pill) + the inline error line.
+async function _aiCreateAudience() {
+  const inp = _q('.cdx-aud-ai-input');
+  const desc = inp ? inp.value.trim() : '';
+  const err = _q('.cdx-bank-aud-err');
+  if (err) err.textContent = '';
+  if (!desc) { notice.info(t('questions.aud_ai_empty')); return; }
+  const btn = _q('[data-act="aud-ai"]');
+  let orig = '';
+  if (btn) { btn.disabled = true; orig = btn.textContent; btn.textContent = t('questions.aud_ai_generating'); }
+  let res; try { res = await ai.chat({ system: _audSysPrompt(_audienceConfig.variables), messages: [{ role: 'user', content: desc }] }); } catch (e) { notice.internal(e); res = null; }
+  if (!_viewEl) return;
+  if (btn) { btn.disabled = false; btn.textContent = orig; }
+  const draft = parseAudienceDraft(res && res.text, _audienceConfig.variables);
+  if (!draft) { if (err) err.textContent = t('questions.aud_ai_error'); return; }
+  _audienceConfig.audiences[draft.key] = { label: draft.label, values: draft.values };
+  _audTab = 'variables';
+  _renderAudContent();
+  notice.ok(t('questions.aud_ai_done'));
+}
+
 function _addAudience() {
   const inp = _q('.cdx-aud-new-label');
   const label = inp ? inp.value.trim() : '';
   if (!label) return;
-  const key = _slug(label);
+  const key = slug(label);
   if (!key) return;
   if (!_audienceConfig.audiences[key]) _audienceConfig.audiences[key] = { label: label, values: {} };
   else _audienceConfig.audiences[key].label = label;
@@ -840,7 +881,7 @@ function _delAudience(key) {
 }
 function _addVariable() {
   const inp = _q('.cdx-var-new-key');
-  const key = _slug(inp ? inp.value.trim() : '');
+  const key = slug(inp ? inp.value.trim() : '');
   if (!key) return;
   if (_audienceConfig.variables.indexOf(key) === -1) _audienceConfig.variables.push(key);
   _renderAudContent();
@@ -1084,6 +1125,7 @@ export function mount(viewEl, ctx) {
     if (act === 'aud-close') _closeAudiences();
     else if (act === 'aud-save') _saveAudiences();
     else if (act === 'aud-add') _addAudience();
+    else if (act === 'aud-ai') _aiCreateAudience();
     else if (act === 'aud-del') _delAudience(btn.getAttribute('data-aud'));
     else if (act === 'var-add') _addVariable();
     else if (act === 'var-del') _delVariable(btn.getAttribute('data-var'));
