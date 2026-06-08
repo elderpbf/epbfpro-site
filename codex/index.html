@@ -91,19 +91,12 @@
      (CVDriveViewer, also used by Lessons) stays a shared global; the legacy
      folders-api / cache / folders-ui / sync-ui globals are no longer loaded. -->
 <script src="../backstage/js/cv-drive-viewer.js?v=1.0"></script>
-<!-- Shared Backstage globals still used by Content sub-tabs (Presets item picker,
-     the shared editor, AI generation). Lessons is now a NATIVE ES module
-     (lessons/lessons.js + lesson-model.js) and no longer loads the aula-engine
-     copy. Pruning the globals that became dead at this cutover (cv-type-registry,
-     cv-focus-mode) is the Phase-4 cleanup, after their non-Lessons users are
-     audited. -->
-<script src="../backstage/js/ai-client.js?v=1.0"></script>
-<script src="../backstage/js/ct-item-form.js?v=1.4"></script>
-<script src="../backstage/js/ct-item-creator.js?v=1.0"></script>
-<script src="../backstage/classvault/js/cv-type-registry.js?v=1.4"></script>
-<script src="../backstage/classvault/js/cv-focus-mode.js?v=1.6"></script>
-<script src="../backstage/js/cv-presets-api.js?v=1.0"></script>
-<script src="../backstage/js/cv-item-picker.js?v=1.3"></script>
+<!-- cv-presets-ui.js: legacy preset LOADER global, still used by Lessons
+     (lessons.js -> CVPresetsUI.mountPresetLoader). Content's presets sub-tab is a
+     native port (content/presets.js). The dead globals that were loaded here
+     (ai-client, ct-item-form, ct-item-creator, cv-type-registry, cv-focus-mode,
+     cv-presets-api, cv-item-picker) were removed in Stage 0 of the separation
+     plan (2026-06-07): unused anywhere in the codex tree, verified per-tag. -->
 <script src="../backstage/js/cv-presets-ui.js?v=1.2"></script>
 <!-- Shared QR share modal (the live host's QR button reuses this global). -->
 <script src="../backstage/js/qr-share-modal.js?v=1.3"></script>
