@@ -439,6 +439,15 @@
 .cdx-aud-addrow input { flex: 1; }
 .cdx-aud-ai-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
 .cdx-aud-ai-row input { flex: 1; }
+.cdx-bank-import-file-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.cdx-bank-import-banks { margin-bottom: 0.6rem; }
+.cdx-bank-import-banks-head { font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.3rem; }
+.cdx-bank-import-banklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.cdx-bank-import-bankrow { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.cdx-bank-import-bankname { flex: 1; font-weight: 600; }
+.cdx-bank-import-bankcount { color: var(--text-light); }
+.cdx-bank-import-banktag { font-size: 0.72rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--border); color: var(--text-light); }
+.cdx-bank-import-bankrow--new .cdx-bank-import-banktag { background: var(--primary); color: #fff; }
 .cdx-aud-lint { font-size: 0.78rem; color: var(--error); margin: 0.4rem 0; }
 .cdx-var-gridwrap { overflow-x: auto; }
 .cdx-var-grid { border-collapse: collapse; width: 100%; }

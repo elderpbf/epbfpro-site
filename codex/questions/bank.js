@@ -65,6 +65,24 @@ export function moveInArray(arr, index, dir) {
   return out;
 }
 
+// Pure: summarize which banks an import will touch. One row per target bank
+// (sorted by name), with its question count and whether it is NEW (not among
+// existingNames). Items with no list_name fall back to textTarget; items with no
+// target at all are dropped. Drives the "banks affected" review summary so the
+// user sees the bank structure, not just a flat question list.
+export function importBankSummary(items, textTarget, existingNames) {
+  const existing = new Set(existingNames || []);
+  const counts = new Map();
+  (items || []).forEach((q) => {
+    const name = (q && q.list_name) || textTarget || '';
+    if (!name) return;
+    counts.set(name, (counts.get(name) || 0) + 1);
+  });
+  return Array.from(counts.keys()).sort().map((name) => ({
+    name, count: counts.get(name), isNew: !existing.has(name),
+  }));
+}
+
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
@@ -694,12 +712,50 @@ async function _importProcess() {
   _importItems = items;
   _renderImportReview();
 }
+// Read a picked .json file into the import box and go straight to review. A
+// picked file is always a JSON envelope/array, so force JSON mode.
+function _loadImportFile(file) {
+  const err = _q('.cdx-bank-import-err');
+  if (err) err.textContent = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const inp = _q('.cdx-bank-import-in');
+    if (inp) inp.value = String(reader.result || '');
+    _importMode = 'json';
+    _syncImportTabs();
+    _importProcess();
+  };
+  reader.onerror = (e) => { notice.internal(e); if (err) err.textContent = t('questions.bank_import_file_error'); };
+  reader.readAsText(file);
+}
+
+// Render the "banks affected" summary above the question list: each target bank,
+// its incoming count, and a new/existing tag.
+function _renderImportBanks(items) {
+  const el = _q('#cdx-bank-import-banks');
+  if (!el) return;
+  const tgtInput = _q('.cdx-bank-import-target');
+  const textTarget = (tgtInput && tgtInput.value.trim()) || _currentSet || '';
+  const rows = importBankSummary(items, textTarget, _banks.map((b) => b.list_name));
+  if (!rows.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="cdx-bank-import-banks-head">' + t('questions.bank_import_banks_head') + '</div>' +
+    '<ul class="cdx-bank-import-banklist">' +
+    rows.map((r) => '<li class="cdx-bank-import-bankrow' + (r.isNew ? ' cdx-bank-import-bankrow--new' : '') + '">' +
+      '<span class="cdx-bank-import-bankname">' + _esc(r.name) + '</span>' +
+      '<span class="cdx-bank-import-bankcount">' + r.count + '</span>' +
+      '<span class="cdx-bank-import-banktag">' + t(r.isNew ? 'questions.bank_import_bank_new' : 'questions.bank_import_bank_existing') + '</span>' +
+    '</li>').join('') +
+    '</ul>';
+}
+
 function _renderImportReview() {
   _q('#cdx-bank-import-config').hidden = true;
   _q('#cdx-bank-import-review').hidden = false;
   _q('[data-act="import-process"]').hidden = true;
   _q('[data-act="import-discard"]').hidden = false;
   _q('[data-act="import-save"]').hidden = false;
+  _renderImportBanks(_importItems);
   _q('#cdx-bank-import-list').innerHTML = _reviewItemsHTML(_importItems);
 }
 async function _importSave() {
@@ -1060,9 +1116,12 @@ export function mount(viewEl, ctx) {
               '<datalist id="cdx-bank-target-list"></datalist>' +
             '</label>' +
             '<textarea class="cdx-input cdx-bank-import-in" rows="7"></textarea>' +
+            '<label class="cdx-bank-import-file-row"><span class="cdx-comp-label">' + t('questions.bank_import_file') + '</span>' +
+              '<input type="file" class="cdx-bank-import-file" accept=".json,application/json"></label>' +
           '</div>' +
           '<div id="cdx-bank-import-review" hidden>' +
             '<p class="cdx-bank-bulk-hint">' + t('questions.bank_bulk_review_hint') + '</p>' +
+            '<div class="cdx-bank-import-banks" id="cdx-bank-import-banks"></div>' +
             '<div class="cdx-bank-bulk-list" id="cdx-bank-import-list"></div>' +
           '</div>' +
           '<p class="cdx-bank-modal-err cdx-bank-import-err"></p>' +
@@ -1263,6 +1322,13 @@ export function mount(viewEl, ctx) {
     if (act === 'bulk-cancel' || act === 'bulk-discard') _closeBulk();
     else if (act === 'bulk-generate') _bulkGenerate();
     else if (act === 'bulk-save') _bulkSave();
+  });
+
+  // Import file picker (change, not click): read the chosen .json into the box.
+  _on(viewEl.querySelector('#cdx-bank-hub'), 'change', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('cdx-bank-import-file')) {
+      _loadImportFile(e.target.files && e.target.files[0]);
+    }
   });
 
   // Import / Export hub (delegated): tab + scope + format + checklist + copy/

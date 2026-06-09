@@ -29,6 +29,31 @@ test('bank moveInArray() reorders immutably and clamps at the ends', async () =>
   assert.deepEqual(orig, ['a', 'b', 'c'], 'does not mutate the input');
 });
 
+test('importBankSummary groups items by target bank and flags new vs existing', async () => {
+  const b = await import('../questions/bank.js');
+  const items = [
+    { list_name: 'LLM', question: 'a' },
+    { list_name: 'LLM', question: 'b' },
+    { list_name: 'Risco e responsabilidade', question: 'c' },
+    { question: 'd' }, // no list_name -> falls back to textTarget
+  ];
+  const rows = b.importBankSummary(items, 'Fallback', ['LLM', 'old-LLM']);
+  assert.deepEqual(rows.map((r) => r.name), ['Fallback', 'LLM', 'Risco e responsabilidade'], 'sorted by name');
+  const llm = rows.find((r) => r.name === 'LLM');
+  assert.equal(llm.count, 2);
+  assert.equal(llm.isNew, false, 'LLM exists -> not new');
+  assert.equal(rows.find((r) => r.name === 'Risco e responsabilidade').isNew, true, 'new bank flagged');
+  const fb = rows.find((r) => r.name === 'Fallback');
+  assert.equal(fb.count, 1, 'no-list_name item uses textTarget');
+  assert.equal(fb.isNew, true);
+});
+
+test('importBankSummary drops items with no target at all', async () => {
+  const b = await import('../questions/bank.js');
+  assert.deepEqual(b.importBankSummary([{ question: 'x' }], '', []), []);
+  assert.deepEqual(b.importBankSummary(null, 'T', []), []);
+});
+
 test('composer buildPayload() normalizes each type to the frozen Worker shape', async () => {
   const c = await import('../questions/question-composer.js');
 
