@@ -118,6 +118,18 @@ export function visibleForAudience(q, audienceKey) {
   return !!audienceKey && q.audience === audienceKey;
 }
 
+// Parse a JSON object out of model text. Tries the whole string first, then
+// falls back to the outermost {...} span so prose around the object (a common
+// cheap-model quirk, e.g. "Claro, aqui está: {...}") does not defeat it. Returns
+// the parsed value, or undefined when nothing parses.
+function _parseObjectLoose(s) {
+  try { return JSON.parse(s); } catch (_) { /* fall through to span extraction */ }
+  const a = s.indexOf('{');
+  const b = s.lastIndexOf('}');
+  if (a !== -1 && b > a) { try { return JSON.parse(s.slice(a, b + 1)); } catch (_) { /* ignore */ } }
+  return undefined;
+}
+
 // Build a reviewable audience draft from one ai.chat reply. `raw` is the model's
 // text (a JSON object, possibly fenced) or an already-parsed object; `variables`
 // is the closed variable vocabulary. Returns { label, key, values } with exactly
@@ -131,7 +143,8 @@ export function parseAudienceDraft(raw, variables) {
   let data = raw;
   if (typeof raw === 'string') {
     const cleaned = raw.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
-    try { data = JSON.parse(cleaned); } catch (_) { return null; }
+    data = _parseObjectLoose(cleaned);
+    if (data === undefined) return null;
   }
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
   const label = typeof data.label === 'string' ? data.label.trim() : '';

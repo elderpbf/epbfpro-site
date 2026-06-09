@@ -41,6 +41,19 @@ test('strips ```json fences before parsing', () => {
   assert.equal(d.values.deliverable.text, 'laudo');
 });
 
+test('tolerates prose around the JSON object (cheap-model quirk)', () => {
+  const ai = 'Claro! Aqui está a audiência:\n{"label":"Contabilidade","values":{"deliverable":{"text":"balancete","g":"m","n":"sg"}}}\nEspero ter ajudado.';
+  const d = parseAudienceDraft(ai, ['deliverable']);
+  assert.equal(d.key, 'contabilidade');
+  assert.equal(d.values.deliverable.text, 'balancete');
+});
+
+test('tolerates a trailing prose sentence after a fenced object', () => {
+  const ai = '```json\n{"label":"Saúde","values":{}}\n```\nPosso detalhar mais se quiser.';
+  const d = parseAudienceDraft(ai, []);
+  assert.equal(d.key, 'saude');
+});
+
 test('accepts an already-parsed object too', () => {
   const d = parseAudienceDraft({ label: 'X', values: {} }, ['deliverable']);
   assert.equal(d.key, 'x');

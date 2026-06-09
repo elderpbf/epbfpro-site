@@ -858,7 +858,15 @@ async function _aiCreateAudience() {
   if (!_viewEl) return;
   if (btn) { btn.disabled = false; btn.textContent = orig; }
   const draft = parseAudienceDraft(res && res.text, _audienceConfig.variables);
-  if (!draft) { if (err) err.textContent = t('questions.aud_ai_error'); return; }
+  if (!draft) {
+    // Never swallow the cause into the toast alone: log the real AI response to
+    // the debug pill so the failure is diagnosable (CLAUDE.md pill rule).
+    const raw = (res && res.text != null) ? String(res.text)
+      : (res === null ? '<null: rate-limited or both AI providers failed>' : '<response had no text field>');
+    notice.internal('aud-ai: no valid draft parsed from AI response. raw=' + raw.slice(0, 400));
+    if (err) err.textContent = t('questions.aud_ai_error');
+    return;
+  }
   _audienceConfig.audiences[draft.key] = { label: draft.label, values: draft.values };
   _audTab = 'variables';
   _renderAudContent();
