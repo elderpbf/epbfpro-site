@@ -54,6 +54,62 @@ test('importBankSummary drops items with no target at all', async () => {
   assert.deepEqual(b.importBankSummary(null, 'T', []), []);
 });
 
+// Filter chips: filterByClass keeps one question class (or all), classCounts
+// tallies each class for the chip badges. Class semantics come from
+// audiences.questionType (audience tag -> unique; {{token}} -> variable; else
+// generic; audience wins when both are present).
+test('filterByClass keeps only the matching class; all returns everything', async () => {
+  const b = await import('../questions/bank.js');
+  const qs = [
+    { id: 1, question: 'plain text' },
+    { id: 2, question: 'assina {{actor_role}}' },
+    { id: 3, question: 'tagged', audience: 'advocacia' },
+    { id: 4, question: 'tagged with {{x}}', audience: 'judiciario' }, // audience wins -> unique
+  ];
+  assert.deepEqual(b.filterByClass(qs, 'all').map((q) => q.id), [1, 2, 3, 4]);
+  assert.deepEqual(b.filterByClass(qs, 'generic').map((q) => q.id), [1]);
+  assert.deepEqual(b.filterByClass(qs, 'variable').map((q) => q.id), [2]);
+  assert.deepEqual(b.filterByClass(qs, 'unique').map((q) => q.id), [3, 4]);
+  assert.deepEqual(b.filterByClass(null, 'all'), [], 'null-safe');
+});
+
+test('classCounts tallies each class with all = total', async () => {
+  const b = await import('../questions/bank.js');
+  const qs = [{ question: 'a' }, { question: '{{x}} faz' }, { question: 't', audience: 'k' }];
+  assert.deepEqual(b.classCounts(qs), { all: 3, generic: 1, variable: 1, unique: 1 });
+  assert.deepEqual(b.classCounts([]), { all: 0, generic: 0, variable: 0, unique: 0 });
+  assert.deepEqual(b.classCounts(null), { all: 0, generic: 0, variable: 0, unique: 0 });
+});
+
+// Cross-bank Variaveis view: collectVariable flattens every variable-class
+// question across the loaded banks, tagging each with its source bank, order
+// preserved (bank order, then question order), non-variable dropped.
+test('collectVariable flattens variable questions across banks, tagging the source', async () => {
+  const b = await import('../questions/bank.js');
+  const banksData = [
+    { list_name: 'LLM', questions: [{ id: 1, question: 'plain' }, { id: 2, question: '{{actor_role}} faz' }] },
+    { list_name: 'Risco', questions: [{ id: 3, question: '{{deliverable}}' }, { id: 4, question: 'tag', audience: 'adv' }] },
+    { list_name: 'Empty', questions: [] },
+  ];
+  const out = b.collectVariable(banksData);
+  assert.deepEqual(out.map((q) => q.id), [2, 3], 'only variable-class, order preserved');
+  assert.equal(out[0]._sourceBank, 'LLM');
+  assert.equal(out[1]._sourceBank, 'Risco');
+  assert.deepEqual(b.collectVariable(null), [], 'null-safe');
+});
+
+test('bank renders the filter chips and the cross-bank Variaveis view', () => {
+  const src = read('../questions/bank.js');
+  assert.match(src, /export\s+function\s+filterByClass\s*\(/, 'filterByClass exported');
+  assert.match(src, /export\s+function\s+classCounts\s*\(/, 'classCounts exported');
+  assert.match(src, /export\s+function\s+collectVariable\s*\(/, 'collectVariable exported');
+  assert.match(src, /data-act="filter-class"/, 'renders the class filter chips');
+  assert.match(src, /cdx-bank-chip/, 'chip class present');
+  assert.match(src, /cdx-bank-chip-count/, 'chips carry a count badge');
+  assert.match(src, /data-act="variaveis"/, 'sidebar has the cross-bank Variaveis entry');
+  assert.match(src, /cdx-q-srcbank/, 'cross-bank cards show a source-bank badge');
+});
+
 test('composer buildPayload() normalizes each type to the frozen Worker shape', async () => {
   const c = await import('../questions/question-composer.js');
 
@@ -161,6 +217,10 @@ test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
     'questions.bank_import_organize', 'questions.bank_hub', 'questions.bank_scope',
     'questions.bank_scope_current', 'questions.bank_scope_all', 'questions.bank_scope_choose',
     'questions.bank_target',
+    // Filter chips + cross-bank Variaveis view
+    'questions.bank_filter_all', 'questions.bank_filter_generic', 'questions.bank_filter_variable',
+    'questions.bank_filter_unique', 'questions.bank_filter_empty', 'questions.bank_variaveis_view',
+    'questions.bank_variaveis_hint', 'questions.bank_variaveis_empty', 'questions.bank_srcbank',
   ];
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);

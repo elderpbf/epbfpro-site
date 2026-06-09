@@ -384,6 +384,37 @@
 
 .cdx-bank-qlist { display: flex; flex-direction: column; gap: 0.75rem; }
 
+/* Class filter chips (Todas / Genéricas / Variáveis / Únicas). Colors are theme
+ * tokens, so dark mode is inherited; mirrors the hub-tab pill language. */
+.cdx-bank-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.cdx-bank-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: transparent;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 999px; padding: 0.25rem 0.7rem;
+  font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+  font-family: inherit;
+}
+.cdx-bank-chip:hover { color: var(--text-primary); }
+.cdx-bank-chip.active { color: var(--primary); border-color: var(--primary); background: var(--surface-hover, rgba(127, 127, 127, 0.08)); }
+.cdx-bank-chip-count {
+  font-size: 0.7rem; font-weight: 700;
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+  border-radius: 999px; padding: 0.02rem 0.4rem; color: var(--text-secondary);
+}
+.cdx-bank-chip.active .cdx-bank-chip-count { color: var(--primary); }
+
+/* Cross-bank Variáveis view (synthetic conjunto) */
+.cdx-bank-set--variaveis .cdx-bank-set-name { color: var(--primary); }
+.cdx-bank-variaveis-hint { font-size: 0.82rem; color: var(--text-secondary); margin: 0; }
+.cdx-q-srcbank {
+  align-self: flex-start;
+  background: transparent; border: none; cursor: pointer; padding: 0;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--primary); font-family: inherit;
+}
+.cdx-q-srcbank:hover { text-decoration: underline; }
+
 /* Question card (text + options preview + footer) */
 .cdx-q {
   display: flex; flex-direction: column; gap: 0.6rem;

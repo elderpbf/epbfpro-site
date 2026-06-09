@@ -46,6 +46,9 @@ let _importItems = [];
 let _importTarget = '';
 let _audienceConfig = null;   // { version, variables[], audiences{} } for typed questions
 let _audTab = 'audiences';    // matrix-manager active tab
+let _classFilter = 'all';     // conjunto question-list filter: all|generic|variable|unique
+let _variaveisView = false;   // cross-bank Variaveis pseudo-conjunto active
+let _variaveisItems = [];     // collected variable questions across all banks
 
 const _DEFAULT_VARS = ['workspace', 'actor_role', 'deliverable', 'domain'];
 function _emptyConfig() { return { version: 1, variables: _DEFAULT_VARS.slice(), audiences: {} }; }
@@ -81,6 +84,42 @@ export function importBankSummary(items, textTarget, existingNames) {
   return Array.from(counts.keys()).sort().map((name) => ({
     name, count: counts.get(name), isNew: !existing.has(name),
   }));
+}
+
+// Pure: keep only the questions of one class ('generic'|'variable'|'unique'),
+// or all of them when cls is 'all' (or anything else). Class comes from the
+// shared questionType resolver, so the chip filter and the cross-bank view agree
+// on what "variable" means.
+export function filterByClass(questions, cls) {
+  const arr = Array.isArray(questions) ? questions : [];
+  if (cls !== 'generic' && cls !== 'variable' && cls !== 'unique') return arr.slice();
+  return arr.filter((q) => questionType(q) === cls);
+}
+
+// Pure: tally questions per class for the chip count badges. `all` is the total.
+export function classCounts(questions) {
+  const out = { all: 0, generic: 0, variable: 0, unique: 0 };
+  (Array.isArray(questions) ? questions : []).forEach((q) => {
+    out.all += 1;
+    out[questionType(q)] += 1;
+  });
+  return out;
+}
+
+// Pure: flatten every variable-class question across the loaded banks into one
+// list, annotating each with its source bank (`_sourceBank`). Bank order then
+// question order is preserved; non-variable questions and empty banks drop out.
+// Drives the cross-bank Variaveis view, where templates scattered across thematic
+// banks are gathered in one place (editing routes back to the source bank).
+export function collectVariable(banksData) {
+  const out = [];
+  (Array.isArray(banksData) ? banksData : []).forEach((bank) => {
+    const name = bank && bank.list_name;
+    (bank && Array.isArray(bank.questions) ? bank.questions : []).forEach((q) => {
+      if (questionType(q) === 'variable') out.push(Object.assign({ _sourceBank: name }, q));
+    });
+  });
+  return out;
 }
 
 function _esc(s) {
@@ -261,8 +300,13 @@ function _renderSets() {
       '<button class="cdx-bank-iconbtn" data-act="newset-cancel" type="button" aria-label="x">✗</button>' +
     '</div>';
   }
-  if (_banks.length) html += _banks.map(_setRow).join('');
-  else if (!_newSetActive) html += '<div class="cdx-bank-empty">' + t('questions.bank_empty_sets') + '</div>';
+  if (_banks.length) {
+    // Synthetic pseudo-conjunto: every variable question across all banks.
+    html += '<button class="cdx-bank-set cdx-bank-set--variaveis' + (_variaveisView ? ' active' : '') + '" data-act="variaveis" type="button">' +
+      '<span class="cdx-bank-set-name">⚡ ' + t('questions.bank_variaveis_view') + '</span>' +
+    '</button>';
+    html += _banks.map(_setRow).join('');
+  } else if (!_newSetActive) html += '<div class="cdx-bank-empty">' + t('questions.bank_empty_sets') + '</div>';
   el.innerHTML = html;
   if (_newSetActive) { const inp = el.querySelector('.cdx-bank-newset-input'); if (inp) inp.focus(); }
 }
@@ -371,15 +415,90 @@ function _moveBar() {
   '</div>';
 }
 
+// Class filter chips (Todas / Genéricas / Variáveis / Únicas), each with a live
+// count badge. Hidden in reorder/move mode, where the list must stay whole so
+// drag indices map to the full _questions array.
+function _filterChips() {
+  if (_editBank) return '';
+  const counts = classCounts(_questions);
+  const chip = (key, label) => '<button class="cdx-bank-chip' + (_classFilter === key ? ' active' : '') + '" data-act="filter-class" data-class="' + key + '" type="button">' +
+    label + ' <span class="cdx-bank-chip-count">' + counts[key] + '</span></button>';
+  return '<div class="cdx-bank-chips">' +
+    chip('all', t('questions.bank_filter_all')) +
+    chip('generic', t('questions.bank_filter_generic')) +
+    chip('variable', t('questions.bank_filter_variable')) +
+    chip('unique', t('questions.bank_filter_unique')) +
+  '</div>';
+}
+
 function _renderConjunto() {
   const body = _q('#cdx-bank-body');
   if (!body) return;
-  const list = _questions.length
-    ? _questions.map(_qCard).join('')
-    : '<div class="cdx-bank-empty">' + t('questions.bank_empty_questions') + '</div>';
-  body.innerHTML = _conjuntoHeader() + _renameRow() + _qHeader() + _moveBar() +
+  const shown = _editBank ? _questions : filterByClass(_questions, _classFilter);
+  const emptyMsg = (_questions.length && _classFilter !== 'all')
+    ? t('questions.bank_filter_empty')
+    : t('questions.bank_empty_questions');
+  const list = shown.length
+    ? shown.map(_qCard).join('')
+    : '<div class="cdx-bank-empty">' + emptyMsg + '</div>';
+  body.innerHTML = _conjuntoHeader() + _renameRow() + _qHeader() + _filterChips() + _moveBar() +
     '<div class="cdx-bank-qlist' + (_editBank ? ' cdx-bank-qlist--editing' : '') + '">' + list + '</div>';
   if (_renaming) { const inp = body.querySelector('.cdx-bank-rename-input'); if (inp) { inp.focus(); inp.select(); } }
+}
+
+// ---- Cross-bank Variaveis view (synthetic pseudo-conjunto) ----
+// A read/navigate aggregate: lists every variable question across all banks with
+// its source-bank badge. Editing routes back to the source bank (the goto action),
+// so this view never mutates a question in place.
+function _variavelCard(q) {
+  return '<div class="cdx-q cdx-q--variavel">' +
+    '<button class="cdx-q-srcbank" data-act="goto" data-set="' + _esc(q._sourceBank) + '" type="button">' + t('questions.bank_srcbank') + ' ' + _esc(q._sourceBank) + '</button>' +
+    '<div class="cdx-q-text">' + _esc(q.question) + '</div>' +
+    _optionPreview(q) +
+    '<div class="cdx-q-foot">' + _typeBadge(q.type) + _classBadge(q) +
+      '<button class="cdx-btn cdx-btn-sm" data-act="goto" data-set="' + _esc(q._sourceBank) + '" type="button">' + t('questions.bank_goto_set') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function _renderVariaveis() {
+  const body = _q('#cdx-bank-body');
+  if (!body) return;
+  const head = '<div class="cdx-bank-conjunto-header">' +
+    '<h2 class="cdx-bank-conjunto-title">' + t('questions.bank_variaveis_view') + '</h2>' +
+  '</div>';
+  const hint = '<p class="cdx-bank-variaveis-hint">' + t('questions.bank_variaveis_hint') + '</p>';
+  const list = _variaveisItems.length
+    ? _variaveisItems.map(_variavelCard).join('')
+    : '<div class="cdx-bank-empty">' + t('questions.bank_variaveis_empty') + '</div>';
+  body.innerHTML = head + hint + '<div class="cdx-bank-qlist">' + list + '</div>';
+}
+
+async function _loadVariaveis() {
+  const body = _q('#cdx-bank-body');
+  if (!body) return;
+  body.innerHTML = '<div class="cdx-bank-loading">' + t('questions.bank_loading') + '</div>';
+  if (!_banks.length) {
+    let r; try { r = await api.listSets(); } catch (e) { notice.internal(e); r = null; }
+    if (!_viewEl || !_variaveisView) return;
+    _banks = (r && r.banks) || [];
+  }
+  const banksData = [];
+  for (const b of _banks) {
+    let res; try { res = await api.getQuestions({ list_name: b.list_name }); } catch (e) { notice.internal(e); res = null; }
+    if (!_viewEl || !_variaveisView) return;
+    banksData.push({ list_name: b.list_name, questions: (res && res.questions) || [] });
+  }
+  _variaveisItems = collectVariable(banksData);
+  _renderVariaveis();
+}
+
+function _selectVariaveis() {
+  _variaveisView = true; _currentSet = null;
+  _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
+  _editBank = false; _selected.clear(); _dragId = null; _classFilter = 'all';
+  _renderSets();
+  _loadVariaveis();
 }
 
 async function _loadQuestions() {
@@ -395,6 +514,7 @@ async function _loadQuestions() {
 
 function _selectSet(name) {
   _currentSet = name;
+  _variaveisView = false; _classFilter = 'all';
   _renaming = false; _confirmDelSet = false; _confirmDelQ = null;
   _editBank = false; _selected.clear(); _dragId = null;
   _renderSets();
@@ -1015,6 +1135,7 @@ export function mount(viewEl, ctx) {
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
+  _classFilter = 'all'; _variaveisView = false; _variaveisItems = [];
 
   viewEl.innerHTML =
     '<div class="cdx-bank">' +
@@ -1164,6 +1285,7 @@ export function mount(viewEl, ctx) {
     if (!btn) return;
     const act = btn.getAttribute('data-act');
     if (act === 'pick') { _selectSet(btn.getAttribute('data-set')); }
+    else if (act === 'variaveis') { _selectVariaveis(); }
     else if (act === 'newset-ok') { _submitNewSet(); }
     else if (act === 'newset-cancel') { _newSetActive = false; _renderSets(); }
   });
@@ -1223,6 +1345,7 @@ export function mount(viewEl, ctx) {
     const act = btn.getAttribute('data-act');
     if (act === 'addq') { _confirmDelQ = null; _openModal(null); }
     else if (act === 'bulk') { _openBulk(); }
+    else if (act === 'filter-class') { _classFilter = btn.getAttribute('data-class') || 'all'; _renderConjunto(); }
     else if (act === 'edit-bank') { _toggleEditBank(); }
     else if (act === 'select') {
       const qid = btn.getAttribute('data-qid');
@@ -1408,5 +1531,6 @@ export function unmount() {
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
+  _classFilter = 'all'; _variaveisView = false; _variaveisItems = [];
   _audienceConfig = null; _audTab = 'audiences'; setAudienceConfig(null);
 }
