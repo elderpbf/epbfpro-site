@@ -86,7 +86,7 @@ test('live-host wires the auto-revelar control to the shared logic + facade reve
   assert.match(src, /cdx-auto-on/, 'toggle checkbox');
   assert.match(src, /cdx-auto-head/, 'headcount input');
   assert.match(src, /cdx-auto-pct/, 'percentage input');
-  assert.match(src, /reveal_answer:\s*true/, 'auto-reveal closes the question showing the correct answer');
+  assert.match(src, /setVisibility\s*\(/, 'auto-show reveals results live via setVisibility, never closing the question');
 });
 
 // ── CSS ────────────────────────────────────────────────────────

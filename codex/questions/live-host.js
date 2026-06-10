@@ -512,14 +512,16 @@ function _updateAutoReveal(q, total) {
   if (barEl) barEl.style.width = (target ? Math.min(100, Math.round(total / target * 100)) : 0) + '%';
   if (!_auto.enabled || target == null || _autoFiredQId === q.id) return;
   const decision = autoRevealDecision({ enabled: true, count: total, target, lastChangeAt: _autoLastChangeAt, now });
-  if (decision.reveal) { _autoFiredQId = q.id; _autoReveal(decision.reason); }
+  if (decision.reveal) { _autoFiredQId = q.id; _autoShow(decision.reason); }
 }
 
-// Close the active question showing the correct answer, then cue the host (flash
-// + chime) so they can be watching the room, not the screen.
-async function _autoReveal(reason) {
+// Threshold reached: SHOW the responses on the display (set_question_visibility),
+// keeping the question OPEN so people can still answer. Never closes, only the
+// Encerrar button closes. Cues the host (flash + chime) so they can watch the
+// room, not the screen.
+async function _autoShow(reason) {
   if (!_activeQId) return;
-  try { await api.closeQuestion({ id: _activeQId, session_code: _session.code, show_results: true, reveal_answer: true }); }
+  try { await api.setVisibility({ id: _activeQId, session_code: _session.code, show_results: true }); }
   catch (e) { notice.internal(e); return; }
   const statusEl = _q('#cdx-auto-status');
   if (statusEl) statusEl.textContent = reason === 'plateau' ? t('questions.host_autoreveal_fired_plateau') : t('questions.host_autoreveal_fired_target');
@@ -530,7 +532,6 @@ async function _autoReveal(reason) {
     _autoFlashTimer = setTimeout(() => { const p = _q('#cdx-active-panel'); if (p) p.classList.remove('cdx-autoreveal-flash'); _autoFlashTimer = null; }, 1200);
   }
   _chime();
-  _activeQId = null;
 }
 
 // Best-effort short chime via WebAudio (no asset). Silently no-ops if the audio
@@ -653,17 +654,15 @@ async function _closeQuestion() {
   if (panel) panel.style.display = 'none';
 }
 
-// Manual reveal: show results + reveal the correct answer right now. Revealing the
-// correct answer requires closing (frozen backend), so this closes the question,
-// the hand-triggered twin of the auto-reveal. The close-options checkboxes stay
-// reserved for the plain Encerrar path the host configures ahead of time.
+// Manual "Mostrar respostas": show the responses on the display RIGHT NOW
+// (set_question_visibility), keeping the question OPEN so people keep answering.
+// Only the Encerrar button closes. The correct-answer highlight remains a
+// close-time option (the reveal checkbox), since the backend only reveals on close.
 async function _revealNow() {
   if (!_activeQId) return;
-  try { await api.closeQuestion({ id: _activeQId, session_code: _session.code, show_results: true, reveal_answer: true }); }
+  try { await api.setVisibility({ id: _activeQId, session_code: _session.code, show_results: true }); }
   catch (e) { notice.internal(e); return; }
-  _activeQId = null;
-  const panel = _q('#cdx-active-panel');
-  if (panel) panel.style.display = 'none';
+  notice.info(t('questions.host_shown'));
 }
 
 // Persist the close-options checkboxes across questions AND sessions, so a host

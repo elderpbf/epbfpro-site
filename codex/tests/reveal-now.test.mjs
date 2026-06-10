@@ -11,14 +11,15 @@ import { fileURLToPath } from 'node:url';
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 const src = () => read('../questions/live-host.js');
 
-test('live-host adds a Revelar agora button wired to a reveal+close handler', () => {
+test('live-host adds a "Mostrar respostas" button that shows results WITHOUT closing', () => {
   const s = src();
-  assert.match(s, /data-act=["']reveal-now["']/, 'has the reveal-now button');
+  assert.match(s, /data-act=["']reveal-now["']/, 'has the show-responses button');
   assert.match(s, /function _revealNow\s*\(/, 'has the _revealNow handler');
-  assert.match(s, /act === ['"]reveal-now['"]\s*\)\s*return _revealNow/, 'click handler routes reveal-now');
-  // _revealNow reveals everything: show_results true AND reveal_answer true.
+  assert.match(s, /act === ['"]reveal-now['"]\s*\)\s*return _revealNow/, 'click handler routes the button');
+  // It SHOWS results live (setVisibility) and must NOT close the question.
   const fn = s.slice(s.indexOf('function _revealNow'));
-  assert.match(fn.slice(0, 400), /closeQuestion\(\{[^}]*show_results:\s*true[^}]*reveal_answer:\s*true/, 'reveal-now closes with show + reveal');
+  assert.match(fn.slice(0, 320), /setVisibility\(\{[^}]*show_results:\s*true/, 'shows results live via setVisibility');
+  assert.ok(!/closeQuestion/.test(fn.slice(0, 320)), 'the show-responses button does not close the question');
 });
 
 test('close-options checkboxes persist across questions and sessions', () => {
