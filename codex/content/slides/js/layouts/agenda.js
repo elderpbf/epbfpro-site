@@ -18,6 +18,7 @@ const FIELDS = [{ key: "time", cls: "ag-time" }, { key: "text", cls: "ag-label" 
 export default {
   id: "agenda",
   label: "Trilha / Agenda",
+  group: "lists",
   defaults: () => ({
     title: "Trilha do aluno",
     rows: ROWS.map(([time, text]) => ({ id: uid(), time, text })),

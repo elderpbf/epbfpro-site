@@ -6,6 +6,7 @@ import { imgslot, ed } from "../render/helpers.js";
 export default {
   id: "cover",
   label: "Capa / Seção",
+  group: "title",
   defaults: () => ({ eyebrow: "Seção", title: "Título da seção", sub: "Subtítulo", icon: null }),
   reveals: () => 0,
   render: (s) => `${bar}${coverMotifs}<div class="L-cover">

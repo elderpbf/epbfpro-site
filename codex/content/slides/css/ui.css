@@ -93,6 +93,24 @@
 .cdx-deck-editor #ai-fill-box button#ai-fill-go { background: var(--teal); border: 0; color: #fff; font-weight: 700; }
 .cdx-deck-editor #ai-fill-box .ai-fill-error { color: var(--danger); font-size: 12px; min-height: 14px; }
 
+/* +slide picker (edit/addslide.js): a modal of LIVE preview cards grouped by
+   category. Each .as-prev is a 16:9 window onto a full 1280x720 .as-scale render
+   that JS shrinks with transform:scale; pointer-events:none so the preview never
+   eats the card click. Same overlay mechanics as #ai-fill-overlay. */
+.cdx-deck-editor #add-slide-overlay { position: absolute; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; background: var(--overlay-strong, rgba(0, 0, 0, .5)); padding: 24px; }
+.cdx-deck-editor #add-slide-box { display: flex; flex-direction: column; gap: 4px; width: 880px; max-width: 100%; max-height: 88%; overflow: auto; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 12px; padding: 16px 20px 20px; box-shadow: 0 16px 48px var(--overlay-strong); }
+.cdx-deck-editor #add-slide-box .as-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--panel); padding-bottom: 8px; }
+.cdx-deck-editor #add-slide-box .as-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.cdx-deck-editor #add-slide-close { font: inherit; font-size: 15px; line-height: 1; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+.cdx-deck-editor #add-slide-close:hover { background: var(--btn-hover); }
+.cdx-deck-editor .as-group-label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #94a3b8); margin: 12px 2px 8px; }
+.cdx-deck-editor .as-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.cdx-deck-editor .as-card { display: flex; flex-direction: column; gap: 6px; padding: 0; background: transparent; border: 0; cursor: pointer; text-align: left; }
+.cdx-deck-editor .as-prev { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--btn-bd); border-radius: 8px; background: var(--btn-bg); }
+.cdx-deck-editor .as-card:hover .as-prev { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal); }
+.cdx-deck-editor .as-prev .as-scale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; pointer-events: none; }
+.cdx-deck-editor .as-label { font-size: 12px; color: var(--text); }
+
 /* unified selection model (js/select/): THE context bar + the selection frame.
    The context bar is one lean, content-width PILL overlaying the top of the stage
    (no reflow): menus open their options into it (centered under the menu button),

@@ -12,6 +12,7 @@ const list = (texts) => texts.map((text) => ({ id: uid(), text }));
 export default {
   id: "steps",
   label: "Fluxo / Etapas",
+  group: "lists",
   defaults: () => ({
     title: "Juntando tudo",
     orientation: "row",

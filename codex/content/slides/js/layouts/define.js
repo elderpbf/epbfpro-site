@@ -18,6 +18,7 @@ const FIELDS = [{ key: "term", cls: "d-term" }, { key: "text", cls: "d-def" }];
 export default {
   id: "define",
   label: "Definições / Glossário",
+  group: "compare",
   defaults: () => ({
     title: "Resumindo",
     terms: TERMS.map(([term, text]) => ({ id: uid(), term, text })),

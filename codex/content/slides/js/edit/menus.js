@@ -14,44 +14,9 @@ export function insertMenu() {
   }));
 }
 
-// opts.templates (set by app.openAddSlide only when a library service is injected)
-// appends a "De um modelo…" entry that opens the saved-template picker. Default
-// (no opts) returns just the layout buttons, so the standalone build is unchanged.
-export function addSlideMenu(layouts, opts = {}) {
-  const items = layouts.map((L) => ({
-    type: "button",
-    id: "add-" + L.id,
-    label: L.label,
-    layoutId: L.id,
-    closeOnRun: true,
-    run(app) { app.addSlide(L.id); },
-  }));
-  if (opts.templates) {
-    items.push({ type: "sep", id: "tpl-sep" });
-    items.push({
-      type: "button", id: "from-template", labelKey: "slides.tpl_from", closeOnRun: true,
-      run(app) { app.openTemplatePicker(); },
-    });
-  }
-  return items;
-}
-
-// templateMenu — the saved-template picker, opened from the +slide menu's "De um
-// modelo…" entry. Each row inserts a DETACHED deep-clone after the current slide
-// (app.insertTemplate). An empty library shows one disabled note rather than a
-// blank bar. Labels prefer the template name, falling back to its layout id.
-export function templateMenu(templates) {
-  if (!templates || !templates.length) {
-    return [{ type: "button", id: "tpl-none", labelKey: "slides.tpl_none", cls: "is-disabled", closeOnRun: true, run() {} }];
-  }
-  return templates.map((tpl) => ({
-    type: "button",
-    id: "tpl-" + tpl.id,
-    label: tpl.name || tpl.layout,
-    closeOnRun: true,
-    run(app) { app.insertTemplate(tpl); },
-  }));
-}
+// The +slide picker is no longer a context-bar menu: it is a modal of live preview
+// cards (edit/addslide.js), which unifies built-in and saved layouts as one concept.
+// addSlideMenu / templateMenu were retired with that move.
 
 // fontValue: the EFFECTIVE scale the slider should show. In "slide" scope this is
 // the slide's per-slide override (player.effFontScale), not the deck default, so the

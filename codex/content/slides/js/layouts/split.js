@@ -8,6 +8,7 @@ import { uid } from "../core/schema.js";
 export default {
   id: "split",
   label: "Imagem + tópicos",
+  group: "media",
   defaults: () => ({
     flip: false,
     ratio: 0.5,

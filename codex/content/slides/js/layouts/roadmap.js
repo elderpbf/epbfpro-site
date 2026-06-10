@@ -12,6 +12,7 @@ const list = (texts) => texts.map((text) => ({ id: uid(), text }));
 export default {
   id: "roadmap",
   label: "Roteiro / Conceitos",
+  group: "cards",
   defaults: () => ({
     eyebrow: "Próximo conceito básico",
     nodes: list(["LLM", "Janela de Contexto", "Embeddings", "Tokens"]),

@@ -12,6 +12,7 @@ const list = (texts) => texts.map((text) => ({ id: uid(), text }));
 export default {
   id: "compare",
   label: "Comparação (A × B)",
+  group: "compare",
   defaults: () => ({
     leftTitle: "Google busca",
     left: list(["Localiza e agrega", "Fonte externa", "Tempo real"]),

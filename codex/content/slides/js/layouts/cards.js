@@ -11,6 +11,7 @@ import { uid } from "../core/schema.js";
 export default {
   id: "cards",
   label: "Cards",
+  group: "cards",
   defaults: () => ({ title: "", reveal: false, cards: [{ id: uid(), parts: { body: true }, text: "Texto do card" }] }),
   reveals: (s) => (s.reveal ? Math.max(0, ...s.cards.map((c, i) => c.step != null ? c.step : (i + 1))) : 0),
   render: (s) => {

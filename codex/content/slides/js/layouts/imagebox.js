@@ -9,6 +9,7 @@ import { uid } from "../core/schema.js";
 export default {
   id: "imagebox",
   label: "Imagem na caixa + tópicos",
+  group: "media",
   defaults: () => ({
     flip: false,
     title: "Título",

@@ -7,6 +7,7 @@ import { ed } from "../render/helpers.js";
 export default {
   id: "quote",
   label: "Citação",
+  group: "title",
   defaults: () => ({
     quote: "Nós moldamos nossas ferramentas e, depois, elas nos moldam.",
     author: "John M. Culkin",

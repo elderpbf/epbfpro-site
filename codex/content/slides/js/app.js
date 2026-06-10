@@ -13,7 +13,8 @@ import { initEditing } from "./edit/editor.js";
 import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
 import { initSelect } from "./select/wiring.js";
 import { initReorder } from "./select/reorder.js";
-import { insertMenu, addSlideMenu, templateMenu, appearanceMenu, animMenu } from "./edit/menus.js";
+import { insertMenu, appearanceMenu, animMenu } from "./edit/menus.js";
+import { addSlidePanelHTML, initAddSlide } from "./edit/addslide.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
@@ -59,6 +60,7 @@ const shellHTML = () => `
 </div>
 
 ${maskPanelHTML()}
+${addSlidePanelHTML()}
 
 <div id="nav"></div>
 <div id="stagewrap"><div id="stagebox"><div id="stage"></div></div></div>
@@ -89,6 +91,7 @@ export function mount(root, ctx = {}) {
     store,
     _aiService: aiService,
     _library: library,
+    _layoutLabel: layoutLabel, // i18n layout label resolver (the add-slide picker reuses it)
     index: 0,
     step: 0,
     presenting: false,
@@ -182,15 +185,14 @@ export function mount(root, ctx = {}) {
     reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
     // add-slide layout picker, opened into the context bar from the thumbnail-rail
     // "＋ slide" button (anchor null -> centered, since the rail sits left of the stage).
-    openAddSlide(anchor) {
-      const layouts = registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }));
-      this.select.openMenu(addSlideMenu(layouts, { templates: !!this._library }), anchor || null);
-    },
+    // openAddSlide is assigned by initAddSlide (the modal preview picker), which
+    // owns the +slide entry the nav rail calls.
 
-    // ── Template library (4c.1, detached copies) ──────────────────────────────
-    // All three no-op when no library is injected (standalone build). saveCurrent
-    // AsTemplate / insertTemplate own the full record-then-mutate-then-refresh
-    // pattern; openTemplatePicker loads the list async then fills the context bar.
+    // ── Template library (4c.1 + the add-slide modal) ─────────────────────────
+    // Both no-op when no library is injected (standalone build). saveCurrentAsTemplate
+    // saves the current slide as a reusable layout; insertTemplate drops a detached
+    // deep-clone (the modal's "Salvos" cards call it). Both own the full
+    // record-then-mutate-then-refresh pattern.
     async saveCurrentAsTemplate(name) {
       if (!this._library) return { error: "no-library" };
       try {
@@ -199,12 +201,6 @@ export function mount(root, ctx = {}) {
       } catch (e) {
         return { error: (e && e.message) || "save-failed" };
       }
-    },
-    async openTemplatePicker(anchor) {
-      if (!this._library) return;
-      let templates = [];
-      try { templates = await this._library.list(); } catch (_) { templates = []; }
-      this.select.openMenu(templateMenu(templates), anchor || this._openMenuBtn || null);
     },
     // Insert a DETACHED deep-clone of a template after the current slide: a fresh
     // slide id so it shares no identity with the library copy, and the library-only
@@ -330,6 +326,7 @@ export function mount(root, ctx = {}) {
   initSelect(app); // unified selection model: every selectable kind + the one context bar
   initReorder(app); // drag-and-drop reorder for cards + topics (grips injected post-render)
   initMaskPanel(app, root); // the recolour-mask popover (#maskpop): owns app.openMask
+  initAddSlide(app, root); // the +slide modal preview picker: owns app.openAddSlide
   app.renderNav = createNavigator(app).render;
   app.broadcast = createSync(app).broadcast;
 
@@ -482,6 +479,7 @@ export function unmount(app, root) {
   if (app._onKey) document.removeEventListener("keydown", app._onKey);
   if (app._onDocClick) document.removeEventListener("click", app._onDocClick);
   if (app._onMaskDocClick) document.removeEventListener("click", app._onMaskDocClick);
+  if (app._onAddSlideKey) document.removeEventListener("keydown", app._onAddSlideKey, true);
   if (app._onFs) document.removeEventListener("fullscreenchange", app._onFs);
   if (root) root.innerHTML = "";
 }

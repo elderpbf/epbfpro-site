@@ -2,15 +2,15 @@
 // The library is ONE backend presentation (reserved slug __library__, a reserved
 // engine tag so it never shows in the deck list) whose deck-JSON `slides[]` array
 // stores reusable slide templates. Covers the service (save/list/remove against a
-// mock facade), the two menu helpers (templateMenu + addSlideMenu gating), and the
-// source-text wiring contracts (facade-only, injected ctx.library, detached clone).
+// mock facade) and the source-text wiring contracts (facade-only, injected
+// ctx.library, detached clone). The +slide modal preview picker (which surfaces
+// saved layouts) is covered in slides-addslide.test.mjs.
 // Zero-dependency, DOM-free; pure-logic + assert-by-source-text.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createLibrary, LIBRARY_SLUG, LIBRARY_ENGINE } from '../content/slides/adapters/library.js';
-import { addSlideMenu, templateMenu } from '../content/slides/js/edit/menus.js';
 
 const read = (rel) => {
   const p = fileURLToPath(new URL(rel, import.meta.url));
@@ -105,44 +105,6 @@ test('remove() drops a template by id and persists the smaller container', async
   assert.deepEqual(out.map((t) => t.id), [b.id], 'only the other template remains');
 });
 
-/* ---------- menus: addSlideMenu gating ---------- */
-test('addSlideMenu gates the "from a template" entry on opts.templates', () => {
-  const layouts = [{ id: 'cover', label: 'Capa' }, { id: 'cards', label: 'Cards' }];
-  const without = addSlideMenu(layouts);
-  assert.deepEqual(without.map((c) => c.id), ['add-cover', 'add-cards'], 'no template entry by default (back-compat)');
-  const withT = addSlideMenu(layouts, { templates: true });
-  const entry = withT.find((c) => c.id === 'from-template');
-  assert.ok(entry, 'adds the from-template entry when templates enabled');
-  assert.equal(entry.labelKey, 'slides.tpl_from');
-  assert.equal(entry.type, 'button');
-});
-
-test('addSlideMenu from-template entry opens the template picker', () => {
-  const e = addSlideMenu([{ id: 'cards', label: 'Cards' }], { templates: true }).find((c) => c.id === 'from-template');
-  let opened = false;
-  e.run({ openTemplatePicker: () => { opened = true; } });
-  assert.ok(opened, 'runs app.openTemplatePicker');
-});
-
-/* ---------- menus: templateMenu ---------- */
-test('templateMenu: each row inserts THAT template; empty library shows a disabled note', () => {
-  const empty = templateMenu([]);
-  assert.equal(empty.length, 1);
-  assert.equal(empty[0].labelKey, 'slides.tpl_none');
-
-  const tpls = [
-    { id: 't1', name: 'Pricing', layout: 'cards', slide: {} },
-    { id: 't2', name: '', layout: 'quote', slide: {} },
-  ];
-  const menu = templateMenu(tpls);
-  assert.equal(menu.length, 2);
-  assert.equal(menu[0].label, 'Pricing', 'a named template uses its name');
-  assert.equal(menu[1].label, 'quote', 'an unnamed template falls back to its layout id');
-  let inserted = null;
-  menu[0].run({ insertTemplate: (t) => { inserted = t; } });
-  assert.equal(inserted.id, 't1', 'runs insertTemplate with that template');
-});
-
 /* ---------- wiring contracts (source text) ---------- */
 test('library.js reaches the backend ONLY through the facade (no callWorker, no raw actions)', () => {
   const src = read('../content/slides/adapters/library.js');
@@ -163,7 +125,6 @@ test('app.js reads an injected ctx.library and inserts DETACHED template clones'
   const src = read('../content/slides/js/app.js');
   assert.match(src, /ctx\.library/, 'reads ctx.library (injected, like ctx.aiService)');
   assert.match(src, /saveCurrentAsTemplate\s*\(/, 'has saveCurrentAsTemplate');
-  assert.match(src, /openTemplatePicker\s*\(/, 'has openTemplatePicker');
   assert.match(src, /insertTemplate\s*\(/, 'has insertTemplate');
   const ins = src.slice(src.indexOf('insertTemplate(tpl)'), src.indexOf('insertTemplate(tpl)') + 400);
   assert.match(ins, /clone\(/, 'deep-clones the template slide');

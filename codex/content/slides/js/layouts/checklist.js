@@ -11,6 +11,7 @@ const list = (texts) => texts.map((text) => ({ id: uid(), text }));
 export default {
   id: "checklist",
   label: "Faça / Não faça",
+  group: "lists",
   defaults: () => ({
     title: "Contexto negativo",
     dos: list(["Caracterização do vínculo", "Elementos fáticos da relação"]),

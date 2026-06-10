@@ -8,6 +8,7 @@ import { ed } from "../render/helpers.js";
 export default {
   id: "statement",
   label: "Frase de impacto",
+  group: "title",
   defaults: () => ({ text: "A IA não substitui a atuação humana." }),
   reveals: () => 0,
   render: (s) => `${bar}<div class="L-statement">${ed("div", "text", s.text, "big")}</div>`,
