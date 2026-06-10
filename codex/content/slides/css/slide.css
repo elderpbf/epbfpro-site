@@ -99,6 +99,27 @@
 .cdx-deck-editor .L-bleed .scrim { position: absolute; left: 0; right: 0; bottom: 0; padding: 44px 58px; z-index: 3; background: linear-gradient(to top, rgba(6, 48, 43, .82), rgba(6, 48, 43, 0)); }
 .cdx-deck-editor .L-bleed .scrim .line { color: #fff; font-size: calc(46px * var(--fontScale)); font-weight: 900; text-shadow: 0 2px 16px rgba(0, 0, 0, .4); }
 
+/* statement — frase de impacto (typographic, no image) */
+.cdx-deck-editor .L-statement { position: absolute; inset: 0; padding: 84px 72px; display: flex; align-items: center; }
+.cdx-deck-editor .L-statement .big { font-size: calc(66px * var(--fontScale)); font-weight: 900; color: var(--ink); line-height: 1.06; max-width: 92%; }
+
+/* quote — citação + autoria */
+.cdx-deck-editor .L-quote { position: absolute; inset: 0; padding: 88px 80px; display: flex; flex-direction: column; justify-content: center; gap: 26px; }
+.cdx-deck-editor .L-quote blockquote { margin: 0; }
+.cdx-deck-editor .L-quote .q-text { font-size: calc(46px * var(--fontScale)); font-weight: 300; font-style: italic; color: var(--ink); line-height: 1.2; }
+.cdx-deck-editor .L-quote .q-by { display: flex; flex-direction: column; gap: 2px; }
+.cdx-deck-editor .L-quote .q-author { font-size: calc(28px * var(--fontScale)); font-weight: 700; color: var(--teal-d); }
+.cdx-deck-editor .L-quote .q-role { font-size: calc(20px * var(--fontScale)); color: var(--ink2); }
+
+/* image-box — imagem contida numa caixa + tópicos */
+.cdx-deck-editor .L-imgbox { position: absolute; inset: 0; padding: 84px 56px 60px; display: grid; grid-template-columns: 40% 1fr; gap: 48px; align-items: center; }
+.cdx-deck-editor .L-imgbox.flip { grid-template-columns: 1fr 40%; }
+.cdx-deck-editor .L-imgbox.flip .ib-pic { order: 2; }
+.cdx-deck-editor .L-imgbox .ib-pic { position: relative; aspect-ratio: 1 / 1; border-radius: 20px; overflow: hidden; box-shadow: 0 16px 36px rgba(20, 40, 38, .18); }
+.cdx-deck-editor .L-imgbox .ib-pic .imgslot { position: absolute; inset: 0; }
+.cdx-deck-editor .L-imgbox .ib-content { position: relative; }
+.cdx-deck-editor .L-imgbox .ib-content h2 { font-size: calc(42px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 18px; line-height: 1.05; }
+
 /* cards */
 .cdx-deck-editor .L-cards { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; gap: 18px; }
 .cdx-deck-editor .L-cards h2 { font-size: calc(40px * var(--fontScale)); font-weight: 900; color: var(--ink); text-align: center; line-height: 1.05; min-height: 1em; }

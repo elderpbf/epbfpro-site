@@ -5,6 +5,9 @@ import split from "./split.js";
 import topics from "./topics.js";
 import bleed from "./bleed.js";
 import cards from "./cards.js";
+import statement from "./statement.js";
+import quote from "./quote.js";
+import imagebox from "./imagebox.js";
 
 const _layouts = new Map();
 
@@ -18,4 +21,4 @@ export function list() {
   return [..._layouts.values()];
 }
 
-[cover, split, topics, bleed, cards].forEach(register);
+[cover, split, topics, bleed, cards, statement, quote, imagebox].forEach(register);
