@@ -17,6 +17,8 @@ import { anchorLeft, placePill } from './anchored.js';
 
 const GEAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
+const HAMBURGER_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+
 // One entry per functional area. Keys are English; PT labels via t(). Colors
 // are CSS tokens in codex.css. href points to the old page until the tab is
 // migrated to /codex/.
@@ -173,6 +175,14 @@ export function init(opts) {
   const inner = document.createElement('div');
   inner.className = 'bs-topbar-inner bs-topbar-inner--with-tabs';
 
+  // Mobile hamburger: toggles the current tab's sidebar drawer. CSS-gated to
+  // phones; the click is wired below once the backdrop exists.
+  const burger = document.createElement('button');
+  burger.className = 'bs-icon-btn cdx-hamburger';
+  burger.setAttribute('aria-label', 'Menu');
+  burger.innerHTML = HAMBURGER_SVG;
+  inner.appendChild(burger);
+
   // Brand wordmark (reused from brand-logos.js), links back to the portal.
   const brand = document.createElement('a');
   brand.href = '/backstage/';
@@ -324,6 +334,27 @@ export function init(opts) {
   // Append at body level (not inside .bs-app) so the fixed bar gets a clean
   // top-level stacking context, above the page content on tall scrolling tabs.
   document.body.appendChild(botnav);
+
+  // Mobile drawer: the hamburger slides the current tab's sidebar in from the
+  // left over a dim backdrop; backdrop tap, Escape, or picking a primary item
+  // closes it. One shared wiring for every tab, each tab's sidebar matches
+  // DRAWER_SEL; CSS owns the off-canvas transform and the phone breakpoint.
+  const DRAWER_SEL = '.cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar';
+  const drawerBackdrop = document.createElement('div');
+  drawerBackdrop.className = 'cdx-drawer-backdrop';
+  document.body.appendChild(drawerBackdrop);
+  const _drawer = () => document.querySelector(DRAWER_SEL);
+  const _closeDrawer = () => { const d = _drawer(); if (d) d.classList.remove('is-open'); drawerBackdrop.classList.remove('is-open'); };
+  const _toggleDrawer = () => { const d = _drawer(); if (!d) return; const open = !d.classList.contains('is-open'); d.classList.toggle('is-open', open); drawerBackdrop.classList.toggle('is-open', open); };
+  burger.addEventListener('click', _toggleDrawer);
+  drawerBackdrop.addEventListener('click', _closeDrawer);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') _closeDrawer(); });
+  // Picking a primary item inside the open drawer closes it to reveal the content.
+  document.addEventListener('click', (e) => {
+    if (!drawerBackdrop.classList.contains('is-open')) return;
+    const d = _drawer();
+    if (d && d.contains(e.target) && e.target.closest('a[href], [data-act="pick"], [data-act="variaveis"], .cdx-item-row')) _closeDrawer();
+  });
 
   // Shared shell services; the global pill/bar toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });

@@ -113,6 +113,11 @@
 .cdx-botnav-item--questions { --accent-color: var(--codex-questions); }
 .cdx-botnav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Mobile hamburger + drawer: desktop-hidden; the phone breakpoint reveals the
+ * hamburger and turns each tab's sidebar into an off-canvas drawer. */
+.cdx-hamburger { display: none; }
+.cdx-drawer-backdrop { display: none; }
+
 @media (max-width: 700px) {
   .cdx-tabs { display: none; }                            /* top strip unusable on phones */
   .cdx-subpill { display: none !important; }              /* hover pill is touch-useless */
@@ -135,6 +140,34 @@
     box-shadow: 0 -4px 16px var(--shadow);
   }
   .cdx-view { padding-bottom: 76px; }                     /* clear the fixed bar */
+
+  /* Hamburger + off-canvas sidebar drawers. Each tab's sidebar slides in from
+   * the left over a backdrop; the main pane fills the row behind it. The drawer
+   * sits above the topbar/bottom-nav when open (a takeover), so backdrop tap,
+   * Escape, or picking an item closes it. */
+  .cdx-hamburger { display: inline-flex; }
+
+  .cdx-bank { grid-template-columns: 1fr; }   /* main pane fills once the sidebar leaves the grid */
+
+  .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 84vw; max-width: 340px;
+    z-index: 120;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    overflow-y: auto;
+    border-radius: 0;
+    box-sizing: border-box;
+  }
+  .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open {
+    transform: none;
+    box-shadow: 4px 0 24px var(--shadow);
+  }
+  .cdx-drawer-backdrop.is-open {
+    display: block;
+    position: fixed; inset: 0; z-index: 119;
+    background: rgba(0, 0, 0, 0.5);
+  }
 }
 
 /* ── Tab content host ───────────────────────────────────────── */

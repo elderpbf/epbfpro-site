@@ -85,6 +85,27 @@ test('codex.css gives the bottom nav + sub-strip a mobile-only layer', () => {
   assert.match(css, /\.cdx-tabs\s*\{[^}]*display:\s*none/, 'hides the top tab strip on mobile');
 });
 
+/* ---------- mobile hamburger drawer (sidebars off-canvas) ---------- */
+test('codex-topbar renders the mobile hamburger + shared drawer mechanism', () => {
+  const src = read('../js/codex-topbar.js');
+  assert.match(src, /cdx-hamburger/, 'renders the hamburger button');
+  assert.match(src, /cdx-drawer-backdrop/, 'creates the drawer backdrop');
+  assert.match(src, /cdx-bank-sets/, 'drawer toggle targets the Banco sidebar');
+  assert.match(src, /cdx-items-list/, 'drawer toggle targets the Content list');
+  assert.match(src, /cdx-lessons-sidebar/, 'drawer toggle targets the Lessons sidebar');
+  assert.match(src, /is-open/, 'toggles an is-open state');
+  assert.ok(!/onclick\s*=/.test(src), 'no inline onclick');
+});
+
+test('codex.css gives the hamburger drawer a mobile-only layer', () => {
+  const css = read('../css/codex.css');
+  assert.match(css, /\.cdx-hamburger\b/, 'styles the hamburger');
+  assert.match(css, /\.cdx-drawer-backdrop\b/, 'styles the drawer backdrop');
+  assert.match(css, /transform:\s*translateX\(-100%\)/, 'sidebar drawer is off-canvas by default');
+  assert.match(css, /\.is-open/, 'has an is-open reveal state');
+  assert.match(css, /\.cdx-bank\s*\{[^}]*grid-template-columns:\s*1fr/, 'Banco grid collapses to one column on mobile');
+});
+
 test('pill mode reveals ANY tab\'s sub-tabs on hover (per-tab map = one-less-click)', () => {
   const src = read('../js/codex-topbar.js');
   assert.match(src, /subTabsByTab/, 'topbar consumes a per-tab sub-tab map');
