@@ -162,6 +162,7 @@
     overflow-y: auto;
     border-radius: 0;
     box-sizing: border-box;
+    background: var(--surface);   /* opaque panel (the bare cohorts wrapper has no bg of its own) */
   }
   .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open {
     transform: none;
