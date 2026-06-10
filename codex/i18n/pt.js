@@ -782,6 +782,7 @@ export default {
   'questions.host_clear':                'Limpar',
   'questions.host_active_q':             'Pergunta ativa',
   'questions.host_close_q':              'Encerrar pergunta',
+  'questions.host_reveal_now':           'Revelar agora',
   'questions.host_autoreveal':           'Auto-revelar',
   'questions.host_autoreveal_of':        'de',
   'questions.host_autoreveal_people':    'pessoas',

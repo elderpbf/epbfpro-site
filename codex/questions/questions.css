@@ -900,6 +900,7 @@
 /* Close-options + the Encerrar button share the right side of the active foot,
    exactly like host.html (the checkboxes sit above the close button). */
 .cdx-active-foot-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; }
+.cdx-active-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
 
 /* Auto-revelar: opt-in control that closes the active question and shows the
    correct answer once a chosen share of the room has answered (or the answers

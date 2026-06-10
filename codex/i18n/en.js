@@ -783,6 +783,7 @@ export default {
   'questions.host_clear':                'Clear',
   'questions.host_active_q':             'Active question',
   'questions.host_close_q':              'Close question',
+  'questions.host_reveal_now':           'Reveal now',
   'questions.host_autoreveal':           'Auto-reveal',
   'questions.host_autoreveal_of':        'of',
   'questions.host_autoreveal_people':    'people',

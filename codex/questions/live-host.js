@@ -25,6 +25,8 @@ import { buildAnswer, makeRng, hashSeed } from './sim-answers.js';
 
 const LAYOUT_KEY = 'codex_host_layout';
 const AUTO_KEY = 'codex_host_autoreveal';
+const CLOSE_OPTS_KEY = 'codex_host_close_opts'; // persisted show/reveal checkbox state
+const SIM_N_KEY = 'codex_host_sim_n';           // persisted debug simulator count
 const DEFAULT_LAYOUT = { left: { visible: true, width: 360 }, center: { visible: true }, right: { visible: true, width: 380 } };
 const TEXT_TYPES = ['open', 'wordcloud', 'rating', 'numeric'];
 
@@ -154,7 +156,10 @@ function _centerMarkup() {
               '<label><input type="checkbox" id="cdx-chk-show" checked> ' + _esc(t('questions.host_show_results')) + '</label>' +
               '<label><input type="checkbox" id="cdx-chk-reveal"> ' + _esc(t('questions.host_reveal_answer')) + '</label>' +
             '</div>' +
-            '<button class="cdx-btn cdx-btn-danger" data-act="close-q" type="button">' + _esc(t('questions.host_close_q')) + '</button>' +
+            '<div class="cdx-active-btns">' +
+              '<button class="cdx-btn cdx-btn-primary" data-act="reveal-now" type="button">' + _esc(t('questions.host_reveal_now')) + '</button>' +
+              '<button class="cdx-btn cdx-btn-danger" data-act="close-q" type="button">' + _esc(t('questions.host_close_q')) + '</button>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -648,6 +653,33 @@ async function _closeQuestion() {
   if (panel) panel.style.display = 'none';
 }
 
+// Manual reveal: show results + reveal the correct answer right now. Revealing the
+// correct answer requires closing (frozen backend), so this closes the question,
+// the hand-triggered twin of the auto-reveal. The close-options checkboxes stay
+// reserved for the plain Encerrar path the host configures ahead of time.
+async function _revealNow() {
+  if (!_activeQId) return;
+  try { await api.closeQuestion({ id: _activeQId, session_code: _session.code, show_results: true, reveal_answer: true }); }
+  catch (e) { notice.internal(e); return; }
+  _activeQId = null;
+  const panel = _q('#cdx-active-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+// Persist the close-options checkboxes across questions AND sessions, so a host
+// who always reveals (or never does) sets it once. Defaults match the prior
+// behavior (show on, reveal off).
+function _loadCloseOpts() {
+  try { const s = JSON.parse(localStorage.getItem(CLOSE_OPTS_KEY)); if (s && typeof s === 'object') return { show: s.show !== false, reveal: !!s.reveal }; }
+  catch (e) { /* ignore */ }
+  return { show: true, reveal: false };
+}
+function _saveCloseOpts() {
+  const show = !!(_q('#cdx-chk-show') && _q('#cdx-chk-show').checked);
+  const reveal = !!(_q('#cdx-chk-reveal') && _q('#cdx-chk-reveal').checked);
+  try { localStorage.setItem(CLOSE_OPTS_KEY, JSON.stringify({ show, reveal })); } catch (e) { /* ignore */ }
+}
+
 function _remountComposer(initial) {
   const host = _q('#cdx-host-composer');
   if (!host) return;
@@ -815,6 +847,11 @@ export function mount(containerEl, ctx) {
   // the shared bs_debug flag is on, so it can never fire in a real class.
   const simEl = _q('#cdx-sim');
   if (simEl) simEl.hidden = !((typeof localStorage !== 'undefined') && localStorage.getItem('bs_debug') === '1');
+  // Restore persisted host controls (close-options + simulator count).
+  const co = _loadCloseOpts();
+  const chkShow = _q('#cdx-chk-show'); if (chkShow) chkShow.checked = co.show;
+  const chkReveal = _q('#cdx-chk-reveal'); if (chkReveal) chkReveal.checked = co.reveal;
+  try { const savedN = parseInt(localStorage.getItem(SIM_N_KEY), 10); const simN = _q('#cdx-sim-n'); if (simN && Number.isFinite(savedN) && savedN > 0) simN.value = Math.min(200, savedN); } catch (e) { /* ignore */ }
 
   const renderHost = _q('#cdx-active-render');
   _qEl = document.createElement(QTAG);
@@ -851,6 +888,7 @@ export function mount(containerEl, ctx) {
       if (act === 'launch') return _launch();
       if (act === 'clear') return _remountComposer(null);
       if (act === 'close-q' || act === 'sqa-close') return _closeQuestion();
+      if (act === 'reveal-now') return _revealNow();
       if (act === 'sim-run') return _simulate();
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
       if (act === 'qr') return _openQr();
@@ -903,6 +941,9 @@ export function mount(containerEl, ctx) {
   _on(_q('#cdx-auto-on'), 'change', (e) => { _auto.enabled = !!e.target.checked; _saveAuto(); _syncAutoUI(); });
   _on(_q('#cdx-auto-pct'), 'input', (e) => { const v = parseInt(e.target.value, 10); _auto.pct = (Number.isFinite(v) && v > 0) ? Math.min(100, v) : DEFAULT_PCT; _saveAuto(); _syncAutoUI(); });
   _on(_q('#cdx-auto-head'), 'input', (e) => { const v = parseInt(e.target.value, 10); _auto.headcount = (Number.isFinite(v) && v > 0) ? v : ''; _saveAuto(); _syncAutoUI(); });
+  _on(_q('#cdx-chk-show'), 'change', _saveCloseOpts);
+  _on(_q('#cdx-chk-reveal'), 'change', _saveCloseOpts);
+  _on(_q('#cdx-sim-n'), 'input', (e) => { const v = parseInt(e.target.value, 10); try { if (Number.isFinite(v) && v > 0) localStorage.setItem(SIM_N_KEY, String(Math.min(200, v))); } catch (err) { /* ignore */ } });
   _container.querySelectorAll('.cdx-hd-resizer').forEach((h) => _on(h, 'pointerdown', (e) => _startResize(e, h)));
 
   // Escape closes the Visao dropdown / Trilha modal; tracked document listener.
