@@ -8,6 +8,9 @@ import cards from "./cards.js";
 import statement from "./statement.js";
 import quote from "./quote.js";
 import imagebox from "./imagebox.js";
+import compare from "./compare.js";
+import checklist from "./checklist.js";
+import steps from "./steps.js";
 
 const _layouts = new Map();
 
@@ -21,4 +24,4 @@ export function list() {
   return [..._layouts.values()];
 }
 
-[cover, split, topics, bleed, cards, statement, quote, imagebox].forEach(register);
+[cover, split, topics, bleed, cards, statement, quote, imagebox, compare, checklist, steps].forEach(register);

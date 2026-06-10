@@ -521,25 +521,30 @@ register({
       const row = Number((cr.dataset && cr.dataset.row) || 0);
       return row ? { kind: "container", ref: "cards", row } : { kind: "container", ref: "cards" };
     }
-    if (el.closest && el.closest(".topiclist")) return { kind: "container", ref: "topics" };
+    const tl = el.closest && el.closest(".topiclist");
+    if (tl) {
+      const list = (tl.dataset && tl.dataset.list) || "topics";
+      return { kind: "container", ref: list };
+    }
     return null;
   },
   el(app, sel) {
-    if (sel.ref === "topics") return app.stage.querySelector(".topiclist");
-    return app.stage.querySelector(`.cardrow[data-row="${sel.row || 0}"]`) || app.stage.querySelector(".cardrow");
+    if (sel.ref === "cards") return app.stage.querySelector(`.cardrow[data-row="${sel.row || 0}"]`) || app.stage.querySelector(".cardrow");
+    return app.stage.querySelector(`.topiclist[data-list="${sel.ref}"]`) || app.stage.querySelector(".topiclist");
   },
   target(app, sel) {
     return app.cur().slots[sel.ref] || null;
   },
   controls(app, sel) {
-    if (sel.ref === "topics") {
-      return [{ type: "button", id: "add", label: "＋ tópico", run(app2) { addItem(app2, "topics"); } }];
+    if (sel.ref === "cards") {
+      // Cards: add a card to THE CLICKED row, and start a new stack (row) below.
+      return [
+        { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addItem(app2, "cards", sel2.row || 0); } },
+        { type: "button", id: "add-row", label: "＋ linha", run(app2) { addRow(app2); } },
+      ];
     }
-    // Cards: add a card to THE CLICKED row, and start a new stack (row) below.
-    return [
-      { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addItem(app2, "cards", sel2.row || 0); } },
-      { type: "button", id: "add-row", label: "＋ linha", run(app2) { addRow(app2); } },
-    ];
+    // Any other named list (topics, left/right, dos/donts, steps, …): add one item.
+    return [{ type: "button", id: "add", label: sel.ref === "topics" ? "＋ tópico" : "＋ item", run(app2, sel2) { addItem(app2, sel2.ref); } }];
   },
 });
 

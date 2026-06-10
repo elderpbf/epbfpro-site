@@ -93,19 +93,23 @@ export function edPlain(tag, path, value, cls = "", styleRef = "") {
  * navigator thumbnails and the presenter window. */
 
 /** One topic bullet. `t` is a {id,text,style?,step?} object; `i` is its current index. */
-export function topicItem(t, i) {
+export function topicItem(t, i, listName = "topics") {
   const step = t.step != null ? t.step : (i + 1);
   const cls = step > 0 ? "reveal" : "";
   return (
-    `<li class="${cls}" data-step="${step}" data-fkey="topics.${t.id}">` +
-    edPlain("span", `topics.${i}.text`, t.text, "", `topics.${t.id}`) +
+    `<li class="${cls}" data-step="${step}" data-fkey="${listName}.${t.id}">` +
+    edPlain("span", `${listName}.${i}.text`, t.text, "", `${listName}.${t.id}`) +
     `</li>`
   );
 }
 
-/** The topic list (<ul>), shared by the topics and split layouts. */
-export function topicList(topics) {
-  return `<ul class="topiclist">${topics.map(topicItem).join("")}</ul>`;
+/** The topic list (<ul>). `listName` lets ONE layout host several independent lists
+ *  (compare's left/right, checklist's dos/donts), each editable through the SAME
+ *  topic + container descriptors: the <ul> carries data-list so the container knows
+ *  which slot to add into, and each item's fkey/path/style-ref are prefixed with the
+ *  list name. Defaults to "topics" so topics/split/imagebox keep the one-arg call. */
+export function topicList(topics, listName = "topics") {
+  return `<ul class="topiclist" data-list="${listName}">${topics.map((t, i) => topicItem(t, i, listName)).join("")}</ul>`;
 }
 
 // The card renderer (cardItem) + the card PART registry now live in

@@ -318,7 +318,7 @@ test('topicItem keys the <li> by stable id, addresses content by index, declares
 
 test('topicList wraps items in the .topiclist ul and emits no add button', () => {
   const html = topicList([{ id: 'a', text: 'x' }, { id: 'b', text: 'y' }]);
-  assert.match(html, /<ul class="topiclist">/);
+  assert.match(html, /<ul class="topiclist" data-list="topics">/);
   assert.equal((html.match(/<li/g) || []).length, 2);
   assert.ok(!/addtopic|\+ tópico/.test(html), 'add is a container control, not layout HTML');
 });
