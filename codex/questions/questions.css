@@ -901,6 +901,26 @@
    exactly like host.html (the checkboxes sit above the close button). */
 .cdx-active-foot-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; }
 
+/* Auto-revelar: opt-in control that closes the active question and shows the
+   correct answer once a chosen share of the room has answered (or the answers
+   plateau as a safety net). Controls/progress/status appear only when toggled on
+   (.is-on). Tokens only, so dark mode is inherited. */
+.cdx-autoreveal { margin-top: 1rem; padding: 0.7rem 0.85rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.cdx-autoreveal-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+.cdx-autoreveal-toggle input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.cdx-autoreveal-controls, .cdx-autoreveal-progress, .cdx-autoreveal-status { display: none; }
+.cdx-autoreveal.is-on .cdx-autoreveal-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.cdx-autoreveal.is-on .cdx-autoreveal-progress { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.6rem; }
+.cdx-autoreveal.is-on .cdx-autoreveal-status:not(:empty) { display: block; margin-top: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--primary); }
+.cdx-autoreveal-num { width: 4rem; padding: 0.3rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-size: 0.84rem; font-family: inherit; }
+.cdx-autoreveal-unit { font-size: 0.82rem; color: var(--text-secondary); }
+.cdx-autoreveal-target { font-size: 0.84rem; font-weight: 700; color: var(--primary); }
+.cdx-autoreveal-bar { flex: 1; height: 8px; border-radius: 6px; background: var(--surface-hover, rgba(127, 127, 127, 0.18)); overflow: hidden; }
+.cdx-autoreveal-bar-fill { height: 100%; width: 0; background: var(--primary); border-radius: 6px; transition: width 0.3s ease; }
+.cdx-autoreveal-count { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+.cdx-autoreveal-flash { animation: cdx-autoreveal-flash 1.2s ease; }
+@keyframes cdx-autoreveal-flash { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--primary); } }
+
 /* Student-Q&A active card */
 .cdx-sqa-meta { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 8px; }
 .cdx-sqa-answer-block { background: rgba(245,158,11,.06); border: 1px dashed rgba(245,158,11,.4); border-radius: 10px; padding: 14px; margin: 14px 0; }

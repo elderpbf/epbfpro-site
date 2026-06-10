@@ -20,8 +20,10 @@ import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, visibleForAudience } from '../js/audiences.js';
+import { revealTarget, autoRevealDecision, DEFAULT_PCT } from './auto-reveal.js';
 
 const LAYOUT_KEY = 'codex_host_layout';
+const AUTO_KEY = 'codex_host_autoreveal';
 const DEFAULT_LAYOUT = { left: { visible: true, width: 360 }, center: { visible: true }, right: { visible: true, width: 380 } };
 const TEXT_TYPES = ['open', 'wordcloud', 'rating', 'numeric'];
 
@@ -47,6 +49,12 @@ let _trailAllTurmas = [];
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
 let _onDelete = null;  // sessions.js callback: delete this session (revealed via the name)
 let _onRename = null;  // sessions.js callback: rename this session (title) via the name menu
+let _auto = null;      // { enabled, headcount, pct } auto-revelar prefs (persisted)
+let _autoQId = null;       // active question the auto-reveal tracker is following
+let _autoFiredQId = null;  // question we already auto-revealed (fire-once guard)
+let _autoLastCount = 0;    // last answer count seen (for plateau detection)
+let _autoLastChangeAt = 0; // ms timestamp of the last count change
+let _autoFlashTimer = null;// timeout that clears the reveal flash (cleared on unmount)
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -135,6 +143,7 @@ function _centerMarkup() {
         '<div class="cdx-active-badge">' + _esc(t('questions.host_active_q')) + '</div>' +
         '<div class="cdx-active-text" id="cdx-active-text"></div>' +
         '<div id="cdx-active-render"></div>' +
+        _autoRevealMarkup() +
         '<div class="cdx-active-foot">' +
           '<span class="cdx-active-tally" id="cdx-active-tally"></span>' +
           '<div class="cdx-active-foot-right">' +
@@ -165,6 +174,28 @@ function _centerMarkup() {
       '<div class="cdx-host-card-title">' + _esc(t('questions.host_history')) + '</div>' +
       '<div id="cdx-history-list"></div>' +
     '</div>';
+}
+
+// Auto-revelar control: opt-in, sits under the active question. The host enters a
+// room headcount + a percentage; once that share has answered (or answers stall),
+// the question closes and the correct answer is shown automatically. Inert until
+// toggled on; the live "X / target" + bar update from the existing poll tick.
+function _autoRevealMarkup() {
+  return '<div class="cdx-autoreveal" id="cdx-autoreveal">' +
+    '<label class="cdx-autoreveal-toggle"><input type="checkbox" id="cdx-auto-on"> ' + _esc(t('questions.host_autoreveal')) + '</label>' +
+    '<div class="cdx-autoreveal-controls">' +
+      '<input type="number" class="cdx-autoreveal-num" id="cdx-auto-pct" min="1" max="100" step="5">' +
+      '<span class="cdx-autoreveal-unit">% ' + _esc(t('questions.host_autoreveal_of')) + '</span>' +
+      '<input type="number" class="cdx-autoreveal-num" id="cdx-auto-head" min="1" step="1" placeholder="0">' +
+      '<span class="cdx-autoreveal-unit">' + _esc(t('questions.host_autoreveal_people')) + '</span>' +
+      '<span class="cdx-autoreveal-target" id="cdx-auto-target"></span>' +
+    '</div>' +
+    '<div class="cdx-autoreveal-progress">' +
+      '<div class="cdx-autoreveal-bar"><div class="cdx-autoreveal-bar-fill" id="cdx-auto-bar"></div></div>' +
+      '<span class="cdx-autoreveal-count" id="cdx-auto-count"></span>' +
+    '</div>' +
+    '<div class="cdx-autoreveal-status" id="cdx-auto-status"></div>' +
+  '</div>';
 }
 
 function _qaMarkup() {
@@ -388,6 +419,9 @@ function _onData(data) {
   const panel = _q('#cdx-active-panel'), std = _q('#cdx-active-standard'), sqa = _q('#cdx-active-sqa');
   if (!q) {
     _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
+    _autoQId = null; _autoFiredQId = null;
+    const cnt = _q('#cdx-auto-count'); if (cnt) cnt.textContent = '';
+    const bar = _q('#cdx-auto-bar'); if (bar) bar.style.width = '0%';
     if (panel) panel.style.display = 'none';
     if (std) std.style.display = '';
     if (sqa) sqa.style.display = 'none';
@@ -396,6 +430,7 @@ function _onData(data) {
   _activeQId = q.id; _activeQType = q.type || 'mc';
   if (_activeQType === 'student_qa') {
     _activeStudentQuestionId = q.student_question_id || null;
+    _autoQId = null;
     _renderSqaActive(q);
     if (std) std.style.display = 'none';
     if (sqa) sqa.style.display = '';
@@ -411,7 +446,87 @@ function _onData(data) {
   const total = usesText ? (q.text_answers || []).length : (q.answer_counts || []).reduce((a, b) => a + b, 0);
   const tally = _q('#cdx-active-tally');
   if (tally) tally.textContent = total + ' ' + (total === 1 ? t('questions.qr_answer') : t('questions.qr_answers'));
+  _updateAutoReveal(q, total);
   if (panel) panel.style.display = 'block';
+}
+
+// ── Auto-revelar (questions/auto-reveal.js logic + this poll-driven glue) ─────
+function _loadAuto() {
+  try {
+    const s = JSON.parse(localStorage.getItem(AUTO_KEY));
+    if (s && typeof s === 'object') {
+      const head = parseInt(s.headcount, 10);
+      const pct = parseInt(s.pct, 10);
+      return { enabled: !!s.enabled, headcount: (Number.isFinite(head) && head > 0) ? head : '', pct: (Number.isFinite(pct) && pct > 0) ? pct : DEFAULT_PCT };
+    }
+  } catch (e) { /* ignore */ }
+  return { enabled: false, headcount: '', pct: DEFAULT_PCT };
+}
+function _saveAuto() { try { localStorage.setItem(AUTO_KEY, JSON.stringify(_auto)); } catch (e) { /* ignore */ } }
+
+// Reflect the persisted prefs into the inputs + the "= N" target preview.
+function _syncAutoUI() {
+  const wrap = _q('#cdx-autoreveal'), on = _q('#cdx-auto-on'), pct = _q('#cdx-auto-pct'), head = _q('#cdx-auto-head'), target = _q('#cdx-auto-target');
+  if (!on) return;
+  on.checked = !!_auto.enabled;
+  if (pct) pct.value = _auto.pct;
+  if (head) head.value = _auto.headcount;
+  if (wrap) wrap.classList.toggle('is-on', !!_auto.enabled);
+  if (target) {
+    const tg = _auto.enabled ? revealTarget(_auto.headcount, _auto.pct) : null;
+    target.textContent = tg != null ? ('= ' + tg) : (_auto.enabled ? t('questions.host_autoreveal_set_people') : '');
+  }
+}
+
+// Called on every poll tick for the active (non-SQA) question: track the count
+// for plateau detection, paint the progress, and fire the reveal when due.
+function _updateAutoReveal(q, total) {
+  const now = Date.now();
+  if (_autoQId !== q.id) { _autoQId = q.id; _autoLastCount = total; _autoLastChangeAt = now; }
+  else if (total !== _autoLastCount) { _autoLastCount = total; _autoLastChangeAt = now; }
+  const target = _auto.enabled ? revealTarget(_auto.headcount, _auto.pct) : null;
+  const countEl = _q('#cdx-auto-count'), barEl = _q('#cdx-auto-bar');
+  if (countEl) countEl.textContent = target != null ? (total + ' / ' + target) : ('' + total);
+  if (barEl) barEl.style.width = (target ? Math.min(100, Math.round(total / target * 100)) : 0) + '%';
+  if (!_auto.enabled || target == null || _autoFiredQId === q.id) return;
+  const decision = autoRevealDecision({ enabled: true, count: total, target, lastChangeAt: _autoLastChangeAt, now });
+  if (decision.reveal) { _autoFiredQId = q.id; _autoReveal(decision.reason); }
+}
+
+// Close the active question showing the correct answer, then cue the host (flash
+// + chime) so they can be watching the room, not the screen.
+async function _autoReveal(reason) {
+  if (!_activeQId) return;
+  try { await api.closeQuestion({ id: _activeQId, session_code: _session.code, show_results: true, reveal_answer: true }); }
+  catch (e) { notice.internal(e); return; }
+  const statusEl = _q('#cdx-auto-status');
+  if (statusEl) statusEl.textContent = reason === 'plateau' ? t('questions.host_autoreveal_fired_plateau') : t('questions.host_autoreveal_fired_target');
+  const panel = _q('#cdx-active-panel');
+  if (panel) {
+    panel.classList.add('cdx-autoreveal-flash');
+    if (_autoFlashTimer) clearTimeout(_autoFlashTimer);
+    _autoFlashTimer = setTimeout(() => { const p = _q('#cdx-active-panel'); if (p) p.classList.remove('cdx-autoreveal-flash'); _autoFlashTimer = null; }, 1200);
+  }
+  _chime();
+  _activeQId = null;
+}
+
+// Best-effort short chime via WebAudio (no asset). Silently no-ops if the audio
+// context is unavailable or blocked.
+function _chime() {
+  try {
+    const AC = (typeof window !== 'undefined') && (window.AudioContext || window.webkitAudioContext);
+    if (!AC) return;
+    const ctx = new AC();
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.value = 0.06;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+    osc.stop(ctx.currentTime + 0.26);
+    osc.onended = () => { try { ctx.close(); } catch (e) { /* ignore */ } };
+  } catch (e) { /* audio is best-effort */ }
 }
 
 // ── Student-Q&A active card debounce (port of host-sqa.js) ───
@@ -630,6 +745,8 @@ export function mount(containerEl, ctx) {
   _session = (ctx && ctx.session) || { code: '', status: 'closed', title: '' };
   _cleanup = [];
   _layout = _loadLayout();
+  _auto = _loadAuto();
+  _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _sqaLastServerAnswer = null; _sqaSaving = false; _historyMap = {}; _bankMap = {};
   _audienceConfig = null; _selectedAudience = '';
@@ -642,6 +759,7 @@ export function mount(containerEl, ctx) {
   _render();
   _remountComposer(null);
   _applyLayout();
+  _syncAutoUI();
 
   const renderHost = _q('#cdx-active-render');
   _qEl = document.createElement(QTAG);
@@ -726,6 +844,9 @@ export function mount(containerEl, ctx) {
     if (item && !e.target.closest('[data-act="bank-launch"]')) { const q = _bankMap[item.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); }
   });
   _on(_q('#cdx-sqa-response'), 'input', _scheduleSqaSave);
+  _on(_q('#cdx-auto-on'), 'change', (e) => { _auto.enabled = !!e.target.checked; _saveAuto(); _syncAutoUI(); });
+  _on(_q('#cdx-auto-pct'), 'input', (e) => { const v = parseInt(e.target.value, 10); _auto.pct = (Number.isFinite(v) && v > 0) ? Math.min(100, v) : DEFAULT_PCT; _saveAuto(); _syncAutoUI(); });
+  _on(_q('#cdx-auto-head'), 'input', (e) => { const v = parseInt(e.target.value, 10); _auto.headcount = (Number.isFinite(v) && v > 0) ? v : ''; _saveAuto(); _syncAutoUI(); });
   _container.querySelectorAll('.cdx-hd-resizer').forEach((h) => _on(h, 'pointerdown', (e) => _startResize(e, h)));
 
   // Escape closes the Visao dropdown / Trilha modal; tracked document listener.
@@ -741,11 +862,13 @@ export function unmount() {
   if (_qa) { try { _qa.destroy(); } catch (_) { /* ignore */ } _qa = null; }
   if (_composer) { try { _composer.destroy(); } catch (_) { /* ignore */ } _composer = null; }
   if (_sqaDebounce) { clearTimeout(_sqaDebounce); _sqaDebounce = null; }
+  if (_autoFlashTimer) { clearTimeout(_autoFlashTimer); _autoFlashTimer = null; }
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
   if (_container) _container.innerHTML = '';
   _container = null; _session = null;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
+  _auto = null; _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
   _onStats = null; _onDelete = null; _onRename = null;
 }
