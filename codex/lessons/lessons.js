@@ -925,10 +925,13 @@ function _renderShell() {
   _wireFocusHover(_q('.cdx-lessons-sidebar'),
     () => _overSide, (v) => { _overSide = v; }, () => { clearTimeout(_focusSideTimer); _focusSideTimer = setTimeout(_maybeHideSide, _FOCUS_DELAY); });
 
-  // Restore persisted focus-mode preference (default: on)
+  // Restore persisted focus-mode preference (default: on). Skip on phones: focus
+  // mode reveals the chrome via mouse-edge hotzones (no touch equivalent), so on a
+  // phone it would tuck the topbar + sidebar out of reach. Below the drawer
+  // breakpoint the sidebar is the hamburger drawer instead.
   let storedFocus = null;
   try { storedFocus = _ls && _ls.getItem('cv_focus_mode'); } catch (_) {}
-  if (storedFocus !== '0') _focusEnable();
+  if (storedFocus !== '0' && window.innerWidth > 700) _focusEnable();
 
   // Delegated sidebar clicks
   _q('.cdx-lessons-sidebar-body').addEventListener('click', (e) => {
