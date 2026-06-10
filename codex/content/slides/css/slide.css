@@ -149,6 +149,32 @@
 .cdx-deck-editor .L-steps.col .topiclist li { flex-direction: row; gap: 18px; text-align: left; }
 .cdx-deck-editor .L-steps .topiclist li::before { content: counter(step); background: var(--teal); color: #fff; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 22px; transform: none; margin: 0; flex: 0 0 auto; }
 
+/* roadmap — roteiro de conceitos com nó ativo */
+.cdx-deck-editor .L-road { position: absolute; inset: 0; padding: 84px 56px; display: flex; flex-direction: column; justify-content: center; gap: 26px; }
+.cdx-deck-editor .L-road .eyebrow { font-size: calc(26px * var(--fontScale)); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--teal-d); }
+.cdx-deck-editor .L-road .roadnodes { list-style: none; display: flex; gap: 18px; padding: 0; margin: 0; }
+.cdx-deck-editor .L-road .roadnodes li { flex: 1; display: block; text-align: center; background: #eef5f4; border: 1px solid #d6e6e3; border-radius: 16px; padding: 30px 14px; margin: 0; font-size: calc(26px * var(--fontScale)); font-weight: 700; color: #5b7572; }
+.cdx-deck-editor .L-road .roadnodes li::before { display: none; }
+.cdx-deck-editor .L-road .roadnodes li.on { background: linear-gradient(var(--teal), var(--teal-d)); color: #fff; border-color: transparent; box-shadow: 0 12px 28px rgba(20, 184, 166, .4); transform: translateY(-8px); }
+
+/* define — termo + definição em grade */
+.cdx-deck-editor .L-def { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; }
+.cdx-deck-editor .L-def h2 { font-size: calc(44px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 18px; }
+.cdx-deck-editor .L-def .topiclist { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; }
+.cdx-deck-editor .L-def .topiclist li { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: baseline; margin: 8px 0; }
+.cdx-deck-editor .L-def .topiclist li::before { display: none; }
+.cdx-deck-editor .L-def .d-term { font-size: calc(30px * var(--fontScale)); font-weight: 900; color: var(--teal-d); white-space: nowrap; }
+.cdx-deck-editor .L-def .d-def { font-size: calc(23px * var(--fontScale)); color: #5b7572; line-height: 1.3; }
+
+/* agenda — trilha com horário + rótulo */
+.cdx-deck-editor .L-agenda { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; }
+.cdx-deck-editor .L-agenda h2 { font-size: calc(44px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 18px; }
+.cdx-deck-editor .L-agenda .topiclist { display: flex; flex-direction: column; }
+.cdx-deck-editor .L-agenda .topiclist li { display: flex; align-items: center; gap: 28px; padding: 16px 0; margin: 0; border-bottom: 1px solid #e3efec; }
+.cdx-deck-editor .L-agenda .topiclist li::before { display: none; }
+.cdx-deck-editor .L-agenda .ag-time { font-family: "Roboto Mono", monospace; font-weight: 700; font-size: calc(27px * var(--fontScale)); color: var(--teal-d); min-width: 140px; }
+.cdx-deck-editor .L-agenda .ag-label { font-size: calc(27px * var(--fontScale)); color: var(--ink); }
+
 /* cards */
 .cdx-deck-editor .L-cards { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; gap: 18px; }
 .cdx-deck-editor .L-cards h2 { font-size: calc(40px * var(--fontScale)); font-weight: 900; color: var(--ink); text-align: center; line-height: 1.05; min-height: 1em; }

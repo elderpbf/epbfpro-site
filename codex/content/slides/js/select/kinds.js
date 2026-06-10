@@ -13,6 +13,7 @@ import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
 import { getByPath, uid, resolveStyleObj } from "../core/schema.js";
 import { formatControls } from "../edit/textstyle.js";
 import { list as cardParts } from "../render/cardparts.js";
+import * as registry from "../layouts/registry.js";
 import { t } from "../../../../js/i18n.js";
 
 // "voltar ao layout": clears the slot's freeform override so it returns to the
@@ -291,10 +292,28 @@ register({
  * geometry follows it by identity and survives reorder with NO remap. Per-item
  * text style lives on the object (.style), so it travels for free too. These are
  * the reusable delete/move/add idioms the old editor.js hand-rolled per kind. */
-const newItem = (list) =>
-  list === "cards"
-    ? { id: uid(), parts: { body: true }, text: t("slides.ed_new_card") }
-    : { id: uid(), text: t("slides.ed_new_topic") };
+// A fresh list item. Cards + topics keep their friendly placeholder; any OTHER named
+// list derives its shape from the layout's own seed (the first default item, minus
+// id/step, with text fields blanked and structural objects cloned), so a multi-field
+// list (define's {term,text}, agenda's {time,text}) adds a fully-shaped item.
+function newItem(list, app) {
+  if (list === "cards") return { id: uid(), parts: { body: true }, text: t("slides.ed_new_card") };
+  if (list === "topics") return { id: uid(), text: t("slides.ed_new_topic") };
+  const layout = app && registry.get(app.cur().layout);
+  const seed = layout && layout.defaults && layout.defaults()[list];
+  const tpl = Array.isArray(seed) && seed[0] && typeof seed[0] === "object" ? seed[0] : null;
+  if (tpl) {
+    const item = {};
+    for (const k of Object.keys(tpl)) {
+      if (k === "id" || k === "step") continue;
+      const v = tpl[k];
+      item[k] = v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : typeof v === "string" ? "" : v;
+    }
+    item.id = uid();
+    return item;
+  }
+  return { id: uid(), text: "" };
+}
 
 const refIndex = (arr, ref) => arr.findIndex((x) => x && `${ref.split(".")[0]}.${x.id}` === ref);
 
@@ -341,7 +360,7 @@ function removeItem(app, ref, keepOne) {
   arr.splice(i, 1);
   const ov = app.cur().overrides;
   if (ov) delete ov[ref];
-  if (keepOne && !arr.length) arr.push(newItem(list));
+  if (keepOne && !arr.length) arr.push(newItem(list, app));
   app.step = Math.min(app.step, app.maxStep());
   app.selectClear();
   app.refresh();
@@ -350,7 +369,7 @@ function removeItem(app, ref, keepOne) {
 function addItem(app, list, row = 0) {
   app.record();
   const arr = (app.cur().slots[list] = app.cur().slots[list] || []);
-  const item = newItem(list);
+  const item = newItem(list, app);
   if (list === "cards" && row) item.row = row; // row 0 stays absent (clean default)
   // Insert after the last card already in this row so rows stay contiguous in the
   // flat array; topics (no rows) append as before.
@@ -371,7 +390,7 @@ function addRow(app) {
   app.record();
   const arr = (app.cur().slots.cards = app.cur().slots.cards || []);
   const maxRow = arr.reduce((m, c) => Math.max(m, c.row || 0), 0);
-  const item = newItem("cards");
+  const item = newItem("cards", app);
   item.row = maxRow + 1;
   arr.push(item);
   app.refresh();
@@ -384,7 +403,7 @@ function addAfter(app, ref) {
   const arr = (app.cur().slots[list] = app.cur().slots[list] || []);
   const i = refIndex(arr, ref);
   app.record();
-  const item = newItem(list);
+  const item = newItem(list, app);
   if (list === "cards" && arr[i] && (arr[i].row || 0)) item.row = arr[i].row; // same stack as the sibling
   arr.splice(i + 1, 0, item);
   if (list === "topics") app.step = app.maxStep();
@@ -474,6 +493,45 @@ register({
       { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots), btnEl); } }
     );
     return ctrls;
+  },
+});
+
+/* ---------- roadnode (4b): a roadmap node; a topic-like item + an "active" toggle ----------
+ * Matches a node ONLY inside a .roadnodes list, so it wins over the generic topic kind
+ * there (registered first) without touching real topics. Toggling "ativo" sets the
+ * layout's slots.active to this node's index; the roadmap renderer highlights it. */
+register({
+  id: "roadnode",
+  geometry: "freeformSlot",
+  match(el) {
+    if (!(el.closest && el.closest(".roadnodes"))) return null;
+    const li = el.closest && el.closest("li[data-fkey]");
+    return li ? { kind: "roadnode", ref: li.dataset.fkey } : null;
+  },
+  el(app, sel) {
+    return app.stage.querySelector(`li[data-fkey="${sel.ref}"]`);
+  },
+  editEl(app, sel) {
+    const li = this.el(app, sel);
+    return li ? li.querySelector('.editable[data-edit="1"]') : null;
+  },
+  target(app, sel) {
+    return resolveStyleObj(app.cur().slots, sel.ref);
+  },
+  controls(app, sel) {
+    const slots = app.cur().slots;
+    const idx = (slots.nodes || []).findIndex((n) => `nodes.${n.id}` === sel.ref);
+    return [
+      ...formatControls(),
+      {
+        type: "toggle", id: "active", label: "ativo", on: (slots.active || 0) === idx,
+        write(app2, sel2, checked) { app2.record(); if (checked) app2.cur().slots.active = idx; app2.refresh(); },
+      },
+      { type: "button", id: "move-up", label: "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
+      { type: "button", id: "move-down", label: "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
+      { type: "button", id: "add", label: "＋ nó", run(app2, sel2) { addAfter(app2, sel2.ref); } },
+      { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
+    ];
   },
 });
 

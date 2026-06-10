@@ -11,6 +11,9 @@ import imagebox from "./imagebox.js";
 import compare from "./compare.js";
 import checklist from "./checklist.js";
 import steps from "./steps.js";
+import roadmap from "./roadmap.js";
+import define from "./define.js";
+import agenda from "./agenda.js";
 
 const _layouts = new Map();
 
@@ -24,4 +27,4 @@ export function list() {
   return [..._layouts.values()];
 }
 
-[cover, split, topics, bleed, cards, statement, quote, imagebox, compare, checklist, steps].forEach(register);
+[cover, split, topics, bleed, cards, statement, quote, imagebox, compare, checklist, steps, roadmap, define, agenda].forEach(register);

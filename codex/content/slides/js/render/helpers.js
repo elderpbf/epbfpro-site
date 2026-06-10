@@ -93,14 +93,18 @@ export function edPlain(tag, path, value, cls = "", styleRef = "") {
  * navigator thumbnails and the presenter window. */
 
 /** One topic bullet. `t` is a {id,text,style?,step?} object; `i` is its current index. */
-export function topicItem(t, i, listName = "topics") {
+export function topicItem(t, i, listName = "topics", fields) {
+  // `fields` lets a list item carry MORE than one editable field (define's
+  // term+def, agenda's time+label). Each field is { key, cls? }; default is a single
+  // "text" field, so topics/compare/etc. are unchanged. All fields share the item's
+  // style-ref so per-item style survives reorder.
+  const flds = fields && fields.length ? fields : [{ key: "text" }];
   const step = t.step != null ? t.step : (i + 1);
   const cls = step > 0 ? "reveal" : "";
-  return (
-    `<li class="${cls}" data-step="${step}" data-fkey="${listName}.${t.id}">` +
-    edPlain("span", `${listName}.${i}.text`, t.text, "", `${listName}.${t.id}`) +
-    `</li>`
-  );
+  const inner = flds
+    .map((f) => edPlain("span", `${listName}.${i}.${f.key}`, t[f.key], f.cls || "", `${listName}.${t.id}`))
+    .join("");
+  return `<li class="${cls}" data-step="${step}" data-fkey="${listName}.${t.id}">${inner}</li>`;
 }
 
 /** The topic list (<ul>). `listName` lets ONE layout host several independent lists
@@ -108,8 +112,8 @@ export function topicItem(t, i, listName = "topics") {
  *  topic + container descriptors: the <ul> carries data-list so the container knows
  *  which slot to add into, and each item's fkey/path/style-ref are prefixed with the
  *  list name. Defaults to "topics" so topics/split/imagebox keep the one-arg call. */
-export function topicList(topics, listName = "topics") {
-  return `<ul class="topiclist" data-list="${listName}">${topics.map((t, i) => topicItem(t, i, listName)).join("")}</ul>`;
+export function topicList(topics, listName = "topics", fields) {
+  return `<ul class="topiclist" data-list="${listName}">${topics.map((t, i) => topicItem(t, i, listName, fields)).join("")}</ul>`;
 }
 
 // The card renderer (cardItem) + the card PART registry now live in
