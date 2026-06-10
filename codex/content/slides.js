@@ -16,6 +16,7 @@
 import { slides as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
+import { createLibrary } from './slides/adapters/library.js';
 import { newDeck } from './slides/js/core/deck.js';
 import * as editor from './slides/js/app.js';
 import { makeWorkerAi } from './slides/js/ai/aiService.js';
@@ -31,6 +32,10 @@ const DECK_ENGINE = 'codex-deck';
 // "the very edge", matching the Lessons focus mode (its zones are 6px).
 const EDGE_ZONE = 6; // left edge -> deck-list sidebar
 const TOP_ZONE = 6;  // top edge  -> Codex topbar + sub-tab row
+
+// The template library service (4c.1). One per sub-tab session; injected into the
+// editor as ctx.library so the vendored core never imports the facade itself.
+const _library = createLibrary({});
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -300,7 +305,7 @@ async function _openDeck(slug, fresh, initialDeck) {
   region.innerHTML = '<div class="cdx-slides-stage cdx-deck-editor" id="cdx-slides-stage"></div>';
   // Geometry is 100% CSS (slides.css, position:fixed region); the editor handles
   // its own canvas fit + window-resize internally. No sizing JS here.
-  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat) });
+  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library });
   _openSlug = slug;
   _writeDeckParam(slug);
   _setDeckOpen(true);

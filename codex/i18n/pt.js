@@ -865,6 +865,10 @@ export default {
   // Content -> Slides -- the deck editor chrome (copied component, strings via t())
   'slides.ed_slide':          'slide',
   'slides.ed_duplicate':      'duplicar',
+  'slides.tpl_save':          'salvar como modelo',
+  'slides.tpl_save_prompt':   'Nome do modelo:',
+  'slides.tpl_from':          'De um modelo…',
+  'slides.tpl_none':          'Nenhum modelo salvo ainda',
   'slides.ed_flip':           'inverter',
   'slides.ed_insert':         'inserir',
   'slides.ed_text':           'Texto',

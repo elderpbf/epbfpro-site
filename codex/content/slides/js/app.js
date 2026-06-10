@@ -5,7 +5,7 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid, migrateDeck } from "./core/schema.js";
+import { uid, migrateDeck, clone } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
@@ -13,7 +13,7 @@ import { initEditing } from "./edit/editor.js";
 import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
 import { initSelect } from "./select/wiring.js";
 import { initReorder } from "./select/reorder.js";
-import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from "./edit/menus.js";
+import { insertMenu, addSlideMenu, templateMenu, appearanceMenu, animMenu } from "./edit/menus.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
@@ -36,6 +36,7 @@ const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) :
 const shellHTML = () => `
 <div id="chrome">
   <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
+  <button id="tplSaveBtn">⊕ ${t("slides.tpl_save")}</button>
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
   <span class="spacer"></span>
   <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
@@ -79,11 +80,15 @@ export function mount(root, ctx = {}) {
   // ctx.aiService: injected by content/slides.js (the integration wrapper) so the
   // vendored core never imports the codex-api facade directly. Falls back to a stub.
   const aiService = ctx.aiService || null;
+  // ctx.library: the template library service (same injection rule as aiService).
+  // Absent in the standalone dev build, so the template UI stays hidden there.
+  const library = ctx.library || null;
 
   const app = {
     isPresenter,
     store,
     _aiService: aiService,
+    _library: library,
     index: 0,
     step: 0,
     presenting: false,
@@ -178,7 +183,41 @@ export function mount(root, ctx = {}) {
     // add-slide layout picker, opened into the context bar from the thumbnail-rail
     // "＋ slide" button (anchor null -> centered, since the rail sits left of the stage).
     openAddSlide(anchor) {
-      this.select.openMenu(addSlideMenu(registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }))), anchor || null);
+      const layouts = registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }));
+      this.select.openMenu(addSlideMenu(layouts, { templates: !!this._library }), anchor || null);
+    },
+
+    // ── Template library (4c.1, detached copies) ──────────────────────────────
+    // All three no-op when no library is injected (standalone build). saveCurrent
+    // AsTemplate / insertTemplate own the full record-then-mutate-then-refresh
+    // pattern; openTemplatePicker loads the list async then fills the context bar.
+    async saveCurrentAsTemplate(name) {
+      if (!this._library) return { error: "no-library" };
+      try {
+        const tpl = await this._library.save(this.cur(), name);
+        return { ok: true, tpl };
+      } catch (e) {
+        return { error: (e && e.message) || "save-failed" };
+      }
+    },
+    async openTemplatePicker(anchor) {
+      if (!this._library) return;
+      let templates = [];
+      try { templates = await this._library.list(); } catch (_) { templates = []; }
+      this.select.openMenu(templateMenu(templates), anchor || this._openMenuBtn || null);
+    },
+    // Insert a DETACHED deep-clone of a template after the current slide: a fresh
+    // slide id so it shares no identity with the library copy, and the library-only
+    // `name` stripped (it is not a slide field). Branding stays deck-level, so the
+    // inserted slide picks up THIS deck's logo + theme automatically.
+    insertTemplate(tpl) {
+      if (!tpl || !tpl.slide) return;
+      this.record();
+      const s = clone(tpl.slide);
+      s.id = uid();
+      delete s.name;
+      this.deck().slides.splice(this.index + 1, 0, s);
+      this.goTo(this.index + 1);
     },
 
     // insert a free element (movable on any slide) of the given type
@@ -313,6 +352,26 @@ function wireChrome(app, root) {
   const $ = (sel) => root.querySelector(sel);
 
   $("#dupBtn").onclick = () => app.duplicate();
+
+  // Save-as-template: only meaningful when a library service is injected; hidden
+  // otherwise (standalone build). A lightweight name prompt (modal parity is a
+  // follow-up, mirrors the deck-list delete confirm in content/slides.js).
+  const tplBtn = $("#tplSaveBtn");
+  if (tplBtn) {
+    if (!app._library) {
+      tplBtn.style.display = "none";
+    } else {
+      tplBtn.onclick = () => {
+        // eslint-disable-next-line no-alert
+        const name = window.prompt(t("slides.tpl_save_prompt"), "");
+        if (name == null) return; // cancelled
+        app.saveCurrentAsTemplate(name).then((res) => {
+          if (res && res.error && window.bsLog) window.bsLog("Save template: " + res.error, "error");
+        });
+      };
+    }
+  }
+
   $("#flip").onclick = () => {
     const s = app.cur().slots;
     if ("flip" in s) { app.record(); s.flip = !s.flip; app.refresh(); }
