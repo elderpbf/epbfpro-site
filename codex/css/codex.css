@@ -88,6 +88,55 @@
 }
 .cdx-subpill.on { display: inline-flex; }
 
+/* ── Mobile bottom navigation (advradar-style) + mobile sub-strip ─────────────
+ * Codex chrome is desktop-first: on phones the top .cdx-tabs strip is flex-
+ * starved (brand + controls eat the row), so the tabs become unreachable. Below
+ * the phone breakpoint we hide that strip and the hover sub-pill, pin a bottom
+ * tab bar, and pin a scrollable sub-strip under the topbar. Tokens only, so dark
+ * mode is inherited. Codex only; the Backstage portal is a card grid that already
+ * reflows on mobile. */
+.cdx-botnav { display: none; }            /* desktop: hidden, revealed at the breakpoint */
+.cdx-subrow--mobile { display: none; }    /* desktop: hidden, the pill/bar handle subs */
+
+.cdx-botnav-item {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 0.3rem 0.2rem;
+  text-decoration: none; color: var(--text-secondary);
+  font-size: 0.66rem; font-weight: 600;
+}
+.cdx-botnav-icon { display: inline-flex; color: currentColor; }
+.cdx-botnav-item.active { color: var(--accent-color); }
+.cdx-botnav-item--lessons   { --accent-color: var(--codex-lessons); }
+.cdx-botnav-item--content   { --accent-color: var(--codex-content); }
+.cdx-botnav-item--cohorts   { --accent-color: var(--codex-cohorts); }
+.cdx-botnav-item--questions { --accent-color: var(--codex-questions); }
+.cdx-botnav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 700px) {
+  .cdx-tabs { display: none; }                            /* top strip unusable on phones */
+  .cdx-subpill { display: none !important; }              /* hover pill is touch-useless */
+  .cdx-subrow:not(.cdx-subrow--mobile) { display: none; } /* desktop persistent bar off */
+
+  .cdx-subrow--mobile {
+    display: block;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .cdx-subrow--mobile .cdx-substrip { padding: 0.3rem 0.6rem; }
+
+  .cdx-botnav {
+    display: flex;
+    position: fixed; left: 0; right: 0; bottom: 0;
+    height: 60px; z-index: 70;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px var(--shadow);
+  }
+  .cdx-view { padding-bottom: 76px; }                     /* clear the fixed bar */
+}
+
 /* ── Tab content host ───────────────────────────────────────── */
 .cdx-view { padding: 0.5rem 1.5rem 1.5rem; }
 

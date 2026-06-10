@@ -36,6 +36,16 @@ function _svg(inner) {
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
 }
 
+// Pure: the bottom-nav item descriptors, one per functional tab in TABS order,
+// with the active one flagged. The mobile bottom bar renders from this (same
+// source as the desktop top strip), so the two navs never drift.
+export function botNavItems(active) {
+  return TABS.map((tab) => ({
+    key: tab.key, labelKey: tab.labelKey, href: tab.href, glyph: tab.glyph,
+    active: tab.key === active,
+  }));
+}
+
 // Sub-tabs (5c): two display modes (hover pill default, persistent bar) via a
 // global pref; positioning reuses the lifted anchored.js.
 const SUBTAB_MODE_KEY = 'codex_subtab_mode';
@@ -272,6 +282,46 @@ export function init(opts) {
   } else if (Object.keys(subTabsByTab).some((k) => (subTabsByTab[k] || []).length)) {
     renderSubPill(header, strip, subTabsByTab);
   }
+
+  // Mobile sub-strip: a full-width scrollable copy of the active tab's sub-tabs,
+  // pinned under the topbar. CSS-gated to phones, where the desktop pill/bar is
+  // hidden (hover is touch-useless); always present so touch never loses sub-tabs.
+  if (subTabs.length) {
+    const mrow = document.createElement('div');
+    mrow.className = 'cdx-subrow cdx-subrow--mobile';
+    const mstrip = document.createElement('nav');
+    mstrip.className = 'cdx-substrip';
+    mstrip.setAttribute('role', 'tablist');
+    mstrip.setAttribute('aria-label', 'Sub-navegação');
+    _subtabLinks(subTabs).forEach((a) => mstrip.appendChild(a));
+    mrow.appendChild(mstrip);
+    header.appendChild(mrow);
+  }
+
+  // Mobile bottom navigation (advradar-style): the four functional tabs as an
+  // icon+label bar pinned to the bottom edge. Hidden on desktop; CSS reveals it
+  // and hides the flex-starved top .cdx-tabs strip below the phone breakpoint.
+  const botnav = document.createElement('nav');
+  botnav.className = 'cdx-botnav';
+  botnav.setAttribute('role', 'tablist');
+  botnav.setAttribute('aria-label', 'Codex');
+  botNavItems(active).forEach((tab) => {
+    const a = document.createElement('a');
+    a.className = 'cdx-botnav-item cdx-botnav-item--' + tab.key + (tab.active ? ' active' : '');
+    a.href = tab.href || '#';
+    a.setAttribute('role', 'tab');
+    if (tab.active) a.setAttribute('aria-current', 'page');
+    const icon = document.createElement('span');
+    icon.className = 'cdx-botnav-icon';
+    icon.innerHTML = _svg(tab.glyph);
+    const label = document.createElement('span');
+    label.className = 'cdx-botnav-label';
+    label.textContent = t(tab.labelKey);
+    a.appendChild(icon);
+    a.appendChild(label);
+    botnav.appendChild(a);
+  });
+  container.appendChild(botnav);
 
   // Shared shell services; the global pill/bar toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });
