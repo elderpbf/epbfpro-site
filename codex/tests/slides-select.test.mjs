@@ -284,11 +284,12 @@ test('geometryCaps: flowCard resizes WIDTH only in the stack (height is content-
   assert.deepEqual([c.move, c.resizeW, c.resizeH, c.rotate], [false, true, false, false]);
 });
 
-test('flowCard.write stores only the basis (width) as a flow override (no height/x/y/rot)', () => {
-  const slide = { overrides: {} };
+test('flowCard.write stores the basis as a per-ROW main-axis size (the whole stack, not one card)', () => {
+  const slide = { overrides: {}, slots: { cards: [{ id: 'a', row: 0 }, { id: 'abc', row: 0 }] } };
   const app = { cur: () => slide };
   strategies.flowCard.write(app, { ref: 'cards.abc' }, { x: 5, y: 6, w: 240, h: 160, rot: 0 });
-  assert.deepEqual(slide.overrides['cards.abc'], { w: 240, flow: true });
+  assert.deepEqual(slide.slots.rowW, { 0: 240 }, 'width stored on the card row');
+  assert.deepEqual(slide.overrides, {}, 'no per-card geometry override (the stack sizes as a unit)');
 });
 
 test('flowCard.read returns zeros when the element is unresolved (nothing live to measure)', () => {
@@ -480,30 +481,23 @@ test('topic.controls add up/down move buttons (mirror the cards ◀ ▶, drive t
   assert.ok(ids.indexOf('move-up') < ids.indexOf('add'), 'move sits before add/remove');
 });
 
-/* ---------- card Toggles: symmetric resize, stack axis, reset widths ---------- */
-test('flowCard.write mirrors the basis to the opposite-end card when symResize is on (either side)', () => {
-  const four = () => ({ overrides: {}, slots: { symResize: true, cards: [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }] } });
-  let slide = four(); let app = { cur: () => slide };
-  strategies.flowCard.write(app, { ref: 'cards.a' }, { w: 300 });
-  assert.deepEqual(slide.overrides['cards.a'], { w: 300, flow: true });
-  assert.deepEqual(slide.overrides['cards.d'], { w: 300, flow: true }, 'left edge mirrors to the right edge');
-  slide = four(); app = { cur: () => slide };
-  strategies.flowCard.write(app, { ref: 'cards.c' }, { w: 260 });
-  assert.deepEqual(slide.overrides['cards.b'], { w: 260, flow: true }, 'inner-right mirrors to inner-left');
-});
-
-test('flowCard.write: the centre card on odd counts mirrors only itself', () => {
-  const slide = { overrides: {}, slots: { symResize: true, cards: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] } };
+/* ---------- card Toggles: whole-row resize, stack axis, reset widths ---------- */
+test('flowCard.write sets ONE size for the resized card row, so the whole stack stays uniform', () => {
+  const slide = { overrides: {}, slots: { cards: [{ id: 'a', row: 0 }, { id: 'b', row: 0 }, { id: 'c', row: 1 }, { id: 'd', row: 1 }] } };
   const app = { cur: () => slide };
-  strategies.flowCard.write(app, { ref: 'cards.b' }, { w: 250 });
-  assert.deepEqual(slide.overrides, { 'cards.b': { w: 250, flow: true } }, 'no sibling written for the centre');
+  strategies.flowCard.write(app, { ref: 'cards.b' }, { w: 300 });
+  assert.equal(slide.slots.rowW[0], 300, 'row 0 sized as a unit (no per-card override)');
+  strategies.flowCard.write(app, { ref: 'cards.c' }, { w: 220 });
+  assert.equal(slide.slots.rowW[1], 220, 'row 1 sizes independently of row 0');
+  assert.equal(slide.slots.rowW[0], 300, 'row 0 left untouched');
+  assert.deepEqual(slide.overrides, {}, 'never writes per-card geometry overrides');
 });
 
-test('flowCard.write does NOT mirror when symResize is off', () => {
+test('flowCard.write treats a card with no `row` field as row 0', () => {
   const slide = { overrides: {}, slots: { cards: [{ id: 'a' }, { id: 'b' }] } };
   const app = { cur: () => slide };
-  strategies.flowCard.write(app, { ref: 'cards.a' }, { w: 300 });
-  assert.deepEqual(slide.overrides, { 'cards.a': { w: 300, flow: true } }, 'only the resized card');
+  strategies.flowCard.write(app, { ref: 'cards.a' }, { w: 280 });
+  assert.deepEqual(slide.slots.rowW, { 0: 280 });
 });
 
 test('card.controls expose a Toggles opener (Ajustes ▾) after the move/add/delete cluster', () => {
@@ -518,22 +512,21 @@ test('card.controls expose a Toggles opener (Ajustes ▾) after the move/add/del
   assert.ok(ids.indexOf('toggles') > ids.indexOf('delete'), 'Toggles sits after the delete');
 });
 
-test('cardTogglesMenu seeds sym/stack toggles from slots + a reset-widths button', () => {
-  const m = kinds.cardTogglesMenu({ symResize: true, stacked: false });
-  const sym = m.find((c) => c.id === 'sym');
+test('cardTogglesMenu seeds the stack toggle + a reset-widths button (symResize retired)', () => {
+  const m = kinds.cardTogglesMenu({ stacked: false });
   const stack = m.find((c) => c.id === 'stack');
-  assert.ok(sym && sym.type === 'toggle' && sym.on === true, 'symmetric toggle seeded on');
   assert.ok(stack && stack.type === 'toggle' && stack.on === false, 'stack toggle seeded off');
   assert.ok(m.some((c) => c.id === 'reset-widths' && c.type === 'button'), 'has reset-widths button');
+  assert.ok(!m.some((c) => c.id === 'sym'), 'no symmetric-resize toggle (whole-row resize replaced it)');
 });
 
-test('cardTogglesMenu reset-widths clears every card width override, leaving others intact', () => {
-  const slide = { slots: { cards: [{ id: 'a' }, { id: 'b' }] }, overrides: { 'cards.a': { w: 300, flow: true }, 'cards.b': { w: 200, flow: true }, title: { x: 1 } } };
+test('cardTogglesMenu reset-widths clears the per-row sizes (back to equal), leaving other slots intact', () => {
+  const slide = { slots: { cards: [{ id: 'a', row: 0 }], rowW: { 0: 300, 1: 200 }, title: 'x' }, overrides: {} };
   let recorded = 0;
   const app = { cur: () => slide, record: () => recorded++, refresh: () => {} };
   kinds.cardTogglesMenu(slide.slots).find((c) => c.id === 'reset-widths').run(app);
-  assert.ok(!('cards.a' in slide.overrides) && !('cards.b' in slide.overrides), 'card widths cleared');
-  assert.deepEqual(slide.overrides.title, { x: 1 }, 'non-card overrides untouched');
+  assert.ok(!slide.slots.rowW, 'all per-row sizes cleared (cards revert to equal flex)');
+  assert.equal(slide.slots.title, 'x', 'other slots untouched');
   assert.equal(recorded, 1);
 });
 
@@ -551,16 +544,15 @@ test('geometryCaps: flowCard flips to HEIGHT resize when the row is stacked', ()
   assert.deepEqual(geometryCaps('flowCard', false), { move: false, resizeW: true, resizeH: false, rotate: false }, 'row -> left/right handles');
 });
 
-test('flowCard.write stores the HEIGHT as the basis when the row is stacked', () => {
-  const slide = { overrides: {}, slots: { stacked: true, cards: [{ id: 'a' }] } };
+test('flowCard.write stores the HEIGHT as the row size when the stack is a column', () => {
+  const slide = { overrides: {}, slots: { stacked: true, cards: [{ id: 'a', row: 0 }] } };
   const app = { cur: () => slide };
   strategies.flowCard.write(app, { ref: 'cards.a' }, { x: 0, y: 0, w: 300, h: 180, rot: 0 });
-  assert.deepEqual(slide.overrides['cards.a'], { w: 180, flow: true }, 'basis = height when stacked (kept under w)');
+  assert.deepEqual(slide.slots.rowW, { 0: 180 }, 'main-axis basis = height when stacked');
 });
 
-test('cardTogglesMenu labels follow the active axis (widths in a row, heights when stacked)', () => {
+test('cardTogglesMenu reset label follows the active axis (equalize widths vs heights)', () => {
   const row = kinds.cardTogglesMenu({ stacked: false });
   const col = kinds.cardTogglesMenu({ stacked: true });
   assert.notEqual(row.find((c) => c.id === 'reset-widths').label, col.find((c) => c.id === 'reset-widths').label, 'equalize label differs by axis');
-  assert.notEqual(row.find((c) => c.id === 'sym').label, col.find((c) => c.id === 'sym').label, 'symmetric label differs by axis');
 });

@@ -53,8 +53,11 @@ export function resolveStyleObj(slots, ref) {
  * into an OPEN `parts` map {image?,title?,body?,…} where an ABSENT key means OFF,
  * so a part added later renders on old cards only when toggled, with no further
  * migration. Existing cards map 1:1 (text->{body}, image-text->{image,body}, …).
+ * v5 = card size is per-ROW: a stack sizes as a unit (slots.rowW keyed by row),
+ * so any legacy per-card flow width (overrides["cards.<id>"]={w,flow}) folds into
+ * its row and the per-card override is dropped. Cards then render at the row size.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * Upgrade a deck in place to the current schema (idempotent, version-gated).
@@ -75,6 +78,7 @@ export function migrateDeck(deck) {
   const repoint = from < 2; // the one-shot positional -> identity remap
   const addSteps = from < 3; // one-shot: assign step=i+1 to items lacking it
   const dropMode = from < 4; // one-shot: retire the card `mode` field (folded into parts)
+  const foldRowW = from < 5; // one-shot: fold per-card card widths into per-row slots.rowW
 
   for (const slide of deck.slides || []) {
     const slots = slide.slots || {};
@@ -93,6 +97,21 @@ export function migrateDeck(deck) {
         }
         if (addSteps && c.step == null) c.step = i + 1;
       });
+      if (foldRowW) {
+        const rowW = slots.rowW || {};
+        slots.cards.forEach((c) => {
+          if (!c) return;
+          const o = ov[`cards.${c.id}`];
+          // Only a PURE basis override (the flowCard.write shape {w, flow:true})
+          // folds; a full {x,y,w,h} box that happens to carry flow is left alone.
+          if (o && o.flow && o.w != null && o.x == null && o.y == null && o.h == null) {
+            const r = c.row || 0;
+            if (rowW[r] == null) rowW[r] = o.w; // first card's width sets its row
+            delete ov[`cards.${c.id}`];          // the per-card override is retired
+          }
+        });
+        if (Object.keys(rowW).length) slots.rowW = rowW;
+      }
     }
 
     if (Array.isArray(slots.topics)) {

@@ -12,7 +12,7 @@
 //                           so a drag never triggers a full stage re-render). `app`
 //                           is passed so flow-rooted slots can use freedStyle's
 //                           offset-parent walk; absolute kinds ignore it.
-import { resolveLogo, DEFAULT_LOGO, freedStyle, flowStyle } from "../render/player.js";
+import { resolveLogo, DEFAULT_LOGO, freedStyle } from "../render/player.js";
 import { getByPath } from "../core/schema.js";
 
 /** Which transform handles a strategy supports (drives the selection frame). */
@@ -48,19 +48,14 @@ function measure(el, app) {
   return { x: (r.left - sr.left) / sc, y: (r.top - sr.top) / sc, w: r.width / sc, h: r.height / sc };
 }
 
-// Symmetric-resize mirror (card Toggles): with slots.symResize on, a card's
-// counterpart is the card at the opposite end (index N-1-i), so resizing one writes
-// the same basis to its mirror and the row stays left-right balanced. The centre
-// card on odd counts mirrors itself (no-op). Returns the mirror's override ref
-// ("cards.<id>"), or null when off / centre / not a card.
-function cardMirrorRef(app, ref) {
-  if (!ref || !app.cur().slots || !app.cur().slots.symResize) return null;
-  const cards = app.cur().slots.cards || [];
-  const i = cards.findIndex((c) => `cards.${c.id}` === ref);
-  if (i < 0) return null;
-  const j = cards.length - 1 - i;
-  if (j === i) return null;
-  return `cards.${cards[j].id}`;
+// The card row a "cards.<id>" ref belongs to (absent row field = row 0). Card size
+// is stored PER ROW, so a resize acts on the whole stack, never one card.
+function cardRow(app, ref) {
+  const cards = (app.cur().slots && app.cur().slots.cards) || [];
+  const dot = ref ? ref.indexOf(".") : -1;
+  const id = dot >= 0 ? ref.slice(dot + 1) : null;
+  const c = cards.find((x) => x && x.id === id);
+  return (c && c.row) || 0;
 }
 
 // The card override stores a single main-axis basis under `w` (flowStyle sets
@@ -165,23 +160,21 @@ export const strategies = {
       const m = measure(el, app);
       return { x: m.x, y: m.y, w: m.w, h: m.h, rot: 0 };
     },
+    // Card size is a property of the STACK, not the card: write the main-axis basis
+    // once per row (slots.rowW[row]), so every card in that row renders at it and
+    // add/remove stays uniform. No per-card override, so a card never drifts out of
+    // its stack (the old bug: one resized card got a fixed basis, the rest did not).
     write(app, sel, g) {
       if (!sel) return;
-      const ov = (app.cur().overrides = app.cur().overrides || {});
-      const basis = cardBasis(app, g); // main-axis size: height when stacked, width otherwise
-      ov[sel.ref] = { w: basis, flow: true };
-      const mref = cardMirrorRef(app, sel.ref); // symmetric mode: the counterpart card
-      if (mref) ov[mref] = { w: basis, flow: true };
+      const slots = (app.cur().slots = app.cur().slots || {});
+      const rowW = (slots.rowW = slots.rowW || {});
+      rowW[cardRow(app, sel.ref)] = cardBasis(app, g); // height when stacked, width otherwise
     },
+    // Live drag: set the var on the card's .cardrow ancestor so ALL its cards track
+    // at once, with no stage re-render (CSS sizes the row's cards from --cardw).
     patch(el, g, app) {
-      const basis = cardBasis(app, g);
-      flowStyle(el, { w: basis }); // flex-basis = main axis (width in a row, height when stacked)
-      // onUp doesn't re-render the stage, so the mirror must track live too.
-      const mref = app && el.dataset && cardMirrorRef(app, el.dataset.fkey);
-      if (mref) {
-        const mel = app.stage.querySelector(`.card[data-fkey="${mref}"]`);
-        if (mel) flowStyle(mel, { w: basis });
-      }
+      const row = el.closest && el.closest(".cardrow");
+      if (row) row.style.setProperty("--cardw", cardBasis(app, g) + "px");
     },
   },
 

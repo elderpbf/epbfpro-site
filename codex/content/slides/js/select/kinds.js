@@ -414,28 +414,20 @@ function addAfter(app, ref) {
 // the same menu-into-bar pattern as Appearance/Animation. Two row-wide modes + one
 // action, seeded from the slide's slots each open. It lives on the CARD bar (not the
 // container's) because selecting the bare stack means clicking the awkward gaps
-// between cards; two of the three act on the whole row even so (Elder's call,
-// 2026-06-03). symResize/stacked are plain per-slide flags read by geometry.flowCard
-// and the cards layout; reset clears every card width override (back to equal flex).
+// between cards; both act on the whole row (Elder's call, 2026-06-03). `stacked` is a
+// per-slide flag read by geometry.flowCard + the cards layout. Card size is per-row
+// now (slots.rowW), so resize sizes the whole stack and `reset` clears those row
+// sizes (back to equal flex); the old per-card symmetric-resize toggle is retired.
 export function cardTogglesMenu(slots) {
   const stacked = !!slots.stacked; // labels follow the active axis (width in a row, height when stacked)
   return [
-    {
-      type: "toggle", id: "sym", label: stacked ? t("slides.ed_sym_height") : t("slides.ed_sym_width"), on: !!slots.symResize,
-      write(app, sel, checked) { app.record(); app.cur().slots.symResize = checked; app.refresh(); },
-    },
     {
       type: "toggle", id: "stack", labelKey: "slides.ed_stack_v", on: !!slots.stacked,
       write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
     },
     {
       type: "button", id: "reset-widths", label: stacked ? t("slides.ed_equalize_h") : t("slides.ed_equalize_w"),
-      run(app) {
-        app.record();
-        const ov = app.cur().overrides;
-        if (ov) (app.cur().slots.cards || []).forEach((c) => delete ov[`cards.${c.id}`]);
-        app.refresh();
-      },
+      run(app) { app.record(); delete app.cur().slots.rowW; app.refresh(); },
     },
   ];
 }
