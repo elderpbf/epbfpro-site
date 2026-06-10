@@ -21,6 +21,7 @@ import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, visibleForAudience } from '../js/audiences.js';
 import { revealTarget, autoRevealDecision, DEFAULT_PCT } from './auto-reveal.js';
+import { buildAnswer, makeRng, hashSeed } from './sim-answers.js';
 
 const LAYOUT_KEY = 'codex_host_layout';
 const AUTO_KEY = 'codex_host_autoreveal';
@@ -55,6 +56,7 @@ let _autoFiredQId = null;  // question we already auto-revealed (fire-once guard
 let _autoLastCount = 0;    // last answer count seen (for plateau detection)
 let _autoLastChangeAt = 0; // ms timestamp of the last count change
 let _autoFlashTimer = null;// timeout that clears the reveal flash (cleared on unmount)
+let _simRunning = false;   // guards the debug-only in-host answer simulator
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -144,6 +146,7 @@ function _centerMarkup() {
         '<div class="cdx-active-text" id="cdx-active-text"></div>' +
         '<div id="cdx-active-render"></div>' +
         _autoRevealMarkup() +
+        _simMarkup() +
         '<div class="cdx-active-foot">' +
           '<span class="cdx-active-tally" id="cdx-active-tally"></span>' +
           '<div class="cdx-active-foot-right">' +
@@ -195,6 +198,20 @@ function _autoRevealMarkup() {
       '<span class="cdx-autoreveal-count" id="cdx-auto-count"></span>' +
     '</div>' +
     '<div class="cdx-autoreveal-status" id="cdx-auto-status"></div>' +
+  '</div>';
+}
+
+// Debug-only in-host simulator: a one-click "Simular respostas" that fires N fake
+// student answers at the active question through the public submit_answer action,
+// so a live-question feature (auto-revelar, tallies) can be exercised from the
+// same screen without a real class. Hidden unless the bs_debug flag is on, so it
+// can never touch a real session. For genuine load use the codex-simulate skill.
+function _simMarkup() {
+  return '<div class="cdx-sim" id="cdx-sim" hidden>' +
+    '<span class="cdx-sim-label">' + _esc(t('questions.host_sim_label')) + '</span>' +
+    '<input type="number" class="cdx-sim-n" id="cdx-sim-n" min="1" max="200" value="30">' +
+    '<button class="cdx-btn cdx-sim-btn" data-act="sim-run" type="button">' + _esc(t('questions.host_sim_run')) + '</button>' +
+    '<span class="cdx-sim-status" id="cdx-sim-status"></span>' +
   '</div>';
 }
 
@@ -529,6 +546,40 @@ function _chime() {
   } catch (e) { /* audio is best-effort */ }
 }
 
+// Debug-only: spray N fake answers at the active question via the public facade
+// action, in small concurrent batches so they arrive like a real room filling
+// in. No timers (so the unmount leak contract holds); aborts if unmounted. The
+// firing logic is here; WHAT each bot answers comes from the pure sim-answers.js.
+async function _simulate() {
+  if (_simRunning) return;
+  const q = _qEl && typeof _qEl.getActiveQuestion === 'function' ? _qEl.getActiveQuestion() : null;
+  const statusEl = _q('#cdx-sim-status');
+  if (!q || !q.id) { if (statusEl) statusEl.textContent = t('questions.host_sim_no_q'); return; }
+  const input = _q('#cdx-sim-n');
+  let n = parseInt(input && input.value, 10);
+  if (!Number.isFinite(n) || n < 1) n = 30;
+  n = Math.min(200, n);
+  _simRunning = true;
+  let ok = 0, done = 0;
+  const skew = 0.6, batch = 6;
+  for (let i = 0; i < n; i += batch) {
+    if (!_container || !_simRunning) break;
+    const calls = [];
+    for (let j = i; j < Math.min(i + batch, n); j++) {
+      const payload = buildAnswer(q, makeRng(hashSeed('Bot_' + (j + 1) + ':' + q.id)), skew);
+      if (!payload) continue;
+      const params = Object.assign({ question_id: q.id, session_code: _session.code, student_name: 'Bot_' + String(j + 1).padStart(3, '0'), _silent: true }, payload);
+      calls.push(api.submitAnswer(params).then((r) => { done++; if (r && !r.error) ok++; }).catch(() => { done++; }));
+    }
+    await Promise.all(calls);
+    const liveStatus = _q('#cdx-sim-status');
+    if (liveStatus) liveStatus.textContent = t('questions.host_sim_progress').replace('{done}', String(done)).replace('{total}', String(n));
+  }
+  _simRunning = false;
+  const finalStatus = _q('#cdx-sim-status');
+  if (finalStatus) finalStatus.textContent = t('questions.host_sim_done').replace('{ok}', String(ok)).replace('{n}', String(n));
+}
+
 // ── Student-Q&A active card debounce (port of host-sqa.js) ───
 function _renderSqaActive(q) {
   const metaEl = _q('#cdx-sqa-meta'), textEl = _q('#cdx-sqa-text'), inputEl = _q('#cdx-sqa-response'), statusEl = _q('#cdx-sqa-status');
@@ -760,6 +811,10 @@ export function mount(containerEl, ctx) {
   _remountComposer(null);
   _applyLayout();
   _syncAutoUI();
+  // The in-host answer simulator is a debug-only affordance: reveal it only when
+  // the shared bs_debug flag is on, so it can never fire in a real class.
+  const simEl = _q('#cdx-sim');
+  if (simEl) simEl.hidden = !((typeof localStorage !== 'undefined') && localStorage.getItem('bs_debug') === '1');
 
   const renderHost = _q('#cdx-active-render');
   _qEl = document.createElement(QTAG);
@@ -796,6 +851,7 @@ export function mount(containerEl, ctx) {
       if (act === 'launch') return _launch();
       if (act === 'clear') return _remountComposer(null);
       if (act === 'close-q' || act === 'sqa-close') return _closeQuestion();
+      if (act === 'sim-run') return _simulate();
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
       if (act === 'qr') return _openQr();
       if (act === 'bank-toggle') { const p = _q('#cdx-bank-panel'); const open = p.classList.toggle('open'); btn.classList.toggle('open', open); if (open) _loadBankSets(); return; }
@@ -870,5 +926,6 @@ export function unmount() {
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
   _auto = null; _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
+  _simRunning = false;
   _onStats = null; _onDelete = null; _onRename = null;
 }

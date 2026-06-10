@@ -83,6 +83,7 @@ export const questions = {
   deleteSessionQuestion: (p) => call('delete_session_question', p), // { id } -> delete one launched question + its answers (drops it from history AND stats)
   setVisibility:   (p) => call('set_question_visibility', p),  // { id, session_code, show_results }
   sessionState:    (p) => call('get_session_state', p),        // { code } -> { session, qa_enabled, pinned_question, active_question, history } (public)
+  submitAnswer:    (p) => call('submit_answer', p),            // { question_id, session_code, student_name, answer_index? | answer_value? } (public, student-side; used by the debug-only in-host simulator)
   // Bank (sets + questions)
   listSets:        (p) => call('list_question_sets', p),       // -> { banks }
   getQuestions:    (p) => call('get_questions', p),            // { list_name } -> { questions }

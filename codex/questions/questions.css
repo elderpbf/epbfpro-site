@@ -921,6 +921,14 @@
 .cdx-autoreveal-flash { animation: cdx-autoreveal-flash 1.2s ease; }
 @keyframes cdx-autoreveal-flash { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--primary); } }
 
+/* Debug-only in-host answer simulator (hidden via [hidden] unless bs_debug is on).
+   A dashed warm border marks it as a dev affordance, not a teaching control. */
+.cdx-sim { margin-top: 0.75rem; padding: 0.5rem 0.7rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; border: 1px dashed var(--cdx-cohorts, rgba(245,158,11,.6)); border-radius: 10px; }
+.cdx-sim-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); }
+.cdx-sim-n { width: 4rem; padding: 0.3rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-size: 0.84rem; font-family: inherit; }
+.cdx-sim-btn { font-size: 0.8rem; }
+.cdx-sim-status { font-size: 0.8rem; color: var(--text-secondary); }
+
 /* Student-Q&A active card */
 .cdx-sqa-meta { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 8px; }
 .cdx-sqa-answer-block { background: rgba(245,158,11,.06); border: 1px dashed rgba(245,158,11,.4); border-radius: 10px; padding: 14px; margin: 14px 0; }
