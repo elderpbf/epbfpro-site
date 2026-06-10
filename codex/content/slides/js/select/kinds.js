@@ -301,8 +301,13 @@ const refIndex = (arr, ref) => arr.findIndex((x) => x && `${ref.split(".")[0]}.$
 function moveItem(app, ref, dir) {
   const arr = app.cur().slots[ref.split(".")[0]];
   const i = refIndex(arr, ref);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= arr.length) return;
+  if (i < 0) return;
+  // Move within the item's OWN row: skip past any cards in other rows to the nearest
+  // same-row neighbour in `dir` (topics are all row 0, so this is plain adjacency).
+  const row = arr[i].row || 0;
+  let j = i + dir;
+  while (j >= 0 && j < arr.length && (arr[j].row || 0) !== row) j += dir;
+  if (j < 0 || j >= arr.length) return;
   app.record();
   [arr[i], arr[j]] = [arr[j], arr[i]]; // override is id-keyed, so it follows the item
   app.refresh();
@@ -320,7 +325,9 @@ export function reorderItem(app, fromRef, toRef) {
   const to = refIndex(arr, toRef);
   if (from < 0 || to < 0 || from === to) return;
   app.record();
+  const toRow = arr[to].row || 0; // capture before the splice shifts indices
   const [item] = arr.splice(from, 1);
+  if ((item.row || 0) !== toRow) item.row = toRow; // dragging across stacks adopts the target row
   arr.splice(to, 0, item);
   app.refresh();
 }
@@ -340,10 +347,33 @@ function removeItem(app, ref, keepOne) {
   app.refresh();
 }
 
-function addItem(app, list) {
+function addItem(app, list, row = 0) {
   app.record();
-  (app.cur().slots[list] = app.cur().slots[list] || []).push(newItem(list));
+  const arr = (app.cur().slots[list] = app.cur().slots[list] || []);
+  const item = newItem(list);
+  if (list === "cards" && row) item.row = row; // row 0 stays absent (clean default)
+  // Insert after the last card already in this row so rows stay contiguous in the
+  // flat array; topics (no rows) append as before.
+  let at = arr.length;
+  if (list === "cards") {
+    for (let k = arr.length - 1; k >= 0; k--) {
+      if ((arr[k].row || 0) === row) { at = k + 1; break; }
+    }
+  }
+  arr.splice(at, 0, item);
   if (list === "topics") app.step = app.maxStep(); // reveal the new bullet
+  app.refresh();
+}
+
+// Start a NEW stack (row) below the last, seeded with one card. The new card's row
+// is maxRow+1; row-0 cards stay row-less, so a single-stack deck is never reshaped.
+function addRow(app) {
+  app.record();
+  const arr = (app.cur().slots.cards = app.cur().slots.cards || []);
+  const maxRow = arr.reduce((m, c) => Math.max(m, c.row || 0), 0);
+  const item = newItem("cards");
+  item.row = maxRow + 1;
+  arr.push(item);
   app.refresh();
 }
 
@@ -354,7 +384,9 @@ function addAfter(app, ref) {
   const arr = (app.cur().slots[list] = app.cur().slots[list] || []);
   const i = refIndex(arr, ref);
   app.record();
-  arr.splice(i + 1, 0, newItem(list));
+  const item = newItem(list);
+  if (list === "cards" && arr[i] && (arr[i].row || 0)) item.row = arr[i].row; // same stack as the sibling
+  arr.splice(i + 1, 0, item);
   if (list === "topics") app.step = app.maxStep();
   app.refresh();
 }
@@ -484,24 +516,29 @@ register({
   id: "container",
   geometry: "none",
   match(el) {
-    if (el.closest && el.closest(".cardrow")) return { kind: "container", ref: "cards" };
+    const cr = el.closest && el.closest(".cardrow");
+    if (cr) {
+      const row = Number((cr.dataset && cr.dataset.row) || 0);
+      return row ? { kind: "container", ref: "cards", row } : { kind: "container", ref: "cards" };
+    }
     if (el.closest && el.closest(".topiclist")) return { kind: "container", ref: "topics" };
     return null;
   },
   el(app, sel) {
-    return app.stage.querySelector(sel.ref === "cards" ? ".cardrow" : ".topiclist");
+    if (sel.ref === "topics") return app.stage.querySelector(".topiclist");
+    return app.stage.querySelector(`.cardrow[data-row="${sel.row || 0}"]`) || app.stage.querySelector(".cardrow");
   },
   target(app, sel) {
     return app.cur().slots[sel.ref] || null;
   },
   controls(app, sel) {
+    if (sel.ref === "topics") {
+      return [{ type: "button", id: "add", label: "＋ tópico", run(app2) { addItem(app2, "topics"); } }];
+    }
+    // Cards: add a card to THE CLICKED row, and start a new stack (row) below.
     return [
-      {
-        type: "button",
-        id: "add",
-        label: sel.ref === "cards" ? "＋ card" : "＋ tópico",
-        run(app2, sel2) { addItem(app2, sel2.ref); },
-      },
+      { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addItem(app2, "cards", sel2.row || 0); } },
+      { type: "button", id: "add-row", label: "＋ linha", run(app2) { addRow(app2); } },
     ];
   },
 });

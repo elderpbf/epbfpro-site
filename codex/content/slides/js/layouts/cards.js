@@ -13,7 +13,24 @@ export default {
   label: "Cards",
   defaults: () => ({ title: "", reveal: false, cards: [{ id: uid(), parts: { body: true }, text: "Texto do card" }] }),
   reveals: (s) => (s.reveal ? Math.max(0, ...s.cards.map((c, i) => c.step != null ? c.step : (i + 1))) : 0),
-  render: (s) => `${bar}${circuit("br")}<div class="L-cards">
+  render: (s) => {
+    const cards = s.cards || [];
+    const colCls = s.stacked ? " col" : "";
+    // Group cards into one .cardrow per `row` (absent = row 0 = a single stack),
+    // preserving each card's FLAT index (the content path + the identity fkey both
+    // use it). Multiple rows = Élder's "two stacks of cards"; CSS stacks them.
+    const byRow = new Map();
+    cards.forEach((c, i) => {
+      const r = c.row || 0;
+      if (!byRow.has(r)) byRow.set(r, []);
+      byRow.get(r).push(cardItem(c, i, cards.length));
+    });
+    if (!byRow.size) byRow.set(0, []); // always a selectable row-0 container, even empty
+    const rows = [...byRow.keys()].sort((a, b) => a - b)
+      .map((r) => `<div class="cardrow${colCls}" data-row="${r}">${byRow.get(r).join("")}</div>`)
+      .join("");
+    return `${bar}${circuit("br")}<div class="L-cards">
     ${ed("h2", "title", s.title || "")}
-    <div class="cardrow${s.stacked ? " col" : ""}">${s.cards.map((c, i) => cardItem(c, i, s.cards.length)).join("")}</div></div>`,
+    ${rows}</div>`;
+  },
 };
