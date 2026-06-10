@@ -37,9 +37,9 @@ export function newDeck() {
         title: "Os 3 conceitos",
         reveal: true,
         cards: [
-          { mode: "text", text: "LLM" },
-          { mode: "text", text: "Tokens" },
-          { mode: "text", text: "Contexto" },
+          { parts: { body: true }, text: "LLM" },
+          { parts: { body: true }, text: "Tokens" },
+          { parts: { body: true }, text: "Contexto" },
         ],
       }),
     ],

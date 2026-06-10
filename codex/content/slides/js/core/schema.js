@@ -49,8 +49,12 @@ export function resolveStyleObj(slots, ref) {
  * v3 = explicit step field on revealable items (topics + cards): integer where
  * 0 = always shown and 1..N = reveal order; derived from array position on first
  * migration so existing decks render identically.
+ * v4 = composable cards: the card `mode` (title|text|image|image-text XOR) folds
+ * into an OPEN `parts` map {image?,title?,body?,…} where an ABSENT key means OFF,
+ * so a part added later renders on old cards only when toggled, with no further
+ * migration. Existing cards map 1:1 (text->{body}, image-text->{image,body}, …).
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * Upgrade a deck in place to the current schema (idempotent, version-gated).
@@ -70,6 +74,7 @@ export function migrateDeck(deck) {
   const from = deck.schemaVersion || 1;
   const repoint = from < 2; // the one-shot positional -> identity remap
   const addSteps = from < 3; // one-shot: assign step=i+1 to items lacking it
+  const dropMode = from < 4; // one-shot: retire the card `mode` field (folded into parts)
 
   for (const slide of deck.slides || []) {
     const slots = slide.slots || {};
@@ -80,6 +85,8 @@ export function migrateDeck(deck) {
       slots.cards.forEach((c, i) => {
         if (!c) return;
         if (c.id == null) c.id = uid();
+        if (c.parts == null) c.parts = modeToParts(c.mode); // always-ensure, mirrors the id ensure
+        if (dropMode) delete c.mode;                        // one-shot: the field is retired
         if (repoint) {
           moveKey(ov, `cards.${i}`, `cards.${c.id}`);
           moveStyle(ts, `cards.${i}.text`, c);
@@ -107,6 +114,18 @@ export function migrateDeck(deck) {
 
   deck.schemaVersion = SCHEMA_VERSION;
   return deck;
+}
+
+/** Map a legacy card `mode` (title|text|image|image-text) onto the composable
+ *  `parts` map. Unknown/absent modes fall back to a body-only card, so a malformed
+ *  legacy card still renders something. */
+function modeToParts(mode) {
+  switch (mode) {
+    case "title": return { title: true };
+    case "image": return { image: true };
+    case "image-text": return { image: true, body: true };
+    default: return { body: true };
+  }
 }
 
 /** Move an override entry from a positional key to an identity key (if present). */

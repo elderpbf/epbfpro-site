@@ -8,7 +8,8 @@ import assert from 'node:assert/strict';
 import { resolveLogo, DEFAULT_LOGO, textStyleProps } from '../content/slides/js/render/player.js';
 import * as kinds from '../content/slides/js/select/kinds.js';
 import { geometryCaps, strategies } from '../content/slides/js/select/geometry.js';
-import { imgslot, cardItem, topicItem, topicList } from '../content/slides/js/render/helpers.js';
+import { imgslot, topicItem, topicList } from '../content/slides/js/render/helpers.js';
+import { cardItem } from '../content/slides/js/render/cardparts.js';
 import { resolveStyleObj } from '../content/slides/js/core/schema.js';
 import cardsLayout from '../content/slides/js/layouts/cards.js';
 import topicsLayout from '../content/slides/js/layouts/topics.js';
@@ -322,8 +323,8 @@ test('topicList wraps items in the .topiclist ul and emits no add button', () =>
   assert.ok(!/addtopic|\+ tópico/.test(html), 'add is a container control, not layout HTML');
 });
 
-test('cardItem keys the .card by stable id; text declares a style-ref; no .cardctl emitted', () => {
-  const html = cardItem({ id: 'c1', mode: 'text', text: 'A' }, 0, 2);
+test('cardItem keys the .card by stable id; an on text part declares a style-ref; no .cardctl emitted', () => {
+  const html = cardItem({ id: 'c1', parts: { body: true }, text: 'A' }, 0, 2);
   assert.match(html, /class="card[ "]/);
   assert.match(html, /data-fkey="cards\.c1"/);
   assert.match(html, /data-step="1"/);
@@ -371,18 +372,21 @@ test('card descriptor: flowCard geometry, matches .card to its id ref, target re
   assert.equal(d.geometry, 'flowCard');
   assert.deepEqual(d.match(stubEl({ '.card': { dataset: { fkey: 'cards.c1' } } })), { kind: 'card', ref: 'cards.c1' });
   assert.equal(d.match(stubEl({})), null);
-  const slide = { slots: { cards: [{ id: 'c1', mode: 'text', text: 'A' }, { id: 'c2', mode: 'image' }] } };
+  const slide = { slots: { cards: [{ id: 'c1', parts: { body: true }, text: 'A' }, { id: 'c2', parts: { image: true } }] } };
   const app = { cur: () => slide, stage: noStage };
   assert.equal(d.target(app, { ref: 'cards.c2' }), slide.slots.cards[1]);
 });
 
-test('card.controls carry a mode choice + move left/right + a danger delete (no dropdowns)', () => {
+test('card.controls carry a part toggle per registered part + move left/right + a danger delete', () => {
   const d = kinds.get('card');
-  const slide = { slots: { cards: [{ id: 'c1', mode: 'text', text: 'A' }] } };
+  const slide = { slots: { cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] } };
   const app = { cur: () => slide, stage: noStage };
   const sel = { kind: 'card', ref: 'cards.c1' };
   const ctrls = d.controls(app, sel, d.target(app, sel));
-  assert.ok(ctrls.some((c) => c.type === 'choice' && c.id === 'mode'), 'mode is a choice (no dropdown)');
+  const toggles = ctrls.filter((c) => c.type === 'toggle' && /^part-/.test(c.id));
+  assert.ok(toggles.length >= 3, 'one on/off toggle per registered card part (no dropdown)');
+  assert.ok(toggles.some((c) => c.id === 'part-image'), 'any card can toggle an image part');
+  assert.equal(toggles.find((c) => c.id === 'part-body').on, true, 'toggle state reflects card.parts');
   assert.ok(ctrls.some((c) => c.id === 'move-l') && ctrls.some((c) => c.id === 'move-r'), 'move left/right');
   assert.ok(ctrls.some((c) => c.id === 'delete' && c.danger), 'danger delete');
 });
@@ -415,7 +419,7 @@ test('container descriptor: matches the stack/list, no geometry handles, control
 /* ---------- the plugin-contract leak is closed: layouts emit content only ---------- */
 test('cards/topics/split layouts emit NO control HTML (the LOG-009 leak is closed)', () => {
   const html = [
-    cardsLayout.render({ title: 'T', reveal: false, cards: [{ id: 'c1', mode: 'text', text: 'A' }] }),
+    cardsLayout.render({ title: 'T', reveal: false, cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] }),
     topicsLayout.render({ title: 'T', topics: [{ id: 't1', text: 'x' }] }),
     splitLayout.render({ ratio: 0.5, title: 'T', image: null, topics: [{ id: 't1', text: 'x' }] }),
   ];
@@ -429,8 +433,9 @@ test('cards/topics/split layouts emit NO control HTML (the LOG-009 leak is close
   assert.match(html[1], /data-fkey="topics\.t1"/, 'topics keyed by id');
 });
 
-test('layout defaults() seed the id-bearing shape (cards have ids; topics are {id,text})', () => {
+test('layout defaults() seed the id-bearing shape (cards have ids + a parts map; topics are {id,text})', () => {
   assert.ok(cardsLayout.defaults().cards.every((c) => typeof c.id === 'string'), 'seeded cards carry ids');
+  assert.ok(cardsLayout.defaults().cards.every((c) => c.parts && typeof c.parts === 'object'), 'seeded cards carry a parts map');
   for (const L of [topicsLayout, splitLayout]) {
     assert.ok(L.defaults().topics.every((t) => t && typeof t === 'object' && typeof t.id === 'string'),
       `${L.id} seeds topics as {id,text} objects`);
@@ -503,7 +508,7 @@ test('flowCard.write does NOT mirror when symResize is off', () => {
 
 test('card.controls expose a Toggles opener (Ajustes ▾) after the move/add/delete cluster', () => {
   const d = kinds.get('card');
-  const slide = { slots: { cards: [{ id: 'c1', mode: 'text', text: 'A' }] } };
+  const slide = { slots: { cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] } };
   const app = { cur: () => slide, stage: noStage };
   const sel = { kind: 'card', ref: 'cards.c1' };
   const ctrls = d.controls(app, sel, d.target(app, sel));
@@ -533,10 +538,10 @@ test('cardTogglesMenu reset-widths clears every card width override, leaving oth
 });
 
 test('cards layout adds the .cardrow col class only when stacked', () => {
-  const flat = cardsLayout.render({ title: '', cards: [{ id: 'c1', mode: 'text', text: 'A' }] });
+  const flat = cardsLayout.render({ title: '', cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] });
   assert.match(flat, /class="cardrow"/, 'row by default');
   assert.ok(!/cardrow col/.test(flat), 'no col class when not stacked');
-  const stacked = cardsLayout.render({ title: '', stacked: true, cards: [{ id: 'c1', mode: 'text', text: 'A' }] });
+  const stacked = cardsLayout.render({ title: '', stacked: true, cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] });
   assert.match(stacked, /class="cardrow col"/, 'col class when stacked');
 });
 

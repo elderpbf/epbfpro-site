@@ -280,10 +280,10 @@ test('buildSlide: topics -> title + normalized {id,text} items', () => {
   assert.deepEqual(slide.overrides, {});
 });
 
-test('buildSlide: cards -> one card per paragraph, mode text', () => {
+test('buildSlide: cards -> one card per paragraph, composable body part', () => {
   const slide = buildSlide({ layoutId: 'cards', src: SRC({ title: 'Conceitos', paragraphs: ['LLM', 'Token'] }) });
   assert.equal(slide.slots.cards.length, 2);
-  assert.equal(slide.slots.cards[0].mode, 'text');
+  assert.deepEqual(slide.slots.cards[0].parts, { body: true });
   assert.equal(slide.slots.cards[0].text, 'LLM');
   assert.equal(typeof slide.slots.cards[1].id, 'string');
 });

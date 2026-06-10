@@ -12,7 +12,7 @@ import coverLayout from '../content/slides/js/layouts/cover.js';
 
 // ---------- 1. migrateDeck: v2 deck gets step assigned ----------
 
-test('migrateDeck v2->v3: topics get step=i+1, cards get step=i+1', () => {
+test('migrateDeck: a v2 deck gets step=i+1 on topics + cards (and is stamped to the current schema)', () => {
   const deck = {
     schemaVersion: 2,
     slides: [
@@ -21,7 +21,7 @@ test('migrateDeck v2->v3: topics get step=i+1, cards get step=i+1', () => {
     ],
   };
   const d = migrateDeck(deck);
-  assert.equal(d.schemaVersion, 3, 'schemaVersion bumped to 3');
+  assert.equal(d.schemaVersion, SCHEMA_VERSION, 'schemaVersion bumped to the current schema');
   const topics = d.slides[0].slots.topics;
   assert.deepEqual(topics.map((t) => t.step), [1, 2, 3], 'topics steps are [1,2,3]');
   const cards = d.slides[1].slots.cards;

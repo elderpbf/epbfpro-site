@@ -12,6 +12,7 @@
 import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
 import { getByPath, uid, resolveStyleObj } from "../core/schema.js";
 import { formatControls } from "../edit/textstyle.js";
+import { list as cardParts } from "../render/cardparts.js";
 import { t } from "../../../../js/i18n.js";
 
 // "voltar ao layout": clears the slot's freeform override so it returns to the
@@ -292,7 +293,7 @@ register({
  * the reusable delete/move/add idioms the old editor.js hand-rolled per kind. */
 const newItem = (list) =>
   list === "cards"
-    ? { id: uid(), mode: "text", text: t("slides.ed_new_card") }
+    ? { id: uid(), parts: { body: true }, text: t("slides.ed_new_card") }
     : { id: uid(), text: t("slides.ed_new_topic") };
 
 const refIndex = (arr, ref) => arr.findIndex((x) => x && `${ref.split(".")[0]}.${x.id}` === ref);
@@ -412,23 +413,26 @@ register({
     const stacked = !!(app.cur().slots && app.cur().slots.stacked); // ▲▼ + vertical resize when stacked
     const ctrls = [];
     if (this.editEl(app, sel)) ctrls.push(...formatControls(), { type: "sep" });
-    ctrls.push({
-      type: "choice",
-      id: "mode",
-      value: card.mode,
-      options: [
-        { v: "title", labelKey: "slides.ed_title" },
-        { v: "text", labelKey: "slides.ed_text" },
-        { v: "image", labelKey: "slides.ed_image" },
-        { v: "image-text", labelKey: "slides.ed_image_text" },
-      ],
-      write(app2, sel2, v) {
-        app2.record();
-        const c = resolveStyleObj(app2.cur().slots, sel2.ref);
-        if (c) c.mode = v;
-        app2.refresh();
-      },
-    });
+    // Composable parts: one on/off toggle per registered card part (imagem / título
+    // / texto / …). Toggling a part on with no content yet renders its empty box or
+    // field, ready to fill; toggling off hides it without discarding the content. A
+    // newly registered part appears here automatically, with NO edit to this
+    // descriptor: it reads the same cardParts registry the renderer does.
+    for (const p of cardParts()) {
+      ctrls.push({
+        type: "toggle",
+        id: `part-${p.id}`,
+        labelKey: p.labelKey,
+        on: !!(card.parts && card.parts[p.id]),
+        write(app2, sel2, checked) {
+          app2.record();
+          const c = resolveStyleObj(app2.cur().slots, sel2.ref);
+          if (c) c.parts = { ...(c.parts || {}), [p.id]: checked };
+          app2.refresh();
+        },
+      });
+    }
+    ctrls.push({ type: "sep" });
     ctrls.push(
       { type: "button", id: "move-l", label: stacked ? "▲" : "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-r", label: stacked ? "▼" : "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },

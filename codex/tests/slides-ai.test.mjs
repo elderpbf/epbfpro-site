@@ -19,13 +19,13 @@ const topicsLayout = {
   }),
 };
 
-// Cards layout fixture: a list of {id, mode, text} items + a boolean control flag.
+// Cards layout fixture: composable cards (a parts map + content) + a control flag.
 const cardsLayout = {
   id: 'cards',
   defaults: () => ({
     title: 'Titulo',
     reveal: false,
-    cards: [{ id: 'a', mode: 'text', text: 'Texto do card' }],
+    cards: [{ id: 'a', parts: { body: true }, text: 'Texto do card' }],
   }),
 };
 
@@ -166,24 +166,24 @@ test('normalize: each coerced topic gets a UNIQUE id', () => {
   assert.equal(new Set(ids).size, ids.length, 'ids must be unique');
 });
 
-test('normalize: cards as bare strings become {id,mode:"text",text}', () => {
-  // mode must be restored to "text" or the renderer falls through to the
-  // image+text branch and shows an empty image box.
+test('normalize: cards as bare strings become {id, parts:{body:true}, text}', () => {
+  // parts must keep the renderable default; the model only fills text content.
   const reply = '{"slots":{"title":"T","cards":["Card um","Card dois"]}}';
   const result = parseFillResponse(reply, cardsLayout);
   assert.equal(result.slots.cards.length, 2);
   for (const c of result.slots.cards) {
-    assert.equal(c.mode, 'text', 'card mode must be restored to text');
+    assert.deepEqual(c.parts, { body: true }, 'card parts kept at the renderable default');
     assert.equal(typeof c.id, 'string');
   }
   assert.equal(result.slots.cards[0].text, 'Card um');
 });
 
-test('normalize: card objects keep mode "text" and never inherit a stray mode', () => {
-  // Even if the model invents mode:"image", we keep the renderable default.
-  const reply = '{"slots":{"cards":[{"mode":"image","text":"x"}]}}';
+test('normalize: card parts stay the renderable default; the model cannot inject structure', () => {
+  // Even if the model invents parts:{image:true} or a stray mode, we keep the default.
+  const reply = '{"slots":{"cards":[{"parts":{"image":true},"mode":"image","text":"x"}]}}';
   const result = parseFillResponse(reply, cardsLayout);
-  assert.equal(result.slots.cards[0].mode, 'text');
+  assert.deepEqual(result.slots.cards[0].parts, { body: true });
+  assert.ok(!('mode' in result.slots.cards[0]), 'a stray mode is never carried over');
   assert.equal(result.slots.cards[0].text, 'x');
 });
 

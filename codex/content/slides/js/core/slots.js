@@ -8,10 +8,10 @@
 import { uid } from './schema.js';
 
 // Fields a content producer (AI or importer) never sets: identity, build-order,
-// and the structural card `mode` (text cards are filled; image/title cards are set
-// by hand). These keep their template defaults so the renderer always gets a shape
-// it can draw.
-export const FIXED_ITEM_KEYS = new Set(['id', 'step', 'mode']);
+// and the structural card `parts` map (which parts a card shows is a layout/editor
+// decision, not content). These keep their template defaults so the renderer always
+// gets a shape it can draw.
+export const FIXED_ITEM_KEYS = new Set(['id', 'step', 'parts']);
 
 // The per-item CONTENT shape for a list slot, derived from its default first item
 // (e.g. topics -> {text}, cards -> {text}). Drops the fixed keys above. Used to
@@ -60,7 +60,9 @@ export function normalizeItem(raw, defItem) {
   const item = {};
   for (const k of Object.keys(src)) {
     if (k === 'id' || k === 'step') continue;
-    item[k] = src[k]; // keeps mode + content defaults
+    const v = src[k];
+    // clone object defaults (e.g. the card `parts` map) so items never share a ref
+    item[k] = v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v;
   }
   let contentKeys = Object.keys(src).filter((k) => !FIXED_ITEM_KEYS.has(k));
   if (!contentKeys.length) { item.text = ''; contentKeys = ['text']; }

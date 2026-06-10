@@ -108,20 +108,7 @@ export function topicList(topics) {
   return `<ul class="topiclist">${topics.map(topicItem).join("")}</ul>`;
 }
 
-/** Inner body of a card by its mode (title / text / image / image+text). */
-function cardBody(c, i) {
-  const ref = `cards.${c.id}`;
-  if (c.mode === "title") return edPlain("div", `cards.${i}.title`, c.title, "c-title", ref);
-  if (c.mode === "text") return edPlain("div", `cards.${i}.text`, c.text, "c-text", ref);
-  const img = `<div class="c-img">${imgslot(`cards.${i}.image`, c.image, true)}</div>`;
-  if (c.mode === "image") return img;
-  return img + edPlain("div", `cards.${i}.text`, c.text, "c-text", ref);
-}
-
-/** One card. `c` is a {id,mode,...,style?,step?} object; `n` is the card count (drives the
- *  reveal class). data-fkey is the stable id ref the flowCard strategy writes to. */
-export function cardItem(c, i, n) {
-  const step = c.step != null ? c.step : (i + 1);
-  const cls = n > 1 && step > 0 ? "card reveal" : "card";
-  return `<div class="${cls}" data-step="${step}" data-fkey="cards.${c.id}">${cardBody(c, i)}</div>`;
-}
+// The card renderer (cardItem) + the card PART registry now live in
+// render/cardparts.js, so any card composes image/title/body parts (and future
+// parts) by toggling flags. helpers.js keeps only the low-level slot renderers that
+// cardparts.js imports from (one-way: helpers never imports cardparts, no cycle).
