@@ -151,7 +151,9 @@
    * leaves the flow (at THIS breakpoint, ahead of any tab's own 600px rule). */
   .cdx-bank, .cdx-items-split, .cdx-three-pane { grid-template-columns: 1fr; }
 
-  .cdx-cohorts-nav { display: block; }   /* override desktop display:contents so the drawer box exists */
+  /* Beat cohorts.css's `.cdx-cohorts-nav { display: contents }` (same specificity,
+   * later in source) so the wrapper forms a real box the drawer can position. */
+  .cdx-three-pane .cdx-cohorts-nav { display: block; }
 
   .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav {
     position: fixed; top: 0; left: 0; bottom: 0;
