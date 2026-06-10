@@ -129,7 +129,7 @@
   .cdx-botnav {
     display: flex;
     position: fixed; left: 0; right: 0; bottom: 0;
-    height: 60px; z-index: 70;
+    height: 60px; z-index: 100;   /* above topbar (90) + sessions sidebar (80); modals sit higher */
     background: var(--surface);
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 16px var(--shadow);

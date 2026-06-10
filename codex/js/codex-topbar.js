@@ -321,7 +321,9 @@ export function init(opts) {
     a.appendChild(label);
     botnav.appendChild(a);
   });
-  container.appendChild(botnav);
+  // Append at body level (not inside .bs-app) so the fixed bar gets a clean
+  // top-level stacking context, above the page content on tall scrolling tabs.
+  document.body.appendChild(botnav);
 
   // Shared shell services; the global pill/bar toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });
