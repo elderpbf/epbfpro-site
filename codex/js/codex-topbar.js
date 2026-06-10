@@ -339,7 +339,7 @@ export function init(opts) {
   // left over a dim backdrop; backdrop tap, Escape, or picking a primary item
   // closes it. One shared wiring for every tab, each tab's sidebar matches
   // DRAWER_SEL; CSS owns the off-canvas transform and the phone breakpoint.
-  const DRAWER_SEL = '.cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar';
+  const DRAWER_SEL = '.cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav';
   const drawerBackdrop = document.createElement('div');
   drawerBackdrop.className = 'cdx-drawer-backdrop';
   document.body.appendChild(drawerBackdrop);
@@ -350,11 +350,14 @@ export function init(opts) {
   drawerBackdrop.addEventListener('click', _closeDrawer);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') _closeDrawer(); });
   // Picking a primary item inside the open drawer closes it to reveal the content.
+  // Capture phase: the tab's own click handler re-renders the sidebar (detaching
+  // the clicked node) before a bubble-phase listener would see it, so contains()
+  // would read false. Capture runs first, while the target is still attached.
   document.addEventListener('click', (e) => {
     if (!drawerBackdrop.classList.contains('is-open')) return;
     const d = _drawer();
-    if (d && d.contains(e.target) && e.target.closest('a[href], [data-act="pick"], [data-act="variaveis"], .cdx-item-row')) _closeDrawer();
-  });
+    if (d && d.contains(e.target) && e.target.closest('a[href], [data-act="pick"], [data-act="variaveis"], .cdx-item-row, [data-turma-slug]')) _closeDrawer();
+  }, true);
 
   // Shared shell services; the global pill/bar toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });

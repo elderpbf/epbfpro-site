@@ -93,6 +93,7 @@ test('codex-topbar renders the mobile hamburger + shared drawer mechanism', () =
   assert.match(src, /cdx-bank-sets/, 'drawer toggle targets the Banco sidebar');
   assert.match(src, /cdx-items-list/, 'drawer toggle targets the Content list');
   assert.match(src, /cdx-lessons-sidebar/, 'drawer toggle targets the Lessons sidebar');
+  assert.match(src, /cdx-cohorts-nav/, 'drawer toggle targets the Cohorts nav wrapper');
   assert.match(src, /is-open/, 'toggles an is-open state');
   assert.ok(!/onclick\s*=/.test(src), 'no inline onclick');
 });
@@ -103,7 +104,7 @@ test('codex.css gives the hamburger drawer a mobile-only layer', () => {
   assert.match(css, /\.cdx-drawer-backdrop\b/, 'styles the drawer backdrop');
   assert.match(css, /transform:\s*translateX\(-100%\)/, 'sidebar drawer is off-canvas by default');
   assert.match(css, /\.is-open/, 'has an is-open reveal state');
-  assert.match(css, /\.cdx-bank\s*\{[^}]*grid-template-columns:\s*1fr/, 'Banco grid collapses to one column on mobile');
+  assert.match(css, /\.cdx-bank[^{]*\{[^}]*grid-template-columns:\s*1fr/, 'Banco grid collapses to one column on mobile');
 });
 
 test('pill mode reveals ANY tab\'s sub-tabs on hover (per-tab map = one-less-click)', () => {

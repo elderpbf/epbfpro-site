@@ -196,6 +196,11 @@ function _renderShell() {
   _viewEl.innerHTML =
     '<div class="cdx-three-pane">' +
 
+      // Clients + Turmas live in one wrapper so phones can show them as a single
+      // off-canvas drawer. On desktop the wrapper is display:contents, so the two
+      // panes stay direct grid items and the 3-column layout is unchanged.
+      '<div class="cdx-cohorts-nav">' +
+
       // Column 1: Clients
       '<div class="cdx-pane">' +
         '<div class="cdx-pane-header">' +
@@ -216,6 +221,7 @@ function _renderShell() {
         '<div class="cdx-pane-body" id="' + IDS.turmasList + '">' +
           '<div class="cdx-empty">' + t('cohorts.select_client_prompt') + '</div>' +
         '</div>' +
+      '</div>' +
       '</div>' +
 
       // Column 3: Aulas

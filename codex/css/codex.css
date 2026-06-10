@@ -147,9 +147,13 @@
    * Escape, or picking an item closes it. */
   .cdx-hamburger { display: inline-flex; }
 
-  .cdx-bank { grid-template-columns: 1fr; }   /* main pane fills once the sidebar leaves the grid */
+  /* Collapse the multi-column tab layouts so the main pane fills once its sidebar
+   * leaves the flow (at THIS breakpoint, ahead of any tab's own 600px rule). */
+  .cdx-bank, .cdx-items-split, .cdx-three-pane { grid-template-columns: 1fr; }
 
-  .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar {
+  .cdx-cohorts-nav { display: block; }   /* override desktop display:contents so the drawer box exists */
+
+  .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav {
     position: fixed; top: 0; left: 0; bottom: 0;
     width: 84vw; max-width: 340px;
     z-index: 120;
@@ -159,7 +163,7 @@
     border-radius: 0;
     box-sizing: border-box;
   }
-  .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open {
+  .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open {
     transform: none;
     box-shadow: 4px 0 24px var(--shadow);
   }
