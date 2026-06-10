@@ -219,6 +219,18 @@ export function mount(root, ctx = {}) {
     // insert a free element (movable on any slide) of the given type
     insertElement(type) {
       const c = this.deck().canvas;
+      // "list" (and later "cards") is a STACK, not a single box: a free-placed asset
+      // whose items live in slots[listKey], so the whole topic machinery (select /
+      // edit / add / remove / reorder) drives them with no new selection code. Starts
+      // as a stack of one and grows via the container's ＋ like any list.
+      if (type === "list") {
+        const listKey = "ins" + uid();
+        this.cur().slots[listKey] = [{ id: uid(), text: t("slides.ed_new_topic") }];
+        this.record();
+        this.deck().assets.push({ id: uid(), type: "stack", variant: "list", listKey, x: c.w / 2 - 200, y: c.h / 2 - 60, w: 400, rot: 0, scope: "slide", slideId: this.cur().id });
+        this.refresh();
+        return;
+      }
       const base = { id: uid(), type, x: c.w / 2 - 110, y: c.h / 2 - 70, w: type === "title" ? 420 : 240, rot: 0, scope: "slide", slideId: this.cur().id };
       if (type === "image" || type === "photo" || type === "video") {
         if (type === "video") base.h = 140; // a <video> has no intrinsic box before metadata (D2)

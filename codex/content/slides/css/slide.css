@@ -226,3 +226,8 @@
 .cdx-deck-editor .asset.a-photo img { border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .28); }
 .cdx-deck-editor .atext { outline: none; font-size: calc(28px * var(--fontScale)); color: var(--ink); line-height: 1.3; min-width: 30px; }
 .cdx-deck-editor .atext.a-title { font-size: calc(52px * var(--fontScale)); font-weight: 900; }
+/* Free-placed list/card stack inserted via +Inserir: the slots list renders inside a
+   movable .asset box (geometry lives on the asset). Reuses the base .topiclist look,
+   just tightened for the smaller inserted box. */
+.cdx-deck-editor .asset.a-stack .topiclist { margin: 0; }
+.cdx-deck-editor .asset.a-stack .topiclist li { margin: 8px 0; }

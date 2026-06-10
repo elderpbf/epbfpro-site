@@ -3,7 +3,7 @@
 // controller calls these. The engine never switches on a layout id (it asks the
 // registry for the slide's layout and calls render()).
 import * as registry from "../layouts/registry.js";
-import { maskOverlay } from "./helpers.js";
+import { maskOverlay, topicList } from "./helpers.js";
 import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
 import { t } from "../../../../js/i18n.js";
 
@@ -34,8 +34,16 @@ function assetsFor(deck, slide) {
 }
 
 // the media inside a free element, by type (image/photo = <img>, video = <video>,
-// text/title = inline-editable block). GIFs animate natively in <img>.
-function assetMedia(a) {
+// text/title = inline-editable block, stack = a growable list bound to slots[listKey]).
+// GIFs animate natively in <img>.
+function assetMedia(a, slide) {
+  if (a.type === "stack") {
+    // The stack's items live in slots[listKey]; rendering the shared topicList there
+    // makes them selectable/editable/addable through the topic + container kinds with
+    // no bespoke wiring (the ul carries data-list=listKey, items are keyed by it).
+    const items = (slide && slide.slots && slide.slots[a.listKey]) || [];
+    return topicList(items, a.listKey);
+  }
   if (a.type === "text" || a.type === "title")
     return `<div class="atext a-${a.type} editable" data-edit="1" data-aid="${a.id}">${a.text || ""}</div>`;
   if (a.type === "video") return `<video src="${a.src}" playsinline controls></video>`;
@@ -49,7 +57,7 @@ function assetsHTML(deck, slide) {
   return `<div class="assetlayer">${assetsFor(deck, slide)
     .map((a) => {
       const hcss = a.type === "video" && a.h ? `height:${a.h}px;` : "";
-      return `<div class="asset a-${a.type || "image"}" data-asset="${a.id}" style="left:${a.x}px;top:${a.y}px;width:${a.w}px;${hcss}transform:rotate(${a.rot || 0}deg)">${assetMedia(a)}</div>`;
+      return `<div class="asset a-${a.type || "image"}" data-asset="${a.id}" style="left:${a.x}px;top:${a.y}px;width:${a.w}px;${hcss}transform:rotate(${a.rot || 0}deg)">${assetMedia(a, slide)}</div>`;
     })
     .join("")}</div>`;
 }

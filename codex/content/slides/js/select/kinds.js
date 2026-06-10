@@ -78,7 +78,9 @@ register({
   controls(app, sel, a) {
     if (!a) return [];
     const ctrls = isTextAsset(a) ? [...formatControls(), { type: "sep" }] : [];
-    ctrls.push({
+    // A stack's items live in THIS slide's slots, so it stays slide-scoped (no
+    // all/layout choice, which would render it on slides that lack its list).
+    if (a.type !== "stack") ctrls.push({
       type: "choice",
       id: "scope",
       value: a.scope || "slide",
@@ -115,7 +117,10 @@ register({
       danger: true,
       run(app2, sel2) {
         app2.record();
+        const gone = app2.deck().assets.find((x) => x.id === sel2.ref);
         app2.deck().assets = app2.deck().assets.filter((x) => x.id !== sel2.ref);
+        // A stack owns its slots list; drop it too so no orphan list lingers.
+        if (gone && gone.type === "stack" && gone.listKey) delete app2.cur().slots[gone.listKey];
         app2.selectClear();
         app2.refresh();
       },

@@ -897,6 +897,7 @@ export default {
   'slides.ed_image':          'Image',
   'slides.ed_photo':          'Photo',
   'slides.ed_video':          'Video',
+  'slides.ed_list':           'List',
   'slides.ed_font':           'Font',
   'slides.ed_font_scope_title': 'the font applies to',
   'slides.ed_scope_all':      'all',
