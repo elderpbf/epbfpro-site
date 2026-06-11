@@ -107,6 +107,51 @@ export function initAddSlide(app, root) {
     return grid;
   }
 
+  // A SAVED-layout card: the live-preview card (body click = insert) wrapped with a
+  // hover action bar that manages the template itself. "editar" inserts it for
+  // manual editing (the next save-as-layout overwrites it); "renomear" and
+  // "excluir" hit the library and rebuild the modal so the Salvos grid refreshes.
+  // Built-in cards have no action bar (they are not editable).
+  function savedCard(tpl) {
+    const wrap = document.createElement("div");
+    wrap.className = "as-card-wrap";
+    const slide = { ...tpl.slide, id: "__prev_" + tpl.id };
+    wrap.appendChild(card(tpl.name || tpl.layout, slide, () => app.insertTemplate(tpl)));
+    const acts = document.createElement("div");
+    acts.className = "as-actions";
+    const mkBtn = (glyph, title, onClick) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "as-act";
+      b.title = title;
+      b.textContent = glyph;
+      b.addEventListener("click", onClick);
+      acts.appendChild(b);
+    };
+    mkBtn("✎", t("slides.tpl_edit"), (e) => {
+      e.stopPropagation();
+      app.editTemplate(tpl);
+      close();
+    });
+    mkBtn("Aa", t("slides.tpl_rename"), async (e) => {
+      e.stopPropagation();
+      // eslint-disable-next-line no-alert
+      const name = window.prompt(t("slides.tpl_rename_prompt"), tpl.name || "");
+      if (name == null) return;
+      await app.renameTemplate(tpl.id, name);
+      open();
+    });
+    mkBtn("🗑", t("slides.tpl_delete"), async (e) => {
+      e.stopPropagation();
+      // eslint-disable-next-line no-alert
+      if (!window.confirm(t("slides.tpl_delete_confirm"))) return;
+      await app.deleteTemplate(tpl.id);
+      open();
+    });
+    wrap.appendChild(acts);
+    return wrap;
+  }
+
   async function open() {
     host.innerHTML = "";
     // Built-in layouts, grouped by category.
@@ -127,8 +172,7 @@ export function initAddSlide(app, root) {
       if (templates.length) {
         const grid = groupBlock(groupLabel("saved"));
         for (const tpl of templates) {
-          const slide = { ...tpl.slide, id: "__prev_" + tpl.id };
-          grid.appendChild(card(tpl.name || tpl.layout, slide, () => app.insertTemplate(tpl)));
+          grid.appendChild(savedCard(tpl));
         }
       }
     }
