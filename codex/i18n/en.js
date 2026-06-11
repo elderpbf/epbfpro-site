@@ -734,6 +734,8 @@ export default {
   'questions.host_bank_empty':           'No questions in this set.',
   'questions.host_bank_set_label':       'Set',
   'questions.host_bank_launch':          'Launch',
+  'questions.host_bank_edit':            'Edit',
+  'questions.host_bank_answer':          'answer',
   'questions.host_qr_no_turma':          'Link a turma (Trilha) to this session to generate the access QR.',
   'questions.host_audience_none':        'No audience',
   'questions.host_audience_unresolved':  'Pick an audience: this question has variables not filled in for it.',

@@ -110,6 +110,17 @@ test('live-host launches/closes via the facade and drives the element through sc
   assert.ok(!/['"]cpq-data['"]/.test(src), 'no legacy cpq-data document bus');
 });
 
+test('live-host bank picker is readable + editable (chevron expand, Editar prefills, options mark the correct answer)', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /cdx-bank-chevron/, 'each item carries an expand chevron');
+  assert.match(src, /cdx-bank-detail/, 'an expandable detail block (full text + options)');
+  assert.match(src, /data-act=["']bank-edit["']/, 'an explicit Editar action');
+  assert.match(src, /'bank-edit'\)[\s\S]{0,120}?_prefillFromBank/, 'Editar writes the question into the composer (prefill)');
+  assert.match(src, /is-correct/, 'the detail marks the correct option');
+  assert.match(src, /classList\.toggle\(\s*['"]is-open['"]/, 'clicking the row body toggles the readable detail');
+  assert.match(src, /host_bank_edit/, 'uses the Editar i18n key');
+});
+
 test('live-host bank picker renders set names from list_name (not [object Object])', () => {
   // list_question_sets returns rows of { list_name, count } with NO `name` field;
   // reading b.name fell back to the raw object -> "[object Object]" in the dropdown

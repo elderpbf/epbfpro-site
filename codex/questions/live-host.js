@@ -788,12 +788,50 @@ async function _loadBankQuestions(listName) {
   _bankMap = {};
   list.innerHTML = qs.map((q, i) => {
     _bankMap[i] = q;
-    // Show the resolved text for the selected audience so the host previews what
-    // students will see; the raw template stays in _bankMap for launch.
-    const shown = resolveQuestion(q, vals).question;
-    return '<div class="cdx-bank-item" data-bank-i="' + i + '"><span class="cdx-bank-item-text">' + _esc(shown) + '</span>' +
-      '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button></div>';
+    // One-line row: chevron + truncated text + Editar/Lançar. Clicking the row
+    // body (chevron or text) expands it to the full question text + options with
+    // the correct answer marked, so the host can read what a question is before
+    // launching. The resolved text/options preview what students will see (the raw
+    // template stays in _bankMap for launch). Editar writes it into the composer.
+    const resolved = resolveQuestion(q, vals);
+    return '<div class="cdx-bank-item" data-bank-i="' + i + '">' +
+      '<div class="cdx-bank-item-head">' +
+        '<span class="cdx-bank-chevron" aria-hidden="true">▸</span>' +
+        '<span class="cdx-bank-item-text">' + _esc(resolved.question) + '</span>' +
+        '<button class="cdx-btn cdx-bank-edit" data-act="bank-edit" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_edit')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button>' +
+      '</div>' +
+      _bankDetailHtml(q, resolved) +
+    '</div>';
   }).join('');
+}
+
+// The expandable detail under a bank row: type tag, the correct answer (host-only),
+// and the option list with the correct one marked. Text types carry no options, so
+// only the type shows; the full question text appears by letting the head text wrap
+// when the row is open (CSS). Reuses the shared correct-answer resolver.
+function _bankDetailHtml(q, resolved) {
+  const type = q.type || 'mc';
+  const isOpt = ['mc', 'tf', 'poll'].includes(type);
+  const opts = Array.isArray(resolved.options) ? resolved.options
+    : ((typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []));
+  const correctVal = correctForLaunch(q);
+  let correctIdx = [];
+  if (Array.isArray(correctVal)) correctIdx = correctVal.map(Number);
+  else if (correctVal !== null && correctVal !== undefined && correctVal !== '') { const n = parseInt(correctVal, 10); if (Number.isInteger(n)) correctIdx = [n]; }
+  const resp = (type !== 'poll' && correctIdx.length)
+    ? (' · ' + t('questions.host_bank_answer') + ': ' + correctIdx.map((ix) => LETTERS[ix] || (ix + 1)).join(', ')) : '';
+  let optsHtml = '';
+  if (isOpt && Array.isArray(opts) && opts.length) {
+    optsHtml = '<div class="cdx-bank-detail-opts">' + opts.map((o, ix) => {
+      const ok = correctIdx.indexOf(ix) !== -1;
+      return '<div class="cdx-bank-opt' + (ok ? ' is-correct' : '') + '">' + _esc((LETTERS[ix] || (ix + 1)) + ') ' + o) + (ok ? ' ✓' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  return '<div class="cdx-bank-detail">' +
+    '<div class="cdx-bank-detail-meta">' + _esc((TYPE_TAGS[type] || type) + resp) + '</div>' +
+    optsHtml +
+  '</div>';
 }
 
 function _safeParse(s) { try { return JSON.parse(s); } catch (_) { return []; } }
@@ -945,6 +983,7 @@ export function mount(containerEl, ctx) {
       if (act === 'qr') return _openQr();
       if (act === 'bank-toggle') { const p = _q('#cdx-bank-panel'); const open = p.classList.toggle('open'); btn.classList.toggle('open', open); if (open) _loadBankSets(); return; }
       if (act === 'bank-launch') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _launchFromBank(q); return; }
+      if (act === 'bank-edit') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); return; }
       if (act === 'reset-layout') { _layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); _applyLayout(); _saveLayout(); return; }
     }
     const col = e.target.closest('[data-toggle-col]');
@@ -985,8 +1024,11 @@ export function mount(containerEl, ctx) {
     _loadBankQuestions(setSel ? setSel.value : '');
   });
   _on(_q('#cdx-bank-list'), 'click', (e) => {
-    const item = e.target.closest('[data-bank-i]');
-    if (item && !e.target.closest('[data-act="bank-launch"]')) { const q = _bankMap[item.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); }
+    // Editar/Lançar are data-act buttons handled by the host click handler; a click
+    // on the row body (chevron or text) just expands/collapses the readable detail.
+    if (e.target.closest('[data-act]')) return;
+    const item = e.target.closest('.cdx-bank-item');
+    if (item) item.classList.toggle('is-open');
   });
   _on(_q('#cdx-sqa-response'), 'input', _scheduleSqaSave);
   _on(_q('#cdx-auto-on'), 'change', (e) => { _auto.enabled = !!e.target.checked; _saveAuto(); _syncAutoUI(); });
