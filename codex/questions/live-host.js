@@ -738,7 +738,11 @@ async function _loadBankSets() {
   let res;
   try { res = await api.listSets(); } catch (e) { notice.internal(e); res = null; }
   const banks = (res && res.banks) || [];
-  sel.innerHTML = '<option value="">' + _esc(t('questions.host_bank_pick')) + '</option>' + banks.map((b) => '<option value="' + _esc(b.name || b) + '">' + _esc(b.name || b) + '</option>').join('');
+  // list_question_sets returns rows of { list_name, count }; read list_name (same
+  // as the Bank sub-tab). Reading b.name fell back to the raw object, rendering
+  // "[object Object]" and setting that as the option value, so no questions loaded.
+  sel.innerHTML = '<option value="">' + _esc(t('questions.host_bank_pick')) + '</option>' +
+    banks.map((b) => { const nm = (b && (b.list_name || b.name)) || ''; return '<option value="' + _esc(nm) + '">' + _esc(nm) + '</option>'; }).join('');
 }
 
 // The audience config (variables x audiences matrix) is loaded once per mount.

@@ -110,6 +110,15 @@ test('live-host launches/closes via the facade and drives the element through sc
   assert.ok(!/['"]cpq-data['"]/.test(src), 'no legacy cpq-data document bus');
 });
 
+test('live-host bank picker renders set names from list_name (not [object Object])', () => {
+  // list_question_sets returns rows of { list_name, count } with NO `name` field;
+  // reading b.name fell back to the raw object -> "[object Object]" in the dropdown
+  // AND as the option value, so selecting a set loaded no questions.
+  const src = read('../questions/live-host.js');
+  assert.match(src, /b\.list_name/, 'bank picker reads list_name (the field list_question_sets returns)');
+  assert.ok(!/b\.name\s*\|\|\s*b\b/.test(src), 'no fallback to the raw bank object (the [object Object] bug)');
+});
+
 test('relaunch/bank-launch keeps the correct answer (resolves it from history correct_answers arrays too)', () => {
   // Bug: _launchFromBank read only the scalar correct_answer, so relaunching a
   // closed question (history items expose correct_answers as an array, no scalar)
