@@ -110,6 +110,14 @@ test('live-host launches/closes via the facade and drives the element through sc
   assert.ok(!/['"]cpq-data['"]/.test(src), 'no legacy cpq-data document bus');
 });
 
+test('live host fills the width by dropping the shell side padding (scoped, desktop only)', () => {
+  const css = read('../questions/questions.css');
+  // Scoped via :has(.cdx-host) so the Sessions list / Bank / other tabs keep their
+  // padding; only the live host goes edge-to-edge.
+  assert.match(css, /\.cdx-view:has\(\.cdx-host\)\s*\{[^}]*padding-left:\s*0/, 'host view drops .cdx-view left padding');
+  assert.match(css, /\.cdx-view:has\(\.cdx-host\)\s*\{[^}]*padding-right:\s*0/, 'host view drops .cdx-view right padding');
+});
+
 test('live-host bank picker is readable + editable (chevron expand, Editar prefills, options mark the correct answer)', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /cdx-bank-chevron/, 'each item carries an expand chevron');

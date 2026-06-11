@@ -1011,6 +1011,17 @@
   .cdx-hd-resizer { display: none; }
 }
 
+/* Live host fills the width: drop .cdx-view's side padding when the host is
+   mounted (scoped via :has so the Sessions list / Bank / other tabs keep theirs,
+   and only on desktop where the 3-column layout shows). The bar stays full-bleed;
+   the outer columns keep a small 8px gutter so the cards don't touch the edge. */
+@media (min-width: 901px) {
+  .cdx-view:has(.cdx-host) { padding-left: 0; padding-right: 0; }
+  .cdx-view:has(.cdx-host) .cdx-host-bar { margin-left: 0; margin-right: 0; }
+  .cdx-view:has(.cdx-host) .cdx-hd-col-left { padding-left: 8px; }
+  .cdx-view:has(.cdx-host) .cdx-hd-col-right { padding-right: 8px; }
+}
+
 /* =========================================================
    Q2 faithful host port: session bar extras (name, Trilha,
    not-hosted note, Trilha modal) + session-card actions.
