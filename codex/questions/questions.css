@@ -898,6 +898,10 @@
 .cdx-bank-detail { display: none; margin-top: 0.4rem; padding: 0.4rem 0 0.1rem calc(0.85rem + 0.4rem); border-top: 1px dashed var(--border); }
 .cdx-bank-item.is-open .cdx-bank-detail { display: block; }
 .cdx-bank-detail-meta { font-size: 0.76rem; color: var(--text-secondary); }
+.cdx-bank-class { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; vertical-align: 1px; }
+.cdx-bank-class-generic { background: rgba(127,127,127,.16); color: var(--text-secondary); }
+.cdx-bank-class-variable { background: rgba(20,184,166,.16); color: var(--primary); }
+.cdx-bank-class-unique { background: rgba(217,119,6,.18); color: #d97706; }
 .cdx-bank-detail-opts { margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.18rem; }
 .cdx-bank-opt { font-size: 0.8rem; color: var(--text-secondary); }
 .cdx-bank-opt.is-correct { color: var(--primary); font-weight: 600; }

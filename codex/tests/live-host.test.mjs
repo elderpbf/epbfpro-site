@@ -130,6 +130,16 @@ test('live-host bank picker is readable + editable (chevron expand, Editar prefi
   assert.match(src, /is-correct/, 'the detail marks the correct option');
   assert.match(src, /classList\.toggle\(\s*['"]is-open['"]/, 'clicking the row body toggles the readable detail');
   assert.match(src, /host_bank_edit/, 'uses the Editar i18n key');
+  assert.match(src, /questionType\s*\(/, 'the detail tags the class (generic/variable/specific)');
+  assert.match(src, /cdx-bank-class/, 'renders the class tag');
+});
+
+test('bank class-tag i18n keys exist in BOTH dictionaries', async () => {
+  const pt = (await import('../i18n/pt.js')).default;
+  const en = (await import('../i18n/en.js')).default;
+  for (const k of ['questions.host_bank_class_generic', 'questions.host_bank_class_variable', 'questions.host_bank_class_unique']) {
+    assert.ok(k in pt, `pt has ${k}`); assert.ok(k in en, `en has ${k}`);
+  }
 });
 
 test('live-host bank picker renders set names from list_name (not [object Object])', () => {

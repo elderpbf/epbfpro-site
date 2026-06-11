@@ -821,6 +821,17 @@ function _bankDetailHtml(q, resolved) {
   else if (correctVal !== null && correctVal !== undefined && correctVal !== '') { const n = parseInt(correctVal, 10); if (Number.isInteger(n)) correctIdx = [n]; }
   const resp = (type !== 'poll' && correctIdx.length)
     ? (' · ' + t('questions.host_bank_answer') + ': ' + correctIdx.map((ix) => LETTERS[ix] || (ix + 1)).join(', ')) : '';
+  // Class tag (generic / variable / specific): tells the host what kind of bank
+  // question it is. A "specific" (unique) one also names the audience it belongs
+  // to, so it's clear why an audience filter hides or shows it.
+  const cls = questionType(q); // 'generic' | 'variable' | 'unique'
+  const clsLabel = cls === 'unique' ? t('questions.host_bank_class_unique')
+    : (cls === 'variable' ? t('questions.host_bank_class_variable') : t('questions.host_bank_class_generic'));
+  let clsAud = '';
+  if (cls === 'unique' && q.audience) {
+    const auds = (_audienceConfig && _audienceConfig.audiences) || {};
+    clsAud = ' · ' + ((auds[q.audience] && auds[q.audience].label) || q.audience);
+  }
   let optsHtml = '';
   if (isOpt && Array.isArray(opts) && opts.length) {
     optsHtml = '<div class="cdx-bank-detail-opts">' + opts.map((o, ix) => {
@@ -829,7 +840,10 @@ function _bankDetailHtml(q, resolved) {
     }).join('') + '</div>';
   }
   return '<div class="cdx-bank-detail">' +
-    '<div class="cdx-bank-detail-meta">' + _esc((TYPE_TAGS[type] || type) + resp) + '</div>' +
+    '<div class="cdx-bank-detail-meta">' +
+      '<span class="cdx-bank-class cdx-bank-class-' + cls + '">' + _esc(clsLabel) + '</span> ' +
+      _esc((TYPE_TAGS[type] || type) + clsAud + resp) +
+    '</div>' +
     optsHtml +
   '</div>';
 }
