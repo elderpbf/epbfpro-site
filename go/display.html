@@ -172,7 +172,12 @@
       return;
     }
     if (cpq) cpq.style.display = 'none';
-    document.getElementById('qa-student-name').textContent = aq.student_name || '';
+    // Audience label seam (mirror of codex/questions/identity.js audienceLabel):
+    // anonymous device handles (Anon_*) collapse to "Anônimo" on the public display;
+    // a typed/real name (legacy ClassPulse join) shows as-is.
+    var _qaNm = aq.student_name || '';
+    document.getElementById('qa-student-name').textContent =
+      (!_qaNm || /^anon[_-]/i.test(_qaNm)) ? 'Anônimo' : _qaNm;
     document.getElementById('qa-student-text').textContent = aq.text || '';
     const ansWrap = document.getElementById('qa-student-answer-wrap');
     const ansText = (aq.student_answer || '').trim();

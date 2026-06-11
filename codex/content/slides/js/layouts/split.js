@@ -8,6 +8,7 @@ import { uid } from "../core/schema.js";
 export default {
   id: "split",
   label: "Imagem + tópicos",
+  group: "media",
   defaults: () => ({
     flip: false,
     ratio: 0.5,
@@ -15,7 +16,7 @@ export default {
     image: null,
     topics: ["Tópico um", "Tópico dois", "Tópico três"].map((text) => ({ id: uid(), text })),
   }),
-  reveals: (s) => s.topics.length,
+  reveals: (s) => Math.max(0, ...s.topics.map((t, i) => t.step != null ? t.step : (i + 1))),
   render: (s) => `${bar}<div class="L-split ${s.flip ? "flip" : ""}" style="grid-template-columns:${
     (s.ratio || 0.5) * 100
   }% ${(1 - (s.ratio || 0.5)) * 100}%">

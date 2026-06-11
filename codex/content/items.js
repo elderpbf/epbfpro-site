@@ -35,11 +35,17 @@ let _previewReq = 0;             // monotonic token: only the latest fetch rende
 let _cleanup = [];
 
 // ── Pure rule (exported for tests) ──────────────────────────────────────────
-// The library grid hides items that belong to imported course content
-// (set_id), tarefas, conteudo sections, and Drive files.
+// Types that are NOT standalone library items: imported course-content sections,
+// tasks, and synced Drive files. The library grid hides them AND the new-item
+// flows must not offer them; otherwise the AI creator can classify into one (e.g.
+// `conteudo`) and the item gets saved but then filtered out of the grid, which
+// reads as "create did nothing". One source of truth so the two can't drift.
+const NON_LIBRARY_TYPES = ['tarefa', 'conteudo', 'drive_file'];
+
+// The library grid hides set members and the non-library types above.
 export function filterLibraryItems(items) {
   return (items || []).filter((it) =>
-    !it.set_id && it.type !== 'tarefa' && it.type !== 'conteudo' && it.type !== 'drive_file');
+    !it.set_id && NON_LIBRARY_TYPES.indexOf(it.type) < 0);
 }
 
 // Master-detail selection (exported for tests). The preview always shows a
@@ -523,7 +529,7 @@ function _openItem(id) {
 function _newItem() {
   const bd = _openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
   itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
-    types: _types,
+    types: _types.filter((ty) => NON_LIBRARY_TYPES.indexOf(ty.slug) < 0),
     tags: _tags,
     titleLabel: t('content.new_item_step1'),
     closeLabel: t('content.close'),
@@ -551,7 +557,7 @@ function _openItemEditorFull(item, prefill, aiContext) {
     titleLabel: isEdit ? t('content.edit_item') : t('content.new_item_step2'),
     saveLabel: isEdit ? t('content.save') : t('content.create'),
     closeLabel: t('content.close'),
-    excludeTypes: isEdit ? [] : ['conteudo', 'tarefa'],
+    excludeTypes: isEdit ? [] : NON_LIBRARY_TYPES,
     onCreateType: _openTypeCreateForm,
     onSave: () => {
       _closeModal(bd);

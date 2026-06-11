@@ -46,8 +46,18 @@ export function resolveStyleObj(slots, ref) {
  * run a one-time upgrade and never re-run it. v2 = D1 stable identity:
  * cards carry an id, topics are {id,text}, geometry overrides + per-item text
  * style are keyed/stored by identity, not array position.
+ * v3 = explicit step field on revealable items (topics + cards): integer where
+ * 0 = always shown and 1..N = reveal order; derived from array position on first
+ * migration so existing decks render identically.
+ * v4 = composable cards: the card `mode` (title|text|image|image-text XOR) folds
+ * into an OPEN `parts` map {image?,title?,body?,…} where an ABSENT key means OFF,
+ * so a part added later renders on old cards only when toggled, with no further
+ * migration. Existing cards map 1:1 (text->{body}, image-text->{image,body}, …).
+ * v5 = card size is per-ROW: a stack sizes as a unit (slots.rowW keyed by row),
+ * so any legacy per-card flow width (overrides["cards.<id>"]={w,flow}) folds into
+ * its row and the per-card override is dropped. Cards then render at the row size.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 5;
 
 /**
  * Upgrade a deck in place to the current schema (idempotent, version-gated).
@@ -66,6 +76,9 @@ export function migrateDeck(deck) {
   if (!deck) return deck;
   const from = deck.schemaVersion || 1;
   const repoint = from < 2; // the one-shot positional -> identity remap
+  const addSteps = from < 3; // one-shot: assign step=i+1 to items lacking it
+  const dropMode = from < 4; // one-shot: retire the card `mode` field (folded into parts)
+  const foldRowW = from < 5; // one-shot: fold per-card card widths into per-row slots.rowW
 
   for (const slide of deck.slides || []) {
     const slots = slide.slots || {};
@@ -76,11 +89,29 @@ export function migrateDeck(deck) {
       slots.cards.forEach((c, i) => {
         if (!c) return;
         if (c.id == null) c.id = uid();
+        if (c.parts == null) c.parts = modeToParts(c.mode); // always-ensure, mirrors the id ensure
+        if (dropMode) delete c.mode;                        // one-shot: the field is retired
         if (repoint) {
           moveKey(ov, `cards.${i}`, `cards.${c.id}`);
           moveStyle(ts, `cards.${i}.text`, c);
         }
+        if (addSteps && c.step == null) c.step = i + 1;
       });
+      if (foldRowW) {
+        const rowW = slots.rowW || {};
+        slots.cards.forEach((c) => {
+          if (!c) return;
+          const o = ov[`cards.${c.id}`];
+          // Only a PURE basis override (the flowCard.write shape {w, flow:true})
+          // folds; a full {x,y,w,h} box that happens to carry flow is left alone.
+          if (o && o.flow && o.w != null && o.x == null && o.y == null && o.h == null) {
+            const r = c.row || 0;
+            if (rowW[r] == null) rowW[r] = o.w; // first card's width sets its row
+            delete ov[`cards.${c.id}`];          // the per-card override is retired
+          }
+        });
+        if (Object.keys(rowW).length) slots.rowW = rowW;
+      }
     }
 
     if (Array.isArray(slots.topics)) {
@@ -91,6 +122,7 @@ export function migrateDeck(deck) {
           moveKey(ov, `topics.${i}`, `topics.${obj.id}`);
           moveStyle(ts, `topics.${i}`, obj);
         }
+        if (addSteps && obj.step == null) obj.step = i + 1;
         return obj;
       });
     }
@@ -101,6 +133,18 @@ export function migrateDeck(deck) {
 
   deck.schemaVersion = SCHEMA_VERSION;
   return deck;
+}
+
+/** Map a legacy card `mode` (title|text|image|image-text) onto the composable
+ *  `parts` map. Unknown/absent modes fall back to a body-only card, so a malformed
+ *  legacy card still renders something. */
+function modeToParts(mode) {
+  switch (mode) {
+    case "title": return { title: true };
+    case "image": return { image: true };
+    case "image-text": return { image: true, body: true };
+    default: return { body: true };
+  }
 }
 
 /** Move an override entry from a positional key to an identity key (if present). */

@@ -227,12 +227,22 @@
     try {
       var existing = localStorage.getItem('bs_anon_id');
       if (existing) return existing;
-      var fresh = 'Anon_' + Math.random().toString(36).slice(2, 5).toUpperCase();
+      // 6 random chars (was 3): collision-safe for the connected-count, which
+      // counts DISTINCT student_name. Existing devices keep their stored handle.
+      var fresh = 'Anon_' + Math.random().toString(36).slice(2, 8).toUpperCase();
       localStorage.setItem('bs_anon_id', fresh);
       return fresh;
     } catch (_) {
       return 'Anon';
     }
+  }
+
+  // Audience-facing label seam (mirror of codex/questions/identity.js audienceLabel,
+  // duplicated here because this legacy IIFE cannot import the Codex ES module):
+  // anonymous device handles (Anon_*) collapse to "Anônimo"; a typed/real name shows.
+  function _audienceLabel(name) {
+    var s = String(name == null ? '' : name).trim();
+    return (!s || s === 'Anônimo' || /^anon[_-]/i.test(s)) ? 'Anônimo' : s;
   }
 
   function _showState(name) {
@@ -387,7 +397,7 @@
         _showIdle();
         return;
       }
-      var metaParts = [aq.student_name || 'Anônimo', _fmtTime(aq.student_time)].filter(Boolean);
+      var metaParts = [_audienceLabel(aq.student_name), _fmtTime(aq.student_time)].filter(Boolean);
       if (els.sqaMeta) els.sqaMeta.textContent = metaParts.join(' · ');
       if (els.sqaText) els.sqaText.textContent = aq.text || '';
       var ans = (aq.student_answer || '').trim();

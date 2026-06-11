@@ -16,7 +16,7 @@ import { questions as api, ai, audiences as audiencesApi } from '../js/codex-api
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
 import { mountComposer, setAudienceConfig } from './question-composer.js';
-import { questionType, lintConfig } from '../js/audiences.js';
+import { questionType, lintConfig, parseAudienceDraft, slug } from '../js/audiences.js';
 
 let _viewEl = null;
 let _cleanup = [];
@@ -46,6 +46,9 @@ let _importItems = [];
 let _importTarget = '';
 let _audienceConfig = null;   // { version, variables[], audiences{} } for typed questions
 let _audTab = 'audiences';    // matrix-manager active tab
+let _classFilter = 'all';     // conjunto question-list filter: all|generic|variable|unique
+let _variaveisView = false;   // cross-bank Variaveis pseudo-conjunto active
+let _variaveisItems = [];     // collected variable questions across all banks
 
 const _DEFAULT_VARS = ['workspace', 'actor_role', 'deliverable', 'domain'];
 function _emptyConfig() { return { version: 1, variables: _DEFAULT_VARS.slice(), audiences: {} }; }
@@ -53,11 +56,8 @@ function _audienceLabel(key) {
   const auds = (_audienceConfig && _audienceConfig.audiences) || {};
   return (auds[key] && auds[key].label) || key;
 }
-// Slug an audience label to an ascii key (strip accents, lowercase, underscores).
-function _slug(s) {
-  return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-}
+// Audience-label -> ascii key is the shared `slug` from js/audiences.js (same
+// key for manual add and AI add).
 
 // Pure: move an item up/down, immutable, clamped at the ends.
 export function moveInArray(arr, index, dir) {
@@ -65,6 +65,60 @@ export function moveInArray(arr, index, dir) {
   const j = dir === 'up' ? index - 1 : index + 1;
   if (index < 0 || index >= out.length || j < 0 || j >= out.length) return out;
   const tmp = out[index]; out[index] = out[j]; out[j] = tmp;
+  return out;
+}
+
+// Pure: summarize which banks an import will touch. One row per target bank
+// (sorted by name), with its question count and whether it is NEW (not among
+// existingNames). Items with no list_name fall back to textTarget; items with no
+// target at all are dropped. Drives the "banks affected" review summary so the
+// user sees the bank structure, not just a flat question list.
+export function importBankSummary(items, textTarget, existingNames) {
+  const existing = new Set(existingNames || []);
+  const counts = new Map();
+  (items || []).forEach((q) => {
+    const name = (q && q.list_name) || textTarget || '';
+    if (!name) return;
+    counts.set(name, (counts.get(name) || 0) + 1);
+  });
+  return Array.from(counts.keys()).sort().map((name) => ({
+    name, count: counts.get(name), isNew: !existing.has(name),
+  }));
+}
+
+// Pure: keep only the questions of one class ('generic'|'variable'|'unique'),
+// or all of them when cls is 'all' (or anything else). Class comes from the
+// shared questionType resolver, so the chip filter and the cross-bank view agree
+// on what "variable" means.
+export function filterByClass(questions, cls) {
+  const arr = Array.isArray(questions) ? questions : [];
+  if (cls !== 'generic' && cls !== 'variable' && cls !== 'unique') return arr.slice();
+  return arr.filter((q) => questionType(q) === cls);
+}
+
+// Pure: tally questions per class for the chip count badges. `all` is the total.
+export function classCounts(questions) {
+  const out = { all: 0, generic: 0, variable: 0, unique: 0 };
+  (Array.isArray(questions) ? questions : []).forEach((q) => {
+    out.all += 1;
+    out[questionType(q)] += 1;
+  });
+  return out;
+}
+
+// Pure: flatten every variable-class question across the loaded banks into one
+// list, annotating each with its source bank (`_sourceBank`). Bank order then
+// question order is preserved; non-variable questions and empty banks drop out.
+// Drives the cross-bank Variaveis view, where templates scattered across thematic
+// banks are gathered in one place (editing routes back to the source bank).
+export function collectVariable(banksData) {
+  const out = [];
+  (Array.isArray(banksData) ? banksData : []).forEach((bank) => {
+    const name = bank && bank.list_name;
+    (bank && Array.isArray(bank.questions) ? bank.questions : []).forEach((q) => {
+      if (questionType(q) === 'variable') out.push(Object.assign({ _sourceBank: name }, q));
+    });
+  });
   return out;
 }
 
@@ -246,8 +300,13 @@ function _renderSets() {
       '<button class="cdx-bank-iconbtn" data-act="newset-cancel" type="button" aria-label="x">✗</button>' +
     '</div>';
   }
-  if (_banks.length) html += _banks.map(_setRow).join('');
-  else if (!_newSetActive) html += '<div class="cdx-bank-empty">' + t('questions.bank_empty_sets') + '</div>';
+  if (_banks.length) {
+    // Synthetic pseudo-conjunto: every variable question across all banks.
+    html += '<button class="cdx-bank-set cdx-bank-set--variaveis' + (_variaveisView ? ' active' : '') + '" data-act="variaveis" type="button">' +
+      '<span class="cdx-bank-set-name">⚡ ' + t('questions.bank_variaveis_view') + '</span>' +
+    '</button>';
+    html += _banks.map(_setRow).join('');
+  } else if (!_newSetActive) html += '<div class="cdx-bank-empty">' + t('questions.bank_empty_sets') + '</div>';
   el.innerHTML = html;
   if (_newSetActive) { const inp = el.querySelector('.cdx-bank-newset-input'); if (inp) inp.focus(); }
 }
@@ -356,15 +415,90 @@ function _moveBar() {
   '</div>';
 }
 
+// Class filter chips (Todas / Genéricas / Variáveis / Únicas), each with a live
+// count badge. Hidden in reorder/move mode, where the list must stay whole so
+// drag indices map to the full _questions array.
+function _filterChips() {
+  if (_editBank) return '';
+  const counts = classCounts(_questions);
+  const chip = (key, label) => '<button class="cdx-bank-chip' + (_classFilter === key ? ' active' : '') + '" data-act="filter-class" data-class="' + key + '" type="button">' +
+    label + ' <span class="cdx-bank-chip-count">' + counts[key] + '</span></button>';
+  return '<div class="cdx-bank-chips">' +
+    chip('all', t('questions.bank_filter_all')) +
+    chip('generic', t('questions.bank_filter_generic')) +
+    chip('variable', t('questions.bank_filter_variable')) +
+    chip('unique', t('questions.bank_filter_unique')) +
+  '</div>';
+}
+
 function _renderConjunto() {
   const body = _q('#cdx-bank-body');
   if (!body) return;
-  const list = _questions.length
-    ? _questions.map(_qCard).join('')
-    : '<div class="cdx-bank-empty">' + t('questions.bank_empty_questions') + '</div>';
-  body.innerHTML = _conjuntoHeader() + _renameRow() + _qHeader() + _moveBar() +
+  const shown = _editBank ? _questions : filterByClass(_questions, _classFilter);
+  const emptyMsg = (_questions.length && _classFilter !== 'all')
+    ? t('questions.bank_filter_empty')
+    : t('questions.bank_empty_questions');
+  const list = shown.length
+    ? shown.map(_qCard).join('')
+    : '<div class="cdx-bank-empty">' + emptyMsg + '</div>';
+  body.innerHTML = _conjuntoHeader() + _renameRow() + _qHeader() + _filterChips() + _moveBar() +
     '<div class="cdx-bank-qlist' + (_editBank ? ' cdx-bank-qlist--editing' : '') + '">' + list + '</div>';
   if (_renaming) { const inp = body.querySelector('.cdx-bank-rename-input'); if (inp) { inp.focus(); inp.select(); } }
+}
+
+// ---- Cross-bank Variaveis view (synthetic pseudo-conjunto) ----
+// A read/navigate aggregate: lists every variable question across all banks with
+// its source-bank badge. Editing routes back to the source bank (the goto action),
+// so this view never mutates a question in place.
+function _variavelCard(q) {
+  return '<div class="cdx-q cdx-q--variavel">' +
+    '<button class="cdx-q-srcbank" data-act="goto" data-set="' + _esc(q._sourceBank) + '" type="button">' + t('questions.bank_srcbank') + ' ' + _esc(q._sourceBank) + '</button>' +
+    '<div class="cdx-q-text">' + _esc(q.question) + '</div>' +
+    _optionPreview(q) +
+    '<div class="cdx-q-foot">' + _typeBadge(q.type) + _classBadge(q) +
+      '<button class="cdx-btn cdx-btn-sm" data-act="goto" data-set="' + _esc(q._sourceBank) + '" type="button">' + t('questions.bank_goto_set') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function _renderVariaveis() {
+  const body = _q('#cdx-bank-body');
+  if (!body) return;
+  const head = '<div class="cdx-bank-conjunto-header">' +
+    '<h2 class="cdx-bank-conjunto-title">' + t('questions.bank_variaveis_view') + '</h2>' +
+  '</div>';
+  const hint = '<p class="cdx-bank-variaveis-hint">' + t('questions.bank_variaveis_hint') + '</p>';
+  const list = _variaveisItems.length
+    ? _variaveisItems.map(_variavelCard).join('')
+    : '<div class="cdx-bank-empty">' + t('questions.bank_variaveis_empty') + '</div>';
+  body.innerHTML = head + hint + '<div class="cdx-bank-qlist">' + list + '</div>';
+}
+
+async function _loadVariaveis() {
+  const body = _q('#cdx-bank-body');
+  if (!body) return;
+  body.innerHTML = '<div class="cdx-bank-loading">' + t('questions.bank_loading') + '</div>';
+  if (!_banks.length) {
+    let r; try { r = await api.listSets(); } catch (e) { notice.internal(e); r = null; }
+    if (!_viewEl || !_variaveisView) return;
+    _banks = (r && r.banks) || [];
+  }
+  const banksData = [];
+  for (const b of _banks) {
+    let res; try { res = await api.getQuestions({ list_name: b.list_name }); } catch (e) { notice.internal(e); res = null; }
+    if (!_viewEl || !_variaveisView) return;
+    banksData.push({ list_name: b.list_name, questions: (res && res.questions) || [] });
+  }
+  _variaveisItems = collectVariable(banksData);
+  _renderVariaveis();
+}
+
+function _selectVariaveis() {
+  _variaveisView = true; _currentSet = null;
+  _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
+  _editBank = false; _selected.clear(); _dragId = null; _classFilter = 'all';
+  _renderSets();
+  _loadVariaveis();
 }
 
 async function _loadQuestions() {
@@ -380,6 +514,7 @@ async function _loadQuestions() {
 
 function _selectSet(name) {
   _currentSet = name;
+  _variaveisView = false; _classFilter = 'all';
   _renaming = false; _confirmDelSet = false; _confirmDelQ = null;
   _editBank = false; _selected.clear(); _dragId = null;
   _renderSets();
@@ -697,12 +832,50 @@ async function _importProcess() {
   _importItems = items;
   _renderImportReview();
 }
+// Read a picked .json file into the import box and go straight to review. A
+// picked file is always a JSON envelope/array, so force JSON mode.
+function _loadImportFile(file) {
+  const err = _q('.cdx-bank-import-err');
+  if (err) err.textContent = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const inp = _q('.cdx-bank-import-in');
+    if (inp) inp.value = String(reader.result || '');
+    _importMode = 'json';
+    _syncImportTabs();
+    _importProcess();
+  };
+  reader.onerror = (e) => { notice.internal(e); if (err) err.textContent = t('questions.bank_import_file_error'); };
+  reader.readAsText(file);
+}
+
+// Render the "banks affected" summary above the question list: each target bank,
+// its incoming count, and a new/existing tag.
+function _renderImportBanks(items) {
+  const el = _q('#cdx-bank-import-banks');
+  if (!el) return;
+  const tgtInput = _q('.cdx-bank-import-target');
+  const textTarget = (tgtInput && tgtInput.value.trim()) || _currentSet || '';
+  const rows = importBankSummary(items, textTarget, _banks.map((b) => b.list_name));
+  if (!rows.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="cdx-bank-import-banks-head">' + t('questions.bank_import_banks_head') + '</div>' +
+    '<ul class="cdx-bank-import-banklist">' +
+    rows.map((r) => '<li class="cdx-bank-import-bankrow' + (r.isNew ? ' cdx-bank-import-bankrow--new' : '') + '">' +
+      '<span class="cdx-bank-import-bankname">' + _esc(r.name) + '</span>' +
+      '<span class="cdx-bank-import-bankcount">' + r.count + '</span>' +
+      '<span class="cdx-bank-import-banktag">' + t(r.isNew ? 'questions.bank_import_bank_new' : 'questions.bank_import_bank_existing') + '</span>' +
+    '</li>').join('') +
+    '</ul>';
+}
+
 function _renderImportReview() {
   _q('#cdx-bank-import-config').hidden = true;
   _q('#cdx-bank-import-review').hidden = false;
   _q('[data-act="import-process"]').hidden = true;
   _q('[data-act="import-discard"]').hidden = false;
   _q('[data-act="import-save"]').hidden = false;
+  _renderImportBanks(_importItems);
   _q('#cdx-bank-import-list').innerHTML = _reviewItemsHTML(_importItems);
 }
 async function _importSave() {
@@ -778,6 +951,10 @@ function _renderAudiencesTab() {
     '<div class="cdx-aud-addrow">' +
       '<input class="cdx-input cdx-aud-new-label" placeholder="' + _esc(t('questions.aud_label_ph')) + '">' +
       '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="aud-add" type="button">' + t('questions.aud_add') + '</button>' +
+    '</div>' +
+    '<div class="cdx-aud-ai-row">' +
+      '<input class="cdx-input cdx-aud-ai-input" placeholder="' + _esc(t('questions.aud_ai_ph')) + '">' +
+      '<button class="cdx-btn cdx-btn-sm" data-act="aud-ai" type="button">' + t('questions.aud_ai_create') + '</button>' +
     '</div>';
 }
 function _varAddRow() {
@@ -824,11 +1001,59 @@ function _ensureCell(audKey, varKey) {
   if (!a.values[varKey]) a.values[varKey] = { text: '', g: 'f', n: 'sg' };
   return a.values[varKey];
 }
+// AI-audience-create: strict-JSON system prompt. The model gets a name/
+// description of a público and returns ONE audience object the matrix can stage.
+// Strict JSON (no markdown) is load-bearing for the cheap fallback models; one
+// worked example anchors the schema. Fills only the existing variable vocabulary.
+function _audSysPrompt(variables) {
+  const list = (variables || []).join(', ');
+  return 'Você cria a configuração de uma audiência (público-alvo) para um banco de questões. ' +
+    'Receberá o nome/descrição de um público. Devolva APENAS um objeto JSON estrito, sem markdown, no formato: ' +
+    '{"label":"<nome curto do público>","values":{"<variável>":{"text":"<termo concreto em PT-BR>","g":"m|f","n":"sg|pl"}}}. ' +
+    'Use EXATAMENTE estas variáveis como chaves, todas preenchidas: ' + list + '. ' +
+    'Para cada variável, "text" é o termo que esse público realmente usa, "g" é o gênero gramatical do termo ("m" ou "f") e "n" o número ("sg" ou "pl"). ' +
+    'Não invente outras chaves nem inclua texto fora do JSON. ' +
+    'Exemplo para "Advocacia" com variáveis workspace, actor_role, deliverable, domain: ' +
+    '{"label":"IA na Advocacia","values":{"workspace":{"text":"escritório","g":"m","n":"sg"},"actor_role":{"text":"advogado","g":"m","n":"sg"},"deliverable":{"text":"petição","g":"f","n":"sg"},"domain":{"text":"Direito","g":"m","n":"sg"}}}.';
+}
+
+// Generate a whole audience from a typed name/description via ai.chat. The result
+// is a REVIEWABLE DRAFT staged in memory only (never auto-saved): it lands in the
+// config and we switch to the variables grid so Élder can edit; lint + Salvar own
+// persistence. Errors route to notice (pill) + the inline error line.
+async function _aiCreateAudience() {
+  const inp = _q('.cdx-aud-ai-input');
+  const desc = inp ? inp.value.trim() : '';
+  const err = _q('.cdx-bank-aud-err');
+  if (err) err.textContent = '';
+  if (!desc) { notice.info(t('questions.aud_ai_empty')); return; }
+  const btn = _q('[data-act="aud-ai"]');
+  let orig = '';
+  if (btn) { btn.disabled = true; orig = btn.textContent; btn.textContent = t('questions.aud_ai_generating'); }
+  let res; try { res = await ai.chat({ system: _audSysPrompt(_audienceConfig.variables), messages: [{ role: 'user', content: desc }] }); } catch (e) { notice.internal(e); res = null; }
+  if (!_viewEl) return;
+  if (btn) { btn.disabled = false; btn.textContent = orig; }
+  const draft = parseAudienceDraft(res && res.text, _audienceConfig.variables);
+  if (!draft) {
+    // Never swallow the cause into the toast alone: log the real AI response to
+    // the debug pill so the failure is diagnosable (CLAUDE.md pill rule).
+    const raw = (res && res.text != null) ? String(res.text)
+      : (res === null ? '<null: rate-limited or both AI providers failed>' : '<response had no text field>');
+    notice.internal('aud-ai: no valid draft parsed from AI response. raw=' + raw.slice(0, 400));
+    if (err) err.textContent = t('questions.aud_ai_error');
+    return;
+  }
+  _audienceConfig.audiences[draft.key] = { label: draft.label, values: draft.values };
+  _audTab = 'variables';
+  _renderAudContent();
+  notice.ok(t('questions.aud_ai_done'));
+}
+
 function _addAudience() {
   const inp = _q('.cdx-aud-new-label');
   const label = inp ? inp.value.trim() : '';
   if (!label) return;
-  const key = _slug(label);
+  const key = slug(label);
   if (!key) return;
   if (!_audienceConfig.audiences[key]) _audienceConfig.audiences[key] = { label: label, values: {} };
   else _audienceConfig.audiences[key].label = label;
@@ -840,7 +1065,7 @@ function _delAudience(key) {
 }
 function _addVariable() {
   const inp = _q('.cdx-var-new-key');
-  const key = _slug(inp ? inp.value.trim() : '');
+  const key = slug(inp ? inp.value.trim() : '');
   if (!key) return;
   if (_audienceConfig.variables.indexOf(key) === -1) _audienceConfig.variables.push(key);
   _renderAudContent();
@@ -910,6 +1135,7 @@ export function mount(viewEl, ctx) {
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
+  _classFilter = 'all'; _variaveisView = false; _variaveisItems = [];
 
   viewEl.innerHTML =
     '<div class="cdx-bank">' +
@@ -1011,9 +1237,12 @@ export function mount(viewEl, ctx) {
               '<datalist id="cdx-bank-target-list"></datalist>' +
             '</label>' +
             '<textarea class="cdx-input cdx-bank-import-in" rows="7"></textarea>' +
+            '<label class="cdx-bank-import-file-row"><span class="cdx-comp-label">' + t('questions.bank_import_file') + '</span>' +
+              '<input type="file" class="cdx-bank-import-file" accept=".json,application/json"></label>' +
           '</div>' +
           '<div id="cdx-bank-import-review" hidden>' +
             '<p class="cdx-bank-bulk-hint">' + t('questions.bank_bulk_review_hint') + '</p>' +
+            '<div class="cdx-bank-import-banks" id="cdx-bank-import-banks"></div>' +
             '<div class="cdx-bank-bulk-list" id="cdx-bank-import-list"></div>' +
           '</div>' +
           '<p class="cdx-bank-modal-err cdx-bank-import-err"></p>' +
@@ -1056,6 +1285,7 @@ export function mount(viewEl, ctx) {
     if (!btn) return;
     const act = btn.getAttribute('data-act');
     if (act === 'pick') { _selectSet(btn.getAttribute('data-set')); }
+    else if (act === 'variaveis') { _selectVariaveis(); }
     else if (act === 'newset-ok') { _submitNewSet(); }
     else if (act === 'newset-cancel') { _newSetActive = false; _renderSets(); }
   });
@@ -1084,6 +1314,7 @@ export function mount(viewEl, ctx) {
     if (act === 'aud-close') _closeAudiences();
     else if (act === 'aud-save') _saveAudiences();
     else if (act === 'aud-add') _addAudience();
+    else if (act === 'aud-ai') _aiCreateAudience();
     else if (act === 'aud-del') _delAudience(btn.getAttribute('data-aud'));
     else if (act === 'var-add') _addVariable();
     else if (act === 'var-del') _delVariable(btn.getAttribute('data-var'));
@@ -1114,6 +1345,7 @@ export function mount(viewEl, ctx) {
     const act = btn.getAttribute('data-act');
     if (act === 'addq') { _confirmDelQ = null; _openModal(null); }
     else if (act === 'bulk') { _openBulk(); }
+    else if (act === 'filter-class') { _classFilter = btn.getAttribute('data-class') || 'all'; _renderConjunto(); }
     else if (act === 'edit-bank') { _toggleEditBank(); }
     else if (act === 'select') {
       const qid = btn.getAttribute('data-qid');
@@ -1215,6 +1447,13 @@ export function mount(viewEl, ctx) {
     else if (act === 'bulk-save') _bulkSave();
   });
 
+  // Import file picker (change, not click): read the chosen .json into the box.
+  _on(viewEl.querySelector('#cdx-bank-hub'), 'change', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('cdx-bank-import-file')) {
+      _loadImportFile(e.target.files && e.target.files[0]);
+    }
+  });
+
   // Import / Export hub (delegated): tab + scope + format + checklist + copy/
   // download + import process/save.
   _on(viewEl.querySelector('#cdx-bank-hub'), 'click', (e) => {
@@ -1292,5 +1531,6 @@ export function unmount() {
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
+  _classFilter = 'all'; _variaveisView = false; _variaveisItems = [];
   _audienceConfig = null; _audTab = 'audiences'; setAudienceConfig(null);
 }

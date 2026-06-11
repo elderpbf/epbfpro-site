@@ -14,14 +14,20 @@
 // the embedded element's poll, the Q&A feed's poll, the SQA debounce, and every
 // layout/resizer/document/modal listener.
 import { questions as api, cohorts, audiences as audienceApi } from '../js/codex-api.js';
-import { mountComposer } from './question-composer.js';
+import { mountComposer, correctForLaunch } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, visibleForAudience } from '../js/audiences.js';
+import { revealTarget, autoRevealDecision, DEFAULT_PCT } from './auto-reveal.js';
+import { buildAnswer, makeRng, hashSeed } from './sim-answers.js';
+import { hostLabel } from './identity.js';
 
 const LAYOUT_KEY = 'codex_host_layout';
+const AUTO_KEY = 'codex_host_autoreveal';
+const CLOSE_OPTS_KEY = 'codex_host_close_opts'; // persisted show/reveal checkbox state
+const SIM_N_KEY = 'codex_host_sim_n';           // persisted debug simulator count
 const DEFAULT_LAYOUT = { left: { visible: true, width: 360 }, center: { visible: true }, right: { visible: true, width: 380 } };
 const TEXT_TYPES = ['open', 'wordcloud', 'rating', 'numeric'];
 
@@ -47,6 +53,14 @@ let _trailAllTurmas = [];
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
 let _onDelete = null;  // sessions.js callback: delete this session (revealed via the name)
 let _onRename = null;  // sessions.js callback: rename this session (title) via the name menu
+let _auto = null;      // { enabled, headcount, pct } auto-revelar prefs (persisted)
+let _autoQId = null;       // active question the auto-reveal tracker is following
+let _autoFiredQId = null;  // question we already auto-revealed (fire-once guard)
+let _autoLastCount = 0;    // last answer count seen (for plateau detection)
+let _autoLastChangeAt = 0; // ms timestamp of the last count change
+let _autoFlashTimer = null;// timeout that clears the reveal flash (cleared on unmount)
+let _simRunning = false;   // guards the debug-only in-host answer simulator
+let _connected = 0;        // live count of students with the answer page open (presence)
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -82,6 +96,7 @@ function _barMarkup() {
       '</div>' +
     '</div>' +
     '<div class="cdx-host-bar-actions">' +
+      '<span class="cdx-host-connected" id="cdx-host-connected" hidden></span>' +
       '<button class="cdx-btn cdx-host-stats" data-act="stats" type="button">' + _esc(t('questions.host_stats')) + '</button>' +
       '<details class="cdx-host-visao" id="cdx-host-visao" hidden><summary>' + _esc(t('questions.host_view')) + ' ▾</summary>' +
         '<div class="cdx-host-visao-panel">' +
@@ -135,6 +150,8 @@ function _centerMarkup() {
         '<div class="cdx-active-badge">' + _esc(t('questions.host_active_q')) + '</div>' +
         '<div class="cdx-active-text" id="cdx-active-text"></div>' +
         '<div id="cdx-active-render"></div>' +
+        _autoRevealMarkup() +
+        _simMarkup() +
         '<div class="cdx-active-foot">' +
           '<span class="cdx-active-tally" id="cdx-active-tally"></span>' +
           '<div class="cdx-active-foot-right">' +
@@ -142,7 +159,10 @@ function _centerMarkup() {
               '<label><input type="checkbox" id="cdx-chk-show" checked> ' + _esc(t('questions.host_show_results')) + '</label>' +
               '<label><input type="checkbox" id="cdx-chk-reveal"> ' + _esc(t('questions.host_reveal_answer')) + '</label>' +
             '</div>' +
-            '<button class="cdx-btn cdx-btn-danger" data-act="close-q" type="button">' + _esc(t('questions.host_close_q')) + '</button>' +
+            '<div class="cdx-active-btns">' +
+              '<button class="cdx-btn cdx-btn-primary" data-act="reveal-now" type="button">' + _esc(t('questions.host_reveal_now')) + '</button>' +
+              '<button class="cdx-btn cdx-btn-danger" data-act="close-q" type="button">' + _esc(t('questions.host_close_q')) + '</button>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -165,6 +185,44 @@ function _centerMarkup() {
       '<div class="cdx-host-card-title">' + _esc(t('questions.host_history')) + '</div>' +
       '<div id="cdx-history-list"></div>' +
     '</div>';
+}
+
+// Auto-revelar control: opt-in, sits under the active question. The host picks a
+// percentage; the target is that share of the LIVE connected count (people with
+// the answer page open, not a typed number). Once that many have answered (or
+// answers stall, the plateau backstop), the results are SHOWN on the display and
+// the question stays OPEN (only Encerrar closes). Inert until toggled on; the live
+// connected readout, "X / target", and bar update from the existing poll tick.
+function _autoRevealMarkup() {
+  return '<div class="cdx-autoreveal" id="cdx-autoreveal">' +
+    '<label class="cdx-autoreveal-toggle"><input type="checkbox" id="cdx-auto-on"> ' + _esc(t('questions.host_autoreveal')) + '</label>' +
+    '<div class="cdx-autoreveal-controls">' +
+      '<input type="number" class="cdx-autoreveal-num" id="cdx-auto-pct" min="1" max="100" step="5">' +
+      '<span class="cdx-autoreveal-unit">% ' + _esc(t('questions.host_autoreveal_of')) + '</span>' +
+      '<span class="cdx-autoreveal-connected" id="cdx-auto-connected">0</span>' +
+      '<span class="cdx-autoreveal-unit">' + _esc(t('questions.host_autoreveal_connected')) + '</span>' +
+      '<span class="cdx-autoreveal-target" id="cdx-auto-target"></span>' +
+    '</div>' +
+    '<div class="cdx-autoreveal-progress">' +
+      '<div class="cdx-autoreveal-bar"><div class="cdx-autoreveal-bar-fill" id="cdx-auto-bar"></div></div>' +
+      '<span class="cdx-autoreveal-count" id="cdx-auto-count"></span>' +
+    '</div>' +
+    '<div class="cdx-autoreveal-status" id="cdx-auto-status"></div>' +
+  '</div>';
+}
+
+// Debug-only in-host simulator: a one-click "Simular respostas" that fires N fake
+// student answers at the active question through the public submit_answer action,
+// so a live-question feature (auto-revelar, tallies) can be exercised from the
+// same screen without a real class. Hidden unless the bs_debug flag is on, so it
+// can never touch a real session. For genuine load use the codex-simulate skill.
+function _simMarkup() {
+  return '<div class="cdx-sim" id="cdx-sim" hidden>' +
+    '<span class="cdx-sim-label">' + _esc(t('questions.host_sim_label')) + '</span>' +
+    '<input type="number" class="cdx-sim-n" id="cdx-sim-n" min="1" max="200" value="30">' +
+    '<button class="cdx-btn cdx-sim-btn" data-act="sim-run" type="button">' + _esc(t('questions.host_sim_run')) + '</button>' +
+    '<span class="cdx-sim-status" id="cdx-sim-status"></span>' +
+  '</div>';
 }
 
 function _qaMarkup() {
@@ -382,12 +440,19 @@ async function _deleteHistoryQuestion(q) {
 // ── Active panel + Q&A sync (port of host-page _cpqDataHandler) ──
 function _onData(data) {
   if (!_container) return;
+  // Live connected count (presence): people with the answer page open, distinct
+  // from those who answered. Updates the bar badge + auto-reveal target each tick.
+  _connected = (data && Number.isFinite(data.connected)) ? data.connected : 0;
+  _paintConnected();
   if (_qa) _qa.syncFromState(data);
   _renderHistory(data.history || []);
   const q = data.active_question;
   const panel = _q('#cdx-active-panel'), std = _q('#cdx-active-standard'), sqa = _q('#cdx-active-sqa');
   if (!q) {
     _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
+    _autoQId = null; _autoFiredQId = null;
+    const cnt = _q('#cdx-auto-count'); if (cnt) cnt.textContent = '';
+    const bar = _q('#cdx-auto-bar'); if (bar) bar.style.width = '0%';
     if (panel) panel.style.display = 'none';
     if (std) std.style.display = '';
     if (sqa) sqa.style.display = 'none';
@@ -396,6 +461,7 @@ function _onData(data) {
   _activeQId = q.id; _activeQType = q.type || 'mc';
   if (_activeQType === 'student_qa') {
     _activeStudentQuestionId = q.student_question_id || null;
+    _autoQId = null;
     _renderSqaActive(q);
     if (std) std.style.display = 'none';
     if (sqa) sqa.style.display = '';
@@ -411,7 +477,157 @@ function _onData(data) {
   const total = usesText ? (q.text_answers || []).length : (q.answer_counts || []).reduce((a, b) => a + b, 0);
   const tally = _q('#cdx-active-tally');
   if (tally) tally.textContent = total + ' ' + (total === 1 ? t('questions.qr_answer') : t('questions.qr_answers'));
+  _updateAutoReveal(q, total);
   if (panel) panel.style.display = 'block';
+}
+
+// ── Auto-revelar (questions/auto-reveal.js logic + this poll-driven glue) ─────
+function _loadAuto() {
+  try {
+    const s = JSON.parse(localStorage.getItem(AUTO_KEY));
+    if (s && typeof s === 'object') {
+      const pct = parseInt(s.pct, 10);
+      return { enabled: !!s.enabled, pct: (Number.isFinite(pct) && pct > 0) ? pct : DEFAULT_PCT };
+    }
+  } catch (e) { /* ignore */ }
+  return { enabled: false, pct: DEFAULT_PCT };
+}
+function _saveAuto() { try { localStorage.setItem(AUTO_KEY, JSON.stringify(_auto)); } catch (e) { /* ignore */ } }
+
+// Reflect the persisted prefs into the inputs + the "= N" target preview. The
+// target is a share of the LIVE connected count, so it shows "aguardando conexões"
+// while nobody is connected yet.
+function _syncAutoUI() {
+  const wrap = _q('#cdx-autoreveal'), on = _q('#cdx-auto-on'), pct = _q('#cdx-auto-pct'), conn = _q('#cdx-auto-connected'), target = _q('#cdx-auto-target');
+  if (!on) return;
+  on.checked = !!_auto.enabled;
+  if (pct) pct.value = _auto.pct;
+  if (conn) conn.textContent = String(_connected);
+  if (wrap) wrap.classList.toggle('is-on', !!_auto.enabled);
+  if (target) {
+    const tg = _auto.enabled ? revealTarget(_connected, _auto.pct) : null;
+    target.textContent = tg != null ? ('= ' + tg) : (_auto.enabled ? t('questions.host_autoreveal_waiting') : '');
+  }
+}
+
+// Paint the live connected count (students with the answer page open) into both
+// the host bar badge and the auto-revelar control. Driven by data.connected on
+// every poll tick; the bar badge shows only while the session is being hosted.
+function _paintConnected() {
+  const bar = _q('#cdx-host-connected');
+  if (bar) {
+    if (_isOpen()) {
+      bar.hidden = false;
+      bar.textContent = '👥 ' + _connected;
+      bar.title = t('questions.host_connected_title').replace('{n}', String(_connected));
+    } else {
+      bar.hidden = true;
+    }
+  }
+  const conn = _q('#cdx-auto-connected');
+  if (conn) conn.textContent = String(_connected);
+  const target = _q('#cdx-auto-target');
+  if (target && _auto) {
+    const tg = _auto.enabled ? revealTarget(_connected, _auto.pct) : null;
+    target.textContent = tg != null ? ('= ' + tg) : (_auto.enabled ? t('questions.host_autoreveal_waiting') : '');
+  }
+}
+
+// Called on every poll tick for the active (non-SQA) question: track the count
+// for plateau detection, paint the progress, and fire the reveal when due.
+function _updateAutoReveal(q, total) {
+  const now = Date.now();
+  if (_autoQId !== q.id) { _autoQId = q.id; _autoLastCount = total; _autoLastChangeAt = now; }
+  else if (total !== _autoLastCount) { _autoLastCount = total; _autoLastChangeAt = now; }
+  const target = _auto.enabled ? revealTarget(_connected, _auto.pct) : null;
+  const countEl = _q('#cdx-auto-count'), barEl = _q('#cdx-auto-bar');
+  if (countEl) countEl.textContent = target != null ? (total + ' / ' + target) : ('' + total);
+  if (barEl) barEl.style.width = (target ? Math.min(100, Math.round(total / target * 100)) : 0) + '%';
+  if (!_auto.enabled || target == null || _autoFiredQId === q.id) return;
+  const decision = autoRevealDecision({ enabled: true, count: total, target, lastChangeAt: _autoLastChangeAt, now });
+  if (decision.reveal) { _autoFiredQId = q.id; _autoShow(decision.reason); }
+}
+
+// Threshold reached: SHOW the responses on the display (set_question_visibility),
+// keeping the question OPEN so people can still answer. Never closes, only the
+// Encerrar button closes. Cues the host (flash + chime) so they can watch the
+// room, not the screen.
+async function _autoShow(reason) {
+  if (!_activeQId) return;
+  try { await api.setVisibility({ id: _activeQId, session_code: _session.code, show_results: true }); }
+  catch (e) { notice.internal(e); return; }
+  const statusEl = _q('#cdx-auto-status');
+  if (statusEl) statusEl.textContent = reason === 'plateau' ? t('questions.host_autoreveal_fired_plateau') : t('questions.host_autoreveal_fired_target');
+  const panel = _q('#cdx-active-panel');
+  if (panel) {
+    panel.classList.add('cdx-autoreveal-flash');
+    if (_autoFlashTimer) clearTimeout(_autoFlashTimer);
+    _autoFlashTimer = setTimeout(() => { const p = _q('#cdx-active-panel'); if (p) p.classList.remove('cdx-autoreveal-flash'); _autoFlashTimer = null; }, 1200);
+  }
+  _chime();
+}
+
+// Best-effort short chime via WebAudio (no asset). Silently no-ops if the audio
+// context is unavailable or blocked.
+function _chime() {
+  try {
+    const AC = (typeof window !== 'undefined') && (window.AudioContext || window.webkitAudioContext);
+    if (!AC) return;
+    const ctx = new AC();
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.value = 0.06;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+    osc.stop(ctx.currentTime + 0.26);
+    osc.onended = () => { try { ctx.close(); } catch (e) { /* ignore */ } };
+  } catch (e) { /* audio is best-effort */ }
+}
+
+// Debug-only: spray N fake answers at the active question via the public facade
+// action, in small concurrent batches so they arrive like a real room filling
+// in. No timers (so the unmount leak contract holds); aborts if unmounted. The
+// firing logic is here; WHAT each bot answers comes from the pure sim-answers.js.
+async function _simulate() {
+  if (_simRunning) return;
+  const q = _qEl && typeof _qEl.getActiveQuestion === 'function' ? _qEl.getActiveQuestion() : null;
+  const statusEl = _q('#cdx-sim-status');
+  if (!q || !q.id) { if (statusEl) statusEl.textContent = t('questions.host_sim_no_q'); return; }
+  const input = _q('#cdx-sim-n');
+  let n = parseInt(input && input.value, 10);
+  if (!Number.isFinite(n) || n < 1) n = 30;
+  n = Math.min(200, n);
+  _simRunning = true;
+  let ok = 0, done = 0;
+  const skew = 0.6, batch = 6;
+  const botNames = Array.from({ length: n }, (_v, j) => 'Bot_' + String(j + 1).padStart(3, '0'));
+  // Register each bot as "connected" FIRST, via the same inbox heartbeat a real
+  // student's answer page sends. Without this the bots only submit answers and
+  // never count toward the connected headcount, so auto-revelar (keyed to that
+  // count) would never fire. Pre-registering establishes the room size up front,
+  // so the threshold fires at its true percentage, not on the first answer.
+  for (let i = 0; i < n; i += batch) {
+    if (!_container || !_simRunning) break;
+    await Promise.all(botNames.slice(i, i + batch).map((nm) =>
+      api.studentInbox({ session_code: _session.code, student_name: nm, _silent: true }).catch(() => {})));
+  }
+  for (let i = 0; i < n; i += batch) {
+    if (!_container || !_simRunning) break;
+    const calls = [];
+    for (let j = i; j < Math.min(i + batch, n); j++) {
+      const payload = buildAnswer(q, makeRng(hashSeed('Bot_' + (j + 1) + ':' + q.id)), skew);
+      if (!payload) continue;
+      const params = Object.assign({ question_id: q.id, session_code: _session.code, student_name: botNames[j], _silent: true }, payload);
+      calls.push(api.submitAnswer(params).then((r) => { done++; if (r && !r.error) ok++; }).catch(() => { done++; }));
+    }
+    await Promise.all(calls);
+    const liveStatus = _q('#cdx-sim-status');
+    if (liveStatus) liveStatus.textContent = t('questions.host_sim_progress').replace('{done}', String(done)).replace('{total}', String(n));
+  }
+  _simRunning = false;
+  const finalStatus = _q('#cdx-sim-status');
+  if (finalStatus) finalStatus.textContent = t('questions.host_sim_done').replace('{ok}', String(ok)).replace('{n}', String(n));
 }
 
 // ── Student-Q&A active card debounce (port of host-sqa.js) ───
@@ -420,7 +636,7 @@ function _renderSqaActive(q) {
   if (!metaEl || !textEl || !inputEl || !statusEl) return;
   let when = '';
   try { when = q.student_time ? new Date(q.student_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''; } catch (_) { when = ''; }
-  metaEl.textContent = (q.student_name || t('questions.qr_anonymous')) + (when ? ' · ' + when : '');
+  metaEl.textContent = hostLabel(q.student_name) + (when ? ' · ' + when : '');
   textEl.textContent = q.text || '';
   const serverAnswer = q.student_answer || '';
   if ((typeof document === 'undefined' || document.activeElement !== inputEl) && serverAnswer !== _sqaLastServerAnswer) inputEl.value = serverAnswer;
@@ -482,6 +698,31 @@ async function _closeQuestion() {
   if (panel) panel.style.display = 'none';
 }
 
+// Manual "Mostrar respostas": show the responses on the display RIGHT NOW
+// (set_question_visibility), keeping the question OPEN so people keep answering.
+// Only the Encerrar button closes. The correct-answer highlight remains a
+// close-time option (the reveal checkbox), since the backend only reveals on close.
+async function _revealNow() {
+  if (!_activeQId) return;
+  try { await api.setVisibility({ id: _activeQId, session_code: _session.code, show_results: true }); }
+  catch (e) { notice.internal(e); return; }
+  notice.info(t('questions.host_shown'));
+}
+
+// Persist the close-options checkboxes across questions AND sessions, so a host
+// who always reveals (or never does) sets it once. Defaults match the prior
+// behavior (show on, reveal off).
+function _loadCloseOpts() {
+  try { const s = JSON.parse(localStorage.getItem(CLOSE_OPTS_KEY)); if (s && typeof s === 'object') return { show: s.show !== false, reveal: !!s.reveal }; }
+  catch (e) { /* ignore */ }
+  return { show: true, reveal: false };
+}
+function _saveCloseOpts() {
+  const show = !!(_q('#cdx-chk-show') && _q('#cdx-chk-show').checked);
+  const reveal = !!(_q('#cdx-chk-reveal') && _q('#cdx-chk-reveal').checked);
+  try { localStorage.setItem(CLOSE_OPTS_KEY, JSON.stringify({ show, reveal })); } catch (e) { /* ignore */ }
+}
+
 function _remountComposer(initial) {
   const host = _q('#cdx-host-composer');
   if (!host) return;
@@ -497,7 +738,11 @@ async function _loadBankSets() {
   let res;
   try { res = await api.listSets(); } catch (e) { notice.internal(e); res = null; }
   const banks = (res && res.banks) || [];
-  sel.innerHTML = '<option value="">' + _esc(t('questions.host_bank_pick')) + '</option>' + banks.map((b) => '<option value="' + _esc(b.name || b) + '">' + _esc(b.name || b) + '</option>').join('');
+  // list_question_sets returns rows of { list_name, count }; read list_name (same
+  // as the Bank sub-tab). Reading b.name fell back to the raw object, rendering
+  // "[object Object]" and setting that as the option value, so no questions loaded.
+  sel.innerHTML = '<option value="">' + _esc(t('questions.host_bank_pick')) + '</option>' +
+    banks.map((b) => { const nm = (b && (b.list_name || b.name)) || ''; return '<option value="' + _esc(nm) + '">' + _esc(nm) + '</option>'; }).join('');
 }
 
 // The audience config (variables x audiences matrix) is loaded once per mount.
@@ -543,12 +788,64 @@ async function _loadBankQuestions(listName) {
   _bankMap = {};
   list.innerHTML = qs.map((q, i) => {
     _bankMap[i] = q;
-    // Show the resolved text for the selected audience so the host previews what
-    // students will see; the raw template stays in _bankMap for launch.
-    const shown = resolveQuestion(q, vals).question;
-    return '<div class="cdx-bank-item" data-bank-i="' + i + '"><span class="cdx-bank-item-text">' + _esc(shown) + '</span>' +
-      '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button></div>';
+    // One-line row: chevron + truncated text + Editar/Lançar. Clicking the row
+    // body (chevron or text) expands it to the full question text + options with
+    // the correct answer marked, so the host can read what a question is before
+    // launching. The resolved text/options preview what students will see (the raw
+    // template stays in _bankMap for launch). Editar writes it into the composer.
+    const resolved = resolveQuestion(q, vals);
+    return '<div class="cdx-bank-item" data-bank-i="' + i + '">' +
+      '<div class="cdx-bank-item-head">' +
+        '<span class="cdx-bank-chevron" aria-hidden="true">▸</span>' +
+        '<span class="cdx-bank-item-text">' + _esc(resolved.question) + '</span>' +
+        '<button class="cdx-btn cdx-bank-edit" data-act="bank-edit" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_edit')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button>' +
+      '</div>' +
+      _bankDetailHtml(q, resolved) +
+    '</div>';
   }).join('');
+}
+
+// The expandable detail under a bank row: type tag, the correct answer (host-only),
+// and the option list with the correct one marked. Text types carry no options, so
+// only the type shows; the full question text appears by letting the head text wrap
+// when the row is open (CSS). Reuses the shared correct-answer resolver.
+function _bankDetailHtml(q, resolved) {
+  const type = q.type || 'mc';
+  const isOpt = ['mc', 'tf', 'poll'].includes(type);
+  const opts = Array.isArray(resolved.options) ? resolved.options
+    : ((typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []));
+  const correctVal = correctForLaunch(q);
+  let correctIdx = [];
+  if (Array.isArray(correctVal)) correctIdx = correctVal.map(Number);
+  else if (correctVal !== null && correctVal !== undefined && correctVal !== '') { const n = parseInt(correctVal, 10); if (Number.isInteger(n)) correctIdx = [n]; }
+  const resp = (type !== 'poll' && correctIdx.length)
+    ? (' · ' + t('questions.host_bank_answer') + ': ' + correctIdx.map((ix) => LETTERS[ix] || (ix + 1)).join(', ')) : '';
+  // Class tag (generic / variable / specific): tells the host what kind of bank
+  // question it is. A "specific" (unique) one also names the audience it belongs
+  // to, so it's clear why an audience filter hides or shows it.
+  const cls = questionType(q); // 'generic' | 'variable' | 'unique'
+  const clsLabel = cls === 'unique' ? t('questions.host_bank_class_unique')
+    : (cls === 'variable' ? t('questions.host_bank_class_variable') : t('questions.host_bank_class_generic'));
+  let clsAud = '';
+  if (cls === 'unique' && q.audience) {
+    const auds = (_audienceConfig && _audienceConfig.audiences) || {};
+    clsAud = ' · ' + ((auds[q.audience] && auds[q.audience].label) || q.audience);
+  }
+  let optsHtml = '';
+  if (isOpt && Array.isArray(opts) && opts.length) {
+    optsHtml = '<div class="cdx-bank-detail-opts">' + opts.map((o, ix) => {
+      const ok = correctIdx.indexOf(ix) !== -1;
+      return '<div class="cdx-bank-opt' + (ok ? ' is-correct' : '') + '">' + _esc((LETTERS[ix] || (ix + 1)) + ') ' + o) + (ok ? ' ✓' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  return '<div class="cdx-bank-detail">' +
+    '<div class="cdx-bank-detail-meta">' +
+      '<span class="cdx-bank-class cdx-bank-class-' + cls + '">' + _esc(clsLabel) + '</span> ' +
+      _esc((TYPE_TAGS[type] || type) + clsAud + resp) +
+    '</div>' +
+    optsHtml +
+  '</div>';
 }
 
 function _safeParse(s) { try { return JSON.parse(s); } catch (_) { return []; } }
@@ -572,8 +869,11 @@ async function _launchFromBank(q) {
   }
   const opts = Array.isArray(r.options) ? r.options
     : ((typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []));
+  // Resolve the correct answer from EITHER the bank scalar or a history item's
+  // correct_answers array; reading only the scalar dropped it on relaunch, so a
+  // closed question couldn't highlight on reveal.
   const payload = { session_code: _session.code, type: q.type || 'mc', text: r.question, options: opts,
-    correct_answer: (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '') ? q.correct_answer : null };
+    correct_answer: correctForLaunch(q) };
   if (TEXT_TYPES.includes(q.type)) payload.max_select = 0;
   else payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select, 10) : 1;
   try { await api.launchQuestion(payload); if (_qEl) _qEl.startPolling(); } catch (e) { notice.internal(e); }
@@ -630,6 +930,9 @@ export function mount(containerEl, ctx) {
   _session = (ctx && ctx.session) || { code: '', status: 'closed', title: '' };
   _cleanup = [];
   _layout = _loadLayout();
+  _auto = _loadAuto();
+  _connected = 0;
+  _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _sqaLastServerAnswer = null; _sqaSaving = false; _historyMap = {}; _bankMap = {};
   _audienceConfig = null; _selectedAudience = '';
@@ -642,6 +945,16 @@ export function mount(containerEl, ctx) {
   _render();
   _remountComposer(null);
   _applyLayout();
+  _syncAutoUI();
+  // The in-host answer simulator is a debug-only affordance: reveal it only when
+  // the shared bs_debug flag is on, so it can never fire in a real class.
+  const simEl = _q('#cdx-sim');
+  if (simEl) simEl.hidden = !((typeof localStorage !== 'undefined') && localStorage.getItem('bs_debug') === '1');
+  // Restore persisted host controls (close-options + simulator count).
+  const co = _loadCloseOpts();
+  const chkShow = _q('#cdx-chk-show'); if (chkShow) chkShow.checked = co.show;
+  const chkReveal = _q('#cdx-chk-reveal'); if (chkReveal) chkReveal.checked = co.reveal;
+  try { const savedN = parseInt(localStorage.getItem(SIM_N_KEY), 10); const simN = _q('#cdx-sim-n'); if (simN && Number.isFinite(savedN) && savedN > 0) simN.value = Math.min(200, savedN); } catch (e) { /* ignore */ }
 
   const renderHost = _q('#cdx-active-render');
   _qEl = document.createElement(QTAG);
@@ -678,10 +991,13 @@ export function mount(containerEl, ctx) {
       if (act === 'launch') return _launch();
       if (act === 'clear') return _remountComposer(null);
       if (act === 'close-q' || act === 'sqa-close') return _closeQuestion();
+      if (act === 'reveal-now') return _revealNow();
+      if (act === 'sim-run') return _simulate();
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
       if (act === 'qr') return _openQr();
       if (act === 'bank-toggle') { const p = _q('#cdx-bank-panel'); const open = p.classList.toggle('open'); btn.classList.toggle('open', open); if (open) _loadBankSets(); return; }
       if (act === 'bank-launch') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _launchFromBank(q); return; }
+      if (act === 'bank-edit') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); return; }
       if (act === 'reset-layout') { _layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); _applyLayout(); _saveLayout(); return; }
     }
     const col = e.target.closest('[data-toggle-col]');
@@ -722,10 +1038,18 @@ export function mount(containerEl, ctx) {
     _loadBankQuestions(setSel ? setSel.value : '');
   });
   _on(_q('#cdx-bank-list'), 'click', (e) => {
-    const item = e.target.closest('[data-bank-i]');
-    if (item && !e.target.closest('[data-act="bank-launch"]')) { const q = _bankMap[item.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); }
+    // Editar/Lançar are data-act buttons handled by the host click handler; a click
+    // on the row body (chevron or text) just expands/collapses the readable detail.
+    if (e.target.closest('[data-act]')) return;
+    const item = e.target.closest('.cdx-bank-item');
+    if (item) item.classList.toggle('is-open');
   });
   _on(_q('#cdx-sqa-response'), 'input', _scheduleSqaSave);
+  _on(_q('#cdx-auto-on'), 'change', (e) => { _auto.enabled = !!e.target.checked; _saveAuto(); _syncAutoUI(); });
+  _on(_q('#cdx-auto-pct'), 'input', (e) => { const v = parseInt(e.target.value, 10); _auto.pct = (Number.isFinite(v) && v > 0) ? Math.min(100, v) : DEFAULT_PCT; _saveAuto(); _syncAutoUI(); });
+  _on(_q('#cdx-chk-show'), 'change', _saveCloseOpts);
+  _on(_q('#cdx-chk-reveal'), 'change', _saveCloseOpts);
+  _on(_q('#cdx-sim-n'), 'input', (e) => { const v = parseInt(e.target.value, 10); try { if (Number.isFinite(v) && v > 0) localStorage.setItem(SIM_N_KEY, String(Math.min(200, v))); } catch (err) { /* ignore */ } });
   _container.querySelectorAll('.cdx-hd-resizer').forEach((h) => _on(h, 'pointerdown', (e) => _startResize(e, h)));
 
   // Escape closes the Visao dropdown / Trilha modal; tracked document listener.
@@ -741,11 +1065,15 @@ export function unmount() {
   if (_qa) { try { _qa.destroy(); } catch (_) { /* ignore */ } _qa = null; }
   if (_composer) { try { _composer.destroy(); } catch (_) { /* ignore */ } _composer = null; }
   if (_sqaDebounce) { clearTimeout(_sqaDebounce); _sqaDebounce = null; }
+  if (_autoFlashTimer) { clearTimeout(_autoFlashTimer); _autoFlashTimer = null; }
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
   if (_container) _container.innerHTML = '';
   _container = null; _session = null;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
+  _auto = null; _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
+  _connected = 0;
+  _simRunning = false;
   _onStats = null; _onDelete = null; _onRename = null;
 }

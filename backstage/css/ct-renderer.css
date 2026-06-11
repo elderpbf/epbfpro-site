@@ -327,6 +327,30 @@
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Copy button under prompt bodies. CTRenderer emits it for non-preview prompt
+   items; consumers that don't want it (lessons, trilha cards, classvault scroll)
+   hide it via a higher-specificity .ctr-copy-btn{display:none}. The base style was
+   missing, so it rendered as a bare browser button in Codex's Items preview.
+   Theme tokens carry dark mode. */
+.ctr-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ctr-copy-btn:hover {
+  background: var(--option-hover-bg);
+  border-color: var(--primary);
+}
+
 /* Mobile fits */
 @media (max-width: 700px) {
   .ctr-pdf-object {

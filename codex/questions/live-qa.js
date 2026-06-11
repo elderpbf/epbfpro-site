@@ -10,6 +10,7 @@
 // poll. Q&A is implicitly always-on here (no toggle UI), matching the legacy host.
 import { questions as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { hostLabel } from './identity.js';
 
 const POLL_MS = 4000;
 
@@ -107,7 +108,7 @@ export function createQaFeed(opts) {
     const rowClasses = 'cdx-qa-row cdx-qa-' + q.status + (onDisplay ? ' cdx-qa-pinned' : '');
     let html = '<div class="' + rowClasses + '" data-qa-row-id="' + escHtml(q.id) + '">'
       + '<div class="cdx-qa-meta-row">'
-      +   '<span class="cdx-qa-meta">' + escHtml(q.student_name) + ' &middot; ' + formatTime(q.created_at) + '</span>'
+      +   '<span class="cdx-qa-meta">' + escHtml(hostLabel(q.student_name)) + ' &middot; ' + formatTime(q.created_at) + '</span>'
       +   (onDisplay ? '<span class="cdx-qa-pin-badge">' + escHtml(t('questions.qa_on_display')) + '</span>' : '')
       + '</div>'
       + '<p class="cdx-qa-text">' + escHtml(q.text) + '</p>';

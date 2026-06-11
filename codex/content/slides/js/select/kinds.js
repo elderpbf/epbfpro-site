@@ -12,6 +12,8 @@
 import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
 import { getByPath, uid, resolveStyleObj } from "../core/schema.js";
 import { formatControls } from "../edit/textstyle.js";
+import { list as cardParts } from "../render/cardparts.js";
+import * as registry from "../layouts/registry.js";
 import { t } from "../../../../js/i18n.js";
 
 // "voltar ao layout": clears the slot's freeform override so it returns to the
@@ -76,7 +78,9 @@ register({
   controls(app, sel, a) {
     if (!a) return [];
     const ctrls = isTextAsset(a) ? [...formatControls(), { type: "sep" }] : [];
-    ctrls.push({
+    // A stack's items live in THIS slide's slots, so it stays slide-scoped (no
+    // all/layout choice, which would render it on slides that lack its list).
+    if (a.type !== "stack") ctrls.push({
       type: "choice",
       id: "scope",
       value: a.scope || "slide",
@@ -113,7 +117,10 @@ register({
       danger: true,
       run(app2, sel2) {
         app2.record();
+        const gone = app2.deck().assets.find((x) => x.id === sel2.ref);
         app2.deck().assets = app2.deck().assets.filter((x) => x.id !== sel2.ref);
+        // A stack owns its slots list; drop it too so no orphan list lingers.
+        if (gone && gone.type === "stack" && gone.listKey) delete app2.cur().slots[gone.listKey];
         app2.selectClear();
         app2.refresh();
       },
@@ -290,18 +297,41 @@ register({
  * geometry follows it by identity and survives reorder with NO remap. Per-item
  * text style lives on the object (.style), so it travels for free too. These are
  * the reusable delete/move/add idioms the old editor.js hand-rolled per kind. */
-const newItem = (list) =>
-  list === "cards"
-    ? { id: uid(), mode: "text", text: t("slides.ed_new_card") }
-    : { id: uid(), text: t("slides.ed_new_topic") };
+// A fresh list item. Cards + topics keep their friendly placeholder; any OTHER named
+// list derives its shape from the layout's own seed (the first default item, minus
+// id/step, with text fields blanked and structural objects cloned), so a multi-field
+// list (define's {term,text}, agenda's {time,text}) adds a fully-shaped item.
+function newItem(list, app) {
+  if (list === "cards") return { id: uid(), parts: { body: true }, text: t("slides.ed_new_card") };
+  if (list === "topics") return { id: uid(), text: t("slides.ed_new_topic") };
+  const layout = app && registry.get(app.cur().layout);
+  const seed = layout && layout.defaults && layout.defaults()[list];
+  const tpl = Array.isArray(seed) && seed[0] && typeof seed[0] === "object" ? seed[0] : null;
+  if (tpl) {
+    const item = {};
+    for (const k of Object.keys(tpl)) {
+      if (k === "id" || k === "step") continue;
+      const v = tpl[k];
+      item[k] = v && typeof v === "object" ? JSON.parse(JSON.stringify(v)) : typeof v === "string" ? "" : v;
+    }
+    item.id = uid();
+    return item;
+  }
+  return { id: uid(), text: "" };
+}
 
 const refIndex = (arr, ref) => arr.findIndex((x) => x && `${ref.split(".")[0]}.${x.id}` === ref);
 
 function moveItem(app, ref, dir) {
   const arr = app.cur().slots[ref.split(".")[0]];
   const i = refIndex(arr, ref);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= arr.length) return;
+  if (i < 0) return;
+  // Move within the item's OWN row: skip past any cards in other rows to the nearest
+  // same-row neighbour in `dir` (topics are all row 0, so this is plain adjacency).
+  const row = arr[i].row || 0;
+  let j = i + dir;
+  while (j >= 0 && j < arr.length && (arr[j].row || 0) !== row) j += dir;
+  if (j < 0 || j >= arr.length) return;
   app.record();
   [arr[i], arr[j]] = [arr[j], arr[i]]; // override is id-keyed, so it follows the item
   app.refresh();
@@ -319,7 +349,9 @@ export function reorderItem(app, fromRef, toRef) {
   const to = refIndex(arr, toRef);
   if (from < 0 || to < 0 || from === to) return;
   app.record();
+  const toRow = arr[to].row || 0; // capture before the splice shifts indices
   const [item] = arr.splice(from, 1);
+  if ((item.row || 0) !== toRow) item.row = toRow; // dragging across stacks adopts the target row
   arr.splice(to, 0, item);
   app.refresh();
 }
@@ -333,16 +365,39 @@ function removeItem(app, ref, keepOne) {
   arr.splice(i, 1);
   const ov = app.cur().overrides;
   if (ov) delete ov[ref];
-  if (keepOne && !arr.length) arr.push(newItem(list));
+  if (keepOne && !arr.length) arr.push(newItem(list, app));
   app.step = Math.min(app.step, app.maxStep());
   app.selectClear();
   app.refresh();
 }
 
-function addItem(app, list) {
+function addItem(app, list, row = 0) {
   app.record();
-  (app.cur().slots[list] = app.cur().slots[list] || []).push(newItem(list));
+  const arr = (app.cur().slots[list] = app.cur().slots[list] || []);
+  const item = newItem(list, app);
+  if (list === "cards" && row) item.row = row; // row 0 stays absent (clean default)
+  // Insert after the last card already in this row so rows stay contiguous in the
+  // flat array; topics (no rows) append as before.
+  let at = arr.length;
+  if (list === "cards") {
+    for (let k = arr.length - 1; k >= 0; k--) {
+      if ((arr[k].row || 0) === row) { at = k + 1; break; }
+    }
+  }
+  arr.splice(at, 0, item);
   if (list === "topics") app.step = app.maxStep(); // reveal the new bullet
+  app.refresh();
+}
+
+// Start a NEW stack (row) below the last, seeded with one card. The new card's row
+// is maxRow+1; row-0 cards stay row-less, so a single-stack deck is never reshaped.
+function addRow(app) {
+  app.record();
+  const arr = (app.cur().slots.cards = app.cur().slots.cards || []);
+  const maxRow = arr.reduce((m, c) => Math.max(m, c.row || 0), 0);
+  const item = newItem("cards", app);
+  item.row = maxRow + 1;
+  arr.push(item);
   app.refresh();
 }
 
@@ -353,7 +408,9 @@ function addAfter(app, ref) {
   const arr = (app.cur().slots[list] = app.cur().slots[list] || []);
   const i = refIndex(arr, ref);
   app.record();
-  arr.splice(i + 1, 0, newItem(list));
+  const item = newItem(list, app);
+  if (list === "cards" && arr[i] && (arr[i].row || 0)) item.row = arr[i].row; // same stack as the sibling
+  arr.splice(i + 1, 0, item);
   if (list === "topics") app.step = app.maxStep();
   app.refresh();
 }
@@ -362,28 +419,20 @@ function addAfter(app, ref) {
 // the same menu-into-bar pattern as Appearance/Animation. Two row-wide modes + one
 // action, seeded from the slide's slots each open. It lives on the CARD bar (not the
 // container's) because selecting the bare stack means clicking the awkward gaps
-// between cards; two of the three act on the whole row even so (Elder's call,
-// 2026-06-03). symResize/stacked are plain per-slide flags read by geometry.flowCard
-// and the cards layout; reset clears every card width override (back to equal flex).
+// between cards; both act on the whole row (Elder's call, 2026-06-03). `stacked` is a
+// per-slide flag read by geometry.flowCard + the cards layout. Card size is per-row
+// now (slots.rowW), so resize sizes the whole stack and `reset` clears those row
+// sizes (back to equal flex); the old per-card symmetric-resize toggle is retired.
 export function cardTogglesMenu(slots) {
   const stacked = !!slots.stacked; // labels follow the active axis (width in a row, height when stacked)
   return [
-    {
-      type: "toggle", id: "sym", label: stacked ? t("slides.ed_sym_height") : t("slides.ed_sym_width"), on: !!slots.symResize,
-      write(app, sel, checked) { app.record(); app.cur().slots.symResize = checked; app.refresh(); },
-    },
     {
       type: "toggle", id: "stack", labelKey: "slides.ed_stack_v", on: !!slots.stacked,
       write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
     },
     {
       type: "button", id: "reset-widths", label: stacked ? t("slides.ed_equalize_h") : t("slides.ed_equalize_w"),
-      run(app) {
-        app.record();
-        const ov = app.cur().overrides;
-        if (ov) (app.cur().slots.cards || []).forEach((c) => delete ov[`cards.${c.id}`]);
-        app.refresh();
-      },
+      run(app) { app.record(); delete app.cur().slots.rowW; app.refresh(); },
     },
   ];
 }
@@ -412,23 +461,26 @@ register({
     const stacked = !!(app.cur().slots && app.cur().slots.stacked); // ▲▼ + vertical resize when stacked
     const ctrls = [];
     if (this.editEl(app, sel)) ctrls.push(...formatControls(), { type: "sep" });
-    ctrls.push({
-      type: "choice",
-      id: "mode",
-      value: card.mode,
-      options: [
-        { v: "title", labelKey: "slides.ed_title" },
-        { v: "text", labelKey: "slides.ed_text" },
-        { v: "image", labelKey: "slides.ed_image" },
-        { v: "image-text", labelKey: "slides.ed_image_text" },
-      ],
-      write(app2, sel2, v) {
-        app2.record();
-        const c = resolveStyleObj(app2.cur().slots, sel2.ref);
-        if (c) c.mode = v;
-        app2.refresh();
-      },
-    });
+    // Composable parts: one on/off toggle per registered card part (imagem / título
+    // / texto / …). Toggling a part on with no content yet renders its empty box or
+    // field, ready to fill; toggling off hides it without discarding the content. A
+    // newly registered part appears here automatically, with NO edit to this
+    // descriptor: it reads the same cardParts registry the renderer does.
+    for (const p of cardParts()) {
+      ctrls.push({
+        type: "toggle",
+        id: `part-${p.id}`,
+        labelKey: p.labelKey,
+        on: !!(card.parts && card.parts[p.id]),
+        write(app2, sel2, checked) {
+          app2.record();
+          const c = resolveStyleObj(app2.cur().slots, sel2.ref);
+          if (c) c.parts = { ...(c.parts || {}), [p.id]: checked };
+          app2.refresh();
+        },
+      });
+    }
+    ctrls.push({ type: "sep" });
     ctrls.push(
       { type: "button", id: "move-l", label: stacked ? "▲" : "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-r", label: stacked ? "▼" : "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
@@ -438,6 +490,45 @@ register({
       { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots), btnEl); } }
     );
     return ctrls;
+  },
+});
+
+/* ---------- roadnode (4b): a roadmap node; a topic-like item + an "active" toggle ----------
+ * Matches a node ONLY inside a .roadnodes list, so it wins over the generic topic kind
+ * there (registered first) without touching real topics. Toggling "ativo" sets the
+ * layout's slots.active to this node's index; the roadmap renderer highlights it. */
+register({
+  id: "roadnode",
+  geometry: "freeformSlot",
+  match(el) {
+    if (!(el.closest && el.closest(".roadnodes"))) return null;
+    const li = el.closest && el.closest("li[data-fkey]");
+    return li ? { kind: "roadnode", ref: li.dataset.fkey } : null;
+  },
+  el(app, sel) {
+    return app.stage.querySelector(`li[data-fkey="${sel.ref}"]`);
+  },
+  editEl(app, sel) {
+    const li = this.el(app, sel);
+    return li ? li.querySelector('.editable[data-edit="1"]') : null;
+  },
+  target(app, sel) {
+    return resolveStyleObj(app.cur().slots, sel.ref);
+  },
+  controls(app, sel) {
+    const slots = app.cur().slots;
+    const idx = (slots.nodes || []).findIndex((n) => `nodes.${n.id}` === sel.ref);
+    return [
+      ...formatControls(),
+      {
+        type: "toggle", id: "active", label: "ativo", on: (slots.active || 0) === idx,
+        write(app2, sel2, checked) { app2.record(); if (checked) app2.cur().slots.active = idx; app2.refresh(); },
+      },
+      { type: "button", id: "move-up", label: "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
+      { type: "button", id: "move-down", label: "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
+      { type: "button", id: "add", label: "＋ nó", run(app2, sel2) { addAfter(app2, sel2.ref); } },
+      { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
+    ];
   },
 });
 
@@ -480,25 +571,35 @@ register({
   id: "container",
   geometry: "none",
   match(el) {
-    if (el.closest && el.closest(".cardrow")) return { kind: "container", ref: "cards" };
-    if (el.closest && el.closest(".topiclist")) return { kind: "container", ref: "topics" };
+    const cr = el.closest && el.closest(".cardrow");
+    if (cr) {
+      const row = Number((cr.dataset && cr.dataset.row) || 0);
+      return row ? { kind: "container", ref: "cards", row } : { kind: "container", ref: "cards" };
+    }
+    const tl = el.closest && el.closest(".topiclist");
+    if (tl) {
+      const list = (tl.dataset && tl.dataset.list) || "topics";
+      return { kind: "container", ref: list };
+    }
     return null;
   },
   el(app, sel) {
-    return app.stage.querySelector(sel.ref === "cards" ? ".cardrow" : ".topiclist");
+    if (sel.ref === "cards") return app.stage.querySelector(`.cardrow[data-row="${sel.row || 0}"]`) || app.stage.querySelector(".cardrow");
+    return app.stage.querySelector(`.topiclist[data-list="${sel.ref}"]`) || app.stage.querySelector(".topiclist");
   },
   target(app, sel) {
     return app.cur().slots[sel.ref] || null;
   },
   controls(app, sel) {
-    return [
-      {
-        type: "button",
-        id: "add",
-        label: sel.ref === "cards" ? "＋ card" : "＋ tópico",
-        run(app2, sel2) { addItem(app2, sel2.ref); },
-      },
-    ];
+    if (sel.ref === "cards") {
+      // Cards: add a card to THE CLICKED row, and start a new stack (row) below.
+      return [
+        { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addItem(app2, "cards", sel2.row || 0); } },
+        { type: "button", id: "add-row", label: "＋ linha", run(app2) { addRow(app2); } },
+      ];
+    }
+    // Any other named list (topics, left/right, dos/donts, steps, …): add one item.
+    return [{ type: "button", id: "add", label: sel.ref === "topics" ? "＋ tópico" : "＋ item", run(app2, sel2) { addItem(app2, sel2.ref); } }];
   },
 });
 

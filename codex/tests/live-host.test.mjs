@@ -110,6 +110,56 @@ test('live-host launches/closes via the facade and drives the element through sc
   assert.ok(!/['"]cpq-data['"]/.test(src), 'no legacy cpq-data document bus');
 });
 
+test('live host fills the width by dropping the shell side padding (scoped, desktop only)', () => {
+  const css = read('../questions/questions.css');
+  // Scoped via :has(.cdx-host) so the Sessions list / Bank / other tabs keep their
+  // padding; only the live host goes edge-to-edge.
+  assert.match(css, /\.cdx-view:has\(\.cdx-host\)\s*\{[^}]*padding-left:\s*0/, 'host view drops .cdx-view left padding');
+  assert.match(css, /\.cdx-view:has\(\.cdx-host\)\s*\{[^}]*padding-right:\s*0/, 'host view drops .cdx-view right padding');
+  // Columns carry no inner side gutter, so the cards sit flush against the 8px
+  // resize bars (no extra margin around the resizers).
+  assert.match(css, /\.cdx-hd-col\s*\{[^}]*padding:\s*0 0\b/, 'host columns have no inner side gutter');
+});
+
+test('live-host bank picker is readable + editable (chevron expand, Editar prefills, options mark the correct answer)', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /cdx-bank-chevron/, 'each item carries an expand chevron');
+  assert.match(src, /cdx-bank-detail/, 'an expandable detail block (full text + options)');
+  assert.match(src, /data-act=["']bank-edit["']/, 'an explicit Editar action');
+  assert.match(src, /'bank-edit'\)[\s\S]{0,120}?_prefillFromBank/, 'Editar writes the question into the composer (prefill)');
+  assert.match(src, /is-correct/, 'the detail marks the correct option');
+  assert.match(src, /classList\.toggle\(\s*['"]is-open['"]/, 'clicking the row body toggles the readable detail');
+  assert.match(src, /host_bank_edit/, 'uses the Editar i18n key');
+  assert.match(src, /questionType\s*\(/, 'the detail tags the class (generic/variable/specific)');
+  assert.match(src, /cdx-bank-class/, 'renders the class tag');
+});
+
+test('bank class-tag i18n keys exist in BOTH dictionaries', async () => {
+  const pt = (await import('../i18n/pt.js')).default;
+  const en = (await import('../i18n/en.js')).default;
+  for (const k of ['questions.host_bank_class_generic', 'questions.host_bank_class_variable', 'questions.host_bank_class_unique']) {
+    assert.ok(k in pt, `pt has ${k}`); assert.ok(k in en, `en has ${k}`);
+  }
+});
+
+test('live-host bank picker renders set names from list_name (not [object Object])', () => {
+  // list_question_sets returns rows of { list_name, count } with NO `name` field;
+  // reading b.name fell back to the raw object -> "[object Object]" in the dropdown
+  // AND as the option value, so selecting a set loaded no questions.
+  const src = read('../questions/live-host.js');
+  assert.match(src, /b\.list_name/, 'bank picker reads list_name (the field list_question_sets returns)');
+  assert.ok(!/b\.name\s*\|\|\s*b\b/.test(src), 'no fallback to the raw bank object (the [object Object] bug)');
+});
+
+test('relaunch/bank-launch keeps the correct answer (resolves it from history correct_answers arrays too)', () => {
+  // Bug: _launchFromBank read only the scalar correct_answer, so relaunching a
+  // closed question (history items expose correct_answers as an array, no scalar)
+  // dropped the correct answer -> closing with "reveal" highlighted nothing.
+  const src = read('../questions/live-host.js');
+  assert.match(src, /from\s+['"]\.\/question-composer\.js['"]/, 'imports the composer helpers');
+  assert.match(src, /correctForLaunch\s*\(/, '_launchFromBank resolves the correct answer via the shared helper');
+});
+
 test('history cards expose a delete-from-history action wired to the facade', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /data-hi-act="delete"/, 'history card carries an Excluir button');

@@ -167,7 +167,7 @@ export function initSelect(app) {
     if (e.target.closest(".selbox") || e.target.closest(".selbar")) return; // own listeners
     const hit = kinds.matchKind(e.target);
     if (!hit) {
-      if (sel.get()) clear(); // clicked empty space / non-selectable chrome
+      clear(); // clicked empty stage: clear any selection AND dismiss an open menu pill
       return;
     }
     // let the caret work while editing a text asset in place

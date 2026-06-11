@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { anchorLeft } from '../content/slides/js/ui/anchored.js';
-import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from '../content/slides/js/edit/menus.js';
+import { insertMenu, appearanceMenu, animMenu } from '../content/slides/js/edit/menus.js';
 import { writeAssetStyle, writeSlotStyle, captureStyle } from '../content/slides/js/edit/textstyle.js';
 
 /* ---------- anchored: position a content-width pill ---------- */
@@ -25,16 +25,11 @@ test('anchorLeft pins to pad when the content overflows the container', () => {
 });
 
 /* ---------- menus as data (no dropdowns; every choice is items) ---------- */
-test('insertMenu returns five button primitives in order', () => {
+test('insertMenu returns the free elements plus the list stack object, in order', () => {
   const m = insertMenu();
-  assert.equal(m.length, 5);
+  assert.equal(m.length, 6);
   assert.ok(m.every((c) => c.type === 'button'));
-  assert.deepEqual(m.map((c) => c.id), ['ins-text', 'ins-title', 'ins-image', 'ins-photo', 'ins-video']);
-});
-test('addSlideMenu makes one button per registered layout', () => {
-  const m = addSlideMenu([{ id: 'cover', label: 'Capa' }, { id: 'cards', label: 'Cards' }]);
-  assert.deepEqual(m.map((c) => c.id), ['add-cover', 'add-cards']);
-  assert.ok(m.every((c) => c.type === 'button' && typeof c.run === 'function'));
+  assert.deepEqual(m.map((c) => c.id), ['ins-text', 'ins-title', 'ins-list', 'ins-image', 'ins-photo', 'ins-video']);
 });
 test('appearanceMenu seeds current theme values and uses NO dropdown', () => {
   const m = appearanceMenu({ fontScale: 1, accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' }, 'all');

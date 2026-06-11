@@ -5,7 +5,7 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid, migrateDeck } from "./core/schema.js";
+import { uid, migrateDeck, clone } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
@@ -13,10 +13,12 @@ import { initEditing } from "./edit/editor.js";
 import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
 import { initSelect } from "./select/wiring.js";
 import { initReorder } from "./select/reorder.js";
-import { insertMenu, addSlideMenu, appearanceMenu, animMenu } from "./edit/menus.js";
+import { insertMenu, appearanceMenu, animMenu } from "./edit/menus.js";
+import { addSlidePanelHTML, initAddSlide } from "./edit/addslide.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
+import { makeStubAi } from "./ai/aiService.js";
 
 // Layout display label by id, translated. Layout modules keep a PT fallback in
 // their own `label`; here we map the id to an i18n key so the add-slide menu
@@ -35,16 +37,30 @@ const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) :
 const shellHTML = () => `
 <div id="chrome">
   <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
+  <button id="tplSaveBtn">⊕ ${t("slides.tpl_save")}</button>
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
   <span class="spacer"></span>
   <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
   <button id="appearBtn">${t("slides.ed_appearance")} ▾</button>
   <button id="animBtn">${t("slides.ed_anim")} ▾</button>
+  <button id="aiFillBtn">${t("slides.ai_fill")}</button>
   <span class="spacer"></span>
   <button id="present" class="primary">▶ ${t("slides.ed_present")}</button>
 </div>
 
+<div id="ai-fill-overlay" style="display:none">
+  <div id="ai-fill-box">
+    <textarea id="ai-fill-intent" rows="3" placeholder="${t("slides.ai_intent_ph")}"></textarea>
+    <div class="ai-fill-actions">
+      <button id="ai-fill-go" class="cdx-btn cdx-btn-primary" type="button">${t("slides.ai_fill_go")}</button>
+      <button id="ai-fill-cancel" class="cdx-btn" type="button">${t("slides.ai_cancel")}</button>
+    </div>
+    <div class="ai-fill-error" aria-live="polite"></div>
+  </div>
+</div>
+
 ${maskPanelHTML()}
+${addSlidePanelHTML()}
 
 <div id="nav"></div>
 <div id="stagewrap"><div id="stagebox"><div id="stage"></div></div></div>
@@ -63,10 +79,19 @@ export function mount(root, ctx = {}) {
   const $ = (sel) => root.querySelector(sel);
   const store = ctx.store || createMemoryStore(newDeck());
   migrateDeck(store.getDeck()); // D1: bring legacy decks (string topics, id-less cards) to current schema before first render
+  // ctx.aiService: injected by content/slides.js (the integration wrapper) so the
+  // vendored core never imports the codex-api facade directly. Falls back to a stub.
+  const aiService = ctx.aiService || null;
+  // ctx.library: the template library service (same injection rule as aiService).
+  // Absent in the standalone dev build, so the template UI stays hidden there.
+  const library = ctx.library || null;
 
   const app = {
     isPresenter,
     store,
+    _aiService: aiService,
+    _library: library,
+    _layoutLabel: layoutLabel, // i18n layout label resolver (the add-slide picker reuses it)
     index: 0,
     step: 0,
     presenting: false,
@@ -160,13 +185,52 @@ export function mount(root, ctx = {}) {
     reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
     // add-slide layout picker, opened into the context bar from the thumbnail-rail
     // "＋ slide" button (anchor null -> centered, since the rail sits left of the stage).
-    openAddSlide(anchor) {
-      this.select.openMenu(addSlideMenu(registry.list().map((L) => ({ id: L.id, label: layoutLabel(L) }))), anchor || null);
+    // openAddSlide is assigned by initAddSlide (the modal preview picker), which
+    // owns the +slide entry the nav rail calls.
+
+    // ── Template library (4c.1 + the add-slide modal) ─────────────────────────
+    // Both no-op when no library is injected (standalone build). saveCurrentAsTemplate
+    // saves the current slide as a reusable layout; insertTemplate drops a detached
+    // deep-clone (the modal's "Salvos" cards call it). Both own the full
+    // record-then-mutate-then-refresh pattern.
+    async saveCurrentAsTemplate(name) {
+      if (!this._library) return { error: "no-library" };
+      try {
+        const tpl = await this._library.save(this.cur(), name);
+        return { ok: true, tpl };
+      } catch (e) {
+        return { error: (e && e.message) || "save-failed" };
+      }
+    },
+    // Insert a DETACHED deep-clone of a template after the current slide: a fresh
+    // slide id so it shares no identity with the library copy, and the library-only
+    // `name` stripped (it is not a slide field). Branding stays deck-level, so the
+    // inserted slide picks up THIS deck's logo + theme automatically.
+    insertTemplate(tpl) {
+      if (!tpl || !tpl.slide) return;
+      this.record();
+      const s = clone(tpl.slide);
+      s.id = uid();
+      delete s.name;
+      this.deck().slides.splice(this.index + 1, 0, s);
+      this.goTo(this.index + 1);
     },
 
     // insert a free element (movable on any slide) of the given type
     insertElement(type) {
       const c = this.deck().canvas;
+      // "list" (and later "cards") is a STACK, not a single box: a free-placed asset
+      // whose items live in slots[listKey], so the whole topic machinery (select /
+      // edit / add / remove / reorder) drives them with no new selection code. Starts
+      // as a stack of one and grows via the container's ＋ like any list.
+      if (type === "list") {
+        const listKey = "ins" + uid();
+        this.cur().slots[listKey] = [{ id: uid(), text: t("slides.ed_new_topic") }];
+        this.record();
+        this.deck().assets.push({ id: uid(), type: "stack", variant: "list", listKey, x: c.w / 2 - 200, y: c.h / 2 - 60, w: 400, rot: 0, scope: "slide", slideId: this.cur().id });
+        this.refresh();
+        return;
+      }
       const base = { id: uid(), type, x: c.w / 2 - 110, y: c.h / 2 - 70, w: type === "title" ? 420 : 240, rot: 0, scope: "slide", slideId: this.cur().id };
       if (type === "image" || type === "photo" || type === "video") {
         if (type === "video") base.h = 140; // a <video> has no intrinsic box before metadata (D2)
@@ -220,6 +284,26 @@ export function mount(root, ctx = {}) {
         else if (document.fullscreenElement) document.exitFullscreen();
       } catch (e) { /* ignore */ }
     },
+
+    // fillSlideWithAI — calls the AI service for the current slide's layout +
+    // the user's intent, then merges the returned slots and refreshes.
+    // Mirrors the record-then-mutate-then-refresh pattern used by all app.* methods.
+    // ctx.aiService (injected by the integration layer) drives the real AI call;
+    // falls back to makeStubAi() so the standalone dev build still works.
+    // Returns { ok: true } or { error } so the overlay caller can report errors
+    // without this module needing to import notice.js.
+    async fillSlideWithAI(intent) {
+      const svc = this._aiService || makeStubAi();
+      const layout = this.layoutOf(this.cur());
+      const result = await svc.fill(layout, intent);
+      if (result.error) {
+        return { error: result.error };
+      }
+      this.record("ai-fill");
+      Object.assign(this.cur().slots, result.slots);
+      this.refresh();
+      return { ok: true };
+    },
   };
 
   const history = createHistory({
@@ -254,6 +338,7 @@ export function mount(root, ctx = {}) {
   initSelect(app); // unified selection model: every selectable kind + the one context bar
   initReorder(app); // drag-and-drop reorder for cards + topics (grips injected post-render)
   initMaskPanel(app, root); // the recolour-mask popover (#maskpop): owns app.openMask
+  initAddSlide(app, root); // the +slide modal preview picker: owns app.openAddSlide
   app.renderNav = createNavigator(app).render;
   app.broadcast = createSync(app).broadcast;
 
@@ -276,6 +361,26 @@ function wireChrome(app, root) {
   const $ = (sel) => root.querySelector(sel);
 
   $("#dupBtn").onclick = () => app.duplicate();
+
+  // Save-as-template: only meaningful when a library service is injected; hidden
+  // otherwise (standalone build). A lightweight name prompt (modal parity is a
+  // follow-up, mirrors the deck-list delete confirm in content/slides.js).
+  const tplBtn = $("#tplSaveBtn");
+  if (tplBtn) {
+    if (!app._library) {
+      tplBtn.style.display = "none";
+    } else {
+      tplBtn.onclick = () => {
+        // eslint-disable-next-line no-alert
+        const name = window.prompt(t("slides.tpl_save_prompt"), "");
+        if (name == null) return; // cancelled
+        app.saveCurrentAsTemplate(name).then((res) => {
+          if (res && res.error && window.bsLog) window.bsLog("Save template: " + res.error, "error");
+        });
+      };
+    }
+  }
+
   $("#flip").onclick = () => {
     const s = app.cur().slots;
     if ("flip" in s) { app.record(); s.flip = !s.flip; app.refresh(); }
@@ -322,6 +427,46 @@ function wireChrome(app, root) {
     window.open(location.href.split("?")[0] + "?presenter=1", "slides-presenter", "width=1100,height=720");
   };
 
+  // AI-fill overlay: the "IA" button in the chrome bar shows a small overlay
+  // with a textarea for the user's intent. "Preencher" calls app.fillSlideWithAI.
+  const aiOverlay = $("#ai-fill-overlay");
+  const aiIntent = $("#ai-fill-intent");
+  const aiGoBtn = $("#ai-fill-go");
+  const aiCancelBtn = $("#ai-fill-cancel");
+  const openAiOverlay = () => {
+    aiIntent.value = "";
+    aiOverlay.style.display = "";
+    aiIntent.focus();
+  };
+  const closeAiOverlay = () => { aiOverlay.style.display = "none"; };
+  const aiFillBtn = $("#aiFillBtn");
+  if (aiFillBtn) aiFillBtn.onclick = (e) => { e.stopPropagation(); openAiOverlay(); };
+  if (aiCancelBtn) aiCancelBtn.onclick = closeAiOverlay;
+  // Click the dim backdrop (outside the box) to dismiss the overlay.
+  if (aiOverlay) aiOverlay.addEventListener("mousedown", (e) => { if (e.target === aiOverlay) closeAiOverlay(); });
+  if (aiGoBtn) aiGoBtn.onclick = async () => {
+    const intent = aiIntent.value.trim();
+    if (!intent) return;
+    const errEl = aiOverlay.querySelector(".ai-fill-error");
+    if (errEl) errEl.textContent = "";
+    aiGoBtn.disabled = true;
+    aiGoBtn.textContent = "...";
+    try {
+      const res = await app.fillSlideWithAI(intent);
+      if (res && res.error) {
+        if (errEl) errEl.textContent = t("slides.ai_error");
+        // Surface the real cause to the debug/error pill (every error must reach it).
+        if (window.bsLog) window.bsLog("AI-fill: " + res.error, "error");
+      } else {
+        closeAiOverlay();
+      }
+    } finally {
+      aiGoBtn.disabled = false;
+      aiGoBtn.textContent = t("slides.ai_fill_go");
+    }
+  };
+  if (aiIntent) aiIntent.addEventListener("keydown", (e) => { if (e.key === "Enter") e.stopPropagation(); });
+
   const onKey = (e) => {
     if (e.key === "Escape" && app.presenting) { app.setPresenting(false); return; }
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
@@ -346,6 +491,7 @@ export function unmount(app, root) {
   if (app._onKey) document.removeEventListener("keydown", app._onKey);
   if (app._onDocClick) document.removeEventListener("click", app._onDocClick);
   if (app._onMaskDocClick) document.removeEventListener("click", app._onMaskDocClick);
+  if (app._onAddSlideKey) document.removeEventListener("keydown", app._onAddSlideKey, true);
   if (app._onFs) document.removeEventListener("fullscreenchange", app._onFs);
   if (root) root.innerHTML = "";
 }

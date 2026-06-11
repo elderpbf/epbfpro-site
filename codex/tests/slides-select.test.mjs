@@ -8,7 +8,8 @@ import assert from 'node:assert/strict';
 import { resolveLogo, DEFAULT_LOGO, textStyleProps } from '../content/slides/js/render/player.js';
 import * as kinds from '../content/slides/js/select/kinds.js';
 import { geometryCaps, strategies } from '../content/slides/js/select/geometry.js';
-import { imgslot, cardItem, topicItem, topicList } from '../content/slides/js/render/helpers.js';
+import { imgslot, topicItem, topicList } from '../content/slides/js/render/helpers.js';
+import { cardItem } from '../content/slides/js/render/cardparts.js';
 import { resolveStyleObj } from '../content/slides/js/core/schema.js';
 import cardsLayout from '../content/slides/js/layouts/cards.js';
 import topicsLayout from '../content/slides/js/layouts/topics.js';
@@ -283,11 +284,12 @@ test('geometryCaps: flowCard resizes WIDTH only in the stack (height is content-
   assert.deepEqual([c.move, c.resizeW, c.resizeH, c.rotate], [false, true, false, false]);
 });
 
-test('flowCard.write stores only the basis (width) as a flow override (no height/x/y/rot)', () => {
-  const slide = { overrides: {} };
+test('flowCard.write stores the basis as a per-ROW main-axis size (the whole stack, not one card)', () => {
+  const slide = { overrides: {}, slots: { cards: [{ id: 'a', row: 0 }, { id: 'abc', row: 0 }] } };
   const app = { cur: () => slide };
   strategies.flowCard.write(app, { ref: 'cards.abc' }, { x: 5, y: 6, w: 240, h: 160, rot: 0 });
-  assert.deepEqual(slide.overrides['cards.abc'], { w: 240, flow: true });
+  assert.deepEqual(slide.slots.rowW, { 0: 240 }, 'width stored on the card row');
+  assert.deepEqual(slide.overrides, {}, 'no per-card geometry override (the stack sizes as a unit)');
 });
 
 test('flowCard.read returns zeros when the element is unresolved (nothing live to measure)', () => {
@@ -317,13 +319,13 @@ test('topicItem keys the <li> by stable id, addresses content by index, declares
 
 test('topicList wraps items in the .topiclist ul and emits no add button', () => {
   const html = topicList([{ id: 'a', text: 'x' }, { id: 'b', text: 'y' }]);
-  assert.match(html, /<ul class="topiclist">/);
+  assert.match(html, /<ul class="topiclist" data-list="topics">/);
   assert.equal((html.match(/<li/g) || []).length, 2);
   assert.ok(!/addtopic|\+ tópico/.test(html), 'add is a container control, not layout HTML');
 });
 
-test('cardItem keys the .card by stable id; text declares a style-ref; no .cardctl emitted', () => {
-  const html = cardItem({ id: 'c1', mode: 'text', text: 'A' }, 0, 2);
+test('cardItem keys the .card by stable id; an on text part declares a style-ref; no .cardctl emitted', () => {
+  const html = cardItem({ id: 'c1', parts: { body: true }, text: 'A' }, 0, 2);
   assert.match(html, /class="card[ "]/);
   assert.match(html, /data-fkey="cards\.c1"/);
   assert.match(html, /data-step="1"/);
@@ -371,18 +373,21 @@ test('card descriptor: flowCard geometry, matches .card to its id ref, target re
   assert.equal(d.geometry, 'flowCard');
   assert.deepEqual(d.match(stubEl({ '.card': { dataset: { fkey: 'cards.c1' } } })), { kind: 'card', ref: 'cards.c1' });
   assert.equal(d.match(stubEl({})), null);
-  const slide = { slots: { cards: [{ id: 'c1', mode: 'text', text: 'A' }, { id: 'c2', mode: 'image' }] } };
+  const slide = { slots: { cards: [{ id: 'c1', parts: { body: true }, text: 'A' }, { id: 'c2', parts: { image: true } }] } };
   const app = { cur: () => slide, stage: noStage };
   assert.equal(d.target(app, { ref: 'cards.c2' }), slide.slots.cards[1]);
 });
 
-test('card.controls carry a mode choice + move left/right + a danger delete (no dropdowns)', () => {
+test('card.controls carry a part toggle per registered part + move left/right + a danger delete', () => {
   const d = kinds.get('card');
-  const slide = { slots: { cards: [{ id: 'c1', mode: 'text', text: 'A' }] } };
+  const slide = { slots: { cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] } };
   const app = { cur: () => slide, stage: noStage };
   const sel = { kind: 'card', ref: 'cards.c1' };
   const ctrls = d.controls(app, sel, d.target(app, sel));
-  assert.ok(ctrls.some((c) => c.type === 'choice' && c.id === 'mode'), 'mode is a choice (no dropdown)');
+  const toggles = ctrls.filter((c) => c.type === 'toggle' && /^part-/.test(c.id));
+  assert.ok(toggles.length >= 3, 'one on/off toggle per registered card part (no dropdown)');
+  assert.ok(toggles.some((c) => c.id === 'part-image'), 'any card can toggle an image part');
+  assert.equal(toggles.find((c) => c.id === 'part-body').on, true, 'toggle state reflects card.parts');
   assert.ok(ctrls.some((c) => c.id === 'move-l') && ctrls.some((c) => c.id === 'move-r'), 'move left/right');
   assert.ok(ctrls.some((c) => c.id === 'delete' && c.danger), 'danger delete');
 });
@@ -415,7 +420,7 @@ test('container descriptor: matches the stack/list, no geometry handles, control
 /* ---------- the plugin-contract leak is closed: layouts emit content only ---------- */
 test('cards/topics/split layouts emit NO control HTML (the LOG-009 leak is closed)', () => {
   const html = [
-    cardsLayout.render({ title: 'T', reveal: false, cards: [{ id: 'c1', mode: 'text', text: 'A' }] }),
+    cardsLayout.render({ title: 'T', reveal: false, cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] }),
     topicsLayout.render({ title: 'T', topics: [{ id: 't1', text: 'x' }] }),
     splitLayout.render({ ratio: 0.5, title: 'T', image: null, topics: [{ id: 't1', text: 'x' }] }),
   ];
@@ -429,8 +434,9 @@ test('cards/topics/split layouts emit NO control HTML (the LOG-009 leak is close
   assert.match(html[1], /data-fkey="topics\.t1"/, 'topics keyed by id');
 });
 
-test('layout defaults() seed the id-bearing shape (cards have ids; topics are {id,text})', () => {
+test('layout defaults() seed the id-bearing shape (cards have ids + a parts map; topics are {id,text})', () => {
   assert.ok(cardsLayout.defaults().cards.every((c) => typeof c.id === 'string'), 'seeded cards carry ids');
+  assert.ok(cardsLayout.defaults().cards.every((c) => c.parts && typeof c.parts === 'object'), 'seeded cards carry a parts map');
   for (const L of [topicsLayout, splitLayout]) {
     assert.ok(L.defaults().topics.every((t) => t && typeof t === 'object' && typeof t.id === 'string'),
       `${L.id} seeds topics as {id,text} objects`);
@@ -475,35 +481,28 @@ test('topic.controls add up/down move buttons (mirror the cards ◀ ▶, drive t
   assert.ok(ids.indexOf('move-up') < ids.indexOf('add'), 'move sits before add/remove');
 });
 
-/* ---------- card Toggles: symmetric resize, stack axis, reset widths ---------- */
-test('flowCard.write mirrors the basis to the opposite-end card when symResize is on (either side)', () => {
-  const four = () => ({ overrides: {}, slots: { symResize: true, cards: [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }] } });
-  let slide = four(); let app = { cur: () => slide };
-  strategies.flowCard.write(app, { ref: 'cards.a' }, { w: 300 });
-  assert.deepEqual(slide.overrides['cards.a'], { w: 300, flow: true });
-  assert.deepEqual(slide.overrides['cards.d'], { w: 300, flow: true }, 'left edge mirrors to the right edge');
-  slide = four(); app = { cur: () => slide };
-  strategies.flowCard.write(app, { ref: 'cards.c' }, { w: 260 });
-  assert.deepEqual(slide.overrides['cards.b'], { w: 260, flow: true }, 'inner-right mirrors to inner-left');
-});
-
-test('flowCard.write: the centre card on odd counts mirrors only itself', () => {
-  const slide = { overrides: {}, slots: { symResize: true, cards: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] } };
+/* ---------- card Toggles: whole-row resize, stack axis, reset widths ---------- */
+test('flowCard.write sets ONE size for the resized card row, so the whole stack stays uniform', () => {
+  const slide = { overrides: {}, slots: { cards: [{ id: 'a', row: 0 }, { id: 'b', row: 0 }, { id: 'c', row: 1 }, { id: 'd', row: 1 }] } };
   const app = { cur: () => slide };
-  strategies.flowCard.write(app, { ref: 'cards.b' }, { w: 250 });
-  assert.deepEqual(slide.overrides, { 'cards.b': { w: 250, flow: true } }, 'no sibling written for the centre');
+  strategies.flowCard.write(app, { ref: 'cards.b' }, { w: 300 });
+  assert.equal(slide.slots.rowW[0], 300, 'row 0 sized as a unit (no per-card override)');
+  strategies.flowCard.write(app, { ref: 'cards.c' }, { w: 220 });
+  assert.equal(slide.slots.rowW[1], 220, 'row 1 sizes independently of row 0');
+  assert.equal(slide.slots.rowW[0], 300, 'row 0 left untouched');
+  assert.deepEqual(slide.overrides, {}, 'never writes per-card geometry overrides');
 });
 
-test('flowCard.write does NOT mirror when symResize is off', () => {
+test('flowCard.write treats a card with no `row` field as row 0', () => {
   const slide = { overrides: {}, slots: { cards: [{ id: 'a' }, { id: 'b' }] } };
   const app = { cur: () => slide };
-  strategies.flowCard.write(app, { ref: 'cards.a' }, { w: 300 });
-  assert.deepEqual(slide.overrides, { 'cards.a': { w: 300, flow: true } }, 'only the resized card');
+  strategies.flowCard.write(app, { ref: 'cards.a' }, { w: 280 });
+  assert.deepEqual(slide.slots.rowW, { 0: 280 });
 });
 
 test('card.controls expose a Toggles opener (Ajustes ▾) after the move/add/delete cluster', () => {
   const d = kinds.get('card');
-  const slide = { slots: { cards: [{ id: 'c1', mode: 'text', text: 'A' }] } };
+  const slide = { slots: { cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] } };
   const app = { cur: () => slide, stage: noStage };
   const sel = { kind: 'card', ref: 'cards.c1' };
   const ctrls = d.controls(app, sel, d.target(app, sel));
@@ -513,30 +512,29 @@ test('card.controls expose a Toggles opener (Ajustes ▾) after the move/add/del
   assert.ok(ids.indexOf('toggles') > ids.indexOf('delete'), 'Toggles sits after the delete');
 });
 
-test('cardTogglesMenu seeds sym/stack toggles from slots + a reset-widths button', () => {
-  const m = kinds.cardTogglesMenu({ symResize: true, stacked: false });
-  const sym = m.find((c) => c.id === 'sym');
+test('cardTogglesMenu seeds the stack toggle + a reset-widths button (symResize retired)', () => {
+  const m = kinds.cardTogglesMenu({ stacked: false });
   const stack = m.find((c) => c.id === 'stack');
-  assert.ok(sym && sym.type === 'toggle' && sym.on === true, 'symmetric toggle seeded on');
   assert.ok(stack && stack.type === 'toggle' && stack.on === false, 'stack toggle seeded off');
   assert.ok(m.some((c) => c.id === 'reset-widths' && c.type === 'button'), 'has reset-widths button');
+  assert.ok(!m.some((c) => c.id === 'sym'), 'no symmetric-resize toggle (whole-row resize replaced it)');
 });
 
-test('cardTogglesMenu reset-widths clears every card width override, leaving others intact', () => {
-  const slide = { slots: { cards: [{ id: 'a' }, { id: 'b' }] }, overrides: { 'cards.a': { w: 300, flow: true }, 'cards.b': { w: 200, flow: true }, title: { x: 1 } } };
+test('cardTogglesMenu reset-widths clears the per-row sizes (back to equal), leaving other slots intact', () => {
+  const slide = { slots: { cards: [{ id: 'a', row: 0 }], rowW: { 0: 300, 1: 200 }, title: 'x' }, overrides: {} };
   let recorded = 0;
   const app = { cur: () => slide, record: () => recorded++, refresh: () => {} };
   kinds.cardTogglesMenu(slide.slots).find((c) => c.id === 'reset-widths').run(app);
-  assert.ok(!('cards.a' in slide.overrides) && !('cards.b' in slide.overrides), 'card widths cleared');
-  assert.deepEqual(slide.overrides.title, { x: 1 }, 'non-card overrides untouched');
+  assert.ok(!slide.slots.rowW, 'all per-row sizes cleared (cards revert to equal flex)');
+  assert.equal(slide.slots.title, 'x', 'other slots untouched');
   assert.equal(recorded, 1);
 });
 
 test('cards layout adds the .cardrow col class only when stacked', () => {
-  const flat = cardsLayout.render({ title: '', cards: [{ id: 'c1', mode: 'text', text: 'A' }] });
+  const flat = cardsLayout.render({ title: '', cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] });
   assert.match(flat, /class="cardrow"/, 'row by default');
   assert.ok(!/cardrow col/.test(flat), 'no col class when not stacked');
-  const stacked = cardsLayout.render({ title: '', stacked: true, cards: [{ id: 'c1', mode: 'text', text: 'A' }] });
+  const stacked = cardsLayout.render({ title: '', stacked: true, cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] });
   assert.match(stacked, /class="cardrow col"/, 'col class when stacked');
 });
 
@@ -546,16 +544,15 @@ test('geometryCaps: flowCard flips to HEIGHT resize when the row is stacked', ()
   assert.deepEqual(geometryCaps('flowCard', false), { move: false, resizeW: true, resizeH: false, rotate: false }, 'row -> left/right handles');
 });
 
-test('flowCard.write stores the HEIGHT as the basis when the row is stacked', () => {
-  const slide = { overrides: {}, slots: { stacked: true, cards: [{ id: 'a' }] } };
+test('flowCard.write stores the HEIGHT as the row size when the stack is a column', () => {
+  const slide = { overrides: {}, slots: { stacked: true, cards: [{ id: 'a', row: 0 }] } };
   const app = { cur: () => slide };
   strategies.flowCard.write(app, { ref: 'cards.a' }, { x: 0, y: 0, w: 300, h: 180, rot: 0 });
-  assert.deepEqual(slide.overrides['cards.a'], { w: 180, flow: true }, 'basis = height when stacked (kept under w)');
+  assert.deepEqual(slide.slots.rowW, { 0: 180 }, 'main-axis basis = height when stacked');
 });
 
-test('cardTogglesMenu labels follow the active axis (widths in a row, heights when stacked)', () => {
+test('cardTogglesMenu reset label follows the active axis (equalize widths vs heights)', () => {
   const row = kinds.cardTogglesMenu({ stacked: false });
   const col = kinds.cardTogglesMenu({ stacked: true });
   assert.notEqual(row.find((c) => c.id === 'reset-widths').label, col.find((c) => c.id === 'reset-widths').label, 'equalize label differs by axis');
-  assert.notEqual(row.find((c) => c.id === 'sym').label, col.find((c) => c.id === 'sym').label, 'symmetric label differs by axis');
 });

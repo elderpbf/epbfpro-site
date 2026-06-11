@@ -92,32 +92,31 @@ export function edPlain(tag, path, value, cls = "", styleRef = "") {
  * helpers are the single renderer, shared by the layouts AND inherited by the
  * navigator thumbnails and the presenter window. */
 
-/** One topic bullet. `t` is a {id,text,style?} object; `i` is its current index. */
-export function topicItem(t, i) {
-  return (
-    `<li class="reveal" data-step="${i + 1}" data-fkey="topics.${t.id}">` +
-    edPlain("span", `topics.${i}.text`, t.text, "", `topics.${t.id}`) +
-    `</li>`
-  );
+/** One topic bullet. `t` is a {id,text,style?,step?} object; `i` is its current index. */
+export function topicItem(t, i, listName = "topics", fields) {
+  // `fields` lets a list item carry MORE than one editable field (define's
+  // term+def, agenda's time+label). Each field is { key, cls? }; default is a single
+  // "text" field, so topics/compare/etc. are unchanged. All fields share the item's
+  // style-ref so per-item style survives reorder.
+  const flds = fields && fields.length ? fields : [{ key: "text" }];
+  const step = t.step != null ? t.step : (i + 1);
+  const cls = step > 0 ? "reveal" : "";
+  const inner = flds
+    .map((f) => edPlain("span", `${listName}.${i}.${f.key}`, t[f.key], f.cls || "", `${listName}.${t.id}`))
+    .join("");
+  return `<li class="${cls}" data-step="${step}" data-fkey="${listName}.${t.id}">${inner}</li>`;
 }
 
-/** The topic list (<ul>), shared by the topics and split layouts. */
-export function topicList(topics) {
-  return `<ul class="topiclist">${topics.map(topicItem).join("")}</ul>`;
+/** The topic list (<ul>). `listName` lets ONE layout host several independent lists
+ *  (compare's left/right, checklist's dos/donts), each editable through the SAME
+ *  topic + container descriptors: the <ul> carries data-list so the container knows
+ *  which slot to add into, and each item's fkey/path/style-ref are prefixed with the
+ *  list name. Defaults to "topics" so topics/split/imagebox keep the one-arg call. */
+export function topicList(topics, listName = "topics", fields) {
+  return `<ul class="topiclist" data-list="${listName}">${topics.map((t, i) => topicItem(t, i, listName, fields)).join("")}</ul>`;
 }
 
-/** Inner body of a card by its mode (title / text / image / image+text). */
-function cardBody(c, i) {
-  const ref = `cards.${c.id}`;
-  if (c.mode === "title") return edPlain("div", `cards.${i}.title`, c.title, "c-title", ref);
-  if (c.mode === "text") return edPlain("div", `cards.${i}.text`, c.text, "c-text", ref);
-  const img = `<div class="c-img">${imgslot(`cards.${i}.image`, c.image, true)}</div>`;
-  if (c.mode === "image") return img;
-  return img + edPlain("div", `cards.${i}.text`, c.text, "c-text", ref);
-}
-
-/** One card. `c` is a {id,mode,...,style?} object; `n` is the card count (drives the
- *  reveal class). data-fkey is the stable id ref the flowCard strategy writes to. */
-export function cardItem(c, i, n) {
-  return `<div class="card ${n > 1 ? "reveal" : ""}" data-step="${i + 1}" data-fkey="cards.${c.id}">${cardBody(c, i)}</div>`;
-}
+// The card renderer (cardItem) + the card PART registry now live in
+// render/cardparts.js, so any card composes image/title/body parts (and future
+// parts) by toggling flags. helpers.js keeps only the low-level slot renderers that
+// cardparts.js imports from (one-way: helpers never imports cardparts, no cycle).

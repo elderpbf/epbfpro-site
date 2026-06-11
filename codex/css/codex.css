@@ -88,6 +88,95 @@
 }
 .cdx-subpill.on { display: inline-flex; }
 
+/* ── Mobile bottom navigation (advradar-style) + mobile sub-strip ─────────────
+ * Codex chrome is desktop-first: on phones the top .cdx-tabs strip is flex-
+ * starved (brand + controls eat the row), so the tabs become unreachable. Below
+ * the phone breakpoint we hide that strip and the hover sub-pill, pin a bottom
+ * tab bar, and pin a scrollable sub-strip under the topbar. Tokens only, so dark
+ * mode is inherited. Codex only; the Backstage portal is a card grid that already
+ * reflows on mobile. */
+.cdx-botnav { display: none; }            /* desktop: hidden, revealed at the breakpoint */
+.cdx-subrow--mobile { display: none; }    /* desktop: hidden, the pill/bar handle subs */
+
+.cdx-botnav-item {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 0.3rem 0.2rem;
+  text-decoration: none; color: var(--text-secondary);
+  font-size: 0.66rem; font-weight: 600;
+}
+.cdx-botnav-icon { display: inline-flex; color: currentColor; }
+.cdx-botnav-item.active { color: var(--accent-color); }
+.cdx-botnav-item--lessons   { --accent-color: var(--codex-lessons); }
+.cdx-botnav-item--content   { --accent-color: var(--codex-content); }
+.cdx-botnav-item--cohorts   { --accent-color: var(--codex-cohorts); }
+.cdx-botnav-item--questions { --accent-color: var(--codex-questions); }
+.cdx-botnav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Mobile hamburger + drawer: desktop-hidden; the phone breakpoint reveals the
+ * hamburger and turns each tab's sidebar into an off-canvas drawer. */
+.cdx-hamburger { display: none; }
+.cdx-drawer-backdrop { display: none; }
+
+@media (max-width: 700px) {
+  .cdx-tabs { display: none; }                            /* top strip unusable on phones */
+  .cdx-subpill { display: none !important; }              /* hover pill is touch-useless */
+  .cdx-subrow:not(.cdx-subrow--mobile) { display: none; } /* desktop persistent bar off */
+
+  .cdx-subrow--mobile {
+    display: block;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .cdx-subrow--mobile .cdx-substrip { padding: 0.3rem 0.6rem; }
+
+  .cdx-botnav {
+    display: flex;
+    position: fixed; left: 0; right: 0; bottom: 0;
+    height: 60px; z-index: 100;   /* above topbar (90) + sessions sidebar (80); modals sit higher */
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px var(--shadow);
+  }
+  .cdx-view { padding-bottom: 76px; }                     /* clear the fixed bar */
+
+  /* Hamburger + off-canvas sidebar drawers. Each tab's sidebar slides in from
+   * the left over a backdrop; the main pane fills the row behind it. The drawer
+   * sits above the topbar/bottom-nav when open (a takeover), so backdrop tap,
+   * Escape, or picking an item closes it. */
+  .cdx-hamburger { display: inline-flex; }
+
+  /* Collapse the multi-column tab layouts so the main pane fills once its sidebar
+   * leaves the flow (at THIS breakpoint, ahead of any tab's own 600px rule). */
+  .cdx-bank, .cdx-items-split, .cdx-three-pane { grid-template-columns: 1fr; }
+
+  /* Beat cohorts.css's `.cdx-cohorts-nav { display: contents }` (same specificity,
+   * later in source) so the wrapper forms a real box the drawer can position. */
+  .cdx-three-pane .cdx-cohorts-nav { display: block; }
+
+  .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 84vw; max-width: 340px;
+    z-index: 120;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    overflow-y: auto;
+    border-radius: 0;
+    box-sizing: border-box;
+    background: var(--surface);   /* opaque panel (the bare cohorts wrapper has no bg of its own) */
+  }
+  .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open {
+    transform: none;
+    box-shadow: 4px 0 24px var(--shadow);
+  }
+  .cdx-drawer-backdrop.is-open {
+    display: block;
+    position: fixed; inset: 0; z-index: 119;
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
 /* ── Tab content host ───────────────────────────────────────── */
 .cdx-view { padding: 0.5rem 1.5rem 1.5rem; }
 

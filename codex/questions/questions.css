@@ -384,6 +384,37 @@
 
 .cdx-bank-qlist { display: flex; flex-direction: column; gap: 0.75rem; }
 
+/* Class filter chips (Todas / Genéricas / Variáveis / Únicas). Colors are theme
+ * tokens, so dark mode is inherited; mirrors the hub-tab pill language. */
+.cdx-bank-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.cdx-bank-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: transparent;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
+  border-radius: 999px; padding: 0.25rem 0.7rem;
+  font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+  font-family: inherit;
+}
+.cdx-bank-chip:hover { color: var(--text-primary); }
+.cdx-bank-chip.active { color: var(--primary); border-color: var(--primary); background: var(--surface-hover, rgba(127, 127, 127, 0.08)); }
+.cdx-bank-chip-count {
+  font-size: 0.7rem; font-weight: 700;
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+  border-radius: 999px; padding: 0.02rem 0.4rem; color: var(--text-secondary);
+}
+.cdx-bank-chip.active .cdx-bank-chip-count { color: var(--primary); }
+
+/* Cross-bank Variáveis view (synthetic conjunto) */
+.cdx-bank-set--variaveis .cdx-bank-set-name { color: var(--primary); }
+.cdx-bank-variaveis-hint { font-size: 0.82rem; color: var(--text-secondary); margin: 0; }
+.cdx-q-srcbank {
+  align-self: flex-start;
+  background: transparent; border: none; cursor: pointer; padding: 0;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--primary); font-family: inherit;
+}
+.cdx-q-srcbank:hover { text-decoration: underline; }
+
 /* Question card (text + options preview + footer) */
 .cdx-q {
   display: flex; flex-direction: column; gap: 0.6rem;
@@ -437,6 +468,17 @@
 .cdx-aud-key { font-size: 0.74rem; color: var(--text-light); font-family: ui-monospace, monospace; }
 .cdx-aud-addrow { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
 .cdx-aud-addrow input { flex: 1; }
+.cdx-aud-ai-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.cdx-aud-ai-row input { flex: 1; }
+.cdx-bank-import-file-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.cdx-bank-import-banks { margin-bottom: 0.6rem; }
+.cdx-bank-import-banks-head { font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.3rem; }
+.cdx-bank-import-banklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.cdx-bank-import-bankrow { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.cdx-bank-import-bankname { flex: 1; font-weight: 600; }
+.cdx-bank-import-bankcount { color: var(--text-light); }
+.cdx-bank-import-banktag { font-size: 0.72rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--border); color: var(--text-light); }
+.cdx-bank-import-bankrow--new .cdx-bank-import-banktag { background: var(--primary); color: #fff; }
 .cdx-aud-lint { font-size: 0.78rem; color: var(--error); margin: 0.4rem 0; }
 .cdx-var-gridwrap { overflow-x: auto; }
 .cdx-var-grid { border-collapse: collapse; width: 100%; }
@@ -787,6 +829,7 @@
 .cdx-host-bar .cdx-btn { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
 .cdx-host-bar-left { display: flex; align-items: center; gap: 0.6rem; }
 .cdx-host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+.cdx-host-connected { display: inline-flex; align-items: center; gap: 4px; padding: 0.25rem 0.55rem; border-radius: 999px; background: var(--surface-hover, rgba(127, 127, 127, 0.18)); font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
 .cdx-host-code { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; color: var(--primary); }
 .cdx-host-live { display: inline-flex; align-items: center; gap: 5px; }
 .cdx-host-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: cdx-host-live-pulse 2s ease-in-out infinite; }
@@ -811,7 +854,7 @@
    content and the page (browser chrome) scrolls, so there is no inner vertical
    scrollbar and no per-column scrollbars. The columns scroll together. */
 .cdx-host-dashboard { display: flex; gap: 0; flex: 1; min-height: 0; }
-.cdx-hd-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: visible; padding: 0 10px 16px; }
+.cdx-hd-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: visible; padding: 0 0 16px; }
 .cdx-hd-col-left { width: 360px; flex-shrink: 0; min-width: 260px; max-width: 600px; padding-left: 0; }
 .cdx-hd-col-center { flex: 1; min-width: 280px; }
 .cdx-hd-col-right { width: 380px; flex-shrink: 0; min-width: 280px; max-width: 600px; padding-right: 0; }
@@ -843,10 +886,25 @@
 .cdx-bank-set-label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
 .cdx-bank-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; max-height: 220px; overflow-y: auto; }
 .cdx-bank-msg { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
-.cdx-bank-item { display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; padding: 0.45rem 0.6rem; border: 1px solid rgba(20,184,166,.12); border-radius: 8px; background: var(--background); cursor: pointer; }
+.cdx-bank-item { display: flex; flex-direction: column; padding: 0.4rem 0.55rem; border: 1px solid rgba(20,184,166,.12); border-radius: 8px; background: var(--background); }
 .cdx-bank-item:hover { border-color: var(--primary); }
+.cdx-bank-item-head { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+.cdx-bank-chevron { flex-shrink: 0; width: 0.85rem; text-align: center; font-size: 0.72rem; color: var(--text-secondary); transition: transform 0.15s ease; }
+.cdx-bank-item.is-open .cdx-bank-chevron { transform: rotate(90deg); }
 .cdx-bank-item-text { font-size: 0.84rem; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-bank-item.is-open .cdx-bank-item-text { white-space: normal; overflow: visible; }
+.cdx-bank-edit { padding: 0.3rem 0.6rem; font-size: 0.76rem; flex-shrink: 0; }
 .cdx-bank-launch { padding: 0.3rem 0.7rem; font-size: 0.76rem; flex-shrink: 0; }
+.cdx-bank-detail { display: none; margin-top: 0.4rem; padding: 0.4rem 0 0.1rem calc(0.85rem + 0.4rem); border-top: 1px dashed var(--border); }
+.cdx-bank-item.is-open .cdx-bank-detail { display: block; }
+.cdx-bank-detail-meta { font-size: 0.76rem; color: var(--text-secondary); }
+.cdx-bank-class { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; vertical-align: 1px; }
+.cdx-bank-class-generic { background: rgba(127,127,127,.16); color: var(--text-secondary); }
+.cdx-bank-class-variable { background: rgba(20,184,166,.16); color: var(--primary); }
+.cdx-bank-class-unique { background: rgba(217,119,6,.18); color: #d97706; }
+.cdx-bank-detail-opts { margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.18rem; }
+.cdx-bank-opt { font-size: 0.8rem; color: var(--text-secondary); }
+.cdx-bank-opt.is-correct { color: var(--primary); font-weight: 600; }
 
 /* Active question panel */
 .cdx-active-panel { background: var(--surface); border: 2px solid var(--primary); border-radius: 14px; padding: 1.25rem; display: none; }
@@ -858,6 +916,36 @@
 /* Close-options + the Encerrar button share the right side of the active foot,
    exactly like host.html (the checkboxes sit above the close button). */
 .cdx-active-foot-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; }
+.cdx-active-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Auto-revelar: opt-in control that closes the active question and shows the
+   correct answer once a chosen share of the room has answered (or the answers
+   plateau as a safety net). Controls/progress/status appear only when toggled on
+   (.is-on). Tokens only, so dark mode is inherited. */
+.cdx-autoreveal { margin-top: 1rem; padding: 0.7rem 0.85rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.cdx-autoreveal-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+.cdx-autoreveal-toggle input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.cdx-autoreveal-controls, .cdx-autoreveal-progress, .cdx-autoreveal-status { display: none; }
+.cdx-autoreveal.is-on .cdx-autoreveal-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.cdx-autoreveal.is-on .cdx-autoreveal-progress { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.6rem; }
+.cdx-autoreveal.is-on .cdx-autoreveal-status:not(:empty) { display: block; margin-top: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--primary); }
+.cdx-autoreveal-num { width: 4rem; padding: 0.3rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-size: 0.84rem; font-family: inherit; }
+.cdx-autoreveal-unit { font-size: 0.82rem; color: var(--text-secondary); }
+.cdx-autoreveal-connected { min-width: 1.6rem; padding: 0.2rem 0.45rem; border-radius: 6px; background: var(--surface-hover, rgba(127, 127, 127, 0.18)); font-size: 0.84rem; font-weight: 700; color: var(--primary); text-align: center; }
+.cdx-autoreveal-target { font-size: 0.84rem; font-weight: 700; color: var(--primary); }
+.cdx-autoreveal-bar { flex: 1; height: 8px; border-radius: 6px; background: var(--surface-hover, rgba(127, 127, 127, 0.18)); overflow: hidden; }
+.cdx-autoreveal-bar-fill { height: 100%; width: 0; background: var(--primary); border-radius: 6px; transition: width 0.3s ease; }
+.cdx-autoreveal-count { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+.cdx-autoreveal-flash { animation: cdx-autoreveal-flash 1.2s ease; }
+@keyframes cdx-autoreveal-flash { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--primary); } }
+
+/* Debug-only in-host answer simulator (hidden via [hidden] unless bs_debug is on).
+   A dashed warm border marks it as a dev affordance, not a teaching control. */
+.cdx-sim { margin-top: 0.75rem; padding: 0.5rem 0.7rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; border: 1px dashed var(--cdx-cohorts, rgba(245,158,11,.6)); border-radius: 10px; }
+.cdx-sim-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); }
+.cdx-sim-n { width: 4rem; padding: 0.3rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-size: 0.84rem; font-family: inherit; }
+.cdx-sim-btn { font-size: 0.8rem; }
+.cdx-sim-status { font-size: 0.8rem; color: var(--text-secondary); }
 
 /* Student-Q&A active card */
 .cdx-sqa-meta { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 8px; }
@@ -925,6 +1013,17 @@
   .cdx-host-dashboard { flex-direction: column; max-height: none; }
   .cdx-hd-col, .cdx-hd-col-left, .cdx-hd-col-center, .cdx-hd-col-right { width: 100% !important; max-width: none !important; overflow-y: visible; padding: 0 0 14px; }
   .cdx-hd-resizer { display: none; }
+}
+
+/* Live host fills the width: drop .cdx-view's side padding when the host is
+   mounted (scoped via :has so the Sessions list / Bank / other tabs keep theirs,
+   and only on desktop where the 3-column layout shows). The bar stays full-bleed;
+   the outer columns keep a small 8px gutter so the cards don't touch the edge. */
+@media (min-width: 901px) {
+  .cdx-view:has(.cdx-host) { padding-left: 0; padding-right: 0; }
+  .cdx-view:has(.cdx-host) .cdx-host-bar { margin-left: 0; margin-right: 0; }
+  .cdx-view:has(.cdx-host) .cdx-hd-col-left { padding-left: 8px; }
+  .cdx-view:has(.cdx-host) .cdx-hd-col-right { padding-right: 8px; }
 }
 
 /* =========================================================

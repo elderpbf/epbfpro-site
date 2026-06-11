@@ -69,6 +69,16 @@ test('migrateDeck preserves non-list slot textStyle (e.g. title) untouched', () 
   assert.deepEqual(d.slides[0].textStyle.title, { fs: 40 }, 'title style (a real layout slot) is left in slide.textStyle');
 });
 
+test('migrateDeck v4: folds the legacy card mode into a composable parts map and drops mode', () => {
+  const legacy = legacyDeck(); // cards are {mode:'text'}
+  legacy.slides[0].slots.cards.push({ mode: 'image-text', text: 'C', image: { src: 'x' } });
+  const d = migrateDeck(legacy);
+  const cards = d.slides[0].slots.cards;
+  assert.deepEqual(cards[0].parts, { body: true }, "mode:'text' -> {body:true}");
+  assert.deepEqual(cards[2].parts, { image: true, body: true }, "mode:'image-text' -> {image,body}");
+  for (const c of cards) assert.ok(!('mode' in c), 'the retired mode field is dropped');
+});
+
 test('migrateDeck sets schemaVersion and is idempotent (second run is a no-op)', () => {
   const once = migrateDeck(legacyDeck());
   assert.equal(once.schemaVersion, SCHEMA_VERSION, 'schemaVersion is stamped to current');

@@ -161,5 +161,18 @@ export function createBar(app) {
     return b;
   }
 
+  // Click outside the bar dismisses it. The stage area handles its own
+  // select/clear (its pointerdown), so we only act on clicks OUTSIDE the stage
+  // (chrome, nav, empty gutter), exempting the pill, the Ajustes dropdown, and
+  // the menu trigger that opened it. Scoped to app.root so it is torn down with
+  // the editor (no document-level leak).
+  app.root.addEventListener("mousedown", (e) => {
+    if (!current) return;
+    if (layer.contains(e.target) || drop.contains(e.target)) return;
+    if (anchorEl && anchorEl.contains(e.target)) return;
+    if (app.stagewrap.contains(e.target)) return; // stage manages its own selection
+    hide();
+  }, true);
+
   return { el: layer, render, openMenu, openDropdown, hide, hideDropdown, reposition, current: () => current };
 }
