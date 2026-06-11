@@ -84,6 +84,7 @@ export const questions = {
   setVisibility:   (p) => call('set_question_visibility', p),  // { id, session_code, show_results }
   sessionState:    (p) => call('get_session_state', p),        // { code } -> { session, qa_enabled, pinned_question, active_question, history } (public)
   submitAnswer:    (p) => call('submit_answer', p),            // { question_id, session_code, student_name, answer_index? | answer_value? } (public, student-side; used by the debug-only in-host simulator)
+  studentInbox:    (p) => call('cp_student_inbox', p),         // { session_code, student_name } (public; the answer-page heartbeat, also marks the student "connected" for presence. The debug simulator uses it to register bot presence so auto-revelar can fire.)
   // Bank (sets + questions)
   listSets:        (p) => call('list_question_sets', p),       // -> { banks }
   getQuestions:    (p) => call('get_questions', p),            // { list_name } -> { questions }

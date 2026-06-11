@@ -87,6 +87,7 @@ test('live-host wires a debug-gated in-host simulator using the pure logic + fac
   assert.match(src, /from\s+['"]\.\/sim-answers\.js['"]/, 'imports the pure sim logic');
   assert.match(src, /buildAnswer\s*\(/, 'builds answers via the shared logic');
   assert.match(src, /\.submitAnswer\s*\(/, 'submits via the facade');
+  assert.match(src, /\.studentInbox\s*\(/, 'registers bot presence (inbox heartbeat) so the connected-count + auto-revelar see them');
   assert.match(src, /cdx-sim\b/, 'renders the simulator control');
   assert.match(src, /data-act=["']sim-run["']/, 'has the run action');
   assert.match(src, /bs_debug/, 'gated behind the bs_debug flag');

@@ -110,6 +110,15 @@ test('live-host launches/closes via the facade and drives the element through sc
   assert.ok(!/['"]cpq-data['"]/.test(src), 'no legacy cpq-data document bus');
 });
 
+test('relaunch/bank-launch keeps the correct answer (resolves it from history correct_answers arrays too)', () => {
+  // Bug: _launchFromBank read only the scalar correct_answer, so relaunching a
+  // closed question (history items expose correct_answers as an array, no scalar)
+  // dropped the correct answer -> closing with "reveal" highlighted nothing.
+  const src = read('../questions/live-host.js');
+  assert.match(src, /from\s+['"]\.\/question-composer\.js['"]/, 'imports the composer helpers');
+  assert.match(src, /correctForLaunch\s*\(/, '_launchFromBank resolves the correct answer via the shared helper');
+});
+
 test('history cards expose a delete-from-history action wired to the facade', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /data-hi-act="delete"/, 'history card carries an Excluir button');

@@ -57,6 +57,23 @@ export function buildPayload(form) {
   return out;
 }
 
+// Resolve a STORED question's correct answer into the launch shape (scalar index
+// for single-select, array for multi, null for none). Stored questions arrive in
+// two shapes: bank rows carry `correct_answer` (scalar / serialized string), live
+// history items carry `correct_answers` (array) and NO scalar. Relaunch must read
+// BOTH, else relaunching a closed question silently drops its correct answer and
+// closing with "reveal" highlights nothing on the display.
+export function correctForLaunch(q) {
+  if (q && q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '') {
+    return q.correct_answer;
+  }
+  if (q && Array.isArray(q.correct_answers) && q.correct_answers.length) {
+    const maxSel = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select, 10) : 1;
+    return (maxSel === 1) ? q.correct_answers[0] : q.correct_answers;
+  }
+  return null;
+}
+
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]

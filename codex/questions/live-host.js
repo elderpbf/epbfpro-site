@@ -14,7 +14,7 @@
 // the embedded element's poll, the Q&A feed's poll, the SQA debounce, and every
 // layout/resizer/document/modal listener.
 import { questions as api, cohorts, audiences as audienceApi } from '../js/codex-api.js';
-import { mountComposer } from './question-composer.js';
+import { mountComposer, correctForLaunch } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
@@ -601,13 +601,24 @@ async function _simulate() {
   _simRunning = true;
   let ok = 0, done = 0;
   const skew = 0.6, batch = 6;
+  const botNames = Array.from({ length: n }, (_v, j) => 'Bot_' + String(j + 1).padStart(3, '0'));
+  // Register each bot as "connected" FIRST, via the same inbox heartbeat a real
+  // student's answer page sends. Without this the bots only submit answers and
+  // never count toward the connected headcount, so auto-revelar (keyed to that
+  // count) would never fire. Pre-registering establishes the room size up front,
+  // so the threshold fires at its true percentage, not on the first answer.
+  for (let i = 0; i < n; i += batch) {
+    if (!_container || !_simRunning) break;
+    await Promise.all(botNames.slice(i, i + batch).map((nm) =>
+      api.studentInbox({ session_code: _session.code, student_name: nm, _silent: true }).catch(() => {})));
+  }
   for (let i = 0; i < n; i += batch) {
     if (!_container || !_simRunning) break;
     const calls = [];
     for (let j = i; j < Math.min(i + batch, n); j++) {
       const payload = buildAnswer(q, makeRng(hashSeed('Bot_' + (j + 1) + ':' + q.id)), skew);
       if (!payload) continue;
-      const params = Object.assign({ question_id: q.id, session_code: _session.code, student_name: 'Bot_' + String(j + 1).padStart(3, '0'), _silent: true }, payload);
+      const params = Object.assign({ question_id: q.id, session_code: _session.code, student_name: botNames[j], _silent: true }, payload);
       calls.push(api.submitAnswer(params).then((r) => { done++; if (r && !r.error) ok++; }).catch(() => { done++; }));
     }
     await Promise.all(calls);
@@ -802,8 +813,11 @@ async function _launchFromBank(q) {
   }
   const opts = Array.isArray(r.options) ? r.options
     : ((typeof q.options === 'string') ? _safeParse(q.options) : (q.options || []));
+  // Resolve the correct answer from EITHER the bank scalar or a history item's
+  // correct_answers array; reading only the scalar dropped it on relaunch, so a
+  // closed question couldn't highlight on reveal.
   const payload = { session_code: _session.code, type: q.type || 'mc', text: r.question, options: opts,
-    correct_answer: (q.correct_answer !== null && q.correct_answer !== undefined && q.correct_answer !== '') ? q.correct_answer : null };
+    correct_answer: correctForLaunch(q) };
   if (TEXT_TYPES.includes(q.type)) payload.max_select = 0;
   else payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select, 10) : 1;
   try { await api.launchQuestion(payload); if (_qEl) _qEl.startPolling(); } catch (e) { notice.internal(e); }
