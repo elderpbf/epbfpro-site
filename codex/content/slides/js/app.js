@@ -252,15 +252,20 @@ export function mount(root, ctx = {}) {
     // insert a free element (movable on any slide) of the given type
     insertElement(type) {
       const c = this.deck().canvas;
-      // "list" (and later "cards") is a STACK, not a single box: a free-placed asset
-      // whose items live in slots[listKey], so the whole topic machinery (select /
-      // edit / add / remove / reorder) drives them with no new selection code. Starts
-      // as a stack of one and grows via the container's ＋ like any list.
-      if (type === "list") {
+      // "list" and "card" are STACKS, not single boxes: a free-placed asset whose
+      // items live in slots[listKey], so the whole list machinery (select / edit /
+      // add / remove / reorder) drives them with no new selection code. Starts as a
+      // stack of one and grows via the selected stack's ＋. The variant picks the item
+      // shape: "cards" seeds a composable card, "list" a bullet.
+      if (type === "list" || type === "card") {
+        const isCard = type === "card";
         const listKey = "ins" + uid();
-        this.cur().slots[listKey] = [{ id: uid(), text: t("slides.ed_new_topic") }];
+        this.cur().slots[listKey] = [
+          isCard ? { id: uid(), parts: { body: true }, text: t("slides.ed_new_card") } : { id: uid(), text: t("slides.ed_new_topic") },
+        ];
         this.record();
-        this.deck().assets.push({ id: uid(), type: "stack", variant: "list", listKey, x: c.w / 2 - 200, y: c.h / 2 - 60, w: 400, rot: 0, scope: "slide", slideId: this.cur().id });
+        const w = isCard ? 320 : 400;
+        this.deck().assets.push({ id: uid(), type: "stack", variant: isCard ? "cards" : "list", listKey, x: c.w / 2 - w / 2, y: c.h / 2 - 60, w, rot: 0, scope: "slide", slideId: this.cur().id });
         this.refresh();
         return;
       }

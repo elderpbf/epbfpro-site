@@ -26,42 +26,53 @@ export function list() {
 // The three parts that recompose the retired title|text|image|image-text modes.
 // Any card can now carry an image (the #1 ask), and parts combine freely. Future
 // parts (number, badge, price, icon…) register exactly the same way, with NO change
-// here or in the renderer / descriptor / schema.
+// here or in the renderer / descriptor / schema. `list` is the slot list the card
+// lives in ("cards" for the layout; a generated key for a free-placed card stack),
+// so the same renderer serves both with identical paths/identity, just prefixed.
 register({
   id: "image",
   order: 10,
   labelKey: "slides.ed_image",
-  render: (c, i) => `<div class="c-img">${imgslot(`cards.${i}.image`, c.image, true)}</div>`,
+  render: (c, i, list) => `<div class="c-img">${imgslot(`${list}.${i}.image`, c.image, true)}</div>`,
 });
 register({
   id: "title",
   order: 20,
   labelKey: "slides.ed_title",
-  render: (c, i) => edPlain("div", `cards.${i}.title`, c.title, "c-title", `cards.${c.id}`),
+  render: (c, i, list) => edPlain("div", `${list}.${i}.title`, c.title, "c-title", `${list}.${c.id}`),
 });
 register({
   id: "body",
   order: 30,
   labelKey: "slides.ed_text",
-  render: (c, i) => edPlain("div", `cards.${i}.text`, c.text, "c-text", `cards.${c.id}`),
+  render: (c, i, list) => edPlain("div", `${list}.${i}.text`, c.text, "c-text", `${list}.${c.id}`),
 });
 
 // The card body: render each registered part whose flag is ON in card.parts
 // (absent = off), in registry order. Layouts emit content only; controls are data.
-function cardBody(c, i) {
+function cardBody(c, i, listName = "cards") {
   const parts = c.parts || {};
   return list()
     .filter((p) => parts[p.id])
-    .map((p) => p.render(c, i))
+    .map((p) => p.render(c, i, listName))
     .join("");
 }
 
 /** One card. `c` is a {id,parts,…,style?,step?} object; `n` is the card count
- *  (drives the reveal class). data-fkey is the stable id ref the flowCard strategy
- *  writes to. The single card renderer, shared by the layout, the navigator
- *  thumbnails and the presenter window. */
-export function cardItem(c, i, n) {
+ *  (drives the reveal class); `listName` is the slot list it lives in ("cards" for
+ *  the layout, a generated key for a free-placed card stack). data-fkey is the stable
+ *  id ref the flowCard strategy writes to. The single card renderer, shared by the
+ *  layout, the free-placed stack, the navigator thumbnails and the presenter window. */
+export function cardItem(c, i, n, listName = "cards") {
   const step = c.step != null ? c.step : (i + 1);
   const cls = n > 1 && step > 0 ? "card reveal" : "card";
-  return `<div class="${cls}" data-step="${step}" data-fkey="cards.${c.id}">${cardBody(c, i)}</div>`;
+  return `<div class="${cls}" data-step="${step}" data-fkey="${listName}.${c.id}">${cardBody(c, i, listName)}</div>`;
+}
+
+/** A free-placed CARD stack (the twin of helpers.topicList): a .cardrow bound to a
+ *  generated list key, each card path-prefixed by it, so the card + container kinds
+ *  drive it with no bespoke code. Single column (a growable stack), so the asset box
+ *  sizes it as a unit. The Cards LAYOUT builds its own rows, so it does not use this. */
+export function cardList(cards, listName = "cards") {
+  return `<div class="cardrow col" data-list="${listName}">${cards.map((c, i) => cardItem(c, i, cards.length, listName)).join("")}</div>`;
 }

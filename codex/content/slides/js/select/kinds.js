@@ -99,6 +99,18 @@ register({
         app2.refresh();
       },
     });
+    // A stack is selected as a UNIT (the asset wins the click), so its OWN bar carries
+    // the grow control: "＋ card" / "＋ tópico" adds to its slots list. This is how a
+    // free-placed Lista or Card stack grows ("click the stack, add more").
+    if (a.type === "stack") ctrls.push({
+      type: "button",
+      id: "add",
+      label: `＋ ${a.variant === "cards" ? t("slides.ed_card") : t("slides.ed_topic")}`,
+      run(app2, sel2) {
+        const obj = app2.deck().assets.find((x) => x.id === sel2.ref);
+        if (obj && obj.listKey) addItem(app2, obj.listKey);
+      },
+    });
     if (isImageAsset(a)) {
       ctrls.push({
         type: "button",
@@ -297,13 +309,28 @@ register({
  * geometry follows it by identity and survives reorder with NO remap. Per-item
  * text style lives on the object (.style), so it travels for free too. These are
  * the reusable delete/move/add idioms the old editor.js hand-rolled per kind. */
-// A fresh list item. Cards + topics keep their friendly placeholder; any OTHER named
-// list derives its shape from the layout's own seed (the first default item, minus
-// id/step, with text fields blanked and structural objects cloned), so a multi-field
-// list (define's {term,text}, agenda's {time,text}) adds a fully-shaped item.
+// The free-placed stack asset (if any) that owns a given slots list key. Its
+// `variant` decides what a fresh item is (a card vs a bullet), so a free stack grows
+// with the right shape with no per-call flag threading.
+function stackAssetOf(app, listKey) {
+  const assets = app && app.deck && app.deck().assets;
+  return (Array.isArray(assets) && assets.find((a) => a && a.type === "stack" && a.listKey === listKey)) || null;
+}
+
+const cardSeed = () => ({ id: uid(), parts: { body: true }, text: t("slides.ed_new_card") });
+const topicSeed = () => ({ id: uid(), text: t("slides.ed_new_topic") });
+
+// A fresh list item. Cards + topics keep their friendly placeholder; a free-placed
+// stack derives its shape from the asset variant (cards -> a card, else a bullet);
+// any OTHER named list derives its shape from the layout's own seed (the first
+// default item, minus id/step, with text fields blanked and structural objects
+// cloned), so a multi-field list (define's {term,text}, agenda's {time,text}) adds a
+// fully-shaped item.
 function newItem(list, app) {
-  if (list === "cards") return { id: uid(), parts: { body: true }, text: t("slides.ed_new_card") };
-  if (list === "topics") return { id: uid(), text: t("slides.ed_new_topic") };
+  if (list === "cards") return cardSeed();
+  if (list === "topics") return topicSeed();
+  const st = stackAssetOf(app, list);
+  if (st) return st.variant === "cards" ? cardSeed() : topicSeed();
   const layout = app && registry.get(app.cur().layout);
   const seed = layout && layout.defaults && layout.defaults()[list];
   const tpl = Array.isArray(seed) && seed[0] && typeof seed[0] === "object" ? seed[0] : null;
@@ -573,6 +600,11 @@ register({
   match(el) {
     const cr = el.closest && el.closest(".cardrow");
     if (cr) {
+      // A free-placed card stack's row carries data-list (its slots key); the Cards
+      // LAYOUT's rows carry data-row instead. data-list wins so a free stack resolves
+      // to its own key, not the shared "cards" list.
+      const list = cr.dataset && cr.dataset.list;
+      if (list) return { kind: "container", ref: list };
       const row = Number((cr.dataset && cr.dataset.row) || 0);
       return row ? { kind: "container", ref: "cards", row } : { kind: "container", ref: "cards" };
     }
@@ -585,7 +617,8 @@ register({
   },
   el(app, sel) {
     if (sel.ref === "cards") return app.stage.querySelector(`.cardrow[data-row="${sel.row || 0}"]`) || app.stage.querySelector(".cardrow");
-    return app.stage.querySelector(`.topiclist[data-list="${sel.ref}"]`) || app.stage.querySelector(".topiclist");
+    // a free stack's container is whatever carries its data-list (a .topiclist OR a .cardrow)
+    return app.stage.querySelector(`[data-list="${sel.ref}"]`);
   },
   target(app, sel) {
     return app.cur().slots[sel.ref] || null;
@@ -598,7 +631,13 @@ register({
         { type: "button", id: "add-row", label: "＋ linha", run(app2) { addRow(app2); } },
       ];
     }
-    // Any other named list (topics, left/right, dos/donts, steps, …): add one item.
+    // A free-placed CARD stack: add a card. Detected by the asset variant, so the
+    // label + the seeded item match what the user inserted.
+    const st = stackAssetOf(app, sel.ref);
+    if (st && st.variant === "cards") {
+      return [{ type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addItem(app2, sel2.ref); } }];
+    }
+    // Any other named list (topics, left/right, dos/donts, steps, a free Lista, …).
     return [{ type: "button", id: "add", label: sel.ref === "topics" ? "＋ tópico" : "＋ item", run(app2, sel2) { addItem(app2, sel2.ref); } }];
   },
 });

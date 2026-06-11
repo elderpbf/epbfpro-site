@@ -4,11 +4,12 @@
 // descriptors (kinds.js), so the one bar renders menus and selections alike.
 // No dropdowns: every choice is a row of items.
 
-// "list" is not a free box but a STACK object: it drops a growable bullet list
-// (one item to start). It rides the same insertElement entry as the free elements;
-// app.insertElement special-cases it (the items live in slots, the asset is geometry).
+// "list" and "card" are not free boxes but STACK objects: each drops a growable
+// stack (one item to start), bullets for "list" and composable cards for "card".
+// They ride the same insertElement entry as the free elements; app.insertElement
+// special-cases them (the items live in slots, the asset is just geometry).
 export function insertMenu() {
-  return ["text", "title", "list", "image", "photo", "video"].map((kind) => ({
+  return ["text", "title", "list", "card", "image", "photo", "video"].map((kind) => ({
     type: "button",
     id: "ins-" + kind,
     labelKey: "slides.ed_" + kind,

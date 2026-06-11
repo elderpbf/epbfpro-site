@@ -231,3 +231,7 @@
    just tightened for the smaller inserted box. */
 .cdx-deck-editor .asset.a-stack .topiclist { margin: 0; }
 .cdx-deck-editor .asset.a-stack .topiclist li { margin: 8px 0; }
+/* A free-placed CARD stack (variant:"cards"): a single column of cards filling the
+   box, sized as a unit by the asset box. Tighter than the full-slide Cards layout. */
+.cdx-deck-editor .asset.a-stack .cardrow { width: 100%; gap: 12px; }
+.cdx-deck-editor .asset.a-stack .cardrow.col .card { flex: 0 0 auto; gap: 12px; }

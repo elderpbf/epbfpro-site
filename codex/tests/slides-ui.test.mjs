@@ -25,11 +25,11 @@ test('anchorLeft pins to pad when the content overflows the container', () => {
 });
 
 /* ---------- menus as data (no dropdowns; every choice is items) ---------- */
-test('insertMenu returns the free elements plus the list stack object, in order', () => {
+test('insertMenu returns the free elements plus the list + card stack objects, in order', () => {
   const m = insertMenu();
-  assert.equal(m.length, 6);
+  assert.equal(m.length, 7);
   assert.ok(m.every((c) => c.type === 'button'));
-  assert.deepEqual(m.map((c) => c.id), ['ins-text', 'ins-title', 'ins-list', 'ins-image', 'ins-photo', 'ins-video']);
+  assert.deepEqual(m.map((c) => c.id), ['ins-text', 'ins-title', 'ins-list', 'ins-card', 'ins-image', 'ins-photo', 'ins-video']);
 });
 test('appearanceMenu seeds current theme values and uses NO dropdown', () => {
   const m = appearanceMenu({ fontScale: 1, accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' }, 'all');
