@@ -101,3 +101,12 @@ test('preview boxes use the white slide background + the mini treatment (not a t
   const src = read('../content/slides/js/edit/addslide.js');
   assert.match(src, /as-prev mini/, 'preview reuses the thumbnail mini treatment (hides editor-only chrome)');
 });
+
+// Regression: previews must scale even when the box has no width at build time
+// (the modal stays display:none while a saved-layout list loads). A bare rAF
+// skipped scaling and left the render cropped to the corner; a ResizeObserver
+// re-applies once the box gets a real width.
+test('preview scaling survives a hidden-at-build modal (ResizeObserver, not a bare rAF)', () => {
+  const src = read('../content/slides/js/edit/addslide.js');
+  assert.match(src, /ResizeObserver/, 'scales the preview when the box first gets a width');
+});

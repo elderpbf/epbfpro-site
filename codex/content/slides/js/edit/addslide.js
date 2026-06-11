@@ -77,10 +77,21 @@ export function initAddSlide(app, root) {
     const scale = btn.querySelector(".as-scale");
     renderInto(scale, previewDeck(), slide);
     const prev = btn.querySelector(".as-prev");
-    requestAnimationFrame(() => {
+    // Scale the 1280-wide render down to the box width. The box can be 0-width at
+    // build time (the modal is still display:none while the saved layouts load),
+    // and a bare rAF then silently skips, leaving the render unscaled (cropped to
+    // the corner, the bug). So apply now AND, if there is no width yet, again the
+    // moment the box first gets one, then stop observing.
+    const fit = () => {
       const w = prev.clientWidth;
-      if (w) scale.style.transform = `scale(${w / app.deck().canvas.w})`;
-    });
+      if (!w) return false;
+      scale.style.transform = `scale(${w / app.deck().canvas.w})`;
+      return true;
+    };
+    if (!fit() && typeof ResizeObserver === "function") {
+      const ro = new ResizeObserver(() => { if (fit()) ro.disconnect(); });
+      ro.observe(prev);
+    }
     btn.addEventListener("click", () => { onPick(); close(); });
     return btn;
   }
@@ -106,6 +117,9 @@ export function initAddSlide(app, root) {
         grid.appendChild(card(labelOf(L), slide, () => app.addSlide(L.id)));
       }
     }
+    // Show the modal NOW with the built-in previews (so they are laid out and scale
+    // correctly); the saved layouts append below once their async list resolves.
+    overlay.style.display = "";
     // Saved layouts (4c.1 library), if any, under "Salvos", just more cards.
     if (app._library) {
       let templates = [];
@@ -118,7 +132,6 @@ export function initAddSlide(app, root) {
         }
       }
     }
-    overlay.style.display = "";
   }
   function close() { overlay.style.display = "none"; }
 
