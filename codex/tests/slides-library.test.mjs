@@ -28,7 +28,9 @@ function mockFacade() {
     calls,
     facade: {
       async list() { calls.list++; return { presentations: row ? [row] : [] }; },
-      async getDeck() { calls.get++; return { data }; },
+      // The real Worker THROWS a not-found error when the presentation has no row/data
+      // yet (the bug that spammed the debug log when the modal opened pre-first-save).
+      async getDeck() { calls.get++; if (!row) throw new Error('presentation data not found'); return { data }; },
       async saveDeck({ data: d }) { calls.save.push(d); data = d; return { ok: true }; },
       async register({ slug, title, engine }) {
         calls.register.push({ slug, title, engine });
@@ -87,11 +89,12 @@ test('list() maps the container slides to {id,name,layout,slide}, in insertion o
   assert.ok(out.every((t) => typeof t.id === 'string' && t.slide && t.slide.layout === t.layout));
 });
 
-test('list() on a never-saved library returns [] (no container yet)', async () => {
+test('list() on a never-saved library returns [] WITHOUT fetching the deck (no not-found spam)', async () => {
   const m = mockFacade();
   const lib = createLibrary({ facade: m.facade });
   assert.deepEqual(await lib.list(), []);
   assert.equal(m.calls.register.length, 0, 'listing alone does not register the container');
+  assert.equal(m.calls.get, 0, 'never calls getDeck before the row exists (would log a not-found error)');
 });
 
 /* ---------- service: remove ---------- */

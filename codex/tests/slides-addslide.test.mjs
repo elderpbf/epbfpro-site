@@ -91,3 +91,13 @@ test('the add-slide overlay is styled, scoped under .cdx-deck-editor', () => {
   const css = read('../content/slides/css/ui.css');
   assert.match(css, /\.cdx-deck-editor #add-slide-overlay/, 'scoped overlay style exists');
 });
+
+// Regression: the preview box must paint the WHITE slide background (like the nav
+// thumbnail .mini), not a theme var. On the dark Codex theme a var(--btn-bg) box
+// made the slide content invisible (only the logo showed).
+test('preview boxes use the white slide background + the mini treatment (not a theme var)', () => {
+  const css = read('../content/slides/css/ui.css');
+  assert.match(css, /\.as-prev[^}]*background:\s*#fff/i, '.as-prev paints the white slide background');
+  const src = read('../content/slides/js/edit/addslide.js');
+  assert.match(src, /as-prev mini/, 'preview reuses the thumbnail mini treatment (hides editor-only chrome)');
+});

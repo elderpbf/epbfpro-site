@@ -71,7 +71,9 @@ export function initAddSlide(app, root) {
     const btn = document.createElement("button");
     btn.className = "as-card";
     btn.type = "button";
-    btn.innerHTML = `<span class="as-prev"><span class="as-scale"></span></span><span class="as-label">${labelText}</span>`;
+    // .mini reuses the thumbnail treatment (hides editor-only chrome, kills inner
+    // pointer events); the white slide background is on .as-prev in the CSS.
+    btn.innerHTML = `<span class="as-prev mini"><span class="as-scale"></span></span><span class="as-label">${labelText}</span>`;
     const scale = btn.querySelector(".as-scale");
     renderInto(scale, previewDeck(), slide);
     const prev = btn.querySelector(".as-prev");

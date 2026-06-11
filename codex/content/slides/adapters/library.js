@@ -57,7 +57,18 @@ export function createLibrary({ facade } = {}) {
 
   return {
     // List saved templates in insertion order. Each: { id, name, layout, slide }.
+    // The container row only exists after the first save, so gate on it: calling
+    // getDeck for a missing presentation makes the Worker log a not-found error
+    // (which spammed the debug log every time the +slide modal opened).
     async list() {
+      let exists = false;
+      try {
+        const res = await api.list();
+        exists = ((res && res.presentations) || []).some((p) => p && p.slug === LIBRARY_SLUG);
+      } catch (_) {
+        return [];
+      }
+      if (!exists) return [];
       const c = await _load();
       return ((c && c.slides) || []).map(_asTemplate);
     },
