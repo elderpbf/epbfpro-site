@@ -916,6 +916,8 @@ export default {
   'slides.ed_photo':          'Foto',
   'slides.ed_video':          'Vídeo',
   'slides.ed_list':           'Lista',
+  'slides.ed_orientation':    'vertical',
+  'slides.ed_active':         'ativo',
   'slides.ed_font':           'Fonte',
   'slides.ed_font_scope_title': 'a fonte se aplica a',
   'slides.ed_scope_all':      'tudo',

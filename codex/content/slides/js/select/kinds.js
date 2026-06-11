@@ -450,9 +450,27 @@ function addAfter(app, ref) {
 // per-slide flag read by geometry.flowCard + the cards layout. Card size is per-row
 // now (slots.rowW), so resize sizes the whole stack and `reset` clears those row
 // sizes (back to equal flex); the old per-card symmetric-resize toggle is retired.
-export function cardTogglesMenu(slots) {
+export function cardTogglesMenu(slots, card) {
   const stacked = !!slots.stacked; // labels follow the active axis (width in a row, height when stacked)
-  return [
+  // Composable parts live HERE now (off the dense card bar): one on/off toggle per
+  // registered card part (imagem / título / texto / …), read from the SAME cardParts
+  // registry the renderer uses, so a part registered later appears automatically with
+  // NO edit here. `card` is the selected card (may be undefined when previewing).
+  const ctrls = [];
+  for (const p of cardParts()) {
+    ctrls.push({
+      type: "toggle", id: `part-${p.id}`, labelKey: p.labelKey,
+      on: !!(card && card.parts && card.parts[p.id]),
+      write(app, sel, checked) {
+        app.record();
+        const c = resolveStyleObj(app.cur().slots, sel.ref);
+        if (c) c.parts = { ...(c.parts || {}), [p.id]: checked };
+        app.refresh();
+      },
+    });
+  }
+  ctrls.push(
+    { type: "sep" },
     {
       type: "toggle", id: "stack", labelKey: "slides.ed_stack_v", on: !!slots.stacked,
       write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
@@ -461,7 +479,8 @@ export function cardTogglesMenu(slots) {
       type: "button", id: "reset-widths", label: stacked ? t("slides.ed_equalize_h") : t("slides.ed_equalize_w"),
       run(app) { app.record(); delete app.cur().slots.rowW; app.refresh(); },
     },
-  ];
+  );
+  return ctrls;
 }
 
 /* ---------- card (Slice 3): flexible card; resizes in-stack (flowCard) ---------- */
@@ -488,33 +507,15 @@ register({
     const stacked = !!(app.cur().slots && app.cur().slots.stacked); // ▲▼ + vertical resize when stacked
     const ctrls = [];
     if (this.editEl(app, sel)) ctrls.push(...formatControls(), { type: "sep" });
-    // Composable parts: one on/off toggle per registered card part (imagem / título
-    // / texto / …). Toggling a part on with no content yet renders its empty box or
-    // field, ready to fill; toggling off hides it without discarding the content. A
-    // newly registered part appears here automatically, with NO edit to this
-    // descriptor: it reads the same cardParts registry the renderer does.
-    for (const p of cardParts()) {
-      ctrls.push({
-        type: "toggle",
-        id: `part-${p.id}`,
-        labelKey: p.labelKey,
-        on: !!(card.parts && card.parts[p.id]),
-        write(app2, sel2, checked) {
-          app2.record();
-          const c = resolveStyleObj(app2.cur().slots, sel2.ref);
-          if (c) c.parts = { ...(c.parts || {}), [p.id]: checked };
-          app2.refresh();
-        },
-      });
-    }
-    ctrls.push({ type: "sep" });
+    // The card bar was DENSE: the per-part on/off toggles moved into "Ajustes ▾" (see
+    // cardTogglesMenu) so the main bar is just move / add / delete + the opener.
     ctrls.push(
       { type: "button", id: "move-l", label: stacked ? "▲" : "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-r", label: stacked ? "▼" : "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
       { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
       { type: "sep" },
-      { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots), btnEl); } }
+      { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots, resolveStyleObj(app2.cur().slots, sel2.ref)), btnEl); } }
     );
     return ctrls;
   },
@@ -578,13 +579,25 @@ register({
     return resolveStyleObj(app.cur().slots, sel.ref);
   },
   controls(app, sel) {
-    const ctrls = [
-      ...formatControls(),
+    const ctrls = [...formatControls()];
+    // Data-driven "active/now" marker: a layout whose slots carry an `active` index
+    // (agenda's current row) gets an "ativo" toggle per row, setting slots.active to
+    // this row (or clearing it). No layout-id branch; roadmap uses its own roadnode.
+    const slots = app.cur().slots;
+    if (slots && "active" in slots) {
+      const list = sel.ref.split(".")[0];
+      const idx = (slots[list] || []).findIndex((x) => `${list}.${x.id}` === sel.ref);
+      ctrls.push({
+        type: "toggle", id: "active", labelKey: "slides.ed_active", on: slots.active === idx,
+        write(app2, sel2, checked) { app2.record(); app2.cur().slots.active = checked ? idx : null; app2.refresh(); },
+      });
+    }
+    ctrls.push(
       { type: "button", id: "move-up", label: "▲", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-down", label: "▼", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
       { type: "button", id: "add", label: `＋ ${t("slides.ed_topic")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", labelKey: "slides.ed_remove", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
-    ];
+    );
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;
   },
@@ -634,11 +647,21 @@ register({
     // A free-placed CARD stack: add a card. Detected by the asset variant, so the
     // label + the seeded item match what the user inserted.
     const st = stackAssetOf(app, sel.ref);
-    if (st && st.variant === "cards") {
-      return [{ type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addItem(app2, sel2.ref); } }];
+    const ctrls = (st && st.variant === "cards")
+      ? [{ type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addItem(app2, sel2.ref); } }]
+      // Any other named list (topics, left/right, dos/donts, steps, a free Lista, …).
+      : [{ type: "button", id: "add", label: sel.ref === "topics" ? "＋ tópico" : "＋ item", run(app2, sel2) { addItem(app2, sel2.ref); } }];
+    // Data-driven orientation toggle: any layout whose slots carry an `orientation`
+    // (steps row/col) gets a flip on its list bar, no layout-id branch.
+    const slots = app.cur().slots;
+    if (slots && "orientation" in slots) {
+      ctrls.push({
+        type: "toggle", id: "orientation", labelKey: "slides.ed_orientation",
+        on: slots.orientation === "col",
+        write(app2, sel2, checked) { app2.record(); app2.cur().slots.orientation = checked ? "col" : "row"; app2.refresh(); },
+      });
     }
-    // Any other named list (topics, left/right, dos/donts, steps, a free Lista, …).
-    return [{ type: "button", id: "add", label: sel.ref === "topics" ? "＋ tópico" : "＋ item", run(app2, sel2) { addItem(app2, sel2.ref); } }];
+    return ctrls;
   },
 });
 
