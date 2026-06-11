@@ -829,6 +829,7 @@
 .cdx-host-bar .cdx-btn { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
 .cdx-host-bar-left { display: flex; align-items: center; gap: 0.6rem; }
 .cdx-host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+.cdx-host-connected { display: inline-flex; align-items: center; gap: 4px; padding: 0.25rem 0.55rem; border-radius: 999px; background: var(--surface-hover, rgba(127, 127, 127, 0.18)); font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
 .cdx-host-code { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; color: var(--primary); }
 .cdx-host-live { display: inline-flex; align-items: center; gap: 5px; }
 .cdx-host-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: cdx-host-live-pulse 2s ease-in-out infinite; }
@@ -915,6 +916,7 @@
 .cdx-autoreveal.is-on .cdx-autoreveal-status:not(:empty) { display: block; margin-top: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--primary); }
 .cdx-autoreveal-num { width: 4rem; padding: 0.3rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-size: 0.84rem; font-family: inherit; }
 .cdx-autoreveal-unit { font-size: 0.82rem; color: var(--text-secondary); }
+.cdx-autoreveal-connected { min-width: 1.6rem; padding: 0.2rem 0.45rem; border-radius: 6px; background: var(--surface-hover, rgba(127, 127, 127, 0.18)); font-size: 0.84rem; font-weight: 700; color: var(--primary); text-align: center; }
 .cdx-autoreveal-target { font-size: 0.84rem; font-weight: 700; color: var(--primary); }
 .cdx-autoreveal-bar { flex: 1; height: 8px; border-radius: 6px; background: var(--surface-hover, rgba(127, 127, 127, 0.18)); overflow: hidden; }
 .cdx-autoreveal-bar-fill { height: 100%; width: 0; background: var(--primary); border-radius: 6px; transition: width 0.3s ease; }

@@ -84,8 +84,9 @@ test('live-host wires the auto-revelar control to the shared logic + facade reve
   assert.match(src, /autoRevealDecision\s*\(/, 'decides via the shared logic');
   assert.match(src, /cdx-autoreveal/, 'renders the auto-revelar control');
   assert.match(src, /cdx-auto-on/, 'toggle checkbox');
-  assert.match(src, /cdx-auto-head/, 'headcount input');
+  assert.match(src, /cdx-auto-connected/, 'live connected-count readout (replaces the manual headcount)');
   assert.match(src, /cdx-auto-pct/, 'percentage input');
+  assert.match(src, /data\.connected/, 'the reveal target derives from the live connected count');
   assert.match(src, /setVisibility\s*\(/, 'auto-show reveals results live via setVisibility, never closing the question');
 });
 
@@ -102,8 +103,9 @@ test('auto-revelar i18n keys exist in BOTH dictionaries', async () => {
   const pt = (await import('../i18n/pt.js')).default;
   const en = (await import('../i18n/en.js')).default;
   const keys = [
-    'questions.host_autoreveal', 'questions.host_autoreveal_of', 'questions.host_autoreveal_people',
-    'questions.host_autoreveal_set_people', 'questions.host_autoreveal_fired_target', 'questions.host_autoreveal_fired_plateau',
+    'questions.host_autoreveal', 'questions.host_autoreveal_of', 'questions.host_autoreveal_connected',
+    'questions.host_autoreveal_waiting', 'questions.host_autoreveal_fired_target', 'questions.host_autoreveal_fired_plateau',
+    'questions.host_connected_title',
   ];
   for (const k of keys) { assert.ok(k in pt, `pt has ${k}`); assert.ok(k in en, `en has ${k}`); }
 });

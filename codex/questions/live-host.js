@@ -22,6 +22,7 @@ import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, visibleForAudience } from '../js/audiences.js';
 import { revealTarget, autoRevealDecision, DEFAULT_PCT } from './auto-reveal.js';
 import { buildAnswer, makeRng, hashSeed } from './sim-answers.js';
+import { hostLabel } from './identity.js';
 
 const LAYOUT_KEY = 'codex_host_layout';
 const AUTO_KEY = 'codex_host_autoreveal';
@@ -59,6 +60,7 @@ let _autoLastCount = 0;    // last answer count seen (for plateau detection)
 let _autoLastChangeAt = 0; // ms timestamp of the last count change
 let _autoFlashTimer = null;// timeout that clears the reveal flash (cleared on unmount)
 let _simRunning = false;   // guards the debug-only in-host answer simulator
+let _connected = 0;        // live count of students with the answer page open (presence)
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -94,6 +96,7 @@ function _barMarkup() {
       '</div>' +
     '</div>' +
     '<div class="cdx-host-bar-actions">' +
+      '<span class="cdx-host-connected" id="cdx-host-connected" hidden></span>' +
       '<button class="cdx-btn cdx-host-stats" data-act="stats" type="button">' + _esc(t('questions.host_stats')) + '</button>' +
       '<details class="cdx-host-visao" id="cdx-host-visao" hidden><summary>' + _esc(t('questions.host_view')) + ' ▾</summary>' +
         '<div class="cdx-host-visao-panel">' +
@@ -184,18 +187,20 @@ function _centerMarkup() {
     '</div>';
 }
 
-// Auto-revelar control: opt-in, sits under the active question. The host enters a
-// room headcount + a percentage; once that share has answered (or answers stall),
-// the question closes and the correct answer is shown automatically. Inert until
-// toggled on; the live "X / target" + bar update from the existing poll tick.
+// Auto-revelar control: opt-in, sits under the active question. The host picks a
+// percentage; the target is that share of the LIVE connected count (people with
+// the answer page open, not a typed number). Once that many have answered (or
+// answers stall, the plateau backstop), the results are SHOWN on the display and
+// the question stays OPEN (only Encerrar closes). Inert until toggled on; the live
+// connected readout, "X / target", and bar update from the existing poll tick.
 function _autoRevealMarkup() {
   return '<div class="cdx-autoreveal" id="cdx-autoreveal">' +
     '<label class="cdx-autoreveal-toggle"><input type="checkbox" id="cdx-auto-on"> ' + _esc(t('questions.host_autoreveal')) + '</label>' +
     '<div class="cdx-autoreveal-controls">' +
       '<input type="number" class="cdx-autoreveal-num" id="cdx-auto-pct" min="1" max="100" step="5">' +
       '<span class="cdx-autoreveal-unit">% ' + _esc(t('questions.host_autoreveal_of')) + '</span>' +
-      '<input type="number" class="cdx-autoreveal-num" id="cdx-auto-head" min="1" step="1" placeholder="0">' +
-      '<span class="cdx-autoreveal-unit">' + _esc(t('questions.host_autoreveal_people')) + '</span>' +
+      '<span class="cdx-autoreveal-connected" id="cdx-auto-connected">0</span>' +
+      '<span class="cdx-autoreveal-unit">' + _esc(t('questions.host_autoreveal_connected')) + '</span>' +
       '<span class="cdx-autoreveal-target" id="cdx-auto-target"></span>' +
     '</div>' +
     '<div class="cdx-autoreveal-progress">' +
@@ -435,6 +440,10 @@ async function _deleteHistoryQuestion(q) {
 // ── Active panel + Q&A sync (port of host-page _cpqDataHandler) ──
 function _onData(data) {
   if (!_container) return;
+  // Live connected count (presence): people with the answer page open, distinct
+  // from those who answered. Updates the bar badge + auto-reveal target each tick.
+  _connected = (data && Number.isFinite(data.connected)) ? data.connected : 0;
+  _paintConnected();
   if (_qa) _qa.syncFromState(data);
   _renderHistory(data.history || []);
   const q = data.active_question;
@@ -477,26 +486,50 @@ function _loadAuto() {
   try {
     const s = JSON.parse(localStorage.getItem(AUTO_KEY));
     if (s && typeof s === 'object') {
-      const head = parseInt(s.headcount, 10);
       const pct = parseInt(s.pct, 10);
-      return { enabled: !!s.enabled, headcount: (Number.isFinite(head) && head > 0) ? head : '', pct: (Number.isFinite(pct) && pct > 0) ? pct : DEFAULT_PCT };
+      return { enabled: !!s.enabled, pct: (Number.isFinite(pct) && pct > 0) ? pct : DEFAULT_PCT };
     }
   } catch (e) { /* ignore */ }
-  return { enabled: false, headcount: '', pct: DEFAULT_PCT };
+  return { enabled: false, pct: DEFAULT_PCT };
 }
 function _saveAuto() { try { localStorage.setItem(AUTO_KEY, JSON.stringify(_auto)); } catch (e) { /* ignore */ } }
 
-// Reflect the persisted prefs into the inputs + the "= N" target preview.
+// Reflect the persisted prefs into the inputs + the "= N" target preview. The
+// target is a share of the LIVE connected count, so it shows "aguardando conexões"
+// while nobody is connected yet.
 function _syncAutoUI() {
-  const wrap = _q('#cdx-autoreveal'), on = _q('#cdx-auto-on'), pct = _q('#cdx-auto-pct'), head = _q('#cdx-auto-head'), target = _q('#cdx-auto-target');
+  const wrap = _q('#cdx-autoreveal'), on = _q('#cdx-auto-on'), pct = _q('#cdx-auto-pct'), conn = _q('#cdx-auto-connected'), target = _q('#cdx-auto-target');
   if (!on) return;
   on.checked = !!_auto.enabled;
   if (pct) pct.value = _auto.pct;
-  if (head) head.value = _auto.headcount;
+  if (conn) conn.textContent = String(_connected);
   if (wrap) wrap.classList.toggle('is-on', !!_auto.enabled);
   if (target) {
-    const tg = _auto.enabled ? revealTarget(_auto.headcount, _auto.pct) : null;
-    target.textContent = tg != null ? ('= ' + tg) : (_auto.enabled ? t('questions.host_autoreveal_set_people') : '');
+    const tg = _auto.enabled ? revealTarget(_connected, _auto.pct) : null;
+    target.textContent = tg != null ? ('= ' + tg) : (_auto.enabled ? t('questions.host_autoreveal_waiting') : '');
+  }
+}
+
+// Paint the live connected count (students with the answer page open) into both
+// the host bar badge and the auto-revelar control. Driven by data.connected on
+// every poll tick; the bar badge shows only while the session is being hosted.
+function _paintConnected() {
+  const bar = _q('#cdx-host-connected');
+  if (bar) {
+    if (_isOpen()) {
+      bar.hidden = false;
+      bar.textContent = '👥 ' + _connected;
+      bar.title = t('questions.host_connected_title').replace('{n}', String(_connected));
+    } else {
+      bar.hidden = true;
+    }
+  }
+  const conn = _q('#cdx-auto-connected');
+  if (conn) conn.textContent = String(_connected);
+  const target = _q('#cdx-auto-target');
+  if (target && _auto) {
+    const tg = _auto.enabled ? revealTarget(_connected, _auto.pct) : null;
+    target.textContent = tg != null ? ('= ' + tg) : (_auto.enabled ? t('questions.host_autoreveal_waiting') : '');
   }
 }
 
@@ -506,7 +539,7 @@ function _updateAutoReveal(q, total) {
   const now = Date.now();
   if (_autoQId !== q.id) { _autoQId = q.id; _autoLastCount = total; _autoLastChangeAt = now; }
   else if (total !== _autoLastCount) { _autoLastCount = total; _autoLastChangeAt = now; }
-  const target = _auto.enabled ? revealTarget(_auto.headcount, _auto.pct) : null;
+  const target = _auto.enabled ? revealTarget(_connected, _auto.pct) : null;
   const countEl = _q('#cdx-auto-count'), barEl = _q('#cdx-auto-bar');
   if (countEl) countEl.textContent = target != null ? (total + ' / ' + target) : ('' + total);
   if (barEl) barEl.style.width = (target ? Math.min(100, Math.round(total / target * 100)) : 0) + '%';
@@ -592,7 +625,7 @@ function _renderSqaActive(q) {
   if (!metaEl || !textEl || !inputEl || !statusEl) return;
   let when = '';
   try { when = q.student_time ? new Date(q.student_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''; } catch (_) { when = ''; }
-  metaEl.textContent = (q.student_name || t('questions.qr_anonymous')) + (when ? ' · ' + when : '');
+  metaEl.textContent = hostLabel(q.student_name) + (when ? ' · ' + when : '');
   textEl.textContent = q.text || '';
   const serverAnswer = q.student_answer || '';
   if ((typeof document === 'undefined' || document.activeElement !== inputEl) && serverAnswer !== _sqaLastServerAnswer) inputEl.value = serverAnswer;
@@ -828,6 +861,7 @@ export function mount(containerEl, ctx) {
   _cleanup = [];
   _layout = _loadLayout();
   _auto = _loadAuto();
+  _connected = 0;
   _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _sqaLastServerAnswer = null; _sqaSaving = false; _historyMap = {}; _bankMap = {};
@@ -939,7 +973,6 @@ export function mount(containerEl, ctx) {
   _on(_q('#cdx-sqa-response'), 'input', _scheduleSqaSave);
   _on(_q('#cdx-auto-on'), 'change', (e) => { _auto.enabled = !!e.target.checked; _saveAuto(); _syncAutoUI(); });
   _on(_q('#cdx-auto-pct'), 'input', (e) => { const v = parseInt(e.target.value, 10); _auto.pct = (Number.isFinite(v) && v > 0) ? Math.min(100, v) : DEFAULT_PCT; _saveAuto(); _syncAutoUI(); });
-  _on(_q('#cdx-auto-head'), 'input', (e) => { const v = parseInt(e.target.value, 10); _auto.headcount = (Number.isFinite(v) && v > 0) ? v : ''; _saveAuto(); _syncAutoUI(); });
   _on(_q('#cdx-chk-show'), 'change', _saveCloseOpts);
   _on(_q('#cdx-chk-reveal'), 'change', _saveCloseOpts);
   _on(_q('#cdx-sim-n'), 'input', (e) => { const v = parseInt(e.target.value, 10); try { if (Number.isFinite(v) && v > 0) localStorage.setItem(SIM_N_KEY, String(Math.min(200, v))); } catch (err) { /* ignore */ } });
@@ -966,6 +999,7 @@ export function unmount() {
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
   _auto = null; _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
+  _connected = 0;
   _simRunning = false;
   _onStats = null; _onDelete = null; _onRename = null;
 }
