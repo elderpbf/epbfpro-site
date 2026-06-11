@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Mock · Banco de questões (live host)</title>
+<title>Mock · Lançar pergunta (banco + compositor)</title>
 <style>
   :root{
     --bg:#0d1424; --surface:#16203a; --surface-2:#1d2942; --primary:#14b8a6;
@@ -17,36 +17,35 @@
   .note{max-width:560px;font-size:.82rem;color:var(--text-secondary);text-align:center;line-height:1.5}
   .note b{color:var(--text)}
 
-  /* The panel simulates the live-host left column */
-  .panel{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);
+  .panel{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border);
     border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
   .panel-title{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary)}
-
   .field-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);margin-bottom:5px}
 
-  /* Audience segmented control (comes first) */
+  /* Segmented controls (mode + audience) */
   .seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px;gap:3px}
   .seg button{flex:1;padding:7px 6px;border:none;background:transparent;color:var(--text-secondary);
     font:inherit;font-size:.8rem;font-weight:600;border-radius:6px;cursor:pointer;transition:.15s}
   .seg button.on{background:var(--primary);color:#04201c}
+  .seg.mode button{font-size:.85rem;padding:9px 6px}
 
-  select{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);
+  select,textarea,input[type=text]{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);
     border-radius:8px;color:var(--text);font:inherit;font-size:.84rem}
+  textarea{resize:vertical;min-height:64px}
 
-  /* Type filter chips */
   .chips{display:flex;flex-wrap:wrap;gap:6px}
   .chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--bg);
     border:1px solid var(--border);border-radius:999px;color:var(--text-secondary);
     font:inherit;font-size:.76rem;font-weight:600;cursor:pointer;transition:.15s}
   .chip:hover{border-color:var(--primary)}
   .chip.on{background:rgba(20,184,166,.14);border-color:var(--primary);color:var(--text)}
-  .chip .ct{font-size:.7rem}
+  .chip.disabled{opacity:.35;cursor:not-allowed;border-color:var(--border)}
+  .chip.disabled:hover{border-color:var(--border)}
   .ct-generic{color:var(--text-secondary)} .ct-variable{color:var(--primary)} .ct-unique{color:var(--amber)}
 
   .divider{height:1px;background:var(--border);margin:2px 0}
 
-  /* Question rows */
-  .list{display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto}
+  .list{display:flex;flex-direction:column;gap:6px;max-height:330px;overflow-y:auto}
   .item{border:1px solid var(--border);border-radius:9px;background:var(--bg);overflow:hidden}
   .item:hover{border-color:rgba(20,184,166,.5)}
   .row{display:flex;align-items:center;gap:8px;padding:8px 9px;cursor:pointer}
@@ -68,9 +67,19 @@
   .tag-variable{background:rgba(20,184,166,.16);color:var(--primary)}
   .tag-unique{background:var(--amber-bg);color:var(--amber)}
   .opts{margin-top:8px;display:flex;flex-direction:column;gap:3px}
-  .opt{font-size:.8rem;color:var(--text-secondary)}
-  .opt.ok{color:var(--primary);font-weight:600}
+  .opt{font-size:.8rem;color:var(--text-secondary)} .opt.ok{color:var(--primary);font-weight:600}
   .empty{font-size:.82rem;color:var(--text-secondary);text-align:center;padding:18px 8px}
+
+  /* Composer placeholder */
+  .comp{display:flex;flex-direction:column;gap:10px}
+  .comp .optrow{display:flex;align-items:center;gap:8px}
+  .comp .optrow input[type=radio]{accent-color:var(--primary)}
+  .btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);
+    color:var(--text);font:inherit;font-size:.82rem;font-weight:600;cursor:pointer}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#04201c}
+  .btnrow{display:flex;gap:8px;justify-content:flex-end;margin-top:2px}
+
+  .hidden{display:none}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surface-2);
     border:1px solid var(--primary);color:var(--text);padding:9px 16px;border-radius:10px;font-size:.82rem;
     opacity:0;pointer-events:none;transition:.2s}
@@ -80,38 +89,71 @@
 </head>
 <body>
   <div class="note">
-    <b>Mockup — Banco de questões no live host (Ideia A).</b><br>
-    Escolha a <b>Audiência</b> (vem primeiro). Sem audiência = só genéricas. Com audiência = genéricas +
-    variáveis <i>moldadas</i> + específicas dela. Os <b>chips</b> filtram por tipo. Clique numa linha pra expandir.
-    Os botões viraram glifes: <b>✎</b> editar, <b>▶</b> lançar.
+    <b>Mock — card "Lançar pergunta" (Ideia A v2).</b><br>
+    O banco virou o protagonista: o modo <b>Do banco</b> é o padrão; <b>Nova pergunta</b> é o caminho deliberado.
+    Sem audiência, os chips Variáveis/Específicas ficam <b>apagados</b> (não existem ali). "Editar" numa questão
+    do banco te leva pro compositor já carregado.
   </div>
 
   <div class="panel">
-    <div class="panel-title">Banco de questões</div>
+    <div class="panel-title">Lançar pergunta</div>
 
-    <div>
-      <div class="field-label">Audiência</div>
-      <div class="seg" id="seg">
-        <button data-aud="none" class="on">Sem audiência</button>
-        <button data-aud="advocacia">Advocacia</button>
-        <button data-aud="judiciario">Magistrados</button>
+    <div class="seg mode" id="mode">
+      <button data-mode="bank" class="on">Do banco</button>
+      <button data-mode="new">Nova pergunta</button>
+    </div>
+
+    <!-- ===== MODE: DO BANCO ===== -->
+    <div id="bankMode">
+      <div style="margin-bottom:12px">
+        <div class="field-label">Audiência</div>
+        <div class="seg" id="seg">
+          <button data-aud="none" class="on">Sem audiência</button>
+          <button data-aud="advocacia">Advocacia</button>
+          <button data-aud="judiciario">Magistrados</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div class="field-label">Conjunto</div>
+        <select><option>Frameworks</option><option>LLM</option><option>Tokens</option></select>
+      </div>
+
+      <div class="chips" id="chips" style="margin-bottom:12px">
+        <button class="chip on" data-f="all">Todas</button>
+        <button class="chip" data-f="generic"><span class="ct-generic">●</span> Genéricas</button>
+        <button class="chip" data-f="variable"><span class="ct-variable">◆</span> Variáveis</button>
+        <button class="chip" data-f="unique"><span class="ct-unique">★</span> Específicas</button>
+      </div>
+
+      <div class="divider"></div>
+      <div class="list" id="list" style="margin-top:10px"></div>
+    </div>
+
+    <!-- ===== MODE: NOVA PERGUNTA (composer placeholder) ===== -->
+    <div id="newMode" class="hidden">
+      <div class="comp">
+        <div>
+          <div class="field-label">Tipo</div>
+          <select><option>Múltipla escolha</option><option>Verdadeiro/Falso</option><option>Enquete</option><option>Aberta</option></select>
+        </div>
+        <div>
+          <div class="field-label">Pergunta</div>
+          <textarea id="compText" placeholder="Digite a pergunta..."></textarea>
+        </div>
+        <div>
+          <div class="field-label">Opções (marque a correta)</div>
+          <div class="optrow"><input type="radio" name="ok"><input type="text" placeholder="Opção A"></div>
+          <div class="optrow" style="margin-top:6px"><input type="radio" name="ok" checked><input type="text" placeholder="Opção B"></div>
+          <div class="optrow" style="margin-top:6px"><input type="radio" name="ok"><input type="text" placeholder="Opção C"></div>
+        </div>
+        <div>
+          <div class="field-label">Classe</div>
+          <select><option>Genérica</option><option>Variável</option><option>Específica</option></select>
+        </div>
+        <div class="btnrow"><button class="btn">Limpar</button><button class="btn primary">Lançar</button></div>
       </div>
     </div>
-
-    <div>
-      <div class="field-label">Conjunto</div>
-      <select><option>Frameworks</option><option>LLM</option><option>Tokens</option></select>
-    </div>
-
-    <div class="chips" id="chips">
-      <button class="chip on" data-f="all">Todas</button>
-      <button class="chip" data-f="generic"><span class="ct ct-generic">●</span> Genéricas</button>
-      <button class="chip" data-f="variable"><span class="ct ct-variable">◆</span> Variáveis</button>
-      <button class="chip" data-f="unique"><span class="ct ct-unique">★</span> Específicas</button>
-    </div>
-
-    <div class="divider"></div>
-    <div class="list" id="list"></div>
   </div>
 
   <div class="legend">
@@ -123,7 +165,6 @@
   <div class="toast" id="toast"></div>
 
 <script>
-  // ---- sample data ----
   const GLYPH = { generic:'●', variable:'◆', unique:'★' };
   const TAGLBL = { generic:'Genérica', variable:'Variável', unique:'Específica' };
   const AUD = {
@@ -151,23 +192,30 @@
     const a = AUD[aud];
     return text.replace(/\{\{actor\}\}/g, a.actor).replace(/\{\{deliverable\}\}/g, a.deliverable);
   }
-
-  // Audience rule: none -> only generic; an audience -> generic + variable + that audience's unique.
   function audienceAllows(q){
     if (aud === 'none') return q.cls === 'generic';
     if (q.cls === 'unique') return q.audience === aud;
-    return true; // generic + variable
+    return true;
+  }
+
+  // Grey out the type chips that aren't available for the current audience.
+  function syncChips(){
+    const avail = aud === 'none' ? ['all','generic'] : ['all','generic','variable','unique'];
+    document.querySelectorAll('#chips .chip').forEach(c => {
+      const ok = avail.includes(c.dataset.f);
+      c.classList.toggle('disabled', !ok);
+    });
+    if (!avail.includes(filter)) { filter = 'all'; }
+    document.querySelectorAll('#chips .chip').forEach(c => c.classList.toggle('on', c.dataset.f === filter));
   }
 
   function render(){
+    syncChips();
     const list = document.getElementById('list');
     let qs = Q.filter(audienceAllows);
     if (filter !== 'all') qs = qs.filter(q => q.cls === filter);
     if (!qs.length){
-      const hint = (aud === 'none' && filter !== 'generic')
-        ? 'Escolha uma audiência para ver variáveis e específicas.'
-        : 'Nenhuma questão neste filtro.';
-      list.innerHTML = '<div class="empty">' + hint + '</div>';
+      list.innerHTML = '<div class="empty">Nenhuma questão neste filtro.</div>';
       return;
     }
     list.innerHTML = qs.map((q, i) => {
@@ -185,24 +233,31 @@
           '<span class="chev">▸</span>' +
           '<span class="glyph ct-'+q.cls+'">'+GLYPH[q.cls]+'</span>' +
           '<span class="txt">'+t+'</span>' +
-          '<button class="iconbtn" data-act="edit" title="Editar">✎</button>' +
+          '<button class="iconbtn" data-act="edit" data-t="'+encodeURIComponent(t)+'" title="Editar">✎</button>' +
           '<button class="iconbtn go" data-act="launch" title="Lançar">▶</button>' +
         '</div>' +
         '<div class="detail">' +
           '<div class="meta"><span class="tag tag-'+q.cls+'">'+TAGLBL[q.cls]+'</span>' +
-            '<span>'+q.type+audName+resp+'</span></div>' +
-          opts +
+            '<span>'+q.type+audName+resp+'</span></div>' + opts +
         '</div>' +
       '</div>';
     }).join('');
   }
 
+  function setMode(m){
+    document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on', b.dataset.mode===m));
+    document.getElementById('bankMode').classList.toggle('hidden', m!=='bank');
+    document.getElementById('newMode').classList.toggle('hidden', m!=='new');
+  }
   function toast(msg){
     const el = document.getElementById('toast');
     el.textContent = msg; el.classList.add('show');
-    clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 1400);
+    clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 1500);
   }
 
+  document.getElementById('mode').addEventListener('click', e => {
+    const b = e.target.closest('[data-mode]'); if(b) setMode(b.dataset.mode);
+  });
   document.getElementById('seg').addEventListener('click', e => {
     const b = e.target.closest('[data-aud]'); if(!b) return;
     aud = b.dataset.aud;
@@ -210,14 +265,19 @@
     render();
   });
   document.getElementById('chips').addEventListener('click', e => {
-    const b = e.target.closest('[data-f]'); if(!b) return;
-    filter = b.dataset.f;
-    document.querySelectorAll('#chips .chip').forEach(x=>x.classList.toggle('on', x===b));
-    render();
+    const b = e.target.closest('[data-f]'); if(!b || b.classList.contains('disabled')) return;
+    filter = b.dataset.f; render();
   });
   document.getElementById('list').addEventListener('click', e => {
     const btn = e.target.closest('[data-act]');
-    if (btn){ toast(btn.dataset.act === 'edit' ? 'Editar: abriria no compositor.' : 'Lançar: enviaria ao display.'); return; }
+    if (btn){
+      if (btn.dataset.act === 'edit'){
+        setMode('new');
+        document.getElementById('compText').value = decodeURIComponent(btn.dataset.t || '');
+        toast('Carregado no compositor pra editar.');
+      } else { toast('Lançar: enviaria ao display.'); }
+      return;
+    }
     const item = e.target.closest('.item'); if(item) item.classList.toggle('open');
   });
 
