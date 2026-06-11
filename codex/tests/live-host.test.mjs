@@ -134,6 +134,53 @@ test('live-host bank picker is readable + editable (chevron expand, Editar prefi
   assert.match(src, /cdx-bank-class/, 'renders the class tag');
 });
 
+test('bank picker v2: mode toggle (Do banco default | Nova pergunta), audience-first, glyph rows + glyph actions', () => {
+  const src = read('../questions/live-host.js');
+  // Mode toggle: bank is the primary path (default selected), new is deliberate.
+  assert.match(src, /data-act="mode"/, 'mode toggle wired via data-act="mode"');
+  assert.match(src, /data-mode="bank"/, 'Do banco mode button');
+  assert.match(src, /data-mode="new"/, 'Nova pergunta mode button');
+  assert.match(src, /is-on[^>]*data-mode="bank"/, 'Do banco starts selected');
+  // Audience FIRST: the audience control precedes the conjunto select, which
+  // precedes the type chips (the locked Ideia A v2 order).
+  assert.ok(src.indexOf('id="cdx-bank-aud"') < src.indexOf('id="cdx-bank-set"'), 'audience control precedes the conjunto select');
+  assert.ok(src.indexOf('id="cdx-bank-set"') < src.indexOf('id="cdx-bank-chips"'), 'conjunto precedes the type chips');
+  // Four type chips + greyed-when-unavailable handling.
+  for (const f of ['all', 'generic', 'variable', 'unique']) assert.match(src, new RegExp('data-f="' + f + '"'), `chip ${f}`);
+  assert.match(src, /availableTypeFilters\s*\(/, 'chips grey out per availableTypeFilters');
+  assert.match(src, /is-disabled/, 'unavailable chips get a disabled state');
+  // Class glyph on each row + compact glyph action buttons (the ✎/▶ icon buttons).
+  assert.match(src, /cdx-bank-glyph/, 'each row carries a class glyph');
+  assert.match(src, /cdx-iconbtn/, 'compact glyph action buttons');
+  // bankVisible drives the list (no audience -> generic only); audienceControlMode
+  // is the 2b pills/dropdown hybrid; filterByClass is reused from bank.js.
+  assert.match(src, /bankVisible\s*\(/, 'list filters via bankVisible');
+  assert.match(src, /audienceControlMode\s*\(/, 'audience control is the pills/dropdown hybrid');
+  assert.match(src, /filterByClass\s*\(/, 'type chip reuses filterByClass from bank.js');
+});
+
+test('bank picker v2: Editar switches to the new-question composer (mode flip + prefill)', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /'bank-edit'\)[\s\S]{0,160}?_setBankMode\(\s*'new'\s*\)/, 'Editar flips to the new-question mode');
+  assert.match(src, /'bank-edit'\)[\s\S]{0,160}?_prefillFromBank/, 'Editar prefills the composer');
+});
+
+test('bank picker v2 logic comes from the pure audiences module (unit-tested separately)', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /from\s+['"]\.\.\/js\/audiences\.js['"]/, 'imports the pure audience policy');
+  assert.match(src, /from\s+['"]\.\/bank\.js['"]/, 'reuses bank.js filterByClass (no duplicate class filter)');
+});
+
+test('bank picker v2 i18n keys exist in BOTH dictionaries', async () => {
+  const pt = (await import('../i18n/pt.js')).default;
+  const en = (await import('../i18n/en.js')).default;
+  for (const k of ['questions.host_mode_bank', 'questions.host_mode_new', 'questions.host_bank_audience_label',
+    'questions.host_bank_filter_all', 'questions.host_bank_filter_generic',
+    'questions.host_bank_filter_variable', 'questions.host_bank_filter_unique']) {
+    assert.ok(k in pt, `pt has ${k}`); assert.ok(k in en, `en has ${k}`);
+  }
+});
+
 test('bank class-tag i18n keys exist in BOTH dictionaries', async () => {
   const pt = (await import('../i18n/pt.js')).default;
   const en = (await import('../i18n/en.js')).default;
