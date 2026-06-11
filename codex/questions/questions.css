@@ -881,7 +881,7 @@
 .cdx-seg { display: flex; gap: 3px; padding: 3px; background: var(--background); border: 1px solid var(--border); border-radius: 9px; }
 .cdx-seg-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.5rem 0.4rem; border: none; background: none; color: var(--text-secondary); font: inherit; font-size: 0.84rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .cdx-seg-btn:hover { color: var(--text-primary); }
-.cdx-seg-btn.is-on { background: var(--primary); color: #04201c; }
+.cdx-seg-btn.is-on { background: var(--cdx-btn-primary-bg); color: var(--cdx-btn-primary-text); }
 .cdx-bank-mode { margin-bottom: 1rem; }
 .cdx-bank-pane[hidden] { display: none; }
 .cdx-bank-field { margin-bottom: 0.85rem; }
@@ -889,7 +889,7 @@
 .cdx-bank-aud-seg { flex-wrap: wrap; }
 .cdx-bank-aud-pill { flex: 1 1 auto; min-width: max-content; padding: 0.45rem 0.7rem; border: none; background: none; color: var(--text-secondary); font: inherit; font-size: 0.78rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .cdx-bank-aud-pill:hover { color: var(--text-primary); }
-.cdx-bank-aud-pill.is-on { background: var(--primary); color: #04201c; }
+.cdx-bank-aud-pill.is-on { background: var(--cdx-btn-primary-bg); color: var(--cdx-btn-primary-text); }
 .cdx-bank-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
 .cdx-bank-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.32rem 0.65rem; background: var(--background); border: 1px solid var(--border); border-radius: 999px; color: var(--text-secondary); font: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
 .cdx-bank-chip:hover { border-color: var(--primary); }
@@ -912,8 +912,8 @@
 /* Row actions are compact glyph buttons (✎ Editar, ▶ Lançar). */
 .cdx-iconbtn { flex-shrink: 0; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text-secondary); font-size: 0.9rem; line-height: 1; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
 .cdx-iconbtn:hover { border-color: var(--primary); color: var(--text-primary); }
-.cdx-iconbtn-go { background: var(--primary); border-color: var(--primary); color: #04201c; }
-.cdx-iconbtn-go:hover { color: #04201c; }
+.cdx-iconbtn-go { background: var(--cdx-btn-primary-bg); border-color: var(--primary); color: var(--cdx-btn-primary-text); }
+.cdx-iconbtn-go:hover { color: var(--cdx-btn-primary-text); }
 .cdx-bank-detail { display: none; margin-top: 0.4rem; padding: 0.4rem 0 0.1rem calc(0.85rem + 0.4rem); border-top: 1px dashed var(--border); }
 .cdx-bank-item.is-open .cdx-bank-detail { display: block; }
 .cdx-bank-detail-meta { font-size: 0.76rem; color: var(--text-secondary); }
