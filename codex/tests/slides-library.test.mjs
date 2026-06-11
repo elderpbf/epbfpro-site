@@ -108,6 +108,48 @@ test('remove() drops a template by id and persists the smaller container', async
   assert.deepEqual(out.map((t) => t.id), [b.id], 'only the other template remains');
 });
 
+/* ---------- service: rename ---------- */
+test('rename() changes only the name (trimmed); id + content intact', async () => {
+  const m = mockFacade();
+  const lib = createLibrary({ facade: m.facade });
+  const a = await lib.save({ id: 'x', layout: 'quote', slots: { topics: [{ id: 't', text: 'body' }] } }, 'Old');
+  await lib.rename(a.id, '  New  ');
+  const got = (await lib.list()).find((t) => t.id === a.id);
+  assert.equal(got.name, 'New', 'renamed + trimmed');
+  assert.equal(got.id, a.id, 'id unchanged');
+  assert.equal(got.slide.slots.topics[0].text, 'body', 'content unchanged');
+});
+
+/* ---------- service: update (edit a saved layout in place) ---------- */
+test('update() overwrites a template content + name but KEEPS its id; others untouched; deep copy', async () => {
+  const m = mockFacade();
+  const lib = createLibrary({ facade: m.facade });
+  const a = await lib.save({ id: 'x', layout: 'quote', slots: { topics: [{ id: 't', text: 'old' }] } }, 'Q1');
+  const b = await lib.save({ id: 'y', layout: 'split', slots: {} }, 'S1');
+  // the edited slide arrives DETACHED (a deck copy: a different id, name stripped)
+  const edited = { id: 'detached', layout: 'quote', slots: { topics: [{ id: 't', text: 'new' }] } };
+  await lib.update(a.id, edited, 'Q1 v2');
+  const out = await lib.list();
+  const got = out.find((t) => t.id === a.id);
+  assert.ok(got, 'template kept its stable id (not re-generated)');
+  assert.equal(got.name, 'Q1 v2', 'name updated + trimmed');
+  assert.equal(got.slide.slots.topics[0].text, 'new', 'content overwritten');
+  assert.equal(out.length, 2, 'no duplicate appended (overwrite, not save)');
+  assert.ok(out.some((t) => t.id === b.id), 'the other template is untouched');
+  edited.slots.topics[0].text = 'mutated';
+  const after = (await lib.list()).find((t) => t.id === a.id);
+  assert.equal(after.slide.slots.topics[0].text, 'new', 'stored as a DEEP copy of the edited slide');
+});
+
+test('update() with name=null keeps the existing name', async () => {
+  const m = mockFacade();
+  const lib = createLibrary({ facade: m.facade });
+  const a = await lib.save({ id: 'x', layout: 'quote', slots: {} }, 'Keep');
+  await lib.update(a.id, { id: 'd', layout: 'quote', slots: { topics: [] } }, null);
+  const got = (await lib.list()).find((t) => t.id === a.id);
+  assert.equal(got.name, 'Keep', 'name preserved when not provided');
+});
+
 /* ---------- wiring contracts (source text) ---------- */
 test('library.js reaches the backend ONLY through the facade (no callWorker, no raw actions)', () => {
   const src = read('../content/slides/adapters/library.js');
@@ -138,6 +180,32 @@ test('app.js reads an injected ctx.library and inserts DETACHED template clones'
 test('the editor core never imports the library service directly (it is injected)', () => {
   const src = read('../content/slides/js/app.js');
   assert.ok(!/adapters\/library/.test(src), 'app.js does not import the library adapter');
+});
+
+/* ---------- manage saved layouts: rename / delete / edit-in-place ---------- */
+test('library.js exposes rename + update alongside save/list/remove', () => {
+  const src = read('../content/slides/adapters/library.js');
+  assert.match(src, /async\s+rename\s*\(/, 'rename(id, name)');
+  assert.match(src, /async\s+update\s*\(/, 'update(id, slide, name)');
+});
+
+test('app.js wires template management: rename, delete, and edit-in-place', () => {
+  const src = read('../content/slides/js/app.js');
+  assert.match(src, /renameTemplate\s*\(/, 'has renameTemplate');
+  assert.match(src, /deleteTemplate\s*\(/, 'has deleteTemplate');
+  assert.match(src, /editTemplate\s*\(/, 'has editTemplate');
+  // Edit-in-place: while a saved layout is being edited, saving OVERWRITES it
+  // (library.update) instead of appending a duplicate (library.save).
+  assert.match(src, /_editingTpl/, 'tracks which template is being edited');
+  assert.match(src, /_library\.update\s*\(/, 'saves edits back via library.update, not a new save');
+});
+
+test('the +slide modal saved cards expose edit / rename / delete actions', () => {
+  const src = read('../content/slides/js/edit/addslide.js');
+  assert.match(src, /editTemplate\s*\(/, 'a saved card can edit-in-place');
+  assert.match(src, /renameTemplate\s*\(/, 'a saved card can rename');
+  assert.match(src, /deleteTemplate\s*\(/, 'a saved card can delete');
+  assert.ok(!/—/.test(src), 'no em dashes');
 });
 
 test('slides.js injects the library service into the editor mount', () => {

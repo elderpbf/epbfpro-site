@@ -118,6 +118,36 @@ export function visibleForAudience(q, audienceKey) {
   return !!audienceKey && q.audience === audienceKey;
 }
 
+// Whether a question belongs in the live-host BANK PICKER list for the chosen
+// audience. Stricter than visibleForAudience: with NO audience picked a variable
+// question is hidden too, because there is nothing to morph its {{...}} tokens
+// into yet (launching it raw would leak the template to students). So:
+//   no audience -> generic only;
+//   an audience -> generic + variable (it will morph at launch) + that audience's
+//                  unique (other audiences' specifics stay hidden).
+export function bankVisible(q, audienceKey) {
+  const cls = questionType(q);
+  if (!audienceKey) return cls === 'generic';
+  if (cls === 'unique') return q.audience === audienceKey;
+  return true;
+}
+
+// The type-filter chips that are usable for the chosen audience. Variáveis and
+// Específicas only make sense once an audience is picked (see bankVisible), so
+// without one only Todas + Genéricas are offered; the rest render greyed/disabled.
+export function availableTypeFilters(audienceKey) {
+  return audienceKey ? ['all', 'generic', 'variable', 'unique'] : ['all', 'generic'];
+}
+
+// The 2b hybrid: render the audience picker as segmented pills while the room is
+// small, switch to a dropdown once it grows. `count` is the number of real
+// audiences; the picker always carries one extra "Sem audiência" entry, so up to
+// 3 real audiences (4 pills total) stay as pills and 4+ fall back to a dropdown.
+export function audienceControlMode(count) {
+  const n = Number.isFinite(count) && count > 0 ? count : 0;
+  return n <= 3 ? 'pills' : 'dropdown';
+}
+
 // Parse a JSON object out of model text. Tries the whole string first, then
 // falls back to the outermost {...} span so prose around the object (a common
 // cheap-model quirk, e.g. "Claro, aqui está: {...}") does not defeat it. Returns

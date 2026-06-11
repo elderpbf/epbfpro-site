@@ -99,6 +99,18 @@ register({
         app2.refresh();
       },
     });
+    // A stack is selected as a UNIT (the asset wins the click), so its OWN bar carries
+    // the grow control: "＋ card" / "＋ tópico" adds to its slots list. This is how a
+    // free-placed Lista or Card stack grows ("click the stack, add more").
+    if (a.type === "stack") ctrls.push({
+      type: "button",
+      id: "add",
+      label: `＋ ${a.variant === "cards" ? t("slides.ed_card") : t("slides.ed_topic")}`,
+      run(app2, sel2) {
+        const obj = app2.deck().assets.find((x) => x.id === sel2.ref);
+        if (obj && obj.listKey) addItem(app2, obj.listKey);
+      },
+    });
     if (isImageAsset(a)) {
       ctrls.push({
         type: "button",
@@ -297,13 +309,28 @@ register({
  * geometry follows it by identity and survives reorder with NO remap. Per-item
  * text style lives on the object (.style), so it travels for free too. These are
  * the reusable delete/move/add idioms the old editor.js hand-rolled per kind. */
-// A fresh list item. Cards + topics keep their friendly placeholder; any OTHER named
-// list derives its shape from the layout's own seed (the first default item, minus
-// id/step, with text fields blanked and structural objects cloned), so a multi-field
-// list (define's {term,text}, agenda's {time,text}) adds a fully-shaped item.
+// The free-placed stack asset (if any) that owns a given slots list key. Its
+// `variant` decides what a fresh item is (a card vs a bullet), so a free stack grows
+// with the right shape with no per-call flag threading.
+function stackAssetOf(app, listKey) {
+  const assets = app && app.deck && app.deck().assets;
+  return (Array.isArray(assets) && assets.find((a) => a && a.type === "stack" && a.listKey === listKey)) || null;
+}
+
+const cardSeed = () => ({ id: uid(), parts: { body: true }, text: t("slides.ed_new_card") });
+const topicSeed = () => ({ id: uid(), text: t("slides.ed_new_topic") });
+
+// A fresh list item. Cards + topics keep their friendly placeholder; a free-placed
+// stack derives its shape from the asset variant (cards -> a card, else a bullet);
+// any OTHER named list derives its shape from the layout's own seed (the first
+// default item, minus id/step, with text fields blanked and structural objects
+// cloned), so a multi-field list (define's {term,text}, agenda's {time,text}) adds a
+// fully-shaped item.
 function newItem(list, app) {
-  if (list === "cards") return { id: uid(), parts: { body: true }, text: t("slides.ed_new_card") };
-  if (list === "topics") return { id: uid(), text: t("slides.ed_new_topic") };
+  if (list === "cards") return cardSeed();
+  if (list === "topics") return topicSeed();
+  const st = stackAssetOf(app, list);
+  if (st) return st.variant === "cards" ? cardSeed() : topicSeed();
   const layout = app && registry.get(app.cur().layout);
   const seed = layout && layout.defaults && layout.defaults()[list];
   const tpl = Array.isArray(seed) && seed[0] && typeof seed[0] === "object" ? seed[0] : null;
@@ -423,9 +450,27 @@ function addAfter(app, ref) {
 // per-slide flag read by geometry.flowCard + the cards layout. Card size is per-row
 // now (slots.rowW), so resize sizes the whole stack and `reset` clears those row
 // sizes (back to equal flex); the old per-card symmetric-resize toggle is retired.
-export function cardTogglesMenu(slots) {
+export function cardTogglesMenu(slots, card) {
   const stacked = !!slots.stacked; // labels follow the active axis (width in a row, height when stacked)
-  return [
+  // Composable parts live HERE now (off the dense card bar): one on/off toggle per
+  // registered card part (imagem / título / texto / …), read from the SAME cardParts
+  // registry the renderer uses, so a part registered later appears automatically with
+  // NO edit here. `card` is the selected card (may be undefined when previewing).
+  const ctrls = [];
+  for (const p of cardParts()) {
+    ctrls.push({
+      type: "toggle", id: `part-${p.id}`, labelKey: p.labelKey,
+      on: !!(card && card.parts && card.parts[p.id]),
+      write(app, sel, checked) {
+        app.record();
+        const c = resolveStyleObj(app.cur().slots, sel.ref);
+        if (c) c.parts = { ...(c.parts || {}), [p.id]: checked };
+        app.refresh();
+      },
+    });
+  }
+  ctrls.push(
+    { type: "sep" },
     {
       type: "toggle", id: "stack", labelKey: "slides.ed_stack_v", on: !!slots.stacked,
       write(app, sel, checked) { app.record(); app.cur().slots.stacked = checked; app.refresh(); },
@@ -434,7 +479,8 @@ export function cardTogglesMenu(slots) {
       type: "button", id: "reset-widths", label: stacked ? t("slides.ed_equalize_h") : t("slides.ed_equalize_w"),
       run(app) { app.record(); delete app.cur().slots.rowW; app.refresh(); },
     },
-  ];
+  );
+  return ctrls;
 }
 
 /* ---------- card (Slice 3): flexible card; resizes in-stack (flowCard) ---------- */
@@ -461,33 +507,15 @@ register({
     const stacked = !!(app.cur().slots && app.cur().slots.stacked); // ▲▼ + vertical resize when stacked
     const ctrls = [];
     if (this.editEl(app, sel)) ctrls.push(...formatControls(), { type: "sep" });
-    // Composable parts: one on/off toggle per registered card part (imagem / título
-    // / texto / …). Toggling a part on with no content yet renders its empty box or
-    // field, ready to fill; toggling off hides it without discarding the content. A
-    // newly registered part appears here automatically, with NO edit to this
-    // descriptor: it reads the same cardParts registry the renderer does.
-    for (const p of cardParts()) {
-      ctrls.push({
-        type: "toggle",
-        id: `part-${p.id}`,
-        labelKey: p.labelKey,
-        on: !!(card.parts && card.parts[p.id]),
-        write(app2, sel2, checked) {
-          app2.record();
-          const c = resolveStyleObj(app2.cur().slots, sel2.ref);
-          if (c) c.parts = { ...(c.parts || {}), [p.id]: checked };
-          app2.refresh();
-        },
-      });
-    }
-    ctrls.push({ type: "sep" });
+    // The card bar was DENSE: the per-part on/off toggles moved into "Ajustes ▾" (see
+    // cardTogglesMenu) so the main bar is just move / add / delete + the opener.
     ctrls.push(
       { type: "button", id: "move-l", label: stacked ? "▲" : "◀", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-r", label: stacked ? "▼" : "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
       { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
       { type: "sep" },
-      { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots), btnEl); } }
+      { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots, resolveStyleObj(app2.cur().slots, sel2.ref)), btnEl); } }
     );
     return ctrls;
   },
@@ -551,13 +579,25 @@ register({
     return resolveStyleObj(app.cur().slots, sel.ref);
   },
   controls(app, sel) {
-    const ctrls = [
-      ...formatControls(),
+    const ctrls = [...formatControls()];
+    // Data-driven "active/now" marker: a layout whose slots carry an `active` index
+    // (agenda's current row) gets an "ativo" toggle per row, setting slots.active to
+    // this row (or clearing it). No layout-id branch; roadmap uses its own roadnode.
+    const slots = app.cur().slots;
+    if (slots && "active" in slots) {
+      const list = sel.ref.split(".")[0];
+      const idx = (slots[list] || []).findIndex((x) => `${list}.${x.id}` === sel.ref);
+      ctrls.push({
+        type: "toggle", id: "active", labelKey: "slides.ed_active", on: slots.active === idx,
+        write(app2, sel2, checked) { app2.record(); app2.cur().slots.active = checked ? idx : null; app2.refresh(); },
+      });
+    }
+    ctrls.push(
       { type: "button", id: "move-up", label: "▲", run(app2, sel2) { moveItem(app2, sel2.ref, -1); } },
       { type: "button", id: "move-down", label: "▼", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
       { type: "button", id: "add", label: `＋ ${t("slides.ed_topic")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", labelKey: "slides.ed_remove", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
-    ];
+    );
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;
   },
@@ -573,6 +613,11 @@ register({
   match(el) {
     const cr = el.closest && el.closest(".cardrow");
     if (cr) {
+      // A free-placed card stack's row carries data-list (its slots key); the Cards
+      // LAYOUT's rows carry data-row instead. data-list wins so a free stack resolves
+      // to its own key, not the shared "cards" list.
+      const list = cr.dataset && cr.dataset.list;
+      if (list) return { kind: "container", ref: list };
       const row = Number((cr.dataset && cr.dataset.row) || 0);
       return row ? { kind: "container", ref: "cards", row } : { kind: "container", ref: "cards" };
     }
@@ -585,7 +630,8 @@ register({
   },
   el(app, sel) {
     if (sel.ref === "cards") return app.stage.querySelector(`.cardrow[data-row="${sel.row || 0}"]`) || app.stage.querySelector(".cardrow");
-    return app.stage.querySelector(`.topiclist[data-list="${sel.ref}"]`) || app.stage.querySelector(".topiclist");
+    // a free stack's container is whatever carries its data-list (a .topiclist OR a .cardrow)
+    return app.stage.querySelector(`[data-list="${sel.ref}"]`);
   },
   target(app, sel) {
     return app.cur().slots[sel.ref] || null;
@@ -598,8 +644,24 @@ register({
         { type: "button", id: "add-row", label: "＋ linha", run(app2) { addRow(app2); } },
       ];
     }
-    // Any other named list (topics, left/right, dos/donts, steps, …): add one item.
-    return [{ type: "button", id: "add", label: sel.ref === "topics" ? "＋ tópico" : "＋ item", run(app2, sel2) { addItem(app2, sel2.ref); } }];
+    // A free-placed CARD stack: add a card. Detected by the asset variant, so the
+    // label + the seeded item match what the user inserted.
+    const st = stackAssetOf(app, sel.ref);
+    const ctrls = (st && st.variant === "cards")
+      ? [{ type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addItem(app2, sel2.ref); } }]
+      // Any other named list (topics, left/right, dos/donts, steps, a free Lista, …).
+      : [{ type: "button", id: "add", label: sel.ref === "topics" ? "＋ tópico" : "＋ item", run(app2, sel2) { addItem(app2, sel2.ref); } }];
+    // Data-driven orientation toggle: any layout whose slots carry an `orientation`
+    // (steps row/col) gets a flip on its list bar, no layout-id branch.
+    const slots = app.cur().slots;
+    if (slots && "orientation" in slots) {
+      ctrls.push({
+        type: "toggle", id: "orientation", labelKey: "slides.ed_orientation",
+        on: slots.orientation === "col",
+        write(app2, sel2, checked) { app2.record(); app2.cur().slots.orientation = checked ? "col" : "row"; app2.refresh(); },
+      });
+    }
+    return ctrls;
   },
 });
 

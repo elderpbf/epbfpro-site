@@ -19,7 +19,8 @@ import { register as registerQuestionEl, TAG as QTAG } from './question-element.
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
-import { resolveQuestion, isVariable, questionType, visibleForAudience } from '../js/audiences.js';
+import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
+import { filterByClass } from './bank.js';
 import { revealTarget, autoRevealDecision, DEFAULT_PCT } from './auto-reveal.js';
 import { buildAnswer, makeRng, hashSeed } from './sim-answers.js';
 import { hostLabel } from './identity.js';
@@ -48,6 +49,10 @@ let _historyMap = {};
 let _bankMap = {};
 let _audienceConfig = null;   // { variables, audiences } loaded from the Worker config doc
 let _selectedAudience = '';   // audience key governing bank filter + launch resolution
+let _bankMode = 'bank';       // 'bank' | 'new' launch-card mode (Do banco is the default)
+let _bankFilter = 'all';      // active type chip: 'all'|'generic'|'variable'|'unique'
+let _bankSetName = '';        // currently loaded conjunto (empty = none picked yet)
+let _bankRaw = [];            // raw questions for the loaded set (audience/type filtered client-side)
 let _trailTurma = null;
 let _trailAllTurmas = [];
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
@@ -123,23 +128,45 @@ function _displayHref() { return '/go/display.html?code=' + encodeURIComponent(_
 // buttons itself so the Bank and the live host show the same controls.
 const _ICON_BANK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>';
 
+// The class glyph shown on a bank row + its filter chip: a filled dot (generic),
+// a diamond (variable), a star (specific/unique). Mirrors the legend in the mock.
+const _CLASS_GLYPH = { generic: '●', variable: '◆', unique: '★' };
+
 function _composerCardMarkup() {
+  // Two ways to launch, mutually exclusive: "Do banco" (the default, primary path)
+  // and "Nova pergunta" (the deliberate one). Bank mode reads audience FIRST, then
+  // a conjunto, then type chips; the audience governs which questions even show
+  // (bankVisible) and how variable {{...}} morph. See backstage/mocks/codex-bank-picker.html.
   return '<div class="cdx-host-card" id="cdx-launch-card">' +
     '<div class="cdx-host-card-title">' + _esc(t('questions.host_launch')) + '</div>' +
-    '<button class="cdx-bank-toggle" data-act="bank-toggle" type="button">' + _ICON_BANK + ' ' + _esc(t('questions.host_bank')) + ' <i class="cdx-bank-chevron">▾</i></button>' +
-    '<div class="cdx-bank-panel" id="cdx-bank-panel">' +
-      '<div class="cdx-bank-set-row">' +
-        '<label class="cdx-bank-set-label" for="cdx-bank-set">' + _esc(t('questions.host_bank_set_label')) + '</label>' +
+    '<div class="cdx-seg cdx-bank-mode" id="cdx-launch-mode" role="tablist">' +
+      '<button class="cdx-seg-btn is-on" data-act="mode" data-mode="bank" type="button">' + _ICON_BANK + ' ' + _esc(t('questions.host_mode_bank')) + '</button>' +
+      '<button class="cdx-seg-btn" data-act="mode" data-mode="new" type="button">' + _esc(t('questions.host_mode_new')) + '</button>' +
+    '</div>' +
+    '<div class="cdx-bank-pane" id="cdx-bank-pane">' +
+      '<div class="cdx-bank-field">' +
+        '<div class="cdx-bank-field-label">' + _esc(t('questions.host_bank_audience_label')) + '</div>' +
+        '<div class="cdx-bank-aud" id="cdx-bank-aud"></div>' +
+      '</div>' +
+      '<div class="cdx-bank-field">' +
+        '<label class="cdx-bank-field-label" for="cdx-bank-set">' + _esc(t('questions.host_bank_set_label')) + '</label>' +
         '<select class="cdx-select" id="cdx-bank-set"><option value="">' + _esc(t('questions.host_bank_pick')) + '</option></select>' +
-        '<select class="cdx-select cdx-bank-audience" id="cdx-bank-audience" title="' + _esc(t('questions.host_audience_none')) + '" hidden></select>' +
+      '</div>' +
+      '<div class="cdx-bank-chips" id="cdx-bank-chips">' +
+        '<button class="cdx-bank-chip is-on" data-act="bank-filter" data-f="all" type="button">' + _esc(t('questions.host_bank_filter_all')) + '</button>' +
+        '<button class="cdx-bank-chip" data-act="bank-filter" data-f="generic" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-generic" aria-hidden="true">' + _CLASS_GLYPH.generic + '</span> ' + _esc(t('questions.host_bank_filter_generic')) + '</button>' +
+        '<button class="cdx-bank-chip" data-act="bank-filter" data-f="variable" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-variable" aria-hidden="true">' + _CLASS_GLYPH.variable + '</span> ' + _esc(t('questions.host_bank_filter_variable')) + '</button>' +
+        '<button class="cdx-bank-chip" data-act="bank-filter" data-f="unique" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-unique" aria-hidden="true">' + _CLASS_GLYPH.unique + '</span> ' + _esc(t('questions.host_bank_filter_unique')) + '</button>' +
       '</div>' +
       '<div class="cdx-bank-list" id="cdx-bank-list"><div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div></div>' +
     '</div>' +
-    '<div class="cdx-host-composer" id="cdx-host-composer"></div>' +
-    '<p class="cdx-host-error" id="cdx-host-error"></p>' +
-    '<div class="cdx-host-btn-row">' +
-      '<button class="cdx-btn cdx-btn-primary" data-act="launch" type="button">' + _esc(t('questions.host_launch_btn')) + '</button>' +
-      '<button class="cdx-btn" data-act="clear" type="button">' + _esc(t('questions.host_clear')) + '</button>' +
+    '<div class="cdx-bank-pane" id="cdx-new-pane" hidden>' +
+      '<div class="cdx-host-composer" id="cdx-host-composer"></div>' +
+      '<p class="cdx-host-error" id="cdx-host-error"></p>' +
+      '<div class="cdx-host-btn-row">' +
+        '<button class="cdx-btn cdx-btn-primary" data-act="launch" type="button">' + _esc(t('questions.host_launch_btn')) + '</button>' +
+        '<button class="cdx-btn" data-act="clear" type="button">' + _esc(t('questions.host_clear')) + '</button>' +
+      '</div>' +
     '</div>' +
   '</div>';
 }
@@ -752,19 +779,69 @@ async function _loadAudienceConfig() {
   let res;
   try { res = await audienceApi.getConfig(); } catch (_) { res = null; }
   _audienceConfig = (res && res.config) || null;
-  _populateAudiencePicker();
+  _renderAudienceControl();
+  _syncBankChips();
 }
 
-function _populateAudiencePicker() {
-  const sel = _q('#cdx-bank-audience');
-  if (!sel) return;
+// The audience picker, audience-first in the bank pane. The 2b hybrid: render as
+// segmented pills while the room is small (<= 3 real audiences, 4 pills with "Sem
+// audiência"), switch to a dropdown beyond. Both carry the same "Sem audiência"
+// entry. Clicks/changes are handled by delegated listeners on #cdx-bank-aud, so a
+// re-render here never leaks listeners.
+function _renderAudienceControl() {
+  const host = _q('#cdx-bank-aud');
+  if (!host) return;
   const auds = (_audienceConfig && _audienceConfig.audiences) || {};
   const keys = Object.keys(auds);
-  if (!keys.length) { sel.hidden = true; sel.innerHTML = ''; return; }
-  sel.hidden = false;
-  sel.innerHTML = '<option value="">' + _esc(t('questions.host_audience_none')) + '</option>' +
-    keys.map((k) => '<option value="' + _esc(k) + '"' + (k === _selectedAudience ? ' selected' : '') + '>' +
-      _esc((auds[k] && auds[k].label) || k) + '</option>').join('');
+  const noneLabel = t('questions.host_audience_none');
+  if (audienceControlMode(keys.length) === 'pills') {
+    const pill = (val, label) => '<button class="cdx-bank-aud-pill' + (val === _selectedAudience ? ' is-on' : '') +
+      '" data-act="bank-aud" data-aud="' + _esc(val) + '" type="button">' + _esc(label) + '</button>';
+    host.innerHTML = '<div class="cdx-seg cdx-bank-aud-seg">' + pill('', noneLabel) +
+      keys.map((k) => pill(k, (auds[k] && auds[k].label) || k)).join('') + '</div>';
+  } else {
+    host.innerHTML = '<select class="cdx-select" id="cdx-bank-aud-select"><option value="">' + _esc(noneLabel) + '</option>' +
+      keys.map((k) => '<option value="' + _esc(k) + '"' + (k === _selectedAudience ? ' selected' : '') + '>' +
+        _esc((auds[k] && auds[k].label) || k) + '</option>').join('') + '</select>';
+  }
+}
+
+// Pick an audience (from a pill or the dropdown): re-paint the control, re-sync the
+// type chips (Variáveis/Específicas unlock only with an audience), and re-filter the
+// loaded set. No refetch: bankVisible and the {{...}} morph are both client-side.
+function _selectAudience(val) {
+  _selectedAudience = val || '';
+  _renderAudienceControl();
+  _syncBankChips();
+  _renderBankList();
+}
+
+// Grey the type chips that make no sense for the current audience (no audience ->
+// only Todas + Genéricas), and reset to Todas if the active chip just became
+// unavailable. Mirrors the mock's syncChips.
+function _syncBankChips() {
+  const wrap = _q('#cdx-bank-chips');
+  if (!wrap) return;
+  const avail = availableTypeFilters(_selectedAudience);
+  if (avail.indexOf(_bankFilter) === -1) _bankFilter = 'all';
+  wrap.querySelectorAll('.cdx-bank-chip').forEach((c) => {
+    const f = c.getAttribute('data-f');
+    const ok = avail.indexOf(f) !== -1;
+    c.classList.toggle('is-disabled', !ok);
+    c.classList.toggle('is-on', f === _bankFilter);
+    c.disabled = !ok;
+  });
+}
+
+// Switch the launch card between the bank and the new-question composer.
+function _setBankMode(mode) {
+  _bankMode = (mode === 'new') ? 'new' : 'bank';
+  const bankPane = _q('#cdx-bank-pane');
+  const newPane = _q('#cdx-new-pane');
+  if (bankPane) bankPane.hidden = (_bankMode !== 'bank');
+  if (newPane) newPane.hidden = (_bankMode !== 'new');
+  const seg = _q('#cdx-launch-mode');
+  if (seg) seg.querySelectorAll('.cdx-seg-btn').forEach((b) => b.classList.toggle('is-on', b.getAttribute('data-mode') === _bankMode));
 }
 
 // The value map of the currently selected audience, or null (no audience).
@@ -774,32 +851,48 @@ function _audienceValues() {
   return (a && a.values) || null;
 }
 
+// Fetch a conjunto's questions once and cache them; audience + type filtering then
+// runs client-side (bankVisible + filterByClass) so chip/audience clicks never hit
+// the network. Selecting the empty option clears the list back to the hint.
 async function _loadBankQuestions(listName) {
+  _bankSetName = listName || '';
   const list = _q('#cdx-bank-list');
   if (!list) return;
-  if (!listName) { list.innerHTML = '<div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div>'; return; }
+  if (!_bankSetName) { _bankRaw = []; _renderBankList(); return; }
   list.innerHTML = '<div class="cdx-bank-msg">' + _esc(t('questions.sessions_loading')) + '</div>';
   let res;
-  try { res = await api.getQuestions({ list_name: listName }); } catch (e) { notice.internal(e); res = null; }
-  // Hide unique questions that belong to a different audience than the selected one.
-  const qs = ((res && res.questions) || []).filter((q) => visibleForAudience(q, _selectedAudience));
+  try { res = await api.getQuestions({ list_name: _bankSetName }); } catch (e) { notice.internal(e); res = null; }
+  _bankRaw = (res && res.questions) || [];
+  _renderBankList();
+}
+
+// Render the cached set under the current audience + type filters. bankVisible
+// drops what the audience cannot use (no audience -> generic only; an audience ->
+// generic + variable + its own unique); filterByClass then applies the chip.
+function _renderBankList() {
+  const list = _q('#cdx-bank-list');
+  if (!list) return;
+  if (!_bankSetName) { list.innerHTML = '<div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div>'; return; }
+  let qs = _bankRaw.filter((q) => bankVisible(q, _selectedAudience));
+  qs = filterByClass(qs, _bankFilter);
   if (!qs.length) { list.innerHTML = '<div class="cdx-bank-msg">' + _esc(t('questions.host_bank_empty')) + '</div>'; return; }
   const vals = _audienceValues();
   _bankMap = {};
   list.innerHTML = qs.map((q, i) => {
     _bankMap[i] = q;
-    // One-line row: chevron + truncated text + Editar/Lançar. Clicking the row
-    // body (chevron or text) expands it to the full question text + options with
-    // the correct answer marked, so the host can read what a question is before
-    // launching. The resolved text/options preview what students will see (the raw
-    // template stays in _bankMap for launch). Editar writes it into the composer.
+    // One-line row: chevron + class glyph + truncated text + glyph buttons (✎ Editar,
+    // ▶ Lançar). Clicking the row body expands it to the full text + options with the
+    // correct one marked. The resolved text/options preview what students will see
+    // (the raw template stays in _bankMap for launch). Editar opens the composer.
     const resolved = resolveQuestion(q, vals);
+    const cls = questionType(q);
     return '<div class="cdx-bank-item" data-bank-i="' + i + '">' +
       '<div class="cdx-bank-item-head">' +
         '<span class="cdx-bank-chevron" aria-hidden="true">▸</span>' +
+        '<span class="cdx-bank-glyph cdx-bank-glyph-' + cls + '" aria-hidden="true">' + _CLASS_GLYPH[cls] + '</span>' +
         '<span class="cdx-bank-item-text">' + _esc(resolved.question) + '</span>' +
-        '<button class="cdx-btn cdx-bank-edit" data-act="bank-edit" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_edit')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-primary cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button">' + _esc(t('questions.host_bank_launch')) + '</button>' +
+        '<button class="cdx-iconbtn cdx-bank-edit" data-act="bank-edit" data-bank-i="' + i + '" type="button" title="' + _esc(t('questions.host_bank_edit')) + '" aria-label="' + _esc(t('questions.host_bank_edit')) + '">✎</button>' +
+        '<button class="cdx-iconbtn cdx-iconbtn-go cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button" title="' + _esc(t('questions.host_bank_launch')) + '" aria-label="' + _esc(t('questions.host_bank_launch')) + '">▶</button>' +
       '</div>' +
       _bankDetailHtml(q, resolved) +
     '</div>';
@@ -968,6 +1061,7 @@ export function mount(containerEl, ctx) {
   _applyHostedUI(_isOpen());
   _loadTrail();
   _loadAudienceConfig();
+  _loadBankSets();
 
   const host = _q('#cdx-host');
   _on(host, 'click', (e) => {
@@ -995,9 +1089,10 @@ export function mount(containerEl, ctx) {
       if (act === 'sim-run') return _simulate();
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
       if (act === 'qr') return _openQr();
-      if (act === 'bank-toggle') { const p = _q('#cdx-bank-panel'); const open = p.classList.toggle('open'); btn.classList.toggle('open', open); if (open) _loadBankSets(); return; }
+      if (act === 'mode') { _setBankMode(btn.getAttribute('data-mode')); return; }
+      if (act === 'bank-filter') { if (btn.disabled || btn.classList.contains('is-disabled')) return; _bankFilter = btn.getAttribute('data-f') || 'all'; _syncBankChips(); _renderBankList(); return; }
       if (act === 'bank-launch') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _launchFromBank(q); return; }
-      if (act === 'bank-edit') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _prefillFromBank(q); return; }
+      if (act === 'bank-edit') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) { _setBankMode('new'); _prefillFromBank(q); } return; }
       if (act === 'reset-layout') { _layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); _applyLayout(); _saveLayout(); return; }
     }
     const col = e.target.closest('[data-toggle-col]');
@@ -1032,10 +1127,14 @@ export function mount(containerEl, ctx) {
   });
 
   _on(_q('#cdx-bank-set'), 'change', (e) => _loadBankQuestions(e.target.value));
-  _on(_q('#cdx-bank-audience'), 'change', (e) => {
-    _selectedAudience = e.target.value;
-    const setSel = _q('#cdx-bank-set');
-    _loadBankQuestions(setSel ? setSel.value : '');
+  // The audience control re-renders (pills <-> dropdown), so delegate from the
+  // stable container: a pill click or the dropdown change both pick an audience.
+  _on(_q('#cdx-bank-aud'), 'click', (e) => {
+    const b = e.target.closest('[data-act="bank-aud"]');
+    if (b) _selectAudience(b.getAttribute('data-aud') || '');
+  });
+  _on(_q('#cdx-bank-aud'), 'change', (e) => {
+    if (e.target && e.target.id === 'cdx-bank-aud-select') _selectAudience(e.target.value);
   });
   _on(_q('#cdx-bank-list'), 'click', (e) => {
     // Editar/Lançar are data-act buttons handled by the host click handler; a click

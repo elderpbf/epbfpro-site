@@ -166,14 +166,20 @@ export const strategies = {
     // its stack (the old bug: one resized card got a fixed basis, the rest did not).
     write(app, sel, g) {
       if (!sel) return;
+      // A free-placed card stack (ref list != "cards") has NO per-card size: it sizes
+      // as a unit via its asset box, so never write the layout's slots.rowW (that key
+      // belongs to the Cards layout and would collide on a slide that has both).
+      if (sel.ref && sel.ref.split(".")[0] !== "cards") return;
       const slots = (app.cur().slots = app.cur().slots || {});
       const rowW = (slots.rowW = slots.rowW || {});
       rowW[cardRow(app, sel.ref)] = cardBasis(app, g); // height when stacked, width otherwise
     },
     // Live drag: set the var on the card's .cardrow ancestor so ALL its cards track
-    // at once, with no stage re-render (CSS sizes the row's cards from --cardw).
+    // at once, with no stage re-render (CSS sizes the row's cards from --cardw). Only
+    // the Cards LAYOUT's rows (data-row) track it; a free stack's row (data-list) is
+    // sized by its box, so skip it (matches the write guard above).
     patch(el, g, app) {
-      const row = el.closest && el.closest(".cardrow");
+      const row = el.closest && el.closest(".cardrow[data-row]");
       if (row) row.style.setProperty("--cardw", cardBasis(app, g) + "px");
     },
   },

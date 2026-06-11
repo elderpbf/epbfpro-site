@@ -877,13 +877,29 @@
 .cdx-close-options input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
 
 /* Bank picker */
-.cdx-bank-toggle { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0; font-family: inherit; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); cursor: pointer; margin-bottom: 0.9rem; }
-.cdx-bank-chevron { transition: transform .2s; font-style: normal; }
-.cdx-bank-toggle.open .cdx-bank-chevron { transform: rotate(180deg); }
-.cdx-bank-panel { display: none; margin-bottom: 1.1rem; padding-bottom: 1.1rem; border-bottom: 1px solid rgba(20,184,166,.15); }
-.cdx-bank-panel.open { display: block; }
-.cdx-bank-set-row { margin-bottom: 0.6rem; }
-.cdx-bank-set-label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
+/* Mode toggle (Do banco | Nova pergunta) + the audience pills share the segmented look. */
+.cdx-seg { display: flex; gap: 3px; padding: 3px; background: var(--background); border: 1px solid var(--border); border-radius: 9px; }
+.cdx-seg-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.5rem 0.4rem; border: none; background: none; color: var(--text-secondary); font: inherit; font-size: 0.84rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.cdx-seg-btn:hover { color: var(--text-primary); }
+.cdx-seg-btn.is-on { background: var(--primary); color: #04201c; }
+.cdx-bank-mode { margin-bottom: 1rem; }
+.cdx-bank-pane[hidden] { display: none; }
+.cdx-bank-field { margin-bottom: 0.85rem; }
+.cdx-bank-field-label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+.cdx-bank-aud-seg { flex-wrap: wrap; }
+.cdx-bank-aud-pill { flex: 1 1 auto; min-width: max-content; padding: 0.45rem 0.7rem; border: none; background: none; color: var(--text-secondary); font: inherit; font-size: 0.78rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.cdx-bank-aud-pill:hover { color: var(--text-primary); }
+.cdx-bank-aud-pill.is-on { background: var(--primary); color: #04201c; }
+.cdx-bank-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
+.cdx-bank-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.32rem 0.65rem; background: var(--background); border: 1px solid var(--border); border-radius: 999px; color: var(--text-secondary); font: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+.cdx-bank-chip:hover { border-color: var(--primary); }
+.cdx-bank-chip.is-on { background: rgba(20,184,166,.14); border-color: var(--primary); color: var(--text-primary); }
+.cdx-bank-chip.is-disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--border); }
+.cdx-bank-chip.is-disabled:hover { border-color: var(--border); }
+.cdx-bank-glyph { font-size: 0.7rem; line-height: 1; }
+.cdx-bank-glyph-generic { color: var(--text-secondary); }
+.cdx-bank-glyph-variable { color: var(--primary); }
+.cdx-bank-glyph-unique { color: #d97706; }
 .cdx-bank-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; max-height: 220px; overflow-y: auto; }
 .cdx-bank-msg { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
 .cdx-bank-item { display: flex; flex-direction: column; padding: 0.4rem 0.55rem; border: 1px solid rgba(20,184,166,.12); border-radius: 8px; background: var(--background); }
@@ -893,8 +909,11 @@
 .cdx-bank-item.is-open .cdx-bank-chevron { transform: rotate(90deg); }
 .cdx-bank-item-text { font-size: 0.84rem; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cdx-bank-item.is-open .cdx-bank-item-text { white-space: normal; overflow: visible; }
-.cdx-bank-edit { padding: 0.3rem 0.6rem; font-size: 0.76rem; flex-shrink: 0; }
-.cdx-bank-launch { padding: 0.3rem 0.7rem; font-size: 0.76rem; flex-shrink: 0; }
+/* Row actions are compact glyph buttons (✎ Editar, ▶ Lançar). */
+.cdx-iconbtn { flex-shrink: 0; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text-secondary); font-size: 0.9rem; line-height: 1; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+.cdx-iconbtn:hover { border-color: var(--primary); color: var(--text-primary); }
+.cdx-iconbtn-go { background: var(--primary); border-color: var(--primary); color: #04201c; }
+.cdx-iconbtn-go:hover { color: #04201c; }
 .cdx-bank-detail { display: none; margin-top: 0.4rem; padding: 0.4rem 0 0.1rem calc(0.85rem + 0.4rem); border-top: 1px dashed var(--border); }
 .cdx-bank-item.is-open .cdx-bank-detail { display: block; }
 .cdx-bank-detail-meta { font-size: 0.76rem; color: var(--text-secondary); }

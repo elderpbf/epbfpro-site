@@ -96,5 +96,36 @@ export function createLibrary({ facade } = {}) {
       c.slides = c.slides.filter((s) => s && s.id !== id);
       await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
     },
+
+    // Rename a template in place (the only metadata edit a name change needs):
+    // its id and content are untouched, so every deck that inserted a copy is
+    // unaffected (detached model).
+    async rename(id, name) {
+      const c = await _load();
+      if (!c || !Array.isArray(c.slides)) return;
+      const s = c.slides.find((x) => x && x.id === id);
+      if (!s) return;
+      s.name = String(name == null ? '' : name).trim();
+      await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
+      return _asTemplate(s);
+    },
+
+    // Overwrite a template's CONTENT in place (the "edit a saved layout manually"
+    // flow: insert it, edit it as a normal slide, save it back). `slide` is the
+    // edited deck copy (a fresh id, name stripped); it is deep-cloned and forced
+    // back onto the template's STABLE id so the library entry keeps its identity.
+    // `name` null/undefined keeps the existing name. Detached: deck copies stay put.
+    async update(id, slide, name) {
+      const c = await _load();
+      if (!c || !Array.isArray(c.slides)) return;
+      const i = c.slides.findIndex((x) => x && x.id === id);
+      if (i < 0) return;
+      const tpl = clone(slide);
+      tpl.id = id;
+      tpl.name = name == null ? (c.slides[i].name || '') : String(name).trim();
+      c.slides[i] = tpl;
+      await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
+      return _asTemplate(tpl);
+    },
   };
 }

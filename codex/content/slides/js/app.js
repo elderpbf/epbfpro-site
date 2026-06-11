@@ -91,6 +91,9 @@ export function mount(root, ctx = {}) {
     store,
     _aiService: aiService,
     _library: library,
+    // When a saved layout is being edited in place, this holds { id, slideId, name }:
+    // saving the slide whose id is slideId OVERWRITES template id (not a new save).
+    _editingTpl: null,
     _layoutLabel: layoutLabel, // i18n layout label resolver (the add-slide picker reuses it)
     index: 0,
     step: 0,
@@ -195,12 +198,33 @@ export function mount(root, ctx = {}) {
     // record-then-mutate-then-refresh pattern.
     async saveCurrentAsTemplate(name) {
       if (!this._library) return { error: "no-library" };
+      // Edit-in-place: if the current slide is the one we inserted to edit a saved
+      // layout, OVERWRITE that template (keep its id) instead of appending a copy.
+      const editing = this._editingTpl && this.cur() && this.cur().id === this._editingTpl.slideId;
       try {
+        if (editing) {
+          const tpl = await this._library.update(this._editingTpl.id, this.cur(), name);
+          this._editingTpl = null;
+          return { ok: true, updated: true, tpl };
+        }
         const tpl = await this._library.save(this.cur(), name);
         return { ok: true, tpl };
       } catch (e) {
         return { error: (e && e.message) || "save-failed" };
       }
+    },
+    // Rename a saved layout (metadata only). Wrapper over the library service so the
+    // modal never touches it directly; record-then-mutate is moot (no deck change).
+    async renameTemplate(id, name) {
+      if (!this._library) return { error: "no-library" };
+      try { await this._library.rename(id, name); return { ok: true }; }
+      catch (e) { return { error: (e && e.message) || "rename-failed" }; }
+    },
+    // Delete a saved layout. Detached: any deck that already inserted a copy is safe.
+    async deleteTemplate(id) {
+      if (!this._library) return { error: "no-library" };
+      try { await this._library.remove(id); return { ok: true }; }
+      catch (e) { return { error: (e && e.message) || "delete-failed" }; }
     },
     // Insert a DETACHED deep-clone of a template after the current slide: a fresh
     // slide id so it shares no identity with the library copy, and the library-only
@@ -215,19 +239,33 @@ export function mount(root, ctx = {}) {
       this.deck().slides.splice(this.index + 1, 0, s);
       this.goTo(this.index + 1);
     },
+    // Edit a saved layout MANUALLY: insert a detached copy as a new slide to edit,
+    // and remember which template it came from so the next save-as-layout overwrites
+    // it (see saveCurrentAsTemplate). insertTemplate already navigated to the copy,
+    // so cur() is it.
+    editTemplate(tpl) {
+      if (!tpl || !tpl.slide) return;
+      this.insertTemplate(tpl);
+      this._editingTpl = { id: tpl.id, slideId: this.cur().id, name: tpl.name || "" };
+    },
 
     // insert a free element (movable on any slide) of the given type
     insertElement(type) {
       const c = this.deck().canvas;
-      // "list" (and later "cards") is a STACK, not a single box: a free-placed asset
-      // whose items live in slots[listKey], so the whole topic machinery (select /
-      // edit / add / remove / reorder) drives them with no new selection code. Starts
-      // as a stack of one and grows via the container's ＋ like any list.
-      if (type === "list") {
+      // "list" and "card" are STACKS, not single boxes: a free-placed asset whose
+      // items live in slots[listKey], so the whole list machinery (select / edit /
+      // add / remove / reorder) drives them with no new selection code. Starts as a
+      // stack of one and grows via the selected stack's ＋. The variant picks the item
+      // shape: "cards" seeds a composable card, "list" a bullet.
+      if (type === "list" || type === "card") {
+        const isCard = type === "card";
         const listKey = "ins" + uid();
-        this.cur().slots[listKey] = [{ id: uid(), text: t("slides.ed_new_topic") }];
+        this.cur().slots[listKey] = [
+          isCard ? { id: uid(), parts: { body: true }, text: t("slides.ed_new_card") } : { id: uid(), text: t("slides.ed_new_topic") },
+        ];
         this.record();
-        this.deck().assets.push({ id: uid(), type: "stack", variant: "list", listKey, x: c.w / 2 - 200, y: c.h / 2 - 60, w: 400, rot: 0, scope: "slide", slideId: this.cur().id });
+        const w = isCard ? 320 : 400;
+        this.deck().assets.push({ id: uid(), type: "stack", variant: isCard ? "cards" : "list", listKey, x: c.w / 2 - w / 2, y: c.h / 2 - 60, w, rot: 0, scope: "slide", slideId: this.cur().id });
         this.refresh();
         return;
       }
@@ -371,8 +409,14 @@ function wireChrome(app, root) {
       tplBtn.style.display = "none";
     } else {
       tplBtn.onclick = () => {
+        // Editing a saved layout (inserted via "editar")? Pre-fill its name and ask
+        // with the update wording, so saving overwrites that template, not a copy.
+        const editing = app._editingTpl && app.cur() && app.cur().id === app._editingTpl.slideId;
         // eslint-disable-next-line no-alert
-        const name = window.prompt(t("slides.tpl_save_prompt"), "");
+        const name = window.prompt(
+          editing ? t("slides.tpl_update_prompt") : t("slides.tpl_save_prompt"),
+          editing ? app._editingTpl.name : "",
+        );
         if (name == null) return; // cancelled
         app.saveCurrentAsTemplate(name).then((res) => {
           if (res && res.error && window.bsLog) window.bsLog("Save template: " + res.error, "error");

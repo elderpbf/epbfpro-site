@@ -92,15 +92,17 @@ export function edPlain(tag, path, value, cls = "", styleRef = "") {
  * helpers are the single renderer, shared by the layouts AND inherited by the
  * navigator thumbnails and the presenter window. */
 
-/** One topic bullet. `t` is a {id,text,style?,step?} object; `i` is its current index. */
-export function topicItem(t, i, listName = "topics", fields) {
+/** One topic bullet. `t` is a {id,text,style?,step?} object; `i` is its current index.
+ *  `active` (when i === active) marks the row "on" for layouts with a current/active
+ *  marker (agenda's "now"), derived from slots.active, never stored on the item. */
+export function topicItem(t, i, listName = "topics", fields, active) {
   // `fields` lets a list item carry MORE than one editable field (define's
   // term+def, agenda's time+label). Each field is { key, cls? }; default is a single
   // "text" field, so topics/compare/etc. are unchanged. All fields share the item's
   // style-ref so per-item style survives reorder.
   const flds = fields && fields.length ? fields : [{ key: "text" }];
   const step = t.step != null ? t.step : (i + 1);
-  const cls = step > 0 ? "reveal" : "";
+  const cls = `${step > 0 ? "reveal" : ""}${active != null && i === active ? " on" : ""}`.trim();
   const inner = flds
     .map((f) => edPlain("span", `${listName}.${i}.${f.key}`, t[f.key], f.cls || "", `${listName}.${t.id}`))
     .join("");
@@ -111,9 +113,10 @@ export function topicItem(t, i, listName = "topics", fields) {
  *  (compare's left/right, checklist's dos/donts), each editable through the SAME
  *  topic + container descriptors: the <ul> carries data-list so the container knows
  *  which slot to add into, and each item's fkey/path/style-ref are prefixed with the
- *  list name. Defaults to "topics" so topics/split/imagebox keep the one-arg call. */
-export function topicList(topics, listName = "topics", fields) {
-  return `<ul class="topiclist" data-list="${listName}">${topics.map((t, i) => topicItem(t, i, listName, fields)).join("")}</ul>`;
+ *  list name. Defaults to "topics" so topics/split/imagebox keep the one-arg call.
+ *  `active` (a row index) marks one row "on" for an active/now marker (agenda). */
+export function topicList(topics, listName = "topics", fields, active) {
+  return `<ul class="topiclist" data-list="${listName}">${topics.map((t, i) => topicItem(t, i, listName, fields, active)).join("")}</ul>`;
 }
 
 // The card renderer (cardItem) + the card PART registry now live in

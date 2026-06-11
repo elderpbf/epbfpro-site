@@ -73,8 +73,15 @@ export function initSelect(app) {
   }
   function caps() {
     const d = desc();
+    const r = sel.get();
     const s = app.cur().slots;
-    return geometryCaps(d ? d.geometry : null, s && s.stacked); // flowCard flips to vertical resize when stacked
+    const cp = geometryCaps(d ? d.geometry : null, s && s.stacked); // flowCard flips to vertical resize when stacked
+    // A card in a FREE-PLACED stack (ref list != "cards") has no per-card resize: the
+    // whole stack sizes via its asset box, so drop its resize handles (no dead handle).
+    if (r && r.kind === "card" && r.ref && r.ref.split(".")[0] !== "cards") {
+      return { ...cp, resizeW: false, resizeH: false };
+    }
+    return cp;
   }
   function curEl() {
     const d = desc();

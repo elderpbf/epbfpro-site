@@ -378,18 +378,22 @@ test('card descriptor: flowCard geometry, matches .card to its id ref, target re
   assert.equal(d.target(app, { ref: 'cards.c2' }), slide.slots.cards[1]);
 });
 
-test('card.controls carry a part toggle per registered part + move left/right + a danger delete', () => {
+test('card.controls keep move/add/delete + Ajustes on the bar; part toggles moved to Ajustes (decluttered)', () => {
   const d = kinds.get('card');
   const slide = { slots: { cards: [{ id: 'c1', parts: { body: true }, text: 'A' }] } };
   const app = { cur: () => slide, stage: noStage };
   const sel = { kind: 'card', ref: 'cards.c1' };
   const ctrls = d.controls(app, sel, d.target(app, sel));
-  const toggles = ctrls.filter((c) => c.type === 'toggle' && /^part-/.test(c.id));
-  assert.ok(toggles.length >= 3, 'one on/off toggle per registered card part (no dropdown)');
-  assert.ok(toggles.some((c) => c.id === 'part-image'), 'any card can toggle an image part');
-  assert.equal(toggles.find((c) => c.id === 'part-body').on, true, 'toggle state reflects card.parts');
+  assert.ok(!ctrls.some((c) => c.type === 'toggle' && /^part-/.test(c.id)), 'the dense per-part toggles are OFF the main bar');
   assert.ok(ctrls.some((c) => c.id === 'move-l') && ctrls.some((c) => c.id === 'move-r'), 'move left/right');
   assert.ok(ctrls.some((c) => c.id === 'delete' && c.danger), 'danger delete');
+  assert.ok(ctrls.some((c) => c.id === 'toggles'), 'the Ajustes opener stays on the bar');
+  // The part toggles now live inside the Ajustes submenu, reading the selected card.
+  const menu = kinds.cardTogglesMenu(slide.slots, slide.slots.cards[0]);
+  const parts = menu.filter((c) => c.type === 'toggle' && /^part-/.test(c.id));
+  assert.ok(parts.length >= 3, 'one on/off toggle per registered card part, in Ajustes');
+  assert.ok(parts.some((c) => c.id === 'part-image'), 'any card can toggle an image part');
+  assert.equal(parts.find((c) => c.id === 'part-body').on, true, 'toggle state reflects card.parts');
 });
 
 test('topic descriptor: freeformSlot geometry, matches the li, controls carry format + a danger delete', () => {
