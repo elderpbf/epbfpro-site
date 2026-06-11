@@ -854,7 +854,7 @@
    content and the page (browser chrome) scrolls, so there is no inner vertical
    scrollbar and no per-column scrollbars. The columns scroll together. */
 .cdx-host-dashboard { display: flex; gap: 0; flex: 1; min-height: 0; }
-.cdx-hd-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: visible; padding: 0 10px 16px; }
+.cdx-hd-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: visible; padding: 0 0 16px; }
 .cdx-hd-col-left { width: 360px; flex-shrink: 0; min-width: 260px; max-width: 600px; padding-left: 0; }
 .cdx-hd-col-center { flex: 1; min-width: 280px; }
 .cdx-hd-col-right { width: 380px; flex-shrink: 0; min-width: 280px; max-width: 600px; padding-right: 0; }

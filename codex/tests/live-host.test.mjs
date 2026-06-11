@@ -116,6 +116,9 @@ test('live host fills the width by dropping the shell side padding (scoped, desk
   // padding; only the live host goes edge-to-edge.
   assert.match(css, /\.cdx-view:has\(\.cdx-host\)\s*\{[^}]*padding-left:\s*0/, 'host view drops .cdx-view left padding');
   assert.match(css, /\.cdx-view:has\(\.cdx-host\)\s*\{[^}]*padding-right:\s*0/, 'host view drops .cdx-view right padding');
+  // Columns carry no inner side gutter, so the cards sit flush against the 8px
+  // resize bars (no extra margin around the resizers).
+  assert.match(css, /\.cdx-hd-col\s*\{[^}]*padding:\s*0 0\b/, 'host columns have no inner side gutter');
 });
 
 test('live-host bank picker is readable + editable (chevron expand, Editar prefills, options mark the correct answer)', () => {
