@@ -94,6 +94,10 @@ export function mount(root, ctx = {}) {
   // otherwise). Absent in the standalone/harness build -> embed images as data URLs, so
   // the gallery still works. See adapters/imageStore.js.
   const imageStore = ctx.imageStore || makeDataUrlStore();
+  // ctx.drivePicker: the Google Drive image importer (Picker API). Absent in the harness
+  // and disabled until a Picker API key is configured; the gallery's Drive button feature-
+  // detects it. See adapters/drivePicker.js.
+  const drivePicker = ctx.drivePicker || null;
 
   const app = {
     isPresenter,
@@ -101,6 +105,7 @@ export function mount(root, ctx = {}) {
     _aiService: aiService,
     _library: library,
     _imageStore: imageStore,
+    _drivePicker: drivePicker,
     // When a saved layout is being edited in place, this holds { id, slideId, name }:
     // saving the slide whose id is slideId OVERWRITES template id (not a new save).
     _editingTpl: null,
@@ -295,6 +300,14 @@ export function mount(root, ctx = {}) {
       removeImage(this.deck(), id);
       this.commit();
       refreshGalleryBox(this);
+    },
+    // Import an image from Google Drive: the Picker chooses a file, the adapter downloads
+    // its bytes into a File, and from there it's identical to an upload (stored + placed).
+    async importFromDrive(target) {
+      if (!this._drivePicker) return;
+      let file;
+      try { file = await this._drivePicker.pick(); } catch (_) { return; }
+      if (file) await this.uploadToGallery(file, target);
     },
     openAppearance(btn) {
       if (btn) this._appearBtn = btn;

@@ -47,8 +47,10 @@ function build(app, target) {
   src.appendChild(up);
   const drive = el("button", "gb-drive", t("slides.gallery_drive"));
   drive.type = "button";
-  drive.disabled = true;
-  drive.title = t("slides.gallery_soon");
+  const driveOn = !!(app._drivePicker && app._drivePicker.available());
+  drive.disabled = !driveOn;
+  drive.title = driveOn ? t("slides.gallery_drive") : t("slides.gallery_soon");
+  if (driveOn) drive.onclick = () => app.importFromDrive(target);
   src.appendChild(drive);
   wrap.appendChild(src);
 

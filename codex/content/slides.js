@@ -18,6 +18,13 @@ import { t } from '../js/i18n.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
 import { createImageStore } from './slides/adapters/imageStore.js';
+import { createDrivePicker } from './slides/adapters/drivePicker.js';
+
+// Set this to a Google Cloud API key (browser key, "Google Picker API" enabled, restricted
+// to the pensoia.com referrer) to turn ON the gallery's "Google Drive" import. The Drive
+// read scope + sign-in are already handled by BS_GOOGLE, so this key is the only switch.
+// Leave '' to keep the Drive option disabled (the rest of the gallery works regardless).
+const GOOGLE_PICKER_API_KEY = '';
 import { newDeck } from './slides/js/core/deck.js';
 import * as editor from './slides/js/app.js';
 import { makeWorkerAi } from './slides/js/ai/aiService.js';
@@ -309,7 +316,10 @@ async function _openDeck(slug, fresh, initialDeck) {
   // Gallery storage: upload to R2 via the facade for this deck's slug; the adapter
   // falls back to a data URL when there's no slug yet or the upload fails.
   const imageStore = createImageStore({ facade: api, getSlug: () => slug });
-  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore });
+  // Drive import reuses the BS_GOOGLE OAuth token (drive.readonly already granted); it is
+  // inert until GOOGLE_PICKER_API_KEY is set, so the option simply stays disabled till then.
+  const drivePicker = createDrivePicker({ apiKey: GOOGLE_PICKER_API_KEY, getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null) });
+  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore, drivePicker });
   _openSlug = slug;
   _writeDeckParam(slug);
   _setDeckOpen(true);
