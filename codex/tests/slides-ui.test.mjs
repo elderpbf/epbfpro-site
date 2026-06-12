@@ -38,6 +38,13 @@ test('appearanceMenu seeds current theme values and uses NO dropdown', () => {
   assert.ok(!types.includes('choice') && !types.includes('select'), 'no dropdown in appearance');
   assert.equal(m.find((c) => c.id === 'accent').value, '#14b8a6');
 });
+test('appearanceMenu leads with the preset swatches (teal/blue), marking the current accent on', () => {
+  const m = appearanceMenu({ fontScale: 1, accent: '#2563eb', ink: '#16345c', motif: '#2563eb' }, 'all');
+  const swatches = m.filter((c) => c.swatch);
+  assert.ok(swatches.length >= 2, 'at least the two seed swatches');
+  assert.ok(swatches.some((c) => c.id === 'preset-teal') && swatches.some((c) => c.id === 'preset-blue'));
+  assert.equal(swatches.filter((c) => c.on).length, 1, 'exactly the current preset is marked on');
+});
 test('appearanceMenu offers a registry-backed font-family picker seeded with the current font label', () => {
   const m = appearanceMenu({ fontScale: 1, font: 'raleway', accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' }, 'all');
   const fam = m.find((c) => c.id === 'fontfam');

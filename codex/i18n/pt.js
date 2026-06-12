@@ -918,6 +918,8 @@ export default {
   'slides.ed_list':           'Lista',
   'slides.ed_orientation':    'vertical',
   'slides.ed_active':         'ativo',
+  'slides.preset_teal':       'Teal',
+  'slides.preset_blue':       'Azul',
   'slides.ed_font':           'Fonte',
   'slides.ed_font_size':      'Tamanho',
   'slides.ed_font_scope_title': 'o tamanho se aplica a',

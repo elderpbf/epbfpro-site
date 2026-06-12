@@ -151,6 +151,7 @@ export function createBar(app) {
     b.className = "ctl" + (c.cls ? " " + c.cls : "") + (c.danger ? " ctl-danger" : "") + (c.on ? " on" : "");
     b.textContent = c.label || (c.labelKey ? t(c.labelKey) : "");
     if (c.font) b.style.fontFamily = c.font; // preview a typeface in its own font (the font picker)
+    if (c.swatch) { b.style.background = c.swatch; b.classList.add("ctl-swatch"); } // colour swatch chip (preset picker)
     const fire = (e) => {
       e.preventDefault();
       e.stopPropagation();

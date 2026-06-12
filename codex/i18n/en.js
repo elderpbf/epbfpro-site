@@ -919,6 +919,8 @@ export default {
   'slides.ed_list':           'List',
   'slides.ed_orientation':    'vertical',
   'slides.ed_active':         'active',
+  'slides.preset_teal':       'Teal',
+  'slides.preset_blue':       'Blue',
   'slides.ed_font':           'Font',
   'slides.ed_font_size':      'Size',
   'slides.ed_font_scope_title': 'the size applies to',

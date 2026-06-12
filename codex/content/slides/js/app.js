@@ -178,6 +178,16 @@ export function mount(root, ctx = {}) {
       this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
     },
     toggleFontScope() { this.fontScope = this.fontScope === "all" ? "slide" : "all"; this.reopenAppearance(); },
+    // Apply a colour PRESET (a seed swatch): set the three real colours in one undo
+    // step; the shades + panels then derive from them (applyDeckTheme -> derive.js).
+    applyPreset(p) {
+      this.record("preset");
+      const th = this.deck().theme;
+      th.accent = p.accent; th.ink = p.ink; th.motif = p.motif;
+      applyDeckTheme(this.deck(), this.stage);
+      this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+      this.reopenAppearance(); // refresh the menu so the swatch + colour pickers reseed
+    },
     openAppearance(btn) {
       if (btn) this._appearBtn = btn;
       // seed the slider with the EFFECTIVE scale: the per-slide override in "slide"

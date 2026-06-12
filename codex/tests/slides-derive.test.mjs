@@ -6,9 +6,21 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { derive } from '../content/slides/js/theme/derive.js';
 
-test('derive returns exactly the panel token family', () => {
+test('derive returns the accent-shade + panel token family', () => {
   const d = derive({ accent: '#14b8a6', ink: '#134e4a', paper: '#ffffff' });
-  assert.deepEqual(Object.keys(d).sort(), ['--panel-fill', '--panel-fill-2', '--panel-grad', '--panel-line']);
+  assert.deepEqual(Object.keys(d).sort(),
+    ['--ink2', '--panel-fill', '--panel-fill-2', '--panel-grad', '--panel-line', '--teal-d', '--teal-l']);
+});
+test('accent shades derive from the accent: teal-d darkens, teal-l tints, ink2 softens ink toward the accent', () => {
+  const d = derive({ accent: '#14b8a6', ink: '#134e4a' });
+  assert.match(d['--teal-d'], /color-mix\(in srgb, #14b8a6 80%, #000000\)/); // darken keeps it vivid
+  assert.match(d['--teal-l'], /#14b8a6 35%, #ffffff/);
+  assert.match(d['--ink2'], /color-mix\(in srgb, #134e4a 78%, #14b8a6\)/);   // ink toward accent, not white
+});
+test('a blue accent recolours the shades too (nothing hardcoded teal)', () => {
+  const d = derive({ accent: '#2563eb', ink: '#16345c' });
+  assert.match(d['--teal-d'], /#2563eb 80%, #000000/);
+  assert.match(d['--ink2'], /#16345c 78%, #2563eb/);
 });
 test('panel tokens are color-mix washes of the accent over paper (so they follow the swatch)', () => {
   const d = derive({ accent: '#14b8a6', paper: '#ffffff' });

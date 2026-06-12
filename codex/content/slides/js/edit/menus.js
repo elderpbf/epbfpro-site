@@ -5,6 +5,7 @@
 // No dropdowns: every choice is a row of items.
 import { t } from "../../../../js/i18n.js";
 import { fontLabel, fontMenu, ensureAll } from "../theme/fonts.js";
+import { presetMenu } from "../theme/presets.js";
 
 // "list" and "card" are not free boxes but STACK objects: each drops a growable
 // stack (one item to start), bullets for "list" and composable cards for "card".
@@ -29,6 +30,10 @@ export function insertMenu() {
 // slider reflects what's actually applied (5b). Omitted -> falls back to the deck.
 export function appearanceMenu(theme, fontScope, fontValue) {
   return [
+    // Predefinições: the seed colour swatches (teal/blue). Picking one applies the
+    // whole colour bundle; the individual colour pickers below then fine-tune it.
+    ...presetMenu(theme.accent),
+    { type: "sep" },
     // Font FAMILY: deck-wide, registry-backed. The button opens the font registry
     // as a dropdown (theme/fonts.fontMenu), the same button-anchored popover the
     // card "Ajustes" menu uses; opening it preloads the webfonts so previews render.
