@@ -5,6 +5,7 @@
 // The slide canvas itself always stays paper-white; only the chrome flips.
 
 import { fontStack, ensureFont } from "./fonts.js";
+import { derive } from "./derive.js";
 
 const THEME_KEY = "bs_theme"; // same key Backstage/Codex use, so Phase 6 is seamless
 
@@ -21,6 +22,10 @@ export function applyDeckTheme(deck, stage) {
   // --fontFamily (see slide.css); the editor chrome stays Roboto.
   r.setProperty("--fontFamily", fontStack(t.font));
   ensureFont(t.font);
+  // Slide-content panel tokens derived from the palette, so cards / steps / road
+  // panels follow the accent (today they are hardcoded). Paper stays white for now.
+  const d = derive({ accent: t.accent, ink: t.ink, paper: "#ffffff" });
+  for (const k in d) r.setProperty(k, d[k]);
   if (stage) stage.dataset.anim = t.anim || "fade-up";
 }
 
