@@ -6,6 +6,7 @@
 
 import { fontStack, ensureFont } from "./fonts.js";
 import { derive } from "./derive.js";
+import { roleCss } from "./roles.js";
 
 const THEME_KEY = "bs_theme"; // same key Backstage/Codex use, so Phase 6 is seamless
 
@@ -26,7 +27,25 @@ export function applyDeckTheme(deck, stage) {
   // panels follow the accent (today they are hardcoded). Paper stays white for now.
   const d = derive({ accent: t.accent, ink: t.ink, paper: "#ffffff" });
   for (const k in d) r.setProperty(k, d[k]);
+  // Typography roles: inject the active per-role overrides as a stylesheet that wins
+  // over slide.css (same selectors, appended last in <head>). Empty when no role is
+  // set, so a deck with no typography overrides renders identically.
+  applyRoleStyles(t.texto && t.texto.papeis);
   if (stage) stage.dataset.anim = t.anim || "fade-up";
+}
+
+// One <style> per document carries the active typography-role overrides. It is
+// appended last in <head>, so its rules win over slide.css on equal specificity.
+// Rebuilt each applyDeckTheme; empty text clears it.
+function applyRoleStyles(papeis) {
+  if (typeof document === "undefined") return; // non-DOM guard (tests never reach here)
+  let el = document.getElementById("cdx-deck-type");
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "cdx-deck-type";
+    document.head.appendChild(el);
+  }
+  el.textContent = roleCss(papeis);
 }
 
 export function initChromeTheme() {
