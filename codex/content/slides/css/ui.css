@@ -167,6 +167,10 @@
 .cdx-deck-editor .cdx-themebox .tb-tg.tb-u { text-decoration: underline; }
 .cdx-deck-editor .cdx-themebox .tb-tg.tb-s { text-decoration: line-through; }
 .cdx-deck-editor .cdx-themebox .tb-col { flex: 0 0 auto; width: 24px; height: 24px; border: 1px solid var(--btn-bd); border-radius: 5px; background: none; cursor: pointer; padding: 0; }
+.cdx-deck-editor .cdx-themebox .tb-arts { display: flex; gap: 6px; }
+.cdx-deck-editor .cdx-themebox .tb-art { flex: 1; font: inherit; font-size: 12px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 7px 6px; cursor: pointer; }
+.cdx-deck-editor .cdx-themebox .tb-art:hover { background: var(--btn-hover); }
+.cdx-deck-editor .cdx-themebox .tb-art.on { background: var(--teal); color: #fff; border-color: var(--teal); }
 .cdx-deck-editor .cdx-themebox .tb-foot { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--btn-bd); padding-top: 9px; }
 .cdx-deck-editor .cdx-themebox .tb-allcheck { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); cursor: pointer; }
 .cdx-deck-editor .cdx-themebox .tb-clear { font: inherit; font-size: 11px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 4px 9px; cursor: pointer; white-space: nowrap; }

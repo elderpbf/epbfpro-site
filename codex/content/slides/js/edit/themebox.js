@@ -10,6 +10,7 @@ import { t } from "../../../../js/i18n.js";
 import { PRESETS, presetSwatch } from "../theme/presets.js";
 import { FONTS } from "../theme/fonts.js";
 import { ROLES } from "../theme/roles.js";
+import { ARTKITS } from "../theme/art.js";
 
 let panel = null;
 let openBtn = null;
@@ -151,6 +152,18 @@ function build(app) {
   const typ = section("slides.ed_typography");
   for (const role of ROLES) typ.appendChild(roleRow(app, role));
   box.appendChild(typ);
+
+  // Arte de fundo (the decorative-motif kit; recoloured by the swatch)
+  const art = section("slides.ed_background");
+  const arts = el("div", "tb-arts");
+  for (const kit of ARTKITS) {
+    const b = el("button", "tb-art" + (kit.id === (app.deck().theme.art || "circuito") ? " on" : ""), t(kit.labelKey));
+    b.type = "button";
+    b.onclick = () => { app.setTheme("art", kit.id); refreshThemeBox(app); };
+    arts.appendChild(b);
+  }
+  art.appendChild(arts);
+  box.appendChild(art);
 
   // footer: apply-to-all
   const foot = el("div", "tb-foot");

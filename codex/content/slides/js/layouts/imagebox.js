@@ -19,6 +19,6 @@ export default {
   reveals: (s) => Math.max(0, ...s.topics.map((t, i) => (t.step != null ? t.step : i + 1))),
   render: (s) => `${bar}<div class="L-imgbox ${s.flip ? "flip" : ""}">
     <div class="ib-pic">${imgslot("image", s.image)}</div>
-    <div class="ib-content">${contentMotifs}${ed("h2", "title", s.title)}
+    <div class="ib-content">${contentMotifs()}${ed("h2", "title", s.title)}
       ${topicList(s.topics)}</div></div>`,
 };

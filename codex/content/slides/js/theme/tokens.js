@@ -7,6 +7,7 @@
 import { fontStack, ensureFont } from "./fonts.js";
 import { derive } from "./derive.js";
 import { roleCss } from "./roles.js";
+import { setArtKit } from "./art.js";
 
 const THEME_KEY = "bs_theme"; // same key Backstage/Codex use, so Phase 6 is seamless
 
@@ -34,6 +35,9 @@ export function applyDeckTheme(deck, stage) {
   const papeis = t.texto && t.texto.papeis;
   if (papeis) for (const id in papeis) if (papeis[id] && papeis[id].font) ensureFont(papeis[id].font);
   applyRoleStyles(papeis);
+  // Decorative background: choose the active art kit (the layouts' motif accessors
+  // read it). Absent -> "circuito" (today's art), so a legacy deck is unchanged.
+  setArtKit(t.art || "circuito");
   if (stage) stage.dataset.anim = t.anim || "fade-up";
 }
 

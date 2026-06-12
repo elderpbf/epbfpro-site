@@ -9,7 +9,7 @@ export default {
   group: "title",
   defaults: () => ({ eyebrow: "Seção", title: "Título da seção", sub: "Subtítulo", icon: null }),
   reveals: () => 0,
-  render: (s) => `${bar}${coverMotifs}<div class="L-cover">
+  render: (s) => `${bar}${coverMotifs()}<div class="L-cover">
     ${ed("div", "eyebrow", s.eyebrow, "eyebrow")}
     <div class="hero"><div class="heroicon">${imgslot("icon", s.icon)}</div>
       ${ed("h1", "title", s.title)}</div>
