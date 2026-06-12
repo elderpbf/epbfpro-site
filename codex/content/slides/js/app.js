@@ -5,8 +5,11 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid, migrateDeck, clone, clearTextOverrides } from "./core/schema.js";
+import { uid, migrateDeck, clone, clearTextOverrides, setPath } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
+import { addImage, removeImage, getImage } from "./core/gallery.js";
+import { makeDataUrlStore } from "./core/files.js";
+import { openGalleryBox, refreshGalleryBox, closeGalleryBox } from "./edit/gallerybox.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
 import { initEditing } from "./edit/editor.js";
@@ -87,12 +90,17 @@ export function mount(root, ctx = {}) {
   // ctx.library: the template library service (same injection rule as aiService).
   // Absent in the standalone dev build, so the template UI stays hidden there.
   const library = ctx.library || null;
+  // ctx.imageStore: the gallery's storage seam (R2 upload in the deployed app, data-URL
+  // otherwise). Absent in the standalone/harness build -> embed images as data URLs, so
+  // the gallery still works. See adapters/imageStore.js.
+  const imageStore = ctx.imageStore || makeDataUrlStore();
 
   const app = {
     isPresenter,
     store,
     _aiService: aiService,
     _library: library,
+    _imageStore: imageStore,
     // When a saved layout is being edited in place, this holds { id, slideId, name }:
     // saving the slide whose id is slideId OVERWRITES template id (not a new save).
     _editingTpl: null,
@@ -249,6 +257,45 @@ export function mount(root, ctx = {}) {
     },
     // The Tema box: the chrome "Tema" button opens it (toggles on re-click).
     openTheme(btn) { openThemeBox(this, btn); },
+
+    // ── Image gallery ──────────────────────────────────────────────────────────
+    // The gallery box is the single "add an image" surface (empty slot, trocar, and
+    // ＋inserir→imagem all open it). `target` is where a picked image lands:
+    // { kind:"slot", path } or { kind:"asset", assetType }.
+    openGallery(target, anchorEl) { openGalleryBox(this, target || { kind: "manage" }, anchorEl); },
+    // Upload a new file: the store puts the bytes (R2 or data URL), it is registered in
+    // the gallery, and (when opened to add to a target) placed immediately.
+    async uploadToGallery(file, target) {
+      if (!file) return;
+      let res;
+      try { res = await this._imageStore.put(file); } catch (_) { return; }
+      if (!res || !res.url) return;
+      this.record("gallery:add");
+      const entry = addImage(this.deck(), res);
+      this.commit();
+      refreshGalleryBox(this);
+      if (entry && target && (target.kind === "slot" || target.kind === "asset")) this.placeFromGallery(entry.id, target);
+    },
+    // Put a registered image into the open target, then close the box.
+    placeFromGallery(id, target) {
+      const g = getImage(this.deck(), id);
+      if (!g || !target) return;
+      this.record("gallery:place");
+      if (target.kind === "slot") {
+        setPath(this.cur().slots, target.path, { src: g.url, tx: 0, ty: 0, zoom: 1 });
+      } else if (target.kind === "asset") {
+        const c = this.deck().canvas;
+        this.deck().assets.push({ id: uid(), type: target.assetType || "image", src: g.url, x: c.w / 2 - 120, y: c.h / 2 - 80, w: 240, rot: 0, scope: "slide", slideId: this.cur().id });
+      } else return; // manage-only open: nothing to place
+      closeGalleryBox(this);
+      this.refresh();
+    },
+    deleteGalleryImage(id) {
+      this.record("gallery:del");
+      removeImage(this.deck(), id);
+      this.commit();
+      refreshGalleryBox(this);
+    },
     openAppearance(btn) {
       if (btn) this._appearBtn = btn;
       // seed the slider with the EFFECTIVE scale: the per-slide override in "slide"
@@ -341,11 +388,15 @@ export function mount(root, ctx = {}) {
         return;
       }
       const base = { id: uid(), type, x: c.w / 2 - 110, y: c.h / 2 - 70, w: type === "title" ? 420 : 240, rot: 0, scope: "slide", slideId: this.cur().id };
-      if (type === "image" || type === "photo" || type === "video") {
-        if (type === "video") base.h = 140; // a <video> has no intrinsic box before metadata (D2)
+      // Images go through the gallery box (central registry + Upload + Drive); a free
+      // asset is the place target. Video has no gallery, so it keeps the raw OS picker.
+      if (type === "image" || type === "photo") {
+        this.openGallery({ kind: "asset", assetType: type }, this.root.querySelector("#insertBtn"));
+      } else if (type === "video") {
+        base.h = 140; // a <video> has no intrinsic box before metadata (D2)
         const inp = document.createElement("input");
         inp.type = "file";
-        inp.accept = type === "video" ? "video/*" : "image/*"; // image/* includes gif (animates)
+        inp.accept = "video/*";
         inp.onchange = () => {
           const f = inp.files[0];
           if (!f) return;
@@ -606,6 +657,7 @@ function wireChrome(app, root) {
 export function unmount(app, root) {
   try { app.channel.close(); } catch (e) { /* noop */ }
   closeThemeBox(); // tear down the Tema panel + its document listener if open
+  closeGalleryBox(app); // and the gallery box + its outside-click listener
   if (app._onResize) window.removeEventListener("resize", app._onResize);
   if (app._onKey) document.removeEventListener("keydown", app._onKey);
   if (app._onDocClick) document.removeEventListener("click", app._onDocClick);

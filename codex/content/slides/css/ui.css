@@ -187,6 +187,32 @@
 .cdx-deck-editor .cdx-themebox .tb-allcheck { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); cursor: pointer; }
 .cdx-deck-editor .cdx-themebox .tb-clear { font: inherit; font-size: 11px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 4px 9px; cursor: pointer; white-space: nowrap; }
 .cdx-deck-editor .cdx-themebox .tb-clear:hover { background: var(--btn-hover); }
+
+/* ── Gallery box: the image picker (central gallery + Upload + Drive). A context-box
+   surface (viewport-fixed, JS-anchored under its trigger), same shell idiom as the Tema
+   box. Built via ui/contextbox.js; styles scoped under .cdx-gallerybox. ── */
+.cdx-deck-editor .cdx-gallerybox { position: fixed; z-index: 80; width: 340px; max-height: 78vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 12px; box-shadow: 0 16px 48px var(--overlay-strong); padding: 8px 12px 12px; font-size: 12px; color: var(--text); }
+.cdx-deck-editor .cdx-gallerybox .gb-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 8px; }
+.cdx-deck-editor .cdx-gallerybox .gb-title { font-weight: 700; font-size: 14px; }
+.cdx-deck-editor .cdx-gallerybox .gb-x { font: inherit; background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 2px 9px; cursor: pointer; color: var(--text); }
+.cdx-deck-editor .cdx-gallerybox .gb-x:hover { background: var(--btn-hover); }
+.cdx-deck-editor .cdx-gallerybox .gb-src { display: flex; gap: 8px; margin-bottom: 10px; }
+.cdx-deck-editor .cdx-gallerybox .gb-up,
+.cdx-deck-editor .cdx-gallerybox .gb-drive { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: inherit; font-size: 12px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.cdx-deck-editor .cdx-gallerybox .gb-up:hover { background: var(--btn-hover); border-color: var(--teal); }
+.cdx-deck-editor .cdx-gallerybox .gb-up-ic { font-size: 13px; }
+.cdx-deck-editor .cdx-gallerybox .gb-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.cdx-deck-editor .cdx-gallerybox .gb-drive { opacity: .5; cursor: not-allowed; }
+.cdx-deck-editor .cdx-gallerybox .gb-empty { color: var(--muted); padding: 18px 4px; text-align: center; }
+.cdx-deck-editor .cdx-gallerybox .gb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cdx-deck-editor .cdx-gallerybox .gb-cell { position: relative; }
+.cdx-deck-editor .cdx-gallerybox .gb-thumb { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; overflow: hidden; background: var(--paper); border: 1px solid var(--btn-bd); border-radius: 8px; cursor: pointer; }
+.cdx-deck-editor .cdx-gallerybox .gb-thumb:hover { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal); }
+.cdx-deck-editor .cdx-gallerybox .gb-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cdx-deck-editor .cdx-gallerybox .gb-del { position: absolute; top: 3px; right: 3px; font: inherit; font-size: 10px; line-height: 1; color: var(--text); background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 5px; padding: 2px 4px; cursor: pointer; opacity: .6; box-shadow: 0 1px 3px var(--overlay-strong); }
+.cdx-deck-editor .cdx-gallerybox .gb-cell:hover .gb-del { opacity: 1; }
+.cdx-deck-editor .cdx-gallerybox .gb-del:hover { border-color: var(--danger); color: var(--danger); }
+
 .cdx-deck-editor .ctx-choice { display: inline-flex; gap: 3px; }
 .cdx-deck-editor .ctx-toggle { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
 .cdx-deck-editor .ctx-toggle input { cursor: pointer; }

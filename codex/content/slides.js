@@ -17,6 +17,7 @@ import { slides as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
+import { createImageStore } from './slides/adapters/imageStore.js';
 import { newDeck } from './slides/js/core/deck.js';
 import * as editor from './slides/js/app.js';
 import { makeWorkerAi } from './slides/js/ai/aiService.js';
@@ -305,7 +306,10 @@ async function _openDeck(slug, fresh, initialDeck) {
   region.innerHTML = '<div class="cdx-slides-stage cdx-deck-editor" id="cdx-slides-stage"></div>';
   // Geometry is 100% CSS (slides.css, position:fixed region); the editor handles
   // its own canvas fit + window-resize internally. No sizing JS here.
-  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library });
+  // Gallery storage: upload to R2 via the facade for this deck's slug; the adapter
+  // falls back to a data URL when there's no slug yet or the upload fails.
+  const imageStore = createImageStore({ facade: api, getSlug: () => slug });
+  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore });
   _openSlug = slug;
   _writeDeckParam(slug);
   _setDeckOpen(true);

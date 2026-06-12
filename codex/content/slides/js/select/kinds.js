@@ -274,8 +274,8 @@ register({
           type: "button",
           id: "addimage",
           labelKey: "slides.ed_add_image",
-          run(app2, sel2) {
-            app2.pickImage(sel2.ref);
+          run(app2, sel2, btnEl) {
+            app2.openGallery({ kind: "slot", path: sel2.ref }, btnEl);
           },
         },
       ];
@@ -285,8 +285,8 @@ register({
         type: "button",
         id: "replace",
         labelKey: "slides.ed_replace",
-        run(app2, sel2) {
-          app2.pickImage(sel2.ref);
+        run(app2, sel2, btnEl) {
+          app2.openGallery({ kind: "slot", path: sel2.ref }, btnEl);
         },
       },
       {
