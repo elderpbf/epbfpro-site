@@ -5,12 +5,21 @@
  * shell chrome, and shared-components.css. Add ONLY Codex component rules here;
  * surface/text/border values come from the tokens, never hex literals. */
 
+/* ── Codex topbar: full-width bar with a centered tab strip ───
+ * The shell's --with-tabs inner caps at 1400px + centers it; drop that cap here
+ * so the bar spans the full viewport, matching the now full-width content below.
+ * Scoped to the Codex page; the legacy Backstage portal topbar, which shares
+ * --with-tabs, keeps its cap. The strip is centered between brand and controls
+ * by a leading + trailing .bs-topbar-spacer (codex-topbar.js), so .cdx-tabs
+ * carries no side margin of its own. */
+.bs-topbar-inner--with-tabs { max-width: none; }
+
 /* ── Rich tab strip in the Codex topbar ─────────────────────── */
 .cdx-tabs {
   display: flex;
   align-items: center;
   gap: 0.15rem;
-  margin-left: 1rem;
+  margin: 0;
   min-width: 0;
   overflow-x: auto;
 }

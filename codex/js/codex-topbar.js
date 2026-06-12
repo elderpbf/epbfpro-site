@@ -228,6 +228,11 @@ export function init(opts) {
     a.appendChild(label);
     strip.appendChild(a);
   });
+  // Leading spacer mirrors the trailing one below, so the tab strip sits
+  // centered between the brand and the right-side controls on the full-width bar.
+  const spacerLead = document.createElement('div');
+  spacerLead.className = 'bs-topbar-spacer';
+  inner.appendChild(spacerLead);
   inner.appendChild(strip);
 
   const spacer = document.createElement('div');
