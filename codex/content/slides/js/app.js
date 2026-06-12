@@ -5,7 +5,7 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid, migrateDeck, clone } from "./core/schema.js";
+import { uid, migrateDeck, clone, clearTextOverrides } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
@@ -15,6 +15,7 @@ import { initSelect } from "./select/wiring.js";
 import { initReorder } from "./select/reorder.js";
 import { insertMenu, appearanceMenu, animMenu } from "./edit/menus.js";
 import { addSlidePanelHTML, initAddSlide } from "./edit/addslide.js";
+import { openThemeBox, refreshThemeBox, closeThemeBox } from "./edit/themebox.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
@@ -41,7 +42,7 @@ const shellHTML = () => `
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
   <span class="spacer"></span>
   <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
-  <button id="appearBtn">${t("slides.ed_appearance")} ▾</button>
+  <button id="appearBtn">${t("slides.ed_theme")} ▾</button>
   <button id="animBtn">${t("slides.ed_anim")} ▾</button>
   <button id="aiFillBtn">${t("slides.ai_fill")}</button>
   <span class="spacer"></span>
@@ -184,10 +185,37 @@ export function mount(root, ctx = {}) {
       this.record("preset");
       const th = this.deck().theme;
       th.accent = p.accent; th.ink = p.ink; th.motif = p.motif;
+      if (this._applyAll) clearTextOverrides(this.deck()); // optional: snap manual edits to the new theme
       applyDeckTheme(this.deck(), this.stage);
       this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
-      this.reopenAppearance(); // refresh the menu so the swatch + colour pickers reseed
+      refreshThemeBox(this); // reseed the box's swatch + colour controls
     },
+    // Set a typography ROLE property (font/size/weight/italic/underline/strike/color).
+    // Null/empty clears it (back to the role default); an empty role is dropped so the
+    // model stays sparse. The slide re-renders; the open box keeps its own control state.
+    setRole(roleId, field, value) {
+      this.record("role:" + roleId);
+      const th = this.deck().theme;
+      const texto = th.texto || (th.texto = { papeis: {} });
+      const papeis = texto.papeis || (texto.papeis = {});
+      const p = papeis[roleId] || (papeis[roleId] = {});
+      if (value == null || value === "") delete p[field];
+      else p[field] = value;
+      if (!Object.keys(p).length) delete papeis[roleId];
+      applyDeckTheme(this.deck(), this.stage);
+      this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+    },
+    // "Aplicar a tudo agora": clear every manual per-item text override so the whole
+    // deck conforms to the theme, in one undoable step.
+    applyThemeToAll() {
+      this.record("apply-all");
+      clearTextOverrides(this.deck());
+      applyDeckTheme(this.deck(), this.stage);
+      this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+      refreshThemeBox(this);
+    },
+    // The Tema box: the chrome "Tema" button opens it (toggles on re-click).
+    openTheme(btn) { openThemeBox(this, btn); },
     openAppearance(btn) {
       if (btn) this._appearBtn = btn;
       // seed the slider with the EFFECTIVE scale: the per-slide override in "slide"
@@ -454,8 +482,11 @@ function wireChrome(app, root) {
     };
   };
   menuBtn("#insertBtn", (btn) => app.select.openMenu(insertMenu(), btn));
-  menuBtn("#appearBtn", (btn) => app.openAppearance(btn));
   menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim, app.cur().slots.reveal, "reveal" in app.cur().slots), btn));
+  // The "Tema" button opens its own settings panel (themebox), not a context-bar menu,
+  // so it is wired directly (toggles on re-click; the panel owns its outside-click).
+  const themeBtn = $("#appearBtn");
+  if (themeBtn) themeBtn.onclick = (e) => { e.stopPropagation(); app.select.clear(); app.openTheme(themeBtn); };
 
   // Outside-click closes the mask popover and any open context-bar menu. Stored on
   // app and removed in unmount() (a DOCUMENT-level listener). Each $() is null-guarded.
@@ -541,6 +572,7 @@ function wireChrome(app, root) {
 
 export function unmount(app, root) {
   try { app.channel.close(); } catch (e) { /* noop */ }
+  closeThemeBox(); // tear down the Tema panel + its document listener if open
   if (app._onResize) window.removeEventListener("resize", app._onResize);
   if (app._onKey) document.removeEventListener("keydown", app._onKey);
   if (app._onDocClick) document.removeEventListener("click", app._onDocClick);

@@ -27,7 +27,7 @@ export function newDeck() {
     id: uid(),
     title: "Nova apresentação",
     canvas: { ...CANVAS },
-    theme: { fontScale: 1, font: "roboto", accent: "#14b8a6", ink: "#134e4a", motif: "#14b8a6", anim: "fade-up" },
+    theme: { fontScale: 1, font: "roboto", accent: "#14b8a6", ink: "#134e4a", motif: "#14b8a6", anim: "fade-up", texto: { papeis: {} } },
     logo: { ...DEFAULT_LOGO }, // deck-level: same position on every slide (single source: schema.js)
     assets: [],
     slides: [

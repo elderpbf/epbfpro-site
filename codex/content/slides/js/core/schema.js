@@ -135,6 +135,27 @@ export function migrateDeck(deck) {
   return deck;
 }
 
+/**
+ * Clear every MANUAL per-item text override in the deck (the "aplicar a tudo" reset),
+ * so all text falls back to the theme/role defaults. Drops slide.textStyle, each list
+ * item's `.style`, and each asset's `.style`. Pure: mutates + returns the deck (the
+ * caller wraps it in one undo snapshot). Geometry overrides (slide.overrides) are NOT
+ * touched, those are position, not style.
+ */
+export function clearTextOverrides(deck) {
+  if (!deck) return deck;
+  for (const slide of deck.slides || []) {
+    delete slide.textStyle;
+    const slots = slide.slots || {};
+    for (const k in slots) {
+      const v = slots[k];
+      if (Array.isArray(v)) v.forEach((it) => { if (it && it.style) delete it.style; });
+    }
+  }
+  for (const a of deck.assets || []) { if (a && a.style) delete a.style; }
+  return deck;
+}
+
 /** Map a legacy card `mode` (title|text|image|image-text) onto the composable
  *  `parts` map. Unknown/absent modes fall back to a body-only card, so a malformed
  *  legacy card still renders something. */

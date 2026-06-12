@@ -29,8 +29,11 @@ export function applyDeckTheme(deck, stage) {
   for (const k in d) r.setProperty(k, d[k]);
   // Typography roles: inject the active per-role overrides as a stylesheet that wins
   // over slide.css (same selectors, appended last in <head>). Empty when no role is
-  // set, so a deck with no typography overrides renders identically.
-  applyRoleStyles(t.texto && t.texto.papeis);
+  // set, so a deck with no typography overrides renders identically. Lazy-load any
+  // per-role webfont so a role's chosen family actually renders (not a fallback).
+  const papeis = t.texto && t.texto.papeis;
+  if (papeis) for (const id in papeis) if (papeis[id] && papeis[id].font) ensureFont(papeis[id].font);
+  applyRoleStyles(papeis);
   if (stage) stage.dataset.anim = t.anim || "fade-up";
 }
 

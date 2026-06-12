@@ -137,6 +137,40 @@
    current preset. */
 .cdx-deck-editor .ctl.ctl-swatch { color: #fff; border: 0; font-weight: 700; text-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
 .cdx-deck-editor .ctl.ctl-swatch.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--teal); }
+
+/* ── Tema box: a dense settings panel (its own surface, like the +slide modal),
+   viewport-fixed + JS-anchored under the "Tema" chrome button. ── */
+.cdx-deck-editor .cdx-themebox { position: fixed; z-index: 80; width: 392px; max-height: 80vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 12px; box-shadow: 0 16px 48px var(--overlay-strong); padding: 8px 12px 12px; font-size: 12px; color: var(--text); }
+.cdx-deck-editor .cdx-themebox .tb-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--panel); padding: 4px 0 8px; z-index: 1; }
+.cdx-deck-editor .cdx-themebox .tb-title { font-weight: 700; font-size: 14px; }
+.cdx-deck-editor .cdx-themebox .tb-x { font: inherit; background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 2px 9px; cursor: pointer; color: var(--text); }
+.cdx-deck-editor .cdx-themebox .tb-sec { margin-top: 12px; }
+.cdx-deck-editor .cdx-themebox .tb-sec-h { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+.cdx-deck-editor .cdx-themebox .tb-presets { display: flex; gap: 6px; }
+.cdx-deck-editor .cdx-themebox .tb-preset { flex: 1; color: #fff; border: 0; border-radius: 8px; padding: 9px 8px; font-weight: 700; cursor: pointer; text-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
+.cdx-deck-editor .cdx-themebox .tb-preset.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--teal); }
+.cdx-deck-editor .cdx-themebox .tb-pal { display: flex; gap: 14px; }
+.cdx-deck-editor .cdx-themebox .tb-pal-c { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; font-size: 11px; color: var(--muted); }
+.cdx-deck-editor .cdx-themebox .tb-pal-c input { width: 48px; height: 26px; border: 1px solid var(--btn-bd); border-radius: 6px; background: none; cursor: pointer; padding: 0; }
+.cdx-deck-editor .cdx-themebox .tb-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+.cdx-deck-editor .cdx-themebox .tb-lbl { min-width: 64px; color: var(--muted); }
+.cdx-deck-editor .cdx-themebox .tb-sel { font: inherit; font-size: 12px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 3px 6px; flex: 1; min-width: 0; }
+.cdx-deck-editor .cdx-themebox .tb-role { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
+.cdx-deck-editor .cdx-themebox .tb-role-name { flex: 0 0 64px; font-size: 11px; }
+.cdx-deck-editor .cdx-themebox .tb-role .tb-sel { flex: 1 1 80px; }
+.cdx-deck-editor .cdx-themebox .tb-size { flex: 0 0 62px; height: 18px; }
+.cdx-deck-editor .cdx-themebox .tb-fmt { display: inline-flex; gap: 2px; }
+.cdx-deck-editor .cdx-themebox .tb-tg { width: 22px; height: 22px; font-size: 11px; line-height: 1; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 5px; cursor: pointer; padding: 0; }
+.cdx-deck-editor .cdx-themebox .tb-tg.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+.cdx-deck-editor .cdx-themebox .tb-tg.tb-b { font-weight: 900; }
+.cdx-deck-editor .cdx-themebox .tb-tg.tb-i { font-style: italic; }
+.cdx-deck-editor .cdx-themebox .tb-tg.tb-u { text-decoration: underline; }
+.cdx-deck-editor .cdx-themebox .tb-tg.tb-s { text-decoration: line-through; }
+.cdx-deck-editor .cdx-themebox .tb-col { flex: 0 0 auto; width: 24px; height: 24px; border: 1px solid var(--btn-bd); border-radius: 5px; background: none; cursor: pointer; padding: 0; }
+.cdx-deck-editor .cdx-themebox .tb-foot { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--btn-bd); padding-top: 9px; }
+.cdx-deck-editor .cdx-themebox .tb-allcheck { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); cursor: pointer; }
+.cdx-deck-editor .cdx-themebox .tb-clear { font: inherit; font-size: 11px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 4px 9px; cursor: pointer; white-space: nowrap; }
+.cdx-deck-editor .cdx-themebox .tb-clear:hover { background: var(--btn-hover); }
 .cdx-deck-editor .ctx-choice { display: inline-flex; gap: 3px; }
 .cdx-deck-editor .ctx-toggle { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
 .cdx-deck-editor .ctx-toggle input { cursor: pointer; }
