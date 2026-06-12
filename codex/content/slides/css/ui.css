@@ -146,7 +146,12 @@
 .cdx-deck-editor .cdx-themebox .tb-x { font: inherit; background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 2px 9px; cursor: pointer; color: var(--text); }
 .cdx-deck-editor .cdx-themebox .tb-sec { margin-top: 12px; }
 .cdx-deck-editor .cdx-themebox .tb-sec-h { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
-.cdx-deck-editor .cdx-themebox .tb-presets { display: flex; gap: 6px; }
+.cdx-deck-editor .cdx-themebox .tb-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.cdx-deck-editor .cdx-themebox .tb-saved { position: relative; display: inline-flex; }
+.cdx-deck-editor .cdx-themebox .tb-saved .tb-preset { flex: 0 0 auto; padding-right: 22px; }
+.cdx-deck-editor .cdx-themebox .tb-saved-x { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; font-size: 10px; line-height: 1; color: #fff; background: rgba(0, 0, 0, .35); border: 0; border-radius: 50%; cursor: pointer; padding: 0; }
+.cdx-deck-editor .cdx-themebox .tb-savetheme { margin-top: 7px; font: inherit; font-size: 12px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+.cdx-deck-editor .cdx-themebox .tb-savetheme:hover { background: var(--btn-hover); }
 .cdx-deck-editor .cdx-themebox .tb-preset { flex: 1; color: #fff; border: 0; border-radius: 8px; padding: 9px 8px; font-weight: 700; cursor: pointer; text-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
 .cdx-deck-editor .cdx-themebox .tb-preset.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--teal); }
 .cdx-deck-editor .cdx-themebox .tb-pal { display: flex; gap: 14px; }

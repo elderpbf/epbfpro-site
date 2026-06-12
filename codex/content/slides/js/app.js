@@ -16,6 +16,7 @@ import { initReorder } from "./select/reorder.js";
 import { insertMenu, appearanceMenu, animMenu } from "./edit/menus.js";
 import { addSlidePanelHTML, initAddSlide } from "./edit/addslide.js";
 import { openThemeBox, refreshThemeBox, closeThemeBox } from "./edit/themebox.js";
+import { snapshotTheme, applyThemeFields } from "./theme/presets.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
@@ -212,6 +213,38 @@ export function mount(root, ctx = {}) {
       clearTextOverrides(this.deck());
       applyDeckTheme(this.deck(), this.stage);
       this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+      refreshThemeBox(this);
+    },
+    // ── Saved themes ("Meus temas", per-deck) ─────────────────────────────────
+    // Snapshot the current look as a named saved theme. If `name` matches an existing
+    // one, overwrite it; otherwise add it (save-as).
+    saveTheme(name) {
+      this.record("save-theme");
+      const d = this.deck();
+      const list = d.savedThemes || (d.savedThemes = []);
+      const snap = snapshotTheme(d.theme);
+      const existing = list.find((s) => s.name === name);
+      if (existing) existing.theme = snap;
+      else list.push({ id: uid(), name: String(name || "").trim() || "Tema", theme: snap });
+      this.commit();
+      refreshThemeBox(this);
+    },
+    applySavedTheme(id) {
+      const s = (this.deck().savedThemes || []).find((x) => x.id === id);
+      if (!s) return;
+      this.record("apply-saved");
+      applyThemeFields(this.deck().theme, s.theme);
+      if (this._applyAll) clearTextOverrides(this.deck());
+      applyDeckTheme(this.deck(), this.stage);
+      this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+      refreshThemeBox(this);
+    },
+    deleteSavedTheme(id) {
+      const d = this.deck();
+      if (!d.savedThemes) return;
+      this.record("del-saved");
+      d.savedThemes = d.savedThemes.filter((x) => x.id !== id);
+      this.commit();
       refreshThemeBox(this);
     },
     // The Tema box: the chrome "Tema" button opens it (toggles on re-click).

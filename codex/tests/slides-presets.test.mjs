@@ -3,7 +3,7 @@
 // node:test.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PRESETS, getPreset, presetSwatch, presetMenu } from '../content/slides/js/theme/presets.js';
+import { PRESETS, getPreset, presetSwatch, presetMenu, snapshotTheme, applyThemeFields } from '../content/slides/js/theme/presets.js';
 
 test('the seed swatches Élder asked for are present: teal + blue', () => {
   assert.ok(PRESETS.length >= 2);
@@ -43,4 +43,26 @@ test('a preset button applies the whole colour bundle in one step', () => {
   const app = { applyPreset: (p) => calls.push(p.id) };
   presetMenu('#14b8a6').find((c) => c.id === 'preset-blue').run(app);
   assert.deepEqual(calls, ['blue']);
+});
+
+/* ---------- saved themes: snapshot + apply ---------- */
+test('snapshotTheme captures the look fields and deep-clones them', () => {
+  const theme = { accent: '#111111', ink: '#222222', motif: '#333333', art: 'neural', font: 'raleway', fontScale: 1.1, anim: 'fade', texto: { papeis: { title: { size: 1.2 } } }, junk: 'ignore' };
+  const snap = snapshotTheme(theme);
+  assert.deepEqual(Object.keys(snap).sort(), ['accent', 'anim', 'art', 'font', 'fontScale', 'ink', 'motif', 'texto']);
+  assert.equal(snap.junk, undefined);
+  // deep clone: mutating the live theme does not change the snapshot
+  theme.texto.papeis.title.size = 2;
+  assert.equal(snap.texto.papeis.title.size, 1.2);
+});
+test('applyThemeFields copies a saved theme back onto a live theme (deep-cloned)', () => {
+  const saved = { accent: '#abcdef', art: 'nenhum', texto: { papeis: { topic: { weight: 700 } } } };
+  const live = { accent: '#000000', ink: '#111111', art: 'circuito', texto: { papeis: {} } };
+  applyThemeFields(live, saved);
+  assert.equal(live.accent, '#abcdef');
+  assert.equal(live.art, 'nenhum');
+  assert.equal(live.ink, '#111111'); // a field absent from the saved theme is left alone
+  assert.equal(live.texto.papeis.topic.weight, 700);
+  saved.texto.papeis.topic.weight = 900; // independence
+  assert.equal(live.texto.papeis.topic.weight, 700);
 });

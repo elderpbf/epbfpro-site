@@ -927,6 +927,8 @@ export default {
   'slides.ed_typography':     'Typography',
   'slides.ed_apply_all':      'Apply to all (incl. manual edits)',
   'slides.ed_apply_all_now':  'Apply now',
+  'slides.ed_save_theme':     'Save theme',
+  'slides.saved_theme_name':  'My theme',
   'slides.ed_background':     'Background art',
   'slides.art_circuito':      'Circuit',
   'slides.art_neural':        'Neural',

@@ -99,7 +99,7 @@ function build(app) {
   head.appendChild(x);
   box.appendChild(head);
 
-  // Predefinições (preset swatches)
+  // Predefinições (built-in preset swatches + the user's saved themes)
   const sp = section("slides.ed_presets");
   const strip = el("div", "tb-presets");
   for (const p of PRESETS) {
@@ -109,7 +109,31 @@ function build(app) {
     b.onclick = () => app.applyPreset(p);
     strip.appendChild(b);
   }
+  // saved themes ("Meus temas"): a swatch chip per saved theme, each with a delete ✕
+  for (const s of app.deck().savedThemes || []) {
+    const wrap = el("span", "tb-saved");
+    const b = el("button", "tb-preset", s.name);
+    b.type = "button";
+    b.style.background = presetSwatch({ accent: (s.theme && s.theme.accent) || "#14b8a6" });
+    b.onclick = () => app.applySavedTheme(s.id);
+    wrap.appendChild(b);
+    const del = el("button", "tb-saved-x", "✕");
+    del.type = "button";
+    del.title = t("slides.delete");
+    del.onclick = (e) => { e.stopPropagation(); app.deleteSavedTheme(s.id); };
+    wrap.appendChild(del);
+    strip.appendChild(wrap);
+  }
   sp.appendChild(strip);
+  const saveBtn = el("button", "tb-savetheme", "＋ " + t("slides.ed_save_theme"));
+  saveBtn.type = "button";
+  saveBtn.onclick = () => {
+    const list = app.deck().savedThemes || [];
+    const def = t("slides.saved_theme_name") + " " + (list.length + 1);
+    const name = (typeof window !== "undefined" && window.prompt) ? window.prompt(t("slides.ed_save_theme"), def) : def;
+    if (name) app.saveTheme(name);
+  };
+  sp.appendChild(saveBtn);
   box.appendChild(sp);
 
   // Paleta (the real colours; shades + panels derive from them)
