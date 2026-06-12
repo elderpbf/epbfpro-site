@@ -77,7 +77,7 @@ register({
   },
   controls(app, sel, a) {
     if (!a) return [];
-    const ctrls = isTextAsset(a) ? [...formatControls(), { type: "sep" }] : [];
+    const ctrls = isTextAsset(a) ? [...formatControls(app), { type: "sep" }] : [];
     // A stack's items live in THIS slide's slots, so it stays slide-scoped (no
     // all/layout choice, which would render it on slides that lack its list).
     if (a.type !== "stack") ctrls.push({
@@ -239,7 +239,7 @@ register({
     return (app.cur().overrides || {})[sel.ref] || null;
   },
   controls(app, sel) {
-    const ctrls = [...formatControls()];
+    const ctrls = [...formatControls(app)];
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;
   },
@@ -506,7 +506,7 @@ register({
     if (!card) return [];
     const stacked = !!(app.cur().slots && app.cur().slots.stacked); // ▲▼ + vertical resize when stacked
     const ctrls = [];
-    if (this.editEl(app, sel)) ctrls.push(...formatControls(), { type: "sep" });
+    if (this.editEl(app, sel)) ctrls.push(...formatControls(app), { type: "sep" });
     // The card bar was DENSE: the per-part on/off toggles moved into "Ajustes ▾" (see
     // cardTogglesMenu) so the main bar is just move / add / delete + the opener.
     ctrls.push(
@@ -547,7 +547,7 @@ register({
     const slots = app.cur().slots;
     const idx = (slots.nodes || []).findIndex((n) => `nodes.${n.id}` === sel.ref);
     return [
-      ...formatControls(),
+      ...formatControls(app),
       {
         type: "toggle", id: "active", label: "ativo", on: (slots.active || 0) === idx,
         write(app2, sel2, checked) { app2.record(); if (checked) app2.cur().slots.active = idx; app2.refresh(); },
@@ -579,7 +579,7 @@ register({
     return resolveStyleObj(app.cur().slots, sel.ref);
   },
   controls(app, sel) {
-    const ctrls = [...formatControls()];
+    const ctrls = [...formatControls(app)];
     // Data-driven "active/now" marker: a layout whose slots carry an `active` index
     // (agenda's current row) gets an "ativo" toggle per row, setting slots.active to
     // this row (or clearing it). No layout-id branch; roadmap uses its own roadnode.

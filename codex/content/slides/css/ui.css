@@ -137,6 +137,13 @@
    current preset. */
 .cdx-deck-editor .ctl.ctl-swatch { color: #fff; border: 0; font-weight: 700; text-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
 .cdx-deck-editor .ctl.ctl-swatch.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--teal); }
+/* per-item theme-colour chips (the text format bar): a compact square swatch per real
+   palette colour (Destaque/Texto/Arte), surfaced before the raw "Cor" input so one text
+   element can borrow a coordinated theme colour in one click; the reset chip clears the
+   pin so the item follows the swatch again. */
+.cdx-deck-editor .ctl.ctl-chip { width: 20px; min-width: 20px; height: 20px; padding: 0; border-radius: 6px; }
+.cdx-deck-editor .ctl.ctl-chip:hover { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--teal); }
+.cdx-deck-editor .ctl.ctl-chipreset { font-size: 11px; padding: 3px 7px; }
 
 /* ── Tema box: a dense settings panel (its own surface, like the +slide modal),
    viewport-fixed + JS-anchored under the "Tema" chrome button. ── */
