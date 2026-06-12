@@ -3,6 +3,8 @@
 // + handlers inline in app.js. Same primitive vocabulary as the selection
 // descriptors (kinds.js), so the one bar renders menus and selections alike.
 // No dropdowns: every choice is a row of items.
+import { t } from "../../../../js/i18n.js";
+import { fontLabel, fontMenu, ensureAll } from "../theme/fonts.js";
 
 // "list" and "card" are not free boxes but STACK objects: each drops a growable
 // stack (one item to start), bullets for "list" and composable cards for "card".
@@ -27,8 +29,16 @@ export function insertMenu() {
 // slider reflects what's actually applied (5b). Omitted -> falls back to the deck.
 export function appearanceMenu(theme, fontScope, fontValue) {
   return [
+    // Font FAMILY: deck-wide, registry-backed. The button opens the font registry
+    // as a dropdown (theme/fonts.fontMenu), the same button-anchored popover the
+    // card "Ajustes" menu uses; opening it preloads the webfonts so previews render.
     {
-      type: "range", id: "font", labelKey: "slides.ed_font",
+      type: "button", id: "fontfam",
+      label: t("slides.ed_font") + ": " + fontLabel(theme.font) + " ▾",
+      run(app, sel, btnEl) { ensureAll(); app.select.openDropdown(fontMenu(theme.font), btnEl); },
+    },
+    {
+      type: "range", id: "font", labelKey: "slides.ed_font_size",
       value: fontValue != null ? fontValue : theme.fontScale, min: 0.7, max: 1.5, step: 0.05,
       input(app, sel, v) { app.setFontScale(+v); },
     },

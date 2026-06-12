@@ -4,6 +4,8 @@
 //      (data-theme on <html>, persisted in localStorage `bs_theme`, default dark).
 // The slide canvas itself always stays paper-white; only the chrome flips.
 
+import { fontStack, ensureFont } from "./fonts.js";
+
 const THEME_KEY = "bs_theme"; // same key Backstage/Codex use, so Phase 6 is seamless
 
 /** Push the deck's own colour/scale tokens onto the document + stage. */
@@ -14,6 +16,11 @@ export function applyDeckTheme(deck, stage) {
   r.setProperty("--teal", t.accent);
   r.setProperty("--ink", t.ink);
   r.setProperty("--motif", t.motif);
+  // Deck-wide font family: resolve through the registry (fontStack handles a legacy
+  // deck with no `font` field) and lazy-load its webfont. Only slide CONTENT reads
+  // --fontFamily (see slide.css); the editor chrome stays Roboto.
+  r.setProperty("--fontFamily", fontStack(t.font));
+  ensureFont(t.font);
   if (stage) stage.dataset.anim = t.anim || "fade-up";
 }
 

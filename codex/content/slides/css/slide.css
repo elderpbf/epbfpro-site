@@ -12,6 +12,15 @@
   transform-origin: top left;
 }
 
+/* Deck font family: only slide CONTENT (stage + thumbnail/presenter minis) reads
+   the --fontFamily token (set deck-wide by applyDeckTheme from the font registry);
+   the editor chrome keeps Roboto. Falls back to the prior default when unset, so a
+   legacy deck renders exactly as before. */
+.cdx-deck-editor #stage,
+.cdx-deck-editor .mini .scale {
+  font-family: var(--fontFamily, 'Roboto', system-ui, 'Segoe UI', Arial, sans-serif);
+}
+
 /* frame */
 .cdx-deck-editor .logo { position: absolute; z-index: 20; cursor: move; } /* its own thing: on top, deck-positioned */
 .cdx-deck-editor .logo img { height: 100%; display: block; }
