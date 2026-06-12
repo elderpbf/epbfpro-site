@@ -178,6 +178,17 @@
 }
 
 /* ── Tab content host ───────────────────────────────────────── */
+/* The shared Backstage shell caps .bs-main at 1200px + centers it (a reading
+ * measure for the portal/dashboard). Codex faces are multi-pane app layouts
+ * (Cohorts 3-pane, Content/Lessons 2-pane, Questions Bank/Sessions/host) whose
+ * 1fr pane only cramps at that cap; the content that genuinely needs a measure
+ * caps itself internally (Content editor 760px, session detail 60rem, Stats
+ * 1200px below). So drop the shell cap and let every face use the full width.
+ * This stylesheet loads ONLY on the Codex page, so the override is scoped to
+ * Codex; the rest of Backstage keeps its 1200px width. Padding is untouched
+ * (the Sessions/host full-bleed views negate exactly 3rem of it). Lessons' own
+ * `.bs-app--classvault .bs-main` override still wins for its flush look. */
+.bs-main { max-width: none; }
 .cdx-view { padding: 0.5rem 1.5rem 1.5rem; }
 
 /* Language toggle button (PT/EN). The topbar renders it only when more than
