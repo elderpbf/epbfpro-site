@@ -3,8 +3,10 @@
 // Emits the SAME .ph-* markup the shared public-header.css styles, so the bar
 // looks identical; only the code shape changed (IIFE global -> ES module that
 // defines the custom element). Used by the Trail (student mode) + the validar
-// page. ThemeManager (shared infra) and QRShareModal (absent on the public Trail,
-// so the QR button is inert there) stay window globals.
+// page. ThemeManager (shared infra) stays a window global. QRShareModal is now a
+// Codex ES module the admin live host imports; it is deliberately NOT loaded on
+// the public Trail (students don't generate a join QR), so the code button here
+// stays inert via the window-global guard below.
 //
 // The class is guarded so the module imports cleanly under node (no HTMLElement):
 // only buildHeaderHtml() and clampZoom() are unit-tested; the upgraded element is

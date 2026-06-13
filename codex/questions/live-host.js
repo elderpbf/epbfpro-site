@@ -18,6 +18,7 @@ import { mountComposer, correctForLaunch } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
+import { open as openQrShare } from '../js/qr-share-modal.js';
 import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
 import { filterByClass } from './bank.js';
@@ -374,9 +375,7 @@ async function _unlinkTrail() {
 function _openQr() {
   const joinUrl = _buildTrailUrl();
   if (!joinUrl) { notice.info(t('questions.host_qr_no_turma')); return; }
-  if (typeof window !== 'undefined' && window.QRShareModal && typeof window.QRShareModal.open === 'function') {
-    window.QRShareModal.open({ joinUrl: joinUrl });
-  }
+  openQrShare({ joinUrl });
 }
 
 // ── Lifecycle: Iniciar / Encerrar (port of host-session.js) ──
