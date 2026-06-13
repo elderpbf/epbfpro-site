@@ -15,8 +15,11 @@
 // Methods take an optional params object passed straight through; param shapes
 // are pinned when each method is wired during its tab's migration.
 //
-// Globals (shared Backstage script, loaded before the module boot):
-//   window.callWorker  (../backstage/js/api-client.js)
+// Transport seam (window.callWorker, set before the module boot):
+//   On the Trail it is provided by codex/js/worker-call.js (Codex-owned, defaults
+//   to codex-api, auth-free public path). On the admin it is still
+//   backstage/js/api-client.js until that page's auth is ported. The facade is
+//   identical either way; tests stub this global to read back the action.
 
 export function call(action, params) {
   const p = Object.assign({}, params || {});

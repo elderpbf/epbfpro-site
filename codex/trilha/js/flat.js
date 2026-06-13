@@ -1,14 +1,16 @@
 // codex/trilha/js/flat.js
 // Flat-card layout for the Apostila ("Conteúdo do curso") and Outros materiais
 // tabs. Cards expand inline (no sub-card nesting); body content comes from the
-// shared CTRenderer, the action row from Actions.appendFlatActionRow. Reuses the
-// same cdx-tr- card styles as the Aulas timeline. Registers both renderers.
+// Codex item renderer, the action row from Actions.appendFlatActionRow. Reuses
+// the same cdx-tr- card styles as the Aulas timeline. Registers both renderers.
 import { state } from './state.js';
 import { esc } from './utils.js';
 import { isFresh } from './freshness.js';
 import { appendFlatActionRow } from './actions.js';
 import { trail } from './api.js';
 import { registerRenderer } from './page.js';
+import { renderItem } from '../../js/item-render.js';
+import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
 
 export function renderApostilaTab() {
   const container = document.getElementById('cdx-tr-apostila-list');
@@ -64,14 +66,13 @@ export function renderOutrosTab() {
   });
 
   function renderList() {
-    const filtered = window.CT_TYPE_FILTER ? window.CT_TYPE_FILTER.apply(items, state.outrosTypeFilter) : items;
+    const filtered = applyTypeFilter(items, state.outrosTypeFilter);
     listEl.innerHTML = '';
     if (!filtered.length) { listEl.innerHTML = '<div class="cdx-tr-empty">Nenhum item neste filtro.</div>'; return; }
     filtered.forEach((item) => listEl.appendChild(buildFlatCard(item)));
   }
   function rerenderFilter() {
-    if (!window.CT_TYPE_FILTER) return;
-    window.CT_TYPE_FILTER.render({
+    renderTypeFilter({
       container: filterEl, types, items, selectedSlug: state.outrosTypeFilter,
       onChange: (slug) => { state.outrosTypeFilter = slug; rerenderFilter(); renderList(); },
     });
@@ -149,7 +150,7 @@ async function toggleFlatCard(card, item) {
     body.innerHTML = '';
     const contentWrap = document.createElement('div');
     body.appendChild(contentWrap);
-    window.CTRenderer.render(data.item, contentWrap, { preview: true });
+    renderItem(data.item, contentWrap, { preview: true });
     appendFlatActionRow(body, data.item);
   } catch (_) {
     body.innerHTML = '<div class="cdx-tr-empty">Erro ao carregar conteúdo.</div>';

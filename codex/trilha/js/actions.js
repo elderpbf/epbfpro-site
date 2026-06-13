@@ -2,9 +2,10 @@
 // Item-action dispatch + button injection. getItemAction() maps an item to its
 // right-side action (open / copy / submit / submitted) and is pure (unit-tested);
 // injectActionButton / appendFlatActionRow mount it. The tarefa-submit modal is
-// the shared CTTarefaSubmitModal global (reused, not re-ported).
+// the Codex tarefa-submit-modal module (cdx- port).
 import { state } from './state.js';
 import { esc, copyToClipboard, hasSubmittedTarefa } from './utils.js';
+import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
 
 export function getMeta(item) {
   if (!item || !item.meta_json) return {};
@@ -71,8 +72,7 @@ export function injectActionButton(sub, item, opts = {}) {
 }
 
 export function openTarefaSubmit(item, sub, opts) {
-  if (!window.CTTarefaSubmitModal) { console.error('CTTarefaSubmitModal not loaded'); return; }
-  window.CTTarefaSubmitModal.open({
+  openTarefaSubmitModal({
     item,
     clientSlug: state.clientSlug,
     turmaSlug: state.turmaSlug,

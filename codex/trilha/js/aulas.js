@@ -2,13 +2,14 @@
 // Aulas tab: the timeline of aula cards + the inline-expand body (Tarefa /
 // Conteúdo da aula / Outros materiais). On mobile, a single-open accordion
 // invariant is enforced in JS to match the focus-mode CSS. Registers its
-// renderer with the page orchestrator; the type-filter inside Outros reuses the
-// shared CT_TYPE_FILTER global.
+// renderer with the page orchestrator; the type-filter inside Outros uses the
+// Codex type filter.
 import { state } from './state.js';
 import { esc, aulaStatus, aulaDateText, parseTopics } from './utils.js';
 import { countFreshIn } from './freshness.js';
 import { buildSub } from './sub.js';
 import { registerRenderer } from './page.js';
+import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
 
 let _wired = false;
 
@@ -203,7 +204,7 @@ function buildSection(label, items, opts = {}) {
 }
 
 // Outros materiais within an aula: a section with a type-filter chip strip
-// (shared CT_TYPE_FILTER). Filter state is per-section (closure-scoped).
+// (Codex type filter). Filter state is per-section (closure-scoped).
 function buildOutrosSection(items) {
   const section = document.createElement('div');
   section.className = 'cdx-tr-section';
@@ -227,18 +228,17 @@ function buildOutrosSection(items) {
 
   let selectedSlug = null;
   function renderList() {
-    const filtered = window.CT_TYPE_FILTER ? window.CT_TYPE_FILTER.apply(items, selectedSlug) : items;
+    const filtered = applyTypeFilter(items, selectedSlug);
     list.innerHTML = '';
     filtered.forEach((item) => list.appendChild(buildSub(item)));
   }
   function rerenderFilter() {
-    if (!window.CT_TYPE_FILTER) return;
-    window.CT_TYPE_FILTER.render({
+    renderTypeFilter({
       container: filterEl, types, items, selectedSlug,
       onChange: (slug) => { selectedSlug = slug; rerenderFilter(); renderList(); },
     });
   }
-  if (types.length > 1 && window.CT_TYPE_FILTER) rerenderFilter();
+  if (types.length > 1) rerenderFilter();
   else filterEl.style.display = 'none';
   renderList();
   return section;

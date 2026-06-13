@@ -1,13 +1,14 @@
 // codex/trilha/js/sub.js
 // Compact sub-card used inside an aula body (Tarefa / Conteúdo da aula / Outros
 // materiais). Clicking expands inline below it with the rendered item content
-// (via the shared CTRenderer global) + a right-side action button. Item content
-// is fetched through the Trail facade (ct_get_item_public).
+// (via the Codex item renderer) + a right-side action button. Item content is
+// fetched through the Trail facade (ct_get_item_public).
 import { state } from './state.js';
 import { esc } from './utils.js';
 import { isFresh } from './freshness.js';
 import { injectActionButton } from './actions.js';
 import { trail } from './api.js';
+import { renderItem } from '../../js/item-render.js';
 
 export function buildSub(item, opts = {}) {
   const sub = document.createElement('div');
@@ -78,7 +79,7 @@ export async function toggleSub(sub, item, opts = {}) {
       _silent: true,
     });
     exp.innerHTML = '';
-    window.CTRenderer.render(data.item, exp, { preview: true });
+    renderItem(data.item, exp, { preview: true });
     injectActionButton(sub, data.item, opts);
   } catch (_) {
     exp.innerHTML = '<div class="cdx-tr-empty">Erro ao carregar conteúdo.</div>';

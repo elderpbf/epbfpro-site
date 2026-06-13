@@ -101,13 +101,7 @@
 <!-- Shared services + reused leaf components (window globals) before the boot:
      CTRenderer (item content), CT_TYPE_FILTER (chip strip), CTTarefaSubmitModal
      (tarefa submit) + its field registry. Same shared components the admin uses. -->
-<script src="/backstage/js/api-client.js?v=1.2"></script>
-<script src="/backstage/js/pensoia-header.js?v=1.4"></script>
 <script src="/backstage/js/utils.js?v=1.5"></script>
-<script src="/backstage/js/ct-renderer.js?v=1.2"></script>
-<script src="/backstage/js/ct-type-filter.js?v=1.1"></script>
-<script src="/backstage/js/ct-tarefa-fields.js?v=1.0"></script>
-<script src="/backstage/js/ct-tarefa-submit-modal.js?v=1.0"></script>
 <!-- Live-question answer experience (NexoAnswer + the question renderer). -->
 <script src="/backstage/js/question-renderer.js?v=2.6"></script>
 <script src="/backstage/js/classpulse-question.min.js?v=1.8"></script>
@@ -116,14 +110,16 @@
 <!-- Codex is ES modules: one boot owns glyphs, points the backend at codex-api,
      registers the tab renderers, and mounts. -->
 <script type="module">
+  import '/codex/js/worker-call.js'; // Codex-owned Worker transport -> window.callWorker (codex-api default)
+  import '/codex/trilha/js/pensoia-header.js'; // defines the <pensoia-header> custom element
   import * as glyphs from '/codex/js/glyphs.js';
   import { mount } from '/codex/trilha/js/page.js';
   import '/codex/trilha/js/aulas.js'; // self-registers the 'aulas' panel renderer
   import '/codex/trilha/js/flat.js';  // self-registers the 'apostila' + 'outros' renderers
   import '/codex/trilha/js/nexo.js';  // self-starts the live-question poller
   window.CdxGlyphs = glyphs;
-  // Stage 2: Trail's backend is the codex-api Worker. Repoint window.WORKER_URL
-  // (set by api-client.js) before any facade call. Reversible: delete this line.
+  // Stage 2: Trail's backend is the codex-api Worker. worker-call.js already
+  // defaults here; this stays as the explicit page-level override. Reversible.
   window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
   mount(document.getElementById('cdx-trilha-root'), {});
 </script>

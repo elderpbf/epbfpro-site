@@ -96,8 +96,15 @@ const TABS = ['cohorts', 'content', 'questions', 'lessons', 'certificates'];
 // All .js files in the tree.
 const allJs = walkJs(ROOT);
 
-// index.html, which counts as a module consumer (imports codex-topbar.js).
-const indexHtml = read('../index.html');
+// HTML entry points that count as module consumers (they import shared js/
+// modules directly, not via a .js file). The admin index.html imports
+// codex-topbar.js; the Trail entry HTMLs import the shared transport
+// (js/worker-call.js). Joined into one corpus for the string-match below.
+const indexHtml = [
+  read('../index.html'),
+  read('../trilha/index.html'),
+  read('../trilha/validar.html'),
+].join('\n');
 
 // ── Test 1: no orphaned shared module ────────────────────────────────────────
 // For each js/*.js file, its basename must appear in at least one import
@@ -120,7 +127,7 @@ test('no orphaned shared module', () => {
         break;
       }
     }
-    // Also check index.html (uses string-match since it is not a .js file).
+    // Also check the HTML entry points (string-match, since they are not .js).
     if (!found && indexHtml.includes(mod)) found = true;
     assert.ok(found, `shared module js/${mod} is imported by at least one consumer`);
   }

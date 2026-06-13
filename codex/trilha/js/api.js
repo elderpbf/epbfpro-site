@@ -16,6 +16,7 @@ export const trail = {
   // Student timeline
   turmaView:      (p) => call('ct_get_turma_view', p),      // { client_slug, turma_slug, token } -> { client, turma, items, aulas, apostila_set }
   itemPublic:     (p) => call('ct_get_item_public', p),     // { item_id, ... } -> item detail
+  submitTarefa:   (p) => call('ct_submit_tarefa', p),       // { client_slug, turma_slug, token, item_id, student_name, answer_type, answer_json }
 
   // Live questions (ClassPulse public surface)
   activeForTurma: (p) => call('cp_get_active_for_turma', p),// { client_slug, turma_slug } -> { session, question } | { session:null }
