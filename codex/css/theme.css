@@ -1,0 +1,72 @@
+/* =========================================================
+   Codex — Design Tokens (copied verbatim from backstage/css/theme.css)
+   CSS custom properties for colors + base body styles. This is the ONLY
+   file that defines color variables; all other Codex CSS references them
+   via var(--...). Codex owns this copy; the backstage original stays for
+   the legacy family until quarantine. Values are byte-identical so themes
+   render the same.
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+[hidden] { display: none !important; }
+
+:root {
+  --primary: #14b8a6;
+  --primary-dark: #0d9488;
+  --primary-light: #5eead4;
+  --secondary: #047857;
+  --accent: #7de8d6;
+  --background: #d4f4ed;
+  --surface: #ffffff;
+  --text-primary: #134e4a;
+  --text-secondary: #115e59;
+  --text-light: #2dd4bf;
+  --shadow: rgba(20, 184, 166, 0.1);
+  --border: #e2e8f0;
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --error: #ef4444;
+  --error-bg: #fef2f2;
+  --option-hover-bg: #fdf6ec;
+  --option-selected-bg: #fdf6ec;
+  --status-live-bg: #1a3a1a;
+  --status-live-text: #6ee7b7;
+  --status-closed-bg: #2a2a2a;
+  --status-closed-text: #d1d5db;
+}
+
+[data-theme="dark"] {
+  --primary: #14b8a6;
+  --primary-dark: #0d9488;
+  --primary-light: #2dd4bf;
+  --secondary: #0f766e;
+  --accent: #134e4a;
+  --background: #0f1419;
+  --surface: #1a1f26;
+  --text-primary: #e5e7eb;
+  --text-secondary: #d1d5db;
+  --text-light: #5eead4;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --border: #0f766e;
+  --success: #34d399;
+  --success-bg: #064e3b;
+  --error: #f87171;
+  --error-bg: #7f1d1d;
+  --option-hover-bg: rgba(20, 184, 166, 0.15);
+  --option-selected-bg: rgba(20, 184, 166, 0.25);
+  --status-live-bg: #065f46;
+  --status-live-text: #6ee7b7;
+  --status-closed-bg: #374151;
+  --status-closed-text: #d1d5db;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.7;
+  color: var(--text-primary);
+  background-color: var(--background);
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}

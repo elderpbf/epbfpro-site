@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
 
 <!-- Shell chrome reused from Backstage (same origin, so the login carries over). -->
-<link rel="stylesheet" href="../backstage/css/theme.css?v=1.3">
+<link rel="stylesheet" href="css/theme.css?v=1.0">
 <link rel="stylesheet" href="../backstage/css/backstage.css?v=2.8">
 <!-- Settings drawer chrome (Codex copy, pairs with js/settings-drawer.js). -->
 <link rel="stylesheet" href="css/settings-drawer.css?v=1.0">
@@ -70,7 +70,9 @@
      uses its own toast (js/toast.js), and the pure helpers (escHtml/parseCSV/
      LETTERS) were unused (each module vendors its own). -->
 <script src="../backstage/js/api-client.js?v=1.2"></script>
-<script src="../backstage/js/theme-manager.js?v=1.2"></script>
+<!-- Codex-owned theme manager (classic script: the Trail pre-paints the theme
+     synchronously, so it stays a non-deferred global, window.ThemeManager). -->
+<script src="js/theme-manager.js?v=1.0"></script>
 <script src="../backstage/js/bs-google.js?v=1.4"></script>
 <script src="../backstage/js/auth.js?v=1.4"></script>
 <!-- The Settings drawer is now Codex ES modules: the shell js/settings-drawer.js
