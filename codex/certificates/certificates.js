@@ -58,10 +58,18 @@ let _viewEl = null;
 let _activeSub = 'modelos';
 let _cleanup = [];
 
-// Modelos (catalog) state — master-detail: selected template on the left, live
-// preview + colour theme on the right (same split shell as the Labs sub-tab).
+// The catalog has two sides. Fronts = the 7 themed templates (CERT_TEMPLATES);
+// backs = the shared verso, a single entry today but modeled as a list because
+// more backs are expected. The back is theme-aware but has no template key.
+const CERT_BACKS = [{ key: 'standard', labelKey: 'certificates.back_label', descKey: 'certificates.back_desc' }];
+
+// Modelos (catalog) state — master-detail with a Frente/Verso side switch: the
+// active side drives the left list (templates vs backs); the right pane shows the
+// one selected sheet, themed by the shared colour picker.
 let _catalogTheme = 'duo';
+let _activeSide = 'front';          // 'front' | 'back'
 let _selectedTemplate = 'vetor';
+let _selectedBack = 'standard';
 
 // Emitidos state
 let _certs = [];
@@ -324,6 +332,26 @@ function _fitSheets(container) {
   });
 }
 
+// Scale the single catalog sheet to FILL the pane's width, then let the pane grow
+// to the sheet's resulting height: the panel conforms to the image, not the other
+// way round, so the whole sheet shows with no cropping and no scrollbar. (The
+// fullscreen modal still uses _fitSheets, which CONTAINS within the viewport.)
+function _fitSheetWidth(container) {
+  if (!container || typeof window === 'undefined') return;
+  const wrap = container.querySelector('.cdx-cert-sheet-wrap');
+  if (!wrap) return;
+  const cs   = window.getComputedStyle(container);
+  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const availW = Math.max(0, container.clientWidth - padX);
+  const scale  = availW > 0 ? availW / SHEET_PX_W : 1;
+  const page = wrap.querySelector('.cdx-cert-page');
+  if (!page) return;
+  page.style.transformOrigin = 'top left';
+  page.style.transform = 'scale(' + scale + ')';
+  wrap.style.width  = (SHEET_PX_W * scale) + 'px';
+  wrap.style.height = (SHEET_PX_H * scale) + 'px';
+}
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 function _renderShell() {
   _viewEl.innerHTML =
@@ -349,8 +377,14 @@ function _mountModelos() {
         '<div class="cdx-labs-hint">' + esc(t('certificates.catalog_hint')) + '</div>' +
       '</div>' +
       '<div class="cdx-items-split cdx-certs-modelos-split">' +
-        '<div class="cdx-items-list" id="cdx-certs-tpl-list"></div>' +
-        '<div class="cdx-item-preview" id="cdx-certs-tpl-preview"></div>' +
+        '<div class="cdx-cert-side">' +
+          '<div class="cdx-cert-side-tabs" role="tablist">' +
+            '<button type="button" class="cdx-cert-side-tab' + (_activeSide === 'front' ? ' is-active' : '') + '" data-side="front">' + esc(t('certificates.side_front')) + '</button>' +
+            '<button type="button" class="cdx-cert-side-tab' + (_activeSide === 'back' ? ' is-active' : '') + '" data-side="back">' + esc(t('certificates.side_back')) + '</button>' +
+          '</div>' +
+          '<div class="cdx-items-list" id="cdx-certs-tpl-list"></div>' +
+        '</div>' +
+        '<div class="cdx-item-preview cdx-cert-preview" id="cdx-certs-tpl-preview"></div>' +
       '</div>' +
     '</div>';
 
@@ -360,6 +394,17 @@ function _mountModelos() {
   const split = area.querySelector('.cdx-certs-modelos-split');
   if (split) {
     const onClick = (e) => {
+      const sideTab = e.target.closest('[data-side]');
+      if (sideTab) {
+        const side = sideTab.dataset.side;
+        if (side !== _activeSide) {
+          _activeSide = side;
+          split.querySelectorAll('[data-side]').forEach((b) => b.classList.toggle('is-active', b.dataset.side === side));
+          _renderTplList();
+          _renderTplPreview();
+        }
+        return;
+      }
       const chip = e.target.closest('[data-theme]');
       if (chip) {
         _catalogTheme = chip.dataset.theme;
@@ -367,12 +412,14 @@ function _mountModelos() {
         _renderTplPreview();
         return;
       }
-      if (e.target.closest('[data-action="open-preview"]')) {
-        _openCertFullscreen(Object.assign(sampleCert(), { template_slug: _selectedTemplate, theme: _catalogTheme }));
+      if (e.target.closest('[data-action="fullscreen"]')) {
+        _openCertFullscreen(Object.assign(sampleCert(), { template_slug: _selectedTemplate, theme: _catalogTheme }), _activeSide);
         return;
       }
-      const row = e.target.closest('[data-template]');
-      if (row) _selectTemplate(row.dataset.template);
+      const frontRow = e.target.closest('[data-template]');
+      if (frontRow) { _selectTemplate(frontRow.dataset.template); return; }
+      const backRow = e.target.closest('[data-back]');
+      if (backRow) { _selectBack(backRow.dataset.back); return; }
     };
     split.addEventListener('click', onClick);
     _cleanup.push(() => split.removeEventListener('click', onClick));
@@ -386,6 +433,18 @@ function _mountModelos() {
 function _renderTplList() {
   const list = _q('#cdx-certs-tpl-list');
   if (!list) return;
+  if (_activeSide === 'back') {
+    list.innerHTML = CERT_BACKS.map((b) =>
+      '<div class="cdx-item-row' + (b.key === _selectedBack ? ' is-active' : '') + '" data-back="' + esc(b.key) + '">' +
+        '<span class="cdx-item-type-icon cdx-cert-tpl-icon">&#9672;</span>' +
+        '<div class="cdx-item-info">' +
+          '<div class="cdx-item-title">' + esc(t(b.labelKey)) + '</div>' +
+          '<div class="cdx-item-sub">' + esc(t(b.descKey)) + '</div>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+    return;
+  }
   list.innerHTML = CERT_TEMPLATES.map((tpl) =>
     '<div class="cdx-item-row' + (tpl.key === _selectedTemplate ? ' is-active' : '') + '" data-template="' + esc(tpl.key) + '">' +
       '<span class="cdx-item-type-icon cdx-cert-tpl-icon">&#9672;</span>' +
@@ -405,18 +464,34 @@ function _selectTemplate(key) {
   _renderTplPreview();
 }
 
+function _selectBack(key) {
+  if (key === _selectedBack) return;
+  _selectedBack = key;
+  const list = _q('#cdx-certs-tpl-list');
+  if (list) list.querySelectorAll('.cdx-item-row').forEach((r) => r.classList.toggle('is-active', r.dataset.back === key));
+  _renderTplPreview();
+}
+
 function _renderTplPreview() {
   const pane = _q('#cdx-certs-tpl-preview');
   if (!pane) return;
-  const tpl    = CERT_TEMPLATES.find((x) => x.key === _selectedTemplate) || CERT_TEMPLATES[0];
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
   const cert   = Object.assign(sampleCert(), { template_slug: _selectedTemplate, theme: _catalogTheme });
 
+  let title, desc;
+  if (_activeSide === 'back') {
+    const b = CERT_BACKS.find((x) => x.key === _selectedBack) || CERT_BACKS[0];
+    title = t(b.labelKey); desc = t(b.descKey);
+  } else {
+    const tpl = CERT_TEMPLATES.find((x) => x.key === _selectedTemplate) || CERT_TEMPLATES[0];
+    title = tpl.label; desc = t('certificates.tpl_desc_' + tpl.key);
+  }
+
   pane.innerHTML =
-    '<div class="cdx-preview-head">' +
+    '<div class="cdx-preview-head cdx-cert-preview-head">' +
       '<div class="cdx-preview-head-info">' +
-        '<div class="cdx-preview-title">' + esc(tpl.label) + '</div>' +
-        '<span class="cdx-preview-type">' + esc(t('certificates.tpl_desc_' + tpl.key)) + '</span>' +
+        '<div class="cdx-preview-title">' + esc(title) + '</div>' +
+        '<span class="cdx-preview-type">' + esc(desc) + '</span>' +
       '</div>' +
       '<div class="cdx-preview-actions">' +
         '<div class="cdx-cert-theme-picker">' +
@@ -426,11 +501,11 @@ function _renderTplPreview() {
               'data-theme="' + esc(th.key) + '">' + esc(t('certificates.theme_' + th.key)) + '</button>'
           ).join('') +
         '</div>' +
-        '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary" data-action="open-preview">' + esc(t('certificates.preview_open')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-action="fullscreen">' + esc(t('certificates.fullscreen')) + '</button>' +
       '</div>' +
     '</div>' +
     '<div class="cdx-preview-body cdx-cert-preview-body" id="cdx-certs-tpl-preview-body">' +
-      _previewSheetsHtml(cert, origin) +
+      _previewSheetsHtml(cert, origin, _activeSide) +
     '</div>';
 
   const body = _q('#cdx-certs-tpl-preview-body');
@@ -440,18 +515,21 @@ function _renderTplPreview() {
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(_scaleTplPreview);
 }
 
-// Front + back, each wrapped in a sized box so the fixed-mm sheet can be
-// transform-scaled down to fit the pane without overflowing (mirrors the Labs
-// preview frame-wrap technique).
-function _previewSheetsHtml(cert, origin) {
+// Wrap one (or both) sheets in a sized box so the fixed-mm sheet can be
+// transform-scaled. `side` selects 'front' | 'back' | (default) both — the
+// catalog shows the one selected side; the Emitidos fullscreen still shows both.
+function _previewSheetsHtml(cert, origin, side) {
   const d  = buildCertData(cert, parseCertMeta(cert), origin);
   const tk = certTemplateKey(cert);
   const th = certThemeKey(cert);
-  return '<div class="cdx-cert-sheet-wrap">' + renderFrontPage(tk, th, d) + '</div>' +
-         '<div class="cdx-cert-sheet-wrap">' + renderBackPage(th, d) + '</div>';
+  const front = '<div class="cdx-cert-sheet-wrap">' + renderFrontPage(tk, th, d) + '</div>';
+  const back  = '<div class="cdx-cert-sheet-wrap">' + renderBackPage(th, d) + '</div>';
+  if (side === 'front') return front;
+  if (side === 'back')  return back;
+  return front + back;
 }
 
-function _scaleTplPreview() { _fitSheets(_q('#cdx-certs-tpl-preview-body')); }
+function _scaleTplPreview() { _fitSheetWidth(_q('#cdx-certs-tpl-preview-body')); }
 
 // ── Emitidos sub-area ─────────────────────────────────────────────────────────
 function _mountEmitidos() {
@@ -650,7 +728,7 @@ function _previewCert(code) {
 // front + back scaled to fit the viewport, a print → PDF action and a close (×)
 // at the top-right. Mirrors the Labs fullscreen viewer (CVLabViewer): a fixed
 // dark overlay, Escape / backdrop-click / × to dismiss.
-function _openCertFullscreen(cert) {
+function _openCertFullscreen(cert, side) {
   const origin  = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
   const overlay = document.createElement('div');
   overlay.className = 'cdx-cert-fs-overlay';
@@ -661,7 +739,7 @@ function _openCertFullscreen(cert) {
       '<button type="button" class="cdx-cert-fs-btn" data-action="print">' + esc(t('certificates.print')) + '</button>' +
       '<button type="button" class="cdx-cert-fs-close" aria-label="' + esc(t('certificates.cancel')) + '">&times;</button>' +
     '</div>' +
-    '<div class="cdx-cert-fs-body" id="cdx-cert-fs-body">' + _previewSheetsHtml(cert, origin) + '</div>';
+    '<div class="cdx-cert-fs-body" id="cdx-cert-fs-body">' + _previewSheetsHtml(cert, origin, side) + '</div>';
   document.body.appendChild(overlay);
 
   const body = overlay.querySelector('#cdx-cert-fs-body');

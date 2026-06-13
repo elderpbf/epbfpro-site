@@ -365,21 +365,53 @@
 /* No own padding: the wrap is a .cdx-labs flex column; the page margins come
    from #codex-view (.cdx-view padding), exactly like the Labs sub-tab. */
 .cdx-certs-modelos-wrap { min-width: 0; }
-/* Narrow list (short template names) so the landscape preview gets more room. */
-.cdx-certs-modelos-split.cdx-items-split { grid-template-columns: 240px 1fr; }
+/* Narrow list (short template names) so the landscape preview gets more room.
+   align-items:start so the preview pane can grow taller than the list without
+   stretching the list to match. */
+.cdx-certs-modelos-split.cdx-items-split { grid-template-columns: 240px 1fr; align-items: start; }
 @media (max-width: 980px) { .cdx-certs-modelos-split.cdx-items-split { grid-template-columns: 1fr; } }
+
+/* Left column = Frente/Verso tabs stacked over the list. */
+.cdx-cert-side { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.cdx-cert-side-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.cdx-cert-side-tab {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.cdx-cert-side-tab:hover { background: var(--cdx-card-hover-bg, rgba(127,127,127,0.08)); }
+.cdx-cert-side-tab.is-active { background: var(--primary); color: #fff; }
 
 .cdx-cert-tpl-icon { color: var(--accent-color, #8b5cf6); font-size: 1.05rem; }
 
-/* Right pane: front+back sheets, contained (no scrollbars — JS scales to fit). */
+/* Slim preview header: a thin bar, not the tall default. */
+.cdx-cert-preview-head { padding: 0.5rem 0.8rem; align-items: center; }
+
+/* Right pane conforms to the sheet: JS scales the single sheet to the pane WIDTH,
+   the pane grows to its height. No fixed height, no clipping, no scrollbar. */
+.cdx-certs-modelos-split .cdx-cert-preview { max-height: none; overflow: visible; }
 .cdx-cert-preview-body {
+  flex: none;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  padding: 0.6rem;
   background: #eef2f1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  overflow: hidden;
 }
 [data-theme="dark"] .cdx-cert-preview-body { background: #11161c; }
 
