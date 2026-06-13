@@ -65,7 +65,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
-  #cdx-tr-nexo-host .qr-option-btn { margin-bottom: 0 !important; }
+  #cdx-tr-nexo-host .cdx-qr-option-btn { margin-bottom: 0 !important; }
 }
 
 /* Student Q&A "active question" card. */

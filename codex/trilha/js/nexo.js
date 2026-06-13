@@ -2,11 +2,12 @@
 // Live-question orchestrator. Polls cp_get_active_for_turma every 15s (paused via
 // the Page Visibility API). When the turma's session is OPEN, it hides the trilha
 // body chrome (hero / tabs / content / footer) and mounts the full answer
-// experience inline via the shared NexoAnswer global; pensoia-header stays
+// experience inline via the Codex nexo-answer module; pensoia-header stays
 // visible. When the session closes, it unmounts and restores the trilha. Self-
 // contained (parses its own URL) so it does not depend on the page orchestrator.
 import { parseLocation, state } from './state.js';
 import { trail } from './api.js';
+import { mount as mountAnswer_, unmount as unmountAnswer_ } from './nexo-answer.js';
 
 const POLL_MS         = 15000;
 const POLL_MS_BACKOFF = 60000;
@@ -66,7 +67,6 @@ function apply(data) {
 }
 
 function mountAnswer(sessionCode) {
-  if (!window.NexoAnswer || typeof window.NexoAnswer.mount !== 'function') return; // not loaded; retry next tick
   HIDE_SELECTORS.forEach((sel) => document.querySelectorAll(sel).forEach((el) => el.classList.add(HIDDEN_CLS)));
   let host = document.getElementById(HOST_ID);
   if (!host) {
@@ -74,15 +74,13 @@ function mountAnswer(sessionCode) {
     host.id = HOST_ID;
     (document.querySelector('.cdx-trilha-main') || document.body).appendChild(host);
   }
-  window.NexoAnswer.mount(host, { sessionCode });
+  mountAnswer_(host, { sessionCode });
   _isMounted = true;
   _lastCode = sessionCode;
 }
 
 function unmountAnswer() {
-  if (window.NexoAnswer && typeof window.NexoAnswer.unmount === 'function') {
-    try { window.NexoAnswer.unmount(); } catch (_) {}
-  }
+  try { unmountAnswer_(); } catch (_) {}
   const host = document.getElementById(HOST_ID);
   if (host && host.parentNode) host.parentNode.removeChild(host);
   HIDE_SELECTORS.forEach((sel) => document.querySelectorAll(sel).forEach((el) => el.classList.remove(HIDDEN_CLS)));
