@@ -20,6 +20,16 @@ const pt = {
   'cert.f_issuer':          'Emissor',
   'cert.download_pdf':      'Baixar certificado em PDF',
   'cert.footer':            'Este documento foi emitido pela plataforma PensoIA.',
+  // Student timeline page
+  'page.loading':           'Carregando sua trilha...',
+  'page.err_link':          'Link inválido ou expirado. Verifique o endereço com seu professor(a).',
+  'page.err_generic':       'Erro ao carregar o conteúdo. Tente novamente em instantes.',
+  'page.hero_eyebrow':      'Sua trilha de aprendizado',
+  'page.tab_aulas':         'Aulas',
+  'page.tab_outros':        'Outros materiais',
+  'page.tab_apostila':      'Conteúdo do curso',
+  'page.wa_group':          'Grupo no WhatsApp',
+  'page.footer':            'Feito com PensoIA',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -39,6 +49,16 @@ const en = {
   'cert.f_issuer':          'Issuer',
   'cert.download_pdf':      'Download certificate PDF',
   'cert.footer':            'This document was issued by the PensoIA platform.',
+  // Student timeline page
+  'page.loading':           'Loading your trail...',
+  'page.err_link':          'Invalid or expired link. Check the address with your instructor.',
+  'page.err_generic':       'Could not load the content. Try again in a moment.',
+  'page.hero_eyebrow':      'Your learning trail',
+  'page.tab_aulas':         'Classes',
+  'page.tab_outros':        'Other materials',
+  'page.tab_apostila':      'Course content',
+  'page.wa_group':          'WhatsApp group',
+  'page.footer':            'Made with PensoIA',
 };
 
 const DICTS = { 'pt-BR': pt, en };

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>PensoIA</title>
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="icon" type="image/x-icon" href="/favicon.ico?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
+
+<!-- Shared tokens + public chrome (Codex owns its component CSS below). -->
+<link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
+<link rel="stylesheet" href="/backstage/css/shared-components.css?v=1.6">
+<link rel="stylesheet" href="/backstage/css/public-header.css?v=1.8">
+<link rel="stylesheet" href="css/trilha.css?v=1.0">
+
+<script src="/backstage/js/debug.js?v=2.5"></script>
+<script src="/backstage/js/theme-manager.js?v=1.2"></script>
+<script>
+  // Pre-paint theme (shared public chrome boot, not app logic; same key as legacy trilha).
+  ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });
+</script>
+</head>
+<body>
+
+<pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
+
+<div class="cdx-trilha-page" id="cdx-trilha-root">
+
+  <div class="cdx-trilha-loading" data-i18n="page.loading">Carregando sua trilha...</div>
+
+  <div class="cdx-trilha-error" hidden>
+    <div class="cdx-trilha-error-icon">&#128274;</div>
+    <p class="cdx-trilha-error-msg"></p>
+  </div>
+
+  <main class="cdx-trilha-main" hidden>
+
+    <!-- HERO -->
+    <section class="cdx-trilha-hero">
+      <div class="cdx-trilha-hero-identity">
+        <div class="cdx-tr-client-avatar" id="cdx-tr-client-avatar">
+          <img id="cdx-tr-client-icon" src="" alt="" hidden>
+        </div>
+        <div class="cdx-tr-hero-text">
+          <span class="cdx-tr-hero-eyebrow" data-i18n="page.hero_eyebrow">Sua trilha de aprendizado</span>
+          <h1 class="cdx-tr-client-name" id="cdx-tr-client-name"></h1>
+          <p class="cdx-tr-turma-name" id="cdx-tr-turma-name"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB NAV (split: Aulas + Outros left, Apostila right) -->
+    <nav class="cdx-trilha-tabs" role="tablist">
+      <div class="cdx-trilha-tabs-left">
+        <button class="cdx-tr-tab-btn active" role="tab" data-tab="aulas" aria-selected="true" data-i18n="page.tab_aulas">Aulas</button>
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="outros" aria-selected="false" id="cdx-tr-tab-outros" hidden>Outros materiais</button>
+      </div>
+      <div class="cdx-trilha-tabs-right">
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="apostila" aria-selected="false" id="cdx-tr-tab-apostila" hidden>Conteúdo do curso</button>
+      </div>
+    </nav>
+
+    <div class="cdx-trilha-tabcontent">
+
+      <!-- AULAS -->
+      <div class="cdx-trilha-panel" data-panel="aulas">
+        <div id="cdx-tr-aulas-timeline" class="cdx-tr-timeline"></div>
+      </div>
+
+      <!-- APOSTILA -->
+      <div class="cdx-trilha-panel" data-panel="apostila" hidden>
+        <div id="cdx-tr-apostila-list" class="cdx-tr-card-list"></div>
+      </div>
+
+      <!-- OUTROS -->
+      <div class="cdx-trilha-panel" data-panel="outros" hidden>
+        <div id="cdx-tr-outros-filter" class="cdx-tr-type-filter"></div>
+        <div id="cdx-tr-outros-list" class="cdx-tr-card-list"></div>
+      </div>
+
+    </div>
+
+    <footer class="cdx-trilha-footer">
+      <span data-i18n="page.footer">Feito com PensoIA</span> &middot; <a href="https://pensoia.com" target="_blank" rel="noopener">pensoia.com</a>
+    </footer>
+  </main>
+
+</div>
+
+<!-- Shared services (window globals) before the module boot. -->
+<script src="/backstage/js/api-client.js?v=1.2"></script>
+<script src="/backstage/js/pensoia-header.js?v=1.4"></script>
+
+<!-- Codex is ES modules: one boot points the backend at codex-api and mounts. -->
+<script type="module">
+  import { mount } from './js/page.js';
+  // Stage 2: Trail's backend is the codex-api Worker. Repoint window.WORKER_URL
+  // (set by api-client.js) before any facade call. Reversible: delete this line.
+  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+  mount(document.getElementById('cdx-trilha-root'), {});
+</script>
+</body>
+</html>
