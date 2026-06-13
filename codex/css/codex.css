@@ -48,10 +48,11 @@
 }
 
 /* Bind each functional tab to its accent token. */
-.cdx-tab--lessons   { --accent-color: var(--codex-lessons); }
-.cdx-tab--content   { --accent-color: var(--codex-content); }
-.cdx-tab--cohorts   { --accent-color: var(--codex-cohorts); }
-.cdx-tab--questions { --accent-color: var(--codex-questions); }
+.cdx-tab--lessons      { --accent-color: var(--codex-lessons); }
+.cdx-tab--content      { --accent-color: var(--codex-content); }
+.cdx-tab--cohorts      { --accent-color: var(--codex-cohorts); }
+.cdx-tab--questions    { --accent-color: var(--codex-questions); }
+.cdx-tab--certificates { --accent-color: var(--codex-certificates, #8b5cf6); }
 
 /* ── Sub-tabs (5c): one nav, two modes, positioned under the active tab ──────
  * by js/anchored.js. The mode is a global pref toggled in the Settings drawer:

@@ -154,7 +154,13 @@ export const cohorts = {
   listAulas:       (p) => call('ct_list_aulas', p),            // { client_slug, turma_slug }
   createAula:      (p) => call('ct_create_aula', p),
   updateAula:      (p) => call('ct_update_aula', p),
-  deleteAula:      (p) => call('ct_delete_aula', p)            // { id }
+  deleteAula:      (p) => call('ct_delete_aula', p),           // { id }
+  // Participant roster (API.md — Participant Roster, ct_* family, auth required)
+  listParticipants:   (p) => call('ct_list_participants', p),  // { turma_id }
+  addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
+  updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
+  deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
+  importParticipants: (p) => call('ct_import_participants', p) // { turma_id, rows[] }
 };
 
 // Content — the item library (Items sub-tab) plus the shared types/tags it
@@ -226,4 +232,19 @@ export const releases = {
   // Aggregate student-view payload for a turma: the released items with their
   // aula_number binding. Needs the turma token (read from ct_list_turmas).
   turmaView: (p) => call('ct_get_turma_view', p)    // { client_slug, turma_slug, token }
+};
+
+// Certificates — admin cert_* actions (API.md §Certificate Administration, auth required).
+//
+// NOTE: The PUBLIC `cert_validate` action is intentionally NOT here. It is consumed
+// by the public Trilha validar page directly (no auth required) and is not a Codex
+// admin operation. Certificate TEMPLATES reuse the existing `slides` facade with
+// `engine: 'codex-certificate'`; no new template methods are needed here.
+export const certificates = {
+  issue:      (p) => call('cert_issue', p),       // { turma_id, participant_ids[], course_title, hours?, issued_on?, issuer?, template_slug? }
+  list:       (p) => call('cert_list', p),        // { turma_id?, status?, q? }
+  get:        (p) => call('cert_get', p),         // { code }
+  revoke:     (p) => call('cert_revoke', p),      // { code }
+  markSent:   (p) => call('cert_mark_sent', p),   // { code }
+  attachPdf:  (p) => call('cert_attach_pdf', p)   // { code, pdf_b64 }
 };

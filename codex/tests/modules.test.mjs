@@ -53,15 +53,30 @@ function resolveImport(fromFile, importSpec) {
   return path.posix.normalize(dir + '/' + importSpec);
 }
 
-// The only sanctioned cross-tab import today.
-const ALLOWED_CROSS_TAB = ['../content/item-form.js'];
+// Sanctioned cross-tab imports. Each entry is the exact import specifier as it
+// appears in the importing file (the relative path the importing module uses).
+const ALLOWED_CROSS_TAB = [
+  '../content/item-form.js',
+  // certificates/certificates.js imports the Slides editor + core directly
+  // (it is a sanctioned inbound wrapper alongside content/slides.js).
+  '../content/slides/js/app.js',
+  '../content/slides/js/core/deck.js',
+  '../content/slides/js/ai/aiService.js',
+  '../content/slides/adapters/library.js',
+];
 
 // Sealed vendored prefix: everything under this path is excluded from the
 // duplicate-name check and treated specially in boundary tests.
 const SLIDES_PREFIX = 'content/slides/';
 
-// The sanctioned mount wrapper for the Slides sub-tree (inbound boundary).
+// The sanctioned mount wrappers for the Slides sub-tree (inbound boundary).
+// content/slides.js is the authored-deck sub-tab; certificates/certificates.js
+// is the certificate template editor face (added 2026-06-12).
 const SLIDES_WRAPPER = 'content/slides.js';
+const SLIDES_INBOUND_ALLOWLIST = new Set([
+  'content/slides.js',
+  'certificates/certificates.js',
+]);
 
 // The vendored Slides CORE (the standalone app). Only this sub-tree is held to
 // the strict outbound rule. The Codex integration glue (the content/slides.js
@@ -70,7 +85,7 @@ const SLIDES_WRAPPER = 'content/slides.js';
 const SLIDES_CORE_PREFIX = 'content/slides/js/';
 
 // Tab directories.
-const TABS = ['cohorts', 'content', 'questions', 'lessons'];
+const TABS = ['cohorts', 'content', 'questions', 'lessons', 'certificates'];
 
 // All .js files in the tree.
 const allJs = walkJs(ROOT);
@@ -132,8 +147,8 @@ test('Slides boundary intact inbound', () => {
       const resolved = resolveImport(f, imp);
       if (resolved.startsWith('content/slides/js/')) {
         assert.ok(
-          f === SLIDES_WRAPPER,
-          `"${f}" imports "${imp}" (resolves to "${resolved}") inside content/slides/js/; only ${SLIDES_WRAPPER} may do this`,
+          SLIDES_INBOUND_ALLOWLIST.has(f),
+          `"${f}" imports "${imp}" (resolves to "${resolved}") inside content/slides/js/; only ${[...SLIDES_INBOUND_ALLOWLIST].join(', ')} may do this`,
         );
       }
     }

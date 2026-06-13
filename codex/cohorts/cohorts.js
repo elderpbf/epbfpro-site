@@ -6,6 +6,9 @@
 //   window.BSToast      (../backstage/js/bs-toast.js)  — optional, graceful fallback
 import { cohorts as api, cp as cpApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { esc as _esc, slugify as _slugify } from '../js/dom.js';
+import { openModal, closeModal } from '../js/modal.js';
+import { parseRosterLines } from './roster-parser.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -20,21 +23,7 @@ let _cleanup = []; // teardown functions pushed by mount
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function _esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function _slugify(s) {
-  return (s || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-}
+// _esc and _slugify are imported from ../js/dom.js
 
 function _toast(msg) {
   if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
@@ -105,37 +94,15 @@ const IDS = {
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
 // ── Modal helpers ────────────────────────────────────────────────────────────
+// Delegated to the shared js/modal.js primitives. The Escape-key cleanup is now
+// self-contained inside openModal/closeModal (no push to _cleanup needed).
 
 function _openModal(html, opts) {
-  opts = opts || {};
-  const bd = document.createElement('div');
-  bd.className = 'cdx-modal-backdrop';
-  bd.innerHTML = html;
-
-  if (!opts.disableBackdropClose) {
-    bd.addEventListener('click', (e) => {
-      if (e.target === bd) _closeModal(bd);
-    });
-  }
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      _closeModal(bd);
-      document.removeEventListener('keydown', escHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-  _cleanup.push(() => document.removeEventListener('keydown', escHandler));
-
-  document.body.appendChild(bd);
-  const first = bd.querySelector('input,textarea,select');
-  if (first) setTimeout(() => first.focus(), 60);
-  return bd;
+  return openModal(html, opts);
 }
 
 function _closeModal(bd) {
-  const target = bd || document.querySelector('.cdx-modal-backdrop');
-  if (target && target.parentNode) target.parentNode.removeChild(target);
+  closeModal(bd);
 }
 
 // ── Typed-name delete confirmation modal ─────────────────────────────────────
@@ -584,6 +551,7 @@ function _renderTurmas() {
         urlRow +
         '<div class="cdx-card-actions">' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-action="edit-turma" data-id="' + _esc(turma.id) + '">' + t('cohorts.edit') + '</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" data-action="participants" data-id="' + _esc(turma.id) + '" title="' + t('cohorts.participants_btn_title') + '">' + t('cohorts.participants_btn') + '</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-action="regen-token" data-client-slug="' + _esc(turma.client_slug) + '" data-turma-slug="' + _esc(turma.slug) + '" title="' + t('cohorts.regen_token_title') + '">&#8635;</button>' +
           (turma.status !== 'archived'
             ? '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="archive-turma" data-client-slug="' + _esc(turma.client_slug) + '" data-turma-slug="' + _esc(turma.slug) + '">' + t('cohorts.archive') + '</button>'
@@ -612,6 +580,13 @@ function _onTurmasClick(e) {
     const btn = e.target.closest('[data-action="edit-turma"]');
     const turma = _turmas.find(x => String(x.id) === String(btn.dataset.id));
     if (turma) _openTurmaForm(turma);
+    return;
+  }
+  if (action === 'participants') {
+    e.stopPropagation();
+    const btn = e.target.closest('[data-action="participants"]');
+    const turma = _turmas.find(x => String(x.id) === String(btn.dataset.id));
+    if (turma) _openRosterModal(turma);
     return;
   }
   if (action === 'archive-turma') {
@@ -753,6 +728,232 @@ function _openTurmaForm(turma) {
         _toast(isEdit ? t('cohorts.turma_updated') : t('cohorts.turma_created'));
         _loadTurmas(_selectedClientSlug);
       }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+    });
+  });
+}
+
+// ── Roster (Participantes) ────────────────────────────────────────────────────
+
+function _renderRosterTable(participants) {
+  if (!participants.length) {
+    return '<p class="cdx-roster-empty">' + t('cohorts.participants_empty') + '</p>';
+  }
+  return (
+    '<table class="cdx-roster-table">' +
+      '<thead>' +
+        '<tr>' +
+          '<th>' + t('cohorts.participant_name') + '</th>' +
+          '<th>' + t('cohorts.participant_email') + '</th>' +
+          '<th>' + t('cohorts.participant_cpf') + '</th>' +
+          '<th></th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' +
+        participants.map((p) =>
+          '<tr data-pid="' + _esc(String(p.id)) + '">' +
+            '<td class="cdx-roster-cell-name">' + _esc(p.name) + '</td>' +
+            '<td class="cdx-roster-cell-email">' + _esc(p.email || '') + '</td>' +
+            '<td class="cdx-roster-cell-cpf">' + _esc(p.cpf || '') + '</td>' +
+            '<td class="cdx-roster-cell-actions">' +
+              '<button type="button" class="cdx-btn cdx-btn-sm cdx-roster-edit-btn" data-action="roster-edit" data-pid="' + _esc(String(p.id)) + '">' + t('cohorts.edit') + '</button>' +
+              '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-danger cdx-roster-del-btn" data-action="roster-delete" data-pid="' + _esc(String(p.id)) + '">' + t('cohorts.delete') + '</button>' +
+            '</td>' +
+          '</tr>'
+        ).join('') +
+      '</tbody>' +
+    '</table>'
+  );
+}
+
+function _openRosterModal(turma) {
+  // Build the modal shell. The participant list will be filled after the API call.
+  const modalHtml =
+    '<div class="cdx-modal cdx-roster-modal" style="max-width:680px;max-height:88vh;overflow-y:auto">' +
+      '<div class="cdx-modal-title">' +
+        _esc(t('cohorts.participants_title') + ': ' + (turma.display_name || turma.name)) +
+      '</div>' +
+
+      // List area
+      '<div id="cdx-roster-list">' +
+        '<p class="cdx-roster-empty">' + t('cohorts.loading') + '</p>' +
+      '</div>' +
+
+      // Add participant form
+      '<details class="cdx-roster-section" id="cdx-roster-add-section">' +
+        '<summary class="cdx-roster-section-title">' + t('cohorts.participants_add') + '</summary>' +
+        '<div class="cdx-roster-add-form">' +
+          '<div class="cdx-field">' +
+            '<label>' + t('cohorts.participant_name') + ' <span class="cdx-required">*</span></label>' +
+            '<input type="text" id="cdx-roster-add-name" autocomplete="off" placeholder="' + t('cohorts.participant_name_ph') + '">' +
+          '</div>' +
+          '<div class="cdx-roster-two-col">' +
+            '<div class="cdx-field">' +
+              '<label>' + t('cohorts.participant_email') + '</label>' +
+              '<input type="text" id="cdx-roster-add-email" autocomplete="off" placeholder="' + t('cohorts.participant_email_ph') + '">' +
+            '</div>' +
+            '<div class="cdx-field">' +
+              '<label>' + t('cohorts.participant_cpf') + '</label>' +
+              '<input type="text" id="cdx-roster-add-cpf" autocomplete="off" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
+            '</div>' +
+          '</div>' +
+          '<div class="cdx-modal-actions cdx-roster-add-actions">' +
+            '<button type="button" class="cdx-btn cdx-btn-primary" id="cdx-roster-add-btn">' + t('cohorts.participants_add_btn') + '</button>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
+      // Bulk import form
+      '<details class="cdx-roster-section" id="cdx-roster-import-section">' +
+        '<summary class="cdx-roster-section-title">' + t('cohorts.participants_import') + '</summary>' +
+        '<div class="cdx-roster-import-form">' +
+          '<p class="cdx-helper-text">' + t('cohorts.participants_import_hint') + '</p>' +
+          '<textarea id="cdx-roster-import-text" class="cdx-roster-import-textarea" placeholder="' + t('cohorts.participants_import_ph') + '" rows="6"></textarea>' +
+          '<div class="cdx-modal-actions cdx-roster-import-actions">' +
+            '<button type="button" class="cdx-btn cdx-btn-primary" id="cdx-roster-import-btn">' + t('cohorts.participants_import_btn') + '</button>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
+      '<div class="cdx-modal-actions" style="margin-top:1rem">' +
+        '<button type="button" class="cdx-btn" id="cdx-roster-close">' + t('cohorts.close') + '</button>' +
+      '</div>' +
+    '</div>';
+
+  const bd = _openModal(modalHtml, { disableBackdropClose: false });
+
+  // Wire close button
+  bd.querySelector('#cdx-roster-close').addEventListener('click', () => _closeModal(bd));
+
+  // State for the in-modal edit form
+  let _participants = [];
+
+  // Refresh participant list
+  function _loadRoster() {
+    const listEl = bd.querySelector('#cdx-roster-list');
+    if (listEl) listEl.innerHTML = '<p class="cdx-roster-empty">' + t('cohorts.loading') + '</p>';
+    api.listParticipants({ turma_id: turma.id }).then((data) => {
+      _participants = (data && data.participants) || [];
+      const listEl2 = bd.querySelector('#cdx-roster-list');
+      if (listEl2) listEl2.innerHTML = _renderRosterTable(_participants);
+      _wireRosterTableEvents();
+    }).catch((err) => {
+      const listEl2 = bd.querySelector('#cdx-roster-list');
+      if (listEl2) listEl2.innerHTML = '<p class="cdx-roster-empty">' + _esc(t('cohorts.error_loading')) + '</p>';
+      if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (err && err.message || err), 'error');
+    });
+  }
+
+  function _wireRosterTableEvents() {
+    const listEl = bd.querySelector('#cdx-roster-list');
+    if (!listEl) return;
+
+    listEl.querySelectorAll('[data-action="roster-delete"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const pid = btn.dataset.pid;
+        const participant = _participants.find((p) => String(p.id) === String(pid));
+        if (!participant) return;
+        _openArchiveConfirm({
+          title: t('cohorts.participants_delete_title'),
+          message: t('cohorts.participants_delete_msg') + ' "' + participant.name + '"?',
+          onConfirm() {
+            api.deleteParticipant({ id: pid }).then(() => {
+              _toast(t('cohorts.participant_deleted'));
+              _loadRoster();
+            }).catch((err) => {
+              _toastError(t('cohorts.error') + ': ' + (err && err.message || err));
+              if (window.bsLog) window.bsLog(t('cohorts.error') + ': ' + (err && err.message || err), 'error');
+            });
+          }
+        });
+      });
+    });
+
+    listEl.querySelectorAll('[data-action="roster-edit"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const pid = btn.dataset.pid;
+        const participant = _participants.find((p) => String(p.id) === String(pid));
+        if (!participant) return;
+        _openParticipantEditModal(participant, () => _loadRoster());
+      });
+    });
+  }
+
+  // Wire add form
+  bd.querySelector('#cdx-roster-add-btn').addEventListener('click', () => {
+    const nameEl  = bd.querySelector('#cdx-roster-add-name');
+    const emailEl = bd.querySelector('#cdx-roster-add-email');
+    const cpfEl   = bd.querySelector('#cdx-roster-add-cpf');
+    const name  = nameEl.value.trim();
+    const email = emailEl.value.trim() || null;
+    const cpf   = cpfEl.value.trim() || null;
+    if (!name) { _toast(t('cohorts.name_required')); nameEl.focus(); return; }
+    api.addParticipant({ turma_id: turma.id, name, email, cpf }).then(() => {
+      _toast(t('cohorts.participant_added'));
+      nameEl.value  = '';
+      emailEl.value = '';
+      cpfEl.value   = '';
+      _loadRoster();
+    }).catch((err) => {
+      _toastError(t('cohorts.error') + ': ' + (err && err.message || err));
+      if (window.bsLog) window.bsLog(t('cohorts.error') + ': ' + (err && err.message || err), 'error');
+    });
+  });
+
+  // Wire bulk import
+  bd.querySelector('#cdx-roster-import-btn').addEventListener('click', () => {
+    const textEl = bd.querySelector('#cdx-roster-import-text');
+    const text = textEl.value;
+    const rows = parseRosterLines(text);
+    if (!rows.length) { _toast(t('cohorts.participants_import_empty')); return; }
+    api.importParticipants({ turma_id: turma.id, rows }).then(() => {
+      _toast(t('cohorts.participants_imported').replace('{n}', String(rows.length)));
+      textEl.value = '';
+      const section = bd.querySelector('#cdx-roster-import-section');
+      if (section) section.removeAttribute('open');
+      _loadRoster();
+    }).catch((err) => {
+      _toastError(t('cohorts.error') + ': ' + (err && err.message || err));
+      if (window.bsLog) window.bsLog(t('cohorts.error') + ': ' + (err && err.message || err), 'error');
+    });
+  });
+
+  // Initial load
+  _loadRoster();
+}
+
+function _openParticipantEditModal(participant, onSaved) {
+  const html =
+    '<div class="cdx-modal" style="max-width:480px">' +
+      '<div class="cdx-modal-title">' + t('cohorts.participant_edit_title') + '</div>' +
+      '<div class="cdx-field"><label>' + t('cohorts.participant_name') + ' <span class="cdx-required">*</span></label>' +
+        '<input type="text" id="cdx-pe-name" value="' + _esc(participant.name) + '">' +
+      '</div>' +
+      '<div class="cdx-field"><label>' + t('cohorts.participant_email') + '</label>' +
+        '<input type="text" id="cdx-pe-email" value="' + _esc(participant.email || '') + '" placeholder="' + t('cohorts.participant_email_ph') + '">' +
+      '</div>' +
+      '<div class="cdx-field"><label>' + t('cohorts.participant_cpf') + '</label>' +
+        '<input type="text" id="cdx-pe-cpf" value="' + _esc(participant.cpf || '') + '" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
+      '</div>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" id="cdx-pe-cancel">' + t('cohorts.cancel') + '</button>' +
+        '<button class="cdx-btn cdx-btn-primary" id="cdx-pe-save">' + t('cohorts.save') + '</button>' +
+      '</div>' +
+    '</div>';
+
+  const bd = _openModal(html);
+  bd.querySelector('#cdx-pe-cancel').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('#cdx-pe-save').addEventListener('click', () => {
+    const name  = bd.querySelector('#cdx-pe-name').value.trim();
+    const email = bd.querySelector('#cdx-pe-email').value.trim() || null;
+    const cpf   = bd.querySelector('#cdx-pe-cpf').value.trim() || null;
+    if (!name) { _toast(t('cohorts.name_required')); bd.querySelector('#cdx-pe-name').focus(); return; }
+    api.updateParticipant({ id: participant.id, name, email, cpf }).then(() => {
+      _closeModal(bd);
+      _toast(t('cohorts.participant_updated'));
+      if (onSaved) onSaved();
+    }).catch((err) => {
+      _toastError(t('cohorts.error') + ': ' + (err && err.message || err));
+      if (window.bsLog) window.bsLog(t('cohorts.error') + ': ' + (err && err.message || err), 'error');
     });
   });
 }
