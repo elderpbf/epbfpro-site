@@ -1087,12 +1087,15 @@ export default {
   'certificates.col_status':          'Status',
   'certificates.col_actions':         'Actions',
   'certificates.col_url':             'Validation URL',
+  'certificates.col_client':          'Client',
+  'certificates.col_turma':           'Cohort',
   // Emitidos — status
   'certificates.status_issued':       'Issued',
   'certificates.status_sent':         'Sent',
   'certificates.status_revoked':      'Revoked',
   // Emitidos — toolbar filters
   'certificates.search_ph':           'Search by name...',
+  'certificates.filter_all_clients':  'All clients',
   'certificates.filter_all_turmas':   'All cohorts',
   'certificates.filter_all_statuses': 'All statuses',
   // Emitidos — actions

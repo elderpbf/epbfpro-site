@@ -255,6 +255,33 @@ describe('filterCerts', () => {
     assert.deepEqual(certs.filterCerts(null, {}), []);
     assert.deepEqual(certs.filterCerts(undefined, {}), []);
   });
+
+  // turma_ids = the set of a client's cohorts (drill down by client).
+  test('filter by turma_ids membership (a clients cohorts)', () => {
+    const res = certs.filterCerts(fixtures, { turma_ids: [10] });
+    assert.equal(res.length, 2);
+    assert.ok(res.every((c) => c.turma_id === 10));
+  });
+
+  test('turma_ids unions multiple cohorts', () => {
+    assert.equal(certs.filterCerts(fixtures, { turma_ids: [10, 20] }).length, 4);
+  });
+
+  test('a specific turma_id takes precedence over turma_ids', () => {
+    const res = certs.filterCerts(fixtures, { turma_id: '20', turma_ids: [10] });
+    assert.equal(res.length, 2);
+    assert.ok(res.every((c) => c.turma_id === 20));
+  });
+
+  test('empty turma_ids array is ignored (matches all)', () => {
+    assert.equal(certs.filterCerts(fixtures, { turma_ids: [] }).length, 4);
+  });
+
+  test('turma_ids combines with the name query (AND)', () => {
+    const res = certs.filterCerts(fixtures, { turma_ids: [10, 20], q: 'carla' });
+    assert.equal(res.length, 1);
+    assert.equal(res[0].code, 'C3');
+  });
 });
 
 // ── 7. buildTokenValues ───────────────────────────────────────────────────────

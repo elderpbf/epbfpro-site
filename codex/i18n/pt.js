@@ -1086,12 +1086,15 @@ export default {
   'certificates.col_status':          'Status',
   'certificates.col_actions':         'Ações',
   'certificates.col_url':             'URL de validação',
+  'certificates.col_client':          'Cliente',
+  'certificates.col_turma':           'Turma',
   // Emitidos — status
   'certificates.status_issued':       'Emitido',
   'certificates.status_sent':         'Enviado',
   'certificates.status_revoked':      'Revogado',
   // Emitidos — toolbar filters
   'certificates.search_ph':           'Buscar por nome...',
+  'certificates.filter_all_clients':  'Todos os clientes',
   'certificates.filter_all_turmas':   'Todas as turmas',
   'certificates.filter_all_statuses': 'Todos os status',
   // Emitidos — actions

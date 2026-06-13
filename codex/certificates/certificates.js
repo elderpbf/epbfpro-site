@@ -71,12 +71,17 @@ let _activeSide = 'front';          // 'front' | 'back'
 let _selectedTemplate = 'vetor';
 let _selectedBack = 'standard';
 
-// Emitidos state
+// Emitidos state. Two-step locate: by client → its cohorts, and/or by name. The
+// turma index + by-client grouping (from ct_list_all_turmas) resolve a cert's
+// turma_id to its cohort + client for both the filters and the table columns.
 let _certs = [];
+let _filterClientSlug = '';
 let _filterTurmaId = '';
 let _filterStatus = '';
 let _filterQ = '';
 let _clients = [];
+let _turmaIndex = {};       // String(turma_id) -> turma row
+let _turmasByClient = {};   // client_slug -> [turma rows]
 let _issueParticipants = [];
 let _issueSelectedIds = new Set();
 
@@ -174,8 +179,13 @@ export function buildIssuePayload(fields) {
  */
 export function filterCerts(certs, filters) {
   let out = certs || [];
-  const { turma_id, status, q } = filters || {};
-  if (turma_id) out = out.filter((c) => String(c.turma_id) === String(turma_id));
+  const { turma_id, turma_ids, status, q } = filters || {};
+  if (turma_id) {
+    out = out.filter((c) => String(c.turma_id) === String(turma_id));
+  } else if (Array.isArray(turma_ids) && turma_ids.length) {
+    const set = new Set(turma_ids.map((id) => String(id)));
+    out = out.filter((c) => set.has(String(c.turma_id)));
+  }
   if (status)   out = out.filter((c) => c.status === status);
   if (q)        out = out.filter((c) => (c.holder_name || '').toLowerCase().includes(q.toLowerCase()));
   return out;
@@ -540,7 +550,10 @@ function _mountEmitidos() {
     '<div class="cdx-certs-emitidos">' +
       '<div class="cdx-certs-toolbar">' +
         '<input type="search" class="cdx-certs-search" id="cdx-certs-search" placeholder="' + esc(t('certificates.search_ph')) + '">' +
-        '<select id="cdx-certs-filter-turma" class="cdx-certs-select">' +
+        '<select id="cdx-certs-filter-client" class="cdx-certs-select">' +
+          '<option value="">' + esc(t('certificates.filter_all_clients')) + '</option>' +
+        '</select>' +
+        '<select id="cdx-certs-filter-turma" class="cdx-certs-select" disabled>' +
           '<option value="">' + esc(t('certificates.filter_all_turmas')) + '</option>' +
         '</select>' +
         '<select id="cdx-certs-filter-status" class="cdx-certs-select">' +
@@ -557,7 +570,7 @@ function _mountEmitidos() {
     '</div>';
 
   _loadCertList();
-  _loadClientsForFilter();
+  _loadFilters();
 
   // Wire toolbar
   const searchEl = _q('#cdx-certs-search');
@@ -565,6 +578,17 @@ function _mountEmitidos() {
     const onInput = () => { _filterQ = searchEl.value; _renderCertList(); };
     searchEl.addEventListener('input', onInput);
     _cleanup.push(() => searchEl.removeEventListener('input', onInput));
+  }
+  const clientEl = _q('#cdx-certs-filter-client');
+  if (clientEl) {
+    const onChange = () => {
+      _filterClientSlug = clientEl.value;
+      _filterTurmaId = '';
+      _populateTurmaFilter(_filterClientSlug);
+      _renderCertList();
+    };
+    clientEl.addEventListener('change', onChange);
+    _cleanup.push(() => clientEl.removeEventListener('change', onChange));
   }
   const turmaEl = _q('#cdx-certs-filter-turma');
   if (turmaEl) {
@@ -616,17 +640,73 @@ async function _loadCertList() {
   }
 }
 
-async function _loadClientsForFilter() {
+// Load the filter sources: clients (for the client picker + name resolution) and
+// EVERY turma (to cascade client→cohorts and resolve each cert's turma_id to its
+// cohort + client for the table columns).
+async function _loadFilters() {
   try {
-    const res = await cohortsApi.listClients();
-    _clients = (res && res.clients) || [];
-  } catch (_) {}
+    const [cRes, tRes] = await Promise.all([
+      cohortsApi.listClients(),
+      cohortsApi.listAllTurmas(),
+    ]);
+    _clients = (cRes && cRes.clients) || [];
+    const turmas = (tRes && tRes.turmas) || [];
+    _turmaIndex = {};
+    _turmasByClient = {};
+    turmas.forEach((tm) => {
+      _turmaIndex[String(tm.id)] = tm;
+      const cs = tm.client_slug || '';
+      (_turmasByClient[cs] = _turmasByClient[cs] || []).push(tm);
+    });
+    _populateClientFilter();
+    _renderCertList(); // re-render so the Client/Cohort columns resolve names
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: load filters: ' + (e && e.message || e), 'error');
+  }
+}
+
+function _clientName(slug) {
+  const c = _clients.find((x) => x.slug === slug);
+  return c ? (c.display_name || c.name || slug) : (slug || '');
+}
+function _turmaName(turma) {
+  return turma ? (turma.display_name || turma.name || String(turma.id)) : '';
+}
+
+function _populateClientFilter() {
+  const sel = _q('#cdx-certs-filter-client');
+  if (!sel) return;
+  const opts = _clients.slice().sort((a, b) =>
+    (a.display_name || a.name || '').localeCompare(b.display_name || b.name || ''));
+  sel.innerHTML =
+    '<option value="">' + esc(t('certificates.filter_all_clients')) + '</option>' +
+    opts.map((c) => '<option value="' + esc(c.slug) + '"' + (c.slug === _filterClientSlug ? ' selected' : '') + '>' +
+      esc(c.display_name || c.name) + '</option>').join('');
+}
+
+function _populateTurmaFilter(clientSlug) {
+  const sel = _q('#cdx-certs-filter-turma');
+  if (!sel) return;
+  const turmas = (clientSlug && _turmasByClient[clientSlug]) ? _turmasByClient[clientSlug].slice() : [];
+  turmas.sort((a, b) => _turmaName(a).localeCompare(_turmaName(b)));
+  sel.innerHTML =
+    '<option value="">' + esc(t('certificates.filter_all_turmas')) + '</option>' +
+    turmas.map((tm) => '<option value="' + esc(String(tm.id)) + '">' + esc(_turmaName(tm)) + '</option>').join('');
+  sel.disabled = !clientSlug;
 }
 
 function _renderCertList() {
   const listEl = _q('#cdx-certs-list');
   if (!listEl) return;
-  const visible = filterCerts(_certs, { turma_id: _filterTurmaId, status: _filterStatus, q: _filterQ });
+  const clientTurmaIds = _filterClientSlug
+    ? (_turmasByClient[_filterClientSlug] || []).map((tm) => tm.id)
+    : null;
+  const visible = filterCerts(_certs, {
+    turma_id:  _filterTurmaId,
+    turma_ids: clientTurmaIds,
+    status:    _filterStatus,
+    q:         _filterQ,
+  });
   if (!visible.length) {
     listEl.innerHTML = '<div class="cdx-empty">' + esc(t('certificates.empty')) + '</div>';
     return;
@@ -636,6 +716,8 @@ function _renderCertList() {
       '<thead><tr>' +
         '<th>' + esc(t('certificates.col_code'))    + '</th>' +
         '<th>' + esc(t('certificates.col_holder'))  + '</th>' +
+        '<th>' + esc(t('certificates.col_client'))  + '</th>' +
+        '<th>' + esc(t('certificates.col_turma'))   + '</th>' +
         '<th>' + esc(t('certificates.col_course'))  + '</th>' +
         '<th>' + esc(t('certificates.col_date'))    + '</th>' +
         '<th>' + esc(t('certificates.col_status'))  + '</th>' +
@@ -653,9 +735,14 @@ function _renderCertRow(c) {
     c.code
   );
   const hasPdf = !!(c.pdf_path);
+  const turma = _turmaIndex[String(c.turma_id)];
+  const clientLabel = turma ? _clientName(turma.client_slug) : '';
+  const turmaLabel  = _turmaName(turma);
   return '<tr>' +
     '<td class="cdx-certs-code"><code>' + esc(c.code) + '</code></td>' +
     '<td>' + esc(c.holder_name || '') + '</td>' +
+    '<td>' + esc(clientLabel || '—') + '</td>' +
+    '<td>' + esc(turmaLabel || '—') + '</td>' +
     '<td>' + esc(c.course_title || '') + '</td>' +
     '<td>' + esc(formatIssuedOn(c.issued_on)) + '</td>' +
     '<td><span class="' + statusBadgeClass(c.status) + '">' + esc(t('certificates.status_' + c.status) || c.status) + '</span></td>' +
@@ -1031,10 +1118,13 @@ export function mount(viewEl, ctx) {
   _catalogTheme = 'duo';
   _selectedTemplate = 'vetor';
   _certs = [];
+  _filterClientSlug = '';
   _filterTurmaId = '';
   _filterStatus  = '';
   _filterQ       = '';
   _clients       = [];
+  _turmaIndex    = {};
+  _turmasByClient = {};
   _issueParticipants = [];
   _issueSelectedIds  = new Set();
 
