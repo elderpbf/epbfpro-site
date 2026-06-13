@@ -1,0 +1,61 @@
+/* =========================================================
+   Codex · Trilha — mobile breakpoints + single-open focus mode.
+   cdx- port of trilha-mobile.css; VALUES copied verbatim, only
+   structural class names move to cdx-tr-. The focus-mode :has()
+   rules collapse the rail + siblings while one aula is open.
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .cdx-trilha-page { padding: 0 1rem 3rem; }
+
+  .cdx-trilha-hero {
+    padding: 1.5rem 1.25rem 1.75rem;
+    margin: 1.5rem 0 1rem;
+    border-radius: 16px;
+  }
+
+  .cdx-tr-client-name { font-size: 1.5rem; }
+  .cdx-tr-client-avatar { width: 56px; height: 56px; }
+
+  .cdx-tr-timeline { padding-left: 30px; }
+  .cdx-tr-timeline::before { left: 9px; }
+  .cdx-tr-tl-dot { left: -28px; width: 22px; height: 22px; }
+  .cdx-tr-tl-row.is-open .cdx-tr-tl-dot { left: -31px; width: 28px; height: 28px; }
+
+  /* Sub-action button shrinks on mobile; the short label replaces the full one. */
+  .cdx-tr-item-action span { display: none; }
+  .cdx-tr-item-action .cdx-tr-ia-label-short { display: inline; }
+  .cdx-tr-item-action { padding: 0.4rem 0.6rem; }
+  .cdx-tr-item-action svg { width: 15px; height: 15px; }
+
+  .cdx-tr-tab-btn { padding: 0.6rem 0.85rem; font-size: 0.8rem; }
+}
+
+@media (max-width: 360px) {
+  .cdx-tr-client-name { font-size: 1.25rem; }
+  .cdx-tr-tab-btn { padding: 0.55rem 0.65rem; font-size: 0.75rem; }
+}
+
+/* ── Focus mode (mobile only): single-open accordion ─────── */
+@media (max-width: 700px) {
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-timeline { padding-left: 0; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-timeline::before { opacity: 0; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-tl-row:not(.is-open) { display: none; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-tl-row.is-open .cdx-tr-tl-dot { display: none; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-back-pill { display: inline-flex; }
+
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-zone {
+    width: 34px;
+    padding: 0.55rem 0.15rem;
+  }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-zone-num { font-size: 1.15rem; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-zone-label { display: none; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-meta { padding: 0.7rem 0.8rem; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-body { padding: 0.9rem 0.75rem; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-sub-zone {
+    width: 26px;
+    font-size: 0.9rem;
+  }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-sub-meta { padding: 0.55rem 0.7rem; }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-sub-expanded { padding: 0.85rem 0.75rem; }
+}

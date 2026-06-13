@@ -1,0 +1,235 @@
+/* =========================================================
+   Codex · Trilha — live-question (Nexo) inline answer experience.
+   cdx- port of trilha-nexo.css. When a session is open, nexo.js
+   hides the trilha body (.cdx-tr-hidden-by-nexo) and mounts the
+   answer body into #cdx-tr-nexo-host via the shared NexoAnswer.
+   The inner classes (.nx-*, .state-*, .cp-*, #q-options, etc.)
+   are NexoAnswer's own output and keep their names; VALUES copied
+   verbatim. Only the host id + hidden class move to cdx-.
+   ========================================================= */
+
+.cdx-tr-hidden-by-nexo { display: none !important; }
+
+#cdx-tr-nexo-host {
+  max-width: clamp(480px, 80vw, 720px);
+  margin: 1.5rem auto 5rem;
+  padding: 0 1rem;
+  width: 100%;
+}
+
+#cdx-tr-nexo-host .nx-state { margin-top: 1rem; }
+#cdx-tr-nexo-host .state-center { text-align: center; padding: 56px 0; }
+#cdx-tr-nexo-host .state-icon { font-size: 2.4rem; margin-bottom: 14px; }
+#cdx-tr-nexo-host .state-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-bottom: 8px;
+}
+#cdx-tr-nexo-host .state-sub { font-size: 1rem; color: var(--text-secondary); }
+#cdx-tr-nexo-host .question-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0 0 22px;
+  text-align: justify;
+}
+#cdx-tr-nexo-host .results-next {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 10px;
+}
+#cdx-tr-nexo-host .error-msg {
+  font-size: 1rem;
+  color: var(--error);
+  margin-top: 10px;
+  min-height: 1.2em;
+  text-align: center;
+}
+#cdx-tr-nexo-host .dot-wrap { text-align: center; margin-top: 18px; }
+#cdx-tr-nexo-host .refresh-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-light);
+  transition: background 0.3s;
+}
+#cdx-tr-nexo-host .refresh-dot.active { background: var(--success); }
+
+@media (min-width: 600px) {
+  #cdx-tr-nexo-host #q-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  #cdx-tr-nexo-host .qr-option-btn { margin-bottom: 0 !important; }
+}
+
+/* Student Q&A "active question" card. */
+#cdx-tr-nexo-host .cp-sqa-card {
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+#cdx-tr-nexo-host .cp-sqa-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+#cdx-tr-nexo-host .cp-sqa-meta { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 14px; }
+#cdx-tr-nexo-host .cp-sqa-text {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+#cdx-tr-nexo-host .cp-sqa-answer {
+  margin-top: 18px;
+  padding: 12px 14px;
+  background: var(--background);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 8px 8px 0;
+}
+#cdx-tr-nexo-host .cp-sqa-answer-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+#cdx-tr-nexo-host .cp-sqa-answer-text {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Student-to-instructor Q&A bottom bar (body-level, NexoAnswer's classes). */
+.cp-qa-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+  display: none;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.cp-qa-bar.visible { display: block; }
+body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px)); }
+
+.cp-qa-bar-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: text;
+  padding: 9px 12px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
+}
+.cp-qa-bar-collapsed:hover { border-color: var(--primary); }
+.cp-qa-bar-collapsed .cp-qa-bar-placeholder { flex: 1; }
+.cp-qa-bar-collapsed .cp-qa-bar-send {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-dark);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+.cp-qa-bar.expanded .cp-qa-bar-collapsed { display: none; }
+
+.cp-qa-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 80;
+  display: none;
+}
+.cp-qa-backdrop.visible { display: block; }
+
+.cp-qa-editor { display: none; }
+.cp-qa-bar.expanded .cp-qa-editor { display: block; }
+.cp-qa-editor-textarea {
+  width: 100%;
+  min-height: 64px;
+  max-height: 140px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--background);
+  color: var(--text-primary);
+  outline: none;
+  resize: none;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+.cp-qa-editor-textarea:focus { border-color: var(--primary); }
+.cp-qa-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+.cp-qa-editor-charcount { font-size: 0.72rem; color: var(--text-light); }
+.cp-qa-editor-actions { display: flex; gap: 8px; }
+.cp-qa-editor-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  transition: opacity 0.15s;
+}
+.cp-qa-editor-btn.primary { background: var(--primary-dark); color: #fff; border-color: var(--primary-dark); }
+.cp-qa-editor-btn:hover:not(:disabled) { opacity: 0.85; }
+.cp-qa-editor-btn:disabled { opacity: 0.4; cursor: default; }
+.cp-qa-editor-error {
+  font-size: 0.82rem;
+  color: var(--error);
+  margin-top: 8px;
+  min-height: 0;
+  display: none;
+}
+.cp-qa-editor-error.visible { display: block; }
+.cp-qa-toast {
+  position: absolute;
+  top: -36px;
+  left: 14px;
+  right: 14px;
+  background: var(--success);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: none;
+}
+.cp-qa-toast.visible { display: block; }
