@@ -244,7 +244,7 @@ function _autoRevealMarkup() {
 // same screen without a real class. Hidden unless the bs_debug flag is on, so it
 // can never touch a real session. For genuine load use the codex-simulate skill.
 function _simMarkup() {
-  return '<div class="cdx-sim" id="cdx-sim" hidden>' +
+  return '<div class="cdx-sim cdx-dev-only" id="cdx-sim" hidden>' +
     '<span class="cdx-sim-label">' + _esc(t('questions.host_sim_label')) + '</span>' +
     '<input type="number" class="cdx-sim-n" id="cdx-sim-n" min="1" max="200" value="30">' +
     '<button class="cdx-btn cdx-sim-btn" data-act="sim-run" type="button">' + _esc(t('questions.host_sim_run')) + '</button>' +

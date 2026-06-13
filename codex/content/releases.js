@@ -225,7 +225,7 @@ function _renderList() {
     const title = aula.title ? _esc(aula.title) : (t('cohorts.aula_label') + ' ' + _esc(n));
     // Debug-only: clear the NOVO badge for every item in this lesson.
     const clearBtn = debug
-      ? '<button type="button" class="cdx-rel-clear-fresh" data-clear-fresh="' + _esc(n) + '" title="' + _esc(t('releases.clear_fresh')) + '">NOVO &times;</button>'
+      ? '<button type="button" class="cdx-rel-clear-fresh cdx-dev-only" data-clear-fresh="' + _esc(n) + '" title="' + _esc(t('releases.clear_fresh')) + '">NOVO &times;</button>'
       : '';
     html +=
       '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-aula-id="' + _esc(aula.id) + '" data-aula-num="' + _esc(n) + '">' +

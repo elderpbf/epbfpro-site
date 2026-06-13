@@ -297,3 +297,12 @@
 .cdx-menu-item:hover { background: var(--cdx-card-hover-bg, rgba(127,127,127,0.08)); }
 .cdx-menu-item.is-danger { color: var(--danger, #ef4444); }
 .cdx-menu-item.is-danger:hover { background: rgba(239,68,68,0.1); }
+
+/* ── Developer-mode-only affordance marker ───────────────────────────────────
+ * Shared signature for any control gated behind the bs_debug flag (hidden unless
+ * localStorage.bs_debug === '1'): a dashed --danger (palette red) border, no new
+ * colour. Reads as "dev tool, not a real control". The element keeps its own
+ * padding / radius / background; this class only owns the border. Consumers add
+ * `cdx-dev-only` to their class list and must NOT declare a competing border.
+ * Convention registered in Codex CLAUDE.md ("Developer-mode-only UI"). */
+.cdx-dev-only { border: 1px dashed var(--danger); }
