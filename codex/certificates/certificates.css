@@ -244,6 +244,12 @@
   color: var(--text-primary);
 }
 
+/* Disabled cohort filter (locked until a client is chosen) reads as inert. */
+.cdx-certs-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── Certificate table ─────────────────────────────────────────── */
 .cdx-certs-table {
   width: 100%;

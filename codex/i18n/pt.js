@@ -1113,7 +1113,7 @@ export default {
   'certificates.preview_note':        'Para PDF, use a funcionalidade de impressão do navegador (Ctrl+P / Cmd+P) e escolha "Salvar como PDF".',
   // Issue flow
   'certificates.issue_btn':           'Emitir certificados',
-  'certificates.issue_title':         'Emitir certificados',
+  'certificates.issue_title':         'Emitir certificados da turma',
   'certificates.issue_client':        'Cliente',
   'certificates.issue_select_client': 'Selecione um cliente',
   'certificates.issue_turma':         'Turma',

@@ -32,7 +32,7 @@ export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
 
 // Stylesheet href for the standalone print window (resolved absolute so the
 // popup, which has no base URL, can fetch it).
-const CERT_CSS_HREF = new URL('cert-render.css?v=1.0', import.meta.url).href;
+const CERT_CSS_HREF = new URL('cert-render.css?v=1.1', import.meta.url).href;
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 export const SUBTABS = [
@@ -415,7 +415,7 @@ function _mountModelos() {
         }
         return;
       }
-      const chip = e.target.closest('[data-theme]');
+      const chip = e.target.closest('.cdx-cert-theme-chip');
       if (chip) {
         _catalogTheme = chip.dataset.theme;
         split.querySelectorAll('[data-theme]').forEach((b) => b.classList.toggle('is-active', b.dataset.theme === _catalogTheme));

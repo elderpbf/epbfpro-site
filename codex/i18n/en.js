@@ -1114,7 +1114,7 @@ export default {
   'certificates.preview_note':        'For PDF, use the browser print function (Ctrl+P / Cmd+P) and choose "Save as PDF".',
   // Issue flow
   'certificates.issue_btn':           'Issue certificates',
-  'certificates.issue_title':         'Issue certificates',
+  'certificates.issue_title':         'Issue certificates for a cohort',
   'certificates.issue_client':        'Client',
   'certificates.issue_select_client': 'Select a client',
   'certificates.issue_turma':         'Cohort',
