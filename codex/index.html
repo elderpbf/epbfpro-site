@@ -66,9 +66,13 @@
 <script src="../backstage/js/bs-google.js?v=1.4"></script>
 <script src="../backstage/js/auth.js?v=1.4"></script>
 <script src="../backstage/js/settings-drawer.js?v=1.2"></script>
+<!-- Brand logo/glyph helpers (window globals stdColors/mark/glyphWordmarkTag).
+     NOT inert for Codex: the certificate renderer (certificates/cert-render.js
+     hydrate) fills its logo + watermark placeholders from these globals. -->
+<script src="../backstage/js/brand-logos.js?v=1.0"></script>
 <!-- The toast, item renderer / type-filter / tarefa-fields, and the AI item-spec
      are now Codex ES modules (js/toast.js, js/item-render.js, js/type-filter.js,
-     js/tarefa-fields.js, js/ai-spec.js). brand-logos.js was inert and was removed. -->
+     js/tarefa-fields.js, js/ai-spec.js). -->
 <!-- ct-renderer / ct-type-filter / ct-tarefa-fields are now Codex ES modules
      (js/item-render.js, js/type-filter.js, js/tarefa-fields.js), imported by the
      Content + Lessons tab modules. The backstage globals are no longer loaded. -->
