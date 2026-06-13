@@ -9,8 +9,15 @@ import { parseLocation, state } from './state.js';
 import { trail } from './api.js';
 import { mount as mountAnswer_, unmount as unmountAnswer_ } from './nexo-answer.js';
 
-const POLL_MS         = 15000;
-const POLL_MS_BACKOFF = 60000;
+// Cadence is asymmetric on PURPOSE, the opposite way round from the obvious one.
+// While a session is OPEN the inner <codex-question> element drives liveness; the
+// orchestrator only watches for the CLOSE edge, so a calmer cadence is fine. While
+// IDLE the orchestrator is the only thing watching for a session to OPEN, so it
+// must poll snappily, otherwise a freshly-opened session takes up to the idle
+// interval to surface and the host has to ask students to refresh. Invariant:
+// idle <= live, so opening surfaces no slower than closing.
+const POLL_LIVE_MS    = 15000; // session open: watch for it to close
+const POLL_IDLE_MS    = 8000;  // no session: watch for one to open (snappy)
 const HOST_ID         = 'cdx-tr-nexo-host';
 const HIDDEN_CLS      = 'cdx-tr-hidden-by-nexo';
 const HIDE_SELECTORS  = ['.cdx-trilha-hero', '.cdx-trilha-tabs', '.cdx-trilha-tabcontent', '.cdx-trilha-footer'];
@@ -30,6 +37,10 @@ export function startNexo(loc) {
 
 export function stopNexo() { _stopped = true; clearTimeout(_timer); }
 
+// PURE. Next poll delay given whether a session is currently open. Exported so the
+// idle<=live invariant (opening surfaces no slower than closing) is unit-pinned.
+export function nextDelay(hasSession) { return hasSession ? POLL_LIVE_MS : POLL_IDLE_MS; }
+
 function schedule(ms) {
   if (_stopped) return;
   clearTimeout(_timer);
@@ -42,11 +53,11 @@ async function tick() {
   try {
     data = await trail.activeForTurma({ client_slug: _loc.clientSlug, turma_slug: _loc.turmaSlug, _silent: true });
   } catch (_) {
-    schedule(POLL_MS);
+    schedule(POLL_LIVE_MS); // transient error: back off to the calmer cadence, retry
     return;
   }
   apply(data || {});
-  schedule(data && data.session ? POLL_MS : POLL_MS_BACKOFF);
+  schedule(nextDelay(!!(data && data.session)));
 }
 
 function onVisibilityChange() {
