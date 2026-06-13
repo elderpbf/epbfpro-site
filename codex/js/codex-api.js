@@ -15,8 +15,11 @@
 // Methods take an optional params object passed straight through; param shapes
 // are pinned when each method is wired during its tab's migration.
 //
-// Globals (shared Backstage script, loaded before the module boot):
-//   window.callWorker  (../backstage/js/api-client.js)
+// Transport seam (window.callWorker, set before the module boot):
+//   On the Trail it is provided by codex/js/worker-call.js (Codex-owned, defaults
+//   to codex-api, auth-free public path). On the admin it is still
+//   backstage/js/api-client.js until that page's auth is ported. The facade is
+//   identical either way; tests stub this global to read back the action.
 
 export function call(action, params) {
   const p = Object.assign({}, params || {});
@@ -62,6 +65,13 @@ export const lessons = {
 export const audiences = {
   getConfig:  () => call('get_audience_config'),      // -> { config }
   saveConfig: (p) => call('save_audience_config', p)  // { config }
+};
+
+// Browser-safe runtime config served by the Worker: values the client needs but that
+// must NOT live in the public frontend repo (e.g. the Google Picker API key for the
+// slides gallery's Drive import). -> { config: { googlePickerApiKey } }
+export const appConfig = {
+  get: () => call('get_client_config')
 };
 
 // Questions (host/admin plane): live sessions, bank, student Q&A, stats. The
@@ -154,7 +164,13 @@ export const cohorts = {
   listAulas:       (p) => call('ct_list_aulas', p),            // { client_slug, turma_slug }
   createAula:      (p) => call('ct_create_aula', p),
   updateAula:      (p) => call('ct_update_aula', p),
-  deleteAula:      (p) => call('ct_delete_aula', p)            // { id }
+  deleteAula:      (p) => call('ct_delete_aula', p),           // { id }
+  // Participant roster (API.md — Participant Roster, ct_* family, auth required)
+  listParticipants:   (p) => call('ct_list_participants', p),  // { turma_id }
+  addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
+  updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
+  deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
+  importParticipants: (p) => call('ct_import_participants', p) // { turma_id, rows[] }
 };
 
 // Content — the item library (Items sub-tab) plus the shared types/tags it
@@ -223,7 +239,25 @@ export const releases = {
   release:   (p) => call('ct_release_item', p),     // { client_slug, turma_slug, item_id }
   unrelease: (p) => call('ct_unrelease_item', p),
   setAula:   (p) => call('ct_set_release_aula', p), // { ..., aula_number_or_null }
+  // Debug-only: toggle the NOVO badge for every item in an aula by moving
+  // released_at relative to the 5-day window. fresh:false hides, fresh:true shows.
+  setFreshness: (p) => call('ct_set_release_freshness', p), // { client_slug, turma_slug, aula_number, fresh }
   // Aggregate student-view payload for a turma: the released items with their
   // aula_number binding. Needs the turma token (read from ct_list_turmas).
   turmaView: (p) => call('ct_get_turma_view', p)    // { client_slug, turma_slug, token }
+};
+
+// Certificates — admin cert_* actions (API.md §Certificate Administration, auth required).
+//
+// NOTE: The PUBLIC `cert_validate` action is intentionally NOT here. It is consumed
+// by the public Trilha validar page directly (no auth required) and is not a Codex
+// admin operation. Certificate TEMPLATES reuse the existing `slides` facade with
+// `engine: 'codex-certificate'`; no new template methods are needed here.
+export const certificates = {
+  issue:      (p) => call('cert_issue', p),       // { turma_id, participant_ids[], course_title, hours?, issued_on?, issuer?, template_slug?, theme?, meta_json? }
+  list:       (p) => call('cert_list', p),        // { turma_id?, status?, q? }
+  get:        (p) => call('cert_get', p),         // { code }
+  revoke:     (p) => call('cert_revoke', p),      // { code }
+  markSent:   (p) => call('cert_mark_sent', p),   // { code }
+  attachPdf:  (p) => call('cert_attach_pdf', p)   // { code, pdf_b64 }
 };

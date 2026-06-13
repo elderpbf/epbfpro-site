@@ -94,7 +94,8 @@ test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared glo
   assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
   assert.match(src, /\.lookupTurmaBySession\s*\(/, 'Trilha looks up the linked turma');
   assert.match(src, /\.updateTurmaMeta\s*\(/, 'Trilha links/unlinks via turma meta');
-  assert.match(src, /QRShareModal/, 'QR reuses the shared modal global');
+  assert.match(src, /from\s+['"]\.\.\/js\/qr-share-modal\.js['"]/, 'QR uses the Codex qr-share-modal module');
+  assert.ok(!/window\.QRShareModal\b/.test(src), 'no longer reads the backstage QRShareModal global');
   // AI Gerar/Melhorar now lives in the shared composer (reused by Bank + host),
   // so the host wires it by mounting the composer, not by its own ai.question call.
   assert.match(src, /mountComposer\s*\(/, 'host renders the shared composer that owns AI Gerar/Melhorar');

@@ -13,10 +13,28 @@
 // Slides embed (`slide` type) is untouched and renders in Lessons, not here.
 // Backend is reached ONLY through the codex-api slides facade. Every string goes
 // through t(). No inline JS in markup; events are delegated.
-import { slides as api, ai as aiApi } from '../js/codex-api.js';
+import { slides as api, ai as aiApi, appConfig } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { openMenu, closeMenu } from '../js/menu.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
+import { createImageStore } from './slides/adapters/imageStore.js';
+import { createDrivePicker } from './slides/adapters/drivePicker.js';
+
+// The Google Picker API key is a referrer-restricted browser key kept OUT of this public
+// repo: the Worker serves it (get_client_config, sourced from a Doppler/Worker secret) and
+// the client fetches it once per session. Empty (secret unset or the call fails) -> the
+// gallery's Drive option stays disabled; the rest of the gallery is unaffected.
+let _pickerKey = '';
+let _pickerKeyPromise = null;
+function ensurePickerKey() {
+  if (!_pickerKeyPromise) {
+    _pickerKeyPromise = appConfig.get()
+      .then((r) => { _pickerKey = (r && r.config && r.config.googlePickerApiKey) || ''; })
+      .catch(() => { _pickerKey = ''; });
+  }
+  return _pickerKeyPromise;
+}
 import { newDeck } from './slides/js/core/deck.js';
 import * as editor from './slides/js/app.js';
 import { makeWorkerAi } from './slides/js/ai/aiService.js';
@@ -123,8 +141,8 @@ function _renderList() {
         '<div class="cdx-slides-row-title">' + title + '</div>' +
         (sub ? '<div class="cdx-slides-row-sub">' + _esc(t('slides.modified')) + ' ' + _esc(sub) + '</div>' : '') +
       '</div>' +
-      '<button class="cdx-slides-row-del" data-act="del" data-slug="' + _esc(d.slug) + '" ' +
-        'title="' + _esc(t('slides.delete')) + '" aria-label="' + _esc(t('slides.delete')) + '">&times;</button>' +
+      '<button class="cdx-slides-row-menu" data-act="menu" data-slug="' + _esc(d.slug) + '" ' +
+        'title="' + _esc(t('slides.edit')) + '" aria-label="' + _esc(t('slides.edit')) + '" aria-haspopup="menu">&#9998;</button>' +
     '</div>';
   }).join('');
 }
@@ -180,6 +198,20 @@ function _setDeckOpen(on) {
 function _showSidebar() { const s = _q('#cdx-slides-sidebar'); if (s) s.classList.add('is-open'); }
 function _hideSidebar() { if (!_deckOpen) return; const s = _q('#cdx-slides-sidebar'); if (s) s.classList.remove('is-open'); }
 
+// The Codex topbar (.bs-topbar) is sticky with a CONTENT-driven height (it varies with
+// the sub-tab strip mode and the tab set), so the deck-list shell can't assume a fixed
+// offset, the old hardcoded 96px overshot and left a gap above the sidebar. Measure the
+// real bar bottom and pin --cdx-chrome-h to it so the sidebar sits flush under the topbar
+// and stays correct as the bar changes. Skipped in focus mode, where the bar is receded
+// and the shell is top:0 anyway (so the value isn't used).
+function _syncChromeH() {
+  if (document.body.classList.contains('cdx-slides-focus')) return;
+  const bar = document.querySelector('.bs-topbar:not(.bs-topbar--presentation)');
+  if (!bar) return;
+  const h = Math.round(bar.getBoundingClientRect().bottom);
+  if (h > 0) document.documentElement.style.setProperty('--cdx-chrome-h', h + 'px');
+}
+
 // Top-edge reveal of the receded Codex chrome. Shown while the cursor is within
 // the revealed band (~104px: topbar 65 + sub-tab row 31 + slack), hidden shortly
 // after it leaves, so it never collapses out from under a click on the bar.
@@ -218,6 +250,36 @@ async function _deleteDeck(slug) {
     await api.remove({ slug });
     await _loadDecks();
     if (_openSlug === slug) _showPlaceholder();  // deleted the open deck -> back to placeholder
+  } catch (e) {
+    const list = _q('#cdx-slides-list');
+    if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
+  }
+}
+
+// The per-row ✎ glyph opens a small action menu (rename + delete live here, off
+// the row itself). `btn` is the trigger, the menu anchors to it.
+function _openDeckMenu(btn) {
+  const slug = btn.getAttribute('data-slug');
+  openMenu(btn, [
+    { label: t('slides.rename'), onClick: () => _renameDeck(slug) },
+    { label: t('slides.delete'), danger: true, onClick: () => _deleteDeck(slug) },
+  ]);
+}
+
+// Rename a deck: re-register the same slug with the new title (the *_presentation
+// action is an upsert, so this only changes the D1 title, leaving deck JSON, R2
+// images and the open editor untouched), then refresh the sidebar.
+async function _renameDeck(slug) {
+  const d = _deckBySlug(slug);
+  const current = (d && d.title) || '';
+  // eslint-disable-next-line no-alert -- lightweight guard; modal parity is a follow-up (mirrors _deleteDeck)
+  const next = window.prompt(t('slides.rename_prompt'), current);
+  if (next == null) return;                          // cancelled
+  const title = next.trim();
+  if (!title || title === current) return;           // empty or unchanged -> no-op
+  try {
+    await api.register({ slug, title, engine: DECK_ENGINE });
+    await _loadDecks();                              // re-renders the sidebar; the open deck stays open
   } catch (e) {
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
@@ -305,7 +367,14 @@ async function _openDeck(slug, fresh, initialDeck) {
   region.innerHTML = '<div class="cdx-slides-stage cdx-deck-editor" id="cdx-slides-stage"></div>';
   // Geometry is 100% CSS (slides.css, position:fixed region); the editor handles
   // its own canvas fit + window-resize internally. No sizing JS here.
-  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library });
+  // Gallery storage: upload to R2 via the facade for this deck's slug; the adapter
+  // falls back to a data URL when there's no slug yet or the upload fails.
+  const imageStore = createImageStore({ facade: api, getSlug: () => slug });
+  // Drive import reuses the BS_GOOGLE OAuth token (drive.readonly already granted); it is
+  // inert until GOOGLE_PICKER_API_KEY is set, so the option simply stays disabled till then.
+  ensurePickerKey(); // fetch the Picker key once per session (non-blocking; resolves before the gallery is opened)
+  const drivePicker = createDrivePicker({ getApiKey: () => _pickerKey, getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null) });
+  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore, drivePicker });
   _openSlug = slug;
   _writeDeckParam(slug);
   _setDeckOpen(true);
@@ -327,13 +396,21 @@ export function mount(viewEl, ctx) {
   _viewEl = viewEl;
   _render();
 
+  // Pin the shell offset to the real topbar height (now + after layout settles + on
+  // resize) so the deck-list sidebar sits flush under the Codex topbar, no stale gap.
+  _syncChromeH();
+  requestAnimationFrame(_syncChromeH);
+  const onResize = () => _syncChromeH();
+  window.addEventListener('resize', onResize);
+  _cleanup.push(() => window.removeEventListener('resize', onResize));
+
   const onClick = (e) => {
     const act = e.target.closest('[data-act]');
     if (act) {
       const a = act.getAttribute('data-act');
       if (a === 'new') return _createDeck();
       if (a === 'import') return _pickPptx();
-      if (a === 'del') { e.stopPropagation(); return _deleteDeck(act.getAttribute('data-slug')); }
+      if (a === 'menu') { e.stopPropagation(); return _openDeckMenu(act); }
     }
     const row = e.target.closest('.cdx-slides-row[data-slug]');
     if (row) return _openDeck(row.getAttribute('data-slug'), false);
@@ -388,6 +465,7 @@ export function mount(viewEl, ctx) {
 
 export function unmount() {
   _teardownEditor();
+  closeMenu();
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
   // Leave no focus-mode residue on the shared shell when the tab is torn down.

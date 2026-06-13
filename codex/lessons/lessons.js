@@ -10,20 +10,20 @@
 // breadcrumb merged into the bottom bar.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CTRenderer    (../backstage/js/ct-renderer.js)
-//   window.CVDriveViewer (../backstage/js/cv-drive-viewer.js)
 //   window.BS_GOOGLE     (../backstage/js/bs-google.js)
-//   window.CVLabs        (../backstage/classvault/js/cv-labs.js)
-//   window.CVPresetsUI   (../backstage/js/cv-presets-ui.js)
 import { lessons as api, content as contentApi, cohorts as cohortsApi, presets as presetsApi, cp as cpApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as itemForm from '../content/item-form.js';
+import { renderItem } from '../js/item-render.js';
+import { findItem as findLabItem, getAllItems as labItems } from '../js/labs-registry.js';
+import { mountInContainer as mountDriveFile } from '../js/drive-viewer.js';
+import { mountPresetLoader } from '../js/preset-loader.js';
 import {
   classifyVault, SECTION_ORDER, rendererStrategy,
   crumbActions, supportsTextResize, makeTextScale,
-  driveFolderEmbedUrl, driveFileEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
+  driveFolderEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
   groupItemsByType, zoneClassFor,
   makeFavorites, makeContentWidth, groupDriveByFolder, LLM_LAUNCHERS,
 } from './lesson-model.js';
@@ -81,10 +81,10 @@ function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 function _itemIcon(item) { return typeIconHtml(item && item.type_icon, { size: 18 }); }
 function _sectionLabel(key) { return t('lessons.section_' + key); }
 
-// Locate an item: vault rows first, then CVLabs synthetic items.
+// Locate an item: vault rows first, then synthetic lab items.
 function _findItem(id) {
   let item = _vault.find((it) => String(it.id) === String(id));
-  if (!item && window.CVLabs) item = window.CVLabs.findItem(id);
+  if (!item) item = findLabItem(id);
   return item || null;
 }
 
@@ -336,8 +336,7 @@ function _renderDriveSection(driveItems) {
 }
 
 function _renderLabsSection() {
-  if (!window.CVLabs) return '';
-  const labs = window.CVLabs.getAllItems();
+  const labs = labItems();
   if (!labs.length) return '';
   const collapsed = _collapsed.has('labs');
   const body = collapsed ? '' : labs.map(_renderSubCard).join('');
@@ -395,12 +394,12 @@ function _applySearch() {
 // ── Preset loader ─────────────────────────────────────────────────────────────
 function _mountPresetLoader() {
   const wrap = _q('.cdx-lessons-preset-wrap');
-  if (!wrap || !window.CVPresetsUI) return;
+  if (!wrap) return;
   if (_presetLoader) { _presetLoader.destroy(); _presetLoader = null; }
   presetsApi.list({ _silent: true }).then((d) => {
     const presets = (d && d.presets) || [];
     if (!presets.length) return;
-    _presetLoader = window.CVPresetsUI.mountPresetLoader(wrap, {
+    _presetLoader = mountPresetLoader(wrap, {
       presets,
       currentPresetId: _presetId || null,
       onSelect: (preset) => {
@@ -575,12 +574,9 @@ function _renderIframe(host, url, emptyMsg) {
 }
 
 function _renderDriveFile(host, item, meta) {
-  if (window.CVDriveViewer && typeof window.CVDriveViewer.mountInContainer === 'function') {
-    host.innerHTML = '';
-    window.CVDriveViewer.mountInContainer(item, host);
-    return;
-  }
-  _renderIframe(host, driveFileEmbedUrl(meta), t('lessons.drive_no_file'));
+  // The Codex drive-viewer owns the preview URL contract + empty-state handling.
+  host.innerHTML = '';
+  mountDriveFile(item, host);
 }
 
 function _renderPopupCard(host, item, meta) {
@@ -595,11 +591,8 @@ function _renderPopupCard(host, item, meta) {
 }
 
 function _renderContent(host, item) {
-  if (window.CTRenderer && window.CTRenderer.render) {
-    try { window.CTRenderer.render(item, host, {}); return; }
-    catch (_) { host.textContent = item.body_md || ''; return; }
-  }
-  host.textContent = item.body_md || '';
+  try { renderItem(item, host, {}); }
+  catch (_) { host.textContent = item.body_md || ''; }
 }
 
 // ── Bottom bar: crumb + actions + resize ──────────────────────────────────────

@@ -27,8 +27,10 @@ export function newDeck() {
     id: uid(),
     title: "Nova apresentação",
     canvas: { ...CANVAS },
-    theme: { fontScale: 1, accent: "#14b8a6", ink: "#134e4a", motif: "#14b8a6", anim: "fade-up" },
+    theme: { fontScale: 1, font: "roboto", accent: "#14b8a6", ink: "#134e4a", motif: "#14b8a6", anim: "fade-up", art: "circuito", texto: { papeis: {} } },
     logo: { ...DEFAULT_LOGO }, // deck-level: same position on every slide (single source: schema.js)
+    savedThemes: [], // the user's "Meus temas" (per-deck snapshots; see theme/presets.snapshotTheme)
+    gallery: [], // the central image registry ({id,name,url}); see core/gallery.js + edit/gallerybox.js
     assets: [],
     slides: [
       newSlide("cover", { eyebrow: "Seção", title: "Título da seção", sub: "Subtítulo", icon: null }),

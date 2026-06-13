@@ -1,6 +1,12 @@
 RewriteEngine On
 RewriteBase /trilha/
 
+# ── Certificate validation routes (MUST precede the generic two-segment rule) ──
+# /trilha/validar/<code> -> validar.html?code=<code>
+RewriteRule ^validar/([A-Za-z0-9-]+)/?$ validar.html?code=$1 [QSA,L]
+# /trilha/validar  (bare path, shows manual code-entry form)
+RewriteRule ^validar/?$ validar.html [L]
+
 # Rewrite /trilha/<client>/<turma>[/] to index.html, preserving ?k=token
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

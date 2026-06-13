@@ -18,6 +18,7 @@ import { mountComposer, correctForLaunch } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
+import { open as openQrShare } from '../js/qr-share-modal.js';
 import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
 import { filterByClass } from './bank.js';
@@ -244,7 +245,7 @@ function _autoRevealMarkup() {
 // same screen without a real class. Hidden unless the bs_debug flag is on, so it
 // can never touch a real session. For genuine load use the codex-simulate skill.
 function _simMarkup() {
-  return '<div class="cdx-sim" id="cdx-sim" hidden>' +
+  return '<div class="cdx-sim cdx-dev-only" id="cdx-sim" hidden>' +
     '<span class="cdx-sim-label">' + _esc(t('questions.host_sim_label')) + '</span>' +
     '<input type="number" class="cdx-sim-n" id="cdx-sim-n" min="1" max="200" value="30">' +
     '<button class="cdx-btn cdx-sim-btn" data-act="sim-run" type="button">' + _esc(t('questions.host_sim_run')) + '</button>' +
@@ -374,9 +375,7 @@ async function _unlinkTrail() {
 function _openQr() {
   const joinUrl = _buildTrailUrl();
   if (!joinUrl) { notice.info(t('questions.host_qr_no_turma')); return; }
-  if (typeof window !== 'undefined' && window.QRShareModal && typeof window.QRShareModal.open === 'function') {
-    window.QRShareModal.open({ joinUrl: joinUrl });
-  }
+  openQrShare({ joinUrl });
 }
 
 // ── Lifecycle: Iniciar / Encerrar (port of host-session.js) ──

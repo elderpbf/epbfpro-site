@@ -92,6 +92,33 @@ function _toast(msg) { if (window.BSToast && window.BSToast.show) window.BSToast
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 function _today() { return new Date().toISOString().slice(0, 10); }
+// Debug gate: the shared Backstage bs_debug flag (same flag the live-host
+// in-host simulator uses). Read at render time so toggling it just needs a reload.
+function _isDebug() {
+  return typeof localStorage !== 'undefined' && localStorage.getItem('bs_debug') === '1';
+}
+
+// NOVO freshness, mirrored from the sealed trilha/js/freshness.js (the admin app
+// cannot import across the Trail boundary). Source of truth for the 5-day window
+// lives there; keep these in sync. released_at is epoch seconds or an ISO string.
+const _FRESH_WINDOW_MS = 5 * 24 * 60 * 60 * 1000;
+function _relMs(v) {
+  if (v == null) return 0;
+  if (typeof v === 'number') return v * 1000;
+  const ms = Date.parse(v);
+  return isFinite(ms) ? ms : 0;
+}
+function _aulaReleasedIds(aulaNum) {
+  return _released.filter((id) => String((_releasedMeta[id] || {}).aula_number) === String(aulaNum));
+}
+// Is any item in this aula currently inside the NOVO window (i.e. the badge shows)?
+function _aulaIsFresh(aulaNum) {
+  const now = Date.now();
+  return _aulaReleasedIds(aulaNum).some((id) => {
+    const ts = _relMs((_releasedMeta[id] || {}).released_at);
+    return ts && (now - ts) < _FRESH_WINDOW_MS;
+  });
+}
 
 function _fmtDate(iso) {
   if (!iso) return '';
@@ -164,7 +191,7 @@ function _loadReleases(clientSlug, turmaSlug) {
       const items = (vd && vd.items) || [];
       _released = items.map((i) => i.id);
       _releasedMeta = {};
-      items.forEach((i) => { _releasedMeta[i.id] = { aula_number: i.aula_number || null }; });
+      items.forEach((i) => { _releasedMeta[i.id] = { aula_number: i.aula_number || null, released_at: i.released_at }; });
       _renderList();
     }).catch(() => { _released = []; _releasedMeta = {}; _renderList(); });
   }).catch(() => {
@@ -210,12 +237,25 @@ function _renderList() {
     html += '<div class="cdx-empty" style="margin-bottom:0.5rem">' + t('releases.no_aulas') + '</div>';
   }
 
+  const debug = _isDebug();
+
   _aulas.forEach((aula) => {
     const n = aula.aula_number;
     const ds = aulaDateStatusKey(aula, _today());
     const dateText = t('cohorts.date_' + ds.key) + (ds.date ? ' ' + _fmtDate(ds.date) : '');
     const active = String(_selectedAula) === String(aula.id);
     const title = aula.title ? _esc(aula.title) : (t('cohorts.aula_label') + ' ' + _esc(n));
+    // Debug-only toggle: hide/show the NOVO badge for every item in this lesson.
+    // Only on lessons that actually have released items. The button reflects the
+    // current state: "− NOVO" when the badge shows (click hides), "+ NOVO" when
+    // hidden (click shows it back). It never unreleases anything.
+    let clearBtn = '';
+    if (debug && _aulaReleasedIds(n).length) {
+      const fresh = _aulaIsFresh(n);
+      const label = fresh ? '&minus; NOVO' : '+ NOVO';
+      const title = _esc(fresh ? t('releases.clear_fresh') : t('releases.show_fresh'));
+      clearBtn = '<button type="button" class="cdx-rel-clear-fresh cdx-dev-only' + (fresh ? '' : ' is-hidden-state') + '" data-toggle-fresh="' + _esc(n) + '" data-make-fresh="' + (fresh ? '0' : '1') + '" title="' + title + '">' + label + '</button>';
+    }
     html +=
       '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-aula-id="' + _esc(aula.id) + '" data-aula-num="' + _esc(n) + '">' +
         '<span class="cdx-rel-aula-num">' + _esc(n) + '</span>' +
@@ -226,6 +266,7 @@ function _renderList() {
             '<span class="cdx-rel-aula-counts">' + _aulaCountsHtml(n) + '</span>' +
           '</div>' +
         '</div>' +
+        clearBtn +
       '</div>';
   });
 
@@ -268,11 +309,29 @@ function _renderPreview() {
 }
 
 function _onListClick(e) {
+  const toggleBtn = e.target.closest('.cdx-rel-clear-fresh');
+  if (toggleBtn) { _toggleFresh(toggleBtn.dataset.toggleFresh, toggleBtn.dataset.makeFresh === '1'); return; }
   const row = e.target.closest('.cdx-item-row');
   if (!row) return;
   _selectedAula = row.dataset.aulaId;   // 'outros' or an aula id (string)
   _renderList();
   _renderPreview();
+}
+
+// Debug-only: hide/show the NOVO badge for every item in this aula by moving
+// released_at relative to the 5-day window (makeFresh=false hides, true shows).
+// Reversible, never unreleases an item, never changes its order. The local
+// released_at mirror is updated so the button flips on the spot.
+function _toggleFresh(aulaNum, makeFresh) {
+  api.setFreshness({ client_slug: _clientSlug, turma_slug: _turmaSlug, aula_number: Number(aulaNum), fresh: makeFresh })
+    .then((r) => {
+      if (r && r.error) throw new Error(r.error);
+      const ts = Math.floor(Date.now() / 1000) - (makeFresh ? 0 : 6 * 24 * 60 * 60);
+      _aulaReleasedIds(aulaNum).forEach((id) => { (_releasedMeta[id] || (_releasedMeta[id] = {})).released_at = ts; });
+      _toast(t(makeFresh ? 'releases.show_fresh_done' : 'releases.clear_fresh_done'));
+      _renderList();
+    })
+    .catch((err) => notice.internal(_err(err)));
 }
 
 // ── Composer rendering (collapsible accordion, like the Presets picker) ──────

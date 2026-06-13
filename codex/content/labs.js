@@ -8,18 +8,20 @@
 // split classes (cdx-items-split / cdx-items-list / cdx-item-row /
 // cdx-item-preview) so there is one master-detail layout, not a per-tab copy.
 //
-// What stays a shared global (deliberately, not debt):
-//   window.CVLabs       (../backstage/classvault/js/cv-labs.js)  the registry
-//   window.CVLabViewer  (../backstage/js/cv-lab-viewer.js)       fullscreen preview
-// CVLabs is the lab registry consumed by Presets + Lessons too; CVLabViewer is a
-// reusable fullscreen iframe modal. This module owns only the PANEL UI.
+// Shared Codex modules (the lab registry + the fullscreen viewer are now
+// Codex-owned ES modules, not backstage globals):
+//   js/labs-registry.js  the lab registry (LABS), consumed by Presets + Lessons too
+//   js/lab-viewer.js      reusable fullscreen iframe modal
+// This module owns only the PANEL UI.
 //
 // On/off state lives in localStorage 'cv_labs_enabled' with the EXACT contract
-// CVLabs.isLabEnabled reads (a map keyed by lab key; missing/true = enabled,
-// false = hidden everywhere). Toggling here is therefore instantly reflected in
-// the Aula list, Trilha, and the Presets picker. Filtering stays read-time in
-// every consumer, so disabling is instant and reversible.
+// labs-registry.isLabEnabled reads (a map keyed by lab key; missing/true =
+// enabled, false = hidden everywhere). Toggling here is therefore instantly
+// reflected in the Lessons sidebar and the Presets picker. Filtering stays
+// read-time in every consumer, so disabling is instant and reversible.
 import { t } from '../js/i18n.js';
+import { LABS } from '../js/labs-registry.js';
+import { openModal as openLabViewer } from '../js/lab-viewer.js';
 
 const LS_KEY = 'cv_labs_enabled';
 
@@ -54,7 +56,7 @@ function _setEnabled(key, on) {
 }
 
 function _labs() {
-  return (window.CVLabs && Array.isArray(window.CVLabs.LABS)) ? window.CVLabs.LABS : null;
+  return Array.isArray(LABS) ? LABS : null;
 }
 function _labByKey(key) {
   const labs = _labs();
@@ -189,11 +191,7 @@ function _render() {
 
 function _openFullscreen(key) {
   const lab = _labByKey(key);
-  if (window.CVLabViewer && typeof window.CVLabViewer.openModal === 'function') {
-    window.CVLabViewer.openModal({ key, title: lab && lab.title });
-  } else if (typeof window !== 'undefined' && typeof window.open === 'function') {
-    window.open('/backstage/labs/' + encodeURIComponent(key) + '/', '_blank');
-  }
+  openLabViewer({ key, title: lab && lab.title });
 }
 
 export function mount(viewEl) {

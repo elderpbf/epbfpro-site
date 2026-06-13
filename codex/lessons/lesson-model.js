@@ -33,7 +33,8 @@ export function sidebarSections(buckets) {
 
 // Locate an item across the three id namespaces. 'lab:' / 'drive:' are synthetic;
 // numeric ids hit the ct_items vault. Returns { item, source } or null. findLab is
-// an optional resolver (idStr -> item) injected by the caller (window.CVLabs).
+// an optional resolver (idStr -> item) injected by the caller (the labs-registry
+// findItem); when absent, lab ids simply do not resolve here.
 export function findItem(itemId, ctx) {
   ctx = ctx || {};
   const idStr = String(itemId);

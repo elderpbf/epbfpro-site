@@ -21,7 +21,7 @@ export default {
     (s.ratio || 0.5) * 100
   }% ${(1 - (s.ratio || 0.5)) * 100}%">
     <div class="pic">${imgslot("image", s.image)}</div>
-    <div class="content">${contentMotifs}${ed("h2", "title", s.title)}
+    <div class="content">${contentMotifs()}${ed("h2", "title", s.title)}
       ${topicList(s.topics)}</div></div>
     <div class="divider editoronly" style="left:${(s.ratio || 0.5) * 100}%"></div>`,
 };

@@ -1,0 +1,39 @@
+/* tokens.css — Greenroom design tokens. The mock's --mint palette: a light
+   default plus four themes (menta is the app default, set on <html>). Greenroom
+   owns its theming; it does not reach into Backstage's theme variables. */
+:root{
+  --bg:#f4f6f7; --surface:#ffffff; --surface-2:#eef1f2; --surface-3:#e7ebec;
+  --text:#143b38; --muted:#5f7775; --faint:#93a3a2; --border:#e2e8e7; --border-2:#cfdad8;
+  --mint:#0d9488; --mint-bright:#14b8a6; --mint-soft:#e6f5f2;
+  --blue:#3b82f6; --blue-soft:#e8f0fe; --amber:#d97706; --red:#e05a43; --violet:#8b5cf6;
+  --sk:#e9edee; --shadow:0 1px 2px rgba(20,40,40,.06),0 6px 18px rgba(20,40,40,.06);
+  --r:10px;
+}
+[data-theme="dark"]{
+  --bg:#0e1514; --surface:#15201e; --surface-2:#1b2725; --surface-3:#223230;
+  --text:#e6efed; --muted:#9fb2af; --faint:#6f8480; --border:#26352f; --border-2:#324340;
+  --mint:#2bb7a6; --mint-bright:#34d3c0; --mint-soft:#0f2a27;
+  --blue:#6ea8fe; --blue-soft:#10243f; --amber:#e0ad4a; --red:#e2735a; --violet:#a78bfa;
+  --sk:#21302e; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28);
+}
+[data-theme="menta"]{
+  --bg:#dff3ec; --surface:#ffffff; --surface-2:#eafaf4; --surface-3:#d8efe6;
+  --text:#0f4e44; --muted:#3f7d70; --faint:#86b3a6; --border:#c4e6db; --border-2:#a9d8c9;
+  --mint:#0d9488; --mint-bright:#14b8a6; --mint-soft:#d6f1ea;
+  --blue:#3b82f6; --blue-soft:#e4eefe; --amber:#d97706; --red:#e05a43; --violet:#8b5cf6;
+  --sk:#d2ece2; --shadow:0 1px 2px rgba(13,148,136,.08),0 6px 18px rgba(13,148,136,.10);
+}
+[data-theme="areia"]{
+  --bg:#f0e9dd; --surface:#fbf7f0; --surface-2:#efe7d9; --surface-3:#e6dcc9;
+  --text:#3a3326; --muted:#6f6452; --faint:#a99a82; --border:#e0d6c4; --border-2:#cdbfa6;
+  --mint:#0d9488; --mint-bright:#14b8a6; --mint-soft:#dfeee8;
+  --blue:#3b82f6; --blue-soft:#e7eefc; --amber:#c2842a; --red:#c2553f; --violet:#8b5cf6;
+  --sk:#e4dac8; --shadow:0 1px 2px rgba(80,60,30,.07),0 6px 18px rgba(80,60,30,.09);
+}
+[data-theme="midnight"]{
+  --bg:#0a1020; --surface:#121a2e; --surface-2:#18223a; --surface-3:#1f2b48;
+  --text:#e6ecf5; --muted:#9fb0c8; --faint:#6b7d99; --border:#26324d; --border-2:#324264;
+  --mint:#2dd4bf; --mint-bright:#5eead4; --mint-soft:#10243a;
+  --blue:#60a5fa; --blue-soft:#16243f; --amber:#e0ad4a; --red:#f87171; --violet:#a78bfa;
+  --sk:#1c2840; --shadow:0 1px 2px rgba(0,0,0,.35),0 8px 22px rgba(0,0,0,.32);
+}

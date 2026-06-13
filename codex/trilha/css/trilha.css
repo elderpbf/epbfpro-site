@@ -1,0 +1,205 @@
+/* =========================================================
+   Codex · Trilha — student page (frame: base + hero + tabs)
+   cdx- port of trilha-base.css + trilha-hero-tabs.css. VALUES
+   copied verbatim so the page is pixel-identical; only the
+   class names move to cdx-. Content-panel styles (timeline,
+   cards, tarefa modal, nexo) load from their own slices.
+   ========================================================= */
+
+/* ── Local tokens (theme.css has no orange / "a definir" zone) ── */
+:root {
+  --task:        #d97706;
+  --task-dark:   #92400e;
+  --task-bg:     rgba(217, 119, 6, 0.12);
+  --task-border: rgba(217, 119, 6, 0.34);
+  --zone-und:    var(--text-secondary);
+}
+[data-theme="dark"] {
+  --task:        #f59e0b;
+  --task-dark:   #fbbf24;
+  --task-bg:     rgba(245, 158, 11, 0.16);
+  --task-border: rgba(245, 158, 11, 0.42);
+  --zone-und:    #374151;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.cdx-trilha-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1.5rem 5rem;
+}
+
+/* ── Loading ─────────────────────────────────────────────── */
+.cdx-trilha-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+.cdx-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: cdx-spin 0.75s linear infinite;
+  margin-right: 0.85rem;
+  flex-shrink: 0;
+}
+@keyframes cdx-spin { to { transform: rotate(360deg); } }
+
+/* ── Error ───────────────────────────────────────────────── */
+.cdx-trilha-error { text-align: center; padding: 5rem 1rem; }
+.cdx-trilha-error-icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.7; }
+.cdx-trilha-error-msg {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 420px;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+
+/* ── Main + shared fade-in/slide-down ────────────────────── */
+.cdx-trilha-main { animation: cdx-tr-fade-in 0.4s ease both; }
+@keyframes cdx-tr-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes cdx-tr-slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Empty + footer ──────────────────────────────────────── */
+.cdx-tr-empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}
+.cdx-trilha-footer {
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.cdx-trilha-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+/* ── Hero ────────────────────────────────────────────────── */
+.cdx-trilha-hero {
+  margin: 2.5rem 0 1.5rem;
+  padding: 2rem 2rem 2.25rem;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 40px -18px var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.cdx-trilha-hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+}
+.cdx-trilha-hero-identity { display: flex; align-items: center; gap: 1.25rem; }
+.cdx-tr-client-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid var(--border);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cdx-tr-client-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.cdx-tr-avatar-initials { color: #fff; font-weight: 800; font-size: 1.6rem; }
+.cdx-tr-hero-text { min-width: 0; }
+.cdx-tr-hero-eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+  margin-bottom: 0.35rem;
+}
+.cdx-tr-client-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 0.35rem;
+}
+.cdx-tr-turma-name {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+/* ── Tab nav (split: left + right) ───────────────────────── */
+.cdx-trilha-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cdx-trilha-tabs::-webkit-scrollbar { display: none; }
+.cdx-trilha-tabs-left, .cdx-trilha-tabs-right { display: flex; }
+.cdx-trilha-tabs-right { margin-left: auto; }
+.cdx-tr-tab-btn {
+  flex-shrink: 0;
+  padding: 0.65rem 1.1rem;
+  background: none;
+  border: none;
+  border-bottom: 4px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, font-weight 0.15s;
+  font-family: inherit;
+}
+.cdx-tr-tab-btn:hover { color: var(--text-primary); }
+.cdx-tr-tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 700;
+}
+
+/* ── Tab panels ──────────────────────────────────────────── */
+.cdx-trilha-tabcontent { min-height: 20rem; }
+.cdx-trilha-panel { animation: cdx-tr-fade-in 0.25s ease both; }

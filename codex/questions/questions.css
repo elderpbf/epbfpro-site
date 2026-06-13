@@ -14,7 +14,10 @@
  * site-wide, so Questions must NEVER redefine those global primitives here:
  * doing so repaints every other tab. Questions-only classes are unique
  * (cdx-stats-*, cdx-session-*, cdx-bank-*, etc.). */
-.cdx-stats { display: flex; flex-direction: column; gap: 1rem; }
+/* Stats is the one single-column reading view: now the shell's 1200px cap is
+ * dropped (codex.css), keep that measure here so the filter bar, KPIs and table
+ * don't sprawl across a wide screen. Centered, matching the old shell look. */
+.cdx-stats { display: flex; flex-direction: column; gap: 1rem; max-width: 1200px; margin-inline: auto; width: 100%; }
 
 .cdx-stats-loading,
 .cdx-stats-empty {
@@ -959,8 +962,9 @@
 @keyframes cdx-autoreveal-flash { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--primary); } }
 
 /* Debug-only in-host answer simulator (hidden via [hidden] unless bs_debug is on).
-   A dashed warm border marks it as a dev affordance, not a teaching control. */
-.cdx-sim { margin-top: 0.75rem; padding: 0.5rem 0.7rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; border: 1px dashed var(--cdx-cohorts, rgba(245,158,11,.6)); border-radius: 10px; }
+   Border comes from the shared .cdx-dev-only marker (dashed --danger); see Codex
+   CLAUDE.md "Developer-mode-only UI". Layout only here. */
+.cdx-sim { margin-top: 0.75rem; padding: 0.5rem 0.7rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; border-radius: 10px; }
 .cdx-sim-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); }
 .cdx-sim-n { width: 4rem; padding: 0.3rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-size: 0.84rem; font-family: inherit; }
 .cdx-sim-btn { font-size: 0.8rem; }

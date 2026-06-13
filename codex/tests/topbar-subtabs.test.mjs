@@ -58,10 +58,15 @@ test('only the active tab keeps a highlighted sub-tab; previews of other tabs sh
 });
 
 /* ---------- mobile bottom nav (advradar-style) + mobile sub-strip ---------- */
-test('botNavItems returns the four functional tabs in order, only active flagged', () => {
+test('botNavItems returns the functional tabs in order, only active flagged', () => {
   const items = botNavItems('questions');
-  assert.deepEqual(items.map((i) => i.key), ['lessons', 'content', 'cohorts', 'questions'], 'same order as TABS');
-  assert.deepEqual(items.map((i) => i.active), [false, false, false, true], 'only the active tab is flagged');
+  // Derive expected keys directly from TABS so the test stays green as tabs are added.
+  const expectedKeys = TABS.map((t) => t.key);
+  assert.deepEqual(items.map((i) => i.key), expectedKeys, 'same order as TABS');
+  // Only 'questions' should be active
+  const activeItems = items.filter((i) => i.active);
+  assert.equal(activeItems.length, 1, 'exactly one item active');
+  assert.equal(activeItems[0].key, 'questions', 'the correct tab is active');
   assert.equal(items.length, TABS.length, 'one item per functional tab');
   assert.ok(items.every((i) => i.href && i.glyph && i.labelKey), 'each item carries href + glyph + labelKey');
   assert.ok(botNavItems('nope').every((i) => !i.active), 'unknown active -> none flagged');

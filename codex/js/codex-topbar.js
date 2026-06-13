@@ -10,10 +10,13 @@
 // old page; flip the href to the /codex route as each migrates.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.ThemeManager, window.SettingsDrawer, window.BS_AUTH,
-//   window.glyphWordmark, window.stdColors
+//   window.ThemeManager, window.BS_AUTH
 import { t, languages, setLang } from './i18n.js';
 import { anchorLeft, placePill } from './anchored.js';
+// The Settings drawer is app-owned (the shell) with auth as an injected component.
+import { init as initSettingsDrawer } from './settings-drawer.js';
+import { googleSection, passwordSection } from './settings-auth.js';
+import { glyphWordmark, stdColors } from './brand-logos.js';
 
 const GEAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
@@ -30,7 +33,9 @@ export const TABS = [
   { key: 'cohorts',   labelKey: 'nav.cohorts',   href: '/codex/',
     glyph: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>' },
   { key: 'questions', labelKey: 'nav.questions', href: '/codex/?tab=questions',
-    glyph: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>' }
+    glyph: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>' },
+  { key: 'certificates', labelKey: 'nav.certificates', href: '/codex/?tab=certificates',
+    glyph: '<circle cx="12" cy="8" r="6"></circle><path d="M12 14v8"></path><path d="M8 18l4 4 4-4"></path>' }
 ];
 
 function _svg(inner) {
@@ -157,6 +162,38 @@ function subtabModeSection() {
   };
 }
 
+// Developer section: toggles the shared debug pill (backstage/js/debug.js) via
+// window.bsDebugMount/Unmount + the bs_debug flag. Dev tooling, not auth, so the
+// topbar (app chrome) composes it into the drawer, not the drawer shell.
+function debugSection() {
+  return {
+    id: 'sd-debug',
+    title: 'Desenvolvedor',
+    content:
+      '<p style="font-size:.88rem;color:var(--text-primary);margin-bottom:.5rem">Painel de debug</p>' +
+      '<button class="bs-toggle-btn" id="sd-debug-toggle" style="margin-bottom:.5rem">Desativado</button>' +
+      '<p class="bs-hint">Exibe pill flutuante com logs em todas as páginas do Backstage.</p>',
+    onInit() {
+      const btn = document.getElementById('sd-debug-toggle');
+      if (!btn) return;
+      const sync = () => {
+        const on = localStorage.getItem('bs_debug') === '1';
+        btn.textContent = on ? 'Desativar' : 'Ativar';
+        btn.style.color = on ? 'var(--primary)' : '';
+        btn.style.borderColor = on ? 'var(--primary)' : '';
+      };
+      sync();
+      btn.addEventListener('click', () => {
+        const on = localStorage.getItem('bs_debug') === '1';
+        localStorage.setItem('bs_debug', on ? '0' : '1');
+        sync();
+        if (!on) { if (window.bsDebugMount) window.bsDebugMount(); }
+        else     { if (window.bsDebugUnmount) window.bsDebugUnmount(); }
+      });
+    },
+  };
+}
+
 export function init(opts) {
   opts = opts || {};
   const active = opts.active || '';
@@ -194,10 +231,8 @@ export function init(opts) {
   const wmDark = document.createElement('span');
   wmDark.className = 'bs-topbar-logo-dark bs-topbar-mark';
   wmDark.setAttribute('aria-hidden', 'true');
-  if (window.glyphWordmark && window.stdColors) {
-    wmLight.innerHTML = window.glyphWordmark(window.stdColors('white'));
-    wmDark.innerHTML = window.glyphWordmark(window.stdColors('navy'));
-  }
+  wmLight.innerHTML = glyphWordmark(stdColors('white'));
+  wmDark.innerHTML = glyphWordmark(stdColors('navy'));
   brand.appendChild(wmLight);
   brand.appendChild(wmDark);
   const suffix = document.createElement('span');
@@ -228,6 +263,11 @@ export function init(opts) {
     a.appendChild(label);
     strip.appendChild(a);
   });
+  // Leading spacer mirrors the trailing one below, so the tab strip sits
+  // centered between the brand and the right-side controls on the full-width bar.
+  const spacerLead = document.createElement('div');
+  spacerLead.className = 'bs-topbar-spacer';
+  inner.appendChild(spacerLead);
   inner.appendChild(strip);
 
   const spacer = document.createElement('div');
@@ -359,8 +399,15 @@ export function init(opts) {
     if (d && d.contains(e.target) && e.target.closest('a[href], [data-act="pick"], [data-act="variaveis"], .cdx-item-row, [data-turma-slug]')) _closeDrawer();
   }, true);
 
-  // Shared shell services; the global pill/bar toggle leads the drawer sections.
+  // Shared shell services; the sub-tab mode toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });
   ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
-  SettingsDrawer.init({ sections: [subtabModeSection(), ...sections] });
+  // Compose the drawer in display order: the topbar's own sections, then the
+  // injected auth + dev sections. The drawer shell owns none of this — Google
+  // and password come from the settings-auth component, gated on their globals.
+  const drawerSections = [subtabModeSection(), ...sections];
+  if (typeof globalThis.BS_GOOGLE !== 'undefined') drawerSections.push(googleSection());
+  drawerSections.push(debugSection());
+  if (typeof globalThis.callWorker === 'function') drawerSections.push(passwordSection());
+  initSettingsDrawer({ sections: drawerSections });
 }

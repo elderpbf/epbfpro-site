@@ -1,0 +1,269 @@
+/* =========================================================
+   Trilha – Certificate Validation Page (validar.css v1.0)
+   Standalone styles for /trilha/validar/<code>.
+   Relies on theme.css tokens (--background, --surface,
+   --text-primary, --text-secondary, --border, --accent,
+   --accent-hover) and trilha-base.css for .tr-page layout
+   and .tr-spinner.
+   ========================================================= */
+
+/* ── Entry form (bare /validar with no code) ────────────── */
+
+.vd-entry-wrap {
+  max-width: 480px;
+  margin: 4rem auto 0;
+  padding: 2.5rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.vd-entry-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.vd-entry-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+  color: var(--text-primary);
+}
+
+.vd-entry-desc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.vd-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.vd-code-input {
+  flex: 1 1 180px;
+  padding: 0.6rem 0.85rem;
+  font-size: 1rem;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.vd-code-input:focus {
+  border-color: var(--accent);
+}
+
+.vd-submit-btn {
+  flex: 0 0 auto;
+  padding: 0.6rem 1.3rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.vd-submit-btn:hover { background: var(--accent-hover, var(--accent)); }
+
+/* ── Error / not-found state ───────────────────────────── */
+
+.vd-msg-wrap {
+  max-width: 480px;
+  margin: 4rem auto 0;
+  padding: 2.5rem 2rem;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.vd-msg-wrap--error {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.28);
+}
+
+.vd-msg-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 0.8rem;
+  color: #dc2626;
+}
+
+.vd-msg-text {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin: 0 0 1.2rem;
+  line-height: 1.5;
+}
+
+.vd-try-again {
+  font-size: 0.9rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+.vd-try-again:hover { text-decoration: underline; }
+
+/* ── Result card ───────────────────────────────────────── */
+
+.vd-result {
+  max-width: 580px;
+  margin: 3rem auto 0;
+}
+
+/* Status badge */
+.vd-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
+  margin-bottom: 1.2rem;
+}
+
+.vd-badge--valid {
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  color: #15803d;
+}
+[data-theme="dark"] .vd-badge--valid {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.vd-badge--revoked {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #b91c1c;
+}
+[data-theme="dark"] .vd-badge--revoked {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.28);
+  color: #f87171;
+}
+
+.vd-badge-icon {
+  font-style: normal;
+}
+
+/* Card body */
+.vd-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.6rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.vd-result--revoked .vd-card {
+  opacity: 0.75;
+}
+
+.vd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.vd-fields-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.vd-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.vd-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.vd-value--name {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* PDF download button */
+.vd-pdf-wrap {
+  padding-top: 0.4rem;
+}
+
+.vd-pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.vd-pdf-btn:hover { background: var(--accent-hover, var(--accent)); }
+
+/* Footer note */
+.vd-footer-note {
+  margin-top: 1.2rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.vd-footer-note a {
+  color: inherit;
+}
+
+/* ── Loading (reuses .tr-spinner from trilha-base.css) ──── */
+
+#vd-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  min-height: 40vh;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+  .vd-entry-wrap,
+  .vd-msg-wrap,
+  .vd-result {
+    margin-top: 2rem;
+  }
+  .vd-card {
+    padding: 1.2rem 1rem;
+  }
+  .vd-fields-row {
+    grid-template-columns: 1fr;
+  }
+  .vd-form {
+    flex-direction: column;
+  }
+}

@@ -569,3 +569,118 @@ a.cdx-card-mini-icon.is-on:hover {
 
 /* Component + status tokens (--cdx-*) moved to css/codex.css (2026-06-04) so
    codex.css is the single token home. See ARCHITECTURE.md §8. */
+
+/* ----- Roster modal (Participantes) ----- */
+
+.cdx-roster-modal { max-width: 680px; }
+
+.cdx-roster-empty {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+  margin: 0;
+}
+
+/* Participant table */
+.cdx-roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  margin-bottom: 0.5rem;
+}
+
+.cdx-roster-table th,
+.cdx-roster-table td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.cdx-roster-table th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.cdx-roster-table tbody tr:hover { background: var(--cdx-card-hover-bg); }
+
+.cdx-roster-cell-actions {
+  display: flex;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* Collapsible sections inside the roster modal */
+.cdx-roster-section {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cdx-roster-section-title {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+  background: var(--cdx-chip-bg);
+  list-style: none;
+}
+
+.cdx-roster-section-title::-webkit-details-marker { display: none; }
+
+.cdx-roster-section[open] .cdx-roster-section-title {
+  border-bottom: 1px solid var(--border);
+}
+
+.cdx-roster-add-form,
+.cdx-roster-import-form {
+  padding: 0.85rem;
+}
+
+.cdx-roster-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.cdx-roster-import-textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.84rem;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text-primary);
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.cdx-roster-import-textarea:focus { border-color: var(--primary); }
+
+.cdx-roster-add-actions,
+.cdx-roster-import-actions {
+  margin-top: 0.6rem;
+}
+
+/* Required field marker */
+.cdx-required {
+  color: var(--error);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .cdx-roster-section-title {
+  background: var(--cdx-chip-bg);
+}
+
+[data-theme="dark"] .cdx-roster-table tbody tr:hover {
+  background: var(--cdx-card-hover-bg);
+}

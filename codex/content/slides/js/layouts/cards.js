@@ -3,7 +3,7 @@
 // (render/cardparts) is the single renderer, and part toggles/move/delete (card kind)
 // + add (container kind) live as descriptor controls on the selection bar. Reveal is
 // a bar/menu toggle. Layouts emit content only.
-import { bar, circuit } from "../theme/art.js";
+import { bar, cardMotifs } from "../theme/art.js";
 import { ed } from "../render/helpers.js";
 import { cardItem } from "../render/cardparts.js";
 import { uid } from "../core/schema.js";
@@ -35,7 +35,7 @@ export default {
         return `<div class="cardrow${colCls}" data-row="${r}"${sz}>${byRow.get(r).join("")}</div>`;
       })
       .join("");
-    return `${bar}${circuit("br")}<div class="L-cards">
+    return `${bar}${cardMotifs()}<div class="L-cards">
     ${ed("h2", "title", s.title || "")}
     ${rows}</div>`;
   },

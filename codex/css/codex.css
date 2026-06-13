@@ -5,12 +5,21 @@
  * shell chrome, and shared-components.css. Add ONLY Codex component rules here;
  * surface/text/border values come from the tokens, never hex literals. */
 
+/* ── Codex topbar: full-width bar with a centered tab strip ───
+ * The shell's --with-tabs inner caps at 1400px + centers it; drop that cap here
+ * so the bar spans the full viewport, matching the now full-width content below.
+ * Scoped to the Codex page; the legacy Backstage portal topbar, which shares
+ * --with-tabs, keeps its cap. The strip is centered between brand and controls
+ * by a leading + trailing .bs-topbar-spacer (codex-topbar.js), so .cdx-tabs
+ * carries no side margin of its own. */
+.bs-topbar-inner--with-tabs { max-width: none; }
+
 /* ── Rich tab strip in the Codex topbar ─────────────────────── */
 .cdx-tabs {
   display: flex;
   align-items: center;
   gap: 0.15rem;
-  margin-left: 1rem;
+  margin: 0;
   min-width: 0;
   overflow-x: auto;
 }
@@ -39,10 +48,11 @@
 }
 
 /* Bind each functional tab to its accent token. */
-.cdx-tab--lessons   { --accent-color: var(--codex-lessons); }
-.cdx-tab--content   { --accent-color: var(--codex-content); }
-.cdx-tab--cohorts   { --accent-color: var(--codex-cohorts); }
-.cdx-tab--questions { --accent-color: var(--codex-questions); }
+.cdx-tab--lessons      { --accent-color: var(--codex-lessons); }
+.cdx-tab--content      { --accent-color: var(--codex-content); }
+.cdx-tab--cohorts      { --accent-color: var(--codex-cohorts); }
+.cdx-tab--questions    { --accent-color: var(--codex-questions); }
+.cdx-tab--certificates { --accent-color: var(--codex-certificates, #8b5cf6); }
 
 /* ── Sub-tabs (5c): one nav, two modes, positioned under the active tab ──────
  * by js/anchored.js. The mode is a global pref toggled in the Settings drawer:
@@ -178,6 +188,17 @@
 }
 
 /* ── Tab content host ───────────────────────────────────────── */
+/* The shared Backstage shell caps .bs-main at 1200px + centers it (a reading
+ * measure for the portal/dashboard). Codex faces are multi-pane app layouts
+ * (Cohorts 3-pane, Content/Lessons 2-pane, Questions Bank/Sessions/host) whose
+ * 1fr pane only cramps at that cap; the content that genuinely needs a measure
+ * caps itself internally (Content editor 760px, session detail 60rem, Stats
+ * 1200px below). So drop the shell cap and let every face use the full width.
+ * This stylesheet loads ONLY on the Codex page, so the override is scoped to
+ * Codex; the rest of Backstage keeps its 1200px width. Padding is untouched
+ * (the Sessions/host full-bleed views negate exactly 3rem of it). Lessons' own
+ * `.bs-app--classvault .bs-main` override still wins for its flush look. */
+.bs-main { max-width: none; }
 .cdx-view { padding: 0.5rem 1.5rem 1.5rem; }
 
 /* Language toggle button (PT/EN). The topbar renders it only when more than
@@ -247,3 +268,41 @@
 .cdx-notice--warn  .cdx-notice-glyph { color: var(--codex-cohorts); }
 .cdx-notice--error { border-left-color: var(--error); }
 .cdx-notice--error .cdx-notice-glyph { color: var(--error); }
+
+/* ── Action menu (js/menu.js) ─────────────────────────────────────────────────
+   A small popover of actions opened from a row trigger (✎ / kebab). Fixed-
+   positioned body child, so it escapes any clipping list/sidebar. */
+.cdx-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 140px;
+  padding: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 22px var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+.cdx-menu-item {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+.cdx-menu-item:hover { background: var(--cdx-card-hover-bg, rgba(127,127,127,0.08)); }
+.cdx-menu-item.is-danger { color: var(--danger, #ef4444); }
+.cdx-menu-item.is-danger:hover { background: rgba(239,68,68,0.1); }
+
+/* ── Developer-mode-only affordance marker ───────────────────────────────────
+ * Shared signature for any control gated behind the bs_debug flag (hidden unless
+ * localStorage.bs_debug === '1'): a dashed --danger (palette red) border, no new
+ * colour. Reads as "dev tool, not a real control". The element keeps its own
+ * padding / radius / background; this class only owns the border. Consumers add
+ * `cdx-dev-only` to their class list and must NOT declare a competing border.
+ * Convention registered in Codex CLAUDE.md ("Developer-mode-only UI"). */
+.cdx-dev-only { border: 1px dashed var(--danger); }

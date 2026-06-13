@@ -12,6 +12,7 @@ import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
 import * as notice from '../js/notice.js';
+import { renderItem } from '../js/item-render.js';
 
 // ── Pure rule (exported for tests) ──────────────────────────────────────────
 // Of all sets, the tab shows the newest one that has items (matches the student
@@ -170,16 +171,12 @@ function _previewHtml(item, opts) {
     '</div></div>';
 }
 
-// Render the section body with the shared CTRenderer (same global Items uses).
+// Render the section body with the Codex item renderer (same module Items uses).
 function _renderBody(item) {
   const host = _q('cdx-apostila-render');
   if (!host) return;
-  if (window.CTRenderer && window.CTRenderer.render) {
-    try { window.CTRenderer.render(item, host, {}); }
-    catch (_) { host.textContent = item.body_md || ''; }
-  } else {
-    host.textContent = item.body_md || '';
-  }
+  try { renderItem(item, host, {}); }
+  catch (_) { host.textContent = item.body_md || ''; }
 }
 
 function _renderPreview() {

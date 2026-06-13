@@ -1,0 +1,171 @@
+/* =========================================================
+   SETTINGS DRAWER (Codex copy — pairs with js/settings-drawer.js)
+   Carried verbatim from backstage/css/settings-drawer.css so Codex
+   owns the drawer chrome and no longer loads the backstage copy.
+   The .bs- class names are kept (faithful port); they are also used
+   by the injected section content (js/settings-auth.js, the topbar's
+   composed sections). CSS variables fall back to dark-theme defaults
+   when theme.css is not loaded.
+   ========================================================= */
+
+.bs-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9990;
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.bs-overlay.open { opacity: 1; }
+
+.bs-drawer {
+  position: fixed;
+  top: 0; right: -440px; bottom: 0;
+  width: 400px; max-width: 100vw;
+  background: var(--surface, #1e1e2e);
+  border-left: 1px solid rgba(255,255,255,.1);
+  z-index: 9991;
+  padding: 2rem;
+  overflow-y: auto;
+  transition: right .3s ease;
+  box-shadow: -4px 0 30px rgba(0,0,0,.3);
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.bs-drawer.open { right: 0; }
+
+.bs-drawer h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary, #e2e8f0);
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bs-drawer h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 2rem 0 1rem;
+}
+
+.bs-drawer hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,.1);
+  margin: 2rem 0;
+}
+
+.bs-drawer-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1;
+  padding: 0;
+}
+
+.bs-drawer-close:hover { color: var(--text-primary, #e2e8f0); }
+
+.bs-save-btn {
+  width: 100%;
+  padding: 0.7rem;
+  background: var(--primary, #14b8a6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .2s;
+  margin-top: 0.25rem;
+}
+
+.bs-save-btn:hover { opacity: .88; }
+
+.bs-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #94a3b8);
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+
+.bs-drawer-save-msg {
+  font-size: 0.82rem;
+  color: var(--primary, #14b8a6);
+  margin-top: 0.5rem;
+  min-height: 1rem;
+}
+
+.bs-toggle-btn {
+  display: block;
+  width: 100%;
+  padding: 0.65rem;
+  background: transparent;
+  border: 1.5px solid rgba(100,160,255,.35);
+  border-radius: 8px;
+  color: var(--primary, #14b8a6);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all .2s;
+}
+
+.bs-toggle-btn:hover { background: rgba(100,160,255,.08); }
+
+.bs-field { margin-bottom: 0.75rem; }
+.bs-field label { display: block; font-size: 0.82rem; color: var(--text-secondary, #94a3b8); margin-bottom: 0.3rem; }
+.bs-field input {
+  width: 100%; padding: 0.6rem 0.8rem;
+  background: var(--background, #0f172a);
+  border: 1.5px solid rgba(255,255,255,.15);
+  border-radius: 6px;
+  color: var(--text-primary, #e2e8f0);
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.bs-form-error {
+  font-size: 0.82rem;
+  color: #f87171;
+  margin-top: 0.5rem;
+  min-height: 1rem;
+}
+
+.bs-select,
+.bs-textarea {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: var(--background, #0f172a);
+  border: 1.5px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  color: var(--text-primary, #e2e8f0);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color .2s;
+  box-sizing: border-box;
+}
+
+.bs-select:focus,
+.bs-textarea:focus { border-color: var(--primary, #14b8a6); }
+
+.bs-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .bs-drawer { width: 100%; right: -100%; }
+}

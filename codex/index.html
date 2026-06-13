@@ -12,32 +12,41 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
 
 <!-- Shell chrome reused from Backstage (same origin, so the login carries over). -->
-<link rel="stylesheet" href="../backstage/css/theme.css?v=1.3">
+<link rel="stylesheet" href="css/theme.css?v=1.0">
 <link rel="stylesheet" href="../backstage/css/backstage.css?v=2.8">
-<link rel="stylesheet" href="../backstage/css/settings-drawer.css?v=1.0">
-<link rel="stylesheet" href="../backstage/css/shared-components.css?v=1.6">
-<!-- ct-/ctr- scoped styles for the shared item editor (CTItemForm/Creator),
-     which Content → Items mounts as a window global until it is migrated.
-     Prefix-scoped, so they do not collide with Codex's cdx- styles. -->
-<link rel="stylesheet" href="../backstage/css/ct-renderer.css?v=1.1">
+<!-- Settings drawer chrome (Codex copy, pairs with js/settings-drawer.js). -->
+<link rel="stylesheet" href="css/settings-drawer.css?v=1.0">
+<!-- Codex toast (.cdx-toast, pairs with js/toast.js). shared-components.css is no
+     longer loaded: its only live class here was the toast; the rest was ClassPulse
+     /host legacy and the question bars are cdx-qr-bar-* in questions.css. -->
+<link rel="stylesheet" href="css/toast.css?v=1.0">
+<!-- .ctr- item-render styles (Codex copy, pairs with js/item-render.js). Prefix-
+     scoped, so they do not collide with Codex's cdx- styles. -->
+<link rel="stylesheet" href="css/item-render.css?v=1.0">
 <link rel="stylesheet" href="../backstage/classtrail/css/classtrail.css?v=4.0">
-<!-- Drive sub-tab: the native panel is cdx- styled in content.css; cv-drive.css
-     remains only for the shared CVDriveViewer file-preview modal. -->
-<link rel="stylesheet" href="../backstage/css/cv-drive.css?v=1.3">
-<link rel="stylesheet" href="../backstage/css/cv-presets.css?v=1.4">
+<!-- Drive file-preview styles (Codex copy, pairs with js/drive-viewer.js). The
+     native Drive panel is cdx- styled in content.css; the legacy cv-drive.css is
+     no longer loaded. -->
+<link rel="stylesheet" href="css/drive-viewer.css?v=1.0">
+<!-- cv-presets.css is no longer loaded: Content's Presets is a native cdx- port
+     (content/presets.js) and the sidebar preset loader (js/preset-loader.js) is
+     styled by lessons.css (.cdx-lessons-sidebar-head .cv-preset-loader-*). -->
 <link rel="stylesheet" href="../backstage/classvault/css/classvault.css?v=1.50">
 <link rel="stylesheet" href="css/tokens.css?v=1.0">
-<link rel="stylesheet" href="css/codex.css?v=2.0">
-<link rel="stylesheet" href="cohorts/cohorts.css?v=1.2">
+<link rel="stylesheet" href="css/codex.css?v=2.4">
+<link rel="stylesheet" href="cohorts/cohorts.css?v=1.3">
 <link rel="stylesheet" href="content/content.css?v=2.6">
-<link rel="stylesheet" href="content/slides.css?v=1.8">
+<link rel="stylesheet" href="content/slides.css?v=1.9">
 <!-- Deck editor styles, scoped under .cdx-deck-editor (no global leak). -->
 <link rel="stylesheet" href="content/slides/css/tokens.css?v=1.2">
-<link rel="stylesheet" href="content/slides/css/slide.css?v=2.3">
-<link rel="stylesheet" href="content/slides/css/ui.css?v=2.6">
+<link rel="stylesheet" href="content/slides/css/slide.css?v=2.5">
+<link rel="stylesheet" href="content/slides/css/ui.css?v=3.2">
 <link rel="stylesheet" href="lessons/lessons.css?v=2.1">
-<link rel="stylesheet" href="../backstage/css/qr-share-modal.css?v=1.3">
-<link rel="stylesheet" href="questions/questions.css?v=3.5">
+<!-- QR share modal styles (Codex copy, pairs with js/qr-share-modal.js). -->
+<link rel="stylesheet" href="css/qr-share-modal.css?v=1.0">
+<link rel="stylesheet" href="questions/questions.css?v=3.6">
+<link rel="stylesheet" href="certificates/certificates.css?v=1.5">
+<link rel="stylesheet" href="certificates/cert-render.css?v=1.1">
 <script src="../backstage/js/debug.js?v=2.5"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -59,47 +68,47 @@
 
 <!-- Shared Backstage services as regular scripts (window globals), loaded
      BEFORE the module boot so Codex modules can read them. -->
-<script src="../backstage/js/utils.js?v=1.5"></script>
+<!-- utils.js is no longer loaded: Codex vendors hashPw (js/settings-auth.js),
+     owns the Enter-to-submit handler (js/form-enter.js, imported in the boot),
+     uses its own toast (js/toast.js), and the pure helpers (escHtml/parseCSV/
+     LETTERS) were unused (each module vendors its own). -->
 <script src="../backstage/js/api-client.js?v=1.2"></script>
-<script src="../backstage/js/theme-manager.js?v=1.2"></script>
+<!-- Codex-owned theme manager (classic script: the Trail pre-paints the theme
+     synchronously, so it stays a non-deferred global, window.ThemeManager). -->
+<script src="js/theme-manager.js?v=1.0"></script>
 <script src="../backstage/js/bs-google.js?v=1.4"></script>
 <script src="../backstage/js/auth.js?v=1.4"></script>
-<script src="../backstage/js/settings-drawer.js?v=1.2"></script>
-<script src="../backstage/js/brand-logos.js?v=1.0"></script>
-<!-- Shared helpers (window globals) still used by Content → Items: the type
-     filter chips, the preview renderer, and the prompt-building AI spec. The
-     item editor + creator are now Codex-native ES modules (content/item-form.js,
-     content/item-creator.js); the legacy CTItemForm/CTItemCreator globals are no
-     longer loaded here. -->
-<script src="../backstage/js/bs-toast.js?v=1.0"></script>
-<script src="../backstage/js/ct-ai-spec.js?v=1.3"></script>
-<script src="../backstage/js/ct-type-filter.js?v=1.1"></script>
-<script src="../backstage/js/ct-renderer.js?v=1.0"></script>
-<!-- Tarefas answer-field registry (list of field types + stored-value rendering
-     and CSV serialization). Shared leaf helper, used as a global by the native
-     Tarefas sub-tab, same pattern as ct-renderer above. -->
-<script src="../backstage/js/ct-tarefa-fields.js?v=1.0"></script>
-<!-- Labs sub-tab (native cdx- module, content/labs.js). The lab registry
-     (CVLabs, also feeds the Presets picker's Labs group + Lessons) and the
-     fullscreen preview modal (CVLabViewer) stay shared globals; the panel grid
-     is now native, so the legacy ct-labs-panel.js global is no longer loaded. -->
-<script src="../backstage/classvault/js/cv-labs.js?v=1.4"></script>
-<script src="../backstage/js/cv-lab-viewer.js?v=1.0"></script>
+<!-- The Settings drawer is now Codex ES modules: the shell js/settings-drawer.js
+     (app-owned) + the injected auth sections js/settings-auth.js, imported by
+     js/codex-topbar.js. The backstage settings-drawer.js global is no longer loaded. -->
+<!-- Brand logo/glyph helpers are now the Codex ES module js/brand-logos.js,
+     imported by certificates/cert-render.js (logo + watermark) and js/codex-topbar.js
+     (the topbar wordmark). The backstage global is no longer loaded; the canonical
+     artwork is mirrored verbatim and the backstage copy stays for the legacy family. -->
+<!-- The toast, item renderer / type-filter / tarefa-fields, and the AI item-spec
+     are now Codex ES modules (js/toast.js, js/item-render.js, js/type-filter.js,
+     js/tarefa-fields.js, js/ai-spec.js). -->
+<!-- ct-renderer / ct-type-filter / ct-tarefa-fields are now Codex ES modules
+     (js/item-render.js, js/type-filter.js, js/tarefa-fields.js), imported by the
+     Content + Lessons tab modules. The backstage globals are no longer loaded. -->
+<!-- Labs sub-tab (native cdx- module, content/labs.js). The lab registry and
+     the fullscreen preview modal are now Codex ES modules (js/labs-registry.js,
+     js/lab-viewer.js), imported by content/labs.js, content/presets.js and
+     lessons.js; the backstage globals are no longer loaded. -->
 <!-- Drive sub-tab (native cdx- module, content/drive.js). Folder CRUD + the
      synced-item index go through the codex-api facade; the client-side Google
-     Drive read uses BS_GOOGLE (already loaded above). Only the file-preview modal
-     (CVDriveViewer, also used by Lessons) stays a shared global; the legacy
-     folders-api / cache / folders-ui / sync-ui globals are no longer loaded. -->
-<script src="../backstage/js/cv-drive-viewer.js?v=1.0"></script>
-<!-- cv-presets-ui.js: legacy preset LOADER global, still used by Lessons
-     (lessons.js -> CVPresetsUI.mountPresetLoader). Content's presets sub-tab is a
-     native port (content/presets.js). The dead globals that were loaded here
-     (ai-client, ct-item-form, ct-item-creator, cv-type-registry, cv-focus-mode,
-     cv-presets-api, cv-item-picker) were removed in Stage 0 of the separation
-     plan (2026-06-07): unused anywhere in the codex tree, verified per-tag. -->
-<script src="../backstage/js/cv-presets-ui.js?v=1.2"></script>
-<!-- Shared QR share modal (the live host's QR button reuses this global). -->
-<script src="../backstage/js/qr-share-modal.js?v=1.3"></script>
+     Drive read uses BS_GOOGLE (already loaded above). The file-preview modal is
+     now the Codex ES module js/drive-viewer.js (imported by content/drive.js and
+     lessons.js); the legacy folders-api / cache / folders-ui / sync-ui globals
+     are no longer loaded. -->
+<!-- The preset loader is now the Codex ES module js/preset-loader.js (imported by
+     lessons.js); Content's Presets sub-tab is a native port (content/presets.js).
+     The legacy cv-presets-ui.js global (and the Stage 0 dead globals: ai-client,
+     ct-item-form, ct-item-creator, cv-type-registry, cv-focus-mode, cv-presets-api,
+     cv-item-picker) are no longer loaded. -->
+<!-- The QR share modal is now the Codex ES module js/qr-share-modal.js, imported
+     by the live host (questions/live-host.js). The backstage global is no longer
+     loaded. -->
 
 <!-- Codex is ES modules. One boot imports, routes by ?tab=, and mounts the
      active tab; no logic inline beyond the wiring. -->
@@ -107,16 +116,26 @@
   import { init as topbar } from './js/codex-topbar.js';
   import { apply as applyI18n } from './js/i18n.js';
   import * as glyphs from './js/glyphs.js';
+  import './js/toast.js'; // Codex-owned toast -> window.BSToast (replaces backstage/js/bs-toast.js)
+  import './js/form-enter.js'; // Codex-owned Enter-to-submit (replaces backstage/js/utils.js)
   import * as cohorts from './cohorts/cohorts.js';
   import * as content from './content/content.js';
   import * as lessons from './lessons/lessons.js';
   import * as questions from './questions/questions.js';
+  import * as certificates from './certificates/certificates.js';
+
+  // Stage 2 cutover: Codex's backend is the codex-api Worker. Repoint the shared
+  // api-client base (window.WORKER_URL, set by api-client.js) so callWorker AND the
+  // facade's assetUrl() hit codex-api. Only this /codex/ page moves; Trail and the
+  // rest of Backstage stay on backstage-api. Reversible: delete this line to fall
+  // back to backstage-api (both Workers share classpulse-db + R2).
+  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
 
   // The Codex glyph library is owned here. Shared window-global consumers
   // (the ct-type-filter chip strip) reach it through this global.
   window.CdxGlyphs = glyphs;
 
-  const TABS = { cohorts, content, lessons, questions };
+  const TABS = { cohorts, content, lessons, questions, certificates };
   const params = new URLSearchParams(location.search);
   const tab = TABS[params.get('tab')] ? params.get('tab') : 'cohorts';
   const sub = params.get('sub') || undefined;
@@ -137,7 +156,7 @@
   topbar({ active: tab, subTabs, subTabsByTab });
 
   const ctx = {};
-  if (tab === 'content' || tab === 'questions') ctx.sub = sub;
+  if (tab === 'content' || tab === 'questions' || tab === 'certificates') ctx.sub = sub;
   TABS[tab].mount(document.getElementById('codex-view'), ctx);
 </script>
 </body>

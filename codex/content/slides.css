@@ -99,14 +99,14 @@
 .cdx-slides-row-info { flex: 1; min-width: 0; }
 .cdx-slides-row-title { color: var(--text-primary); font-weight: 600; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cdx-slides-row-sub { color: var(--text-secondary); font-size: 0.76rem; margin-top: 0.1rem; }
-.cdx-slides-row-del {
+.cdx-slides-row-menu {
   flex: 0 0 auto;
   border: 0; background: none; cursor: pointer;
-  color: var(--text-secondary); font-size: 1.1rem; line-height: 1;
+  color: var(--text-secondary); font-size: 1rem; line-height: 1;
   padding: 0 0.2rem; border-radius: 6px; opacity: 0;
 }
-.cdx-slides-row:hover .cdx-slides-row-del { opacity: 0.7; }
-.cdx-slides-row-del:hover { opacity: 1; color: var(--danger, #ef4444); }
+.cdx-slides-row:hover .cdx-slides-row-menu { opacity: 0.7; }
+.cdx-slides-row-menu:hover { opacity: 1; color: var(--accent, #14b8a6); }
 
 /* ── Focus mode ───────────────────────────────────────────────────────────────
    An open deck recedes the Codex topbar + sub-tab row (both inside .bs-topbar)

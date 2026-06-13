@@ -226,7 +226,7 @@ test('imageSlot is registered with freeformSlot geometry and matches image slots
 
 test('imageSlot.target returns the slot image object; controls expose replace + a compound mask', () => {
   const slide = { slots: { image: { src: 'x', mask: null } } };
-  const app = { cur: () => slide, openMask() {}, pickImage() {} };
+  const app = { cur: () => slide, openMask() {}, openGallery() {} };
   const sel = { kind: 'imageSlot', ref: 'image' };
   assert.equal(kinds.get('imageSlot').target(app, sel), slide.slots.image);
   const ctrls = kinds.get('imageSlot').controls(app, sel, kinds.get('imageSlot').target(app, sel));
@@ -257,16 +257,16 @@ test('imageSlot.match also matches an EMPTY image box (data-fkey on an unfilled 
   assert.equal(d.match(stubEl({ '.dropzone[data-fkey]': inCard })), null, 'empty card image boxes stay on freeform');
 });
 
-test('imageSlot.controls on an EMPTY box offers exactly one add-image button that picks into the slot', () => {
-  let picked = null;
-  const app = { cur: () => ({ slots: {} }), pickImage: (ref) => { picked = ref; } };
+test('imageSlot.controls on an EMPTY box offers exactly one add-image button that opens the gallery into the slot', () => {
+  let opened = null;
+  const app = { cur: () => ({ slots: {} }), openGallery: (target) => { opened = target; } };
   const sel = { kind: 'imageSlot', ref: 'icon' };
   const ctrls = kinds.get('imageSlot').controls(app, sel, null); // empty -> target is null
   assert.equal(ctrls.length, 1, 'just the add-image button while empty');
   assert.equal(ctrls[0].type, 'button');
   assert.ok(!ctrls.some((c) => c.id === 'replace' || c.id === 'mask'), 'no replace/mask while empty');
-  ctrls[0].run(app, sel);
-  assert.equal(picked, 'icon', 'add-image picks straight into the slot path');
+  ctrls[0].run(app, sel, { tagName: 'BUTTON' }); // 3rd arg = the bar button (anchor)
+  assert.deepEqual(opened, { kind: 'slot', path: 'icon' }, 'add-image opens the gallery targeting the slot path');
 });
 
 /* ---------- text-style persistence ---------- */

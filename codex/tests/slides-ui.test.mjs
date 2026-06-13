@@ -34,9 +34,28 @@ test('insertMenu returns the free elements plus the list + card stack objects, i
 test('appearanceMenu seeds current theme values and uses NO dropdown', () => {
   const m = appearanceMenu({ fontScale: 1, accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' }, 'all');
   const types = m.map((c) => c.type);
-  assert.ok(types.includes('range'), 'font is a range');
+  assert.ok(types.includes('range'), 'font size is a range');
   assert.ok(!types.includes('choice') && !types.includes('select'), 'no dropdown in appearance');
   assert.equal(m.find((c) => c.id === 'accent').value, '#14b8a6');
+});
+test('appearanceMenu leads with the preset swatches (teal/blue), marking the current accent on', () => {
+  const m = appearanceMenu({ fontScale: 1, accent: '#2563eb', ink: '#16345c', motif: '#2563eb' }, 'all');
+  const swatches = m.filter((c) => c.swatch);
+  assert.ok(swatches.length >= 2, 'at least the two seed swatches');
+  assert.ok(swatches.some((c) => c.id === 'preset-teal') && swatches.some((c) => c.id === 'preset-blue'));
+  assert.equal(swatches.filter((c) => c.on).length, 1, 'exactly the current preset is marked on');
+});
+test('appearanceMenu offers a registry-backed font-family picker seeded with the current font label', () => {
+  const m = appearanceMenu({ fontScale: 1, font: 'raleway', accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' }, 'all');
+  const fam = m.find((c) => c.id === 'fontfam');
+  assert.ok(fam, 'a font-family control exists');
+  assert.equal(fam.type, 'button'); // opens the registry as a dropdown, like the card "Ajustes" menu
+  assert.match(fam.label, /Raleway/);
+  assert.equal(typeof fam.run, 'function');
+});
+test('appearanceMenu font-family falls back to the default label for a legacy deck with no font field', () => {
+  const m = appearanceMenu({ fontScale: 1, accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' }, 'all');
+  assert.match(m.find((c) => c.id === 'fontfam').label, /Roboto/);
 });
 test('appearanceMenu seeds the font range with the effective value when given, else theme.fontScale (5b)', () => {
   const theme = { fontScale: 1, accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' };

@@ -12,13 +12,14 @@
 // What stays a shared global (deliberately, not debt):
 //   window.BS_GOOGLE     auth + the client-side Google Drive read (auth-bound,
 //                        Backstage-owned; the actual Drive listing happens here)
-//   window.CVDriveViewer the file preview modal (also used by Lessons)
-// Everything else (folder CRUD, the synced-item index, the editor, the sync
-// orchestration) is native, and every Worker call goes through the codex-api
-// `drive` facade, never callWorker directly.
+// The file-preview modal is the Codex-owned js/drive-viewer.js module (also used
+// by Lessons). Everything else (folder CRUD, the synced-item index, the editor,
+// the sync orchestration) is native, and every Worker call goes through the
+// codex-api `drive` facade, never callWorker directly.
 import { drive as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import { openModal as openDriveModal } from '../js/drive-viewer.js';
 
 let _viewEl = null;
 let _folders = [];
@@ -305,7 +306,7 @@ export function mount(viewEl) {
     const fileBtn = e.target.closest('.cdx-drive-file');
     if (fileBtn) {
       const item = _files.find((f) => String(f.id) === String(fileBtn.getAttribute('data-file-id')));
-      if (item && window.CVDriveViewer && typeof window.CVDriveViewer.openModal === 'function') window.CVDriveViewer.openModal(item);
+      if (item) openDriveModal(item);
       return;
     }
     const row = e.target.closest('.cdx-item-row');

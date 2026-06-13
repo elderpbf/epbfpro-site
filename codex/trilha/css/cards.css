@@ -1,0 +1,531 @@
+/* =========================================================
+   Codex · Trilha — cards + sub-cards + item actions + timeline
+   cdx- port of trilha-cards.css + trilha-timeline.css. VALUES
+   copied verbatim; only structural class names move to cdx-tr-.
+   State modifiers (.open/.is-open/.is-expanded/.is-done) and the
+   reused-component output classes (.ctr-* from CTRenderer, .ct-tf-*
+   from CT_TYPE_FILTER) keep their names.
+   ========================================================= */
+
+.cdx-tr-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.18s ease;
+}
+.cdx-tr-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px -10px var(--shadow);
+}
+.cdx-tr-card.open {
+  transform: none;
+  box-shadow: 0 14px 36px -16px rgba(20, 184, 166, 0.32);
+}
+
+.cdx-tr-card-header {
+  display: flex;
+  align-items: stretch;
+  min-height: 96px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+.cdx-tr-card-header:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: 13px;
+}
+
+.cdx-tr-zone {
+  width: 96px;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0.6rem 0.4rem;
+}
+.cdx-tr-zone--done     { background: var(--success); }
+.cdx-tr-zone--und      { background: var(--zone-und); }
+.cdx-tr-zone--apostila { background: var(--primary-dark); }
+
+.cdx-tr-zone-num {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.cdx-tr-zone-icon { font-size: 1.65rem; line-height: 1; }
+.cdx-tr-zone-icon svg { display: block; width: 26px; height: 26px; }
+.cdx-tr-zone-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.95;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.cdx-tr-meta {
+  flex: 1;
+  padding: 0.9rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.cdx-tr-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.cdx-tr-meta-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.cdx-tr-date-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--primary-dark);
+}
+
+.cdx-tr-tarefa-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--task-bg);
+  color: var(--task-dark);
+  border: 1px solid var(--task-border);
+}
+
+.cdx-tr-novo-pill {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--task-bg);
+  color: var(--task-dark);
+  border: 1px solid var(--task-border);
+  vertical-align: middle;
+}
+
+.cdx-tr-novo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--task-bg);
+  color: var(--task-dark);
+  border-bottom: 1px solid var(--task-border);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  user-select: none;
+}
+.cdx-tr-novo-banner:hover,
+.cdx-tr-novo-banner:focus-visible {
+  background: var(--task);
+  color: #fff;
+  outline: none;
+}
+.cdx-tr-novo-text { flex: 1; min-width: 0; }
+.cdx-tr-novo-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--task);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.cdx-tr-novo-banner:hover .cdx-tr-novo-count,
+.cdx-tr-novo-banner:focus-visible .cdx-tr-novo-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.cdx-tr-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.cdx-tr-summary {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.cdx-tr-topics { display: flex; flex-wrap: wrap; gap: 4px; }
+.cdx-tr-topic-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(13, 148, 136, 0.10);
+  color: var(--text-secondary);
+}
+[data-theme="dark"] .cdx-tr-topic-chip { background: rgba(94, 234, 212, 0.12); }
+
+.cdx-tr-actions {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem 0 0.4rem;
+  flex-shrink: 0;
+}
+.cdx-tr-chevron {
+  font-size: 1.4rem;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  transform: rotate(0deg);
+  transition: transform 0.22s ease, opacity 0.15s;
+  line-height: 1;
+}
+.cdx-tr-card.open .cdx-tr-chevron { transform: rotate(90deg); opacity: 1; }
+
+/* ── Aula expanded body ──────────────────────────────────── */
+.cdx-tr-body {
+  border-top: 1px solid var(--border);
+  padding: 1.1rem 1.25rem 1.35rem;
+  background: linear-gradient(180deg, rgba(20, 184, 166, 0.03), transparent 70%);
+  animation: cdx-tr-slide-down 0.22s ease both;
+}
+.cdx-tr-section { margin-bottom: 1.1rem; }
+.cdx-tr-section:last-child { margin-bottom: 0; }
+.cdx-tr-section-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.55rem;
+}
+
+/* ── .sub compact card ───────────────────────────────────── */
+.cdx-tr-sub-list { display: flex; flex-direction: column; gap: 8px; }
+
+.cdx-tr-sub {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 76px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.15s, border-radius 0.18s;
+}
+.cdx-tr-sub:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px -6px var(--shadow);
+}
+
+.cdx-tr-sub-zone {
+  width: 56px;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.cdx-tr-sub-zone--apostila { background: var(--primary-dark); }
+.cdx-tr-sub-zone--tarefa   { background: var(--task); }
+.cdx-tr-sub-zone svg { display: block; width: 22px; height: 22px; }
+
+.cdx-tr-sub-meta {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+.cdx-tr-sub-type {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cdx-tr-sub--tarefa .cdx-tr-sub-type { color: var(--task-dark); }
+.cdx-tr-sub-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.cdx-tr-sub-summary {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 2px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.cdx-tr-sub--tarefa {
+  border-color: var(--task-border);
+  background: var(--task-bg);
+}
+.cdx-tr-sub--tarefa:hover { border-color: var(--task); }
+
+.cdx-tr-sub-actions {
+  display: flex;
+  align-items: center;
+  padding: 0 0.85rem 0 0.4rem;
+  flex-shrink: 0;
+}
+.cdx-tr-sub-actions:empty { padding: 0; }
+
+.cdx-tr-sub.is-expanded { border-radius: 10px 10px 0 0; }
+.cdx-tr-sub-expanded {
+  margin: -1px 0 0;
+  padding: 1rem 1.1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  animation: cdx-tr-slide-down 0.22s ease both;
+}
+.cdx-tr-sub--tarefa.is-expanded { border-bottom-color: var(--task-border); }
+.cdx-tr-sub--tarefa.is-expanded + .cdx-tr-sub-expanded { border-color: var(--task-border); }
+
+/* ── .item-action button ─────────────────────────────────── */
+.cdx-tr-item-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.18s;
+  box-shadow: 0 3px 12px -4px rgba(20, 184, 166, 0.45);
+}
+.cdx-tr-item-action:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px -4px rgba(20, 184, 166, 0.55);
+}
+.cdx-tr-item-action:active { transform: translateY(0); }
+.cdx-tr-item-action .cdx-tr-ia-label-short { display: none; }
+.cdx-tr-item-action svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cdx-tr-item-action--task {
+  background: var(--task);
+  box-shadow: 0 3px 12px -4px rgba(217, 119, 6, 0.5);
+}
+.cdx-tr-item-action--task:hover {
+  background: var(--task-dark);
+  box-shadow: 0 5px 16px -4px rgba(217, 119, 6, 0.6);
+}
+.cdx-tr-item-action.is-done {
+  background: var(--success);
+  box-shadow: 0 3px 12px -4px rgba(16, 185, 129, 0.5);
+}
+
+/* Flat-card action row (was an inline style on appendFlatActionRow). */
+.cdx-tr-flat-action-row { margin-top: 1.1rem; text-align: right; }
+
+/* ── Card list (Apostila + Outros tabs) ──────────────────── */
+.cdx-tr-card-list { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── Type-filter chips (reused CT_TYPE_FILTER, .ct-tf-* output) ── */
+#cdx-tr-outros-filter { margin-bottom: 1.25rem; }
+.cdx-tr-type-filter:empty { display: none; }
+.cdx-tr-section > .cdx-tr-type-filter { margin: 0.4rem 0 0.75rem; }
+
+.cdx-tr-type-filter .ct-tf { display: flex; flex-wrap: wrap; gap: 8px; }
+.cdx-tr-type-filter .ct-tf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.cdx-tr-type-filter .ct-tf-chip:hover {
+  border-color: var(--primary-dark);
+  color: var(--text-primary);
+}
+.cdx-tr-type-filter .ct-tf-chip.active {
+  background: var(--primary-dark);
+  color: #fff;
+  border-color: var(--primary-dark);
+}
+[data-theme="dark"] .cdx-tr-type-filter .ct-tf-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #0f1419;
+}
+.cdx-tr-type-filter .ct-tf-icon { font-size: 1rem; line-height: 1; display: inline-flex; align-items: center; }
+.cdx-tr-type-filter .ct-tf-icon svg { display: block; width: 15px; height: 15px; }
+.cdx-tr-type-filter .ct-tf-count {
+  font-size: 0.74rem;
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.35);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.cdx-tr-type-filter .ct-tf-chip.active .ct-tf-count { background: rgba(255, 255, 255, 0.22); }
+
+/* ── CTRenderer overrides specific to trilha cards (.ctr-* reused) ── */
+.cdx-trilha-page .ctr-prompt-body p { text-align: justify; hyphens: auto; }
+.cdx-tr-sub-expanded .ctr-copy-btn,
+.cdx-tr-sub-expanded .ctr-affordance-row { display: none; }
+.cdx-tr-sub-expanded .ctr-model-badges {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 0.65rem;
+}
+.cdx-tr-sub-expanded .ctr-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--primary-dark);
+}
+.cdx-tr-sub-expanded .ctr-pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.08);
+  color: var(--text-secondary);
+}
+.cdx-tr-sub-expanded .ctr-strengths-list { margin: 0.6rem 0 0.5rem; padding-left: 1.2em; }
+.cdx-tr-sub-expanded .ctr-pdf-embed { margin: 1rem 0; width: 100%; aspect-ratio: 4 / 3; }
+.cdx-tr-sub-expanded .ctr-pdf-object { width: 100%; height: 100%; border: 0; }
+
+/* ========================================================= */
+/* Timeline rail (.cdx-tr-timeline)                          */
+/* ========================================================= */
+.cdx-tr-timeline { position: relative; padding-left: 36px; }
+.cdx-tr-timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: rgba(17, 94, 89, 0.15);
+}
+[data-theme="dark"] .cdx-tr-timeline::before { background: rgba(94, 234, 212, 0.18); }
+
+.cdx-tr-tl-row { position: relative; margin-bottom: 12px; }
+.cdx-tr-tl-row:last-child { margin-bottom: 0; }
+
+.cdx-tr-tl-dot {
+  position: absolute;
+  left: -32px;
+  top: 36px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 3px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  z-index: 2;
+  transition: all 0.22s ease;
+}
+.cdx-tr-tl-dot--done { background: var(--success); border-color: var(--success); color: #fff; }
+.cdx-tr-tl-dot--und  { background: var(--surface); border-color: var(--text-secondary); color: var(--text-secondary); }
+
+.cdx-tr-tl-row.is-open .cdx-tr-tl-dot {
+  width: 30px;
+  height: 30px;
+  top: 33px;
+  left: -35px;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow:
+    0 0 0 4px rgba(20, 184, 166, 0.18),
+    0 0 0 9px rgba(20, 184, 166, 0.10);
+}
+.cdx-tr-tl-row.is-open .cdx-tr-tl-dot.cdx-tr-tl-dot--done {
+  background: var(--success);
+  border-color: var(--success);
+  box-shadow:
+    0 0 0 4px rgba(16, 185, 129, 0.20),
+    0 0 0 9px rgba(16, 185, 129, 0.10);
+}
+
+.cdx-tr-back-pill {
+  display: none;
+  padding: 6px 12px 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  margin: 0 0 14px;
+}
+.cdx-tr-back-pill:hover { color: var(--text-primary); border-color: var(--primary-light); }

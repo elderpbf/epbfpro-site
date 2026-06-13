@@ -53,15 +53,36 @@ function resolveImport(fromFile, importSpec) {
   return path.posix.normalize(dir + '/' + importSpec);
 }
 
-// The only sanctioned cross-tab import today.
-const ALLOWED_CROSS_TAB = ['../content/item-form.js'];
+// Sanctioned cross-tab imports. Each entry is the exact import specifier as it
+// appears in the importing file (the relative path the importing module uses).
+const ALLOWED_CROSS_TAB = [
+  '../content/item-form.js',
+  // certificates/certificates.js imports the Slides editor + core directly
+  // (it is a sanctioned inbound wrapper alongside content/slides.js).
+  '../content/slides/js/app.js',
+  '../content/slides/js/core/deck.js',
+  '../content/slides/js/ai/aiService.js',
+  '../content/slides/adapters/library.js',
+];
 
 // Sealed vendored prefix: everything under this path is excluded from the
 // duplicate-name check and treated specially in boundary tests.
 const SLIDES_PREFIX = 'content/slides/';
 
-// The sanctioned mount wrapper for the Slides sub-tree (inbound boundary).
+// The public Trail student app (trilha/) is a separate bounded context: it is
+// served as its own public page(s), NOT a tab in the auth'd shell, and owns its
+// own i18n + backend facade by design (the admin app never imports it). Like the
+// Slides tree, it is excluded from the cross-tree duplicate-name check.
+const TRILHA_PREFIX = 'trilha/';
+
+// The sanctioned mount wrappers for the Slides sub-tree (inbound boundary).
+// content/slides.js is the authored-deck sub-tab; certificates/certificates.js
+// is the certificate template editor face (added 2026-06-12).
 const SLIDES_WRAPPER = 'content/slides.js';
+const SLIDES_INBOUND_ALLOWLIST = new Set([
+  'content/slides.js',
+  'certificates/certificates.js',
+]);
 
 // The vendored Slides CORE (the standalone app). Only this sub-tree is held to
 // the strict outbound rule. The Codex integration glue (the content/slides.js
@@ -70,13 +91,20 @@ const SLIDES_WRAPPER = 'content/slides.js';
 const SLIDES_CORE_PREFIX = 'content/slides/js/';
 
 // Tab directories.
-const TABS = ['cohorts', 'content', 'questions', 'lessons'];
+const TABS = ['cohorts', 'content', 'questions', 'lessons', 'certificates'];
 
 // All .js files in the tree.
 const allJs = walkJs(ROOT);
 
-// index.html, which counts as a module consumer (imports codex-topbar.js).
-const indexHtml = read('../index.html');
+// HTML entry points that count as module consumers (they import shared js/
+// modules directly, not via a .js file). The admin index.html imports
+// codex-topbar.js; the Trail entry HTMLs import the shared transport
+// (js/worker-call.js). Joined into one corpus for the string-match below.
+const indexHtml = [
+  read('../index.html'),
+  read('../trilha/index.html'),
+  read('../trilha/validar.html'),
+].join('\n');
 
 // ── Test 1: no orphaned shared module ────────────────────────────────────────
 // For each js/*.js file, its basename must appear in at least one import
@@ -99,24 +127,24 @@ test('no orphaned shared module', () => {
         break;
       }
     }
-    // Also check index.html (uses string-match since it is not a .js file).
+    // Also check the HTML entry points (string-match, since they are not .js).
     if (!found && indexHtml.includes(mod)) found = true;
     assert.ok(found, `shared module js/${mod} is imported by at least one consumer`);
   }
 });
 
-// ── Test 2: no duplicate-named module outside the Slides boundary ────────────
-// Gather basenames of all *.js files EXCLUDING anything under content/slides/.
-// No basename may appear more than once.
-test('no duplicate-named module outside the Slides boundary', () => {
-  const nonSlidesFiles = allJs.filter((f) => !f.startsWith(SLIDES_PREFIX));
+// ── Test 2: no duplicate-named module outside the sealed trees ───────────────
+// Gather basenames of all *.js files EXCLUDING the sealed bounded trees
+// (content/slides/ and trilha/). No basename may appear more than once.
+test('no duplicate-named module outside the Slides/Trail boundaries', () => {
+  const checkedFiles = allJs.filter((f) => !f.startsWith(SLIDES_PREFIX) && !f.startsWith(TRILHA_PREFIX));
   const counts = Object.create(null);
-  for (const f of nonSlidesFiles) {
+  for (const f of checkedFiles) {
     const base = f.substring(f.lastIndexOf('/') + 1);
     counts[base] = (counts[base] || 0) + 1;
   }
   for (const [base, count] of Object.entries(counts)) {
-    assert.ok(count === 1, `basename "${base}" appears ${count} times outside content/slides/ (must be unique)`);
+    assert.ok(count === 1, `basename "${base}" appears ${count} times outside content/slides/ and trilha/ (must be unique)`);
   }
 });
 
@@ -132,8 +160,8 @@ test('Slides boundary intact inbound', () => {
       const resolved = resolveImport(f, imp);
       if (resolved.startsWith('content/slides/js/')) {
         assert.ok(
-          f === SLIDES_WRAPPER,
-          `"${f}" imports "${imp}" (resolves to "${resolved}") inside content/slides/js/; only ${SLIDES_WRAPPER} may do this`,
+          SLIDES_INBOUND_ALLOWLIST.has(f),
+          `"${f}" imports "${imp}" (resolves to "${resolved}") inside content/slides/js/; only ${[...SLIDES_INBOUND_ALLOWLIST].join(', ')} may do this`,
         );
       }
     }
