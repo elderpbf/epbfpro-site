@@ -69,6 +69,12 @@ const ALLOWED_CROSS_TAB = [
 // duplicate-name check and treated specially in boundary tests.
 const SLIDES_PREFIX = 'content/slides/';
 
+// The public Trail student app (trilha/) is a separate bounded context: it is
+// served as its own public page(s), NOT a tab in the auth'd shell, and owns its
+// own i18n + backend facade by design (the admin app never imports it). Like the
+// Slides tree, it is excluded from the cross-tree duplicate-name check.
+const TRILHA_PREFIX = 'trilha/';
+
 // The sanctioned mount wrappers for the Slides sub-tree (inbound boundary).
 // content/slides.js is the authored-deck sub-tab; certificates/certificates.js
 // is the certificate template editor face (added 2026-06-12).
@@ -120,18 +126,18 @@ test('no orphaned shared module', () => {
   }
 });
 
-// ── Test 2: no duplicate-named module outside the Slides boundary ────────────
-// Gather basenames of all *.js files EXCLUDING anything under content/slides/.
-// No basename may appear more than once.
-test('no duplicate-named module outside the Slides boundary', () => {
-  const nonSlidesFiles = allJs.filter((f) => !f.startsWith(SLIDES_PREFIX));
+// ── Test 2: no duplicate-named module outside the sealed trees ───────────────
+// Gather basenames of all *.js files EXCLUDING the sealed bounded trees
+// (content/slides/ and trilha/). No basename may appear more than once.
+test('no duplicate-named module outside the Slides/Trail boundaries', () => {
+  const checkedFiles = allJs.filter((f) => !f.startsWith(SLIDES_PREFIX) && !f.startsWith(TRILHA_PREFIX));
   const counts = Object.create(null);
-  for (const f of nonSlidesFiles) {
+  for (const f of checkedFiles) {
     const base = f.substring(f.lastIndexOf('/') + 1);
     counts[base] = (counts[base] || 0) + 1;
   }
   for (const [base, count] of Object.entries(counts)) {
-    assert.ok(count === 1, `basename "${base}" appears ${count} times outside content/slides/ (must be unique)`);
+    assert.ok(count === 1, `basename "${base}" appears ${count} times outside content/slides/ and trilha/ (must be unique)`);
   }
 });
 
