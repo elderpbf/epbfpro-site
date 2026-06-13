@@ -24,7 +24,9 @@
      native Drive panel is cdx- styled in content.css; the legacy cv-drive.css is
      no longer loaded. -->
 <link rel="stylesheet" href="css/drive-viewer.css?v=1.0">
-<link rel="stylesheet" href="../backstage/css/cv-presets.css?v=1.4">
+<!-- cv-presets.css is no longer loaded: Content's Presets is a native cdx- port
+     (content/presets.js) and the sidebar preset loader (js/preset-loader.js) is
+     styled by lessons.css (.cdx-lessons-sidebar-head .cv-preset-loader-*). -->
 <link rel="stylesheet" href="../backstage/classvault/css/classvault.css?v=1.50">
 <link rel="stylesheet" href="css/tokens.css?v=1.0">
 <link rel="stylesheet" href="css/codex.css?v=2.4">
@@ -87,13 +89,11 @@
      now the Codex ES module js/drive-viewer.js (imported by content/drive.js and
      lessons.js); the legacy folders-api / cache / folders-ui / sync-ui globals
      are no longer loaded. -->
-<!-- cv-presets-ui.js: legacy preset LOADER global, still used by Lessons
-     (lessons.js -> CVPresetsUI.mountPresetLoader). Content's presets sub-tab is a
-     native port (content/presets.js). The dead globals that were loaded here
-     (ai-client, ct-item-form, ct-item-creator, cv-type-registry, cv-focus-mode,
-     cv-presets-api, cv-item-picker) were removed in Stage 0 of the separation
-     plan (2026-06-07): unused anywhere in the codex tree, verified per-tag. -->
-<script src="../backstage/js/cv-presets-ui.js?v=1.2"></script>
+<!-- The preset loader is now the Codex ES module js/preset-loader.js (imported by
+     lessons.js); Content's Presets sub-tab is a native port (content/presets.js).
+     The legacy cv-presets-ui.js global (and the Stage 0 dead globals: ai-client,
+     ct-item-form, ct-item-creator, cv-type-registry, cv-focus-mode, cv-presets-api,
+     cv-item-picker) are no longer loaded. -->
 <!-- Shared QR share modal (the live host's QR button reuses this global). -->
 <script src="../backstage/js/qr-share-modal.js?v=1.3"></script>
 

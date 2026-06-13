@@ -11,7 +11,6 @@
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.BS_GOOGLE     (../backstage/js/bs-google.js)
-//   window.CVPresetsUI   (../backstage/js/cv-presets-ui.js)
 import { lessons as api, content as contentApi, cohorts as cohortsApi, presets as presetsApi, cp as cpApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
@@ -20,6 +19,7 @@ import * as itemForm from '../content/item-form.js';
 import { renderItem } from '../js/item-render.js';
 import { findItem as findLabItem, getAllItems as labItems } from '../js/labs-registry.js';
 import { mountInContainer as mountDriveFile } from '../js/drive-viewer.js';
+import { mountPresetLoader } from '../js/preset-loader.js';
 import {
   classifyVault, SECTION_ORDER, rendererStrategy,
   crumbActions, supportsTextResize, makeTextScale,
@@ -394,12 +394,12 @@ function _applySearch() {
 // ── Preset loader ─────────────────────────────────────────────────────────────
 function _mountPresetLoader() {
   const wrap = _q('.cdx-lessons-preset-wrap');
-  if (!wrap || !window.CVPresetsUI) return;
+  if (!wrap) return;
   if (_presetLoader) { _presetLoader.destroy(); _presetLoader = null; }
   presetsApi.list({ _silent: true }).then((d) => {
     const presets = (d && d.presets) || [];
     if (!presets.length) return;
-    _presetLoader = window.CVPresetsUI.mountPresetLoader(wrap, {
+    _presetLoader = mountPresetLoader(wrap, {
       presets,
       currentPresetId: _presetId || null,
       onSelect: (preset) => {
