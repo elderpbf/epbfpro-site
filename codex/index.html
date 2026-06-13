@@ -114,6 +114,13 @@
   import * as questions from './questions/questions.js';
   import * as certificates from './certificates/certificates.js';
 
+  // Stage 2 cutover: Codex's backend is the codex-api Worker. Repoint the shared
+  // api-client base (window.WORKER_URL, set by api-client.js) so callWorker AND the
+  // facade's assetUrl() hit codex-api. Only this /codex/ page moves; Trail and the
+  // rest of Backstage stay on backstage-api. Reversible: delete this line to fall
+  // back to backstage-api (both Workers share classpulse-db + R2).
+  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+
   // The Codex glyph library is owned here. Shared window-global consumers
   // (the ct-type-filter chip strip) reach it through this global.
   window.CdxGlyphs = glyphs;
