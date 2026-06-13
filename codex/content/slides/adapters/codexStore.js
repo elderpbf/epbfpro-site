@@ -33,8 +33,20 @@ export function createCodexStore({ slug, facade } = {}) {
     touch() { bus.emit('change', deck); },
     on: bus.on,
     // Fetch the deck JSON from R2 (null if the presentation has none yet).
+    // A presentation row that exists but has no saved deck JSON makes the frozen
+    // deck-load action REJECT with "not found" rather than return empty data.
+    // Treat that as the documented "null if none" so callers can seed a fresh
+    // deck (a new certificate template hits this on its first open). Genuine
+    // failures (network, auth, etc.) still propagate.
     async load() {
-      const res = await api.getDeck({ slug });
+      let res;
+      try {
+        res = await api.getDeck({ slug });
+      } catch (e) {
+        const msg = (e && e.message) || String(e);
+        if (!/not\s*found/i.test(msg)) throw e;
+        res = null;
+      }
       deck = (res && res.data) || null;
       bus.emit('change', deck);
       return deck;
