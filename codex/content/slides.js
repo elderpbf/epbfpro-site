@@ -197,6 +197,20 @@ function _setDeckOpen(on) {
 function _showSidebar() { const s = _q('#cdx-slides-sidebar'); if (s) s.classList.add('is-open'); }
 function _hideSidebar() { if (!_deckOpen) return; const s = _q('#cdx-slides-sidebar'); if (s) s.classList.remove('is-open'); }
 
+// The Codex topbar (.bs-topbar) is sticky with a CONTENT-driven height (it varies with
+// the sub-tab strip mode and the tab set), so the deck-list shell can't assume a fixed
+// offset, the old hardcoded 96px overshot and left a gap above the sidebar. Measure the
+// real bar bottom and pin --cdx-chrome-h to it so the sidebar sits flush under the topbar
+// and stays correct as the bar changes. Skipped in focus mode, where the bar is receded
+// and the shell is top:0 anyway (so the value isn't used).
+function _syncChromeH() {
+  if (document.body.classList.contains('cdx-slides-focus')) return;
+  const bar = document.querySelector('.bs-topbar:not(.bs-topbar--presentation)');
+  if (!bar) return;
+  const h = Math.round(bar.getBoundingClientRect().bottom);
+  if (h > 0) document.documentElement.style.setProperty('--cdx-chrome-h', h + 'px');
+}
+
 // Top-edge reveal of the receded Codex chrome. Shown while the cursor is within
 // the revealed band (~104px: topbar 65 + sub-tab row 31 + slack), hidden shortly
 // after it leaves, so it never collapses out from under a click on the bar.
@@ -350,6 +364,14 @@ function _teardownEditor() {
 export function mount(viewEl, ctx) {
   _viewEl = viewEl;
   _render();
+
+  // Pin the shell offset to the real topbar height (now + after layout settles + on
+  // resize) so the deck-list sidebar sits flush under the Codex topbar, no stale gap.
+  _syncChromeH();
+  requestAnimationFrame(_syncChromeH);
+  const onResize = () => _syncChromeH();
+  window.addEventListener('resize', onResize);
+  _cleanup.push(() => window.removeEventListener('resize', onResize));
 
   const onClick = (e) => {
     const act = e.target.closest('[data-act]');
