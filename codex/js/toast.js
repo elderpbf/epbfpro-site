@@ -1,8 +1,9 @@
 // Codex-owned transient toast.
 //
-// cdx- port of the backstage BSToast global. Mount-free: a .bs-toast div is
-// appended to <body> and removed after the dwell. The .bs-toast / .bs-toast.show
-// CSS lives in shared-components.css (shared infra), so the toast looks identical.
+// cdx- port of the backstage BSToast global. Mount-free: a .cdx-toast div is
+// appended to <body> and removed after the dwell. The .cdx-toast / .cdx-toast.show
+// CSS lives in Codex's own css/toast.css, so the toast looks identical without
+// loading the legacy shared-components.css.
 //
 // Used by the admin tab modules (cohorts/content/lessons) which call it through
 // the window.BSToast seam (guarded). This module provides that global from Codex,
@@ -12,7 +13,7 @@
 export function toast(msg, duration) {
   if (typeof document === 'undefined') return;
   const el = document.createElement('div');
-  el.className = 'bs-toast';
+  el.className = 'cdx-toast';
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.classList.add('show'), 10);
