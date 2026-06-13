@@ -912,6 +912,8 @@ export default {
   'slides.edit':              'Edit',
   'slides.delete':            'Delete',
   'slides.confirm_delete':    'Delete the presentation "{name}"? This action cannot be undone.',
+  'slides.rename':            'Rename',
+  'slides.rename_prompt':     'New presentation name:',
   'slides.back':              'Back',
   'slides.preview_hint':      'Click Edit to open this presentation.',
   'slides.placeholder':       'Select a presentation from the sidebar, or create a new one.',

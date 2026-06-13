@@ -15,6 +15,7 @@
 // through t(). No inline JS in markup; events are delegated.
 import { slides as api, ai as aiApi, appConfig } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { openMenu, closeMenu } from '../js/menu.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
 import { createImageStore } from './slides/adapters/imageStore.js';
@@ -140,8 +141,8 @@ function _renderList() {
         '<div class="cdx-slides-row-title">' + title + '</div>' +
         (sub ? '<div class="cdx-slides-row-sub">' + _esc(t('slides.modified')) + ' ' + _esc(sub) + '</div>' : '') +
       '</div>' +
-      '<button class="cdx-slides-row-del" data-act="del" data-slug="' + _esc(d.slug) + '" ' +
-        'title="' + _esc(t('slides.delete')) + '" aria-label="' + _esc(t('slides.delete')) + '">&times;</button>' +
+      '<button class="cdx-slides-row-menu" data-act="menu" data-slug="' + _esc(d.slug) + '" ' +
+        'title="' + _esc(t('slides.edit')) + '" aria-label="' + _esc(t('slides.edit')) + '" aria-haspopup="menu">&#9998;</button>' +
     '</div>';
   }).join('');
 }
@@ -249,6 +250,36 @@ async function _deleteDeck(slug) {
     await api.remove({ slug });
     await _loadDecks();
     if (_openSlug === slug) _showPlaceholder();  // deleted the open deck -> back to placeholder
+  } catch (e) {
+    const list = _q('#cdx-slides-list');
+    if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
+  }
+}
+
+// The per-row ✎ glyph opens a small action menu (rename + delete live here, off
+// the row itself). `btn` is the trigger, the menu anchors to it.
+function _openDeckMenu(btn) {
+  const slug = btn.getAttribute('data-slug');
+  openMenu(btn, [
+    { label: t('slides.rename'), onClick: () => _renameDeck(slug) },
+    { label: t('slides.delete'), danger: true, onClick: () => _deleteDeck(slug) },
+  ]);
+}
+
+// Rename a deck: re-register the same slug with the new title (the *_presentation
+// action is an upsert, so this only changes the D1 title, leaving deck JSON, R2
+// images and the open editor untouched), then refresh the sidebar.
+async function _renameDeck(slug) {
+  const d = _deckBySlug(slug);
+  const current = (d && d.title) || '';
+  // eslint-disable-next-line no-alert -- lightweight guard; modal parity is a follow-up (mirrors _deleteDeck)
+  const next = window.prompt(t('slides.rename_prompt'), current);
+  if (next == null) return;                          // cancelled
+  const title = next.trim();
+  if (!title || title === current) return;           // empty or unchanged -> no-op
+  try {
+    await api.register({ slug, title, engine: DECK_ENGINE });
+    await _loadDecks();                              // re-renders the sidebar; the open deck stays open
   } catch (e) {
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
@@ -379,7 +410,7 @@ export function mount(viewEl, ctx) {
       const a = act.getAttribute('data-act');
       if (a === 'new') return _createDeck();
       if (a === 'import') return _pickPptx();
-      if (a === 'del') { e.stopPropagation(); return _deleteDeck(act.getAttribute('data-slug')); }
+      if (a === 'menu') { e.stopPropagation(); return _openDeckMenu(act); }
     }
     const row = e.target.closest('.cdx-slides-row[data-slug]');
     if (row) return _openDeck(row.getAttribute('data-slug'), false);
@@ -434,6 +465,7 @@ export function mount(viewEl, ctx) {
 
 export function unmount() {
   _teardownEditor();
+  closeMenu();
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
   // Leave no focus-mode residue on the shared shell when the tab is torn down.

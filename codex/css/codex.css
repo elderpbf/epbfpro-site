@@ -268,3 +268,32 @@
 .cdx-notice--warn  .cdx-notice-glyph { color: var(--codex-cohorts); }
 .cdx-notice--error { border-left-color: var(--error); }
 .cdx-notice--error .cdx-notice-glyph { color: var(--error); }
+
+/* ── Action menu (js/menu.js) ─────────────────────────────────────────────────
+   A small popover of actions opened from a row trigger (✎ / kebab). Fixed-
+   positioned body child, so it escapes any clipping list/sidebar. */
+.cdx-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 140px;
+  padding: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 22px var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+.cdx-menu-item {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+.cdx-menu-item:hover { background: var(--cdx-card-hover-bg, rgba(127,127,127,0.08)); }
+.cdx-menu-item.is-danger { color: var(--danger, #ef4444); }
+.cdx-menu-item.is-danger:hover { background: rgba(239,68,68,0.1); }

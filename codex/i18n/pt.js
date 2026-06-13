@@ -911,6 +911,8 @@ export default {
   'slides.edit':              'Editar',
   'slides.delete':            'Excluir',
   'slides.confirm_delete':    'Excluir a apresentação "{name}"? Esta ação não pode ser desfeita.',
+  'slides.rename':            'Renomear',
+  'slides.rename_prompt':     'Novo nome da apresentação:',
   'slides.back':              'Voltar',
   'slides.preview_hint':      'Clique em Editar para abrir esta apresentação.',
   'slides.placeholder':       'Selecione uma apresentação na barra lateral, ou crie uma nova.',
