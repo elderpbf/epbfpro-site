@@ -6,18 +6,25 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDrivePicker } from '../content/slides/adapters/drivePicker.js';
 
-test('available() reflects whether a Picker API key is configured', () => {
-  assert.equal(createDrivePicker({ apiKey: '' }).available(), false);
+test('available() reflects whether the Picker key has arrived (read live)', () => {
+  assert.equal(createDrivePicker({ getApiKey: () => '' }).available(), false);
   assert.equal(createDrivePicker({}).available(), false);
-  assert.equal(createDrivePicker({ apiKey: 'AIzaKEY' }).available(), true);
+  assert.equal(createDrivePicker({ getApiKey: () => 'AIzaKEY' }).available(), true);
 });
-test('pick() is inert without an API key (does not even request a token)', async () => {
+test('available() flips on once the background key fetch resolves', () => {
+  let key = '';
+  const dp = createDrivePicker({ getApiKey: () => key });
+  assert.equal(dp.available(), false);
+  key = 'AIzaKEY'; // the fetch landed
+  assert.equal(dp.available(), true);
+});
+test('pick() is inert without a key (does not even request a token)', async () => {
   let asked = false;
-  const dp = createDrivePicker({ apiKey: '', getToken: () => { asked = true; return 't'; } });
+  const dp = createDrivePicker({ getApiKey: () => '', getToken: () => { asked = true; return 't'; } });
   assert.equal(await dp.pick(), null);
   assert.equal(asked, false);
 });
 test('pick() resolves null when there is no Google token (no picker is loaded)', async () => {
-  const dp = createDrivePicker({ apiKey: 'AIzaKEY', getToken: async () => null });
+  const dp = createDrivePicker({ getApiKey: () => 'AIzaKEY', getToken: async () => null });
   assert.equal(await dp.pick(), null);
 });

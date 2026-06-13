@@ -13,18 +13,27 @@
 // Slides embed (`slide` type) is untouched and renders in Lessons, not here.
 // Backend is reached ONLY through the codex-api slides facade. Every string goes
 // through t(). No inline JS in markup; events are delegated.
-import { slides as api, ai as aiApi } from '../js/codex-api.js';
+import { slides as api, ai as aiApi, appConfig } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
 import { createImageStore } from './slides/adapters/imageStore.js';
 import { createDrivePicker } from './slides/adapters/drivePicker.js';
 
-// Set this to a Google Cloud API key (browser key, "Google Picker API" enabled, restricted
-// to the pensoia.com referrer) to turn ON the gallery's "Google Drive" import. The Drive
-// read scope + sign-in are already handled by BS_GOOGLE, so this key is the only switch.
-// Leave '' to keep the Drive option disabled (the rest of the gallery works regardless).
-const GOOGLE_PICKER_API_KEY = '';
+// The Google Picker API key is a referrer-restricted browser key kept OUT of this public
+// repo: the Worker serves it (get_client_config, sourced from a Doppler/Worker secret) and
+// the client fetches it once per session. Empty (secret unset or the call fails) -> the
+// gallery's Drive option stays disabled; the rest of the gallery is unaffected.
+let _pickerKey = '';
+let _pickerKeyPromise = null;
+function ensurePickerKey() {
+  if (!_pickerKeyPromise) {
+    _pickerKeyPromise = appConfig.get()
+      .then((r) => { _pickerKey = (r && r.config && r.config.googlePickerApiKey) || ''; })
+      .catch(() => { _pickerKey = ''; });
+  }
+  return _pickerKeyPromise;
+}
 import { newDeck } from './slides/js/core/deck.js';
 import * as editor from './slides/js/app.js';
 import { makeWorkerAi } from './slides/js/ai/aiService.js';
@@ -318,7 +327,8 @@ async function _openDeck(slug, fresh, initialDeck) {
   const imageStore = createImageStore({ facade: api, getSlug: () => slug });
   // Drive import reuses the BS_GOOGLE OAuth token (drive.readonly already granted); it is
   // inert until GOOGLE_PICKER_API_KEY is set, so the option simply stays disabled till then.
-  const drivePicker = createDrivePicker({ apiKey: GOOGLE_PICKER_API_KEY, getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null) });
+  ensurePickerKey(); // fetch the Picker key once per session (non-blocking; resolves before the gallery is opened)
+  const drivePicker = createDrivePicker({ getApiKey: () => _pickerKey, getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null) });
   _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore, drivePicker });
   _openSlug = slug;
   _writeDeckParam(slug);

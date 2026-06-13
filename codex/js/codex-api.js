@@ -64,6 +64,13 @@ export const audiences = {
   saveConfig: (p) => call('save_audience_config', p)  // { config }
 };
 
+// Browser-safe runtime config served by the Worker: values the client needs but that
+// must NOT live in the public frontend repo (e.g. the Google Picker API key for the
+// slides gallery's Drive import). -> { config: { googlePickerApiKey } }
+export const appConfig = {
+  get: () => call('get_client_config')
+};
+
 // Questions (host/admin plane): live sessions, bank, student Q&A, stats. The
 // core actions carry NO prefix (the original pre-prefix ClassPulse actions);
 // cp_* is the public student/trilha path (see `cp` above), out of the host

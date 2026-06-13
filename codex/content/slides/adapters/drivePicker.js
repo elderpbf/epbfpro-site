@@ -58,12 +58,16 @@ async function fetchDriveFile(doc, token) {
   return new File([blob], doc.name || ('drive-' + doc.id), { type: blob.type || doc.mimeType || 'image/png' });
 }
 
-export function createDrivePicker({ apiKey, getToken } = {}) {
+export function createDrivePicker({ getApiKey, getToken } = {}) {
+  // The key is fetched from the Worker in the background, so read it live each time
+  // (a sync getter) rather than capturing it once at construction.
+  const key = () => (typeof getApiKey === 'function' ? getApiKey() : '') || '';
   return {
-    /** Is the Drive option wired (an API key is configured)? */
-    available() { return !!apiKey; },
+    /** Is the Drive option wired yet (the Picker key has arrived)? */
+    available() { return !!key(); },
     /** Open the Picker and resolve the chosen image as a File (or null on cancel/no-auth). */
     async pick() {
+      const apiKey = key();
       if (!apiKey) return null;
       const token = getToken ? await getToken() : null;
       if (!token) return null;
