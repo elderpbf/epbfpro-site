@@ -66,14 +66,9 @@
 <script src="../backstage/js/bs-google.js?v=1.4"></script>
 <script src="../backstage/js/auth.js?v=1.4"></script>
 <script src="../backstage/js/settings-drawer.js?v=1.2"></script>
-<script src="../backstage/js/brand-logos.js?v=1.0"></script>
-<!-- Shared helpers (window globals) still used by Content → Items: the type
-     filter chips, the preview renderer, and the prompt-building AI spec. The
-     item editor + creator are now Codex-native ES modules (content/item-form.js,
-     content/item-creator.js); the legacy CTItemForm/CTItemCreator globals are no
-     longer loaded here. -->
-<script src="../backstage/js/bs-toast.js?v=1.0"></script>
-<script src="../backstage/js/ct-ai-spec.js?v=1.3"></script>
+<!-- The toast, item renderer / type-filter / tarefa-fields, and the AI item-spec
+     are now Codex ES modules (js/toast.js, js/item-render.js, js/type-filter.js,
+     js/tarefa-fields.js, js/ai-spec.js). brand-logos.js was inert and was removed. -->
 <!-- ct-renderer / ct-type-filter / ct-tarefa-fields are now Codex ES modules
      (js/item-render.js, js/type-filter.js, js/tarefa-fields.js), imported by the
      Content + Lessons tab modules. The backstage globals are no longer loaded. -->
@@ -105,6 +100,7 @@
   import { init as topbar } from './js/codex-topbar.js';
   import { apply as applyI18n } from './js/i18n.js';
   import * as glyphs from './js/glyphs.js';
+  import './js/toast.js'; // Codex-owned toast -> window.BSToast (replaces backstage/js/bs-toast.js)
   import * as cohorts from './cohorts/cohorts.js';
   import * as content from './content/content.js';
   import * as lessons from './lessons/lessons.js';

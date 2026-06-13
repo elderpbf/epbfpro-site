@@ -13,13 +13,13 @@
 // Returns: { destroy() }
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CT_AI_SPEC      (../backstage/js/ct-ai-spec.js)  prompt-building logic
-//   window.BSToast         (../backstage/js/bs-toast.js)     optional toast
+//   window.BSToast         (Codex toast seam, js/toast.js)    optional toast
 //   window.bsLog/window.dbg (../backstage/js/debug.js)       optional debug pill
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as aiSpec from '../js/ai-spec.js';
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
@@ -141,19 +141,19 @@ export function mount(container, opts) {
     btn.disabled = true;
     btn.textContent = t('creator.ai_generating');
     try {
-      const systemPrompt = window.CT_AI_SPEC.buildSystemPrompt(types, tags, { addEmojis });
+      const systemPrompt = aiSpec.buildSystemPrompt(types, tags, { addEmojis });
       const res = await aiApi.chat({
         system: systemPrompt,
         messages: [{ role: 'user', content: raw }],
         temperature: 0.3,
-        max_tokens: window.CT_AI_SPEC.MAX_TOKENS
+        max_tokens: aiSpec.MAX_TOKENS
       });
       if (!res || !res.text) { _logAi('no content', res); _toast(t('creator.ai_no_content')); return; }
-      let parsed = window.CT_AI_SPEC.parseModelJson(res.text);
+      let parsed = aiSpec.parseModelJson(res.text);
       if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); _toast(t('creator.ai_bad_format')); return; }
-      parsed = window.CT_AI_SPEC.enforcePromptVerbatim(parsed, raw);
+      parsed = aiSpec.enforcePromptVerbatim(parsed, raw);
       // Truncation guard. Deferred cleanup: convert to a cdx confirm modal.
-      if (parsed.type !== 'prompt' && window.CT_AI_SPEC.looksTruncated(raw, parsed.body_md)) {
+      if (parsed.type !== 'prompt' && aiSpec.looksTruncated(raw, parsed.body_md)) {
         if (!window.confirm(t('creator.ai_truncated_confirm'))) return;
       }
       const prefill = {

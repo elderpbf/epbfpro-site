@@ -18,13 +18,13 @@
 // Returns: { isDirty(), getState(), destroy() }
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CT_AI_SPEC      (../backstage/js/ct-ai-spec.js)  prompt-building logic
-//   window.BSToast         (../backstage/js/bs-toast.js)     optional toast
+//   window.BSToast         (Codex toast seam, js/toast.js)    optional toast
 //   window.bsLog/window.dbg (../backstage/js/debug.js)       optional debug pill
 //   window.marked          (CDN, lazy)                       markdown preview
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
+import * as aiSpec from '../js/ai-spec.js';
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
@@ -550,20 +550,20 @@ export function mount(container, opts) {
           body_md: bodyEl ? bodyEl.value : '',
           tag_labels: currentTagLabels
         };
-        const diff = window.CT_AI_SPEC.computeEditDiff(aiContext.firstOutput, current);
-        const systemPrompt = window.CT_AI_SPEC.buildRefineSystemPrompt({ addEmojis: aiContext.addEmojis });
-        const userMsg = window.CT_AI_SPEC.buildRefineUserMessage(aiContext.rawInput, aiContext.firstOutput, diff);
+        const diff = aiSpec.computeEditDiff(aiContext.firstOutput, current);
+        const systemPrompt = aiSpec.buildRefineSystemPrompt({ addEmojis: aiContext.addEmojis });
+        const userMsg = aiSpec.buildRefineUserMessage(aiContext.rawInput, aiContext.firstOutput, diff);
 
         const res = await aiApi.chat({
           system: systemPrompt,
           messages: [{ role: 'user', content: userMsg }],
           temperature: 0.3,
-          max_tokens: window.CT_AI_SPEC.MAX_TOKENS
+          max_tokens: aiSpec.MAX_TOKENS
         });
         if (!res || !res.text) { _logAi('no content', res); _toast(t('editor.ai_no_content')); return; }
-        let parsed = window.CT_AI_SPEC.parseModelJson(res.text);
+        let parsed = aiSpec.parseModelJson(res.text);
         if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); _toast(t('editor.ai_bad_format')); return; }
-        parsed = window.CT_AI_SPEC.enforcePromptVerbatim(parsed, aiContext.rawInput);
+        parsed = aiSpec.enforcePromptVerbatim(parsed, aiContext.rawInput);
 
         aiContext.firstOutput = parsed;
         root.querySelector('#ie-title').value = parsed.title || '';
