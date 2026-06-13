@@ -376,6 +376,9 @@ export default {
   'releases.empty_outros_solo': 'Nenhum item disponível.',
   'releases.saving':          'Salvando...',
   'releases.saved':           'Salvo.',
+  'releases.clear_fresh':         'Limpar selo NOVO desta aula',
+  'releases.clear_fresh_confirm': 'Remover o selo NOVO de todos os itens desta aula? Os itens continuam liberados.',
+  'releases.clear_fresh_done':    'Selo NOVO removido.',
 
   // Content → Apostila (imported course content)
   'apostila.title_default':   'Conteúdo do curso',

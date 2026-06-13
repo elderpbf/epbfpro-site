@@ -92,6 +92,11 @@ function _toast(msg) { if (window.BSToast && window.BSToast.show) window.BSToast
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 function _today() { return new Date().toISOString().slice(0, 10); }
+// Debug gate: the shared Backstage bs_debug flag (same flag the live-host
+// in-host simulator uses). Read at render time so toggling it just needs a reload.
+function _isDebug() {
+  return typeof localStorage !== 'undefined' && localStorage.getItem('bs_debug') === '1';
+}
 
 function _fmtDate(iso) {
   if (!iso) return '';
@@ -210,12 +215,18 @@ function _renderList() {
     html += '<div class="cdx-empty" style="margin-bottom:0.5rem">' + t('releases.no_aulas') + '</div>';
   }
 
+  const debug = _isDebug();
+
   _aulas.forEach((aula) => {
     const n = aula.aula_number;
     const ds = aulaDateStatusKey(aula, _today());
     const dateText = t('cohorts.date_' + ds.key) + (ds.date ? ' ' + _fmtDate(ds.date) : '');
     const active = String(_selectedAula) === String(aula.id);
     const title = aula.title ? _esc(aula.title) : (t('cohorts.aula_label') + ' ' + _esc(n));
+    // Debug-only: clear the NOVO badge for every item in this lesson.
+    const clearBtn = debug
+      ? '<button type="button" class="cdx-rel-clear-fresh" data-clear-fresh="' + _esc(n) + '" title="' + _esc(t('releases.clear_fresh')) + '">NOVO &times;</button>'
+      : '';
     html +=
       '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-aula-id="' + _esc(aula.id) + '" data-aula-num="' + _esc(n) + '">' +
         '<span class="cdx-rel-aula-num">' + _esc(n) + '</span>' +
@@ -226,6 +237,7 @@ function _renderList() {
             '<span class="cdx-rel-aula-counts">' + _aulaCountsHtml(n) + '</span>' +
           '</div>' +
         '</div>' +
+        clearBtn +
       '</div>';
   });
 
@@ -268,11 +280,25 @@ function _renderPreview() {
 }
 
 function _onListClick(e) {
+  const clearBtn = e.target.closest('.cdx-rel-clear-fresh');
+  if (clearBtn) { _clearFresh(clearBtn.dataset.clearFresh); return; }
   const row = e.target.closest('.cdx-item-row');
   if (!row) return;
   _selectedAula = row.dataset.aulaId;   // 'outros' or an aula id (string)
   _renderList();
   _renderPreview();
+}
+
+// Debug-only: backdate released_at for every item in this aula so the student
+// trail stops flagging them as NOVO. Items stay released and keep their order.
+function _clearFresh(aulaNum) {
+  if (typeof window.confirm === 'function' && !window.confirm(t('releases.clear_fresh_confirm'))) return;
+  api.clearFreshness({ client_slug: _clientSlug, turma_slug: _turmaSlug, aula_number: Number(aulaNum) })
+    .then((r) => {
+      if (r && r.error) throw new Error(r.error);
+      _toast(t('releases.clear_fresh_done'));
+    })
+    .catch((err) => notice.internal(_err(err)));
 }
 
 // ── Composer rendering (collapsible accordion, like the Presets picker) ──────

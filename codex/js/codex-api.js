@@ -236,6 +236,9 @@ export const releases = {
   release:   (p) => call('ct_release_item', p),     // { client_slug, turma_slug, item_id }
   unrelease: (p) => call('ct_unrelease_item', p),
   setAula:   (p) => call('ct_set_release_aula', p), // { ..., aula_number_or_null }
+  // Debug-only: backdate released_at for every item in an aula past the 5-day NOVO
+  // window, so the student trail stops flagging them as new.
+  clearFreshness: (p) => call('ct_clear_release_freshness', p), // { client_slug, turma_slug, aula_number }
   // Aggregate student-view payload for a turma: the released items with their
   // aula_number binding. Needs the turma token (read from ct_list_turmas).
   turmaView: (p) => call('ct_get_turma_view', p)    // { client_slug, turma_slug, token }
