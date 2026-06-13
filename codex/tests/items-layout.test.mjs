@@ -52,7 +52,7 @@ test('Items uses a master-detail split (list + preview) wired to the renderer', 
   const src = read('../content/items.js');
   assert.match(src, /cdx-items-split/, 'authors the split container');
   assert.match(src, /cdx-item-preview/, 'authors the preview pane');
-  assert.match(src, /window\.CTRenderer/, 'renders the preview through the shared renderer');
+  assert.match(src, /renderItem\(/, 'renders the preview through the Codex item renderer');
   assert.ok(!/—/.test(src), 'no em dashes');
 });
 

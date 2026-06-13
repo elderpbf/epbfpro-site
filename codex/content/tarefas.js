@@ -7,13 +7,12 @@
 // CSV export, per-answer delete). New assignments are created and released in
 // one step.
 //
-// Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CTTarefaFields  (../backstage/js/ct-tarefa-fields.js)  answer-field
-//     registry: list() of field types, get(type).renderStored()/toCsvValue().
-//     A shared leaf helper, reused as a global (same pattern as ct-renderer).
+// The tarefa field registry is now a Codex module (js/tarefa-fields.js),
+// imported below. Remaining shared global:
 //   window.BSToast         (../backstage/js/bs-toast.js)          optional toast
 import { content as api, releases as relApi, cohorts as cohortsApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { getField, listFields } from '../js/tarefa-fields.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as turmaPicker from './turma-picker.js';
@@ -59,11 +58,8 @@ function _esc(s) {
 function _toast(msg) { if (window.BSToast && window.BSToast.show) window.BSToast.show(msg); }
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
-function _fields() { return (window.CTTarefaFields && window.CTTarefaFields.list) ? window.CTTarefaFields.list() : [{ slug: 'text', label: 'Texto livre' }]; }
-function _field(type) {
-  if (window.CTTarefaFields && window.CTTarefaFields.get) return window.CTTarefaFields.get(type || 'text');
-  return { renderStored: (v) => _esc(typeof v === 'string' ? v : JSON.stringify(v)), toCsvValue: (v) => (typeof v === 'string' ? v : JSON.stringify(v)) };
-}
+function _fields() { return listFields(); }
+function _field(type) { return getField(type || 'text'); }
 function _plural(n, one, many) { return n === 1 ? one : many; }
 
 function _formatTs(unix) {

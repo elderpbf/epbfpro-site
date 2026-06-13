@@ -7,9 +7,8 @@
 // mounted behind one call; it gets its own Codex migration later (Lessons uses
 // it too).
 //
-// Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CT_TYPE_FILTER  (../backstage/js/ct-type-filter.js)  type filter chips
-//   window.CTRenderer      (../backstage/js/ct-renderer.js)     preview renderer
+// The item renderer + type-filter are now Codex modules (js/item-render.js,
+// js/type-filter.js), imported below. Remaining shared global:
 //   window.BSToast         (../backstage/js/bs-toast.js)         optional toast
 // Type icons now come from the Codex glyph library (js/glyphs.js), not BSTypeIcon.
 // The item editor and content-first creator are now Codex-native modules
@@ -18,6 +17,8 @@ import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
 import * as itemCreator from './item-creator.js';
+import { renderItem } from '../js/item-render.js';
+import { renderTypeFilter, applyTypeFilter } from '../js/type-filter.js';
 import { iconHtml as typeIconHtml, glyphSvg, glyphKeys, GLYPH_PREFIX } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 
@@ -247,9 +248,7 @@ function _loadTypes() {
 // ── Render grid ─────────────────────────────────────────────────────────────
 function _visibleItems() {
   const library = filterLibraryItems(_items);
-  return window.CT_TYPE_FILTER
-    ? window.CT_TYPE_FILTER.apply(library, _selectedTypeFilter)
-    : library;
+  return applyTypeFilter(library, _selectedTypeFilter);
 }
 
 function _renderItems() {
@@ -265,9 +264,7 @@ function _renderItems() {
     _renderPreview(null);
     return;
   }
-  const filtered = window.CT_TYPE_FILTER
-    ? window.CT_TYPE_FILTER.apply(library, _selectedTypeFilter)
-    : library;
+  const filtered = applyTypeFilter(library, _selectedTypeFilter);
   if (!filtered.length) {
     _selectedId = null;
     grid.innerHTML = '<div class="cdx-empty">' + t('content.empty_filter') + '</div>';
@@ -367,20 +364,16 @@ function _renderPreview(item, opts) {
     host.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
     return;
   }
-  if (window.CTRenderer && window.CTRenderer.render) {
-    try { window.CTRenderer.render(item, host, {}); }
-    catch (_) { host.textContent = item.body_md || ''; }
-  } else {
-    host.textContent = item.body_md || '';
-  }
+  try { renderItem(item, host, {}); }
+  catch (_) { host.textContent = item.body_md || ''; }
 }
 
 function _renderFilter(library) {
   const fc = _q('cdx-items-filter');
   if (!fc) return;
-  if (!library.length || !window.CT_TYPE_FILTER) { fc.innerHTML = ''; return; }
+  if (!library.length) { fc.innerHTML = ''; return; }
   fc.innerHTML = '<div class="cdx-filter-row"><div id="cdx-type-filter-host"></div></div>';
-  window.CT_TYPE_FILTER.render({
+  renderTypeFilter({
     container: fc.querySelector('#cdx-type-filter-host'),
     types: _types,
     items: library,

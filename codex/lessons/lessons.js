@@ -10,7 +10,6 @@
 // breadcrumb merged into the bottom bar.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CTRenderer    (../backstage/js/ct-renderer.js)
 //   window.CVDriveViewer (../backstage/js/cv-drive-viewer.js)
 //   window.BS_GOOGLE     (../backstage/js/bs-google.js)
 //   window.CVLabs        (../backstage/classvault/js/cv-labs.js)
@@ -20,6 +19,7 @@ import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as itemForm from '../content/item-form.js';
+import { renderItem } from '../js/item-render.js';
 import {
   classifyVault, SECTION_ORDER, rendererStrategy,
   crumbActions, supportsTextResize, makeTextScale,
@@ -595,11 +595,8 @@ function _renderPopupCard(host, item, meta) {
 }
 
 function _renderContent(host, item) {
-  if (window.CTRenderer && window.CTRenderer.render) {
-    try { window.CTRenderer.render(item, host, {}); return; }
-    catch (_) { host.textContent = item.body_md || ''; return; }
-  }
-  host.textContent = item.body_md || '';
+  try { renderItem(item, host, {}); }
+  catch (_) { host.textContent = item.body_md || ''; }
 }
 
 // ── Bottom bar: crumb + actions + resize ──────────────────────────────────────
