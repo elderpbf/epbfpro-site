@@ -7,15 +7,24 @@
 //
 //   googleSection()   - "Conta Google": connect / disconnect via window.BS_GOOGLE.
 //   passwordSection() - "Segurança": change the password-hash fallback via
-//                       callWorker('change_password') + hashPw + BS_AUTH.
+//                       callWorker('change_password') + the local hashPw + BS_AUTH.
 //
 // Auth globals (window in the browser; stubbed on globalThis in tests):
-//   callWorker (api-client / worker-call), hashPw + BS_AUTH (auth.js), BS_GOOGLE.
+//   callWorker (api-client / worker-call), BS_AUTH (auth.js), BS_GOOGLE.
+// hashPw is Codex-owned (below), no longer the backstage utils.js global.
 
 function _esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// SHA-256 hex of a password, the bs_pw_hash fallback contract. Vendored from the
+// legacy utils.js (its only on-Codex caller was this password-change form; the
+// login page hashes on its own page). Exported for tests.
+export async function hashPw(pw) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
 }
 
 // ── Google account ───────────────────────────────────────────────────────────
@@ -126,8 +135,8 @@ function _initPwChange() {
 
     btn.disabled = true;
     try {
-      var curHash = await globalThis.hashPw(cur);
-      var newHash = await globalThis.hashPw(newPw);
+      var curHash = await hashPw(cur);
+      var newHash = await hashPw(newPw);
       await globalThis.callWorker({ action: 'change_password', auth_token: curHash, new_hash: newHash });
       localStorage.setItem(globalThis.BS_AUTH ? globalThis.BS_AUTH.PW_KEY : 'bs_pw_hash', newHash);
       document.getElementById('sd-pw-current').value = '';

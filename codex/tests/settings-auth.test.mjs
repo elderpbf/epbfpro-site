@@ -129,7 +129,6 @@ test('rejects mismatched confirmation', async () => {
 
 test('happy path hashes both, calls change_password, persists the new hash, clears fields', async () => {
   const sent = [];
-  globalThis.hashPw = async (s) => 'H:' + s;
   globalThis.callWorker = async (p) => { sent.push(p); return { ok: true }; };
   globalThis.BS_AUTH = { PW_KEY: 'bs_pw_hash' };
   const lsCalls = [];
@@ -137,14 +136,18 @@ test('happy path hashes both, calls change_password, persists the new hash, clea
   const f = setupPw();
   f.cur.value = 'old'; f.nw.value = 'secret1'; f.cf.value = 'secret1';
   await f.save.dispatch('click', {});
-  assert.deepEqual(sent[0], { action: 'change_password', auth_token: 'H:old', new_hash: 'H:secret1' });
-  assert.deepEqual(lsCalls[0], ['bs_pw_hash', 'H:secret1']);
+  // hashPw is the Codex-vendored SHA-256; recompute via the same function.
+  const expCur = await auth.hashPw('old');
+  const expNew = await auth.hashPw('secret1');
+  assert.deepEqual(sent[0], { action: 'change_password', auth_token: expCur, new_hash: expNew });
+  assert.match(expCur, /^[0-9a-f]{64}$/, 'auth_token is a SHA-256 hex digest');
+  assert.notEqual(expCur, expNew, 'current and new hash differ');
+  assert.deepEqual(lsCalls[0], ['bs_pw_hash', expNew]);
   assert.equal(f.cur.value, ''); assert.equal(f.nw.value, ''); assert.equal(f.cf.value, '');
   assert.equal(f.err.textContent, 'Senha alterada com sucesso.');
 });
 
 test('falls back to bs_pw_hash when BS_AUTH is absent', async () => {
-  globalThis.hashPw = async (s) => 'H:' + s;
   globalThis.callWorker = async () => ({ ok: true });
   globalThis.BS_AUTH = undefined;
   const lsCalls = [];
@@ -156,7 +159,6 @@ test('falls back to bs_pw_hash when BS_AUTH is absent', async () => {
 });
 
 test('surfaces a wrong-current-password error when the worker rejects', async () => {
-  globalThis.hashPw = async (s) => 'H:' + s;
   globalThis.callWorker = async () => { throw new Error('401'); };
   globalThis.BS_AUTH = { PW_KEY: 'bs_pw_hash' };
   globalThis.localStorage = { setItem: () => {}, getItem: () => null };

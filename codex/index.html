@@ -65,7 +65,10 @@
 
 <!-- Shared Backstage services as regular scripts (window globals), loaded
      BEFORE the module boot so Codex modules can read them. -->
-<script src="../backstage/js/utils.js?v=1.5"></script>
+<!-- utils.js is no longer loaded: Codex vendors hashPw (js/settings-auth.js),
+     owns the Enter-to-submit handler (js/form-enter.js, imported in the boot),
+     uses its own toast (js/toast.js), and the pure helpers (escHtml/parseCSV/
+     LETTERS) were unused (each module vendors its own). -->
 <script src="../backstage/js/api-client.js?v=1.2"></script>
 <script src="../backstage/js/theme-manager.js?v=1.2"></script>
 <script src="../backstage/js/bs-google.js?v=1.4"></script>
@@ -109,6 +112,7 @@
   import { apply as applyI18n } from './js/i18n.js';
   import * as glyphs from './js/glyphs.js';
   import './js/toast.js'; // Codex-owned toast -> window.BSToast (replaces backstage/js/bs-toast.js)
+  import './js/form-enter.js'; // Codex-owned Enter-to-submit (replaces backstage/js/utils.js)
   import * as cohorts from './cohorts/cohorts.js';
   import * as content from './content/content.js';
   import * as lessons from './lessons/lessons.js';

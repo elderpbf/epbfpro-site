@@ -30,8 +30,9 @@ function _toast(msg) {
 }
 
 function _toastError(msg) {
-  if (window.showToastError) window.showToastError(msg);
-  else _toast(msg);
+  // Codex toast (js/toast.js sets window.BSToast); the legacy utils.js
+  // showToastError global is no longer loaded.
+  _toast(msg);
 }
 
 function _baseUrl() {
