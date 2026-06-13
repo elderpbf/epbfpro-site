@@ -4,7 +4,45 @@
 // callWorker, never raw action strings). The editor calls getDeck/setDeck/
 // touch/on synchronously; persistence is the async load()/save() pair wrapping
 // the frozen *_presentation actions (deck JSON in R2; the facade owns the key).
-import { slides as slidesApi } from '../../../js/codex-api.js';
+import { slides as slidesApi, assetUrl } from '../../../js/codex-api.js';
+
+// Image src/url values in a deck point at the Worker's /r2/ route. We persist
+// them ORIGIN-LESS (a leading "/r2/..." path) so a deck never hard-codes which
+// Worker served it (backstage-api before the Stage 2 cutover, codex-api after),
+// and we re-absolutize against the CURRENT Worker on load via the facade's
+// assetUrl(). So an old deck that baked an absolute backstage-api origin self-
+// heals on its next load+save; no R2 data migration is required.
+const R2_ABS = /^https?:\/\/[^/]+(\/r2\/.*)$/;   // any origin + /r2/ path
+const R2_REL = /^(\/r2\/.*)$/;                    // already origin-less
+
+// Deep-map every string leaf of a JSON-shaped deck through fn, returning a clone
+// (the in-memory deck the editor holds is never mutated).
+function mapStrings(node, fn) {
+  if (typeof node === 'string') return fn(node);
+  if (Array.isArray(node)) return node.map((v) => mapStrings(v, fn));
+  if (node && typeof node === 'object') {
+    const out = {};
+    for (const k in node) out[k] = mapStrings(node[k], fn);
+    return out;
+  }
+  return node;
+}
+
+// Persisted form: strip the Worker origin so only "/r2/..." is stored.
+function toRelativeR2(deck) {
+  if (!deck) return deck;
+  return mapStrings(deck, (s) => { const m = s.match(R2_ABS); return m ? m[1] : s; });
+}
+
+// Hydrated form: point every "/r2/..." path (and any stale absolute Worker /r2/
+// origin) at the CURRENT Worker, so old decks follow the cutover automatically.
+function toAbsoluteR2(deck) {
+  if (!deck) return deck;
+  return mapStrings(deck, (s) => {
+    const m = s.match(R2_ABS) || s.match(R2_REL);
+    return m ? assetUrl(m[1]) : s;
+  });
+}
 
 // Minimal event emitter (mirrors the in-memory store the editor ships with).
 function emitter() {
@@ -47,13 +85,15 @@ export function createCodexStore({ slug, facade } = {}) {
         if (!/not\s*found/i.test(msg)) throw e;
         res = null;
       }
-      deck = (res && res.data) || null;
+      deck = toAbsoluteR2((res && res.data) || null);
       bus.emit('change', deck);
       return deck;
     },
-    // Persist the current deck JSON to R2 via the facade.
+    // Persist the current deck JSON to R2 via the facade. Image URLs are stored
+    // origin-less (/r2/...) so the deck is Worker-independent; the in-memory deck
+    // the editor keeps using stays absolute (toRelativeR2 returns a clone).
     async save() {
-      const res = await api.saveDeck({ slug, data: deck });
+      const res = await api.saveDeck({ slug, data: toRelativeR2(deck) });
       bus.emit('saved', deck);
       return res;
     },
