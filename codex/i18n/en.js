@@ -1143,6 +1143,13 @@ export default {
   'certificates.preview_open':        'View front and back',
   'certificates.print':               'Print / PDF',
   'certificates.print_blocked':       'The browser blocked the print window. Allow pop-ups for this site.',
+  'certificates.tpl_desc_vetor':      'Geometric, diagonal slab',
+  'certificates.tpl_desc_console':    'Technical, grid and rail',
+  'certificates.tpl_desc_mono':       'Editorial, classic frame',
+  'certificates.tpl_desc_aurora':     'Soft gradient with orbs',
+  'certificates.tpl_desc_plate':      'Sober, corners and seal',
+  'certificates.tpl_desc_holo':       'Holographic card',
+  'certificates.tpl_desc_eclipse':    'Dark, radial glow',
 
   // Issue — template, theme and back-side content
   'certificates.issue_theme':         'Theme',

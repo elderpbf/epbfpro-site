@@ -24,7 +24,7 @@ import * as notice from '../js/notice.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
-  buildCertData, renderFrontPage, renderCertificate, hydrate,
+  buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate,
 } from './cert-render.js';
 
 // Re-export the registries so the catalog UI (and tests) read them from the face.
@@ -58,8 +58,10 @@ let _viewEl = null;
 let _activeSub = 'modelos';
 let _cleanup = [];
 
-// Modelos (catalog) state
+// Modelos (catalog) state — master-detail: selected template on the left, live
+// preview + colour theme on the right (same split shell as the Labs sub-tab).
 let _catalogTheme = 'duo';
+let _selectedTemplate = 'vetor';
 
 // Emitidos state
 let _certs = [];
@@ -314,82 +316,138 @@ function _renderShell() {
     '</div>';
 }
 
-// ── Modelos sub-area: catalog of the 7 templates ──────────────────────────────
+// ── Modelos sub-area: master-detail catalog of the 7 templates ────────────────
+// Same split shell as the Labs sub-tab (cdx-items-split / cdx-items-list /
+// cdx-item-row / cdx-item-preview): the 7 templates list on the left, a live
+// front+back preview on the right with the colour-theme picker over it.
 function _mountModelos() {
   const area = _q('#cdx-certs-area');
   if (!area) return;
 
+  if (!isTemplate(_selectedTemplate)) _selectedTemplate = CERT_TEMPLATES[0].key;
+
   area.innerHTML =
-    '<div class="cdx-cert-catalog">' +
-      '<div class="cdx-cert-catalog-head">' +
-        '<div class="cdx-cert-catalog-heading">' +
-          '<div class="cdx-cert-catalog-title">' + esc(t('certificates.catalog_title')) + '</div>' +
-          '<p class="cdx-cert-catalog-hint">' + esc(t('certificates.catalog_hint')) + '</p>' +
-        '</div>' +
-        '<div class="cdx-cert-theme-picker" id="cdx-cert-theme-picker">' +
+    '<div class="cdx-certs-modelos-wrap cdx-labs">' +
+      '<div class="cdx-labs-head">' +
+        '<h2 class="cdx-labs-title">' + esc(t('certificates.catalog_title')) + '</h2>' +
+        '<div class="cdx-labs-hint">' + esc(t('certificates.catalog_hint')) + '</div>' +
+      '</div>' +
+      '<div class="cdx-items-split cdx-certs-modelos-split">' +
+        '<div class="cdx-items-list" id="cdx-certs-tpl-list"></div>' +
+        '<div class="cdx-item-preview" id="cdx-certs-tpl-preview"></div>' +
+      '</div>' +
+    '</div>';
+
+  _renderTplList();
+  _renderTplPreview();
+
+  const split = area.querySelector('.cdx-certs-modelos-split');
+  if (split) {
+    const onClick = (e) => {
+      const chip = e.target.closest('[data-theme]');
+      if (chip) {
+        _catalogTheme = chip.dataset.theme;
+        split.querySelectorAll('[data-theme]').forEach((b) => b.classList.toggle('is-active', b.dataset.theme === _catalogTheme));
+        _renderTplPreview();
+        return;
+      }
+      if (e.target.closest('[data-action="open-preview"]')) {
+        _openCertPreview(Object.assign(sampleCert(), { template_slug: _selectedTemplate, theme: _catalogTheme }));
+        return;
+      }
+      const row = e.target.closest('[data-template]');
+      if (row) _selectTemplate(row.dataset.template);
+    };
+    split.addEventListener('click', onClick);
+    _cleanup.push(() => split.removeEventListener('click', onClick));
+  }
+
+  const onResize = () => _scaleTplPreview();
+  window.addEventListener('resize', onResize);
+  _cleanup.push(() => window.removeEventListener('resize', onResize));
+}
+
+function _renderTplList() {
+  const list = _q('#cdx-certs-tpl-list');
+  if (!list) return;
+  list.innerHTML = CERT_TEMPLATES.map((tpl) =>
+    '<div class="cdx-item-row' + (tpl.key === _selectedTemplate ? ' is-active' : '') + '" data-template="' + esc(tpl.key) + '">' +
+      '<span class="cdx-item-type-icon cdx-cert-tpl-icon">&#9672;</span>' +
+      '<div class="cdx-item-info">' +
+        '<div class="cdx-item-title">' + esc(tpl.label) + '</div>' +
+        '<div class="cdx-item-sub">' + esc(t('certificates.tpl_desc_' + tpl.key)) + '</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function _selectTemplate(key) {
+  if (!isTemplate(key) || key === _selectedTemplate) return;
+  _selectedTemplate = key;
+  const list = _q('#cdx-certs-tpl-list');
+  if (list) list.querySelectorAll('.cdx-item-row').forEach((r) => r.classList.toggle('is-active', r.dataset.template === key));
+  _renderTplPreview();
+}
+
+function _renderTplPreview() {
+  const pane = _q('#cdx-certs-tpl-preview');
+  if (!pane) return;
+  const tpl    = CERT_TEMPLATES.find((x) => x.key === _selectedTemplate) || CERT_TEMPLATES[0];
+  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
+  const cert   = Object.assign(sampleCert(), { template_slug: _selectedTemplate, theme: _catalogTheme });
+
+  pane.innerHTML =
+    '<div class="cdx-preview-head">' +
+      '<div class="cdx-preview-head-info">' +
+        '<div class="cdx-preview-title">' + esc(tpl.label) + '</div>' +
+        '<span class="cdx-preview-type">' + esc(t('certificates.tpl_desc_' + tpl.key)) + '</span>' +
+      '</div>' +
+      '<div class="cdx-preview-actions">' +
+        '<div class="cdx-cert-theme-picker">' +
           '<span class="cdx-cert-theme-label">' + esc(t('certificates.theme')) + '</span>' +
           CERT_THEMES.map((th) =>
             '<button type="button" class="cdx-cert-theme-chip' + (th.key === _catalogTheme ? ' is-active' : '') + '" ' +
               'data-theme="' + esc(th.key) + '">' + esc(t('certificates.theme_' + th.key)) + '</button>'
           ).join('') +
         '</div>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary" data-action="open-preview">' + esc(t('certificates.preview_open')) + '</button>' +
       '</div>' +
-      '<div class="cdx-cert-grid" id="cdx-cert-grid"></div>' +
+    '</div>' +
+    '<div class="cdx-preview-body cdx-cert-preview-body" id="cdx-certs-tpl-preview-body">' +
+      _previewSheetsHtml(cert, origin) +
     '</div>';
 
-  _renderCatalogThumbs();
-
-  const picker = _q('#cdx-cert-theme-picker');
-  if (picker) {
-    const onClick = (e) => {
-      const btn = e.target.closest('[data-theme]');
-      if (!btn) return;
-      _catalogTheme = btn.dataset.theme;
-      picker.querySelectorAll('[data-theme]').forEach((b) => b.classList.toggle('is-active', b.dataset.theme === _catalogTheme));
-      _renderCatalogThumbs();
-    };
-    picker.addEventListener('click', onClick);
-    _cleanup.push(() => picker.removeEventListener('click', onClick));
-  }
-
-  const grid = _q('#cdx-cert-grid');
-  if (grid) {
-    const onClick = (e) => {
-      const card = e.target.closest('[data-template]');
-      if (!card) return;
-      const cert = Object.assign(sampleCert(), { template_slug: card.dataset.template, theme: _catalogTheme });
-      _openCertPreview(cert);
-    };
-    grid.addEventListener('click', onClick);
-    _cleanup.push(() => grid.removeEventListener('click', onClick));
-  }
-
-  const onResize = () => {
-    const g = _q('#cdx-cert-grid');
-    if (g) g.querySelectorAll('.cdx-cert-thumb').forEach((th) => _fitPage(th.querySelector('.cdx-cert-page'), th.clientWidth));
-  };
-  window.addEventListener('resize', onResize);
-  _cleanup.push(() => window.removeEventListener('resize', onResize));
+  const body = _q('#cdx-certs-tpl-preview-body');
+  if (body) hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+  _scaleTplPreview();
 }
 
-function _renderCatalogThumbs() {
-  const grid = _q('#cdx-cert-grid');
-  if (!grid) return;
-  const cert   = sampleCert();
-  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
-  const d      = buildCertData(cert, parseCertMeta(cert), origin);
-  const qrUrl  = buildValidarUrl(origin, cert.code);
+// Front + back, each wrapped in a sized box so the fixed-mm sheet can be
+// transform-scaled down to fit the pane without overflowing (mirrors the Labs
+// preview frame-wrap technique).
+function _previewSheetsHtml(cert, origin) {
+  const d  = buildCertData(cert, parseCertMeta(cert), origin);
+  const tk = certTemplateKey(cert);
+  const th = certThemeKey(cert);
+  return '<div class="cdx-cert-sheet-wrap">' + renderFrontPage(tk, th, d) + '</div>' +
+         '<div class="cdx-cert-sheet-wrap">' + renderBackPage(th, d) + '</div>';
+}
 
-  grid.innerHTML = CERT_TEMPLATES.map((tpl) =>
-    '<div class="cdx-cert-card" data-template="' + esc(tpl.key) + '" title="' + esc(t('certificates.preview_open')) + '">' +
-      '<div class="cdx-cert-thumb">' + renderFrontPage(tpl.key, _catalogTheme, d) + '</div>' +
-      '<div class="cdx-cert-card-label">' + esc(tpl.label) + '</div>' +
-    '</div>'
-  ).join('');
-
-  grid.querySelectorAll('.cdx-cert-thumb').forEach((thumb) => {
-    hydrate(thumb, { qr: generateQrSvg, qrUrl });
-    _fitPage(thumb.querySelector('.cdx-cert-page'), thumb.clientWidth);
+function _scaleTplPreview() {
+  const body = _q('#cdx-certs-tpl-preview-body');
+  if (!body || typeof window === 'undefined') return;
+  const cs   = window.getComputedStyle(body);
+  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const avail = Math.max(0, body.clientWidth - padX);
+  if (!avail) return;
+  const scale = avail / SHEET_PX_W;
+  body.querySelectorAll('.cdx-cert-sheet-wrap').forEach((wrap) => {
+    const page = wrap.querySelector('.cdx-cert-page');
+    if (!page) return;
+    page.style.transformOrigin = 'top left';
+    page.style.transform = 'scale(' + scale + ')';
+    wrap.style.width  = avail + 'px';
+    wrap.style.height = (SHEET_PX_H * scale) + 'px';
   });
 }
 
@@ -874,6 +932,7 @@ export function mount(viewEl, ctx) {
   _activeSub = _resolveSub(ctx.sub);
   _cleanup = [];
   _catalogTheme = 'duo';
+  _selectedTemplate = 'vetor';
   _certs = [];
   _filterTurmaId = '';
   _filterStatus  = '';

@@ -361,34 +361,34 @@
   margin: 0 0 1rem;
 }
 
-/* ── Modelos: catalog of the 7 templates ───────────────────────── */
-.cdx-cert-catalog {
-  padding: 1rem 1.5rem 2rem;
-  min-height: 0;
-  overflow-y: auto;
-}
+/* ── Modelos: master-detail catalog (shared Items/Labs split shell) ──────── */
+.cdx-certs-modelos-wrap { padding: 1rem 1.5rem 1.5rem; }
+.cdx-certs-modelos-split { margin-top: 0.75rem; }
+/* Narrower list than Items: template names are short. */
+.cdx-certs-modelos-split.cdx-items-split { grid-template-columns: 300px 1fr; }
+@media (max-width: 980px) { .cdx-certs-modelos-split.cdx-items-split { grid-template-columns: 1fr; } }
 
-.cdx-cert-catalog-head {
+.cdx-cert-tpl-icon { color: var(--accent-color, #8b5cf6); font-size: 1.05rem; }
+
+/* Right pane: front+back sheets, each scaled to fit. */
+.cdx-cert-preview-body {
+  background: #eef2f1;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
   gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.25rem;
 }
+[data-theme="dark"] .cdx-cert-preview-body { background: #11161c; }
 
-.cdx-cert-catalog-title {
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--text-primary);
+.cdx-cert-sheet-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.18);
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
-
-.cdx-cert-catalog-hint {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  margin: 0.25rem 0 0;
-  max-width: 60ch;
-}
+.cdx-cert-sheet-wrap .cdx-cert-page { position: absolute; top: 0; left: 0; }
 
 .cdx-cert-theme-picker {
   display: inline-flex;
@@ -426,45 +426,6 @@
   color: #fff;
   background: var(--accent-color, #8b5cf6);
   border-color: var(--accent-color, #8b5cf6);
-}
-
-.cdx-cert-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
-}
-
-.cdx-cert-card {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--surface);
-  cursor: pointer;
-  transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
-}
-.cdx-cert-card:hover {
-  border-color: var(--accent-color, #8b5cf6);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  transform: translateY(-2px);
-}
-
-[data-theme="dark"] .cdx-cert-card { background: var(--surface); border-color: var(--border); }
-
-/* Thumbnail clips the full-size .cdx-cert-page which JS scales down. */
-.cdx-cert-thumb {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  background: #eef2f1;
-  border-bottom: 1px solid var(--border);
-}
-.cdx-cert-thumb .cdx-cert-page { position: absolute; top: 0; left: 0; }
-
-.cdx-cert-card-label {
-  padding: 0.6rem 0.9rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--text-primary);
 }
 
 /* ── Render preview modal (real front + back) ──────────────────── */
@@ -521,6 +482,5 @@
 @media (max-width: 640px) {
   .cdx-certs-modelos { flex-direction: column; height: auto; }
   .cdx-certs-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 200px; }
-  .cdx-cert-grid { grid-template-columns: 1fr; }
   .cdx-field-row { flex-direction: column; gap: 0; }
 }

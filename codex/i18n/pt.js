@@ -1142,6 +1142,13 @@ export default {
   'certificates.preview_open':        'Ver frente e verso',
   'certificates.print':               'Imprimir / PDF',
   'certificates.print_blocked':       'O navegador bloqueou a janela de impressão. Permita pop-ups para este site.',
+  'certificates.tpl_desc_vetor':      'Geométrico, slab diagonal',
+  'certificates.tpl_desc_console':    'Técnico, grid e trilho',
+  'certificates.tpl_desc_mono':       'Editorial, moldura clássica',
+  'certificates.tpl_desc_aurora':     'Gradiente suave com orbes',
+  'certificates.tpl_desc_plate':      'Sóbrio, cantos e selo',
+  'certificates.tpl_desc_holo':       'Cartão holográfico',
+  'certificates.tpl_desc_eclipse':    'Escuro, brilho radial',
 
   // Emissão — modelo, tema e conteúdo do verso
   'certificates.issue_theme':         'Tema',
