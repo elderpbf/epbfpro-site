@@ -12,7 +12,6 @@
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.CVDriveViewer (../backstage/js/cv-drive-viewer.js)
 //   window.BS_GOOGLE     (../backstage/js/bs-google.js)
-//   window.CVLabs        (../backstage/classvault/js/cv-labs.js)
 //   window.CVPresetsUI   (../backstage/js/cv-presets-ui.js)
 import { lessons as api, content as contentApi, cohorts as cohortsApi, presets as presetsApi, cp as cpApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
@@ -20,6 +19,7 @@ import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as itemForm from '../content/item-form.js';
 import { renderItem } from '../js/item-render.js';
+import { findItem as findLabItem, getAllItems as labItems } from '../js/labs-registry.js';
 import {
   classifyVault, SECTION_ORDER, rendererStrategy,
   crumbActions, supportsTextResize, makeTextScale,
@@ -81,10 +81,10 @@ function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 function _itemIcon(item) { return typeIconHtml(item && item.type_icon, { size: 18 }); }
 function _sectionLabel(key) { return t('lessons.section_' + key); }
 
-// Locate an item: vault rows first, then CVLabs synthetic items.
+// Locate an item: vault rows first, then synthetic lab items.
 function _findItem(id) {
   let item = _vault.find((it) => String(it.id) === String(id));
-  if (!item && window.CVLabs) item = window.CVLabs.findItem(id);
+  if (!item) item = findLabItem(id);
   return item || null;
 }
 
@@ -336,8 +336,7 @@ function _renderDriveSection(driveItems) {
 }
 
 function _renderLabsSection() {
-  if (!window.CVLabs) return '';
-  const labs = window.CVLabs.getAllItems();
+  const labs = labItems();
   if (!labs.length) return '';
   const collapsed = _collapsed.has('labs');
   const body = collapsed ? '' : labs.map(_renderSubCard).join('');

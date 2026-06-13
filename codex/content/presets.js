@@ -12,14 +12,14 @@
 // The embedded picker is the same primitive Lessons (Phase 3) will reuse.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.BSToast   (../backstage/js/bs-toast.js)   optional transient toast
-//   window.CVLabs    (legacy ClassVault labs, OPTIONAL) merged into the picker
-//     so a preset can include lab demos. Absent on Codex until the Labs sub-tab
-//     migration loads it; the picker simply omits the Labs group until then.
+//   window.BSToast   (codex toast seam, js/toast.js)   optional transient toast
+// The lab registry is the Codex-owned js/labs-registry.js module: its labs are
+// merged into the picker so a preset can include lab demos.
 import { presets as api, content as contentApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import { getAllItems as labItems } from '../js/labs-registry.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -79,12 +79,10 @@ function _itemIconHtml(item) {
   return typeIconHtml(ty && ty.icon, { size: 16 });
 }
 
-// Merge the full ct_items list with synthetic Labs items (when CVLabs is loaded)
-// so a preset can include lab demos, mirroring the legacy preset editor.
+// Merge the full ct_items list with synthetic Labs items so a preset can include
+// lab demos, mirroring the legacy preset editor.
 function _pickerItems() {
-  const labItems = (window.CVLabs && typeof window.CVLabs.getAllItems === 'function')
-    ? window.CVLabs.getAllItems() : [];
-  return _items.concat(labItems);
+  return _items.concat(labItems());
 }
 
 // ── Modal helpers (delete confirmation only; the editor is inline) ───────────

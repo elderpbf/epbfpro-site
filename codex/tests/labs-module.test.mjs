@@ -1,8 +1,9 @@
 // Labs sub-tab: NATIVE cdx- module (was a CTLabsPanel global wrapper). Tab
 // contract + module source rules + the shared-state/registry contract. The lab
-// registry (CVLabs) and the fullscreen preview modal (CVLabViewer) stay shared
-// globals; this module owns only the panel UI and the on/off state, which it
-// writes to the SAME localStorage key CVLabs.isLabEnabled reads ('cv_labs_enabled').
+// registry (js/labs-registry.js) and the fullscreen preview modal (js/lab-viewer.js)
+// are now Codex ES modules; this module owns only the panel UI and the on/off
+// state, which it writes to the SAME localStorage key labs-registry.isLabEnabled
+// reads ('cv_labs_enabled').
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -35,9 +36,11 @@ test('labs is a native cdx- module, not a CTLabsPanel wrapper', () => {
 
 test('labs preserves the shared state + registry contract', () => {
   const src = read('../content/labs.js');
-  assert.match(src, /cv_labs_enabled/, 'writes the same on/off key CVLabs.isLabEnabled reads');
-  assert.match(src, /window\.CVLabs/, 'reads the shared lab registry');
-  assert.match(src, /window\.CVLabViewer/, 'delegates fullscreen preview to the shared viewer');
+  assert.match(src, /cv_labs_enabled/, 'writes the same on/off key labs-registry.isLabEnabled reads');
+  assert.match(src, /from\s+['"]\.\.\/js\/labs-registry\.js['"]/, 'reads the Codex lab registry module');
+  assert.match(src, /from\s+['"]\.\.\/js\/lab-viewer\.js['"]/, 'delegates fullscreen preview to the Codex viewer module');
+  assert.ok(!/window\.CVLabs\b/.test(src), 'no longer reads the backstage CVLabs global');
+  assert.ok(!/window\.CVLabViewer\b/.test(src), 'no longer reads the backstage CVLabViewer global');
 });
 
 test('labs strings route through t() in both dictionaries', async () => {

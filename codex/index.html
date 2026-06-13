@@ -72,12 +72,10 @@
 <!-- ct-renderer / ct-type-filter / ct-tarefa-fields are now Codex ES modules
      (js/item-render.js, js/type-filter.js, js/tarefa-fields.js), imported by the
      Content + Lessons tab modules. The backstage globals are no longer loaded. -->
-<!-- Labs sub-tab (native cdx- module, content/labs.js). The lab registry
-     (CVLabs, also feeds the Presets picker's Labs group + Lessons) and the
-     fullscreen preview modal (CVLabViewer) stay shared globals; the panel grid
-     is now native, so the legacy ct-labs-panel.js global is no longer loaded. -->
-<script src="../backstage/classvault/js/cv-labs.js?v=1.4"></script>
-<script src="../backstage/js/cv-lab-viewer.js?v=1.0"></script>
+<!-- Labs sub-tab (native cdx- module, content/labs.js). The lab registry and
+     the fullscreen preview modal are now Codex ES modules (js/labs-registry.js,
+     js/lab-viewer.js), imported by content/labs.js, content/presets.js and
+     lessons.js; the backstage globals are no longer loaded. -->
 <!-- Drive sub-tab (native cdx- module, content/drive.js). Folder CRUD + the
      synced-item index go through the codex-api facade; the client-side Google
      Drive read uses BS_GOOGLE (already loaded above). Only the file-preview modal
