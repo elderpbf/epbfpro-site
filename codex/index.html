@@ -73,10 +73,10 @@
 <!-- The Settings drawer is now Codex ES modules: the shell js/settings-drawer.js
      (app-owned) + the injected auth sections js/settings-auth.js, imported by
      js/codex-topbar.js. The backstage settings-drawer.js global is no longer loaded. -->
-<!-- Brand logo/glyph helpers (window globals stdColors/mark/glyphWordmarkTag).
-     NOT inert for Codex: the certificate renderer (certificates/cert-render.js
-     hydrate) fills its logo + watermark placeholders from these globals. -->
-<script src="../backstage/js/brand-logos.js?v=1.0"></script>
+<!-- Brand logo/glyph helpers are now the Codex ES module js/brand-logos.js,
+     imported by certificates/cert-render.js (logo + watermark) and js/codex-topbar.js
+     (the topbar wordmark). The backstage global is no longer loaded; the canonical
+     artwork is mirrored verbatim and the backstage copy stays for the legacy family. -->
 <!-- The toast, item renderer / type-filter / tarefa-fields, and the AI item-spec
      are now Codex ES modules (js/toast.js, js/item-render.js, js/type-filter.js,
      js/tarefa-fields.js, js/ai-spec.js). -->

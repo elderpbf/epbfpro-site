@@ -10,12 +10,13 @@
 // old page; flip the href to the /codex route as each migrates.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.ThemeManager, window.BS_AUTH, window.glyphWordmark, window.stdColors
+//   window.ThemeManager, window.BS_AUTH
 import { t, languages, setLang } from './i18n.js';
 import { anchorLeft, placePill } from './anchored.js';
 // The Settings drawer is app-owned (the shell) with auth as an injected component.
 import { init as initSettingsDrawer } from './settings-drawer.js';
 import { googleSection, passwordSection } from './settings-auth.js';
+import { glyphWordmark, stdColors } from './brand-logos.js';
 
 const GEAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
@@ -230,10 +231,8 @@ export function init(opts) {
   const wmDark = document.createElement('span');
   wmDark.className = 'bs-topbar-logo-dark bs-topbar-mark';
   wmDark.setAttribute('aria-hidden', 'true');
-  if (window.glyphWordmark && window.stdColors) {
-    wmLight.innerHTML = window.glyphWordmark(window.stdColors('white'));
-    wmDark.innerHTML = window.glyphWordmark(window.stdColors('navy'));
-  }
+  wmLight.innerHTML = glyphWordmark(stdColors('white'));
+  wmDark.innerHTML = glyphWordmark(stdColors('navy'));
   brand.appendChild(wmLight);
   brand.appendChild(wmDark);
   const suffix = document.createElement('span');

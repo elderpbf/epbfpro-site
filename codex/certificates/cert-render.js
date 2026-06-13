@@ -4,10 +4,11 @@
 // functions are PURE (data in, HTML string out) and emit placeholders for the
 // brand logo and the QR code, so they unit-test under node --test with zero
 // dependencies. hydrate() (browser only) fills those placeholders using the
-// global brand-logos helpers + a QR renderer the caller injects.
+// Codex brand-logos module + a QR renderer the caller injects.
 //
 // The visual layer lives in certificates/cert-render.css, scoped under
 // .cdx-cert-page so it never leaks into the rest of Codex.
+import { stdColors, mark, glyphWordmarkTag } from '../js/brand-logos.js';
 
 // Pure, dependency-free HTML escaper (kept local so the render path has no DOM
 // coupling and stays testable in node).
@@ -318,8 +319,8 @@ export function renderCertificate(templateKey, theme, d) {
 
 // ── hydrate (browser only) ────────────────────────────────────────────────────
 // Fills the logo/glyph/QR placeholders left by the render functions. Uses the
-// global brand-logos helpers (mark/glyphWordmarkTag/stdColors, loaded as window
-// globals in codex/index.html) and a QR renderer injected by the caller
+// Codex brand-logos module (mark/glyphWordmarkTag/stdColors, imported above)
+// and a QR renderer injected by the caller
 // (opts.qr: (url) => svgString, e.g. generateQrSvg from ./vendor/qr.js).
 export function hydrate(rootEl, opts) {
   opts = opts || {};
