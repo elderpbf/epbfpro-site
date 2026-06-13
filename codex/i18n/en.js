@@ -1135,7 +1135,7 @@ export default {
 
   // Templates — catalog of the 7 templates (cert-render.js)
   'certificates.catalog_title':       'Certificate templates',
-  'certificates.catalog_hint':        'Pick a theme. All 7 templates are available at issue time. Click a template to see front and back.',
+  'certificates.catalog_hint':        'Select a template from the list; adjust the colour in the preview. All 7 ship at issue time.',
   'certificates.theme':               'Theme',
   'certificates.theme_navy':          'Navy',
   'certificates.theme_teal':          'Teal',

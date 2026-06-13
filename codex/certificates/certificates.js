@@ -296,16 +296,32 @@ function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 const SHEET_PX_W = 297 * 96 / 25.4;
 const SHEET_PX_H = 210 * 96 / 25.4;
 
-// Scale a rendered .cdx-cert-page to fit the given container width (the sheet
-// keeps its fixed mm geometry; we just transform it down). The container must
-// clip overflow (see certificates.css).
-function _fitPage(page, containerWidth) {
-  if (!page) return;
-  const w = containerWidth || page.parentElement && page.parentElement.clientWidth || 280;
-  const scale = w / SHEET_PX_W;
-  page.style.transformOrigin = 'top left';
-  page.style.transform = 'scale(' + scale + ')';
-  page.style.height = (SHEET_PX_H * scale) + 'px';
+// Scale every .cdx-cert-sheet-wrap inside `container` to CONTAIN it: fit both the
+// width AND the full stacked height (n sheets + the gaps between them), so the
+// whole front + back shows with no scrollbars. Mirrors the Labs preview
+// contain-scaling. The sheets keep their fixed mm geometry; we transform them.
+function _fitSheets(container) {
+  if (!container || typeof window === 'undefined') return;
+  const wraps = container.querySelectorAll('.cdx-cert-sheet-wrap');
+  if (!wraps.length) return;
+  const cs   = window.getComputedStyle(container);
+  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+  const gap  = parseFloat(cs.rowGap || cs.gap || '0') || 0;
+  const n    = wraps.length;
+  const availW = Math.max(0, container.clientWidth - padX);
+  const availH = Math.max(0, container.clientHeight - padY);
+  const scaleW = availW > 0 ? availW / SHEET_PX_W : 1;
+  const scaleH = availH > 0 ? (availH - (n - 1) * gap) / (n * SHEET_PX_H) : scaleW;
+  const scale  = Math.max(0, Math.min(scaleW, scaleH));
+  wraps.forEach((wrap) => {
+    const page = wrap.querySelector('.cdx-cert-page');
+    if (!page) return;
+    page.style.transformOrigin = 'top left';
+    page.style.transform = 'scale(' + scale + ')';
+    wrap.style.width  = (SHEET_PX_W * scale) + 'px';
+    wrap.style.height = (SHEET_PX_H * scale) + 'px';
+  });
 }
 
 // ── Shell ─────────────────────────────────────────────────────────────────────
@@ -352,7 +368,7 @@ function _mountModelos() {
         return;
       }
       if (e.target.closest('[data-action="open-preview"]')) {
-        _openCertPreview(Object.assign(sampleCert(), { template_slug: _selectedTemplate, theme: _catalogTheme }));
+        _openCertFullscreen(Object.assign(sampleCert(), { template_slug: _selectedTemplate, theme: _catalogTheme }));
         return;
       }
       const row = e.target.closest('[data-template]');
@@ -420,6 +436,8 @@ function _renderTplPreview() {
   const body = _q('#cdx-certs-tpl-preview-body');
   if (body) hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
   _scaleTplPreview();
+  // Refit once the pane has its final laid-out size (first mount can run before layout).
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(_scaleTplPreview);
 }
 
 // Front + back, each wrapped in a sized box so the fixed-mm sheet can be
@@ -433,23 +451,7 @@ function _previewSheetsHtml(cert, origin) {
          '<div class="cdx-cert-sheet-wrap">' + renderBackPage(th, d) + '</div>';
 }
 
-function _scaleTplPreview() {
-  const body = _q('#cdx-certs-tpl-preview-body');
-  if (!body || typeof window === 'undefined') return;
-  const cs   = window.getComputedStyle(body);
-  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-  const avail = Math.max(0, body.clientWidth - padX);
-  if (!avail) return;
-  const scale = avail / SHEET_PX_W;
-  body.querySelectorAll('.cdx-cert-sheet-wrap').forEach((wrap) => {
-    const page = wrap.querySelector('.cdx-cert-page');
-    if (!page) return;
-    page.style.transformOrigin = 'top left';
-    page.style.transform = 'scale(' + scale + ')';
-    wrap.style.width  = avail + 'px';
-    wrap.style.height = (SHEET_PX_H * scale) + 'px';
-  });
-}
+function _scaleTplPreview() { _fitSheets(_q('#cdx-certs-tpl-preview-body')); }
 
 // ── Emitidos sub-area ─────────────────────────────────────────────────────────
 function _mountEmitidos() {
@@ -641,28 +643,45 @@ async function _markSent(code) {
 function _previewCert(code) {
   const cert = _certs.find((c) => c.code === code);
   if (!cert) return;
-  _openCertPreview(cert);
+  _openCertFullscreen(cert);
 }
 
-// Render the real front+back for a certificate (a saved row or a catalog sample)
-// into a modal, hydrate the logo/QR placeholders, and offer print → PDF.
-function _openCertPreview(cert) {
-  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
-  const html =
-    '<div class="cdx-modal cdx-cert-render-modal">' +
-      '<div class="cdx-modal-title">' + esc(t('certificates.preview_title')) + '</div>' +
-      '<div class="cdx-cert-render-stage" id="cdx-cert-render-stage">' + renderCertHtml(cert, origin) + '</div>' +
-      '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn" id="cdx-prev-close">' + esc(t('certificates.cancel')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-primary" id="cdx-prev-print">' + esc(t('certificates.print')) + '</button>' +
-      '</div>' +
-    '</div>';
-  const bd = openModal(html);
-  const stage = bd.querySelector('#cdx-cert-render-stage');
-  hydrate(stage, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
-  stage.querySelectorAll('.cdx-cert-page').forEach((p) => _fitPage(p, stage.clientWidth));
-  bd.querySelector('#cdx-prev-close').addEventListener('click', () => closeModal(bd));
-  bd.querySelector('#cdx-prev-print').addEventListener('click', () => _printCert(cert));
+// Open the certificate (a saved row or a catalog sample) FULLSCREEN: the real
+// front + back scaled to fit the viewport, a print → PDF action and a close (×)
+// at the top-right. Mirrors the Labs fullscreen viewer (CVLabViewer): a fixed
+// dark overlay, Escape / backdrop-click / × to dismiss.
+function _openCertFullscreen(cert) {
+  const origin  = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
+  const overlay = document.createElement('div');
+  overlay.className = 'cdx-cert-fs-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.innerHTML =
+    '<div class="cdx-cert-fs-actions">' +
+      '<button type="button" class="cdx-cert-fs-btn" data-action="print">' + esc(t('certificates.print')) + '</button>' +
+      '<button type="button" class="cdx-cert-fs-close" aria-label="' + esc(t('certificates.cancel')) + '">&times;</button>' +
+    '</div>' +
+    '<div class="cdx-cert-fs-body" id="cdx-cert-fs-body">' + _previewSheetsHtml(cert, origin) + '</div>';
+  document.body.appendChild(overlay);
+
+  const body = overlay.querySelector('#cdx-cert-fs-body');
+  hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+
+  const fit = () => _fitSheets(body);
+  fit();
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fit);
+
+  const onKey = (e) => { if (e.key === 'Escape') destroy(); };
+  function destroy() {
+    document.removeEventListener('keydown', onKey);
+    if (typeof window !== 'undefined') window.removeEventListener('resize', fit);
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+  }
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) destroy(); });
+  overlay.querySelector('.cdx-cert-fs-close').addEventListener('click', destroy);
+  overlay.querySelector('[data-action="print"]').addEventListener('click', () => _printCert(cert));
+  document.addEventListener('keydown', onKey);
+  if (typeof window !== 'undefined') window.addEventListener('resize', fit);
 }
 
 function _printCert(cert) {
@@ -950,8 +969,8 @@ export function mount(viewEl, ctx) {
 export function unmount() {
   _cleanup.forEach((fn) => { try { fn(); } catch (_) {} });
   _cleanup = [];
-  document.querySelectorAll('.cdx-modal-backdrop').forEach((bd) => {
-    if (bd.parentNode) bd.parentNode.removeChild(bd);
+  document.querySelectorAll('.cdx-modal-backdrop, .cdx-cert-fs-overlay').forEach((el) => {
+    if (el.parentNode) el.parentNode.removeChild(el);
   });
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;

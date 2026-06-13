@@ -1134,7 +1134,7 @@ export default {
 
   // Modelos — catálogo dos 7 modelos (cert-render.js)
   'certificates.catalog_title':       'Modelos de certificado',
-  'certificates.catalog_hint':        'Escolha o tema. Todos os 7 modelos ficam disponíveis na emissão. Clique em um modelo para ver frente e verso.',
+  'certificates.catalog_hint':        'Selecione um modelo na lista; ajuste a cor no preview. Os 7 ficam disponíveis na emissão.',
   'certificates.theme':               'Tema',
   'certificates.theme_navy':          'Navy',
   'certificates.theme_teal':          'Teal',
