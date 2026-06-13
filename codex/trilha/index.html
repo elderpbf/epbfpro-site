@@ -15,7 +15,9 @@
 <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
 <link rel="stylesheet" href="/backstage/css/shared-components.css?v=1.6">
 <link rel="stylesheet" href="/backstage/css/public-header.css?v=1.8">
+<link rel="stylesheet" href="/backstage/css/ct-renderer.css?v=1.2">
 <link rel="stylesheet" href="css/trilha.css?v=1.0">
+<link rel="stylesheet" href="css/cards.css?v=1.0">
 
 <script src="/backstage/js/debug.js?v=2.5"></script>
 <script src="/backstage/js/theme-manager.js?v=1.2"></script>
@@ -68,6 +70,7 @@
 
       <!-- AULAS -->
       <div class="cdx-trilha-panel" data-panel="aulas">
+        <button id="cdx-tr-back-pill" class="cdx-tr-back-pill" type="button">&lsaquo; Voltar à trilha</button>
         <div id="cdx-tr-aulas-timeline" class="cdx-tr-timeline"></div>
       </div>
 
@@ -91,13 +94,24 @@
 
 </div>
 
-<!-- Shared services (window globals) before the module boot. -->
+<!-- Shared services + reused leaf components (window globals) before the boot:
+     CTRenderer (item content), CT_TYPE_FILTER (chip strip), CTTarefaSubmitModal
+     (tarefa submit) + its field registry. Same shared components the admin uses. -->
 <script src="/backstage/js/api-client.js?v=1.2"></script>
 <script src="/backstage/js/pensoia-header.js?v=1.4"></script>
+<script src="/backstage/js/utils.js?v=1.5"></script>
+<script src="/backstage/js/ct-renderer.js?v=1.2"></script>
+<script src="/backstage/js/ct-type-filter.js?v=1.1"></script>
+<script src="/backstage/js/ct-tarefa-fields.js?v=1.0"></script>
+<script src="/backstage/js/ct-tarefa-submit-modal.js?v=1.0"></script>
 
-<!-- Codex is ES modules: one boot points the backend at codex-api and mounts. -->
+<!-- Codex is ES modules: one boot owns glyphs, points the backend at codex-api,
+     registers the tab renderers, and mounts. -->
 <script type="module">
+  import * as glyphs from '/codex/js/glyphs.js';
   import { mount } from './js/page.js';
+  import './js/aulas.js'; // self-registers the 'aulas' panel renderer
+  window.CdxGlyphs = glyphs;
   // Stage 2: Trail's backend is the codex-api Worker. Repoint window.WORKER_URL
   // (set by api-client.js) before any facade call. Reversible: delete this line.
   window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';

@@ -1,0 +1,86 @@
+// codex/trilha/js/sub.js
+// Compact sub-card used inside an aula body (Tarefa / Conteúdo da aula / Outros
+// materiais). Clicking expands inline below it with the rendered item content
+// (via the shared CTRenderer global) + a right-side action button. Item content
+// is fetched through the Trail facade (ct_get_item_public).
+import { state } from './state.js';
+import { esc } from './utils.js';
+import { isFresh } from './freshness.js';
+import { injectActionButton } from './actions.js';
+import { trail } from './api.js';
+
+export function buildSub(item, opts = {}) {
+  const sub = document.createElement('div');
+  sub.className = 'cdx-tr-sub' + (opts.isTarefa ? ' cdx-tr-sub--tarefa' : '');
+  sub.dataset.itemId = item.id;
+
+  let zoneClass = 'cdx-tr-sub-zone';
+  if (opts.isTarefa) zoneClass += ' cdx-tr-sub-zone--tarefa';
+  else if (opts.isApostila) zoneClass += ' cdx-tr-sub-zone--apostila';
+
+  // A content item's icon comes from its type (item.type_icon: a "glyph:<key>"
+  // resolved to an SVG by the Codex glyph library) rendered through CdxGlyphs.
+  // The Tarefa zone keeps its dedicated check mark. Falls back to escaped text.
+  let iconHtml;
+  if (opts.isTarefa) {
+    iconHtml = '✓';
+  } else if (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && item.type_icon) {
+    iconHtml = window.CdxGlyphs.iconHtml(item.type_icon, { size: 20 });
+  } else {
+    iconHtml = esc(item.type_icon || '•');
+  }
+  const typeLabel = opts.isTarefa ? 'Tarefa' : (item.type_label || item.type || '');
+  const novoPill = isFresh(item) ? '<span class="cdx-tr-novo-pill">NOVO</span>' : '';
+
+  sub.innerHTML =
+    '<div class="' + zoneClass + '">' + iconHtml + '</div>' +
+    '<div class="cdx-tr-sub-meta">' +
+      '<span class="cdx-tr-sub-type">' + esc(typeLabel) + novoPill + '</span>' +
+      '<span class="cdx-tr-sub-title">' + esc(item.title) + '</span>' +
+      (item.summary ? '<span class="cdx-tr-sub-summary">' + esc(item.summary) + '</span>' : '') +
+    '</div>' +
+    '<div class="cdx-tr-sub-actions"></div>';
+
+  sub.addEventListener('click', (e) => {
+    if (e.target && e.target.closest && e.target.closest('.cdx-tr-item-action')) return;
+    // When open, clicks on the action-area padding (not the button) are dead space.
+    if (sub.classList.contains('is-expanded') && e.target && e.target.closest && e.target.closest('.cdx-tr-sub-actions')) return;
+    toggleSub(sub, item, opts);
+  });
+  return sub;
+}
+
+export async function toggleSub(sub, item, opts = {}) {
+  const alreadyExpanded = sub.classList.contains('is-expanded');
+
+  const list = sub.parentNode;
+  list.querySelectorAll('.cdx-tr-sub-expanded').forEach((el) => el.remove());
+  list.querySelectorAll('.cdx-tr-sub.is-expanded').forEach((el) => {
+    el.classList.remove('is-expanded');
+    const a = el.querySelector('.cdx-tr-sub-actions');
+    if (a) a.innerHTML = '';
+  });
+
+  if (alreadyExpanded) return;
+
+  sub.classList.add('is-expanded');
+  const exp = document.createElement('div');
+  exp.className = 'cdx-tr-sub-expanded';
+  exp.innerHTML = '<div class="ctr-loading">Carregando...</div>';
+  sub.parentNode.insertBefore(exp, sub.nextSibling);
+
+  try {
+    const data = await trail.itemPublic({
+      client_slug: state.clientSlug,
+      turma_slug: state.turmaSlug,
+      token: state.token,
+      item_id: item.id,
+      _silent: true,
+    });
+    exp.innerHTML = '';
+    window.CTRenderer.render(data.item, exp, { preview: true });
+    injectActionButton(sub, data.item, opts);
+  } catch (_) {
+    exp.innerHTML = '<div class="cdx-tr-empty">Erro ao carregar conteúdo.</div>';
+  }
+}
