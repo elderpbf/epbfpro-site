@@ -716,6 +716,9 @@
   background: var(--danger);
   color: #fff;
 }
+/* Hidden state ("+ NOVO", badge currently off): muted, fills on hover. */
+.cdx-rel-clear-fresh.is-hidden-state { background: transparent; opacity: 0.6; }
+.cdx-rel-clear-fresh.is-hidden-state:hover { background: var(--danger); color: #fff; opacity: 1; }
 /* Composer in the right pane: one search + a single-open accordion (the Presets
    picker layout, .cdx-picker*), filling the body with the Save pinned below. */
 .cdx-releases-split .cdx-preview-body { display: flex; flex-direction: column; gap: 0.8rem; }

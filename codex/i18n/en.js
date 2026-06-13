@@ -377,9 +377,10 @@ export default {
   'releases.empty_outros_solo': 'No items available.',
   'releases.saving':          'Saving...',
   'releases.saved':           'Saved.',
-  'releases.clear_fresh':         'Clear NOVO badge for this lesson',
-  'releases.clear_fresh_confirm': 'Remove the NOVO badge from every item in this lesson? The items stay released.',
-  'releases.clear_fresh_done':    'NOVO badge cleared.',
+  'releases.clear_fresh':         'Hide NOVO badge for this lesson',
+  'releases.clear_fresh_done':    'NOVO badge hidden.',
+  'releases.show_fresh':          'Show NOVO badge for this lesson',
+  'releases.show_fresh_done':     'NOVO badge shown.',
 
   // Content → Apostila (imported course content)
   'apostila.title_default':   'Course content',
