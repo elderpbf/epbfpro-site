@@ -10,7 +10,6 @@
 // breadcrumb merged into the bottom bar.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.CVDriveViewer (../backstage/js/cv-drive-viewer.js)
 //   window.BS_GOOGLE     (../backstage/js/bs-google.js)
 //   window.CVPresetsUI   (../backstage/js/cv-presets-ui.js)
 import { lessons as api, content as contentApi, cohorts as cohortsApi, presets as presetsApi, cp as cpApi } from '../js/codex-api.js';
@@ -20,10 +19,11 @@ import * as notice from '../js/notice.js';
 import * as itemForm from '../content/item-form.js';
 import { renderItem } from '../js/item-render.js';
 import { findItem as findLabItem, getAllItems as labItems } from '../js/labs-registry.js';
+import { mountInContainer as mountDriveFile } from '../js/drive-viewer.js';
 import {
   classifyVault, SECTION_ORDER, rendererStrategy,
   crumbActions, supportsTextResize, makeTextScale,
-  driveFolderEmbedUrl, driveFileEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
+  driveFolderEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
   groupItemsByType, zoneClassFor,
   makeFavorites, makeContentWidth, groupDriveByFolder, LLM_LAUNCHERS,
 } from './lesson-model.js';
@@ -574,12 +574,9 @@ function _renderIframe(host, url, emptyMsg) {
 }
 
 function _renderDriveFile(host, item, meta) {
-  if (window.CVDriveViewer && typeof window.CVDriveViewer.mountInContainer === 'function') {
-    host.innerHTML = '';
-    window.CVDriveViewer.mountInContainer(item, host);
-    return;
-  }
-  _renderIframe(host, driveFileEmbedUrl(meta), t('lessons.drive_no_file'));
+  // The Codex drive-viewer owns the preview URL contract + empty-state handling.
+  host.innerHTML = '';
+  mountDriveFile(item, host);
 }
 
 function _renderPopupCard(host, item, meta) {

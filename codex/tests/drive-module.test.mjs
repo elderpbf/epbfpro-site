@@ -1,8 +1,8 @@
 // Drive sub-tab: NATIVE cdx- module (was a CVDriveSyncUI global wrapper). Tab
 // contract + module source rules + facade wiring + the shared-global boundary.
-// The file-preview modal (CVDriveViewer) and the Google Drive read (BS_GOOGLE)
-// stay shared globals; every Worker call goes through the codex-api `drive`
-// facade. Importing must not touch DOM/globals at the top level.
+// The file-preview modal is the Codex-owned js/drive-viewer.js module; the Google
+// Drive read (BS_GOOGLE) stays a shared global; every Worker call goes through the
+// codex-api `drive` facade. Importing must not touch DOM/globals at the top level.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -34,9 +34,10 @@ test('drive reaches the backend through the facade drive group', () => {
   for (const m of ['listFolders', 'addFolder', 'updateFolder', 'deleteFolder', 'listItems', 'syncItems']) {
     assert.match(src, new RegExp('api\\.' + m + '\\s*\\('), `uses drive facade .${m}()`);
   }
-  // The actual Google Drive read + file modal stay shared globals.
+  // The Google Drive read stays a shared global; the file modal is now a Codex module.
   assert.match(src, /window\.BS_GOOGLE|_bs\(\)/, 'reads Google Drive via BS_GOOGLE');
-  assert.match(src, /window\.CVDriveViewer/, 'delegates file preview to CVDriveViewer');
+  assert.match(src, /from\s+['"]\.\.\/js\/drive-viewer\.js['"]/, 'delegates file preview to the Codex drive-viewer module');
+  assert.ok(!/window\.CVDriveViewer\b/.test(src), 'no longer reads the backstage CVDriveViewer global');
 });
 
 test('the codex-api facade exposes the drive group mapped to the frozen cv_* actions', async () => {
