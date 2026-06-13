@@ -11,15 +11,17 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
 
+<!-- Shared tokens + public chrome (Codex owns its component CSS below). -->
 <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
 <link rel="stylesheet" href="/backstage/css/shared-components.css?v=1.6">
 <link rel="stylesheet" href="/backstage/css/public-header.css?v=1.8">
-<link rel="stylesheet" href="/trilha/css/trilha-base.css?v=4.2">
-<link rel="stylesheet" href="/trilha/css/validar.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/validar.css?v=1.0">
 
 <script src="/backstage/js/debug.js?v=2.5"></script>
 <script src="/backstage/js/theme-manager.js?v=1.2"></script>
 <script>
+  // Pre-paint theme (shared public chrome boot, not app logic; same key as the
+  // legacy trilha so a student's saved preference carries over).
   ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });
 </script>
 </head>
@@ -27,105 +29,21 @@
 
 <pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
 
-<div class="tr-page">
+<div class="cdx-trilha-page">
+  <div id="cdx-trilha-view"></div>
+</div>
 
-  <!-- Loading state -->
-  <div id="vd-loading" hidden>
-    <div class="tr-spinner"></div>
-    Verificando certificado...
-  </div>
-
-  <!-- Code-entry fallback (bare /trilha/validar with no ?code=) -->
-  <div id="vd-entry" hidden>
-    <div class="vd-entry-wrap">
-      <div class="vd-entry-icon">&#127941;</div>
-      <h1 class="vd-entry-title">Validar certificado</h1>
-      <p class="vd-entry-desc">Digite o código impresso no seu certificado para confirmar a autenticidade.</p>
-      <form id="vd-form" class="vd-form" autocomplete="off">
-        <input
-          id="vd-code-input"
-          class="vd-code-input"
-          type="text"
-          placeholder="Ex.: ABC123XYZ4"
-          maxlength="20"
-          spellcheck="false"
-          autocapitalize="characters"
-          required
-        >
-        <button class="vd-submit-btn" type="submit">Verificar</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Error state (not found, network error) -->
-  <div id="vd-error" hidden>
-    <div class="vd-msg-wrap vd-msg-wrap--error">
-      <div class="vd-msg-icon">&#10007;</div>
-      <p id="vd-error-msg" class="vd-msg-text"></p>
-      <a href="/trilha/validar" class="vd-try-again">Tentar outro código</a>
-    </div>
-  </div>
-
-  <!-- Result state (valid or revoked) -->
-  <div id="vd-result" class="vd-result" hidden>
-
-    <!-- Status badge: valid ✓ / revoked ✗ -->
-    <div id="vd-status-badge" class="vd-badge"></div>
-
-    <div class="vd-card">
-
-      <div class="vd-field">
-        <span class="vd-label">Participante</span>
-        <span id="vd-holder-name" class="vd-value vd-value--name"></span>
-      </div>
-
-      <div class="vd-field">
-        <span class="vd-label">Curso</span>
-        <span id="vd-course-title" class="vd-value"></span>
-      </div>
-
-      <div class="vd-fields-row">
-        <div class="vd-field">
-          <span class="vd-label">Carga horária</span>
-          <span id="vd-hours" class="vd-value"></span>
-        </div>
-        <div class="vd-field">
-          <span class="vd-label">Data de emissão</span>
-          <span id="vd-issued-on" class="vd-value"></span>
-        </div>
-      </div>
-
-      <div class="vd-field">
-        <span class="vd-label">Emissor</span>
-        <span id="vd-issuer" class="vd-value"></span>
-      </div>
-
-      <!-- PDF download (rendered only when pdf_url present) -->
-      <div id="vd-pdf-wrap" class="vd-pdf-wrap" hidden>
-        <a id="vd-pdf-link" class="vd-pdf-btn" href="#" target="_blank" rel="noopener">
-          &#8659; Baixar certificado em PDF
-        </a>
-      </div>
-
-      <!--
-        Phase 2 – assinatura digital
-        <div id="vd-sig-badge" class="vd-sig-badge" style="display:none" aria-hidden="true">
-          &#128274; Assinado digitalmente
-        </div>
-      -->
-
-    </div>
-
-    <p class="vd-footer-note">
-      Este documento foi emitido pela plataforma <a href="https://pensoia.com" target="_blank" rel="noopener">PensoIA</a>.
-    </p>
-
-  </div>
-
-</div><!-- /.tr-page -->
-
+<!-- Shared services (window globals) before the module boot. -->
 <script src="/backstage/js/api-client.js?v=1.2"></script>
 <script src="/backstage/js/pensoia-header.js?v=1.4"></script>
-<script src="/trilha/js/validar.js?v=1.0"></script>
+
+<!-- Codex is ES modules: one boot points the backend at codex-api and mounts. -->
+<script type="module">
+  import { mount } from '/codex/trilha/js/validar.js';
+  // Stage 2: Trail's backend is the codex-api Worker. Repoint window.WORKER_URL
+  // (set by api-client.js) before any facade call. Reversible: delete this line.
+  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+  mount(document.getElementById('cdx-trilha-view'), {});
+</script>
 </body>
 </html>

@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/backstage/css/theme.css?v=1.2">
 <link rel="stylesheet" href="/backstage/css/shared-components.css?v=1.6">
 <link rel="stylesheet" href="/backstage/css/public-header.css?v=1.8">
-<link rel="stylesheet" href="css/validar.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/validar.css?v=1.0">
 
 <script src="/backstage/js/debug.js?v=2.5"></script>
 <script src="/backstage/js/theme-manager.js?v=1.2"></script>
@@ -39,7 +39,7 @@
 
 <!-- Codex is ES modules: one boot points the backend at codex-api and mounts. -->
 <script type="module">
-  import { mount } from './js/validar.js';
+  import { mount } from '/codex/trilha/js/validar.js';
   // Stage 2: Trail's backend is the codex-api Worker. Repoint window.WORKER_URL
   // (set by api-client.js) before any facade call. Reversible: delete this line.
   window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';

@@ -17,11 +17,11 @@
 <link rel="stylesheet" href="/backstage/css/public-header.css?v=1.8">
 <link rel="stylesheet" href="/backstage/css/ct-renderer.css?v=1.2">
 <link rel="stylesheet" href="/backstage/css/question-types.css?v=1.9">
-<link rel="stylesheet" href="css/trilha.css?v=1.0">
-<link rel="stylesheet" href="css/cards.css?v=1.0">
-<link rel="stylesheet" href="css/nexo.css?v=1.0">
-<link rel="stylesheet" href="css/tarefa-modal.css?v=1.0">
-<link rel="stylesheet" href="css/mobile.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/nexo.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/tarefa-modal.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/mobile.css?v=1.0">
 
 <script src="/backstage/js/debug.js?v=2.5"></script>
 <script src="/backstage/js/theme-manager.js?v=1.2"></script>
@@ -117,10 +117,10 @@
      registers the tab renderers, and mounts. -->
 <script type="module">
   import * as glyphs from '/codex/js/glyphs.js';
-  import { mount } from './js/page.js';
-  import './js/aulas.js'; // self-registers the 'aulas' panel renderer
-  import './js/flat.js';  // self-registers the 'apostila' + 'outros' renderers
-  import './js/nexo.js';  // self-starts the live-question poller
+  import { mount } from '/codex/trilha/js/page.js';
+  import '/codex/trilha/js/aulas.js'; // self-registers the 'aulas' panel renderer
+  import '/codex/trilha/js/flat.js';  // self-registers the 'apostila' + 'outros' renderers
+  import '/codex/trilha/js/nexo.js';  // self-starts the live-question poller
   window.CdxGlyphs = glyphs;
   // Stage 2: Trail's backend is the codex-api Worker. Repoint window.WORKER_URL
   // (set by api-client.js) before any facade call. Reversible: delete this line.

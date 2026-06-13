@@ -20,9 +20,14 @@ export function fmtDate(iso) {
   return p[2].replace(/^0/, '') + '/' + p[1].replace(/^0/, '') + '/' + p[0];
 }
 
-// ?code= out of a location.search string.
-export function getCode(search) {
-  return (new URLSearchParams(search || '').get('code') || '').trim();
+// The certificate code, from ?code= OR the clean path /validar/<code> (the
+// .htaccess rewrite of /trilha/validar/<code> leaves the code in the PATH, not
+// the browser's query string, so both forms must be read).
+export function getCode(search, pathname) {
+  const q = (new URLSearchParams(search || '').get('code') || '').trim();
+  if (q) return q;
+  const m = String(pathname || '').match(/\/validar\/([^/?#]+)/);
+  return m ? decodeURIComponent(m[1]).trim() : '';
 }
 
 // cert -> view-model. All status/format/pdf-gating logic lives here, DOM-free:
@@ -120,9 +125,9 @@ let _root = null;
 export function mount(root, ctx = {}) {
   const api = ctx.api || trail;
   const t   = ctx.t   || defaultT;
-  const loc = ctx.location || (typeof window !== 'undefined' ? window.location : { search: '' });
+  const loc = ctx.location || (typeof window !== 'undefined' ? window.location : { search: '', pathname: '' });
   _root = root;
-  const code = getCode(loc.search || '');
+  const code = getCode(loc.search || '', loc.pathname || '');
   if (code) { settle(root, api, t, code); return; }
 
   // Bare page: manual entry form.

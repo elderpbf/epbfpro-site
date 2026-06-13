@@ -25,6 +25,13 @@ test('getCode: absent -> empty', () => {
   assert.equal(getCode(''), '');
   assert.equal(getCode('?x=1'), '');
 });
+test('getCode: reads the clean path /validar/<code> when the query is empty', () => {
+  assert.equal(getCode('', '/trilha/validar/XYZ789'), 'XYZ789');
+  assert.equal(getCode('', '/codex/trilha/validar/ABC123'), 'ABC123');
+});
+test('getCode: query wins over path', () => {
+  assert.equal(getCode('?code=Q1', '/trilha/validar/P1'), 'Q1');
+});
 
 const VALID = {
   holder_name: 'Maria da Silva',
