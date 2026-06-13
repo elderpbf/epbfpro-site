@@ -673,6 +673,21 @@ function _turmaName(turma) {
   return turma ? (turma.display_name || turma.name || String(turma.id)) : '';
 }
 
+// Cohorts for a client in the issue flow. Prefer the already-loaded index (the
+// same source the Emitidos cascade uses); fall back to a fresh ct_list_turmas if
+// the index has not loaded yet (e.g. issue opened before _loadFilters resolved).
+async function _issueTurmasFor(slug) {
+  if (!slug) return [];
+  if (_turmasByClient[slug] && _turmasByClient[slug].length) return _turmasByClient[slug];
+  try {
+    const res = await cohortsApi.listTurmas({ client_slug: slug });
+    return (res && res.turmas) || [];
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: issue: listTurmas: ' + (e && e.message || e), 'error');
+    return [];
+  }
+}
+
 function _populateClientFilter() {
   const sel = _q('#cdx-certs-filter-client');
   if (!sel) return;
@@ -986,22 +1001,21 @@ function _openIssueFlow() {
   clientSel.addEventListener('change', async () => {
     const slug = clientSel.value;
     turmaSel.innerHTML = '<option value="">' + esc(t('certificates.issue_select_turma')) + '</option>';
-    turmaSel.disabled = !slug;
-    // Pre-fill the client display name into the verso "client" snapshot.
+    turmaSel.disabled = true;
+    const rosterWrap = bd.querySelector('#cdx-issue-roster-wrap');
+    if (rosterWrap) rosterWrap.style.display = 'none';
     if (!slug) return;
-    try {
-      const res = await cohortsApi.listTurmas({ client_slug: slug });
-      const turmas = (res && res.turmas) || [];
-      turmas.forEach((turma) => {
+    const turmas = await _issueTurmasFor(slug);
+    turmas.slice()
+      .sort((a, b) => _turmaName(a).localeCompare(_turmaName(b)))
+      .forEach((turma) => {
         const opt = document.createElement('option');
         opt.value = String(turma.id);
-        opt.textContent = turma.display_name || turma.name;
+        opt.textContent = _turmaName(turma);
         turmaSel.appendChild(opt);
       });
-      turmaSel.disabled = false;
-    } catch (e) {
-      if (window.bsLog) window.bsLog('certs: issue: listTurmas: ' + (e && e.message || e), 'error');
-    }
+    turmaSel.disabled = !turmas.length;
+    if (!turmas.length && window.bsLog) window.bsLog('certs: issue: no cohorts for client ' + slug, 'error');
   });
 
   turmaSel.addEventListener('change', async () => {
