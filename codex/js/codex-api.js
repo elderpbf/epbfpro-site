@@ -248,7 +248,7 @@ export const releases = {
 // admin operation. Certificate TEMPLATES reuse the existing `slides` facade with
 // `engine: 'codex-certificate'`; no new template methods are needed here.
 export const certificates = {
-  issue:      (p) => call('cert_issue', p),       // { turma_id, participant_ids[], course_title, hours?, issued_on?, issuer?, template_slug? }
+  issue:      (p) => call('cert_issue', p),       // { turma_id, participant_ids[], course_title, hours?, issued_on?, issuer?, template_slug?, theme?, meta_json? }
   list:       (p) => call('cert_list', p),        // { turma_id?, status?, q? }
   get:        (p) => call('cert_get', p),         // { code }
   revoke:     (p) => call('cert_revoke', p),      // { code }

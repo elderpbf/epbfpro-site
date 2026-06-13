@@ -361,8 +361,166 @@
   margin: 0 0 1rem;
 }
 
+/* ── Modelos: catalog of the 7 templates ───────────────────────── */
+.cdx-cert-catalog {
+  padding: 1rem 1.5rem 2rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.cdx-cert-catalog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.cdx-cert-catalog-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.cdx-cert-catalog-hint {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0.25rem 0 0;
+  max-width: 60ch;
+}
+
+.cdx-cert-theme-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+[data-theme="dark"] .cdx-cert-theme-picker { background: var(--surface); border-color: var(--border); }
+
+.cdx-cert-theme-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 0 0.35rem;
+}
+
+.cdx-cert-theme-chip {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.28rem 0.7rem;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.cdx-cert-theme-chip:hover { color: var(--text-primary); background: var(--surface-hover, rgba(127,127,127,0.10)); }
+.cdx-cert-theme-chip.is-active {
+  color: #fff;
+  background: var(--accent-color, #8b5cf6);
+  border-color: var(--accent-color, #8b5cf6);
+}
+
+.cdx-cert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.cdx-cert-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+.cdx-cert-card:hover {
+  border-color: var(--accent-color, #8b5cf6);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .cdx-cert-card { background: var(--surface); border-color: var(--border); }
+
+/* Thumbnail clips the full-size .cdx-cert-page which JS scales down. */
+.cdx-cert-thumb {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #eef2f1;
+  border-bottom: 1px solid var(--border);
+}
+.cdx-cert-thumb .cdx-cert-page { position: absolute; top: 0; left: 0; }
+
+.cdx-cert-card-label {
+  padding: 0.6rem 0.9rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+/* ── Render preview modal (real front + back) ──────────────────── */
+.cdx-cert-render-modal { max-width: min(960px, 92vw); }
+
+.cdx-cert-render-stage {
+  overflow: hidden;
+  background: #eef2f1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0;
+  margin-bottom: 1rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.cdx-cert-render-stage .cdx-cert-page { display: block; }
+
+/* ── Issue modal: field rows + verso fieldset ──────────────────── */
+.cdx-field-row { display: flex; gap: 0.75rem; }
+.cdx-field-row .cdx-field { flex: 1; min-width: 0; }
+
+.cdx-cert-verso {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem 0.85rem;
+  margin: 0.4rem 0 0.9rem;
+}
+.cdx-cert-verso legend {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  padding: 0 0.4rem;
+}
+.cdx-cert-verso textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  outline: none;
+}
+.cdx-cert-verso textarea:focus { border-color: var(--accent-color, #8b5cf6); }
+[data-theme="dark"] .cdx-cert-verso textarea { background: var(--surface); border-color: var(--border); color: var(--text-primary); }
+
+.cdx-field-hint { display: block; font-size: 0.74rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .cdx-certs-modelos { flex-direction: column; height: auto; }
   .cdx-certs-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 200px; }
+  .cdx-cert-grid { grid-template-columns: 1fr; }
+  .cdx-field-row { flex-direction: column; gap: 0; }
 }

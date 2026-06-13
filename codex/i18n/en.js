@@ -1124,11 +1124,37 @@ export default {
   'certificates.issue_hours_ph':      'e.g. 40',
   'certificates.issue_issued_on':     'Issue date',
   'certificates.issue_issuer':        'Issued by',
-  'certificates.issue_issuer_default':'PensoIA',
+  'certificates.issue_issuer_default':'EPBF Soluções em Tecnologia Ltda',
   'certificates.issue_issuer_ph':     'Name of issuing organization',
   'certificates.issue_submit':        'Issue',
   'certificates.issue_result_title':  'Certificates issued:',
   'certificates.issued_ok':           '{n} certificate(s) issued.',
+
+  // Templates — catalog of the 7 templates (cert-render.js)
+  'certificates.catalog_title':       'Certificate templates',
+  'certificates.catalog_hint':        'Pick a theme. All 7 templates are available at issue time. Click a template to see front and back.',
+  'certificates.theme':               'Theme',
+  'certificates.theme_navy':          'Navy',
+  'certificates.theme_teal':          'Teal',
+  'certificates.theme_duo':           'Duo',
+  'certificates.preview_open':        'View front and back',
+  'certificates.print':               'Print / PDF',
+  'certificates.print_blocked':       'The browser blocked the print window. Allow pop-ups for this site.',
+
+  // Issue — template, theme and back-side content
+  'certificates.issue_theme':         'Theme',
+  'certificates.issue_verso_legend':  'Back-side content',
+  'certificates.issue_instructor':    'Lead instructor',
+  'certificates.issue_place':         'Location',
+  'certificates.issue_place_ph':      'e.g. Aracaju · SE',
+  'certificates.issue_format':        'Format',
+  'certificates.issue_format_ph':     'e.g. 3 sessions of 4 hours',
+  'certificates.issue_modality':      'Modality',
+  'certificates.issue_meetings':      'Sessions',
+  'certificates.issue_meetings_ph':   'e.g. 3',
+  'certificates.issue_modules':       'Program content',
+  'certificates.issue_modules_ph':    'LLM Foundations :: Tokens and context.\nPrompt Engineering :: Frameworks and roles.',
+  'certificates.issue_modules_hint':  'One module per line. Use "::" to split title and description.',
 
   // Certificates — Templates (cert-template.js + content/certificates.js)
   'cert.sub_modelos':          'Templates',

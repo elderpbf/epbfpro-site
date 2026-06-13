@@ -1123,11 +1123,37 @@ export default {
   'certificates.issue_hours_ph':      'Ex: 40',
   'certificates.issue_issued_on':     'Data de emissão',
   'certificates.issue_issuer':        'Emitido por',
-  'certificates.issue_issuer_default':'PensoIA',
+  'certificates.issue_issuer_default':'EPBF Soluções em Tecnologia Ltda',
   'certificates.issue_issuer_ph':     'Nome da organização emissora',
   'certificates.issue_submit':        'Emitir',
   'certificates.issue_result_title':  'Certificados emitidos:',
   'certificates.issued_ok':           '{n} certificado(s) emitido(s).',
+
+  // Modelos — catálogo dos 7 modelos (cert-render.js)
+  'certificates.catalog_title':       'Modelos de certificado',
+  'certificates.catalog_hint':        'Escolha o tema. Todos os 7 modelos ficam disponíveis na emissão. Clique em um modelo para ver frente e verso.',
+  'certificates.theme':               'Tema',
+  'certificates.theme_navy':          'Navy',
+  'certificates.theme_teal':          'Teal',
+  'certificates.theme_duo':           'Duo',
+  'certificates.preview_open':        'Ver frente e verso',
+  'certificates.print':               'Imprimir / PDF',
+  'certificates.print_blocked':       'O navegador bloqueou a janela de impressão. Permita pop-ups para este site.',
+
+  // Emissão — modelo, tema e conteúdo do verso
+  'certificates.issue_theme':         'Tema',
+  'certificates.issue_verso_legend':  'Conteúdo do verso',
+  'certificates.issue_instructor':    'Instrutor responsável',
+  'certificates.issue_place':         'Local',
+  'certificates.issue_place_ph':      'Ex: Aracaju · SE',
+  'certificates.issue_format':        'Formato',
+  'certificates.issue_format_ph':     'Ex: 3 encontros de 4 horas',
+  'certificates.issue_modality':      'Modalidade',
+  'certificates.issue_meetings':      'Encontros',
+  'certificates.issue_meetings_ph':   'Ex: 3',
+  'certificates.issue_modules':       'Conteúdo programático',
+  'certificates.issue_modules_ph':    'Fundamentos de LLMs :: Tokens e contexto.\nEngenharia de Prompt :: Frameworks e papéis.',
+  'certificates.issue_modules_hint':  'Um módulo por linha. Use "::" para separar título e descrição.',
 
   // Certificados — Modelos (cert-template.js + content/certificates.js)
   'cert.sub_modelos':          'Modelos',
