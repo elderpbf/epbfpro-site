@@ -12,6 +12,9 @@
 
 export function openModal(html, opts) {
   opts = opts || {};
+  // Remember what had focus so closeModal can restore it (a11y: keyboard and
+  // screen-reader users keep their place instead of dropping focus to <body>).
+  const trigger = (typeof document !== 'undefined') ? document.activeElement : null;
   const bd = document.createElement('div');
   bd.className = 'cdx-modal-backdrop';
   bd.innerHTML = html;
@@ -26,6 +29,7 @@ export function openModal(html, opts) {
     if (e.key === 'Escape') closeModal(bd);
   };
   bd._escHandler = escHandler;
+  bd._trigger = trigger;
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(bd);
@@ -41,5 +45,8 @@ export function closeModal(bd) {
     document.removeEventListener('keydown', target._escHandler);
     target._escHandler = null;
   }
+  const trigger = target._trigger;
+  target._trigger = null;
   if (target.parentNode) target.parentNode.removeChild(target);
+  if (trigger && typeof trigger.focus === 'function') trigger.focus();
 }

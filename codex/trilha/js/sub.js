@@ -14,6 +14,10 @@ export function buildSub(item, opts = {}) {
   const sub = document.createElement('div');
   sub.className = 'cdx-tr-sub' + (opts.isTarefa ? ' cdx-tr-sub--tarefa' : '');
   sub.dataset.itemId = item.id;
+  // Keyboard-operable (a11y): the sub-card is an expander, so expose it as a
+  // button and toggle on Enter/Space, mirroring the click handler below.
+  sub.setAttribute('role', 'button');
+  sub.setAttribute('tabindex', '0');
 
   let zoneClass = 'cdx-tr-sub-zone';
   if (opts.isTarefa) zoneClass += ' cdx-tr-sub-zone--tarefa';
@@ -46,6 +50,12 @@ export function buildSub(item, opts = {}) {
     if (e.target && e.target.closest && e.target.closest('.cdx-tr-item-action')) return;
     // When open, clicks on the action-area padding (not the button) are dead space.
     if (sub.classList.contains('is-expanded') && e.target && e.target.closest && e.target.closest('.cdx-tr-sub-actions')) return;
+    toggleSub(sub, item, opts);
+  });
+  sub.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.target && e.target.closest && e.target.closest('.cdx-tr-item-action')) return;
+    e.preventDefault();
     toggleSub(sub, item, opts);
   });
   return sub;
