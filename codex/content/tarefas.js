@@ -211,7 +211,7 @@ function _prefetchSubmissionCount(itemId) {
   api.listSubmissions({ item_id: itemId, client_slug: _client, turma_slug: _turma }).then((res) => {
     _submissions[itemId] = (res && res.submissions) || [];
     _updateSubmissionCount(itemId);
-  }).catch(() => {});
+  }).catch((e) => { notice.internal(e); });
 }
 
 function _updateSubmissionCount(itemId) {

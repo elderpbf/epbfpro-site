@@ -235,7 +235,7 @@ export function createQaFeed(opts) {
 
   // Q&A is implicitly always-on (no toggle UI), so force server state to match
   // and begin polling immediately.
-  api.toggleQa({ code: sessionCode, enabled: 1 }).catch(() => {});
+  api.toggleQa({ code: sessionCode, enabled: 1 }).catch((e) => { if (window.bsLog) window.bsLog('live-qa: toggle failed: ' + (e && e.message || e), 'error'); });
   startPoll();
 
   return {

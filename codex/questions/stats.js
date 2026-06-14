@@ -116,7 +116,7 @@ async function _load(result, from, to) {
   const p = {};
   if (from && to) { p.date_from = from; p.date_to = to; }
   let gs;
-  try { gs = await api.globalStats(p); } catch (_) { gs = null; }
+  try { gs = await api.globalStats(p); } catch (e) { if (window.bsLog) window.bsLog('stats: global load failed: ' + (e && e.message || e), 'error'); gs = null; }
   if (!_viewEl) return; // view changed mid-await
   _renderResult(result, gs);
 }
