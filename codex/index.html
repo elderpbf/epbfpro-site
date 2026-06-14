@@ -84,7 +84,12 @@
      owns the Enter-to-submit handler (js/form-enter.js, imported in the boot),
      uses its own toast (js/toast.js), and the pure helpers (escHtml/parseCSV/
      LETTERS) were unused (each module vendors its own). -->
-<script src="../backstage/js/api-client.js?v=1.2"></script>
+<!-- api-client.js is no longer loaded: the Worker transport is now the Codex ES
+     module js/worker-call.js (the boot's first import below), which sets
+     window.callWorker and defaults to codex-api. This also completes the admin's
+     Stage 2 backend cutover: api-client.js hardcoded backstage-api and ignored
+     window.WORKER_URL, so the admin had still been on backstage-api. -->
+
 <!-- Codex-owned theme manager (classic script: the Trail pre-paints the theme
      synchronously, so it stays a non-deferred global, window.ThemeManager). -->
 <script src="js/theme-manager.js?v=1.0"></script>
@@ -125,6 +130,7 @@
 <!-- Codex is ES modules. One boot imports, routes by ?tab=, and mounts the
      active tab; no logic inline beyond the wiring. -->
 <script type="module">
+  import './js/worker-call.js'; // Codex Worker transport FIRST -> sets window.callWorker (codex-api default); replaces backstage/js/api-client.js
   import { init as topbar } from './js/codex-topbar.js';
   import { apply as applyI18n } from './js/i18n.js';
   import * as glyphs from './js/glyphs.js';
@@ -136,11 +142,11 @@
   import * as questions from './questions/questions.js';
   import * as certificates from './certificates/certificates.js';
 
-  // Stage 2 cutover: Codex's backend is the codex-api Worker. Repoint the shared
-  // api-client base (window.WORKER_URL, set by api-client.js) so callWorker AND the
-  // facade's assetUrl() hit codex-api. Only this /codex/ page moves; Trail and the
-  // rest of Backstage stay on backstage-api. Reversible: delete this line to fall
-  // back to backstage-api (both Workers share classpulse-db + R2).
+  // Stage 2 cutover: Codex's backend is the codex-api Worker. worker-call.js (the
+  // boot's first import) already defaults here; this is the explicit page-level
+  // override that callWorker AND the facade's assetUrl() read. Trail and the rest
+  // of Backstage are unaffected. Reversible: delete this line to fall back to
+  // worker-call.js's codex-api default (both Workers share classpulse-db + R2).
   window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
 
   // The Codex glyph library is owned here. Shared window-global consumers
