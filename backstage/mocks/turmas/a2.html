@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turmas · B — Drill-in com trilha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#14b8a6; --primary-dark:#0d9488; --navy:#061a51;
+    --bg:#d4f4ed; --surface:#fff; --ink:#134e4a; --ink2:#115e59; --muted:#5b7975;
+    --border:#e2e8f0; --shadow:rgba(20,184,166,.12);
+    --amber:#f59e0b; --blue:#3b82f6; --green:#10b981; --red:#ef4444;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:1.2rem 1.6rem 4rem}
+  .subtabs{display:flex;gap:.3rem;border-bottom:2px solid var(--border);margin-bottom:1rem}
+  .subtab{padding:.6rem 1rem;font-size:.92rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;display:flex;align-items:center;gap:.45rem}
+  .subtab.on{color:var(--primary-dark);border-bottom-color:var(--primary)}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:9px;padding:.5rem .85rem;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+  .btn:hover{border-color:var(--primary)}
+  .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;box-shadow:0 6px 16px var(--shadow)}
+  .btn-sm{padding:.3rem .55rem;font-size:.75rem}
+  /* trail */
+  .trail{display:flex;align-items:center;gap:.45rem;font-size:.88rem;margin-bottom:1rem;color:var(--muted)}
+  .trail a{color:var(--primary-dark);font-weight:600;text-decoration:none;cursor:pointer}
+  .trail a:hover{text-decoration:underline}
+  .trail b{color:var(--navy);font-weight:700}
+  .trail .sep{color:#c2d3d0}
+  /* turma header */
+  .thead{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+  .thead h1{margin:0;font-size:1.6rem;color:var(--navy)}
+  .thead .m{font-size:.86rem;color:var(--muted);margin-top:.2rem}
+  .pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.74rem;font-weight:600;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);border:1px solid color-mix(in srgb,var(--c) 30%,#fff);border-radius:999px;padding:.15rem .55rem}
+  .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+  .s-and{--c:var(--blue)}
+  /* section tabs */
+  .sectabs{display:flex;gap:.2rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.3rem;box-shadow:0 6px 22px var(--shadow);margin-bottom:1.1rem}
+  .sectab{flex:1;text-align:center;padding:.55rem;font-size:.84rem;font-weight:600;color:var(--muted);border-radius:9px;cursor:pointer}
+  .sectab.on{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff}
+  .sectab .b{display:inline-block;margin-left:.3rem;font-size:.7rem;background:rgba(255,255,255,.25);border-radius:999px;padding:0 .35rem}
+  .sectab:not(.on) .b{background:var(--bg);color:var(--ink2)}
+  /* card + form (full width = breathes) */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow);padding:1.3rem 1.5rem}
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.4rem}
+  .f label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:.3rem}
+  .f input,.f select{width:100%;border:1px solid var(--border);border-radius:9px;padding:.55rem .65rem;font:inherit;font-size:.88rem;background:#f8fcfb;color:var(--ink)}
+  .f input:focus,.f select:focus{outline:none;border-color:var(--primary);background:#fff}
+  .f.full{grid-column:1 / -1}
+  /* course link block */
+  .courselink{grid-column:1 / -1;display:flex;align-items:center;gap:.8rem;background:linear-gradient(135deg,rgba(20,184,166,.07),rgba(6,26,81,.04));border:1px solid var(--primary);border-radius:11px;padding:.8rem .9rem}
+  .courselink .ico{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--navy));color:#fff;display:grid;place-items:center;font-size:1.1rem}
+  .courselink .t{font-weight:700;color:var(--navy);font-size:.95rem}
+  .courselink .s{font-size:.78rem;color:var(--muted)}
+  .courselink .act{margin-left:auto;display:flex;gap:.4rem}
+  .divider{height:1px;background:var(--border);margin:1.2rem 0;grid-column:1 / -1}
+  .save{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1.2rem}
+  /* ementa preview (inherited) */
+  .inherit-note{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--ink2);background:var(--bg);border-radius:9px;padding:.5rem .7rem;margin-bottom:1rem}
+  .emrow{padding:.3rem 0;border-bottom:1px dashed #eef3f2}
+  .emrow.m{font-weight:700;color:var(--navy);font-size:.92rem}
+  .emrow.t{padding-left:1rem;font-weight:600;font-size:.85rem}
+  .emrow.s{padding-left:2rem;color:var(--muted);font-size:.8rem}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="subtabs">
+    <div class="subtab on">▦ Turmas</div>
+    <div class="subtab">✦ Cursos</div>
+  </div>
+
+  <div class="trail"><a>Turmas</a><span class="sep">›</span><a>VNC Advocacia</a><span class="sep">›</span><b>Turma A</b></div>
+
+  <div class="thead">
+    <div><h1>Turma A</h1><div class="m">VNC Advocacia · 14 alunos · turma fechada</div></div>
+    <span class="pill s-and">Em andamento</span>
+  </div>
+
+  <div class="sectabs">
+    <div class="sectab on">Visão geral</div>
+    <div class="sectab">Ementa</div>
+    <div class="sectab">Participantes <span class="b">14</span></div>
+    <div class="sectab">Aulas <span class="b">3</span></div>
+    <div class="sectab">Certificados <span class="b">14</span></div>
+  </div>
+
+  <!-- VISÃO GERAL: the rich fields, roomy -->
+  <div class="card" id="s0">
+    <div class="formgrid">
+      <div class="courselink">
+        <div class="ico">✦</div>
+        <div><div class="t">IA Jurídica na Prática</div><div class="s">Curso vinculado · 16h · 6 módulos · a ementa é herdada deste curso</div></div>
+        <div class="act"><button class="btn btn-sm">Ver ementa</button><button class="btn btn-sm">Trocar curso</button></div>
+      </div>
+
+      <div class="f"><label>Nome interno</label><input value="Turma A"></div>
+      <div class="f"><label>Nome de exibição</label><input value="VNC Advocacia · IA Jurídica"></div>
+      <div class="f"><label>Cliente</label><select><option>VNC Advocacia</option><option>Cliente</option><option>Lauterna</option></select></div>
+      <div class="f"><label>Modalidade</label><select><option>Turma fechada (in-company)</option><option>Turma aberta</option></select></div>
+
+      <div class="divider"></div>
+
+      <div class="f"><label>Data de início</label><input type="text" value="04/08/2026"></div>
+      <div class="f"><label>Data de fim</label><input type="text" value="06/08/2026"></div>
+      <div class="f"><label>Formato</label><select><option>Presencial</option><option>Online</option><option>Híbrido</option></select></div>
+      <div class="f"><label>Encontros</label><input value="4 encontros de 4h"></div>
+      <div class="f"><label>Local</label><input value="Aracaju · SE"></div>
+      <div class="f"><label>Carga horária (do curso)</label><input value="16 horas" disabled style="opacity:.6"></div>
+    </div>
+    <div class="save"><button class="btn">Cancelar</button><button class="btn btn-primary">Salvar turma</button></div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('.subtab,.sectab').forEach(s=>s.onclick=()=>{
+    const sib=s.parentElement.children;
+    [...sib].forEach(x=>x.classList.remove('on'));s.classList.add('on');
+  });
+</script>
+</body>
+</html>
