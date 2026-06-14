@@ -743,3 +743,8 @@ a.cdx-card-mini-icon.is-on:hover {
 .cdx-cursos-paste-ta { width: 100%; font-family: 'JetBrains Mono', monospace; font-size: .82rem; border: 1px solid var(--border); border-radius: 9px; padding: .55rem .65rem; background: var(--background); color: var(--text-primary); resize: vertical; }
 .cdx-cursos-paste-mode { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text-secondary); margin: .6rem 0 .2rem; }
 @media (max-width: 760px) { .cdx-cursos-work { grid-template-columns: 1fr; } }
+
+/* Turma form — course/instance section header + a 2-col field grid. */
+.cdx-tf-section { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; margin: 1.1rem 0 .5rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
+.cdx-tf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem .9rem; }
+@media (max-width: 520px) { .cdx-tf-grid { grid-template-columns: 1fr; } }

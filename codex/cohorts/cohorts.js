@@ -4,7 +4,7 @@
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.callWorker   (../backstage/js/api-client.js)
 //   window.BSToast      (../backstage/js/bs-toast.js)  — optional, graceful fallback
-import { cohorts as api, cp as cpApi, assetUrl } from '../js/codex-api.js';
+import { cohorts as api, cp as cpApi, courses as coursesApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -41,6 +41,8 @@ let _turmaAulas = [];
 let _relClientSlug = null;
 let _relTurmaSlug = null;
 let _cpSessions = [];
+let _turmaCourses = [];   // course list cached for the turma form's course picker
+let _pickedCourse = null; // full course fetched when the picker changes (for ementa copy)
 let _cleanup = []; // teardown functions pushed by mount
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -671,19 +673,38 @@ function _copyUrl(url) {
 
 // ── Turma form ────────────────────────────────────────────────────────────────
 
+const _TF_FORMATS = ['presencial', 'online', 'hibrido'];
+const _TF_MODALITIES = ['fechada', 'aberta'];
+
 function _openTurmaForm(turma) {
   const isEdit = !!turma;
+  _pickedCourse = null;
 
-  const cpLoad = _cpSessions.length
-    ? Promise.resolve()
-    : cpApi.listSessions().then(d => { _cpSessions = (d && d.sessions) || []; }).catch(() => {});
+  const load = Promise.all([
+    _cpSessions.length
+      ? Promise.resolve()
+      : cpApi.listSessions().then(d => { _cpSessions = (d && d.sessions) || []; }).catch(() => {}),
+    coursesApi.list().then(d => { _turmaCourses = (d && d.courses) || []; }).catch(() => {}),
+  ]);
 
-  cpLoad.then(() => {
+  load.then(() => {
     const cpOptions = '<option value="">' + t('cohorts.none') + '</option>' +
       _cpSessions.map(s => {
         const sel = (isEdit && turma.classpulse_session_id === s.id) ? ' selected' : '';
         return '<option value="' + _esc(s.id) + '"' + sel + '>' + _esc(s.name) + '</option>';
       }).join('');
+
+    const courseOptions = '<option value="">' + t('cohorts.tf_no_course') + '</option>' +
+      _turmaCourses.map(c => {
+        const sel = (isEdit && String(turma.course_id || '') === String(c.id)) ? ' selected' : '';
+        return '<option value="' + _esc(String(c.id)) + '"' + sel + '>' + _esc(c.title) + '</option>';
+      }).join('');
+
+    const selOptions = (keys, prefix, cur) => '<option value="">' + t('cohorts.none') + '</option>' +
+      keys.map(k => '<option value="' + k + '"' + (cur === k ? ' selected' : '') + '>' + t(prefix + k) + '</option>').join('');
+    const formatOptions = selOptions(_TF_FORMATS, 'cohorts.fmt_', isEdit ? turma.format : '');
+    const modalityOptions = selOptions(_TF_MODALITIES, 'cohorts.mod_', isEdit ? turma.modality : '');
+    const v = (key) => _esc(isEdit && turma[key] != null ? turma[key] : '');
 
     const html =
       '<div class="cdx-modal" style="max-width:600px;max-height:90vh;overflow-y:auto">' +
@@ -694,6 +715,30 @@ function _openTurmaForm(turma) {
         '<div class="cdx-field"><label>' + t('cohorts.field_display_name') + '</label>' +
           '<input type="text" id="cdx-tf-display" value="' + _esc(isEdit ? (turma.display_name || '') : '') + '" placeholder="' + t('cohorts.field_display_placeholder') + '">' +
         '</div>' +
+        // ── Course + instance data (seeds the certificate) ──
+        '<div class="cdx-tf-section">' + t('cohorts.tf_section_course') + '</div>' +
+        '<div class="cdx-field"><label>' + t('cohorts.tf_course') + '</label>' +
+          '<select id="cdx-tf-course">' + courseOptions + '</select>' +
+          '<small class="cdx-field-hint">' + t('cohorts.tf_course_hint') + '</small>' +
+        '</div>' +
+        '<div class="cdx-tf-grid">' +
+          '<div class="cdx-field"><label>' + t('cohorts.course_hours_label') + '</label>' +
+            '<input type="text" id="cdx-tf-hours" value="' + v('hours') + '" placeholder="' + t('cohorts.course_hours_ph') + '"></div>' +
+          '<div class="cdx-field"><label>' + t('cohorts.tf_meetings') + '</label>' +
+            '<input type="text" id="cdx-tf-meetings" value="' + v('meetings') + '" placeholder="' + t('cohorts.tf_meetings_ph') + '"></div>' +
+          '<div class="cdx-field"><label>' + t('cohorts.tf_date_start') + '</label>' +
+            '<input type="date" id="cdx-tf-date-start" value="' + v('date_start') + '"></div>' +
+          '<div class="cdx-field"><label>' + t('cohorts.tf_date_end') + '</label>' +
+            '<input type="date" id="cdx-tf-date-end" value="' + v('date_end') + '"></div>' +
+          '<div class="cdx-field"><label>' + t('cohorts.tf_format') + '</label>' +
+            '<select id="cdx-tf-format">' + formatOptions + '</select></div>' +
+          '<div class="cdx-field"><label>' + t('cohorts.tf_modality') + '</label>' +
+            '<select id="cdx-tf-modality">' + modalityOptions + '</select></div>' +
+        '</div>' +
+        '<div class="cdx-field"><label>' + t('cohorts.tf_place') + '</label>' +
+          '<input type="text" id="cdx-tf-place" value="' + v('place') + '" placeholder="' + t('cohorts.tf_place_ph') + '"></div>' +
+        // ── Links ──
+        '<div class="cdx-tf-section">' + t('cohorts.tf_section_links') + '</div>' +
         '<div class="cdx-field"><label>' + t('cohorts.field_whatsapp') + '</label>' +
           '<input type="text" id="cdx-tf-whatsapp" value="' + _esc(isEdit ? (turma.whatsapp_url || '') : '') + '" placeholder="https://chat.whatsapp.com/...">' +
         '</div>' +
@@ -709,6 +754,23 @@ function _openTurmaForm(turma) {
     const bd = _openModal(html);
     bd.querySelector('#cdx-tf-cancel').addEventListener('click', () => _closeModal(bd));
 
+    // Course picker pre-fill (decision 1d): selecting a course seeds the turma's
+    // hours from the course, without clobbering a value already typed. The full
+    // course (with its ementa) is fetched so save can copy it into the turma.
+    const courseEl = bd.querySelector('#cdx-tf-course');
+    const hoursEl = bd.querySelector('#cdx-tf-hours');
+    courseEl.addEventListener('change', () => {
+      _pickedCourse = null;
+      const cid = courseEl.value ? Number(courseEl.value) : null;
+      if (!cid) return;
+      const fromList = _turmaCourses.find(c => c.id === cid);
+      if (fromList && fromList.hours && !hoursEl.value.trim()) hoursEl.value = fromList.hours;
+      coursesApi.get({ id: cid }).then(d => {
+        _pickedCourse = (d && d.course) || null;
+        if (_pickedCourse && _pickedCourse.hours && !hoursEl.value.trim()) hoursEl.value = _pickedCourse.hours;
+      }).catch(() => {});
+    });
+
     bd.querySelector('#cdx-tf-save').addEventListener('click', () => {
       const name      = bd.querySelector('#cdx-tf-name').value.trim();
       const display   = bd.querySelector('#cdx-tf-display').value.trim();
@@ -719,38 +781,53 @@ function _openTurmaForm(turma) {
       const slug = isEdit ? turma.slug : _slugify(name);
       if (!slug) { _toast(t('cohorts.slug_invalid')); return; }
 
-      const baseParams = {
-        client_slug: _selectedClientSlug,
-        name,
-        display_name: display || null,
-        slug,
+      const courseId = courseEl.value ? Number(courseEl.value) : null;
+      const instance = {
+        course_id: courseId,
+        hours: hoursEl.value.trim() || null,
+        meetings: bd.querySelector('#cdx-tf-meetings').value.trim() || null,
+        date_start: bd.querySelector('#cdx-tf-date-start').value || null,
+        date_end: bd.querySelector('#cdx-tf-date-end').value || null,
+        format: bd.querySelector('#cdx-tf-format').value || null,
+        modality: bd.querySelector('#cdx-tf-modality').value || null,
+        place: bd.querySelector('#cdx-tf-place').value.trim() || null,
       };
+      // Copy the course ementa into the turma's own copy only when the course is
+      // newly linked or changed (so a turma's later edits are never clobbered).
+      const prevCourseId = isEdit ? (turma.course_id || null) : null;
+      if (courseId && courseId !== prevCourseId && _pickedCourse && _pickedCourse.id === courseId) {
+        instance.ementa_json = _pickedCourse.ementa_json || null;
+      }
 
+      const baseParams = { client_slug: _selectedClientSlug, name, display_name: display || null, slug };
       const firstCall = isEdit
-        ? api.updateTurma(baseParams)
+        ? api.updateTurma(Object.assign({}, baseParams, instance))
         : api.createTurma(baseParams);
 
-      firstCall.then(() => {
-        const metaChanged = isEdit && (
-          whatsapp !== (turma.whatsapp_url || '') ||
-          cpSession !== (String(turma.classpulse_session_id || ''))
-        );
-        const needMeta = isEdit ? metaChanged : !!(whatsapp || cpSession);
-        const metaSlug = isEdit ? turma.slug : slug;
-        if (needMeta) {
-          return api.updateTurmaMeta({
-            client_slug: _selectedClientSlug,
-            slug: metaSlug,
-            whatsapp_url: whatsapp || null,
-            classpulse_session_id: cpSession || null,
-          });
-        }
-        return Promise.resolve();
-      }).then(() => {
-        _closeModal(bd);
-        _toast(isEdit ? t('cohorts.turma_updated') : t('cohorts.turma_created'));
-        _loadTurmas(_selectedClientSlug);
-      }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+      firstCall
+        .then(() => isEdit
+          ? null
+          : api.updateTurma(Object.assign({ client_slug: _selectedClientSlug, slug }, instance)))
+        .then(() => {
+          const metaChanged = isEdit && (
+            whatsapp !== (turma.whatsapp_url || '') ||
+            cpSession !== (String(turma.classpulse_session_id || ''))
+          );
+          const needMeta = isEdit ? metaChanged : !!(whatsapp || cpSession);
+          if (needMeta) {
+            return api.updateTurmaMeta({
+              client_slug: _selectedClientSlug,
+              slug: isEdit ? turma.slug : slug,
+              whatsapp_url: whatsapp || null,
+              classpulse_session_id: cpSession || null,
+            });
+          }
+          return Promise.resolve();
+        }).then(() => {
+          _closeModal(bd);
+          _toast(isEdit ? t('cohorts.turma_updated') : t('cohorts.turma_created'));
+          _loadTurmas(_selectedClientSlug);
+        }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     });
   });
 }

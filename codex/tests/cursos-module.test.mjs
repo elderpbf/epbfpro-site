@@ -44,6 +44,26 @@ test('courses builds the ementa with the pure ementa model', () => {
   }
 });
 
+test('turma form gains the course picker + instance fields (feed the certificate)', () => {
+  assert.match(cohorts, /import \{ cohorts as api, cp as cpApi, courses as coursesApi/, 'imports the courses facade');
+  for (const id of ['cdx-tf-course', 'cdx-tf-hours', 'cdx-tf-date-start', 'cdx-tf-date-end', 'cdx-tf-format', 'cdx-tf-modality', 'cdx-tf-place', 'cdx-tf-meetings']) {
+    assert.ok(cohorts.includes(id), `turma form has #${id}`);
+  }
+});
+
+test('turma save sends the course-instance fields to updateTurma', () => {
+  for (const f of ['course_id:', 'date_start:', 'date_end:', 'format:', 'place:', 'meetings:', 'modality:']) {
+    assert.ok(cohorts.includes(f), `save payload includes ${f}`);
+  }
+});
+
+test('turma copies the course ementa only when the course is newly linked/changed (decision 1d)', () => {
+  // The ementa copy is guarded by a course-changed check, so a turma edit never
+  // clobbers its own ementa.
+  assert.match(cohorts, /courseId !== prevCourseId/, 'guards ementa copy on course change');
+  assert.match(cohorts, /instance\.ementa_json = _pickedCourse\.ementa_json/, 'copies the picked course ementa');
+});
+
 test('every user-facing string in courses goes through t()', () => {
   // No raw Portuguese sentences in markup: the only quoted PT should be via t('...').
   // Heuristic: there is no '>Algum texto<' literal and i18n keys are present.
