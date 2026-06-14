@@ -684,3 +684,62 @@ a.cdx-card-mini-icon.is-on:hover {
 [data-theme="dark"] .cdx-roster-table tbody tr:hover {
   background: var(--cdx-card-hover-bg);
 }
+
+/* ── Cursos sub-tab (course/ementa registry; cohorts/courses.js) ──────────────
+   Theme tokens only (no hardcoded palette), so dark mode rides the token set. */
+.cdx-cursos { max-width: 1280px; }
+.cdx-cursos-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.1rem; }
+.cdx-cursos-h1 { margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
+.cdx-cursos-sub { margin: .25rem 0 0; font-size: .86rem; color: var(--text-secondary); max-width: 560px; }
+.cdx-cursos-work { display: grid; grid-template-columns: 210px 1fr; gap: 1.1rem; align-items: start; }
+/* rail */
+.cdx-cursos-rail { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); overflow: hidden; }
+.cdx-cursos-rail-h { padding: .6rem .8rem; border-bottom: 1px solid var(--border); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; }
+.cdx-cursos-ri { padding: .55rem .8rem; cursor: pointer; border-left: 3px solid transparent; }
+.cdx-cursos-ri:hover { background: var(--cdx-card-hover-bg); }
+.cdx-cursos-ri.is-on { background: var(--cdx-card-sel-bg); border-left-color: var(--primary); }
+.cdx-cursos-ri-t { font-weight: 600; font-size: .86rem; color: var(--text-primary); }
+.cdx-cursos-ri-m { font-size: .72rem; color: var(--text-secondary); margin-top: .15rem; }
+/* main */
+.cdx-cursos-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.cdx-cursos-meta { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); padding: 1rem 1.2rem; }
+.cdx-cursos-title { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); border: none; outline: none; width: 100%; background: transparent; border-bottom: 2px solid transparent; padding-bottom: .2rem; }
+.cdx-cursos-title:focus { border-bottom-color: var(--primary); }
+.cdx-cursos-fields { display: flex; gap: .6rem; margin-top: .8rem; flex-wrap: wrap; align-items: flex-end; }
+.cdx-cursos-f { background: var(--background); border: 1px solid var(--border); border-radius: 9px; padding: .45rem .6rem; min-width: 150px; }
+.cdx-cursos-f label { display: block; font-size: .64rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); font-weight: 700; margin-bottom: .15rem; }
+.cdx-cursos-f input { border: none; background: transparent; font: inherit; font-size: .86rem; font-weight: 600; color: var(--text-primary); width: 100%; outline: none; }
+.cdx-cursos-f-stat { margin-left: auto; min-width: auto; background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); }
+.cdx-cursos-f-v { font-size: .86rem; font-weight: 700; color: var(--primary-dark); }
+/* ementa panel */
+.cdx-cursos-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); }
+.cdx-cursos-panel-h { display: flex; align-items: center; gap: .6rem; padding: .7rem .9rem; border-bottom: 1px solid var(--border); }
+.cdx-cursos-panel-h b { font-size: .95rem; color: var(--text-primary); }
+.cdx-cursos-stats { font-size: .74rem; color: var(--text-secondary); }
+.cdx-cursos-sp { flex: 1; }
+.cdx-cursos-ementa { padding: .8rem .9rem; }
+.cdx-cursos-ementa-empty { color: var(--text-secondary); font-size: .85rem; padding: .4rem 0 .8rem; }
+/* outline rows */
+.cdx-cur-mod { border: 1px solid var(--border); border-radius: 10px; margin-bottom: .6rem; overflow: hidden; }
+.cdx-cur-mod-h { display: flex; align-items: center; gap: .5rem; padding: .5rem .6rem; background: var(--background); border-bottom: 1px solid var(--border); }
+.cdx-cur-num { font-family: 'JetBrains Mono', monospace; font-size: .7rem; font-weight: 600; color: var(--cdx-btn-primary-text); background: var(--primary-dark); border-radius: 5px; padding: .05rem .4rem; flex: 0 0 auto; }
+.cdx-cur-mt { flex: 1; font: inherit; font-weight: 700; font-size: .92rem; color: var(--text-primary); border: 1px solid transparent; background: transparent; border-radius: 6px; padding: .2rem .35rem; outline: none; }
+.cdx-cur-mt:focus { border-color: var(--primary); background: var(--surface); }
+.cdx-cur-top { padding: .35rem .6rem .35rem 2rem; border-bottom: 1px dashed var(--border); }
+.cdx-cur-top:last-child { border-bottom: none; }
+.cdx-cur-tt { width: 100%; font: inherit; font-weight: 600; font-size: .87rem; color: var(--text-primary); border: 1px solid transparent; background: transparent; border-radius: 6px; padding: .2rem .35rem; outline: none; }
+.cdx-cur-tt:focus { border-color: var(--primary); background: var(--surface); }
+.cdx-cur-sub { display: flex; align-items: center; gap: .35rem; padding-left: 1rem; }
+.cdx-cur-st { flex: 1; font: inherit; font-size: .82rem; color: var(--text-secondary); border: 1px solid transparent; background: transparent; border-radius: 6px; padding: .15rem .35rem; outline: none; }
+.cdx-cur-st:focus { border-color: var(--primary); background: var(--surface); color: var(--text-primary); }
+.cdx-cur-x { border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 .25rem; flex: 0 0 auto; border-radius: 4px; }
+.cdx-cur-x:hover { color: var(--error); background: var(--cdx-danger-bg); }
+.cdx-cursos-addmod { width: 100%; justify-content: center; }
+/* local button modifiers (not in the global set) */
+.cdx-cursos .cdx-btn-ghost { background: transparent; border: 1px dashed var(--border); color: var(--text-secondary); }
+.cdx-cursos .cdx-btn-ghost:hover { border-color: var(--primary); color: var(--primary-dark); }
+.cdx-cursos .cdx-btn-xs { padding: .2rem .45rem; font-size: .72rem; margin: .35rem 0 .1rem; }
+/* paste modal */
+.cdx-cursos-paste-ta { width: 100%; font-family: 'JetBrains Mono', monospace; font-size: .82rem; border: 1px solid var(--border); border-radius: 9px; padding: .55rem .65rem; background: var(--background); color: var(--text-primary); resize: vertical; }
+.cdx-cursos-paste-mode { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text-secondary); margin: .6rem 0 .2rem; }
+@media (max-width: 760px) { .cdx-cursos-work { grid-template-columns: 1fr; } }

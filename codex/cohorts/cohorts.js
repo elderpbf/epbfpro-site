@@ -9,6 +9,28 @@ import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
+import * as cursos from './courses.js';
+
+// ── Sub-tab registry ──────────────────────────────────────────────────────────
+// Cohorts gained sub-tabs with the Cursos data model: the operational
+// Clientes→Turmas→Aulas view (default) + the reusable course/ementa registry.
+export const SUBTABS = [
+  { key: 'turmas', labelKey: 'cohorts.sub_turmas' },
+  { key: 'cursos', labelKey: 'cohorts.sub_cursos' },
+];
+
+function _resolveSub(sub) {
+  return SUBTABS.some((s) => s.key === sub) ? sub : SUBTABS[0].key;
+}
+
+export function subtabs(activeSub) {
+  const active = _resolveSub(activeSub);
+  return SUBTABS.map((s) => ({
+    label: t(s.labelKey),
+    href: '/codex/?tab=cohorts&sub=' + s.key,
+    active: s.key === active,
+  }));
+}
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -1226,11 +1248,17 @@ export function mount(viewEl, ctx) {
   _cpSessions = [];
   _cleanup = [];
 
+  // Route by sub-tab. The Cursos sub-view is its own module; the default
+  // Clientes→Turmas→Aulas view is the shell below.
+  const sub = _resolveSub(ctx && ctx.sub);
+  if (sub === 'cursos') { cursos.mount(viewEl); return; }
+
   _renderShell();
   _loadClients();
 }
 
 export function unmount() {
+  cursos.unmount();
   _cleanup.forEach(fn => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';
