@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cursos · C — Assistente de criação (co-piloto IA)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#14b8a6; --primary-dark:#0d9488; --navy:#061a51;
+    --bg:#d4f4ed; --surface:#fff; --ink:#134e4a; --ink2:#115e59; --muted:#5b7975;
+    --border:#e2e8f0; --shadow:rgba(20,184,166,.12);
+    --amber:#f59e0b; --blue:#3b82f6; --green:#10b981; --red:#ef4444;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:1.4rem 1.6rem 4rem}
+  .crumbs{font-size:.78rem;color:var(--ink2);letter-spacing:.04em;margin-bottom:.5rem}
+  .crumbs b{color:var(--primary-dark)}
+  .head h1{margin:0 0 1rem;font-size:1.5rem;font-weight:700;color:var(--navy)}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:9px;padding:.5rem .85rem;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+  .btn:hover{border-color:var(--primary)}
+  .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;box-shadow:0 6px 16px var(--shadow)}
+  /* stepper */
+  .steps{display:flex;align-items:center;gap:.4rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.7rem 1rem;box-shadow:0 6px 22px var(--shadow);margin-bottom:1.1rem}
+  .step{display:flex;align-items:center;gap:.5rem;font-size:.86rem;color:var(--muted);font-weight:600}
+  .step .dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:.76rem;background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+  .step.done .dot{background:var(--green);color:#fff;border-color:var(--green)}
+  .step.on{color:var(--navy)}
+  .step.on .dot{background:linear-gradient(135deg,var(--primary),var(--navy));color:#fff;border:none}
+  .step-line{flex:1;height:2px;background:var(--border);min-width:18px;border-radius:2px}
+  .step-line.done{background:var(--green)}
+  /* two-pane co-pilot */
+  .pane{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;align-items:stretch}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow);display:flex;flex-direction:column;min-height:560px}
+  .card-h{padding:.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.55rem}
+  .card-h .ico{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--navy));color:#fff;display:grid;place-items:center;font-size:.95rem}
+  .card-h b{font-size:.95rem;color:var(--ink)}
+  .card-h span{font-size:.76rem;color:var(--muted);margin-left:auto}
+  /* chat */
+  .chat{flex:1;padding:1rem;overflow:auto;display:flex;flex-direction:column;gap:.7rem}
+  .msg{max-width:88%;padding:.55rem .75rem;border-radius:12px;font-size:.84rem;line-height:1.5}
+  .msg.ai{background:#f4faf9;border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px}
+  .msg.me{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .msg.me.raw{background:#0b1f2a;font-family:var(--mono);font-size:.72rem;color:#cfe8e3;max-height:96px;overflow:hidden}
+  .msg b{font-weight:700}
+  .msg .chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem}
+  .mchip{background:#fff;border:1px solid var(--primary);color:var(--primary-dark);border-radius:999px;padding:.2rem .55rem;font-size:.74rem;font-weight:600;cursor:pointer}
+  .compose{border-top:1px solid var(--border);padding:.7rem .8rem}
+  .sugg{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.55rem}
+  .schip{background:var(--bg);border:1px solid var(--border);color:var(--ink2);border-radius:999px;padding:.22rem .6rem;font-size:.74rem;font-weight:600;cursor:pointer}
+  .schip:hover{border-color:var(--primary)}
+  .inrow{display:flex;gap:.5rem}
+  .inrow input{flex:1;border:1px solid var(--border);border-radius:10px;padding:.55rem .7rem;font:inherit;font-size:.84rem;background:#f8fcfb}
+  .inrow input:focus{outline:none;border-color:var(--primary);background:#fff}
+  /* preview */
+  .prev{flex:1;padding:1rem 1.1rem;overflow:auto}
+  .prev .badge{display:inline-flex;gap:.4rem;align-items:center;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#0f766e;border-radius:999px;padding:.18rem .55rem;font-size:.74rem;font-weight:600;margin-bottom:.8rem}
+  .pmod{margin-bottom:.7rem}
+  .pmod-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem}
+  .pmod-n{font-family:var(--mono);font-size:.7rem;font-weight:600;color:#fff;background:var(--navy);border-radius:5px;padding:.05rem .35rem}
+  .pmod-t{font-weight:700;font-size:.92rem;color:var(--navy)}
+  .ptop{padding-left:1.5rem;font-size:.85rem;font-weight:600;color:var(--ink);margin-top:.2rem}
+  .psub{padding-left:2.4rem;font-size:.8rem;color:var(--muted)}
+  .psub::before{content:"–";color:var(--primary);margin-right:.35rem}
+  .pmod.changed{background:rgba(245,158,11,.07);border-left:3px solid var(--amber);border-radius:8px;padding:.4rem .5rem;margin-left:-.5rem}
+  /* footer nav */
+  .nav{display:flex;justify-content:space-between;margin-top:1.1rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumbs">Certificados › Cursos › <b>Novo curso</b></div>
+  <div class="head"><h1>Assistente de criação de curso</h1></div>
+
+  <!-- stepper -->
+  <div class="steps">
+    <div class="step done"><span class="dot">✓</span>Curso</div>
+    <div class="step-line done"></div>
+    <div class="step on"><span class="dot">2</span>Programa</div>
+    <div class="step-line"></div>
+    <div class="step"><span class="dot">3</span>Turma</div>
+    <div class="step-line"></div>
+    <div class="step"><span class="dot">4</span>Revisar</div>
+  </div>
+
+  <div class="pane">
+    <!-- LEFT: co-pilot chat -->
+    <div class="card">
+      <div class="card-h"><div class="ico">✦</div><b>Co-piloto da ementa</b><span>IA</span></div>
+      <div class="chat">
+        <div class="msg ai">Cole o programa do curso, do jeito que você tem. Pode ser bagunçado, eu organizo em módulos, tópicos e subtópicos.</div>
+        <div class="msg me raw">modulo 1 fundamentos de llms - tokens, janela de contexto, temperatura amostragem... capacidades e limites o que sabe e o que inventa. glossario. PROMPT anatomia papel contexto tarefa formato, few shot, frameworks, iteracao refino. riscos alucinacao vies confidencialidade boas praticas escritorio. ferramentas assistentes fluxos. lab casos reais...</div>
+        <div class="msg ai">Pronto. Identifiquei <b>5 módulos, 14 tópicos e 22 subtópicos</b> (prévia à direita). Reparei que "Ferramentas" e "Laboratório" têm pouco conteúdo, posso juntar num módulo final de prática. Quer?
+          <div class="chips"><span class="mchip">Sim, juntar</span><span class="mchip">Deixar separados</span></div>
+        </div>
+        <div class="msg me">junta sim, e deixa as descrições mais curtas</div>
+        <div class="msg ai">Feito. Agora são <b>4 módulos</b> e encurtei as descrições dos subtópicos. Veja o módulo IV destacado na prévia. Mais algum ajuste, ou seguimos pra turma?</div>
+      </div>
+      <div class="compose">
+        <div class="sugg">
+          <span class="schip">↻ Numerar os tópicos</span>
+          <span class="schip">＋ Detalhar módulo I</span>
+          <span class="schip">✂ Resumir tudo</span>
+        </div>
+        <div class="inrow"><input placeholder="Peça um ajuste em linguagem natural…"><button class="btn btn-primary">Enviar</button></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: live preview -->
+    <div class="card">
+      <div class="card-h"><div class="ico" style="background:linear-gradient(135deg,var(--green),#0f766e)">≡</div><b>Prévia da ementa</b><span>atualiza ao vivo</span></div>
+      <div class="prev">
+        <span class="badge">✓ 4 módulos · 12 tópicos · 18 subtópicos</span>
+        <div class="pmod">
+          <div class="pmod-h"><span class="pmod-n">I</span><span class="pmod-t">Fundamentos de LLMs</span></div>
+          <div class="ptop">Como o modelo gera texto</div>
+          <div class="psub">Tokens e janela de contexto</div>
+          <div class="psub">Temperatura e amostragem</div>
+          <div class="ptop">Capacidades e limites</div>
+          <div class="psub">O que sabe e o que inventa</div>
+        </div>
+        <div class="pmod">
+          <div class="pmod-h"><span class="pmod-n">II</span><span class="pmod-t">Engenharia de Prompt</span></div>
+          <div class="ptop">Anatomia de um bom prompt</div>
+          <div class="psub">Papel, contexto, tarefa, formato</div>
+          <div class="psub">Few-shot e exemplos</div>
+          <div class="ptop">Frameworks e iteração</div>
+        </div>
+        <div class="pmod">
+          <div class="pmod-h"><span class="pmod-n">III</span><span class="pmod-t">Gestão de Riscos</span></div>
+          <div class="ptop">Alucinação, viés e confidencialidade</div>
+          <div class="ptop">Boas práticas no escritório</div>
+        </div>
+        <div class="pmod changed">
+          <div class="pmod-h"><span class="pmod-n">IV</span><span class="pmod-t">Ferramentas e Laboratório</span></div>
+          <div class="ptop">Assistentes e fluxos do dia a dia</div>
+          <div class="ptop">Laboratório com casos reais</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="btn">← Voltar</button>
+    <button class="btn btn-primary">Avançar para a turma →</button>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('.mchip,.schip').forEach(c=>c.onclick=()=>{c.style.background='var(--primary)';c.style.color='#fff';});
+</script>
+</body>
+</html>
