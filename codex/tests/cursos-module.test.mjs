@@ -38,7 +38,7 @@ test('courses talks to the backend only through the courses facade', () => {
 });
 
 test('courses builds the ementa with the pure ementa model', () => {
-  assert.match(courses, /from '\.\/ementa\.js'/, 'imports the ementa model');
+  assert.match(courses, /from '\.\.\/js\/ementa\.js'/, 'imports the shared ementa model');
   for (const fn of ['parseEmenta', 'normalizeEmenta', 'ementaStats', 'emptyEmenta']) {
     assert.ok(courses.includes(fn), `uses ${fn}`);
   }

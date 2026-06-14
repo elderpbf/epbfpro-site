@@ -5,8 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  emptyEmenta, normalizeEmenta, ementaStats, parseEmenta, ementaToText,
-} from '../cohorts/ementa.js';
+  emptyEmenta, normalizeEmenta, ementaStats, parseEmenta, ementaToText, ementaToCertModules,
+} from '../js/ementa.js';
 
 test('emptyEmenta is an empty module list', () => {
   assert.deepEqual(emptyEmenta(), { modules: [] });
@@ -96,6 +96,17 @@ test('parseEmenta: no keyword, pure indentation = three levels', () => {
 test('parseEmenta: empty/whitespace yields empty ementa', () => {
   assert.deepEqual(parseEmenta(''), { modules: [] });
   assert.deepEqual(parseEmenta('   \n  \n'), { modules: [] });
+});
+
+test('ementaToCertModules flattens to the cert {n,t,d} shape', () => {
+  const e = { modules: [
+    { title: 'Fundamentos', topics: [{ title: 'Tokens', subtopics: [] }, { title: 'Limites', subtopics: [] }] },
+    { title: 'Prompt', topics: [] },
+  ] };
+  const mods = ementaToCertModules(e);
+  assert.equal(mods.length, 2);
+  assert.deepEqual(mods[0], { n: 'I', t: 'Fundamentos', d: 'Tokens · Limites' });
+  assert.deepEqual(mods[1], { n: 'II', t: 'Prompt', d: '' });
 });
 
 test('ementaToText round-trips through parseEmenta', () => {

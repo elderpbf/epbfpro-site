@@ -19,7 +19,7 @@ import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import {
   emptyEmenta, normalizeEmenta, ementaStats, parseEmenta,
-} from './ementa.js';
+} from '../js/ementa.js';
 
 let _viewEl = null;
 let _courses = [];

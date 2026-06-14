@@ -78,8 +78,8 @@ test('ct-type-filter reaches the glyph library through window.CdxGlyphs', () => 
 });
 
 test('Trilha sub-cards render the type icon through CdxGlyphs', () => {
-  const src = readAbs('../../trilha/js/trilha-sub.js');
-  assert.match(src, /window\.CdxGlyphs/, 'trilha-sub consults CdxGlyphs');
+  const src = readAbs('../trilha/js/sub.js');
+  assert.match(src, /window\.CdxGlyphs/, 'trilha sub consults CdxGlyphs');
   assert.match(src, /iconHtml/, 'renders item.type_icon via iconHtml');
 });
 
@@ -89,8 +89,8 @@ test('ClassVault sub-cards render the type icon through CdxGlyphs', () => {
 });
 
 test('Trilha flat cards render the type icon through CdxGlyphs', () => {
-  const src = readAbs('../../trilha/js/trilha-flat.js');
-  assert.match(src, /window\.CdxGlyphs/, 'trilha-flat consults CdxGlyphs');
+  const src = readAbs('../trilha/js/flat.js');
+  assert.match(src, /window\.CdxGlyphs/, 'trilha flat consults CdxGlyphs');
   assert.match(src, /iconHtml/, 'renders item.type_icon via iconHtml');
 });
 
