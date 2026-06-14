@@ -21,6 +21,7 @@ import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
+import { ementaToCertModules } from '../js/ementa.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
@@ -803,21 +804,6 @@ function _turmaName(turma) {
   return turma ? (turma.display_name || turma.name || String(turma.id)) : '';
 }
 
-// Cohorts for a client in the issue flow. Prefer the already-loaded index (the
-// same source the Emitidos cascade uses); fall back to a fresh ct_list_turmas if
-// the index has not loaded yet (e.g. issue opened before _loadFilters resolved).
-async function _issueTurmasFor(slug) {
-  if (!slug) return [];
-  if (_turmasByClient[slug] && _turmasByClient[slug].length) return _turmasByClient[slug];
-  try {
-    const res = await cohortsApi.listTurmas({ client_slug: slug });
-    return (res && res.turmas) || [];
-  } catch (e) {
-    if (window.bsLog) window.bsLog('certs: issue: listTurmas: ' + (e && e.message || e), 'error');
-    return [];
-  }
-}
-
 function _populateClientFilter() {
   const sel = _q('#cdx-certs-filter-client');
   if (!sel) return;
@@ -1138,15 +1124,28 @@ function _openIssueFlow() {
 
   const clientSel = bd.querySelector('#cdx-issue-client');
   const turmaSel  = bd.querySelector('#cdx-issue-turma');
+  // Full turmas (with the course-instance fields from ct_list_turmas) for the
+  // auto-fill, and the currently-selected one (for capturing course dates at
+  // submit). Fetched fresh — the _turmasByClient cache lacks the new columns.
+  let _issueTurmas = [];
+  let _issueTurma = null;
 
   clientSel.addEventListener('change', async () => {
     const slug = clientSel.value;
     turmaSel.innerHTML = '<option value="">' + esc(t('certificates.issue_select_turma')) + '</option>';
     turmaSel.disabled = true;
+    _issueTurmas = [];
+    _issueTurma = null;
     const rosterWrap = bd.querySelector('#cdx-issue-roster-wrap');
     if (rosterWrap) rosterWrap.style.display = 'none';
     if (!slug) return;
-    const turmas = await _issueTurmasFor(slug);
+    try {
+      const res = await cohortsApi.listTurmas({ client_slug: slug });
+      _issueTurmas = (res && res.turmas) || [];
+    } catch (e) {
+      if (window.bsLog) window.bsLog('certs: issue: listTurmas: ' + (e && e.message || e), 'error');
+    }
+    const turmas = _issueTurmas;
     turmas.slice()
       .sort((a, b) => _turmaName(a).localeCompare(_turmaName(b)))
       .forEach((turma) => {
@@ -1163,7 +1162,11 @@ function _openIssueFlow() {
     const turmaId = turmaSel.value;
     const rosterWrap = bd.querySelector('#cdx-issue-roster-wrap');
     const rosterEl   = bd.querySelector('#cdx-issue-roster');
-    if (!turmaId) { if (rosterWrap) rosterWrap.style.display = 'none'; return; }
+    if (!turmaId) { if (rosterWrap) rosterWrap.style.display = 'none'; _issueTurma = null; return; }
+    // Pull the course/instance data from the turma into the form (the promise:
+    // pick a turma, the certificate fields fill themselves).
+    _issueTurma = _issueTurmas.find((tt) => String(tt.id) === String(turmaId)) || null;
+    if (_issueTurma) _autofillIssueFromTurma(bd, _issueTurma);
     if (rosterEl) rosterEl.innerHTML = '<span class="cdx-empty">' + esc(t('certificates.loading')) + '</span>';
     if (rosterWrap) rosterWrap.style.display = '';
     try {
@@ -1207,6 +1210,11 @@ function _openIssueFlow() {
     if (_issueSelectedIds.size === 0) { notice.warn(t('certificates.issue_no_selection')); return; }
 
     const meta = _gatherVersoMeta(bd, clientSel);
+    // Freeze the course period (start/end dates) from the turma into the snapshot.
+    if (_issueTurma) {
+      if (_issueTurma.date_start) meta.course_start = _issueTurma.date_start;
+      if (_issueTurma.date_end) meta.course_end = _issueTurma.date_end;
+    }
 
     const payload = buildIssuePayload({
       turmaId:        parseInt(turmaId, 10),
@@ -1239,6 +1247,29 @@ function _openIssueFlow() {
       notice.error(t('certificates.error_loading'));
     }
   });
+}
+
+// Auto-fill the issue form from the selected turma (decision: emissão pulls from
+// the turma, nothing retyped). Overwrites the auto-fillable fields with the
+// turma's values when present; the user can still adjust before issuing. The
+// nested ementa flattens into the modules textarea as "title :: description"
+// lines (what parseModulesText reads at submit).
+function _autofillIssueFromTurma(bd, turma) {
+  const set = (sel, val) => {
+    const el = bd.querySelector(sel);
+    if (el && val != null && String(val).trim()) el.value = String(val);
+  };
+  set('#cdx-issue-course', turma.course_title);
+  set('#cdx-issue-hours', turma.hours);
+  set('#cdx-issue-place', turma.place);
+  set('#cdx-issue-meetings', turma.meetings);
+  set('#cdx-issue-format', turma.format ? t('cohorts.fmt_' + turma.format) : '');
+  set('#cdx-issue-modality', turma.modality ? t('cohorts.mod_' + turma.modality) : '');
+  const modsEl = bd.querySelector('#cdx-issue-modules');
+  if (modsEl && turma.ementa_json) {
+    const certMods = ementaToCertModules(turma.ementa_json);
+    if (certMods.length) modsEl.value = certMods.map((m) => (m.d ? m.t + ' :: ' + m.d : m.t)).join('\n');
+  }
 }
 
 // Collect the verso (back) snapshot from the issue modal. Only non-empty values

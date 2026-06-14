@@ -42,6 +42,28 @@ test('buildWorkerRequest: oversized payload -> POST with JSON body', () => {
   assert.equal(r.body, JSON.stringify(big));
 });
 
+test('buildWorkerRequest: a non-empty auth_token forces POST (credential never in the URL)', () => {
+  const r = buildWorkerRequest({ action: 'x', auth_token: 'deadbeefhash' });
+  assert.equal(r.method, 'POST', 'an admin request with a secret must POST');
+  assert.equal(r.url, DEFAULT_WORKER_URL, 'no query string carrying the payload');
+  assert.ok(!/deadbeefhash/.test(r.url), 'the credential is not in the URL');
+  assert.ok(/deadbeefhash/.test(r.body), 'the credential travels in the POST body');
+});
+
+test('buildWorkerRequest: empty auth_token (public Trail) may stay GET', () => {
+  const r = buildWorkerRequest({ action: 'x', auth_token: '' });
+  assert.equal(r.method, 'GET', 'the public Trail has no secret to leak');
+});
+
+test('callWorker: an injected auth_token POSTs and keeps the token out of the URL', async () => {
+  let captured = null;
+  const fakeFetch = async (url, opts) => { captured = { url, opts }; return { ok: true, status: 200, text: async () => '{}' }; };
+  await callWorker({ action: 'x' }, { fetch: fakeFetch, authToken: 'secretX' });
+  assert.ok(!/secretX/.test(captured.url), 'token absent from the URL');
+  assert.equal(captured.opts.method, 'POST');
+  assert.ok(/secretX/.test(captured.opts.body), 'token present in the POST body');
+});
+
 test('buildWorkerRequest: no Authorization header without a google token', () => {
   const r = buildWorkerRequest({ action: 'x' });
   assert.ok(!('Authorization' in r.headers), 'public Trail goes out auth-free');
