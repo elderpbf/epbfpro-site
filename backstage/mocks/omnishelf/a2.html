@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omnishelf · Estante</title>
+<style>
+  :root{
+    --bg:#fef7ff; --surf:#ffffff; --sv:#f4eefa; --ink:#1c1b1f; --ink2:#49454f; --pri:#6750a4; --pric:#eaddff; --onpric:#21005d; --line:#cac4d0;
+    --fis:#7a5900; --fisc:#ffdf9e; --epub:#00497d; --epubc:#cfe5ff; --audio:#5b3da7; --audioc:#ece1ff; --ref:#444746; --refc:#e3e2e6;
+    --sans:'Segoe UI',Roboto,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#312f36;font-family:var(--sans);color:#e8e4ee;padding:30px 26px 60px;}
+  .hd{max-width:1200px;margin:0 auto 22px;}
+  .hd h1{font-weight:600;font-size:24px;color:#fff;}
+  .hd h1 small{font-size:12px;font-weight:400;color:#c3bcd2;letter-spacing:.16em;text-transform:uppercase;display:block;margin-top:5px;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:#cfc8dd;}
+  .legend .it{display:inline-flex;align-items:center;gap:6px;}
+  .legend .dot{width:11px;height:11px;border-radius:4px;}
+  .board{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start;}
+  .frame{width:300px;}
+  .cap{margin-top:11px;text-align:center;font-size:12px;color:#bdb4ce;}.cap b{color:#fff;font-weight:600;}
+  .phone{width:300px;height:642px;border-radius:34px;background:var(--bg);overflow:hidden;position:relative;box-shadow:0 22px 50px rgba(0,0,0,.45);border:7px solid #0f0f12;color:var(--ink);}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;}
+  svg.ic{width:20px;height:20px;display:block;}
+  .bar{padding:18px 18px 8px;display:flex;align-items:center;justify-content:space-between;}
+  .bar .t{font-size:24px;font-weight:500;}
+  .body{flex:1;overflow:hidden;padding:0 16px;}
+  .sbar{display:flex;align-items:center;gap:10px;background:var(--sv);border-radius:28px;padding:11px 15px;color:var(--ink2);font-size:13px;margin:2px 0 14px;}
+  .sbar .av{margin-left:auto;width:26px;height:26px;border-radius:50%;background:var(--pric);color:var(--onpric);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+  .chips{display:flex;gap:8px;overflow:hidden;padding-bottom:14px;}
+  .ch{font-size:12px;padding:6px 13px;border-radius:9px;border:1px solid var(--line);color:var(--ink2);white-space:nowrap;}
+  .ch.on{background:var(--pric);border-color:transparent;color:var(--onpric);font-weight:500;}
+  .sec{font-size:13px;font-weight:600;color:var(--ink);margin:6px 0 10px;}
+  .rail{display:flex;gap:12px;overflow:hidden;margin-bottom:18px;}
+  .rcard{flex:0 0 130px;background:var(--surf);border-radius:16px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .rcard .cv{height:74px;border-radius:11px;display:flex;align-items:flex-end;padding:7px;color:#fff;font-weight:600;font-size:11.5px;line-height:1.12;}
+  .rmeta{display:flex;align-items:center;gap:5px;margin-top:8px;font-size:10px;color:var(--ink2);}
+  .lp{height:4px;border-radius:4px;background:var(--sv);margin-top:6px;overflow:hidden;}.lp i{display:block;height:100%;background:var(--pri);}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:15px 13px;}
+  .bk{background:var(--surf);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .bk .cv{height:120px;display:flex;align-items:flex-end;padding:9px;color:#fff;font-weight:600;font-size:12.5px;line-height:1.13;}
+  .bk .pad{padding:9px 10px 11px;}
+  .bk .ti{font-size:12px;font-weight:600;line-height:1.18;}
+  .bk .au{font-size:10.5px;color:var(--ink2);margin-top:2px;}
+  .bdgs{display:flex;gap:5px;margin-top:8px;}
+  .bdg{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;}
+  .bdg svg{width:13px;height:13px;}
+  .b-fis{background:var(--fisc);color:var(--fis);}.b-epub{background:var(--epubc);color:var(--epub);}.b-audio{background:var(--audioc);color:var(--audio);}.b-ref{background:var(--refc);color:var(--ref);}
+  .nav{display:flex;justify-content:space-around;padding:8px 6px 14px;background:var(--sv);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--ink2);}
+  .nav a .pin{padding:4px 17px;border-radius:16px;}
+  .nav a.on .pin{background:var(--pric);color:var(--onpric);}.nav a.on{color:var(--ink);font-weight:600;}
+  .fab{position:absolute;right:16px;bottom:74px;background:var(--pric);color:var(--onpric);border-radius:18px;padding:14px;box-shadow:0 4px 10px rgba(0,0,0,.25);}
+  .fab svg{width:22px;height:22px;}
+  /* detail */
+  .hero{display:flex;gap:14px;padding:8px 2px 2px;}
+  .hero .cv{width:96px;height:142px;border-radius:14px;flex:0 0 auto;display:flex;align-items:flex-end;padding:9px;color:#fff;font-weight:600;font-size:13px;line-height:1.13;}
+  .hero h2{font-size:19px;line-height:1.16;font-weight:600;}
+  .hero .au{font-size:12px;color:var(--ink2);margin-top:3px;}
+  .stars{display:flex;gap:2px;color:#7a5900;margin-top:9px;}.stars svg{width:15px;height:15px;}
+  .status{display:flex;gap:0;margin:13px 0 4px;border:1px solid var(--line);border-radius:20px;overflow:hidden;}
+  .status span{flex:1;text-align:center;font-size:11px;padding:7px 0;color:var(--ink2);}
+  .status span.on{background:var(--pric);color:var(--onpric);font-weight:600;}
+  .gen{display:flex;gap:7px;margin:10px 0 2px;}
+  .gen span{font-size:10.5px;padding:4px 10px;border-radius:9px;background:var(--sv);color:var(--ink2);}
+  .ed{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line);}
+  .ed .bdg{width:38px;height:38px;border-radius:11px;}.ed .bdg svg{width:19px;height:19px;}
+  .ed .info{flex:1;}.ed .e-t{font-size:12.5px;font-weight:600;}.ed .e-s{font-size:10.5px;color:var(--ink2);margin-top:2px;}
+  .tonal{font-size:11px;font-weight:600;color:var(--onpric);background:var(--pric);padding:7px 13px;border-radius:18px;}
+  /* reader */
+  .rd{flex:1;padding:16px 22px;font-size:14.5px;line-height:1.72;color:#2b2930;overflow:hidden;}
+  .rd p{margin-bottom:13px;}
+  .rd .cn{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin-bottom:15px;}
+  .sheet{margin:0 12px 12px;background:var(--sv);border-radius:20px;padding:14px 16px;}
+  .sheet .row{display:flex;align-items:center;justify-content:space-between;}
+  .sheet .grab{width:34px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 12px;}
+  .sheet .seg{display:flex;gap:6px;}.sheet .seg span{padding:6px 12px;border-radius:9px;border:1px solid var(--line);font-size:12px;}
+  .sheet .seg span.on{background:var(--pric);border-color:transparent;color:var(--onpric);}
+  /* player */
+  .pl{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 22px 0;}
+  .pl .cv{width:182px;height:182px;border-radius:22px;display:flex;align-items:flex-end;padding:12px;color:#fff;font-weight:600;font-size:16px;box-shadow:0 12px 28px rgba(0,0,0,.22);}
+  .pl h2{font-size:19px;margin-top:18px;text-align:center;}
+  .pl .nb{font-size:11.5px;color:var(--ink2);margin-top:3px;text-align:center;}
+  .scrub{width:100%;height:4px;border-radius:4px;background:var(--sv);margin-top:18px;overflow:hidden;}.scrub i{display:block;height:100%;width:19%;background:var(--pri);}
+  .times{width:100%;display:flex;justify-content:space-between;font-size:10px;color:var(--ink2);margin-top:6px;}
+  .trans{display:flex;align-items:center;gap:24px;margin-top:14px;color:var(--ink);}.trans svg{width:30px;height:30px;}
+  .ppz{width:66px;height:66px;border-radius:22px;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;}.ppz svg{width:30px;height:30px;}
+  .pchips{display:flex;gap:8px;margin-top:18px;}
+  .pchips span{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:7px 13px;border-radius:18px;background:var(--sv);color:var(--ink2);}
+  .pchips svg{width:15px;height:15px;}
+  /* add */
+  .tile{display:flex;align-items:center;gap:13px;background:var(--sv);border-radius:18px;padding:15px 14px;margin-bottom:12px;}
+  .tile .bdg{width:42px;height:42px;border-radius:13px;background:var(--pric);color:var(--onpric);}.tile .bdg svg{width:20px;height:20px;}
+  .tile .ot{font-size:13px;font-weight:600;}.tile .os{font-size:11px;color:var(--ink2);margin-top:2px;}
+  .field{display:flex;align-items:center;gap:9px;background:var(--surf);border:1px solid var(--line);border-radius:28px;padding:12px 15px;color:var(--ink2);font-size:13px;margin-bottom:12px;}
+  .refbox{background:var(--surf);border:1px solid var(--line);border-radius:18px;padding:15px;margin-top:4px;}
+  .refbox .rt{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .refbox .rs{font-size:11px;color:var(--ink2);margin:6px 0 11px;}
+  .seg{display:flex;gap:7px;flex-wrap:wrap;}
+  .seg span{font-size:11px;padding:6px 13px;border-radius:9px;border:1px solid var(--line);color:var(--ink2);}
+  .seg span.on{background:var(--refc);border-color:transparent;color:var(--ref);font-weight:600;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M8 3v18"/></symbol>
+<symbol id="tablet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><line x1="10.5" y1="18.5" x2="13.5" y2="18.5"/></symbol>
+<symbol id="audio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="13" width="4.2" height="6.5" rx="1.5"/><rect x="16.8" y="13" width="4.2" height="6.5" rx="1.5"/></symbol>
+<symbol id="ref" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-1-7.9A5 5 0 0 1 16 9a3.5 3.5 0 0 1 1 6.8"/><path d="M12 11v6"/><path d="m9.5 13.5 2.5-2.5 2.5 2.5"/></symbol>
+<symbol id="search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+<symbol id="barcode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 5v14M7 5v14M11 5v14M14 5v14M18 5v14M21 5v14"/></symbol>
+<symbol id="play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></symbol>
+<symbol id="back30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v6h6"/><path d="M3.5 11a9 9 0 1 1 .5 5"/></symbol>
+<symbol id="fwd30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5v6h-6"/><path d="M20.5 11a9 9 0 1 0-.5 5"/></symbol>
+<symbol id="toc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+<symbol id="bm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+<symbol id="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+<symbol id="star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6L12 17l-5.4 2.6 1-6L3.3 9.4l6-.9z"/></symbol>
+<symbol id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="speed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14a6 6 0 1 1 6-6"/><path d="M12 14 16 9"/></symbol>
+<symbol id="home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></symbol>
+<symbol id="gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1l-.4-2.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></symbol>
+</defs></svg>
+
+<div class="hd">
+  <h1>Omnishelf <small>Variante B · Estante (Material 3)</small></h1>
+  <div class="legend">
+    <span class="it"><span class="dot" style="background:#7a5900"></span> Físico</span>
+    <span class="it"><span class="dot" style="background:#00497d"></span> EPUB</span>
+    <span class="it"><span class="dot" style="background:#5b3da7"></span> Audiolivro</span>
+    <span class="it"><span class="dot" style="background:#444746"></span> Referência (Kindle/Nook)</span>
+  </div>
+</div>
+
+<div class="board">
+
+  <!-- 1. BIBLIOTECA -->
+  <div class="frame"><div class="phone"><div class="scr">
+    <div class="bar"><span class="t">Biblioteca</span></div>
+    <div class="body">
+      <div class="sbar"><svg class="ic"><use href="#search"/></svg> Buscar no acervo <span class="av">E</span></div>
+      <div class="chips"><span class="ch on">Todos</span><span class="ch">Lendo</span><span class="ch">Físico</span><span class="ch">EPUB</span></div>
+      <div class="sec">Continuar</div>
+      <div class="rail">
+        <div class="rcard"><div class="cv" style="background:linear-gradient(150deg,#6a4ea0,#a98fe0)">Duna</div><div class="rmeta"><span class="bdg b-audio" style="width:15px;height:15px"><svg style="width:10px;height:10px"><use href="#audio"/></svg></span> 12%</div><div class="lp"><i style="width:12%"></i></div></div>
+        <div class="rcard"><div class="cv" style="background:linear-gradient(150deg,#3a7d6a,#76c0a0)">Torto Arado</div><div class="rmeta"><span class="bdg b-epub" style="width:15px;height:15px"><svg style="width:10px;height:10px"><use href="#tablet"/></svg></span> 43%</div><div class="lp"><i style="width:43%"></i></div></div>
+      </div>
+      <div class="sec">Tudo</div>
+      <div class="grid">
+        <div class="bk"><div class="cv" style="background:linear-gradient(150deg,#3f4a7a,#8a93c8)">Sapiens</div><div class="pad"><div class="ti">Sapiens</div><div class="au">Y. N. Harari</div><div class="bdgs"><span class="bdg b-audio"><svg><use href="#audio"/></svg></span></div></div></div>
+        <div class="bk"><div class="cv" style="background:linear-gradient(150deg,#7a3550,#c47a9a)">A Hipótese do Amor</div><div class="pad"><div class="ti">A Hipótese do Amor</div><div class="au">Ali Hazelwood</div><div class="bdgs"><span class="bdg b-epub"><svg><use href="#tablet"/></svg></span></div></div></div>
+        <div class="bk"><div class="cv" style="background:linear-gradient(150deg,#33352e,#6f7363)">1984</div><div class="pad"><div class="ti">1984</div><div class="au">George Orwell</div><div class="bdgs"><span class="bdg b-ref"><svg><use href="#ref"/></svg></span></div></div></div>
+        <div class="bk"><div class="cv" style="background:linear-gradient(150deg,#5a3526,#a8775a)">O Nome do Vento</div><div class="pad"><div class="ti">O Nome do Vento</div><div class="au">P. Rothfuss</div><div class="bdgs"><span class="bdg b-fis"><svg><use href="#book"/></svg></span></div></div></div>
+      </div>
+    </div>
+    <div class="fab"><svg><use href="#plus"/></svg></div>
+    <div class="nav"><a class="on"><span class="pin"><svg class="ic"><use href="#home"/></svg></span>Acervo</a><a><span class="pin"><svg class="ic"><use href="#tablet"/></svg></span>Lendo</a><a><span class="pin"><svg class="ic"><use href="#gear"/></svg></span>Ajustes</a></div>
+  </div></div><div class="cap"><b>1.</b> Biblioteca (busca, chips, FAB)</div></div>
+
+  <!-- 2. DETALHE -->
+  <div class="frame"><div class="phone"><div class="scr">
+    <div class="bar" style="padding-bottom:4px"><span style="transform:rotate(180deg)"><svg class="ic"><use href="#chev"/></svg></span><span style="margin-left:auto"><svg class="ic"><use href="#bm"/></svg></span></div>
+    <div class="body" style="overflow:hidden">
+      <div class="hero">
+        <div class="cv" style="background:linear-gradient(150deg,#6a4ea0,#a98fe0)">Duna</div>
+        <div><h2>Duna</h2><div class="au">Frank Herbert</div>
+          <div class="stars"><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg><use href="#star"/></svg><svg style="opacity:.25"><use href="#star"/></svg></div></div>
+      </div>
+      <div class="status"><span>Quero ler</span><span class="on">Lendo</span><span>Lido</span></div>
+      <div class="gen"><span>Ficção científica</span><span>Clássico</span></div>
+      <div class="sec" style="margin-top:14px">Minhas edições</div>
+      <div class="ed"><span class="bdg b-fis"><svg><use href="#book"/></svg></span><div class="info"><div class="e-t">Físico</div><div class="e-s">Estante B · emprestado a Ana</div></div></div>
+      <div class="ed"><span class="bdg b-epub"><svg><use href="#tablet"/></svg></span><div class="info"><div class="e-t">EPUB · 43%</div><div class="lp" style="margin-top:5px"><i style="width:43%"></i></div></div><span class="tonal">Ler</span></div>
+      <div class="ed" style="border:0"><span class="bdg b-audio"><svg><use href="#audio"/></svg></span><div class="info"><div class="e-t">Audiolivro · 12%</div><div class="lp" style="margin-top:5px"><i style="width:12%"></i></div></div><span class="tonal">Ouvir</span></div>
+    </div>
+  </div></div><div class="cap"><b>2.</b> Detalhe (status segmentado, edições)</div></div>
+
+  <!-- 3. LEITOR -->
+  <div class="frame"><div class="phone"><div class="scr">
+    <div class="bar" style="padding-bottom:6px"><span style="transform:rotate(180deg)"><svg class="ic"><use href="#chev"/></svg></span><span style="margin-left:auto;display:flex;gap:14px"><svg class="ic"><use href="#toc"/></svg><svg class="ic"><use href="#bm"/></svg></span></div>
+    <div class="rd">
+      <div class="cn">Cap. 7 · Arrakis</div>
+      <p>O deserto se abria diante deles como um mar imóvel. Paul sentiu o calor subir da areia em ondas, e por um instante a especiaria adoçou o ar.</p>
+      <p>"Um Fremen nunca desperdiça água", disse Stilgar, sem se virar. As palavras tinham o peso de uma lei aprendida ao longo de gerações.</p>
+      <p>Paul observou as dunas mudarem de cor com o entardecer, e soube que sob seus pés dormia o verme.</p>
+    </div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="row" style="margin-bottom:12px"><b style="font-size:13px">Aa</b><div class="seg"><span>A-</span><span class="on">A+</span></div></div>
+      <div class="row"><span style="font-size:12px;color:var(--ink2)">Tema</span><div class="seg"><span class="on">Claro</span><span>Sépia</span><span><svg class="ic" style="width:14px;height:14px"><use href="#moon"/></svg></span></div></div>
+      <div class="lp" style="margin-top:13px"><i style="width:43%"></i></div>
+      <div style="font-size:10.5px;color:var(--ink2);margin-top:6px">43% · faltam 12 min no capítulo</div>
+    </div>
+  </div></div><div class="cap"><b>3.</b> Leitor (bottom sheet de ajustes)</div></div>
+
+  <!-- 4. PLAYER -->
+  <div class="frame"><div class="phone"><div class="scr">
+    <div class="bar" style="padding-bottom:4px"><span><svg class="ic"><use href="#chev"/></svg></span><span style="margin-left:auto;font-size:12px;color:var(--ink2)">Tocando agora</span></div>
+    <div class="pl">
+      <div class="cv" style="background:linear-gradient(150deg,#3f4a7a,#8a93c8)">Sapiens</div>
+      <h2>Sapiens</h2>
+      <div class="nb">Cap. 3 · A Revolução Cognitiva</div>
+      <div class="scrub"><i></i></div>
+      <div class="times"><span>02:14</span><span>11:47</span></div>
+      <div class="trans"><svg class="ic"><use href="#back30"/></svg><span class="ppz"><svg><use href="#play"/></svg></span><svg class="ic"><use href="#fwd30"/></svg></div>
+      <div class="pchips"><span><svg><use href="#speed"/></svg> 1,5x</span><span><svg><use href="#clock"/></svg> 30 min</span><span><svg><use href="#toc"/></svg> Capítulos</span></div>
+    </div>
+  </div></div><div class="cap"><b>4.</b> Player (controles, velocidade, timer)</div></div>
+
+  <!-- 5. ADICIONAR -->
+  <div class="frame"><div class="phone"><div class="scr">
+    <div class="bar"><span class="t" style="font-size:21px">Adicionar livro</span></div>
+    <div class="body" style="overflow:hidden">
+      <div class="tile"><span class="bdg"><svg><use href="#barcode"/></svg></span><div><div class="ot">Escanear código de barras</div><div class="os">ISBN na contracapa do físico</div></div></div>
+      <div class="field"><svg class="ic"><use href="#search"/></svg> Buscar por título ou ISBN</div>
+      <div class="tile"><span class="bdg"><svg><use href="#plus"/></svg></span><div><div class="ot">Adicionar manualmente</div><div class="os">Edição rara, antiga ou sem código</div></div></div>
+      <div class="refbox">
+        <div class="rt"><svg class="ic" style="color:var(--ref)"><use href="#ref"/></svg> Já tenho em outro app</div>
+        <div class="rs">Catalogar um livro do Kindle ou Nook como referência, sem abrir no app.</div>
+        <div class="seg"><span class="on">Kindle</span><span>Nook</span><span>Apple Books</span><span>Outro</span></div>
+      </div>
+    </div>
+  </div></div><div class="cap"><b>5.</b> Adicionar (scan, busca, manual, referência)</div></div>
+
+</div>
+</body>
+</html>
