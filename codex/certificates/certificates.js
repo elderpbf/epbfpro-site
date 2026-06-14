@@ -84,6 +84,11 @@ let _turmaIndex = {};       // String(turma_id) -> turma row
 let _turmasByClient = {};   // client_slug -> [turma rows]
 let _issueParticipants = [];
 let _issueSelectedIds = new Set();
+// Emissão dashboard (ported from backstage/mocks/emissao/a3.html): sortable table
+// with a header select-all, KPI cards as status filters, and a bulk-action bar.
+let _sortKey = 'created';   // code | holder | client | turma | course | issued | status | created
+let _sortDir = 'desc';      // 'asc' | 'desc'
+let _selectedCodes = new Set();
 
 // ── Pure helper functions (exported for tests) ────────────────────────────────
 
@@ -121,6 +126,7 @@ export function formatIssuedOn(iso) {
 export function statusBadgeClass(status) {
   switch (status) {
     case 'issued':  return 'cdx-cert-badge cdx-cert-badge--issued';
+    case 'signed':  return 'cdx-cert-badge cdx-cert-badge--signed';
     case 'sent':    return 'cdx-cert-badge cdx-cert-badge--sent';
     case 'revoked': return 'cdx-cert-badge cdx-cert-badge--revoked';
     default:        return 'cdx-cert-badge cdx-cert-badge--unknown';
@@ -547,7 +553,8 @@ function _mountEmitidos() {
   if (!area) return;
 
   area.innerHTML =
-    '<div class="cdx-certs-emitidos">' +
+    '<div class="cdx-emissao">' +
+      '<div class="cdx-emissao-kpis" id="cdx-emissao-kpis"></div>' +
       '<div class="cdx-certs-toolbar">' +
         '<input type="search" class="cdx-certs-search" id="cdx-certs-search" placeholder="' + esc(t('certificates.search_ph')) + '">' +
         '<select id="cdx-certs-filter-client" class="cdx-certs-select">' +
@@ -556,17 +563,20 @@ function _mountEmitidos() {
         '<select id="cdx-certs-filter-turma" class="cdx-certs-select" disabled>' +
           '<option value="">' + esc(t('certificates.filter_all_turmas')) + '</option>' +
         '</select>' +
-        '<select id="cdx-certs-filter-status" class="cdx-certs-select">' +
-          '<option value="">' + esc(t('certificates.filter_all_statuses')) + '</option>' +
-          '<option value="issued">' + esc(t('certificates.status_issued')) + '</option>' +
-          '<option value="sent">' + esc(t('certificates.status_sent')) + '</option>' +
-          '<option value="revoked">' + esc(t('certificates.status_revoked')) + '</option>' +
-        '</select>' +
+        '<span class="cdx-emissao-spacer"></span>' +
         '<button class="cdx-btn cdx-btn-primary" id="cdx-certs-issue-btn">' + esc(t('certificates.issue_btn')) + '</button>' +
       '</div>' +
-      '<div id="cdx-certs-list">' +
+      '<div class="cdx-emissao-tablewrap" id="cdx-certs-list">' +
         '<div class="cdx-empty">' + esc(t('certificates.loading')) + '</div>' +
       '</div>' +
+    '</div>' +
+    '<div class="cdx-emissao-bulk" id="cdx-emissao-bulk">' +
+      '<b id="cdx-emissao-bulk-count"></b>' +
+      '<button class="cdx-btn cdx-btn-sm" data-bulk="sign">' + esc(t('certificates.bulk_sign')) + '</button>' +
+      '<button class="cdx-btn cdx-btn-sm" data-bulk="send">' + esc(t('certificates.bulk_send')) + '</button>' +
+      '<button class="cdx-btn cdx-btn-sm" data-bulk="pdf">' + esc(t('certificates.bulk_pdf')) + '</button>' +
+      '<button class="cdx-btn cdx-btn-sm" data-bulk="revoke">' + esc(t('certificates.bulk_revoke')) + '</button>' +
+      '<button class="cdx-btn cdx-btn-sm" data-bulk="clear">' + esc(t('certificates.bulk_clear')) + '</button>' +
     '</div>';
 
   _loadCertList();
@@ -575,7 +585,7 @@ function _mountEmitidos() {
   // Wire toolbar
   const searchEl = _q('#cdx-certs-search');
   if (searchEl) {
-    const onInput = () => { _filterQ = searchEl.value; _renderCertList(); };
+    const onInput = () => { _filterQ = searchEl.value; _selectedCodes.clear(); _refreshEmissao(); };
     searchEl.addEventListener('input', onInput);
     _cleanup.push(() => searchEl.removeEventListener('input', onInput));
   }
@@ -584,23 +594,31 @@ function _mountEmitidos() {
     const onChange = () => {
       _filterClientSlug = clientEl.value;
       _filterTurmaId = '';
+      _selectedCodes.clear();
       _populateTurmaFilter(_filterClientSlug);
-      _renderCertList();
+      _refreshEmissao();
     };
     clientEl.addEventListener('change', onChange);
     _cleanup.push(() => clientEl.removeEventListener('change', onChange));
   }
   const turmaEl = _q('#cdx-certs-filter-turma');
   if (turmaEl) {
-    const onChange = () => { _filterTurmaId = turmaEl.value; _renderCertList(); };
+    const onChange = () => { _filterTurmaId = turmaEl.value; _selectedCodes.clear(); _refreshEmissao(); };
     turmaEl.addEventListener('change', onChange);
     _cleanup.push(() => turmaEl.removeEventListener('change', onChange));
   }
-  const statusEl = _q('#cdx-certs-filter-status');
-  if (statusEl) {
-    const onChange = () => { _filterStatus = statusEl.value; _renderCertList(); };
-    statusEl.addEventListener('change', onChange);
-    _cleanup.push(() => statusEl.removeEventListener('change', onChange));
+  // KPI cards double as status filters (toggle).
+  const kpis = _q('#cdx-emissao-kpis');
+  if (kpis) {
+    const onClick = (e) => {
+      const card = e.target.closest('[data-status]');
+      if (!card) return;
+      _filterStatus = (_filterStatus === card.dataset.status) ? '' : card.dataset.status;
+      _selectedCodes.clear();
+      _refreshEmissao();
+    };
+    kpis.addEventListener('click', onClick);
+    _cleanup.push(() => kpis.removeEventListener('click', onClick));
   }
   const issueBtn = _q('#cdx-certs-issue-btn');
   if (issueBtn) {
@@ -612,17 +630,129 @@ function _mountEmitidos() {
   const list = _q('#cdx-certs-list');
   if (list) {
     const onClick = (e) => {
+      const th = e.target.closest('[data-sort]');
+      if (th) { _toggleSort(th.dataset.sort); return; }
+      if (e.target.closest('#cdx-emissao-selall')) { _selectAllVisible(e.target.checked); return; }
+      const cb = e.target.closest('input[data-sel]');
+      if (cb) { _toggleSel(cb.dataset.sel); return; }
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       const action = btn.dataset.action;
       const code   = btn.dataset.code;
-      if (action === 'copy-url') { _copyValidarUrl(code); return; }
-      if (action === 'revoke')   { _revokeConfirm(code);  return; }
-      if (action === 'mark-sent'){ _markSent(code);       return; }
-      if (action === 'preview')  { _previewCert(code);    return; }
+      if (action === 'copy-url')  { _copyValidarUrl(code); return; }
+      if (action === 'revoke')    { _revokeConfirm(code);  return; }
+      if (action === 'sign')      { _markSigned(code);     return; }
+      if (action === 'mark-sent') { _markSent(code);       return; }
+      if (action === 'preview')   { _previewCert(code);    return; }
     };
     list.addEventListener('click', onClick);
     _cleanup.push(() => list.removeEventListener('click', onClick));
+  }
+  const bulk = _q('#cdx-emissao-bulk');
+  if (bulk) {
+    const onClick = (e) => {
+      const b = e.target.closest('[data-bulk]');
+      if (b) _bulkAction(b.dataset.bulk);
+    };
+    bulk.addEventListener('click', onClick);
+    _cleanup.push(() => bulk.removeEventListener('click', onClick));
+  }
+}
+
+// The filtered set (client → cohort + name + optional status), shared by the KPI
+// counts (status excluded) and the table (status included), then sorted.
+function _emissaoFiltered(withStatus) {
+  const clientTurmaIds = _filterClientSlug
+    ? (_turmasByClient[_filterClientSlug] || []).map((tm) => tm.id)
+    : null;
+  return filterCerts(_certs, {
+    turma_id:  _filterTurmaId,
+    turma_ids: clientTurmaIds,
+    status:    withStatus ? _filterStatus : '',
+    q:         _filterQ,
+  });
+}
+
+function _sortCerts(list) {
+  const dir = _sortDir === 'asc' ? 1 : -1;
+  const val = (c) => {
+    switch (_sortKey) {
+      case 'code':   return (c.code || '').toLowerCase();
+      case 'holder': return (c.holder_name || '').toLowerCase();
+      case 'client': { const tm = _turmaIndex[String(c.turma_id)]; return (tm ? _clientName(tm.client_slug) : '').toLowerCase(); }
+      case 'turma':  return _turmaName(_turmaIndex[String(c.turma_id)]).toLowerCase();
+      case 'course': return (c.course_title || '').toLowerCase();
+      case 'issued': return c.issued_on || '';
+      case 'status': return c.status || '';
+      default:       return c.created_at || c.id || 0;
+    }
+  };
+  return list.slice().sort((a, b) => { const va = val(a), vb = val(b); return va < vb ? -dir : va > vb ? dir : 0; });
+}
+
+function _toggleSort(key) {
+  if (_sortKey === key) _sortDir = (_sortDir === 'asc' ? 'desc' : 'asc');
+  else { _sortKey = key; _sortDir = 'asc'; }
+  _renderCertList();
+}
+
+function _refreshEmissao() { _renderKpis(); _renderCertList(); _syncBulk(); }
+
+// KPI cards = status counts over the current client/turma/search set (status
+// excluded), each clickable to filter the table by that status.
+const _KPIS = [
+  { s: 'issued',  k: 'certificates.kpi_awaiting_sign' },
+  { s: 'signed',  k: 'certificates.kpi_awaiting_send' },
+  { s: 'sent',    k: 'certificates.kpi_sent' },
+  { s: 'revoked', k: 'certificates.kpi_revoked' },
+];
+function _renderKpis() {
+  const el = _q('#cdx-emissao-kpis');
+  if (!el) return;
+  const base = _emissaoFiltered(false);
+  el.innerHTML = _KPIS.map((c) => {
+    const n = base.filter((x) => x.status === c.s).length;
+    return '<button type="button" class="cdx-emissao-kpi cdx-emissao-kpi--' + c.s + (_filterStatus === c.s ? ' is-active' : '') + '" data-status="' + c.s + '">' +
+      '<span class="cdx-emissao-kpi-n">' + n + '</span>' +
+      '<span class="cdx-emissao-kpi-l">' + esc(t(c.k)) + '</span>' +
+    '</button>';
+  }).join('');
+}
+
+function _toggleSel(code) {
+  if (_selectedCodes.has(code)) _selectedCodes.delete(code); else _selectedCodes.add(code);
+  _renderCertList(); _syncBulk();
+}
+function _selectAllVisible(on) {
+  const visible = _emissaoFiltered(true);
+  visible.forEach((c) => { if (on) _selectedCodes.add(c.code); else _selectedCodes.delete(c.code); });
+  _renderCertList(); _syncBulk();
+}
+function _syncBulk() {
+  const bar = _q('#cdx-emissao-bulk');
+  if (!bar) return;
+  const n = _selectedCodes.size;
+  bar.classList.toggle('is-on', n > 0);
+  const c = _q('#cdx-emissao-bulk-count');
+  if (c) c.textContent = t('certificates.bulk_count').replace('{n}', String(n));
+}
+async function _bulkAction(kind) {
+  if (kind === 'clear') { _selectedCodes.clear(); _renderCertList(); _syncBulk(); return; }
+  const codes = Array.from(_selectedCodes);
+  if (!codes.length) return;
+  if (kind === 'pdf') { notice.warn(t('certificates.bulk_pdf_todo')); return; }
+  try {
+    for (const code of codes) {
+      if (kind === 'sign')   await api.markSigned({ code });
+      else if (kind === 'send')   await api.markSent({ code });
+      else if (kind === 'revoke') await api.revoke({ code });
+    }
+    notice.ok(t('certificates.bulk_done').replace('{n}', String(codes.length)));
+    _selectedCodes.clear();
+    await _loadCertList();
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: bulk ' + kind + ': ' + (e && e.message || e), 'error');
+    notice.error(t('certificates.error_loading'));
   }
 }
 
@@ -632,7 +762,7 @@ async function _loadCertList() {
   try {
     const res = await api.list({});
     _certs = (res && res.certificates) || [];
-    _renderCertList();
+    _refreshEmissao();
   } catch (e) {
     if (window.bsLog) window.bsLog('certs: list: ' + (e && e.message || e), 'error');
     notice.error(t('certificates.error_loading'));
@@ -659,7 +789,7 @@ async function _loadFilters() {
       (_turmasByClient[cs] = _turmasByClient[cs] || []).push(tm);
     });
     _populateClientFilter();
-    _renderCertList(); // re-render so the Client/Cohort columns resolve names
+    _refreshEmissao(); // re-render so the Client/Cohort columns + KPI counts resolve
   } catch (e) {
     if (window.bsLog) window.bsLog('certs: load filters: ' + (e && e.message || e), 'error');
   }
@@ -713,34 +843,28 @@ function _populateTurmaFilter(clientSlug) {
 function _renderCertList() {
   const listEl = _q('#cdx-certs-list');
   if (!listEl) return;
-  const clientTurmaIds = _filterClientSlug
-    ? (_turmasByClient[_filterClientSlug] || []).map((tm) => tm.id)
-    : null;
-  const visible = filterCerts(_certs, {
-    turma_id:  _filterTurmaId,
-    turma_ids: clientTurmaIds,
-    status:    _filterStatus,
-    q:         _filterQ,
-  });
+  const visible = _sortCerts(_emissaoFiltered(true));
   if (!visible.length) {
     listEl.innerHTML = '<div class="cdx-empty">' + esc(t('certificates.empty')) + '</div>';
     return;
   }
+  const allSel = visible.every((c) => _selectedCodes.has(c.code));
+  const arrow = (k) => (_sortKey === k ? ' <span class="cdx-emissao-sort">' + (_sortDir === 'asc' ? '▲' : '▼') + '</span>' : '');
+  const th = (k, key) => '<th data-sort="' + k + '" class="cdx-emissao-th' + (_sortKey === k ? ' is-sorted' : '') + '">' + esc(t(key)) + arrow(k) + '</th>';
   listEl.innerHTML =
-    '<table class="cdx-certs-table">' +
+    '<table class="cdx-certs-table cdx-emissao-table">' +
       '<thead><tr>' +
-        '<th>' + esc(t('certificates.col_code'))    + '</th>' +
-        '<th>' + esc(t('certificates.col_holder'))  + '</th>' +
-        '<th>' + esc(t('certificates.col_client'))  + '</th>' +
-        '<th>' + esc(t('certificates.col_turma'))   + '</th>' +
-        '<th>' + esc(t('certificates.col_course'))  + '</th>' +
-        '<th>' + esc(t('certificates.col_date'))    + '</th>' +
-        '<th>' + esc(t('certificates.col_status'))  + '</th>' +
+        '<th class="cdx-emissao-cbcol"><input type="checkbox" id="cdx-emissao-selall"' + (allSel ? ' checked' : '') + '></th>' +
+        th('code',   'certificates.col_code') +
+        th('holder', 'certificates.col_holder') +
+        th('client', 'certificates.col_client') +
+        th('turma',  'certificates.col_turma') +
+        th('course', 'certificates.col_course') +
+        th('issued', 'certificates.col_date') +
+        th('status', 'certificates.col_status') +
         '<th>' + esc(t('certificates.col_actions')) + '</th>' +
       '</tr></thead>' +
-      '<tbody>' +
-        visible.map((c) => _renderCertRow(c)).join('') +
-      '</tbody>' +
+      '<tbody>' + visible.map((c) => _renderCertRow(c)).join('') + '</tbody>' +
     '</table>';
 }
 
@@ -753,7 +877,13 @@ function _renderCertRow(c) {
   const turma = _turmaIndex[String(c.turma_id)];
   const clientLabel = turma ? _clientName(turma.client_slug) : '';
   const turmaLabel  = _turmaName(turma);
-  return '<tr>' +
+  const sel = _selectedCodes.has(c.code);
+  // Lifecycle next-step button: issued -> assinar, signed -> enviar.
+  let nextBtn = '';
+  if (c.status === 'issued') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="sign" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_sign')) + '</button>';
+  else if (c.status === 'signed') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="mark-sent" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_send')) + '</button>';
+  return '<tr' + (sel ? ' class="is-selected"' : '') + '>' +
+    '<td class="cdx-emissao-cbcol"><input type="checkbox" data-sel="' + esc(c.code) + '"' + (sel ? ' checked' : '') + '></td>' +
     '<td class="cdx-certs-code"><code>' + esc(c.code) + '</code></td>' +
     '<td>' + esc(c.holder_name || '') + '</td>' +
     '<td>' + esc(clientLabel || '—') + '</td>' +
@@ -762,9 +892,9 @@ function _renderCertRow(c) {
     '<td>' + esc(formatIssuedOn(c.issued_on)) + '</td>' +
     '<td><span class="' + statusBadgeClass(c.status) + '">' + esc(t('certificates.status_' + c.status) || c.status) + '</span></td>' +
     '<td class="cdx-certs-actions">' +
+      nextBtn +
       '<button class="cdx-btn cdx-btn-sm" data-action="preview" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_preview')) + '</button>' +
       '<button class="cdx-btn cdx-btn-sm" data-action="copy-url" data-code="' + esc(c.code) + '" title="' + esc(validarUrl) + '">' + esc(t('certificates.action_copy_url')) + '</button>' +
-      (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm" data-action="mark-sent" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_mark_sent')) + '</button>' : '') +
       (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
       (hasPdf ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(c.pdf_path) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>' : '') +
     '</td>' +
@@ -806,6 +936,17 @@ function _revokeConfirm(code) {
       notice.error(t('certificates.error_loading'));
     }
   });
+}
+
+async function _markSigned(code) {
+  try {
+    await api.markSigned({ code });
+    notice.ok(t('certificates.marked_signed_ok'));
+    await _loadCertList();
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: markSigned: ' + (e && e.message || e), 'error');
+    notice.error(t('certificates.error_loading'));
+  }
 }
 
 async function _markSent(code) {
@@ -1141,6 +1282,9 @@ export function mount(viewEl, ctx) {
   _turmasByClient = {};
   _issueParticipants = [];
   _issueSelectedIds  = new Set();
+  _sortKey = 'created';
+  _sortDir = 'desc';
+  _selectedCodes = new Set();
 
   _renderShell();
 

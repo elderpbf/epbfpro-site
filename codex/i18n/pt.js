@@ -1052,7 +1052,7 @@ export default {
 
   // Certificados tab — sub-tab nav and general
   'certificates.sub_modelos':         'Modelos',
-  'certificates.sub_emitidos':        'Emitidos',
+  'certificates.sub_emitidos':        'Emissão',
   'certificates.loading':             'Carregando...',
   'certificates.error_loading':       'Erro ao carregar.',
   'certificates.cancel':              'Cancelar',
@@ -1090,6 +1090,7 @@ export default {
   'certificates.col_turma':           'Turma',
   // Emitidos — status
   'certificates.status_issued':       'Emitido',
+  'certificates.status_signed':       'Assinado',
   'certificates.status_sent':         'Enviado',
   'certificates.status_revoked':      'Revogado',
   // Emitidos — toolbar filters
@@ -1108,6 +1109,22 @@ export default {
   'certificates.revoke_msg':          'Revogar o certificado {code}? Esta ação invalida a URL de validação.',
   'certificates.revoked_ok':          'Certificado revogado.',
   'certificates.marked_sent_ok':      'Marcado como enviado.',
+  'certificates.marked_signed_ok':    'Certificado assinado.',
+  // Emissão — KPIs (filtros de status) + ações em massa
+  'certificates.kpi_awaiting_sign':   'Aguardando assinatura',
+  'certificates.kpi_awaiting_send':   'Aguardando envio',
+  'certificates.kpi_sent':            'Enviados',
+  'certificates.kpi_revoked':         'Revogados',
+  'certificates.action_sign':         'Assinar',
+  'certificates.action_send':         'Enviar',
+  'certificates.bulk_count':          '{n} selecionados',
+  'certificates.bulk_sign':           'Assinar',
+  'certificates.bulk_send':           'Enviar',
+  'certificates.bulk_pdf':            'Baixar PDF',
+  'certificates.bulk_revoke':         'Revogar',
+  'certificates.bulk_clear':          'Limpar',
+  'certificates.bulk_done':           '{n} certificados atualizados.',
+  'certificates.bulk_pdf_todo':       'Download em lote chega em breve.',
   // Preview
   'certificates.preview_title':       'Detalhes do certificado',
   'certificates.preview_note':        'Para PDF, use a funcionalidade de impressão do navegador (Ctrl+P / Cmd+P) e escolha "Salvar como PDF".',

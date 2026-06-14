@@ -1053,7 +1053,7 @@ export default {
 
   // Certificates tab — sub-tab nav and general
   'certificates.sub_modelos':         'Templates',
-  'certificates.sub_emitidos':        'Issued',
+  'certificates.sub_emitidos':        'Issuance',
   'certificates.loading':             'Loading...',
   'certificates.error_loading':       'Error loading.',
   'certificates.cancel':              'Cancel',
@@ -1091,6 +1091,7 @@ export default {
   'certificates.col_turma':           'Cohort',
   // Emitidos — status
   'certificates.status_issued':       'Issued',
+  'certificates.status_signed':       'Signed',
   'certificates.status_sent':         'Sent',
   'certificates.status_revoked':      'Revoked',
   // Emitidos — toolbar filters
@@ -1109,6 +1110,22 @@ export default {
   'certificates.revoke_msg':          'Revoke certificate {code}? This invalidates the validation URL.',
   'certificates.revoked_ok':          'Certificate revoked.',
   'certificates.marked_sent_ok':      'Marked as sent.',
+  'certificates.marked_signed_ok':    'Certificate signed.',
+  // Issuance — KPIs (status filters) + bulk actions
+  'certificates.kpi_awaiting_sign':   'Awaiting signature',
+  'certificates.kpi_awaiting_send':   'Awaiting send',
+  'certificates.kpi_sent':            'Sent',
+  'certificates.kpi_revoked':         'Revoked',
+  'certificates.action_sign':         'Sign',
+  'certificates.action_send':         'Send',
+  'certificates.bulk_count':          '{n} selected',
+  'certificates.bulk_sign':           'Sign',
+  'certificates.bulk_send':           'Send',
+  'certificates.bulk_pdf':            'Download PDF',
+  'certificates.bulk_revoke':         'Revoke',
+  'certificates.bulk_clear':          'Clear',
+  'certificates.bulk_done':           '{n} certificates updated.',
+  'certificates.bulk_pdf_todo':       'Bulk download coming soon.',
   // Preview
   'certificates.preview_title':       'Certificate details',
   'certificates.preview_note':        'For PDF, use the browser print function (Ctrl+P / Cmd+P) and choose "Save as PDF".',
