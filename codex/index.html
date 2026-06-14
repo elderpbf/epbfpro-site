@@ -175,6 +175,9 @@
 
   const ctx = {};
   if (tab === 'content' || tab === 'questions' || tab === 'certificates') ctx.sub = sub;
+  // Questions deep-link: ?session=<code> opens that session's live host directly
+  // (the Lessons live card links here). The Sessions sub-tab reads ctx.session.
+  if (tab === 'questions') ctx.session = params.get('session') || undefined;
   TABS[tab].mount(document.getElementById('codex-view'), ctx);
 </script>
 </body>

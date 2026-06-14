@@ -433,9 +433,12 @@ function _renderLiveCard() {
   const live = _liveSession;
   const tail = live ? live.name : t('lessons.live_open_sessions');
   const titleAttr = _esc(t('nav.questions') + ' \xb7 ' + (live ? live.name : t('lessons.live_open_sessions')));
+  // Wire straight into Codex (Questions ▸ Sessions), not the legacy ClassPulse host
+  // page: a live session deep-links to its host via ?session=<code>; no session
+  // opens the Sessions sub-tab. Removes the last Codex->backstage runtime link.
   const href = live
-    ? '/backstage/classpulse/host.html?code=' + encodeURIComponent(live.id)
-    : '/backstage/classpulse/';
+    ? '/codex/?tab=questions&sub=sessions&session=' + encodeURIComponent(live.id)
+    : '/codex/?tab=questions&sub=sessions';
   // role="button" wrapper (not <button>) so the inner refresh <button> is valid.
   el.innerHTML =
     '<div role="button" tabindex="0" class="cdx-lessons-live cdx-lesson-section--preset" ' +

@@ -242,12 +242,18 @@ function _select(code) {
 export function mount(viewEl, ctx) {
   _viewEl = viewEl;
   _sessions = [];
-  _selectedCode = null;
-  _sidebarPinned = true;
+  // Deep-link (?session=<code>, e.g. the Lessons live card): preselect that
+  // session so its live host opens straight away; without one, the pinned picker
+  // shows. _load() reconciles, if the code is no longer listed/open it falls back
+  // to the placeholder. The value is the session code (cp_get_live_session aliases
+  // it to `id`, but it is the same `code` that list_sessions returns under `code`).
+  const pre = (ctx && ctx.session) ? String(ctx.session) : null;
+  _selectedCode = pre;
+  _sidebarPinned = !pre;
   _overSidebar = false;
 
   viewEl.innerHTML =
-    '<div class="cdx-sessions-layout cdx-sm--open" id="cdx-sessions-layout">' +
+    '<div class="cdx-sessions-layout' + (_sidebarPinned ? ' cdx-sm--open' : '') + '" id="cdx-sessions-layout">' +
       '<aside class="cdx-sessions-sidebar" id="cdx-sessions-sidebar">' +
         '<form class="cdx-create-session" id="cdx-sessions-create">' +
           '<h3 class="cdx-create-session-heading">' + t('questions.sessions_sidebar_heading') + '</h3>' +
