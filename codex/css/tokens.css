@@ -37,6 +37,24 @@
   --cdx-remarcada-bg:      rgba(245, 158, 11, 0.1);
   --cdx-remarcada-text:    #d97706;
   --danger:                var(--error);
+
+  /* Certificate status palette. Reuses Codex's own status hues: amber
+     (= --codex-cohorts / --cdx-remarcada) for "aguardando assinatura", blue
+     (= --cdx-agendada) for "aguardando envio", --success for "enviado",
+     --error for "revogado". `-txt` is the legible-on-tint badge text, `-bg`
+     the tinted badge fill, `-ac` the solid accent for KPI left-borders. */
+  --cdx-cert-issued-txt:   #b45309;
+  --cdx-cert-issued-bg:    rgba(245, 158, 11, 0.14);
+  --cdx-cert-issued-ac:    #f59e0b;
+  --cdx-cert-signed-txt:   #2563eb;
+  --cdx-cert-signed-bg:    rgba(59, 130, 246, 0.12);
+  --cdx-cert-signed-ac:    #3b82f6;
+  --cdx-cert-sent-txt:     #059669;
+  --cdx-cert-sent-bg:      rgba(16, 185, 129, 0.12);
+  --cdx-cert-sent-ac:      var(--success);
+  --cdx-cert-revoked-txt:  #dc2626;
+  --cdx-cert-revoked-bg:   rgba(239, 68, 68, 0.12);
+  --cdx-cert-revoked-ac:   var(--error);
 }
 
 [data-theme="dark"] {
@@ -55,4 +73,15 @@
   --cdx-agendada-text:     #93c5fd;
   --cdx-remarcada-bg:      rgba(245, 158, 11, 0.15);
   --cdx-remarcada-text:    #fcd34d;
+
+  /* Certificate status — dark. The `-ac` accents are theme-stable brand hues
+     (no override needed); only the badge text/fill lighten for dark surfaces. */
+  --cdx-cert-issued-txt:   #fbbf24;
+  --cdx-cert-issued-bg:    rgba(245, 158, 11, 0.20);
+  --cdx-cert-signed-txt:   #93c5fd;
+  --cdx-cert-signed-bg:    rgba(59, 130, 246, 0.22);
+  --cdx-cert-sent-txt:     #6ee7b7;
+  --cdx-cert-sent-bg:      rgba(16, 185, 129, 0.18);
+  --cdx-cert-revoked-txt:  #fca5a5;
+  --cdx-cert-revoked-bg:   rgba(239, 68, 68, 0.18);
 }

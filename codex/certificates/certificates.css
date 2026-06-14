@@ -303,16 +303,13 @@
   letter-spacing: 0.04em;
 }
 
-.cdx-cert-badge--issued  { background: rgba(245,158,11,0.14); color: #b45309; }
-.cdx-cert-badge--signed  { background: rgba(59,130,246,0.12); color: #2563eb; }
-.cdx-cert-badge--sent    { background: rgba(16,185,129,0.12); color: #059669; }
-.cdx-cert-badge--revoked { background: rgba(239,68,68,0.12);  color: #dc2626; }
-.cdx-cert-badge--unknown { background: rgba(107,114,128,0.12);color: var(--text-secondary); }
-
-[data-theme="dark"] .cdx-cert-badge--issued  { background: rgba(245,158,11,0.20); color: #fbbf24; }
-[data-theme="dark"] .cdx-cert-badge--signed  { background: rgba(59,130,246,0.22); color: #93c5fd; }
-[data-theme="dark"] .cdx-cert-badge--sent    { background: rgba(16,185,129,0.18); color: #6ee7b7; }
-[data-theme="dark"] .cdx-cert-badge--revoked { background: rgba(239,68,68,0.18);  color: #fca5a5; }
+/* Colors live in css/tokens.css (--cdx-cert-*), which carries the dark
+   overrides; these rules just consume them, so no [data-theme] block here. */
+.cdx-cert-badge--issued  { background: var(--cdx-cert-issued-bg);  color: var(--cdx-cert-issued-txt); }
+.cdx-cert-badge--signed  { background: var(--cdx-cert-signed-bg);  color: var(--cdx-cert-signed-txt); }
+.cdx-cert-badge--sent    { background: var(--cdx-cert-sent-bg);    color: var(--cdx-cert-sent-txt); }
+.cdx-cert-badge--revoked { background: var(--cdx-cert-revoked-bg); color: var(--cdx-cert-revoked-txt); }
+.cdx-cert-badge--unknown { background: rgba(107,114,128,0.12);     color: var(--text-secondary); }
 
 /* ── Issue flow modal ──────────────────────────────────────────── */
 .cdx-cert-roster {
@@ -598,10 +595,10 @@
 .cdx-emissao-kpi.is-active { box-shadow: 0 0 0 2px var(--primary); }
 .cdx-emissao-kpi-n { font-size: 1.7rem; font-weight: 700; line-height: 1; color: var(--text-primary); }
 .cdx-emissao-kpi-l { font-size: 0.72rem; color: var(--text-secondary); }
-.cdx-emissao-kpi--issued  { border-left-color: #f59e0b; }
-.cdx-emissao-kpi--signed  { border-left-color: #3b82f6; }
-.cdx-emissao-kpi--sent    { border-left-color: var(--success, #10b981); }
-.cdx-emissao-kpi--revoked { border-left-color: var(--error, #ef4444); }
+.cdx-emissao-kpi--issued  { border-left-color: var(--cdx-cert-issued-ac); }
+.cdx-emissao-kpi--signed  { border-left-color: var(--cdx-cert-signed-ac); }
+.cdx-emissao-kpi--sent    { border-left-color: var(--cdx-cert-sent-ac); }
+.cdx-emissao-kpi--revoked { border-left-color: var(--cdx-cert-revoked-ac); }
 [data-theme="dark"] .cdx-emissao-kpi { background: var(--surface); border-color: var(--border); }
 
 .cdx-emissao-spacer { flex: 1; }

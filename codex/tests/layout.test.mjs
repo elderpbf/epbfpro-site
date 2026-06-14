@@ -43,8 +43,11 @@ test('every owned surface/text/border token has a dark override', () => {
   const light = blockVars(tokens, ':root');
   const dark = new Set(blockVars(tokens, '\\[data-theme="dark"\\]'));
   // Brand accents are intentionally theme-stable; --danger inherits via --error.
+  // The cert-status `-ac` accents are likewise theme-stable (fixed brand hues, or
+  // var(--success)/var(--error) which theme themselves), so they share the exemption.
   const exempt = new Set([
     '--codex-lessons', '--codex-content', '--codex-cohorts', '--codex-questions', '--danger',
+    '--cdx-cert-issued-ac', '--cdx-cert-signed-ac', '--cdx-cert-sent-ac', '--cdx-cert-revoked-ac',
   ]);
   const missing = light.filter((v) => !exempt.has(v) && !dark.has(v));
   assert.deepEqual(missing, [], 'tokens missing a [data-theme="dark"] override: ' + missing.join(', '));

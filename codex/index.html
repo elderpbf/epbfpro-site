@@ -13,7 +13,11 @@
 
 <!-- Shell chrome reused from Backstage (same origin, so the login carries over). -->
 <link rel="stylesheet" href="css/theme.css?v=1.0">
-<link rel="stylesheet" href="../backstage/css/backstage.css?v=2.8">
+<!-- Admin shell chrome (bs-app/bs-main/bs-topbar, theme-transition) + the inline
+     login card (bs-auth-*). Codex copy, verbatim, so the backstage backstage.css
+     link is dropped. bs-auth-* rides along unchanged (auth.js stays backstage and
+     emits it); the cdx- rename of the Codex-emitted shell classes is a later pass. -->
+<link rel="stylesheet" href="css/backstage.css?v=1.0">
 <!-- Settings drawer chrome (Codex copy, pairs with js/settings-drawer.js). -->
 <link rel="stylesheet" href="css/settings-drawer.css?v=1.0">
 <!-- Codex toast (.cdx-toast, pairs with js/toast.js). shared-components.css is no
@@ -36,7 +40,7 @@
      (content/presets.js) and the sidebar preset loader (js/preset-loader.js) is
      styled by lessons.css (.cdx-lessons-sidebar-head .cv-preset-loader-*). -->
 <link rel="stylesheet" href="../backstage/classvault/css/classvault.css?v=1.50">
-<link rel="stylesheet" href="css/tokens.css?v=1.0">
+<link rel="stylesheet" href="css/tokens.css?v=1.1">
 <link rel="stylesheet" href="css/codex.css?v=2.4">
 <link rel="stylesheet" href="cohorts/cohorts.css?v=1.3">
 <link rel="stylesheet" href="content/content.css?v=2.6">
@@ -49,7 +53,7 @@
 <!-- QR share modal styles (Codex copy, pairs with js/qr-share-modal.js). -->
 <link rel="stylesheet" href="css/qr-share-modal.css?v=1.0">
 <link rel="stylesheet" href="questions/questions.css?v=3.6">
-<link rel="stylesheet" href="certificates/certificates.css?v=1.6">
+<link rel="stylesheet" href="certificates/certificates.css?v=1.7">
 <link rel="stylesheet" href="certificates/cert-render.css?v=1.1">
 <script src="../backstage/js/debug.js?v=2.5"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
