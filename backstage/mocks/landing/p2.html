@@ -29,7 +29,7 @@
   --bg:#04122e; --bg-2:#06183a; --surface:#0a2150; --surface-2:#0c2658;
   --ink:#eef4ff; --ink-soft:#a9c2e6; --ink-faint:#7c95c0;
   --line:rgba(125,232,214,.16); --line-soft:rgba(125,232,214,.07);
-  --pill:rgba(125,232,214,.08); --teal-text:var(--teal-light);
+  --pill:rgba(125,232,214,.08); --teal-text:var(--teal-light); --hl-line:var(--teal-light);
   --hero:radial-gradient(130% 100% at 70% -10%,#0a2b63 0%,#061c45 46%,#04122e 82%);
   --glow:rgba(20,184,166,.5); --glow-2:rgba(125,232,214,.42);
   --line-rgb:125,232,214;
@@ -39,7 +39,7 @@
   --bg:#f3f8fb; --bg-2:#e9f3f4; --surface:#ffffff; --surface-2:#f6fbfc;
   --ink:#082149; --ink-soft:#3a567d; --ink-faint:#6b85a8;
   --line:rgba(13,148,136,.18); --line-soft:rgba(8,33,74,.08);
-  --pill:rgba(13,148,136,.07); --teal-text:var(--teal-dark);
+  --pill:rgba(13,148,136,.07); --teal-text:var(--teal-dark); --hl-line:var(--teal-dark);
   --hero:radial-gradient(130% 100% at 70% -10%,#d7f1ec 0%,#eaf4f4 46%,#f3f8fb 82%);
   --glow:rgba(20,184,166,.34); --glow-2:rgba(13,148,136,.30);
   --line-rgb:13,148,136;
@@ -73,8 +73,8 @@ img{max-width:100%;display:block}
 .contact.iris .inner{opacity:1;transform:none;filter:none;clip-path:circle(0% at 50% 50%);transition:clip-path 1s cubic-bezier(.3,0,.15,1)}
 .contact.iris.lit .inner{clip-path:circle(82% at 50% 50%)}
 /* realce dos snippets (ideia 3: sublinhado + glow), contido no trecho */
-.hl{background-image:linear-gradient(var(--teal-light),var(--teal-light));background-repeat:no-repeat;background-position:0 100%;background-size:0% 3px;padding-bottom:.05em;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:text-shadow .4s ease,color .4s ease}
-.hl-on{text-shadow:0 0 18px var(--glow);color:#fff}
+.hl{background-image:linear-gradient(var(--hl-line),var(--hl-line));background-repeat:no-repeat;background-position:0 100%;background-size:0% 3px;padding-bottom:.05em;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:text-shadow .4s ease,color .4s ease}
+.hl-on{text-shadow:0 0 18px var(--glow);color:var(--ink)}
 @media(max-width:640px){#spark{width:11px;height:11px}}
 
 /* ===== header ===== */
@@ -687,12 +687,12 @@ function restartDemo(){
     }
     if(scrollY<=detachScroll-4 && hb>my){phase="follow";}
     if(armed){locked=false;ease=0.08;clearGlow();return {x:innerWidth*0.5, y:innerCY};}      // revelando: centro dos contatos
-    if(innerCY < innerHeight*1.05){locked=false;ease=0.07;clearGlow();return {x:innerWidth*0.5, y:Math.max(70,Math.min(innerHeight-70,innerCY))};} // corre pro bloco do finale
+    if(innerCY < innerHeight*1.05){locked=false;ease=0.06;clearGlow();return {x:innerWidth*0.5, y:Math.max(70,Math.min(innerHeight-70,innerCY))};} // corre pro bloco do finale
     const f=descendTarget(now);                                                              // trava num destaque e traça a base
-    if(f){ease=0.14;return f;}
-    ease=0.05;                                                                               // livre: vagueia (vaga-lume, figura-de-oito)
-    return {x:innerWidth*0.5+Math.sin(now*0.0012)*Math.min(230,innerWidth*0.22),
-            y:innerHeight*0.5+Math.sin(now*0.0024+1.57)*36};
+    if(f){ease=0.11;return f;}
+    ease=0.035;                                                                              // livre: vagueia bem devagar (vaga-lume)
+    return {x:innerWidth*0.5+Math.sin(now*0.00075)*Math.min(200,innerWidth*0.20),
+            y:innerHeight*0.5+Math.sin(now*0.0015+1.57)*30};
   }
   function frame(now){
     const rr=cinner.getBoundingClientRect();innerTop=rr.top;innerCY=rr.top+rr.height/2;
@@ -700,7 +700,9 @@ function restartDemo(){
     else if(armed && innerCY>innerHeight*0.96){armed=false;unfire();}                                           // sobe de volta -> desfaz
     const t=computeTarget(now);
     sx+=(t.x-sx)*ease; sy+=(t.y-sy)*ease;                   // velocidade varia: lenta ao vaguear, firme ao traçar
-    spark.style.transform="translate("+sx+"px,"+sy+"px) translate(-50%,-50%)";
+    const wob=(phase==='descend'&&!locked&&!armed)?1:0;     // leve curva/wobble só ao vaguear livre
+    const wx=sx+Math.cos(now*0.0016)*7*wob, wy=sy+Math.sin(now*0.0022)*7*wob;
+    spark.style.transform="translate("+wx+"px,"+wy+"px) translate(-50%,-50%)";
     spark.classList.toggle("on", !armed);                  // a luz vira o efeito do finale
     spark.classList.toggle("soft", phase==='descend' && !armed && !locked); // glow suave ao vaguear livre
     if(hero.getBoundingClientRect().bottom>0){             // constelação só enquanto o hero está visível
