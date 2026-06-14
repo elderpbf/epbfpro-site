@@ -62,6 +62,7 @@ img{max-width:100%;display:block}
   background:radial-gradient(circle,#fff 0%,var(--teal-light) 40%,transparent 72%);
   box-shadow:0 0 20px 6px var(--glow-2),0 0 44px 14px var(--glow)}
 #spark.on{opacity:1}
+#spark.soft{box-shadow:0 0 12px 4px var(--glow-2),0 0 26px 8px var(--glow)}
 #spark.behind{z-index:1}
 #spark.big{width:160px;height:160px;box-shadow:0 0 70px 22px var(--glow-2),0 0 150px 64px var(--glow)}
 .fxbox{position:relative}
@@ -72,8 +73,8 @@ img{max-width:100%;display:block}
 .contact.iris .inner{opacity:1;transform:none;filter:none;clip-path:circle(0% at 50% 50%);transition:clip-path 1s cubic-bezier(.3,0,.15,1)}
 .contact.iris.lit .inner{clip-path:circle(82% at 50% 50%)}
 /* realce dos snippets (ideia 3: sublinhado + glow), contido no trecho */
-.hl{background-image:linear-gradient(var(--teal-light),var(--teal-light));background-repeat:no-repeat;background-position:0 100%;background-size:0% 3px;padding-bottom:.05em;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:background-size .5s var(--ease),text-shadow .5s ease,color .5s ease}
-.hl-on{background-size:100% 3px !important;text-shadow:0 0 18px var(--glow);color:#fff}
+.hl{background-image:linear-gradient(var(--teal-light),var(--teal-light));background-repeat:no-repeat;background-position:0 100%;background-size:0% 3px;padding-bottom:.05em;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:text-shadow .4s ease,color .4s ease}
+.hl-on{text-shadow:0 0 18px var(--glow);color:#fff}
 @media(max-width:640px){#spark{width:11px;height:11px}}
 
 /* ===== header ===== */
@@ -643,7 +644,7 @@ function restartDemo(){
   size();addEventListener("resize",size);addEventListener("load",size);
   addEventListener("pointermove",e=>{mx=e.clientX;my=e.clientY;mAt=performance.now();},{passive:true}); // segue mouse/dedo no hero; ao descolar vira scroll (igual desktop)
   function rgb(){return getComputedStyle(document.documentElement).getPropertyValue("--line-rgb").trim()||"125,232,214";}
-  let phase="follow",detachScroll=0,detachY=innerHeight*0.4;
+  let phase="follow",detachScroll=0,detachY=innerHeight*0.4,locked=false,ease=0.08;
   function contactsScroll(){return contact.offsetTop-innerHeight*0.6;}
   /* ---- finale: dois mecanismos testáveis (Íris / Partículas) ---- */
   let FINALE=(location.search.match(/finale=(iris|part)/)||[])[1]||'iris',armed=false,bP=[],bRAF=0,bW=0,bH=0,burstCY=0,innerTop=0,innerCY=0,activeHL=null;
@@ -657,20 +658,27 @@ function restartDemo(){
   function lblFin(){finBtn.textContent='Finale: '+(FINALE==='iris'?'Íris':'Partículas');}
   finBtn.addEventListener('click',()=>{FINALE=FINALE==='iris'?'part':'iris';if(armed){unfire();fire(FINALE);}lblFin();}); lblFin();
   const WP=['#sobre .ro','#oferta .title .em','.xp:not(.rev) h3','.xp.rev h3','#certificado .title .em'];
-  function focal(now){                                      // snippet (.hl) mais centralizado: orb vai pra LINHA dele
-    let best=null,bel=null,bd=1e9;
-    for(const el of document.querySelectorAll('.hl')){const r=el.getBoundingClientRect();
-      if(r.bottom<60||r.top>innerHeight-60)continue;
-      const cy=r.top+r.height/2,d=Math.abs(cy-innerHeight*0.46);
-      if(d<bd){bd=d;bel=el;best={x:r.left+r.width/2+Math.sin(now*0.0016)*14,y:Math.max(70,Math.min(innerHeight-70,r.bottom+7))};}}
-    if(bel!==activeHL){if(activeHL)activeHL.classList.remove('hl-on');activeHL=bel;if(bel)bel.classList.add('hl-on');}
-    return best;
+  const FOCUS=()=>innerHeight*0.5;
+  function clearGlow(){for(const e of document.querySelectorAll('.hl-on'))e.classList.remove('hl-on');}
+  function descendTarget(now){                               // desenha o sublinhado pelo scroll; devolve a "ponta da caneta"
+    const focus=FOCUS(); let best=null,bd=1e9,bp=0,br=null;
+    for(const el of document.querySelectorAll('.hl')){
+      const r=el.getBoundingClientRect();
+      if(r.bottom<-30||r.top>innerHeight+30){el.style.backgroundSize='0% 3px';el.classList.remove('hl-on');continue;}
+      const p=Math.max(0,Math.min(1,(focus-r.top)/Math.max(1,r.height)));
+      el.style.backgroundSize=(p*100)+'% 3px';                // o sublinhado acompanha o scroll (reversível)
+      const cy=r.top+r.height/2,d=Math.abs(cy-focus);
+      el.classList.toggle('hl-on',d<innerHeight*0.26);         // brilho só perto do foco
+      if(d<bd){bd=d;best=el;bp=p;br=r;}
+    }
+    if(best&&bd<innerHeight*0.30){locked=true;return {x:br.left+br.width*bp,y:br.bottom+6};} // ponta na base do texto
+    locked=false; return null;
   }
   function computeTarget(now){
     const hb=hero.getBoundingClientRect().bottom;
     const live=now-mAt<2500;
-    if(phase==="follow"){                                   // acompanha o mouse, mesmo rolando, até o rodapé
-      if(activeHL){activeHL.classList.remove('hl-on');activeHL=null;}
+    if(phase==="follow"){                                   // acompanha mouse/dedo, mesmo rolando, até o rodapé
+      locked=false; ease=0.12; clearGlow();
       let tx=live?mx:innerWidth*0.5, ty=live?my:innerHeight*0.40;
       if(hb<=ty+2){phase="descend";detachScroll=scrollY;detachY=Math.max(40,hb);}
       const k=Math.max(0,Math.min(1,(ty-(hb-130))/130));
@@ -678,25 +686,23 @@ function restartDemo(){
       return {x:tx,y:ty};
     }
     if(scrollY<=detachScroll-4 && hb>my){phase="follow";}
-    if(armed) return {x:innerWidth*0.5, y:innerCY};                       // revelando: segura no centro dos contatos
-    if(innerCY < innerHeight*1.05){if(activeHL){activeHL.classList.remove('hl-on');activeHL=null;} return {x:innerWidth*0.5, y:Math.max(70,Math.min(innerHeight-70,innerCY))};} // a luz corre pro bloco
-    const f=focal(now);                                                   // visita o snippet da seção
-    if(f) return f;
-    const cs=contactsScroll();
-    const pd=Math.max(0,Math.min(1,(scrollY-detachScroll)/Math.max(1,cs-detachScroll)));
-    const drift=Math.sin(now*0.0008)*innerWidth*0.04;
-    return {x:innerWidth*0.5+drift, y:detachY+(innerHeight*0.82-detachY)*pd};
+    if(armed){locked=false;ease=0.08;clearGlow();return {x:innerWidth*0.5, y:innerCY};}      // revelando: centro dos contatos
+    if(innerCY < innerHeight*1.05){locked=false;ease=0.07;clearGlow();return {x:innerWidth*0.5, y:Math.max(70,Math.min(innerHeight-70,innerCY))};} // corre pro bloco do finale
+    const f=descendTarget(now);                                                              // trava num destaque e traça a base
+    if(f){ease=0.14;return f;}
+    ease=0.05;                                                                               // livre: vagueia (vaga-lume, figura-de-oito)
+    return {x:innerWidth*0.5+Math.sin(now*0.0012)*Math.min(230,innerWidth*0.22),
+            y:innerHeight*0.5+Math.sin(now*0.0024+1.57)*36};
   }
   function frame(now){
     const rr=cinner.getBoundingClientRect();innerTop=rr.top;innerCY=rr.top+rr.height/2;
     if(!armed && innerCY<innerHeight*0.78){armed=true;fire(FINALE);} // a luz alcança o bloco -> revela cedo
     else if(armed && innerCY>innerHeight*0.96){armed=false;unfire();}                                           // sobe de volta -> desfaz
     const t=computeTarget(now);
-    sx+=(t.x-sx)*0.08; sy+=(t.y-sy)*0.08;                   // mais lento
+    sx+=(t.x-sx)*ease; sy+=(t.y-sy)*ease;                   // velocidade varia: lenta ao vaguear, firme ao traçar
     spark.style.transform="translate("+sx+"px,"+sy+"px) translate(-50%,-50%)";
     spark.classList.toggle("on", !armed);                  // a luz vira o efeito do finale
-    spark.classList.toggle("behind", phase==='descend');   // atrás do texto, como linha de highlight
-    if(armed && activeHL){activeHL.classList.remove('hl-on');activeHL=null;}
+    spark.classList.toggle("soft", phase==='descend' && !armed && !locked); // glow suave ao vaguear livre
     if(hero.getBoundingClientRect().bottom>0){             // constelação só enquanto o hero está visível
       ctx.clearRect(0,0,W,H);const c=rgb();
       const r=cv.getBoundingClientRect();const lx=sx-r.left,ly=sy-r.top;
