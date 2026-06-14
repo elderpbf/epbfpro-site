@@ -1,0 +1,648 @@
+/* =========================================================
+   Backstage — Portal Shell
+   Auth screens, topbar, settings drawer, dashboard grid.
+   All class names use bs- prefix.
+   ========================================================= */
+
+/* =========================================================
+   THEME TRANSITION OVERLAY
+   ========================================================= */
+
+.theme-transition {
+  position: fixed;
+  top: var(--ty, 50%);
+  left: var(--tx, 50%);
+  width: 0; height: 0;
+  border-radius: 50%;
+  background: var(--background);
+  z-index: 9999;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+}
+
+.theme-transition.active {
+  animation: bs-wipe 0.6s ease-in forwards;
+}
+
+@keyframes bs-wipe {
+  0%   { width: 0; height: 0; opacity: 1; }
+  100% { width: 300vmax; height: 300vmax; opacity: 1; }
+}
+
+/* =========================================================
+   AUTH SCREENS (login + first-time setup)
+   ========================================================= */
+
+.bs-auth-bg {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--background);
+  z-index: 50;
+}
+
+.bs-auth-card {
+  background: var(--surface);
+  border: 1px solid rgba(20,184,166,.2);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%; max-width: 400px;
+  box-shadow: 0 8px 40px var(--shadow);
+}
+
+.bs-auth-logo {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.bs-auth-logo img {
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.bs-auth-logo .bs-product {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.bs-auth-card h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.bs-auth-card p.bs-auth-hint {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.bs-field {
+  margin-bottom: 1rem;
+}
+
+.bs-field label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bs-field input,
+.bs-field input[type="url"],
+.bs-field input[type="password"],
+.bs-field input[type="text"] {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: var(--background);
+  border: 1.5px solid rgba(20,184,166,.25);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color .2s;
+  box-sizing: border-box;
+}
+
+.bs-field input:focus {
+  border-color: var(--primary);
+}
+
+.bs-form-error {
+  color: #ef4444;
+  font-size: 0.82rem;
+  min-height: 1rem;
+  margin: -0.25rem 0 0.75rem;
+}
+
+.bs-auth-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: opacity .2s, transform .2s;
+}
+
+.bs-auth-btn:hover { opacity: .9; transform: translateY(-1px); }
+.bs-auth-btn:active { transform: translateY(0); }
+
+/* Google sign-in: white button, multi-color logo. Standard Google look. */
+.bs-auth-btn--google {
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.bs-auth-btn--google:hover {
+  background: #f8f9fa;
+  opacity: 1;
+  border-color: rgba(0, 0, 0, 0.25);
+}
+[data-theme="dark"] .bs-auth-btn--google {
+  background: #2a2a2a;
+  color: #e8eaed;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+[data-theme="dark"] .bs-auth-btn--google:hover {
+  background: #353535;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Bundle Q: divider between primary password sign-in and secondary Google
+   sign-in. The "ou" label sits centered over a horizontal hairline. */
+.bs-auth-divider {
+  position: relative;
+  margin: 1.5rem 0 1rem;
+  text-align: center;
+}
+.bs-auth-divider::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: rgba(20, 184, 166, 0.18);
+}
+.bs-auth-divider-text {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.75rem;
+  background: var(--card-bg, #fff);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+[data-theme="dark"] .bs-auth-divider::before {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* =========================================================
+   APP SHELL
+   ========================================================= */
+
+.bs-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Topbar */
+.bs-topbar {
+  background: var(--surface);
+  border-bottom: 1px solid rgba(20,184,166,.15);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+
+.bs-topbar--presentation {
+  position: fixed;
+  left: 0; right: 0;
+  z-index: 9900;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.bs-topbar--presentation.bs-topbar--visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.bs-topbar-item {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: 'Inter', system-ui, sans-serif;
+  text-decoration: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  background: rgba(20,184,166,.1);
+  border: 1px solid rgba(20,184,166,.2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.bs-topbar-item:hover {
+  background: rgba(20,184,166,.2);
+  color: var(--text-primary);
+}
+
+.bs-topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Codex hub variant: wider inner to fit the 5-tab strip alongside
+   brand + icon buttons + logout, and tighter gap so tabs cluster
+   with the brand instead of floating mid-bar. */
+.bs-topbar-inner--with-tabs {
+  max-width: 1400px;
+  gap: 0.4rem;
+}
+
+.bs-topbar-logo {
+  display: flex; align-items: center; gap: 0.6rem;
+  text-decoration: none;
+}
+
+.bs-topbar-back {
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+/* PensoIA glyph-wordmark + page suffix lockup. */
+.bs-topbar-logo {
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.bs-topbar-mark {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+}
+.bs-topbar-mark svg {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+/* Theme-aware wordmark switch via inline SVG. Light theme = navy P + navy
+   "enso" + teal "IA"; dark theme = white P + white "enso" + teal "IA". Both
+   rendered, CSS hides one based on the active theme. */
+.bs-topbar-logo-dark { display: none; }
+[data-theme="dark"] .bs-topbar-logo-light { display: none; }
+[data-theme="dark"] .bs-topbar-logo-dark { display: inline-flex; }
+
+.bs-topbar-name {
+  font-family: 'Comfortaa', 'Inter', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  /* Subtle separator hint via a thin border-left for visual lockup integrity. */
+  padding-left: 0.65rem;
+  border-left: 1px solid var(--border, rgba(255,255,255,0.16));
+}
+
+.bs-topbar-spacer { flex: 1; }
+
+/* Codex hub tab strip (between brand and spacer) */
+.bs-topbar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding-left: 0.4rem;
+}
+
+.bs-topbar-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 8px;
+  letter-spacing: -0.005em;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.bs-topbar-tab:hover {
+  color: var(--text-primary);
+  background: rgba(20,184,166,.08);
+}
+
+.bs-topbar-tab.active {
+  color: var(--primary);
+  background: rgba(20,184,166,.12);
+}
+
+.bs-topbar-tab-dot {
+  display: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+}
+.bs-topbar-tab-dot.live {
+  display: inline-block;
+  animation: bs-tab-dot-pulse 2s ease-in-out infinite;
+}
+
+/* Bundle F hybrid: thin 30px sub-row INSIDE the topbar chassis. Hidden when
+   subTabs is empty (the DOM node isn't rendered at all). Aligns with where
+   the main tabs start (logo + tabs use ~220px on the left). */
+.bs-topbar-subrow {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem 0 230px;
+  gap: 0.1rem;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  background: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .bs-topbar-subrow {
+  background: rgba(0,0,0,0.025);
+  border-top-color: rgba(20,184,166,0.10);
+}
+.bs-topbar-subtabs {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.bs-topbar-subtab {
+  padding: 0.2rem 0.65rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim, var(--text-secondary));
+  text-decoration: none;
+  border-radius: 5px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.bs-topbar-subtab:hover {
+  color: var(--text-primary);
+  background: rgba(20,184,166,0.06);
+}
+.bs-topbar-subtab.active {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.06);
+}
+[data-theme="light"] .bs-topbar-subtab.active {
+  background: rgba(20,184,166,0.12);
+  color: var(--primary);
+}
+
+@keyframes bs-tab-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.75); }
+}
+
+.bs-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.3);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--primary);
+  transition: all .2s;
+}
+
+.bs-icon-btn:hover {
+  background: rgba(20,184,166,.1);
+  border-color: var(--primary);
+}
+
+#themeIcon {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  color: var(--primary);
+}
+
+
+.bs-logout-btn {
+  padding: 0.4rem 1rem;
+  background: transparent;
+  border: 1.5px solid rgba(20,184,166,.3);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.bs-logout-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239,68,68,.06);
+}
+
+/* Main content area */
+.bs-main {
+  flex: 1;
+  padding: 2.5rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Tighter top on the dashboard so the tabs sit closer to the topbar. */
+.bs-main:has(#view-dashboard) { padding-top: 1.25rem; }
+
+/* =========================================================
+   DASHBOARD — Tool grid
+   ========================================================= */
+
+.bs-dashboard-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 2rem;
+}
+
+.bs-tabs {
+  display: flex;
+  gap: 2rem;
+  margin: 0 0 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.bs-tab {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 0.5rem 0;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+.bs-tab:hover { color: var(--text-primary); }
+.bs-tab.is-active {
+  color: var(--text-primary);
+  border-bottom-color: var(--primary);
+}
+
+.bs-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.bs-tool-card {
+  background: var(--surface);
+  border: 1px solid rgba(20,184,166,.15);
+  border-radius: 16px;
+  padding: 2rem;
+  cursor: pointer;
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+  box-shadow: 0 2px 8px var(--shadow);
+  text-decoration: none;
+  display: block;
+  position: relative;
+}
+
+.bs-tool-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px var(--shadow);
+  border-color: rgba(20,184,166,.4);
+  text-decoration: none;
+}
+
+.bs-tool-card.bs-disabled {
+  opacity: .6;
+  cursor: default;
+  pointer-events: none;
+}
+
+.bs-tool-icon {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.25rem;
+  color: white;
+}
+
+.bs-tool-codename {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
+.bs-tool-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.35rem;
+}
+
+.bs-tool-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.bs-soon-badge {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: rgba(20,184,166,.15);
+  border: 1px solid rgba(20,184,166,.3);
+  color: var(--primary);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+/* Legacy section on the Backstage homepage — small, de-emphasized
+   row below the primary tool grid for tools kept around for ongoing
+   maintenance only (ClassForge). */
+.bs-legacy-section {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border, rgba(20,184,166,.12));
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.bs-legacy-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.bs-legacy-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.5rem 0.85rem;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(20,184,166,.12));
+  background: var(--surface);
+  width: fit-content;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.bs-legacy-link:hover {
+  border-color: rgba(20,184,166,.3);
+  background: rgba(20,184,166,.04);
+}
+
+.bs-legacy-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.bs-legacy-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1100px) {
+  .bs-topbar-tab { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+  .bs-topbar-inner--with-tabs { gap: 0.25rem; padding: 0 0.85rem; }
+}
+
+@media (max-width: 600px) {
+  .bs-main { padding: 1.5rem 1rem; }
+  .bs-topbar-name { font-size: 1rem; }
+  .bs-tool-grid { grid-template-columns: 1fr; }
+}
