@@ -4,7 +4,10 @@ window.REVIEW_MANIFEST = {
   storageKey: 'mockrev_curso_ratings_v1',
   notesKey:   'mockrev_curso_notes_v1',
   rows: [
-    { label: 'Conceitos', items: [
+    { label: 'Escolhido (refinado)', items: [
+      { id: 'b2', file: 'b2.html', label: 'B+C · cara do B + assistente do C' }
+    ]},
+    { label: 'Conceitos originais', items: [
       { id: 'a1', file: 'a1.html', label: 'A · Biblioteca (mestre-detalhe)' },
       { id: 'a2', file: 'a2.html', label: 'B · Editor de ementa (documento)' },
       { id: 'a3', file: 'a3.html', label: 'C · Assistente (co-piloto IA)' }

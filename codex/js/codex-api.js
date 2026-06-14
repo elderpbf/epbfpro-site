@@ -157,7 +157,7 @@ export const cohorts = {
   listAllTurmas:   (p) => call('ct_list_all_turmas', p),       // every turma across clients (Lessons sidebar)
   lookupTurmaBySession: (p) => call('ct_lookup_turma_by_session', p), // { session_id } -> { turma } (live host Trilha link)
   createTurma:     (p) => call('ct_create_turma', p),
-  updateTurma:     (p) => call('ct_update_turma', p),          // { client_slug, slug, name, display_name? }
+  updateTurma:     (p) => call('ct_update_turma', p),          // { client_slug, slug, name?, display_name?, course_id?, hours?, ementa_json?, date_start?, date_end?, format?, place?, meetings?, modality? } — course-instance fields added with the Cursos data model (migration 0017)
   updateTurmaMeta: (p) => call('ct_update_turma_meta', p),
   archiveTurma:    (p) => call('ct_archive_turma', p),         // { client_slug, slug }
   regenTurmaToken: (p) => call('ct_regenerate_turma_token', p),// { client_slug, slug }
@@ -171,6 +171,20 @@ export const cohorts = {
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
   importParticipants: (p) => call('ct_import_participants', p) // { turma_id, rows[] }
+};
+
+// Courses — reusable course templates (Cohorts → Cursos sub-tab). A course is a
+// MOLD: its title/hours/ementa seed a turma's OWN editable copy (see the
+// course_id/hours/ementa_json fields on cohorts.updateTurma). The certificate
+// snapshots the turma's copy at issue. ct_*_course family (auth required), added
+// with migration 0017. ementa_json shape (frontend-owned):
+//   { modules: [ { title, topics: [ { title, subtopics: [ "..." ] } ] } ] }
+export const courses = {
+  list:    (p) => call('ct_list_courses', p),    // { include_archived? } -> { courses } (no ementa_json, + turma_count)
+  get:     (p) => call('ct_get_course', p),      // { id } -> { course } (with ementa_json)
+  create:  (p) => call('ct_create_course', p),   // { title, hours?, ementa_json? } -> { course }
+  update:  (p) => call('ct_update_course', p),   // { id, title?, hours?, ementa_json? } -> { course }
+  archive: (p) => call('ct_archive_course', p)   // { id }
 };
 
 // Content — the item library (Items sub-tab) plus the shared types/tags it
