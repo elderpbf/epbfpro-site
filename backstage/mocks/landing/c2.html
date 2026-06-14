@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PensoIA — IA Generativa para o Direito</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --teal-light:#5eead4;
+  --accent:#7de8d6; --green:#047857;
+  /* dark default */
+  --bg:#040a1c; --bg-2:#07112b; --surface:#0b1838; --surface-2:#0e1d44;
+  --ink:#f2f6ff; --ink-soft:#9fb0d6; --line:#1a2a55; --brand-2:var(--teal-light);
+  --glow:color-mix(in srgb,var(--teal) 60%,transparent);
+}
+html[data-theme="light"]{
+  --bg:#f4f7fb; --bg-2:#ffffff; --surface:#ffffff; --surface-2:#f0f4fa;
+  --ink:#08132e; --ink-soft:#4a5778; --line:#dde5f0; --brand-2:var(--teal-dark);
+  --glow:color-mix(in srgb,var(--teal) 30%,transparent);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .4s,color .4s}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+:focus-visible{outline:3px solid var(--teal-light);outline-offset:3px;border-radius:6px}
+
+/* header */
+header{position:sticky;top:0;z-index:60;background:color-mix(in srgb,var(--bg) 80%,transparent);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:76px}
+.logo{height:34px}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-links{display:flex;gap:30px;margin-right:14px}
+.nav-links a{font-size:14px;font-weight:500;color:var(--ink-soft);transition:.2s}
+.nav-links a:hover{color:var(--brand-2)}
+.ibtn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);
+  color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;display:grid;place-items:center;transition:.2s}
+.ibtn:hover{border-color:var(--teal)}
+.navcta{background:linear-gradient(120deg,var(--teal),var(--teal-dark));color:#04201d;padding:11px 20px;
+  border-radius:10px;font-weight:700;font-size:14px;transition:.2s}
+.navcta:hover{box-shadow:0 0 28px -6px var(--glow);transform:translateY(-1px)}
+
+/* hero */
+.hero{position:relative;padding:96px 0 70px;overflow:hidden;text-align:center}
+.mesh{position:absolute;inset:0;z-index:0;pointer-events:none}
+.mesh i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55}
+.mesh i:nth-child(1){width:560px;height:560px;background:var(--teal);top:-180px;left:-120px;opacity:.32}
+.mesh i:nth-child(2){width:520px;height:520px;background:#3b82f6;top:-140px;right:-120px;opacity:.22}
+.mesh i:nth-child(3){width:480px;height:480px;background:var(--teal-dark);bottom:-260px;left:40%;opacity:.25}
+.grid-overlay{position:absolute;inset:0;z-index:0;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:54px 54px;mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,#000,transparent 75%)}
+.hero .wrap{position:relative;z-index:2}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
+  border:1px solid var(--line);background:var(--surface);padding:8px 16px;border-radius:999px;color:var(--brand-2);margin-bottom:30px}
+.badge .live{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 0 var(--glow);animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--glow)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+h1{font-size:clamp(2.6rem,6.4vw,5rem);line-height:1.02;font-weight:800;letter-spacing:-.03em;max-width:16ch;margin:0 auto}
+h1 .grad{background:linear-gradient(110deg,var(--teal-light),var(--teal),#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{font-size:clamp(1.05rem,1.7vw,1.28rem);color:var(--ink-soft);max-width:56ch;margin:28px auto 0}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:38px}
+.bp{background:linear-gradient(120deg,var(--teal),var(--teal-dark));color:#04201d;padding:16px 30px;border-radius:13px;
+  font-weight:700;transition:.2s;display:inline-flex;align-items:center;gap:9px}
+.bp:hover{transform:translateY(-2px);box-shadow:0 0 36px -8px var(--glow)}
+.bg{padding:16px 28px;border-radius:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);transition:.2s}
+.bg:hover{border-color:var(--teal);color:var(--brand-2)}
+/* reserved-height animated line */
+.typewrap{height:30px;margin-top:30px;display:flex;align-items:center;justify-content:center}
+.typewrap .mono{font-size:13.5px;color:var(--brand-2);border-left:2px solid var(--teal);padding-left:12px}
+.cursor{display:inline-block;width:8px;background:var(--teal);margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* stats inline */
+.hstats{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin-top:52px;padding-top:36px;border-top:1px solid var(--line)}
+.hstats .s b{font-size:1.7rem;font-weight:800;color:var(--brand-2);display:block;line-height:1}
+.hstats .s span{font-size:13px;color:var(--ink-soft)}
+
+/* bento */
+section{padding:88px 0}
+.shead{text-align:center;max-width:60ch;margin:0 auto 50px}
+.kick{font-family:'JetBrains Mono',monospace;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand-2);margin-bottom:14px}
+.shead h2{font-size:clamp(1.9rem,3.8vw,2.8rem);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.shead p{margin-top:14px;color:var(--ink-soft);font-size:1.06rem}
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;grid-auto-rows:minmax(150px,auto)}
+.cell{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px;position:relative;
+  overflow:hidden;transition:.25s}
+.cell:hover{border-color:color-mix(in srgb,var(--teal) 55%,var(--line));transform:translateY(-3px)}
+.cell .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.2rem;
+  background:color-mix(in srgb,var(--teal) 14%,transparent);border:1px solid var(--line);margin-bottom:16px}
+.cell h3{font-size:1.2rem;font-weight:700;margin-bottom:8px}
+.cell p{color:var(--ink-soft);font-size:.96rem}
+.c-wide{grid-column:span 3}.c-mid{grid-column:span 2}.c-tall{grid-column:span 2;grid-row:span 2}
+.c-feat{grid-column:span 4}
+.cell.glow{background:linear-gradient(135deg,var(--surface),var(--surface-2));border-color:color-mix(in srgb,var(--teal) 35%,var(--line))}
+.cell .big{font-family:'JetBrains Mono',monospace;font-size:clamp(2.2rem,5vw,3.4rem);font-weight:600;color:var(--brand-2);line-height:1}
+.cell.dotgrid::after{content:"";position:absolute;inset:0;opacity:.4;background-image:radial-gradient(var(--line) 1.2px,transparent 1.2px);background-size:18px 18px;mask-image:linear-gradient(135deg,#000,transparent 70%)}
+
+/* platform split */
+.platform{background:var(--bg-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.psplit{display:grid;grid-template-columns:1fr .9fr;gap:56px;align-items:center}
+.phone{justify-self:center;width:300px;max-width:80vw;border-radius:44px;padding:12px;position:relative;
+  background:linear-gradient(160deg,#0a1f55,#0d9488);box-shadow:0 30px 80px -30px var(--glow)}
+.phone img{border-radius:34px;width:100%}
+.phone .notch{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:110px;height:7px;border-radius:6px;background:rgba(255,255,255,.4);z-index:2}
+.feat{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid var(--line)}
+.feat:last-child{border-bottom:none}
+.feat .fi{flex:none;width:44px;height:44px;border-radius:12px;background:color-mix(in srgb,var(--teal) 16%,transparent);
+  display:grid;place-items:center;color:var(--brand-2);border:1px solid var(--line)}
+.feat h4{font-size:1.08rem;font-weight:700;margin-bottom:3px}
+.feat p{font-size:.95rem;color:var(--ink-soft)}
+.pill{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--brand-2);border:1px solid var(--line);padding:5px 12px;border-radius:999px;display:inline-block;margin-bottom:14px}
+
+/* method chips */
+.chips{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;max-width:980px;margin:0 auto}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 22px;min-width:200px;flex:1 1 200px;transition:.2s}
+.chip:hover{border-color:var(--teal);transform:translateY(-3px)}
+.chip .n{font-family:'JetBrains Mono',monospace;color:var(--brand-2);font-size:13px;font-weight:600}
+.chip h4{font-size:1.05rem;font-weight:700;margin:8px 0 6px}
+.chip p{font-size:.9rem;color:var(--ink-soft)}
+
+/* audience strip */
+.aud{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.aud .a{border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:28px}
+.aud .a .e{font-size:1.8rem;margin-bottom:10px}
+.aud .a h4{font-weight:700;margin-bottom:6px}
+.aud .a p{color:var(--ink-soft);font-size:.94rem}
+
+/* final */
+.final{text-align:center}
+.fcard{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:28px;padding:70px 40px;
+  background:linear-gradient(135deg,var(--surface),var(--surface-2))}
+.fcard .mesh2{position:absolute;width:600px;height:600px;border-radius:50%;filter:blur(90px);background:var(--teal);opacity:.22;top:-260px;left:50%;transform:translateX(-50%)}
+.fcard h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.02em;position:relative}
+.fcard p{color:var(--ink-soft);max-width:48ch;margin:16px auto 0;position:relative}
+.factions{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
+
+footer{border-top:1px solid var(--line);padding:48px 0;background:var(--bg-2)}
+.foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:22px}
+.flogo{height:30px}
+.soc{display:flex;gap:12px}
+.soc a{width:42px;height:42px;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink-soft);transition:.2s}
+.soc a:hover{color:var(--brand-2);border-color:var(--teal);transform:translateY(-2px)}
+.fcopy{width:100%;text-align:center;font-size:13px;color:var(--ink-soft);margin-top:6px}
+
+@media(max-width:980px){
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .c-wide,.c-mid,.c-tall,.c-feat{grid-column:span 2;grid-row:auto}
+  .psplit{grid-template-columns:1fr;gap:42px}
+  .aud{grid-template-columns:1fr}
+  .nav-links{display:none}
+}
+@media(max-width:560px){.bento{grid-template-columns:1fr}.c-wide,.c-mid,.c-tall,.c-feat{grid-column:span 1}.hstats{gap:26px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}.cursor{opacity:1}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a href="#" aria-label="PensoIA — início"><img class="logo" id="logoMain" src="../../../images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA"></a>
+    <nav class="nav-right" aria-label="Navegação principal">
+      <div class="nav-links">
+        <a href="#oferta" data-i18n="nav_offer">Soluções</a>
+        <a href="#plataforma" data-i18n="nav_platform">Plataforma</a>
+        <a href="#metodo" data-i18n="nav_method">Método</a>
+        <a href="#contato" data-i18n="nav_contact">Contato</a>
+      </div>
+      <button class="ibtn" id="langBtn" aria-label="Mudar idioma">EN</button>
+      <button class="ibtn" id="themeBtn" aria-label="Alternar tema">☀️</button>
+      <a href="https://wa.me/557998014253" class="navcta" data-i18n="nav_cta">Falar agora</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+  <div class="wrap">
+    <span class="badge"><span class="live" aria-hidden="true"></span><span data-i18n="hero_badge">Engenharia de Prompt &amp; IA Generativa</span></span>
+    <h1 data-i18n-html="hero_h1">Traduzimos a IA em <span class="grad">ferramentas práticas</span> para o seu trabalho jurídico.</h1>
+    <p class="hero-sub" data-i18n="hero_sub">Treinamentos e consultoria que economizam tempo, aumentam a precisão e mantêm o ser humano no controle. Com segurança jurídica e rigor técnico.</p>
+    <div class="hero-actions">
+      <a href="#oferta" class="bp" data-i18n="hero_cta1">Ver soluções →</a>
+      <a href="https://wa.me/557998014253" class="bg" data-i18n="hero_cta2">Montar uma turma</a>
+    </div>
+    <div class="typewrap"><span class="mono"><span id="typed"></span><span class="cursor" aria-hidden="true">&nbsp;</span></span></div>
+    <div class="hstats">
+      <div class="s"><b>600+</b><span data-i18n="hs1">profissionais treinados</span></div>
+      <div class="s"><b>~11</b><span data-i18n="hs2">anos no Judiciário</span></div>
+      <div class="s"><b>12–16h</b><span data-i18n="hs3">com certificação</span></div>
+      <div class="s"><b>15</b><span data-i18n="hs4">dias de suporte pós-curso</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="oferta">
+  <div class="wrap">
+    <div class="shead">
+      <p class="kick" data-i18n="offer_kick">// o que entregamos</p>
+      <h2 data-i18n="offer_h2">Três frentes, um mesmo objetivo: autonomia com responsabilidade.</h2>
+    </div>
+    <div class="bento">
+      <div class="cell c-feat glow dotgrid">
+        <div class="ic" aria-hidden="true">🎓</div>
+        <h3 data-i18n="b1_h">Cursos &amp; treinamentos com certificação</h3>
+        <p data-i18n="b1_p">Engenharia de Prompt e IA Generativa em turmas presenciais ou híbridas. De 12 a 16 horas em encontros de ~4h, unindo parte expositiva e laboratório prático aplicado às rotinas reais da sua equipe.</p>
+      </div>
+      <div class="cell c-mid">
+        <div class="ic" aria-hidden="true">🛠️</div>
+        <h3 data-i18n="b2_h">Consultoria em IA</h3>
+        <p data-i18n="b2_p">Soluções sob medida e automação inteligente de processos jurídicos.</p>
+      </div>
+      <div class="cell c-mid">
+        <div class="ic" aria-hidden="true">⚙️</div>
+        <h3 data-i18n="b3_h">Otimização de fluxos</h3>
+        <p data-i18n="b3_p">Reorganização de tarefas com LLMs: menos retrabalho, mais precisão.</p>
+      </div>
+      <div class="cell c-mid glow">
+        <div class="big">600+</div>
+        <p style="margin-top:10px" data-i18n="b4_p">magistrados, desembargadores, juízes e servidores já treinados.</p>
+      </div>
+      <div class="cell c-mid">
+        <div class="ic" aria-hidden="true">📜</div>
+        <h3 data-i18n="b5_h">Certificação real</h3>
+        <p data-i18n="b5_p">Com carga horária e ementa detalhada para o seu RH e a sua progressão.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="platform" id="plataforma">
+  <div class="wrap">
+    <div class="psplit">
+      <div class="phone">
+        <span class="notch" aria-hidden="true"></span>
+        <img id="appShot" src="../../../images/app/student-dark.jpg" alt="Aplicativo Trilha da Turma com aulas, tarefas e materiais" loading="lazy">
+      </div>
+      <div>
+        <span class="pill" data-i18n="plat_pill">o diferencial</span>
+        <div class="shead" style="text-align:left;margin:0 0 8px">
+          <h2 style="font-size:clamp(1.7rem,3vw,2.3rem)" data-i18n="plat_h2">Não ensinamos só. Entregamos as ferramentas.</h2>
+          <p data-i18n="plat_sub">Plataformas próprias que tornam o aprendizado simples e duradouro, durante e depois da aula.</p>
+        </div>
+        <div class="feat"><div class="fi" aria-hidden="true">⚡</div><div><h4 data-i18n="pf1_h">Pulso da Turma — ao vivo</h4><p data-i18n="pf1_p">Perguntas em tempo real, enquetes e um termômetro de compreensão durante a aula.</p></div></div>
+        <div class="feat"><div class="fi" aria-hidden="true">📚</div><div><h4 data-i18n="pf2_h">Trilha da Turma — depois da aula</h4><p data-i18n="pf2_p">Apostila digital com conteúdo, tarefas, prompts e instruções. Referência permanente.</p></div></div>
+        <div class="feat"><div class="fi" aria-hidden="true">🤝</div><div><h4 data-i18n="pf3_h">Suporte por 15 dias</h4><p data-i18n="pf3_p">Dúvidas atendidas durante e após o treinamento. Você não fica sozinho.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="metodo">
+  <div class="wrap">
+    <div class="shead">
+      <p class="kick" data-i18n="m_kick">// como ensinamos</p>
+      <h2 data-i18n="m_h2">Do conceito ao uso seguro, sem jargão.</h2>
+      <p data-i18n="m_sub">Cada etapa entrega algo aplicável no dia seguinte.</p>
+    </div>
+    <div class="chips">
+      <div class="chip"><span class="n">01</span><h4 data-i18n="mc1_h">Fundamentos de LLM</h4><p data-i18n="mc1_p">Tokens, embeddings e janela de contexto. Por que IA não é buscador.</p></div>
+      <div class="chip"><span class="n">02</span><h4 data-i18n="mc2_h">Engenharia de prompt</h4><p data-i18n="mc2_p">Frameworks em markdown para precisão e replicabilidade.</p></div>
+      <div class="chip"><span class="n">03</span><h4 data-i18n="mc3_h">Gestão de risco</h4><p data-i18n="mc3_p">Reconhecer e mitigar alucinações e precedentes falsos.</p></div>
+      <div class="chip"><span class="n">04</span><h4 data-i18n="mc4_h">Ferramentas</h4><p data-i18n="mc4_p">ChatGPT, Claude, Gemini e NotebookLM para grandes autos.</p></div>
+      <div class="chip"><span class="n">05</span><h4 data-i18n="mc5_h">Laboratório</h4><p data-i18n="mc5_p">Prompts reais e um repertório reutilizável pela equipe.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="shead"><p class="kick" data-i18n="aud_kick">// para quem é</p><h2 data-i18n="aud_h2">Direito, tribunais e governo.</h2></div>
+    <div class="aud">
+      <div class="a"><div class="e">👩‍⚖️</div><h4 data-i18n="au1_h">Advogados &amp; escritórios</h4><p data-i18n="au1_p">Rotina mais rápida, com controle e responsabilidade técnica preservados.</p></div>
+      <div class="a"><div class="e">⚖️</div><h4 data-i18n="au2_h">Magistrados &amp; tribunais</h4><p data-i18n="au2_p">Juízes, assessores e servidores com fluência prática e segura em IA.</p></div>
+      <div class="a"><div class="e">🏛️</div><h4 data-i18n="au3_h">Setor público</h4><p data-i18n="au3_p">Órgãos que querem adotar IA com critério, segurança e bom senso.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="final" id="contato">
+  <div class="wrap">
+    <div class="fcard">
+      <div class="mesh2" aria-hidden="true"></div>
+      <h2 data-i18n="final_h2">Pronto para ampliar o trabalho da sua equipe?</h2>
+      <p data-i18n="final_p">Conte o seu contexto e montamos uma turma sob medida, com certificação e suporte. A IA como facilitadora, você sempre no comando.</p>
+      <div class="factions">
+        <a href="https://wa.me/557998014253" class="bp" data-i18n="final_wa">Conversar no WhatsApp</a>
+        <a href="mailto:contato@pensoia.com" class="bg" data-i18n="final_mail">contato@pensoia.com</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <img class="flogo" id="logoFoot" src="../../../images/brand/glyph-wordmark_tag_bg.navy.svg" alt="PensoIA — pensamento humano, inteligência ampliada">
+    <div class="soc">
+      <a href="https://wa.me/557998014253" aria-label="WhatsApp"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zM6.6 20.13c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.515 5.26l-.999 3.648 3.973-.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.074-.148-.668-1.611-.916-2.206-.241-.579-.486-.501-.668-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg></a>
+      <a href="mailto:contato@pensoia.com" aria-label="E-mail"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></a>
+      <a href="https://www.linkedin.com/in/elderpbf/" aria-label="LinkedIn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+      <a href="https://github.com/elderpbf" aria-label="GitHub"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+      <a href="https://www.instagram.com/elderpbf/" aria-label="Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+    </div>
+    <p class="fcopy">© <span id="yr"></span> PensoIA · EPBF Soluções em Tecnologia</p>
+  </div>
+</footer>
+
+<script>
+const I18N={
+  pt:{
+    nav_offer:"Soluções",nav_platform:"Plataforma",nav_method:"Método",nav_contact:"Contato",nav_cta:"Falar agora",
+    hero_badge:"Engenharia de Prompt & IA Generativa",
+    hero_h1:'Traduzimos a IA em <span class="grad">ferramentas práticas</span> para o seu trabalho jurídico.',
+    hero_sub:"Treinamentos e consultoria que economizam tempo, aumentam a precisão e mantêm o ser humano no controle. Com segurança jurídica e rigor técnico.",
+    hero_cta1:"Ver soluções →",hero_cta2:"Montar uma turma",
+    hs1:"profissionais treinados",hs2:"anos no Judiciário",hs3:"com certificação",hs4:"dias de suporte pós-curso",
+    offer_kick:"// o que entregamos",offer_h2:"Três frentes, um mesmo objetivo: autonomia com responsabilidade.",
+    b1_h:"Cursos & treinamentos com certificação",b1_p:"Engenharia de Prompt e IA Generativa em turmas presenciais ou híbridas. De 12 a 16 horas em encontros de ~4h, unindo parte expositiva e laboratório prático aplicado às rotinas reais da sua equipe.",
+    b2_h:"Consultoria em IA",b2_p:"Soluções sob medida e automação inteligente de processos jurídicos.",
+    b3_h:"Otimização de fluxos",b3_p:"Reorganização de tarefas com LLMs: menos retrabalho, mais precisão.",
+    b4_p:"magistrados, desembargadores, juízes e servidores já treinados.",
+    b5_h:"Certificação real",b5_p:"Com carga horária e ementa detalhada para o seu RH e a sua progressão.",
+    plat_pill:"o diferencial",plat_h2:"Não ensinamos só. Entregamos as ferramentas.",
+    plat_sub:"Plataformas próprias que tornam o aprendizado simples e duradouro, durante e depois da aula.",
+    pf1_h:"Pulso da Turma — ao vivo",pf1_p:"Perguntas em tempo real, enquetes e um termômetro de compreensão durante a aula.",
+    pf2_h:"Trilha da Turma — depois da aula",pf2_p:"Apostila digital com conteúdo, tarefas, prompts e instruções. Referência permanente.",
+    pf3_h:"Suporte por 15 dias",pf3_p:"Dúvidas atendidas durante e após o treinamento. Você não fica sozinho.",
+    m_kick:"// como ensinamos",m_h2:"Do conceito ao uso seguro, sem jargão.",m_sub:"Cada etapa entrega algo aplicável no dia seguinte.",
+    mc1_h:"Fundamentos de LLM",mc1_p:"Tokens, embeddings e janela de contexto. Por que IA não é buscador.",
+    mc2_h:"Engenharia de prompt",mc2_p:"Frameworks em markdown para precisão e replicabilidade.",
+    mc3_h:"Gestão de risco",mc3_p:"Reconhecer e mitigar alucinações e precedentes falsos.",
+    mc4_h:"Ferramentas",mc4_p:"ChatGPT, Claude, Gemini e NotebookLM para grandes autos.",
+    mc5_h:"Laboratório",mc5_p:"Prompts reais e um repertório reutilizável pela equipe.",
+    aud_kick:"// para quem é",aud_h2:"Direito, tribunais e governo.",
+    au1_h:"Advogados & escritórios",au1_p:"Rotina mais rápida, com controle e responsabilidade técnica preservados.",
+    au2_h:"Magistrados & tribunais",au2_p:"Juízes, assessores e servidores com fluência prática e segura em IA.",
+    au3_h:"Setor público",au3_p:"Órgãos que querem adotar IA com critério, segurança e bom senso.",
+    final_h2:"Pronto para ampliar o trabalho da sua equipe?",
+    final_p:"Conte o seu contexto e montamos uma turma sob medida, com certificação e suporte. A IA como facilitadora, você sempre no comando.",
+    final_wa:"Conversar no WhatsApp",final_mail:"contato@pensoia.com",
+    typed:["pensamento humano, inteligência ampliada","menos retrabalho, mais precisão","você sempre no controle da decisão"]
+  },
+  en:{
+    nav_offer:"Solutions",nav_platform:"Platform",nav_method:"Method",nav_contact:"Contact",nav_cta:"Talk to us",
+    hero_badge:"Prompt Engineering & Generative AI",
+    hero_h1:'We turn AI into <span class="grad">practical tools</span> for your legal work.',
+    hero_sub:"Training and consulting that save time, increase precision and keep the human in control. With legal safety and technical rigor.",
+    hero_cta1:"See solutions →",hero_cta2:"Build a cohort",
+    hs1:"professionals trained",hs2:"years in the Judiciary",hs3:"with certification",hs4:"days of post-course support",
+    offer_kick:"// what we deliver",offer_h2:"Three fronts, one goal: autonomy with responsibility.",
+    b1_h:"Courses & training with certification",b1_p:"Prompt Engineering and Generative AI in in-person or hybrid cohorts. 12 to 16 hours across ~4h sessions, combining lecture with a hands-on lab applied to your team's real routines.",
+    b2_h:"AI consulting",b2_p:"Custom solutions and intelligent automation of legal processes.",
+    b3_h:"Workflow optimization",b3_p:"Reorganizing tasks with LLMs: less rework, more precision.",
+    b4_p:"magistrates, appellate judges, judges and court staff already trained.",
+    b5_h:"Real certification",b5_p:"With course hours and a detailed syllabus for HR and career progression.",
+    plat_pill:"the differentiator",plat_h2:"We don't just teach. We hand over the tools.",
+    plat_sub:"Our own platforms that make learning simple and lasting, during and after class.",
+    pf1_h:"Pulso da Turma — live",pf1_p:"Live questions, polls and a comprehension thermometer during class.",
+    pf2_h:"Trilha da Turma — after class",pf2_p:"A digital workbook with content, tasks, prompts and instructions. A permanent reference.",
+    pf3_h:"15 days of support",pf3_p:"Questions answered during and after the training. You're never left alone.",
+    m_kick:"// how we teach",m_h2:"From concept to safe use, without jargon.",m_sub:"Every step delivers something you can apply the next day.",
+    mc1_h:"LLM fundamentals",mc1_p:"Tokens, embeddings and context window. Why AI is not a search engine.",
+    mc2_h:"Prompt engineering",mc2_p:"Markdown frameworks for precision and repeatability.",
+    mc3_h:"Risk management",mc3_p:"Recognizing and mitigating hallucinations and fake precedents.",
+    mc4_h:"Tools",mc4_p:"ChatGPT, Claude, Gemini and NotebookLM for large case files.",
+    mc5_h:"Hands-on lab",mc5_p:"Real prompts and a reusable repertoire for the team.",
+    aud_kick:"// who it's for",aud_h2:"Law, courts and government.",
+    au1_h:"Lawyers & firms",au1_p:"A faster routine, with control and technical responsibility preserved.",
+    au2_h:"Magistrates & courts",au2_p:"Judges, advisors and staff with practical, safe fluency in AI.",
+    au3_h:"Public sector",au3_p:"Bodies that want to adopt AI with judgment, safety and good sense.",
+    final_h2:"Ready to amplify your team's work?",
+    final_p:"Tell us your context and we'll build a tailored cohort, with certification and support. AI as a facilitator, you always in command.",
+    final_wa:"Chat on WhatsApp",final_mail:"contato@pensoia.com",
+    typed:["human thinking, amplified intelligence","less rework, more precision","you, always in control of the decision"]
+  }
+};
+let lang="pt";
+function applyLang(l){
+  lang=l;document.documentElement.lang=(l==="pt")?"pt-BR":"en";
+  document.getElementById("langBtn").textContent=(l==="pt")?"EN":"PT";
+  document.querySelectorAll("[data-i18n]").forEach(el=>{const k=el.getAttribute("data-i18n");if(I18N[l][k]!=null)el.innerHTML=I18N[l][k];});
+  document.querySelectorAll("[data-i18n-html]").forEach(el=>{const k=el.getAttribute("data-i18n-html");if(I18N[l][k]!=null)el.innerHTML=I18N[l][k];});
+  restartType();
+}
+document.getElementById("langBtn").addEventListener("click",()=>applyLang(lang==="pt"?"en":"pt"));
+
+const navy="../../../images/brand/glyph-wordmark_bg.navy.svg";
+const white="../../../images/brand/glyph-wordmark_bg.white.svg";
+const tagNavy="../../../images/brand/glyph-wordmark_tag_bg.navy.svg";
+const tagTransp="../../../images/brand/glyph-wordmark_tag_bg.transp.svg";
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  document.getElementById("themeBtn").textContent=(t==="dark")?"☀️":"🌙";
+  // header/footer bg dark in dark-mode -> all-white lockup; light bg in light-mode -> navy/transp lockup
+  document.getElementById("logoMain").src=(t==="dark")?navy:white; // navy variant = white lockup; white variant = navy ink on white bg
+  document.getElementById("logoFoot").src=(t==="dark")?tagNavy:tagTransp;
+  document.getElementById("appShot").src=(t==="dark")?"../../../images/app/student-dark.jpg":"../../../images/app/student-light.jpg";
+}
+document.getElementById("themeBtn").addEventListener("click",()=>{
+  const cur=document.documentElement.getAttribute("data-theme");
+  applyTheme(cur==="dark"?"light":"dark");
+});
+
+/* typewriter — container height reserved (.typewrap fixed 30px) */
+let tHandle=null,phrase=0,ch=0,deleting=false;
+const reduce=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+function restartType(){
+  clearTimeout(tHandle);phrase=0;ch=0;deleting=false;
+  const el=document.getElementById("typed");
+  if(reduce){el.textContent=I18N[lang].typed[0];return;}
+  typeStep();
+}
+function typeStep(){
+  const arr=I18N[lang].typed;const cur=arr[phrase];const el=document.getElementById("typed");
+  if(!deleting){
+    el.textContent=cur.slice(0,++ch);
+    if(ch===cur.length){deleting=true;tHandle=setTimeout(typeStep,1800);return;}
+    tHandle=setTimeout(typeStep,42);
+  }else{
+    el.textContent=cur.slice(0,--ch);
+    if(ch===0){deleting=false;phrase=(phrase+1)%arr.length;tHandle=setTimeout(typeStep,260);return;}
+    tHandle=setTimeout(typeStep,22);
+  }
+}
+document.getElementById("yr").textContent=new Date().getFullYear();
+applyTheme("dark");applyLang("pt");
+</script>
+</body>
+</html>

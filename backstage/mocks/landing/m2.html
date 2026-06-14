@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>PensoIA · A Bancada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Lora:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   PensoIA — CONCEITO "A BANCADA"
+   Execução clara-primeiro, acolhedora. Navegação por SETOR num
+   índice vertical à esquerda com SPINE animada (h2) que mostra
+   onde você está; o conteúdo do setor revela num grande painel à
+   direita. O herói é a FRASE QUE SE COMPLETA de várias formas (e2).
+   Glow segue o mouse + ponto de luz desce o índice e VIRA SUPERNOVA
+   nos contatos (animação assinatura). Prints reais revelados num
+   quadro animado (a3/k1). Mobile: o índice vira barra de abas com
+   scroll-snap no topo.
+   ============================================================ */
+:root{
+  --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --teal-light:#5eead4;
+  --accent:#7de8d6; --green:#047857;
+  --ease:cubic-bezier(.2,.65,.3,1);
+}
+/* ---------- LIGHT (home) ---------- */
+html[data-theme="light"]{
+  --bg:#f3faf8; --bg-2:#e9f5f1; --panel:#ffffff; --panel-2:#f4fbf9; --panel-3:#eef6f3;
+  --ink:#0a1430; --ink-soft:#41527a; --ink-dim:#6a799f;
+  --line:#d9ebe5; --line-2:#bfe1d8; --hair:#e8f2ee;
+  --tealtext:#0d9488; --brandink:var(--navy);
+  --mesh:radial-gradient(42% 50% at 18% 12%,#c6f0e6,transparent 60%),radial-gradient(46% 54% at 86% 20%,#d7e6ff,transparent 62%),radial-gradient(50% 50% at 50% 110%,#cdeee5,transparent 70%);
+  --glowmouse:rgba(20,184,166,.14);
+  --shadow:0 34px 80px -40px rgba(13,148,136,.42);
+  --shadow-sm:0 16px 40px -26px rgba(13,148,136,.34);
+  --chip:#e6f6f1; --chipink:#0b6b5e; --chipline:#bfe1d8;
+  --logo:url('../../../images/brand/glyph-wordmark_bg.transp.svg');
+  --logotag:url('../../../images/brand/glyph-wordmark_tag_bg.transp.svg');
+}
+/* ---------- DARK (tão bom quanto o claro) ---------- */
+html[data-theme="dark"]{
+  --bg:#04101f; --bg-2:#06202f; --panel:#082233; --panel-2:#0a2a3d; --panel-3:#0c3040;
+  --ink:#eafaf6; --ink-soft:#a6c8c2; --ink-dim:#6f9088;
+  --line:#103244; --line-2:#16465c; --hair:#0e2c3c;
+  --tealtext:#5eead4; --brandink:#ffffff;
+  --mesh:radial-gradient(42% 50% at 18% 12%,#0c3a45,transparent 60%),radial-gradient(46% 54% at 86% 20%,#0a2750,transparent 62%),radial-gradient(50% 50% at 50% 110%,#0b3540,transparent 70%);
+  --glowmouse:rgba(20,184,166,.20);
+  --shadow:0 36px 84px -38px rgba(0,0,0,.72);
+  --shadow-sm:0 18px 44px -26px rgba(0,0,0,.6);
+  --chip:#0c3540; --chipink:#5eead4; --chipline:#16465c;
+  --logo:url('../../../images/brand/glyph-wordmark_bg.navy.svg');
+  --logotag:url('../../../images/brand/glyph-wordmark_tag_bg.navy.svg');
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  -webkit-font-smoothing:antialiased;line-height:1.62;overflow:hidden;
+  transition:background .5s,color .5s;}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2.5px solid var(--teal);outline-offset:2px;border-radius:10px}
+.serif{font-family:'Lora',serif}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* background mesh + mouse glow */
+.bgmesh{position:fixed;inset:0;z-index:0;background:var(--mesh),var(--bg);opacity:.92;
+  filter:blur(2px);transition:background .5s}
+#mouseGlow{position:fixed;width:520px;height:520px;border-radius:50%;z-index:1;pointer-events:none;
+  transform:translate(-50%,-50%);left:50%;top:40%;
+  background:radial-gradient(circle,var(--glowmouse),transparent 64%);will-change:left,top}
+
+/* ===== TOPBAR ===== */
+.topbar{position:fixed;top:0;left:0;right:0;height:66px;z-index:40;display:flex;align-items:center;gap:14px;
+  padding:0 clamp(16px,3vw,30px);
+  background:color-mix(in srgb,var(--bg) 76%,transparent);backdrop-filter:blur(16px) saturate(150%);
+  border-bottom:1px solid var(--hair)}
+.brand{height:42px;width:172px;background:var(--logotag) left center/contain no-repeat}
+.topbar .sp{flex:1}
+.toolbtn{height:40px;padding:0 13px;border-radius:999px;border:1px solid var(--line-2);background:var(--panel);
+  color:var(--ink-soft);font-size:.82rem;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:.22s}
+.toolbtn:hover{border-color:var(--teal);color:var(--ink);transform:translateY(-1px)}
+.langseg{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;overflow:hidden;background:var(--panel)}
+.langseg button{height:40px;padding:0 13px;font-size:.78rem;font-weight:700;color:var(--ink-dim);transition:.2s}
+.langseg button[aria-pressed="true"]{background:var(--teal);color:#03201c}
+.langseg button:not([aria-pressed="true"]):hover{color:var(--ink)}
+.cta{height:42px;padding:0 18px;border-radius:999px;font-weight:700;font-size:.86rem;color:#03201c;
+  background:var(--teal);display:inline-flex;align-items:center;gap:8px;box-shadow:var(--shadow-sm);transition:.22s}
+.cta:hover{transform:translateY(-2px);background:var(--teal-light)}
+.cta svg{width:17px;height:17px}
+@media(max-width:560px){.brand{width:46px;overflow:hidden}.cta span{display:none}.cta{padding:0 13px}}
+
+/* ===== SHELL (no body scroll) ===== */
+.shell{position:fixed;inset:66px 0 0 0;z-index:5;display:grid;
+  grid-template-columns:clamp(258px,26vw,320px) 1fr;gap:clamp(14px,2vw,26px);
+  padding:clamp(14px,2.2vw,28px)}
+@media(max-width:900px){.shell{grid-template-columns:1fr;gap:12px;padding:12px;
+  grid-template-rows:auto 1fr}}
+
+/* ===== LEFT INDEX (sector nav + spine) ===== */
+.index{border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:var(--shadow-sm);
+  padding:clamp(16px,1.6vw,22px);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.index .ihead{font-size:.66rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);
+  margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.index .ihead .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);position:relative}
+.index .ihead .dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--teal);animation:ping 2s ease-out infinite}
+@keyframes ping{0%{transform:scale(1);opacity:.6}100%{transform:scale(3.4);opacity:0}}
+.navlist{position:relative;display:flex;flex-direction:column;gap:4px;padding-left:22px;flex:1}
+/* the animated spine */
+.spine{position:absolute;left:7px;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--hair)}
+.spine .fill{position:absolute;left:0;top:0;width:100%;border-radius:2px;height:0;
+  background:linear-gradient(180deg,var(--teal),var(--teal-dark));transition:height .5s var(--ease)}
+.spine .spark{position:absolute;left:50%;top:0;width:11px;height:11px;border-radius:50%;transform:translate(-50%,-50%);
+  background:var(--teal-light);box-shadow:0 0 14px 4px var(--glowmouse),0 0 4px 1px var(--teal-light);
+  transition:top .5s var(--ease)}
+.nbtn{position:relative;text-align:left;border-radius:13px;padding:13px 14px;color:var(--ink-soft);
+  border:1px solid transparent;transition:.22s;display:flex;flex-direction:column;gap:2px}
+.nbtn .node{position:absolute;left:-19px;top:50%;transform:translateY(-50%);width:11px;height:11px;border-radius:50%;
+  background:var(--panel);border:2px solid var(--line-2);transition:.3s;z-index:2}
+.nbtn b{font-size:.98rem;font-weight:700}
+.nbtn span{font-size:.78rem;color:var(--ink-dim)}
+.nbtn:hover{background:var(--panel-2);color:var(--ink)}
+.nbtn[aria-current="true"]{background:var(--panel-2);border-color:var(--line-2);color:var(--ink)}
+.nbtn[aria-current="true"] .node{background:var(--teal);border-color:var(--teal);box-shadow:0 0 0 5px var(--chip)}
+.nbtn[aria-current="true"] b{color:var(--tealtext)}
+.index .ifoot{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair);font-size:.78rem;color:var(--ink-soft)}
+.index .ifoot b{color:var(--tealtext)}
+
+/* mobile tab bar */
+@media(max-width:900px){
+  .index{flex-direction:row;align-items:center;padding:10px;border-radius:18px;overflow-x:auto;scrollbar-width:none}
+  .index::-webkit-scrollbar{display:none}
+  .index .ihead,.index .ifoot,.spine{display:none}
+  .navlist{flex-direction:row;padding-left:0;gap:8px;scroll-snap-type:x mandatory}
+  .nbtn{flex:0 0 auto;white-space:nowrap;scroll-snap-align:start;padding:10px 14px;flex-direction:row;align-items:center;gap:8px;
+    border:1px solid var(--line)}
+  .nbtn .node{display:none}.nbtn span{display:none}
+  .nbtn[aria-current="true"]{background:var(--teal);border-color:transparent}
+  .nbtn[aria-current="true"] b{color:#03201c}
+}
+
+/* ===== RIGHT PANEL ===== */
+.panel{border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:var(--shadow);
+  position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.panel-scroll{flex:1;overflow:auto;padding:clamp(20px,3vw,40px);
+  transition:opacity .4s var(--ease),transform .45s var(--ease)}
+.panel-scroll.swap{opacity:0;transform:translateY(12px)}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:.68rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--tealtext)}
+.eyebrow::before{content:"";width:18px;height:2px;background:var(--teal);border-radius:2px}
+.psec{max-width:780px}
+.psec h2{font-family:'Lora',serif;font-weight:600;font-size:clamp(1.6rem,3.2vw,2.5rem);line-height:1.1;
+  letter-spacing:-.015em;margin:14px 0 0}
+.psec h2 em{font-style:italic;color:var(--tealtext)}
+.psec .lede{margin-top:14px;color:var(--ink-soft);font-size:clamp(1rem,1.3vw,1.12rem);max-width:62ch}
+
+/* ----- HERO (completing sentence) ----- */
+.hero-creds{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-bottom:22px}
+.hero-creds img{width:78px;height:78px;border-radius:22px;object-fit:cover;border:2px solid var(--chipline);flex:0 0 auto}
+.hero-creds .who b{display:block;font-weight:700;font-size:1rem}
+.hero-creds .who span{font-size:.82rem;color:var(--ink-soft)}
+.numrow{display:flex;flex-wrap:wrap;gap:10px;margin-left:auto}
+.numpill{display:flex;align-items:center;gap:9px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:14px;padding:10px 14px}
+.numpill b{font-family:'Lora',serif;font-weight:600;font-size:1.45rem;color:var(--tealtext);line-height:1}
+.numpill span{font-size:.72rem;color:var(--ink-dim);max-width:16ch;line-height:1.2}
+.completer{margin-top:8px;font-family:'Lora',serif;font-weight:500;font-size:clamp(1.7rem,3.6vw,3rem);
+  line-height:1.15;letter-spacing:-.015em;max-width:20ch}
+.completer .fixed{color:var(--ink)}
+.rotor{display:inline-block;position:relative;color:var(--tealtext);font-style:italic;min-height:1.2em}
+.rotor .w{display:inline-block;transition:opacity .45s,transform .45s}
+.rotor .w.out{opacity:0;transform:translateY(-40%)}
+.rotor .w.in-from{opacity:0;transform:translateY(40%)}
+.tagline{margin-top:24px;font-size:.92rem;color:var(--ink-soft)}
+.tagline b{color:var(--tealtext);font-weight:700}
+.hactions{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.btn{display:inline-flex;align-items:center;gap:9px;height:52px;padding:0 24px;border-radius:14px;font-weight:700;
+  font-size:.98rem;transition:.2s;border:1px solid transparent}
+.btn svg{width:18px;height:18px}
+.btn-p{background:var(--teal);color:#03201c;box-shadow:var(--shadow-sm)}
+.btn-p:hover{transform:translateY(-2px);background:var(--teal-light)}
+.btn-o{background:var(--panel);border-color:var(--line-2);color:var(--ink)}
+.btn-o:hover{border-color:var(--teal);color:var(--tealtext);transform:translateY(-2px)}
+
+/* ----- generic blocks ----- */
+.cards{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.cards{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:18px;padding:20px;background:var(--panel-2);transition:.25s}
+.card:hover{border-color:var(--line-2);box-shadow:var(--shadow-sm);transform:translateY(-3px)}
+.card .ci{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--chip);
+  color:var(--chipink);border:1px solid var(--chipline);margin-bottom:12px}
+.card .ci svg{width:21px;height:21px}
+.card h4{font-size:1.04rem;font-weight:700}
+.card p{font-size:.9rem;color:var(--ink-soft);margin-top:6px}
+
+.curr{margin-top:24px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:640px){.curr{grid-template-columns:1fr}}
+.cc{border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:var(--panel-2);display:flex;gap:14px}
+.cc .st{flex:0 0 auto;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+  font-family:'JetBrains Mono',monospace;font-weight:600;font-size:.84rem;color:#03201c;
+  background:linear-gradient(135deg,var(--teal-light),var(--teal))}
+.cc h4{font-size:.98rem;font-weight:700}
+.cc p{font-size:.86rem;color:var(--ink-soft);margin-top:3px}
+
+.chips{margin-top:20px;display:flex;flex-wrap:wrap;gap:9px}
+.chip{font-size:.78rem;font-weight:600;color:var(--chipink);background:var(--chip);border:1px solid var(--chipline);
+  border-radius:999px;padding:8px 13px}
+
+/* ----- PRINTS as an animated framed reveal (a3/k1) ----- */
+.prints{margin-top:26px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.prints{grid-template-columns:1fr}}
+.printcard{border:1px solid var(--line);border-radius:22px;padding:22px;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,var(--panel-2),var(--panel))}
+.printcard.live{background:linear-gradient(160deg,var(--panel-2),var(--panel))}
+.printcard.ref{background:linear-gradient(160deg,var(--navy),#0a2a70);color:#eaf2ff}
+html[data-theme="dark"] .printcard.ref{background:linear-gradient(160deg,#071a4d,#0c2f80)}
+.printcard .ptag{font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tealtext);
+  display:inline-flex;align-items:center;gap:8px}
+.printcard.ref .ptag{color:var(--teal-light)}
+.printcard .ptag .ld{width:7px;height:7px;border-radius:50%;background:var(--teal)}
+.printcard h3{font-family:'Lora',serif;font-weight:600;font-size:1.3rem;margin:8px 0 4px}
+.printcard.ref h3{color:#fff}
+.printcard .pp{font-size:.9rem;color:var(--ink-soft)}
+.printcard.ref .pp{color:#c3d4f7}
+.stagewrap{margin-top:18px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.phone{flex:0 0 auto;width:166px;border-radius:28px;padding:7px;background:var(--navy);position:relative;
+  box-shadow:var(--shadow);border:1px solid var(--line-2)}
+html[data-theme="light"] .phone{background:#0b1c44}
+.phone .scr{border-radius:21px;overflow:hidden;aspect-ratio:720/1387;background:#000;position:relative}
+.phone .scr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .7s var(--ease)}
+.phone .scr img.on{opacity:1}
+.phone .notch{position:absolute;top:15px;left:50%;transform:translateX(-50%);width:66px;height:5px;border-radius:99px;background:rgba(255,255,255,.3);z-index:2}
+.stagemeta{flex:1;min-width:160px}
+.tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.tab{font-size:.72rem;font-weight:600;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;
+  padding:6px 11px;transition:.2s}
+.printcard.ref .tab{color:#c3d4f7;border-color:rgba(255,255,255,.2)}
+.tab[aria-pressed="true"]{background:var(--teal);color:#03201c;border-color:transparent}
+.tab:not([aria-pressed="true"]):hover{border-color:var(--teal)}
+.capx{font-size:.86rem;color:var(--ink-soft);display:block}
+.printcard.ref .capx{color:#c3d4f7}
+/* live pulse bars (h2) */
+.pulse-mini{margin-top:14px}
+.pulse-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pulse-row .pl{font-size:.74rem;color:var(--ink-soft);width:84px;flex:0 0 auto}
+.ptrack{flex:1;height:8px;border-radius:99px;background:var(--panel-3);overflow:hidden}
+.pfill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--teal),var(--teal-light));width:0;transition:width 1.3s var(--ease)}
+.pl-val{font-size:.74rem;font-weight:700;color:var(--tealtext);width:34px;text-align:right}
+
+/* ----- certificate ----- */
+.cert{margin-top:24px;display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;
+  border:1px solid var(--line-2);border-radius:20px;padding:24px;
+  background:linear-gradient(150deg,var(--panel-2),var(--panel))}
+@media(max-width:560px){.cert{grid-template-columns:1fr;text-align:center;justify-items:center}}
+.seal{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;position:relative;
+  background:radial-gradient(circle at 35% 30%,var(--teal-light),var(--teal-dark));color:#03201c;
+  box-shadow:0 0 40px -6px var(--glowmouse)}
+.seal svg{width:42px;height:42px}
+.seal::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:2px dashed var(--chipline)}
+.cert h3{font-family:'Lora',serif;font-weight:600;font-size:1.3rem}
+.cert p{font-size:.94rem;color:var(--ink-soft);margin-top:8px}
+.cert .chips{margin-top:14px}
+
+/* ----- contacts supernova ----- */
+.nova{position:relative;border-radius:24px;overflow:hidden;margin-top:8px;
+  background:linear-gradient(150deg,var(--navy),#0a2a72);color:#eaf2ff;padding:clamp(26px,3.4vw,42px)}
+html[data-theme="dark"] .nova{background:linear-gradient(150deg,#071a4d,#0c2f80)}
+.nova .burst{position:absolute;left:82%;top:22%;width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);
+  background:var(--teal-light);opacity:0}
+.nova.fire .burst{animation:supernova 2.6s var(--ease) .2s forwards}
+@keyframes supernova{
+  0%{opacity:1;box-shadow:0 0 0 0 rgba(94,234,212,.7),0 0 0 0 rgba(20,184,166,.5)}
+  60%{opacity:1;box-shadow:0 0 0 70px rgba(94,234,212,.16),0 0 0 140px rgba(20,184,166,.08)}
+  100%{opacity:.9;box-shadow:0 0 0 240px rgba(94,234,212,0),0 0 0 420px rgba(20,184,166,0)}}
+.nova>*{position:relative;z-index:1}
+.nova .eyebrow{color:var(--teal-light)}.nova .eyebrow::before{background:var(--teal-light)}
+.nova h2{color:#fff}.nova .lede{color:#c3d4f7}
+.cact{margin-top:24px;display:flex;flex-wrap:wrap;gap:12px}
+.cbtn{height:52px;padding:0 24px;border-radius:14px;font-weight:700;display:inline-flex;align-items:center;gap:9px;transition:.2s}
+.cbtn svg{width:19px;height:19px}
+.c-wa{background:var(--teal);color:#03201c}.c-wa:hover{transform:translateY(-2px);background:var(--teal-light)}
+.c-mail{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.22)}
+.c-mail:hover{transform:translateY(-2px);background:rgba(255,255,255,.16)}
+.socials{margin-top:22px;display:flex;gap:10px}
+.soc{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;color:#c3d4f7;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);transition:.2s}
+.soc:hover{color:#fff;border-color:var(--teal-light);transform:translateY(-2px)}
+.soc svg{width:20px;height:20px}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  #mouseGlow{display:none}
+  .rotor .w{opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+<div class="bgmesh" aria-hidden="true"></div>
+<div id="mouseGlow" aria-hidden="true"></div>
+
+<!-- ========== TOPBAR ========== -->
+<header class="topbar">
+  <a href="#" class="brand" aria-label="PensoIA — início"></a>
+  <span class="sp"></span>
+  <div class="langseg" role="group" aria-label="Idioma">
+    <button data-lang="pt" aria-pressed="true">PT</button>
+    <button data-lang="en" aria-pressed="false">EN</button>
+    <button data-lang="es" aria-pressed="false">ES</button>
+  </div>
+  <button class="toolbtn" id="themeBtn" aria-label="Alternar tema claro e escuro">
+    <span id="themeIc">☾</span><span id="themeTx">Escuro</span>
+  </button>
+  <a class="cta" href="https://wa.me/557998014253" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.06 24l1.68-6.1A11.9 11.9 0 1 1 12 24a11.9 11.9 0 0 1-5.7-1.45L.06 24zM6.6 20.1l.36.2a9.9 9.9 0 1 0-3.4-3.3l.23.37-1 3.6 3.8-.87zM18 14.3c-.25-.12-1.47-.72-1.7-.8-.23-.08-.4-.12-.56.13-.17.25-.65.8-.8.97-.14.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.15-.25-.02-.38.11-.5.11-.11.25-.3.37-.44.12-.15.16-.25.25-.42.08-.17.04-.31-.02-.43-.06-.13-.56-1.34-.76-1.84-.2-.48-.4-.41-.56-.42h-.48c-.16 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.13.17 1.74 2.66 4.22 3.73.59.25 1.05.4 1.4.52.6.18 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.2-.58.2-1.07.15-1.18-.06-.1-.22-.16-.47-.28z"/></svg>
+    <span id="ctaTop">Falar com o Élder</span>
+  </a>
+</header>
+
+<!-- ========== SHELL ========== -->
+<div class="shell">
+  <!-- LEFT INDEX -->
+  <nav class="index" aria-label="Navegação por setor">
+    <div class="ihead"><span class="dot"></span><span id="ihead">A bancada · escolha um tópico</span></div>
+    <div class="navlist" id="navlist">
+      <div class="spine" aria-hidden="true"><span class="fill" id="spineFill"></span><span class="spark" id="spineSpark"></span></div>
+    </div>
+    <div class="ifoot"><b id="ifootB">pensamento humano,</b> <span id="ifootS">inteligência ampliada</span></div>
+  </nav>
+
+  <!-- RIGHT PANEL -->
+  <section class="panel">
+    <div class="panel-scroll" id="pscroll" aria-live="polite"></div>
+  </section>
+</div>
+
+<script>
+/* ============ ICONS ============ */
+const IC = {
+  start:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/><circle cx="12" cy="12" r="2.5"/></svg>',
+  about:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  offer:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v6l9 4 9-4V7"/></svg>',
+  tools:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12c0 5.5-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2"/><path d="M12 12l4-4"/><circle cx="12" cy="12" r="2.4"/></svg>',
+  cert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M9 14.5 8 22l4-2 4 2-1-7.5"/></svg>',
+  contato:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.3A8.4 8.4 0 1 1 21 11.5z"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>',
+  flow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h12"/><path d="M4 12h8"/><path d="M4 17h5"/><path d="m16 14 4 3-4 3"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>'
+};
+
+/* ============ NAV ITEMS ============ */
+const ORDER = ['start','about','offer','tools','cert','contato'];
+
+/* ============ CONTENT (PT/EN/ES) ============ */
+const C = {
+  pt:{
+    ui:{ihead:'A bancada · escolha um tópico',ifootB:'pensamento humano,',ifootS:'inteligência ampliada',
+      themeLight:'Claro',themeDark:'Escuro',ctaTop:'Falar com o Élder',
+      ctaWa:'Falar no WhatsApp',ctaMail:'contato@pensoia.com',htmlLang:'pt-BR',
+      heroPrimary:'Conhecer as aulas',heroGhost:'Falar com o Élder',
+      openShots:'telas reais',acc:{role:'Direito + Análise e Desenvolvimento de Sistemas · servidor do TJSE'}},
+    nav:{start:['Início','o convite'],about:['Quem ensina','sobre o Élder'],offer:['O que é oferecido','aulas & consultoria'],
+      tools:['Ferramentas da aula','Pulso & Trilha'],cert:['Certificado validado','emitido pelo site'],contato:['Contato','vamos conversar']},
+    start:{eyebrow:'Ensino & consultoria em IA',
+      completeFixed:'Aprender IA no Direito pode ser',
+      rotor:['acolhedor.','sem jargão.','com calma.','seu, sob controle.','seguro.'],
+      lede:'A PensoIA é a prática de ensino e consultoria do Élder: traduzir a IA generativa em ferramentas práticas para quem atua no Direito. Quem está sendo apresentado aqui é o instrutor, não um produto.',
+      n:[['600+','pessoas do Direito já formadas'],['~11','anos no Judiciário (TJSE)'],['2','formações: Direito + Sistemas']]},
+    about:{eyebrow:'Quem ensina',h:'Quem ensina já <em>viveu o dia a dia</em> do Direito.',
+      lede:'Élder une duas formações, Direito e Análise e Desenvolvimento de Sistemas, com cerca de 11 anos de Judiciário (servidor no TJSE). Isso permite explicar a IA na linguagem de quem advoga e julga, sem perder o rigor técnico, e sem se gabar.',
+      cards:[['about','Dupla formação','Direito para entender o trabalho; Sistemas para entender os modelos por dentro.'],
+             ['shield','Postura humilde','Sem promessas mágicas. A IA facilita; a decisão e a responsabilidade continuam suas.']],
+      chips:['~11 anos no TJSE','600+ já formados','Órgãos públicos e escritórios atendidos']},
+    offer:{eyebrow:'O que é oferecido',h:'Aulas e consultoria <em>para usar com confiança</em>.',
+      lede:'O foco é a sua aprendizagem: turmas presenciais ou híbridas e acompanhamento sob medida, do conceito à prática. Ensino, não um produto à venda.',
+      cards:[['book','Cursos & treinamentos','Engenharia de prompt e IA generativa, com certificação. ~12–16h em sessões de ~4h.'],
+             ['start','Consultoria em IA','Acompanho a sua equipe para aplicar IA com segurança em tarefas reais.'],
+             ['flow','Otimização de fluxos','Repertório de prompts e rotinas desenhadas para o seu dia a dia.'],
+             ['shield','Gestão de risco','Alucinações e precedentes falsos: como reconhecer e conferir antes de confiar.']],
+      steps:[['01','Fundamentos de LLM','Como esses modelos pensam, e onde erram.'],
+             ['02','Prompt avançado','Do pedido vago ao resultado confiável.'],
+             ['03','Gestão de risco','Conferência de fontes, sigilo e responsabilidade.'],
+             ['04','Laboratório prático','Você sai com um repertório de prompts reutilizável.']],
+      chips:['Presencial ou híbrido','ChatGPT · Claude · Gemini · NotebookLM','Turmas para tribunais e escritórios']},
+    tools:{eyebrow:'Ferramentas da aula',h:'Duas ferramentas que <em>acompanham a turma</em>.',
+      lede:'Não são produtos à venda: fazem parte da aula. O Pulso da Turma acontece ao vivo; a Trilha da Turma fica como referência depois. Veja telas reais nas abas.',
+      live:{tag:'Ao vivo na aula',title:'Pulso da Turma',
+        pp:'Perguntas em tempo real, enquetes e um termômetro de compreensão da turma.',
+        tabs:[['risco','pulso-risco','Gestão de risco ao vivo: a turma responde e o instrutor vê na hora onde reforçar.'],
+              ['markdown','pulso-markdown','Prática de prompt em markdown, conferida em conjunto durante a aula.'],
+              ['contexto','pulso-contexto','Exercício de contexto: cada resposta calibra o ritmo da turma.']],
+        pulse:[['Acompanho bem',86],['Tenho dúvida',11],['Perdido',3]]},
+      ref:{tag:'Depois da aula',title:'Trilha da Turma',
+        pp:'Caderno digital com conteúdo, tarefas e materiais, sua referência permanente. Suporte por ~15 dias.',
+        tabs:[['home','trilha-home','A trilha do curso: conteúdo e materiais organizados para consultar quando quiser.'],
+              ['aula','trilha-aula','Uma aula por dentro: teoria, exercícios e os prompts praticados.']]},
+      chips:['Ao vivo na aula','Referência permanente','Suporte ~15 dias']},
+    cert:{eyebrow:'Certificado validado',h:'Um certificado <em>validado pelo site</em> ao fim.',
+      lede:'Quem conclui o curso recebe um certificado emitido e validado pela própria plataforma, com carga horária e ementa, pronto para comprovar a formação.',
+      sealH:'Emitido e verificável pela plataforma',
+      sealP:'Não é só um PDF solto: o certificado é gerado pelo site e pode ser conferido, com carga horária e ementa registradas.',
+      chips:['Emitido ao concluir','Carga horária registrada','Ementa detalhada','Verificável online']},
+    contato:{eyebrow:'Vamos conversar',h:'Me conte o seu <em>contexto</em>.',
+      lede:'Turma, tribunal, escritório ou órgão: conte a sua realidade e eu desenho a formação ou a consultoria sob medida.'}
+  },
+  en:{
+    ui:{ihead:'The desk · pick a topic',ifootB:'human thinking,',ifootS:'amplified intelligence',
+      themeLight:'Light',themeDark:'Dark',ctaTop:'Talk to Élder',
+      ctaWa:'Chat on WhatsApp',ctaMail:'contato@pensoia.com',htmlLang:'en',
+      heroPrimary:'See the classes',heroGhost:'Talk to Élder',
+      openShots:'real screens',acc:{role:'Law + Systems Analysis & Development · civil servant at TJSE'}},
+    nav:{start:['Start','the invitation'],about:['Who teaches','about Élder'],offer:['What is offered','classes & consulting'],
+      tools:['Class tools','Pulso & Trilha'],cert:['Validated certificate','issued by the site'],contato:['Contact',"let's talk"]},
+    start:{eyebrow:'AI teaching & consulting',
+      completeFixed:'Learning AI in Law can be',
+      rotor:['welcoming.','jargon-free.','calm.','yours, in control.','safe.'],
+      lede:"PensoIA is Élder's teaching and consulting practice: turning generative AI into practical tools for legal professionals. What's introduced here is the instructor, not a product.",
+      n:[['600+','legal professionals trained'],['~11','years in the Judiciary (TJSE)'],['2','degrees: Law + Systems']]},
+    about:{eyebrow:'Who teaches',h:'Whoever teaches has <em>lived the day-to-day</em> of Law.',
+      lede:'Élder pairs two backgrounds, Law and Systems Analysis & Development, with about 11 years in the Judiciary (civil servant at TJSE). That lets him explain AI in the language of those who practice and judge, without losing technical rigor, and without boasting.',
+      cards:[['about','Dual background','Law to understand the work; Systems to understand the models from the inside.'],
+             ['shield','A humble stance','No magic promises. AI facilitates; the decision and responsibility stay with you.']],
+      chips:['~11 years at TJSE','600+ already trained','Public bodies and firms served']},
+    offer:{eyebrow:'What is offered',h:'Classes and consulting <em>to use with confidence</em>.',
+      lede:'The focus is your learning: in-person or hybrid cohorts and tailored support, from concept to practice. Teaching, not a product for sale.',
+      cards:[['book','Courses & training','Prompt engineering and generative AI, with certification. ~12–16h in ~4h sessions.'],
+             ['start','AI consulting','I support your team to apply AI safely to real tasks.'],
+             ['flow','Workflow tuning','A prompt repertoire and routines designed for your daily work.'],
+             ['shield','Risk management','Hallucinations and fake precedents: how to spot and check before trusting.']],
+      steps:[['01','LLM fundamentals','How these models think, and where they fail.'],
+             ['02','Advanced prompting','From a vague ask to a reliable result.'],
+             ['03','Risk management','Source checking, confidentiality and responsibility.'],
+             ['04','Hands-on lab','You leave with a reusable prompt repertoire.']],
+      chips:['In-person or hybrid','ChatGPT · Claude · Gemini · NotebookLM','Cohorts for courts and firms']},
+    tools:{eyebrow:'Class tools',h:'Two tools that <em>accompany the class</em>.',
+      lede:'Not products for sale: they are part of the class. Pulso da Turma runs live; Trilha da Turma stays as a reference afterwards. See real screens in the tabs.',
+      live:{tag:'Live in class',title:'Pulso da Turma',
+        pp:'Real-time questions, polls and a comprehension thermometer for the room.',
+        tabs:[['risk','pulso-risco','Live risk management: the class answers and the instructor sees instantly where to reinforce.'],
+              ['markdown','pulso-markdown','Prompt practice in markdown, reviewed together during class.'],
+              ['context','pulso-contexto','A context exercise: each answer calibrates the room.']],
+        pulse:[['Following well',86],['Have a doubt',11],['Lost',3]]},
+      ref:{tag:'After class',title:'Trilha da Turma',
+        pp:'A digital workbook with content, tasks and materials, your permanent reference. ~15 days of support.',
+        tabs:[['home','trilha-home','The course trail: content and materials organized to revisit anytime.'],
+              ['class','trilha-aula','Inside a class: theory, exercises and the prompts practiced.']]},
+      chips:['Live in class','Permanent reference','~15-day support']},
+    cert:{eyebrow:'Validated certificate',h:'A certificate <em>validated by the site</em>.',
+      lede:'Those who finish the course get a certificate issued and validated by the platform itself, with hours and syllabus, ready to prove the training.',
+      sealH:'Issued and verifiable by the platform',
+      sealP:'Not just a loose PDF: the certificate is generated by the site and can be checked, with hours and syllabus on record.',
+      chips:['Issued on completion','Registered hours','Detailed syllabus','Verifiable online']},
+    contato:{eyebrow:"Let's talk",h:'Tell me your <em>context</em>.',
+      lede:'Cohort, court, firm or agency: tell me your reality and I design tailored training or consulting.'}
+  },
+  es:{
+    ui:{ihead:'La bancada · elija un tema',ifootB:'pensamiento humano,',ifootS:'inteligencia ampliada',
+      themeLight:'Claro',themeDark:'Oscuro',ctaTop:'Hablar con Élder',
+      ctaWa:'Hablar por WhatsApp',ctaMail:'contato@pensoia.com',htmlLang:'es',
+      heroPrimary:'Conocer las clases',heroGhost:'Hablar con Élder',
+      openShots:'pantallas reales',acc:{role:'Derecho + Análisis y Desarrollo de Sistemas · servidor del TJSE'}},
+    nav:{start:['Inicio','la invitación'],about:['Quién enseña','sobre Élder'],offer:['Qué se ofrece','clases y consultoría'],
+      tools:['Herramientas de clase','Pulso y Trilha'],cert:['Certificado validado','emitido por el sitio'],contato:['Contacto','hablemos']},
+    start:{eyebrow:'Enseñanza y consultoría en IA',
+      completeFixed:'Aprender IA en el Derecho puede ser',
+      rotor:['acogedor.','sin jerga.','con calma.','suyo, bajo control.','seguro.'],
+      lede:'PensoIA es la práctica de enseñanza y consultoría de Élder: traducir la IA generativa en herramientas prácticas para quien ejerce el Derecho. Aquí se presenta al instructor, no un producto.',
+      n:[['600+','profesionales del Derecho formados'],['~11','años en el Poder Judicial (TJSE)'],['2','formaciones: Derecho + Sistemas']]},
+    about:{eyebrow:'Quién enseña',h:'Quien enseña ya <em>vivió el día a día</em> del Derecho.',
+      lede:'Élder une dos formaciones, Derecho y Análisis y Desarrollo de Sistemas, con cerca de 11 años en el Poder Judicial (servidor en el TJSE). Eso le permite explicar la IA en el lenguaje de quien ejerce y juzga, sin perder el rigor técnico y sin presumir.',
+      cards:[['about','Doble formación','Derecho para entender el trabajo; Sistemas para entender los modelos por dentro.'],
+             ['shield','Una postura humilde','Sin promesas mágicas. La IA facilita; la decisión y la responsabilidad siguen siendo suyas.']],
+      chips:['~11 años en el TJSE','600+ ya formados','Órganos públicos y despachos atendidos']},
+    offer:{eyebrow:'Qué se ofrece',h:'Clases y consultoría <em>para usar con confianza</em>.',
+      lede:'El foco es su aprendizaje: grupos presenciales o híbridos y acompañamiento a medida, del concepto a la práctica. Enseñanza, no un producto a la venta.',
+      cards:[['book','Cursos y formación','Ingeniería de prompts e IA generativa, con certificación. ~12–16h en sesiones de ~4h.'],
+             ['start','Consultoría en IA','Acompaño a su equipo para aplicar IA con seguridad en tareas reales.'],
+             ['flow','Optimización de flujos','Repertorio de prompts y rutinas diseñadas para su día a día.'],
+             ['shield','Gestión de riesgo','Alucinaciones y precedentes falsos: cómo reconocerlos y verificar antes de confiar.']],
+      steps:[['01','Fundamentos de LLM','Cómo piensan estos modelos, y dónde fallan.'],
+             ['02','Prompt avanzado','De la petición vaga al resultado confiable.'],
+             ['03','Gestión de riesgo','Verificación de fuentes, confidencialidad y responsabilidad.'],
+             ['04','Laboratorio práctico','Sale con un repertorio de prompts reutilizable.']],
+      chips:['Presencial o híbrido','ChatGPT · Claude · Gemini · NotebookLM','Grupos para tribunales y despachos']},
+    tools:{eyebrow:'Herramientas de clase',h:'Dos herramientas que <em>acompañan al grupo</em>.',
+      lede:'No son productos a la venta: son parte de la clase. Pulso da Turma ocurre en vivo; Trilha da Turma queda como referencia después. Vea pantallas reales en las pestañas.',
+      live:{tag:'En vivo en clase',title:'Pulso da Turma',
+        pp:'Preguntas en tiempo real, encuestas y un termómetro de comprensión del grupo.',
+        tabs:[['riesgo','pulso-risco','Gestión de riesgo en vivo: el grupo responde y el instructor ve al instante dónde reforzar.'],
+              ['markdown','pulso-markdown','Práctica de prompt en markdown, revisada en conjunto durante la clase.'],
+              ['contexto','pulso-contexto','Ejercicio de contexto: cada respuesta calibra el ritmo del grupo.']],
+        pulse:[['Sigo bien',86],['Tengo duda',11],['Perdido',3]]},
+      ref:{tag:'Después de la clase',title:'Trilha da Turma',
+        pp:'Cuaderno digital con contenido, tareas y materiales, su referencia permanente. Soporte por ~15 días.',
+        tabs:[['home','trilha-home','La ruta del curso: contenido y materiales organizados para consultar cuando quiera.'],
+              ['clase','trilha-aula','Una clase por dentro: teoría, ejercicios y los prompts practicados.']]},
+      chips:['En vivo en clase','Referencia permanente','Soporte ~15 días']},
+    cert:{eyebrow:'Certificado validado',h:'Un certificado <em>validado por el sitio</em>.',
+      lede:'Quien concluye el curso recibe un certificado emitido y validado por la propia plataforma, con carga horaria y temario, listo para comprobar la formación.',
+      sealH:'Emitido y verificable por la plataforma',
+      sealP:'No es solo un PDF suelto: el certificado se genera por el sitio y puede verificarse, con carga horaria y temario registrados.',
+      chips:['Emitido al concluir','Carga horaria registrada','Temario detallado','Verificable en línea']},
+    contato:{eyebrow:'Hablemos',h:'Cuénteme su <em>contexto</em>.',
+      lede:'Grupo, tribunal, despacho u órgano: cuénteme su realidad y diseño la formación o la consultoría a medida.'}
+  }
+};
+
+/* ============ STATE ============ */
+let lang='pt';
+let theme=document.documentElement.getAttribute('data-theme');
+let current='start';
+const $=s=>document.querySelector(s);
+const pscroll=$('#pscroll');
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let rotorTimer=null, barTimers=[];
+
+/* ============ NAV BUILD ============ */
+function buildNav(){
+  const nav=C[lang].nav;
+  const list=$('#navlist');
+  // keep spine, rebuild buttons
+  list.querySelectorAll('.nbtn').forEach(b=>b.remove());
+  ORDER.forEach(key=>{
+    const n=nav[key];
+    const b=document.createElement('button');
+    b.className='nbtn'; b.dataset.go=key;
+    b.setAttribute('aria-current', String(key===current));
+    b.innerHTML=`<span class="node"></span><b>${n[0]}</b><span>${n[1]}</span>`;
+    b.addEventListener('click',()=>go(key));
+    list.appendChild(b);
+  });
+  positionSpine();
+}
+
+/* spine fill + spark follow the current sector */
+function positionSpine(){
+  const idx=ORDER.indexOf(current);
+  const p=(idx+0.5)/ORDER.length;
+  $('#spineFill').style.height=(p*100)+'%';
+  $('#spineSpark').style.top=(current==='contato'?98:p*100)+'%';
+}
+
+/* ============ RENDER SECTION ============ */
+function render(key){
+  const d=C[lang][key], ui=C[lang].ui;
+  let h='';
+  if(key==='start'){
+    h=`<div class="psec">
+      <div class="hero-creds">
+        <img src="../../../images/profile.jpg" alt="Élder Prudente Barbosa Filho">
+        <div class="who"><b>Élder Prudente Barbosa Filho</b><span>${ui.acc.role}</span></div>
+        <div class="numrow">${d.n.map(n=>`<div class="numpill"><b>${n[0]}</b><span>${n[1]}</span></div>`).join('')}</div>
+      </div>
+      <span class="eyebrow">${d.eyebrow}</span>
+      <p class="completer"><span class="fixed">${d.completeFixed}</span> <span class="rotor" id="rotor"><span class="w">${d.rotor[0]}</span></span></p>
+      <p class="lede">${d.lede}</p>
+      <p class="tagline">pensamento humano, <b>inteligência ampliada</b></p>
+      <div class="hactions">
+        <button class="btn btn-p" data-jump="offer">${IC.offer} ${ui.heroPrimary}</button>
+        <a class="btn btn-o" href="https://wa.me/557998014253" target="_blank" rel="noopener">${IC.contato} ${ui.heroGhost}</a>
+      </div>
+    </div>`;
+  } else if(key==='contato'){
+    h=`<div class="psec"><div class="nova" id="nova"><span class="burst"></span>
+      <span class="eyebrow">${d.eyebrow}</span>
+      <h2 class="serif">${d.h}</h2>
+      <p class="lede">${d.lede}</p>
+      <div class="cact">
+        <a class="cbtn c-wa" href="https://wa.me/557998014253" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.06 24l1.68-6.1A11.9 11.9 0 1 1 12 24a11.9 11.9 0 0 1-5.7-1.45L.06 24zM6.6 20.1l.36.2a9.9 9.9 0 1 0-3.4-3.3l.23.37-1 3.6 3.8-.87zM18 14.3c-.25-.12-1.47-.72-1.7-.8-.23-.08-.4-.12-.56.13-.17.25-.65.8-.8.97-.14.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.15-.25-.02-.38.11-.5.11-.11.25-.3.37-.44.12-.15.16-.25.25-.42.08-.17.04-.31-.02-.43-.06-.13-.56-1.34-.76-1.84-.2-.48-.4-.41-.56-.42h-.48c-.16 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.13.17 1.74 2.66 4.22 3.73.59.25 1.05.4 1.4.52.6.18 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.2-.58.2-1.07.15-1.18-.06-.1-.22-.16-.47-.28z"/></svg>
+          ${ui.ctaWa}</a>
+        <a class="cbtn c-mail" href="mailto:contato@pensoia.com">${IC.mail} ${ui.ctaMail}</a>
+      </div>
+      <div class="socials">
+        <a class="soc" href="https://www.linkedin.com/in/elderpbf/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 0 5 8.5a2.5 2.5 0 0 0-.02-5zM3 9h4v12H3zM10 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21h-4v-5.3c0-1.27-.02-2.9-1.77-2.9-1.77 0-2.04 1.38-2.04 2.8V21h-4z"/></svg></a>
+        <a class="soc" href="https://www.instagram.com/elderpbf/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+        <a class="soc" href="https://github.com/elderpbf" target="_blank" rel="noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.1 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3z"/></svg></a>
+      </div>
+    </div></div>`;
+  } else if(key==='tools'){
+    h=`<div class="psec">
+      <span class="eyebrow">${d.eyebrow}</span>
+      <h2 class="serif">${d.h}</h2>
+      <p class="lede">${d.lede}</p>
+      <div class="prints">
+        ${printcard('live',d.live)}
+        ${printcard('ref',d.ref)}
+      </div>
+      <div class="chips">${d.chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div>
+    </div>`;
+  } else if(key==='cert'){
+    h=`<div class="psec">
+      <span class="eyebrow">${d.eyebrow}</span>
+      <h2 class="serif">${d.h}</h2>
+      <p class="lede">${d.lede}</p>
+      <div class="cert">
+        <span class="seal">${IC.cert}</span>
+        <div><h3 class="serif">${d.sealH}</h3><p>${d.sealP}</p>
+          <div class="chips">${d.chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div></div>
+      </div>
+    </div>`;
+  } else if(key==='offer'){
+    h=`<div class="psec">
+      <span class="eyebrow">${d.eyebrow}</span>
+      <h2 class="serif">${d.h}</h2>
+      <p class="lede">${d.lede}</p>
+      <div class="cards">${d.cards.map(c=>card(c)).join('')}</div>
+      <div class="curr">${d.steps.map(s=>`<div class="cc"><span class="st">${s[0]}</span><div><h4>${s[1]}</h4><p>${s[2]}</p></div></div>`).join('')}</div>
+      <div class="chips">${d.chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div>
+    </div>`;
+  } else { /* about */
+    h=`<div class="psec">
+      <span class="eyebrow">${d.eyebrow}</span>
+      <h2 class="serif">${d.h}</h2>
+      <p class="lede">${d.lede}</p>
+      <div class="cards">${d.cards.map(c=>card(c)).join('')}</div>
+      <div class="chips">${d.chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div>
+    </div>`;
+  }
+  pscroll.innerHTML=h;
+  pscroll.scrollTop=0;
+  afterRender(key);
+}
+function card(c){return `<div class="card"><span class="ci">${IC[c[0]]}</span><h4>${c[1]}</h4><p>${c[2]}</p></div>`;}
+
+function printcard(kind, g){
+  const tabs=g.tabs.map((t,i)=>`<button class="tab" data-base="${t[1]}" aria-pressed="${i===0}">${t[0]}</button>`).join('');
+  const imgs=g.tabs.map((t,i)=>`<img data-base="${t[1]}" alt="${g.title}" class="${i===0?'on':''}" src="">`).join('');
+  const caps=g.tabs.map((t,i)=>`<span class="capx" data-for="${t[1]}" ${i===0?'':'hidden'}>${t[2]}</span>`).join('');
+  let extra='';
+  if(g.pulse){
+    extra=`<div class="pulse-mini" data-pulse>${g.pulse.map(p=>`<div class="pulse-row"><span class="pl">${p[0]}</span><div class="ptrack"><div class="pfill" data-w="${p[1]}"></div></div><span class="pl-val">${p[1]}%</span></div>`).join('')}</div>`;
+  }
+  return `<div class="printcard ${kind}" data-group>
+    <span class="ptag"><span class="ld"></span>${g.tag}</span>
+    <h3 class="serif">${g.title}</h3>
+    <p class="pp">${g.pp}</p>
+    <div class="stagewrap">
+      <div class="phone"><span class="notch"></span><div class="scr">${imgs}</div></div>
+      <div class="stagemeta">
+        <div class="tabs">${tabs}</div>
+        <div class="capx-wrap">${caps}</div>
+        ${extra}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============ AFTER RENDER (wire interactions) ============ */
+function clearTimers(){ if(rotorTimer){clearInterval(rotorTimer);rotorTimer=null;} barTimers.forEach(clearInterval); barTimers=[]; }
+function afterRender(key){
+  clearTimers();
+  if(key==='start') startRotor();
+  if(key==='tools') wirePrints();
+  if(key==='contato' && !reduce){ const n=$('#nova'); if(n) requestAnimationFrame(()=> n.classList.add('fire')); }
+  // hero jump button
+  pscroll.querySelectorAll('[data-jump]').forEach(b=> b.addEventListener('click',()=>go(b.dataset.jump)));
+}
+function startRotor(){
+  const d=C[lang].start, rotor=$('#rotor');
+  if(!rotor) return;
+  if(reduce){ rotor.firstElementChild.textContent=d.rotor[0]; return; }
+  let i=0;
+  rotorTimer=setInterval(()=>{
+    i=(i+1)%d.rotor.length;
+    const cur=rotor.firstElementChild;
+    cur.classList.add('out');
+    setTimeout(()=>{
+      const nw=document.createElement('span');
+      nw.className='w in-from'; nw.textContent=d.rotor[i];
+      rotor.innerHTML=''; rotor.appendChild(nw);
+      requestAnimationFrame(()=> requestAnimationFrame(()=> nw.classList.remove('in-from')));
+    },420);
+  },2600);
+}
+function shotSrc(base){return `../../../images/app/${base}-${theme}.jpg`;}
+function wirePrints(){
+  pscroll.querySelectorAll('[data-group]').forEach(group=>{
+    group.querySelectorAll('img[data-base]').forEach(img=> img.src=shotSrc(img.dataset.base));
+    group.querySelectorAll('.tab').forEach(tab=> tab.addEventListener('click',()=>{
+      const base=tab.dataset.base;
+      group.querySelectorAll('.tab').forEach(t=> t.setAttribute('aria-pressed', t===tab));
+      group.querySelectorAll('img[data-base]').forEach(img=> img.classList.toggle('on', img.dataset.base===base));
+      group.querySelectorAll('.capx').forEach(c=> c.hidden = c.dataset.for!==base);
+    }));
+    // animate pulse bars
+    const pulse=group.querySelector('[data-pulse]');
+    if(pulse){
+      const fills=pulse.querySelectorAll('.pfill');
+      setTimeout(()=> fills.forEach(f=> f.style.width=f.dataset.w+'%'), 120);
+      if(!reduce){
+        const t=setInterval(()=> fills.forEach(f=>{
+          const base=+f.dataset.w; const jitter=base + (Math.random()*6-3);
+          f.style.width=Math.max(2,Math.min(98,jitter))+'%';
+        }), 1600);
+        barTimers.push(t);
+      }
+    }
+  });
+}
+
+/* ============ GO (swap section) ============ */
+function go(key){
+  if(key===current){ return; }
+  current=key;
+  document.querySelectorAll('.nbtn').forEach(b=> b.setAttribute('aria-current', String(b.dataset.go===key)));
+  positionSpine();
+  if(reduce){ render(key); return; }
+  pscroll.classList.add('swap');
+  setTimeout(()=>{ render(key); requestAnimationFrame(()=> pscroll.classList.remove('swap')); }, 240);
+}
+
+/* ============ LANGUAGE ============ */
+function applyLang(){
+  const ui=C[lang].ui;
+  document.documentElement.lang=ui.htmlLang;
+  document.querySelectorAll('.langseg button').forEach(b=> b.setAttribute('aria-pressed', b.dataset.lang===lang));
+  $('#ihead').textContent=ui.ihead;
+  $('#ifootB').textContent=ui.ifootB;
+  $('#ifootS').textContent=ui.ifootS;
+  $('#ctaTop').textContent=ui.ctaTop;
+  $('#themeTx').textContent=(theme==='dark')?ui.themeLight:ui.themeDark;
+  buildNav();
+  render(current);
+}
+document.querySelectorAll('.langseg button').forEach(b=> b.addEventListener('click',()=>{ lang=b.dataset.lang; applyLang(); }));
+
+/* ============ THEME ============ */
+function applyTheme(t){
+  theme=t;
+  document.documentElement.setAttribute('data-theme',t);
+  $('#themeIc').textContent=t==='dark'?'☀':'☾';
+  $('#themeTx').textContent=(t==='dark')?C[lang].ui.themeLight:C[lang].ui.themeDark;
+  if(current==='tools'){ pscroll.querySelectorAll('img[data-base]').forEach(img=> img.src=shotSrc(img.dataset.base)); }
+}
+$('#themeBtn').addEventListener('click',()=> applyTheme(theme==='dark'?'light':'dark'));
+
+/* ============ MOUSE GLOW ============ */
+const glow=$('#mouseGlow');
+if(!reduce){
+  let gx=innerWidth*.5, gy=innerHeight*.4, tx=gx, ty=gy;
+  addEventListener('pointermove',e=>{tx=e.clientX;ty=e.clientY;},{passive:true});
+  (function loop(){ gx+=(tx-gx)*.08; gy+=(ty-gy)*.08; glow.style.left=gx+'px'; glow.style.top=gy+'px'; requestAnimationFrame(loop); })();
+}
+
+/* ============ INIT ============ */
+applyTheme(theme);
+applyLang();
+</script>
+</body>
+</html>

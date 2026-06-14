@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PensoIA — pensamento humano, inteligência ampliada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Lora:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   n1 — "A CONSTELAÇÃO"
+   Conceito assinatura: um PONTO DE LUZ desce acompanhando a jornada
+   (i1 + e3 spine) e EXPANDE como SUPERNOVA nos contatos. Hero com campo
+   de constelação que SEGUE O MOUSE (i1, amado), frase que se COMPLETA
+   (e2). Vitrine das ferramentas = device animado ciclando os 6 prints
+   reais (k1/a3 evoluído) + medidor animado (h2) + certificado em destaque.
+   =================================================================== */
+:root{
+  --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --teal-light:#5eead4;
+  --accent:#7de8d6; --green:#047857;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+/* ---------- DARK (default) ---------- */
+[data-theme="dark"]{
+  --bg:#03102e; --bg-2:#061a3f; --surface:#0a1f4d; --surface-2:#0d2456;
+  --ink:#eaf2ff; --ink-soft:#aac2e8; --ink-faint:#7a93c0;
+  --line:rgba(125,232,214,.16); --line-soft:rgba(125,232,214,.08);
+  --card:rgba(10,30,70,.6); --card-brd:rgba(125,232,214,.18);
+  --glow-a:rgba(20,184,166,.45); --glow-b:rgba(94,234,212,.35);
+  --hero-grad:radial-gradient(120% 120% at 50% 0%,#0a2a63 0%,#051a44 42%,#03102e 78%);
+  --pill:rgba(125,232,214,.10);
+  --node:'125,232,214';
+  --shadow:0 30px 80px -30px rgba(0,0,0,.72);
+  --device-bezel:#02091f;
+}
+/* ---------- LIGHT (tão bom quanto o dark) ---------- */
+[data-theme="light"]{
+  --bg:#f3f8fb; --bg-2:#e9f3f4; --surface:#ffffff; --surface-2:#f1f7fa;
+  --ink:#06214a; --ink-soft:#2d4f78; --ink-faint:#5c7aa0;
+  --line:rgba(13,148,136,.20); --line-soft:rgba(13,148,136,.10);
+  --card:rgba(255,255,255,.82); --card-brd:rgba(13,148,136,.18);
+  --glow-a:rgba(20,184,166,.30); --glow-b:rgba(94,234,212,.26);
+  --hero-grad:radial-gradient(120% 120% at 50% 0%,#dcf3ef 0%,#e9f3f4 44%,#f3f8fb 80%);
+  --pill:rgba(13,148,136,.08);
+  --node:'13,148,136';
+  --shadow:0 30px 70px -32px rgba(6,33,74,.28);
+  --device-bezel:#0a1733;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  line-height:1.62;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  transition:background .5s var(--ease),color .5s var(--ease);
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+:focus-visible{outline:2.5px solid var(--teal-light);outline-offset:3px;border-radius:8px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mono{font-family:'JetBrains Mono',monospace;letter-spacing:.02em}
+
+/* ===================== HEADER ===================== */
+header{position:fixed;inset:0 0 auto 0;z-index:80;transition:.5s var(--ease)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 24px;max-width:1180px;margin:0 auto;transition:.4s var(--ease)}
+header.scrolled .bar{padding:9px 24px}
+header.scrolled{background:color-mix(in srgb,var(--bg) 84%,transparent);
+  backdrop-filter:blur(18px) saturate(140%);border-bottom:1px solid var(--line-soft)}
+.brand{display:flex;align-items:center}
+.brand img{height:38px;width:auto}
+header.scrolled .brand img{height:32px;transition:.4s var(--ease)}
+.nav{display:flex;align-items:center;gap:26px}
+.nav-links{display:flex;align-items:center;gap:26px}
+.nav-links a{font-size:.88rem;font-weight:500;color:var(--ink-soft);position:relative}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:-5px;height:2px;width:0;background:var(--teal);transition:width .3s}
+.nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+.ctrl{display:flex;align-items:center;gap:8px}
+/* language segmented control */
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--pill)}
+.lang button{border:none;background:transparent;color:var(--ink-faint);font:inherit;font-size:.74rem;font-weight:700;
+  padding:8px 9px;cursor:pointer;transition:.2s;letter-spacing:.04em}
+.lang button.on{background:linear-gradient(120deg,var(--teal),var(--teal-dark));color:#021}
+.lang button:hover:not(.on){color:var(--ink)}
+.btn-ic{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--pill);
+  color:var(--ink);font-size:1rem;cursor:pointer;display:grid;place-items:center;transition:.25s}
+.btn-ic:hover{border-color:var(--teal);color:var(--teal-light);transform:translateY(-1px)}
+.cta{background:linear-gradient(120deg,var(--teal),var(--teal-dark));color:#021;font-weight:700;font-size:.85rem;
+  padding:10px 18px;border-radius:12px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+  box-shadow:0 8px 26px -10px var(--glow-a);transition:.25s}
+.cta:hover{transform:translateY(-2px);box-shadow:0 14px 34px -10px var(--glow-a)}
+.cta.lg{padding:15px 28px;font-size:1rem}
+.burger{display:none}
+
+/* ===================== HERO ===================== */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;background:var(--hero-grad);
+  overflow:hidden;padding:130px 0 80px}
+#field{position:absolute;inset:0;z-index:1}
+.hero-fade{position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(70% 60% at 50% 38%,transparent 45%,color-mix(in srgb,var(--bg) 55%,transparent) 100%)}
+.hero .wrap{position:relative;z-index:3;text-align:center}
+.kick{display:inline-flex;align-items:center;gap:9px;padding:8px 16px;border-radius:100px;background:var(--pill);
+  border:1px solid var(--card-brd);font-size:.78rem;font-weight:600;color:var(--ink-soft);
+  letter-spacing:.02em;margin-bottom:28px;backdrop-filter:blur(6px)}
+.kick .dot{width:9px;height:9px;border-radius:50%;background:var(--teal-light);box-shadow:0 0 0 0 var(--glow-b);animation:beat 2.4s infinite}
+@keyframes beat{0%{box-shadow:0 0 0 0 var(--glow-b)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.hero h1{font-family:'Lora',serif;font-size:clamp(2.4rem,6.4vw,4.8rem);line-height:1.04;font-weight:600;
+  letter-spacing:-.02em;margin-bottom:14px}
+.hero h1 .amp{background:linear-gradient(110deg,var(--teal-light),var(--teal),var(--accent));
+  -webkit-background-clip:text;background-clip:text;color:transparent;font-style:italic;
+  background-size:200% auto;animation:shimmer 7s linear infinite}
+@keyframes shimmer{to{background-position:200% center}}
+/* completing phrase (e2) */
+.complete{font-size:clamp(1.05rem,2.2vw,1.4rem);color:var(--ink-soft);margin:8px auto 6px;font-weight:500;
+  min-height:1.7em;display:flex;align-items:center;justify-content:center;gap:.4ch;flex-wrap:wrap}
+.complete .pre{color:var(--ink-soft)}
+.complete .rot{position:relative;display:inline-block;min-width:8ch;height:1.4em;overflow:hidden;text-align:left;vertical-align:bottom}
+.complete .rot span{display:block;font-weight:700;color:var(--teal-light);font-style:italic;font-family:'Lora',serif}
+[data-theme="light"] .complete .rot span{color:var(--teal-dark)}
+.hero .lead{font-size:clamp(1rem,2vw,1.18rem);color:var(--ink-soft);max-width:600px;margin:18px auto 0;font-weight:400}
+.hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+.ghost{padding:14px 26px;border-radius:12px;border:1px solid var(--card-brd);background:transparent;color:var(--ink);
+  font-weight:600;font-size:.95rem;cursor:pointer;transition:.25s}
+.ghost:hover{border-color:var(--teal);color:var(--teal-light)}
+/* credibility row — front and center, é o Élder sendo vendido */
+.cred{display:flex;gap:22px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:50px}
+.cred .face{display:flex;align-items:center;gap:14px;padding:10px 18px 10px 10px;border-radius:60px;
+  background:var(--card);border:1px solid var(--card-brd);backdrop-filter:blur(12px);box-shadow:var(--shadow)}
+.cred .face img{width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid var(--card-brd)}
+.cred .face .nm{text-align:left}
+.cred .face .nm b{display:block;font-size:.92rem;font-weight:700}
+.cred .face .nm span{font-size:.74rem;color:var(--ink-faint)}
+.cred .stat{text-align:center}
+.cred .stat b{display:block;font-family:'Lora',serif;font-size:1.7rem;font-weight:600;line-height:1;
+  background:linear-gradient(120deg,var(--teal-light),var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+[data-theme="light"] .cred .stat b{background:linear-gradient(120deg,var(--teal-dark),var(--teal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.cred .stat span{font-size:.72rem;color:var(--ink-faint);letter-spacing:.04em;text-transform:uppercase}
+.cred .sep{width:1px;height:38px;background:var(--line)}
+@media(max-width:680px){.cred .sep{display:none}}
+
+/* ===================== SIGNATURE SPINE OF LIGHT ===================== */
+.journey{position:relative}
+.spine{position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);z-index:0;
+  background:linear-gradient(180deg,transparent,var(--line) 6%,var(--line) 94%,transparent)}
+.spine .trail{position:absolute;top:0;left:50%;transform:translateX(-50%);width:2px;height:0;
+  background:linear-gradient(180deg,var(--teal),var(--teal-light));border-radius:2px}
+.spark{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;
+  background:var(--teal-light);box-shadow:0 0 22px 5px var(--glow-b),0 0 0 1px var(--accent);z-index:2;will-change:top}
+@media(max-width:880px){.spine{display:none}}
+
+/* ===================== SECTION SHELL ===================== */
+section{position:relative}
+.S{padding:108px 0}
+.head{text-align:center;max-width:760px;margin:0 auto 54px}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:.74rem;
+  font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-dark);margin-bottom:16px}
+[data-theme="dark"] .eyebrow{color:var(--teal-light)}
+.eyebrow::before{content:"";width:24px;height:2px;background:linear-gradient(90deg,var(--teal),transparent)}
+h2.title{font-family:'Lora',serif;font-size:clamp(1.9rem,4.2vw,3rem);font-weight:600;letter-spacing:-.02em;
+  line-height:1.1;margin:0 auto 16px}
+.sub{font-size:1.06rem;color:var(--ink-soft);max-width:620px;margin:0 auto}
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .8s ease,transform .8s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+
+/* ===================== ABOUT ===================== */
+.about-grid{display:grid;grid-template-columns:300px 1fr;gap:48px;align-items:center}
+@media(max-width:820px){.about-grid{grid-template-columns:1fr;text-align:center}}
+.about-photo{position:relative;border-radius:24px;overflow:hidden;border:1px solid var(--card-brd);
+  box-shadow:var(--shadow);aspect-ratio:3/3.5}
+.about-photo img{width:100%;height:100%;object-fit:cover}
+.about-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 58%,rgba(3,16,46,.45))}
+.about-photo .bd{position:absolute;left:14px;right:14px;bottom:14px;z-index:2;
+  background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(8px);
+  border:1px solid var(--card-brd);border-radius:14px;padding:11px 14px;font-size:.82rem;text-align:left}
+.about-photo .bd b{color:var(--ink)}.about-photo .bd span{color:var(--ink-faint)}
+.about-body h2{text-align:left}
+@media(max-width:820px){.about-body h2{text-align:center}}
+.about-body .role{font-size:.92rem;font-weight:600;color:var(--teal-dark);margin:4px 0 16px}
+[data-theme="dark"] .about-body .role{color:var(--teal-light)}
+.about-body p{color:var(--ink-soft);font-size:1.04rem;margin-bottom:14px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+@media(max-width:820px){.chips{justify-content:center}}
+.chips .c{border:1px solid var(--card-brd);background:var(--card);border-radius:60px;padding:8px 15px;
+  font-size:.84rem;color:var(--ink-soft);font-weight:500;backdrop-filter:blur(8px)}
+.chips .c b{color:var(--teal-dark)}
+[data-theme="dark"] .chips .c b{color:var(--teal-light)}
+
+/* ===================== OFFER ===================== */
+.offer{background:linear-gradient(170deg,var(--bg-2),var(--bg));border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+.offer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+@media(max-width:880px){.offer-grid{grid-template-columns:1fr}}
+.ocard{background:var(--card);border:1px solid var(--card-brd);border-radius:20px;padding:30px;
+  backdrop-filter:blur(14px);position:relative;overflow:hidden;transition:.4s var(--ease);box-shadow:var(--shadow)}
+.ocard::before{content:"";position:absolute;inset:0;background:radial-gradient(140% 120% at 0% 0%,var(--glow-b),transparent 50%);opacity:0;transition:.4s}
+.ocard:hover{transform:translateY(-6px);border-color:var(--teal)}
+.ocard:hover::before{opacity:.4}
+.ocard .ic{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;margin-bottom:18px;
+  background:linear-gradient(135deg,var(--teal),var(--teal-dark));position:relative;z-index:1}
+.ocard .ic svg{width:25px;height:25px;stroke:#021;fill:none;stroke-width:2}
+.ocard h3{font-size:1.2rem;font-weight:700;margin-bottom:9px;position:relative;z-index:1}
+.ocard p{font-size:.95rem;color:var(--ink-soft);position:relative;z-index:1}
+.ocard ul{list-style:none;margin-top:14px;position:relative;z-index:1}
+.ocard li{font-size:.88rem;color:var(--ink-soft);padding-left:22px;position:relative;margin-bottom:7px}
+.ocard li::before{content:"";position:absolute;left:0;top:8px;width:7px;height:7px;border-radius:50%;background:var(--teal-light)}
+[data-theme="light"] .ocard li::before{background:var(--teal)}
+
+/* ===================== TOOLS SHOWCASE (o foco) ===================== */
+.tools-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:54px;align-items:center}
+@media(max-width:920px){.tools-grid{grid-template-columns:1fr;gap:40px}}
+.tool-copy .tabs{display:inline-flex;gap:6px;padding:5px;border-radius:14px;background:var(--surface-2);
+  border:1px solid var(--line);margin-bottom:24px}
+.tool-copy .tabs button{border:none;background:transparent;color:var(--ink-soft);font:inherit;font-weight:700;
+  font-size:.88rem;padding:9px 18px;border-radius:10px;cursor:pointer;transition:.25s;display:inline-flex;align-items:center;gap:8px}
+.tool-copy .tabs button.on{background:linear-gradient(120deg,var(--teal),var(--teal-dark));color:#021;box-shadow:0 8px 22px -10px var(--glow-a)}
+.tool-badge{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--teal-dark);margin-bottom:12px}
+[data-theme="dark"] .tool-badge{color:var(--teal-light)}
+.tool-copy h3{font-family:'Lora',serif;font-size:clamp(1.6rem,3.4vw,2.2rem);font-weight:600;line-height:1.1;margin-bottom:12px}
+.tool-copy>p{font-size:1.04rem;color:var(--ink-soft);margin-bottom:22px}
+.tool-feats{list-style:none;display:flex;flex-direction:column;gap:13px;margin-bottom:24px}
+.tool-feats li{display:flex;gap:12px;align-items:flex-start;font-size:.95rem;color:var(--ink-soft)}
+.tool-feats .tk{flex:0 0 auto;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;margin-top:1px;
+  background:color-mix(in srgb,var(--teal) 16%,transparent);color:var(--teal-dark);font-size:.7rem;font-weight:800}
+[data-theme="dark"] .tool-feats .tk{color:var(--teal-light)}
+/* animated comprehension meter (h2 lineage) */
+.meter{border:1px solid var(--card-brd);border-radius:16px;padding:18px;background:var(--card);backdrop-filter:blur(10px)}
+.meter .mh{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--ink-soft);margin-bottom:14px}
+.meter .mh b{font-family:'JetBrains Mono',monospace;color:var(--teal-dark);font-size:.92rem}
+[data-theme="dark"] .meter .mh b{color:var(--teal-light)}
+.mrow{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.mrow:last-child{margin-bottom:0}
+.mrow .ml{font-size:.8rem;color:var(--ink-soft);width:96px;flex:0 0 auto}
+.mtrack{flex:1;height:9px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.mfill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--teal),var(--teal-light));width:0;transition:width 1.3s var(--ease)}
+.mrow .mv{font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:600;color:var(--teal-dark);width:42px;text-align:right}
+[data-theme="dark"] .mrow .mv{color:var(--teal-light)}
+
+/* animated device stage cycling real prints */
+.stage{position:relative;justify-self:center;width:min(330px,86%)}
+.stage-glow{position:absolute;inset:-30px -10px;z-index:0;border-radius:50%;
+  background:radial-gradient(circle,var(--glow-b),transparent 66%);filter:blur(34px);opacity:.7}
+.device{position:relative;z-index:1;border:12px solid var(--device-bezel);border-radius:42px;overflow:hidden;
+  background:var(--device-bezel);box-shadow:var(--shadow);aspect-ratio:1080/2160}
+.device .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:90px;height:7px;border-radius:99px;background:rgba(255,255,255,.28);z-index:3}
+.device .screens{position:absolute;inset:0}
+.device .screens img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;
+  opacity:0;transform:scale(1.04);transition:opacity .8s var(--ease),transform 6s linear}
+.device .screens img.show{opacity:1;transform:scale(1)}
+/* progress dots that show which print + auto-advance bar */
+.stage-dots{display:flex;gap:7px;justify-content:center;margin-top:18px}
+.stage-dots button{width:34px;height:5px;border-radius:99px;border:none;background:var(--line-soft);cursor:pointer;
+  position:relative;overflow:hidden;transition:.3s;padding:0}
+.stage-dots button.on{background:var(--line)}
+.stage-dots button.on::after{content:"";position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--teal),var(--teal-light));border-radius:99px}
+.stage-dots button.on.run::after{animation:fillbar 5s linear forwards}
+@keyframes fillbar{to{width:100%}}
+.stage-cap{text-align:center;margin-top:12px;font-size:.82rem;color:var(--ink-faint);min-height:1.2em}
+
+/* ===================== CERTIFICATE ===================== */
+.cert{background:linear-gradient(170deg,var(--bg-2),var(--bg));border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+.cert-grid{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}
+@media(max-width:860px){.cert-grid{grid-template-columns:1fr;gap:40px}}
+.cert-body .eyebrow{justify-content:flex-start}
+.cert-body h2{text-align:left;font-size:clamp(1.7rem,3.6vw,2.5rem)}
+.cert-body>p{color:var(--ink-soft);font-size:1.05rem;margin:14px 0 22px;max-width:46ch}
+.cert-points{list-style:none;display:flex;flex-direction:column;gap:12px}
+.cert-points li{display:flex;gap:12px;align-items:flex-start;font-size:.96rem;color:var(--ink-soft)}
+.cert-points .tk{flex:0 0 auto;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;margin-top:1px;
+  background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#021;font-size:.74rem;font-weight:800}
+/* the certificate visual */
+.diploma{position:relative;border-radius:20px;padding:30px;background:var(--surface);border:1px solid var(--card-brd);
+  box-shadow:var(--shadow);overflow:hidden}
+.diploma::before{content:"";position:absolute;inset:0;background:radial-gradient(400px 260px at 80% 0%,var(--glow-b),transparent 60%);opacity:.5;pointer-events:none}
+.diploma .seal{position:absolute;right:24px;bottom:24px;width:74px;height:74px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,var(--teal-light),var(--teal-dark));display:grid;place-items:center;
+  color:#021;box-shadow:0 0 30px -4px var(--glow-a);animation:sealspin 18s linear infinite}
+@keyframes sealspin{to{transform:rotate(360deg)}}
+.diploma .seal svg{width:34px;height:34px;animation:sealspin 18s linear infinite reverse}
+.diploma .dlogo{height:30px;margin-bottom:18px;position:relative;z-index:1}
+.diploma .dk{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);position:relative;z-index:1}
+.diploma .dt{font-family:'Lora',serif;font-size:1.4rem;font-weight:600;margin:8px 0 4px;position:relative;z-index:1}
+.diploma .dn{font-size:.92rem;color:var(--ink-soft);position:relative;z-index:1}
+.diploma .dmeta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;position:relative;z-index:1}
+.diploma .dmeta span{font-size:.72rem;font-weight:600;color:var(--ink-soft);background:var(--pill);border:1px solid var(--card-brd);padding:5px 11px;border-radius:60px}
+.diploma .dline{height:1px;background:var(--line);margin:18px 0;position:relative;z-index:1}
+.diploma .dfoot{font-size:.74rem;color:var(--ink-faint);position:relative;z-index:1}
+
+/* ===================== CONTACT (SUPERNOVA) ===================== */
+.contact{position:relative;text-align:center;padding:120px 0 110px;overflow:hidden;
+  background:radial-gradient(120% 110% at 50% 100%,var(--bg-2),var(--bg))}
+#nova{position:absolute;left:50%;bottom:-40px;transform:translateX(-50%);z-index:0;width:760px;height:760px;max-width:140vw;pointer-events:none}
+.contact .wrap{position:relative;z-index:2}
+.contact h2{font-family:'Lora',serif;font-size:clamp(2rem,5vw,3.4rem);font-weight:600;letter-spacing:-.02em;
+  margin:0 auto 16px;max-width:760px;line-height:1.1}
+.contact .tagline{font-size:1.06rem;color:var(--ink-soft);max-width:520px;margin:0 auto 8px}
+.contact .tagline b{color:var(--teal-dark)}
+[data-theme="dark"] .contact .tagline b{color:var(--teal-light)}
+.contact .cta{margin-top:30px}
+.contacts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.contacts a{display:inline-flex;align-items:center;gap:9px;padding:12px 18px;border-radius:12px;background:var(--card);
+  border:1px solid var(--card-brd);font-size:.88rem;font-weight:600;backdrop-filter:blur(10px);transition:.25s}
+.contacts a:hover{border-color:var(--teal);color:var(--teal-light);transform:translateY(-2px)}
+[data-theme="light"] .contacts a:hover{color:var(--teal-dark)}
+.contacts svg{width:17px;height:17px}
+
+/* ===================== FOOTER ===================== */
+footer{padding:50px 0 40px;border-top:1px solid var(--line-soft)}
+.foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px}
+.foot img{height:30px}
+.foot small{color:var(--ink-faint);font-size:.8rem}
+.foot .soc{display:flex;gap:12px}
+.foot .soc a{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);display:grid;place-items:center;
+  background:var(--pill);transition:.25s;color:var(--ink-soft)}
+.foot .soc a:hover{border-color:var(--teal);color:var(--teal-light);transform:translateY(-2px)}
+.foot .soc svg{width:18px;height:18px}
+
+@media(max-width:880px){
+  .nav-links{display:none}
+  .burger{display:grid}
+  .S{padding:76px 0}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<header id="hdr">
+  <div class="bar">
+    <a class="brand" href="#top" aria-label="PensoIA — início">
+      <img id="logo" src="../../../images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA">
+    </a>
+    <nav class="nav" aria-label="Principal">
+      <div class="nav-links">
+        <a href="#sobre" data-i="nav.about">Quem ensina</a>
+        <a href="#oferta" data-i="nav.offer">O que oferecemos</a>
+        <a href="#ferramentas" data-i="nav.tools">Ferramentas</a>
+        <a href="#certificado" data-i="nav.cert">Certificado</a>
+      </div>
+      <div class="ctrl">
+        <div class="lang" role="group" aria-label="Idioma">
+          <button data-lang="pt" class="on">PT</button>
+          <button data-lang="en">EN</button>
+          <button data-lang="es">ES</button>
+        </div>
+        <button class="btn-ic" id="theme" aria-label="Alternar tema claro e escuro">☾</button>
+        <a class="cta" href="https://wa.me/557998014253" target="_blank" rel="noopener" data-i="nav.cta">Falar com o Élder</a>
+        <button class="btn-ic burger" id="burger" aria-label="Menu">☰</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<a id="top"></a>
+<!-- ===================== HERO ===================== -->
+<section class="hero" aria-labelledby="h1">
+  <canvas id="field" aria-hidden="true"></canvas>
+  <div class="hero-fade" aria-hidden="true"></div>
+  <div class="wrap">
+    <span class="kick"><span class="dot"></span><span data-i="hero.kick">Ensino e consultoria em IA aplicada ao Direito</span></span>
+    <h1 id="h1"><span data-i="hero.t1">Pensamento humano,</span><br><span class="amp" data-i="hero.t2">inteligência ampliada.</span></h1>
+    <div class="complete" aria-hidden="true">
+      <span class="pre" data-i="hero.pre">Aprenda a usar a IA para</span>
+      <span class="rot" id="rot"><span>ganhar tempo.</span></span>
+    </div>
+    <p class="lead" data-i="hero.lead">Aulas e consultoria com o Élder: alguém que viveu o Judiciário por dentro e aprendeu a tecnologia para traduzi-la, sem jargão, em algo que você usa no dia seguinte.</p>
+    <div class="hero-cta">
+      <a class="cta lg" href="#ferramentas" data-i="hero.cta1">Ver como ensino</a>
+      <a class="ghost" href="#oferta" data-i="hero.cta2">O que ofereço</a>
+    </div>
+    <div class="cred">
+      <div class="face">
+        <img src="../../../images/profile.jpg" alt="Élder Prudente Barbosa Filho">
+        <div class="nm"><b>Élder Prudente Barbosa Filho</b><span data-i="hero.role">Instrutor e consultor</span></div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat"><b>600+</b><span data-i="hero.s1">já capacitados</span></div>
+      <div class="sep"></div>
+      <div class="stat"><b>~11</b><span data-i="hero.s2">anos no Judiciário</span></div>
+      <div class="sep"></div>
+      <div class="stat"><b>✦</b><span data-i="hero.s3">certificado validado</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="journey">
+  <div class="spine" aria-hidden="true"><div class="trail" id="trail"></div></div>
+  <div class="spark" id="spark" aria-hidden="true"></div>
+
+  <!-- ===================== ABOUT ===================== -->
+  <section class="S" id="sobre">
+    <div class="wrap">
+      <div class="about-grid">
+        <div class="about-photo reveal">
+          <img src="../../../images/profile.jpg" alt="Élder Prudente Barbosa Filho">
+          <div class="bd"><b>Élder Prudente Barbosa Filho</b><br><span data-i="about.role">Direito + Análise e Desenvolvimento de Sistemas</span></div>
+        </div>
+        <div class="about-body reveal">
+          <span class="eyebrow" data-i="about.ey">Quem ensina</span>
+          <h2 class="title" data-i="about.h">Duas formações, uma rotina vivida por dentro.</h2>
+          <div class="role" data-i="about.r">Direito · Análise e Desenvolvimento de Sistemas · servidor do TJSE</div>
+          <p data-i="about.p1">Sou o Élder. Passei cerca de 11 anos no Judiciário e, no caminho, me formei também em sistemas. Conheço a rotina forense de quem lida com prazos e autos, e entendo o que acontece por trás dos modelos de IA.</p>
+          <p data-i="about.p2">É por isso que consigo traduzir a IA sem espetáculo técnico e sem promessas vazias. A ideia é simples: a IA facilita, você continua no comando da decisão e da responsabilidade.</p>
+          <div class="chips">
+            <span class="c"><b>600+</b> <span data-i="about.c1">profissionais formados</span></span>
+            <span class="c"><b>TJSE</b> <span data-i="about.c2">~11 anos</span></span>
+            <span class="c" data-i="about.c3">tribunais, órgãos e escritórios</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== OFFER ===================== -->
+  <section class="S offer" id="oferta">
+    <div class="wrap">
+      <div class="head reveal">
+        <span class="eyebrow" style="justify-content:center" data-i="offer.ey">O que ofereço</span>
+        <h2 class="title" data-i="offer.h">Ensino primeiro. Consultoria quando faz sentido.</h2>
+        <p class="sub" data-i="offer.s">O foco é capacitar você e sua equipe a usar IA com segurança. Quando o passo seguinte é automatizar, a consultoria entra para ajudar.</p>
+      </div>
+      <div class="offer-grid">
+        <article class="ocard reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="M2 8v8l10 5 10-5V8"/></svg></div>
+          <h3 data-i="offer.c1h">Aulas e cursos</h3>
+          <p data-i="offer.c1p">Engenharia de prompts e IA generativa, do conceito à prática, com linguagem de quem advoga e julga.</p>
+          <ul>
+            <li data-i="offer.c1l1">Presencial ou híbrido, em encontros de ~4h</li>
+            <li data-i="offer.c1l2">Aula expositiva + laboratório prático</li>
+            <li data-i="offer.c1l3">Certificado validado ao final</li>
+          </ul>
+        </article>
+        <article class="ocard reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 14l2 2 3-4"/></svg></div>
+          <h3 data-i="offer.c2h">Consultoria em IA</h3>
+          <p data-i="offer.c2p">Quando a equipe já entende o terreno, ajudo a desenhar automações de processos jurídicos com cuidado.</p>
+          <ul>
+            <li data-i="offer.c2l1">Diagnóstico de fluxos e oportunidades</li>
+            <li data-i="offer.c2l2">Revisão humana e sigilo no centro</li>
+            <li data-i="offer.c2l3">Acompanhamento da implementação</li>
+          </ul>
+        </article>
+        <article class="ocard reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div>
+          <h3 data-i="offer.c3h">Otimização de fluxos</h3>
+          <p data-i="offer.c3p">Repertório de prompts reutilizável e rotinas mais consistentes para o dia a dia da equipe.</p>
+          <ul>
+            <li data-i="offer.c3l1">Prompts prontos para reusar</li>
+            <li data-i="offer.c3l2">Padrões para reduzir alucinações</li>
+            <li data-i="offer.c3l3">Integração à rotina real</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TOOLS SHOWCASE ===================== -->
+  <section class="S" id="ferramentas">
+    <div class="wrap">
+      <div class="head reveal">
+        <span class="eyebrow" style="justify-content:center" data-i="tools.ey">Ferramentas de apoio à aula</span>
+        <h2 class="title" data-i="tools.h">A tecnologia entra para o aprendizado acontecer.</h2>
+        <p class="sub" data-i="tools.s">Não são produtos à venda. São duas ferramentas que uso na aula: uma mantém a turma junta ao vivo, a outra deixa tudo registrado depois.</p>
+      </div>
+
+      <div class="tools-grid reveal">
+        <div class="tool-copy">
+          <div class="tabs" role="tablist" aria-label="Escolher ferramenta">
+            <button id="tab-pulso" class="on" role="tab" aria-selected="true">◗ <span data-i="tools.tabPulso">Pulso da Turma</span></button>
+            <button id="tab-trilha" role="tab" aria-selected="false">◷ <span data-i="tools.tabTrilha">Trilha da Turma</span></button>
+          </div>
+
+          <!-- PULSO panel -->
+          <div id="panel-pulso">
+            <div class="tool-badge" data-i="tools.live">● durante a aula</div>
+            <h3 data-i="tools.pulsoH">A turma, em tempo real</h3>
+            <p data-i="tools.pulsoP">Enquanto explico, a turma responde no celular: perguntas, enquetes e um termômetro de compreensão. Eu vejo na hora quem acompanhou e ajusto o ritmo, ninguém fica para trás em silêncio.</p>
+            <ul class="tool-feats">
+              <li><span class="tk">✓</span><span data-i="tools.pf1">Perguntas ao vivo para fixar o que acabei de explicar</span></li>
+              <li><span class="tk">✓</span><span data-i="tools.pf2">Dúvidas anônimas, respondidas na hora</span></li>
+              <li><span class="tk">✓</span><span data-i="tools.pf3">Termômetro de compreensão que guia o ritmo</span></li>
+            </ul>
+            <div class="meter" aria-hidden="true">
+              <div class="mh"><span data-i="tools.meterL">pulso da turma agora</span><b id="meterPct">84%</b></div>
+              <div class="mrow"><span class="ml" data-i="tools.m1">Acompanho bem</span><div class="mtrack"><div class="mfill" data-w="84"></div></div><span class="mv">84%</span></div>
+              <div class="mrow"><span class="ml" data-i="tools.m2">Tenho dúvida</span><div class="mtrack"><div class="mfill" data-w="12"></div></div><span class="mv">12%</span></div>
+              <div class="mrow"><span class="ml" data-i="tools.m3">Perdido</span><div class="mtrack"><div class="mfill" data-w="4"></div></div><span class="mv">4%</span></div>
+            </div>
+          </div>
+
+          <!-- TRILHA panel -->
+          <div id="panel-trilha" hidden>
+            <div class="tool-badge" data-i="tools.after">↻ depois da aula</div>
+            <h3 data-i="tools.trilhaH">A referência que continua com você</h3>
+            <p data-i="tools.trilhaP">Tudo o que praticamos vira uma apostila digital: conteúdo, tarefas e os prompts que você montou. Não é teoria solta numa pasta, é uma trilha organizada que você consulta quando precisar.</p>
+            <ul class="tool-feats">
+              <li><span class="tk">✓</span><span data-i="tools.tf1">Conteúdo e exercícios organizados por aula</span></li>
+              <li><span class="tk">✓</span><span data-i="tools.tf2">Seu repertório de prompts, pronto para reusar</span></li>
+              <li><span class="tk">✓</span><span data-i="tools.tf3">Suporte por ~15 dias após o curso</span></li>
+            </ul>
+            <div class="meter" aria-hidden="true" style="display:flex;align-items:center;gap:14px">
+              <div style="font-size:1.9rem">📓</div>
+              <div style="font-size:.9rem;color:var(--ink-soft)" data-i="tools.trilhaNote">Uma trilha que não acaba no último slide: fica como consulta permanente para o dia a dia.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- animated device stage -->
+        <div>
+          <div class="stage">
+            <div class="stage-glow" aria-hidden="true"></div>
+            <div class="device" role="img" aria-label="Telas reais das ferramentas Pulso e Trilha da Turma">
+              <span class="notch"></span>
+              <div class="screens" id="screens"><!-- imgs injected by JS --></div>
+            </div>
+          </div>
+          <div class="stage-dots" id="dots" role="tablist" aria-label="Telas"></div>
+          <div class="stage-cap" id="cap"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CERTIFICATE ===================== -->
+  <section class="S cert" id="certificado">
+    <div class="wrap">
+      <div class="cert-grid">
+        <div class="cert-body reveal">
+          <span class="eyebrow" data-i="cert.ey">Certificado validado</span>
+          <h2 class="title" data-i="cert.h">No fim, um certificado que vale.</h2>
+          <p data-i="cert.p">Ao concluir o curso, o próprio site emite um certificado validado, com carga horária e ementa. Não é um papel qualquer: é comprovação real da capacitação para você e sua instituição.</p>
+          <ul class="cert-points">
+            <li><span class="tk">✓</span><span data-i="cert.l1">Emitido automaticamente pelo site ao concluir</span></li>
+            <li><span class="tk">✓</span><span data-i="cert.l2">Com carga horária e ementa detalhadas</span></li>
+            <li><span class="tk">✓</span><span data-i="cert.l3">Verificável, para apresentar onde precisar</span></li>
+          </ul>
+        </div>
+        <div class="diploma reveal" role="img" aria-label="Exemplo de certificado validado da PensoIA">
+          <img class="dlogo" id="dlogo" src="../../../images/brand/glyph-wordmark_bg.navy.svg" alt="">
+          <div class="dk" data-i="cert.dk">Certificado de conclusão</div>
+          <div class="dt" data-i="cert.dt">IA Generativa & Engenharia de Prompts</div>
+          <div class="dn" data-i="cert.dn">aplicada ao trabalho jurídico</div>
+          <div class="dmeta">
+            <span data-i="cert.dm1">Carga horária: 16h</span>
+            <span data-i="cert.dm2">Ementa completa</span>
+            <span data-i="cert.dm3">Código verificável</span>
+          </div>
+          <div class="dline"></div>
+          <div class="dfoot" data-i="cert.df">Emitido por PensoIA · EPBF Soluções em Tecnologia</div>
+          <div class="seal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== CONTACT / SUPERNOVA ===================== -->
+<section class="contact" id="contato">
+  <canvas id="nova" aria-hidden="true"></canvas>
+  <div class="wrap reveal">
+    <h2 data-i="contact.h">Vamos conversar sobre a sua turma?</h2>
+    <p class="tagline" data-i="contact.t">pensamento humano, <b>inteligência ampliada</b></p>
+    <p class="tagline" data-i="contact.p">Me conte o contexto do seu escritório, tribunal ou órgão. Respondo com um caminho prático, humano e sem jargão.</p>
+    <a class="cta lg" href="https://wa.me/557998014253" target="_blank" rel="noopener" data-i="contact.cta">Conversar pelo WhatsApp</a>
+    <div class="contacts">
+      <a href="mailto:contato@pensoia.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>contato@pensoia.com</a>
+      <a href="https://www.linkedin.com/in/elderpbf/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 0 5 8.5a2.5 2.5 0 0 0-.02-5ZM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-.95 1.83-1.95 3.77-1.95 4.03 0 4.78 2.5 4.78 5.75V21h-4v-5c0-1.2-.02-2.74-1.67-2.74-1.67 0-1.93 1.3-1.93 2.65V21H9z"/></svg>LinkedIn</a>
+      <a href="https://www.instagram.com/elderpbf/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Instagram</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <img id="logo-foot" src="../../../images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA">
+    <small data-i="foot.copy">© 2026 PensoIA · EPBF Soluções em Tecnologia · pensamento humano, inteligência ampliada</small>
+    <div class="soc">
+      <a href="https://wa.me/557998014253" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2Zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.8.9.9-2.7-.2-.3A8 8 0 1 1 12 20Zm4.4-6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.1.1-.3 0-.4l-.7-1.7c-.2-.5-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2c0 1.3 1 2.6 1.1 2.7.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1Z"/></svg></a>
+      <a href="https://www.linkedin.com/in/elderpbf/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 0 5 8.5a2.5 2.5 0 0 0-.02-5ZM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-.95 1.83-1.95 3.77-1.95 4.03 0 4.78 2.5 4.78 5.75V21h-4v-5c0-1.2-.02-2.74-1.67-2.74-1.67 0-1.93 1.3-1.93 2.65V21H9z"/></svg></a>
+      <a href="https://www.instagram.com/elderpbf/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ===================== ASSETS ===================== */
+const LOGO={navy:'../../../images/brand/glyph-wordmark_bg.navy.svg',transp:'../../../images/brand/glyph-wordmark_bg.transp.svg'};
+const PRINTS=[
+  {base:'pulso-risco',     tool:'pulso', cap:{pt:'Pulso · pergunta sobre gestão de risco',es:'Pulso · pregunta sobre gestión de riesgo',en:'Pulso · risk-management question'}},
+  {base:'pulso-markdown',  tool:'pulso', cap:{pt:'Pulso · pergunta sobre prompts em markdown',es:'Pulso · pregunta sobre prompts en markdown',en:'Pulso · markdown prompt question'}},
+  {base:'pulso-contexto',  tool:'pulso', cap:{pt:'Pulso · pergunta sobre janela de contexto',es:'Pulso · pregunta sobre ventana de contexto',en:'Pulso · context-window question'}},
+  {base:'trilha-home',     tool:'trilha',cap:{pt:'Trilha · início, suas aulas organizadas',es:'Trilha · inicio, tus clases organizadas',en:'Trilha · home, your classes organized'}},
+  {base:'trilha-aula',     tool:'trilha',cap:{pt:'Trilha · conteúdo e materiais da aula',es:'Trilha · contenido y materiales de la clase',en:'Trilha · class content and materials'}},
+];
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let theme='dark', lang='pt';
+
+/* ===================== I18N ===================== */
+const I18N={
+ pt:{}, /* PT é o markup base, capturado abaixo */
+ en:{
+  "nav.about":"Who teaches","nav.offer":"What I offer","nav.tools":"Tools","nav.cert":"Certificate","nav.cta":"Talk to Élder",
+  "hero.kick":"Teaching & consulting in AI applied to Law","hero.t1":"Human thinking,","hero.t2":"amplified intelligence.",
+  "hero.pre":"Learn to use AI to","hero.lead":"Classes and consulting with Élder: someone who lived the Judiciary from the inside and learned the technology to translate it, jargon-free, into something you use the next day.",
+  "hero.cta1":"See how I teach","hero.cta2":"What I offer","hero.role":"Instructor & consultant",
+  "hero.s1":"already trained","hero.s2":"years in the Judiciary","hero.s3":"validated certificate",
+  "about.ey":"Who teaches","about.h":"Two degrees, a routine lived from the inside.","about.r":"Law · Systems Analysis & Development · TJSE civil servant","about.role":"Law + Systems Analysis & Development",
+  "about.p1":"I'm Élder. I spent about 11 years in the Judiciary and, along the way, also graduated in systems. I know the forensic routine of deadlines and case files, and I understand what happens behind AI models.",
+  "about.p2":"That's why I can translate AI without tech spectacle or empty promises. The idea is simple: AI facilitates, you stay in command of the decision and the responsibility.",
+  "about.c1":"professionals trained","about.c2":"~11 years","about.c3":"courts, agencies and firms",
+  "offer.ey":"What I offer","offer.h":"Teaching first. Consulting when it makes sense.","offer.s":"The focus is enabling you and your team to use AI safely. When the next step is to automate, consulting steps in to help.",
+  "offer.c1h":"Classes & courses","offer.c1p":"Prompt engineering and generative AI, from concept to practice, in the language of those who litigate and judge.",
+  "offer.c1l1":"In-person or hybrid, in ~4h sessions","offer.c1l2":"Lecture + hands-on lab","offer.c1l3":"Validated certificate at the end",
+  "offer.c2h":"AI consulting","offer.c2p":"Once the team gets the terrain, I help design automation of legal processes with care.",
+  "offer.c2l1":"Diagnosis of workflows and opportunities","offer.c2l2":"Human review and confidentiality at the core","offer.c2l3":"Implementation follow-up",
+  "offer.c3h":"Workflow optimization","offer.c3p":"A reusable prompt repertoire and more consistent routines for daily work.",
+  "offer.c3l1":"Ready-to-reuse prompts","offer.c3l2":"Patterns to reduce hallucinations","offer.c3l3":"Built into the real routine",
+  "tools.ey":"Class-support tools","tools.h":"Technology steps in so learning happens.","tools.s":"They're not products for sale. They're two tools I use in class: one keeps the group together live, the other keeps everything on record afterwards.",
+  "tools.tabPulso":"Pulso da Turma","tools.tabTrilha":"Trilha da Turma",
+  "tools.live":"● during class","tools.after":"↻ after class",
+  "tools.pulsoH":"The class, in real time","tools.pulsoP":"As I explain, the class answers on their phone: questions, polls and a comprehension thermometer. I see live who kept up and adjust the pace, no one is left behind in silence.",
+  "tools.pf1":"Live questions to lock in what I just explained","tools.pf2":"Anonymous doubts, answered on the spot","tools.pf3":"A comprehension thermometer that guides the pace",
+  "tools.meterL":"class pulse right now","tools.m1":"Following well","tools.m2":"Have a doubt","tools.m3":"Lost",
+  "tools.trilhaH":"The reference that stays with you","tools.trilhaP":"Everything we practice becomes a digital workbook: content, tasks and the prompts you built. Not loose theory in a folder, but an organized trail you consult whenever you need.",
+  "tools.tf1":"Content and exercises organized by class","tools.tf2":"Your prompt repertoire, ready to reuse","tools.tf3":"Support for ~15 days after the course",
+  "tools.trilhaNote":"A trail that doesn't end at the last slide: it stays as a permanent reference for daily work.",
+  "cert.ey":"Validated certificate","cert.h":"At the end, a certificate that counts.","cert.p":"On completing the course, the site itself issues a validated certificate, with workload and syllabus. Not just any paper: real proof of training for you and your institution.",
+  "cert.l1":"Issued automatically by the site on completion","cert.l2":"With detailed workload and syllabus","cert.l3":"Verifiable, to present wherever you need",
+  "cert.dk":"Certificate of completion","cert.dt":"Generative AI & Prompt Engineering","cert.dn":"applied to legal work",
+  "cert.dm1":"Workload: 16h","cert.dm2":"Full syllabus","cert.dm3":"Verifiable code","cert.df":"Issued by PensoIA · EPBF Soluções em Tecnologia",
+  "contact.h":"Shall we talk about your class?","contact.t":"human thinking, <b>amplified intelligence</b>","contact.p":"Tell me the context of your firm, court or agency. I reply with a practical, human path, no jargon.","contact.cta":"Chat on WhatsApp",
+  "foot.copy":"© 2026 PensoIA · EPBF Soluções em Tecnologia · human thinking, amplified intelligence"
+ },
+ es:{
+  "nav.about":"Quién enseña","nav.offer":"Qué ofrezco","nav.tools":"Herramientas","nav.cert":"Certificado","nav.cta":"Hablar con Élder",
+  "hero.kick":"Enseñanza y consultoría en IA aplicada al Derecho","hero.t1":"Pensamiento humano,","hero.t2":"inteligencia ampliada.",
+  "hero.pre":"Aprende a usar la IA para","hero.lead":"Clases y consultoría con Élder: alguien que vivió el Poder Judicial por dentro y aprendió la tecnología para traducirla, sin jerga, en algo que usas al día siguiente.",
+  "hero.cta1":"Ver cómo enseño","hero.cta2":"Qué ofrezco","hero.role":"Instructor y consultor",
+  "hero.s1":"ya capacitados","hero.s2":"años en el Poder Judicial","hero.s3":"certificado validado",
+  "about.ey":"Quién enseña","about.h":"Dos formaciones, una rutina vivida por dentro.","about.r":"Derecho · Análisis y Desarrollo de Sistemas · funcionario del TJSE","about.role":"Derecho + Análisis y Desarrollo de Sistemas",
+  "about.p1":"Soy Élder. Pasé cerca de 11 años en el Poder Judicial y, en el camino, también me formé en sistemas. Conozco la rutina forense de plazos y autos, y entiendo lo que ocurre detrás de los modelos de IA.",
+  "about.p2":"Por eso traduzco la IA sin espectáculo técnico ni promesas vacías. La idea es simple: la IA facilita, tú sigues al mando de la decisión y la responsabilidad.",
+  "about.c1":"profesionales formados","about.c2":"~11 años","about.c3":"tribunales, órganos y despachos",
+  "offer.ey":"Qué ofrezco","offer.h":"Primero enseñar. Consultoría cuando tiene sentido.","offer.s":"El foco es capacitarte a ti y a tu equipo para usar IA con seguridad. Cuando el paso siguiente es automatizar, entra la consultoría.",
+  "offer.c1h":"Clases y cursos","offer.c1p":"Ingeniería de prompts e IA generativa, del concepto a la práctica, en el lenguaje de quien litiga y juzga.",
+  "offer.c1l1":"Presencial o híbrido, en sesiones de ~4h","offer.c1l2":"Clase expositiva + laboratorio práctico","offer.c1l3":"Certificado validado al final",
+  "offer.c2h":"Consultoría en IA","offer.c2p":"Cuando el equipo ya entiende el terreno, ayudo a diseñar automatizaciones de procesos jurídicos con cuidado.",
+  "offer.c2l1":"Diagnóstico de flujos y oportunidades","offer.c2l2":"Revisión humana y confidencialidad en el centro","offer.c2l3":"Acompañamiento de la implementación",
+  "offer.c3h":"Optimización de flujos","offer.c3p":"Un repertorio de prompts reutilizable y rutinas más consistentes para el día a día.",
+  "offer.c3l1":"Prompts listos para reusar","offer.c3l2":"Patrones para reducir alucinaciones","offer.c3l3":"Integrado a la rutina real",
+  "tools.ey":"Herramientas de apoyo a la clase","tools.h":"La tecnología entra para que el aprendizaje ocurra.","tools.s":"No son productos a la venta. Son dos herramientas que uso en clase: una mantiene al grupo unido en vivo, la otra deja todo registrado después.",
+  "tools.tabPulso":"Pulso da Turma","tools.tabTrilha":"Trilha da Turma",
+  "tools.live":"● durante la clase","tools.after":"↻ después de la clase",
+  "tools.pulsoH":"La clase, en tiempo real","tools.pulsoP":"Mientras explico, la clase responde en el móvil: preguntas, encuestas y un termómetro de comprensión. Veo al instante quién siguió y ajusto el ritmo, nadie se queda atrás en silencio.",
+  "tools.pf1":"Preguntas en vivo para fijar lo recién explicado","tools.pf2":"Dudas anónimas, respondidas al momento","tools.pf3":"Un termómetro de comprensión que guía el ritmo",
+  "tools.meterL":"pulso de la clase ahora","tools.m1":"Sigo bien","tools.m2":"Tengo una duda","tools.m3":"Perdido",
+  "tools.trilhaH":"La referencia que se queda contigo","tools.trilhaP":"Todo lo que practicamos se vuelve un cuaderno digital: contenido, tareas y los prompts que armaste. No es teoría suelta en una carpeta, sino un recorrido organizado que consultas cuando lo necesites.",
+  "tools.tf1":"Contenido y ejercicios organizados por clase","tools.tf2":"Tu repertorio de prompts, listo para reusar","tools.tf3":"Soporte por ~15 días tras el curso",
+  "tools.trilhaNote":"Un recorrido que no termina en la última diapositiva: queda como consulta permanente.",
+  "cert.ey":"Certificado validado","cert.h":"Al final, un certificado que vale.","cert.p":"Al concluir el curso, el propio sitio emite un certificado validado, con carga horaria y temario. No es cualquier papel: es prueba real de la capacitación para ti y tu institución.",
+  "cert.l1":"Emitido automáticamente por el sitio al concluir","cert.l2":"Con carga horaria y temario detallados","cert.l3":"Verificable, para presentar donde necesites",
+  "cert.dk":"Certificado de finalización","cert.dt":"IA Generativa e Ingeniería de Prompts","cert.dn":"aplicada al trabajo jurídico",
+  "cert.dm1":"Carga horaria: 16h","cert.dm2":"Temario completo","cert.dm3":"Código verificable","cert.df":"Emitido por PensoIA · EPBF Soluções em Tecnologia",
+  "contact.h":"¿Hablamos sobre tu grupo?","contact.t":"pensamiento humano, <b>inteligencia ampliada</b>","contact.p":"Cuéntame el contexto de tu despacho, tribunal u órgano. Respondo con un camino práctico, humano y sin jerga.","contact.cta":"Hablar por WhatsApp",
+  "foot.copy":"© 2026 PensoIA · EPBF Soluções em Tecnologia · pensamiento humano, inteligencia ampliada"
+ }
+};
+/* capture PT base */
+document.querySelectorAll('[data-i]').forEach(el=>{I18N.pt[el.getAttribute('data-i')]=el.innerHTML;});
+const ROT={
+  pt:["ganhar tempo.","decidir melhor.","reduzir o retrabalho.","ter mais segurança."],
+  en:["save time.","decide better.","reduce rework.","gain more safety."],
+  es:["ganar tiempo.","decidir mejor.","reducir el retrabajo.","tener más seguridad."]
+};
+
+function applyLang(l){
+  lang=l;
+  document.documentElement.lang = l==='pt'?'pt-BR':l;
+  const d=I18N[l];
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i'); if(d[k]!=null) el.innerHTML=d[k];});
+  document.querySelectorAll('.lang button').forEach(b=>b.classList.toggle('on',b.dataset.lang===l));
+  rot.words=ROT[l]; rot.i=0; rotEl.firstElementChild.textContent=rot.words[0];
+  updateCap();
+}
+document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>applyLang(b.dataset.lang)));
+
+/* ===================== THEME ===================== */
+function applyTheme(t){
+  theme=t;
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('theme').textContent = t==='dark'?'☾':'☀';
+  const v = t==='dark'? LOGO.navy : LOGO.transp;
+  document.getElementById('logo').src=v;
+  document.getElementById('logo-foot').src=v;
+  document.getElementById('dlogo').src=v;
+  syncScreens();
+  initField(); initNova();
+}
+document.getElementById('theme').addEventListener('click',()=>applyTheme(theme==='dark'?'light':'dark'));
+
+/* ===================== COMPLETING PHRASE (e2) ===================== */
+const rotEl=document.getElementById('rot');
+const rot={words:ROT.pt,i:0};
+if(!reduce) setInterval(()=>{
+  if(!rot.words.length)return;
+  rot.i=(rot.i+1)%rot.words.length;
+  const s=rotEl.firstElementChild;
+  s.style.transition='transform .45s var(--ease,ease),opacity .45s';s.style.opacity=0;s.style.transform='translateY(-70%)';
+  setTimeout(()=>{s.textContent=rot.words[rot.i];s.style.transition='none';s.style.transform='translateY(70%)';
+    requestAnimationFrame(()=>{s.style.transition='transform .45s,opacity .45s';s.style.opacity=1;s.style.transform='none';});},450);
+},2800);
+
+/* ===================== TOOLS: tabs + device stage ===================== */
+const screensEl=document.getElementById('screens'), dotsEl=document.getElementById('dots'), capEl=document.getElementById('cap');
+let curTool='pulso', stageIdx=0, stageTimer=null;
+function toolList(){return PRINTS.map((p,i)=>({...p,i})).filter(p=>p.tool===curTool);}
+function srcFor(p){return `../../../images/app/${p.base}-${theme}.jpg`;}
+function buildScreens(){
+  const list=toolList();
+  screensEl.innerHTML=''; dotsEl.innerHTML='';
+  list.forEach((p,k)=>{
+    const img=document.createElement('img');
+    img.src=srcFor(p); img.alt=''; img.dataset.k=k;
+    if(k===0)img.classList.add('show');
+    screensEl.appendChild(img);
+    const dot=document.createElement('button');
+    dot.setAttribute('role','tab'); dot.setAttribute('aria-label','Tela '+(k+1));
+    dot.addEventListener('click',()=>{showScreen(k,true);});
+    dotsEl.appendChild(dot);
+  });
+  stageIdx=0; markDots(); updateCap(); armTimer();
+}
+function showScreen(k,manual){
+  const imgs=[...screensEl.children]; if(!imgs.length)return;
+  k=(k+imgs.length)%imgs.length;
+  imgs.forEach((im,j)=>im.classList.toggle('show',j===k));
+  stageIdx=k; markDots(); updateCap();
+  if(manual)armTimer();
+}
+function markDots(){
+  [...dotsEl.children].forEach((d,j)=>{
+    d.classList.toggle('on',j===stageIdx);
+    d.classList.remove('run'); void d.offsetWidth;
+    if(j===stageIdx && !reduce) d.classList.add('run');
+  });
+}
+function updateCap(){
+  const list=toolList(); const p=list[stageIdx]; if(!p)return;
+  capEl.textContent=p.cap[lang]||p.cap.pt;
+}
+function armTimer(){
+  clearTimeout(stageTimer);
+  if(reduce)return;
+  stageTimer=setTimeout(()=>showScreen(stageIdx+1,false),5000);
+}
+function syncScreens(){
+  const list=toolList();
+  [...screensEl.children].forEach((im,k)=>{ if(list[k]) im.src=srcFor(list[k]); });
+}
+function setTool(t){
+  curTool=t;
+  document.getElementById('tab-pulso').classList.toggle('on',t==='pulso');
+  document.getElementById('tab-trilha').classList.toggle('on',t==='trilha');
+  document.getElementById('tab-pulso').setAttribute('aria-selected',t==='pulso');
+  document.getElementById('tab-trilha').setAttribute('aria-selected',t==='trilha');
+  document.getElementById('panel-pulso').hidden = t!=='pulso';
+  document.getElementById('panel-trilha').hidden = t!=='trilha';
+  buildScreens();
+}
+document.getElementById('tab-pulso').addEventListener('click',()=>setTool('pulso'));
+document.getElementById('tab-trilha').addEventListener('click',()=>setTool('trilha'));
+
+/* meter fills on view */
+let meterRan=false;
+const meterObs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!meterRan){
+  meterRan=true; document.querySelectorAll('.mfill').forEach(f=>f.style.width=f.dataset.w+'%');
+}});},{threshold:.4});
+meterObs.observe(document.getElementById('ferramentas'));
+
+/* ===================== HERO CONSTELLATION FIELD (i1, mouse-follow) ===================== */
+let fieldRAF=null;
+function initField(){
+  const c=document.getElementById('field'); if(!c)return; const ctx=c.getContext('2d');
+  let W,H,DPR=Math.min(devicePixelRatio||1,2);
+  function size(){const h=c.parentElement.offsetHeight;W=c.width=innerWidth*DPR;H=c.height=h*DPR;c.style.width='100%';c.style.height=h+'px';}
+  size();
+  const NODE=getComputedStyle(document.documentElement).getPropertyValue('--node').trim().replace(/'/g,'')||'125,232,214';
+  const N=innerWidth<700?44:84;
+  const pts=[];
+  for(let i=0;i<N;i++)pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.18*DPR,vy:(Math.random()-.5)*.18*DPR,r:(Math.random()*1.5+.6)*DPR});
+  const mouse={x:W/2,y:H*.4,active:false};
+  c.parentElement.onmousemove=e=>{const r=c.getBoundingClientRect();mouse.x=(e.clientX-r.left)*DPR;mouse.y=(e.clientY-r.top)*DPR;mouse.active=true;};
+  c.parentElement.onmouseleave=()=>mouse.active=false;
+  cancelAnimationFrame(fieldRAF);
+  const LINK=(W<1200*DPR)?128*DPR:150*DPR;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    for(const p of pts){
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+      if(mouse.active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.hypot(dx,dy);if(d<160*DPR&&d>0){const f=(160*DPR-d)/(160*DPR)*.55;p.x+=dx/d*f;p.y+=dy/d*f;}}
+    }
+    for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+      const a=pts[i],b=pts[j],d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<LINK){const o=(1-d/LINK)*.5;ctx.strokeStyle='rgba('+NODE+','+o+')';ctx.lineWidth=DPR*.6;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    }
+    if(mouse.active){for(const p of pts){const d=Math.hypot(p.x-mouse.x,p.y-mouse.y);if(d<200*DPR){const o=(1-d/(200*DPR))*.8;ctx.strokeStyle='rgba('+NODE+','+o+')';ctx.lineWidth=DPR*.8;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(mouse.x,mouse.y);ctx.stroke();}}}
+    for(const p of pts){ctx.fillStyle='rgba('+NODE+',.9)';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();}
+    if(!reduce)fieldRAF=requestAnimationFrame(frame);
+  }
+  frame();
+  addEventListener('resize',size,{passive:true});
+}
+
+/* ===================== SIGNATURE SPARK + TRAIL ===================== */
+const journey=document.querySelector('.journey'), spark=document.getElementById('spark'), trail=document.getElementById('trail');
+function onScroll(){
+  document.getElementById('hdr').classList.toggle('scrolled',scrollY>30);
+  const r=journey.getBoundingClientRect();
+  const total=r.height; const passed=Math.min(Math.max(window.innerHeight*0.5 - r.top,0),total);
+  if(spark){spark.style.top=(r.top+passed)+'px';}
+  if(trail){trail.style.height=passed+'px';}
+}
+addEventListener('scroll',onScroll,{passive:true});
+addEventListener('resize',onScroll);
+
+/* ===================== SUPERNOVA (contacts) ===================== */
+let novaRAF=null, novaT=0, novaFired=false;
+function initNova(){
+  const c=document.getElementById('nova'); if(!c)return; const ctx=c.getContext('2d');
+  let DPR=Math.min(devicePixelRatio||1,2),W,H;
+  function size(){W=c.width=c.offsetWidth*DPR;H=c.height=c.offsetHeight*DPR;}
+  size();
+  const NODE=getComputedStyle(document.documentElement).getPropertyValue('--node').trim().replace(/'/g,'')||'125,232,214';
+  const cx=W/2, cy=H*0.62;
+  const rays=64, parts=[];
+  for(let i=0;i<rays;i++){const a=(i/rays)*Math.PI*2;parts.push({a,len:(Math.random()*.5+.5),sp:Math.random()*.4+.6});}
+  cancelAnimationFrame(novaRAF);
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const t=Math.min(novaT/120,1);
+    const ease=1-Math.pow(1-t,3);
+    const R=ease*Math.min(W,H)*0.5;
+    // core glow
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.1+20);
+    g.addColorStop(0,'rgba('+NODE+','+(0.5*(1-t*0.5))+')');
+    g.addColorStop(.5,'rgba('+NODE+','+(0.16*(1-t*0.4))+')');
+    g.addColorStop(1,'rgba('+NODE+',0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.1+20,0,7);ctx.fill();
+    // rays
+    for(const p of parts){
+      const rr=R*p.len; const x=cx+Math.cos(p.a)*rr, y=cy+Math.sin(p.a)*rr;
+      const lg=ctx.createRadialGradient(x,y,0,x,y,4*DPR);
+      lg.addColorStop(0,'rgba('+NODE+','+(0.8*(1-t*0.6))+')');lg.addColorStop(1,'rgba('+NODE+',0)');
+      ctx.fillStyle=lg;ctx.beginPath();ctx.arc(x,y,4*DPR,0,7);ctx.fill();
+      ctx.strokeStyle='rgba('+NODE+','+(0.12*(1-t))+')';ctx.lineWidth=DPR;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();
+    }
+    // bright center seed
+    ctx.fillStyle='rgba('+NODE+','+(1-t*0.3)+')';ctx.beginPath();ctx.arc(cx,cy,(6-t*3)*DPR,0,7);ctx.fill();
+    if(novaT<140 && !reduce){novaT++;novaRAF=requestAnimationFrame(frame);}
+  }
+  if(reduce){novaT=120;frame();} else if(novaFired){novaT=120;frame();}
+}
+const novaObs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!novaFired){novaFired=true;novaT=0;initNova();}});},{threshold:.4});
+novaObs.observe(document.getElementById('contato'));
+
+/* ===================== SCROLL REVEAL ===================== */
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.14});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ===================== MOBILE NAV ===================== */
+document.getElementById('burger').addEventListener('click',()=>{
+  const l=document.querySelector('.nav-links');
+  const open=l.style.display==='flex';
+  l.style.cssText=open?'':'display:flex;position:fixed;top:62px;left:0;right:0;flex-direction:column;background:var(--bg);padding:20px 24px;border-bottom:1px solid var(--line);gap:16px;z-index:70';
+});
+
+/* ===================== INIT ===================== */
+applyLang('pt'); applyTheme('dark'); setTool('pulso'); onScroll();
+</script>
+</body>
+</html>

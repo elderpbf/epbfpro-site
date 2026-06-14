@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PensoIA — A Travessia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --teal-light:#5eead4; --accent:#7de8d6; --green:#047857;
+}
+[data-theme="light"]{
+  --bg:#f6f4ee; --paper:#fffdf8; --ink:#0a1838; --ink-soft:#475172; --ink-faint:#8a91a8;
+  --line:rgba(10,24,56,.12); --rule:rgba(10,24,56,.18);
+  --brand:var(--teal-dark); --brand-2:var(--green); --halo:rgba(20,184,166,.14);
+  --logo-url:url('../../../images/brand/glyph-wordmark_bg.transp.svg');
+  --app-url:url('../../../images/app/student-light.jpg');
+  --navy-panel:#061a51; --navy-ink:#eaf1ff;
+}
+[data-theme="dark"]{
+  --bg:#050d24; --paper:#0a1740; --ink:#eef3ff; --ink-soft:#a9b9e0; --ink-faint:#6c7faf;
+  --line:rgba(125,232,214,.16); --rule:rgba(125,232,214,.26);
+  --brand:var(--teal-light); --brand-2:var(--teal); --halo:rgba(20,184,166,.22);
+  --logo-url:url('../../../images/brand/glyph-wordmark_bg.navy.svg');
+  --app-url:url('../../../images/app/student-dark.jpg');
+  --navy-panel:#020a20; --navy-ink:#eaf1ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;
+  -webkit-font-smoothing:antialiased;transition:background .5s,color .5s;overflow-x:hidden}
+::selection{background:var(--teal);color:#04102f}
+:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+a{color:inherit}
+
+/* grain texture */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;mix-blend-mode:multiply;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+[data-theme="dark"] body::after{mix-blend-mode:screen;opacity:.04}
+
+/* ===== fixed chrome ===== */
+.top{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+  padding:16px 26px;backdrop-filter:blur(10px);background:color-mix(in srgb,var(--bg) 72%,transparent);border-bottom:1px solid var(--line)}
+.logo{height:26px;width:148px;background:var(--logo-url) left center/contain no-repeat}
+.ctrls{display:flex;gap:9px}
+.tg{font:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);
+  border-radius:999px;padding:7px 12px;cursor:pointer;transition:.2s}
+.tg:hover{border-color:var(--rule);color:var(--ink)} .tg b{color:var(--brand)}
+
+/* progress rail */
+.rail{position:fixed;left:26px;top:50%;transform:translateY(-50%);z-index:45;display:flex;flex-direction:column;gap:14px}
+@media(max-width:760px){.rail{display:none}}
+.rail a{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--rule);background:transparent;transition:.3s;position:relative}
+.rail a.active{background:var(--brand);border-color:var(--brand);box-shadow:0 0 0 5px var(--halo)}
+.rail a span{position:absolute;left:18px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);opacity:0;transition:.3s;pointer-events:none}
+.rail a:hover span,.rail a.active span{opacity:1}
+
+/* ===== scene scaffolding ===== */
+.scene{min-height:100vh;display:grid;place-items:center;padding:120px 26px;position:relative}
+.wrap{max-width:760px;width:100%}
+.num{font-family:'Lora',serif;font-style:italic;color:var(--brand);font-size:15px;letter-spacing:.04em;margin-bottom:18px;
+  display:flex;align-items:center;gap:12px}
+.num::after{content:"";height:1px;flex:1;background:var(--rule)}
+.lead{font-family:'Lora',serif;font-weight:500;line-height:1.16;letter-spacing:-.01em;
+  font-size:clamp(28px,5.2vw,52px)}
+.lead em{font-style:italic;color:var(--brand)}
+.body{margin-top:22px;font-size:clamp(16px,1.9vw,19px);color:var(--ink-soft);max-width:60ch}
+
+/* reveal animation */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.18s}.reveal.d3{transition-delay:.30s}
+
+/* SCENE 1 — the fog / overwhelm */
+#s1{background:radial-gradient(120% 100% at 50% 30%,var(--halo),transparent 60%)}
+.tagline-line{font-family:'Comfortaa',sans-serif;font-size:14px;color:var(--ink-faint);margin-top:30px}
+/* drifting noise words */
+.fog{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.fog span{position:absolute;font-family:'Lora',serif;font-style:italic;color:var(--ink-faint);opacity:.18;white-space:nowrap;
+  animation:drift linear infinite}
+@keyframes drift{from{transform:translateX(8vw)}to{transform:translateX(-8vw)}}
+#s1 .wrap{position:relative;z-index:1}
+
+/* SCENE counters reserved height */
+.counter{height:clamp(64px,11vw,118px);display:flex;align-items:baseline;gap:14px;margin-top:8px}
+.counter b{font-family:'Lora',serif;font-weight:600;color:var(--brand);font-size:clamp(56px,11vw,118px);line-height:.9;
+  font-variant-numeric:tabular-nums}
+.counter .u{font-size:18px;color:var(--ink-soft);max-width:18ch;line-height:1.3}
+
+/* SCENE — risk twin panels */
+.twin{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
+@media(max-width:640px){.twin{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:14px;padding:22px;background:var(--paper)}
+.card.bad{border-style:dashed;border-color:rgba(192,57,43,.5)}
+.card h4{font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px;font-weight:600}
+.card.bad h4{color:#c0392b}.card.good h4{color:var(--brand)}
+.card p{font-family:'Lora',serif;font-size:15px;line-height:1.55;color:var(--ink-soft)}
+[data-theme="dark"] .card.bad h4{color:#ff8a7a}
+[data-theme="dark"] .card.bad{border-color:rgba(255,138,122,.5)}
+
+/* method list */
+.steps{margin-top:30px;border-top:1px solid var(--rule)}
+.step{display:grid;grid-template-columns:auto 1fr;gap:20px;padding:20px 0;border-bottom:1px solid var(--line);align-items:start}
+.step .ix{font-family:'Lora',serif;font-style:italic;color:var(--brand);font-size:15px;padding-top:2px;min-width:42px}
+.step h4{font-size:17px;font-weight:600}
+.step p{font-size:14.5px;color:var(--ink-soft);margin-top:5px}
+
+/* platforms scene — navy block + phone */
+#s5{background:var(--navy-panel);color:var(--navy-ink)}
+#s5 .lead,#s5 .body{color:var(--navy-ink)}
+#s5 .body{color:#b9c9f5}
+#s5 .num{color:var(--teal-light)}#s5 .num::after{background:rgba(125,232,214,.3)}
+#s5 .lead em{color:var(--teal-light)}
+.platgrid{display:grid;grid-template-columns:1fr 280px;gap:34px;align-items:center;margin-top:34px}
+@media(max-width:760px){.platgrid{grid-template-columns:1fr}}
+.platrow{border-left:3px solid var(--teal);padding:6px 0 6px 18px;margin-bottom:20px}
+.platrow .when{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal-light);font-weight:600}
+.platrow h4{font-size:18px;margin:5px 0 6px}.platrow p{font-size:14.5px;color:#b9c9f5}
+.phone{justify-self:center;width:264px;max-width:80vw;aspect-ratio:264/544;border-radius:34px;border:9px solid #02091e;
+  outline:1px solid rgba(125,232,214,.25);background:var(--app-url) center/cover no-repeat;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+
+/* final / command scene */
+#s6{background:radial-gradient(120% 100% at 50% 20%,var(--halo),transparent 55%)}
+.tag-final{font-family:'Comfortaa',sans-serif;color:var(--ink-soft);font-size:15px;margin-top:18px}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.btn{font:inherit;font-weight:600;font-size:14.5px;padding:13px 22px;border-radius:12px;text-decoration:none;
+  display:inline-flex;align-items:center;gap:8px;transition:.2s;border:1px solid transparent}
+.btn.primary{background:var(--teal);color:#04102f}.btn.primary:hover{background:var(--teal-light);transform:translateY(-2px)}
+.btn.ghost{border-color:var(--rule);color:var(--ink)}.btn.ghost:hover{background:var(--paper);transform:translateY(-2px)}
+.who{margin-top:36px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.who img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--rule)}
+.who p{font-size:13.5px;color:var(--ink-soft);max-width:46ch}.who b{color:var(--ink)}
+.social{display:flex;gap:18px;margin-top:30px;font-size:13px}
+.social a{color:var(--ink-soft);text-decoration:none}.social a:hover{color:var(--brand)}
+.fin-note{margin-top:40px;font-size:12px;color:var(--ink-faint)}
+
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none}
+}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</head>
+<body>
+<a href="#s1" class="sr-only">Pular para o conteúdo</a>
+<div class="top">
+  <a href="#s1" class="logo" aria-label="PensoIA"></a>
+  <div class="ctrls">
+    <button class="tg" id="lang">🌐 <b id="langTxt">EN</b></button>
+    <button class="tg" id="theme">🌗 <span id="themeTxt">Escuro</span></button>
+  </div>
+</div>
+
+<nav class="rail" aria-label="Progresso da narrativa">
+  <a href="#s1" data-s="1"><span data-i18n="r1">o ruído</span></a>
+  <a href="#s2" data-s="2"><span data-i18n="r2">quem já cruzou</span></a>
+  <a href="#s3" data-s="3"><span data-i18n="r3">o risco</span></a>
+  <a href="#s4" data-s="4"><span data-i18n="r4">o método</span></a>
+  <a href="#s5" data-s="5"><span data-i18n="r5">o apoio</span></a>
+  <a href="#s6" data-s="6"><span data-i18n="r6">o comando</span></a>
+</nav>
+
+<main>
+  <!-- SCENE 1 : the noise -->
+  <section class="scene" id="s1" aria-labelledby="t1">
+    <div class="fog" aria-hidden="true">
+      <span style="top:18%;left:4%;animation-duration:26s">alucinação</span>
+      <span style="top:30%;left:64%;animation-duration:34s">precedente falso</span>
+      <span style="top:52%;left:12%;animation-duration:30s;font-size:22px">prompt</span>
+      <span style="top:68%;left:58%;animation-duration:38s">ChatGPT? Claude? Gemini?</span>
+      <span style="top:80%;left:22%;animation-duration:28s">por onde começo?</span>
+      <span style="top:42%;left:40%;animation-duration:44s;font-size:26px">IA generativa</span>
+    </div>
+    <div class="wrap">
+      <p class="num reveal">PensoIA</p>
+      <h1 class="lead reveal d1" id="t1" data-i18n="s1_lead">A IA chegou ao Direito como <em>ruído</em>. Promessa demais, prática de menos.</h1>
+      <p class="body reveal d2" data-i18n="s1_body">Esta página é uma travessia. Em seis cenas, do barulho ao comando: como transformar a IA em ferramenta segura para quem advoga e julga.</p>
+      <p class="tagline-line reveal d3">pensamento humano, inteligência ampliada ↓</p>
+    </div>
+  </section>
+
+  <!-- SCENE 2 : who already crossed -->
+  <section class="scene" id="s2" aria-labelledby="t2">
+    <div class="wrap">
+      <p class="num reveal">i. <span data-i18n="s2_kick">quem já cruzou</span></p>
+      <h2 class="lead reveal d1" id="t2" data-i18n="s2_lead">Você não seria o primeiro a fazer essa travessia.</h2>
+      <div class="counter reveal d2" aria-hidden="true">
+        <b id="cnt">0</b><span class="u" data-i18n="s2_unit">magistrados, desembargadores, juízes e servidores já formados.</span>
+      </div>
+      <p class="body reveal d3" data-i18n="s2_body">São <strong>600+</strong> profissionais do Judiciário, vários órgãos públicos e escritórios. Conduzido por quem tem <strong>~11 anos dentro do Judiciário</strong> — servidor no TJSE — e dupla formação: Direito e Análise e Desenvolvimento de Sistemas.</p>
+    </div>
+  </section>
+
+  <!-- SCENE 3 : the risk -->
+  <section class="scene" id="s3" aria-labelledby="t3">
+    <div class="wrap">
+      <p class="num reveal">ii. <span data-i18n="s3_kick">o risco que assusta</span></p>
+      <h2 class="lead reveal d1" id="t3" data-i18n="s3_lead">O medo é legítimo. A resposta não é evitar — é <em>blindar</em>.</h2>
+      <div class="twin">
+        <div class="card bad reveal d2">
+          <h4 data-i18n="s3_badh">sem método</h4>
+          <p data-i18n="s3_badp">"A IA me deu uma jurisprudência perfeita." Ela não existia. O risco de alucinação e precedente falso assina embaixo do seu nome.</p>
+        </div>
+        <div class="card good reveal d3">
+          <h4 data-i18n="s3_goodh">com método</h4>
+          <p data-i18n="s3_goodp">Você instrui a fonte, exige citação rastreável e impõe limites. A IA vira rascunho conferível — e o humano segue no comando.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENE 4 : the method -->
+  <section class="scene" id="s4" aria-labelledby="t4">
+    <div class="wrap">
+      <p class="num reveal">iii. <span data-i18n="s4_kick">o método</span></p>
+      <h2 class="lead reveal d1" id="t4" data-i18n="s4_lead">Uma formação que vira <em>repertório</em>, não palestra esquecível.</h2>
+      <p class="body reveal d2" data-i18n="s4_body">Certificada, presencial ou híbrida — ~12 a 16h em sessões de ~4h que misturam aula e laboratório. Você sai com prompts prontos para reusar.</p>
+      <div class="steps">
+        <div class="step reveal"><div class="ix">01</div><div><h4 data-i18n="st1h">Fundamentos de LLM</h4><p data-i18n="st1p">Como o modelo pensa, sem jargão. O que ele faz bem e onde tropeça.</p></div></div>
+        <div class="step reveal"><div class="ix">02</div><div><h4 data-i18n="st2h">Engenharia de prompt avançada</h4><p data-i18n="st2p">Instruções que devolvem respostas úteis, citáveis e revisáveis.</p></div></div>
+        <div class="step reveal"><div class="ix">03</div><div><h4 data-i18n="st3h">Gestão de risco</h4><p data-i18n="st3p">Alucinações e precedentes falsos: identificar, conferir, prevenir.</p></div></div>
+        <div class="step reveal"><div class="ix">04</div><div><h4 data-i18n="st4h">Cenário de ferramentas</h4><p data-i18n="st4p">ChatGPT, Claude, Gemini, NotebookLM — qual usar e para quê.</p></div></div>
+        <div class="step reveal"><div class="ix">05</div><div><h4 data-i18n="st5h">Laboratório prático</h4><p data-i18n="st5p">Mão na massa para construir seu repertório reutilizável de prompts.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENE 5 : support / platforms (navy) -->
+  <section class="scene" id="s5" aria-labelledby="t5">
+    <div class="wrap">
+      <p class="num reveal">iv. <span data-i18n="s5_kick">o apoio</span></p>
+      <h2 class="lead reveal d1" id="t5" data-i18n="s5_lead">A tecnologia que <em>facilita</em> — antes, durante e depois.</h2>
+      <div class="platgrid">
+        <div>
+          <div class="platrow reveal d2">
+            <span class="when" data-i18n="s5_p1when">durante a aula</span>
+            <h4 data-i18n="s5_p1h">Pulso da Turma</h4>
+            <p data-i18n="s5_p1p">Perguntas em tempo real, enquetes e um termômetro de compreensão ao vivo.</p>
+          </div>
+          <div class="platrow reveal d3">
+            <span class="when" data-i18n="s5_p2when">depois da aula</span>
+            <h4 data-i18n="s5_p2h">Trilha da Turma</h4>
+            <p data-i18n="s5_p2p">Caderno digital com conteúdo, tarefas e materiais. Referência permanente — e suporte por ~15 dias.</p>
+          </div>
+        </div>
+        <div class="phone reveal d2" role="img" aria-label="App Trilha da Turma"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENE 6 : command / contact -->
+  <section class="scene" id="s6" aria-labelledby="t6">
+    <div class="wrap">
+      <p class="num reveal">v. <span data-i18n="s6_kick">o comando</span></p>
+      <h2 class="lead reveal d1" id="t6" data-i18n="s6_lead">No fim da travessia, a IA é facilitadora. <em>Você</em> continua no comando.</h2>
+      <p class="tag-final reveal d2">pensamento humano, inteligência ampliada</p>
+      <div class="cta reveal d3">
+        <a class="btn primary" href="https://wa.me/557998014253" target="_blank" rel="noopener" data-i18n="cta_wa">Começar uma conversa</a>
+        <a class="btn ghost" href="mailto:contato@pensoia.com">contato@pensoia.com</a>
+      </div>
+      <div class="who reveal d3">
+        <img src="../../../images/profile.jpg" alt="Élder Prudente Barbosa Filho">
+        <p><b>Élder Prudente Barbosa Filho</b> — <span data-i18n="who">Direito + Análise e Desenvolvimento de Sistemas, ~11 anos no Judiciário. PensoIA / EPBF Soluções em Tecnologia.</span></p>
+      </div>
+      <div class="social reveal">
+        <a href="https://wa.me/557998014253" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="https://www.linkedin.com/in/elderpbf/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/elderpbf" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.instagram.com/elderpbf/" target="_blank" rel="noopener">Instagram</a>
+      </div>
+      <p class="fin-note">© 2026 PensoIA · EPBF Soluções em Tecnologia</p>
+    </div>
+  </section>
+</main>
+
+<script>
+const I18N={
+ pt:{ r1:"o ruído",r2:"quem já cruzou",r3:"o risco",r4:"o método",r5:"o apoio",r6:"o comando",
+  s1_lead:'A IA chegou ao Direito como <em>ruído</em>. Promessa demais, prática de menos.',
+  s1_body:"Esta página é uma travessia. Em seis cenas, do barulho ao comando: como transformar a IA em ferramenta segura para quem advoga e julga.",
+  s2_kick:"quem já cruzou", s2_lead:"Você não seria o primeiro a fazer essa travessia.",
+  s2_unit:"magistrados, desembargadores, juízes e servidores já formados.",
+  s2_body:"São <strong>600+</strong> profissionais do Judiciário, vários órgãos públicos e escritórios. Conduzido por quem tem <strong>~11 anos dentro do Judiciário</strong> — servidor no TJSE — e dupla formação: Direito e Análise e Desenvolvimento de Sistemas.",
+  s3_kick:"o risco que assusta", s3_lead:'O medo é legítimo. A resposta não é evitar — é <em>blindar</em>.',
+  s3_badh:"sem método",s3_badp:'"A IA me deu uma jurisprudência perfeita." Ela não existia. O risco de alucinação e precedente falso assina embaixo do seu nome.',
+  s3_goodh:"com método",s3_goodp:"Você instrui a fonte, exige citação rastreável e impõe limites. A IA vira rascunho conferível — e o humano segue no comando.",
+  s4_kick:"o método", s4_lead:'Uma formação que vira <em>repertório</em>, não palestra esquecível.',
+  s4_body:"Certificada, presencial ou híbrida — ~12 a 16h em sessões de ~4h que misturam aula e laboratório. Você sai com prompts prontos para reusar.",
+  st1h:"Fundamentos de LLM",st1p:"Como o modelo pensa, sem jargão. O que ele faz bem e onde tropeça.",
+  st2h:"Engenharia de prompt avançada",st2p:"Instruções que devolvem respostas úteis, citáveis e revisáveis.",
+  st3h:"Gestão de risco",st3p:"Alucinações e precedentes falsos: identificar, conferir, prevenir.",
+  st4h:"Cenário de ferramentas",st4p:"ChatGPT, Claude, Gemini, NotebookLM — qual usar e para quê.",
+  st5h:"Laboratório prático",st5p:"Mão na massa para construir seu repertório reutilizável de prompts.",
+  s5_kick:"o apoio", s5_lead:'A tecnologia que <em>facilita</em> — antes, durante e depois.',
+  s5_p1when:"durante a aula",s5_p1h:"Pulso da Turma",s5_p1p:"Perguntas em tempo real, enquetes e um termômetro de compreensão ao vivo.",
+  s5_p2when:"depois da aula",s5_p2h:"Trilha da Turma",s5_p2p:"Caderno digital com conteúdo, tarefas e materiais. Referência permanente — e suporte por ~15 dias.",
+  s6_kick:"o comando", s6_lead:'No fim da travessia, a IA é facilitadora. <em>Você</em> continua no comando.',
+  cta_wa:"Começar uma conversa",
+  who:"Direito + Análise e Desenvolvimento de Sistemas, ~11 anos no Judiciário. PensoIA / EPBF Soluções em Tecnologia." },
+ en:{ r1:"the noise",r2:"who crossed",r3:"the risk",r4:"the method",r5:"the support",r6:"command",
+  s1_lead:'AI reached Law as <em>noise</em>. Too much promise, too little practice.',
+  s1_body:"This page is a crossing. In six scenes, from noise to command: how to turn AI into a safe tool for those who practice and judge.",
+  s2_kick:"who already crossed", s2_lead:"You wouldn't be the first to make this crossing.",
+  s2_unit:"magistrates, appellate and trial judges, and court staff already trained.",
+  s2_body:"That's <strong>600+</strong> Judiciary professionals, several public bodies and law firms. Led by someone with <strong>~11 years inside the Judiciary</strong> — civil servant at TJSE — and a dual background: Law and Systems Analysis & Development.",
+  s3_kick:"the fear", s3_lead:'The fear is fair. The answer isn\'t to avoid — it\'s to <em>protect</em>.',
+  s3_badh:"without method",s3_badp:'"The AI gave me a perfect precedent." It never existed. The risk of hallucination and fake precedent signs off under your name.',
+  s3_goodh:"with method",s3_goodp:"You instruct the source, require traceable citation and set boundaries. AI becomes a checkable draft — and the human stays in command.",
+  s4_kick:"the method", s4_lead:'Training that becomes <em>repertoire</em>, not a forgettable lecture.',
+  s4_body:"Certified, in-person or hybrid — ~12 to 16h in ~4h sessions mixing lecture and lab. You leave with prompts ready to reuse.",
+  st1h:"LLM fundamentals",st1p:"How the model thinks, without jargon. What it does well and where it slips.",
+  st2h:"Advanced prompt engineering",st2p:"Instructions that return useful, citable, reviewable answers.",
+  st3h:"Risk management",st3p:"Hallucinations and fake precedents: identify, check, prevent.",
+  st4h:"Tools landscape",st4p:"ChatGPT, Claude, Gemini, NotebookLM — which to use and for what.",
+  st5h:"Hands-on lab",st5p:"Practice building your reusable repertoire of prompts.",
+  s5_kick:"the support", s5_lead:'The technology that <em>makes it easier</em> — before, during and after.',
+  s5_p1when:"during class",s5_p1h:"Pulso da Turma",s5_p1p:"Real-time questions, polls and a live comprehension thermometer.",
+  s5_p2when:"after class",s5_p2h:"Trilha da Turma",s5_p2p:"Digital workbook with content, tasks and materials. A permanent reference — plus ~15 days of support.",
+  s6_kick:"command", s6_lead:'At the end of the crossing, AI is a facilitator. <em>You</em> stay in command.',
+  cta_wa:"Start a conversation",
+  who:"Law + Systems Analysis & Development, ~11 years in the Judiciary. PensoIA / EPBF Soluções em Tecnologia." }
+};
+let lang=(navigator.language||"pt").toLowerCase().startsWith("en")?"en":"pt";
+function applyI18n(){
+  document.documentElement.lang=lang==="pt"?"pt-BR":"en";
+  document.querySelectorAll("[data-i18n]").forEach(el=>{const t=I18N[lang][el.dataset.i18n];if(t!=null)el.innerHTML=t;});
+  document.getElementById("langTxt").textContent=lang==="pt"?"EN":"PT";
+}
+document.getElementById("lang").onclick=()=>{lang=lang==="pt"?"en":"pt";applyI18n();syncTheme();};
+const themeTxt=document.getElementById("themeTxt");
+function syncTheme(){const d=document.documentElement.getAttribute("data-theme")==="dark";
+  themeTxt.textContent=d?(lang==="pt"?"Claro":"Light"):(lang==="pt"?"Escuro":"Dark");}
+document.getElementById("theme").onclick=()=>{const d=document.documentElement.getAttribute("data-theme")==="dark";
+  document.documentElement.setAttribute("data-theme",d?"light":"dark");syncTheme();};
+applyI18n();syncTheme();
+
+/* reveal on scroll */
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");}});},{threshold:.18});
+document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+
+/* progress rail + counter */
+const rail=[...document.querySelectorAll(".rail a")];
+const secs=[...document.querySelectorAll(".scene")];
+const so=new IntersectionObserver((es)=>{es.forEach(e=>{
+  if(e.isIntersecting){
+    const id=e.target.id; rail.forEach(a=>a.classList.toggle("active",a.getAttribute("href")==="#"+id));
+    if(id==="s2") runCounter();
+  }
+});},{threshold:.5});
+secs.forEach(s=>so.observe(s));
+
+let counted=false;
+function runCounter(){
+  if(counted)return; counted=true;
+  const el=document.getElementById("cnt");
+  if(window.matchMedia("(prefers-reduced-motion:reduce)").matches){el.textContent="600+";return;}
+  let n=0; const t=setInterval(()=>{n+=18; if(n>=600){n=600;clearInterval(t);el.textContent="600+";return;} el.textContent=n;},22);
+}
+</script>
+</body>
+</html>

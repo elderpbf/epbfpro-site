@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PensoIA — pensamento humano, inteligência ampliada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+/* ============ CONCEPT A3 — "Soft Horizon" ============
+   Warm, human, centered. Teal-forward gradient mesh, big rounded
+   pill shapes, a centered hero with the tagline lockup, and a
+   single-column scroll narrative with alternating soft cards.
+   Friendliest of the three; emphasizes outcomes & people. */
+
+:root{
+  --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --teal-light:#5eead4;
+  --accent:#7de8d6; --green:#047857;
+  --maxw:1080px; --ease:cubic-bezier(.2,.65,.3,1);
+}
+/* LIGHT default */
+:root{
+  --bg:#f3faf8; --bg-soft:#e7f5f1; --card:#ffffff; --card-2:#f5fbf9;
+  --ink:#0a1430; --ink-soft:#3f4a6b; --line:#dcebe6; --line-2:#c8e0d9;
+  --brand:var(--navy); --acc:var(--teal-dark);
+  --mesh-a:#bff0e5; --mesh-b:#d7e3ff; --mesh-c:#f3faf8;
+  --pill:#e6f6f1; --pill-ink:#0b6b5e;
+  --shadow:0 26px 60px -30px rgba(13,148,136,.4);
+  --logo:url("../../../images/brand/glyph-wordmark_tag_bg.transp.svg");
+  --logo-plain:url("../../../images/brand/glyph-wordmark_bg.transp.svg");
+  --app:url("../../../images/app/student-light.jpg");
+}
+html[data-theme="dark"]{
+  --bg:#04101f; --bg-soft:#072031; --card:#082233; --card-2:#0a2a3e;
+  --ink:#eafaf6; --ink-soft:#a3c6c0; --line:#103244; --line-2:#16465c;
+  --brand:#ffffff; --acc:var(--teal-light);
+  --mesh-a:#0c3a45; --mesh-b:#0a2750; --mesh-c:#04101f;
+  --pill:#0c3540; --pill-ink:var(--teal-light);
+  --shadow:0 30px 70px -28px rgba(0,0,0,.7);
+  --logo:url("../../../images/brand/glyph-wordmark_tag_bg.navy.svg");
+  --logo-plain:url("../../../images/brand/glyph-wordmark_bg.navy.svg");
+  --app:url("../../../images/app/student-dark.jpg");
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;line-height:1.62;-webkit-font-smoothing:antialiased;
+  transition:background-color .4s var(--ease),color .4s var(--ease)}
+img{max-width:100%;display:block}
+a{color:inherit}
+h1,h2,h3{margin:0;line-height:1.1;letter-spacing:-.02em}
+.serif{font-family:'Lora',Georgia,serif}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.eyebrow{display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--acc)}
+:focus-visible{outline:3px solid var(--teal);outline-offset:3px;border-radius:10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* header */
+header{position:sticky;top:0;z-index:60;background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:blur(14px) saturate(150%);transition:.3s;border-bottom:1px solid transparent}
+header.sc{border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:78px;gap:16px}
+.logo{width:150px;height:0;padding-top:54.4px;background:var(--logo) no-repeat left center/contain;text-indent:-9999px;display:block}
+.nlinks{display:flex;gap:26px}
+.nlinks a{text-decoration:none;color:var(--ink-soft);font-weight:500;font-size:.93rem;transition:.2s}
+.nlinks a:hover{color:var(--acc)}
+.tools{display:flex;gap:8px;align-items:center}
+.tb{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);
+  color:var(--ink);font:inherit;font-weight:600;font-size:.84rem;cursor:pointer;transition:.18s;display:inline-flex;align-items:center;gap:6px}
+.tb:hover{border-color:var(--teal);transform:translateY(-1px)}
+.tb.solid{background:var(--teal);border-color:var(--teal);color:#04201c}
+.tb.solid:hover{background:var(--teal-dark);color:#fff}
+@media(max-width:840px){.nlinks{display:none}.solid.dk{display:none}}
+
+/* hero centered */
+.hero{position:relative;text-align:center;padding:78px 0 64px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:-10% -10% auto -10%;height:120%;z-index:0;
+  background:
+   radial-gradient(40% 50% at 22% 18%,var(--mesh-a),transparent 60%),
+   radial-gradient(46% 54% at 82% 26%,var(--mesh-b),transparent 62%),
+   radial-gradient(50% 50% at 50% 96%,var(--mesh-a),transparent 70%),
+   var(--mesh-c);
+  filter:blur(2px);opacity:.9}
+.hero .wrap{position:relative;z-index:1}
+.htag-pill{display:inline-flex;align-items:center;gap:9px;padding:8px 16px;border-radius:999px;background:var(--pill);
+  color:var(--pill-ink);font-weight:600;font-size:.85rem;margin-bottom:26px;border:1px solid var(--line-2)}
+.htag-pill .d{width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.hero h1{font-size:clamp(2.5rem,6vw,4.4rem);font-weight:600;max-width:18ch;margin:0 auto}
+.hero h1 .hl{color:var(--acc);font-style:italic}
+.hero .lede{font-size:1.18rem;color:var(--ink-soft);max-width:54ch;margin:26px auto 0}
+.hactions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+.btn{display:inline-flex;align-items:center;gap:9px;height:54px;padding:0 26px;border-radius:999px;font-weight:700;
+  text-decoration:none;border:1px solid transparent;transition:transform .16s var(--ease),box-shadow .2s;font-size:1rem}
+.btn-p{background:var(--teal);color:#04201c;box-shadow:var(--shadow)}
+.btn-p:hover{transform:translateY(-2px)}
+.btn-o{background:var(--card);border-color:var(--line-2);color:var(--ink)}
+.btn-o:hover{border-color:var(--acc);color:var(--acc)}
+/* floating proof chips under hero */
+.proof-chips{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:42px}
+.pchip{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 20px;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:12px}
+.pchip .n{font-family:'Lora',serif;font-weight:600;font-size:1.7rem;color:var(--acc);line-height:1}
+.pchip .c{font-size:.82rem;color:var(--ink-soft);text-align:left;max-width:18ch}
+
+/* sections */
+section{padding:80px 0;position:relative}
+.shead{text-align:center;max-width:60ch;margin:0 auto 50px}
+.shead h2{font-size:clamp(1.9rem,4vw,2.7rem);font-weight:600}
+.shead p{color:var(--ink-soft);font-size:1.08rem;margin:16px 0 0}
+
+/* offers — soft rows */
+.osoft{display:flex;flex-direction:column;gap:18px}
+.orow{display:grid;grid-template-columns:64px 1fr auto;gap:22px;align-items:center;padding:26px 30px;
+  background:var(--card);border:1px solid var(--line);border-radius:26px;transition:transform .2s var(--ease),border-color .2s,box-shadow .2s}
+.orow:hover{transform:translateY(-3px);border-color:var(--teal);box-shadow:var(--shadow)}
+.orow .em{width:64px;height:64px;border-radius:20px;background:var(--pill);color:var(--pill-ink);display:grid;place-items:center;font-size:1.5rem}
+.orow h3{font-size:1.3rem;margin-bottom:5px;font-weight:600}
+.orow p{margin:0;color:var(--ink-soft);font-size:.98rem}
+.orow .arr{font-size:1.4rem;color:var(--acc);opacity:.6}
+@media(max-width:680px){.orow{grid-template-columns:56px 1fr;}.orow .arr{display:none}.orow .em{width:56px;height:56px}}
+
+/* method — curriculum chips on soft band */
+.method{background:var(--bg-soft)}
+.curr{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.cc{flex:1 1 280px;max-width:340px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px}
+.cc .step{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;
+  background:var(--brand);color:#fff;font-weight:800;font-size:.85rem;margin-bottom:12px}
+html[data-theme="dark"] .cc .step{background:var(--teal);color:#04201c}
+.cc h4{margin:0 0 6px;font-size:1.08rem;font-weight:600}
+.cc p{margin:0;color:var(--ink-soft);font-size:.92rem}
+
+/* platforms — centered with phone + outcome */
+.plat{display:grid;grid-template-columns:1fr 320px;gap:50px;align-items:center}
+.pfeat{display:flex;flex-direction:column;gap:16px}
+.pf{display:flex;gap:16px;align-items:flex-start;padding:22px;border:1px solid var(--line);border-radius:22px;background:var(--card)}
+.pf .badge{font-size:.7rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--pill-ink);
+  background:var(--pill);border-radius:999px;padding:4px 11px;white-space:nowrap}
+.pf h4{margin:0 0 4px;font-size:1.12rem;font-weight:600}
+.pf p{margin:0;color:var(--ink-soft);font-size:.94rem}
+.device{justify-self:center;width:300px;max-width:100%;border-radius:42px;padding:13px;background:var(--navy);
+  box-shadow:var(--shadow);position:relative}
+html[data-theme="dark"] .device{background:#02060f;border:1px solid var(--line-2)}
+.device .sc{border-radius:32px;overflow:hidden;aspect-ratio:9/19.5;background:var(--app) no-repeat center top/cover}
+.device .bar{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:104px;height:8px;border-radius:99px;background:#ffffff44;z-index:2}
+.device .glow{position:absolute;inset:-14px;border-radius:54px;background:radial-gradient(circle,var(--teal),transparent 65%);opacity:.32;z-index:-1;filter:blur(20px)}
+@media(max-width:760px){.plat{grid-template-columns:1fr;gap:38px}.device{order:-1}}
+
+/* quote / human band */
+.human{text-align:center}
+.human .q{font-family:'Lora',serif;font-style:italic;font-size:clamp(1.4rem,3vw,2rem);font-weight:500;max-width:24ch;margin:0 auto;line-height:1.3}
+.human .who{display:flex;align-items:center;gap:14px;justify-content:center;margin-top:28px}
+.human .who img{width:58px;height:58px;border-radius:50%;object-fit:cover;border:2px solid var(--line-2)}
+.human .who .nm{text-align:left}
+.human .who .nm b{display:block}
+.human .who .nm span{color:var(--ink-soft);font-size:.9rem}
+
+/* audience round */
+.aud{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.acard{flex:1 1 270px;max-width:330px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px;text-align:center}
+.acard .ic{width:54px;height:54px;border-radius:50%;background:var(--pill);color:var(--pill-ink);display:grid;place-items:center;margin:0 auto 16px;font-size:1.3rem}
+.acard b{display:block;font-size:1.1rem;margin-bottom:6px;font-weight:600}
+.acard span{color:var(--ink-soft);font-size:.93rem}
+
+/* final CTA — big rounded teal-to-navy */
+.final{text-align:center;background:linear-gradient(135deg,var(--teal-dark),var(--navy));color:#fff;
+  border-radius:40px;padding:64px 40px;position:relative;overflow:hidden}
+.final::after{content:"";position:absolute;left:50%;top:-40%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(125,232,214,.3),transparent 60%)}
+.final>*{position:relative}
+.final h2{font-size:clamp(2rem,4.4vw,2.9rem);max-width:20ch;margin:0 auto;font-weight:600}
+.final p{color:#d7f4ee;max-width:48ch;margin:16px auto 30px}
+.final .hactions{margin-top:0}
+.final .btn-o{background:transparent;border-color:#ffffff66;color:#fff}
+.final .btn-o:hover{border-color:#fff;color:#fff}
+
+/* footer */
+footer{padding:50px 0 30px;border-top:1px solid var(--line);margin-top:10px}
+.frow{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;align-items:flex-start}
+.logo-f{width:140px;height:0;padding-top:50.75px;background:var(--logo-plain) no-repeat left center/contain;text-indent:-9999px;display:block}
+.fsoc{display:flex;gap:10px;flex-wrap:wrap}
+.fsoc a{width:44px;height:44px;border:1px solid var(--line-2);border-radius:50%;display:grid;place-items:center;
+  text-decoration:none;color:var(--ink-soft);font-weight:600;font-size:.8rem;transition:.2s}
+.fsoc a:hover{border-color:var(--teal);color:var(--acc);transform:translateY(-2px)}
+.fbot{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;font-size:.83rem;color:var(--ink-soft)}
+@media(max-width:560px){section{padding:58px 0}.final{padding:44px 24px;border-radius:30px}}
+</style>
+</head>
+<body>
+<header id="hdr">
+  <div class="wrap nav">
+    <a class="logo" href="#top">PensoIA</a>
+    <nav class="nlinks" aria-label="Principal">
+      <a href="#offers" data-i="nav1">Soluções</a>
+      <a href="#method" data-i="nav2">Método</a>
+      <a href="#platforms" data-i="nav3">Plataformas</a>
+      <a href="#final" data-i="nav4">Contato</a>
+    </nav>
+    <div class="tools">
+      <button class="tb" id="langBtn" aria-label="Switch language"><span id="langLabel">EN</span></button>
+      <button class="tb" id="themeBtn" aria-label="Alternar tema"><span id="themeIcon">🌙</span></button>
+      <a class="tb solid dk" href="https://wa.me/557998014253" data-i="navcta">Falar agora</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <span class="htag-pill"><span class="d" aria-hidden="true"></span><span data-i="tag">pensamento humano, inteligência ampliada</span></span>
+      <h1 class="serif" data-i="h1">A IA como aliada do trabalho jurídico, com a pessoa sempre no <span class="hl" data-i="h1hl">comando</span>.</h1>
+      <p class="lede" data-i="lede">Cursos, consultoria e automação em IA Generativa para advogados, tribunais e órgãos públicos. Traduzimos a complexidade técnica em ferramentas práticas, com segurança jurídica e rigor.</p>
+      <div class="hactions">
+        <a class="btn btn-p" href="#offers" data-i="cta1">Conhecer as soluções</a>
+        <a class="btn btn-o" href="https://wa.me/557998014253" data-i="cta2">Falar com a gente</a>
+      </div>
+      <div class="proof-chips">
+        <div class="pchip"><span class="n">600+</span><span class="c" data-i="ch1">profissionais do Direito já formados</span></div>
+        <div class="pchip"><span class="n">~11</span><span class="c" data-i="ch2">anos de atuação no Judiciário</span></div>
+        <div class="pchip"><span class="n">2</span><span class="c" data-i="ch3">plataformas próprias de apoio ao aluno</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OFFERS -->
+  <section id="offers">
+    <div class="wrap">
+      <div class="shead">
+        <span class="eyebrow" data-i="oe">O que oferecemos</span>
+        <h2 class="serif" data-i="oh">Soluções que devolvem tempo e precisão.</h2>
+        <p data-i="op">Do treinamento prático à automação sob medida, sempre mantendo a pessoa no controle do resultado.</p>
+      </div>
+      <div class="osoft">
+        <div class="orow">
+          <div class="em">◐</div>
+          <div><h3 data-i="o1h">Cursos & treinamentos</h3><p data-i="o1p">Engenharia de Prompts e IA Generativa, com certificação. Presencial ou híbrido, em turmas, com aula e laboratório prático.</p></div>
+          <div class="arr">→</div>
+        </div>
+        <div class="orow">
+          <div class="em">⚙</div>
+          <div><h3 data-i="o2h">Consultoria em IA</h3><p data-i="o2p">Soluções personalizadas e automação inteligente de processos jurídicos, desenhadas para a sua rotina real.</p></div>
+          <div class="arr">→</div>
+        </div>
+        <div class="orow">
+          <div class="em">↗</div>
+          <div><h3 data-i="o3h">Otimização de fluxos</h3><p data-i="o3p">Tarefas reorganizadas com LLMs: menos retrabalho, mais consistência e um repertório reutilizável para o time.</p></div>
+          <div class="arr">→</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- METHOD -->
+  <section id="method" class="method">
+    <div class="wrap">
+      <div class="shead">
+        <span class="eyebrow" data-i="me">Método & ementa</span>
+        <h2 class="serif" data-i="mh">Da base conceitual à prática segura.</h2>
+        <p data-i="mp">Um percurso que desmistifica a IA e termina com a equipe usando prompts em tarefas reais, com consciência dos riscos.</p>
+      </div>
+      <div class="curr">
+        <div class="cc"><span class="step">1</span><h4 data-i="s1h">Fundamentos de LLM</h4><p data-i="s1p">Tokens, embeddings, janela de contexto, e por que não é um buscador.</p></div>
+        <div class="cc"><span class="step">2</span><h4 data-i="s2h">Prompts avançados</h4><p data-i="s2p">Frameworks em markdown para precisão e respostas consistentes.</p></div>
+        <div class="cc"><span class="step">3</span><h4 data-i="s3h">Gestão de riscos</h4><p data-i="s3p">Reconhecer e mitigar alucinações: precedentes e dados falsos.</p></div>
+        <div class="cc"><span class="step">4</span><h4 data-i="s4h">Panorama de ferramentas</h4><p data-i="s4p">ChatGPT, Claude, Gemini e NotebookLM para autos volumosos.</p></div>
+        <div class="cc"><span class="step">5</span><h4 data-i="s5h">Laboratório prático</h4><p data-i="s5p">Prompts para a rotina real e um repertório reutilizável para o time.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATFORMS -->
+  <section id="platforms">
+    <div class="wrap">
+      <div class="shead">
+        <span class="eyebrow" data-i="pe">O diferencial</span>
+        <h2 class="serif" data-i="ph">Não entregamos só aula. Entregamos ferramentas.</h2>
+        <p data-i="pp">Plataformas próprias que tornam o aprendizado simples e duradouro, durante e depois do curso.</p>
+      </div>
+      <div class="plat">
+        <div class="pfeat">
+          <div class="pf"><span class="badge" data-i="b1">ao vivo</span><div><h4 data-i="pf1h">Pulso da Turma</h4><p data-i="pf1p">Interação em tempo real durante a aula: perguntas, enquetes e um termômetro de compreensão que orienta o ritmo.</p></div></div>
+          <div class="pf"><span class="badge" data-i="b2">depois</span><div><h4 data-i="pf2h">Trilha da Turma</h4><p data-i="pf2p">Apostila digital com conteúdo, tarefas e materiais (prompts e instruções). Referência permanente após o curso.</p></div></div>
+          <div class="pf"><span class="badge" data-i="b3">suporte</span><div><h4 data-i="pf3h">Apoio contínuo</h4><p data-i="pf3p">Tira-dúvidas durante e depois do treinamento, com 15 dias de suporte após o encerramento.</p></div></div>
+        </div>
+        <div class="device" role="img" aria-label="Plataforma Trilha da Turma, apostila digital do aluno">
+          <div class="glow" aria-hidden="true"></div>
+          <div class="bar"></div>
+          <div class="sc" id="appSc"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HUMAN / QUOTE -->
+  <section class="human method">
+    <div class="wrap">
+      <p class="q serif" data-i="quote">"A IA não substitui o raciocínio jurídico. Ela devolve tempo para que ele aconteça melhor."</p>
+      <div class="who">
+        <img src="../../../images/profile.jpg" alt="Élder Prudente Barbosa Filho">
+        <div class="nm">
+          <b>Élder Prudente Barbosa Filho</b>
+          <span data-i="qrole">Instrutor e consultor · Direito + Análise de Sistemas · ~11 anos no Judiciário</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUDIENCE -->
+  <section id="audience">
+    <div class="wrap">
+      <div class="shead">
+        <span class="eyebrow" data-i="ae">Para quem</span>
+        <h2 class="serif" data-i="ah">Feito para quem decide com responsabilidade.</h2>
+      </div>
+      <div class="aud">
+        <div class="acard"><div class="ic">§</div><b data-i="au1b">Advogados & escritórios</b><span data-i="au1s">Da peça à pesquisa, tempo ganho com segurança e controle do resultado.</span></div>
+        <div class="acard"><div class="ic">⚖</div><b data-i="au2b">Tribunais</b><span data-i="au2s">Magistrados, assessores e servidores: rotina judicial mais ágil e consistente.</span></div>
+        <div class="acard"><div class="ic">▣</div><b data-i="au3b">Setor público</b><span data-i="au3s">Órgãos e instituições que precisam de adoção responsável de IA.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="final">
+    <div class="wrap">
+      <div class="final">
+        <h2 class="serif" data-i="fh">Vamos colocar a IA a serviço da sua equipe?</h2>
+        <p data-i="fp">Conte sobre seu escritório, tribunal ou órgão. Respondemos com um caminho prático, humano e sem jargão.</p>
+        <div class="hactions">
+          <a class="btn btn-p" href="https://wa.me/557998014253" data-i="fb1">Falar no WhatsApp</a>
+          <a class="btn btn-o" href="mailto:contato@pensoia.com" data-i="fb2">Enviar e-mail</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="frow">
+      <div style="max-width:320px">
+        <a class="logo-f" href="#top">PensoIA</a>
+        <p style="color:var(--ink-soft);font-size:.9rem;margin:14px 0 0" data-i="ftag">pensamento humano, inteligência ampliada. Por EPBF Soluções em Tecnologia.</p>
+      </div>
+      <div class="fsoc" aria-label="Redes sociais">
+        <a href="https://wa.me/557998014253" aria-label="WhatsApp">WA</a>
+        <a href="mailto:contato@pensoia.com" aria-label="E-mail">@</a>
+        <a href="https://www.linkedin.com/in/elderpbf/" aria-label="LinkedIn">in</a>
+        <a href="https://github.com/elderpbf" aria-label="GitHub">GH</a>
+        <a href="https://www.instagram.com/elderpbf/" aria-label="Instagram">IG</a>
+      </div>
+    </div>
+    <div class="fbot">
+      <span>© <span id="yr"></span> PensoIA · EPBF Soluções em Tecnologia</span>
+      <span data-i="fmade">Tecnologia que facilita o trabalho intelectual.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const I18N={
+ pt:{
+  nav1:"Soluções",nav2:"Método",nav3:"Plataformas",nav4:"Contato",navcta:"Falar agora",
+  tag:"pensamento humano, inteligência ampliada",
+  h1:"A IA como aliada do trabalho jurídico, com a pessoa sempre no ",h1hl:"comando",
+  lede:"Cursos, consultoria e automação em IA Generativa para advogados, tribunais e órgãos públicos. Traduzimos a complexidade técnica em ferramentas práticas, com segurança jurídica e rigor.",
+  cta1:"Conhecer as soluções",cta2:"Falar com a gente",
+  ch1:"profissionais do Direito já formados",ch2:"anos de atuação no Judiciário",ch3:"plataformas próprias de apoio ao aluno",
+  oe:"O que oferecemos",oh:"Soluções que devolvem tempo e precisão.",
+  op:"Do treinamento prático à automação sob medida, sempre mantendo a pessoa no controle do resultado.",
+  o1h:"Cursos & treinamentos",o1p:"Engenharia de Prompts e IA Generativa, com certificação. Presencial ou híbrido, em turmas, com aula e laboratório prático.",
+  o2h:"Consultoria em IA",o2p:"Soluções personalizadas e automação inteligente de processos jurídicos, desenhadas para a sua rotina real.",
+  o3h:"Otimização de fluxos",o3p:"Tarefas reorganizadas com LLMs: menos retrabalho, mais consistência e um repertório reutilizável para o time.",
+  me:"Método & ementa",mh:"Da base conceitual à prática segura.",
+  mp:"Um percurso que desmistifica a IA e termina com a equipe usando prompts em tarefas reais, com consciência dos riscos.",
+  s1h:"Fundamentos de LLM",s1p:"Tokens, embeddings, janela de contexto, e por que não é um buscador.",
+  s2h:"Prompts avançados",s2p:"Frameworks em markdown para precisão e respostas consistentes.",
+  s3h:"Gestão de riscos",s3p:"Reconhecer e mitigar alucinações: precedentes e dados falsos.",
+  s4h:"Panorama de ferramentas",s4p:"ChatGPT, Claude, Gemini e NotebookLM para autos volumosos.",
+  s5h:"Laboratório prático",s5p:"Prompts para a rotina real e um repertório reutilizável para o time.",
+  pe:"O diferencial",ph:"Não entregamos só aula. Entregamos ferramentas.",
+  pp:"Plataformas próprias que tornam o aprendizado simples e duradouro, durante e depois do curso.",
+  b1:"ao vivo",pf1h:"Pulso da Turma",pf1p:"Interação em tempo real durante a aula: perguntas, enquetes e um termômetro de compreensão que orienta o ritmo.",
+  b2:"depois",pf2h:"Trilha da Turma",pf2p:"Apostila digital com conteúdo, tarefas e materiais (prompts e instruções). Referência permanente após o curso.",
+  b3:"suporte",pf3h:"Apoio contínuo",pf3p:"Tira-dúvidas durante e depois do treinamento, com 15 dias de suporte após o encerramento.",
+  quote:"“A IA não substitui o raciocínio jurídico. Ela devolve tempo para que ele aconteça melhor.”",
+  qrole:"Instrutor e consultor · Direito + Análise de Sistemas · ~11 anos no Judiciário",
+  ae:"Para quem",ah:"Feito para quem decide com responsabilidade.",
+  au1b:"Advogados & escritórios",au1s:"Da peça à pesquisa, tempo ganho com segurança e controle do resultado.",
+  au2b:"Tribunais",au2s:"Magistrados, assessores e servidores: rotina judicial mais ágil e consistente.",
+  au3b:"Setor público",au3s:"Órgãos e instituições que precisam de adoção responsável de IA.",
+  fh:"Vamos colocar a IA a serviço da sua equipe?",
+  fp:"Conte sobre seu escritório, tribunal ou órgão. Respondemos com um caminho prático, humano e sem jargão.",
+  fb1:"Falar no WhatsApp",fb2:"Enviar e-mail",
+  ftag:"pensamento humano, inteligência ampliada. Por EPBF Soluções em Tecnologia.",
+  fmade:"Tecnologia que facilita o trabalho intelectual."
+ },
+ en:{
+  nav1:"Solutions",nav2:"Method",nav3:"Platforms",nav4:"Contact",navcta:"Talk now",
+  tag:"human thinking, amplified intelligence",
+  h1:"AI as an ally to legal work, with the human always in ",h1hl:"command",
+  lede:"Courses, consulting and automation in Generative AI for lawyers, courts and public bodies. We translate technical complexity into practical tools, with legal safety and rigor.",
+  cta1:"Explore the solutions",cta2:"Talk to us",
+  ch1:"legal professionals already trained",ch2:"years working in the Judiciary",ch3:"in-house platforms supporting students",
+  oe:"What we offer",oh:"Solutions that give back time and precision.",
+  op:"From hands-on training to tailored automation, always keeping the human in control of the outcome.",
+  o1h:"Courses & training",o1p:"Prompt Engineering and Generative AI, with certification. In-person or hybrid, in cohorts, with lecture and hands-on lab.",
+  o2h:"AI consulting",o2p:"Custom solutions and intelligent automation of legal processes, designed for your real routine.",
+  o3h:"Workflow optimization",o3p:"Tasks reorganized with LLMs: less rework, more consistency and a reusable repertoire for the team.",
+  me:"Method & syllabus",mh:"From conceptual base to safe practice.",
+  mp:"A path that demystifies AI and ends with your team using prompts on real tasks, fully aware of the risks.",
+  s1h:"LLM fundamentals",s1p:"Tokens, embeddings, context window, and why it is not a search engine.",
+  s2h:"Advanced prompting",s2p:"Markdown frameworks for precision and consistent answers.",
+  s3h:"Risk management",s3p:"Recognizing and mitigating hallucinations: fake precedents and data.",
+  s4h:"Tools landscape",s4p:"ChatGPT, Claude, Gemini and NotebookLM for large case files.",
+  s5h:"Hands-on lab",s5p:"Prompts for the real routine and a reusable repertoire for the team.",
+  pe:"The differentiator",ph:"We don't just teach. We hand over tools.",
+  pp:"In-house platforms that make learning simple and lasting, during and after the course.",
+  b1:"live",pf1h:"Pulso da Turma",pf1p:"Real-time interaction during class: questions, polls and a comprehension thermometer that guides the pace.",
+  b2:"after",pf2h:"Trilha da Turma",pf2p:"A digital workbook with content, tasks and materials (prompts and instructions). A permanent reference after the course.",
+  b3:"support",pf3h:"Ongoing support",pf3p:"Q&A during and after the training, with 15 days of support after it ends.",
+  quote:"“AI doesn't replace legal reasoning. It gives back the time for that reasoning to happen better.”",
+  qrole:"Instructor and consultant · Law + Systems Analysis · ~11 years in the Judiciary",
+  ae:"For whom",ah:"Built for those who decide responsibly.",
+  au1b:"Lawyers & firms",au1s:"From drafting to research, time saved with safety and control over the outcome.",
+  au2b:"Courts",au2s:"Magistrates, advisors and staff: a faster, more consistent judicial routine.",
+  au3b:"Public sector",au3s:"Bodies and institutions that need responsible AI adoption.",
+  fh:"Shall we put AI to work for your team?",
+  fp:"Tell us about your firm, court or agency. We reply with a practical, human path, no jargon.",
+  fb1:"Talk on WhatsApp",fb2:"Send an email",
+  ftag:"human thinking, amplified intelligence. By EPBF Soluções em Tecnologia.",
+  fmade:"Technology that makes intellectual work easier."
+ }
+};
+let lang='pt';
+function applyLang(){
+  const d=I18N[lang];
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(d[k]!=null)el.textContent=d[k];});
+  // h1 with highlight span
+  const h1=document.querySelector('.hero h1');
+  h1.innerHTML = d.h1 + '<span class="hl">'+d.h1hl+'</span>.';
+  document.documentElement.lang=lang==='pt'?'pt-BR':'en';
+  document.getElementById('langLabel').textContent=lang==='pt'?'EN':'PT';
+}
+document.getElementById('langBtn').addEventListener('click',()=>{lang=lang==='pt'?'en':'pt';applyLang();});
+
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('themeIcon').textContent=t==='dark'?'☀':'🌙';
+}
+let theme=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+document.getElementById('themeBtn').addEventListener('click',()=>{theme=theme==='dark'?'light':'dark';setTheme(theme);});
+
+const hdr=document.getElementById('hdr');
+addEventListener('scroll',()=>hdr.classList.toggle('sc',scrollY>8),{passive:true});
+document.getElementById('yr').textContent=new Date().getFullYear();
+setTheme(theme);applyLang();
+</script>
+</body>
+</html>
