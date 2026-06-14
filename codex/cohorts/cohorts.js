@@ -255,7 +255,8 @@ function _loadClients() {
       const first = _clients.find(c => c.status !== 'archived') || _clients[0];
       if (first) _selectClient(first.slug);
     }
-  }).catch(() => {
+  }).catch((e) => {
+    if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
     const el2 = _q(IDS.clientsList);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
   });
@@ -512,7 +513,8 @@ function _loadTurmas(clientSlug) {
       const first = _turmas.find(t => t.status !== 'archived') || _turmas[0];
       if (first) _selectTurmaForAulas(first.client_slug, first.slug);
     }
-  }).catch(() => {
+  }).catch((e) => {
+    if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
     const el2 = _q(IDS.turmasList);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
   });
@@ -683,7 +685,7 @@ function _openTurmaForm(turma) {
   const load = Promise.all([
     _cpSessions.length
       ? Promise.resolve()
-      : cpApi.listSessions().then(d => { _cpSessions = (d && d.sessions) || []; }).catch(() => {}),
+      : cpApi.listSessions().then(d => { _cpSessions = (d && d.sessions) || []; }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: list sessions failed: ' + (e && e.message || e), 'error'); }),
     coursesApi.list().then(d => { _turmaCourses = (d && d.courses) || []; }).catch(() => {}),
   ]);
 
@@ -1093,7 +1095,8 @@ function _loadTurmaAulas(clientSlug, turmaSlug) {
   api.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }).then((d) => {
     _turmaAulas = (d.aulas || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
     _renderTurmaAulas();
-  }).catch(() => {
+  }).catch((e) => {
+    if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
     const el2 = _q(IDS.aulasList);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
   });

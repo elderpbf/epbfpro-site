@@ -478,7 +478,7 @@ function _loadLiveSession() {
   _renderLiveCard();
   cpApi.liveSession({ _silent: true })
     .then((d) => { _liveSession = (d && d.session) || null; })
-    .catch(() => { /* keep prior state on error */ })
+    .catch((e) => { notice.internal(e); /* keep prior state on error */ })
     .then(() => { _liveLoading = false; _renderLiveCard(); });
 }
 
@@ -762,8 +762,8 @@ function _closeContextMenu() {
 function _ensureTypesAndTags() {
   if (_typesLoaded) return Promise.resolve();
   return Promise.all([
-    contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch(() => {}),
-    contentApi.listTags().then((d) => { _tags = (d && d.tags) || []; }).catch(() => {}),
+    contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(e); }),
+    contentApi.listTags().then((d) => { _tags = (d && d.tags) || []; }).catch((e) => { notice.internal(e); }),
   ]).then(() => { _typesLoaded = true; });
 }
 
@@ -814,7 +814,8 @@ function _loadVault() {
       _renderEmptyMain();
       _mountPresetLoader();
     })
-    .catch(() => {
+    .catch((e) => {
+      notice.internal(e);
       if (body) body.innerHTML = '<div class="cdx-empty">' + t('lessons.error_items') + '</div>';
     });
 }
@@ -1008,7 +1009,8 @@ export function mount(viewEl) {
     _renderLiveCard();
     _loadLiveSession();
     _loadVault();
-  }).catch(() => {
+  }).catch((e) => {
+    notice.internal(e);
     _viewEl.innerHTML = '<div class="cdx-empty">' + t('lessons.error_turmas') + '</div>';
   });
 }
