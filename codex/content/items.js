@@ -218,8 +218,8 @@ function _renderShell() {
 // ── Load ──────────────────────────────────────────────────────────────────────
 function _load() {
   return Promise.all([
-    api.listTypes().then((d) => { _types = (d && d.types) || []; }).catch(() => {}),
-    api.listTags().then((d) => { _tags = (d && d.tags) || []; }).catch(() => {}),
+    api.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(e); }),
+    api.listTags().then((d) => { _tags = (d && d.tags) || []; }).catch((e) => { notice.internal(e); }),
   ]).then(_loadItems);
 }
 
@@ -232,17 +232,18 @@ function _loadItems(opts) {
   return api.listItems().then((d) => {
     _items = (d && d.items) || [];
     _renderItems();
-  }).catch(() => {
+  }).catch((e) => {
+    notice.internal(e);
     const g = _q('cdx-items-grid');
     if (g) g.innerHTML = '<div class="cdx-empty">' + t('content.error_loading') + '</div>';
   });
 }
 
 function _loadTags() {
-  return api.listTags().then((d) => { _tags = (d && d.tags) || []; }).catch(() => {});
+  return api.listTags().then((d) => { _tags = (d && d.tags) || []; }).catch((e) => { notice.internal(e); });
 }
 function _loadTypes() {
-  return api.listTypes().then((d) => { _types = (d && d.types) || []; }).catch(() => {});
+  return api.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(e); });
 }
 
 // ── Render grid ─────────────────────────────────────────────────────────────
