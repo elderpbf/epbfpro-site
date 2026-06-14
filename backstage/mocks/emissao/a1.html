@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emissão · A — Mestre-detalhe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#14b8a6; --primary-dark:#0d9488; --navy:#061a51;
+    --bg:#d4f4ed; --surface:#fff; --ink:#134e4a; --ink2:#115e59; --muted:#5b7975;
+    --border:#e2e8f0; --shadow:rgba(20,184,166,.12);
+    --amber:#f59e0b; --amber-bg:#fffbeb; --blue:#3b82f6; --blue-bg:#eff6ff;
+    --green:#10b981; --green-bg:#ecfdf5; --red:#ef4444; --red-bg:#fef2f2;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1320px;margin:0 auto;padding:1.4rem 1.6rem 3rem}
+  .crumbs{font-size:.78rem;color:var(--ink2);letter-spacing:.04em;margin-bottom:.5rem}
+  .crumbs b{color:var(--primary-dark)}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.1rem}
+  .head h1{margin:0;font-size:1.5rem;font-weight:700;color:var(--navy)}
+  .head p{margin:.25rem 0 0;font-size:.86rem;color:var(--muted)}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:9px;padding:.5rem .85rem;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+  .btn:hover{border-color:var(--primary)}
+  .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;box-shadow:0 6px 16px var(--shadow)}
+  .btn-sm{padding:.35rem .6rem;font-size:.76rem}
+  /* status cards */
+  .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:.7rem;margin-bottom:1.1rem}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.7rem .85rem;cursor:pointer;transition:.12s;position:relative;overflow:hidden}
+  .card:hover{transform:translateY(-1px);box-shadow:0 8px 20px var(--shadow)}
+  .card.on{border-color:var(--primary);box-shadow:0 0 0 2px rgba(20,184,166,.2)}
+  .card .n{font-size:1.7rem;font-weight:700;line-height:1;color:var(--navy)}
+  .card .l{font-size:.72rem;color:var(--muted);margin-top:.3rem;font-weight:500}
+  .card .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .card.total .bar{background:var(--navy)} .card.assn .bar{background:var(--amber)}
+  .card.send .bar{background:var(--blue)} .card.done .bar{background:var(--green)} .card.rev .bar{background:var(--red)}
+  /* split */
+  .split{display:grid;grid-template-columns:380px 1fr;gap:1rem;align-items:start}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow)}
+  .listhead{padding:.7rem .8rem;border-bottom:1px solid var(--border);display:flex;gap:.5rem;align-items:center}
+  .search{flex:1;border:1px solid var(--border);border-radius:8px;padding:.45rem .6rem;font:inherit;font-size:.82rem}
+  .list{max-height:62vh;overflow:auto}
+  .row{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid #f1f5f4;cursor:pointer}
+  .row:hover{background:#f7fbfa}
+  .row.sel{background:rgba(20,184,166,.09);box-shadow:inset 3px 0 0 var(--primary)}
+  .row input{width:16px;height:16px;accent-color:var(--primary)}
+  .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--navy));color:#fff;display:grid;place-items:center;font-weight:600;font-size:.78rem;flex:0 0 auto}
+  .row .info{min-width:0;flex:1}
+  .row .nm{font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .sub{font-size:.74rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .s-emitido .dot,.pill.s-emitido{--c:var(--amber)} .s-assinado .dot,.pill.s-assinado{--c:var(--blue)}
+  .s-enviado .dot,.pill.s-enviado{--c:var(--green)} .s-revogado .dot,.pill.s-revogado{--c:var(--red)}
+  .dot{background:var(--c)}
+  .pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:600;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);border:1px solid color-mix(in srgb,var(--c) 30%,#fff);border-radius:999px;padding:.18rem .55rem}
+  .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+  /* detail */
+  .detail{padding:1.1rem 1.2rem}
+  .dtop{display:flex;gap:1rem;align-items:flex-start;justify-content:space-between}
+  .dtitle{font-size:1.15rem;font-weight:700;color:var(--navy);margin:0}
+  .dsub{font-size:.82rem;color:var(--muted);margin:.15rem 0 0}
+  .thumb{margin:1rem 0;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,#061a51,#0c5f7a 70%,#14b8a6);height:170px;position:relative;overflow:hidden;color:#fff}
+  .thumb .pn{position:absolute;left:1rem;top:.8rem;font-family:'Comfortaa',sans-serif;font-weight:700}
+  .thumb .nm{position:absolute;left:1rem;bottom:1.1rem;font-size:1.35rem;font-weight:700;font-family:Georgia,serif}
+  .thumb .ey{position:absolute;left:1rem;top:3.2rem;font-size:.62rem;letter-spacing:.28em;opacity:.8}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:.6rem 1rem;margin:.4rem 0 1rem}
+  .meta div{font-size:.8rem}
+  .meta .k{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .meta .v{font-weight:600;color:var(--ink2)}
+  /* stepper */
+  .stepper{display:flex;align-items:center;gap:.2rem;margin:.4rem 0 1rem}
+  .step{flex:1;text-align:center;font-size:.72rem;color:var(--muted);position:relative;padding-top:1.4rem}
+  .step::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--border)}
+  .step.ok::before{background:var(--green);border-color:var(--green)}
+  .step.now::before{background:var(--primary);border-color:var(--primary);box-shadow:0 0 0 4px rgba(20,184,166,.18)}
+  .step::after{content:"";position:absolute;top:8px;left:-50%;width:100%;height:2px;background:var(--border);z-index:-1}
+  .step:first-child::after{display:none}
+  .step.ok::after,.step.now::after{background:var(--green)}
+  .actions{display:flex;flex-wrap:wrap;gap:.5rem}
+  .bulkbar{position:sticky;bottom:0;margin-top:1rem;background:var(--navy);color:#fff;border-radius:12px;padding:.6rem .9rem;display:none;align-items:center;gap:.8rem;box-shadow:0 10px 30px rgba(6,26,81,.35)}
+  .bulkbar.on{display:flex}
+  .bulkbar b{font-size:.85rem}
+  .bulkbar .btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff}
+  .bulkbar .btn:hover{background:rgba(255,255,255,.22)}
+  .spacer{flex:1}
+  @media(max-width:1000px){.split{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumbs">Certificados › <b>Emissão</b></div>
+  <div class="head">
+    <div><h1>Emissão</h1><p>Emita e acompanhe os certificados de cada turma, do emitido ao enviado.</p></div>
+    <button class="btn btn-primary">＋ Emitir certificados</button>
+  </div>
+
+  <div class="cards" id="cards">
+    <div class="card total on" data-f="todos"><span class="bar"></span><div class="n">18</div><div class="l">Total</div></div>
+    <div class="card assn" data-f="emitido"><span class="bar"></span><div class="n">6</div><div class="l">Aguardando assinatura</div></div>
+    <div class="card send" data-f="assinado"><span class="bar"></span><div class="n">5</div><div class="l">Aguardando envio</div></div>
+    <div class="card done" data-f="enviado"><span class="bar"></span><div class="n">6</div><div class="l">Enviados</div></div>
+    <div class="card rev" data-f="revogado"><span class="bar"></span><div class="n">1</div><div class="l">Revogados</div></div>
+  </div>
+
+  <div class="split">
+    <!-- LEFT: list -->
+    <div class="panel">
+      <div class="listhead">
+        <input class="search" placeholder="Buscar por nome…">
+        <button class="btn btn-sm" title="Selecionar todos os filtrados">☑ Todos</button>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+
+    <!-- RIGHT: detail -->
+    <div class="panel detail" id="detail"></div>
+  </div>
+
+  <div class="bulkbar" id="bulk">
+    <b id="bcount">2 selecionados</b>
+    <span class="spacer"></span>
+    <button class="btn btn-sm">✍ Assinar</button>
+    <button class="btn btn-sm">✉ Enviar</button>
+    <button class="btn btn-sm">⤓ Baixar PDF</button>
+    <button class="btn btn-sm">⊘ Revogar</button>
+    <button class="btn btn-sm" onclick="clearSel()">✕ Limpar</button>
+  </div>
+</div>
+
+<script>
+const DATA = [
+  {c:'AB3HNQ4VXY',n:'Ana Beatriz Carvalho',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'15/08/2026',s:'emitido'},
+  {c:'KD9PLM2WXA',n:'Bruno Almeida Souza',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'15/08/2026',s:'emitido'},
+  {c:'QR4TZC8NVB',n:'Carla Mendes Oliveira',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'15/08/2026',s:'emitido'},
+  {c:'LM2WXA7HQD',n:'Daniel Ferreira Lima',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'15/08/2026',s:'emitido'},
+  {c:'ZC8NVBR4TQ',n:'Eduarda Ribeiro Santos',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'15/08/2026',s:'emitido'},
+  {c:'WXA7HQDLM2',n:'Felipe Gonçalves Rocha',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'15/08/2026',s:'emitido'},
+  {c:'NVBR4TQZC8',n:'Gabriela Nunes Pereira',t:'VNC Advocacia · Turma A',cur:'IA Jurídica na Prática',d:'02/08/2026',s:'assinado'},
+  {c:'HQDLM2WXA7',n:'Henrique Barbosa Cardoso',t:'VNC Advocacia · Turma A',cur:'IA Jurídica na Prática',d:'02/08/2026',s:'assinado'},
+  {c:'R4TQZC8NVB',n:'Isabela Martins Azevedo',t:'VNC Advocacia · Turma A',cur:'IA Jurídica na Prática',d:'02/08/2026',s:'assinado'},
+  {c:'DLM2WXA7HQ',n:'João Pedro Teixeira',t:'VNC Advocacia · Turma A',cur:'IA Jurídica na Prática',d:'02/08/2026',s:'assinado'},
+  {c:'TQZC8NVBR4',n:'Larissa Cunha Moreira',t:'VNC Advocacia · Turma A',cur:'IA Jurídica na Prática',d:'02/08/2026',s:'assinado'},
+  {c:'M2WXA7HQDL',n:'Marcos Vinícius Ramos',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'10/07/2026',s:'enviado'},
+  {c:'8NVBR4TQZC',n:'Patrícia Lopes Faria',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'10/07/2026',s:'enviado'},
+  {c:'A7HQDLM2WX',n:'Rafael Augusto Pires',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'10/07/2026',s:'enviado'},
+  {c:'BR4TQZC8NV',n:'Sofia Albuquerque Dias',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'10/07/2026',s:'enviado'},
+  {c:'QZC8NVBR4T',n:'Thiago Moura Fontes',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'10/07/2026',s:'enviado'},
+  {c:'XA7HQDLM2W',n:'Vanessa Brito Carneiro',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'10/07/2026',s:'enviado'},
+  {c:'C8NVBR4TQZ',n:'William Teles Aragão',t:'Cliente · Turma 1',cur:'IA do Zero ao Entendimento Prático',d:'05/07/2026',s:'revogado'},
+];
+const LABEL={emitido:'Aguardando assinatura',assinado:'Aguardando envio',enviado:'Enviado',revogado:'Revogado'};
+const STEPS=['emitido','assinado','enviado'];
+let filter='todos', selected=new Set(), active=0;
+const initials=n=>n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const view=()=>DATA.map((x,i)=>({...x,i})).filter(x=>filter==='todos'||x.s===filter);
+
+function renderList(){
+  const list=document.getElementById('list');
+  list.innerHTML=view().map(x=>`
+    <div class="row s-${x.s} ${x.i===active?'sel':''}" onclick="pick(${x.i})">
+      <input type="checkbox" ${selected.has(x.i)?'checked':''} onclick="event.stopPropagation();toggle(${x.i})">
+      <div class="av">${initials(x.n)}</div>
+      <div class="info"><div class="nm">${x.n}</div><div class="sub">${x.t}</div></div>
+      <span class="dot"></span>
+    </div>`).join('') || '<div style="padding:2rem;text-align:center;color:var(--muted)">Nada aqui.</div>';
+}
+function renderDetail(){
+  const x=DATA[active]; const si=STEPS.indexOf(x.s);
+  const next = x.s==='emitido'?'✍ Assinar certificado': x.s==='assinado'?'✉ Enviar ao participante': x.s==='enviado'?'⤓ Baixar PDF':'↩ Reativar';
+  document.getElementById('detail').innerHTML=`
+    <div class="dtop">
+      <div><h2 class="dtitle">${x.n}</h2><p class="dsub">${x.t} · ${x.cur}</p></div>
+      <span class="pill s-${x.s}">${LABEL[x.s]}</span>
+    </div>
+    <div class="thumb"><div class="pn">pensoIA</div><div class="ey">CERTIFICADO DE PARTICIPAÇÃO</div><div class="nm">${x.n}</div></div>
+    <div class="meta">
+      <div><div class="k">Código</div><div class="v" style="font-family:var(--mono)">${x.c}</div></div>
+      <div><div class="k">Carga horária</div><div class="v">12 horas</div></div>
+      <div><div class="k">Curso</div><div class="v">${x.cur}</div></div>
+      <div><div class="k">Emissão</div><div class="v">${x.d}</div></div>
+    </div>
+    <div class="stepper">
+      <div class="step ${si>=0?'ok':''} ${x.s==='emitido'?'now':''}">Emitido</div>
+      <div class="step ${si>=1?'ok':''} ${x.s==='assinado'?'now':''}">Assinado</div>
+      <div class="step ${si>=2?'ok':''} ${x.s==='enviado'?'now':''}">Enviado</div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary btn-sm">${next}</button>
+      <button class="btn btn-sm">👁 Visualizar</button>
+      <button class="btn btn-sm">⤓ PDF</button>
+      <button class="btn btn-sm">🔗 Link de validação</button>
+      ${x.s!=='revogado'?'<button class="btn btn-sm">⊘ Revogar</button>':''}
+    </div>`;
+}
+function pick(i){active=i;renderList();renderDetail();}
+function toggle(i){selected.has(i)?selected.delete(i):selected.add(i);syncBulk();renderList();}
+function clearSel(){selected.clear();syncBulk();renderList();}
+function syncBulk(){const b=document.getElementById('bulk');b.classList.toggle('on',selected.size>0);document.getElementById('bcount').textContent=selected.size+' selecionado'+(selected.size>1?'s':'');}
+document.getElementById('cards').addEventListener('click',e=>{const c=e.target.closest('.card');if(!c)return;document.querySelectorAll('.card').forEach(k=>k.classList.remove('on'));c.classList.add('on');filter=c.dataset.f;const v=view();active=v.length?v[0].i:0;renderList();renderDetail();});
+renderList();renderDetail();
+</script>
+</body>
+</html>

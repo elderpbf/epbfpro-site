@@ -258,6 +258,7 @@ export const certificates = {
   list:       (p) => call('cert_list', p),        // { turma_id?, status?, q? }
   get:        (p) => call('cert_get', p),         // { code }
   revoke:     (p) => call('cert_revoke', p),      // { code }
+  markSigned: (p) => call('cert_mark_signed', p), // { code }
   markSent:   (p) => call('cert_mark_sent', p),   // { code }
   attachPdf:  (p) => call('cert_attach_pdf', p)   // { code, pdf_b64 }
 };

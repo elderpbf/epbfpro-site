@@ -303,12 +303,14 @@
   letter-spacing: 0.04em;
 }
 
-.cdx-cert-badge--issued  { background: rgba(99,102,241,0.12); color: #4f46e5; }
+.cdx-cert-badge--issued  { background: rgba(245,158,11,0.14); color: #b45309; }
+.cdx-cert-badge--signed  { background: rgba(59,130,246,0.12); color: #2563eb; }
 .cdx-cert-badge--sent    { background: rgba(16,185,129,0.12); color: #059669; }
 .cdx-cert-badge--revoked { background: rgba(239,68,68,0.12);  color: #dc2626; }
 .cdx-cert-badge--unknown { background: rgba(107,114,128,0.12);color: var(--text-secondary); }
 
-[data-theme="dark"] .cdx-cert-badge--issued  { background: rgba(99,102,241,0.22); color: #a5b4fc; }
+[data-theme="dark"] .cdx-cert-badge--issued  { background: rgba(245,158,11,0.20); color: #fbbf24; }
+[data-theme="dark"] .cdx-cert-badge--signed  { background: rgba(59,130,246,0.22); color: #93c5fd; }
 [data-theme="dark"] .cdx-cert-badge--sent    { background: rgba(16,185,129,0.18); color: #6ee7b7; }
 [data-theme="dark"] .cdx-cert-badge--revoked { background: rgba(239,68,68,0.18);  color: #fca5a5; }
 
@@ -559,3 +561,86 @@
   .cdx-certs-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 200px; }
   .cdx-field-row { flex-direction: column; gap: 0; }
 }
+
+/* ── Emissão dashboard (ported from backstage/mocks/emissao/a3.html) ──────────
+   Conceito C: faixa de KPIs (clicáveis = filtro de status) + tabela densa
+   ordenável com select-all no header + barra de ações em massa. Cores de status:
+   amber (aguardando assinatura) / blue (aguardando envio) / green / red. */
+.cdx-emissao {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  min-height: 0;
+}
+
+.cdx-emissao-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7rem;
+}
+.cdx-emissao-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.cdx-emissao-kpi:hover { transform: translateY(-1px); box-shadow: 0 8px 20px var(--shadow); }
+.cdx-emissao-kpi.is-active { box-shadow: 0 0 0 2px var(--primary); }
+.cdx-emissao-kpi-n { font-size: 1.7rem; font-weight: 700; line-height: 1; color: var(--text-primary); }
+.cdx-emissao-kpi-l { font-size: 0.72rem; color: var(--text-secondary); }
+.cdx-emissao-kpi--issued  { border-left-color: #f59e0b; }
+.cdx-emissao-kpi--signed  { border-left-color: #3b82f6; }
+.cdx-emissao-kpi--sent    { border-left-color: var(--success, #10b981); }
+.cdx-emissao-kpi--revoked { border-left-color: var(--error, #ef4444); }
+[data-theme="dark"] .cdx-emissao-kpi { background: var(--surface); border-color: var(--border); }
+
+.cdx-emissao-spacer { flex: 1; }
+
+.cdx-emissao-tablewrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 6px 22px var(--shadow);
+  overflow: auto;
+}
+[data-theme="dark"] .cdx-emissao-tablewrap { background: var(--surface); border-color: var(--border); }
+
+.cdx-emissao-table th.cdx-emissao-th { cursor: pointer; user-select: none; white-space: nowrap; }
+.cdx-emissao-table th.cdx-emissao-th:hover { color: var(--text-primary); }
+.cdx-emissao-table th.is-sorted { color: var(--primary); }
+.cdx-emissao-sort { font-size: 0.7em; }
+.cdx-emissao-cbcol { width: 36px; text-align: center; }
+.cdx-emissao-cbcol input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.cdx-emissao-table tr.is-selected td { background: var(--cdx-card-sel-bg, rgba(20,184,166,0.10)); }
+
+.cdx-emissao-bulk {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 1.2rem;
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  background: #061a51;
+  color: #fff;
+  border-radius: 14px;
+  padding: 0.55rem 0.85rem;
+  box-shadow: 0 14px 40px rgba(6,26,81,0.4);
+  z-index: 9400;
+}
+.cdx-emissao-bulk.is-on { display: flex; }
+.cdx-emissao-bulk b { font-size: 0.85rem; white-space: nowrap; padding-right: 0.2rem; }
+.cdx-emissao-bulk .cdx-btn { background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.25); color: #fff; }
+.cdx-emissao-bulk .cdx-btn:hover { background: rgba(255,255,255,0.24); }
+
+@media (max-width: 880px) { .cdx-emissao-kpis { grid-template-columns: repeat(2, 1fr); } }

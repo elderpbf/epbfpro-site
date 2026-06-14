@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emissão · B — Pipeline por status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#14b8a6; --primary-dark:#0d9488; --navy:#061a51;
+    --bg:#d4f4ed; --surface:#fff; --ink:#134e4a; --ink2:#115e59; --muted:#5b7975;
+    --border:#e2e8f0; --shadow:rgba(20,184,166,.12);
+    --amber:#f59e0b; --blue:#3b82f6; --green:#10b981; --red:#ef4444;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1480px;margin:0 auto;padding:1.4rem 1.6rem 3rem}
+  .crumbs{font-size:.78rem;color:var(--ink2);letter-spacing:.04em;margin-bottom:.5rem}
+  .crumbs b{color:var(--primary-dark)}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+  .head h1{margin:0;font-size:1.5rem;font-weight:700;color:var(--navy)}
+  .head p{margin:.25rem 0 0;font-size:.86rem;color:var(--muted)}
+  .toolbar{display:flex;gap:.5rem;align-items:center}
+  .sel,.search{border:1px solid var(--border);border-radius:8px;padding:.45rem .6rem;font:inherit;font-size:.82rem;background:var(--surface)}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:9px;padding:.5rem .85rem;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+  .btn:hover{border-color:var(--primary)}
+  .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;box-shadow:0 6px 16px var(--shadow)}
+  .btn-sm{padding:.3rem .55rem;font-size:.74rem}
+  .hint{font-size:.78rem;color:var(--muted);margin:.2rem 0 1rem;display:flex;align-items:center;gap:.4rem}
+  /* board */
+  .board{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;align-items:start}
+  .col{background:rgba(255,255,255,.55);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;max-height:74vh}
+  .colhead{padding:.7rem .8rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem;border-radius:14px 14px 0 0}
+  .colhead .tag{width:10px;height:10px;border-radius:3px}
+  .colhead .ttl{font-weight:700;font-size:.86rem;color:var(--navy)}
+  .colhead .cnt{margin-left:auto;font-size:.78rem;font-weight:700;background:#fff;border:1px solid var(--border);border-radius:999px;padding:.05rem .5rem;color:var(--ink2)}
+  .c-emitido .tag{background:var(--amber)} .c-assinado .tag{background:var(--blue)}
+  .c-enviado .tag{background:var(--green)} .c-revogado .tag{background:var(--red)}
+  .colbulk{padding:.45rem .8rem;border-bottom:1px solid var(--border);display:flex;gap:.4rem;align-items:center;background:rgba(255,255,255,.7)}
+  .colbulk label{font-size:.74rem;color:var(--muted);display:flex;align-items:center;gap:.3rem;cursor:pointer}
+  .colbulk .grow{flex:1}
+  .cards{padding:.6rem;overflow:auto;display:flex;flex-direction:column;gap:.55rem}
+  .ccard{background:#fff;border:1px solid var(--border);border-radius:11px;padding:.6rem .7rem;box-shadow:0 2px 8px rgba(6,26,81,.05);cursor:grab}
+  .ccard:hover{box-shadow:0 8px 18px var(--shadow)}
+  .ccard .top{display:flex;align-items:center;gap:.5rem}
+  .ccard input{accent-color:var(--primary)}
+  .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--navy));color:#fff;display:grid;place-items:center;font-weight:600;font-size:.72rem;flex:0 0 auto}
+  .ccard .nm{font-weight:600;font-size:.83rem;line-height:1.1}
+  .ccard .sub{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+  .ccard .meta{display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;font-size:.7rem;color:var(--muted)}
+  .ccard .meta .code{font-family:var(--mono)}
+  .ccard .row2{display:flex;gap:.35rem;margin-top:.5rem}
+  .adv{flex:1;justify-content:center;background:color-mix(in srgb,var(--primary) 12%,#fff);border-color:color-mix(in srgb,var(--primary) 35%,#fff);color:var(--primary-dark)}
+  .icon{padding:.3rem .45rem}
+  .empty{padding:1.5rem .8rem;text-align:center;color:var(--muted);font-size:.78rem}
+  @media(max-width:1200px){.board{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumbs">Certificados › <b>Emissão</b></div>
+  <div class="head">
+    <div><h1>Emissão</h1><p>O fluxo dos certificados em colunas, da assinatura ao envio. Avance um a um ou a coluna inteira.</p></div>
+    <div class="toolbar">
+      <select class="sel"><option>Todas as turmas</option><option>Cliente · Turma 1</option><option>VNC Advocacia · Turma A</option></select>
+      <input class="search" placeholder="Buscar nome…">
+      <button class="btn btn-primary">＋ Emitir</button>
+    </div>
+  </div>
+  <div class="hint">↳ Cada cartão avança pra próxima etapa pelo botão. Selecione vários e use a ação do topo da coluna pra mover em lote.</div>
+
+  <div class="board" id="board"></div>
+</div>
+
+<script>
+const DATA=[
+  {c:'AB3HNQ4VXY',n:'Ana Beatriz Carvalho',t:'Cliente · Turma 1',d:'15/08',s:'emitido'},
+  {c:'KD9PLM2WXA',n:'Bruno Almeida Souza',t:'Cliente · Turma 1',d:'15/08',s:'emitido'},
+  {c:'QR4TZC8NVB',n:'Carla Mendes Oliveira',t:'Cliente · Turma 1',d:'15/08',s:'emitido'},
+  {c:'LM2WXA7HQD',n:'Daniel Ferreira Lima',t:'Cliente · Turma 1',d:'15/08',s:'emitido'},
+  {c:'ZC8NVBR4TQ',n:'Eduarda Ribeiro Santos',t:'Cliente · Turma 1',d:'15/08',s:'emitido'},
+  {c:'WXA7HQDLM2',n:'Felipe Gonçalves Rocha',t:'Cliente · Turma 1',d:'15/08',s:'emitido'},
+  {c:'NVBR4TQZC8',n:'Gabriela Nunes Pereira',t:'VNC · Turma A',d:'02/08',s:'assinado'},
+  {c:'HQDLM2WXA7',n:'Henrique Barbosa Cardoso',t:'VNC · Turma A',d:'02/08',s:'assinado'},
+  {c:'R4TQZC8NVB',n:'Isabela Martins Azevedo',t:'VNC · Turma A',d:'02/08',s:'assinado'},
+  {c:'DLM2WXA7HQ',n:'João Pedro Teixeira',t:'VNC · Turma A',d:'02/08',s:'assinado'},
+  {c:'TQZC8NVBR4',n:'Larissa Cunha Moreira',t:'VNC · Turma A',d:'02/08',s:'assinado'},
+  {c:'M2WXA7HQDL',n:'Marcos Vinícius Ramos',t:'Cliente · Turma 1',d:'10/07',s:'enviado'},
+  {c:'8NVBR4TQZC',n:'Patrícia Lopes Faria',t:'Cliente · Turma 1',d:'10/07',s:'enviado'},
+  {c:'A7HQDLM2WX',n:'Rafael Augusto Pires',t:'Cliente · Turma 1',d:'10/07',s:'enviado'},
+  {c:'BR4TQZC8NV',n:'Sofia Albuquerque Dias',t:'Cliente · Turma 1',d:'10/07',s:'enviado'},
+  {c:'QZC8NVBR4T',n:'Thiago Moura Fontes',t:'Cliente · Turma 1',d:'10/07',s:'enviado'},
+  {c:'XA7HQDLM2W',n:'Vanessa Brito Carneiro',t:'Cliente · Turma 1',d:'10/07',s:'enviado'},
+  {c:'C8NVBR4TQZ',n:'William Teles Aragão',t:'Cliente · Turma 1',d:'05/07',s:'revogado'},
+];
+const COLS=[
+  {s:'emitido',ttl:'Aguardando assinatura',adv:'✍ Assinar'},
+  {s:'assinado',ttl:'Aguardando envio',adv:'✉ Enviar'},
+  {s:'enviado',ttl:'Enviados',adv:'⤓ PDF'},
+  {s:'revogado',ttl:'Revogados',adv:'↩ Reativar'},
+];
+const ini=n=>n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+function render(){
+  document.getElementById('board').innerHTML=COLS.map(col=>{
+    const items=DATA.filter(x=>x.s===col.s);
+    const cards=items.map(x=>`
+      <div class="ccard">
+        <div class="top"><input type="checkbox"><div class="av">${ini(x.n)}</div>
+          <div><div class="nm">${x.n}</div><div class="sub">${x.t}</div></div></div>
+        <div class="meta"><span class="code">${x.c}</span><span>${x.d}</span></div>
+        <div class="row2">
+          <button class="btn btn-sm adv">${col.adv}${col.s==='emitido'||col.s==='assinado'?' →':''}</button>
+          <button class="btn btn-sm icon" title="Visualizar">👁</button>
+          <button class="btn btn-sm icon" title="Link">🔗</button>
+        </div>
+      </div>`).join('') || '<div class="empty">Coluna vazia.</div>';
+    const bulk = col.s!=='revogado' ? `<div class="colbulk"><label><input type="checkbox"> selecionar todos</label><span class="grow"></span><button class="btn btn-sm">${col.adv} todos</button></div>` : '';
+    return `<div class="col c-${col.s}">
+      <div class="colhead"><span class="tag"></span><span class="ttl">${col.ttl}</span><span class="cnt">${items.length}</span></div>
+      ${bulk}
+      <div class="cards">${cards}</div>
+    </div>`;
+  }).join('');
+}
+render();
+</script>
+</body>
+</html>

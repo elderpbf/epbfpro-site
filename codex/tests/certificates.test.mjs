@@ -135,6 +135,11 @@ describe('statusBadgeClass', () => {
     assert.ok(cls.includes('cdx-cert-badge--sent'), 'sent class');
   });
 
+  test('signed returns signed class', () => {
+    const cls = certs.statusBadgeClass('signed');
+    assert.ok(cls.includes('cdx-cert-badge--signed'), 'signed class');
+  });
+
   test('revoked returns revoked class', () => {
     const cls = certs.statusBadgeClass('revoked');
     assert.ok(cls.includes('cdx-cert-badge--revoked'), 'revoked class');
@@ -414,5 +419,37 @@ describe('generateQrDataUrl', () => {
     const a = qr.generateQrDataUrl(text);
     const b = qr.generateQrDataUrl(text);
     assert.equal(a, b, 'QR generation is deterministic');
+  });
+});
+
+// ── Emissão dashboard port (backstage/mocks/emissao/a3.html → cdx-emissao-*) ───
+// Source-contract test: pins the A3 port. The Emitidos status <select> is gone,
+// replaced by clickable KPI cards; the table gains a header select-all + sortable
+// headers + a bulk-action bar; the 'signed' lifecycle is wired through the facade.
+import { readFileSync } from 'node:fs';
+describe('Emissão dashboard port (source contract)', () => {
+  const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
+  const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+
+  test('KPI filter cards present', () => {
+    assert.ok(src.includes('cdx-emissao-kpi'), 'KPI card class');
+    assert.ok(src.includes('cdx-emissao-kpis'), 'KPI container');
+  });
+  test('header select-all + sortable headers present', () => {
+    assert.ok(src.includes('cdx-emissao-selall'), 'select-all id');
+    assert.ok(src.includes('data-sort='), 'sortable headers');
+    assert.ok(src.includes('cdx-emissao-cbcol'), 'checkbox column');
+  });
+  test('bulk-action bar present', () => {
+    assert.ok(src.includes('cdx-emissao-bulk'), 'bulk bar');
+    assert.ok(src.includes("data-bulk=\"sign\"") || src.includes("data-bulk='sign'"), 'bulk sign action');
+  });
+  test('old status <select> filter is gone (cards replaced it)', () => {
+    assert.ok(!src.includes('cdx-certs-filter-status'), 'old status select removed');
+  });
+  test("'signed' lifecycle wired through the facade", () => {
+    assert.ok(src.includes("data-action=\"sign\""), 'row sign action');
+    assert.ok(src.includes('api.markSigned'), 'markSigned used');
+    assert.ok(api.includes('cert_mark_signed'), 'facade exposes cert_mark_signed');
   });
 });
