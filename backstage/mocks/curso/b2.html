@@ -20,15 +20,13 @@
   .btn{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:9px;padding:.5rem .85rem;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
   .btn:hover{border-color:var(--primary)}
   .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;box-shadow:0 6px 16px var(--shadow)}
-  .btn-ai{background:linear-gradient(135deg,var(--navy),#1e3a8a);color:#fff;border:none}
   .btn-sm{padding:.3rem .55rem;font-size:.75rem}
-  .btn-ghost{background:transparent;border:1px dashed var(--border);color:var(--ink2)}
   /* page header (like the other sub-tabs) */
   .phead{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.1rem}
   .phead h1{margin:0;font-size:1.5rem;font-weight:700;color:var(--navy)}
   .phead p{margin:.25rem 0 0;font-size:.86rem;color:var(--muted);max-width:560px}
   /* workspace: rail + main */
-  .work{display:grid;grid-template-columns:208px 1fr;gap:1.1rem;align-items:start}
+  .work{display:grid;grid-template-columns:200px 1fr;gap:1.1rem;align-items:start}
   .rail{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow);overflow:hidden}
   .rail-h{padding:.6rem .8rem;border-bottom:1px solid var(--border);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
   .ri{padding:.55rem .8rem;font-size:.84rem;cursor:pointer;border-left:3px solid transparent;color:var(--ink2)}
@@ -37,7 +35,7 @@
   .ri small{display:block;color:var(--muted);font-size:.7rem;font-weight:400}
   .rail .btn{margin:.55rem;width:calc(100% - 1.1rem);justify-content:center}
   .main{display:flex;flex-direction:column;gap:1rem;min-width:0}
-  /* course meta on top (frees the ementa to full width) */
+  /* course data ON TOP (full width) */
   .cmeta{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow);padding:1rem 1.2rem}
   .ctitle{font-size:1.4rem;font-weight:700;color:var(--navy);border:none;outline:none;width:100%;border-bottom:2px solid transparent;padding-bottom:.2rem}
   .ctitle:focus{border-bottom-color:var(--primary)}
@@ -47,63 +45,58 @@
   .cf input{border:none;background:transparent;font:inherit;font-size:.86rem;font-weight:600;color:var(--ink);width:100%;outline:none}
   .cf.stat{margin-left:auto;background:linear-gradient(135deg,rgba(20,184,166,.08),rgba(6,26,81,.04));border-color:var(--primary);display:flex;flex-direction:column;justify-content:center;min-width:auto}
   .cf.stat .v{font-size:.86rem;font-weight:700;color:var(--primary-dark)}
-  /* apostilas */
-  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow);padding:1rem 1.2rem}
-  .sec-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.7rem}
-  .sec-h b{font-size:1rem;color:var(--ink)}
-  .sec-h .hint{font-size:.74rem;color:var(--muted);display:flex;align-items:center;gap:.3rem}
-  .sec-h .sp{flex:1}
-  .apos{display:flex;gap:.7rem;flex-wrap:wrap}
-  .acard{display:flex;align-items:center;gap:.6rem;border:1px solid var(--border);border-radius:11px;padding:.6rem .7rem;min-width:240px;background:#f8fcfb}
-  .acard .ico{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;display:grid;place-items:center;font-size:.7rem;font-weight:700;flex:0 0 auto}
-  .acard .ico.doc{background:linear-gradient(135deg,var(--blue),#1e3a8a)}
-  .acard .t{font-weight:600;font-size:.85rem;color:var(--ink)}
-  .acard .s{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:.3rem;margin-top:.1rem}
-  .acard .sync{margin-left:.4rem;border:1px solid var(--border);background:#fff;border-radius:7px;padding:.2rem .4rem;font-size:.72rem;color:var(--primary-dark);font-weight:600;cursor:pointer}
-  .gdrive{display:inline-flex;align-items:center;gap:.25rem;font-size:.7rem;color:var(--green);font-weight:600}
-  .addapos{border:1px dashed var(--border);border-radius:11px;padding:.6rem .9rem;background:transparent;color:var(--ink2);font:inherit;font-weight:600;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:.4rem}
-  /* ementa — full width, with floating assistant */
-  .ementa{position:relative}
-  .outline{margin-top:.2rem}
+  /* two separate panels: ementa | IA */
+  .duo{display:grid;grid-template-columns:1.08fr .92fr;gap:1rem;align-items:start}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+  .p-h{display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border-bottom:1px solid var(--border)}
+  .p-h b{font-size:.95rem;color:var(--ink)}
+  .p-h .hint{font-size:.72rem;color:var(--muted)}
+  .p-h .sp{flex:1}
+  .p-body{padding:.8rem .9rem}
+  /* ementa outline */
   .o-mod{margin-bottom:.4rem}
-  .o-row{display:flex;align-items:center;gap:.5rem;padding:.32rem .4rem;border-radius:8px}
+  .o-row{display:flex;align-items:center;gap:.5rem;padding:.3rem .35rem;border-radius:8px}
   .o-row:hover{background:#f7fbfa}
   .o-row:hover .grip,.o-row:hover .add{opacity:1}
-  .grip{cursor:grab;color:#c2d3d0;font-size:.85rem;opacity:.3;flex:0 0 auto}
-  .caret{cursor:pointer;color:var(--muted);font-size:.7rem;width:14px;flex:0 0 auto}
-  .o-row.mod .tx{font-weight:700;font-size:1rem;color:var(--navy)}
-  .o-num{font-family:var(--mono);font-size:.7rem;font-weight:600;color:#fff;background:var(--navy);border-radius:5px;padding:.05rem .35rem;flex:0 0 auto}
-  .o-row.top{padding-left:1.7rem}
-  .o-row.top .tx{font-weight:600;font-size:.9rem;color:var(--ink)}
-  .o-row.sub{padding-left:3rem}
-  .o-row.sub .tx{font-size:.84rem;color:var(--ink2)}
+  .grip{cursor:grab;color:#c2d3d0;font-size:.82rem;opacity:.3;flex:0 0 auto}
+  .caret{cursor:pointer;color:var(--muted);font-size:.68rem;width:13px;flex:0 0 auto}
+  .o-row.mod .tx{font-weight:700;font-size:.96rem;color:var(--navy)}
+  .o-num{font-family:var(--mono);font-size:.68rem;font-weight:600;color:#fff;background:var(--navy);border-radius:5px;padding:.05rem .35rem;flex:0 0 auto}
+  .o-row.top{padding-left:1.6rem}
+  .o-row.top .tx{font-weight:600;font-size:.87rem;color:var(--ink)}
+  .o-row.sub{padding-left:2.8rem}
+  .o-row.sub .tx{font-size:.82rem;color:var(--ink2)}
   .o-row.sub .tx::before{content:"–";color:var(--primary);margin-right:.4rem}
   .tx{flex:1;outline:none}
   .tx:focus{box-shadow:inset 0 -2px 0 var(--primary)}
-  .add{opacity:0;border:none;background:transparent;color:var(--primary-dark);cursor:pointer;font-size:.74rem;font-weight:600;flex:0 0 auto}
-  .addmod{border:1px dashed var(--border);background:transparent;color:var(--ink2);border-radius:9px;padding:.45rem;width:100%;cursor:pointer;font:inherit;font-weight:600;font-size:.82rem;margin-top:.4rem}
-  /* floating assistant (C), dismissable -> ementa goes full width when closed */
-  .assistant{position:absolute;right:1rem;bottom:1rem;width:340px;background:var(--surface);border:1px solid var(--primary);border-radius:14px;box-shadow:0 18px 50px rgba(6,26,81,.28);overflow:hidden;display:flex;flex-direction:column;max-height:430px}
-  .as-h{display:flex;align-items:center;gap:.5rem;padding:.6rem .75rem;background:linear-gradient(135deg,var(--primary),var(--navy));color:#fff}
-  .as-h .ico{width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:.85rem}
-  .as-h b{font-size:.84rem}
-  .as-h .x{margin-left:auto;opacity:.85;cursor:pointer;font-size:1rem}
-  .as-chat{padding:.7rem;display:flex;flex-direction:column;gap:.5rem;overflow:auto;background:#fbfdfd}
-  .msg{max-width:90%;padding:.45rem .6rem;border-radius:11px;font-size:.79rem;line-height:1.45}
-  .msg.ai{background:#f1f7f6;border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:3px}
+  .add{opacity:0;border:none;background:transparent;color:var(--primary-dark);cursor:pointer;font-size:.72rem;font-weight:600;flex:0 0 auto}
+  .addmod{border:1px dashed var(--border);background:transparent;color:var(--ink2);border-radius:9px;padding:.45rem;width:100%;cursor:pointer;font:inherit;font-weight:600;font-size:.8rem;margin-top:.4rem}
+  /* IA panel */
+  .ia{min-height:520px}
+  .src{display:flex;gap:.35rem;padding:.7rem .9rem .2rem}
+  .src .opt{flex:1;text-align:center;padding:.4rem;font-size:.78rem;font-weight:600;color:var(--muted);border:1px solid var(--border);border-radius:9px;cursor:pointer;background:#f8fcfb}
+  .src .opt.on{color:#fff;background:linear-gradient(135deg,var(--navy),#1e3a8a);border-color:transparent}
+  .srcpick{margin:.5rem .9rem 0;display:flex;align-items:center;gap:.5rem;background:linear-gradient(135deg,rgba(20,184,166,.07),rgba(6,26,81,.04));border:1px solid var(--primary);border-radius:10px;padding:.5rem .6rem}
+  .srcpick .ico{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--blue),#1e3a8a);color:#fff;display:grid;place-items:center;font-size:.7rem;font-weight:700;flex:0 0 auto}
+  .srcpick .t{font-weight:600;font-size:.8rem;color:var(--ink)}
+  .srcpick .s{font-size:.7rem;color:var(--muted)}
+  .srcpick .chg{margin-left:auto;font-size:.72rem;color:var(--primary-dark);font-weight:600;cursor:pointer;text-decoration:underline}
+  .chat{flex:1;padding:.8rem .9rem;display:flex;flex-direction:column;gap:.5rem;overflow:auto}
+  .msg{max-width:90%;padding:.5rem .65rem;border-radius:12px;font-size:.81rem;line-height:1.45}
+  .msg.ai{background:#f4faf9;border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:3px}
   .msg.me{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
-  .msg.me.raw{background:#0b1f2a;font-family:var(--mono);font-size:.68rem;color:#cfe8e3;max-height:60px;overflow:hidden}
-  .as-comp{border-top:1px solid var(--border);padding:.5rem .6rem;background:var(--surface)}
-  .as-chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.4rem}
-  .as-chip{background:var(--bg);border:1px solid var(--border);color:var(--ink2);border-radius:999px;padding:.18rem .5rem;font-size:.7rem;font-weight:600;cursor:pointer}
-  .as-in{display:flex;gap:.4rem}
-  .as-in input{flex:1;border:1px solid var(--border);border-radius:9px;padding:.4rem .55rem;font:inherit;font-size:.79rem;background:#f8fcfb}
-  .pin{font-size:.72rem;color:var(--muted);margin-top:.5rem;display:flex;align-items:center;gap:.35rem}
+  .msg b{font-weight:700}
+  .compose{border-top:1px solid var(--border);padding:.6rem .7rem}
+  .chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.45rem}
+  .chip{background:var(--bg);border:1px solid var(--border);color:var(--ink2);border-radius:999px;padding:.2rem .55rem;font-size:.72rem;font-weight:600;cursor:pointer}
+  .chip:hover{border-color:var(--primary)}
+  .inrow{display:flex;gap:.45rem}
+  .inrow input{flex:1;border:1px solid var(--border);border-radius:10px;padding:.5rem .6rem;font:inherit;font-size:.81rem;background:#f8fcfb}
+  .inrow input:focus{outline:none;border-color:var(--primary);background:#fff}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <!-- page header, like the other sub-tabs -->
   <div class="phead">
     <div>
       <h1>Cursos</h1>
@@ -113,7 +106,7 @@
   </div>
 
   <div class="work">
-    <!-- left rail: course switcher -->
+    <!-- course switcher -->
     <div class="rail">
       <div class="rail-h">Cursos</div>
       <div class="ri on">IA Jurídica na Prática<small>16h · 2 turmas</small></div>
@@ -123,7 +116,7 @@
     </div>
 
     <div class="main">
-      <!-- course data ON TOP -->
+      <!-- course data on top -->
       <div class="cmeta">
         <input class="ctitle" value="IA Jurídica na Prática">
         <div class="cfields">
@@ -134,69 +127,61 @@
         </div>
       </div>
 
-      <!-- apostilas (Google Drive) -->
-      <div class="panel">
-        <div class="sec-h"><b>Apostilas</b><span class="hint">conteúdo completo do curso</span><span class="sp"></span><span class="gdrive">◑ Google Drive</span></div>
-        <div class="apos">
-          <div class="acard">
+      <!-- two separate panels -->
+      <div class="duo">
+        <!-- PANEL 1: ementa final -->
+        <div class="panel">
+          <div class="p-h"><b>Ementa</b><span class="hint">módulos › tópicos › subtópicos</span></div>
+          <div class="p-body">
+            <div class="o-mod">
+              <div class="o-row mod"><span class="grip">⠿</span><span class="caret">▾</span><span class="o-num">I</span><span class="tx" contenteditable>Fundamentos de IA no Direito</span><button class="add">＋ tópico</button></div>
+              <div class="o-row top"><span class="grip">⠿</span><span class="caret">▾</span><span class="tx" contenteditable>Como o modelo gera texto</span><button class="add">＋ sub</button></div>
+              <div class="o-row sub"><span class="grip">⠿</span><span class="tx" contenteditable>Tokens e janela de contexto</span></div>
+              <div class="o-row sub"><span class="grip">⠿</span><span class="tx" contenteditable>Capacidades e limites no contexto jurídico</span></div>
+              <div class="o-row top"><span class="grip">⠿</span><span class="tx" contenteditable>Onde a IA ajuda no escritório</span></div>
+            </div>
+            <div class="o-mod">
+              <div class="o-row mod"><span class="grip">⠿</span><span class="caret">▾</span><span class="o-num">II</span><span class="tx" contenteditable>Engenharia de Prompt jurídico</span><button class="add">＋ tópico</button></div>
+              <div class="o-row top"><span class="grip">⠿</span><span class="caret">▾</span><span class="tx" contenteditable>Anatomia de um bom prompt</span><button class="add">＋ sub</button></div>
+              <div class="o-row sub"><span class="grip">⠿</span><span class="tx" contenteditable>Papel, contexto, tarefa e formato</span></div>
+              <div class="o-row top"><span class="grip">⠿</span><span class="tx" contenteditable>Modelos de petição assistida</span></div>
+            </div>
+            <div class="o-mod">
+              <div class="o-row mod"><span class="grip">⠿</span><span class="caret">▾</span><span class="o-num">III</span><span class="tx" contenteditable>Pesquisa e jurisprudência</span><button class="add">＋ tópico</button></div>
+              <div class="o-row top"><span class="grip">⠿</span><span class="tx" contenteditable>Busca assistida e verificação de fontes</span></div>
+            </div>
+            <button class="addmod">＋ Adicionar módulo</button>
+          </div>
+        </div>
+
+        <!-- PANEL 2: IA assistant -->
+        <div class="panel ia">
+          <div class="p-h"><span style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--primary),var(--navy));color:#fff;display:grid;place-items:center;font-size:.8rem">✦</span><b>Assistente</b><span class="sp"></span><span class="hint">monta a ementa ao lado</span></div>
+          <!-- source: paste OR from an apostila (which lives in Conteúdo) -->
+          <div class="src"><div class="opt">Colar programa</div><div class="opt on">De uma apostila</div></div>
+          <div class="srcpick">
             <div class="ico">PDF</div>
-            <div><div class="t">Apostila Completa — IA Jurídica</div><div class="s">atualizada há 2 dias <button class="sync">↻ atualizar</button></div></div>
+            <div><div class="t">Apostila Completa — IA Jurídica</div><div class="s">do Conteúdo · 12 seções</div></div>
+            <span class="chg">trocar</span>
           </div>
-          <div class="acard">
-            <div class="ico doc">DOC</div>
-            <div><div class="t">Caderno de Exercícios</div><div class="s">atualizada há 1 semana <button class="sync">↻ atualizar</button></div></div>
+          <div class="chat">
+            <div class="msg ai">Li a apostila <b>"IA Jurídica"</b> (12 seções) e montei a ementa ao lado: 3 módulos, 9 tópicos. As seções "Pesquisa" e "Jurisprudência" eu juntei. Quer ajustar?</div>
+            <div class="msg me">encurta as descrições e renumera</div>
+            <div class="msg ai">Feito. Mais algum ajuste, ou pode salvar?</div>
           </div>
-          <button class="addapos">＋ adicionar apostila do Drive</button>
-        </div>
-      </div>
-
-      <!-- ementa: full width + floating assistant -->
-      <div class="panel ementa">
-        <div class="sec-h"><b>Ementa</b><span class="hint">módulos › tópicos › subtópicos</span><span class="sp"></span><button class="btn btn-ai btn-sm">✦ Assistente</button></div>
-        <div class="outline">
-          <div class="o-mod">
-            <div class="o-row mod"><span class="grip">⠿</span><span class="caret">▾</span><span class="o-num">I</span><span class="tx" contenteditable>Fundamentos de IA no Direito</span><button class="add">＋ tópico</button></div>
-            <div class="o-row top"><span class="grip">⠿</span><span class="caret">▾</span><span class="tx" contenteditable>Como o modelo gera texto</span><button class="add">＋ sub</button></div>
-            <div class="o-row sub"><span class="grip">⠿</span><span class="tx" contenteditable>Tokens e janela de contexto</span></div>
-            <div class="o-row sub"><span class="grip">⠿</span><span class="tx" contenteditable>Capacidades e limites no contexto jurídico</span></div>
-            <div class="o-row top"><span class="grip">⠿</span><span class="caret">▾</span><span class="tx" contenteditable>Onde a IA ajuda no escritório</span><button class="add">＋ sub</button></div>
-          </div>
-          <div class="o-mod">
-            <div class="o-row mod"><span class="grip">⠿</span><span class="caret">▾</span><span class="o-num">II</span><span class="tx" contenteditable>Engenharia de Prompt jurídico</span><button class="add">＋ tópico</button></div>
-            <div class="o-row top"><span class="grip">⠿</span><span class="caret">▾</span><span class="tx" contenteditable>Anatomia de um bom prompt</span><button class="add">＋ sub</button></div>
-            <div class="o-row sub"><span class="grip">⠿</span><span class="tx" contenteditable>Papel, contexto, tarefa e formato</span></div>
-            <div class="o-row top"><span class="grip">⠿</span><span class="tx" contenteditable>Modelos de petição assistida</span></div>
-          </div>
-          <div class="o-mod">
-            <div class="o-row mod"><span class="grip">⠿</span><span class="caret">▾</span><span class="o-num">III</span><span class="tx" contenteditable>Pesquisa e jurisprudência</span><button class="add">＋ tópico</button></div>
-            <div class="o-row top"><span class="grip">⠿</span><span class="tx" contenteditable>Busca assistida e verificação de fontes</span></div>
-          </div>
-          <button class="addmod">＋ Adicionar módulo</button>
-        </div>
-
-        <!-- C's conversational assistant, floating (dismissable) -->
-        <div class="assistant">
-          <div class="as-h"><span class="ico">✦</span><b>Assistente da ementa</b><span class="x">×</span></div>
-          <div class="as-chat">
-            <div class="msg ai">Cole o programa bruto que eu organizo em módulos, tópicos e subtópicos.</div>
-            <div class="msg me raw">modulo 1 fundamentos ia direito tokens contexto capacidades limites onde ajuda escritorio. PROMPT anatomia papel contexto tarefa formato peticao assistida...</div>
-            <div class="msg ai">Pronto, 3 módulos e 9 tópicos (à esquerda). Quer juntar "pesquisa" e "jurisprudência"?</div>
-            <div class="msg me">junta e encurta as descrições</div>
-            <div class="msg ai">Feito. Mais algum ajuste?</div>
-          </div>
-          <div class="as-comp">
-            <div class="as-chips"><span class="as-chip">↻ renumerar</span><span class="as-chip">✂ resumir</span></div>
-            <div class="as-in"><input placeholder="Peça um ajuste…"><button class="btn btn-primary btn-sm">↑</button></div>
+          <div class="compose">
+            <div class="chips"><span class="chip">＋ detalhar módulo I</span><span class="chip">✂ resumir</span><span class="chip">↻ regenerar da apostila</span></div>
+            <div class="inrow"><input placeholder="Peça um ajuste em linguagem natural…"><button class="btn btn-primary btn-sm">↑</button></div>
           </div>
         </div>
       </div>
-      <div class="pin">↳ O assistente abre/fecha; fechado, a ementa ocupa a largura inteira.</div>
     </div>
   </div>
 </div>
 <script>
   document.querySelectorAll('.caret').forEach(c=>c.onclick=()=>{c.textContent=c.textContent==='▾'?'▸':'▾';});
   document.querySelectorAll('.ri').forEach(r=>r.onclick=()=>{document.querySelectorAll('.ri').forEach(x=>x.classList.remove('on'));r.classList.add('on');});
+  document.querySelectorAll('.src .opt').forEach(o=>o.onclick=()=>{document.querySelectorAll('.src .opt').forEach(x=>x.classList.remove('on'));o.classList.add('on');});
 </script>
 </body>
 </html>
