@@ -13,7 +13,7 @@
 
 <!-- Shared tokens + public chrome (Codex owns its component CSS below). -->
 <link rel="stylesheet" href="/codex/css/theme.css?v=1.0">
-<link rel="stylesheet" href="/backstage/css/public-header.css?v=1.8">
+<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.0">
 <link rel="stylesheet" href="/codex/css/item-render.css?v=1.0">
 <link rel="stylesheet" href="/codex/questions/questions.css?v=1.0">
 <link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.0">
@@ -97,10 +97,8 @@
 
 </div>
 
-<!-- Shared services + reused leaf components (window globals) before the boot:
-     CTRenderer (item content), CT_TYPE_FILTER (chip strip), CTTarefaSubmitModal
-     (tarefa submit) + its field registry. Same shared components the admin uses. -->
-<script src="/backstage/js/utils.js?v=1.5"></script>
+<!-- (backstage/js/utils.js dropped: dead load. Its globals are admin-only;
+     the Trail vendors its own renderers + toast as Codex ES modules.) -->
 
 <!-- Codex is ES modules: one boot owns glyphs, points the backend at codex-api,
      registers the tab renderers, and mounts. -->
