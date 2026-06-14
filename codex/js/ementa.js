@@ -122,6 +122,60 @@ export function parseEmenta(text) {
   return { modules };
 }
 
+// ── AI assistant seam (Cursos) ────────────────────────────────────────────────
+// The conversational assistant in the Cursos sub-tab talks to the shared Codex
+// AI endpoint (codex-api `ai_chat`, via the `ai.chat` facade). These two helpers
+// are pure: courses.js owns the network call + the chat UI, this owns the prompt
+// and the response shape so both are unit-testable without a browser.
+
+// Build the system prompt. The model is told the nested ementa shape, the current
+// course + its program, and to answer with a single JSON object carrying a short
+// PT-BR chat reply plus (only when it changed the program) the full new ementa.
+export function buildEmentaAIPrompt({ courseTitle, ementa } = {}) {
+  const current = normalizeEmenta(ementa);
+  const outline = current.modules.length ? ementaToText(current) : '(vazia)';
+  return [
+    'You help build and refine the syllabus ("ementa") of a course taught on PensoIA.',
+    'The ementa is a nested structure: modules → topics → subtopics. Its JSON shape is:',
+    '{ "modules": [ { "title": "...", "topics": [ { "title": "...", "subtopics": [ "..." ] } ] } ] }',
+    '',
+    'Course title: ' + String(courseTitle || '(sem título)'),
+    'Current ementa (indented outline, 2 spaces per level):',
+    outline,
+    '',
+    'When the user asks you to create or change the program, return the FULL updated ementa',
+    '(not a diff). When they only ask a question or you make no change, omit it (use null).',
+    'Always answer with a SINGLE JSON object and nothing else:',
+    '{ "reply": "<short reply, Brazilian Portuguese>", "ementa": <the full ementa object, or null> }',
+    'Keep titles concise. Write all human-facing text (reply + ementa titles) in Brazilian Portuguese.',
+  ].join('\n');
+}
+
+// Parse the model output into { reply, ementa }. Tolerates ```json fences, a bare
+// ementa object, or prose around the JSON. Never throws; ementa is normalized or
+// null. reply is '' when the model returned only an ementa.
+export function parseEmentaAIResponse(text) {
+  const raw = String(text == null ? '' : text);
+  let obj = null;
+  // Prefer the outermost {...} slice (handles fences/prose around it).
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start !== -1 && end > start) {
+    try { obj = JSON.parse(raw.slice(start, end + 1)); } catch (_) { obj = null; }
+  }
+  if (obj == null) {
+    try { obj = JSON.parse(raw.trim()); } catch (_) { return { reply: '', ementa: null }; }
+  }
+  if (!obj || typeof obj !== 'object') return { reply: '', ementa: null };
+  // A bare ementa object (has modules, no reply) is treated as the program itself.
+  if (Array.isArray(obj.modules) && obj.reply === undefined) {
+    return { reply: '', ementa: normalizeEmenta(obj) };
+  }
+  const reply = obj.reply != null ? String(obj.reply) : '';
+  const ementa = (obj.ementa && typeof obj.ementa === 'object') ? normalizeEmenta(obj.ementa) : null;
+  return { reply, ementa };
+}
+
 // Serialize back to an indented outline (2 spaces per level). Round-trips through
 // parseEmenta.
 export function ementaToText(ementa) {

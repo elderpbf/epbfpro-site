@@ -8,17 +8,20 @@
 // here via mount()/unmount(). Layout mirrors backstage/mocks/curso/b2.html:
 // page header, course-switcher rail, course data on top, full-width ementa editor.
 //
-// AI assistant (conversational refine + "from an apostila" source) is a deferred
-// follow-up — it needs the Worker LLM endpoint wired with a prompt + a chat UI.
-// The functional v1 ships the heuristic "colar e estruturar" (ementa.parseEmenta),
-// manual editing, and persistence.
+// AI assistant: the conversational panel (the "C" of the B+C hybrid) talks to the
+// shared Codex AI endpoint via the `ai.chat` facade (codex-api `ai_chat`). It
+// reads the current ementa, applies a natural-language request, and writes the
+// updated program back into the editor at the left. The heuristic "colar e
+// estruturar" (ementa.parseEmenta) stays as the offline, no-LLM path.
+// The "De uma apostila" source is deferred (needs multi-apostila in Conteúdo).
 
-import { courses as api } from '../js/codex-api.js';
+import { courses as api, ai } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import {
   emptyEmenta, normalizeEmenta, ementaStats, parseEmenta,
+  buildEmentaAIPrompt, parseEmentaAIResponse,
 } from '../js/ementa.js';
 
 let _viewEl = null;
@@ -26,6 +29,7 @@ let _courses = [];
 let _selectedId = null;
 let _course = null;        // full selected course (with ementa)
 let _ementa = emptyEmenta(); // working copy of the selected course's ementa
+let _aiMsgs = [];          // assistant chat history ({role, content}) for ai.chat
 
 function _toast(msg) {
   if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
@@ -99,6 +103,7 @@ function _renderRail() {
 
 function _selectCourse(id) {
   _selectedId = id;
+  _aiMsgs = []; // fresh chat per course
   _renderRail();
   const el = _q(IDS.main);
   if (el) el.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.loading')) + '</div>';
@@ -148,19 +153,104 @@ function _renderMain() {
         '<button class="cdx-btn cdx-btn-sm cdx-cursos-archive" id="cdx-cur-archive">' + esc(t('cohorts.archive')) + '</button>' +
       '</div>' +
     '</div>' +
-    // ementa editor (full width)
-    '<div class="cdx-cursos-panel">' +
-      '<div class="cdx-cursos-panel-h">' +
-        '<b>' + esc(t('cohorts.ementa_title')) + '</b>' +
-        '<span class="cdx-cursos-stats">' + esc(statLine) + '</span>' +
-        '<span class="cdx-cursos-sp"></span>' +
-        '<button class="cdx-btn cdx-btn-sm" id="cdx-cur-paste">' + esc(t('cohorts.ementa_paste_btn')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" id="cdx-cur-save">' + esc(t('cohorts.ementa_save')) + '</button>' +
+    // two separate panels: ementa | IA assistant (b2 hybrid)
+    '<div class="cdx-cursos-duo">' +
+      '<div class="cdx-cursos-panel">' +
+        '<div class="cdx-cursos-panel-h">' +
+          '<b>' + esc(t('cohorts.ementa_title')) + '</b>' +
+          '<span class="cdx-cursos-stats">' + esc(statLine) + '</span>' +
+          '<span class="cdx-cursos-sp"></span>' +
+          '<button class="cdx-btn cdx-btn-sm" id="cdx-cur-paste">' + esc(t('cohorts.ementa_paste_btn')) + '</button>' +
+          '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" id="cdx-cur-save">' + esc(t('cohorts.ementa_save')) + '</button>' +
+        '</div>' +
+        '<div class="cdx-cursos-ementa" id="cdx-cur-ementa">' + _renderEmenta() + '</div>' +
       '</div>' +
-      '<div class="cdx-cursos-ementa" id="cdx-cur-ementa">' + _renderEmenta() + '</div>' +
+      _renderAssistant() +
     '</div>';
 
   _wireMain();
+}
+
+// ── AI assistant panel (conversational ementa builder) ──────────────────────────
+
+function _aiChip(labelKey, qKey) {
+  return '<button type="button" class="cdx-cur-chip" data-q="' + esc(t(qKey)) + '">' + esc(t(labelKey)) + '</button>';
+}
+
+function _renderAssistant() {
+  return (
+    '<div class="cdx-cursos-panel cdx-cur-ia">' +
+      '<div class="cdx-cursos-panel-h">' +
+        '<span class="cdx-cur-ia-glyph">&#10022;</span>' +
+        '<b>' + esc(t('cohorts.cursos_ia_title')) + '</b>' +
+        '<span class="cdx-cursos-sp"></span>' +
+        '<span class="cdx-cursos-hint">' + esc(t('cohorts.cursos_ia_hint')) + '</span>' +
+      '</div>' +
+      '<div class="cdx-cur-ia-src">' +
+        '<button type="button" class="cdx-cur-srcopt is-on">' + esc(t('cohorts.cursos_ia_src_paste')) + '</button>' +
+        '<button type="button" class="cdx-cur-srcopt is-soon" disabled title="' + esc(t('cohorts.cursos_ia_src_apostila_soon')) + '">' + esc(t('cohorts.cursos_ia_src_apostila')) + '</button>' +
+      '</div>' +
+      '<div class="cdx-cur-ia-chat" id="cdx-cur-chat">' +
+        '<div class="cdx-cur-msg ai">' + esc(t('cohorts.cursos_ia_welcome')) + '</div>' +
+      '</div>' +
+      '<div class="cdx-cur-ia-compose">' +
+        '<div class="cdx-cur-chips">' +
+          _aiChip('cohorts.cursos_ia_chip_detail', 'cohorts.cursos_ia_q_detail') +
+          _aiChip('cohorts.cursos_ia_chip_shorten', 'cohorts.cursos_ia_q_shorten') +
+          _aiChip('cohorts.cursos_ia_chip_renumber', 'cohorts.cursos_ia_q_renumber') +
+        '</div>' +
+        '<div class="cdx-cur-inrow">' +
+          '<input id="cdx-cur-ai-input" autocomplete="off" placeholder="' + esc(t('cohorts.cursos_ia_placeholder')) + '">' +
+          '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" id="cdx-cur-ai-send" title="' + esc(t('cohorts.cursos_ia_send')) + '">&#8593;</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function _appendMsg(kind, text) {
+  const chat = _q('cdx-cur-chat');
+  if (!chat) return null;
+  const div = document.createElement('div');
+  div.className = 'cdx-cur-msg ' + (kind === 'me' ? 'me' : 'ai');
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+// Send a natural-language request to the shared AI endpoint; apply any returned
+// ementa to the editor and surface the reply in the chat.
+function _askAI(text) {
+  if (!_course || !text) return;
+  _appendMsg('me', text);
+  _aiMsgs.push({ role: 'user', content: text });
+  const loading = _appendMsg('ai', t('cohorts.cursos_ia_thinking'));
+  if (loading) loading.classList.add('is-loading');
+  const sendBtn = _q('cdx-cur-ai-send');
+  if (sendBtn) sendBtn.disabled = true;
+  const system = buildEmentaAIPrompt({ courseTitle: _course.title, ementa: _ementa });
+  ai.chat({ system, messages: _aiMsgs.slice(-12), temperature: 0.3, max_tokens: 1500 }).then((res) => {
+    if (loading && loading.parentNode) loading.parentNode.removeChild(loading);
+    if (!res) { _appendMsg('ai', t('cohorts.cursos_ia_rate')); return; }   // facade returns null on rate-limit
+    if (!res.text) {
+      _appendMsg('ai', t('cohorts.cursos_ia_error'));
+      if (window.bsLog) window.bsLog('cursos ai_chat: empty response', 'error');
+      return;
+    }
+    const parsed = parseEmentaAIResponse(res.text);
+    const reply = parsed.reply || (parsed.ementa ? t('cohorts.cursos_ia_applied') : t('cohorts.cursos_ia_error'));
+    _aiMsgs.push({ role: 'assistant', content: reply });
+    _appendMsg('ai', reply);
+    if (parsed.ementa) { _ementa = parsed.ementa; _rerenderEmenta(); _toast(t('cohorts.cursos_ia_applied')); }
+  }).catch((err) => {
+    if (loading && loading.parentNode) loading.parentNode.removeChild(loading);
+    _appendMsg('ai', t('cohorts.cursos_ia_error'));
+    if (window.bsLog) window.bsLog('cursos ai_chat: ' + (err && err.message || err), 'error');
+  }).finally(() => {
+    const b = _q('cdx-cur-ai-send');
+    if (b) b.disabled = false;
+  });
 }
 
 function _courseTurmaCount() {
@@ -219,6 +309,14 @@ function _wireMain() {
   if (save) save.addEventListener('click', _saveEmenta);
   const paste = _q('cdx-cur-paste');
   if (paste) paste.addEventListener('click', _openPasteModal);
+
+  // AI assistant: send box, Enter, and the quick-action chips.
+  const aiInput = _q('cdx-cur-ai-input');
+  const aiSend = _q('cdx-cur-ai-send');
+  const submitAI = () => { if (!aiInput) return; const v = aiInput.value.trim(); if (!v) return; aiInput.value = ''; _askAI(v); };
+  if (aiSend) aiSend.addEventListener('click', submitAI);
+  if (aiInput) aiInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitAI(); } });
+  if (_viewEl) _viewEl.querySelectorAll('.cdx-cur-chip').forEach((c) => c.addEventListener('click', () => _askAI(c.dataset.q)));
 
   const ementaEl = _q('cdx-cur-ementa');
   if (!ementaEl) return;
@@ -350,6 +448,7 @@ export function mount(viewEl) {
   _selectedId = null;
   _course = null;
   _ementa = emptyEmenta();
+  _aiMsgs = [];
   _renderShell();
   _loadCourses();
 }
@@ -361,4 +460,5 @@ export function unmount() {
   _selectedId = null;
   _course = null;
   _ementa = emptyEmenta();
+  _aiMsgs = [];
 }
