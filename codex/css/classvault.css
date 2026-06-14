@@ -1,0 +1,1243 @@
+/* ClassVault — design tokens (extends theme.css). */
+
+:root {
+  --task: #d97706;
+  --task-dark: #92400e;
+  --llm: #db2777;
+  --llm-dark: #9d174d;
+  --recurso: #0284c7;
+  --recurso-dark: #075985;
+  --material: #7c3aed;
+  --material-dark: #5b21b6;
+  --text-dim: #64748b;
+  --surface-soft: #f0fdfa;
+  --border-soft: #ecfdf5;
+}
+
+[data-theme="dark"] {
+  --text-dim: #94a3b8;
+  --surface-soft: #243240;
+  --border-soft: #2d3a47;
+}
+
+/* ── App shell — fixed viewport, sidebar + main grid ──────── */
+
+.bs-app--classvault {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+.bs-app--classvault > .bs-main {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+}
+
+.cv-shell {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+}
+
+/* ── Focus mode (cv-focus-mode.js) ────────────────────────────
+   Body.cv-focus hides the topbar + sidebar; reveal classes
+   (cv-focus--top, cv-focus--side) slide each one back in. */
+
+body.cv-focus .bs-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9900;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cv-focus.cv-focus--top .bs-topbar {
+  transform: translateY(0);
+  opacity: 1;
+}
+/* Bundle L: pin topbar while Aula is empty and the side menu is hidden.
+   Toggled by _updateTopbarPin() in classvault.js. Releases when the side
+   menu opens (cv-focus--side) or an item is selected. */
+body.cv-focus.cv-topbar-pin .bs-topbar {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+body.cv-focus .cv-shell {
+  /* .cv-sm is position:fixed (out of grid flow), so the only in-flow child
+     .cv-main lands in track 1. Collapse to a single 1fr column so it fills. */
+  grid-template-columns: 1fr;
+}
+body.cv-focus .cv-sm {
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  width: 340px;
+  z-index: 9800;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+body.cv-focus.cv-focus--side .cv-sm {
+  transform: translateX(0);
+  box-shadow: 4px 0 16px var(--shadow);
+}
+
+/* Bottom action bar tucks away in focus mode and slides back up when the
+   cursor reaches the bottom edge (cv-focus--bottom), mirroring the topbar.
+   position:fixed takes it out of flow so .cv-main-view fills the full height. */
+body.cv-focus .cv-main-crumb {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 9800;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+body.cv-focus.cv-focus--bottom .cv-main-crumb {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Edge hot zones for focus-mode reveal. Transparent strips above the content
+   (and any cross-origin embed iframe), below the bars. pointer-events only
+   while focus mode is on, so they never block the iframe edges otherwise. */
+.cv-focus-hot {
+  position: fixed;
+  z-index: 9700;
+  pointer-events: none;
+}
+body.cv-focus .cv-focus-hot {
+  pointer-events: auto;
+}
+.cv-focus-hot--top    { top: 0; left: 0; right: 0; height: 8px; }
+.cv-focus-hot--left   { top: 0; bottom: 0; left: 0; width: 8px; }
+.cv-focus-hot--bottom { bottom: 0; left: 0; right: 0; height: 8px; }
+
+/* ── Sidebar (side menu) ──────────────────────────────────── */
+
+.cv-sm {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.cv-sm-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Search input that replaced the turma + aula picker in cv-sm-head. */
+.cv-sm-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.cv-sm-search-icon {
+  position: absolute;
+  left: 10px;
+  display: inline-flex;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.cv-sm-search-icon svg { width: 16px; height: 16px; }
+.cv-sm-search {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px 8px 34px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cv-sm-search::placeholder { color: var(--text-secondary); opacity: 0.7; }
+.cv-sm-search:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+/* Remove the default ✕ in WebKit/Edge search inputs so our own ESC clear is the only affordance */
+.cv-sm-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.cv-sm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 12px 14px;
+  min-height: 0;
+}
+.cv-sm-body::-webkit-scrollbar { width: 6px; }
+.cv-sm-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.cv-sm-body::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
+
+/* context menu (right-click on sidebar item) */
+.cv-ctx-menu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+  padding: 4px;
+  min-width: 200px;
+}
+.cv-ctx-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.cv-ctx-item:hover {
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+
+/* turma block at top of sidebar */
+.cv-sm-turma {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  cursor: pointer;
+  transition: border-color 0.12s;
+  font: inherit;
+  text-align: left;
+}
+.cv-sm-turma:hover { border-color: var(--primary-light); }
+.cv-sm-turma-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cv-sm-turma-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cv-sm-turma-eyebrow {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-sm-turma-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-sm-turma-chev {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+/* category filter chips */
+.cv-sm-chips {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.cv-sm-chip {
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.cv-sm-chip:hover {
+  border-color: var(--primary-light);
+  color: var(--text-primary);
+}
+.cv-sm-chip.is-active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.cv-sm-chip:disabled,
+.cv-sm-chip.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cv-sm-chip:disabled:hover,
+.cv-sm-chip.is-disabled:hover {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+.cv-sm-chip-count {
+  font-size: 0.6rem;
+  opacity: 0.7;
+}
+
+/* Top-level section headers (neon-glow card, per-section color).
+   --sec is set by .cv-sm-section--<key> modifiers below; falls back to primary. */
+.cv-sm-section--favorites { --sec: #eab308; }   /* gold */
+.cv-sm-section--llms      { --sec: #8b5cf6; }   /* violet */
+.cv-sm-section--nexo      { --sec: #6366f1; }   /* indigo (Perguntas pinned card) */
+.cv-sm-section--external  { --sec: #f97316; }   /* orange */
+.cv-sm-section--labs      { --sec: #ec4899; }   /* pink */
+.cv-sm-section--drive     { --sec: #3b82f6; }   /* blue */
+.cv-sm-section--items     { --sec: #14b8a6; }   /* teal */
+.cv-sm-section--apostila  { --sec: #f59e0b; }   /* amber */
+.cv-sm-section--tarefas   { --sec: #ef4444; }   /* red */
+
+.cv-sm-section {
+  cursor: pointer;
+  /* border-box so the Drive section <div role="button"> matches the other
+     sections' <button> default sizing (button is border-box by UA stylesheet;
+     div is content-box, which made the Drive card 26px wider). */
+  box-sizing: border-box;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec, var(--primary)) 6%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec, var(--primary)) 35%, transparent);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin: 8px 0 7px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: box-shadow 0.18s, border-color 0.15s, transform 0.15s;
+}
+.cv-sm-section:hover {
+  border-color: var(--sec, var(--primary));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--sec, var(--primary)) 25%, transparent),
+              0 6px 22px -10px var(--sec, var(--primary));
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .cv-sm-section {
+  background: color-mix(in oklab, var(--sec, var(--primary)) 10%, var(--surface));
+  box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec, var(--primary)) 60%, transparent);
+}
+[data-theme="dark"] .cv-sm-section:hover {
+  box-shadow: 0 0 24px -6px var(--sec, var(--primary));
+}
+.cv-sm-body > .cv-sm-section:first-child { margin-top: 0; }
+
+/* Section glyph (SVG, colored by --sec) */
+.cv-sm-section-glyph {
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  color: var(--sec, var(--primary));
+  flex-shrink: 0;
+}
+.cv-sm-section-glyph svg {
+  width: 18px; height: 18px;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--sec, var(--primary)) 50%, transparent));
+}
+
+/* Label inside the section header */
+.cv-sm-section-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chevron — in section color, rotates when collapsed */
+.cv-sm-section > .cv-sm-section-chev {
+  font-size: 0.8rem;
+  color: var(--sec, var(--primary));
+  opacity: 0.7;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+}
+.cv-sm-section.is-collapsed > .cv-sm-section-chev { transform: rotate(-90deg); }
+
+/* Sub-section chevron keeps the old subtle gray */
+.cv-sm-section-chev {
+  font-size: 0.9rem;
+  opacity: 0.6;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+/* Hide the legacy expanding line inside top-level sections (no longer used) */
+.cv-sm-section > .cv-sm-section-line { display: none; }
+
+/* Sub-section line stays as-is */
+.cv-sm-section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Pinned slot at the bottom of the sidebar. Holds the PensoNexo launcher
+   card so it stays visible regardless of body scroll position. */
+.cv-sm-pinned {
+  flex-shrink: 0;
+  padding: 6px 12px 0;
+  background: var(--surface);
+}
+
+/* PensoNexo brand swap: "PensoNexo · X" by default; .is-cramped (set by JS
+   when the label would overflow) collapses the brand to "Nexo · X" so the
+   session name keeps its room. */
+.cv-nexo-brand--short { display: none; }
+.cv-sm-section-label.is-cramped .cv-nexo-brand--full { display: none; }
+.cv-sm-section-label.is-cramped .cv-nexo-brand--short { display: inline; }
+
+/* PensoNexo refresh button (inside the launcher card; mirrors the Drive sync
+   button styling but in the section's indigo tone). */
+.cv-nexo-refresh-btn {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: color-mix(in oklab, var(--sec, var(--primary)) 14%, transparent);
+  color: var(--sec, var(--primary));
+  font-size: 0.85rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cv-nexo-refresh-btn:hover {
+  background: color-mix(in oklab, var(--sec, var(--primary)) 25%, transparent);
+  border-color: var(--sec, var(--primary));
+}
+/* Shared spin glyph — used by both PensoNexo refresh and Drive sync. Wrap the
+   ↻ in a <span class="cv-spin-glyph"> and add .is-loading to the parent button
+   to start the rotation. Only the glyph rotates, never the button background. */
+.cv-spin-glyph {
+  display: inline-block;
+  line-height: 1;
+}
+.is-loading > .cv-spin-glyph,
+.is-loading .cv-spin-glyph {
+  animation: cv-spin 0.8s linear infinite;
+}
+@keyframes cv-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Live indicator on PensoNexo header — pulsing red dot. Sized to occupy the
+   same right-edge slot as a count badge. */
+.cv-sm-section-live-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  flex-shrink: 0;
+  animation: cv-pulse-dot 1.4s ease-in-out infinite;
+}
+@keyframes cv-pulse-dot {
+  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  70%  { box-shadow: 0 0 0 9px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Count badge — colored pill matching section color (top-level only) */
+.cv-sm-section > .cv-sm-section-count {
+  min-width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--sec, var(--primary));
+  border-radius: 999px;
+  padding: 0 7px;
+  box-shadow: 0 0 8px -2px color-mix(in oklab, var(--sec, var(--primary)) 80%, transparent);
+}
+/* Sub-section count keeps the old subtle pill */
+.cv-sm-section-count {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  background: var(--background);
+  color: var(--text-secondary);
+  border-radius: 999px;
+}
+
+/* Phase 4: item action buttons in the breadcrumb area when an item is selected */
+.cv-crumb-btn {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
+}
+.cv-crumb-btn:hover:not(:disabled) {
+  background: var(--surface-soft);
+  border-color: var(--primary);
+}
+.cv-crumb-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.cv-crumb-btn--primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.cv-crumb-btn--primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  color: white;
+  border-color: var(--primary-dark);
+}
+.cv-crumb-btn--icon {
+  padding: 4px 8px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Phase 4: drag-to-reorder visual states for Hoje items */
+.sub--draggable { cursor: grab; }
+.sub--draggable:active { cursor: grabbing; }
+.sub.is-dragging { opacity: 0.4; }
+.sub.is-drop-target {
+  box-shadow: inset 0 2px 0 0 var(--primary);
+}
+
+/* Sub-group label inside an aula: Tarefa(s) / Conteúdo / Outros */
+.cv-sm-subgroup-label {
+  padding: 10px 12px 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Nested subsection (tag group inside Vault, aula group inside Trilha) */
+.cv-sm-subsection {
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 8px 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px;
+  opacity: 0.85;
+}
+.cv-sm-subsection:hover { color: var(--text-primary); opacity: 1; }
+.cv-sm-subsection .cv-sm-section-chev {
+  font-size: 0.85rem;
+  opacity: 0.6;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+}
+.cv-sm-subsection.is-collapsed .cv-sm-section-chev { transform: rotate(-90deg); }
+
+/* Inline empty state inside an expanded section */
+.cv-sm-empty--inline {
+  padding: 10px 12px 14px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Bundle E: the aula picker + dropdown were removed along with the Hoje
+   shelf. .cv-sm-aula* and .cv-aula-menu* rules dropped. */
+
+/* turma dropdown (anchored under sidebar turma block) */
+.cv-turma-menu {
+  position: fixed;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -10px var(--shadow);
+  padding: 6px;
+  min-width: 240px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+.cv-turma-menu[hidden] { display: none; }
+.cv-turma-menu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text-primary);
+}
+.cv-turma-menu-item:hover { background: var(--surface-soft); }
+.cv-turma-menu-item.is-active { background: var(--surface-soft); }
+.cv-turma-menu-eyebrow {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+  line-height: 1;
+}
+.cv-turma-menu-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.cv-sm-empty {
+  padding: 30px 14px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* ── Sidebar item cards (.sub primitive) ──────────────────── */
+
+.cv-sm .sub {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  min-height: 58px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.15s;
+  margin-bottom: 6px;
+}
+.cv-sm .sub:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 3px 10px -5px var(--shadow);
+}
+.cv-sm .sub.is-active {
+  border-color: var(--primary);
+  box-shadow: 0 4px 14px -6px rgba(20,184,166,0.32);
+}
+.cv-sm .sub-zone {
+  width: 42px;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+/* A type whose icon is a Codex glyph renders as an SVG; it inherits the zone's
+   white text color via currentColor. */
+.cv-sm .sub-zone svg { display: block; width: 18px; height: 18px; }
+.cv-sm .sub-zone--tarefa   { background: var(--task); }
+.cv-sm .sub-zone--llm      { background: var(--llm); }
+.cv-sm .sub-zone--recurso  { background: var(--recurso); }
+.cv-sm .sub-zone--material { background: var(--material); }
+.cv-sm .sub-zone--lab      { background: var(--primary); }
+.cv-sm .sub-meta {
+  flex: 1;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+}
+.cv-sm .sub-type {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cv-sm .sub-title {
+  font-size: 0.81rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.cv-sm .sub-sub {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.3;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── Main content area ────────────────────────────────────── */
+
+.cv-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--background);
+}
+.cv-main-crumb {
+  /* The crumb lives at the BOTTOM of .cv-main as the full-width action bar:
+     item context on the left, lifecycle / launch / content actions on the
+     right. JS still calls it .cv-main-crumb. The flex `order` flip below
+     keeps HTML order intact (crumb before view) while painting it last. */
+  order: 2;
+  height: 48px;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;   /* keep the 20px right padding inside 100% width so
+                               the rightmost action button isn't clipped */
+  padding: 0 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.cv-main-crumb:empty {
+  display: none;
+}
+.cv-main-crumb > span:not(.cv-main-crumb-sep),
+.cv-main-crumb > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.cv-main-crumb-sep {
+  color: var(--text-dim);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.cv-main-crumb strong { color: var(--text-primary); font-weight: 700; }
+.cv-main-crumb-spacer { flex: 1; flex-shrink: 0; }
+.cv-main-crumb-action {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.cv-main-crumb-action:hover {
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.cv-main-view {
+  order: 1;
+  flex: 1;
+  min-height: 0;
+  /* Full-bleed: renderers (iframes, slides, video) sit edge-to-edge against
+     the sidebar and bottom action bar. The markdown fallback adds its own
+     interior padding via .cv-renderer-scroll. */
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* CTItemForm editor is sized as a modal by default (max-height: calc(100vh - 4rem)).
+   When mounted in the right pane it must conform to the parent's bounded height
+   so the footer (save button) stays visible. */
+.cv-main-view .ct-editor {
+  max-height: 100%;
+  height: 100%;
+  width: 100%;
+  max-width: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cv-main-view .ct-editor-body { min-height: 0; }
+
+/* Reuse hint shown beneath the editor header when the item being edited is
+   released to turmas other than the active one. Quiet, single line, ellipsis. */
+.cv-main-view .cv-reuse-hint {
+  flex-shrink: 0;
+  padding: 0.55rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cv-main-view .cv-reuse-hint-label {
+  color: var(--text-dim);
+  margin-right: 0.25rem;
+}
+
+@media (max-width: 840px) {
+  .cv-shell { grid-template-columns: 1fr; }
+  .cv-sm { display: none; }
+}
+
+/* ── Renderers in main viewport ───────────────────────────── */
+
+.cv-renderer-iframe-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.cv-renderer-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--surface);
+  display: block;
+}
+.cv-renderer-empty {
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Welcome state shown in .cv-main-view when no item is active. Quiet,
+   centered, with keyboard hints for focus mode. */
+.cv-empty-welcome {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.cv-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(79,70,229,0.10));
+  color: #6366f1;
+  margin-bottom: 1.25rem;
+}
+[data-theme="dark"] .cv-empty-icon {
+  background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(79,70,229,0.14));
+  color: #8b8df0;
+}
+.cv-empty-title {
+  font-family: 'Comfortaa', 'Inter', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0 0 0.45rem;
+}
+.cv-empty-hint {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.6rem;
+  max-width: 360px;
+  line-height: 1.45;
+}
+.cv-empty-shortcuts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-dim, var(--text-secondary));
+  opacity: 0.85;
+}
+.cv-empty-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border, rgba(20,184,166,.18));
+  border-radius: 5px;
+  box-shadow: 0 1px 0 var(--border, rgba(20,184,166,.18));
+}
+.cv-empty-kbd-label {
+  margin-right: 0.35rem;
+}
+.cv-empty-sep {
+  opacity: 0.5;
+  margin: 0 0.15rem;
+}
+
+/* Bundle F text-resize icon glyph — sits inside .bs-icon-btn (32x32 box). */
+.cv-text-icon {
+  font: 600 11px/1 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Slide embed shell. Google Slides /embed renders a persistent control bar
+   anchored to the very bottom edge of the iframe. We hide it by oversizing the
+   iframe height past the shell and clipping the overflow. The deck is
+   letterboxed inside the embed, so the extra height pushes only the bar out of
+   view; slide content stays fully visible.
+
+   Scoped to slide surfaces ONLY:
+     .cv-slides-inline                         Drive popup slides (_renderPopupCard)
+     .cv-renderer-iframe-wrap.cv-slides-clip   Drive presentation files (CVDriveViewer)
+   Both load the chrome-free /embed player (CVDriveViewer.slidesEmbedUrl), so the
+   only chrome is the bottom playbar, which this clip hides — no corner mask
+   needed. Drive *files* (/preview PDFs/Docs) keep the plain
+   .cv-renderer-iframe-wrap so their content is never cropped (the Bundle D
+   reason); restricting the clip to presentations resolves that conflict. */
+.cv-slides-inline,
+.cv-renderer-iframe-wrap.cv-slides-clip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.cv-slides-inline .cv-renderer-iframe,
+.cv-renderer-iframe-wrap.cv-slides-clip .cv-renderer-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100% + 60px);
+  border: 0;
+}
+/* Card: structural flex column. Header is a fixed sibling above the
+   scrollable body — content does NOT scroll under it. */
+.cv-renderer-fallback {
+  /* Width control: --cv-content-width is set on .cv-main-view by the Lessons
+     "Aa" popover and inherits here. Standalone Aula never sets it, so its
+     default stays 760px (daily driver unchanged). */
+  max-width: var(--cv-content-width, 760px);
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px -12px var(--shadow);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+/* Far end of the width slider: true full-bleed. Drop the card chrome so it
+   reads as the whole window, not a card stretched to the edges. */
+.cv-main-view.is-full-width .cv-renderer-fallback {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cv-renderer-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 36px 32px;
+  /* Bundle F text resize: --cv-content-scale (default 1) is set on
+     .cv-main-view by CVTextResize and inherits down into this element. +A /
+     −A buttons in the topbar bump it within [0.75, 1.6]. */
+  font-size: calc(0.95rem * var(--cv-content-scale, 1));
+  line-height: 1.55;
+}
+.cv-renderer-scroll h1 { font-size: 1.5rem; margin: 0 0 0.6em; line-height: 1.2; }
+.cv-renderer-scroll h2 { font-size: 1.2rem; margin: 1.2em 0 0.4em; line-height: 1.25; }
+.cv-renderer-scroll h3 { font-size: 1.05rem; margin: 1em 0 0.4em; line-height: 1.3; }
+.cv-renderer-scroll p  { margin: 0 0 0.8em; }
+.cv-renderer-scroll ul,
+.cv-renderer-scroll ol { margin: 0 0 0.8em; padding-left: 1.5em; }
+.cv-renderer-scroll li { margin: 0.2em 0; }
+.cv-renderer-scroll a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cv-renderer-scroll a:hover { color: var(--primary-light); }
+.cv-renderer-scroll code {
+  background: var(--surface-soft);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.88em;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+}
+.cv-renderer-scroll pre {
+  background: var(--surface-soft);
+  padding: 10px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+.cv-renderer-scroll pre code { background: none; padding: 0; }
+.cv-renderer-scroll .ctr-prompt-verbatim {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  /* Honour the +A/-A scale (was a fixed size, which is why resize did nothing). */
+  font-size: calc(0.88rem * var(--cv-content-scale, 1));
+  /* No inner card: a prompt flows inside the same renderer card as every other
+     content type (Items/Apostila/Tarefas/conteudo/...). The verbatim box from
+     ct-renderer.css (background/border/max-height inner scroll) is neutralized
+     here so prompt is visually consistent; monospace + pre-wrap keep the text
+     copy-exact. Scoped to .cv-renderer-scroll, so the public ClassTrail page
+     and the editor preview keep their boxed verbatim style. */
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
+}
+.cv-renderer-scroll .ctr-prompt-body {
+  font-size: calc(0.95rem * var(--cv-content-scale, 1));
+  line-height: 1.55;
+}
+
+/* CTRenderer mounts its own .ctr-copy-btn inside the scroll area for some
+   types; classvault.js hides it after render because the bottom action bar
+   exposes the same affordance via CVTypes. The rule below is a safety net for
+   any race where the JS hide hasn't fired yet. */
+.cv-renderer-scroll .ctr-copy-btn { display: none; }
+.cv-renderer-scroll .ctr-affordance-btn { font-size: 0.82rem; }
+
+.cv-popup-launcher {
+  max-width: 520px;
+  margin: 40px auto 0;
+  text-align: center;
+  padding: 30px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px -16px var(--shadow);
+}
+.cv-popup-launcher-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+.cv-popup-launcher-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+.cv-popup-launcher-hint {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.cv-popup-launcher-url {
+  margin: 14px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+/* ── Phase 5: Drive section ───────────────────────────────────── */
+
+:root {
+  --cv-drive-sync-bg: #e0f2fe;
+  --cv-drive-sync-color: #0369a1;
+  --cv-drive-sync-bg-hover: #bae6fd;
+  --cv-drive-auth-bg: #f0fdf4;
+  --cv-drive-auth-border: #bbf7d0;
+  --cv-drive-connect-bg: #14b8a6;
+  --cv-drive-connect-color: #ffffff;
+  --cv-drive-connect-bg-hover: #0d9488;
+}
+
+[data-theme="dark"] {
+  --cv-drive-sync-bg: #1e3a4f;
+  --cv-drive-sync-color: #7dd3fc;
+  --cv-drive-sync-bg-hover: #1e4a6a;
+  --cv-drive-auth-bg: #1a2e23;
+  --cv-drive-auth-border: #166534;
+  --cv-drive-connect-bg: #0d9488;
+  --cv-drive-connect-color: #ffffff;
+  --cv-drive-connect-bg-hover: #0f766e;
+}
+
+/* Wrapper div that contains the Drive section header + body. */
+.cv-sm-section--drive-wrapper {
+  display: contents;
+}
+
+/* The Drive section header is a div[role="button"] styled identically
+   to .cv-sm-section but with cursor and display already set by that class.
+   Override only what needs to differ. */
+.cv-sm-section--drive {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Sync button injected inside the Drive section header.
+   box-sizing border-box keeps the 22x22 outer size with the 1px border so the
+   button doesn't make the Drive header row taller than the other sections. */
+.cv-drive-sync-btn {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: var(--cv-drive-sync-bg);
+  color: var(--cv-drive-sync-color);
+  font-size: 0.85rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cv-drive-sync-btn:hover {
+  background: var(--cv-drive-sync-bg-hover);
+  border-color: var(--cv-drive-sync-color);
+}
+
+/* Auth / pending prompt area inside the Drive section body. */
+.cv-drive-auth-prompt {
+  background: var(--cv-drive-auth-bg);
+  border: 1px solid var(--cv-drive-auth-border);
+  border-radius: 8px;
+  margin: 4px 0 8px;
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* "Conectar Drive" call-to-action button inside the auth prompt. */
+.cv-drive-connect-btn {
+  margin-top: 10px;
+  display: inline-block;
+  padding: 7px 16px;
+  background: var(--cv-drive-connect-bg);
+  color: var(--cv-drive-connect-color);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cv-drive-connect-btn:hover {
+  background: var(--cv-drive-connect-bg-hover);
+}
+
+/* ── LLMs section: external launchers (open in new tab) ──────── */
+
+.cv-sm-llm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.15s, background 0.12s;
+}
+.cv-sm-llm:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 3px 10px -5px var(--shadow);
+}
+.cv-sm-llm-favicon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+.cv-sm-llm-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
