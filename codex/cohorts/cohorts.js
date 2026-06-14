@@ -4,7 +4,7 @@
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.callWorker   (../backstage/js/api-client.js)
 //   window.BSToast      (../backstage/js/bs-toast.js)  — optional, graceful fallback
-import { cohorts as api, cp as cpApi, courses as coursesApi, assetUrl } from '../js/codex-api.js';
+import { cohorts as api, cp as cpApi, courses as coursesApi, certificates as certApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -216,15 +216,13 @@ function _renderShell() {
       '</div>' +
       '</div>' +
 
-      // Column 3: Aulas
-      '<div class="cdx-pane">' +
-        '<div class="cdx-pane-header">' +
-          '<span class="cdx-pane-title" id="' + IDS.aulasTitle + '">' + t('cohorts.col_aulas') + '</span>' +
-        '</div>' +
-        '<div class="cdx-pane-body">' +
-          '<div id="' + IDS.aulasList + '">' +
-            '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>' +
-          '</div>' +
+      // Column 3: the turma DOSSIER (replaces the old cramped Aulas-only pane).
+      // Surfaces the rich turma data the Cursos model now captures — linked
+      // course, dates, place, format — plus participants, aulas, and the cert
+      // shortcut, in one roomy panel.
+      '<div class="cdx-pane cdx-doss-pane">' +
+        '<div class="cdx-pane-body cdx-doss-body" id="cdx-turma-dossier">' +
+          '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>' +
         '</div>' +
       '</div>' +
 
@@ -1066,10 +1064,8 @@ function _clearAulasColumn() {
   _relClientSlug = null;
   _relTurmaSlug = null;
   _turmaAulas = [];
-  const hdr = _q(IDS.aulasTitle);
-  if (hdr) hdr.textContent = t('cohorts.col_aulas');
-  const list = _q(IDS.aulasList);
-  if (list) list.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>';
+  const el = _q('cdx-turma-dossier');
+  if (el) el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>';
   _renderTurmas();
 }
 
@@ -1078,14 +1074,113 @@ function _selectTurmaForAulas(clientSlug, turmaSlug) {
   if (clientSlug === _relClientSlug && turmaSlug === _relTurmaSlug) return;
   _relClientSlug = clientSlug;
   _relTurmaSlug = turmaSlug;
-  const hdr = _q(IDS.aulasTitle);
-  if (hdr) {
-    const found = _turmas.find(x => x.client_slug === clientSlug && x.slug === turmaSlug);
-    const name = found ? (found.display_name || found.name) : '';
-    hdr.textContent = name ? t('cohorts.col_aulas') + ': ' + name : t('cohorts.col_aulas');
-  }
-  _loadTurmaAulas(clientSlug, turmaSlug);
+  const turma = _turmas.find((x) => x.client_slug === clientSlug && x.slug === turmaSlug);
+  _renderDossier(turma);
   _renderTurmas();
+}
+
+// ── Turma dossier (Concept A: the rich right-pane detail) ─────────────────────
+
+function _fmtDateBr(iso) {
+  if (!iso) return '';
+  const p = String(iso).split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+}
+
+function _renderDossier(turma) {
+  const el = _q('cdx-turma-dossier');
+  if (!el) return;
+  if (!turma) { el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
+
+  const client = _clients.find((c) => c.slug === turma.client_slug) || {};
+  const clientName = client.display_name || client.name || turma.client_slug;
+  const modLabel = turma.modality ? t('cohorts.mod_' + turma.modality) : '';
+  const fmtLabel = turma.format ? t('cohorts.fmt_' + turma.format) : '';
+  const sub = clientName + (modLabel ? ' · ' + modLabel : '');
+  const fact = (label, val) =>
+    '<div class="cdx-doss-fact"><label>' + _esc(label) + '</label><div class="v">' + (val ? _esc(val) : '—') + '</div></div>';
+  const courseVal = turma.course_title
+    ? _esc(turma.course_title)
+    : '<button class="cdx-doss-linkbtn" data-doss="edit">' + _esc(t('cohorts.tf_no_course')) + '</button>';
+
+  el.innerHTML =
+    '<div class="cdx-doss">' +
+      '<div class="cdx-doss-head">' +
+        '<div><h2 class="cdx-doss-title">' + _esc(turma.name) + '</h2>' +
+          '<div class="cdx-doss-sub">' + _esc(sub) + '</div></div>' +
+        '<button class="cdx-btn cdx-btn-sm" data-doss="edit">' + _esc(t('cohorts.edit')) + '</button>' +
+      '</div>' +
+      '<div class="cdx-doss-facts">' +
+        '<div class="cdx-doss-fact cdx-doss-fact--course"><label>' + _esc(t('cohorts.tf_course')) + '</label><div class="v">' + courseVal + '</div></div>' +
+        fact(t('cohorts.course_hours_label'), turma.hours) +
+        fact(t('cohorts.tf_meetings'), turma.meetings) +
+        fact(t('cohorts.tf_date_start'), _fmtDateBr(turma.date_start)) +
+        fact(t('cohorts.tf_date_end'), _fmtDateBr(turma.date_end)) +
+        fact(t('cohorts.tf_format'), fmtLabel) +
+        fact(t('cohorts.tf_place'), turma.place) +
+      '</div>' +
+      // Participantes
+      '<div class="cdx-doss-sec">' +
+        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.participants_title')) + '</b>' +
+          '<button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></div>' +
+        '<div id="cdx-doss-participants"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
+      '</div>' +
+      // Aulas (reuses the aula editor via #cdx-aulas-list)
+      '<div class="cdx-doss-sec">' +
+        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.col_aulas')) + '</b></div>' +
+        '<div id="' + IDS.aulasList + '"><div class="cdx-empty">' + _esc(t('cohorts.loading_aulas')) + '</div></div>' +
+      '</div>' +
+      // Certificados
+      '<div class="cdx-doss-sec">' +
+        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.doss_certs')) + '</b>' +
+          '<a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
+        '<div id="cdx-doss-certs"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
+      '</div>' +
+    '</div>';
+
+  el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.doss === 'edit') _openTurmaForm(turma);
+    else if (b.dataset.doss === 'roster') _openRosterModal(turma);
+  }));
+
+  _loadTurmaAulas(turma.client_slug, turma.slug);
+  _loadDossierParticipants(turma);
+  _loadDossierCerts(turma);
+}
+
+function _loadDossierParticipants(turma) {
+  api.listParticipants({ turma_id: turma.id }).then((d) => {
+    const el = _q('cdx-doss-participants');
+    if (!el) return;
+    const ps = (d && d.participants) || [];
+    if (!ps.length) { el.innerHTML = '<span class="cdx-empty">' + _esc(t('cohorts.participants_empty')) + '</span>'; return; }
+    const chips = ps.slice(0, 8).map((p) =>
+      '<span class="cdx-doss-chip">' + _esc(p.name) + '</span>').join('');
+    const more = ps.length > 8 ? '<span class="cdx-doss-chip cdx-doss-chip--more">+' + (ps.length - 8) + '</span>' : '';
+    el.innerHTML = '<div class="cdx-doss-count">' + ps.length + '</div><div class="cdx-doss-chips">' + chips + more + '</div>';
+  }).catch(() => {});
+}
+
+const _DOSS_CERT_STATUSES = [
+  { s: 'issued',  k: 'cohorts.doss_st_issued',  c: 'issued' },
+  { s: 'signed',  k: 'cohorts.doss_st_signed',  c: 'signed' },
+  { s: 'sent',    k: 'cohorts.doss_st_sent',    c: 'sent' },
+  { s: 'revoked', k: 'cohorts.doss_st_revoked', c: 'revoked' },
+];
+
+function _loadDossierCerts(turma) {
+  certApi.list({ turma_id: turma.id }).then((d) => {
+    const el = _q('cdx-doss-certs');
+    if (!el) return;
+    const certs = (d && d.certificates) || [];
+    if (!certs.length) { el.innerHTML = '<span class="cdx-empty">' + _esc(t('cohorts.doss_no_certs')) + '</span>'; return; }
+    const counts = {};
+    certs.forEach((c) => { counts[c.status] = (counts[c.status] || 0) + 1; });
+    el.innerHTML = '<div class="cdx-doss-certrow">' + _DOSS_CERT_STATUSES
+      .filter((st) => counts[st.s])
+      .map((st) => '<span class="cdx-doss-cstat cdx-doss-cstat--' + st.c + '"><i></i>' + counts[st.s] + ' ' + _esc(t(st.k)) + '</span>')
+      .join('') + '</div>';
+  }).catch(() => {});
 }
 
 function _loadTurmaAulas(clientSlug, turmaSlug) {

@@ -64,6 +64,20 @@ test('turma copies the course ementa only when the course is newly linked/change
   assert.match(cohorts, /instance\.ementa_json = _pickedCourse\.ementa_json/, 'copies the picked course ementa');
 });
 
+test('turma dossier (Concept A) replaces the cramped aulas pane', () => {
+  assert.match(cohorts, /function _renderDossier/, 'has the dossier renderer');
+  assert.match(cohorts, /id="cdx-turma-dossier"/, 'shell column 3 is the dossier container');
+  assert.ok(!cohorts.includes("id=\"' + IDS.aulasTitle"), 'old aulas-pane title is gone');
+  // dossier surfaces the rich turma fields
+  for (const f of ['turma.course_title', 'turma.hours', 'turma.date_start', 'turma.date_end', 'turma.place', 'turma.format']) {
+    assert.ok(cohorts.includes(f), `dossier shows ${f}`);
+  }
+  // and the participants/aulas/cert sections
+  assert.match(cohorts, /_loadDossierParticipants/, 'loads participants summary');
+  assert.match(cohorts, /_loadDossierCerts/, 'loads cert summary');
+  assert.match(cohorts, /import \{[^}]*certificates as certApi/, 'imports the certificates facade for the cert summary');
+});
+
 test('every user-facing string in courses goes through t()', () => {
   // No raw Portuguese sentences in markup: the only quoted PT should be via t('...').
   // Heuristic: there is no '>Algum texto<' literal and i18n keys are present.

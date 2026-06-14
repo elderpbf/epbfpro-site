@@ -96,6 +96,14 @@ export default {
   'cohorts.fmt_hibrido':          'Hybrid',
   'cohorts.mod_fechada':          'Closed cohort (in-company)',
   'cohorts.mod_aberta':           'Open cohort',
+  // Turma dossier (Concept A right pane)
+  'cohorts.doss_certs':           'Certificates',
+  'cohorts.doss_emit':            'Issue for this cohort →',
+  'cohorts.doss_no_certs':        'No certificates issued for this cohort yet.',
+  'cohorts.doss_st_issued':       'awaiting signature',
+  'cohorts.doss_st_signed':       'awaiting send',
+  'cohorts.doss_st_sent':         'sent',
+  'cohorts.doss_st_revoked':      'revoked',
   'cohorts.select_turma_prompt':  'Select a cohort to see its lessons.',
 
   // Cohorts — clients

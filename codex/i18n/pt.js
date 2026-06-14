@@ -95,6 +95,14 @@ export default {
   'cohorts.fmt_hibrido':          'Híbrido',
   'cohorts.mod_fechada':          'Turma fechada (in-company)',
   'cohorts.mod_aberta':           'Turma aberta',
+  // Turma dossier (Concept A right pane)
+  'cohorts.doss_certs':           'Certificados',
+  'cohorts.doss_emit':            'Emitir desta turma →',
+  'cohorts.doss_no_certs':        'Nenhum certificado emitido nesta turma.',
+  'cohorts.doss_st_issued':       'aguardando assinatura',
+  'cohorts.doss_st_signed':       'aguardando envio',
+  'cohorts.doss_st_sent':         'enviados',
+  'cohorts.doss_st_revoked':      'revogados',
   'cohorts.select_turma_prompt':  'Selecione uma turma para ver suas aulas.',
 
   // Cohorts — clients

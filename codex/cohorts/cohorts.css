@@ -748,3 +748,31 @@ a.cdx-card-mini-icon.is-on:hover {
 .cdx-tf-section { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; margin: 1.1rem 0 .5rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
 .cdx-tf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem .9rem; }
 @media (max-width: 520px) { .cdx-tf-grid { grid-template-columns: 1fr; } }
+
+/* ── Turma dossier (Concept A right pane; cohorts.js _renderDossier) ──────────
+   Theme tokens only. Reuses the --cdx-cert-* status tokens for the cert dots. */
+.cdx-doss-body { overflow-y: auto; }
+.cdx-doss-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.cdx-doss-title { margin: 0; font-size: 1.25rem; color: var(--text-primary); }
+.cdx-doss-sub { font-size: .84rem; color: var(--text-secondary); margin-top: .2rem; }
+.cdx-doss-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; margin-bottom: 1.2rem; }
+.cdx-doss-fact { background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .5rem .6rem; }
+.cdx-doss-fact label { display: block; font-size: .62rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); font-weight: 700; margin-bottom: .15rem; }
+.cdx-doss-fact .v { font-size: .85rem; font-weight: 600; color: var(--text-primary); }
+.cdx-doss-fact--course { grid-column: span 2; background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); }
+.cdx-doss-fact--course .v { color: var(--primary-dark); }
+.cdx-doss-linkbtn { border: none; background: transparent; color: var(--primary-dark); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0; }
+.cdx-doss-sec { border-top: 1px solid var(--border); padding-top: .9rem; margin-top: .3rem; margin-bottom: .9rem; }
+.cdx-doss-sec-h { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .6rem; }
+.cdx-doss-sec-h b { font-size: .95rem; color: var(--text-primary); }
+.cdx-doss-count { font-size: 1.6rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
+.cdx-doss-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+.cdx-doss-chip { background: var(--background); border: 1px solid var(--border); border-radius: 999px; padding: .15rem .5rem; font-size: .76rem; color: var(--text-primary); }
+.cdx-doss-chip--more { color: var(--text-secondary); }
+.cdx-doss-certrow { display: flex; flex-wrap: wrap; gap: .4rem .9rem; }
+.cdx-doss-cstat { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 600; color: var(--text-secondary); }
+.cdx-doss-cstat i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.cdx-doss-cstat--issued i  { background: var(--cdx-cert-issued-ac); }
+.cdx-doss-cstat--signed i  { background: var(--cdx-cert-signed-ac); }
+.cdx-doss-cstat--sent i    { background: var(--cdx-cert-sent-ac); }
+.cdx-doss-cstat--revoked i { background: var(--cdx-cert-revoked-ac); }
