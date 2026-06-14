@@ -23,7 +23,11 @@
 <!-- .ctr- item-render styles (Codex copy, pairs with js/item-render.js). Prefix-
      scoped, so they do not collide with Codex's cdx- styles. -->
 <link rel="stylesheet" href="css/item-render.css?v=1.0">
-<link rel="stylesheet" href="../backstage/classtrail/css/classtrail.css?v=4.0">
+<!-- ClassTrail styles the admin still uses (type-filter chips, tarefa view) plus
+     the deferred shared editor/renderer (ct-/ctr-, window-global JS). Codex copy,
+     verbatim, so the backstage classtrail.css link is dropped. The cdx- rename of
+     the Codex-owned widgets is a later pass (their names are shared with the Trail). -->
+<link rel="stylesheet" href="css/classtrail.css?v=1.0">
 <!-- Drive file-preview styles (Codex copy, pairs with js/drive-viewer.js). The
      native Drive panel is cdx- styled in content.css; the legacy cv-drive.css is
      no longer loaded. -->
