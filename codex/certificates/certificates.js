@@ -775,11 +775,12 @@ async function _bulkAction(kind) {
   const codes = Array.from(_selectedCodes);
   if (!codes.length) return;
   if (kind === 'pdf') { _bulkPdf(codes); return; }
+  // Sign/send aren't real yet — don't record a false signed/sent state in bulk either.
+  if (kind === 'sign') { notice.warn(t('certificates.sign_not_wired')); return; }
+  if (kind === 'send') { notice.warn(t('certificates.send_not_wired')); return; }
   try {
     for (const code of codes) {
-      if (kind === 'sign')   await api.markSigned({ code });
-      else if (kind === 'send')   await api.markSent({ code });
-      else if (kind === 'revoke') await api.revoke({ code });
+      if (kind === 'revoke') await api.revoke({ code });
     }
     notice.ok(t('certificates.bulk_done').replace('{n}', String(codes.length)));
     _selectedCodes.clear();
@@ -987,26 +988,17 @@ function _deleteConfirm(code) {
   });
 }
 
+// Sign + send are NOT wired to the real digital signature / email yet. Until they
+// are, the action must NOT complete: flipping status to signed/sent would assert
+// something false (a real ICP-Brasil signature / a real email) that didn't happen.
+// We surface a clear notice and change nothing. (cert_mark_signed/cert_mark_sent
+// stay in the facade for when the real flows land.)
 async function _markSigned(code) {
-  try {
-    await api.markSigned({ code });
-    notice.ok(t('certificates.marked_signed_ok'));
-    await _loadCertList();
-  } catch (e) {
-    if (window.bsLog) window.bsLog('certs: markSigned: ' + (e && e.message || e), 'error');
-    notice.error(t('certificates.error_loading'));
-  }
+  notice.warn(t('certificates.sign_not_wired'));
 }
 
 async function _markSent(code) {
-  try {
-    await api.markSent({ code });
-    notice.ok(t('certificates.marked_sent_ok'));
-    await _loadCertList();
-  } catch (e) {
-    if (window.bsLog) window.bsLog('certs: markSent: ' + (e && e.message || e), 'error');
-    notice.error(t('certificates.error_loading'));
-  }
+  notice.warn(t('certificates.send_not_wired'));
 }
 
 // ── Preview + print ───────────────────────────────────────────────────────────

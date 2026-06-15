@@ -477,9 +477,18 @@ describe('Emissão dashboard port (source contract)', () => {
   test('old status <select> filter is gone (cards replaced it)', () => {
     assert.ok(!src.includes('cdx-certs-filter-status'), 'old status select removed');
   });
-  test("'signed' lifecycle wired through the facade", () => {
-    assert.ok(src.includes("data-action=\"sign\""), 'row sign action');
-    assert.ok(src.includes('api.markSigned'), 'markSigned used');
-    assert.ok(api.includes('cert_mark_signed'), 'facade exposes cert_mark_signed');
+  test("sign/send are gated until real signing/email — no false status flip", () => {
+    // The row actions still exist (the workflow is visible)…
+    assert.ok(src.includes("data-action=\"sign\""), 'row sign action present');
+    assert.ok(src.includes("data-action=\"mark-sent\""), 'row send action present');
+    // …but they must NOT complete a status change yet: clicking surfaces the
+    // not-wired notice and does not call the mark APIs (no false signed/sent).
+    assert.ok(src.includes("t('certificates.sign_not_wired')"), 'sign shows the not-wired notice');
+    assert.ok(src.includes("t('certificates.send_not_wired')"), 'send shows the not-wired notice');
+    assert.ok(!src.includes('api.markSigned'), 'does NOT flip status to signed yet');
+    assert.ok(!src.includes('api.markSent'), 'does NOT flip status to sent yet');
+    // The facade keeps the actions ready for when the real flows land.
+    assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed');
+    assert.ok(api.includes('cert_mark_sent'), 'facade still exposes cert_mark_sent');
   });
 });

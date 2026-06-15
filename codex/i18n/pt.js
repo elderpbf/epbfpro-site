@@ -1222,6 +1222,8 @@ export default {
   'certificates.delete_only_issued':  'Só dá para excluir um certificado ainda não assinado/enviado. Use Revogar.',
   'certificates.marked_sent_ok':      'Marcado como enviado.',
   'certificates.marked_signed_ok':    'Certificado assinado.',
+  'certificates.sign_not_wired':      'Assinatura digital (ICP-Brasil) ainda não está conectada. Não vou marcar como assinado para não registrar algo falso.',
+  'certificates.send_not_wired':      'Envio por e-mail ainda não está conectado. Não vou marcar como enviado para não registrar algo falso.',
   // Emissão — KPIs (filtros de status) + ações em massa
   'certificates.kpi_awaiting_sign':   'Aguardando assinatura',
   'certificates.kpi_awaiting_send':   'Aguardando envio',

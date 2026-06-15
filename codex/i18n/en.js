@@ -1223,6 +1223,8 @@ export default {
   'certificates.delete_only_issued':  'A certificate can only be deleted before it is signed/sent. Use Revoke instead.',
   'certificates.marked_sent_ok':      'Marked as sent.',
   'certificates.marked_signed_ok':    'Certificate signed.',
+  'certificates.sign_not_wired':      'Real digital signing (ICP-Brasil) is not wired yet. Not marking as signed, to avoid recording something false.',
+  'certificates.send_not_wired':      'Email delivery is not wired yet. Not marking as sent, to avoid recording something false.',
   // Issuance — KPIs (status filters) + bulk actions
   'certificates.kpi_awaiting_sign':   'Awaiting signature',
   'certificates.kpi_awaiting_send':   'Awaiting send',
