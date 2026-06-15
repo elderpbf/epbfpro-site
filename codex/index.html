@@ -45,7 +45,7 @@
      link. A dead-rule trim + cdx- rename is a later pass. -->
 <link rel="stylesheet" href="css/classvault.css?v=1.0">
 <link rel="stylesheet" href="css/tokens.css?v=1.1">
-<link rel="stylesheet" href="css/codex.css?v=2.4">
+<link rel="stylesheet" href="css/codex.css?v=2.5">
 <link rel="stylesheet" href="cohorts/cohorts.css?v=1.8">
 <link rel="stylesheet" href="content/content.css?v=2.6">
 <link rel="stylesheet" href="content/slides.css?v=1.9">
@@ -131,6 +131,7 @@
      active tab; no logic inline beyond the wiring. -->
 <script type="module">
   import './js/worker-call.js'; // Codex Worker transport FIRST -> sets window.callWorker (codex-api default); replaces backstage/js/api-client.js
+  import { install as installReconnect } from './js/reconnect.js'; // connection watchdog: raises a reload banner when the network drops, clears it when calls succeed
   import { init as topbar } from './js/codex-topbar.js';
   import { apply as applyI18n } from './js/i18n.js';
   import * as glyphs from './js/glyphs.js';
@@ -152,6 +153,11 @@
   // The Codex glyph library is owned here. Shared window-global consumers
   // (the ct-type-filter chip strip) reach it through this global.
   window.CdxGlyphs = glyphs;
+
+  // Connection watchdog: from here on, a dropped network surfaces a reload
+  // banner instead of silent failures. Install before any tab mounts so the
+  // very first call is covered.
+  installReconnect();
 
   const TABS = { cohorts, content, lessons, questions, certificates };
   const params = new URLSearchParams(location.search);
