@@ -503,12 +503,14 @@ describe('Emissão fixes (source contract)', () => {
     assert.ok(src.includes('data-action="pdf"'), 'per-row PDF action present');
     assert.ok(src.includes("if (action === 'pdf')"), 'pdf action routed to print');
   });
-  test('delete is offered for issued OR revoked rows', () => {
-    assert.ok(/c\.status === 'issued' \|\| c\.status === 'revoked'/.test(src), 'row delete gated to issued|revoked');
+  test('delete is bulk-only (no per-row delete button), to avoid mis-click deletes', () => {
+    assert.ok(!src.includes('data-action="delete"'), 'no per-row delete button');
+    assert.ok(!/if \(action === 'delete'\)/.test(src), 'no per-row delete route');
   });
-  test('bulk delete present and confirmed', () => {
+  test('bulk delete present and confirmed, deletable = issued|revoked', () => {
     assert.ok(src.includes('data-bulk="delete"'), 'bulk delete button');
     assert.ok(src.includes('_bulkDeleteConfirm'), 'bulk delete goes through a confirm');
+    assert.ok(/c\.status === 'issued' \|\| c\.status === 'revoked'/.test(src), 'bulk delete filters to deletable statuses');
     assert.ok(api.includes('cert_delete'), 'facade exposes cert_delete');
   });
   test('issue modal has a select-all checkbox and a model preview', () => {

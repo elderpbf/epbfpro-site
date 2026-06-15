@@ -85,6 +85,14 @@ test('back renders the course, every module title, and the code', () => {
   assert.ok(html.includes('data-qr'));
 });
 
+test('the code appears only ONCE on the back (in the QR vcard, not the top header)', () => {
+  const html = renderBack(d);
+  const count = html.split('AB3HNQ4VXY').length - 1;
+  assert.equal(count, 1, 'code rendered exactly once on the back');
+  assert.ok(!html.includes('class="code"'), 'old top header code block is gone');
+  assert.ok(html.includes('class="vcard"'), 'the QR vcard (the one kept) is present');
+});
+
 test('renderFrontPage wraps with the scoped page class and the chosen theme', () => {
   const html = renderFrontPage('vetor', 'duo', d);
   assert.ok(html.includes('cdx-cert-page'));
