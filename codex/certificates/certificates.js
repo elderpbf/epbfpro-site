@@ -33,12 +33,12 @@ export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
 
 // Stylesheet href for the standalone print window (resolved absolute so the
 // popup, which has no base URL, can fetch it).
-const CERT_CSS_HREF = new URL('cert-render.css?v=1.1', import.meta.url).href;
+const CERT_CSS_HREF = new URL('cert-render.css?v=1.2', import.meta.url).href;
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 export const SUBTABS = [
-  { key: 'modelos',  labelKey: 'certificates.sub_modelos'  },
   { key: 'emitidos', labelKey: 'certificates.sub_emitidos' },
+  { key: 'modelos',  labelKey: 'certificates.sub_modelos'  },
 ];
 
 function _resolveSub(sub) {
@@ -315,8 +315,11 @@ export function buildPrintDocument(opts) {
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">' +
     '<link rel="stylesheet" href="' + (opts.cssHref || '') + '">' +
-    '<style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}' +
-    '.cdx-cert-page{page-break-after:always}.cdx-cert-page:last-child{page-break-after:auto}</style>' +
+    '<style>@page{size:297mm 210mm;margin:0}html,body{margin:0;padding:0;background:#fff}' +
+    // Fill the page box exactly; sheet at 100% (not a fixed 297mm) so sub-pixel mm
+    // rounding can't overflow and trigger the shrink-to-fit white bars.
+    '.cdx-cert-page{width:297mm;height:210mm;overflow:hidden;page-break-after:always}.cdx-cert-page:last-child{page-break-after:auto}' +
+    '.cdx-cert-page .cdxc-sheet{width:100%;height:100%;box-shadow:none}</style>' +
     '</head><body>' + (opts.bodyHtml || '') + '</body></html>';
 }
 

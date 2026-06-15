@@ -372,10 +372,16 @@ describe('subtabs', () => {
     assert.ok(activeTab.href.includes('emitidos'), 'active href references emitidos');
   });
 
-  test('defaults to modelos when sub is invalid', () => {
+  test('defaults to emitidos (Emissão) when sub is invalid', () => {
     const tabs = certs.subtabs('nonexistent');
     const active = tabs.find((s) => s.active);
-    assert.ok(active && active.href.includes('modelos'), 'defaults to modelos');
+    assert.ok(active && active.href.includes('emitidos'), 'defaults to emitidos (the first/main sub-tab)');
+  });
+
+  test('Emissão (emitidos) is the first sub-tab, Modelos second', () => {
+    const tabs = certs.subtabs('emitidos');
+    assert.ok(tabs[0].href.includes('emitidos'), 'first sub-tab is emitidos');
+    assert.ok(tabs[1].href.includes('modelos'), 'second sub-tab is modelos');
   });
 
   test('hrefs point to /codex/?tab=certificates&sub=<key>', () => {

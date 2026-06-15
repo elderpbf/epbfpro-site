@@ -282,7 +282,15 @@
 
 /* ── print: one sheet per A4 landscape page ── */
 @media print {
-  @page { size:A4 landscape; margin:0; }
-  .cdx-cert-page { display:block; }
-  .cdx-cert-page .cdxc-sheet { box-shadow:none; page-break-after:always; break-after:page; }
+  /* Explicit numeric size (more reliably honored than the "A4 landscape" keyword)
+     + margin:0 for full-bleed. */
+  @page { size:297mm 210mm; margin:0; }
+  html, body { margin:0; padding:0; }
+  /* Size the page+sheet to fill the page box. The sheet is 100% of .cdx-cert-page
+     (the exact page box) instead of a fixed 297mm×210mm: a fixed mm size rounds a
+     sub-pixel over the page box, so the browser shrink-to-fits and that scaling
+     leaves the white bars. 100% can't overflow. */
+  .cdx-cert-page { display:block; width:297mm; height:210mm; margin:0; overflow:hidden; page-break-after:always; break-after:page; }
+  .cdx-cert-page:last-child { page-break-after:auto; break-after:auto; }
+  .cdx-cert-page .cdxc-sheet { width:100%; height:100%; box-shadow:none; }
 }
