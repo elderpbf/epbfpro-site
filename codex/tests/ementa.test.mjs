@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   emptyEmenta, normalizeEmenta, ementaStats, parseEmenta, ementaToText, ementaToCertModules,
+  buildEmentaAIPrompt, parseEmentaAIResponse,
 } from '../js/ementa.js';
 
 test('emptyEmenta is an empty module list', () => {
@@ -118,4 +119,44 @@ test('ementaToText round-trips through parseEmenta', () => {
   const text = ementaToText(e);
   const back = parseEmenta(text);
   assert.deepEqual(back, e);
+});
+
+// ── AI assistant helpers (pure) ───────────────────────────────────────────────
+
+test('buildEmentaAIPrompt embeds the course title + current outline + JSON contract', () => {
+  const p = buildEmentaAIPrompt({ courseTitle: 'IA Jurídica', ementa: {
+    modules: [{ title: 'Fundamentos', topics: [{ title: 'Tokens', subtopics: [] }] }],
+  } });
+  assert.match(p, /IA Jurídica/, 'includes the course title');
+  assert.match(p, /Fundamentos/, 'includes the current outline');
+  assert.match(p, /"modules"/, 'states the ementa JSON shape');
+  assert.match(p, /"reply"/, 'asks for a reply field');
+});
+
+test('buildEmentaAIPrompt tolerates an empty/missing ementa', () => {
+  const p = buildEmentaAIPrompt({ courseTitle: 'X' });
+  assert.match(p, /vazia/, 'marks an empty program');
+});
+
+test('parseEmentaAIResponse: reply + ementa, tolerating ```json fences and prose', () => {
+  const out = parseEmentaAIResponse('Claro!\n```json\n{"reply":"Pronto","ementa":{"modules":[{"title":"M","topics":[]}]}}\n```');
+  assert.equal(out.reply, 'Pronto');
+  assert.equal(out.ementa.modules[0].title, 'M');
+});
+
+test('parseEmentaAIResponse: a bare ementa object becomes the program with empty reply', () => {
+  const out = parseEmentaAIResponse('{"modules":[{"title":"M1","topics":[{"title":"T","subtopics":["s"]}]}]}');
+  assert.equal(out.reply, '');
+  assert.equal(out.ementa.modules[0].topics[0].subtopics[0], 's');
+});
+
+test('parseEmentaAIResponse: reply-only (no change) leaves ementa null', () => {
+  const out = parseEmentaAIResponse('{"reply":"Sobre o que é o curso?","ementa":null}');
+  assert.equal(out.reply, 'Sobre o que é o curso?');
+  assert.equal(out.ementa, null);
+});
+
+test('parseEmentaAIResponse: unparseable text never throws', () => {
+  const out = parseEmentaAIResponse('desculpe, não entendi');
+  assert.deepEqual(out, { reply: '', ementa: null });
 });

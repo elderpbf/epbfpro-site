@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light" data-lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>pensoIA · O Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700;800&family=Lora:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --teal-light:#5eead4;
+  --accent:#7de8d6; --green:#047857;
+  /* light theme */
+  --bg:#f4f7fb; --panel:#ffffff; --panel-2:#eef3fa; --ink:#0a1738; --dim:#516086;
+  --line:rgba(6,26,81,.12); --line-2:rgba(6,26,81,.07);
+  --glow:rgba(20,184,166,.14); --prompt:#0d9488; --shadow:0 20px 60px -28px rgba(6,26,81,.35);
+  --chip:#eaf1fb; --chip-on:#061a51;
+}
+html[data-theme="dark"]{
+  --bg:#04102e; --panel:#081a44; --panel-2:#0a2150; --ink:#eaf2ff; --dim:#9fb2db;
+  --line:rgba(255,255,255,.14); --line-2:rgba(255,255,255,.07);
+  --glow:rgba(20,184,166,.22); --prompt:#5eead4; --shadow:0 24px 70px -30px rgba(0,0,0,.7);
+  --chip:#0c2257; --chip-on:#eaf2ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',sans-serif;color:var(--ink);background:var(--bg);
+  overflow:hidden; /* single-screen */
+  display:flex;flex-direction:column;
+  transition:background .4s ease,color .4s ease;
+}
+body::before{ /* ambient aurora */
+  content:"";position:fixed;inset:-30%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(40% 50% at 16% 8%, var(--glow), transparent 60%),
+    radial-gradient(38% 46% at 88% 92%, var(--glow), transparent 60%);
+}
+a{color:inherit;}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px;border-radius:6px;}
+
+/* ---------- top bar ---------- */
+header{
+  position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:14px clamp(16px,4vw,40px);border-bottom:1px solid var(--line-2);flex:0 0 auto;
+}
+.logo{height:30px;display:block;}
+.logo.dark{display:none;}
+html[data-theme="dark"] .logo.light{display:none;}
+html[data-theme="dark"] .logo.dark{display:block;}
+.controls{display:flex;align-items:center;gap:8px;}
+.tg{
+  font:600 .74rem/1 'Inter',sans-serif;letter-spacing:.04em;color:var(--ink);
+  background:var(--panel);border:1px solid var(--line);border-radius:999px;
+  padding:8px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  transition:border-color .15s,transform .15s;
+}
+.tg:hover{border-color:var(--teal);transform:translateY(-1px);}
+.tg b{color:var(--prompt);font-weight:700;}
+
+/* ---------- console shell ---------- */
+.stage{
+  position:relative;z-index:2;flex:1 1 auto;min-height:0;
+  display:grid;grid-template-columns:300px 1fr;gap:clamp(14px,2.4vw,28px);
+  padding:clamp(14px,3vw,32px) clamp(16px,4vw,40px);
+}
+@media(max-width:900px){
+  body{overflow:auto;}
+  .stage{grid-template-columns:1fr;}
+}
+
+/* left: who is asking + offer rail */
+.aside{display:flex;flex-direction:column;gap:14px;min-height:0;}
+.eyebrow{font:700 .68rem/1 'Inter';letter-spacing:.2em;text-transform:uppercase;color:var(--prompt);}
+.lede{font-family:'Lora',serif;font-size:clamp(1.5rem,2.6vw,2rem);line-height:1.18;letter-spacing:-.01em;}
+.lede em{font-style:italic;color:var(--teal-dark);}
+html[data-theme="dark"] .lede em{color:var(--teal-light);}
+.tag{color:var(--dim);font-size:.92rem;line-height:1.5;max-width:34ch;}
+.rail{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
+.rail .rlabel{font:700 .64rem/1 'Inter';letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:2px;}
+.rail .ritem{display:flex;gap:10px;align-items:baseline;font-size:.86rem;color:var(--dim);}
+.rail .ritem b{color:var(--ink);font-weight:600;}
+.rail .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex:0 0 auto;transform:translateY(-1px);}
+
+/* right: the live console */
+.console{
+  background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
+}
+.cbar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line-2);flex:0 0 auto;}
+.cbar .dots{display:flex;gap:6px;}
+.cbar .dots i{width:11px;height:11px;border-radius:50%;display:block;background:var(--line);}
+.cbar .dots i:nth-child(1){background:#f0a35e;}
+.cbar .dots i:nth-child(2){background:var(--teal);}
+.cbar .dots i:nth-child(3){background:var(--teal-light);}
+.cbar .title{font:600 .76rem/1 'Inter';color:var(--dim);letter-spacing:.02em;}
+.cbar .live{margin-left:auto;display:flex;align-items:center;gap:7px;font:600 .68rem/1 'Inter';color:var(--prompt);letter-spacing:.06em;text-transform:uppercase;}
+.cbar .pulse{width:8px;height:8px;border-radius:50%;background:var(--teal);position:relative;}
+.cbar .pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--teal);animation:ping 1.8s ease-out infinite;}
+@keyframes ping{0%{transform:scale(1);opacity:.6}100%{transform:scale(3.2);opacity:0}}
+
+/* prompt line */
+.promptline{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line-2);flex:0 0 auto;}
+.caret{font-family:'Lora',serif;color:var(--prompt);font-weight:700;font-size:1.1rem;}
+.typed{
+  font-size:clamp(.95rem,1.6vw,1.15rem);font-weight:600;color:var(--ink);
+  min-height:1.5em;display:flex;align-items:center;
+}
+.typed .cur{display:inline-block;width:.6ch;height:1.05em;background:var(--teal);margin-left:2px;transform:translateY(.12em);animation:blink 1s steps(1) infinite;}
+@keyframes blink{50%{opacity:0}}
+
+/* answer viewport — fixed flexible height, scrolls inside, never reflows page */
+.viewport{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;}
+.answer{
+  position:absolute;inset:0;overflow:auto;padding:clamp(16px,2.2vw,26px);
+  opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .45s ease,transform .45s ease;
+}
+.answer.on{opacity:1;transform:none;pointer-events:auto;}
+.answer h3{font-family:'Lora',serif;font-weight:400;font-size:clamp(1.25rem,2.2vw,1.7rem);line-height:1.22;letter-spacing:-.01em;margin-bottom:6px;}
+.answer h3 b{color:var(--teal-dark);font-weight:700;}
+html[data-theme="dark"] .answer h3 b{color:var(--teal-light);}
+.answer p{color:var(--dim);font-size:.96rem;line-height:1.6;max-width:60ch;}
+.answer p + p{margin-top:10px;}
+.answer .meta{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;}
+.tagpill{font:600 .72rem/1 'Inter';letter-spacing:.02em;padding:7px 11px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line-2);color:var(--ink);}
+
+/* answer layouts */
+.cards{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.mini{border:1px solid var(--line-2);border-radius:14px;padding:14px;background:var(--panel-2);}
+.mini .n{font-family:'Lora',serif;font-size:1.5rem;color:var(--teal-dark);font-weight:700;line-height:1;}
+html[data-theme="dark"] .mini .n{color:var(--teal-light);}
+.mini .l{margin-top:6px;font-size:.82rem;color:var(--dim);line-height:1.4;}
+
+.steps{margin-top:16px;display:flex;flex-direction:column;gap:10px;}
+.step{display:flex;gap:12px;align-items:flex-start;}
+.step .si{flex:0 0 28px;height:28px;border-radius:9px;background:var(--navy);color:#fff;font:700 .8rem/28px 'Inter';text-align:center;}
+html[data-theme="dark"] .step .si{background:var(--teal);color:#04253a;}
+.step .st b{display:block;font-size:.94rem;color:var(--ink);}
+.step .st span{font-size:.84rem;color:var(--dim);}
+
+.split{margin-top:16px;display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:center;}
+@media(max-width:620px){.split{grid-template-columns:1fr;}}
+.phone{justify-self:center;width:172px;border-radius:26px;border:7px solid var(--navy);overflow:hidden;box-shadow:var(--shadow);background:#000;}
+html[data-theme="dark"] .phone{border-color:#16306e;}
+.phone img{display:block;width:100%;}
+.phone .pl{display:block;} .phone .pd{display:none;}
+html[data-theme="dark"] .phone .pl{display:none;} html[data-theme="dark"] .phone .pd{display:block;}
+
+.profilewrap{margin-top:16px;display:flex;gap:16px;align-items:center;}
+.profilewrap img{width:84px;height:84px;border-radius:18px;object-fit:cover;border:1px solid var(--line);flex:0 0 auto;}
+.profilewrap .pname{font-weight:700;font-size:1rem;}
+.profilewrap .prole{font-size:.85rem;color:var(--dim);line-height:1.45;margin-top:3px;}
+
+.contacts{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;}
+.cbtn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:600;font-size:.86rem;
+  padding:10px 14px;border-radius:11px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+  transition:transform .15s,border-color .15s;}
+.cbtn:hover{transform:translateY(-1px);border-color:var(--teal);}
+.cbtn.primary{background:var(--teal);color:#04241f;border-color:transparent;}
+html[data-theme="dark"] .cbtn.primary{color:#04241f;}
+
+/* chip dock — the "menu" */
+.dock{
+  flex:0 0 auto;border-top:1px solid var(--line-2);padding:13px 16px;
+  display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:thin;
+}
+.dock .dlabel{font:700 .62rem/1 'Inter';letter-spacing:.16em;text-transform:uppercase;color:var(--dim);flex:0 0 auto;margin-right:2px;}
+.chip{
+  flex:0 0 auto;cursor:pointer;font:600 .82rem/1 'Inter';white-space:nowrap;
+  padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--ink);
+  transition:transform .15s,border-color .15s,background .2s,color .2s;
+}
+.chip:hover{transform:translateY(-1px);border-color:var(--teal);}
+.chip[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:transparent;}
+html[data-theme="dark"] .chip[aria-pressed="true"]{background:var(--teal);color:#04241f;}
+
+/* footer micro */
+footer{position:relative;z-index:2;flex:0 0 auto;padding:10px clamp(16px,4vw,40px);
+  display:flex;gap:14px;flex-wrap:wrap;font-size:.74rem;color:var(--dim);border-top:1px solid var(--line-2);}
+footer b{color:var(--ink);font-weight:600;}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important;}
+}
+</style>
+</head>
+<body>
+<a class="sr" href="#console">Pular para o console</a>
+<header>
+  <img class="logo light" src="../../../images/brand/glyph-wordmark_bg.transp.svg" alt="PensoIA">
+  <img class="logo dark"  src="../../../images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA">
+  <div class="controls">
+    <button class="tg" id="langBtn" aria-label="Mudar idioma">🌐 <b id="langTxt">EN</b></button>
+    <button class="tg" id="themeBtn" aria-label="Alternar tema">🌙 <b id="themeTxt">Escuro</b></button>
+  </div>
+</header>
+
+<main class="stage">
+  <aside class="aside">
+    <div class="eyebrow" data-i="eyebrow">Pergunte ao console</div>
+    <h1 class="lede" data-i="lede">Você comanda. A <em>IA amplia</em>. Veja como, ao seu jeito.</h1>
+    <p class="tag" data-i="tag">PensoIA forma e assessora profissionais do Direito no uso de IA generativa e engenharia de prompt. Escolha uma pergunta abaixo, a resposta aparece aqui ao lado.</p>
+    <div class="rail">
+      <div class="rlabel" data-i="rlabel">Por trás do console</div>
+      <div class="ritem"><span class="dot"></span><div><b>Élder Prudente Barbosa Filho</b> <span data-i="r1">— Direito + Análise de Sistemas</span></div></div>
+      <div class="ritem"><span class="dot"></span><div><b data-i="r2">~11 anos no Judiciário</b> <span data-i="r2b">— servidor no TJSE</span></div></div>
+      <div class="ritem"><span class="dot"></span><div><b>600+</b> <span data-i="r3">magistrados e servidores já formados</span></div></div>
+    </div>
+  </aside>
+
+  <section class="console" id="console" aria-label="Console PensoIA">
+    <div class="cbar">
+      <span class="dots"><i></i><i></i><i></i></span>
+      <span class="title">pensoIA — console</span>
+      <span class="live"><span class="pulse"></span><span data-i="live">ao vivo</span></span>
+    </div>
+    <div class="promptline">
+      <span class="caret">›</span>
+      <div class="typed" id="typed" aria-live="polite"><span class="cur"></span></div>
+    </div>
+
+    <div class="viewport" id="viewport">
+      <!-- answers injected/toggled here -->
+    </div>
+
+    <div class="dock" role="tablist" aria-label="Perguntas">
+      <span class="dlabel" data-i="dlabel">Perguntas</span>
+      <!-- chips injected -->
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span data-i="f1"><b>pensamento humano, inteligência ampliada</b></span>
+  <span data-i="f2">Certificação · presencial ou híbrido · ~12–16h</span>
+  <span>EPBF Soluções em Tecnologia</span>
+</footer>
+
+<script>
+/* ---------------- bilingual content ---------------- */
+const COPY = {
+  pt:{
+    eyebrow:"Pergunte ao console", live:"ao vivo", dlabel:"Perguntas",
+    lede:'Você comanda. A <em>IA amplia</em>. Veja como, ao seu jeito.',
+    tag:"PensoIA forma e assessora profissionais do Direito no uso de IA generativa e engenharia de prompt. Escolha uma pergunta abaixo, a resposta aparece aqui ao lado.",
+    rlabel:"Por trás do console",
+    r1:"— Direito + Análise de Sistemas", r2:"~11 anos no Judiciário", r2b:"— servidor no TJSE",
+    r3:"magistrados e servidores já formados",
+    f1:"pensamento humano, inteligência ampliada",
+    f2:"Certificação · presencial ou híbrido · ~12–16h",
+    langTxt:"EN", themeDark:"Escuro", themeLight:"Claro",
+    answers:{
+      what:{
+        q:"O que é a PensoIA?",
+        h:'Traduzir a complexidade da IA em <b>ferramentas práticas</b>, com segurança jurídica e rigor técnico.',
+        p:["Treinamentos e assessoria em engenharia de prompt e IA generativa para quem atua no Direito. A IA é facilitadora; o humano permanece no comando.","Por Élder Prudente Barbosa Filho — dupla formação em Direito e em Análise e Desenvolvimento de Sistemas."],
+        pills:["Cursos & treinamentos","Consultoria em IA generativa","Otimização de workflows com LLM"]
+      },
+      who:{
+        q:"Para quem é?",
+        h:"Feito para <b>quem decide e redige</b> no dia a dia jurídico.",
+        layout:"cards",
+        cards:[["Advogados","e escritórios de advocacia"],["Magistrados","desembargadores, juízes e assessores"],["Servidores","do Judiciário e do setor público"]],
+        p:["A linguagem e os exemplos partem da rotina forense real, não de demonstrações genéricas de tecnologia."]
+      },
+      method:{
+        q:"Como é o método?",
+        h:"Aula + laboratório, em sessões de <b>~4h</b>, num total de ~12–16h.",
+        layout:"steps",
+        steps:[
+          ["1","Fundamentos de LLM","Como esses modelos pensam e onde erram."],
+          ["2","Engenharia de prompt avançada","Do pedido vago ao resultado confiável."],
+          ["3","Gestão de risco","Alucinações, precedentes falsos, conferência."],
+          ["4","Laboratório prático","Você sai com um repertório de prompts reutilizável."]
+        ],
+        pills:["ChatGPT","Claude","Gemini","NotebookLM"]
+      },
+      tech:{
+        q:"E a tecnologia, ajuda mesmo?",
+        h:"Duas plataformas próprias deixam o curso <b>mais fácil</b> — durante e depois.",
+        layout:"split",
+        splitTitle:"Trilha da Turma",
+        p:["<b>Pulso da Turma</b> (ao vivo): perguntas em tempo real, enquetes e um termômetro de compreensão da turma.","<b>Trilha da Turma</b> (depois): caderno digital com conteúdo, tarefas e materiais — uma referência permanente. Suporte a dúvidas por ~15 dias após o curso."]
+      },
+      proof:{
+        q:"Já funcionou antes?",
+        h:"Fatos, sem vaidade.",
+        layout:"cards",
+        cards:[["600+","magistrados, desembargadores, juízes e servidores formados"],["~11 anos","no Judiciário (servidor no TJSE)"],["Vários","órgãos públicos e escritórios atendidos"]],
+        p:["Certificação com carga horária e ementa incluída."]
+      },
+      talk:{
+        q:"Quero conversar.",
+        h:"Vamos desenhar o treinamento para a sua realidade.",
+        layout:"contact"
+      }
+    }
+  },
+  en:{
+    eyebrow:"Ask the console", live:"live", dlabel:"Questions",
+    lede:'You stay in command. <em>AI amplifies</em>. See how, your way.',
+    tag:"PensoIA trains and advises legal professionals in generative AI and prompt engineering. Pick a question below — the answer appears right here.",
+    rlabel:"Behind the console",
+    r1:"— Law + Systems Analysis & Development", r2:"~11 years in the Judiciary", r2b:"— civil servant at TJSE",
+    r3:"magistrates and court staff already trained",
+    f1:"human thinking, amplified intelligence",
+    f2:"Certification · in-person or hybrid · ~12–16h",
+    langTxt:"PT", themeDark:"Dark", themeLight:"Light",
+    answers:{
+      what:{
+        q:"What is PensoIA?",
+        h:'Translating the complexity of AI into <b>practical tools</b>, with legal safety and technical rigor.',
+        p:["Training and advisory in prompt engineering and generative AI for legal professionals. AI is a facilitator; the human stays in command.","By Élder Prudente Barbosa Filho — dual background in Law and in Systems Analysis & Development."],
+        pills:["Courses & training","Generative-AI consulting","LLM workflow optimization"]
+      },
+      who:{
+        q:"Who is it for?",
+        h:"Built for <b>those who decide and draft</b> every day in law.",
+        layout:"cards",
+        cards:[["Lawyers","and law firms"],["Magistrates","appellate judges, judges & advisors"],["Court staff","Judiciary and public sector"]],
+        p:["The language and examples come from real legal routine, not generic tech demos."]
+      },
+      method:{
+        q:"How does the method work?",
+        h:"Lecture + lab, in <b>~4h</b> sessions, ~12–16h total.",
+        layout:"steps",
+        steps:[
+          ["1","LLM fundamentals","How these models think — and where they fail."],
+          ["2","Advanced prompt engineering","From a vague ask to a reliable result."],
+          ["3","Risk management","Hallucinations, fake precedents, checking."],
+          ["4","Hands-on lab","You leave with a reusable prompt repertoire."]
+        ],
+        pills:["ChatGPT","Claude","Gemini","NotebookLM"]
+      },
+      tech:{
+        q:"Does the tech really help?",
+        h:"Two in-house platforms make the course <b>easier</b> — during and after.",
+        layout:"split",
+        splitTitle:"Trilha da Turma",
+        p:["<b>Pulso da Turma</b> (live): real-time questions, polls and a comprehension thermometer for the room.","<b>Trilha da Turma</b> (after): a digital workbook with content, tasks and materials — a permanent reference. Q&A support for ~15 days after the course."]
+      },
+      proof:{
+        q:"Has it worked before?",
+        h:"Facts, no bragging.",
+        layout:"cards",
+        cards:[["600+","magistrates, appellate judges, judges & court staff trained"],["~11 years","in the Judiciary (civil servant at TJSE)"],["Many","public bodies and law firms served"]],
+        p:["Certification with hours and syllabus included."]
+      },
+      talk:{
+        q:"Let's talk.",
+        h:"Let's design the training for your reality.",
+        layout:"contact"
+      }
+    }
+  }
+};
+const ORDER = ["what","who","method","tech","proof","talk"];
+const LINKS = {
+  wa:"https://wa.me/557998014253", mail:"mailto:contato@pensoia.com",
+  li:"https://www.linkedin.com/in/elderpbf/", gh:"https://github.com/elderpbf",
+  ig:"https://www.instagram.com/elderpbf/"
+};
+
+let lang = "pt", active = "what", typeTimer=null;
+
+/* ---------- static i18n ---------- */
+function applyStatic(){
+  const c = COPY[lang];
+  document.querySelectorAll("[data-i]").forEach(el=>{
+    const k = el.getAttribute("data-i");
+    if(c[k]!==undefined) el.innerHTML = c[k];
+  });
+  document.documentElement.setAttribute("lang", lang==="pt"?"pt-BR":"en");
+  document.getElementById("langTxt").textContent = c.langTxt;
+  const dark = document.documentElement.getAttribute("data-theme")==="dark";
+  document.getElementById("themeTxt").textContent = dark? c.themeLight : c.themeDark;
+}
+
+/* ---------- build chips ---------- */
+function buildChips(){
+  const dock = document.querySelector(".dock");
+  // remove old chips (keep label)
+  dock.querySelectorAll(".chip").forEach(n=>n.remove());
+  ORDER.forEach(key=>{
+    const b=document.createElement("button");
+    b.className="chip"; b.type="button"; b.setAttribute("role","tab");
+    b.setAttribute("aria-pressed", key===active ? "true":"false");
+    b.textContent = COPY[lang].answers[key].q;
+    b.addEventListener("click",()=>select(key));
+    dock.appendChild(b);
+  });
+}
+
+/* ---------- typing effect (height reserved) ---------- */
+function typeQuestion(text){
+  const el = document.getElementById("typed");
+  clearTimeout(typeTimer);
+  el.innerHTML="<span class='cur'></span>";
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    el.innerHTML = esc(text)+"<span class='cur'></span>"; return;
+  }
+  let i=0;
+  const tick=()=>{
+    el.innerHTML = esc(text.slice(0,i))+"<span class='cur'></span>";
+    if(i<text.length){ i++; typeTimer=setTimeout(tick, 26+Math.random()*40); }
+  };
+  tick();
+}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+/* ---------- render an answer ---------- */
+function answerHTML(key){
+  const a = COPY[lang].answers[key];
+  let body = `<h3>${a.h}</h3>`;
+  if(a.layout==="cards"){
+    body += `<div class="cards">`+a.cards.map(c=>`<div class="mini"><div class="n">${c[0]}</div><div class="l">${c[1]}</div></div>`).join("")+`</div>`;
+    if(a.p) body += a.p.map(p=>`<p>${p}</p>`).join("");
+  } else if(a.layout==="steps"){
+    body += `<div class="steps">`+a.steps.map(s=>`<div class="step"><span class="si">${s[0]}</span><span class="st"><b>${s[1]}</b><span>${s[2]}</span></span></div>`).join("")+`</div>`;
+    if(a.pills) body += `<div class="meta">`+a.pills.map(p=>`<span class="tagpill">${p}</span>`).join("")+`</div>`;
+  } else if(a.layout==="split"){
+    body += `<div class="split"><div>`+a.p.map(p=>`<p>${p}</p>`).join("")+`</div>
+      <figure class="phone"><img class="pl" src="../../../images/app/student-light.jpg" alt="Trilha da Turma — caderno digital do aluno (tema claro)"><img class="pd" src="../../../images/app/student-dark.jpg" alt="Trilha da Turma — caderno digital do aluno (tema escuro)"></figure></div>`;
+  } else if(a.layout==="contact"){
+    body += `<div class="profilewrap"><img src="../../../images/profile.jpg" alt="Foto de Élder Prudente Barbosa Filho"><div><div class="pname">Élder Prudente Barbosa Filho</div><div class="prole">PensoIA · EPBF Soluções em Tecnologia</div></div></div>
+      <div class="contacts">
+        <a class="cbtn primary" href="${LINKS.wa}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="cbtn" href="${LINKS.mail}">contato@pensoia.com</a>
+        <a class="cbtn" href="${LINKS.li}" target="_blank" rel="noopener">LinkedIn</a>
+        <a class="cbtn" href="${LINKS.gh}" target="_blank" rel="noopener">GitHub</a>
+        <a class="cbtn" href="${LINKS.ig}" target="_blank" rel="noopener">Instagram</a>
+      </div>`;
+  } else {
+    body += (a.p||[]).map(p=>`<p>${p}</p>`).join("");
+    if(a.pills) body += `<div class="meta">`+a.pills.map(p=>`<span class="tagpill">${p}</span>`).join("")+`</div>`;
+  }
+  return body;
+}
+
+function render(){
+  const vp = document.getElementById("viewport");
+  vp.innerHTML = `<div class="answer on" role="region" aria-live="polite">${answerHTML(active)}</div>`;
+}
+
+function select(key){
+  active = key;
+  document.querySelectorAll(".chip").forEach(c=>{
+    c.setAttribute("aria-pressed", c.textContent===COPY[lang].answers[key].q ? "true":"false");
+  });
+  // animate out then in
+  const vp = document.getElementById("viewport");
+  const old = vp.querySelector(".answer");
+  typeQuestion(COPY[lang].answers[key].q);
+  if(old) old.classList.remove("on");
+  setTimeout(()=>{ render(); }, old?260:0);
+}
+
+/* ---------- toggles ---------- */
+document.getElementById("themeBtn").addEventListener("click",()=>{
+  const cur=document.documentElement.getAttribute("data-theme");
+  document.documentElement.setAttribute("data-theme", cur==="dark"?"light":"dark");
+  document.getElementById("themeBtn").firstChild.textContent =
+    (cur==="dark"?"🌙 ":"☀️ ");
+  applyStatic();
+});
+document.getElementById("langBtn").addEventListener("click",()=>{
+  lang = lang==="pt"?"en":"pt";
+  applyStatic(); buildChips();
+  typeQuestion(COPY[lang].answers[active].q); render();
+});
+
+/* ---------- boot ---------- */
+applyStatic(); buildChips();
+typeQuestion(COPY[lang].answers[active].q); render();
+</script>
+</body>
+</html>

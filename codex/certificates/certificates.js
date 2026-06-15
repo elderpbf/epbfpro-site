@@ -80,6 +80,8 @@ let _filterClientSlug = '';
 let _filterTurmaId = '';
 let _filterStatus = '';
 let _filterQ = '';
+let _filterDateFrom = '';
+let _filterDateTo = '';
 let _clients = [];
 let _turmaIndex = {};       // String(turma_id) -> turma row
 let _turmasByClient = {};   // client_slug -> [turma rows]
@@ -186,7 +188,7 @@ export function buildIssuePayload(fields) {
  */
 export function filterCerts(certs, filters) {
   let out = certs || [];
-  const { turma_id, turma_ids, status, q } = filters || {};
+  const { turma_id, turma_ids, status, q, date_from, date_to } = filters || {};
   if (turma_id) {
     out = out.filter((c) => String(c.turma_id) === String(turma_id));
   } else if (Array.isArray(turma_ids) && turma_ids.length) {
@@ -195,6 +197,10 @@ export function filterCerts(certs, filters) {
   }
   if (status)   out = out.filter((c) => c.status === status);
   if (q)        out = out.filter((c) => (c.holder_name || '').toLowerCase().includes(q.toLowerCase()));
+  // issued_on is an ISO yyyy-mm-dd string, so lexicographic compare == date compare.
+  // A cert without an issued_on is excluded while any date bound is active.
+  if (date_from) out = out.filter((c) => c.issued_on && c.issued_on >= date_from);
+  if (date_to)   out = out.filter((c) => c.issued_on && c.issued_on <= date_to);
   return out;
 }
 
@@ -564,20 +570,29 @@ function _mountEmitidos() {
         '<select id="cdx-certs-filter-turma" class="cdx-certs-select" disabled>' +
           '<option value="">' + esc(t('certificates.filter_all_turmas')) + '</option>' +
         '</select>' +
+        '<label class="cdx-certs-datelabel">' + esc(t('certificates.filter_date_from')) +
+          '<input type="date" id="cdx-certs-filter-from" class="cdx-certs-date" aria-label="' + esc(t('certificates.filter_date_from')) + '">' +
+        '</label>' +
+        '<label class="cdx-certs-datelabel">' + esc(t('certificates.filter_date_to')) +
+          '<input type="date" id="cdx-certs-filter-to" class="cdx-certs-date" aria-label="' + esc(t('certificates.filter_date_to')) + '">' +
+        '</label>' +
         '<span class="cdx-emissao-spacer"></span>' +
         '<button class="cdx-btn cdx-btn-primary" id="cdx-certs-issue-btn">' + esc(t('certificates.issue_btn')) + '</button>' +
+      '</div>' +
+      // Bulk-action bar: inline, between the toolbar and the table (revealed when
+      // rows are selected), so it follows the theme and never floats over content.
+      '<div class="cdx-emissao-bulk" id="cdx-emissao-bulk">' +
+        '<b id="cdx-emissao-bulk-count"></b>' +
+        '<button class="cdx-btn cdx-btn-sm" data-bulk="sign">' + esc(t('certificates.bulk_sign')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm" data-bulk="send">' + esc(t('certificates.bulk_send')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm" data-bulk="pdf">' + esc(t('certificates.bulk_pdf')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm" data-bulk="revoke">' + esc(t('certificates.bulk_revoke')) + '</button>' +
+        '<span class="cdx-emissao-spacer"></span>' +
+        '<button class="cdx-btn cdx-btn-sm" data-bulk="clear">' + esc(t('certificates.bulk_clear')) + '</button>' +
       '</div>' +
       '<div class="cdx-emissao-tablewrap" id="cdx-certs-list">' +
         '<div class="cdx-empty">' + esc(t('certificates.loading')) + '</div>' +
       '</div>' +
-    '</div>' +
-    '<div class="cdx-emissao-bulk" id="cdx-emissao-bulk">' +
-      '<b id="cdx-emissao-bulk-count"></b>' +
-      '<button class="cdx-btn cdx-btn-sm" data-bulk="sign">' + esc(t('certificates.bulk_sign')) + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm" data-bulk="send">' + esc(t('certificates.bulk_send')) + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm" data-bulk="pdf">' + esc(t('certificates.bulk_pdf')) + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm" data-bulk="revoke">' + esc(t('certificates.bulk_revoke')) + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm" data-bulk="clear">' + esc(t('certificates.bulk_clear')) + '</button>' +
     '</div>';
 
   _loadCertList();
@@ -607,6 +622,18 @@ function _mountEmitidos() {
     const onChange = () => { _filterTurmaId = turmaEl.value; _selectedCodes.clear(); _refreshEmissao(); };
     turmaEl.addEventListener('change', onChange);
     _cleanup.push(() => turmaEl.removeEventListener('change', onChange));
+  }
+  const fromEl = _q('#cdx-certs-filter-from');
+  if (fromEl) {
+    const onChange = () => { _filterDateFrom = fromEl.value; _selectedCodes.clear(); _refreshEmissao(); };
+    fromEl.addEventListener('change', onChange);
+    _cleanup.push(() => fromEl.removeEventListener('change', onChange));
+  }
+  const toEl = _q('#cdx-certs-filter-to');
+  if (toEl) {
+    const onChange = () => { _filterDateTo = toEl.value; _selectedCodes.clear(); _refreshEmissao(); };
+    toEl.addEventListener('change', onChange);
+    _cleanup.push(() => toEl.removeEventListener('change', onChange));
   }
   // KPI cards double as status filters (toggle).
   const kpis = _q('#cdx-emissao-kpis');
@@ -642,6 +669,7 @@ function _mountEmitidos() {
       const code   = btn.dataset.code;
       if (action === 'copy-url')  { _copyValidarUrl(code); return; }
       if (action === 'revoke')    { _revokeConfirm(code);  return; }
+      if (action === 'delete')    { _deleteConfirm(code);  return; }
       if (action === 'sign')      { _markSigned(code);     return; }
       if (action === 'mark-sent') { _markSent(code);       return; }
       if (action === 'preview')   { _previewCert(code);    return; }
@@ -671,6 +699,8 @@ function _emissaoFiltered(withStatus) {
     turma_ids: clientTurmaIds,
     status:    withStatus ? _filterStatus : '',
     q:         _filterQ,
+    date_from: _filterDateFrom,
+    date_to:   _filterDateTo,
   });
 }
 
@@ -741,7 +771,7 @@ async function _bulkAction(kind) {
   if (kind === 'clear') { _selectedCodes.clear(); _renderCertList(); _syncBulk(); return; }
   const codes = Array.from(_selectedCodes);
   if (!codes.length) return;
-  if (kind === 'pdf') { notice.warn(t('certificates.bulk_pdf_todo')); return; }
+  if (kind === 'pdf') { _bulkPdf(codes); return; }
   try {
     for (const code of codes) {
       if (kind === 'sign')   await api.markSigned({ code });
@@ -882,6 +912,9 @@ function _renderCertRow(c) {
       '<button class="cdx-btn cdx-btn-sm" data-action="preview" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_preview')) + '</button>' +
       '<button class="cdx-btn cdx-btn-sm" data-action="copy-url" data-code="' + esc(c.code) + '" title="' + esc(validarUrl) + '">' + esc(t('certificates.action_copy_url')) + '</button>' +
       (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
+      // Delete is offered ONLY while issued (not signed/sent): an issue-by-mistake
+      // that never left the building. Past that, revoke (keeps the record) is the path.
+      (c.status === 'issued' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_delete')) + '</button>' : '') +
       (hasPdf ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(c.pdf_path) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>' : '') +
     '</td>' +
   '</tr>';
@@ -920,6 +953,33 @@ function _revokeConfirm(code) {
     } catch (e) {
       if (window.bsLog) window.bsLog('certs: revoke: ' + (e && e.message || e), 'error');
       notice.error(t('certificates.error_loading'));
+    }
+  });
+}
+
+function _deleteConfirm(code) {
+  const html =
+    '<div class="cdx-modal" style="max-width:400px">' +
+      '<div class="cdx-modal-title">' + esc(t('certificates.delete_title')) + '</div>' +
+      '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(t('certificates.delete_msg').replace('{code}', code)) + '</p>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" id="cdx-del-cancel">' + esc(t('certificates.cancel')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger" id="cdx-del-confirm">' + esc(t('certificates.action_delete')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html);
+  bd.querySelector('#cdx-del-cancel').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('#cdx-del-confirm').addEventListener('click', async () => {
+    closeModal(bd);
+    try {
+      await api.remove({ code });
+      notice.ok(t('certificates.deleted_ok'));
+      await _loadCertList();
+    } catch (e) {
+      if (window.bsLog) window.bsLog('certs: delete: ' + (e && e.message || e), 'error');
+      // Surface the worker's guard (e.g. only_issued_deletable) rather than a generic error.
+      const code2 = e && e.data && e.data.error;
+      notice.error(code2 === 'only_issued_deletable' ? t('certificates.delete_only_issued') : t('certificates.error_loading'));
     }
   });
 }
@@ -992,21 +1052,38 @@ function _openCertFullscreen(cert, side) {
 }
 
 function _printCert(cert) {
+  _printCerts([cert], 'Certificado ' + (cert.code || ''));
+}
+
+// Build ONE print document from N certs (each its own front+back pages, separated
+// by buildPrintDocument's .cdx-cert-page page-breaks) and open the print → "Save
+// as PDF" dialog once. The single-cert print is just N=1. Each cert is hydrated
+// with its OWN QR before concatenation.
+function _printCerts(certs, title) {
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
-  const tmp = document.createElement('div');
-  tmp.innerHTML = renderCertHtml(cert, origin);
-  hydrate(tmp, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
-  const doc = buildPrintDocument({
-    cssHref: CERT_CSS_HREF,
-    bodyHtml: tmp.innerHTML,
-    title: 'Certificado ' + (cert.code || ''),
-  });
+  const parts = [];
+  for (const cert of certs) {
+    if (!cert) continue;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderCertHtml(cert, origin);
+    hydrate(tmp, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+    parts.push(tmp.innerHTML);
+  }
+  if (!parts.length) return;
+  const doc = buildPrintDocument({ cssHref: CERT_CSS_HREF, bodyHtml: parts.join(''), title: title || 'Certificados' });
   const w = window.open('', '_blank');
   if (!w) { notice.warn(t('certificates.print_blocked')); return; }
   w.document.open();
   w.document.write(doc);
   w.document.close();
   w.onload = () => { try { w.focus(); w.print(); } catch (_) {} };
+}
+
+// Bulk "Baixar PDF": print every selected cert in one document (one Save-as-PDF).
+function _bulkPdf(codes) {
+  const certs = codes.map((code) => _certs.find((c) => c.code === code)).filter(Boolean);
+  if (!certs.length) return;
+  _printCerts(certs, t('certificates.bulk_pdf_title').replace('{n}', String(certs.length)));
 }
 
 // ── Issue flow ────────────────────────────────────────────────────────────────
@@ -1228,9 +1305,19 @@ function _openIssueFlow() {
       issuer:         issuer || undefined,
     });
 
+    // Lock the button for the whole in-flight request so a double-click can't
+    // fire two issue calls (which could both pass the backend dup-guard before
+    // the first cert commits). Restored in finally; the backend guard then
+    // covers any deliberate re-click.
+    const submitBtn = bd.querySelector('#cdx-issue-submit');
+    const prevLabel = submitBtn ? submitBtn.textContent : '';
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('certificates.issue_submitting'); }
     try {
       const res = await api.issue(payload);
       const codes = (res && res.codes) || (res && res.certificates && res.certificates.map((c) => c.code)) || [];
+      // The backend dup-guard returns the participants that already had an active
+      // cert (so we didn't re-issue). Surface them instead of silently dropping.
+      const skipped = (res && res.skipped) || [];
       const resultEl = bd.querySelector('#cdx-issue-result');
       if (resultEl) {
         resultEl.style.display = '';
@@ -1238,13 +1325,22 @@ function _openIssueFlow() {
           '<div class="cdx-cert-issue-result">' +
             '<strong>' + esc(t('certificates.issue_result_title')) + '</strong>' +
             '<ul>' + codes.map((code) => '<li><code>' + esc(code) + '</code></li>').join('') + '</ul>' +
+            (skipped.length
+              ? '<div class="cdx-cert-issue-skipped">' +
+                  '<strong>' + esc(t('certificates.issue_skipped_title').replace('{n}', String(skipped.length))) + '</strong>' +
+                  '<ul>' + skipped.map((s) => '<li>' + esc((s && (s.holder_name || s.code)) || '') + '</li>').join('') + '</ul>' +
+                '</div>'
+              : '') +
           '</div>';
       }
       notice.ok(t('certificates.issued_ok').replace('{n}', String(codes.length)));
+      if (skipped.length) notice.warn(t('certificates.issue_skipped_toast').replace('{n}', String(skipped.length)));
       await _loadCertList();
     } catch (e) {
       if (window.bsLog) window.bsLog('certs: issue: ' + (e && e.message || e), 'error');
       notice.error(t('certificates.error_loading'));
+    } finally {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
     }
   });
 }

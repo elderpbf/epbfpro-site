@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>pensoIA · Landing · 9 propostas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#061a51; --teal:#14b8a6; --teal-light:#5eead4;
+    --deep:#04123a; --ink:#eaf2ff; --dim:#a9bbdf; --rule:rgba(255,255,255,.12);
+    --inter:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:var(--inter);color:var(--ink);min-height:100vh;
+    background:radial-gradient(120% 80% at 12% -8%, rgba(20,184,166,.16), transparent 55%), var(--deep);}
+  .wrap{max-width:1480px;margin:0 auto;padding:44px 24px 100px;}
+
+  header.top{margin-bottom:8px;}
+  .brand{font-family:'Comfortaa',sans-serif;font-weight:700;font-size:1.5rem;}
+  .brand b{color:var(--teal);}
+  .kicker{font-family:var(--mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--teal-light);margin-top:8px;}
+  h1{font-size:clamp(1.8rem,4vw,2.7rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin:10px 0 8px;}
+  .sub{color:var(--dim);max-width:760px;font-size:1rem;line-height:1.6;}
+  .meta-row{margin-top:14px;font-family:var(--mono);font-size:.74rem;color:var(--dim);letter-spacing:.04em;}
+  .meta-row b{color:var(--teal-light);font-weight:500;}
+  .legend{margin-top:10px;font-size:.82rem;color:var(--dim);}
+  .legend b{color:var(--ink);}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:36px;}
+  @media(max-width:1120px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;max-width:560px;margin-inline:auto;}}
+
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border:1px solid var(--rule);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;
+    transition:border-color .2s ease, transform .2s ease;}
+  .card:hover{border-color:rgba(20,184,166,.5);transform:translateY(-3px);}
+
+  .thumb{position:relative;aspect-ratio:16/10;overflow:hidden;border-bottom:1px solid var(--rule);
+    background:#fff;display:block;}
+  .thumb iframe{position:absolute;top:0;left:0;width:1280px;height:800px;
+    transform:scale(.357);transform-origin:top left;border:0;pointer-events:none;background:#fff;}
+  @media(max-width:1120px){.thumb iframe{transform:scale(.42);}}
+  @media(max-width:760px){.thumb iframe{transform:scale(.42);}}
+  .thumb .agent{position:absolute;top:11px;left:11px;z-index:2;font-family:var(--mono);font-size:.66rem;
+    letter-spacing:.16em;text-transform:uppercase;background:rgba(4,18,58,.85);backdrop-filter:blur(4px);
+    border:1px solid var(--rule);border-radius:18px;padding:5px 11px;color:var(--teal-light);}
+  .thumb .open-hint{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;
+    opacity:0;transition:opacity .2s ease;background:rgba(4,18,58,.45);font-weight:700;}
+  .thumb:hover .open-hint{opacity:1;}
+
+  .body{padding:16px 18px 18px;display:flex;flex-direction:column;flex:1;}
+  .body h2{font-size:1.08rem;font-weight:800;letter-spacing:-.01em;margin-bottom:5px;}
+  .body p{color:var(--dim);font-size:.85rem;line-height:1.5;margin-bottom:14px;}
+  .open-btn{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    background:var(--teal);color:#042b27;font-weight:700;font-size:.86rem;text-decoration:none;
+    padding:11px 16px;border-radius:11px;transition:filter .15s ease,transform .15s ease;}
+  .open-btn:hover{filter:brightness(1.06);transform:translateY(-1px);}
+  .open-btn:focus-visible{outline:3px solid var(--teal-light);outline-offset:2px;}
+
+  footer.foot{margin-top:46px;padding-top:20px;border-top:1px solid var(--rule);
+    font-family:var(--mono);font-size:.74rem;color:var(--dim);display:flex;gap:18px;flex-wrap:wrap;}
+  footer.foot a{color:var(--teal-light);text-decoration:none;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand"><span>p</span>enso<b>IA</b></div>
+      <div class="kicker">Landing · 9 propostas · 3 agentes às cegas</div>
+      <h1>Nove direções para a nova home</h1>
+      <p class="sub">Três designers independentes, sem ver a página atual, trazendo três conceitos cada um a partir do mesmo dossiê e da mesma marca. Cada card abre o conceito completo e responsivo, com <b>toggle PT/EN</b> e <b>claro/escuro próprios</b> (o screenshot do app do aluno troca junto com o tema). Escolha uma direção, ou um híbrido, e eu reconstruo o <code>index.html</code> real sobre ela no padrão Codex.</p>
+      <div class="meta-row">9 mocks · <b>self-contained</b> · PT/EN + claro/escuro em cada · plataformas Pulso &amp; Trilha · 13 jun 2026</div>
+      <div class="legend"><b>A / B / C</b> = os três agentes. Os 3 mocks anteriores foram arquivados.</div>
+    </header>
+
+    <div class="grid">
+
+      <article class="card"><a class="thumb" href="a1.html" target="_blank" rel="noopener" aria-label="Abrir A1 Aurora Ledger"><span class="agent">A1</span><span class="open-hint">Abrir →</span><iframe src="a1.html" title="A1" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Aurora Ledger</h2><p>Editorial premium, creme/navy, serifa Lora, retrato em card com selos de credencial. O mais "consultoria premium".</p><a class="open-btn" href="a1.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+      <article class="card"><a class="thumb" href="a2.html" target="_blank" rel="noopener" aria-label="Abrir A2 Bento Console"><span class="agent">A2</span><span class="open-hint">Abrir →</span><iframe src="a2.html" title="A2" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Bento Console</h2><p>Ousado, dark-navy, grid bento de tiles, manchete condensada, números monoespaçados. Técnico mas caloroso.</p><a class="open-btn" href="a2.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+      <article class="card"><a class="thumb" href="a3.html" target="_blank" rel="noopener" aria-label="Abrir A3 Soft Horizon"><span class="agent">A3</span><span class="open-hint">Abrir →</span><iframe src="a3.html" title="A3" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Soft Horizon</h2><p>Caloroso, teal-forward, chips de prova, banda humana com citação humilde. O mais acessível e centrado em pessoas.</p><a class="open-btn" href="a3.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+      <article class="card"><a class="thumb" href="b1.html" target="_blank" rel="noopener" aria-label="Abrir B1 Dossiê Editorial"><span class="agent">B1</span><span class="open-hint">Abrir →</span><iframe src="b1.html" title="B1" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Dossiê Editorial</h2><p>Cara de whitepaper, serifa Lora, hero split com painel navy e retrato, lista editorial numerada. Sério e crível.</p><a class="open-btn" href="b1.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+      <article class="card"><a class="thumb" href="b2.html" target="_blank" rel="noopener" aria-label="Abrir B2 Aurora Ampliação"><span class="agent">B2</span><span class="open-hint">Abrir →</span><iframe src="b2.html" title="B2" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Aurora / Ampliação</h2><p>Contemporâneo, hero centrado em gradiente navy→teal com blobs aurora, bento flutuante sobreposto. O mais "wow".</p><a class="open-btn" href="b2.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+      <article class="card"><a class="thumb" href="b3.html" target="_blank" rel="noopener" aria-label="Abrir B3 Estúdio Cream"><span class="agent">B3</span><span class="open-hint">Abrir →</span><iframe src="b3.html" title="B3" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Estúdio / Cream</h2><p>Humanista, teal sobre creme, step-rail do método e díptico das plataformas (Pulso em painel ao vivo + Trilha real).</p><a class="open-btn" href="b3.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+      <article class="card"><a class="thumb" href="c1.html" target="_blank" rel="noopener" aria-label="Abrir C1 Editorial Manifesto"><span class="agent">C1</span><span class="open-hint">Abrir →</span><iframe src="c1.html" title="C1" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Editorial / Manifesto</h2><p>Creme+navy, hero em duas colunas, retrato inclinado com chip 600+, timeline horizontal. O mais clássico e confiável.</p><a class="open-btn" href="c1.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+      <article class="card"><a class="thumb" href="c2.html" target="_blank" rel="noopener" aria-label="Abrir C2 Dark Tech Bento"><span class="agent">C2</span><span class="open-hint">Abrir →</span><iframe src="c2.html" title="C2" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Dark Tech / Bento</h2><p>Energético, dark, malha de gradiente + grid, typewriter de altura reservada, grid bento. A opção mais moderna.</p><a class="open-btn" href="c2.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+      <article class="card"><a class="thumb" href="c3.html" target="_blank" rel="noopener" aria-label="Abrir C3 Split-Screen Product"><span class="agent">C3</span><span class="open-hint">Abrir →</span><iframe src="c3.html" title="C3" loading="lazy" tabindex="-1" scrolling="no"></iframe></a>
+        <div class="body"><h2>Split-Screen / Product</h2><p>Ritmo diferente: hero split vertical, painel teal + dashboard de métricas. Teal como superfície dominante.</p><a class="open-btn" href="c3.html" target="_blank" rel="noopener">Abrir →</a></div></article>
+
+    </div>
+
+    <footer class="foot">
+      <span>← <a href="../index.html">Galeria de mocks</a></span>
+      <span>Mocks anteriores: <a href="archive/index-v1.html">archive/</a></span>
+      <span>Próximo: escolher direção → rebuild no padrão Codex</span>
+    </footer>
+  </div>
+</body>
+</html>

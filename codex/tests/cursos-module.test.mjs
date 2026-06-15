@@ -30,11 +30,38 @@ test('courses module satisfies the sub-module contract', () => {
 });
 
 test('courses talks to the backend only through the courses facade', () => {
-  assert.match(courses, /import \{ courses as api \} from '\.\.\/js\/codex-api\.js'/, 'imports the courses facade');
+  // The course CRUD facade, plus the shared `ai` facade for the assistant — both
+  // from codex-api.js (never callWorker directly).
+  assert.match(courses, /import \{ courses as api, ai(?:, content as contentApi)? \} from '\.\.\/js\/codex-api\.js'/, 'imports the courses + ai (+ content) facades');
   for (const m of ['api.list', 'api.get', 'api.create', 'api.update', 'api.archive']) {
     assert.ok(courses.includes(m + '('), `uses ${m}()`);
   }
   assert.ok(!/callWorker\s*\(/.test(courses), 'never calls callWorker directly');
+});
+
+test('cursos AI assistant wires the shared ai.chat seam + the pure ementa prompt/parse', () => {
+  assert.match(courses, /from '\.\.\/js\/ementa\.js'/, 'imports the shared ementa model');
+  for (const fn of ['buildEmentaAIPrompt', 'parseEmentaAIResponse']) {
+    assert.ok(courses.includes(fn), `uses ${fn}`);
+  }
+  assert.match(courses, /ai\.chat\(\{/, 'calls the shared ai.chat facade');
+  // the two-panel layout + chat surface from the b2 hybrid
+  for (const id of ['cdx-cursos-duo', 'cdx-cur-ia', 'cdx-cur-chat', 'cdx-cur-ai-input', 'cdx-cur-ai-send']) {
+    assert.ok(courses.includes(id), `assistant panel has #${id}`);
+  }
+});
+
+test('cursos assistant "De uma apostila" pulls Conteúdo sets through the content facade', () => {
+  assert.match(courses, /content as contentApi/, 'imports the content facade');
+  assert.match(courses, /contentApi\.listSets\(/, 'lists apostila sets');
+  assert.match(courses, /contentApi\.getSet\(/, 'reads a set for its sections');
+  for (const fn of ['_loadApostilas', '_genFromApostila']) {
+    assert.ok(courses.includes(fn), `has ${fn}`);
+  }
+  assert.ok(courses.includes('cdx-cur-apostila'), 'has the apostila picker');
+  // the generated request flows through the same AI pipeline (_askAI)
+  assert.ok(courses.includes("t('cohorts.cursos_ia_apostila_prompt')"), 'builds the apostila generation prompt');
+  assert.match(courses, /_askAI\(apiText,/, 'feeds the apostila material to _askAI');
 });
 
 test('courses builds the ementa with the pure ementa model', () => {
@@ -62,6 +89,48 @@ test('turma copies the course ementa only when the course is newly linked/change
   // clobbers its own ementa.
   assert.match(cohorts, /courseId !== prevCourseId/, 'guards ementa copy on course change');
   assert.match(cohorts, /instance\.ementa_json = _pickedCourse\.ementa_json/, 'copies the picked course ementa');
+});
+
+test('turma dossier (Concept A) replaces the cramped aulas pane', () => {
+  assert.match(cohorts, /function _renderDossier/, 'has the dossier renderer');
+  assert.match(cohorts, /id="cdx-turma-dossier"/, 'shell column 3 is the dossier container');
+  assert.ok(!cohorts.includes("id=\"' + IDS.aulasTitle"), 'old aulas-pane title is gone');
+  // dossier surfaces the rich turma fields
+  for (const f of ['turma.course_title', 'turma.hours', 'turma.date_start', 'turma.date_end', 'turma.place', 'turma.format']) {
+    assert.ok(cohorts.includes(f), `dossier shows ${f}`);
+  }
+  // and the participants/aulas/cert sections
+  assert.match(cohorts, /_loadDossierParticipants/, 'loads participants summary');
+  assert.match(cohorts, /_loadDossierCerts/, 'loads cert summary');
+  assert.match(cohorts, /import \{[^}]*certificates as certApi/, 'imports the certificates facade for the cert summary');
+});
+
+test('cohorts merges Clientes+Turmas into one grouped list (Concept A left merge)', () => {
+  // The merged list, search, and the kept mobile-drawer wrapper.
+  for (const id of ['cdx-cohorts-list', 'cdx-cohorts-search', 'cdx-cohorts-nav']) {
+    assert.ok(cohorts.includes(id), `shell has #${id}`);
+  }
+  for (const fn of ['_loadAll', '_renderList', '_renderGroup', '_renderTurmaRow', '_onListClick', '_turmaPhase']) {
+    assert.ok(cohorts.includes(fn), `has ${fn}`);
+  }
+  // The old two-pane structure is gone.
+  for (const dead of ['cdx-clients-list', 'cdx-turmas-list', '_renderClients', '_onTurmasClick']) {
+    assert.ok(!cohorts.includes(dead), `removed ${dead}`);
+  }
+  // Turma rows keep data-turma-slug so the mobile drawer closes on pick.
+  assert.ok(cohorts.includes('class="cdx-ti'), 'renders turma rows (.cdx-ti)');
+  assert.ok(cohorts.includes('data-turma-slug="'), 'turma row carries data-turma-slug');
+});
+
+test('per-turma actions moved into the dossier (nothing lost in the merge)', () => {
+  for (const act of ['data-doss="archive"', 'data-doss="regen"', 'data-doss="copyurl"']) {
+    assert.ok(cohorts.includes(act), `dossier wires ${act}`);
+  }
+  assert.match(cohorts, /cdx-doss-links/, 'dossier has the trilha link/action strip');
+  // those actions reuse the existing helpers
+  for (const fn of ['_archiveTurma', '_regenToken', '_copyUrl']) {
+    assert.ok(cohorts.includes(fn), `keeps ${fn}`);
+  }
 });
 
 test('every user-facing string in courses goes through t()', () => {
