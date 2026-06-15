@@ -492,3 +492,28 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(api.includes('cert_mark_sent'), 'facade still exposes cert_mark_sent');
   });
 });
+
+// ── Emissão fixes (2026-06-15): per-row PDF, revoked delete, bulk delete, modal
+// select-all + model preview ───────────────────────────────────────────────────
+describe('Emissão fixes (source contract)', () => {
+  const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
+  const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+
+  test('every row can produce a PDF (print → Salvar como PDF), not gated on a stored file', () => {
+    assert.ok(src.includes('data-action="pdf"'), 'per-row PDF action present');
+    assert.ok(src.includes("if (action === 'pdf')"), 'pdf action routed to print');
+  });
+  test('delete is offered for issued OR revoked rows', () => {
+    assert.ok(/c\.status === 'issued' \|\| c\.status === 'revoked'/.test(src), 'row delete gated to issued|revoked');
+  });
+  test('bulk delete present and confirmed', () => {
+    assert.ok(src.includes('data-bulk="delete"'), 'bulk delete button');
+    assert.ok(src.includes('_bulkDeleteConfirm'), 'bulk delete goes through a confirm');
+    assert.ok(api.includes('cert_delete'), 'facade exposes cert_delete');
+  });
+  test('issue modal has a select-all checkbox and a model preview', () => {
+    assert.ok(src.includes('cdx-issue-selall'), 'roster select-all checkbox');
+    assert.ok(src.includes('cdx-issue-preview'), 'preview button');
+    assert.ok(src.includes('_buildIssuePreviewCert'), 'preview builds a cert from the form');
+  });
+});

@@ -282,10 +282,16 @@
 
 /* ── print: one sheet per A4 landscape page ── */
 @media print {
-  /* Explicit numeric size (more reliably honored than the "A4 landscape" keyword)
-     + margin:0 for full-bleed. */
-  @page { size:297mm 210mm; margin:0; }
+  /* The "A4 landscape" keyword maps straight to the print dialog's Orientation
+     control, so it forces landscape even when the dialog's saved default is
+     portrait — explicit "297mm 210mm" was silently falling back to portrait on
+     some Chrome setups. margin:0 for full-bleed. */
+  @page { size:A4 landscape; margin:0; }
   html, body { margin:0; padding:0; }
+  /* Force the themed gradients/background colours to print even when the dialog's
+     "Background graphics" box is unchecked. Without this the coloured fronts come
+     out blank white (the cert "loses all the colours of the preview"). */
+  .cdx-cert-page, .cdx-cert-page * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   /* Size the page+sheet to fill the page box. The sheet is 100% of .cdx-cert-page
      (the exact page box) instead of a fixed 297mm×210mm: a fixed mm size rounds a
      sub-pixel over the page box, so the browser shrink-to-fits and that scaling

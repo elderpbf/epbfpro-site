@@ -360,6 +360,13 @@
 }
 .cdx-cert-roster-row:hover { background: var(--surface-hover, rgba(127,127,127,0.08)); }
 .cdx-cert-roster-email { color: var(--text-secondary); font-size: 0.8em; }
+/* "Selecionar todos" sits at the top of the roster, separated by a rule. */
+.cdx-cert-roster-all { border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 0.15rem; padding-bottom: 0.35rem; position: sticky; top: -0.4rem; background: var(--surface); }
+.cdx-cert-roster-allk { font-weight: 600; }
+
+/* Preview button row under the model/theme selects in the issue modal. */
+.cdx-cert-issue-previewrow { display: flex; align-items: center; gap: 0.6rem; margin: -0.2rem 0 0.75rem; flex-wrap: wrap; }
+.cdx-cert-issue-previewrow .cdx-field-hint { margin: 0; }
 
 .cdx-cert-issue-result {
   background: var(--surface-hover, rgba(99,102,241,0.07));

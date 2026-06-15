@@ -33,7 +33,7 @@ export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
 
 // Stylesheet href for the standalone print window (resolved absolute so the
 // popup, which has no base URL, can fetch it).
-const CERT_CSS_HREF = new URL('cert-render.css?v=1.2', import.meta.url).href;
+const CERT_CSS_HREF = new URL('cert-render.css?v=1.3', import.meta.url).href;
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 export const SUBTABS = [
@@ -315,7 +315,12 @@ export function buildPrintDocument(opts) {
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">' +
     '<link rel="stylesheet" href="' + (opts.cssHref || '') + '">' +
-    '<style>@page{size:297mm 210mm;margin:0}html,body{margin:0;padding:0;background:#fff}' +
+    // "A4 landscape" keyword forces landscape orientation in the print dialog even
+    // when its saved default is portrait (explicit "297mm 210mm" fell back to
+    // portrait on some setups). print-color-adjust:exact keeps the themed
+    // gradients/colours from being stripped when "Background graphics" is off.
+    '<style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}' +
+    '.cdx-cert-page,.cdx-cert-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     // Fill the page box exactly; sheet at 100% (not a fixed 297mm) so sub-pixel mm
     // rounding can't overflow and trigger the shrink-to-fit white bars.
     '.cdx-cert-page{width:297mm;height:210mm;overflow:hidden;page-break-after:always}.cdx-cert-page:last-child{page-break-after:auto}' +
@@ -590,6 +595,7 @@ function _mountEmitidos() {
         '<button class="cdx-btn cdx-btn-sm" data-bulk="send">' + esc(t('certificates.bulk_send')) + '</button>' +
         '<button class="cdx-btn cdx-btn-sm" data-bulk="pdf">' + esc(t('certificates.bulk_pdf')) + '</button>' +
         '<button class="cdx-btn cdx-btn-sm" data-bulk="revoke">' + esc(t('certificates.bulk_revoke')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-bulk="delete">' + esc(t('certificates.bulk_delete')) + '</button>' +
         '<span class="cdx-emissao-spacer"></span>' +
         '<button class="cdx-btn cdx-btn-sm" data-bulk="clear">' + esc(t('certificates.bulk_clear')) + '</button>' +
       '</div>' +
@@ -676,6 +682,7 @@ function _mountEmitidos() {
       if (action === 'sign')      { _markSigned(code);     return; }
       if (action === 'mark-sent') { _markSent(code);       return; }
       if (action === 'preview')   { _previewCert(code);    return; }
+      if (action === 'pdf')       { const cert = _certs.find((x) => x.code === code); if (cert) _printCert(cert); return; }
     };
     list.addEventListener('click', onClick);
     _cleanup.push(() => list.removeEventListener('click', onClick));
@@ -775,6 +782,7 @@ async function _bulkAction(kind) {
   const codes = Array.from(_selectedCodes);
   if (!codes.length) return;
   if (kind === 'pdf') { _bulkPdf(codes); return; }
+  if (kind === 'delete') { _bulkDeleteConfirm(codes); return; }
   // Sign/send aren't real yet — don't record a false signed/sent state in bulk either.
   if (kind === 'sign') { notice.warn(t('certificates.sign_not_wired')); return; }
   if (kind === 'send') { notice.warn(t('certificates.send_not_wired')); return; }
@@ -915,11 +923,16 @@ function _renderCertRow(c) {
       nextBtn +
       '<button class="cdx-btn cdx-btn-sm" data-action="preview" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_preview')) + '</button>' +
       '<button class="cdx-btn cdx-btn-sm" data-action="copy-url" data-code="' + esc(c.code) + '" title="' + esc(validarUrl) + '">' + esc(t('certificates.action_copy_url')) + '</button>' +
+      // Every row can produce its PDF (print → Salvar como PDF), independent of a
+      // stored file. When a signed PDF is attached later, link that instead.
+      (hasPdf
+        ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(c.pdf_path) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>'
+        : '<button class="cdx-btn cdx-btn-sm" data-action="pdf" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>') +
       (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
-      // Delete is offered ONLY while issued (not signed/sent): an issue-by-mistake
-      // that never left the building. Past that, revoke (keeps the record) is the path.
-      (c.status === 'issued' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_delete')) + '</button>' : '') +
-      (hasPdf ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(c.pdf_path) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>' : '') +
+      // Delete is offered while issued (an issue-by-mistake that never left the
+      // building) OR revoked (clearing an already-invalidated record). A signed/sent
+      // cert must be revoked first; revoke keeps the audit record.
+      (c.status === 'issued' || c.status === 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_delete')) + '</button>' : '') +
     '</td>' +
   '</tr>';
 }
@@ -981,9 +994,49 @@ function _deleteConfirm(code) {
       await _loadCertList();
     } catch (e) {
       if (window.bsLog) window.bsLog('certs: delete: ' + (e && e.message || e), 'error');
-      // Surface the worker's guard (e.g. only_issued_deletable) rather than a generic error.
+      // Surface the worker's guard rather than a generic error.
       const code2 = e && e.data && e.data.error;
-      notice.error(code2 === 'only_issued_deletable' ? t('certificates.delete_only_issued') : t('certificates.error_loading'));
+      notice.error(code2 === 'only_issued_or_revoked_deletable' ? t('certificates.delete_only_issued') : t('certificates.error_loading'));
+    }
+  });
+}
+
+// Bulk delete: only 'issued' and 'revoked' certs are deletable; 'signed'/'sent'
+// must be revoked first. We delete the deletable ones and report how many were
+// blocked, so a mixed selection does a partial delete with a clear count instead
+// of erroring out on the first non-deletable code.
+function _bulkDeleteConfirm(codes) {
+  const deletable = codes.filter((code) => {
+    const c = _certs.find((x) => x.code === code);
+    return c && (c.status === 'issued' || c.status === 'revoked');
+  });
+  const blocked = codes.length - deletable.length;
+  if (!deletable.length) { notice.warn(t('certificates.delete_none_deletable')); return; }
+  const msg = t('certificates.bulk_delete_msg').replace('{n}', String(deletable.length)) +
+    (blocked > 0 ? ' ' + t('certificates.bulk_delete_blocked_note').replace('{n}', String(blocked)) : '');
+  const html =
+    '<div class="cdx-modal" style="max-width:420px">' +
+      '<div class="cdx-modal-title">' + esc(t('certificates.bulk_delete_title')) + '</div>' +
+      '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(msg) + '</p>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" id="cdx-bdel-cancel">' + esc(t('certificates.cancel')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger" id="cdx-bdel-confirm">' + esc(t('certificates.action_delete')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html);
+  bd.querySelector('#cdx-bdel-cancel').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('#cdx-bdel-confirm').addEventListener('click', async () => {
+    closeModal(bd);
+    let done = 0;
+    try {
+      for (const code of deletable) { await api.remove({ code }); done++; }
+      notice.ok(t('certificates.bulk_deleted_ok').replace('{n}', String(done)));
+      if (blocked > 0) notice.warn(t('certificates.bulk_delete_blocked').replace('{n}', String(blocked)));
+      _selectedCodes.clear();
+      await _loadCertList();
+    } catch (e) {
+      if (window.bsLog) window.bsLog('certs: bulk delete: ' + (e && e.message || e), 'error');
+      notice.error(t('certificates.error_loading'));
     }
   });
 }
@@ -1033,16 +1086,19 @@ function _openCertFullscreen(cert, side) {
   fit();
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fit);
 
-  const onKey = (e) => { if (e.key === 'Escape') destroy(); };
+  // Capture-phase + stopPropagation so Escape closes ONLY this overlay — when the
+  // preview is opened over the issue modal, the modal's own Escape handler must
+  // not also fire (which would discard the form).
+  const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); destroy(); } };
   function destroy() {
-    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('keydown', onKey, true);
     if (typeof window !== 'undefined') window.removeEventListener('resize', fit);
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
   }
   overlay.addEventListener('click', (e) => { if (e.target === overlay) destroy(); });
   overlay.querySelector('.cdx-cert-fs-close').addEventListener('click', destroy);
   overlay.querySelector('[data-action="print"]').addEventListener('click', () => _printCert(cert));
-  document.addEventListener('keydown', onKey);
+  document.addEventListener('keydown', onKey, true);
   if (typeof window !== 'undefined') window.addEventListener('resize', fit);
 }
 
@@ -1126,6 +1182,10 @@ function _openIssueFlow() {
           '</select>' +
         '</div>' +
       '</div>' +
+      '<div class="cdx-cert-issue-previewrow">' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" id="cdx-issue-preview">' + esc(t('certificates.issue_preview_btn')) + '</button>' +
+        '<small class="cdx-field-hint">' + esc(t('certificates.issue_preview_hint')) + '</small>' +
+      '</div>' +
 
       // Step 4: course metadata
       '<div class="cdx-field">' +
@@ -1194,6 +1254,12 @@ function _openIssueFlow() {
 
   bd.querySelector('#cdx-issue-cancel').addEventListener('click', () => closeModal(bd));
 
+  // Preview the chosen model + theme with the form's current data, before issuing.
+  const previewBtn = bd.querySelector('#cdx-issue-preview');
+  if (previewBtn) previewBtn.addEventListener('click', () => {
+    _openCertFullscreen(_buildIssuePreviewCert(bd, bd.querySelector('#cdx-issue-client')));
+  });
+
   const clientSel = bd.querySelector('#cdx-issue-client');
   const turmaSel  = bd.querySelector('#cdx-issue-turma');
   // Full turmas (with the course-instance fields from ct_list_turmas) for the
@@ -1246,19 +1312,34 @@ function _openIssueFlow() {
       _issueParticipants = (res && res.participants) || [];
       _issueSelectedIds = new Set(_issueParticipants.map((p) => p.id));
       if (rosterEl) rosterEl.innerHTML = _issueParticipants.length
-        ? _issueParticipants.map((p) =>
+        ? '<label class="cdx-cert-roster-row cdx-cert-roster-all">' +
+            '<input type="checkbox" id="cdx-issue-selall" checked>' +
+            '<span class="cdx-cert-roster-allk">' + esc(t('certificates.issue_select_all')) + '</span>' +
+          '</label>' +
+          _issueParticipants.map((p) =>
             '<label class="cdx-cert-roster-row">' +
               '<input type="checkbox" data-pid="' + esc(String(p.id)) + '" ' + (_issueSelectedIds.has(p.id) ? 'checked' : '') + '>' +
               '<span>' + esc(p.name) + (p.email ? ' <span class="cdx-cert-roster-email">(' + esc(p.email) + ')</span>' : '') + '</span>' +
             '</label>'
           ).join('')
         : '<span class="cdx-empty">' + esc(t('certificates.issue_no_participants')) + '</span>';
-      if (rosterEl) {
-        rosterEl.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+      if (rosterEl && _issueParticipants.length) {
+        const selAll = rosterEl.querySelector('#cdx-issue-selall');
+        const cbs = Array.from(rosterEl.querySelectorAll('input[data-pid]'));
+        const syncAll = () => { if (selAll) selAll.checked = cbs.length > 0 && cbs.every((cb) => cb.checked); };
+        cbs.forEach((cb) => {
           cb.addEventListener('change', () => {
             const pid = parseInt(cb.dataset.pid, 10);
             if (cb.checked) _issueSelectedIds.add(pid);
             else _issueSelectedIds.delete(pid);
+            syncAll();
+          });
+        });
+        if (selAll) selAll.addEventListener('change', () => {
+          cbs.forEach((cb) => {
+            cb.checked = selAll.checked;
+            const pid = parseInt(cb.dataset.pid, 10);
+            if (selAll.checked) _issueSelectedIds.add(pid); else _issueSelectedIds.delete(pid);
           });
         });
       }
@@ -1384,6 +1465,32 @@ function _gatherVersoMeta(bd, clientSel) {
     if (opt && opt.textContent) meta.client = opt.textContent.trim();
   }
   return meta;
+}
+
+// Build a certificate-shaped object from the issue form's current values so the
+// chosen model + theme can be previewed exactly as it will be issued. Empty
+// course/holder fall back to sample text so the preview is never blank. The code
+// is a sample placeholder (no real cert is created by previewing).
+function _buildIssuePreviewCert(bd, clientSel) {
+  const get = (sel) => { const el = bd.querySelector(sel); return el ? String(el.value || '').trim() : ''; };
+  let holder = '';
+  const firstId = Array.from(_issueSelectedIds)[0];
+  if (firstId != null) {
+    const p = _issueParticipants.find((x) => x.id === firstId);
+    if (p) holder = p.name;
+  }
+  const meta = _gatherVersoMeta(bd, clientSel);
+  return {
+    holder_name:  holder || t('certificates.preview_sample_name'),
+    course_title: get('#cdx-issue-course') || t('certificates.preview_sample_course'),
+    hours:        get('#cdx-issue-hours'),
+    issued_on:    get('#cdx-issue-date'),
+    issuer:       get('#cdx-issue-issuer'),
+    code:         'PREVIEW000',
+    template_slug: get('#cdx-issue-template'),
+    theme:         get('#cdx-issue-theme'),
+    meta_json:     JSON.stringify(meta),
+  };
 }
 
 // ── Tab contract ──────────────────────────────────────────────────────────────
