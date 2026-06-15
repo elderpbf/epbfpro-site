@@ -292,6 +292,13 @@
      "Background graphics" box is unchecked. Without this the coloured fronts come
      out blank white (the cert "loses all the colours of the preview"). */
   .cdx-cert-page, .cdx-cert-page * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  /* Chrome's print rasterizer draws an OPAQUE backing rectangle behind any element
+     carrying a filter / box-shadow / backdrop-filter / text-shadow once backgrounds
+     print — which shows as a white box around the logo and the name on the dark
+     themes. Drop these purely-decorative effects in print. The orb/glow blurs are
+     on .au-orb/.ho-orb/.glow (filter), NOT on .bmark, so the soft glows survive. */
+  .cdx-cert-page * { text-shadow:none !important; box-shadow:none !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  .cdx-cert-page .bmark { filter:none !important; }
   /* Size the page+sheet to fill the page box. The sheet is 100% of .cdx-cert-page
      (the exact page box) instead of a fixed 297mm×210mm: a fixed mm size rounds a
      sub-pixel over the page box, so the browser shrink-to-fits and that scaling

@@ -33,7 +33,7 @@ export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
 
 // Stylesheet href for the standalone print window (resolved absolute so the
 // popup, which has no base URL, can fetch it).
-const CERT_CSS_HREF = new URL('cert-render.css?v=1.3', import.meta.url).href;
+const CERT_CSS_HREF = new URL('cert-render.css?v=1.4', import.meta.url).href;
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 export const SUBTABS = [
@@ -321,6 +321,9 @@ export function buildPrintDocument(opts) {
     // gradients/colours from being stripped when "Background graphics" is off.
     '<style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}' +
     '.cdx-cert-page,.cdx-cert-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    // Kill decorative filter/shadow layers that Chrome's print rasterizer turns
+    // into opaque backing boxes around the logo + name once backgrounds print.
+    '.cdx-cert-page *{text-shadow:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}.cdx-cert-page .bmark{filter:none!important}' +
     // Fill the page box exactly; sheet at 100% (not a fixed 297mm) so sub-pixel mm
     // rounding can't overflow and trigger the shrink-to-fit white bars.
     '.cdx-cert-page{width:297mm;height:210mm;overflow:hidden;page-break-after:always}.cdx-cert-page:last-child{page-break-after:auto}' +
@@ -678,7 +681,6 @@ function _mountEmitidos() {
       const code   = btn.dataset.code;
       if (action === 'copy-url')  { _copyValidarUrl(code); return; }
       if (action === 'revoke')    { _revokeConfirm(code);  return; }
-      if (action === 'delete')    { _deleteConfirm(code);  return; }
       if (action === 'sign')      { _markSigned(code);     return; }
       if (action === 'mark-sent') { _markSent(code);       return; }
       if (action === 'preview')   { _previewCert(code);    return; }
@@ -929,10 +931,9 @@ function _renderCertRow(c) {
         ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(c.pdf_path) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>'
         : '<button class="cdx-btn cdx-btn-sm" data-action="pdf" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>') +
       (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
-      // Delete is offered while issued (an issue-by-mistake that never left the
-      // building) OR revoked (clearing an already-invalidated record). A signed/sent
-      // cert must be revoked first; revoke keeps the audit record.
-      (c.status === 'issued' || c.status === 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_delete')) + '</button>' : '') +
+      // Delete is intentionally NOT a per-row button: it lives only in the bulk bar
+      // (select the checkbox first), so a cert can't be deleted by a single
+      // mis-click. Issued/revoked are deletable there; signed/sent are not.
     '</td>' +
   '</tr>';
 }
@@ -970,33 +971,6 @@ function _revokeConfirm(code) {
     } catch (e) {
       if (window.bsLog) window.bsLog('certs: revoke: ' + (e && e.message || e), 'error');
       notice.error(t('certificates.error_loading'));
-    }
-  });
-}
-
-function _deleteConfirm(code) {
-  const html =
-    '<div class="cdx-modal" style="max-width:400px">' +
-      '<div class="cdx-modal-title">' + esc(t('certificates.delete_title')) + '</div>' +
-      '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(t('certificates.delete_msg').replace('{code}', code)) + '</p>' +
-      '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn" id="cdx-del-cancel">' + esc(t('certificates.cancel')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" id="cdx-del-confirm">' + esc(t('certificates.action_delete')) + '</button>' +
-      '</div>' +
-    '</div>';
-  const bd = openModal(html);
-  bd.querySelector('#cdx-del-cancel').addEventListener('click', () => closeModal(bd));
-  bd.querySelector('#cdx-del-confirm').addEventListener('click', async () => {
-    closeModal(bd);
-    try {
-      await api.remove({ code });
-      notice.ok(t('certificates.deleted_ok'));
-      await _loadCertList();
-    } catch (e) {
-      if (window.bsLog) window.bsLog('certs: delete: ' + (e && e.message || e), 'error');
-      // Surface the worker's guard rather than a generic error.
-      const code2 = e && e.data && e.data.error;
-      notice.error(code2 === 'only_issued_or_revoked_deletable' ? t('certificates.delete_only_issued') : t('certificates.error_loading'));
     }
   });
 }
@@ -1095,7 +1069,12 @@ function _openCertFullscreen(cert, side) {
     if (typeof window !== 'undefined') window.removeEventListener('resize', fit);
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
   }
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) destroy(); });
+  // Close on any click outside the certificate sheets and the action buttons —
+  // the whole dark area, not just the thin overlay padding (the body fills the
+  // overlay, so e.target===overlay almost never matched before).
+  overlay.addEventListener('click', (e) => {
+    if (!e.target.closest('.cdx-cert-sheet-wrap') && !e.target.closest('.cdx-cert-fs-actions')) destroy();
+  });
   overlay.querySelector('.cdx-cert-fs-close').addEventListener('click', destroy);
   overlay.querySelector('[data-action="print"]').addEventListener('click', () => _printCert(cert));
   document.addEventListener('keydown', onKey, true);
