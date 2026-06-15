@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Lab · Certificados PensoIA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Comfortaa:wght@400;700&display=swap">
+<link rel="stylesheet" href="cert-render.css?v=1.4">
+<style>
+  body { margin:0; font-family:'Inter',sans-serif; background:#0e1622; color:#e8eef5; }
+  .lab { max-width:1180px; margin:0 auto; padding:24px 20px 80px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:#9fb0c3; font-size:13px; margin:0 0 20px; line-height:1.6; }
+  .sub b { color:#e8eef5; }
+  .panel { background:#16202e; border:1px solid #243348; border-radius:12px; padding:16px; margin-bottom:18px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+  label { display:block; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#9fb0c3; margin-bottom:5px; }
+  select { background:#0e1622; color:#e8eef5; border:1px solid #2c3e57; border-radius:8px; padding:9px 12px; font-size:14px; min-width:170px; }
+  .btns { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  button { cursor:pointer; border:none; border-radius:9px; padding:11px 16px; font-size:13.5px; font-weight:600; color:#fff; }
+  .b-print { background:#475569; }
+  .b-h2c   { background:#0d9488; }
+  .b-ms    { background:#2563eb; }
+  .b-hti   { background:#7c3aed; }
+  .b-all   { background:#b45309; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .hint { font-size:12px; color:#9fb0c3; margin-top:8px; line-height:1.7; }
+  .hint code { background:#0e1622; padding:1px 6px; border-radius:5px; color:#cfe; }
+  #status { margin-top:12px; font-size:13px; color:#7de8d6; min-height:20px; white-space:pre-wrap; }
+  .stagewrap { background:#1b2736; border:1px solid #243348; border-radius:12px; padding:18px; overflow:auto; }
+  .stagewrap h2 { font-size:13px; color:#9fb0c3; margin:0 0 12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; }
+  #stage { display:flex; flex-direction:column; gap:16px; align-items:flex-start; }
+  /* Off-screen sheets at natural A4 size, rendered (not display:none) so the
+     rasterizers can capture them. */
+  #offscreen { position:fixed; left:-20000px; top:0; }
+  #offscreen .cdx-cert-page { display:block; }
+</style>
+</head>
+<body>
+<div class="lab">
+  <h1>PDF Lab · Certificados</h1>
+  <p class="sub">
+    Cada botão gera o PDF do certificado por um <b>método diferente</b>. Baixe todos,
+    abra cada um no seu Chrome e me diga qual saiu <b>certo</b> (cores, o P grande, sem caixas).
+    Os métodos 2–4 <b>não usam a janela de impressão</b>: rasterizam o certificado já
+    renderizado direto pra dentro do PDF, então tendem a sair iguais ao que você vê aqui.
+  </p>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>Modelo</label>
+        <select id="tpl"></select>
+      </div>
+      <div>
+        <label>Tema</label>
+        <select id="theme"></select>
+      </div>
+      <button class="b-all" id="re">Atualizar preview</button>
+    </div>
+    <div class="btns">
+      <button class="b-print" id="m1">1 · Janela de impressão (atual)</button>
+      <button class="b-h2c"   id="m2">2 · html2canvas → PDF</button>
+      <button class="b-ms"    id="m3">3 · modern-screenshot → PDF</button>
+      <button class="b-hti"   id="m4">4 · html-to-image → PDF</button>
+      <button class="b-all"   id="mall">Baixar 2 + 3 + 4 de uma vez</button>
+    </div>
+    <div class="hint">
+      <b>1</b> = o método atual (depende da sua caixa de diálogo, é o que está dando problema).
+      <b>2</b> = engine de "replay" do DOM. <b>3</b> e <b>4</b> = engines de foreignObject/SVG (lidam melhor com SVG e gradiente).
+      Arquivos saem como <code>cert-&lt;modelo&gt;-&lt;tema&gt;-&lt;metodo&gt;.pdf</code>.
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="stagewrap">
+    <h2>Preview (o que vai ser baixado)</h2>
+    <div id="stage"></div>
+  </div>
+</div>
+
+<div id="offscreen"></div>
+
+<script type="module">
+import {
+  CERT_TEMPLATES, CERT_THEMES, buildCertData, defaultMeta,
+  renderFrontPage, renderBackPage, hydrate,
+} from './cert-render.js';
+import { generateQrSvg } from './vendor/qr.js';
+
+const JSPDF = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm';
+const H2C   = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm';
+const MS    = 'https://cdn.jsdelivr.net/npm/modern-screenshot@4.4.39/+esm';
+const HTI   = 'https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/+esm';
+
+const $ = (s) => document.querySelector(s);
+const status = (m) => { $('#status').textContent = m; };
+
+// Sample data styled after the EJUSE reference (institutional register).
+function sampleCert() {
+  const tpl = $('#tpl').value, theme = $('#theme').value;
+  return {
+    holder_name: 'Élder Prudente Barbosa Filho',
+    course_title: 'Formação de Formadores · Nível 1, Módulo 2',
+    hours: '40 horas',
+    issued_on: '2026-03-27',
+    code: 'EJUSE0DEMO',
+    issuer: 'EPBF Soluções em Tecnologia Ltda',
+    template_slug: tpl,
+    theme: theme,
+    meta_json: JSON.stringify({
+      place: 'Aracaju · SE',
+      client: 'Escola Judicial de Sergipe',
+      format: '23/02 a 27/03/2026',
+      meetings: '6',
+      modules: [
+        { n: 'I',   t: 'Fundamentos da formação', d: 'Andragogia e desenho de aula.' },
+        { n: 'II',  t: 'Práticas de facilitação', d: 'Condução de turma e avaliação.' },
+        { n: 'III', t: 'Laboratório', d: 'Microaulas com feedback.' },
+      ],
+    }),
+  };
+}
+
+function buildPages() {
+  const cert = sampleCert();
+  const meta = JSON.parse(cert.meta_json);
+  const d = buildCertData(cert, meta, location.origin);
+  const html = renderFrontPage(cert.template_slug, cert.theme, d) + renderBackPage(cert.theme, d);
+  return { html, qrUrl: d.validarUrl, cert };
+}
+
+let CURRENT = null;
+function render() {
+  const { html, qrUrl, cert } = buildPages();
+  CURRENT = cert;
+  // Off-screen at natural size (for rasterizing).
+  const off = $('#offscreen');
+  off.innerHTML = html;
+  hydrate(off, { qr: generateQrSvg, qrUrl });
+  // Scaled preview.
+  const stage = $('#stage');
+  stage.innerHTML = html;
+  hydrate(stage, { qr: generateQrSvg, qrUrl });
+  stage.querySelectorAll('.cdx-cert-page').forEach((p) => {
+    p.style.transformOrigin = 'top left';
+    p.style.transform = 'scale(0.62)';
+    p.style.marginBottom = '-300px';
+  });
+  status('Preview atualizado: ' + cert.template_slug + ' / ' + cert.theme);
+}
+
+// ── PDF helpers ───────────────────────────────────────────────────────────────
+function fname(method) {
+  return 'cert-' + CURRENT.template_slug + '-' + CURRENT.theme + '-' + method + '.pdf';
+}
+function sheets() { return $('#offscreen').querySelectorAll('.cdxc-sheet'); }
+
+async function rasterToPdf(method, toCanvas) {
+  setBusy(true);
+  try {
+    await document.fonts.ready;
+    status('Gerando (' + method + ')… renderizando frente e verso.');
+    const { jsPDF } = await import(JSPDF);
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const sh = sheets();
+    for (let i = 0; i < sh.length; i++) {
+      status('Gerando (' + method + ')… página ' + (i + 1) + '/' + sh.length);
+      const canvas = await toCanvas(sh[i]);
+      // JPEG keeps the file to a couple MB (PNG of a 3x gradient sheet was ~30MB/page).
+      const img = canvas.toDataURL('image/jpeg', 0.96);
+      if (i > 0) doc.addPage('a4', 'landscape');
+      doc.addImage(img, 'JPEG', 0, 0, W, H);
+    }
+    doc.save(fname(method));
+    status('Pronto: ' + fname(method));
+  } catch (e) {
+    status('ERRO (' + method + '): ' + (e && e.message || e));
+    console.error(e);
+  } finally { setBusy(false); }
+}
+
+async function viaH2C(el) {
+  const h2c = (await import(H2C)).default;
+  return h2c(el, { scale: 3, backgroundColor: null, useCORS: true, logging: false });
+}
+async function viaMS(el) {
+  const ms = await import(MS);
+  return ms.domToCanvas(el, { scale: 3 });
+}
+async function viaHTI(el) {
+  const hti = await import(HTI);
+  // skipFonts: the page already has the web fonts loaded, so don't try to re-read
+  // the cross-origin Google Fonts stylesheet (that throws a CORS cssRules error).
+  return hti.toCanvas(el, { pixelRatio: 3, cacheBust: true, skipFonts: true });
+}
+
+// Method 1: the current print-dialog flow (popup + window.print).
+function printPopup() {
+  const off = $('#offscreen');
+  const body = off.innerHTML;
+  const css = new URL('cert-render.css?v=1.4', location.href).href;
+  const doc = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>cert</title>'
+    + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Comfortaa:wght@400;700&display=swap">'
+    + '<link rel="stylesheet" href="' + css + '">'
+    + '<style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}'
+    + '.cdx-cert-page,.cdx-cert-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + '.cdx-cert-page *{text-shadow:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}.cdx-cert-page .bmark{filter:none!important}'
+    + '.cdx-cert-page{width:297mm;height:210mm;overflow:hidden;page-break-after:always}.cdx-cert-page:last-child{page-break-after:auto}'
+    + '.cdx-cert-page .cdxc-sheet{width:100%;height:100%;box-shadow:none}</style></head><body>' + body + '</body></html>';
+  const w = window.open('', '_blank');
+  if (!w) { status('Pop-up bloqueado. Permita pop-ups para baixar pelo método 1.'); return; }
+  w.document.open(); w.document.write(doc); w.document.close();
+  w.onload = () => { try { w.focus(); w.print(); } catch (_) {} };
+  status('Método 1: abriu a janela de impressão (escolha "Salvar como PDF").');
+}
+
+function setBusy(b) {
+  document.querySelectorAll('button').forEach((x) => { x.disabled = b; });
+}
+
+// ── wire ──────────────────────────────────────────────────────────────────────
+$('#tpl').innerHTML = CERT_TEMPLATES.map((t) => '<option value="' + t.key + '">' + t.label + '</option>').join('');
+$('#theme').innerHTML = CERT_THEMES.map((t) => '<option value="' + t.key + '"' + (t.key === 'duo' ? ' selected' : '') + '>' + t.label + '</option>').join('');
+$('#re').addEventListener('click', render);
+$('#tpl').addEventListener('change', render);
+$('#theme').addEventListener('change', render);
+$('#m1').addEventListener('click', printPopup);
+$('#m2').addEventListener('click', () => rasterToPdf('html2canvas', viaH2C));
+$('#m3').addEventListener('click', () => rasterToPdf('modern-screenshot', viaMS));
+$('#m4').addEventListener('click', () => rasterToPdf('html-to-image', viaHTI));
+$('#mall').addEventListener('click', async () => {
+  await rasterToPdf('html2canvas', viaH2C);
+  await rasterToPdf('modern-screenshot', viaMS);
+  await rasterToPdf('html-to-image', viaHTI);
+});
+
+render();
+</script>
+</body>
+</html>
