@@ -27,13 +27,13 @@ test('demos: phones host the real Codex components (mock demo UI gone)', () => {
     assert.ok(!h.includes(bad), 'index still has mock demo ' + bad);
 
   const css = read('css/landing.css');
-  for (const c of ['.cdx-qr-option-btn', '.cdx-qr-bar', '.cp-qa-bar', '.cdx-tr-card', '.cdx-tr-novo-banner', '.cdx-tr-item-action', '.plp-th'])
+  for (const c of ['.cdx-qr-option-btn', '.cdx-qr-bar', '.cp-qa-bar', '.cdx-tr-card', '.cdx-tr-novo-banner', '.cdx-tr-item-action', '.cdx-trilha-hero', '.tr-modal'])
     assert.ok(css.includes(c), 'css missing copied component ' + c);
+  assert.ok(!css.includes('.plp-th{'), 'on-screen thermometer should be removed');
 
   const d = read('js/demos.js');
-  for (const c of ['cdx-qr-option-btn', 'cdx-qr-bar', 'is-correct', 'cp-qa-bar', 'cdx-tr-novo-banner', 'cdx-tr-item-action', 'is-done'])
+  for (const c of ['cdx-qr-option-btn', 'cdx-qr-bar', 'is-correct', 'cp-qa-bar', 'cdx-trilha-hero', 'cdx-trilha-tabs', 'cdx-tr-novo-banner', 'is-expanded', 'tr-modal-backdrop', 'cdx-tr-item-action--submitted'])
     assert.ok(d.includes(c), 'demos.js does not build ' + c);
-  assert.ok(d.includes('M14 14.76V3.5'), 'demos.js missing the real thermometer glyph');
 });
 
 test('index.html: structure only (module boot + consent + JSON-LD, no inline logic)', () => {
