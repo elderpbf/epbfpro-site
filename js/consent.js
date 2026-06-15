@@ -78,30 +78,33 @@
 
   function injectStyles() {
     if (document.getElementById('pso-consent-style')) return;
+    // Colors use the landing tokens (--ink/--ink-soft/--teal/--line/--surface) with
+    // Codex tokens (--text-primary/...) and hard hex as nested fallbacks, so the
+    // banner is readable on the landing AND on any Codex-styled page, in both themes.
     var css = ''
       + '.pso-consent{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9998;'
-      + 'width:min(560px,calc(100vw - 32px));background:var(--surface,#fff);color:var(--text-primary,#134e4a);'
-      + 'border:1px solid var(--accent,#7de8d6);border-radius:16px;box-shadow:0 18px 50px rgba(6,26,81,.18);'
+      + 'width:min(560px,calc(100vw - 32px));background:var(--surface,#fff);color:var(--ink,var(--text-primary,#082149));'
+      + 'border:1px solid var(--line,var(--accent,#7de8d6));border-radius:16px;box-shadow:0 18px 50px rgba(6,26,81,.18);'
       + 'padding:20px 22px;font-family:"Inter","Segoe UI",sans-serif;line-height:1.55;animation:pso-rise .35s ease-out both;}'
       + '@keyframes pso-rise{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}'
-      + '.pso-consent h2{font-size:1rem;margin:0 0 6px;font-weight:700;}'
-      + '.pso-consent p{font-size:.86rem;margin:0 0 14px;color:var(--text-secondary,#115e59);}'
-      + '.pso-consent a{color:var(--primary,#14b8a6);font-weight:600;text-decoration:underline;}'
+      + '.pso-consent h2{font-size:1.02rem;margin:0 0 6px;font-weight:700;color:var(--ink,var(--text-primary,#082149));}'
+      + '.pso-consent p{font-size:.92rem;margin:0 0 14px;color:var(--ink-soft,var(--text-secondary,#3a567d));}'
+      + '.pso-consent a{color:var(--teal-text,var(--primary,#0d9488));font-weight:600;text-decoration:underline;}'
       + '.pso-consent .pso-actions{display:flex;flex-wrap:wrap;gap:10px;}'
       + '.pso-consent button{font-family:inherit;font-size:.84rem;font-weight:600;border-radius:10px;'
-      + 'padding:10px 16px;cursor:pointer;border:1px solid var(--accent,#7de8d6);transition:transform .12s ease,filter .12s ease;}'
+      + 'padding:10px 16px;cursor:pointer;border:1px solid var(--line,var(--accent,#7de8d6));transition:transform .12s ease,filter .12s ease;}'
       + '.pso-consent button:hover{transform:translateY(-1px);filter:brightness(.98);}'
-      + '.pso-consent button:focus-visible{outline:3px solid var(--primary,#14b8a6);outline-offset:2px;}'
-      + '.pso-consent .pso-primary{background:var(--primary,#14b8a6);color:#042b27;border-color:var(--primary,#14b8a6);}'
-      + '.pso-consent .pso-ghost{background:transparent;color:var(--text-primary,#134e4a);}'
+      + '.pso-consent button:focus-visible{outline:3px solid var(--teal,var(--primary,#14b8a6));outline-offset:2px;}'
+      + '.pso-consent .pso-primary{background:var(--teal,var(--primary,#14b8a6));color:var(--on-teal,#042b27);border-color:var(--teal,var(--primary,#14b8a6));}'
+      + '.pso-consent .pso-ghost{background:transparent;color:var(--ink,var(--text-primary,#082149));}'
       + '.pso-consent .pso-prefs{margin:4px 0 14px;display:none;}'
       + '.pso-consent .pso-prefs.open{display:block;}'
       + '.pso-consent .pso-cat{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;'
-      + 'padding:10px 0;border-top:1px solid var(--accent,#7de8d6);}'
+      + 'padding:10px 0;border-top:1px solid var(--line,var(--accent,#7de8d6));}'
       + '.pso-consent .pso-cat .pso-cat-label{font-weight:600;font-size:.84rem;}'
-      + '.pso-consent .pso-cat .pso-cat-desc{font-size:.76rem;color:var(--text-secondary,#115e59);margin-top:2px;}'
-      + '.pso-consent .pso-cat .pso-always{font-size:.74rem;color:var(--text-secondary,#115e59);white-space:nowrap;padding-top:2px;}'
-      + '.pso-consent input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary,#14b8a6);margin-top:2px;}'
+      + '.pso-consent .pso-cat .pso-cat-desc{font-size:.78rem;color:var(--ink-soft,var(--text-secondary,#3a567d));margin-top:2px;}'
+      + '.pso-consent .pso-cat .pso-always{font-size:.76rem;color:var(--ink-soft,var(--text-secondary,#3a567d));white-space:nowrap;padding-top:2px;}'
+      + '.pso-consent input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal,var(--primary,#14b8a6));margin-top:2px;}'
       + '@media (max-width:480px){.pso-consent .pso-actions button{flex:1 1 100%;}}'
       + '@media (prefers-reduced-motion: reduce){.pso-consent{animation:none;}}';
     var style = document.createElement('style');
