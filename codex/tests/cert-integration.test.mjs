@@ -134,10 +134,14 @@ describe('buildPrintDocument', () => {
     assert.ok(doc.startsWith('<!doctype html>'), 'is a full document');
     assert.ok(doc.includes('certificates/cert-render.css?v=1.0'), 'links the cert stylesheet');
     assert.ok(doc.includes('cdx-cert-page'), 'embeds the body');
-    // Numeric A4-landscape page (297mm×210mm) at margin 0 — the keyword "A4 landscape"
-    // rendered a hair short and triggered shrink-to-fit (the white bars).
-    assert.ok(/@page[^}]*297mm 210mm/i.test(doc), 'numeric A4-landscape @page rule');
+    // "A4 landscape" keyword (not numeric 297mm 210mm): it maps to the dialog's
+    // Orientation control, so it forces landscape even when the dialog default is
+    // portrait. Numeric dimensions were silently falling back to portrait.
+    assert.ok(/@page[^}]*A4 landscape/i.test(doc), 'A4-landscape @page rule');
     assert.ok(/@page[^}]*margin:\s*0/i.test(doc), '@page margin 0 (full bleed)');
+    // Backgrounds (the themed gradients) must print even when the dialog's
+    // "Background graphics" box is off, or the cert loses all its colours.
+    assert.ok(/print-color-adjust:\s*exact/i.test(doc), 'print-color-adjust:exact keeps backgrounds');
     assert.ok(doc.includes('Certificado AB3HNQ4VXY'), 'title in the head');
   });
 });

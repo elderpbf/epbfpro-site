@@ -477,9 +477,43 @@ describe('Emissão dashboard port (source contract)', () => {
   test('old status <select> filter is gone (cards replaced it)', () => {
     assert.ok(!src.includes('cdx-certs-filter-status'), 'old status select removed');
   });
-  test("'signed' lifecycle wired through the facade", () => {
-    assert.ok(src.includes("data-action=\"sign\""), 'row sign action');
-    assert.ok(src.includes('api.markSigned'), 'markSigned used');
-    assert.ok(api.includes('cert_mark_signed'), 'facade exposes cert_mark_signed');
+  test("sign/send are gated until real signing/email — no false status flip", () => {
+    // The row actions still exist (the workflow is visible)…
+    assert.ok(src.includes("data-action=\"sign\""), 'row sign action present');
+    assert.ok(src.includes("data-action=\"mark-sent\""), 'row send action present');
+    // …but they must NOT complete a status change yet: clicking surfaces the
+    // not-wired notice and does not call the mark APIs (no false signed/sent).
+    assert.ok(src.includes("t('certificates.sign_not_wired')"), 'sign shows the not-wired notice');
+    assert.ok(src.includes("t('certificates.send_not_wired')"), 'send shows the not-wired notice');
+    assert.ok(!src.includes('api.markSigned'), 'does NOT flip status to signed yet');
+    assert.ok(!src.includes('api.markSent'), 'does NOT flip status to sent yet');
+    // The facade keeps the actions ready for when the real flows land.
+    assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed');
+    assert.ok(api.includes('cert_mark_sent'), 'facade still exposes cert_mark_sent');
+  });
+});
+
+// ── Emissão fixes (2026-06-15): per-row PDF, revoked delete, bulk delete, modal
+// select-all + model preview ───────────────────────────────────────────────────
+describe('Emissão fixes (source contract)', () => {
+  const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
+  const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+
+  test('every row can produce a PDF (print → Salvar como PDF), not gated on a stored file', () => {
+    assert.ok(src.includes('data-action="pdf"'), 'per-row PDF action present');
+    assert.ok(src.includes("if (action === 'pdf')"), 'pdf action routed to print');
+  });
+  test('delete is offered for issued OR revoked rows', () => {
+    assert.ok(/c\.status === 'issued' \|\| c\.status === 'revoked'/.test(src), 'row delete gated to issued|revoked');
+  });
+  test('bulk delete present and confirmed', () => {
+    assert.ok(src.includes('data-bulk="delete"'), 'bulk delete button');
+    assert.ok(src.includes('_bulkDeleteConfirm'), 'bulk delete goes through a confirm');
+    assert.ok(api.includes('cert_delete'), 'facade exposes cert_delete');
+  });
+  test('issue modal has a select-all checkbox and a model preview', () => {
+    assert.ok(src.includes('cdx-issue-selall'), 'roster select-all checkbox');
+    assert.ok(src.includes('cdx-issue-preview'), 'preview button');
+    assert.ok(src.includes('_buildIssuePreviewCert'), 'preview builds a cert from the form');
   });
 });
