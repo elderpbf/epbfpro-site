@@ -9,6 +9,11 @@ export default {
   'nav.certificates': 'Certificados',
   'nav.logout':       'Sair',
 
+  // Connection watchdog (js/reconnect.js)
+  'net.lost':         'Conexão perdida.',
+  'net.reload':       'Recarregar',
+  'net.dismiss':      'Dispensar',
+
   // Cohorts tab — general
   'cohorts.loading':              'Carregando...',
   'cohorts.error_loading':        'Erro ao carregar.',

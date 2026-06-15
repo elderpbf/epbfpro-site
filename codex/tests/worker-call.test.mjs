@@ -156,3 +156,46 @@ test('callWorker: surfaces a worker error payload as a throw', async () => {
     (e) => e.data.error === 'bad_thing',
   );
 });
+
+// ── connection watchdog hook (window.cdxNet) ─────────────────────────────────
+// callWorker signals 'down' on a transport failure and 'up' once a response comes
+// back, so the admin's reconnect banner (js/reconnect.js) can raise/clear itself.
+// Tests inject a fake window carrying a cdxNet spy and restore it afterwards.
+async function withCdxNet(run) {
+  const saved = globalThis.window;
+  const calls = [];
+  globalThis.window = { cdxNet: (state, data) => calls.push({ state, data }) };
+  try { await run(calls); } finally {
+    if (saved === undefined) delete globalThis.window; else globalThis.window = saved;
+  }
+}
+
+test('callWorker: a network failure signals the watchdog down', async () => {
+  await withCdxNet(async (calls) => {
+    const failFetch = async () => { throw new Error('offline'); };
+    await assert.rejects(callWorker({ action: 'x' }, { fetch: failFetch }));
+    assert.ok(
+      calls.some((c) => c.state === 'down' && c.data && c.data.error === 'network_error'),
+      'down signalled with network_error',
+    );
+    assert.ok(!calls.some((c) => c.state === 'up'), 'never signals up on a hard network failure');
+  });
+});
+
+test('callWorker: a successful call signals the watchdog up', async () => {
+  await withCdxNet(async (calls) => {
+    const okFetch = async () => ({ ok: true, status: 200, text: async () => '{"ok":1}' });
+    await callWorker({ action: 'x' }, { fetch: okFetch });
+    assert.ok(calls.some((c) => c.state === 'up'), 'up signalled when a response comes back');
+    assert.ok(!calls.some((c) => c.state === 'down'), 'no down on success');
+  });
+});
+
+test('callWorker: a deliberate Worker error still signals up (connection is alive)', async () => {
+  await withCdxNet(async (calls) => {
+    const errFetch = async () => ({ ok: true, status: 200, text: async () => '{"error":"bad_thing"}' });
+    await assert.rejects(callWorker({ action: 'x', _silent: true }, { fetch: errFetch }));
+    assert.ok(calls.some((c) => c.state === 'up'), 'an app error proves reachability -> up, not down');
+    assert.ok(!calls.some((c) => c.state === 'down'), 'app errors never raise the reconnect banner');
+  });
+});

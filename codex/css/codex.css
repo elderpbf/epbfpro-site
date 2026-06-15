@@ -306,3 +306,38 @@
  * `cdx-dev-only` to their class list and must NOT declare a competing border.
  * Convention registered in Codex CLAUDE.md ("Developer-mode-only UI"). */
 .cdx-dev-only { border: 1px dashed var(--danger); }
+
+/* ── Connection watchdog banner (js/reconnect.js) ────────────────────────────
+ * Raised when a Worker call fails as a transport error (the network dropped
+ * while the tab sat idle), cleared the moment a call succeeds again. Top-center,
+ * non-blocking, above the toast and modals. Amber = recoverable, not a hard
+ * error. Entrance mirrors the toast (.cdx-toast) idiom. */
+.cdx-reconnect {
+  position: fixed; top: 1rem; left: 50%; z-index: 99999;
+  display: flex; align-items: center; gap: 0.75rem;
+  max-width: min(92vw, 460px);
+  padding: 0.6rem 0.9rem;
+  background: var(--surface); color: var(--text-primary);
+  border: 1px solid var(--cdx-remarcada-text, #d97706);
+  border-left: 4px solid var(--cdx-remarcada-text, #d97706);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px var(--shadow);
+  font-size: 0.86rem;
+  opacity: 0; transform: translate(-50%, -1rem);
+  transition: opacity .3s, transform .3s;
+}
+.cdx-reconnect.show { opacity: 1; transform: translate(-50%, 0); }
+.cdx-reconnect-msg { font-weight: 500; }
+.cdx-reconnect-reload {
+  border: 0; cursor: pointer; white-space: nowrap;
+  padding: 0.35rem 0.7rem; border-radius: 6px;
+  background: var(--cdx-btn-primary-bg, var(--primary));
+  color: var(--cdx-btn-primary-text, #fff);
+  font-size: 0.82rem; font-weight: 600;
+}
+.cdx-reconnect-reload:hover { filter: brightness(1.05); }
+.cdx-reconnect-dismiss {
+  border: 0; background: none; cursor: pointer;
+  margin-left: -0.25rem; padding: 0 0.2rem;
+  color: var(--text-secondary, #888); font-size: 1.1rem; line-height: 1;
+}

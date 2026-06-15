@@ -129,12 +129,15 @@ describe('renderCertHtml', () => {
 
 // ── buildPrintDocument: a standalone A4-landscape page that links the cert CSS ──
 describe('buildPrintDocument', () => {
-  test('wraps the body, links the stylesheet, and sets A4 landscape', () => {
+  test('wraps the body, links the stylesheet, and sets an A4-landscape full-bleed page', () => {
     const doc = certs.buildPrintDocument({ cssHref: 'certificates/cert-render.css?v=1.0', bodyHtml: '<div class="cdx-cert-page">X</div>', title: 'Certificado AB3HNQ4VXY' });
     assert.ok(doc.startsWith('<!doctype html>'), 'is a full document');
     assert.ok(doc.includes('certificates/cert-render.css?v=1.0'), 'links the cert stylesheet');
     assert.ok(doc.includes('cdx-cert-page'), 'embeds the body');
-    assert.ok(/@page[^}]*A4 landscape/i.test(doc), 'A4 landscape @page rule');
+    // Numeric A4-landscape page (297mm×210mm) at margin 0 — the keyword "A4 landscape"
+    // rendered a hair short and triggered shrink-to-fit (the white bars).
+    assert.ok(/@page[^}]*297mm 210mm/i.test(doc), 'numeric A4-landscape @page rule');
+    assert.ok(/@page[^}]*margin:\s*0/i.test(doc), '@page margin 0 (full bleed)');
     assert.ok(doc.includes('Certificado AB3HNQ4VXY'), 'title in the head');
   });
 });

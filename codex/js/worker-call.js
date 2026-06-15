@@ -88,6 +88,17 @@ function _log(kind, msg) {
   }
 }
 
+// Optional connection-state hook for the admin's reconnect watchdog
+// (js/reconnect.js installs window.cdxNet): 'down' on a transport failure (the
+// network dropped), 'up' once a response comes back. The public Trail and the
+// tests install no hook, so this is a silent no-op there, and it must never
+// throw into a live call.
+function _net(state, data) {
+  if (typeof window !== 'undefined' && typeof window.cdxNet === 'function') {
+    try { window.cdxNet(state, data); } catch (_) { /* watchdog must not break a call */ }
+  }
+}
+
 // Make a Worker call. `env` lets tests inject fetch/workerUrl/auth; in the
 // browser those default to window.WORKER_URL, localStorage, and window.BS_GOOGLE.
 export async function callWorker(params, env = {}) {
@@ -133,6 +144,7 @@ export async function callWorker(params, env = {}) {
     _log('error', 'callWorker network error | action: ' + action + ' | ' + netMsg);
     const e = new Error('Network: ' + netMsg);
     e.data = { error: 'network_error', detail: netMsg };
+    _net('down', e.data);
     throw e;
   }
 
@@ -144,8 +156,13 @@ export async function callWorker(params, env = {}) {
     _log('error', 'callWorker body read error | action: ' + action + ' | ' + readMsg);
     const e = new Error('Body read: ' + readMsg);
     e.data = { error: 'body_read_error', detail: readMsg };
+    _net('down', e.data);
     throw e;
   }
+
+  // A response body came back -> the connection is alive (even a worker-level
+  // error or a 4xx/5xx proves reachability), so clear any reconnect banner.
+  _net('up');
 
   try {
     const data = interpretWorkerResponse({ ok: resp.ok, status: resp.status, text }, p);
