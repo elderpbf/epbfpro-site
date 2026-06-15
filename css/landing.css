@@ -327,7 +327,8 @@ h1{font-family:'Lora',serif;font-weight:600;font-size:clamp(2.5rem,6.4vw,4.6rem)
 .plp-contact.plp-lit .plp-inner{opacity:1;transform:none;filter:none}
 .plp-contact .plp-tagl2{font:500 .9rem 'JetBrains Mono';letter-spacing:.04em;color:var(--ink-soft);margin:6px 0 26px}
 .plp-contact .plp-tagl2 b{color:var(--teal-text)}
-.plp-contacts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.plp-contacts{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:24px}
+.plp-contacts-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .plp-contacts a{display:inline-flex;align-items:center;gap:9px;padding:13px 19px;border-radius:13px;background:var(--surface);border:1px solid var(--line);font-weight:600;font-size:.9rem;box-shadow:var(--shadow-s);transition:.25s}
 .plp-contacts a:hover{border-color:var(--teal);color:var(--teal-text);transform:translateY(-2px)}
 .plp-contacts a.plp-wa{background:linear-gradient(120deg,var(--teal),var(--teal-dark));color:var(--on-teal);border-color:transparent}

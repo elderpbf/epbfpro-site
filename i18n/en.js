@@ -55,7 +55,7 @@ export default {
   "ce.cp": "Issued and validated by the site on course completion.",
   "ce.m1": "course hours", "ce.m2": "syllabus", "ce.m3": "online validation",
   "ct.eye": "Let's talk",
-  "ct.title": 'Tell me your <span class="plp-em">context</span>',
+  "ct.title": 'Get in touch and present your <span class="plp-em">context</span>',
   "ct.sub": "Tell me where you want to get to and I'll propose the right program.",
   "ct.wa": "Chat on WhatsApp",
   "ct.role": "PensoIA · EPBF Soluções em Tecnologia",

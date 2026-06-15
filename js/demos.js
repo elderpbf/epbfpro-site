@@ -7,7 +7,7 @@
 // page via the scoped tokens in landing.css, so only text rebuilds on a language
 // change. (No comprehension thermometer here — per Elder that lives outside the
 // phone, and the real student view has none.)
-import { t, onLang } from './i18n.js?v=5';
+import { t, onLang } from './i18n.js?v=6';
 
 const DEMO_VOTES = [14, 68, 7, 11]; // % per option; option 2 (index 1) is correct
 const CORRECT = 1;

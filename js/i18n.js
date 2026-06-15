@@ -1,9 +1,9 @@
 // js/i18n.js — t() engine for the public landing (PensoIA site).
 // Codex-style i18n: every user-facing string lives in i18n/<lang>.js (all langs in sync).
 // data-i18n -> textContent; data-i18n-html -> innerHTML (for strings carrying <span> markup).
-import pt from '../i18n/pt.js?v=5';
-import en from '../i18n/en.js?v=5';
-import es from '../i18n/es.js?v=5';
+import pt from '../i18n/pt.js?v=6';
+import en from '../i18n/en.js?v=6';
+import es from '../i18n/es.js?v=6';
 
 const DICTS = { pt, en, es };
 let active = 'pt';
