@@ -80,13 +80,18 @@ function _fmtDate(iso) {
   return p[2] + '/' + p[1];
 }
 
-function _aulaDateStatus(a) {
-  const today = new Date().toISOString().slice(0, 10);
+// An aula's date status. It counts as OCCURRED only when an explicit "ocorreu em"
+// date (happened_on) is filled, OR once its scheduled day has fully PASSED (the day
+// AFTER — scheduled_for strictly before today). On the scheduled day itself it still
+// reads as agendada/remarcada, so an aula never self-reports as done before it has
+// actually happened. `today` is injectable for tests; defaults to the real date.
+export function _aulaDateStatus(a, today) {
+  today = today || new Date().toISOString().slice(0, 10);
   if (a.happened_on) return { text: t('cohorts.date_happened') + ' ' + _fmtDate(a.happened_on), cls: 'cdx-rel-date-ocorreu' };
   if (a.scheduled_for) {
-    if (a.rescheduled_from && a.scheduled_for > today)
+    if (a.rescheduled_from && a.scheduled_for >= today)
       return { text: t('cohorts.date_rescheduled') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-remarcada' };
-    if (a.scheduled_for > today)
+    if (a.scheduled_for >= today)
       return { text: t('cohorts.date_scheduled') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-agendada' };
     return { text: t('cohorts.date_happened') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-ocorreu' };
   }
