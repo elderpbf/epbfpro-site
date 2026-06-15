@@ -277,9 +277,11 @@ function backHtml(d) {
   const mods = d.modules.map(function (m) {
     return '<div class="ci"><div class="n">' + m.n + '</div><div><h4>' + m.t + '</h4><p>' + m.d + '</p></div></div>';
   }).join('');
+  // The code appears once on the back, in the QR vcard at the bottom. The old
+  // top "Código …" line next to the logo was a duplicate — removed.
   return '<div class="bhead">'
       + '<div class="ht"><div class="kicker">Conteúdo Programático</div><h2 class="title">' + d.course + '.</h2></div>'
-      + '<div class="hc"><span class="bmark" data-logo="light"></span><div class="code">Código<b>' + d.code + '</b></div></div>'
+      + '<div class="hc"><span class="bmark" data-logo="light"></span></div>'
     + '</div><div class="rule"></div>'
     + '<div class="bcols"><div class="curriculum">' + mods + '</div>'
       + '<div class="side"><div class="cargo">'

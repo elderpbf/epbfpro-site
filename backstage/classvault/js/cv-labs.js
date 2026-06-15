@@ -52,6 +52,11 @@ window.CVLabs = (function() {
       key: 'k13',
       title: 'Três velocidades',
       summary: 'Tradicional, raciocínio e agêntico são formatos diferentes'
+    },
+    {
+      key: 'k14',
+      title: 'Reforça ou enfraquece',
+      summary: 'Acerto reforça o caminho no peso; erro o enfraquece'
     }
   ];
 

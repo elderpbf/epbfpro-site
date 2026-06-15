@@ -10,6 +10,7 @@
 //   window.BSToast   (../backstage/js/bs-toast.js)   optional transient toast
 import { content as contentApi, releases as api, cohorts as cohortsApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { aulaStatus } from '../js/aula-status.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as turmaPicker from './turma-picker.js';
@@ -32,17 +33,16 @@ let _picker = null;
 let _cleanup = [];
 
 // ── Pure rules (exported for tests) ──────────────────────────────────────────
-// Lesson date status. Returns { key, date }; key is i18n-free so the renderer
-// maps it through t() in the cohorts.date_* namespace. `today` is injected (ISO
-// yyyy-mm-dd) so the rule is deterministic under test.
+// Lesson date status for the composer. Returns { key, date }; key is i18n-free so
+// the renderer maps it through t() in the cohorts.date_* namespace. The RULE lives
+// in the shared js/aula-status.js (same one the admin Cohorts view + the Trail use);
+// here we keep the legacy { key, date } shape ('undefined' -> 'tbd'). `today` is
+// injected (ISO yyyy-mm-dd) so it stays deterministic under test.
 export function aulaDateStatusKey(aula, today) {
-  if (!aula) return { key: 'tbd', date: null };
-  if (aula.happened_on) return { key: 'happened', date: aula.happened_on };
-  if (aula.scheduled_for) {
-    if (aula.rescheduled_from && aula.scheduled_for > today) return { key: 'rescheduled', date: aula.scheduled_for };
-    if (aula.scheduled_for > today) return { key: 'scheduled', date: aula.scheduled_for };
-    return { key: 'happened', date: aula.scheduled_for };
-  }
+  const status = aulaStatus(aula, today);
+  if (status === 'happened') return { key: 'happened', date: aula.happened_on || aula.scheduled_for };
+  if (status === 'rescheduled') return { key: 'rescheduled', date: aula.scheduled_for };
+  if (status === 'scheduled') return { key: 'scheduled', date: aula.scheduled_for };
   return { key: 'tbd', date: null };
 }
 
