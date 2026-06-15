@@ -372,6 +372,9 @@
 .cdx-cert-issue-result ul { margin: 0.4rem 0 0 1.2rem; padding: 0; }
 .cdx-cert-issue-result li { margin-bottom: 0.2rem; }
 .cdx-cert-issue-result code { font-family: monospace; font-size: 0.9em; }
+/* Skipped (already-issued) participants — a muted note under the issued list. */
+.cdx-cert-issue-skipped { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed var(--border); color: var(--text-secondary); }
+.cdx-cert-issue-skipped strong { color: var(--cdx-cert-issued-ac); }
 
 /* ── Preview modal ─────────────────────────────────────────────── */
 .cdx-cert-preview-dl {

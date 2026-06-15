@@ -771,7 +771,7 @@ async function _bulkAction(kind) {
   if (kind === 'clear') { _selectedCodes.clear(); _renderCertList(); _syncBulk(); return; }
   const codes = Array.from(_selectedCodes);
   if (!codes.length) return;
-  if (kind === 'pdf') { notice.warn(t('certificates.bulk_pdf_todo')); return; }
+  if (kind === 'pdf') { _bulkPdf(codes); return; }
   try {
     for (const code of codes) {
       if (kind === 'sign')   await api.markSigned({ code });
@@ -1052,21 +1052,38 @@ function _openCertFullscreen(cert, side) {
 }
 
 function _printCert(cert) {
+  _printCerts([cert], 'Certificado ' + (cert.code || ''));
+}
+
+// Build ONE print document from N certs (each its own front+back pages, separated
+// by buildPrintDocument's .cdx-cert-page page-breaks) and open the print → "Save
+// as PDF" dialog once. The single-cert print is just N=1. Each cert is hydrated
+// with its OWN QR before concatenation.
+function _printCerts(certs, title) {
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
-  const tmp = document.createElement('div');
-  tmp.innerHTML = renderCertHtml(cert, origin);
-  hydrate(tmp, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
-  const doc = buildPrintDocument({
-    cssHref: CERT_CSS_HREF,
-    bodyHtml: tmp.innerHTML,
-    title: 'Certificado ' + (cert.code || ''),
-  });
+  const parts = [];
+  for (const cert of certs) {
+    if (!cert) continue;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderCertHtml(cert, origin);
+    hydrate(tmp, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+    parts.push(tmp.innerHTML);
+  }
+  if (!parts.length) return;
+  const doc = buildPrintDocument({ cssHref: CERT_CSS_HREF, bodyHtml: parts.join(''), title: title || 'Certificados' });
   const w = window.open('', '_blank');
   if (!w) { notice.warn(t('certificates.print_blocked')); return; }
   w.document.open();
   w.document.write(doc);
   w.document.close();
   w.onload = () => { try { w.focus(); w.print(); } catch (_) {} };
+}
+
+// Bulk "Baixar PDF": print every selected cert in one document (one Save-as-PDF).
+function _bulkPdf(codes) {
+  const certs = codes.map((code) => _certs.find((c) => c.code === code)).filter(Boolean);
+  if (!certs.length) return;
+  _printCerts(certs, t('certificates.bulk_pdf_title').replace('{n}', String(certs.length)));
 }
 
 // ── Issue flow ────────────────────────────────────────────────────────────────
@@ -1298,6 +1315,9 @@ function _openIssueFlow() {
     try {
       const res = await api.issue(payload);
       const codes = (res && res.codes) || (res && res.certificates && res.certificates.map((c) => c.code)) || [];
+      // The backend dup-guard returns the participants that already had an active
+      // cert (so we didn't re-issue). Surface them instead of silently dropping.
+      const skipped = (res && res.skipped) || [];
       const resultEl = bd.querySelector('#cdx-issue-result');
       if (resultEl) {
         resultEl.style.display = '';
@@ -1305,9 +1325,16 @@ function _openIssueFlow() {
           '<div class="cdx-cert-issue-result">' +
             '<strong>' + esc(t('certificates.issue_result_title')) + '</strong>' +
             '<ul>' + codes.map((code) => '<li><code>' + esc(code) + '</code></li>').join('') + '</ul>' +
+            (skipped.length
+              ? '<div class="cdx-cert-issue-skipped">' +
+                  '<strong>' + esc(t('certificates.issue_skipped_title').replace('{n}', String(skipped.length))) + '</strong>' +
+                  '<ul>' + skipped.map((s) => '<li>' + esc((s && (s.holder_name || s.code)) || '') + '</li>').join('') + '</ul>' +
+                '</div>'
+              : '') +
           '</div>';
       }
       notice.ok(t('certificates.issued_ok').replace('{n}', String(codes.length)));
+      if (skipped.length) notice.warn(t('certificates.issue_skipped_toast').replace('{n}', String(skipped.length)));
       await _loadCertList();
     } catch (e) {
       if (window.bsLog) window.bsLog('certs: issue: ' + (e && e.message || e), 'error');

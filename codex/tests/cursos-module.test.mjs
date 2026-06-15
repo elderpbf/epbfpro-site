@@ -32,7 +32,7 @@ test('courses module satisfies the sub-module contract', () => {
 test('courses talks to the backend only through the courses facade', () => {
   // The course CRUD facade, plus the shared `ai` facade for the assistant — both
   // from codex-api.js (never callWorker directly).
-  assert.match(courses, /import \{ courses as api, ai \} from '\.\.\/js\/codex-api\.js'/, 'imports the courses + ai facades');
+  assert.match(courses, /import \{ courses as api, ai(?:, content as contentApi)? \} from '\.\.\/js\/codex-api\.js'/, 'imports the courses + ai (+ content) facades');
   for (const m of ['api.list', 'api.get', 'api.create', 'api.update', 'api.archive']) {
     assert.ok(courses.includes(m + '('), `uses ${m}()`);
   }
@@ -49,6 +49,19 @@ test('cursos AI assistant wires the shared ai.chat seam + the pure ementa prompt
   for (const id of ['cdx-cursos-duo', 'cdx-cur-ia', 'cdx-cur-chat', 'cdx-cur-ai-input', 'cdx-cur-ai-send']) {
     assert.ok(courses.includes(id), `assistant panel has #${id}`);
   }
+});
+
+test('cursos assistant "De uma apostila" pulls Conteúdo sets through the content facade', () => {
+  assert.match(courses, /content as contentApi/, 'imports the content facade');
+  assert.match(courses, /contentApi\.listSets\(/, 'lists apostila sets');
+  assert.match(courses, /contentApi\.getSet\(/, 'reads a set for its sections');
+  for (const fn of ['_loadApostilas', '_genFromApostila']) {
+    assert.ok(courses.includes(fn), `has ${fn}`);
+  }
+  assert.ok(courses.includes('cdx-cur-apostila'), 'has the apostila picker');
+  // the generated request flows through the same AI pipeline (_askAI)
+  assert.ok(courses.includes("t('cohorts.cursos_ia_apostila_prompt')"), 'builds the apostila generation prompt');
+  assert.match(courses, /_askAI\(apiText,/, 'feeds the apostila material to _askAI');
 });
 
 test('courses builds the ementa with the pure ementa model', () => {

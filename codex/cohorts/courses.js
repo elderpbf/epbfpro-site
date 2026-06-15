@@ -15,7 +15,7 @@
 // estruturar" (ementa.parseEmenta) stays as the offline, no-LLM path.
 // The "De uma apostila" source is deferred (needs multi-apostila in Conteúdo).
 
-import { courses as api, ai } from '../js/codex-api.js';
+import { courses as api, ai, content as contentApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -30,6 +30,7 @@ let _selectedId = null;
 let _course = null;        // full selected course (with ementa)
 let _ementa = emptyEmenta(); // working copy of the selected course's ementa
 let _aiMsgs = [];          // assistant chat history ({role, content}) for ai.chat
+let _apostilas = [];       // Conteúdo apostila sets, lazy-loaded for "De uma apostila"
 
 function _toast(msg) {
   if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
@@ -187,8 +188,14 @@ function _renderAssistant() {
         '<span class="cdx-cursos-hint">' + esc(t('cohorts.cursos_ia_hint')) + '</span>' +
       '</div>' +
       '<div class="cdx-cur-ia-src">' +
-        '<button type="button" class="cdx-cur-srcopt is-on">' + esc(t('cohorts.cursos_ia_src_paste')) + '</button>' +
-        '<button type="button" class="cdx-cur-srcopt is-soon" disabled title="' + esc(t('cohorts.cursos_ia_src_apostila_soon')) + '">' + esc(t('cohorts.cursos_ia_src_apostila')) + '</button>' +
+        '<button type="button" class="cdx-cur-srcopt is-on" data-src="chat">' + esc(t('cohorts.cursos_ia_src_paste')) + '</button>' +
+        '<button type="button" class="cdx-cur-srcopt" data-src="apostila">' + esc(t('cohorts.cursos_ia_src_apostila')) + '</button>' +
+      '</div>' +
+      // Apostila picker (revealed by the "De uma apostila" source): pick a Conteúdo
+      // apostila and the assistant builds the ementa from its sections.
+      '<div class="cdx-cur-ia-srcpick" id="cdx-cur-srcpick" style="display:none">' +
+        '<select id="cdx-cur-apostila"><option value="">' + esc(t('cohorts.cursos_ia_apostila_loading')) + '</option></select>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" id="cdx-cur-apostila-gen">' + esc(t('cohorts.cursos_ia_apostila_gen')) + '</button>' +
       '</div>' +
       '<div class="cdx-cur-ia-chat" id="cdx-cur-chat">' +
         '<div class="cdx-cur-msg ai">' + esc(t('cohorts.cursos_ia_welcome')) + '</div>' +
@@ -220,17 +227,21 @@ function _appendMsg(kind, text) {
 }
 
 // Send a natural-language request to the shared AI endpoint; apply any returned
-// ementa to the editor and surface the reply in the chat.
-function _askAI(text) {
+// ementa to the editor and surface the reply in the chat. `displayText` lets the
+// chat bubble show a short label while a longer payload (e.g. apostila material)
+// goes to the model.
+function _askAI(text, displayText) {
   if (!_course || !text) return;
-  _appendMsg('me', text);
+  _appendMsg('me', displayText || text);
   _aiMsgs.push({ role: 'user', content: text });
   const loading = _appendMsg('ai', t('cohorts.cursos_ia_thinking'));
   if (loading) loading.classList.add('is-loading');
   const sendBtn = _q('cdx-cur-ai-send');
   if (sendBtn) sendBtn.disabled = true;
   const system = buildEmentaAIPrompt({ courseTitle: _course.title, ementa: _ementa });
-  ai.chat({ system, messages: _aiMsgs.slice(-12), temperature: 0.3, max_tokens: 1500 }).then((res) => {
+  // Generous response budget: a full ementa (many modules) as JSON can be large,
+  // and a truncated response yields unparseable JSON (looks like a failure).
+  ai.chat({ system, messages: _aiMsgs.slice(-12), temperature: 0.3, max_tokens: 4000 }).then((res) => {
     if (loading && loading.parentNode) loading.parentNode.removeChild(loading);
     if (!res) { _appendMsg('ai', t('cohorts.cursos_ia_rate')); return; }   // facade returns null on rate-limit
     if (!res.text) {
@@ -250,6 +261,60 @@ function _askAI(text) {
   }).finally(() => {
     const b = _q('cdx-cur-ai-send');
     if (b) b.disabled = false;
+  });
+}
+
+// Lazy-load the Conteúdo apostila sets (only those with sections) into the picker.
+function _loadApostilas() {
+  const sel = _q('cdx-cur-apostila');
+  if (!sel) return;
+  if (_apostilas.length) { _fillApostilaSelect(sel); return; }
+  contentApi.listSets().then((d) => {
+    _apostilas = ((d && d.sets) || []).filter((s) => (s.item_count || 0) > 0);
+    _fillApostilaSelect(sel);
+  }).catch((err) => {
+    if (window.bsLog) window.bsLog('cursos apostila list: ' + (err && err.message || err), 'error');
+    sel.innerHTML = '<option value="">' + esc(t('cohorts.cursos_ia_apostila_none')) + '</option>';
+  });
+}
+
+function _fillApostilaSelect(sel) {
+  if (!_apostilas.length) {
+    sel.innerHTML = '<option value="">' + esc(t('cohorts.cursos_ia_apostila_none')) + '</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">' + esc(t('cohorts.cursos_ia_apostila_choose')) + '</option>' +
+    _apostilas.map((s) => {
+      const name = s.title || s.name || t('cohorts.cursos_ia_apostila_unnamed');
+      return '<option value="' + esc(String(s.id)) + '">' + esc(name) + ' (' + (s.item_count || 0) + ')</option>';
+    }).join('');
+}
+
+// Build the ementa from a chosen apostila: pull its sections (title + summary)
+// and feed them to the same AI pipeline as a generation request.
+function _genFromApostila() {
+  const sel = _q('cdx-cur-apostila');
+  const id = sel && sel.value;
+  if (!id) { _toast(t('cohorts.cursos_ia_apostila_pick')); return; }
+  const set = _apostilas.find((s) => String(s.id) === String(id));
+  const name = (set && (set.title || set.name)) || t('cohorts.cursos_ia_apostila_unnamed');
+  const gen = _q('cdx-cur-apostila-gen');
+  if (gen) gen.disabled = true;
+  contentApi.getSet({ id }).then((d) => {
+    const items = (d && d.items) || [];
+    if (!items.length) { _toast(t('cohorts.cursos_ia_apostila_empty')); return; }
+    const material = items.slice()
+      .sort((a, b) => (a.set_position || 0) - (b.set_position || 0))
+      .map((i) => '- ' + (i.title || '') + (i.summary ? ': ' + i.summary : ''))
+      .join('\n');
+    const apiText = t('cohorts.cursos_ia_apostila_prompt').replace('{name}', name) + '\n\n' + material;
+    _askAI(apiText, t('cohorts.cursos_ia_apostila_sent').replace('{name}', name));
+  }).catch((err) => {
+    if (window.bsLog) window.bsLog('cursos apostila get: ' + (err && err.message || err), 'error');
+    _toast(t('cohorts.error') + ': ' + (err && err.message || err));
+  }).finally(() => {
+    const g = _q('cdx-cur-apostila-gen');
+    if (g) g.disabled = false;
   });
 }
 
@@ -317,6 +382,17 @@ function _wireMain() {
   if (aiSend) aiSend.addEventListener('click', submitAI);
   if (aiInput) aiInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitAI(); } });
   if (_viewEl) _viewEl.querySelectorAll('.cdx-cur-chip').forEach((c) => c.addEventListener('click', () => _askAI(c.dataset.q)));
+
+  // Source toggle: "Colar programa" (free chat) vs "De uma apostila" (picker).
+  const srcpick = _q('cdx-cur-srcpick');
+  if (_viewEl) _viewEl.querySelectorAll('.cdx-cur-srcopt').forEach((b) => b.addEventListener('click', () => {
+    _viewEl.querySelectorAll('.cdx-cur-srcopt').forEach((x) => x.classList.toggle('is-on', x === b));
+    const isApostila = b.dataset.src === 'apostila';
+    if (srcpick) srcpick.style.display = isApostila ? '' : 'none';
+    if (isApostila) _loadApostilas();
+  }));
+  const genBtn = _q('cdx-cur-apostila-gen');
+  if (genBtn) genBtn.addEventListener('click', _genFromApostila);
 
   const ementaEl = _q('cdx-cur-ementa');
   if (!ementaEl) return;
@@ -449,6 +525,7 @@ export function mount(viewEl) {
   _course = null;
   _ementa = emptyEmenta();
   _aiMsgs = [];
+  _apostilas = [];
   _renderShell();
   _loadCourses();
 }
@@ -461,4 +538,5 @@ export function unmount() {
   _course = null;
   _ementa = emptyEmenta();
   _aiMsgs = [];
+  _apostilas = [];
 }

@@ -754,6 +754,9 @@ a.cdx-card-mini-icon.is-on:hover {
 .cdx-cur-srcopt { flex: 1; text-align: center; padding: .4rem; font: inherit; font-size: .78rem; font-weight: 600; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 9px; cursor: pointer; background: var(--background); }
 .cdx-cur-srcopt.is-on { color: var(--cdx-btn-primary-text); background: var(--primary-dark); border-color: transparent; }
 .cdx-cur-srcopt.is-soon { opacity: .55; cursor: not-allowed; }
+.cdx-cur-ia-srcpick { display: flex; gap: .4rem; padding: .5rem .9rem 0; flex: 0 0 auto; }
+.cdx-cur-ia-srcpick select { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: .4rem .5rem; font: inherit; font-size: .8rem; background: var(--background); color: var(--text-primary); }
+.cdx-cur-ia-srcpick select:focus { outline: none; border-color: var(--primary); }
 .cdx-cur-ia-chat { flex: 1; min-height: 0; overflow-y: auto; padding: .8rem .9rem; display: flex; flex-direction: column; gap: .5rem; }
 .cdx-cur-msg { max-width: 90%; padding: .5rem .65rem; border-radius: 12px; font-size: .82rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
 .cdx-cur-msg.ai { background: var(--background); border: 1px solid var(--border); color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 3px; }
