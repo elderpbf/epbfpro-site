@@ -19,6 +19,23 @@ test('index.html: ported to plp- classes, mock classes gone', () => {
     assert.ok(!h.includes(bad), 'should not contain ' + bad);
 });
 
+test('demos: phones host the real Codex components (mock demo UI gone)', () => {
+  const h = read('index.html');
+  for (const c of ['plp-app-scale', 'plp-demo-pulse', 'plp-demo-trail', 'id="pulseApp"', 'id="trailApp"'])
+    assert.ok(h.includes(c), 'index missing ' + c);
+  for (const bad of ['plp-pulso', 'plp-shots', 'id="trPhone"', 'plp-askbar', 'id="thBar"'])
+    assert.ok(!h.includes(bad), 'index still has mock demo ' + bad);
+
+  const css = read('css/landing.css');
+  for (const c of ['.cdx-qr-option-btn', '.cdx-qr-bar', '.cp-qa-bar', '.cdx-tr-card', '.cdx-tr-novo-banner', '.cdx-tr-item-action', '.plp-th'])
+    assert.ok(css.includes(c), 'css missing copied component ' + c);
+
+  const d = read('js/demos.js');
+  for (const c of ['cdx-qr-option-btn', 'cdx-qr-bar', 'is-correct', 'cp-qa-bar', 'cdx-tr-novo-banner', 'cdx-tr-item-action', 'is-done'])
+    assert.ok(d.includes(c), 'demos.js does not build ' + c);
+  assert.ok(d.includes('M14 14.76V3.5'), 'demos.js missing the real thermometer glyph');
+});
+
 test('index.html: structure only (module boot + consent + JSON-LD, no inline logic)', () => {
   const h = read('index.html');
   assert.ok(h.includes('<script type="module" src="js/main.js'), 'module boot missing');

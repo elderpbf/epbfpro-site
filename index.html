@@ -60,7 +60,7 @@
   <!-- Preload profile image for faster LCP -->
   <link rel="preload" as="image" href="images/profile.jpg" fetchpriority="high">
 
-  <link rel="stylesheet" href="css/landing.css?v=1">
+  <link rel="stylesheet" href="css/landing.css?v=2">
 
   <!-- Structured data (Schema.org JSON-LD) -->
   <script type="application/ld+json">
@@ -214,13 +214,7 @@
         <div class="plp-phone">
           <div class="plp-screen">
             <div class="plp-statusbar"><span>9:41</span><div class="plp-r"><span>PensoIA</span><span class="plp-b"></span></div></div>
-            <div class="plp-pulso">
-              <div class="plp-hd"><span class="plp-live"><span class="plp-dot"></span><span data-i18n="demo.live">AO VIVO</span></span><span data-i18n="demo.tag">Pulso da Turma</span></div>
-              <div class="plp-pq" id="pq"></div>
-              <div class="plp-opts" id="opts"></div>
-              <div class="plp-thermo"><div class="plp-tl"><span data-i18n="demo.comp">Compreensão da turma</span><b id="thN">0%</b></div><div class="plp-bar"><i id="thBar"></i></div></div>
-              <div class="plp-askbar"><span class="plp-tx" id="askTx"></span><span class="plp-snd" data-i18n="demo.send">enviar</span></div>
-            </div>
+            <div class="plp-app"><div class="plp-app-scale"><div class="plp-demo-pulse" id="pulseApp"></div></div></div>
           </div>
         </div>
       </div>
@@ -235,8 +229,11 @@
         <p class="plp-cap" id="trCap" style="text-align:left;margin-top:14px"></p>
       </div>
       <div class="plp-xp-media">
-        <div class="plp-phone plp-shots" id="trPhone">
-          <div class="plp-statusbar" style="position:absolute;left:0;right:0;top:0;z-index:2"><span>9:41</span><div class="plp-r"><span>PensoIA</span><span class="plp-b"></span></div></div>
+        <div class="plp-phone">
+          <div class="plp-screen">
+            <div class="plp-statusbar"><span>9:41</span><div class="plp-r"><span>PensoIA</span><span class="plp-b"></span></div></div>
+            <div class="plp-app"><div class="plp-app-scale"><div class="plp-demo-trail" id="trailApp"></div></div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -298,7 +295,7 @@
   </div>
 </footer>
 
-<script type="module" src="js/main.js?v=1"></script>
+<script type="module" src="js/main.js?v=2"></script>
 <script src="js/consent.js?v=1"></script>
 </body>
 </html>
