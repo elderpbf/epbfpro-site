@@ -3,7 +3,7 @@ export default {
   "nav.cta": "Let's talk",
   "hero.h1": "Artificial intelligence applied to your work",
   "hero.rot": ["with method.", "safely.", "responsibly."],
-  "hero.lead": "Training and consulting for courts, public bodies, law firms and other fields that want to adopt AI with method and responsibility.",
+  "hero.lead": "Training and consulting for companies, institutions and professionals who want to use AI day to day, with clarity, safety and results.",
   "ab.eye": "Instructor",
   "ab.role": "Background in Law and technology",
   "ab.p1": 'A background in Law and in technology, with about 11 years in the Judiciary (TJSE). I join legal experience to technical know-how to teach a <span class="plp-hl">safe adoption of AI, in your routine</span>.',

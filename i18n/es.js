@@ -3,7 +3,7 @@ export default {
   "nav.cta": "Hablemos",
   "hero.h1": "Inteligencia artificial aplicada a tu trabajo",
   "hero.rot": ["con método.", "con seguridad.", "con responsabilidad."],
-  "hero.lead": "Capacitación y consultoría para tribunales, órganos públicos, despachos jurídicos y otros sectores que quieren adoptar la IA con método y responsabilidad.",
+  "hero.lead": "Capacitación y consultoría para empresas, instituciones y profesionales que quieren usar la IA en el día a día, con claridad, seguridad y resultado.",
   "ab.eye": "Instructor",
   "ab.role": "Formación en Derecho y tecnología",
   "ab.p1": 'Formación en Derecho y en tecnología, con cerca de 11 años en el Poder Judicial (TJSE). Uno la vivencia jurídica al conocimiento técnico para enseñar una <span class="plp-hl">adopción segura de la IA, en tu rutina</span>.',

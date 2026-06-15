@@ -5,8 +5,8 @@
 const KEY = 'plp_orb', DEV = 'plp_dev';
 
 const DEFAULTS = {
-  easeFree: 0.035, easeLock: 0.11, easeFollow: 0.12, easeApproach: 0.06, easeArmed: 0.08,
-  wanderX: 0.20, wanderXCap: 200, wanderFreq: 0.00075, wanderY: 30, wanderYFreq: 0.0015,
+  easeFree: 0.02, easeLock: 0.06, easeFollow: 0.07, easeApproach: 0.04, easeArmed: 0.05,
+  wanderX: 0.20, wanderXCap: 200, wanderFreq: 0.0005, wanderY: 30, wanderYFreq: 0.001,
   wobble: 7, lockBand: 0.30, glowBand: 0.26, focus: 0.50, armAt: 0.78, finale: 'iris'
 };
 
