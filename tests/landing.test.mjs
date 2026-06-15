@@ -36,10 +36,10 @@ test('demos: phones host the real Codex components (mock demo UI gone)', () => {
     assert.ok(d.includes(c), 'demos.js does not build ' + c);
 });
 
-test('index.html: structure only (module boot + consent + JSON-LD, no inline logic)', () => {
+test('index.html: structure only (module boot + JSON-LD, no inline logic)', () => {
   const h = read('index.html');
   assert.ok(h.includes('<script type="module" src="js/main.js'), 'module boot missing');
-  assert.ok(h.includes('js/consent.js'), 'consent missing');
+  assert.ok(!h.includes('<script src="js/consent.js'), 'consent banner should not be loaded (no tracking cookies)');
   assert.ok(h.includes('css/landing.css'), 'landing css link missing');
   assert.ok(!h.includes('const I18N'), 'inline i18n leaked into HTML');
   assert.ok(!h.includes('function('), 'inline JS logic leaked into HTML');
