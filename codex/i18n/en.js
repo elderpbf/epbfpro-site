@@ -1189,16 +1189,24 @@ export default {
   'certificates.filter_all_clients':  'All clients',
   'certificates.filter_all_turmas':   'All cohorts',
   'certificates.filter_all_statuses': 'All statuses',
+  'certificates.filter_date_from':    'From',
+  'certificates.filter_date_to':      'To',
   // Emitidos — actions
   'certificates.action_preview':      'View',
   'certificates.action_copy_url':     'Copy URL',
   'certificates.action_mark_sent':    'Mark sent',
   'certificates.action_revoke':       'Revoke',
+  'certificates.action_delete':       'Delete',
   'certificates.action_download_pdf': 'PDF',
   // Emitidos — revoke
   'certificates.revoke_title':        'Revoke certificate',
   'certificates.revoke_msg':          'Revoke certificate {code}? This invalidates the validation URL.',
   'certificates.revoked_ok':          'Certificate revoked.',
+  // Emitidos — delete (only while "issued", not yet signed/sent)
+  'certificates.delete_title':        'Delete certificate',
+  'certificates.delete_msg':          'Permanently delete certificate {code}? Only possible while it has not been signed or sent. This cannot be undone.',
+  'certificates.deleted_ok':          'Certificate deleted.',
+  'certificates.delete_only_issued':  'A certificate can only be deleted before it is signed/sent. Use Revoke instead.',
   'certificates.marked_sent_ok':      'Marked as sent.',
   'certificates.marked_signed_ok':    'Certificate signed.',
   // Issuance — KPIs (status filters) + bulk actions
@@ -1241,6 +1249,7 @@ export default {
   'certificates.issue_issuer_default':'EPBF Soluções em Tecnologia Ltda',
   'certificates.issue_issuer_ph':     'Name of issuing organization',
   'certificates.issue_submit':        'Issue',
+  'certificates.issue_submitting':    'Issuing…',
   'certificates.issue_result_title':  'Certificates issued:',
   'certificates.issued_ok':           '{n} certificate(s) issued.',
 

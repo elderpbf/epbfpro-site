@@ -1188,16 +1188,24 @@ export default {
   'certificates.filter_all_clients':  'Todos os clientes',
   'certificates.filter_all_turmas':   'Todas as turmas',
   'certificates.filter_all_statuses': 'Todos os status',
+  'certificates.filter_date_from':    'De',
+  'certificates.filter_date_to':      'Até',
   // Emitidos — actions
   'certificates.action_preview':      'Ver',
   'certificates.action_copy_url':     'Copiar URL',
   'certificates.action_mark_sent':    'Marcar enviado',
   'certificates.action_revoke':       'Revogar',
+  'certificates.action_delete':       'Excluir',
   'certificates.action_download_pdf': 'PDF',
   // Emitidos — revoke
   'certificates.revoke_title':        'Revogar certificado',
   'certificates.revoke_msg':          'Revogar o certificado {code}? Esta ação invalida a URL de validação.',
   'certificates.revoked_ok':          'Certificado revogado.',
+  // Emitidos — delete (só enquanto "emitido", ainda não assinado/enviado)
+  'certificates.delete_title':        'Excluir certificado',
+  'certificates.delete_msg':          'Excluir definitivamente o certificado {code}? Só é possível enquanto ainda não foi assinado ou enviado. Esta ação não pode ser desfeita.',
+  'certificates.deleted_ok':          'Certificado excluído.',
+  'certificates.delete_only_issued':  'Só dá para excluir um certificado ainda não assinado/enviado. Use Revogar.',
   'certificates.marked_sent_ok':      'Marcado como enviado.',
   'certificates.marked_signed_ok':    'Certificado assinado.',
   // Emissão — KPIs (filtros de status) + ações em massa
@@ -1240,6 +1248,7 @@ export default {
   'certificates.issue_issuer_default':'EPBF Soluções em Tecnologia Ltda',
   'certificates.issue_issuer_ph':     'Nome da organização emissora',
   'certificates.issue_submit':        'Emitir',
+  'certificates.issue_submitting':    'Emitindo…',
   'certificates.issue_result_title':  'Certificados emitidos:',
   'certificates.issued_ok':           '{n} certificado(s) emitido(s).',
 

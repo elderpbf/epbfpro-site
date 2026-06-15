@@ -287,6 +287,30 @@ describe('filterCerts', () => {
     assert.equal(res.length, 1);
     assert.equal(res[0].code, 'C3');
   });
+
+  // Date-range filter over issued_on (ISO yyyy-mm-dd, lexicographic == date order).
+  const dated = [
+    { code: 'E1', holder_name: 'Eva',  status: 'issued', issued_on: '2026-01-10' },
+    { code: 'E2', holder_name: 'Fred', status: 'issued', issued_on: '2026-03-15' },
+    { code: 'E3', holder_name: 'Gabi', status: 'issued', issued_on: '2026-06-01' },
+    { code: 'E4', holder_name: 'Hugo', status: 'issued', issued_on: null },
+  ];
+  test('date_from keeps certs issued on/after the bound', () => {
+    const res = certs.filterCerts(dated, { date_from: '2026-03-15' });
+    assert.deepEqual(res.map((c) => c.code), ['E2', 'E3']);
+  });
+  test('date_to keeps certs issued on/before the bound', () => {
+    const res = certs.filterCerts(dated, { date_to: '2026-03-15' });
+    assert.deepEqual(res.map((c) => c.code), ['E1', 'E2']);
+  });
+  test('date_from + date_to is an inclusive range', () => {
+    const res = certs.filterCerts(dated, { date_from: '2026-01-11', date_to: '2026-06-01' });
+    assert.deepEqual(res.map((c) => c.code), ['E2', 'E3']);
+  });
+  test('a cert with no issued_on is excluded while a date bound is active, kept without', () => {
+    assert.ok(!certs.filterCerts(dated, { date_from: '2026-01-01' }).some((c) => c.code === 'E4'));
+    assert.ok(certs.filterCerts(dated, {}).some((c) => c.code === 'E4'));
+  });
 });
 
 // ── 7. buildTokenValues ───────────────────────────────────────────────────────

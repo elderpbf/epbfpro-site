@@ -244,6 +244,29 @@
   color: var(--text-primary);
 }
 
+/* Date-range filter: a small inline label + a native date input matching the
+ * select chrome. */
+.cdx-certs-datelabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.cdx-certs-date {
+  padding: 0.36rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  outline: none;
+}
+.cdx-certs-date:focus { border-color: var(--primary); }
+
 /* Disabled cohort filter (locked until a client is chosen) reads as inert. */
 .cdx-certs-select:disabled {
   opacity: 0.5;
@@ -620,24 +643,20 @@
 .cdx-emissao-cbcol input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
 .cdx-emissao-table tr.is-selected td { background: var(--cdx-card-sel-bg, rgba(20,184,166,0.10)); }
 
+/* Inline bulk-action bar: sits in the flow between the toolbar and the table,
+ * revealed only when rows are selected. Themed surface (no fixed floating bar,
+ * no hardcoded colors), so it reads correctly in light + dark. */
 .cdx-emissao-bulk {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 1.2rem;
   display: none;
   align-items: center;
   gap: 0.5rem;
-  background: #061a51;
-  color: #fff;
-  border-radius: 14px;
-  padding: 0.55rem 0.85rem;
-  box-shadow: 0 14px 40px rgba(6,26,81,0.4);
-  z-index: 9400;
+  flex-wrap: wrap;
+  background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border);
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
 }
 .cdx-emissao-bulk.is-on { display: flex; }
-.cdx-emissao-bulk b { font-size: 0.85rem; white-space: nowrap; padding-right: 0.2rem; }
-.cdx-emissao-bulk .cdx-btn { background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.25); color: #fff; }
-.cdx-emissao-bulk .cdx-btn:hover { background: rgba(255,255,255,0.24); }
+.cdx-emissao-bulk b { font-size: 0.85rem; white-space: nowrap; padding-right: 0.2rem; color: var(--text-primary); }
 
 @media (max-width: 880px) { .cdx-emissao-kpis { grid-template-columns: repeat(2, 1fr); } }
