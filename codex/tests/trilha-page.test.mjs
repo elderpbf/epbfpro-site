@@ -52,9 +52,11 @@ test('fmtDate: d/m, leading zeros stripped, no year', () => {
 const TODAY = '2026-06-15';
 test('aulaStatus: happened -> done', () => assert.equal(aulaStatus({ happened_on: '2026-06-10' }, TODAY), 'done'));
 test('aulaStatus: future scheduled -> upcoming', () => assert.equal(aulaStatus({ scheduled_for: '2026-06-20' }, TODAY), 'upcoming'));
-test('aulaStatus: past/today scheduled -> done', () => {
+test('aulaStatus: past scheduled -> done', () => {
   assert.equal(aulaStatus({ scheduled_for: '2026-06-10' }, TODAY), 'done');
-  assert.equal(aulaStatus({ scheduled_for: TODAY }, TODAY), 'done');
+});
+test('aulaStatus: today scheduled -> upcoming (not done until the day after)', () => {
+  assert.equal(aulaStatus({ scheduled_for: TODAY }, TODAY), 'upcoming');
 });
 test('aulaStatus: nothing -> und', () => assert.equal(aulaStatus({}, TODAY), 'und'));
 

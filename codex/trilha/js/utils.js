@@ -3,6 +3,7 @@
 // takes an explicit `today` so it is deterministic under test; the leaf DOM
 // helpers (copy, showError) operate on a passed root, never a global lookup.
 import { state, ICONS } from './state.js';
+import { aulaStatus as canonicalAulaStatus } from '../../js/aula-status.js';
 
 export function esc(s) {
   if (s == null) return '';
@@ -20,22 +21,25 @@ export function fmtDate(iso) {
 
 function todayIso() { return new Date().toISOString().slice(0, 10); }
 
+// Trail date label, mapped from the canonical aula status (js/aula-status.js).
 export function aulaDateText(aula, today = todayIso()) {
+  const s = canonicalAulaStatus(aula, today);
   if (aula.happened_on) return 'ocorreu em ' + fmtDate(aula.happened_on);
-  if (aula.rescheduled_from && aula.scheduled_for && aula.scheduled_for > today) {
+  if (s === 'rescheduled') {
     return 'remarcada (era ' + fmtDate(aula.rescheduled_from) + ', agora ' + fmtDate(aula.scheduled_for) + ')';
   }
-  if (aula.scheduled_for) {
-    if (aula.scheduled_for > today) return 'agendada para ' + fmtDate(aula.scheduled_for);
-    return fmtDate(aula.scheduled_for);
-  }
+  if (s === 'scheduled') return 'agendada para ' + fmtDate(aula.scheduled_for);
+  if (aula.scheduled_for) return fmtDate(aula.scheduled_for); // past, not yet marked happened
   return 'a definir';
 }
 
+// Trail dot/zone status, mapped from the canonical aula status: 'happened' -> done,
+// anything still ahead -> upcoming, nothing -> und. The RULE lives in the shared
+// module, so the Trail, the admin and Releases agree.
 export function aulaStatus(aula, today = todayIso()) {
-  if (aula.happened_on) return 'done';
-  if (aula.scheduled_for && aula.scheduled_for > today) return 'upcoming';
-  if (aula.scheduled_for && aula.scheduled_for <= today) return 'done';
+  const s = canonicalAulaStatus(aula, today);
+  if (s === 'happened') return 'done';
+  if (s === 'scheduled' || s === 'rescheduled') return 'upcoming';
   return 'und';
 }
 

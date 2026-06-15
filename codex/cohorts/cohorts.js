@@ -7,6 +7,7 @@
 import { cohorts as api, cp as cpApi, courses as coursesApi, certificates as certApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
+import { aulaStatus } from '../js/aula-status.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
 import * as cursos from './courses.js';
@@ -80,21 +81,20 @@ function _fmtDate(iso) {
   return p[2] + '/' + p[1];
 }
 
-// An aula's date status. It counts as OCCURRED only when an explicit "ocorreu em"
-// date (happened_on) is filled, OR once its scheduled day has fully PASSED (the day
-// AFTER — scheduled_for strictly before today). On the scheduled day itself it still
-// reads as agendada/remarcada, so an aula never self-reports as done before it has
-// actually happened. `today` is injectable for tests; defaults to the real date.
+// Maps the canonical aula status (js/aula-status.js) to this view's date badge
+// { text, cls }. The RULE lives in the shared module; here we only pick the label
+// + colour per status. `today` is injectable for tests; the shared rule defaults it.
 export function _aulaDateStatus(a, today) {
-  today = today || new Date().toISOString().slice(0, 10);
-  if (a.happened_on) return { text: t('cohorts.date_happened') + ' ' + _fmtDate(a.happened_on), cls: 'cdx-rel-date-ocorreu' };
-  if (a.scheduled_for) {
-    if (a.rescheduled_from && a.scheduled_for >= today)
-      return { text: t('cohorts.date_rescheduled') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-remarcada' };
-    if (a.scheduled_for >= today)
-      return { text: t('cohorts.date_scheduled') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-agendada' };
-    return { text: t('cohorts.date_happened') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-ocorreu' };
+  const status = aulaStatus(a, today);
+  if (status === 'happened') {
+    // happened_on shows its own date; a past-scheduled aula shows the scheduled one.
+    const when = (a && a.happened_on) || (a && a.scheduled_for) || '';
+    return { text: t('cohorts.date_happened') + ' ' + _fmtDate(when), cls: 'cdx-rel-date-ocorreu' };
   }
+  if (status === 'rescheduled')
+    return { text: t('cohorts.date_rescheduled') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-remarcada' };
+  if (status === 'scheduled')
+    return { text: t('cohorts.date_scheduled') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-agendada' };
   return { text: t('cohorts.date_tbd'), cls: 'cdx-rel-date-adefinir' };
 }
 
