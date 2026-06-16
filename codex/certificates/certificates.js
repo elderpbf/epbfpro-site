@@ -27,13 +27,10 @@ import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
   buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate,
 } from './cert-render.js';
+import { downloadCertsPdf } from './cert-pdf.js';
 
 // Re-export the registries so the catalog UI (and tests) read them from the face.
 export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
-
-// Stylesheet href for the standalone print window (resolved absolute so the
-// popup, which has no base URL, can fetch it).
-const CERT_CSS_HREF = new URL('cert-render.css?v=1.4', import.meta.url).href;
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 export const SUBTABS = [
@@ -298,37 +295,6 @@ export function sampleCert() {
       ],
     }),
   };
-}
-
-/**
- * Wrap hydrated certificate HTML into a standalone A4-landscape document that
- * links the certificate stylesheet, for the browser print → PDF flow. PURE.
- * @param {{cssHref:string, bodyHtml:string, title?:string}} opts
- * @returns {string}  full HTML document
- */
-export function buildPrintDocument(opts) {
-  opts = opts || {};
-  const title = opts.title || 'Certificado';
-  return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">' +
-    '<title>' + title + '</title>' +
-    '<link rel="preconnect" href="https://fonts.googleapis.com">' +
-    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">' +
-    '<link rel="stylesheet" href="' + (opts.cssHref || '') + '">' +
-    // "A4 landscape" keyword forces landscape orientation in the print dialog even
-    // when its saved default is portrait (explicit "297mm 210mm" fell back to
-    // portrait on some setups). print-color-adjust:exact keeps the themed
-    // gradients/colours from being stripped when "Background graphics" is off.
-    '<style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}' +
-    '.cdx-cert-page,.cdx-cert-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-    // Kill decorative filter/shadow layers that Chrome's print rasterizer turns
-    // into opaque backing boxes around the logo + name once backgrounds print.
-    '.cdx-cert-page *{text-shadow:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}.cdx-cert-page .bmark{filter:none!important}' +
-    // Fill the page box exactly; sheet at 100% (not a fixed 297mm) so sub-pixel mm
-    // rounding can't overflow and trigger the shrink-to-fit white bars.
-    '.cdx-cert-page{width:297mm;height:210mm;overflow:hidden;page-break-after:always}.cdx-cert-page:last-child{page-break-after:auto}' +
-    '.cdx-cert-page .cdxc-sheet{width:100%;height:100%;box-shadow:none}</style>' +
-    '</head><body>' + (opts.bodyHtml || '') + '</body></html>';
 }
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
@@ -1047,7 +1013,7 @@ function _openCertFullscreen(cert, side) {
   overlay.setAttribute('aria-modal', 'true');
   overlay.innerHTML =
     '<div class="cdx-cert-fs-actions">' +
-      '<button type="button" class="cdx-cert-fs-btn" data-action="print">' + esc(t('certificates.print')) + '</button>' +
+      '<button type="button" class="cdx-cert-fs-btn" data-action="print">' + esc(t('certificates.download_pdf')) + '</button>' +
       '<button type="button" class="cdx-cert-fs-close" aria-label="' + esc(t('certificates.cancel')) + '">&times;</button>' +
     '</div>' +
     '<div class="cdx-cert-fs-body" id="cdx-cert-fs-body">' + _previewSheetsHtml(cert, origin, side) + '</div>';
@@ -1082,38 +1048,36 @@ function _openCertFullscreen(cert, side) {
 }
 
 function _printCert(cert) {
-  _printCerts([cert], 'Certificado ' + (cert.code || ''));
+  _downloadCerts([cert], 'certificado-' + (cert.code || 'pensoia'));
 }
 
-// Build ONE print document from N certs (each its own front+back pages, separated
-// by buildPrintDocument's .cdx-cert-page page-breaks) and open the print → "Save
-// as PDF" dialog once. The single-cert print is just N=1. Each cert is hydrated
-// with its OWN QR before concatenation.
-function _printCerts(certs, title) {
+// Download ONE PDF holding N certs (front + back per cert), rasterized from the
+// live render via cert-pdf.js (modern-screenshot + jsPDF). This REPLACED the old
+// window.print() popup: the interactive print dialog rasterized inconsistently
+// across browsers (shifted elements, dropped gradient, missing logo, backing
+// boxes). Rasterizing the exact on-screen sheet is pixel-faithful and needs no
+// dialog. A "gerando" notice covers the brief rasterization.
+async function _downloadCerts(certs, filename) {
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
-  const parts = [];
-  for (const cert of certs) {
-    if (!cert) continue;
-    const tmp = document.createElement('div');
-    tmp.innerHTML = renderCertHtml(cert, origin);
-    hydrate(tmp, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
-    parts.push(tmp.innerHTML);
+  const items = (certs || []).filter(Boolean).map((cert) => ({
+    html: renderCertHtml(cert, origin),
+    qrUrl: buildValidarUrl(origin, cert.code),
+  }));
+  if (!items.length) return;
+  notice.ok(t('certificates.pdf_generating'));
+  try {
+    await downloadCertsPdf(items, { filename: (filename || 'certificados') + '.pdf' });
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: pdf: ' + (e && e.message || e), 'error');
+    notice.error(t('certificates.pdf_error'));
   }
-  if (!parts.length) return;
-  const doc = buildPrintDocument({ cssHref: CERT_CSS_HREF, bodyHtml: parts.join(''), title: title || 'Certificados' });
-  const w = window.open('', '_blank');
-  if (!w) { notice.warn(t('certificates.print_blocked')); return; }
-  w.document.open();
-  w.document.write(doc);
-  w.document.close();
-  w.onload = () => { try { w.focus(); w.print(); } catch (_) {} };
 }
 
-// Bulk "Baixar PDF": print every selected cert in one document (one Save-as-PDF).
+// Bulk "Baixar PDF": every selected cert in one downloaded PDF.
 function _bulkPdf(codes) {
   const certs = codes.map((code) => _certs.find((c) => c.code === code)).filter(Boolean);
   if (!certs.length) return;
-  _printCerts(certs, t('certificates.bulk_pdf_title').replace('{n}', String(certs.length)));
+  _downloadCerts(certs, 'certificados-' + certs.length);
 }
 
 // ── Issue flow ────────────────────────────────────────────────────────────────

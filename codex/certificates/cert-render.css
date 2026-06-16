@@ -9,6 +9,13 @@
      </div>
    so .cdxc-sheet is the A4 sheet and .f-KEY / .back ride on it. */
 
+/* Cert fonts, imported here so the cert always has them — Lora for the names,
+   Inter/JetBrains for body/mono, Comfortaa for the logo wordmark. The app shell
+   (theme.css) loads everything EXCEPT Lora, so without this the names fell back to
+   a generic serif; and the PDF rasterizer embeds whatever the document has loaded,
+   so the downloaded PDF needs these too. (@import must precede the rules below.) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Comfortaa:wght@400;700&display=swap');
+
 /* ── brand constants (scoped, not :root, to avoid colliding with Codex tokens) ── */
 .cdx-cert-page {
   --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --green:#047857;

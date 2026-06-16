@@ -127,22 +127,27 @@ describe('renderCertHtml', () => {
   });
 });
 
-// ── buildPrintDocument: a standalone A4-landscape page that links the cert CSS ──
-describe('buildPrintDocument', () => {
-  test('wraps the body, links the stylesheet, and sets an A4-landscape full-bleed page', () => {
-    const doc = certs.buildPrintDocument({ cssHref: 'certificates/cert-render.css?v=1.0', bodyHtml: '<div class="cdx-cert-page">X</div>', title: 'Certificado AB3HNQ4VXY' });
-    assert.ok(doc.startsWith('<!doctype html>'), 'is a full document');
-    assert.ok(doc.includes('certificates/cert-render.css?v=1.0'), 'links the cert stylesheet');
-    assert.ok(doc.includes('cdx-cert-page'), 'embeds the body');
-    // "A4 landscape" keyword (not numeric 297mm 210mm): it maps to the dialog's
-    // Orientation control, so it forces landscape even when the dialog default is
-    // portrait. Numeric dimensions were silently falling back to portrait.
-    assert.ok(/@page[^}]*A4 landscape/i.test(doc), 'A4-landscape @page rule');
-    assert.ok(/@page[^}]*margin:\s*0/i.test(doc), '@page margin 0 (full bleed)');
-    // Backgrounds (the themed gradients) must print even when the dialog's
-    // "Background graphics" box is off, or the cert loses all its colours.
-    assert.ok(/print-color-adjust:\s*exact/i.test(doc), 'print-color-adjust:exact keeps backgrounds');
-    assert.ok(doc.includes('Certificado AB3HNQ4VXY'), 'title in the head');
+// ── PDF download path: rasterize the live render (cert-pdf.js), not window.print ──
+// The interactive browser print dialog rendered certs inconsistently (shifted
+// elements, dropped gradient, missing logo, backing boxes). The download now goes
+// through cert-pdf.js (modern-screenshot + jsPDF), so the PDF is pixel-faithful to
+// the on-screen sheet. Source-contract test (the module render is browser-only).
+import { readFileSync as _readFile } from 'node:fs';
+describe('PDF download path', () => {
+  const src = _readFile(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
+  const pdf = _readFile(new URL('../certificates/cert-pdf.js', import.meta.url), 'utf8');
+
+  test('certificates.js downloads via the rasterizer, not window.print', () => {
+    assert.ok(src.includes("from './cert-pdf.js'"), 'imports the cert-pdf module');
+    assert.ok(src.includes('downloadCertsPdf'), 'calls downloadCertsPdf');
+    assert.ok(!/window\.open\(/.test(src), 'no window.open print popup');
+    assert.ok(!src.includes('buildPrintDocument'), 'old print-document builder is gone');
+  });
+  test('cert-pdf.js uses modern-screenshot + jsPDF, vendored locally', () => {
+    assert.ok(pdf.includes('downloadCertsPdf'), 'exports downloadCertsPdf');
+    assert.ok(pdf.includes('domToCanvas'), 'uses modern-screenshot domToCanvas');
+    assert.ok(pdf.includes('jspdf.umd.min.js'), 'jsPDF vendored locally (no CDN)');
+    assert.ok(pdf.includes('modern-screenshot.umd.js'), 'modern-screenshot vendored locally (no CDN)');
   });
 });
 
