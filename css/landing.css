@@ -172,7 +172,7 @@ h1{font-family:'Lora',serif;font-weight:600;font-size:clamp(2.5rem,6.4vw,4.6rem)
    ========================================================= */
 .plp-app{position:relative;flex:1;overflow:hidden;background:var(--background)}
 .plp-app-scale{position:absolute;top:0;left:0;width:136.5%;height:136.5%;transform:scale(.733);transform-origin:top left;overflow:hidden}
-.plp-app-frame{width:100%;height:100%;border:0;display:block;background:var(--background)}
+.plp-app-frame{width:100%;height:100%;border:0;display:block;background:var(--background);pointer-events:none}
 
 /* Codex design tokens, scoped to the phones (copied from theme.css). */
 .plp-demo-pulse,.plp-demo-trail{

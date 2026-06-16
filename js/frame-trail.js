@@ -3,10 +3,12 @@
 // place on the landing — no separate page). It boots the REAL Codex trilha student
 // page (page.js + aulas.js + flat.js + nexo.js + pensoia-header, rendering through
 // the real cards.css / trilha.css / tarefa-modal.css) on canned data, via the same
-// window.callWorker transport seam the trilha tests use. Nothing is rebuilt or
-// copied, so the demo tracks the real Trail automatically.
+// window.callWorker transport seam the trilha tests use. Nothing is rebuilt.
 //
-// Three real beats: nova aula -> abrir material -> enviar tarefa.
+// It is an INERT demo: body overflow is locked (no scrollbars) and movement is a
+// transform "camera" (panTo) — never scrollIntoView/scrollTo, which would bubble out
+// and hijack the landing's scroll. Three real beats: nova aula -> abrir material ->
+// enviar tarefa.
 
 // 1) Canned Worker transport (set before the real modules call it).
 const nowSec = Math.floor(Date.now() / 1000);
@@ -43,15 +45,19 @@ window.callWorker = function (p) {
 // Fresh start each loop so the tarefa shows "Enviar resposta" again.
 try { for (const k of Object.keys(localStorage)) if (/^ct_tarefa_submitted_|^ct_student_name/.test(k)) localStorage.removeItem(k); } catch (_) { /* noop */ }
 
-// 2) Demo-only skin (scoped to this iframe). Box the long rendered body prose;
-//    keep aula/item titles, labels, dates, buttons and the typed answer real.
+// 2) Demo-only skin (scoped to this iframe). Lock scrolling (the camera pans via
+//    transform, no native scroll), box the long body prose AND the tarefa answer.
 const style = document.createElement('style');
 style.textContent =
-  'html{overflow-x:hidden}body{overflow-x:hidden}' +
+  'html,body{height:100%;margin:0;overflow:hidden!important}' +
+  '.cdx-trilha-main{will-change:transform}' +
   '.ctr-prompt-body,.ctr-prompt-verbatim{color:transparent!important;position:relative;min-height:38px}' +
   '.ctr-prompt-body::after,.ctr-prompt-verbatim::after{content:"";position:absolute;left:0;right:0;top:2px;bottom:2px;border-radius:4px;opacity:.16;' +
   'background:repeating-linear-gradient(var(--text-secondary,#115e59) 0 9px, transparent 9px 17px)}' +
-  '.ctr-copy-btn{display:none}';
+  '.ctr-copy-btn{display:none}' +
+  // the tarefa answer: bars, not a real sentence (text typed invisibly to pass validation)
+  '.tr-tarefa-field textarea,.ct-tarefa-answer-text{color:transparent!important;caret-color:transparent!important;' +
+  'background-image:repeating-linear-gradient(rgba(120,140,150,.30) 0 11px, transparent 11px 24px)!important;background-clip:padding-box!important}';
 document.head.appendChild(style);
 
 // 3) Theme follows the parent landing.
@@ -82,32 +88,46 @@ async function waitFor(sel, ms = 6000) {
   return null;
 }
 
-async function autoplay() {
-  await waitFor('#cdx-tr-aulas-timeline .cdx-tr-tl-row');
-  await sleep(1300);
+// Transform "camera": shift the page so `el` sits `margin` px from the top. Uses live
+// rects, so it composes across beats. NEVER scrollIntoView/scrollTo (those bubble out
+// to the landing and hijack its scroll).
+let panY = 0;
+function camera() { return $('.cdx-trilha-main'); }
+function panTo(el, margin) {
+  const root = camera(); if (!root || !el) return;
+  const m = (margin == null ? 16 : margin);
+  panY = Math.max(0, panY + (el.getBoundingClientRect().top - m));
+  root.style.transition = 'transform .6s ease';
+  root.style.transform = 'translateY(' + (-panY) + 'px)';
+}
 
-  // BEAT 1 — open Aula 03 (the one carrying the "Novo material" banner).
+async function autoplay() {
+  const row3 = await waitFor('.cdx-tr-tl-row[data-aula="3"]');
+  await sleep(1200);
+
+  // BEAT 1 — bring Aula 03 (the one with "Novo material") into frame, then open it.
+  if (row3) { panTo(row3, 70); await sleep(900); }
   const hdr = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-card-header');
-  if (hdr) { hdr.scrollIntoView({ block: 'start' }); hdr.click(); }
+  if (hdr) hdr.click();
   await sleep(1700);
 
-  // BEAT 2 — open the material content.
+  // BEAT 2 — open the material content and frame it.
   const matSub = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)');
-  if (matSub) { matSub.scrollIntoView({ block: 'center' }); matSub.click(); }
-  await sleep(2800);
+  if (matSub) { matSub.click(); await sleep(450); panTo(matSub, 70); }
+  await sleep(2600);
 
-  // BEAT 3 — open the tarefa, type an answer, send it.
+  // BEAT 3 — open the tarefa, type (invisible -> bars), send.
   const taskSub = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub--tarefa');
-  if (taskSub) { taskSub.scrollIntoView({ block: 'center' }); taskSub.click(); }
-  await sleep(1500);
+  if (taskSub) { panTo(taskSub, 70); await sleep(800); taskSub.click(); }
+  await sleep(1400);
   const taskBtn = taskSub && taskSub.querySelector('.cdx-tr-item-action');
-  if (taskBtn) taskBtn.click();                 // open the real tarefa-submit modal
+  if (taskBtn) taskBtn.click();                 // opens the real tarefa-submit modal (fixed overlay)
   const ta = await waitFor('.tr-tarefa-field textarea, .tr-tarefa-field input', 2500);
   const nameI = $('.tr-tarefa-name');
   if (nameI) nameI.value = 'Você';
-  const ANS = 'Resumir um documento e revisar os pontos antes de enviar.';
   if (ta) {
-    for (let i = 1; i <= ANS.length; i++) { ta.value = ANS.slice(0, i); ta.dispatchEvent(new Event('input', { bubbles: true })); await sleep(22); }
+    const filler = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; // invisible; rendered as bars
+    for (let i = 5; i <= filler.length; i += 5) { ta.value = filler.slice(0, i); ta.dispatchEvent(new Event('input', { bubbles: true })); await sleep(70); }
   }
   await sleep(700);
   const submit = $('.tr-tarefa-submit');
