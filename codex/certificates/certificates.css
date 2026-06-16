@@ -368,6 +368,10 @@
 .cdx-cert-issue-previewrow { display: flex; align-items: center; gap: 0.6rem; margin: -0.2rem 0 0.75rem; flex-wrap: wrap; }
 .cdx-cert-issue-previewrow .cdx-field-hint { margin: 0; }
 
+/* Empty-field warning list (pre-issue guard). */
+.cdx-cert-empty-list { margin: 0 0 1.2rem; padding-left: 1.2rem; color: var(--text-secondary); font-size: 0.86rem; }
+.cdx-cert-empty-list li { margin-bottom: 0.15rem; }
+
 .cdx-cert-issue-result {
   background: var(--surface-hover, rgba(99,102,241,0.07));
   border: 1px solid var(--border);

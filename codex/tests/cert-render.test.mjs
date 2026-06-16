@@ -76,6 +76,22 @@ test('renderFront falls back to the first template for an unknown key', () => {
   assert.equal(renderFront('nope', d), renderFront('vetor', d));
 });
 
+test('no empty "()" when the format field is blank', () => {
+  const noFormat = { ...d, format: '' };
+  for (const k of CERT_TEMPLATE_KEYS) {
+    assert.ok(!renderFront(k, noFormat).includes('()'), k + ': no empty parens');
+  }
+  // …and when format IS present, aurora/holo wrap it in parens.
+  const withFormat = { ...d, format: '3 encontros' };
+  assert.ok(renderFront('aurora', withFormat).includes('(3 encontros)'), 'aurora shows format');
+});
+
+test('no self-referential "autêntico" badge on any front', () => {
+  for (const k of CERT_TEMPLATE_KEYS) {
+    assert.ok(!/autêntico/i.test(renderFront(k, d)), k + ': no autêntico badge');
+  }
+});
+
 test('back renders the course, every module title, and the code', () => {
   const html = renderBack(d);
   assert.ok(html.includes('IA do Zero ao Entendimento Prático'));

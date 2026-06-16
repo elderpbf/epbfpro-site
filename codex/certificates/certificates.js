@@ -1305,6 +1305,10 @@ function _openIssueFlow() {
     if (!courseTitle) { notice.warn(t('certificates.issue_course_required')); return; }
     if (_issueSelectedIds.size === 0) { notice.warn(t('certificates.issue_no_selection')); return; }
 
+    // Warn before issuing with blank fields — they render empty on the certificate
+    // (e.g. an empty Encontros leaves a blank cell on the back). User can proceed.
+    if (!(await _confirmEmptyFields(bd))) return;
+
     const meta = _gatherVersoMeta(bd, clientSel);
     // Freeze the course period (start/end dates) from the turma into the snapshot.
     if (_issueTurma) {
@@ -1385,6 +1389,40 @@ function _autofillIssueFromTurma(bd, turma) {
     const certMods = ementaToCertModules(turma.ementa_json);
     if (certMods.length) modsEl.value = certMods.map((m) => (m.d ? m.t + ' :: ' + m.d : m.t)).join('\n');
   }
+}
+
+// Pre-issue guard: list the cert-visible fields left blank and ask the user to
+// confirm (blank fields render empty on the certificate). Resolves true to proceed,
+// false to go back. No empty fields → resolves true immediately.
+function _confirmEmptyFields(bd) {
+  const fields = [
+    ['certificates.issue_hours',      '#cdx-issue-hours'],
+    ['certificates.issue_place',      '#cdx-issue-place'],
+    ['certificates.issue_format',     '#cdx-issue-format'],
+    ['certificates.issue_meetings',   '#cdx-issue-meetings'],
+    ['certificates.issue_instructor', '#cdx-issue-instructor'],
+    ['certificates.issue_modules',    '#cdx-issue-modules'],
+  ];
+  const empty = fields.filter(([, sel]) => {
+    const el = bd.querySelector(sel);
+    return !el || !String(el.value || '').trim();
+  }).map(([k]) => t(k));
+  if (!empty.length) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const html =
+      '<div class="cdx-modal" style="max-width:440px">' +
+        '<div class="cdx-modal-title">' + esc(t('certificates.issue_empty_title')) + '</div>' +
+        '<p style="margin:0 0 .6rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(t('certificates.issue_empty_msg')) + '</p>' +
+        '<ul class="cdx-cert-empty-list">' + empty.map((n) => '<li>' + esc(n) + '</li>').join('') + '</ul>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" id="cdx-empty-cancel">' + esc(t('certificates.issue_empty_cancel')) + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" id="cdx-empty-go">' + esc(t('certificates.issue_empty_go')) + '</button>' +
+        '</div>' +
+      '</div>';
+    const bd2 = openModal(html);
+    bd2.querySelector('#cdx-empty-cancel').addEventListener('click', () => { closeModal(bd2); resolve(false); });
+    bd2.querySelector('#cdx-empty-go').addEventListener('click', () => { closeModal(bd2); resolve(true); });
+  });
 }
 
 // Collect the verso (back) snapshot from the issue modal. Only non-empty values
