@@ -19,21 +19,30 @@ test('index.html: ported to plp- classes, mock classes gone', () => {
     assert.ok(!h.includes(bad), 'should not contain ' + bad);
 });
 
-test('demos: phones host the real Codex components (mock demo UI gone)', () => {
+test('demos: pulso embeds the real Codex student app; trail built from real components', () => {
   const h = read('index.html');
-  for (const c of ['plp-app-scale', 'plp-demo-pulse', 'plp-demo-trail', 'id="pulseApp"', 'id="trailApp"'])
+  for (const c of ['plp-app-scale', 'plp-app-frame', '/codex/demo/pulso.html', 'plp-demo-trail', 'id="trailApp"'])
     assert.ok(h.includes(c), 'index missing ' + c);
-  for (const bad of ['plp-pulso', 'plp-shots', 'id="trPhone"', 'plp-askbar', 'id="thBar"'])
-    assert.ok(!h.includes(bad), 'index still has mock demo ' + bad);
+  for (const bad of ['id="pulseApp"', 'plp-pulso', 'plp-shots', 'id="trPhone"', 'plp-askbar', 'id="thBar"'])
+    assert.ok(!h.includes(bad), 'index still has stale demo ' + bad);
 
-  const css = read('css/landing.css');
-  for (const c of ['.cdx-qr-option-btn', '.cdx-qr-bar', '.cp-qa-bar', '.cdx-tr-card', '.cdx-tr-novo-banner', '.cdx-tr-item-action', '.cdx-trilha-hero', '.tr-modal'])
-    assert.ok(css.includes(c), 'css missing copied component ' + c);
-  assert.ok(!css.includes('.plp-th{'), 'on-screen thermometer should be removed');
+  // Pulso: the demo DRIVES the real student module on canned data, never rebuilds it.
+  const pj = read('codex/demo/pulso.js');
+  assert.ok(pj.includes('/codex/trilha/js/nexo-answer.js'), 'pulso demo must import the real nexo-answer');
+  assert.ok(!/cdx-qr-bar|renderBarChart|class="cdx-qr/.test(pj), 'pulso demo must not rebuild the question UI');
+  const ph = read('codex/demo/pulso.html');
+  for (const link of ['/codex/questions/questions.css', '/codex/trilha/css/nexo.css', '/codex/css/theme.css'])
+    assert.ok(ph.includes(link), 'pulso demo must link the real ' + link);
+  assert.ok(ph.includes('window.callWorker'), 'pulso demo must feed the real app via the callWorker seam');
 
+  // Trail still hosts the real components via demos.js (its own iframe port is next).
   const d = read('js/demos.js');
-  for (const c of ['cdx-qr-option-btn', 'cdx-qr-bar', 'is-correct', 'cp-qa-bar', 'cdx-trilha-hero', 'cdx-trilha-tabs', 'cdx-tr-novo-banner', 'is-expanded', 'tr-modal-backdrop', 'cdx-tr-item-action--submitted'])
-    assert.ok(d.includes(c), 'demos.js does not build ' + c);
+  for (const c of ['cdx-trilha-hero', 'cdx-trilha-tabs', 'cdx-tr-novo-banner', 'tr-modal-backdrop', 'cdx-tr-item-action--submitted'])
+    assert.ok(d.includes(c), 'demos.js trail does not build ' + c);
+  const css = read('css/landing.css');
+  for (const c of ['.cdx-tr-card', '.cdx-tr-novo-banner', '.cdx-trilha-hero', '.tr-modal'])
+    assert.ok(css.includes(c), 'css missing trail component ' + c);
+  assert.ok(!css.includes('.plp-th{'), 'on-screen thermometer should be removed');
 });
 
 test('index.html: structure only (module boot + JSON-LD, no inline logic)', () => {
