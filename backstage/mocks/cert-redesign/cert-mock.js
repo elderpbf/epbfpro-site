@@ -104,8 +104,10 @@ function monoFront(d) {
   return '<div class="cdxc-sheet f-mono">'
     + '<div class="frame"></div><span class="glyph-wm wm" data-wm="light"></span>'
     + '<div class="inner">'
+      // Code shown ONCE (in the validation block below); the top ref carries the
+      // place, not a second code.
       + '<div class="m-top"><span class="bmark" data-logo="light"></span>'
-        + '<div class="ref"><span class="sc">Certificado n.º</span><div class="no">' + d.code + '</div></div></div>'
+        + '<div class="ref"><span class="sc">Local</span><div class="no">' + d.place + '</div></div></div>'
       + '<div class="m-body">'
         + '<div class="m-eyebrow">Certificado de Participação</div>'
         + '<div class="m-orn"><span>certificamos, para os devidos fins, que</span></div>'

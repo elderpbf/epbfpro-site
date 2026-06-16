@@ -27,10 +27,15 @@ body { margin: 0; background: #0e1622; font-family: 'Inter', sans-serif; color: 
 .cdx-cert-page .f-vetor .vt-mid .stmt,
 .cdx-cert-page .f-console .cs-mid .stmt { font-size: 15.5px; line-height: 1.75; }
 
-/* No serif anywhere: the recipient name AND the back course title go sans (Inter). */
+/* No serif anywhere: names, the back course title, and all Monograma body text go
+   sans (Inter). The Monograma layout stays; only the classic serif goes away. */
 .cdx-cert-page .name, .cdx-cert-page .m-name { font-family: var(--inter); font-weight: 600; letter-spacing: -.015em; text-wrap: balance; }
 .cdx-cert-page .back .bhead .ht .title { font-family: var(--inter); font-weight: 600; letter-spacing: -.01em; }
-.cm-name-bold .cdx-cert-page .name { font-weight: 800; font-size: 66px; letter-spacing: -.03em; }
+.cdx-cert-page .f-mono .m-stmt,
+.cdx-cert-page .f-mono .m-orn span,
+.cdx-cert-page .f-mono .ref .no { font-family: var(--inter); font-style: normal; }
+.cdx-cert-page .f-mono .m-orn span { letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+.cdx-cert-page .f-mono .ref .no { font-weight: 600; font-size: 13px; }
 
 /* Keep ALL the front text off the right-hand colour field: confine the text column
    to the paper side so the statement never crosses into the gradient slab. */

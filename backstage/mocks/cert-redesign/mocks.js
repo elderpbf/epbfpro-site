@@ -8,12 +8,10 @@ window.REVIEW_MANIFEST = {
   storageKey: 'mockrev_certredesign_ratings_v1',
   notesKey:   'mockrev_certredesign_notes_v1',
   rows: [
-    { label: 'Vetor (favorito) · nome sans, sem serifa', items: [
-      { id: 'a1', file: 'a1.html', label: 'Vetor · nome leve' },
-      { id: 'a2', file: 'a2.html', label: 'Vetor · nome forte' }
-    ]},
-    { label: 'Alternativa', items: [
-      { id: 'a3', file: 'a3.html', label: 'Console · grade' }
+    { label: 'Modelos claros (sem serifa, mesma frase + validação)', items: [
+      { id: 'a1', file: 'a1.html', label: 'Vetor (padrão)' },
+      { id: 'a2', file: 'a2.html', label: 'Console' },
+      { id: 'a3', file: 'a3.html', label: 'Monograma' }
     ]}
   ]
 };
