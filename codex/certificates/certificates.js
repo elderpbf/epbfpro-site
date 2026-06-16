@@ -25,7 +25,7 @@ import { ementaToCertModules } from '../js/ementa.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
-  buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate,
+  buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames,
 } from './cert-render.js';
 import { downloadCertsPdf } from './cert-pdf.js';
 
@@ -509,7 +509,7 @@ function _renderTplPreview() {
     '</div>';
 
   const body = _q('#cdx-certs-tpl-preview-body');
-  if (body) hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+  if (body) { hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) }); autofitNames(body); }
   _scaleTplPreview();
   // Refit once the pane has its final laid-out size (first mount can run before layout).
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(_scaleTplPreview);
@@ -1021,6 +1021,7 @@ function _openCertFullscreen(cert, side) {
 
   const body = overlay.querySelector('#cdx-cert-fs-body');
   hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+  autofitNames(body);
 
   const fit = () => _fitSheets(body);
   fit();

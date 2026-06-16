@@ -34,18 +34,22 @@ const meta = Object.assign(defaultMeta(), {
 });
 const d = buildCertData(cert, meta, 'https://pensoia.com');
 
-test('exposes exactly 7 templates and 3 themes', () => {
-  assert.equal(CERT_TEMPLATE_KEYS.length, 7);
-  assert.deepEqual(CERT_TEMPLATE_KEYS, ['vetor', 'console', 'mono', 'aurora', 'plate', 'holo', 'eclipse']);
+test('exposes exactly the 3 surviving light templates and 3 themes', () => {
+  assert.equal(CERT_TEMPLATE_KEYS.length, 3);
+  assert.deepEqual(CERT_TEMPLATE_KEYS, ['vetor', 'console', 'mono']);
   assert.equal(CERT_THEME_KEYS.length, 3);
   assert.deepEqual(CERT_THEME_KEYS, ['navy', 'teal', 'duo']);
   assert.ok(CERT_TEMPLATES.every((t) => t.key && t.label));
   assert.ok(CERT_THEMES.every((t) => t.key && t.label));
 });
 
+test('the 4 dark models are retired', () => {
+  for (const k of ['aurora', 'plate', 'holo', 'eclipse']) assert.ok(!isTemplate(k), k + ' retired');
+});
+
 test('isTemplate / isTheme guard the known keys', () => {
   assert.ok(isTemplate('vetor'));
-  assert.ok(isTemplate('eclipse'));
+  assert.ok(isTemplate('mono'));
   assert.ok(!isTemplate('nope'));
   assert.ok(isTheme('duo'));
   assert.ok(!isTheme('pink'));
@@ -76,19 +80,29 @@ test('renderFront falls back to the first template for an unknown key', () => {
   assert.equal(renderFront('nope', d), renderFront('vetor', d));
 });
 
-test('no empty "()" when the format field is blank', () => {
-  const noFormat = { ...d, format: '' };
+test('every front uses the institutional EJUSE sentence, no stray "()"', () => {
   for (const k of CERT_TEMPLATE_KEYS) {
-    assert.ok(!renderFront(k, noFormat).includes('()'), k + ': no empty parens');
+    const html = renderFront(k, d);
+    assert.ok(html.includes('participou, com frequência e aproveitamento'), k + ': EJUSE phrasing');
+    assert.ok(html.includes('Certificamos, para os devidos fins, que'), k + ': institutional lead');
+    assert.ok(!html.includes('()'), k + ': no empty parens');
   }
-  // …and when format IS present, aurora/holo wrap it in parens.
-  const withFormat = { ...d, format: '3 encontros' };
-  assert.ok(renderFront('aurora', withFormat).includes('(3 encontros)'), 'aurora shows format');
 });
 
-test('no self-referential "autêntico" badge on any front', () => {
+test('every front shows the code ONCE, in the unified validation block', () => {
   for (const k of CERT_TEMPLATE_KEYS) {
-    assert.ok(!/autêntico/i.test(renderFront(k, d)), k + ': no autêntico badge');
+    const html = renderFront(k, d);
+    assert.ok(html.includes('cert-valblock'), k + ': unified validation block');
+    assert.ok(html.includes('Autenticidade verificável'), k + ': validation label');
+    assert.equal(html.split('AB3HNQ4VXY').length - 1, 1, k + ': code exactly once on the front');
+  }
+});
+
+test('no self-referential badge ("autêntico" / "verificado") on any front', () => {
+  for (const k of CERT_TEMPLATE_KEYS) {
+    const html = renderFront(k, d);
+    assert.ok(!/autêntico/i.test(html), k + ': no autêntico');
+    assert.ok(!/verificado · pensoIA/i.test(html), k + ': no verificado badge');
   }
 });
 

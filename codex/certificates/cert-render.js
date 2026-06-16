@@ -19,14 +19,12 @@ function esc(s) {
 }
 
 // ── Registries ────────────────────────────────────────────────────────────────
+// The 3 surviving LIGHT models. The 4 dark full-bleed ones (aurora/plate/holo/
+// eclipse) were retired: they read as marketing and print badly on office lasers.
 export const CERT_TEMPLATES = [
   { key: 'vetor',   label: 'Vetor' },
   { key: 'console', label: 'Console' },
   { key: 'mono',    label: 'Monograma' },
-  { key: 'aurora',  label: 'Aurora' },
-  { key: 'plate',   label: 'Folha' },
-  { key: 'holo',    label: 'Holograma' },
-  { key: 'eclipse', label: 'Eclipse' },
 ];
 export const CERT_TEMPLATE_KEYS = CERT_TEMPLATES.map(function (t) { return t.key; });
 
@@ -80,10 +78,16 @@ export function buildCertData(cert, meta, origin) {
   const code = cert.code || '';
   const host = hostOf(origin) || 'pensoia.com';
   const base = (origin ? String(origin).replace(/\/$/, '') : 'https://pensoia.com');
+  // Course period (snapshotted from the turma start/end dates) for the certifying
+  // sentence: "realizado no período de <start> a <end>". Falls back gracefully.
+  const periodo = (meta.course_start && meta.course_end)
+    ? fmtDate(meta.course_start) + ' a ' + fmtDate(meta.course_end)
+    : (meta.course_start ? fmtDate(meta.course_start) : '');
   return {
     holder: esc(cert.holder_name),
     course: esc(cert.course_title),
     hours: esc(cert.hours || ''),
+    periodo: esc(periodo),
     date: esc(fmtDate(cert.issued_on)),
     code: esc(code),
     validar: esc(host + '/trilha/validar'),
@@ -103,6 +107,34 @@ export function buildCertData(cert, meta, origin) {
 }
 
 // ── FRONTS (pure HTML, brand logo + QR as placeholders) ───────────────────────
+// Shared across the 3 models: one institutional lead + certifying sentence (EJUSE
+// register), and one unified validation block (no self-referential "verificado/
+// autêntico" badges). The code appears ONCE per side (in the validation block).
+
+const CERT_LEAD = 'Certificamos, para os devidos fins, que';
+
+// The single canonical certifying sentence. Clauses drop gracefully when a field
+// is missing (period falls back to "realizado em <place>").
+function certStatement(d) {
+  return 'participou, com frequência e aproveitamento, do curso <b>' + d.course + '</b>'
+    + (d.periodo ? ', realizado no período de <b>' + d.periodo + '</b>'
+                 : (d.place ? ', realizado em ' + d.place : ''))
+    + (d.hours ? ', com carga horária total de <b>' + d.hours + '</b>' : '')
+    + (d.instructor ? ', ministrado por <b>' + d.instructor + '</b>' : '')
+    + '.';
+}
+
+// One validation block for every model. variant: 'card' (bordered) | 'plain'.
+function valBlock(d, variant) {
+  const cls = variant === 'card' ? 'cert-val-card' : '';
+  return '<div class="cert-valblock ' + cls + '">'
+    + '<span class="cert-val-qr qr" data-qr></span>'
+    + '<div class="cert-val-tx">'
+      + '<div class="cert-val-label">Autenticidade verificável</div>'
+      + '<div class="cert-val-url">' + d.validar + '</div>'
+      + '<div class="cert-val-code">' + d.code + '</div>'
+    + '</div></div>';
+}
 
 function fVetor(d) {
   return '<div class="vt-grid"></div>'
@@ -110,19 +142,17 @@ function fVetor(d) {
     + '<div class="vt-ghost" data-mk></div>'
     + '<div class="vt-content">'
       + '<div class="vt-top"><span class="bmark" data-logo="light"></span>'
-        + '<div class="vt-tag">Certificado · Nº ' + d.code + '<br>' + d.client + ' · ' + d.place + '</div></div>'
+        + '<div class="vt-tag">' + d.client + '<br>' + d.place + '</div></div>'
       + '<div class="vt-mid">'
         + '<div class="eyebrow">Certificado de Participação</div>'
-        + '<div class="lead">Certificamos que</div>'
+        + '<div class="lead">' + CERT_LEAD + '</div>'
         + '<h1 class="name">' + d.holder + '</h1>'
         + '<div class="gbar"></div>'
-        + '<p class="stmt">concluiu o curso <b>' + d.course + '</b>, com carga horária de <b>' + d.hours + '</b>, realizado em ' + d.place + '.</p>'
+        + '<p class="stmt">' + certStatement(d) + '</p>'
       + '</div>'
       + '<div class="vt-foot">'
         + '<div class="meta">Emissor · <b>' + d.issuerShort + '</b><br>Instrutor · <b>' + d.instructor + '</b><br>Emissão · <b>' + d.date + '</b></div>'
-        + '<div class="vt-vchip"><span class="qr" data-qr></span><div class="vx">'
-          + '<div class="l">Validação</div><div class="c">' + d.code + '</div><div class="u">' + d.validar + '</div>'
-        + '</div></div>'
+        + valBlock(d, 'card')
       + '</div>'
     + '</div>';
 }
@@ -131,32 +161,24 @@ function fConsole(d) {
   return '<div class="cs-grid"></div><div class="cs-rail"></div>'
     + '<div class="cs-ghost" data-mk></div>'
     + '<div class="cs-wrap">'
-      + '<div class="cs-top"><span class="bmark" data-logo="light"></span>'
-        + '<div class="cs-status"><span class="d"></span>verificado · pensoIA</div></div>'
+      + '<div class="cs-top"><span class="bmark" data-logo="light"></span></div>'
       + '<div class="cs-mid">'
         + '<div class="kicker">Certificado de Participação · <b>' + d.client + '</b></div>'
-        + '<div class="lead">Certificamos que</div>'
+        + '<div class="lead">' + CERT_LEAD + '</div>'
         + '<h1 class="name">' + d.holder + '</h1>'
         + '<div class="gbar"></div>'
-        + '<p class="stmt">concluiu o curso <b>' + d.course + '</b>, com carga horária de <b>' + d.hours + '</b>, realizado em ' + d.place + '.</p>'
+        + '<p class="stmt">' + certStatement(d) + '</p>'
       + '</div>'
       + '<div class="cs-foot">'
         + '<div class="cs-fields">'
           + '<div class="fld"><div class="k">Emissor</div><div class="v">' + d.issuerShort + '</div></div>'
-          + '<div class="fld"><div class="k">Instrutor</div><div class="v">' + d.instructor + '</div></div>'
-          + '<div class="fld"><div class="k">Emissão</div><div class="v">' + d.date + '</div></div>'
           + '<div class="fld"><div class="k">Carga horária</div><div class="v">' + d.hours + '</div></div>'
           + '<div class="fld"><div class="k">Modalidade</div><div class="v">' + d.modality + '</div></div>'
+          + '<div class="fld"><div class="k">Período</div><div class="v">' + (d.periodo || d.date) + '</div></div>'
           + '<div class="fld"><div class="k">Local</div><div class="v">' + d.place + '</div></div>'
+          + '<div class="fld"><div class="k">Emissão</div><div class="v">' + d.date + '</div></div>'
         + '</div>'
-        + '<div class="cs-block">'
-          + '<div class="bb"><i></i><i></i><i></i><span>validação</span></div>'
-          + '<div class="bd"><span class="qr" data-qr></span><div class="tx">'
-            + '<div class="row">scan · <b>QR</b></div>'
-            + '<div class="row">' + d.validar + '</div>'
-            + '<div class="code">' + d.code + '</div>'
-          + '</div></div>'
-        + '</div>'
+        + valBlock(d, 'card')
       + '</div>'
     + '</div>';
 }
@@ -166,109 +188,23 @@ function fMono(d) {
     + '<span class="glyph-wm wm" data-wm="light"></span>'
     + '<div class="inner">'
       + '<div class="m-top"><span class="bmark" data-logo="light"></span>'
-        + '<div class="ref"><span class="sc">Certificado n.º</span><div class="no">' + d.code + '</div></div></div>'
+        + '<div class="ref"><span class="sc">Local</span><div class="no">' + d.place + '</div></div></div>'
       + '<div class="m-body">'
         + '<div class="m-eyebrow">Certificado de Participação</div>'
-        + '<div class="m-orn"><span>certificamos que</span></div>'
+        + '<div class="m-orn"><span>' + CERT_LEAD + '</span></div>'
         + '<h1 class="m-name">' + d.holder + '</h1>'
-        + '<p class="m-stmt">concluiu, com aproveitamento, o curso <b>' + d.course + '</b>, com carga horária de ' + d.hours + ', realizado em ' + d.place + '.</p>'
+        + '<p class="m-stmt">' + certStatement(d) + '</p>'
       + '</div>'
       + '<div class="m-foot">'
         + '<div class="ft"><span class="sc">Emissão</span><div class="vv">' + d.date + '</div></div>'
         + '<div class="sig"><div class="sg">Élder B. Filho</div><div class="ln"></div><div class="ft"><span class="sc" style="margin-bottom:3px">Instrutor responsável</span><div class="vv" style="font-size:13px">' + d.instructor + '</div></div></div>'
-        + '<div class="val"><span class="qr" data-qr></span><div class="vt"><span class="c">' + d.code + '</span><br>' + d.validar + '</div></div>'
+        + valBlock(d, 'plain')
       + '</div>'
-    + '</div>';
-}
-
-function fAurora(d) {
-  return '<div class="au-orb o1"></div><div class="au-orb o2"></div>'
-    + '<div class="au-spot"></div>'
-    + '<div class="au-ghost" data-mk></div>'
-    + '<div class="au-top"><span class="bmark" data-logo="grad"></span></div>'
-    + '<div class="au-body">'
-      + '<div class="eyebrow">Certificado de Participação</div>'
-      + '<div class="lead">Certificamos que</div>'
-      + '<h1 class="name">' + d.holder + '</h1>'
-      + '<p class="stmt">concluiu o curso <b>' + d.course + '</b>, com carga horária de <b>' + d.hours + '</b>' + (d.format ? ' (' + d.format + ')' : '') + ', realizado em ' + d.place + '.</p>'
-    + '</div>'
-    + '<dl class="au-foot">'
-      + '<div><dt>Emissão</dt><dd>' + d.date + '</dd></div>'
-      + '<div><dt>Emissor</dt><dd>' + d.issuerShort + '</dd></div>'
-      + '<div class="au-vglass"><span class="qr" data-qr></span><div class="vx">'
-        + '<div class="l">Validação</div><div class="c">' + d.code + '</div><div class="u">' + d.validar + '</div>'
-      + '</div></div>'
-    + '</dl>';
-}
-
-function fPlate(d) {
-  return '<div class="dots"></div><div class="pl-border"></div>'
-    + '<span class="pl-corner tl"></span><span class="pl-corner tr"></span><span class="pl-corner bl"></span><span class="pl-corner br"></span>'
-    + '<span class="glyph-wm wm" data-wm="grad"></span>'
-    + '<div class="pl-in">'
-      + '<div class="pl-top"><span class="bmark" data-logo="grad"></span>'
-        + '<div class="ref"><span class="sc">Certificado n.º</span><div class="no">' + d.code + '</div></div></div>'
-      + '<div class="pl-body">'
-        + '<div class="pl-eyebrow">Certificado de Participação</div>'
-        + '<div class="pl-lead">certificamos que</div>'
-        + '<h1 class="pl-name">' + d.holder + '</h1>'
-        + '<div class="pl-flourish"><span class="d"></span></div>'
-        + '<p class="pl-stmt">concluiu o curso <b>' + d.course + '</b>, com carga horária de <b>' + d.hours + '</b>, realizado em ' + d.place + '.</p>'
-      + '</div>'
-      + '<div class="pl-foot">'
-        + '<div class="ft"><span class="sc">Emissão</span><div class="vv">' + d.date + '<br>' + d.issuerShort + '</div></div>'
-        + '<div class="seal"><span class="qr" data-qr></span><div class="c">' + d.code + '</div><div class="u">' + d.validar + '</div></div>'
-        + '<div class="ft r"><div class="sg">Élder B. Filho</div><span class="sc">' + d.role + '</span><div class="vv" style="font-size:13px">' + d.instructor + '</div></div>'
-      + '</div>'
-    + '</div>';
-}
-
-function fHolo(d) {
-  return '<div class="ho-orb"></div>'
-    + '<div class="ho-ghost" data-mk></div>'
-    + '<div class="ho-card"><div class="dots"></div>'
-      + '<div class="ho-top"><span class="bmark" data-logo="grad"></span>'
-        + '<div class="ho-id">Certificado Nº <b>' + d.code + '</b><br>' + d.client + ' · ' + d.place + '</div></div>'
-      + '<div class="ho-body">'
-        + '<div class="eyebrow">Certificado de Participação</div>'
-        + '<div class="lead">Certificamos que</div>'
-        + '<h1 class="name">' + d.holder + '</h1>'
-        + '<div class="gbar"></div>'
-        + '<p class="stmt">concluiu o curso <b>' + d.course + '</b>, com carga horária de <b>' + d.hours + '</b>' + (d.format ? ' (' + d.format + ')' : '') + ', realizado em ' + d.place + '.</p>'
-      + '</div>'
-      + '<div class="ho-foot">'
-        + '<div class="meta">Emissor · <b>' + d.issuerShort + '</b><br>Instrutor · <b>' + d.instructor + '</b><br>Emissão · <b>' + d.date + '</b></div>'
-        + '<div class="ho-vring"><div class="qwrap"><span class="qr" data-qr></span></div><div class="vx">'
-          + '<div class="l">Validação</div><div class="c">' + d.code + '</div><div class="u">' + d.validar + '</div>'
-        + '</div></div>'
-      + '</div>'
-    + '</div>';
-}
-
-function fEclipse(d) {
-  return '<div class="dots"></div><div class="glow"></div>'
-    + '<span class="pwm pwm-big" data-pwm></span>'
-    + '<div class="ec-wrap">'
-      + '<div class="ec-top"><span class="bmark" data-logo="grad"></span>'
-        + '<div class="ec-tag">Certificado de Participação<br><b>Nº ' + d.code + '</b></div></div>'
-      + '<div class="ec-mid">'
-        + '<div class="eyebrow">Certificado de Participação</div>'
-        + '<div class="lead">Certificamos que</div>'
-        + '<h1 class="name">' + d.holder + '</h1>'
-        + '<p class="sub">concluiu o curso <b>' + d.course + '</b>, com carga horária de <b>' + d.hours + '</b>, realizado em ' + d.place + '.</p>'
-      + '</div>'
-      + '<dl class="ec-foot">'
-        + '<div><dt>Emissão</dt><dd>' + d.date + '</dd></div>'
-        + '<div><dt>Emissor</dt><dd>' + d.issuerShort + '</dd></div>'
-        + '<div class="ec-val"><span class="qr" data-qr></span>'
-          + '<span class="vc">' + d.code + '<small>' + d.validar + '</small></span></div>'
-      + '</dl>'
     + '</div>';
 }
 
 const FRONTS = {
-  vetor: fVetor, console: fConsole, mono: fMono, aurora: fAurora,
-  plate: fPlate, holo: fHolo, eclipse: fEclipse,
+  vetor: fVetor, console: fConsole, mono: fMono,
 };
 
 // ── BACK (shared verso) ───────────────────────────────────────────────────────
@@ -339,4 +275,22 @@ export function hydrate(rootEl, opts) {
   if (typeof qr === 'function') {
     rootEl.querySelectorAll('[data-qr]').forEach(function (el) { el.innerHTML = qr(qrUrl); });
   }
+}
+
+// Shrink the recipient name so long Brazilian names stay within their column and
+// never orphan a word. Browser-only (needs layout); call after hydrate() once the
+// fonts are ready. Idempotent enough to re-run on resize.
+export function autofitNames(rootEl) {
+  if (!rootEl || typeof rootEl.querySelectorAll !== 'function' || typeof window === 'undefined') return;
+  rootEl.querySelectorAll('.name, .m-name').forEach(function (el) {
+    const cs = window.getComputedStyle(el);
+    let size = parseFloat(cs.fontSize) || 60;
+    const lh = parseFloat(cs.lineHeight) || size * 1.05;
+    let guard = 60;
+    while (guard-- > 0 && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > lh * 2 + 2)) {
+      size -= 1.5;
+      if (size < 24) break;
+      el.style.fontSize = size + 'px';
+    }
+  });
 }

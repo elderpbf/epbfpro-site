@@ -120,10 +120,14 @@ describe('renderCertHtml', () => {
   });
 
   test('honors the saved template + theme keys', () => {
-    const cert = Object.assign(certs.sampleCert(), { template_slug: 'eclipse', theme: 'navy' });
+    const cert = Object.assign(certs.sampleCert(), { template_slug: 'mono', theme: 'navy' });
     const html = certs.renderCertHtml(cert, 'https://pensoia.com');
-    assert.ok(html.includes('f-eclipse'), 'eclipse front');
+    assert.ok(html.includes('f-mono'), 'mono front');
     assert.ok(html.includes('data-pal="navy"'), 'navy theme');
+  });
+  test('a retired dark template falls back to the default (vetor)', () => {
+    const cert = Object.assign(certs.sampleCert(), { template_slug: 'eclipse' });
+    assert.ok(certs.renderCertHtml(cert, 'https://pensoia.com').includes('f-vetor'), 'falls back to vetor');
   });
 });
 
@@ -153,8 +157,8 @@ describe('PDF download path', () => {
 
 // ── catalog/registry surface re-exported for the Modelos catalog ───────────────
 describe('catalog surface', () => {
-  test('re-exports the 7 templates and 3 themes for the catalog UI', () => {
-    assert.equal(certs.CERT_TEMPLATES.length, 7);
+  test('re-exports the 3 templates and 3 themes for the catalog UI', () => {
+    assert.equal(certs.CERT_TEMPLATES.length, 3);
     assert.equal(certs.CERT_THEMES.length, 3);
   });
 });
