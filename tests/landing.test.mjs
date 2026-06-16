@@ -19,30 +19,26 @@ test('index.html: ported to plp- classes, mock classes gone', () => {
     assert.ok(!h.includes(bad), 'should not contain ' + bad);
 });
 
-test('demos: pulso embeds the real Codex student app; trail built from real components', () => {
+test('demos: both phones embed the real Codex app in place (srcdoc iframes, no rebuild)', () => {
   const h = read('index.html');
-  for (const c of ['plp-app-scale', 'plp-app-frame', '/codex/demo/pulso.html', 'plp-demo-trail', 'id="trailApp"'])
+  for (const c of ['plp-app-scale', 'id="pulseFrame"', 'id="trailFrame"', 'class="plp-app-frame"'])
     assert.ok(h.includes(c), 'index missing ' + c);
-  for (const bad of ['id="pulseApp"', 'plp-pulso', 'plp-shots', 'id="trPhone"', 'plp-askbar', 'id="thBar"'])
+  for (const bad of ['id="pulseApp"', 'id="trailApp"', '/codex/demo/', 'plp-demo-pulse', 'plp-demo-trail', 'plp-pulso', 'id="trPhone"', 'id="thBar"'])
     assert.ok(!h.includes(bad), 'index still has stale demo ' + bad);
 
-  // Pulso: the demo DRIVES the real student module on canned data, never rebuilds it.
-  const pj = read('codex/demo/pulso.js');
-  assert.ok(pj.includes('/codex/trilha/js/nexo-answer.js'), 'pulso demo must import the real nexo-answer');
-  assert.ok(!/cdx-qr-bar|renderBarChart|class="cdx-qr/.test(pj), 'pulso demo must not rebuild the question UI');
-  const ph = read('codex/demo/pulso.html');
-  for (const link of ['/codex/questions/questions.css', '/codex/trilha/css/nexo.css', '/codex/css/theme.css'])
-    assert.ok(ph.includes(link), 'pulso demo must link the real ' + link);
-  assert.ok(ph.includes('window.callWorker'), 'pulso demo must feed the real app via the callWorker seam');
-
-  // Trail still hosts the real components via demos.js (its own iframe port is next).
+  // demos.js builds srcdoc iframes that link the REAL Codex CSS + the landing frame drivers.
   const d = read('js/demos.js');
-  for (const c of ['cdx-trilha-hero', 'cdx-trilha-tabs', 'cdx-tr-novo-banner', 'tr-modal-backdrop', 'cdx-tr-item-action--submitted'])
-    assert.ok(d.includes(c), 'demos.js trail does not build ' + c);
-  const css = read('css/landing.css');
-  for (const c of ['.cdx-tr-card', '.cdx-tr-novo-banner', '.cdx-trilha-hero', '.tr-modal'])
-    assert.ok(css.includes(c), 'css missing trail component ' + c);
-  assert.ok(!css.includes('.plp-th{'), 'on-screen thermometer should be removed');
+  assert.ok(d.includes('srcdoc') && d.includes('pulseFrame') && d.includes('trailFrame'), 'demos.js must set srcdoc on both frames');
+  for (const link of ['/codex/questions/questions.css', '/codex/trilha/css/nexo.css', '/codex/trilha/css/cards.css', '/codex/trilha/css/tarefa-modal.css'])
+    assert.ok(d.includes(link), 'demos.js srcdoc missing real CSS ' + link);
+
+  // The frame drivers mount the REAL modules via the callWorker seam, never rebuild markup.
+  const fp = read('js/frame-pulso.js');
+  assert.ok(fp.includes('/codex/trilha/js/nexo-answer.js') && fp.includes('window.callWorker'), 'frame-pulso must drive the real nexo-answer via callWorker');
+  const ft = read('js/frame-trail.js');
+  assert.ok(ft.includes('/codex/trilha/js/page.js') && ft.includes('window.callWorker'), 'frame-trail must boot the real trilha page via callWorker');
+  for (const re of [/buildAulaRow/, /renderBarChart/, /cdx-qr-bar-fill/, /cdx-qr-option-letter/])
+    assert.ok(!re.test(fp + ft + d), 'frame drivers / demos must not rebuild app markup');
 });
 
 test('index.html: structure only (module boot + JSON-LD, no inline logic)', () => {
