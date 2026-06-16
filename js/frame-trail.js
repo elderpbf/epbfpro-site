@@ -2,9 +2,10 @@
 // Runs INSIDE the offer-section Trilha phone (a srcdoc iframe built by demos.js, in
 // place on the landing). Boots the REAL Codex trilha student page on canned data via
 // the window.callWorker seam. INERT (body overflow locked; a transform "camera" pans
-// instead of native scroll, so it never hijacks the landing). Action captions + slow
-// pacing + faded reveals make it read as steps: nova aula -> material -> tarefa.
-import { sleep, $, waitFor, tap, caption, baseStyle, followParentTheme } from '/js/frame-demo-shared.js?v=12';
+// instead of native scroll, so it never hijacks the landing). step() beacons (the
+// landing draws the caption tab on top of the phone) + slow pacing + faded reveals
+// make it read as steps: nova aula -> material -> tarefa.
+import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme } from '/js/frame-demo-shared.js?v=13';
 
 // 1) Canned Worker transport (set before the real modules call it).
 const nowSec = Math.floor(Date.now() / 1000);
@@ -74,6 +75,8 @@ Promise.all([
 });
 
 // The demo's OWN scroll: pan `.cdx-trilha-main` so `el` sits `margin` px from the top.
+// NEVER scrollIntoView/scrollTo — those bubble across the iframe boundary and hijack
+// the landing's scroll. This only moves the demo's own content via transform.
 let panY = 0;
 function panTo(el, margin) {
   const root = $('.cdx-trilha-main'); if (!root || !el) return;
@@ -82,49 +85,69 @@ function panTo(el, margin) {
   root.style.transition = 'transform .55s ease';
   root.style.transform = 'translateY(' + (-panY) + 'px)';
 }
-// Bring the target into view, let the pan settle, THEN tap.
+// True if any part of `el` is comfortably inside the phone viewport.
+function inBand(el) {
+  const H = document.documentElement.clientHeight;
+  const r = el.getBoundingClientRect();
+  return r.top >= 8 && r.bottom <= H - 8;
+}
+// Bring the target into view, let the pan settle, THEN tap. The tarefa modal is a
+// FIXED, centered, internally-scrollable overlay (.tr-modal) that the transform camera
+// can't move, so for targets inside it we scroll the modal's own content instead. For
+// page targets we pan; a correction pass re-measures and pans again if a mid-flight
+// layout change (an expand finishing) left the target out of the band.
 async function tapInView(el, margin) {
   if (!el) return;
-  panTo(el, margin);
-  await sleep(720);
+  const modal = el.closest && el.closest('.tr-modal');
+  if (modal) {
+    const er = el.getBoundingClientRect(), mr = modal.getBoundingClientRect();
+    modal.scrollTop = Math.max(0, modal.scrollTop + (er.top - mr.top) - (mr.height - er.height) / 2);
+    await sleep(480);
+  } else {
+    panTo(el, margin);
+    await sleep(700);
+    if (!inBand(el)) { panTo(el, margin); await sleep(560); }
+  }
   await tap(el);
 }
 
 async function autoplay() {
   await waitFor('.cdx-tr-tl-row[data-aula="3"]');
-  await sleep(900);
+  await sleep(1100);
 
   // BEAT 1 — a new aula is published; open it.
-  caption('Nova aula publicada');
-  await sleep(1300);
-  await tapInView($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-card-header'), 150);
+  step(1, 4, 'Nova aula publicada');
   await sleep(1900);
-
-  // BEAT 2 — open the material content.
-  caption('Abrindo o material');
-  await sleep(1000);
-  await tapInView($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)'), 140);
+  await tapInView($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-card-header'), 150);
   await sleep(2600);
 
+  // BEAT 2 — open the material content.
+  step(2, 4, 'Abrindo o material');
+  await sleep(1500);
+  await tapInView($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)'), 140);
+  await sleep(3400);
+
   // BEAT 3 — open the tarefa, type, send.
-  caption('Enviando a tarefa');
-  await sleep(1000);
+  step(3, 4, 'Enviando a tarefa');
+  await sleep(1500);
   const taskSel = '.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub--tarefa';
   await tapInView($(taskSel), 140);
   const taskBtn = await waitFor(taskSel + ' .cdx-tr-item-action', 2500);
-  await sleep(500);
+  await sleep(800);
   await tapInView(taskBtn, 140);                 // open the real tarefa modal (fixed overlay)
   const ta = await waitFor('.tr-tarefa-field textarea, .tr-tarefa-field input', 2500);
   const nameI = $('.tr-tarefa-name');
   if (nameI) nameI.value = 'Você';
   if (ta) {
     const filler = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-    for (let i = 6; i <= filler.length; i += 6) { ta.value = filler.slice(0, i); ta.dispatchEvent(new Event('input', { bubbles: true })); await sleep(60); }
+    for (let i = 6; i <= filler.length; i += 6) { ta.value = filler.slice(0, i); ta.dispatchEvent(new Event('input', { bubbles: true })); await sleep(70); }
   }
-  await sleep(600);
-  await tap($('.tr-tarefa-submit'));
-  caption('Tarefa enviada');
-  await sleep(3600);
+  await sleep(900);
+  await tapInView($('button.tr-tarefa-submit'), 140);   // the real "Enviar resposta" button (modal-aware)
+
+  // BEAT 4 — submitted.
+  step(4, 4, 'Tarefa enviada');
+  await sleep(4200);
 
   setTimeout(() => location.reload(), 900);
 }

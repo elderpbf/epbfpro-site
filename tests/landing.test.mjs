@@ -23,7 +23,7 @@ test('demos: both phones embed the real Codex app in place (srcdoc iframes, no r
   const h = read('index.html');
   for (const c of ['plp-app-scale', 'id="pulseFrame"', 'id="trailFrame"', 'class="plp-app-frame"'])
     assert.ok(h.includes(c), 'index missing ' + c);
-  for (const bad of ['id="pulseApp"', 'id="trailApp"', '/codex/demo/', 'plp-demo-pulse', 'plp-demo-trail', 'plp-pulso', 'id="trPhone"', 'id="thBar"'])
+  for (const bad of ['id="pulseApp"', 'id="trailApp"', '/codex/demo/', 'plp-demo-pulse', 'plp-demo-trail', 'plp-pulso', 'id="trPhone"', 'id="thBar"', 'id="trCap"'])
     assert.ok(!h.includes(bad), 'index still has stale demo ' + bad);
 
   // demos.js builds srcdoc iframes that link the REAL Codex CSS + the landing frame drivers.
@@ -39,6 +39,32 @@ test('demos: both phones embed the real Codex app in place (srcdoc iframes, no r
   assert.ok(ft.includes('/codex/trilha/js/page.js') && ft.includes('window.callWorker'), 'frame-trail must boot the real trilha page via callWorker');
   for (const re of [/buildAulaRow/, /renderBarChart/, /cdx-qr-bar-fill/, /cdx-qr-option-letter/])
     assert.ok(!re.test(fp + ft + d), 'frame drivers / demos must not rebuild app markup');
+});
+
+test('demos: caption tab on top of each phone, driven by the step() postMessage seam', () => {
+  const h = read('index.html');
+  for (const c of ['id="pulseTab"', 'id="trailTab"', 'plp-captab', 'plp-captab-segs', 'plp-captab-txt'])
+    assert.ok(h.includes(c), 'index missing caption tab piece ' + c);
+
+  // The shared module posts the beat to the landing; the in-iframe pill is gone.
+  const sh = read('js/frame-demo-shared.js');
+  assert.ok(/export function step/.test(sh) && sh.includes('plpStep') && sh.includes('parent.postMessage'),
+    'frame-demo-shared must post {plpStep} to the parent');
+  assert.ok(!/export function caption/.test(sh), 'the in-iframe caption pill must be gone');
+
+  // Both drivers emit beats via step(i, total, label).
+  for (const f of ['js/frame-pulso.js', 'js/frame-trail.js'])
+    assert.ok(/step\(\d+,\s*\d+,/.test(read(f)), f + ' must call step(i, total, label)');
+
+  // The landing routes plpStep to the right phone and draws the segmented bar.
+  const ui = read('js/ui.js');
+  assert.ok(ui.includes('plpStep') && ui.includes('contentWindow') && ui.includes('plp-captab-segs'),
+    'ui.js must route plpStep to the matching tab');
+
+  // The Trilha camera never CALLS scrollIntoView/scrollTo (those hijack the landing);
+  // it pans via transform. Match calls (with a paren) so the cautionary comment is fine.
+  const ft = read('js/frame-trail.js');
+  assert.ok(!/\.scrollIntoView\(|\.scrollTo\(/.test(ft), 'frame-trail must not scroll the page');
 });
 
 test('index.html: structure only (module boot + JSON-LD, no inline logic)', () => {

@@ -1,7 +1,7 @@
 // js/orb.js — "A Luz": constellation in the hero, descending light that traces the
 // highlights, finale that reveals the contacts. Ported value-for-value from the mock;
 // the only change is that tunable numbers come from orb-settings (defaults = the mock).
-import { getSettings } from './orb-settings.js?v=12';
+import { getSettings } from './orb-settings.js?v=13';
 
 export function initOrb() {
   const $ = s => document.querySelector(s);

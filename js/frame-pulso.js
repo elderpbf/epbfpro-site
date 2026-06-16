@@ -1,10 +1,10 @@
 // js/frame-pulso.js
 // Runs INSIDE the offer-section Pulso phone (a srcdoc iframe built by demos.js, in
 // place on the landing). Drives the REAL Codex student module (nexo-answer) on
-// canned data via the window.callWorker seam. Visible taps + action captions + faded
-// state transitions make it read as steps: pergunta -> responde -> pergunta ao
-// instrutor -> respondida.
-import { sleep, $, waitFor, tap, caption, baseStyle, followParentTheme } from '/js/frame-demo-shared.js?v=12';
+// canned data via the window.callWorker seam. Visible taps + step() beacons (the
+// landing draws the caption tab on top of the phone) + faded state transitions make
+// it read as steps: pergunta -> responde -> pergunta ao instrutor -> respondida.
+import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme } from '/js/frame-demo-shared.js?v=13';
 
 // 1) Canned Worker transport (set before the real module's first call, at mount).
 const D = {
@@ -72,32 +72,34 @@ import('/codex/trilha/js/nexo-answer.js').then(({ mount, unmount }) => {
 
     // BEAT 1 — read the question, tap an answer.
     const optB = await waitFor('.cdx-qr-option-btn[data-index="1"]');
-    caption('Pergunta ao vivo');
-    await sleep(1300);
-    caption('Respondendo');
-    await sleep(450);
+    step(1, 4, 'Pergunta ao vivo');
+    await sleep(2400);
+    step(2, 4, 'Respondendo');
+    await sleep(900);
     await tap(optB);                              // -> "Resposta enviada!"
 
     // BEAT 2 — ask the instructor.
-    await sleep(1500);
-    caption('Perguntando ao instrutor');
-    await sleep(750);
+    await sleep(2300);
+    step(3, 4, 'Perguntando ao instrutor');
+    await sleep(1100);
     await tap($('#qa-bar-collapsed'));
     const input = await waitFor('#qa-editor-input', 2000);
     if (input) {
-      for (let i = 1; i <= ASK.length; i++) { input.value = ASK.slice(0, i); input.dispatchEvent(new Event('input', { bubbles: true })); await sleep(28); }
+      for (let i = 1; i <= ASK.length; i++) { input.value = ASK.slice(0, i); input.dispatchEvent(new Event('input', { bubbles: true })); await sleep(34); }
     }
-    await sleep(380);
+    await sleep(600);
     await tap($('#qa-editor-send'));              // -> "Pergunta enviada."
 
-    // BEAT 3 — the instructor answers; the question closes -> "Sua pergunta" card.
-    await sleep(1500);
-    caption('Pergunta respondida');
+    // BEAT 3 — the instructor answers, then the question closes -> "Sua pergunta" card.
+    // Wait long enough that the inbox poll has picked up the reply (qAnswered flips at
+    // send+1.6s; nexo polls every ~4s), so the closed card renders populated, not empty.
+    await sleep(4600);
+    step(4, 4, 'Pergunta respondida');
     D.closed = true;
-    await sleep(2900);
+    await sleep(3400);
 
     try { unmount(); } catch (_) { /* noop */ }
-    await sleep(650);
+    await sleep(750);
     runOnce();
   }
 

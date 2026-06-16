@@ -60,7 +60,7 @@
   <!-- Preload profile image for faster LCP -->
   <link rel="preload" as="image" href="images/profile.jpg" fetchpriority="high">
 
-  <link rel="stylesheet" href="css/landing.css?v=12">
+  <link rel="stylesheet" href="css/landing.css?v=13">
 
   <!-- Structured data (Schema.org JSON-LD) -->
   <script type="application/ld+json">
@@ -212,6 +212,10 @@
         <p data-i18n-html="xp.p.p">Perguntas ao vivo e um <span class="plp-hl">termômetro de compreensão</span>. Eu vejo na hora quem entendeu e ajusto o ritmo. Ninguém fica para trás em silêncio.</p>
       </div>
       <div class="plp-xp-media">
+        <div class="plp-captab" id="pulseTab" hidden>
+          <span class="plp-captab-label"><span class="plp-captab-dot"></span><span class="plp-captab-txt"></span></span>
+          <div class="plp-captab-segs"></div>
+        </div>
         <div class="plp-phone">
           <div class="plp-screen">
             <div class="plp-statusbar"><span>9:41</span><div class="plp-r"><span>PensoIA</span><span class="plp-b"></span></div></div>
@@ -227,9 +231,12 @@
         <span class="plp-when">↻ <span data-i18n="xp.t.when">depois da aula</span></span>
         <h3 data-i18n="xp.t.h">Trilha da Turma</h3>
         <p data-i18n-html="xp.t.p">Uma <span class="plp-hl">apostila viva</span> com o conteúdo, as tarefas e os materiais da turma. Fica como referência, com suporte por cerca de 15 dias após o curso.</p>
-        <p class="plp-cap" id="trCap" style="text-align:left;margin-top:14px"></p>
       </div>
       <div class="plp-xp-media">
+        <div class="plp-captab" id="trailTab" hidden>
+          <span class="plp-captab-label"><span class="plp-captab-dot"></span><span class="plp-captab-txt"></span></span>
+          <div class="plp-captab-segs"></div>
+        </div>
         <div class="plp-phone">
           <div class="plp-screen">
             <div class="plp-statusbar"><span>9:41</span><div class="plp-r"><span>PensoIA</span><span class="plp-b"></span></div></div>
@@ -292,7 +299,7 @@
   </div>
 </footer>
 
-<script type="module" src="js/main.js?v=12"></script>
+<script type="module" src="js/main.js?v=13"></script>
 <!-- LGPD consent banner intentionally not loaded: the site sets no tracking
      cookies (only functional localStorage). js/consent.js stays in the repo;
      re-add this include when analytics are introduced. -->
