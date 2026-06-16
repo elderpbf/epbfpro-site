@@ -97,8 +97,9 @@ function _load() {
       _items = ((res && res.items) || []).slice().sort((a, b) => (a.set_position || 0) - (b.set_position || 0));
       _render();
     });
-  }).catch(() => {
+  }).catch((err) => {
     if (el) el.innerHTML = '<div class="cdx-empty">' + t('apostila.error_loading') + '</div>';
+    notice.internal(_err(err));
   });
 }
 
@@ -201,10 +202,11 @@ function _renderPreview() {
     if (full && full.id != null) _detailCache.set(Number(full.id), full);
     pane.innerHTML = _previewHtml(full, {});
     _renderBody(full);
-  }).catch(() => {
+  }).catch((err) => {
     if (Number(_selectedId) !== Number(itemId)) return;
     const host = _q('cdx-apostila-render');
     if (host) host.innerHTML = '<div class="cdx-empty">' + t('apostila.error_loading') + '</div>';
+    notice.internal(_err(err));
   });
 }
 
@@ -319,6 +321,7 @@ function _openImport() {
       btn.textContent = t('apostila.import_confirm');
       // The doc not being shared publicly is the common, user-actionable cause.
       notice.warn(t('creator.gdoc_not_shared'));
+      notice.internal(_err(err));
       notice.internal(err);
     });
   });
@@ -363,8 +366,8 @@ export function mount(viewEl, ctx) {
   _renderShell();
   // Types + tags feed the editor opened from "Editar"; load in parallel.
   Promise.all([
-    api.listTypes().then((d) => { _types = (d && d.types) || []; }).catch(() => {}),
-    api.listTags().then((d) => { _tags = (d && d.tags) || []; }).catch(() => {}),
+    api.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(_err(e)); }),
+    api.listTags().then((d) => { _tags = (d && d.tags) || []; }).catch((e) => { notice.internal(_err(e)); }),
   ]);
   _load();
 }

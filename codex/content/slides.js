@@ -15,6 +15,7 @@
 // through t(). No inline JS in markup; events are delegated.
 import { slides as api, ai as aiApi, appConfig } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import * as notice from '../js/notice.js';
 import { openMenu, closeMenu } from '../js/menu.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
@@ -31,7 +32,7 @@ function ensurePickerKey() {
   if (!_pickerKeyPromise) {
     _pickerKeyPromise = appConfig.get()
       .then((r) => { _pickerKey = (r && r.config && r.config.googlePickerApiKey) || ''; })
-      .catch(() => { _pickerKey = ''; });
+      .catch((e) => { _pickerKey = ''; notice.internal(e); });
   }
   return _pickerKeyPromise;
 }
@@ -357,7 +358,7 @@ async function _openDeck(slug, fresh, initialDeck) {
   // Debounced autosave on any later deck change (the R2 path).
   store.on('change', () => {
     if (_saveTimer) clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => { store.save().catch(() => {}); }, 800);
+    _saveTimer = setTimeout(() => { store.save().catch((e) => notice.internal(e)); }, 800);
   });
   // Persist the initial deck (fresh OR imported) so it survives a reload.
   if (fresh || seeded) { try { await store.save(); } catch (_) { /* surfaced on next edit */ } }

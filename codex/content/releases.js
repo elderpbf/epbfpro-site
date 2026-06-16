@@ -172,7 +172,7 @@ function _loadReleases(clientSlug, turmaSlug) {
       _apostilaItems = ((res && res.items) || []).slice()
         .sort((a, b) => (a.set_position || 0) - (b.set_position || 0));
     });
-  }).catch(() => {});
+  }).catch((e) => { notice.internal(_err(e)); });
 
   Promise.all([
     contentApi.listItems(),
@@ -193,9 +193,10 @@ function _loadReleases(clientSlug, turmaSlug) {
       _releasedMeta = {};
       items.forEach((i) => { _releasedMeta[i.id] = { aula_number: i.aula_number || null, released_at: i.released_at }; });
       _renderList();
-    }).catch(() => { _released = []; _releasedMeta = {}; _renderList(); });
-  }).catch(() => {
+    }).catch((err) => { _released = []; _releasedMeta = {}; _renderList(); notice.internal(_err(err)); });
+  }).catch((err) => {
     if (el) el.innerHTML = '<div class="cdx-empty">' + t('releases.error_loading') + '</div>';
+    notice.internal(_err(err));
   });
 }
 
@@ -571,7 +572,7 @@ export function mount(viewEl, ctx) {
   _selectedAula = null;
   _cleanup = [];
   _renderShell();
-  contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch(() => {});
+  contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(_err(e)); });
   _picker = turmaPicker.mount(_q('cdx-rel-picker'), {
     onSelect: (c, tu) => _loadReleases(c, tu),
     storageKey: { client: LS_CLIENT, turma: LS_TURMA },
