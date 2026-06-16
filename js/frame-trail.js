@@ -5,7 +5,7 @@
 // rebuilt. INERT (body overflow locked, a transform "camera" pans instead of native
 // scroll, so it never hijacks the landing). Visible taps + tight pacing make it read
 // as one flow: nova aula -> abrir material -> enviar tarefa.
-import { sleep, $, waitFor, tap, followParentTheme } from '/js/frame-demo-shared.js?v=10';
+import { sleep, $, waitFor, tap, followParentTheme } from '/js/frame-demo-shared.js?v=11';
 
 // 1) Canned Worker transport (set before the real modules call it).
 const nowSec = Math.floor(Date.now() / 1000);
@@ -75,35 +75,45 @@ Promise.all([
 // Transform "camera": shift the page so `el` sits `margin` px from the top. Uses live
 // rects, so it composes across beats. NEVER scrollIntoView/scrollTo (those bubble out
 // and hijack the landing's scroll).
+// The demo's OWN scroll: pan `.cdx-trilha-main` so `el` sits `margin` px from the
+// top of the phone. Never scrollIntoView/scrollTo (those bubble out and hijack the
+// landing). Uses live rects so it composes across beats.
 let panY = 0;
 function panTo(el, margin) {
   const root = $('.cdx-trilha-main'); if (!root || !el) return;
-  const m = (margin == null ? 16 : margin);
+  const m = (margin == null ? 150 : margin);
   panY = Math.max(0, panY + (el.getBoundingClientRect().top - m));
-  root.style.transition = 'transform .55s ease';
+  root.style.transition = 'transform .5s ease';
   root.style.transform = 'translateY(' + (-panY) + 'px)';
 }
 
-async function autoplay() {
-  const row3 = await waitFor('.cdx-tr-tl-row[data-aula="3"]');
-  await sleep(700);
+// Always bring the target INTO the visible phone, let the pan settle, THEN tap — so
+// every touch happens on-screen.
+async function tapInView(el, margin) {
+  if (!el) return;
+  panTo(el, margin);
+  await sleep(620);     // camera transition (.5s) + settle
+  await tap(el);
+}
 
-  // BEAT 1 — frame Aula 03 (the one with "Novo material"), then tap to open it.
-  if (row3) { panTo(row3, 70); await sleep(750); }
-  await tap($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-card-header'));
+async function autoplay() {
+  await waitFor('.cdx-tr-tl-row[data-aula="3"]');
+  await sleep(600);
+
+  // BEAT 1 — frame Aula 03 (the one with "Novo material") and open it.
+  await tapInView($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-card-header'), 150);
   await sleep(1100);
 
-  // BEAT 2 — tap the material to open its content, then frame it.
-  const matSub = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)');
-  await tap(matSub);
-  await sleep(400); panTo(matSub, 70);
-  await sleep(1500);
+  // BEAT 2 — open the material content (framed before the tap).
+  await tapInView($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)'), 140);
+  await sleep(1800);
 
-  // BEAT 3 — open the tarefa, type (invisible -> bars), send.
-  const taskSub = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub--tarefa');
-  if (taskSub) { panTo(taskSub, 70); await sleep(600); await tap(taskSub); }
-  await sleep(900);
-  await tap(taskSub && taskSub.querySelector('.cdx-tr-item-action'));   // open the real modal (fixed overlay)
+  // BEAT 3 — open the tarefa, then its action button, then type + send.
+  const taskSel = '.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub--tarefa';
+  await tapInView($(taskSel), 140);
+  const taskBtn = await waitFor(taskSel + ' .cdx-tr-item-action', 2500);
+  await sleep(400);
+  await tapInView(taskBtn, 140);                 // open the real tarefa modal (fixed overlay -> in view)
   const ta = await waitFor('.tr-tarefa-field textarea, .tr-tarefa-field input', 2500);
   const nameI = $('.tr-tarefa-name');
   if (nameI) nameI.value = 'Você';
@@ -112,7 +122,7 @@ async function autoplay() {
     for (let i = 6; i <= filler.length; i += 6) { ta.value = filler.slice(0, i); ta.dispatchEvent(new Event('input', { bubbles: true })); await sleep(55); }
   }
   await sleep(450);
-  await tap($('.tr-tarefa-submit'));            // -> canned ok -> closes, button flips to "Resposta enviada"
+  await tap($('.tr-tarefa-submit'));            // submit is in the centred modal -> visible
   await sleep(2800);
 
   setTimeout(() => location.reload(), 900);      // loop

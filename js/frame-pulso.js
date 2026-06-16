@@ -3,7 +3,7 @@
 // place on the landing). Drives the REAL Codex student module (nexo-answer) on
 // canned data via the window.callWorker seam. Nothing is rebuilt. Visible taps +
 // tight pacing make it read as one flow: responde -> pergunta -> respondida.
-import { sleep, $, waitFor, tap, followParentTheme } from '/js/frame-demo-shared.js?v=10';
+import { sleep, $, waitFor, tap, followParentTheme } from '/js/frame-demo-shared.js?v=11';
 
 // 1) Canned Worker transport (set before the real module's first call, at mount).
 const D = {
@@ -38,7 +38,7 @@ const style = document.createElement('style');
 style.textContent =
   'html,body{margin:0;height:100%;background:var(--background);overflow:hidden}' +
   "body{font-family:'Inter','Segoe UI',sans-serif}" +
-  '#demo-host,.nx-answer-screen{min-height:100%}.nx-answer-screen{padding:16px 14px;box-sizing:border-box}' +
+  '#cdx-tr-nexo-host,.nx-answer-screen{min-height:100%}.nx-answer-screen{padding:16px 14px;box-sizing:border-box}' +
   '.cdx-qr-option-btn>span:last-child{color:transparent!important;position:relative}' +
   '.cdx-qr-option-btn>span:last-child::after{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);height:13px;border-radius:3px;background:var(--text-secondary);opacity:.28;width:90%}' +
   '.cdx-qr-option-btn:nth-of-type(1)>span:last-child::after{width:80%}' +
@@ -54,7 +54,7 @@ followParentTheme();
 
 // 3) Mount the REAL student module and autoplay (visible taps, tight pacing).
 import('/codex/trilha/js/nexo-answer.js').then(({ mount, unmount }) => {
-  const HOST = document.getElementById('demo-host');
+  const HOST = document.getElementById('cdx-tr-nexo-host');
   const ASK = 'E quando o modelo erra?';
   let cycle = 0;
 
