@@ -5,7 +5,7 @@
 // instead of native scroll, so it never hijacks the landing). step() beacons (the
 // landing draws the caption tab on top of the phone) + slow pacing + faded reveals
 // make it read as steps: nova aula -> material -> tarefa.
-import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme } from '/js/frame-demo-shared.js?v=13';
+import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=14';
 
 // 1) Canned Worker transport (set before the real modules call it).
 const nowSec = Math.floor(Date.now() / 1000);
@@ -41,10 +41,15 @@ window.callWorker = function (p) {
 
 // Fresh start each loop so the tarefa shows "Enviar resposta" again.
 try { for (const k of Object.keys(localStorage)) if (/^ct_tarefa_submitted_|^ct_student_name/.test(k)) localStorage.removeItem(k); } catch (_) { /* noop */ }
+// Seed a student session (key cdx_student_<c>_<t>, here demo/demo) so tapping the
+// tarefa "Enviar" opens the submit modal directly. The real app gates submission
+// behind login; in the demo the student is already logged in, so we skip that modal.
+try { localStorage.setItem('cdx_student_demo_demo', 'demo-session'); } catch (_) { /* noop */ }
 
 // 2) Demo-only skin: lock scrolling (camera pans via transform), box body prose +
 //    the tarefa answer, fade expanded content in.
 baseStyle();
+lockPageScroll();   // the trilha modules / modal focus inputs; keep that off the landing
 const style = document.createElement('style');
 style.textContent =
   'html,body{height:100%;margin:0;overflow:hidden!important}' +

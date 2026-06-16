@@ -4,7 +4,7 @@
 // canned data via the window.callWorker seam. Visible taps + step() beacons (the
 // landing draws the caption tab on top of the phone) + faded state transitions make
 // it read as steps: pergunta -> responde -> pergunta ao instrutor -> respondida.
-import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme } from '/js/frame-demo-shared.js?v=13';
+import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=14';
 
 // 1) Canned Worker transport (set before the real module's first call, at mount).
 const D = {
@@ -35,6 +35,7 @@ window.callWorker = function (p) {
 
 // 2) Demo-only skin: box the option label + the Q/answer prose; fade each state in.
 baseStyle();
+lockPageScroll();   // nexo-answer focuses the qa editor; keep that from scrolling the landing
 const style = document.createElement('style');
 style.textContent =
   'html,body{margin:0;height:100%;background:var(--background);overflow:hidden}' +

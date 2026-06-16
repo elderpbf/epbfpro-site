@@ -21,6 +21,19 @@ export function followParentTheme() {
   addEventListener('message', (e) => { if (e.data && e.data.plpTheme) apply(e.data.plpTheme); });
 }
 
+// Inert demos must never move the landing. The real Codex modules sometimes focus an
+// input or call scrollIntoView; inside an overflow:hidden iframe that request bubbles
+// across the frame boundary and scrolls the PARENT page (a few dozen px of creep).
+// Neuter both inside the frame: we drive the view ourselves with the transform camera,
+// so nothing here needs real scrolling, and focus still works (just preventScroll).
+export function lockPageScroll() {
+  try { Element.prototype.scrollIntoView = function () { /* inert demo: no scroll */ }; } catch (_) { /* noop */ }
+  try {
+    const _focus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (opts) { return _focus.call(this, Object.assign({ preventScroll: true }, opts || {})); };
+  } catch (_) { /* noop */ }
+}
+
 // Base demo styles, shared: a gentle fade-in (so the loop's reload is not a hard
 // flash) and the tap ripple. Box-sizing is clamped so width:100% + padding can't
 // push content past the phone edge (no right-side cut). The action caption now lives

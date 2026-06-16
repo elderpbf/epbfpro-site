@@ -65,6 +65,15 @@ test('demos: caption tab on top of each phone, driven by the step() postMessage 
   // it pans via transform. Match calls (with a paren) so the cautionary comment is fine.
   const ft = read('js/frame-trail.js');
   assert.ok(!/\.scrollIntoView\(|\.scrollTo\(/.test(ft), 'frame-trail must not scroll the page');
+
+  // Inert demos lock page scroll (the real modules focus inputs / scrollIntoView, which
+  // would creep the landing); both drivers call the shared lockPageScroll().
+  assert.ok(/export function lockPageScroll/.test(sh), 'frame-demo-shared must export lockPageScroll');
+  for (const f of ['js/frame-pulso.js', 'js/frame-trail.js'])
+    assert.ok(read(f).includes('lockPageScroll()'), f + ' must call lockPageScroll()');
+
+  // Trilha seeds a student session so the tarefa "Enviar" opens the submit modal, not login.
+  assert.ok(ft.includes("cdx_student_demo_demo"), 'frame-trail must seed the demo student session');
 });
 
 test('index.html: structure only (module boot + JSON-LD, no inline logic)', () => {
