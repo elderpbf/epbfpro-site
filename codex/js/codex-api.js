@@ -277,3 +277,11 @@ export const certificates = {
   markSent:   (p) => call('cert_mark_sent', p),   // { code }
   attachPdf:  (p) => call('cert_attach_pdf', p)   // { code, pdf_b64 }
 };
+
+// Generic e-mail (shared transport). Any tab composes its own subject/body and
+// calls email.send; the Worker forwards to Resend via lib/email.js. Auth-required.
+// Prefer the js/codex-email.js helper (validation + error routing) over calling
+// this directly.
+export const email = {
+  send: (p) => call('send_email', p) // { to, subject, html?, text?, attachments?:[{filename,content(base64)}], from?, replyTo? } -> { ok, id }
+};

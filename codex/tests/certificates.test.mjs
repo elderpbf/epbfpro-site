@@ -477,19 +477,45 @@ describe('Emissão dashboard port (source contract)', () => {
   test('old status <select> filter is gone (cards replaced it)', () => {
     assert.ok(!src.includes('cdx-certs-filter-status'), 'old status select removed');
   });
-  test("sign/send are gated until real signing/email — no false status flip", () => {
-    // The row actions still exist (the workflow is visible)…
+  test("sign is still gated until real signing — no false 'signed' flip", () => {
     assert.ok(src.includes("data-action=\"sign\""), 'row sign action present');
-    assert.ok(src.includes("data-action=\"mark-sent\""), 'row send action present');
-    // …but they must NOT complete a status change yet: clicking surfaces the
-    // not-wired notice and does not call the mark APIs (no false signed/sent).
     assert.ok(src.includes("t('certificates.sign_not_wired')"), 'sign shows the not-wired notice');
-    assert.ok(src.includes("t('certificates.send_not_wired')"), 'send shows the not-wired notice');
     assert.ok(!src.includes('api.markSigned'), 'does NOT flip status to signed yet');
-    assert.ok(!src.includes('api.markSent'), 'does NOT flip status to sent yet');
-    // The facade keeps the actions ready for when the real flows land.
-    assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed');
+    assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed for when signing lands');
+  });
+  test('send is WIRED: e-mails via the shared module, flips to sent only after a real send', () => {
+    assert.ok(src.includes("data-action=\"mark-sent\""), 'row send action present');
+    assert.ok(src.includes("from '../js/codex-email.js'"), 'uses the shared Codex e-mail module (not a cert-only sender)');
+    assert.ok(src.includes('renderCertsPdfBase64'), 'rasterizes the PDF for the attachment');
+    assert.ok(src.includes('sendEmail('), 'sends through the e-mail module');
+    assert.ok(src.includes('api.markSent'), 'flips status to sent');
+    // Honest status: markSent runs AFTER the send resolves ok, never before.
+    const iSend = src.indexOf('sendEmail(');
+    const iMark = src.indexOf('api.markSent');
+    assert.ok(iSend !== -1 && iMark !== -1 && iSend < iMark, 'markSent comes after the send call');
+    // Guards: no send without a recipient e-mail, and only from issued|signed.
+    assert.ok(src.includes("t('certificates.send_no_email')"), 'guards a missing recipient e-mail');
+    assert.ok(src.includes("t('certificates.send_only_issued_signed')"), 'guards the lifecycle status');
     assert.ok(api.includes('cert_mark_sent'), 'facade still exposes cert_mark_sent');
+  });
+});
+
+// ── Shared Codex e-mail module (js/codex-email.js + facade email.send). Generic
+// transport reused by any tab; certificate delivery is the first consumer. ──────
+describe('shared e-mail module (source contract)', () => {
+  const mod = readFileSync(new URL('../js/codex-email.js', import.meta.url), 'utf8');
+  const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+
+  test('facade exposes a generic email.send mapped to the send_email action', () => {
+    assert.ok(api.includes('export const email'), 'email facade export present');
+    assert.ok(api.includes("call('send_email'"), 'maps to the send_email worker action');
+  });
+  test('the module is generic (to/subject/html/attachments/from) and routes failures to the pill', () => {
+    assert.ok(mod.includes('export async function sendEmail'), 'exports sendEmail');
+    assert.ok(mod.includes('export function attachmentFromBase64'), 'exports the base64 attachment helper');
+    assert.ok(/from\b/.test(mod) && mod.includes('attachments'), 'forwards from + attachments (reusable, not cert-only)');
+    assert.ok(mod.includes('window.bsLog'), 'logs failures to the debug pill');
+    assert.ok(mod.includes("from './codex-api.js'"), 'sends only through the facade');
   });
 });
 

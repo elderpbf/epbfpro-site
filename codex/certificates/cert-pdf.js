@@ -50,17 +50,12 @@ function _mountOffscreen(html, qrUrl) {
   return host;
 }
 
-/**
- * Build and download ONE PDF holding N certificates (front + back page per cert),
- * rasterized from the live render. Browser-only (needs the DOM + the vendored libs).
- * @param {Array<{html:string, qrUrl:string}>} items  rendered+hydratable cert HTML
- * @param {{filename?:string, scale?:number, quality?:number, onStep?:(i:number,n:number)=>void}} [opts]
- * @returns {Promise<void>}
- */
-export async function downloadCertsPdf(items, opts) {
+// Build the jsPDF document for N certs (front + back page per cert), rasterized
+// from the live render. Shared by the download path and the base64 export below,
+// so a cert looks identical whether it is saved to disk, uploaded to R2, or
+// attached to an e-mail. Browser-only (needs the DOM + the vendored libs).
+async function _buildCertsDoc(items, opts) {
   opts = opts || {};
-  items = (items || []).filter(Boolean);
-  if (!items.length) return;
   const scale   = opts.scale || 3;        // ~288 DPI on A4 landscape
   const quality = opts.quality || 0.96;   // JPEG, keeps each page ~0.5–1MB
   const { jsPDF, ms } = await _loadLibs();
@@ -88,5 +83,37 @@ export async function downloadCertsPdf(items, opts) {
       host.remove();
     }
   }
+  return doc;
+}
+
+/**
+ * Build and download ONE PDF holding N certificates (front + back page per cert),
+ * rasterized from the live render. Browser-only (needs the DOM + the vendored libs).
+ * @param {Array<{html:string, qrUrl:string}>} items  rendered+hydratable cert HTML
+ * @param {{filename?:string, scale?:number, quality?:number, onStep?:(i:number,n:number)=>void}} [opts]
+ * @returns {Promise<void>}
+ */
+export async function downloadCertsPdf(items, opts) {
+  opts = opts || {};
+  const list = (items || []).filter(Boolean);
+  if (!list.length) return;
+  const doc = await _buildCertsDoc(list, opts);
   doc.save(opts.filename || 'certificado.pdf');
+}
+
+/**
+ * Build ONE PDF for N certificates and return its bytes as raw base64 (no
+ * download), for uploading (cert_attach_pdf → R2) or attaching to an e-mail.
+ * Same rasterization as downloadCertsPdf, so the file is identical. Browser-only.
+ * @param {Array<{html:string, qrUrl:string}>} items  rendered+hydratable cert HTML
+ * @param {{scale?:number, quality?:number, onStep?:(i:number,n:number)=>void}} [opts]
+ * @returns {Promise<string|null>} base64 of the PDF bytes, or null when no items
+ */
+export async function renderCertsPdfBase64(items, opts) {
+  const list = (items || []).filter(Boolean);
+  if (!list.length) return null;
+  const doc = await _buildCertsDoc(list, opts);
+  const uri = doc.output('datauristring'); // data:application/pdf;...;base64,XXXX
+  const at = uri.indexOf('base64,');
+  return at === -1 ? null : uri.slice(at + 'base64,'.length);
 }

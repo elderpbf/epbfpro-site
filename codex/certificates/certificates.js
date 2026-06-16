@@ -27,7 +27,8 @@ import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
   buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames,
 } from './cert-render.js';
-import { downloadCertsPdf } from './cert-pdf.js';
+import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
+import { sendEmail } from '../js/codex-email.js';
 
 // Re-export the registries so the catalog UI (and tests) read them from the face.
 export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
@@ -648,7 +649,7 @@ function _mountEmitidos() {
       if (action === 'copy-url')  { _copyValidarUrl(code); return; }
       if (action === 'revoke')    { _revokeConfirm(code);  return; }
       if (action === 'sign')      { _markSigned(code);     return; }
-      if (action === 'mark-sent') { _markSent(code);       return; }
+      if (action === 'mark-sent') { _sendCert(code);       return; }
       if (action === 'preview')   { _previewCert(code);    return; }
       if (action === 'pdf')       { const cert = _certs.find((x) => x.code === code); if (cert) _printCert(cert); return; }
     };
@@ -751,9 +752,9 @@ async function _bulkAction(kind) {
   if (!codes.length) return;
   if (kind === 'pdf') { _bulkPdf(codes); return; }
   if (kind === 'delete') { _bulkDeleteConfirm(codes); return; }
-  // Sign/send aren't real yet — don't record a false signed/sent state in bulk either.
+  // Signing isn't real yet — don't record a false 'signed' state in bulk.
   if (kind === 'sign') { notice.warn(t('certificates.sign_not_wired')); return; }
-  if (kind === 'send') { notice.warn(t('certificates.send_not_wired')); return; }
+  if (kind === 'send') { _bulkSend(codes); return; }
   try {
     for (const code of codes) {
       if (kind === 'revoke') await api.revoke({ code });
@@ -874,10 +875,13 @@ function _renderCertRow(c) {
   const clientLabel = turma ? _clientName(turma.client_slug) : '';
   const turmaLabel  = _turmaName(turma);
   const sel = _selectedCodes.has(c.code);
-  // Lifecycle next-step button: issued -> assinar, signed -> enviar.
+  // Lifecycle next-step buttons. Signing isn't wired yet, so "Enviar" is usable
+  // from BOTH issued and signed (the attached PDF is unsigned but validatable via
+  // the QR/code). Issued still shows "Assinar" too, for when real signing lands.
+  const sendBtn = '<button class="cdx-btn cdx-btn-sm" data-action="mark-sent" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_send')) + '</button>';
   let nextBtn = '';
-  if (c.status === 'issued') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="sign" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_sign')) + '</button>';
-  else if (c.status === 'signed') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="mark-sent" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_send')) + '</button>';
+  if (c.status === 'issued') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="sign" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_sign')) + '</button>' + sendBtn;
+  else if (c.status === 'signed') nextBtn = sendBtn;
   return '<tr' + (sel ? ' class="is-selected"' : '') + '>' +
     '<td class="cdx-emissao-cbcol"><input type="checkbox" data-sel="' + esc(c.code) + '"' + (sel ? ' checked' : '') + '></td>' +
     '<td class="cdx-certs-code"><code>' + esc(c.code) + '</code></td>' +
@@ -990,8 +994,88 @@ async function _markSigned(code) {
   notice.warn(t('certificates.sign_not_wired'));
 }
 
-async function _markSent(code) {
-  notice.warn(t('certificates.send_not_wired'));
+// Send the certificate by e-mail through the shared Codex e-mail module. The
+// status flips to 'sent' ONLY after a confirmed send, so 'sent' never asserts a
+// mail that didn't go out. Usable from 'issued' or 'signed' (signing isn't wired
+// yet); the attached PDF is unsigned but authenticable via the QR/code.
+async function _sendCert(code) {
+  const cert = _certs.find((c) => c.code === code);
+  if (!cert) return;
+  if (cert.status !== 'issued' && cert.status !== 'signed') { notice.warn(t('certificates.send_only_issued_signed')); return; }
+  if (!cert.email) { notice.warn(t('certificates.send_no_email')); return; }
+  notice.ok(t('certificates.send_sending'));
+  if (await _sendOne(cert)) {
+    notice.ok(t('certificates.send_ok').replace('{name}', cert.holder_name || ''));
+    await _loadCertList();
+  }
+}
+
+// One cert -> e-mail. Rasterizes the PDF, persists it to R2 (so the validar page
+// — and the future Trail "baixe seu certificado" — can serve the same file),
+// e-mails it as an attachment + the validar link, then marks the cert 'sent'.
+// Returns true on a confirmed send; logs failures to the pill and shows an error
+// notice. Does NOT show the per-cert success notice (the caller summarizes).
+async function _sendOne(cert) {
+  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
+  const validarUrl = buildValidarUrl(origin, cert.code);
+  try {
+    const b64 = await renderCertsPdfBase64([{ html: renderCertHtml(cert, origin), qrUrl: validarUrl }]);
+    if (!b64) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
+    const filename = 'certificado-' + (cert.code || 'pensoia') + '.pdf';
+    // Persist to R2 — non-fatal if it fails, the e-mail still carries the attachment.
+    try { await api.attachPdf({ code: cert.code, pdf_b64: b64 }); }
+    catch (e) { if (window.bsLog) window.bsLog('certs: attachPdf ' + cert.code + ': ' + (e && e.message || e), 'error'); }
+    const res = await sendEmail({
+      to: cert.email,
+      subject: t('certificates.email_subject').replace('{course}', cert.course_title || ''),
+      html: _certEmailHtml(cert, validarUrl),
+      attachments: [{ filename, content: b64 }],
+    });
+    if (!res.ok) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
+    await api.markSent({ code: cert.code });
+    return true;
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: send ' + cert.code + ': ' + (e && e.message || e), 'error');
+    notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || ''));
+    return false;
+  }
+}
+
+// Bulk "Enviar": e-mail every selectable cert (issued|signed with an e-mail),
+// summarizing how many went out and how many had no address.
+async function _bulkSend(codes) {
+  const certs = codes
+    .map((code) => _certs.find((c) => c.code === code))
+    .filter(Boolean)
+    .filter((c) => c.status === 'issued' || c.status === 'signed');
+  const sendable = certs.filter((c) => c.email);
+  const noEmail = certs.length - sendable.length;
+  if (!sendable.length) { notice.warn(t('certificates.send_no_email')); return; }
+  notice.ok(t('certificates.send_sending_bulk').replace('{n}', String(sendable.length)));
+  let done = 0;
+  for (const cert of sendable) { if (await _sendOne(cert)) done++; }
+  notice.ok(t('certificates.send_bulk_ok').replace('{n}', String(done)));
+  if (noEmail > 0) notice.warn(t('certificates.send_bulk_no_email').replace('{n}', String(noEmail)));
+  _selectedCodes.clear();
+  await _loadCertList();
+}
+
+// The certificate e-mail body (PT-BR). Kept small + templated so the future Trail
+// "acesse seu certificado na Trilha" CTA is a one-line add here; the transport
+// (codex-email.js / the Worker lib) never changes. Static t() strings, only the
+// already-escaped holder/course are interpolated.
+function _certEmailHtml(cert, validarUrl) {
+  const name = esc(cert.holder_name || '');
+  const course = esc(cert.course_title || '');
+  return '' +
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.6">' +
+      '<p>' + t('certificates.email_greeting').replace('{name}', name) + '</p>' +
+      '<p>' + t('certificates.email_body').replace('{course}', '<strong>' + course + '</strong>') + '</p>' +
+      '<p>' + t('certificates.email_validate') + '<br>' +
+        '<a href="' + esc(validarUrl) + '">' + esc(validarUrl) + '</a></p>' +
+      // FUTURE (Trail self-service): add an "Acesse na Trilha" button/link here.
+      '<p style="color:#666;font-size:13px">' + t('certificates.email_signoff') + '</p>' +
+    '</div>';
 }
 
 // ── Preview + print ───────────────────────────────────────────────────────────

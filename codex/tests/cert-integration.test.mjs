@@ -153,6 +153,11 @@ describe('PDF download path', () => {
     assert.ok(pdf.includes('jspdf.umd.min.js'), 'jsPDF vendored locally (no CDN)');
     assert.ok(pdf.includes('modern-screenshot.umd.js'), 'modern-screenshot vendored locally (no CDN)');
   });
+  test('cert-pdf.js exposes a base64 export (e-mail/upload path) sharing the build', () => {
+    assert.ok(pdf.includes('export async function renderCertsPdfBase64'), 'renderCertsPdfBase64 exported');
+    assert.ok(pdf.includes('datauristring'), 'returns the PDF bytes as base64');
+    assert.ok(pdf.includes('_buildCertsDoc'), 'shares one build path with downloadCertsPdf (identical file)');
+  });
 });
 
 // ── catalog/registry surface re-exported for the Modelos catalog ───────────────
