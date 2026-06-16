@@ -5,7 +5,7 @@
 // instead of native scroll, so it never hijacks the landing). step() beacons (the
 // landing draws the caption tab on top of the phone) + slow pacing + faded reveals
 // make it read as steps: nova aula -> material -> tarefa.
-import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=15';
+import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=16';
 
 // 1) Canned Worker transport (set before the real modules call it).
 const nowSec = Math.floor(Date.now() / 1000);
@@ -53,7 +53,10 @@ lockPageScroll();   // the trilha modules / modal focus inputs; keep that off th
 const style = document.createElement('style');
 style.textContent =
   'html,body{height:100%;margin:0;overflow:hidden!important}' +
-  '.cdx-trilha-main{will-change:transform}' +
+  // The camera pans .cdx-trilha-main via inline transform; its cdx-tr-fade-in animation
+  // (fill both, ends at translateY(0)) would override that inline transform, pinning the
+  // content and leaving taps stuck at the bottom. Drop the animation so the camera works.
+  '.cdx-trilha-main{will-change:transform;animation:none!important}' +
   '.cdx-tr-sub-expanded,.cdx-tr-body{animation:plp-rise .4s ease both}' +
   '.ctr-prompt-body,.ctr-prompt-verbatim{color:transparent!important;position:relative;min-height:38px}' +
   '.ctr-prompt-body::after,.ctr-prompt-verbatim::after{content:"";position:absolute;left:0;right:0;top:2px;bottom:2px;border-radius:4px;opacity:.16;' +

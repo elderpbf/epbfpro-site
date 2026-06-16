@@ -4,7 +4,7 @@
 // canned data via the window.callWorker seam. Visible taps + step() beacons (the
 // landing draws the caption tab on top of the phone) + faded state transitions make
 // it read as steps: pergunta -> responde -> pergunta ao instrutor -> respondida.
-import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=15';
+import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=16';
 
 // 1) Canned Worker transport (set before the real module's first call, at mount).
 const D = {
