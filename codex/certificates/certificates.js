@@ -22,6 +22,7 @@ import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
 import { ementaToCertModules } from '../js/ementa.js';
+import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
@@ -1378,12 +1379,22 @@ function _openIssueFlow() {
             '<input type="checkbox" id="cdx-issue-selall" checked>' +
             '<span class="cdx-cert-roster-allk">' + esc(t('certificates.issue_select_all')) + '</span>' +
           '</label>' +
-          _issueParticipants.map((p) =>
-            '<label class="cdx-cert-roster-row">' +
+          _issueParticipants.map((p) => {
+            const tier = participantTier(p);
+            const badge = '<span class="' + esc(tierBadgeClass(tier)) + '" title="' + esc(t(tierTitleKey(tier))) + '">' + esc(t(tierLabelKey(tier))) + '</span>';
+            // Email is prominent here: the certificate is delivered to it, so a
+            // missing address is flagged (that cert can't be e-mailed until added).
+            const emailLine = p.email
+              ? '<span class="cdx-cert-roster-email">' + esc(p.email) + '</span>'
+              : '<span class="cdx-cert-roster-noemail">' + esc(t('certificates.issue_no_email')) + '</span>';
+            return '<label class="cdx-cert-roster-row' + (p.email ? '' : ' cdx-cert-roster-row--noemail') + '">' +
               '<input type="checkbox" data-pid="' + esc(String(p.id)) + '" ' + (_issueSelectedIds.has(p.id) ? 'checked' : '') + '>' +
-              '<span>' + esc(p.name) + (p.email ? ' <span class="cdx-cert-roster-email">(' + esc(p.email) + ')</span>' : '') + '</span>' +
-            '</label>'
-          ).join('')
+              '<span class="cdx-cert-roster-person">' +
+                '<span class="cdx-cert-roster-line1">' + esc(p.name) + ' ' + badge + '</span>' +
+                emailLine +
+              '</span>' +
+            '</label>';
+          }).join('')
         : '<span class="cdx-empty">' + esc(t('certificates.issue_no_participants')) + '</span>';
       if (rosterEl && _issueParticipants.length) {
         const selAll = rosterEl.querySelector('#cdx-issue-selall');

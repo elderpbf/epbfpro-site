@@ -351,15 +351,26 @@
 
 .cdx-cert-roster-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.875rem;
-  padding: 0.2rem 0.25rem;
+  padding: 0.3rem 0.25rem;
   border-radius: 4px;
   cursor: pointer;
 }
 .cdx-cert-roster-row:hover { background: var(--surface-hover, rgba(127,127,127,0.08)); }
-.cdx-cert-roster-email { color: var(--text-secondary); font-size: 0.8em; }
+.cdx-cert-roster-row input[type="checkbox"] { margin-top: 0.15rem; }
+/* Person block: name + tier badge on line 1, the delivery e-mail prominent below. */
+.cdx-cert-roster-person { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+.cdx-cert-roster-line1 { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.cdx-cert-roster-email { color: var(--text-primary); font-size: 0.82em; word-break: break-all; }
+/* No e-mail = this certificate can't be delivered; flag it clearly. */
+.cdx-cert-roster-noemail {
+  color: var(--danger, #b91c1c);
+  font-size: 0.78em;
+  font-style: italic;
+}
+.cdx-cert-roster-row--noemail { background: var(--danger-bg, rgba(185,28,28,0.06)); }
 /* "Selecionar todos" sits at the top of the roster, separated by a rule. */
 .cdx-cert-roster-all { border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 0.15rem; padding-bottom: 0.35rem; position: sticky; top: -0.4rem; background: var(--surface); }
 .cdx-cert-roster-allk { font-weight: 600; }
