@@ -12,7 +12,7 @@
 // templates are now a fixed, branded set selected at issue time.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.callWorker   (../backstage/js/api-client.js)
+//   window.callWorker   (set by Codex's ../js/worker-call.js; was backstage/js/api-client.js)
 //   window.bsLog        (../backstage/js/debug.js)
 //   brand-logos helpers (../backstage/js/brand-logos.js) — used by hydrate()
 
