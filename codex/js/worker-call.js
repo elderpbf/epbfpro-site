@@ -32,12 +32,13 @@ export function buildWorkerRequest(params, opts = {}) {
   const headers = {};
   if (opts.googleToken) headers['Authorization'] = 'Bearer ' + opts.googleToken;
 
-  // The admin credential (auth_token = bs_pw_hash) must never ride in the URL,
-  // where it lands in server/proxy access logs and the Referer header. Force POST
-  // whenever it is present so the secret travels in the body; the public Trail
-  // (empty auth_token) may stay GET. Oversized payloads POST regardless.
+  // A credential must never ride in the URL, where it lands in server/proxy access
+  // logs and the Referer header. Force POST whenever one is present so it travels in
+  // the body: the admin auth_token (bs_pw_hash) and the Trail's persistent student
+  // session_token both qualify. The public Trail's auth-free reads (empty auth_token,
+  // no session) may stay GET. Oversized payloads POST regardless.
   const getUrl = workerUrl + '?payload=' + encodeURIComponent(bodyJson);
-  const hasSecret = !!(params && params.auth_token);
+  const hasSecret = !!(params && (params.auth_token || params.session_token));
   if (hasSecret || getUrl.length > URL_BUDGET) {
     headers['Content-Type'] = 'application/json';
     return { method: 'POST', url: workerUrl, headers, body: bodyJson };

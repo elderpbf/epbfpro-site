@@ -55,6 +55,14 @@ test('buildWorkerRequest: empty auth_token (public Trail) may stay GET', () => {
   assert.equal(r.method, 'GET', 'the public Trail has no secret to leak');
 });
 
+test('buildWorkerRequest: a session_token forces POST (the persistent student credential never in the URL)', () => {
+  const r = buildWorkerRequest({ action: 'student_session_check', session_token: 'sess_abc' });
+  assert.equal(r.method, 'POST', 'a persistent session token must POST');
+  assert.equal(r.url, DEFAULT_WORKER_URL, 'no query string carrying the token');
+  assert.ok(!/sess_abc/.test(r.url), 'the session token is absent from the URL');
+  assert.ok(/sess_abc/.test(r.body), 'the session token travels in the POST body');
+});
+
 test('callWorker: an injected auth_token POSTs and keeps the token out of the URL', async () => {
   let captured = null;
   const fakeFetch = async (url, opts) => { captured = { url, opts }; return { ok: true, status: 200, text: async () => '{}' }; };
