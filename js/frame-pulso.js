@@ -1,9 +1,10 @@
 // js/frame-pulso.js
 // Runs INSIDE the offer-section Pulso phone (a srcdoc iframe built by demos.js, in
 // place on the landing). Drives the REAL Codex student module (nexo-answer) on
-// canned data via the window.callWorker seam. Nothing is rebuilt. Visible taps +
-// tight pacing make it read as one flow: responde -> pergunta -> respondida.
-import { sleep, $, waitFor, tap, followParentTheme } from '/js/frame-demo-shared.js?v=11';
+// canned data via the window.callWorker seam. Visible taps + action captions + faded
+// state transitions make it read as steps: pergunta -> responde -> pergunta ao
+// instrutor -> respondida.
+import { sleep, $, waitFor, tap, caption, baseStyle, followParentTheme } from '/js/frame-demo-shared.js?v=12';
 
 // 1) Canned Worker transport (set before the real module's first call, at mount).
 const D = {
@@ -32,17 +33,18 @@ window.callWorker = function (p) {
   return Promise.resolve({ ok: true });
 };
 
-// 2) Demo-only skin: box the option label + the Q/answer prose; keep the letter,
-//    the question prompt, and the state strings real.
+// 2) Demo-only skin: box the option label + the Q/answer prose; fade each state in.
+baseStyle();
 const style = document.createElement('style');
 style.textContent =
   'html,body{margin:0;height:100%;background:var(--background);overflow:hidden}' +
   "body{font-family:'Inter','Segoe UI',sans-serif}" +
-  '#cdx-tr-nexo-host,.nx-answer-screen{min-height:100%}.nx-answer-screen{padding:16px 14px;box-sizing:border-box}' +
+  '#cdx-tr-nexo-host{max-width:100%;overflow-x:hidden}.nx-answer-screen{padding:16px 14px}' +
+  '#cdx-tr-nexo-host .nx-state{animation:plp-rise .4s ease both}' +
   '.cdx-qr-option-btn>span:last-child{color:transparent!important;position:relative}' +
   '.cdx-qr-option-btn>span:last-child::after{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);height:13px;border-radius:3px;background:var(--text-secondary);opacity:.28;width:90%}' +
   '.cdx-qr-option-btn:nth-of-type(1)>span:last-child::after{width:80%}' +
-  '.cdx-qr-option-btn:nth-of-type(2)>span:last-child::after{width:97%}' +
+  '.cdx-qr-option-btn:nth-of-type(2)>span:last-child::after{width:96%}' +
   '.cdx-qr-option-btn:nth-of-type(3)>span:last-child::after{width:68%}' +
   '.cdx-qr-option-btn:nth-of-type(4)>span:last-child::after{width:88%}' +
   '.cp-sqa-text,.cp-sqa-answer-text{color:transparent!important;position:relative;min-height:11px}' +
@@ -52,7 +54,7 @@ document.head.appendChild(style);
 
 followParentTheme();
 
-// 3) Mount the REAL student module and autoplay (visible taps, tight pacing).
+// 3) Mount the REAL student module and autoplay (captions + taps + smooth pacing).
 import('/codex/trilha/js/nexo-answer.js').then(({ mount, unmount }) => {
   const HOST = document.getElementById('cdx-tr-nexo-host');
   const ASK = 'E quando o modelo erra?';
@@ -68,28 +70,34 @@ import('/codex/trilha/js/nexo-answer.js').then(({ mount, unmount }) => {
     reset();
     mount(HOST, { sessionCode: 'DEMO', studentName: 'Você' });
 
-    // BEAT 1 — read the question, tap an answer -> "Resposta enviada!"
+    // BEAT 1 — read the question, tap an answer.
     const optB = await waitFor('.cdx-qr-option-btn[data-index="1"]');
-    await sleep(950);
-    await tap(optB);
+    caption('Pergunta ao vivo');
+    await sleep(1300);
+    caption('Respondendo');
+    await sleep(450);
+    await tap(optB);                              // -> "Resposta enviada!"
 
-    // BEAT 2 — the answered screen leads into asking the instructor.
-    await sleep(1200);
+    // BEAT 2 — ask the instructor.
+    await sleep(1500);
+    caption('Perguntando ao instrutor');
+    await sleep(750);
     await tap($('#qa-bar-collapsed'));
     const input = await waitFor('#qa-editor-input', 2000);
     if (input) {
-      for (let i = 1; i <= ASK.length; i++) { input.value = ASK.slice(0, i); input.dispatchEvent(new Event('input', { bubbles: true })); await sleep(26); }
+      for (let i = 1; i <= ASK.length; i++) { input.value = ASK.slice(0, i); input.dispatchEvent(new Event('input', { bubbles: true })); await sleep(28); }
     }
-    await sleep(280);
-    await tap($('#qa-editor-send'));             // -> "Pergunta enviada."
+    await sleep(380);
+    await tap($('#qa-editor-send'));              // -> "Pergunta enviada."
 
     // BEAT 3 — the instructor answers; the question closes -> "Sua pergunta" card.
-    await sleep(1700);
+    await sleep(1500);
+    caption('Pergunta respondida');
     D.closed = true;
-    await sleep(2600);
+    await sleep(2900);
 
     try { unmount(); } catch (_) { /* noop */ }
-    await sleep(550);
+    await sleep(650);
     runOnce();
   }
 
