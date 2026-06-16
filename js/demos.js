@@ -12,7 +12,7 @@ const PULSO_SRCDOC =
   '<link rel="stylesheet" href="/codex/questions/questions.css?v=1.0">' +
   '<link rel="stylesheet" href="/codex/trilha/css/nexo.css?v=1.0">' +
   '</head><body><div id="demo-host"></div>' +
-  '<script type="module" src="/js/frame-pulso.js?v=9"></scr' + 'ipt></body></html>';
+  '<script type="module" src="/js/frame-pulso.js?v=10"></scr' + 'ipt></body></html>';
 
 const TRAIL_SRCDOC =
   '<!DOCTYPE html><html lang="pt-BR" data-theme="light"><head><meta charset="UTF-8">' +
@@ -54,7 +54,7 @@ const TRAIL_SRCDOC =
       '<footer class="cdx-trilha-footer"><span>Feito com PensoIA</span></footer>' +
     '</main>' +
   '</div>' +
-  '<script type="module" src="/js/frame-trail.js?v=9"></scr' + 'ipt></body></html>';
+  '<script type="module" src="/js/frame-trail.js?v=10"></scr' + 'ipt></body></html>';
 
 export function initDemos() {
   const p = document.getElementById('pulseFrame');

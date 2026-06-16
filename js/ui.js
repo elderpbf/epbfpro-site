@@ -1,7 +1,7 @@
 // js/ui.js — header scroll state, theme toggle + logo swap, language buttons,
 // the rotating typewriter in the hero, and the scroll-reveal observer.
-import { t, getLang, setLang, onLang, apply } from './i18n.js?v=9';
-import { getTheme, toggleTheme, onTheme } from './theme.js?v=9';
+import { t, getLang, setLang, onLang, apply } from './i18n.js?v=10';
+import { getTheme, toggleTheme, onTheme } from './theme.js?v=10';
 
 function applyLogo() {
   const file = getTheme() === 'dark' ? 'glyph-wordmark_bg.navy.svg' : 'glyph-wordmark_bg.transp.svg';
