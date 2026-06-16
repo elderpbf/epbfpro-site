@@ -16,7 +16,7 @@
 //   window.bsLog        (../backstage/js/debug.js)
 //   brand-logos helpers (../backstage/js/brand-logos.js) — used by hydrate()
 
-import { certificates as api, cohorts as cohortsApi } from '../js/codex-api.js';
+import { certificates as api, cohorts as cohortsApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -990,8 +990,12 @@ function _bulkDeleteConfirm(codes) {
 // something false (a real ICP-Brasil signature / a real email) that didn't happen.
 // We surface a clear notice and change nothing. (cert_mark_signed/cert_mark_sent
 // stay in the facade for when the real flows land.)
+// Signing is an ICP-Brasil PAdES operation that must run LOCALLY (the A1 private
+// key never leaves the machine), so the browser can't do it. "Assinar" points to
+// the local signer (tools/sign-certs): once it runs, it uploads the signed PDF
+// and flips the status to 'signed' on its own. No false status flip here.
 async function _markSigned(code) {
-  notice.warn(t('certificates.sign_not_wired'));
+  notice.info(t('certificates.sign_local'));
 }
 
 // Send the certificate by e-mail through the shared Codex e-mail module. The
@@ -1019,12 +1023,23 @@ async function _sendOne(cert) {
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
   const validarUrl = buildValidarUrl(origin, cert.code);
   try {
-    const b64 = await renderCertsPdfBase64([{ html: renderCertHtml(cert, origin), qrUrl: validarUrl }]);
+    // A signed cert already has its SIGNED PDF in R2 — e-mail THAT, never a freshly
+    // re-rendered unsigned copy. Otherwise render fresh and persist it to R2.
+    let b64 = null;
+    let alreadyStored = false;
+    if (cert.status === 'signed' && cert.pdf_path) {
+      b64 = await _fetchStoredPdfBase64(cert.pdf_path, cert.status);
+      alreadyStored = !!b64;
+    }
+    if (!b64) b64 = await renderCertsPdfBase64([{ html: renderCertHtml(cert, origin), qrUrl: validarUrl }]);
     if (!b64) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
     const filename = 'certificado-' + (cert.code || 'pensoia') + '.pdf';
-    // Persist to R2 — non-fatal if it fails, the e-mail still carries the attachment.
-    try { await api.attachPdf({ code: cert.code, pdf_b64: b64 }); }
-    catch (e) { if (window.bsLog) window.bsLog('certs: attachPdf ' + cert.code + ': ' + (e && e.message || e), 'error'); }
+    // Persist the freshly-rendered PDF to R2 (skip when we just pulled the stored
+    // signed one). Non-fatal: the e-mail still carries the attachment.
+    if (!alreadyStored) {
+      try { await api.attachPdf({ code: cert.code, pdf_b64: b64 }); }
+      catch (e) { if (window.bsLog) window.bsLog('certs: attachPdf ' + cert.code + ': ' + (e && e.message || e), 'error'); }
+    }
     const res = await sendEmail({
       to: cert.email,
       subject: t('certificates.email_subject').replace('{course}', cert.course_title || ''),
@@ -1038,6 +1053,25 @@ async function _sendOne(cert) {
     if (window.bsLog) window.bsLog('certs: send ' + cert.code + ': ' + (e && e.message || e), 'error');
     notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || ''));
     return false;
+  }
+}
+
+// Fetch a stored PDF from R2 (the worker serves /r2/certificates/<code>.pdf with
+// CORS *) and return it as raw base64. cacheBust (the cert status) varies the URL
+// so the immutable R2 cache can't serve a stale unsigned copy of a since-signed cert.
+async function _fetchStoredPdfBase64(pdfPath, cacheBust) {
+  try {
+    const url = assetUrl('/r2/' + pdfPath) + '?v=' + encodeURIComponent(cacheBust || '');
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    let binary = '';
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    return btoa(binary);
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: fetch stored pdf: ' + (e && e.message || e), 'error');
+    return null;
   }
 }
 

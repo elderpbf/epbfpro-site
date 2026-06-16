@@ -1224,6 +1224,7 @@ export default {
   'certificates.marked_sent_ok':      'Marcado como enviado.',
   'certificates.marked_signed_ok':    'Certificado assinado.',
   'certificates.sign_not_wired':      'Assinatura digital (ICP-Brasil) ainda não está conectada. Não vou marcar como assinado para não registrar algo falso.',
+  'certificates.sign_local':          'A assinatura ICP-Brasil é feita pelo assinador local. Baixe o PDF (Baixar PDF) e rode tools/sign-certs; o status vira Assinado automaticamente.',
   'certificates.send_not_wired':      'Envio por e-mail ainda não está conectado. Não vou marcar como enviado para não registrar algo falso.',
   // Envio por e-mail (Resend) — agora conectado
   'certificates.send_only_issued_signed': 'Só dá para enviar certificados emitidos ou assinados.',

@@ -477,11 +477,16 @@ describe('Emissão dashboard port (source contract)', () => {
   test('old status <select> filter is gone (cards replaced it)', () => {
     assert.ok(!src.includes('cdx-certs-filter-status'), 'old status select removed');
   });
-  test("sign is still gated until real signing — no false 'signed' flip", () => {
+  test('sign is LOCAL-only — Assinar points to the local signer, never flips status in the browser', () => {
     assert.ok(src.includes("data-action=\"sign\""), 'row sign action present');
-    assert.ok(src.includes("t('certificates.sign_not_wired')"), 'sign shows the not-wired notice');
-    assert.ok(!src.includes('api.markSigned'), 'does NOT flip status to signed yet');
-    assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed for when signing lands');
+    assert.ok(src.includes("t('certificates.sign_local')"), 'Assinar shows the local-signer hint');
+    assert.ok(!src.includes('api.markSigned'), 'browser never flips status to signed (the local tool does)');
+    assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed (used by the local tool)');
+  });
+  test('Enviar e-mails the stored SIGNED PDF for a signed cert (not a fresh unsigned re-render)', () => {
+    assert.ok(src.includes('_fetchStoredPdfBase64'), 'fetches the stored PDF from R2');
+    assert.ok(src.includes("cert.status === 'signed'") && src.includes('cert.pdf_path'), 'only when signed + a stored PDF exists');
+    assert.ok(src.includes("assetUrl('/r2/'"), 'reads it via the worker R2 serve route');
   });
   test('send is WIRED: e-mails via the shared module, flips to sent only after a real send', () => {
     assert.ok(src.includes("data-action=\"mark-sent\""), 'row send action present');
