@@ -5,7 +5,7 @@
 // instead of native scroll, so it never hijacks the landing). step() beacons (the
 // landing draws the caption tab on top of the phone) + slow pacing + faded reveals
 // make it read as steps: nova aula -> material -> tarefa.
-import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=14';
+import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=15';
 
 // 1) Canned Worker transport (set before the real modules call it).
 const nowSec = Math.floor(Date.now() / 1000);
@@ -59,6 +59,7 @@ style.textContent =
   '.ctr-prompt-body::after,.ctr-prompt-verbatim::after{content:"";position:absolute;left:0;right:0;top:2px;bottom:2px;border-radius:4px;opacity:.16;' +
   'background:repeating-linear-gradient(var(--text-secondary,#115e59) 0 9px, transparent 9px 17px)}' +
   '.ctr-copy-btn{display:none}' +
+  '.cdx-tr-login-pill{display:none!important}' +   // no auth chrome in the demo (student is pre-logged-in)
   '.tr-tarefa-field textarea,.ct-tarefa-answer-text{color:transparent!important;caret-color:transparent!important;' +
   'background-image:repeating-linear-gradient(rgba(120,140,150,.30) 0 11px, transparent 11px 24px)!important;background-clip:padding-box!important}';
 document.head.appendChild(style);
@@ -80,15 +81,24 @@ Promise.all([
 });
 
 // The demo's OWN scroll: pan `.cdx-trilha-main` so `el` sits `margin` px from the top.
-// NEVER scrollIntoView/scrollTo — those bubble across the iframe boundary and hijack
-// the landing's scroll. This only moves the demo's own content via transform.
-let panY = 0;
+// Computed ABSOLUTELY each call (clear the transform, measure the target's natural
+// position, then animate to it) so it can't drift as the app re-lays-out between beats
+// (navigating into an aula, expanding a sub) — the old incremental accumulator ran the
+// transform to thousands of px and left taps stuck near the bottom edge. NEVER
+// scrollIntoView/scrollTo — those bubble across the iframe boundary and hijack the
+// landing's scroll. This only moves the demo's own content via transform.
 function panTo(el, margin) {
-  const root = $('.cdx-trilha-main'); if (!root || !el) return;
+  const main = $('.cdx-trilha-main'); if (!main || !el) return;
   const m = (margin == null ? 150 : margin);
-  panY = Math.max(0, panY + (el.getBoundingClientRect().top - m));
-  root.style.transition = 'transform .55s ease';
-  root.style.transform = 'translateY(' + (-panY) + 'px)';
+  const prev = main.style.transform || 'none';
+  main.style.transition = 'none';
+  main.style.transform = 'none';
+  const natural = el.getBoundingClientRect().top;   // untransformed viewport top
+  const pan = Math.max(0, Math.round(natural - m));
+  main.style.transform = prev;                        // restore so there's no flash
+  void main.offsetWidth;                              // commit prev as the transition start
+  main.style.transition = 'transform .6s ease';
+  main.style.transform = 'translateY(-' + pan + 'px)';
 }
 // True if any part of `el` is comfortably inside the phone viewport.
 function inBand(el) {

@@ -1,10 +1,10 @@
 // js/main.js — boot for the PensoIA landing. The single module entry the page loads.
-import { initTheme } from './theme.js?v=14';
-import { apply } from './i18n.js?v=14';
-import { initUI } from './ui.js?v=14';
-import { initDemos } from './demos.js?v=14';
-import { initOrb } from './orb.js?v=14';
-import { initOrbSettings } from './orb-settings.js?v=14';
+import { initTheme } from './theme.js?v=15';
+import { apply } from './i18n.js?v=15';
+import { initUI } from './ui.js?v=15';
+import { initDemos } from './demos.js?v=15';
+import { initOrb } from './orb.js?v=15';
+import { initOrbSettings } from './orb-settings.js?v=15';
 
 initTheme();          // set data-theme from storage
 apply(document);      // fill every data-i18n / data-i18n-html
