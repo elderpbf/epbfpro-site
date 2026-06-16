@@ -6,6 +6,9 @@
 import { state } from './state.js';
 import { esc, copyToClipboard, hasSubmittedTarefa } from './utils.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
+import { isLoggedIn } from './student-session.js';
+import { gate } from './student-login.js';
+import { openLoginModal } from './student-login-modal.js';
 
 export function getMeta(item) {
   if (!item || !item.meta_json) return {};
@@ -72,13 +75,21 @@ export function injectActionButton(sub, item, opts = {}) {
 }
 
 export function openTarefaSubmit(item, sub, opts) {
-  openTarefaSubmitModal({
+  // Persisting a tarefa answer requires a student session: gate the modal behind
+  // login, resuming the submit once authenticated. The gate logic is unit-tested
+  // (student-login.gate); here we only supply the predicate + the two callbacks.
+  const proceed = () => openTarefaSubmitModal({
     item,
     clientSlug: state.clientSlug,
     turmaSlug: state.turmaSlug,
     token: state.token,
     onSubmitted: () => injectActionButton(sub, item, opts || {}),
   });
+  gate(
+    isLoggedIn(state.clientSlug, state.turmaSlug),
+    (resume) => openLoginModal({ client: state.clientSlug, turma: state.turmaSlug, onAuthenticated: resume }),
+    proceed,
+  );
 }
 
 export function appendFlatActionRow(body, item) {

@@ -176,3 +176,78 @@ body.tr-modal-open { overflow: hidden; }
   .tr-modal-title { font-size: 1.05rem; }
   .tr-tarefa-instructions { max-height: 150px; }
 }
+
+/* =========================================================
+   Codex · Trilha — Student login / cadastro modal.
+   Reuses the shared modal shell (.tr-modal*, .tr-btn*,
+   .tr-tarefa-field-label / .tr-tarefa-name / .tr-tarefa-error /
+   .tr-tarefa-actions) defined above; only the login-specific
+   pieces (subtitle, consent box, spinner, dev link) live here.
+   The DOM is rendered by student-login-modal.js and verified on
+   staging; logic is unit-tested in student-login.js.
+   ========================================================= */
+
+.tr-login-subtitle {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.tr-login .tr-tarefa-field-label { display: block; }
+.tr-login-email,
+.tr-login-name { margin-bottom: 0.2rem; }
+
+.tr-login-consent {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--border);
+}
+.tr-login-consent-notice {
+  margin: 0 0 0.7rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--background);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-height: 140px;
+  overflow-y: auto;
+}
+.tr-login-consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+.tr-login-consent-row input[type="checkbox"] {
+  accent-color: var(--task);
+  width: 16px;
+  height: 16px;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.tr-login-dev {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--border);
+}
+
+.tr-login-spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0.6rem 0;
+  border: 3px solid var(--border);
+  border-top-color: var(--task);
+  border-radius: 50%;
+  animation: tr-login-spin 0.8s linear infinite;
+}
+@keyframes tr-login-spin { to { transform: rotate(360deg); } }
+
+/* Header login/logout pill rides on the shared .ph-action-btn chrome; no extra
+   styling needed beyond a stable hook for future tweaks. */
+.cdx-tr-login-pill { cursor: pointer; }
