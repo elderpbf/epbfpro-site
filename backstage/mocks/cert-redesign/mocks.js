@@ -8,13 +8,12 @@ window.REVIEW_MANIFEST = {
   storageKey: 'mockrev_certredesign_ratings_v1',
   notesKey:   'mockrev_certredesign_notes_v1',
   rows: [
-    { label: 'Vetor (favorito)', items: [
-      { id: 'a1', file: 'a1.html', label: 'Vetor · validação card' },
-      { id: 'a2', file: 'a2.html', label: 'Vetor · validação faixa' }
+    { label: 'Vetor (favorito) · nome sans, sem serifa', items: [
+      { id: 'a1', file: 'a1.html', label: 'Vetor · nome leve' },
+      { id: 'a2', file: 'a2.html', label: 'Vetor · nome forte' }
     ]},
-    { label: 'Alternativos claros', items: [
-      { id: 'a3', file: 'a3.html', label: 'Console · grade' },
-      { id: 'a4', file: 'a4.html', label: 'Monograma · clássico' }
+    { label: 'Alternativa', items: [
+      { id: 'a3', file: 'a3.html', label: 'Console · grade' }
     ]}
   ]
 };

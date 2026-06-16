@@ -27,5 +27,12 @@ body { margin: 0; background: #0e1622; font-family: 'Inter', sans-serif; color: 
 .cdx-cert-page .f-vetor .vt-mid .stmt,
 .cdx-cert-page .f-console .cs-mid .stmt { font-size: 15.5px; line-height: 1.75; }
 
-/* Name auto-fit: balance wrapping; JS shrinks the size to keep it to <=2 lines. */
-.cdx-cert-page .name, .cdx-cert-page .m-name { text-wrap: balance; }
+/* No serif: the recipient name is now sans (Inter), modern, not classic. */
+.cdx-cert-page .name, .cdx-cert-page .m-name { font-family: var(--inter); font-weight: 600; letter-spacing: -.015em; text-wrap: balance; }
+.cm-name-bold .cdx-cert-page .name { font-weight: 800; font-size: 66px; letter-spacing: -.03em; }
+
+/* Keep ALL the front text off the right-hand colour field: confine the text column
+   to the paper side so the statement never crosses into the gradient slab. */
+.cdx-cert-page .f-vetor .vt-mid { max-width: 124mm; }
+.cdx-cert-page .f-vetor .vt-mid .stmt,
+.cdx-cert-page .f-vetor .vt-mid .name { max-width: 124mm; }

@@ -59,8 +59,10 @@ function vetorFront(d, valVariant) {
     + '<div class="vt-grid"></div><div class="vt-slab"><div class="dots"></div></div>'
     + '<div class="vt-ghost" data-mk></div>'
     + '<div class="vt-content">'
+      // Code shown ONCE (in the validation block below); the top tag carries only
+      // the issuing context, no second code.
       + '<div class="vt-top"><span class="bmark" data-logo="light"></span>'
-        + '<div class="vt-tag">Certificado · Nº ' + d.code + '<br>' + d.client + ' · ' + d.place + '</div></div>'
+        + '<div class="vt-tag">' + d.client + '<br>' + d.place + '</div></div>'
       + '<div class="vt-mid">'
         + '<div class="eyebrow">Certificado de Participação</div>'
         + '<div class="lead">Certificamos, para os devidos fins, que</div>'
