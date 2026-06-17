@@ -165,7 +165,10 @@ function studentsCard(participants) {
         (online ? ' <span class="cdx-al-online" title="' + esc(t('alunos.online')) + '">●</span>' : '') + '</span>' +
       '<span class="cdx-al-email">' + esc(p.email || '') + '</span>' +
       statusBadge(p) + via +
-      (online ? '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-revoke">' + esc(t('alunos.revoke')) + '</button>' : '<span></span>') +
+      '<span class="cdx-al-sact">' +
+        ((p.access_status === 'approved') ? '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-revoke">' + esc(t('alunos.revoke')) + '</button>' : '') +
+        '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-remove">' + esc(t('alunos.remove')) + '</button>' +
+      '</span>' +
     '</li>';
   }).join('');
   return '<section class="cdx-alunos-card"><h2>' + esc(t('alunos.students')) + ' (' + participants.length + ')</h2>' +
@@ -175,7 +178,16 @@ function wireStudents() {
   body().querySelectorAll('.cdx-al-srow').forEach((li) => {
     const id = Number(li.dataset.id);
     const rv = li.querySelector('.cdx-al-revoke');
-    if (rv) rv.addEventListener('click', async () => { rv.disabled = true; await safe(() => api.revokeStudentSessions({ participant_id: id })); loadTurma(); });
+    const rm = li.querySelector('.cdx-al-remove');
+    // Revoke = flip access_status back to pending. The content gate reads status
+    // live, so this cuts access immediately; a session-only kill (the old wiring)
+    // left status='approved', so the next login auto-re-approved via the roster path.
+    if (rv) rv.addEventListener('click', async () => { rv.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'pending' })); loadTurma(); });
+    // Remove = delete the participant row entirely (clean re-test with the same email).
+    if (rm) rm.addEventListener('click', async () => {
+      if (typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
+      rm.disabled = true; await safe(() => api.deleteParticipant({ id })); loadTurma();
+    });
   });
 }
 

@@ -35,6 +35,8 @@ export default {
   'alunos.students_empty': 'Nenhum aluno nesta turma ainda.',
   'alunos.online':       'Conectado agora',
   'alunos.revoke':       'Revogar acesso',
+  'alunos.remove':       'Remover',
+  'alunos.remove_confirm': 'Remover este aluno? Ele perde o acesso e precisa entrar de novo.',
   'alunos.status_approved': 'Aprovado',
   'alunos.status_pending':  'Pendente',
   'alunos.status_denied':   'Negado',

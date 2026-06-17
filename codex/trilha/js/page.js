@@ -123,7 +123,12 @@ function buildLoginPill() {
   btn.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
   btn.addEventListener('click', () => {
     if (isLoggedIn(state.clientSlug, state.turmaSlug)) {
+      // Logout must re-gate. Content already rendered for an approved session
+      // stays on screen, because the gate only re-checks on the next fetch, so
+      // clearing the token alone left everything visible. Reload so the Trail
+      // re-fetches as anonymous and the gate re-applies.
       clearToken(state.clientSlug, state.turmaSlug);
+      if (typeof location !== 'undefined' && location.reload) { location.reload(); return; }
       refreshLoginPill();
     } else {
       openLoginModal({

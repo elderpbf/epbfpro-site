@@ -34,6 +34,7 @@
 .cdx-al-online { color: var(--ok, #2ecc71); }
 .cdx-al-via { color: var(--muted, #999); font-size: 0.8rem; }
 .cdx-al-qact { display: flex; gap: 0.4rem; }
+.cdx-al-sact { display: flex; gap: 0.4rem; justify-content: flex-end; }
 
 .cdx-al-badge {
   display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px;

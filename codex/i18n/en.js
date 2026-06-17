@@ -36,6 +36,8 @@ export default {
   'alunos.students_empty': 'No students in this class yet.',
   'alunos.online':       'Online now',
   'alunos.revoke':       'Revoke access',
+  'alunos.remove':       'Remove',
+  'alunos.remove_confirm': 'Remove this student? They lose access and must sign in again.',
   'alunos.status_approved': 'Approved',
   'alunos.status_pending':  'Pending',
   'alunos.status_denied':   'Denied',
