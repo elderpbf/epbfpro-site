@@ -49,6 +49,20 @@ test('diffOutrosSelection releases new picks and unreleases dropped Outros items
   assert.deepEqual(out.toUnrelease, [2], 'in-Outros+unchecked -> unrelease');
 });
 
+test('R3 + R1a: composer groups items por tipo and greys items already released to another aula', () => {
+  // R3: items laid out by type (one section per ct_types slug), not one Outros bucket.
+  assert.match(relSrc, /function _groupByType/, 'has a group-by-type helper');
+  assert.match(relSrc, /_groupByType\(outrosItems\)/, 'aula composer groups the pool by type');
+  assert.match(relSrc, /'type-' \+ g\.type/, 'each type gets its own section key');
+  // R1a: items released to another aula are flagged + greyed.
+  assert.match(relSrc, /function _releasedElsewhere/, 'computes the already-released-elsewhere state');
+  assert.match(relSrc, /is-already-released/, 'applies the grey-out class');
+  for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
+    const dict = readFileSync(new URL(lang, import.meta.url), 'utf8');
+    assert.ok(dict.includes("'releases.already_aula'"), lang + ' has releases.already_aula');
+  }
+});
+
 test('R2: mark-aula-happened control sets happened_on to the scheduled day via a full updateAula', () => {
   assert.match(relSrc, /data-mark-happened=/, 'renders the mark-happened control on aula rows');
   assert.match(relSrc, /function _markAulaHappened/, 'has the handler');

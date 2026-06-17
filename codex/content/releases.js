@@ -369,11 +369,45 @@ function _toggleFresh(aulaNum, makeFresh) {
 }
 
 // ── Composer rendering (collapsible accordion, like the Presets picker) ──────
-function _rowHtml(item, pool, checked, glyphHtml) {
-  return '<label class="cdx-comp-item" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
+function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
+  // elsewhereAula: this item is already released to ANOTHER aula in this turma
+  // (greyed + a "já na aula N" note). Checking it here moves it (diffAulaSelection).
+  const already = (elsewhereAula != null && elsewhereAula !== '');
+  return '<label class="cdx-comp-item' + (already ? ' is-already-released' : '') + '" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
     '<input type="checkbox" class="cdx-comp-cb" data-pool="' + pool + '" value="' + _esc(item.id) + '"' + (checked ? ' checked' : '') + '>' +
-    '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) + '</span>' +
+    '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) +
+      (already ? ' <span class="cdx-comp-elsewhere">' + _esc(t('releases.already_aula').replace('{n}', String(elsewhereAula))) + '</span>' : '') +
+    '</span>' +
   '</label>';
+}
+
+// Display label for an item type slug (from the ct_types registry; fallback = slug).
+function _typeLabel(slug) {
+  const ty = _types.find((x) => x.slug === slug);
+  return (ty && ty.label) || slug;
+}
+
+// Group items by their type, ordered by the ct_types registry order (unknown types
+// last). Used to lay the release composer out "por tipo" instead of one Outros bucket.
+function _groupByType(items) {
+  const order = _types.map((tp) => tp.slug);
+  const byType = new Map();
+  items.forEach((i) => { if (!byType.has(i.type)) byType.set(i.type, []); byType.get(i.type).push(i); });
+  return Array.from(byType.keys())
+    .sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    })
+    .map((k) => ({ type: k, items: byType.get(k) }));
+}
+
+// Is this item released to a DIFFERENT aula than aulaNum? Returns that aula number,
+// else null. Drives the "já aplicada noutra aula" grey-out (R1a).
+function _releasedElsewhere(id, aulaNum) {
+  if (_released.indexOf(Number(id)) === -1) return null;
+  const a = (_releasedMeta[id] || {}).aula_number;
+  if (a == null || a === '') return null;
+  return String(a) === String(aulaNum) ? null : a;
 }
 
 // Render the item pools as one search + a single-open accordion of sections,
@@ -450,21 +484,23 @@ function _renderAulaComposer(container, aula) {
 
   const tarefaGlyph = _countGlyph('tarefa', 15);
   const tarefaRows = tarefaItems.length
-    ? tarefaItems.map((i) => _rowHtml(i, 'tarefa', _isBoundTo(i.id, aulaNum), tarefaGlyph)).join('')
+    ? tarefaItems.map((i) => _rowHtml(i, 'tarefa', _isBoundTo(i.id, aulaNum), tarefaGlyph, _releasedElsewhere(i.id, aulaNum))).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_tarefa') + '</div>';
 
-  const outrosRows = outrosItems.length
-    ? outrosItems.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join('')
-    : '<div class="cdx-comp-empty">' + t('releases.empty_outros') + '</div>';
-
+  // R3: lay the item list out por tipo. Apostila + Tarefas keep their own sections;
+  // the former single "Outros" bucket splits into one section per item type.
   const sections = [
     { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length, rowsHtml: apostilaRows },
     { key: 'tarefa', label: t('releases.section_tarefas'), count: tarefaItems.length, rowsHtml: tarefaRows },
-    { key: 'outros', label: t('releases.section_outros'), count: outrosItems.length, rowsHtml: outrosRows },
   ];
+  _groupByType(outrosItems).forEach((g) => {
+    const glyph = typeIconHtml(_typeIcon(g.type), { size: 15 });
+    const rows = g.items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), glyph, _releasedElsewhere(i.id, aulaNum))).join('');
+    sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length, rowsHtml: rows });
+  });
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
-    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph)).join('');
+    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph, _releasedElsewhere(i.id, aulaNum))).join('');
     sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
   }
 
@@ -483,13 +519,15 @@ function _renderOutrosComposer(container) {
   const standalone = eligible.filter((i) => !_isDrive(i));
   const driveItems = eligible.filter(_isDrive);
 
-  const standaloneRows = standalone.length
-    ? standalone.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join('')
-    : '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>';
-
-  const sections = [
-    { key: 'outros', label: t('releases.section_outros_solo'), count: standalone.length, rowsHtml: standaloneRows },
-  ];
+  // R3: por tipo here too. Empty bucket keeps a single placeholder section.
+  const sections = standalone.length
+    ? _groupByType(standalone).map((g) => ({
+        key: 'type-' + g.type,
+        label: _typeLabel(g.type),
+        count: g.items.length,
+        rowsHtml: g.items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join(''),
+      }))
+    : [{ key: 'outros', label: t('releases.section_outros_solo'), count: 0, rowsHtml: '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>' }];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
     const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');

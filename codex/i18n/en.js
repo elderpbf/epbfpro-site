@@ -525,6 +525,7 @@ export default {
   'releases.clear_fresh_done':    'NOVO badge hidden.',
   'releases.show_fresh':          'Show NOVO badge for this lesson',
   'releases.show_fresh_done':     'NOVO badge shown.',
+  'releases.already_aula':        'in lesson {n}',
   'releases.mark_happened':       'Occurred',
   'releases.mark_happened_title': 'Mark as occurred on its scheduled day',
   'releases.mark_happened_done':  'Lesson marked as occurred.',

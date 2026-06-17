@@ -752,6 +752,10 @@
 .cdx-comp-item svg { display: block; flex-shrink: 0; }
 .cdx-comp-cb { flex-shrink: 0; accent-color: var(--primary); }
 .cdx-comp-empty { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
+/* Item already released to another aula in this turma: greyed, with a small note. */
+.cdx-comp-item.is-already-released { opacity: 0.5; }
+.cdx-comp-item.is-already-released:hover { opacity: 0.75; }
+.cdx-comp-elsewhere { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
 .cdx-comp-actions { display: flex; justify-content: flex-end; flex-shrink: 0; }
 
 /* ── Apostila sub-tab (imported course content) ──────────────────────────── */
