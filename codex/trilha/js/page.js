@@ -173,7 +173,9 @@ function renderHeaderActions() {
       prepend(wa);
     }
 
-    if (LOGIN_ENABLED) {
+    // The login pill shows only on a gated turma; open turmas need no login UI and
+    // stay visually unchanged when LOGIN_ENABLED flips on.
+    if (LOGIN_ENABLED && data.access && data.access.gated) {
       _loginPill = buildLoginPill();
       prepend(_loginPill);
     }

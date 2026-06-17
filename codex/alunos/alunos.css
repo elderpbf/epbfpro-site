@@ -1,0 +1,53 @@
+/* codex/alunos/alunos.css — the Alunos (student access) admin section. cdx-al- prefix. */
+.cdx-alunos { padding: 1rem 1.25rem 3rem; max-width: 880px; }
+.cdx-alunos-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+}
+.cdx-alunos-head h1 { margin: 0; font-size: 1.5rem; }
+.cdx-alunos-pick { display: flex; align-items: center; gap: 0.5rem; }
+.cdx-alunos-pick select { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--background); }
+
+.cdx-alunos-empty, .cdx-alunos-hint { color: var(--muted, #777); margin: 0.25rem 0 0.75rem; }
+.cdx-alunos-error { color: var(--danger, #c0392b); }
+
+.cdx-alunos-card {
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 1rem 1.1rem; margin-bottom: 1rem; background: var(--surface, #fff);
+}
+.cdx-alunos-card h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+
+.cdx-al-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+.cdx-al-row select { padding: 0.3rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--background); }
+.cdx-al-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
+.cdx-al-msg { font-size: 0.9rem; color: var(--muted, #777); }
+
+.cdx-al-list { list-style: none; margin: 0.75rem 0 0; padding: 0; }
+.cdx-al-qrow, .cdx-al-srow {
+  display: grid; align-items: center; gap: 0.5rem 0.75rem;
+  grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 1.4fr) auto;
+  padding: 0.5rem 0; border-top: 1px solid var(--border);
+}
+.cdx-al-srow { grid-template-columns: minmax(7rem, 1fr) minmax(7rem, 1.2fr) auto auto auto; }
+.cdx-al-name { font-weight: 600; }
+.cdx-al-email { color: var(--muted, #777); font-size: 0.9rem; word-break: break-all; }
+.cdx-al-online { color: var(--ok, #2ecc71); }
+.cdx-al-via { color: var(--muted, #999); font-size: 0.8rem; }
+.cdx-al-qact { display: flex; gap: 0.4rem; }
+
+.cdx-al-badge {
+  display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px;
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
+}
+.cdx-al-badge--approved { background: rgba(46, 204, 113, 0.15); color: #1e8e4e; }
+.cdx-al-badge--pending  { background: rgba(241, 196, 15, 0.18); color: #9a7d0a; }
+.cdx-al-badge--denied   { background: rgba(192, 57, 43, 0.15); color: #c0392b; }
+
+.cdx-btn {
+  cursor: pointer; padding: 0.4rem 0.85rem; border-radius: 8px;
+  border: 1px solid var(--task, #6b5cff); background: var(--task, #6b5cff); color: #fff;
+  font-size: 0.85rem;
+}
+.cdx-btn:disabled { opacity: 0.55; cursor: default; }
+.cdx-btn-ghost { background: transparent; color: var(--task, #6b5cff); }
+.cdx-al-roster { width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid var(--border); border-radius: 8px; resize: vertical; }

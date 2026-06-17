@@ -170,7 +170,11 @@ export const cohorts = {
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
-  importParticipants: (p) => call('ct_import_participants', p) // { turma_id, rows[] }
+  importParticipants: (p) => call('ct_import_participants', p), // { turma_id, rows[] }
+  // Trail access-control admin (Phase 7): the Alunos section drives these.
+  setParticipantAccess:  (p) => call('ct_set_participant_access', p),   // { participant_id|participant_ids, status }
+  rosterApprove:         (p) => call('ct_roster_approve', p),           // { turma_id, emails[] }
+  revokeStudentSessions: (p) => call('ct_revoke_student_sessions', p)   // { participant_id }
 };
 
 // Courses — reusable course templates (Cohorts → Cursos sub-tab). A course is a

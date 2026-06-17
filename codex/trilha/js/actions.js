@@ -7,8 +7,7 @@ import { state } from './state.js';
 import { esc, copyToClipboard, hasSubmittedTarefa } from './utils.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
 import { isLoggedIn, LOGIN_ENABLED } from './student-session.js';
-import { gate } from './student-login.js';
-import { openLoginModal } from './student-login-modal.js';
+import { openTrailLogin } from './gate.js';
 
 export function getMeta(item) {
   if (!item || !item.meta_json) return {};
@@ -86,14 +85,17 @@ export function openTarefaSubmit(item, sub, opts) {
     sessionToken: state.sessionToken, // approved-session token; gated turmas require it
     onSubmitted: () => injectActionButton(sub, item, opts || {}),
   });
-  // Login disabled: submit name-based as before. When the access-control model
-  // lands, the gate (unit-tested in student-login.gate) routes through login first.
-  if (!LOGIN_ENABLED) { proceed(); return; }
-  gate(
-    isLoggedIn(state.clientSlug, state.turmaSlug),
-    (resume) => openLoginModal({ client: state.clientSlug, turma: state.turmaSlug, k: state.token, onAuthenticated: resume }),
-    proceed,
-  );
+  // Non-gated turmas keep the open anonymous / name-based submit, exactly as before.
+  // A gated turma routes an unauthenticated student through login first (the worker
+  // also enforces it); a logged-in-but-pending student proceeds and the submit modal
+  // surfaces the needs_approval message.
+  const access = (state.data || {}).access;
+  const gated = !!(access && access.gated);
+  if (!LOGIN_ENABLED || !gated || isLoggedIn(state.clientSlug, state.turmaSlug)) {
+    proceed();
+    return;
+  }
+  openTrailLogin();
 }
 
 export function appendFlatActionRow(body, item) {
