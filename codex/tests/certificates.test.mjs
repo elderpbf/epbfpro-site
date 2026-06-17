@@ -502,6 +502,13 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(src.includes("t('certificates.send_no_email')"), 'guards a missing recipient e-mail');
     assert.ok(src.includes("t('certificates.send_only_issued_signed')"), 'guards the lifecycle status');
     assert.ok(api.includes('cert_mark_sent'), 'facade still exposes cert_mark_sent');
+    assert.ok(src.includes('from: CERT_FROM'), 'cert e-mail sets an explicit sender');
+    assert.ok(src.includes('onboarding@resend.dev'), 'sandbox sender (delivers to the account owner) until pensoia.com is verified');
+  });
+  test('a stored (signed) PDF downloads via the worker R2 route, not a relative path', () => {
+    // pdf_path is an R2 key; the row must link through assetUrl('/r2/'+key), else the
+    // browser resolves it relative to the page and 404s.
+    assert.ok(src.includes("assetUrl('/r2/' + c.pdf_path)"), 'stored-PDF link goes through the R2 serve route');
   });
 });
 

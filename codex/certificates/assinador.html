@@ -15,9 +15,10 @@
          --ink:#e8eef5; --mut:#9fb0c3; --teal:#0d9488; --teal2:#14b8a6; --red:#dc2626; --ok:#16a34a; }
   *{ box-sizing:border-box; }
   body{ margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); }
-  .wrap{ max-width:920px; margin:0 auto; padding:24px 20px 80px; }
-  h1{ font-size:20px; margin:0 0 2px; display:flex; align-items:center; gap:9px; }
-  h1 .pp{ font-family:'Comfortaa',sans-serif; font-weight:700; color:var(--teal2); }
+  .wrap{ max-width:720px; margin:0 auto; padding:22px 20px 64px; }
+  .brandrow{ margin:0 0 12px; }
+  .brandlogo svg{ height:30px; width:auto; display:block; }
+  h1{ font-size:19px; margin:0 0 2px; }
   .sub{ color:var(--mut); font-size:13px; margin:0 0 18px; line-height:1.6; }
   .panel{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
   .panel h2{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin:0 0 12px; font-weight:600; }
@@ -50,7 +51,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1><span class="pp">P</span> Assinador de Certificados</h1>
+  <div class="brandrow"><span id="brandLogo" class="brandlogo" aria-label="PensoIA"></span></div>
+  <h1>Assinador de Certificados</h1>
   <p class="sub">Assina os certificados com o seu e-CNPJ (ICP-Brasil) aqui no seu computador e marca como
     <b>Assinado</b> automaticamente. A chave privada nunca sai da sua máquina.</p>
 
@@ -105,6 +107,6 @@
 </div>
 
 <div id="offscreen"></div>
-<script type="module" src="assinador.js?v=1.0"></script>
+<script type="module" src="assinador.js?v=1.1"></script>
 </body>
 </html>

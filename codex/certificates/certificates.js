@@ -31,6 +31,12 @@ import {
 import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
 import { sendEmail } from '../js/codex-email.js';
 
+// TEMP (testing): send cert e-mails from the Resend sandbox sender, which needs no
+// domain setup but only DELIVERS to the Resend account owner's own address. Switch
+// to 'PensoIA <certificados@pensoia.com>' once pensoia.com is verified in Resend
+// (the DNS records are pending). See SCRATCH / the email task.
+const CERT_FROM = 'PensoIA <onboarding@resend.dev>';
+
 // Re-export the registries so the catalog UI (and tests) read them from the face.
 export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
 
@@ -909,7 +915,9 @@ function _renderCertRow(c) {
       // Every row can produce its PDF (print → Salvar como PDF), independent of a
       // stored file. When a signed PDF is attached later, link that instead.
       (hasPdf
-        ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(c.pdf_path) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>'
+        // pdf_path is an R2 key (certificates/<code>.pdf); it is served by the worker
+        // at /r2/<key>, NOT as a relative path off the site. Link through assetUrl.
+        ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(assetUrl('/r2/' + c.pdf_path)) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>'
         : '<button class="cdx-btn cdx-btn-sm" data-action="pdf" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>') +
       (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
       // Delete is intentionally NOT a per-row button: it lives only in the bulk bar
@@ -1053,6 +1061,7 @@ async function _sendOne(cert) {
     }
     const res = await sendEmail({
       to: cert.email,
+      from: CERT_FROM,
       subject: t('certificates.email_subject').replace('{course}', cert.course_title || ''),
       html: _certEmailHtml(cert, validarUrl),
       attachments: [{ filename, content: b64 }],

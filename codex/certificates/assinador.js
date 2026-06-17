@@ -12,10 +12,15 @@ import '../js/worker-call.js'; // sets window.callWorker (defaults to codex-api)
 import { certificates as api } from '../js/codex-api.js';
 import { renderCertsPdfBase64 } from './cert-pdf.js';
 import { renderCertHtml, buildValidarUrl, formatIssuedOn } from './certificates.js';
+import { glyphWordmark, stdColors } from '../js/brand-logos.js';
 
 window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
 
 const $ = (s) => document.querySelector(s);
+
+// Real PensoIA lockup (filled artwork, same as the certs). Dark page -> navy recipe
+// (white wordmark + teal accent).
+const _logo = $('#brandLogo'); if (_logo) _logo.innerHTML = glyphWordmark(stdColors('navy'));
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ── local-app bridge detection ────────────────────────────────────────────────
