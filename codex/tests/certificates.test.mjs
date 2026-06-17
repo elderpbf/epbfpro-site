@@ -547,7 +547,7 @@ describe('shared e-mail module (source contract)', () => {
     // (Gmail/Outlook strip both); the lockup is a text wordmark, not a hosted image.
     assert.ok(mod.includes('role="presentation"') && mod.includes('cellpadding'), 'table-based layout');
     assert.ok(!/<svg/i.test(mod), 'no SVG (e-mail clients strip it)');
-    assert.ok(mod.includes('penso') && mod.includes('IA'), 'PensoIA text wordmark (renders without remote images)');
+    assert.ok(mod.includes('<img') && mod.includes('email-logo.png') && mod.includes('alt="PensoIA"'), 'hosted raster brand logo (e-mail-safe)');
     assert.ok(mod.includes('#061a51') && mod.includes('#14b8a6'), 'brand navy + teal');
   });
 });

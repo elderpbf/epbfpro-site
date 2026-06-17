@@ -58,38 +58,44 @@ export function attachmentFromBase64(filename, base64) {
 // The ONE visual shell every Codex e-mail wraps its content in, so cert delivery,
 // the magic-link login, and anything future all look like the same product. Built
 // for the lowest common denominator of e-mail clients (Gmail/Outlook): table-based
-// layout, fully inline styles, NO external CSS, NO SVG (both are stripped). The
-// PensoIA lockup is a TEXT wordmark (white "penso" + teal "IA"), so it renders even
-// when a client blocks remote images — no hosted logo to keep in sync.
-const BRAND = { navy: '#061a51', teal: '#14b8a6', ink: '#1a2433', mut: '#6b7787', line: '#e6eaf0', bg: '#f4f6f9' };
-
-/** The PensoIA text wordmark for the dark header band. */
-function emailWordmark() {
-  return '<span style="font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;' +
-    'letter-spacing:-.5px;color:#ffffff;line-height:1">penso<span style="color:' + BRAND.teal + '">IA</span></span>';
-}
+// layout, fully inline styles, NO external CSS, NO SVG (clients strip SVG). The
+// PensoIA lockup is a hosted raster PNG (the real brand artwork, white wordmark +
+// teal accent, transparent) so it sits on the navy->teal header gradient.
+const BRAND = { navy: '#061a51', teal: '#14b8a6', tealDk: '#0d9488', ink: '#1a2433', mut: '#8a93a1', page: '#eef1f6' };
+// Absolute, publicly-reachable logo (e-mail can't use relative paths). Callers may
+// override (e.g. point at staging while testing) via opts.logoUrl.
+const DEFAULT_LOGO_URL = 'https://pensoia.com/images/brand/email-logo.png';
 
 /**
- * Wrap message content in the branded PensoIA shell (header band + white card +
- * footer). The caller supplies only the inner body; everything else is consistent.
+ * Wrap message content in the branded PensoIA shell (gradient header with the real
+ * logo + an optional seal, a rounded white card, a centered pill CTA, footer). The
+ * caller supplies only the inner body; everything else is consistent across e-mails.
  * @param {object} opts
- * @param {string} [opts.heading]    bold title at the top of the card
+ * @param {string} [opts.heading]    bold title at the top of the card (centered)
  * @param {string} opts.bodyHtml     the message body (already-escaped HTML)
- * @param {{label:string, url:string}} [opts.cta]  optional primary button
+ * @param {{label:string, url:string}} [opts.cta]  optional primary button (centered pill)
+ * @param {boolean} [opts.badge]     show the celebratory check seal under the logo
+ * @param {string} [opts.logoUrl]    override the logo URL (defaults to the prod logo)
  * @param {string} [opts.footerHtml] small print under the card (defaults to the brand line)
  * @param {string} [opts.preheader]  hidden inbox-preview snippet
  * @returns {string} a complete, e-mail-client-safe HTML document body
  */
 export function renderEmailHtml(opts) {
   const o = opts || {};
+  const logo = o.logoUrl || DEFAULT_LOGO_URL;
+  const badge = o.badge
+    ? '<div style="margin-top:18px"><span style="display:inline-block;width:54px;height:54px;line-height:54px;' +
+      'border-radius:50%;background:rgba(255,255,255,.16);color:#ffffff;font-size:27px;' +
+      'font-family:Arial,Helvetica,sans-serif">&#10003;</span></div>'
+    : '';
   const heading = o.heading
-    ? '<tr><td style="padding:0 0 14px"><h1 style="margin:0;font-family:Arial,Helvetica,sans-serif;' +
-      'font-size:20px;font-weight:700;color:' + BRAND.navy + ';line-height:1.3">' + o.heading + '</h1></td></tr>'
+    ? '<h1 style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;' +
+      'color:' + BRAND.navy + ';line-height:1.3">' + o.heading + '</h1>'
     : '';
   const cta = (o.cta && o.cta.url && o.cta.label)
-    ? '<tr><td style="padding:22px 0 6px"><a href="' + o.cta.url + '" style="display:inline-block;' +
+    ? '<div style="padding:6px 0 4px"><a href="' + o.cta.url + '" style="display:inline-block;' +
       'background:' + BRAND.teal + ';color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;' +
-      'font-size:15px;font-weight:700;padding:12px 26px;border-radius:8px">' + o.cta.label + '</a></td></tr>'
+      'font-size:15px;font-weight:700;padding:13px 34px;border-radius:999px">' + o.cta.label + '</a></div>'
     : '';
   const footer = o.footerHtml || ('PensoIA · <a href="https://pensoia.com" style="color:' + BRAND.mut + '">pensoia.com</a>');
   const preheader = o.preheader
@@ -98,25 +104,26 @@ export function renderEmailHtml(opts) {
   return '' +
     preheader +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ' +
-      'style="background:' + BRAND.bg + ';margin:0;padding:0"><tr><td align="center" style="padding:24px 12px">' +
+      'style="background:' + BRAND.page + ';margin:0;padding:0"><tr><td align="center" style="padding:24px 12px">' +
       '<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" ' +
-        'style="width:600px;max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;' +
-        'border:1px solid ' + BRAND.line + '">' +
-        // Header band
-        '<tr><td style="background:' + BRAND.navy + ';padding:26px 32px" align="left">' + emailWordmark() + '</td></tr>' +
-        // Accent rule
-        '<tr><td style="height:3px;background:' + BRAND.teal + ';font-size:0;line-height:0">&nbsp;</td></tr>' +
-        // Body card
-        '<tr><td style="padding:30px 32px 8px;font-family:Arial,Helvetica,sans-serif;font-size:15px;' +
+        'style="width:600px;max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;' +
+        'box-shadow:0 6px 24px rgba(6,26,81,.12)">' +
+        // Gradient header band with the real logo (+ optional seal)
+        '<tr><td align="center" style="background:' + BRAND.navy + ';' +
+          'background-image:linear-gradient(135deg,' + BRAND.navy + ' 0%,' + BRAND.tealDk + ' 140%);padding:30px 32px 28px">' +
+          '<img src="' + logo + '" alt="PensoIA" width="190" ' +
+            'style="display:inline-block;width:190px;max-width:62%;height:auto;border:0;outline:none;text-decoration:none">' +
+          badge +
+        '</td></tr>' +
+        // Body card (centered)
+        '<tr><td align="center" style="padding:30px 36px 8px;font-family:Arial,Helvetica,sans-serif;font-size:15px;' +
           'color:' + BRAND.ink + ';line-height:1.65">' +
-          '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">' +
-            heading +
-            '<tr><td>' + (o.bodyHtml || '') + '</td></tr>' +
-            cta +
-          '</table>' +
+          heading +
+          (o.bodyHtml || '') +
+          cta +
         '</td></tr>' +
         // Footer
-        '<tr><td style="padding:22px 32px 28px;border-top:1px solid ' + BRAND.line + ';' +
+        '<tr><td align="center" style="padding:22px 32px 28px;' +
           'font-family:Arial,Helvetica,sans-serif;font-size:12px;color:' + BRAND.mut + ';line-height:1.6">' +
           footer +
         '</td></tr>' +

@@ -1124,17 +1124,21 @@ function _certEmailHtml(cert, validarUrl) {
   const firstName = esc((cert.holder_name || '').trim().split(/\s+/)[0] || '');
   const course = esc(cert.course_title || '');
   const url = esc(validarUrl);
-  const greeting = firstName ? ('Olá, ' + firstName + '!') : 'Olá!';
+  const heading = firstName ? ('Parabéns, ' + firstName + '!') : 'Parabéns!';
+  // Same-origin logo so the brand artwork shows on staging too (prod is the default).
+  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
   const bodyHtml = '' +
-    '<p style="margin:0 0 14px">' + greeting + '</p>' +
-    '<p style="margin:0 0 14px">Parabéns! Seu certificado do curso <strong>' + course +
-      '</strong> está pronto e segue <strong>em anexo</strong>, em PDF.</p>' +
-    '<p style="margin:0 0 4px">Você pode confirmar a autenticidade dele a qualquer momento pelo link abaixo:</p>' +
-    '<p style="margin:0;font-size:13px"><a href="' + url + '" style="color:#0d9488">' + url + '</a></p>';
+    '<p style="margin:0 0 18px;color:#56606e">Seu certificado está pronto.</p>' +
+    '<p style="margin:0 0 18px">Você concluiu o curso <strong>' + course +
+      '</strong>. O certificado segue <strong>em anexo</strong>, em PDF.</p>' +
+    '<p style="margin:18px 0 0;font-size:12.5px;color:#8a93a1">Autenticidade verificável em<br>' +
+      '<a href="' + url + '" style="color:#0d9488">' + url + '</a></p>';
   return renderEmailHtml({
-    heading: 'Seu certificado PensoIA',
+    heading,
     bodyHtml,
     cta: { label: 'Validar certificado', url },
+    badge: true,
+    logoUrl: origin + '/images/brand/email-logo.png',
     preheader: 'Seu certificado do curso ' + course + ' está em anexo.',
   });
 }
