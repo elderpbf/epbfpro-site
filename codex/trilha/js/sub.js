@@ -9,6 +9,7 @@ import { isFresh } from './freshness.js';
 import { injectActionButton } from './actions.js';
 import { trail } from './api.js';
 import { renderItem } from '../../js/item-render.js';
+import { interceptItemOpen } from './gate.js';
 
 export function buildSub(item, opts = {}) {
   const sub = document.createElement('div');
@@ -74,6 +75,17 @@ export async function toggleSub(sub, item, opts = {}) {
 
   if (alreadyExpanded) return;
 
+  // Inline content gate (Phase 7): on a gated turma, opening an item needs an
+  // approved session. interceptItemOpen routes anonymous -> login, pending -> notice
+  // (rendered into the expand slot); it is a no-op when LOGIN_ENABLED is off.
+  if (interceptItemOpen((html) => {
+    sub.classList.add('is-expanded');
+    const notice = document.createElement('div');
+    notice.className = 'cdx-tr-sub-expanded';
+    notice.innerHTML = html;
+    sub.parentNode.insertBefore(notice, sub.nextSibling);
+  })) return;
+
   sub.classList.add('is-expanded');
   const exp = document.createElement('div');
   exp.className = 'cdx-tr-sub-expanded';
@@ -86,6 +98,7 @@ export async function toggleSub(sub, item, opts = {}) {
       turma_slug: state.turmaSlug,
       token: state.token,
       item_id: item.id,
+      session_token: state.sessionToken,
       _silent: true,
     });
     exp.innerHTML = '';

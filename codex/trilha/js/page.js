@@ -9,8 +9,9 @@ import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
-import { extractMagicToken, isLoggedIn, clearToken, LOGIN_ENABLED } from './student-session.js';
+import { extractMagicToken, isLoggedIn, clearToken, getToken, getPresence, setPresence, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
+import { isWall } from './access.js';
 
 const PANELS = ['aulas', 'apostila', 'outros'];
 
@@ -41,11 +42,13 @@ export async function mount(root, ctx = {}) {
   if (!state.clientSlug || !state.turmaSlug || !state.token) { showError(root, 'link_invalid', t); return; }
 
   const api = ctx.api || trail;
+  state.sessionToken = LOGIN_ENABLED ? getToken(state.clientSlug, state.turmaSlug) : null;
   try {
     state.data = await api.turmaView({
       client_slug: state.clientSlug,
       turma_slug: state.turmaSlug,
       token: state.token,
+      session_token: state.sessionToken,
       _admin: state.isAdmin,
       _silent: true,
     });
@@ -55,11 +58,18 @@ export async function mount(root, ctx = {}) {
     if (main) main.hidden = false;
     renderHero(root);
     renderHeaderActions();
-    renderTabs(root);
-    _onHash = () => onHashChange();
-    if (_win) _win.addEventListener('hashchange', _onHash);
-    onHashChange();
-    if (LOGIN_ENABLED) handleMagicReturn(loc);
+    // Upfront-gated + unapproved: render the wall instead of the timeline. Inline
+    // mode (and approved / open) renders the timeline as usual; the per-item gate in
+    // sub.js/flat.js handles inline opens.
+    if (LOGIN_ENABLED && isWall((state.data || {}).access)) {
+      renderWall(root);
+    } else {
+      renderTabs(root);
+      _onHash = () => onHashChange();
+      if (_win) _win.addEventListener('hashchange', _onHash);
+      onHashChange();
+    }
+    if (LOGIN_ENABLED) { claimPresence(); handleMagicReturn(loc); }
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
@@ -118,7 +128,8 @@ function buildLoginPill() {
     } else {
       openLoginModal({
         client: state.clientSlug, turma: state.turmaSlug, k: state.token,
-        onAuthenticated: refreshLoginPill,
+        presence: getPresence(state.clientSlug, state.turmaSlug),
+        onAuthenticated: afterAuth,
       });
     }
   });
@@ -178,9 +189,70 @@ function handleMagicReturn(loc) {
   stripLt();
   openLoginModal({
     client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+    presence: getPresence(state.clientSlug, state.turmaSlug),
     startToken: lt,
-    onAuthenticated: refreshLoginPill,
+    onAuthenticated: afterAuth,
   });
+}
+
+// After a successful login: refresh the pill, and on a GATED turma reload so the
+// now-approved session unlocks content (or surfaces the pending wall/notice). An
+// open turma gates nothing, so a reload would be pointless there.
+function afterAuth() {
+  refreshLoginPill();
+  const gated = !!(state.data && state.data.access && state.data.access.gated);
+  if (gated && _win && _win.location && typeof _win.location.reload === 'function') {
+    _win.location.reload();
+  }
+}
+
+// Best-effort device-presence claim (signal b): while the turma's live session is
+// open, the worker issues a grant the device keeps and offers at the next login, so
+// being in the room earns access even if the student logs in later.
+function claimPresence() {
+  try {
+    Promise.resolve(trail.presenceClaim({ client_slug: state.clientSlug, turma_slug: state.turmaSlug, _silent: true }))
+      .then((res) => { if (res && res.granted && res.presence_token) setPresence(state.clientSlug, state.turmaSlug, res.presence_token); })
+      .catch(() => {});
+  } catch (_) { /* presence is best-effort */ }
+}
+
+// Upfront-mode wall: hide the tabs + content and show a login CTA, or a "pending
+// approval" notice once the student is logged in but awaiting approval. The hero
+// stays visible so the student still sees which turma this is.
+function renderWall(root) {
+  const main = root.querySelector('.cdx-trilha-main');
+  if (!main) return;
+  const tabs = main.querySelector('.cdx-trilha-tabs');
+  const content = main.querySelector('.cdx-trilha-tabcontent');
+  if (tabs) tabs.hidden = true;
+  if (content) content.hidden = true;
+  let wall = main.querySelector('.cdx-tr-wall');
+  if (!wall) {
+    wall = document.createElement('section');
+    wall.className = 'cdx-tr-wall';
+    const footer = main.querySelector('.cdx-trilha-footer');
+    main.insertBefore(wall, footer || null);
+  }
+  const access = (state.data || {}).access || {};
+  const pending = access.status === 'pending';
+  wall.innerHTML =
+    '<div class="cdx-tr-wall-card">' +
+      '<div class="cdx-tr-wall-icon" aria-hidden="true">🔒</div>' +
+      '<h2 class="cdx-tr-wall-title">' + esc(t(pending ? 'login.pending_title' : 'login.wall_title')) + '</h2>' +
+      '<p class="cdx-tr-wall-body">' + esc(t(pending ? 'login.pending_body' : 'login.wall_body')) + '</p>' +
+      (pending ? '' : '<button type="button" class="tr-btn tr-btn-primary cdx-tr-wall-cta">' + esc(t('login.access_cta')) + '</button>') +
+    '</div>';
+  const cta = wall.querySelector('.cdx-tr-wall-cta');
+  if (cta) {
+    cta.addEventListener('click', () => {
+      openLoginModal({
+        client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+        presence: getPresence(state.clientSlug, state.turmaSlug),
+        onAuthenticated: afterAuth,
+      });
+    });
+  }
 }
 
 // Remove the lt param from the visible URL without a navigation.

@@ -31,6 +31,11 @@ export const trail = {
   authVerify:     (p) => call('student_auth_verify', p),    // { token } -> { ok, session_token, participant_id, turma_id, needs_profile } | { error }
   profileSave:    (p) => call('student_profile_save', p),   // { session_token, display_name, consent, consent_version } -> { ok } | { error }
   sessionCheck:   (p) => call('student_session_check', p),  // { session_token } -> { ok, participant_id, turma_id } | { error }
+
+  // Device-presence (Phase 7, signal b): claim a presence grant while the turma's
+  // live session is open; the device stores it and offers it at login so being in
+  // the room earns access even if the student logs in later.
+  presenceClaim:  (p) => call('student_presence_claim', p), // { client_slug, turma_slug } -> { ok, granted, presence_token? }
 };
 
 export { assetUrl };

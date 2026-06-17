@@ -175,6 +175,25 @@ test('verify success without needing profile goes straight to authenticated', as
   assert.equal(flow.state, 'authenticated');
 });
 
+test('verify forwards the device-presence grant as presence_token (signal b)', async () => {
+  api = fakeApi({ authVerify: { ok: true, session_token: 'S', needs_profile: false } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', presence: 'PGRANT' });
+  await flow.verify('MAGIC');
+  assert.deepEqual(api.calls[0].params, { token: 'MAGIC', presence_token: 'PGRANT' });
+});
+
+test('verify omits presence_token when the device has no grant', async () => {
+  api = fakeApi({ authVerify: { ok: true, session_token: 'S', needs_profile: false } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  await flow.verify('MAGIC');
+  assert.deepEqual(api.calls[0].params, { token: 'MAGIC' });
+});
+
+test('flowOptsFrom forwards the presence grant', () => {
+  const out = flowOptsFrom({ client: 'jfse', turma: 'geral', k: 'K', presence: 'PGRANT' }, 'https://staging.pensoia.com');
+  assert.equal(out.presence, 'PGRANT');
+});
+
 test('verify failure goes to error and stores no token', async () => {
   api = fakeApi({ authVerify: { error: 'token_expired' } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });

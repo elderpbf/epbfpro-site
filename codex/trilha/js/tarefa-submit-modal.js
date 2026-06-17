@@ -21,6 +21,7 @@ const LS_NAME = 'ct_student_name';
 export function errorMessage(code) {
   if (code === 'already_submitted') return 'Você já enviou uma resposta para esta tarefa. Cada aluno só pode enviar uma vez.';
   if (code === 'anon_not_allowed') return 'Esta tarefa exige identificação. Informe seu nome.';
+  if (code === 'needs_approval') return 'Seu acesso a esta turma está em análise. Aguarde a liberação para enviar.';
   if (code === 'forbidden') return 'Acesso negado. Recarregue a página e tente novamente.';
   if (code === 'not_a_tarefa') return 'Este item não aceita respostas.';
   if (code === 'not_found') return 'Tarefa não encontrada.';
@@ -40,6 +41,7 @@ export function openTarefaSubmitModal(opts) {
   const clientSlug = opts.clientSlug;
   const turmaSlug = opts.turmaSlug;
   const token = opts.token;
+  const sessionToken = opts.sessionToken; // gated turmas require an approved session to submit
   const onSubmitted = opts.onSubmitted || (() => {});
 
   const meta = parseMeta(item.meta_json);
@@ -135,6 +137,7 @@ export function openTarefaSubmitModal(opts) {
         client_slug: clientSlug,
         turma_slug: turmaSlug,
         token,
+        session_token: sessionToken,
         item_id: item.id,
         student_name: isAnon ? null : name,
         answer_type: fieldType,

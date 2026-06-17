@@ -83,6 +83,7 @@ export function openTarefaSubmit(item, sub, opts) {
     clientSlug: state.clientSlug,
     turmaSlug: state.turmaSlug,
     token: state.token,
+    sessionToken: state.sessionToken, // approved-session token; gated turmas require it
     onSubmitted: () => injectActionButton(sub, item, opts || {}),
   });
   // Login disabled: submit name-based as before. When the access-control model

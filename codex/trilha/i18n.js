@@ -56,6 +56,11 @@ const pt = {
   'login.error':            'Não foi possível entrar. Tente novamente.',
   'login.token_invalid':    'Link inválido ou expirado. Peça um novo link de acesso.',
   'login.required_tarefa':  'Entre na trilha para enviar sua resposta.',
+  'login.access_cta':       'Entrar para acessar',
+  'login.wall_title':       'Conteúdo restrito',
+  'login.wall_body':        'Entre com seu e-mail para acessar o conteúdo desta turma.',
+  'login.pending_title':    'Acesso em análise',
+  'login.pending_body':     'Recebemos seu acesso. Você será liberado em breve, é só aguardar a aprovação.',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -111,6 +116,11 @@ const en = {
   'login.error':            'Could not sign in. Please try again.',
   'login.token_invalid':    'Invalid or expired link. Request a new access link.',
   'login.required_tarefa':  'Sign in to your trail to submit your answer.',
+  'login.access_cta':       'Sign in to access',
+  'login.wall_title':       'Restricted content',
+  'login.wall_body':        'Sign in with your email to access this class content.',
+  'login.pending_title':    'Access under review',
+  'login.pending_body':     'We received your request. You will be unlocked shortly, just wait for approval.',
 };
 
 const DICTS = { 'pt-BR': pt, en };

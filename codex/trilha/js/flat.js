@@ -11,6 +11,7 @@ import { trail } from './api.js';
 import { registerRenderer } from './page.js';
 import { renderItem } from '../../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
+import { interceptItemOpen } from './gate.js';
 
 export function renderApostilaTab() {
   const container = document.getElementById('cdx-tr-apostila-list');
@@ -134,6 +135,19 @@ async function toggleFlatCard(card, item) {
     if (existing) existing.remove();
     return;
   }
+
+  // Inline content gate (Phase 7): a gated turma needs an approved session to open
+  // an item. interceptItemOpen routes anonymous -> login, pending -> notice (mounted
+  // into the card body); no-op when LOGIN_ENABLED is off.
+  if (interceptItemOpen((html) => {
+    card.classList.add('open');
+    if (headerEl) headerEl.setAttribute('aria-expanded', 'true');
+    const notice = document.createElement('div');
+    notice.className = 'cdx-tr-body';
+    notice.innerHTML = html;
+    card.appendChild(notice);
+  })) return;
+
   card.classList.add('open');
   if (headerEl) headerEl.setAttribute('aria-expanded', 'true');
 
@@ -145,7 +159,7 @@ async function toggleFlatCard(card, item) {
   try {
     const data = await trail.itemPublic({
       client_slug: state.clientSlug, turma_slug: state.turmaSlug, token: state.token,
-      item_id: item.id, _silent: true,
+      item_id: item.id, session_token: state.sessionToken, _silent: true,
     });
     body.innerHTML = '';
     const contentWrap = document.createElement('div');

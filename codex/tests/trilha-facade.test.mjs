@@ -55,7 +55,7 @@ test('trail facade passes params through unchanged (answer payloads)', () => {
 });
 
 test('trail facade exposes the Phase 1 student-identity methods', () => {
-  for (const m of ['authRequest', 'authVerify', 'profileSave', 'sessionCheck']) {
+  for (const m of ['authRequest', 'authVerify', 'profileSave', 'sessionCheck', 'presenceClaim']) {
     assert.equal(typeof trail[m], 'function', `trail.${m} is a function`);
   }
 });
@@ -66,6 +66,7 @@ test('trail facade maps the student methods to their worker actions', () => {
     [() => trail.authVerify({ token: 'X' }),           'student_auth_verify'],
     [() => trail.profileSave({ session_token: 'S' }),  'student_profile_save'],
     [() => trail.sessionCheck({ session_token: 'S' }), 'student_session_check'],
+    [() => trail.presenceClaim({ client_slug: 'c', turma_slug: 't' }), 'student_presence_claim'],
   ];
   for (const [fn, action] of cases) {
     assert.equal(fn().action, action, `maps to ${action}`);

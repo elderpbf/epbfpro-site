@@ -57,6 +57,15 @@ test('CONSENT_VERSION is a stable non-empty string', () => {
   assert.ok(ss.CONSENT_VERSION.length > 0);
 });
 
+test('stores, reads, and clears a per-turma device-presence grant', () => {
+  assert.equal(ss.getPresence('jfse', 'geral'), null);
+  ss.setPresence('jfse', 'geral', 'PGRANT');
+  assert.equal(ss.getPresence('jfse', 'geral'), 'PGRANT');
+  assert.equal(ss.getPresence('jfse', 'outra'), null); // scoped per turma
+  ss.clearPresence('jfse', 'geral');
+  assert.equal(ss.getPresence('jfse', 'geral'), null);
+});
+
 // Tripwire: the Phase-1 login UI is intentionally hidden until the real
 // access-control model lands. If someone flips this, the failure is the reminder
 // to read the Trail access-control plan before shipping login to production.
