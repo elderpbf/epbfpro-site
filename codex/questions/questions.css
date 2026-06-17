@@ -903,7 +903,7 @@
 .cdx-bank-glyph-generic { color: var(--text-secondary); }
 .cdx-bank-glyph-variable { color: var(--primary); }
 .cdx-bank-glyph-unique { color: #d97706; }
-.cdx-bank-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; max-height: 220px; overflow-y: auto; }
+.cdx-bank-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; max-height: 60vh; overflow-y: auto; }
 .cdx-bank-msg { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
 .cdx-bank-item { display: flex; flex-direction: column; padding: 0.4rem 0.55rem; border: 1px solid rgba(20,184,166,.12); border-radius: 8px; background: var(--background); }
 .cdx-bank-item:hover { border-color: var(--primary); }
