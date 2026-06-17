@@ -532,9 +532,10 @@ describe('Assinador app (source contract)', () => {
   const page = readFileSync(new URL('../certificates/assinador.js', import.meta.url), 'utf8');
   const pt = readFileSync(new URL('../i18n/pt.js', import.meta.url), 'utf8');
 
-  test('the Certificados toolbar offers the signer download (GitHub release asset)', () => {
-    assert.ok(src.includes("t('certificates.signer_download')"), 'download button label via i18n');
+  test('the Certificados toolbar offers the signer download as a glyph with a tooltip', () => {
     assert.ok(src.includes('releases/latest/download/PensoIA-Assinador.exe'), 'links to the GitHub release asset');
+    assert.ok(src.includes('id="cdx-certs-signer-dl"') && src.includes('<svg'), 'rendered as an icon glyph, not a text button');
+    assert.ok(src.includes("t('certificates.signer_download') + ': ' + t('certificates.signer_download_hint')"), 'hover tooltip explains what it is');
     assert.ok(pt.includes("'certificates.signer_download'"), 'pt dictionary has the key');
   });
   test('the signing page reuses the real renderer and signs ONLY via the local app bridge', () => {

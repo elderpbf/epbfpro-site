@@ -556,9 +556,16 @@ function _mountEmitidos() {
           '<input type="date" id="cdx-certs-filter-to" class="cdx-certs-date" aria-label="' + esc(t('certificates.filter_date_to')) + '">' +
         '</label>' +
         '<span class="cdx-emissao-spacer"></span>' +
-        // Local ICP-Brasil signer (downloads the desktop app; signing must run on the
-        // user's machine with the A1 private key). GitHub Release on the public site repo.
-        '<a class="cdx-btn cdx-btn-sm" id="cdx-certs-signer-dl" href="https://github.com/elderpbf/epbfpro-site/releases/latest/download/PensoIA-Assinador.exe" target="_blank" rel="noopener" title="' + esc(t('certificates.signer_download_hint')) + '">' + esc(t('certificates.signer_download')) + '</a>' +
+        // Local ICP-Brasil signer download (desktop app; signing must run on the
+        // user's machine with the A1 private key). A quiet padlock+download glyph,
+        // the tooltip explains it. GitHub Release on the public site repo.
+        '<a class="cdx-certs-signer-dl" id="cdx-certs-signer-dl" href="https://github.com/elderpbf/epbfpro-site/releases/latest/download/PensoIA-Assinador.exe" target="_blank" rel="noopener" aria-label="' + esc(t('certificates.signer_download')) + '" title="' + esc(t('certificates.signer_download') + ': ' + t('certificates.signer_download_hint')) + '">' +
+          '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<rect x="4" y="11" width="16" height="10" rx="2"></rect>' +
+            '<path d="M8 11V7a4 4 0 0 1 8 0v4"></path>' +
+            '<path d="M12 14.5v3.4"></path><path d="M10.2 16.1 12 17.9l1.8-1.8"></path>' +
+          '</svg>' +
+        '</a>' +
         '<button class="cdx-btn cdx-btn-primary" id="cdx-certs-issue-btn">' + esc(t('certificates.issue_btn')) + '</button>' +
       '</div>' +
       // Bulk-action bar: inline, between the toolbar and the table (revealed when

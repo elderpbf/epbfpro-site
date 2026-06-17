@@ -209,6 +209,29 @@
   margin-bottom: 1rem;
 }
 
+/* Quiet utility glyph: download the local ICP-Brasil signer app. Not a primary
+   action (one-time install), so it reads as a muted icon next to Emitir; the
+   tooltip explains it. */
+.cdx-certs-signer-dl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.cdx-certs-signer-dl:hover {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  background: var(--surface-hover);
+}
+
 .cdx-certs-search {
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--border);
