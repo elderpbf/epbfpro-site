@@ -524,6 +524,28 @@ describe('shared e-mail module (source contract)', () => {
   });
 });
 
+// ── Assinador desktop app: the issuance-page download + the signing page it loads.
+// Signing must run locally (A1 private key), so the page signs only via the app
+// bridge and reuses the real renderer so the signed PDF matches the app's. ───────
+describe('Assinador app (source contract)', () => {
+  const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
+  const page = readFileSync(new URL('../certificates/assinador.js', import.meta.url), 'utf8');
+  const pt = readFileSync(new URL('../i18n/pt.js', import.meta.url), 'utf8');
+
+  test('the Certificados toolbar offers the signer download (GitHub release asset)', () => {
+    assert.ok(src.includes("t('certificates.signer_download')"), 'download button label via i18n');
+    assert.ok(src.includes('releases/latest/download/PensoIA-Assinador.exe'), 'links to the GitHub release asset');
+    assert.ok(pt.includes("'certificates.signer_download'"), 'pt dictionary has the key');
+  });
+  test('the signing page reuses the real renderer and signs ONLY via the local app bridge', () => {
+    assert.ok(page.includes('renderCertsPdfBase64'), 'renders the PDF with the real engine');
+    assert.ok(page.includes('renderCertHtml'), 'reuses renderCertHtml (pixel-identical PDF)');
+    assert.ok(page.includes('window.pywebview.api.sign'), 'signs via the local app bridge');
+    assert.ok(page.includes('api.attachPdf') && page.includes('api.markSigned'), 'uploads the signed PDF + flips status');
+    assert.ok(page.includes('needApp'), 'in a normal browser it tells the user to open the app');
+  });
+});
+
 // ── Emissão fixes (2026-06-15): per-row PDF, revoked delete, bulk delete, modal
 // select-all + model preview ───────────────────────────────────────────────────
 describe('Emissão fixes (source contract)', () => {

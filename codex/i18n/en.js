@@ -1225,7 +1225,9 @@ export default {
   'certificates.marked_sent_ok':      'Marked as sent.',
   'certificates.marked_signed_ok':    'Certificate signed.',
   'certificates.sign_not_wired':      'Real digital signing (ICP-Brasil) is not wired yet. Not marking as signed, to avoid recording something false.',
-  'certificates.sign_local':          'ICP-Brasil signing runs in the local signer. Download the PDF (Baixar PDF) and run tools/sign-certs; the status flips to signed automatically.',
+  'certificates.sign_local':          'ICP-Brasil signing runs in the Assinador app (download it via the "Baixar o Assinador" button). Open it, pick the certificates and sign; the status flips to Assinado automatically.',
+  'certificates.signer_download':     'Download the Signer',
+  'certificates.signer_download_hint':'App to sign certificates with your e-CNPJ (ICP-Brasil), on your computer.',
   'certificates.send_not_wired':      'Email delivery is not wired yet. Not marking as sent, to avoid recording something false.',
   // Email delivery (Resend) — now wired
   'certificates.send_only_issued_signed': 'Only issued or signed certificates can be sent.',

@@ -556,6 +556,9 @@ function _mountEmitidos() {
           '<input type="date" id="cdx-certs-filter-to" class="cdx-certs-date" aria-label="' + esc(t('certificates.filter_date_to')) + '">' +
         '</label>' +
         '<span class="cdx-emissao-spacer"></span>' +
+        // Local ICP-Brasil signer (downloads the desktop app; signing must run on the
+        // user's machine with the A1 private key). GitHub Release on the public site repo.
+        '<a class="cdx-btn cdx-btn-sm" id="cdx-certs-signer-dl" href="https://github.com/elderpbf/epbfpro-site/releases/latest/download/PensoIA-Assinador.exe" target="_blank" rel="noopener" title="' + esc(t('certificates.signer_download_hint')) + '">' + esc(t('certificates.signer_download')) + '</a>' +
         '<button class="cdx-btn cdx-btn-primary" id="cdx-certs-issue-btn">' + esc(t('certificates.issue_btn')) + '</button>' +
       '</div>' +
       // Bulk-action bar: inline, between the toolbar and the table (revealed when
