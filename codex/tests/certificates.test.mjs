@@ -460,6 +460,7 @@ import { readFileSync } from 'node:fs';
 describe('Emissão dashboard port (source contract)', () => {
   const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
   const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+  const pt = readFileSync(new URL('../i18n/pt.js', import.meta.url), 'utf8');
 
   test('KPI filter cards present', () => {
     assert.ok(src.includes('cdx-emissao-kpi'), 'KPI card class');
@@ -505,6 +506,17 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(src.includes('from: CERT_FROM'), 'cert e-mail sets an explicit sender');
     assert.ok(src.includes('onboarding@resend.dev'), 'sandbox sender (delivers to the account owner) until pensoia.com is verified');
   });
+  test('the cert e-mail is ALWAYS PT-BR and uses the shared branded shell (not the admin UI locale)', () => {
+    // Copy is hardcoded PT-BR, never via t() (which follows the panel language).
+    const i = src.indexOf('function _certEmailHtml');
+    const body = src.slice(i, i + 1400);
+    assert.ok(!/\bt\(/.test(body), '_certEmailHtml never calls t() (recipient is the student, always PT-BR)');
+    assert.ok(body.includes('renderEmailHtml'), 'wraps the message in the shared branded layout');
+    assert.ok(body.includes('Parabéns') && body.includes('em anexo'), 'PT-BR cert copy');
+    assert.ok(src.includes("import { sendEmail, renderEmailHtml }"), 'imports the shared layout from the e-mail module');
+    // The dead i18n keys are gone from both dictionaries (no English leakage).
+    assert.ok(!pt.includes("'certificates.email_subject'"), 'no dead email_* keys in pt');
+  });
   test('a stored (signed) PDF downloads via the worker R2 route, not a relative path', () => {
     // pdf_path is an R2 key; the row must link through assetUrl('/r2/'+key), else the
     // browser resolves it relative to the page and 404s.
@@ -528,6 +540,15 @@ describe('shared e-mail module (source contract)', () => {
     assert.ok(/from\b/.test(mod) && mod.includes('attachments'), 'forwards from + attachments (reusable, not cert-only)');
     assert.ok(mod.includes('window.bsLog'), 'logs failures to the debug pill');
     assert.ok(mod.includes("from './codex-api.js'"), 'sends only through the facade');
+  });
+  test('exposes ONE shared branded layout every Codex e-mail wraps its content in', () => {
+    assert.ok(mod.includes('export function renderEmailHtml'), 'exports the shared layout model');
+    // E-mail-client safe: table layout + inline styles, no external CSS, no SVG
+    // (Gmail/Outlook strip both); the lockup is a text wordmark, not a hosted image.
+    assert.ok(mod.includes('role="presentation"') && mod.includes('cellpadding'), 'table-based layout');
+    assert.ok(!/<svg/i.test(mod), 'no SVG (e-mail clients strip it)');
+    assert.ok(mod.includes('penso') && mod.includes('IA'), 'PensoIA text wordmark (renders without remote images)');
+    assert.ok(mod.includes('#061a51') && mod.includes('#14b8a6'), 'brand navy + teal');
   });
 });
 

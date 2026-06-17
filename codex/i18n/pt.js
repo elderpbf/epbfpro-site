@@ -1237,11 +1237,9 @@ export default {
   'certificates.send_sending_bulk':   'Enviando {n} certificado(s)…',
   'certificates.send_bulk_ok':        '{n} certificado(s) enviado(s).',
   'certificates.send_bulk_no_email':  '{n} sem e-mail, não enviados.',
-  'certificates.email_subject':       'Seu certificado: {course}',
-  'certificates.email_greeting':      'Olá, {name}!',
-  'certificates.email_body':          'Parabéns! Seu certificado do curso {course} está em anexo, em PDF.',
-  'certificates.email_validate':      'Você pode validar a autenticidade pelo link:',
-  'certificates.email_signoff':       'PensoIA · pensoia.com',
+  // The certificate e-mail copy is intentionally NOT here: it is always PT-BR
+  // (sent to the student, not in the admin UI's language), hardcoded in
+  // certificates.js _certEmailHtml + the branded shell in js/codex-email.js.
   // Emissão — KPIs (filtros de status) + ações em massa
   'certificates.kpi_awaiting_sign':   'Aguardando assinatura',
   'certificates.kpi_awaiting_send':   'Aguardando envio',

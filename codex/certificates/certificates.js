@@ -29,7 +29,7 @@ import {
   buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames,
 } from './cert-render.js';
 import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
-import { sendEmail } from '../js/codex-email.js';
+import { sendEmail, renderEmailHtml } from '../js/codex-email.js';
 
 // TEMP (testing): send cert e-mails from the Resend sandbox sender, which needs no
 // domain setup but only DELIVERS to the Resend account owner's own address. Switch
@@ -1062,7 +1062,7 @@ async function _sendOne(cert) {
     const res = await sendEmail({
       to: cert.email,
       from: CERT_FROM,
-      subject: t('certificates.email_subject').replace('{course}', cert.course_title || ''),
+      subject: 'Seu certificado: ' + (cert.course_title || 'PensoIA'),
       html: _certEmailHtml(cert, validarUrl),
       attachments: [{ filename, content: b64 }],
     });
@@ -1114,22 +1114,29 @@ async function _bulkSend(codes) {
   await _loadCertList();
 }
 
-// The certificate e-mail body (PT-BR). Kept small + templated so the future Trail
-// "acesse seu certificado na Trilha" CTA is a one-line add here; the transport
-// (codex-email.js / the Worker lib) never changes. Static t() strings, only the
-// already-escaped holder/course are interpolated.
+// The certificate e-mail (always PT-BR — the recipient is the student, never the
+// admin UI's language; so this copy is hardcoded, NOT via t() which follows the
+// panel locale). It wraps its body in the shared branded shell (renderEmailHtml),
+// so every Codex e-mail looks like the same product; only the message changes here.
+// Just the already-escaped holder/course are interpolated. FUTURE (Trail
+// self-service): swap/duplicate the CTA to "Acesse seu certificado na Trilha".
 function _certEmailHtml(cert, validarUrl) {
-  const name = esc(cert.holder_name || '');
+  const firstName = esc((cert.holder_name || '').trim().split(/\s+/)[0] || '');
   const course = esc(cert.course_title || '');
-  return '' +
-    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.6">' +
-      '<p>' + t('certificates.email_greeting').replace('{name}', name) + '</p>' +
-      '<p>' + t('certificates.email_body').replace('{course}', '<strong>' + course + '</strong>') + '</p>' +
-      '<p>' + t('certificates.email_validate') + '<br>' +
-        '<a href="' + esc(validarUrl) + '">' + esc(validarUrl) + '</a></p>' +
-      // FUTURE (Trail self-service): add an "Acesse na Trilha" button/link here.
-      '<p style="color:#666;font-size:13px">' + t('certificates.email_signoff') + '</p>' +
-    '</div>';
+  const url = esc(validarUrl);
+  const greeting = firstName ? ('Olá, ' + firstName + '!') : 'Olá!';
+  const bodyHtml = '' +
+    '<p style="margin:0 0 14px">' + greeting + '</p>' +
+    '<p style="margin:0 0 14px">Parabéns! Seu certificado do curso <strong>' + course +
+      '</strong> está pronto e segue <strong>em anexo</strong>, em PDF.</p>' +
+    '<p style="margin:0 0 4px">Você pode confirmar a autenticidade dele a qualquer momento pelo link abaixo:</p>' +
+    '<p style="margin:0;font-size:13px"><a href="' + url + '" style="color:#0d9488">' + url + '</a></p>';
+  return renderEmailHtml({
+    heading: 'Seu certificado PensoIA',
+    bodyHtml,
+    cta: { label: 'Validar certificado', url },
+    preheader: 'Seu certificado do curso ' + course + ' está em anexo.',
+  });
 }
 
 // ── Preview + print ───────────────────────────────────────────────────────────

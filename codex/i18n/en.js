@@ -1238,11 +1238,9 @@ export default {
   'certificates.send_sending_bulk':   'Sending {n} certificate(s)…',
   'certificates.send_bulk_ok':        '{n} certificate(s) sent.',
   'certificates.send_bulk_no_email':  '{n} without e-mail, not sent.',
-  'certificates.email_subject':       'Your certificate: {course}',
-  'certificates.email_greeting':      'Hello, {name}!',
-  'certificates.email_body':          'Congratulations! Your certificate for the {course} course is attached, as a PDF.',
-  'certificates.email_validate':      'You can verify its authenticity at:',
-  'certificates.email_signoff':       'PensoIA · pensoia.com',
+  // The certificate e-mail copy is intentionally NOT here: it is always PT-BR
+  // (sent to the student, not in the admin UI's language), hardcoded in
+  // certificates.js _certEmailHtml + the branded shell in js/codex-email.js.
   // Issuance — KPIs (status filters) + bulk actions
   'certificates.kpi_awaiting_sign':   'Awaiting signature',
   'certificates.kpi_awaiting_send':   'Awaiting send',
