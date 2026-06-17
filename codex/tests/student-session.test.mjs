@@ -66,9 +66,9 @@ test('stores, reads, and clears a per-turma device-presence grant', () => {
   assert.equal(ss.getPresence('jfse', 'geral'), null);
 });
 
-// Tripwire: the Phase-1 login UI is intentionally hidden until the real
-// access-control model lands. If someone flips this, the failure is the reminder
-// to read the Trail access-control plan before shipping login to production.
-test('LOGIN_ENABLED is off (login UI hidden pending the access-control redesign)', () => {
-  assert.equal(ss.LOGIN_ENABLED, false);
+// The access-control model has landed (Phase 7: server-side content gating + a/c/b/d
+// approval + the Alunos admin), so the student-login UI is enabled. It stays inert
+// per turma until an instructor gates a turma (access_gated=1); open turmas unchanged.
+test('LOGIN_ENABLED is on (access-control model shipped)', () => {
+  assert.equal(ss.LOGIN_ENABLED, true);
 });

@@ -9,12 +9,12 @@
 // Bump when the LGPD consent notice text changes, so saved consent is re-prompted.
 export const CONSENT_VERSION = '2026-06-16';
 
-// Master switch for the student-login UI. OFF in production: the Phase-1 magic-link
-// login is built but intentionally hidden while the real access-control model
-// (server-side content gating + presence/window trust + an approval queue) is
-// designed. Flipping this true re-surfaces the header pill, the tarefa gate, and
-// the ?lt= return. Do NOT enable before that model lands.
-export const LOGIN_ENABLED = false;
+// Master switch for the student-login UI. ON: the access-control model has landed
+// (Phase 7 — server-side content gating + a/c/b/d approval + the Alunos admin), so
+// the login pill, tarefa gate, inline/upfront gates and the ?lt= return are live.
+// All of it is inert PER TURMA until an instructor sets access_gated=1; open turmas
+// behave exactly as before (no login UI, anonymous tarefa submit).
+export const LOGIN_ENABLED = true;
 
 const PREFIX = 'cdx_student_';
 
