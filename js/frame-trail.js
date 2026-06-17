@@ -5,7 +5,7 @@
 // instead of native scroll, so it never hijacks the landing). step() beacons (the
 // landing draws the caption tab on top of the phone) + slow pacing + faded reveals
 // make it read as steps: nova aula -> material -> tarefa.
-import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=16';
+import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=17';
 
 // 1) Canned Worker transport (set before the real modules call it).
 const nowSec = Math.floor(Date.now() / 1000);
@@ -19,7 +19,7 @@ const AULAS = [
 ];
 const ITEMS = [
   { id: 'm1', type: 'material', type_label: 'Material', type_icon: '', aula_number: 3, position: 1,
-    title: 'Guia rápido da aula', summary: '', body_md: '## Guia da aula\n\nResumo prático com exemplos e um checklist para aplicar no seu trabalho.', meta_json: {}, released_at: freshAt },
+    title: 'Guia rápido da aula', summary: '', body_md: 'Um resumo prático da aula, com exemplos passo a passo e um checklist curto para aplicar no seu trabalho ainda nesta semana.', meta_json: {}, released_at: freshAt },
   { id: 't1', type: 'tarefa', aula_number: 3, position: 2,
     title: 'Escreva um prompt para uma tarefa real', body_md: 'Escolha uma tarefa do seu dia a dia e escreva um prompt para resolvê-la.', meta_json: { field_type: 'text', allow_anonymous: true }, released_at: freshAt }
 ];

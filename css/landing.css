@@ -6,7 +6,7 @@
    ============================================================ */
 :root{
   --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --teal-light:#5eead4;
-  --accent:#7de8d6; --green:#10b981; --on-teal:#03201b; --danger:#ef4444;
+  --accent:#7de8d6; --green:#10b981; --on-teal:#ffffff; --danger:#ef4444;
   --ease:cubic-bezier(.22,1,.36,1);
 }
 [data-theme="dark"]{
