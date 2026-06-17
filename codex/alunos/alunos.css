@@ -43,11 +43,14 @@
 .cdx-al-badge--pending  { background: rgba(241, 196, 15, 0.18); color: #9a7d0a; }
 .cdx-al-badge--denied   { background: rgba(192, 57, 43, 0.15); color: #c0392b; }
 
-.cdx-btn {
+/* Scoped under .cdx-alunos: these are the Alunos section's buttons. Without the
+   scope they overrode .cdx-btn / .cdx-btn-primary across the WHOLE app, painting
+   every button with var(--task) (globally #d97706, orange). */
+.cdx-alunos .cdx-btn {
   cursor: pointer; padding: 0.4rem 0.85rem; border-radius: 8px;
   border: 1px solid var(--task, #6b5cff); background: var(--task, #6b5cff); color: #fff;
   font-size: 0.85rem;
 }
-.cdx-btn:disabled { opacity: 0.55; cursor: default; }
-.cdx-btn-ghost { background: transparent; color: var(--task, #6b5cff); }
+.cdx-alunos .cdx-btn:disabled { opacity: 0.55; cursor: default; }
+.cdx-alunos .cdx-btn-ghost { background: transparent; color: var(--task, #6b5cff); }
 .cdx-al-roster { width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid var(--border); border-radius: 8px; resize: vertical; }
