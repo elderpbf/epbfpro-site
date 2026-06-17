@@ -18,22 +18,13 @@ test('bank module satisfies the tab contract', async () => {
   assert.equal(typeof b.unmount, 'function', 'exports unmount');
 });
 
-test('composer: new MC defaults to 4 option slots + a "Tornar mais complexa" AI action', () => {
+test('composer: new MC defaults to 4 option slots', () => {
   const src = read('../questions/question-composer.js');
-  // Item a: new multiple-choice seeds 4 empty options (poll stays 2). Editing keeps stored count.
+  // New multiple-choice seeds 4 empty options (poll stays 2). Editing keeps stored count.
   assert.match(src, /\['',\s*'',\s*'',\s*''\]/, 'mc fallback is 4 empty options');
-  // Item e (part 1): a third AI action that raises difficulty, reusing improve_from.
-  assert.match(src, /data-act="ai-complex"/, 'renders the Tornar mais complexa button');
-  assert.match(src, /host_ai_complex/, 'button label via t()');
-  assert.match(src, /comp_ai_complex_instr/, 'sends the raise-difficulty instruction');
-  assert.match(src, /comp_ai_four_options/, 'asks AI for 4 options on MC');
-  // i18n parity for the new keys.
-  for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
-    const dict = read(lang);
-    for (const k of ['questions.host_ai_complex', 'questions.comp_ai_complex_instr', 'questions.comp_ai_four_options']) {
-      assert.ok(dict.includes("'" + k + "'"), lang + ' has ' + k);
-    }
-  }
+  // The "Tornar mais complexa" AI button was reverted (Élder asked for an
+  // existing-question review flow instead, not a composer button).
+  assert.ok(!src.includes('data-act="ai-complex"'), 'no ai-complex button');
 });
 
 test('bank moveInArray() reorders immutably and clamps at the ends', async () => {

@@ -18,8 +18,6 @@ const OPTION_TYPES = ['mc', 'tf', 'poll'];
 // Bank editor and the live-host card render the SAME buttons from ONE source.
 const _AI_GEN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
 const _AI_IMP = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
-// "Tornar mais complexa" glyph: stacked bars (rising difficulty).
-const _AI_CPX = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="9"/><line x1="18" y1="20" x2="18" y2="4"/></svg>';
 
 // The audience config (variables x audiences matrix) drives the "unique" audience
 // picker and the "variable" per-audience preview. The bank/live host load it once
@@ -206,7 +204,6 @@ export function mountComposer(container, initial) {
       '<div class="cdx-comp-ai-row">' +
         '<button class="cdx-btn cdx-btn--ghost cdx-comp-ai" data-act="ai-generate" type="button">' + _AI_GEN + ' ' + _esc(t('questions.host_ai_generate')) + '</button>' +
         '<button class="cdx-btn cdx-btn--ghost cdx-comp-ai" data-act="ai-improve" type="button">' + _AI_IMP + ' ' + _esc(t('questions.host_ai_improve')) + '</button>' +
-        '<button class="cdx-btn cdx-btn--ghost cdx-comp-ai" data-act="ai-complex" type="button">' + _AI_CPX + ' ' + _esc(t('questions.host_ai_complex')) + '</button>' +
       '</div>' +
     '</div>';
   const typeSel = container.querySelector('.cdx-comp-type');
@@ -277,19 +274,12 @@ export function mountComposer(container, initial) {
     const cls = classSel.value;
     const audienceKey = (extraEl.querySelector('.cdx-comp-audience') || {}).value || '';
     const topic = String(textEl.value || '').trim();
-    // 'improve' and 'complex' both reword an existing question, so both need text.
-    const needsText = (kind === 'improve' || kind === 'complex');
-    if (!topic) { notice.info(t(needsText ? 'questions.bank_ai_improve_empty' : 'questions.bank_ai_empty')); return; }
+    if (!topic) { notice.info(t(kind === 'improve' ? 'questions.bank_ai_improve_empty' : 'questions.bank_ai_empty')); return; }
     if (cls === 'unique' && !audienceKey) { notice.info(t('questions.comp_class_warn_no_audience')); return; }
     const maxSel = _curMaxSel();
-    // Augment: class context, a 4-option ask for MC, and (for "complex") the
-    // raise-difficulty instruction. The Worker action only knows {prompt|improve_from}.
-    let aug = _augment(cls, audienceKey);
-    if (typeSel.value === 'mc') aug += '\n\n' + t('questions.comp_ai_four_options');
-    if (kind === 'complex') aug += '\n\n' + t('questions.comp_ai_complex_instr');
+    const aug = _augment(cls, audienceKey);
     const params = { type: typeSel.value, max_select: maxSel };
-    // "Tornar mais complexa" is an improve-from-current with the complexity instruction.
-    if (needsText) params.improve_from = topic + aug; else params.prompt = topic + aug;
+    if (kind === 'improve') params.improve_from = topic + aug; else params.prompt = topic + aug;
     const btns = container.querySelectorAll('.cdx-comp-ai');
     btns.forEach((b) => { b.disabled = true; });
     let res; try { res = await ai.question(params); } catch (e) { notice.internal(e); res = null; }
@@ -298,7 +288,7 @@ export function mountComposer(container, initial) {
     _applyAi(res, maxSel);
   }
   const aiRow = container.querySelector('.cdx-comp-ai-row');
-  const onAi = (e) => { const b = e.target.closest('[data-act]'); if (!b) return; const a = b.getAttribute('data-act'); if (a === 'ai-generate') _aiFlow('generate'); else if (a === 'ai-improve') _aiFlow('improve'); else if (a === 'ai-complex') _aiFlow('complex'); };
+  const onAi = (e) => { const b = e.target.closest('[data-act]'); if (!b) return; const a = b.getAttribute('data-act'); if (a === 'ai-generate') _aiFlow('generate'); else if (a === 'ai-improve') _aiFlow('improve'); };
   if (aiRow) { aiRow.addEventListener('click', onAi); cleanup.push(() => aiRow.removeEventListener('click', onAi)); }
 
   function read() {
