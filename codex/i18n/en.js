@@ -911,6 +911,8 @@ export default {
   'questions.host_bank_pick':            'Choose a set...',
   'questions.host_bank_pick_hint':       'Select a set above.',
   'questions.host_bank_empty':           'No questions in this set.',
+  'questions.host_bank_reorder':         'Reorder',
+  'questions.host_bank_reorder_hint':    'Drag questions to change the bank order (applies to future sessions).',
   'questions.host_bank_set_label':       'Set',
   'questions.host_bank_launch':          'Launch',
   'questions.host_bank_edit':            'Edit',

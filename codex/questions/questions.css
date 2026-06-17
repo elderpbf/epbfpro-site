@@ -903,7 +903,14 @@
 .cdx-bank-glyph-generic { color: var(--text-secondary); }
 .cdx-bank-glyph-variable { color: var(--primary); }
 .cdx-bank-glyph-unique { color: #d97706; }
+.cdx-bank-reorder-bar { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
+.cdx-bank-reorder-toggle { padding: 0.25rem 0.55rem; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text-secondary); font: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+.cdx-bank-reorder-toggle:hover { border-color: var(--primary); color: var(--text-primary); }
+.cdx-bank-reorder-toggle.is-on { background: var(--cdx-btn-primary-bg); border-color: var(--primary); color: var(--cdx-btn-primary-text); }
 .cdx-bank-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; max-height: 60vh; overflow-y: auto; }
+.cdx-bank-item.is-reordering { cursor: grab; border-color: var(--primary); }
+.cdx-bank-item.is-reordering:active { cursor: grabbing; }
+.cdx-bank-item.is-reordering .cdx-bank-item-head { pointer-events: none; }
 .cdx-bank-msg { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
 .cdx-bank-item { display: flex; flex-direction: column; padding: 0.4rem 0.55rem; border: 1px solid rgba(20,184,166,.12); border-radius: 8px; background: var(--background); }
 .cdx-bank-item:hover { border-color: var(--primary); }

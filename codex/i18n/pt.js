@@ -910,6 +910,8 @@ export default {
   'questions.host_bank_pick':            'Escolha um conjunto...',
   'questions.host_bank_pick_hint':       'Selecione um conjunto acima.',
   'questions.host_bank_empty':           'Nenhuma questão neste conjunto.',
+  'questions.host_bank_reorder':         'Reordenar',
+  'questions.host_bank_reorder_hint':    'Arraste as questões para mudar a ordem do banco (vale para as próximas sessões).',
   'questions.host_bank_set_label':       'Conjunto',
   'questions.host_bank_launch':          'Lançar',
   'questions.host_bank_edit':            'Editar',

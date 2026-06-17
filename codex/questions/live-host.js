@@ -54,6 +54,8 @@ let _bankMode = 'bank';       // 'bank' | 'new' launch-card mode (Do banco is th
 let _bankFilter = 'all';      // active type chip: 'all'|'generic'|'variable'|'unique'
 let _bankSetName = '';        // currently loaded conjunto (empty = none picked yet)
 let _bankRaw = [];            // raw questions for the loaded set (audience/type filtered client-side)
+let _bankReorder = false;     // reorder-mode toggle: drag bank rows to persist a new order
+let _bankDragId = null;       // question id being dragged while reordering
 let _trailTurma = null;
 let _trailAllTurmas = [];
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
@@ -70,6 +72,20 @@ let _connected = 0;        // live count of students with the answer page open (
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Pure: move the dragged question before the drop target in the FULL raw list, so a
+// drag in the (possibly filtered) live picker persists a coherent bank order. Returns
+// a new array; ids compared as strings. Exported for unit tests.
+export function reorderByDrag(rawList, dragId, targetId) {
+  const list = (rawList || []).slice();
+  const from = list.findIndex((q) => String(q && q.id) === String(dragId));
+  if (from === -1 || String(dragId) === String(targetId)) return list;
+  const moved = list.splice(from, 1)[0];
+  const to = list.findIndex((q) => String(q && q.id) === String(targetId));
+  if (to === -1) { list.splice(from, 0, moved); return list; } // target gone: no-op
+  list.splice(to, 0, moved);
+  return list;
 }
 function _on(el, evt, fn, opts) { if (!el) return; el.addEventListener(evt, fn, opts); _cleanup.push(() => el.removeEventListener(evt, fn, opts)); }
 function _q(sel) { return _container && _container.querySelector(sel); }
@@ -158,6 +174,9 @@ function _composerCardMarkup() {
         '<button class="cdx-bank-chip" data-act="bank-filter" data-f="generic" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-generic" aria-hidden="true">' + _CLASS_GLYPH.generic + '</span> ' + _esc(t('questions.host_bank_filter_generic')) + '</button>' +
         '<button class="cdx-bank-chip" data-act="bank-filter" data-f="variable" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-variable" aria-hidden="true">' + _CLASS_GLYPH.variable + '</span> ' + _esc(t('questions.host_bank_filter_variable')) + '</button>' +
         '<button class="cdx-bank-chip" data-act="bank-filter" data-f="unique" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-unique" aria-hidden="true">' + _CLASS_GLYPH.unique + '</span> ' + _esc(t('questions.host_bank_filter_unique')) + '</button>' +
+      '</div>' +
+      '<div class="cdx-bank-reorder-bar">' +
+        '<button class="cdx-bank-reorder-toggle" data-act="bank-reorder" type="button" title="' + _esc(t('questions.host_bank_reorder_hint')) + '">&#8597; ' + _esc(t('questions.host_bank_reorder')) + '</button>' +
       '</div>' +
       '<div class="cdx-bank-list" id="cdx-bank-list"><div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div></div>' +
     '</div>' +
@@ -853,6 +872,17 @@ function _audienceValues() {
 // Fetch a conjunto's questions once and cache them; audience + type filtering then
 // runs client-side (bankVisible + filterByClass) so chip/audience clicks never hit
 // the network. Selecting the empty option clears the list back to the hint.
+// Apply a drag reorder to the full raw set and persist it to the bank. Optimistic:
+// re-render immediately, then save; a failure surfaces on the pill (order reverts on
+// the next set reload). The new order is the bank's order (same reorder_questions the
+// Banco edit mode uses), so it sticks across sessions.
+async function _persistBankReorder(dragId, targetId) {
+  _bankRaw = reorderByDrag(_bankRaw, dragId, targetId);
+  _renderBankList();
+  try { await api.reorder({ list_name: _bankSetName, ordered_ids: _bankRaw.map((q) => q.id) }); }
+  catch (e) { notice.internal(e); }
+}
+
 async function _loadBankQuestions(listName) {
   _bankSetName = listName || '';
   const list = _q('#cdx-bank-list');
@@ -885,7 +915,7 @@ function _renderBankList() {
     // (the raw template stays in _bankMap for launch). Editar opens the composer.
     const resolved = resolveQuestion(q, vals);
     const cls = questionType(q);
-    return '<div class="cdx-bank-item" data-bank-i="' + i + '">' +
+    return '<div class="cdx-bank-item' + (_bankReorder ? ' is-reordering' : '') + '" data-bank-i="' + i + '" data-qid="' + _esc(q.id) + '"' + (_bankReorder ? ' draggable="true"' : '') + '>' +
       '<div class="cdx-bank-item-head">' +
         '<span class="cdx-bank-chevron" aria-hidden="true">▸</span>' +
         '<span class="cdx-bank-glyph cdx-bank-glyph-' + cls + '" aria-hidden="true">' + _CLASS_GLYPH[cls] + '</span>' +
@@ -1092,6 +1122,13 @@ export function mount(containerEl, ctx) {
       if (act === 'bank-filter') { if (btn.disabled || btn.classList.contains('is-disabled')) return; _bankFilter = btn.getAttribute('data-f') || 'all'; _syncBankChips(); _renderBankList(); return; }
       if (act === 'bank-launch') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _launchFromBank(q); return; }
       if (act === 'bank-edit') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) { _setBankMode('new'); _prefillFromBank(q); } return; }
+      if (act === 'bank-reorder') {
+        if (!_bankSetName) return;
+        _bankReorder = !_bankReorder;
+        btn.classList.toggle('is-on', _bankReorder);
+        _renderBankList();
+        return;
+      }
       if (act === 'reset-layout') { _layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); _applyLayout(); _saveLayout(); return; }
     }
     const col = e.target.closest('[data-toggle-col]');
@@ -1138,9 +1175,32 @@ export function mount(containerEl, ctx) {
   _on(_q('#cdx-bank-list'), 'click', (e) => {
     // Editar/Lançar are data-act buttons handled by the host click handler; a click
     // on the row body (chevron or text) just expands/collapses the readable detail.
-    if (e.target.closest('[data-act]')) return;
+    // While reordering, a click must not expand (the row is a drag handle).
+    if (_bankReorder || e.target.closest('[data-act]')) return;
     const item = e.target.closest('.cdx-bank-item');
     if (item) item.classList.toggle('is-open');
+  });
+  // Reorder during the session: drag a bank row onto another to persist a new bank
+  // order (reuses reorder_questions). Only armed while reorder mode is on.
+  _on(_q('#cdx-bank-list'), 'dragstart', (e) => {
+    if (!_bankReorder) return;
+    const item = e.target.closest('.cdx-bank-item'); if (!item) return;
+    _bankDragId = item.getAttribute('data-qid');
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+  });
+  _on(_q('#cdx-bank-list'), 'dragover', (e) => {
+    if (!_bankReorder || _bankDragId == null) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  });
+  _on(_q('#cdx-bank-list'), 'drop', (e) => {
+    if (!_bankReorder || _bankDragId == null) return;
+    e.preventDefault();
+    const item = e.target.closest('.cdx-bank-item');
+    const targetId = item ? item.getAttribute('data-qid') : null;
+    const dragId = _bankDragId; _bankDragId = null;
+    if (!targetId || String(targetId) === String(dragId)) return;
+    _persistBankReorder(dragId, targetId);
   });
   _on(_q('#cdx-sqa-response'), 'input', _scheduleSqaSave);
   _on(_q('#cdx-auto-on'), 'change', (e) => { _auto.enabled = !!e.target.checked; _saveAuto(); _syncAutoUI(); });
