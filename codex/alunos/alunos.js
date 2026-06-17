@@ -101,7 +101,7 @@ function wireSettings() {
       access_gated: gated.checked ? 1 : 0, gate_mode: mode.value,
       certificates_enabled: certs.checked ? 1 : 0,
     }));
-    if (res) {
+    if (res && res.ok) {
       _current.access_gated = gated.checked ? 1 : 0;
       _current.gate_mode = mode.value;
       _current.certificates_enabled = certs.checked ? 1 : 0;
@@ -135,6 +135,7 @@ function wireQueue() {
     const ids = [...body().querySelectorAll('.cdx-al-qrow')].map((li) => Number(li.dataset.id));
     if (!ids.length) return;
     all.disabled = true;
+    body().querySelectorAll('.cdx-al-approve, .cdx-al-deny').forEach((b) => { b.disabled = true; });
     await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'approved' }));
     loadTurma();
   });
@@ -196,7 +197,7 @@ function wireRoster() {
     if (!emails.length) { msg.textContent = t('alunos.roster_none'); return; }
     go.disabled = true; msg.textContent = '';
     const res = await safe(() => api.rosterApprove({ turma_id: _current.id, emails }));
-    if (res) { msg.textContent = t('alunos.roster_done'); ta.value = ''; loadTurma(); }
+    if (res && res.ok) { msg.textContent = t('alunos.roster_done'); ta.value = ''; loadTurma(); }
     else { msg.textContent = t('alunos.save_error'); go.disabled = false; }
   });
 }
