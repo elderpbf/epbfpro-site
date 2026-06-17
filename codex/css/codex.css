@@ -341,3 +341,36 @@
   margin-left: -0.25rem; padding: 0 0.2rem;
   color: var(--text-secondary, #888); font-size: 1.1rem; line-height: 1;
 }
+
+/* ── Student-identity tier badge (js/participant-tier.js) ─────────────────────
+ * A small pill on a participant showing how established their identity is:
+ * present (confirmed in a live session) > registered (logged in + LGPD consent)
+ * > roster (on the list only). Shared by the cohorts roster and the cert-issue
+ * modal. Colour tracks trust: success for present, primary for registered,
+ * neutral for roster. */
+.cdx-tier {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: middle;
+  border: 1px solid transparent;
+}
+.cdx-tier--present {
+  color: var(--success, #16a34a);
+  background: var(--success-bg, rgba(22,163,74,0.10));
+  border-color: var(--success, #16a34a);
+}
+.cdx-tier--registered {
+  color: var(--primary, #2563eb);
+  background: var(--primary-bg, rgba(37,99,235,0.10));
+  border-color: var(--primary, #2563eb);
+}
+.cdx-tier--roster {
+  color: var(--text-secondary, #6b7280);
+  background: var(--background, rgba(127,127,127,0.08));
+  border-color: var(--border, #d1d5db);
+}

@@ -1,7 +1,7 @@
 // js/ui.js — header scroll state, theme toggle + logo swap, language buttons,
 // the rotating typewriter in the hero, and the scroll-reveal observer.
-import { t, getLang, setLang, onLang, apply } from './i18n.js?v=6';
-import { getTheme, toggleTheme, onTheme } from './theme.js?v=6';
+import { t, getLang, setLang, onLang, apply } from './i18n.js?v=17';
+import { getTheme, toggleTheme, onTheme } from './theme.js?v=17';
 
 function applyLogo() {
   const file = getTheme() === 'dark' ? 'glyph-wordmark_bg.navy.svg' : 'glyph-wordmark_bg.transp.svg';
@@ -29,13 +29,53 @@ function syncLangButtons() {
     b.setAttribute('aria-pressed', b.dataset.lang === getLang()));
 }
 
+// The demo phones (real Codex app in srcdoc iframes) post {plpStep:{i,total,label}}
+// on each beat. We draw the caption tab on top of the matching phone: the action
+// label (swapped with a soft fade) over a segmented progress bar, one segment per beat.
+function refreshTab(tab, s) {
+  if (tab.hidden) tab.hidden = false;
+  const segs = tab.querySelector('.plp-captab-segs');
+  if (segs.childElementCount !== s.total) {
+    segs.textContent = '';
+    for (let i = 0; i < s.total; i++) segs.appendChild(document.createElement('span'));
+  }
+  [...segs.children].forEach((seg, i) => {
+    seg.className = i === s.i - 1 ? 'is-active' : (i < s.i - 1 ? 'is-done' : '');
+  });
+  const txt = tab.querySelector('.plp-captab-txt');
+  if (txt.textContent !== s.label) {
+    txt.style.opacity = '0';
+    setTimeout(() => { txt.textContent = s.label; txt.style.opacity = '1'; }, 170);
+  }
+}
+
+function initCaptionTabs() {
+  const pairs = [
+    [document.getElementById('pulseFrame'), document.getElementById('pulseTab')],
+    [document.getElementById('trailFrame'), document.getElementById('trailTab')]
+  ].filter(([f, tab]) => f && tab);
+  if (!pairs.length) return;
+  addEventListener('message', (e) => {
+    const s = e.data && e.data.plpStep;
+    if (!s) return;
+    const pair = pairs.find(([f]) => f.contentWindow === e.source);
+    if (pair) refreshTab(pair[1], s);
+  });
+}
+
 export function initUI() {
   // theme
   const tb = document.getElementById('theme');
   const setIcon = () => { if (tb) tb.textContent = getTheme() === 'dark' ? '☀' : '☾'; };
   setIcon(); applyLogo();
   if (tb) tb.addEventListener('click', toggleTheme);
-  onTheme(() => { setIcon(); applyLogo(); });
+  // keep the embedded Codex demo iframes (the real app) on the page theme
+  const syncFrames = () => document.querySelectorAll('.plp-app-frame').forEach(f => {
+    try { f.contentWindow.postMessage({ plpTheme: getTheme() }, '*'); } catch (_) { /* cross-doc not ready yet */ }
+  });
+  document.querySelectorAll('.plp-app-frame').forEach(f => f.addEventListener('load', syncFrames));
+  onTheme(() => { setIcon(); applyLogo(); syncFrames(); });
+  initCaptionTabs();
 
   // language
   syncLangButtons();

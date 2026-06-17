@@ -1,0 +1,178 @@
+// certificates/assinador.js
+// The signing page loaded inside the "Assinador PensoIA" desktop app (a thin
+// pywebview window). It reuses the REAL cert renderer (so the signed PDF is
+// pixel-identical to the app's Baixar PDF), lists the certs awaiting signature,
+// and for each: renders the PDF here, hands it to the local app bridge to sign
+// with the A1 e-CNPJ (window.pywebview.api), then uploads the signed PDF and
+// flips status to 'signed'. The private key only ever lives in the local app.
+//
+// Opened in a normal browser (no pywebview bridge) it still lists certs but can't
+// sign — it shows a "open in the app" notice instead.
+import '../js/worker-call.js'; // sets window.callWorker (defaults to codex-api)
+import { certificates as api } from '../js/codex-api.js';
+import { renderCertsPdfBase64 } from './cert-pdf.js';
+import { renderCertHtml, buildValidarUrl, formatIssuedOn } from './certificates.js';
+import { glyphWordmark, stdColors } from '../js/brand-logos.js';
+
+window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+
+const $ = (s) => document.querySelector(s);
+
+// Real PensoIA lockup (filled artwork, same as the certs). Dark page -> navy recipe
+// (white wordmark + teal accent).
+const _logo = $('#brandLogo'); if (_logo) _logo.innerHTML = glyphWordmark(stdColors('navy'));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ── local-app bridge detection ────────────────────────────────────────────────
+// pywebview injects window.pywebview.api asynchronously and fires `pywebviewready`.
+let APP = !!(window.pywebview && window.pywebview.api);
+window.addEventListener('pywebviewready', () => { APP = true; $('#needApp').classList.add('hide'); });
+setTimeout(() => { if (!APP && !(window.pywebview && window.pywebview.api)) $('#needApp').classList.remove('hide'); }, 1200);
+const inApp = () => APP || !!(window.pywebview && window.pywebview.api);
+
+// SHA-256 hex of the password — the bs_pw_hash auth contract (same output as
+// js/settings-auth.js hashPw; vendored inline so this standalone page doesn't pull
+// in the whole settings-drawer module).
+async function hashPw(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+let _certsByCode = {};
+const _pfx = { chosen: false };
+function log(m) { $('#log').textContent = m; }
+
+// ── login ─────────────────────────────────────────────────────────────────────
+async function login() {
+  const pw = $('#pw').value;
+  if (!pw) return;
+  $('#loginMsg').textContent = '';
+  const hash = await hashPw(pw);
+  let res;
+  try { res = await window.callWorker({ action: 'validate_auth', auth_token: hash }); }
+  catch (_) { res = { ok: false }; }
+  if (!res || !res.ok) { $('#loginMsg').textContent = 'Senha incorreta.'; return; }
+  localStorage.setItem('bs_pw_hash', hash);
+  $('#loginPanel').classList.add('hide');
+  $('#certPanel').classList.remove('hide');
+  $('#listPanel').classList.remove('hide');
+  await loadCerts();
+}
+
+// ── certificate (.pfx) pick ───────────────────────────────────────────────────
+async function choosePfx() {
+  if (!inApp()) { $('#needApp').classList.remove('hide'); return; }
+  let r;
+  try { r = await window.pywebview.api.choose_pfx(); }
+  catch (e) { log('Erro ao abrir o seletor: ' + (e && e.message || e)); return; }
+  if (r && r.name) { _pfx.chosen = true; $('#pfxName').textContent = r.name; }
+  else if (r && r.error) { log('Não consegui usar esse arquivo: ' + r.error); }
+}
+
+// ── load certs awaiting signature (status = issued) ───────────────────────────
+async function loadCerts() {
+  const wrap = $('#listWrap');
+  wrap.innerHTML = '<div class="st" style="color:var(--mut)">Carregando…</div>';
+  let res;
+  try { res = await api.list({ status: 'issued' }); }
+  catch (e) { wrap.innerHTML = '<div class="st err">Falha ao carregar: ' + esc(e && e.message || e) + '</div>'; return; }
+  const certs = (res && res.certificates) || [];
+  _certsByCode = {};
+  certs.forEach((c) => { _certsByCode[c.code] = c; });
+  if (!certs.length) { wrap.innerHTML = '<div class="st" style="color:var(--mut)">Nenhum certificado aguardando assinatura.</div>'; syncSign(); return; }
+  wrap.innerHTML =
+    '<table><thead><tr><th style="width:34px"></th><th>Aluno</th><th>Código</th><th>Curso</th><th>Emitido</th><th>Status</th></tr></thead><tbody>' +
+    certs.map((c) =>
+      '<tr id="row-' + esc(c.code) + '">' +
+        '<td><input type="checkbox" class="selrow" data-code="' + esc(c.code) + '"></td>' +
+        '<td>' + esc(c.holder_name || '') + '</td>' +
+        '<td><code>' + esc(c.code) + '</code></td>' +
+        '<td>' + esc(c.course_title || '') + '</td>' +
+        '<td>' + esc(formatIssuedOn(c.issued_on)) + '</td>' +
+        '<td class="st" id="st-' + esc(c.code) + '"></td>' +
+      '</tr>').join('') +
+    '</tbody></table>';
+  wrap.querySelectorAll('.selrow').forEach((cb) => cb.addEventListener('change', syncSign));
+  $('#selAll').checked = false;
+  syncSign();
+}
+
+function selectedCodes() {
+  return Array.from(document.querySelectorAll('.selrow:checked')).map((cb) => cb.getAttribute('data-code'));
+}
+function syncSign() { $('#signBtn').disabled = selectedCodes().length === 0; }
+function setSt(code, kind, text) { const el = $('#st-' + code); if (el) { el.className = 'st ' + kind; el.textContent = text; } }
+
+// ── sign the selected certs ───────────────────────────────────────────────────
+async function signSelected() {
+  if (!inApp()) { $('#needApp').classList.remove('hide'); return; }
+  const codes = selectedCodes();
+  if (!codes.length) return;
+  if (!_pfx.chosen) { log('Selecione o arquivo .pfx primeiro.'); return; }
+  const pfxPw = $('#pfxPw').value;
+  if (!pfxPw) { log('Digite a senha do certificado.'); return; }
+
+  busy(true);
+  log('Abrindo o certificado digital…');
+  let unlocked;
+  try { unlocked = await window.pywebview.api.unlock(pfxPw); }
+  catch (e) { unlocked = { error: (e && e.message) || String(e) }; }
+  if (!unlocked || !unlocked.ok) { log('Não consegui abrir o .pfx (senha errada?): ' + ((unlocked && unlocked.error) || 'erro')); busy(false); return; }
+
+  let ok = 0, fail = 0;
+  const origin = location.origin;
+  for (const code of codes) {
+    const cert = _certsByCode[code];
+    if (!cert) { fail++; continue; }
+    setSt(code, 'work', 'assinando…');
+    try {
+      const b64 = await renderCertsPdfBase64([{ html: renderCertHtml(cert, origin), qrUrl: buildValidarUrl(origin, code) }]);
+      if (!b64) throw new Error('falha ao gerar o PDF');
+      const signed = await window.pywebview.api.sign(b64);
+      if (!signed || signed.error) throw new Error((signed && signed.error) || 'falha na assinatura');
+      await api.attachPdf({ code, pdf_b64: signed.signed_b64 });
+      await api.markSigned({ code });
+      setSt(code, 'ok', '✓ assinado');
+      const row = $('#row-' + code); if (row) row.classList.add('done');
+      ok++;
+    } catch (e) {
+      setSt(code, 'err', '✗ ' + (e && e.message || e));
+      fail++;
+    }
+  }
+  try { await window.pywebview.api.lock(); } catch (_) { /* best-effort: drop the key */ }
+  $('#pfxPw').value = '';
+  log('Pronto: ' + ok + ' assinado(s)' + (fail ? ', ' + fail + ' com erro' : '') + '. Atualizando a lista…');
+  busy(false);
+  await loadCerts();
+}
+
+function busy(b) {
+  ['#signBtn', '#refreshBtn', '#pfxBtn', '#loginBtn'].forEach((s) => { const el = $(s); if (el) el.disabled = b; });
+  if (!b) syncSign();
+}
+
+// ── wire ──────────────────────────────────────────────────────────────────────
+$('#loginBtn').addEventListener('click', login);
+$('#pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+$('#pfxBtn').addEventListener('click', choosePfx);
+$('#refreshBtn').addEventListener('click', loadCerts);
+$('#signBtn').addEventListener('click', signSelected);
+$('#selAll').addEventListener('change', (e) => {
+  document.querySelectorAll('.selrow').forEach((cb) => { cb.checked = e.target.checked; });
+  syncSign();
+});
+
+// If a prior session already authenticated (bs_pw_hash present), skip the login.
+(async function boot() {
+  const hash = localStorage.getItem('bs_pw_hash');
+  if (!hash) return;
+  let res;
+  try { res = await window.callWorker({ action: 'validate_auth', auth_token: hash }); } catch (_) { res = { ok: false }; }
+  if (res && res.ok) {
+    $('#loginPanel').classList.add('hide');
+    $('#certPanel').classList.remove('hide');
+    $('#listPanel').classList.remove('hide');
+    await loadCerts();
+  }
+})();

@@ -53,3 +53,21 @@ test('trail facade passes params through unchanged (answer payloads)', () => {
   assert.equal(tarefa.answer_type, 'text');
   assert.equal(tarefa.answer_json, '{"text":"x"}');
 });
+
+test('trail facade exposes the Phase 1 student-identity methods', () => {
+  for (const m of ['authRequest', 'authVerify', 'profileSave', 'sessionCheck']) {
+    assert.equal(typeof trail[m], 'function', `trail.${m} is a function`);
+  }
+});
+
+test('trail facade maps the student methods to their worker actions', () => {
+  const cases = [
+    [() => trail.authRequest({ email: 'a@b.c' }),      'student_auth_request'],
+    [() => trail.authVerify({ token: 'X' }),           'student_auth_verify'],
+    [() => trail.profileSave({ session_token: 'S' }),  'student_profile_save'],
+    [() => trail.sessionCheck({ session_token: 'S' }), 'student_session_check'],
+  ];
+  for (const [fn, action] of cases) {
+    assert.equal(fn().action, action, `maps to ${action}`);
+  }
+});

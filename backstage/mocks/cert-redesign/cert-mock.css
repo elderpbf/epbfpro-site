@@ -1,0 +1,44 @@
+/* cert-redesign mock — styles for the NEW elements only. The base cert look comes
+   from /codex/certificates/cert-render.css (linked first). Everything stays scoped
+   under .cdx-cert-page so it reuses the cert palette vars. */
+body { margin: 0; background: #0e1622; font-family: 'Inter', sans-serif; color: #e8eef5; }
+.cm-stage { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 22px 14px 48px; }
+.cm-cap { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #8aa0b8; }
+.cm-pagewrap { box-shadow: 0 18px 50px rgba(0,0,0,.45); border-radius: 2px; overflow: hidden; }
+
+/* ── Unified validation block (replaces the per-template badges) ── */
+.cdx-cert-page .cert-valblock { display: flex; align-items: center; gap: 11px; }
+.cdx-cert-page .cert-valblock .cert-val-qr { width: 20mm; height: 20mm; background: #fff; padding: 4px; border-radius: 5px; flex: 0 0 auto; }
+.cdx-cert-page .cert-valblock .cert-val-qr svg { display: block; width: 100%; height: 100%; }
+.cdx-cert-page .cert-val-label { font-family: var(--inter); font-size: 8.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--pdark); font-weight: 700; }
+.cdx-cert-page .cert-val-url { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.cdx-cert-page .cert-val-code { font-family: var(--mono); font-size: 13.5px; font-weight: 600; letter-spacing: .08em; color: var(--ink2); margin-top: 1px; }
+
+/* card variant: a tidy bordered card (sits in the footer-right) */
+.cdx-cert-page .cert-val-card { background: #fff; border: 1px solid var(--rule); border-radius: 12px; padding: 8px 13px; box-shadow: 0 6px 18px rgba(6,26,81,.08); }
+
+/* strip variant: a full-width footer rule with the same fields inline */
+.cdx-cert-page .cert-val-strip { width: 100%; justify-content: flex-start; gap: 13px; padding-top: 9px; border-top: 1px solid var(--rule); }
+.cdx-cert-page .cert-val-strip .cert-val-tx { display: flex; align-items: baseline; gap: 14px; }
+.cdx-cert-page .cert-val-strip .cert-val-url { margin-top: 0; }
+.cdx-cert-page .cert-val-strip .cert-val-code { margin-top: 0; }
+
+/* The certifying sentence gets a touch more weight (it is the meaningful text). */
+.cdx-cert-page .f-vetor .vt-mid .stmt,
+.cdx-cert-page .f-console .cs-mid .stmt { font-size: 15.5px; line-height: 1.75; }
+
+/* No serif anywhere: names, the back course title, and all Monograma body text go
+   sans (Inter). The Monograma layout stays; only the classic serif goes away. */
+.cdx-cert-page .name, .cdx-cert-page .m-name { font-family: var(--inter); font-weight: 600; letter-spacing: -.015em; text-wrap: balance; }
+.cdx-cert-page .back .bhead .ht .title { font-family: var(--inter); font-weight: 600; letter-spacing: -.01em; }
+.cdx-cert-page .f-mono .m-stmt,
+.cdx-cert-page .f-mono .m-orn span,
+.cdx-cert-page .f-mono .ref .no { font-family: var(--inter); font-style: normal; }
+.cdx-cert-page .f-mono .m-orn span { letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+.cdx-cert-page .f-mono .ref .no { font-weight: 600; font-size: 13px; }
+
+/* Keep ALL the front text off the right-hand colour field: confine the text column
+   to the paper side so the statement never crosses into the gradient slab. */
+.cdx-cert-page .f-vetor .vt-mid { max-width: 124mm; }
+.cdx-cert-page .f-vetor .vt-mid .stmt,
+.cdx-cert-page .f-vetor .vt-mid .name { max-width: 124mm; }

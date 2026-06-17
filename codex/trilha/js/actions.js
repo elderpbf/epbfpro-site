@@ -6,6 +6,9 @@
 import { state } from './state.js';
 import { esc, copyToClipboard, hasSubmittedTarefa } from './utils.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
+import { isLoggedIn, LOGIN_ENABLED } from './student-session.js';
+import { gate } from './student-login.js';
+import { openLoginModal } from './student-login-modal.js';
 
 export function getMeta(item) {
   if (!item || !item.meta_json) return {};
@@ -72,13 +75,24 @@ export function injectActionButton(sub, item, opts = {}) {
 }
 
 export function openTarefaSubmit(item, sub, opts) {
-  openTarefaSubmitModal({
+  // Persisting a tarefa answer requires a student session: gate the modal behind
+  // login, resuming the submit once authenticated. The gate logic is unit-tested
+  // (student-login.gate); here we only supply the predicate + the two callbacks.
+  const proceed = () => openTarefaSubmitModal({
     item,
     clientSlug: state.clientSlug,
     turmaSlug: state.turmaSlug,
     token: state.token,
     onSubmitted: () => injectActionButton(sub, item, opts || {}),
   });
+  // Login disabled: submit name-based as before. When the access-control model
+  // lands, the gate (unit-tested in student-login.gate) routes through login first.
+  if (!LOGIN_ENABLED) { proceed(); return; }
+  gate(
+    isLoggedIn(state.clientSlug, state.turmaSlug),
+    (resume) => openLoginModal({ client: state.clientSlug, turma: state.turmaSlug, k: state.token, onAuthenticated: resume }),
+    proceed,
+  );
 }
 
 export function appendFlatActionRow(body, item) {

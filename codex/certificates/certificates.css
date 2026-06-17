@@ -209,6 +209,29 @@
   margin-bottom: 1rem;
 }
 
+/* Quiet utility glyph: download the local ICP-Brasil signer app. Not a primary
+   action (one-time install), so it reads as a muted icon next to Emitir; the
+   tooltip explains it. */
+.cdx-certs-signer-dl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.cdx-certs-signer-dl:hover {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  background: var(--surface-hover);
+}
+
 .cdx-certs-search {
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--border);
@@ -351,15 +374,26 @@
 
 .cdx-cert-roster-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.875rem;
-  padding: 0.2rem 0.25rem;
+  padding: 0.3rem 0.25rem;
   border-radius: 4px;
   cursor: pointer;
 }
 .cdx-cert-roster-row:hover { background: var(--surface-hover, rgba(127,127,127,0.08)); }
-.cdx-cert-roster-email { color: var(--text-secondary); font-size: 0.8em; }
+.cdx-cert-roster-row input[type="checkbox"] { margin-top: 0.15rem; }
+/* Person block: name + tier badge on line 1, the delivery e-mail prominent below. */
+.cdx-cert-roster-person { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+.cdx-cert-roster-line1 { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.cdx-cert-roster-email { color: var(--text-primary); font-size: 0.82em; word-break: break-all; }
+/* No e-mail = this certificate can't be delivered; flag it clearly. */
+.cdx-cert-roster-noemail {
+  color: var(--danger, #b91c1c);
+  font-size: 0.78em;
+  font-style: italic;
+}
+.cdx-cert-roster-row--noemail { background: var(--danger-bg, rgba(185,28,28,0.06)); }
 /* "Selecionar todos" sits at the top of the roster, separated by a rule. */
 .cdx-cert-roster-all { border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 0.15rem; padding-bottom: 0.35rem; position: sticky; top: -0.4rem; background: var(--surface); }
 .cdx-cert-roster-allk { font-weight: 600; }
@@ -367,6 +401,10 @@
 /* Preview button row under the model/theme selects in the issue modal. */
 .cdx-cert-issue-previewrow { display: flex; align-items: center; gap: 0.6rem; margin: -0.2rem 0 0.75rem; flex-wrap: wrap; }
 .cdx-cert-issue-previewrow .cdx-field-hint { margin: 0; }
+
+/* Empty-field warning list (pre-issue guard). */
+.cdx-cert-empty-list { margin: 0 0 1.2rem; padding-left: 1.2rem; color: var(--text-secondary); font-size: 0.86rem; }
+.cdx-cert-empty-list li { margin-bottom: 0.15rem; }
 
 .cdx-cert-issue-result {
   background: var(--surface-hover, rgba(99,102,241,0.07));

@@ -6,7 +6,7 @@
    ============================================================ */
 :root{
   --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --teal-light:#5eead4;
-  --accent:#7de8d6; --green:#10b981; --on-teal:#03201b; --danger:#ef4444;
+  --accent:#7de8d6; --green:#10b981; --on-teal:#ffffff; --danger:#ef4444;
   --ease:cubic-bezier(.22,1,.36,1);
 }
 [data-theme="dark"]{
@@ -147,7 +147,7 @@ h1{font-family:'Lora',serif;font-weight:600;font-size:clamp(2.5rem,6.4vw,4.6rem)
 .plp-when{display:inline-flex;align-items:center;gap:7px;font:700 .7rem 'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase;color:var(--teal-text);background:var(--pill);border:1px solid var(--line);padding:6px 12px;border-radius:100px;margin-bottom:13px}
 .plp-xp h3{font-family:'Lora',serif;font-weight:600;font-size:1.55rem;margin-bottom:8px}
 .plp-xp p{color:var(--ink-soft);font-size:1rem}
-.plp-xp-media{justify-self:center}
+.plp-xp-media{justify-self:center;display:flex;flex-direction:column;align-items:center}
 
 /* phone frame */
 .plp-phone{position:relative;width:min(280px,82vw);aspect-ratio:72/139;border:8px solid #0d1320;border-radius:26px;overflow:hidden;background:#0d1320;box-shadow:var(--shadow),0 0 60px -26px var(--glow)}
@@ -172,6 +172,25 @@ h1{font-family:'Lora',serif;font-weight:600;font-size:clamp(2.5rem,6.4vw,4.6rem)
    ========================================================= */
 .plp-app{position:relative;flex:1;overflow:hidden;background:var(--background)}
 .plp-app-scale{position:absolute;top:0;left:0;width:136.5%;height:136.5%;transform:scale(.733);transform-origin:top left;overflow:hidden}
+.plp-app-frame{width:100%;height:100%;border:0;display:block;background:var(--background);pointer-events:none}
+/* Caption tab: sits on top of the phone (outside the demo box). The demo phones post
+   {plpStep} on each beat (ui.js); this shows the action label over a segmented bar,
+   one segment per beat, so the viewer reads where in the sequence the demo is. */
+.plp-captab{width:min(280px,82vw);margin-bottom:14px;text-align:center;
+  opacity:0;transform:translateY(5px);transition:opacity .45s var(--ease),transform .45s var(--ease)}
+.plp-captab:not([hidden]){opacity:1;transform:none}
+.plp-captab-label{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:1.25em;
+  margin-bottom:10px;font:600 .9rem 'Inter',sans-serif;color:var(--ink)}
+.plp-captab-dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--teal);
+  box-shadow:0 0 0 0 var(--glow);animation:plp-captab-pulse 1.9s var(--ease) infinite}
+@keyframes plp-captab-pulse{0%{box-shadow:0 0 0 0 var(--glow)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.plp-captab-txt{transition:opacity .25s ease}
+.plp-captab-segs{display:flex;gap:7px}
+.plp-captab-segs span{flex:1;height:5px;border-radius:99px;background:var(--line);
+  transition:background .35s var(--ease),box-shadow .35s var(--ease)}
+.plp-captab-segs span.is-done{background:var(--teal-light)}
+.plp-captab-segs span.is-active{background:var(--teal);box-shadow:0 0 10px var(--glow)}
+@media(prefers-reduced-motion:reduce){.plp-captab-dot{animation:none}}
 
 /* Codex design tokens, scoped to the phones (copied from theme.css). */
 .plp-demo-pulse,.plp-demo-trail{

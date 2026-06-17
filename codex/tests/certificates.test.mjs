@@ -477,19 +477,80 @@ describe('Emissão dashboard port (source contract)', () => {
   test('old status <select> filter is gone (cards replaced it)', () => {
     assert.ok(!src.includes('cdx-certs-filter-status'), 'old status select removed');
   });
-  test("sign/send are gated until real signing/email — no false status flip", () => {
-    // The row actions still exist (the workflow is visible)…
+  test('sign is LOCAL-only — Assinar points to the local signer, never flips status in the browser', () => {
     assert.ok(src.includes("data-action=\"sign\""), 'row sign action present');
+    assert.ok(src.includes("t('certificates.sign_local')"), 'Assinar shows the local-signer hint');
+    assert.ok(!src.includes('api.markSigned'), 'browser never flips status to signed (the local tool does)');
+    assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed (used by the local tool)');
+  });
+  test('Enviar e-mails the stored SIGNED PDF for a signed cert (not a fresh unsigned re-render)', () => {
+    assert.ok(src.includes('_fetchStoredPdfBase64'), 'fetches the stored PDF from R2');
+    assert.ok(src.includes("cert.status === 'signed'") && src.includes('cert.pdf_path'), 'only when signed + a stored PDF exists');
+    assert.ok(src.includes("assetUrl('/r2/'"), 'reads it via the worker R2 serve route');
+  });
+  test('send is WIRED: e-mails via the shared module, flips to sent only after a real send', () => {
     assert.ok(src.includes("data-action=\"mark-sent\""), 'row send action present');
-    // …but they must NOT complete a status change yet: clicking surfaces the
-    // not-wired notice and does not call the mark APIs (no false signed/sent).
-    assert.ok(src.includes("t('certificates.sign_not_wired')"), 'sign shows the not-wired notice');
-    assert.ok(src.includes("t('certificates.send_not_wired')"), 'send shows the not-wired notice');
-    assert.ok(!src.includes('api.markSigned'), 'does NOT flip status to signed yet');
-    assert.ok(!src.includes('api.markSent'), 'does NOT flip status to sent yet');
-    // The facade keeps the actions ready for when the real flows land.
-    assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed');
+    assert.ok(src.includes("from '../js/codex-email.js'"), 'uses the shared Codex e-mail module (not a cert-only sender)');
+    assert.ok(src.includes('renderCertsPdfBase64'), 'rasterizes the PDF for the attachment');
+    assert.ok(src.includes('sendEmail('), 'sends through the e-mail module');
+    assert.ok(src.includes('api.markSent'), 'flips status to sent');
+    // Honest status: markSent runs AFTER the send resolves ok, never before.
+    const iSend = src.indexOf('sendEmail(');
+    const iMark = src.indexOf('api.markSent');
+    assert.ok(iSend !== -1 && iMark !== -1 && iSend < iMark, 'markSent comes after the send call');
+    // Guards: no send without a recipient e-mail, and only from issued|signed.
+    assert.ok(src.includes("t('certificates.send_no_email')"), 'guards a missing recipient e-mail');
+    assert.ok(src.includes("t('certificates.send_only_issued_signed')"), 'guards the lifecycle status');
     assert.ok(api.includes('cert_mark_sent'), 'facade still exposes cert_mark_sent');
+    assert.ok(src.includes('from: CERT_FROM'), 'cert e-mail sets an explicit sender');
+    assert.ok(src.includes('onboarding@resend.dev'), 'sandbox sender (delivers to the account owner) until pensoia.com is verified');
+  });
+  test('a stored (signed) PDF downloads via the worker R2 route, not a relative path', () => {
+    // pdf_path is an R2 key; the row must link through assetUrl('/r2/'+key), else the
+    // browser resolves it relative to the page and 404s.
+    assert.ok(src.includes("assetUrl('/r2/' + c.pdf_path)"), 'stored-PDF link goes through the R2 serve route');
+  });
+});
+
+// ── Shared Codex e-mail module (js/codex-email.js + facade email.send). Generic
+// transport reused by any tab; certificate delivery is the first consumer. ──────
+describe('shared e-mail module (source contract)', () => {
+  const mod = readFileSync(new URL('../js/codex-email.js', import.meta.url), 'utf8');
+  const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+
+  test('facade exposes a generic email.send mapped to the send_email action', () => {
+    assert.ok(api.includes('export const email'), 'email facade export present');
+    assert.ok(api.includes("call('send_email'"), 'maps to the send_email worker action');
+  });
+  test('the module is generic (to/subject/html/attachments/from) and routes failures to the pill', () => {
+    assert.ok(mod.includes('export async function sendEmail'), 'exports sendEmail');
+    assert.ok(mod.includes('export function attachmentFromBase64'), 'exports the base64 attachment helper');
+    assert.ok(/from\b/.test(mod) && mod.includes('attachments'), 'forwards from + attachments (reusable, not cert-only)');
+    assert.ok(mod.includes('window.bsLog'), 'logs failures to the debug pill');
+    assert.ok(mod.includes("from './codex-api.js'"), 'sends only through the facade');
+  });
+});
+
+// ── Assinador desktop app: the issuance-page download + the signing page it loads.
+// Signing must run locally (A1 private key), so the page signs only via the app
+// bridge and reuses the real renderer so the signed PDF matches the app's. ───────
+describe('Assinador app (source contract)', () => {
+  const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
+  const page = readFileSync(new URL('../certificates/assinador.js', import.meta.url), 'utf8');
+  const pt = readFileSync(new URL('../i18n/pt.js', import.meta.url), 'utf8');
+
+  test('the Certificados toolbar offers the signer download as a glyph with a tooltip', () => {
+    assert.ok(src.includes('releases/latest/download/PensoIA-Assinador.exe'), 'links to the GitHub release asset');
+    assert.ok(src.includes('id="cdx-certs-signer-dl"') && src.includes('<svg'), 'rendered as an icon glyph, not a text button');
+    assert.ok(src.includes("t('certificates.signer_download') + ': ' + t('certificates.signer_download_hint')"), 'hover tooltip explains what it is');
+    assert.ok(pt.includes("'certificates.signer_download'"), 'pt dictionary has the key');
+  });
+  test('the signing page reuses the real renderer and signs ONLY via the local app bridge', () => {
+    assert.ok(page.includes('renderCertsPdfBase64'), 'renders the PDF with the real engine');
+    assert.ok(page.includes('renderCertHtml'), 'reuses renderCertHtml (pixel-identical PDF)');
+    assert.ok(page.includes('window.pywebview.api.sign'), 'signs via the local app bridge');
+    assert.ok(page.includes('api.attachPdf') && page.includes('api.markSigned'), 'uploads the signed PDF + flips status');
+    assert.ok(page.includes('needApp'), 'in a normal browser it tells the user to open the app');
   });
 });
 

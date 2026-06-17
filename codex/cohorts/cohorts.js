@@ -10,6 +10,7 @@ import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
+import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import * as cursos from './courses.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
@@ -751,9 +752,12 @@ function _renderRosterTable(participants) {
         '</tr>' +
       '</thead>' +
       '<tbody>' +
-        participants.map((p) =>
+        participants.map((p) => {
+          const tier = participantTier(p);
+          const badge = '<span class="' + _esc(tierBadgeClass(tier)) + '" title="' + _esc(t(tierTitleKey(tier))) + '">' + _esc(t(tierLabelKey(tier))) + '</span>';
+          return (
           '<tr data-pid="' + _esc(String(p.id)) + '">' +
-            '<td class="cdx-roster-cell-name">' + _esc(p.name) + '</td>' +
+            '<td class="cdx-roster-cell-name">' + _esc(p.name) + ' ' + badge + '</td>' +
             '<td class="cdx-roster-cell-email">' + _esc(p.email || '') + '</td>' +
             '<td class="cdx-roster-cell-cpf">' + _esc(p.cpf || '') + '</td>' +
             '<td class="cdx-roster-cell-actions">' +
@@ -761,7 +765,8 @@ function _renderRosterTable(participants) {
               '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-danger cdx-roster-del-btn" data-action="roster-delete" data-pid="' + _esc(String(p.id)) + '">' + t('cohorts.delete') + '</button>' +
             '</td>' +
           '</tr>'
-        ).join('') +
+          );
+        }).join('') +
       '</tbody>' +
     '</table>'
   );

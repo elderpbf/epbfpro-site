@@ -9,6 +9,8 @@ import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
+import { extractMagicToken, isLoggedIn, clearToken, LOGIN_ENABLED } from './student-session.js';
+import { openLoginModal } from './student-login-modal.js';
 
 const PANELS = ['aulas', 'apostila', 'outros'];
 
@@ -57,6 +59,7 @@ export async function mount(root, ctx = {}) {
     _onHash = () => onHashChange();
     if (_win) _win.addEventListener('hashchange', _onHash);
     onHashChange();
+    if (LOGIN_ENABLED) handleMagicReturn(loc);
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
@@ -97,12 +100,41 @@ function renderHero(root) {
   if (titleBase && typeof document !== 'undefined') document.title = titleBase + ' · PensoIA';
 }
 
-// Inject the WhatsApp group pill into the pensoia-header .ph-right (when the
-// turma has a whatsapp_url). Retries while the header web component upgrades.
+// Inject the header actions (login/logout pill, plus the WhatsApp group pill when
+// the turma has a whatsapp_url) into the pensoia-header .ph-right. Retries while
+// the header web component upgrades. The login pill always shows; its label tracks
+// the session and its click reads live state, so one handler serves both directions.
+let _loginPill = null;
+
+function buildLoginPill() {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ph-action-btn cdx-tr-login-pill';
+  btn.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
+  btn.addEventListener('click', () => {
+    if (isLoggedIn(state.clientSlug, state.turmaSlug)) {
+      clearToken(state.clientSlug, state.turmaSlug);
+      refreshLoginPill();
+    } else {
+      openLoginModal({
+        client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+        onAuthenticated: refreshLoginPill,
+      });
+    }
+  });
+  return btn;
+}
+
+function refreshLoginPill() {
+  if (_loginPill) {
+    _loginPill.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
+  }
+}
+
 function renderHeaderActions() {
   const data = state.data || {};
   const turma = data.turma || {};
-  if (!turma.whatsapp_url || typeof document === 'undefined') return;
+  if (typeof document === 'undefined') return;
 
   (function tryInject(attempt = 0) {
     const header = document.querySelector('pensoia-header');
@@ -114,16 +146,51 @@ function renderHeaderActions() {
     if (header.dataset.trActionsInjected) return;
     header.dataset.trActionsInjected = '1';
 
-    const wa = document.createElement('a');
-    wa.className = 'ph-action-btn';
-    wa.href = turma.whatsapp_url;
-    wa.target = '_blank';
-    wa.rel = 'noopener';
-    wa.title = t('page.wa_group');
-    wa.innerHTML = state.WA_ICON + '<span>' + esc(t('page.wa_group')) + '</span>';
-    if (phRight.insertBefore) phRight.insertBefore(wa, (phRight.children && phRight.children[0]) || null);
-    else phRight.appendChild(wa);
+    const prepend = (el) => {
+      if (phRight.insertBefore) phRight.insertBefore(el, (phRight.children && phRight.children[0]) || null);
+      else phRight.appendChild(el);
+    };
+
+    if (turma.whatsapp_url) {
+      const wa = document.createElement('a');
+      wa.className = 'ph-action-btn';
+      wa.href = turma.whatsapp_url;
+      wa.target = '_blank';
+      wa.rel = 'noopener';
+      wa.title = t('page.wa_group');
+      wa.innerHTML = state.WA_ICON + '<span>' + esc(t('page.wa_group')) + '</span>';
+      prepend(wa);
+    }
+
+    if (LOGIN_ENABLED) {
+      _loginPill = buildLoginPill();
+      prepend(_loginPill);
+    }
   })();
+}
+
+// Magic-link return: when the URL carries ?lt=<token>, verify it (the page already
+// loaded the timeline from k), then strip lt so a refresh cannot replay a spent
+// token. Opens the login modal straight into its verifying state.
+function handleMagicReturn(loc) {
+  const lt = extractMagicToken((loc && loc.search) || '');
+  if (!lt) return;
+  stripLt();
+  openLoginModal({
+    client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+    startToken: lt,
+    onAuthenticated: refreshLoginPill,
+  });
+}
+
+// Remove the lt param from the visible URL without a navigation.
+function stripLt() {
+  if (!_win || !_win.history || !_win.history.replaceState || !_win.location) return;
+  try {
+    const url = new URL(_win.location.href);
+    url.searchParams.delete('lt');
+    _win.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+  } catch (_) { /* noop */ }
 }
 
 function renderTabs(root) {

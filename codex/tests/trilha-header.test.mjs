@@ -14,7 +14,12 @@ test('buildHeaderHtml: emits the .ph-* bar structure', () => {
   // Zoom buttons carry their data-delta steps.
   assert.match(html, /data-delta="-1"/);
   assert.match(html, /data-delta="1"/);
-  assert.match(html, /ph-logo">PensoIA/);
+  // The logo is now the PensoIA brand wordmark (inline SVG, a theme-aware
+  // light/dark pair) wrapped in a link to pensoia.com, not the old text node.
+  assert.match(html, /<a class="ph-logo"[^>]*href="https:\/\/pensoia\.com"/, 'logo links to pensoia.com');
+  assert.match(html, /ph-logo-light/, 'has the light-theme mark');
+  assert.match(html, /ph-logo-dark/, 'has the dark-theme mark');
+  assert.match(html, /<svg/, 'renders the inline brand wordmark SVG');
 });
 
 test('clampZoom: clamps into [-4, 12], NaN -> 0', () => {

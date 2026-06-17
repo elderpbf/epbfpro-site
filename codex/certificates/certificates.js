@@ -12,28 +12,33 @@
 // templates are now a fixed, branded set selected at issue time.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.callWorker   (../backstage/js/api-client.js)
+//   window.callWorker   (set by Codex's ../js/worker-call.js; was backstage/js/api-client.js)
 //   window.bsLog        (../backstage/js/debug.js)
 //   brand-logos helpers (../backstage/js/brand-logos.js) — used by hydrate()
 
-import { certificates as api, cohorts as cohortsApi } from '../js/codex-api.js';
+import { certificates as api, cohorts as cohortsApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
 import { ementaToCertModules } from '../js/ementa.js';
+import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
-  buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate,
+  buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames,
 } from './cert-render.js';
+import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
+import { sendEmail } from '../js/codex-email.js';
+
+// TEMP (testing): send cert e-mails from the Resend sandbox sender, which needs no
+// domain setup but only DELIVERS to the Resend account owner's own address. Switch
+// to 'PensoIA <certificados@pensoia.com>' once pensoia.com is verified in Resend
+// (the DNS records are pending). See SCRATCH / the email task.
+const CERT_FROM = 'PensoIA <onboarding@resend.dev>';
 
 // Re-export the registries so the catalog UI (and tests) read them from the face.
 export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
-
-// Stylesheet href for the standalone print window (resolved absolute so the
-// popup, which has no base URL, can fetch it).
-const CERT_CSS_HREF = new URL('cert-render.css?v=1.4', import.meta.url).href;
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 export const SUBTABS = [
@@ -300,37 +305,6 @@ export function sampleCert() {
   };
 }
 
-/**
- * Wrap hydrated certificate HTML into a standalone A4-landscape document that
- * links the certificate stylesheet, for the browser print → PDF flow. PURE.
- * @param {{cssHref:string, bodyHtml:string, title?:string}} opts
- * @returns {string}  full HTML document
- */
-export function buildPrintDocument(opts) {
-  opts = opts || {};
-  const title = opts.title || 'Certificado';
-  return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">' +
-    '<title>' + title + '</title>' +
-    '<link rel="preconnect" href="https://fonts.googleapis.com">' +
-    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">' +
-    '<link rel="stylesheet" href="' + (opts.cssHref || '') + '">' +
-    // "A4 landscape" keyword forces landscape orientation in the print dialog even
-    // when its saved default is portrait (explicit "297mm 210mm" fell back to
-    // portrait on some setups). print-color-adjust:exact keeps the themed
-    // gradients/colours from being stripped when "Background graphics" is off.
-    '<style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}' +
-    '.cdx-cert-page,.cdx-cert-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-    // Kill decorative filter/shadow layers that Chrome's print rasterizer turns
-    // into opaque backing boxes around the logo + name once backgrounds print.
-    '.cdx-cert-page *{text-shadow:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}.cdx-cert-page .bmark{filter:none!important}' +
-    // Fill the page box exactly; sheet at 100% (not a fixed 297mm) so sub-pixel mm
-    // rounding can't overflow and trigger the shrink-to-fit white bars.
-    '.cdx-cert-page{width:297mm;height:210mm;overflow:hidden;page-break-after:always}.cdx-cert-page:last-child{page-break-after:auto}' +
-    '.cdx-cert-page .cdxc-sheet{width:100%;height:100%;box-shadow:none}</style>' +
-    '</head><body>' + (opts.bodyHtml || '') + '</body></html>';
-}
-
 // ── DOM helpers ───────────────────────────────────────────────────────────────
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 
@@ -543,7 +517,7 @@ function _renderTplPreview() {
     '</div>';
 
   const body = _q('#cdx-certs-tpl-preview-body');
-  if (body) hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+  if (body) { hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) }); autofitNames(body); }
   _scaleTplPreview();
   // Refit once the pane has its final laid-out size (first mount can run before layout).
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(_scaleTplPreview);
@@ -588,6 +562,16 @@ function _mountEmitidos() {
           '<input type="date" id="cdx-certs-filter-to" class="cdx-certs-date" aria-label="' + esc(t('certificates.filter_date_to')) + '">' +
         '</label>' +
         '<span class="cdx-emissao-spacer"></span>' +
+        // Local ICP-Brasil signer download (desktop app; signing must run on the
+        // user's machine with the A1 private key). A quiet padlock+download glyph,
+        // the tooltip explains it. GitHub Release on the public site repo.
+        '<a class="cdx-certs-signer-dl" id="cdx-certs-signer-dl" href="https://github.com/elderpbf/epbfpro-site/releases/latest/download/PensoIA-Assinador.exe" target="_blank" rel="noopener" aria-label="' + esc(t('certificates.signer_download')) + '" title="' + esc(t('certificates.signer_download') + ': ' + t('certificates.signer_download_hint')) + '">' +
+          '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<rect x="4" y="11" width="16" height="10" rx="2"></rect>' +
+            '<path d="M8 11V7a4 4 0 0 1 8 0v4"></path>' +
+            '<path d="M12 14.5v3.4"></path><path d="M10.2 16.1 12 17.9l1.8-1.8"></path>' +
+          '</svg>' +
+        '</a>' +
         '<button class="cdx-btn cdx-btn-primary" id="cdx-certs-issue-btn">' + esc(t('certificates.issue_btn')) + '</button>' +
       '</div>' +
       // Bulk-action bar: inline, between the toolbar and the table (revealed when
@@ -682,7 +666,7 @@ function _mountEmitidos() {
       if (action === 'copy-url')  { _copyValidarUrl(code); return; }
       if (action === 'revoke')    { _revokeConfirm(code);  return; }
       if (action === 'sign')      { _markSigned(code);     return; }
-      if (action === 'mark-sent') { _markSent(code);       return; }
+      if (action === 'mark-sent') { _sendCert(code);       return; }
       if (action === 'preview')   { _previewCert(code);    return; }
       if (action === 'pdf')       { const cert = _certs.find((x) => x.code === code); if (cert) _printCert(cert); return; }
     };
@@ -785,9 +769,9 @@ async function _bulkAction(kind) {
   if (!codes.length) return;
   if (kind === 'pdf') { _bulkPdf(codes); return; }
   if (kind === 'delete') { _bulkDeleteConfirm(codes); return; }
-  // Sign/send aren't real yet — don't record a false signed/sent state in bulk either.
+  // Signing isn't real yet — don't record a false 'signed' state in bulk.
   if (kind === 'sign') { notice.warn(t('certificates.sign_not_wired')); return; }
-  if (kind === 'send') { notice.warn(t('certificates.send_not_wired')); return; }
+  if (kind === 'send') { _bulkSend(codes); return; }
   try {
     for (const code of codes) {
       if (kind === 'revoke') await api.revoke({ code });
@@ -908,10 +892,13 @@ function _renderCertRow(c) {
   const clientLabel = turma ? _clientName(turma.client_slug) : '';
   const turmaLabel  = _turmaName(turma);
   const sel = _selectedCodes.has(c.code);
-  // Lifecycle next-step button: issued -> assinar, signed -> enviar.
+  // Lifecycle next-step buttons. Signing isn't wired yet, so "Enviar" is usable
+  // from BOTH issued and signed (the attached PDF is unsigned but validatable via
+  // the QR/code). Issued still shows "Assinar" too, for when real signing lands.
+  const sendBtn = '<button class="cdx-btn cdx-btn-sm" data-action="mark-sent" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_send')) + '</button>';
   let nextBtn = '';
-  if (c.status === 'issued') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="sign" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_sign')) + '</button>';
-  else if (c.status === 'signed') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="mark-sent" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_send')) + '</button>';
+  if (c.status === 'issued') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="sign" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_sign')) + '</button>' + sendBtn;
+  else if (c.status === 'signed') nextBtn = sendBtn;
   return '<tr' + (sel ? ' class="is-selected"' : '') + '>' +
     '<td class="cdx-emissao-cbcol"><input type="checkbox" data-sel="' + esc(c.code) + '"' + (sel ? ' checked' : '') + '></td>' +
     '<td class="cdx-certs-code"><code>' + esc(c.code) + '</code></td>' +
@@ -928,7 +915,9 @@ function _renderCertRow(c) {
       // Every row can produce its PDF (print → Salvar como PDF), independent of a
       // stored file. When a signed PDF is attached later, link that instead.
       (hasPdf
-        ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(c.pdf_path) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>'
+        // pdf_path is an R2 key (certificates/<code>.pdf); it is served by the worker
+        // at /r2/<key>, NOT as a relative path off the site. Link through assetUrl.
+        ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(assetUrl('/r2/' + c.pdf_path)) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>'
         : '<button class="cdx-btn cdx-btn-sm" data-action="pdf" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>') +
       (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
       // Delete is intentionally NOT a per-row button: it lives only in the bulk bar
@@ -1020,12 +1009,127 @@ function _bulkDeleteConfirm(codes) {
 // something false (a real ICP-Brasil signature / a real email) that didn't happen.
 // We surface a clear notice and change nothing. (cert_mark_signed/cert_mark_sent
 // stay in the facade for when the real flows land.)
+// Signing is an ICP-Brasil PAdES operation that must run LOCALLY (the A1 private
+// key never leaves the machine), so the browser can't do it. "Assinar" points to
+// the local signer (tools/sign-certs): once it runs, it uploads the signed PDF
+// and flips the status to 'signed' on its own. No false status flip here.
 async function _markSigned(code) {
-  notice.warn(t('certificates.sign_not_wired'));
+  notice.info(t('certificates.sign_local'));
 }
 
-async function _markSent(code) {
-  notice.warn(t('certificates.send_not_wired'));
+// Send the certificate by e-mail through the shared Codex e-mail module. The
+// status flips to 'sent' ONLY after a confirmed send, so 'sent' never asserts a
+// mail that didn't go out. Usable from 'issued' or 'signed' (signing isn't wired
+// yet); the attached PDF is unsigned but authenticable via the QR/code.
+async function _sendCert(code) {
+  const cert = _certs.find((c) => c.code === code);
+  if (!cert) return;
+  if (cert.status !== 'issued' && cert.status !== 'signed') { notice.warn(t('certificates.send_only_issued_signed')); return; }
+  if (!cert.email) { notice.warn(t('certificates.send_no_email')); return; }
+  notice.ok(t('certificates.send_sending'));
+  if (await _sendOne(cert)) {
+    notice.ok(t('certificates.send_ok').replace('{name}', cert.holder_name || ''));
+    await _loadCertList();
+  }
+}
+
+// One cert -> e-mail. Rasterizes the PDF, persists it to R2 (so the validar page
+// — and the future Trail "baixe seu certificado" — can serve the same file),
+// e-mails it as an attachment + the validar link, then marks the cert 'sent'.
+// Returns true on a confirmed send; logs failures to the pill and shows an error
+// notice. Does NOT show the per-cert success notice (the caller summarizes).
+async function _sendOne(cert) {
+  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
+  const validarUrl = buildValidarUrl(origin, cert.code);
+  try {
+    // A signed cert already has its SIGNED PDF in R2 — e-mail THAT, never a freshly
+    // re-rendered unsigned copy. Otherwise render fresh and persist it to R2.
+    let b64 = null;
+    let alreadyStored = false;
+    if (cert.status === 'signed' && cert.pdf_path) {
+      b64 = await _fetchStoredPdfBase64(cert.pdf_path, cert.status);
+      alreadyStored = !!b64;
+    }
+    if (!b64) b64 = await renderCertsPdfBase64([{ html: renderCertHtml(cert, origin), qrUrl: validarUrl }]);
+    if (!b64) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
+    const filename = 'certificado-' + (cert.code || 'pensoia') + '.pdf';
+    // Persist the freshly-rendered PDF to R2 (skip when we just pulled the stored
+    // signed one). Non-fatal: the e-mail still carries the attachment.
+    if (!alreadyStored) {
+      try { await api.attachPdf({ code: cert.code, pdf_b64: b64 }); }
+      catch (e) { if (window.bsLog) window.bsLog('certs: attachPdf ' + cert.code + ': ' + (e && e.message || e), 'error'); }
+    }
+    const res = await sendEmail({
+      to: cert.email,
+      from: CERT_FROM,
+      subject: t('certificates.email_subject').replace('{course}', cert.course_title || ''),
+      html: _certEmailHtml(cert, validarUrl),
+      attachments: [{ filename, content: b64 }],
+    });
+    if (!res.ok) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
+    await api.markSent({ code: cert.code });
+    return true;
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: send ' + cert.code + ': ' + (e && e.message || e), 'error');
+    notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || ''));
+    return false;
+  }
+}
+
+// Fetch a stored PDF from R2 (the worker serves /r2/certificates/<code>.pdf with
+// CORS *) and return it as raw base64. cacheBust (the cert status) varies the URL
+// so the immutable R2 cache can't serve a stale unsigned copy of a since-signed cert.
+async function _fetchStoredPdfBase64(pdfPath, cacheBust) {
+  try {
+    const url = assetUrl('/r2/' + pdfPath) + '?v=' + encodeURIComponent(cacheBust || '');
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    let binary = '';
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    return btoa(binary);
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: fetch stored pdf: ' + (e && e.message || e), 'error');
+    return null;
+  }
+}
+
+// Bulk "Enviar": e-mail every selectable cert (issued|signed with an e-mail),
+// summarizing how many went out and how many had no address.
+async function _bulkSend(codes) {
+  const certs = codes
+    .map((code) => _certs.find((c) => c.code === code))
+    .filter(Boolean)
+    .filter((c) => c.status === 'issued' || c.status === 'signed');
+  const sendable = certs.filter((c) => c.email);
+  const noEmail = certs.length - sendable.length;
+  if (!sendable.length) { notice.warn(t('certificates.send_no_email')); return; }
+  notice.ok(t('certificates.send_sending_bulk').replace('{n}', String(sendable.length)));
+  let done = 0;
+  for (const cert of sendable) { if (await _sendOne(cert)) done++; }
+  notice.ok(t('certificates.send_bulk_ok').replace('{n}', String(done)));
+  if (noEmail > 0) notice.warn(t('certificates.send_bulk_no_email').replace('{n}', String(noEmail)));
+  _selectedCodes.clear();
+  await _loadCertList();
+}
+
+// The certificate e-mail body (PT-BR). Kept small + templated so the future Trail
+// "acesse seu certificado na Trilha" CTA is a one-line add here; the transport
+// (codex-email.js / the Worker lib) never changes. Static t() strings, only the
+// already-escaped holder/course are interpolated.
+function _certEmailHtml(cert, validarUrl) {
+  const name = esc(cert.holder_name || '');
+  const course = esc(cert.course_title || '');
+  return '' +
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.6">' +
+      '<p>' + t('certificates.email_greeting').replace('{name}', name) + '</p>' +
+      '<p>' + t('certificates.email_body').replace('{course}', '<strong>' + course + '</strong>') + '</p>' +
+      '<p>' + t('certificates.email_validate') + '<br>' +
+        '<a href="' + esc(validarUrl) + '">' + esc(validarUrl) + '</a></p>' +
+      // FUTURE (Trail self-service): add an "Acesse na Trilha" button/link here.
+      '<p style="color:#666;font-size:13px">' + t('certificates.email_signoff') + '</p>' +
+    '</div>';
 }
 
 // ── Preview + print ───────────────────────────────────────────────────────────
@@ -1047,7 +1151,7 @@ function _openCertFullscreen(cert, side) {
   overlay.setAttribute('aria-modal', 'true');
   overlay.innerHTML =
     '<div class="cdx-cert-fs-actions">' +
-      '<button type="button" class="cdx-cert-fs-btn" data-action="print">' + esc(t('certificates.print')) + '</button>' +
+      '<button type="button" class="cdx-cert-fs-btn" data-action="print">' + esc(t('certificates.download_pdf')) + '</button>' +
       '<button type="button" class="cdx-cert-fs-close" aria-label="' + esc(t('certificates.cancel')) + '">&times;</button>' +
     '</div>' +
     '<div class="cdx-cert-fs-body" id="cdx-cert-fs-body">' + _previewSheetsHtml(cert, origin, side) + '</div>';
@@ -1055,6 +1159,7 @@ function _openCertFullscreen(cert, side) {
 
   const body = overlay.querySelector('#cdx-cert-fs-body');
   hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+  autofitNames(body);
 
   const fit = () => _fitSheets(body);
   fit();
@@ -1082,38 +1187,36 @@ function _openCertFullscreen(cert, side) {
 }
 
 function _printCert(cert) {
-  _printCerts([cert], 'Certificado ' + (cert.code || ''));
+  _downloadCerts([cert], 'certificado-' + (cert.code || 'pensoia'));
 }
 
-// Build ONE print document from N certs (each its own front+back pages, separated
-// by buildPrintDocument's .cdx-cert-page page-breaks) and open the print → "Save
-// as PDF" dialog once. The single-cert print is just N=1. Each cert is hydrated
-// with its OWN QR before concatenation.
-function _printCerts(certs, title) {
+// Download ONE PDF holding N certs (front + back per cert), rasterized from the
+// live render via cert-pdf.js (modern-screenshot + jsPDF). This REPLACED the old
+// window.print() popup: the interactive print dialog rasterized inconsistently
+// across browsers (shifted elements, dropped gradient, missing logo, backing
+// boxes). Rasterizing the exact on-screen sheet is pixel-faithful and needs no
+// dialog. A "gerando" notice covers the brief rasterization.
+async function _downloadCerts(certs, filename) {
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
-  const parts = [];
-  for (const cert of certs) {
-    if (!cert) continue;
-    const tmp = document.createElement('div');
-    tmp.innerHTML = renderCertHtml(cert, origin);
-    hydrate(tmp, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
-    parts.push(tmp.innerHTML);
+  const items = (certs || []).filter(Boolean).map((cert) => ({
+    html: renderCertHtml(cert, origin),
+    qrUrl: buildValidarUrl(origin, cert.code),
+  }));
+  if (!items.length) return;
+  notice.ok(t('certificates.pdf_generating'));
+  try {
+    await downloadCertsPdf(items, { filename: (filename || 'certificados') + '.pdf' });
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: pdf: ' + (e && e.message || e), 'error');
+    notice.error(t('certificates.pdf_error'));
   }
-  if (!parts.length) return;
-  const doc = buildPrintDocument({ cssHref: CERT_CSS_HREF, bodyHtml: parts.join(''), title: title || 'Certificados' });
-  const w = window.open('', '_blank');
-  if (!w) { notice.warn(t('certificates.print_blocked')); return; }
-  w.document.open();
-  w.document.write(doc);
-  w.document.close();
-  w.onload = () => { try { w.focus(); w.print(); } catch (_) {} };
 }
 
-// Bulk "Baixar PDF": print every selected cert in one document (one Save-as-PDF).
+// Bulk "Baixar PDF": every selected cert in one downloaded PDF.
 function _bulkPdf(codes) {
   const certs = codes.map((code) => _certs.find((c) => c.code === code)).filter(Boolean);
   if (!certs.length) return;
-  _printCerts(certs, t('certificates.bulk_pdf_title').replace('{n}', String(certs.length)));
+  _downloadCerts(certs, 'certificados-' + certs.length);
 }
 
 // ── Issue flow ────────────────────────────────────────────────────────────────
@@ -1295,12 +1398,22 @@ function _openIssueFlow() {
             '<input type="checkbox" id="cdx-issue-selall" checked>' +
             '<span class="cdx-cert-roster-allk">' + esc(t('certificates.issue_select_all')) + '</span>' +
           '</label>' +
-          _issueParticipants.map((p) =>
-            '<label class="cdx-cert-roster-row">' +
+          _issueParticipants.map((p) => {
+            const tier = participantTier(p);
+            const badge = '<span class="' + esc(tierBadgeClass(tier)) + '" title="' + esc(t(tierTitleKey(tier))) + '">' + esc(t(tierLabelKey(tier))) + '</span>';
+            // Email is prominent here: the certificate is delivered to it, so a
+            // missing address is flagged (that cert can't be e-mailed until added).
+            const emailLine = p.email
+              ? '<span class="cdx-cert-roster-email">' + esc(p.email) + '</span>'
+              : '<span class="cdx-cert-roster-noemail">' + esc(t('certificates.issue_no_email')) + '</span>';
+            return '<label class="cdx-cert-roster-row' + (p.email ? '' : ' cdx-cert-roster-row--noemail') + '">' +
               '<input type="checkbox" data-pid="' + esc(String(p.id)) + '" ' + (_issueSelectedIds.has(p.id) ? 'checked' : '') + '>' +
-              '<span>' + esc(p.name) + (p.email ? ' <span class="cdx-cert-roster-email">(' + esc(p.email) + ')</span>' : '') + '</span>' +
-            '</label>'
-          ).join('')
+              '<span class="cdx-cert-roster-person">' +
+                '<span class="cdx-cert-roster-line1">' + esc(p.name) + ' ' + badge + '</span>' +
+                emailLine +
+              '</span>' +
+            '</label>';
+          }).join('')
         : '<span class="cdx-empty">' + esc(t('certificates.issue_no_participants')) + '</span>';
       if (rosterEl && _issueParticipants.length) {
         const selAll = rosterEl.querySelector('#cdx-issue-selall');
@@ -1340,6 +1453,10 @@ function _openIssueFlow() {
     if (!turmaId) { notice.warn(t('certificates.issue_select_turma')); return; }
     if (!courseTitle) { notice.warn(t('certificates.issue_course_required')); return; }
     if (_issueSelectedIds.size === 0) { notice.warn(t('certificates.issue_no_selection')); return; }
+
+    // Warn before issuing with blank fields — they render empty on the certificate
+    // (e.g. an empty Encontros leaves a blank cell on the back). User can proceed.
+    if (!(await _confirmEmptyFields(bd))) return;
 
     const meta = _gatherVersoMeta(bd, clientSel);
     // Freeze the course period (start/end dates) from the turma into the snapshot.
@@ -1421,6 +1538,40 @@ function _autofillIssueFromTurma(bd, turma) {
     const certMods = ementaToCertModules(turma.ementa_json);
     if (certMods.length) modsEl.value = certMods.map((m) => (m.d ? m.t + ' :: ' + m.d : m.t)).join('\n');
   }
+}
+
+// Pre-issue guard: list the cert-visible fields left blank and ask the user to
+// confirm (blank fields render empty on the certificate). Resolves true to proceed,
+// false to go back. No empty fields → resolves true immediately.
+function _confirmEmptyFields(bd) {
+  const fields = [
+    ['certificates.issue_hours',      '#cdx-issue-hours'],
+    ['certificates.issue_place',      '#cdx-issue-place'],
+    ['certificates.issue_format',     '#cdx-issue-format'],
+    ['certificates.issue_meetings',   '#cdx-issue-meetings'],
+    ['certificates.issue_instructor', '#cdx-issue-instructor'],
+    ['certificates.issue_modules',    '#cdx-issue-modules'],
+  ];
+  const empty = fields.filter(([, sel]) => {
+    const el = bd.querySelector(sel);
+    return !el || !String(el.value || '').trim();
+  }).map(([k]) => t(k));
+  if (!empty.length) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const html =
+      '<div class="cdx-modal" style="max-width:440px">' +
+        '<div class="cdx-modal-title">' + esc(t('certificates.issue_empty_title')) + '</div>' +
+        '<p style="margin:0 0 .6rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(t('certificates.issue_empty_msg')) + '</p>' +
+        '<ul class="cdx-cert-empty-list">' + empty.map((n) => '<li>' + esc(n) + '</li>').join('') + '</ul>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" id="cdx-empty-cancel">' + esc(t('certificates.issue_empty_cancel')) + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" id="cdx-empty-go">' + esc(t('certificates.issue_empty_go')) + '</button>' +
+        '</div>' +
+      '</div>';
+    const bd2 = openModal(html);
+    bd2.querySelector('#cdx-empty-cancel').addEventListener('click', () => { closeModal(bd2); resolve(false); });
+    bd2.querySelector('#cdx-empty-go').addEventListener('click', () => { closeModal(bd2); resolve(true); });
+  });
 }
 
 // Collect the verso (back) snapshot from the issue modal. Only non-empty values

@@ -11,6 +11,12 @@
 // The class is guarded so the module imports cleanly under node (no HTMLElement):
 // only buildHeaderHtml() and clampZoom() are unit-tested; the upgraded element is
 // verified on staging.
+//
+// The brand wordmark is the canonical PensoIA glyph-wordmark, rendered as inline
+// SVG via the shared js/brand-logos.js (same source the admin topbar uses), in a
+// light/dark pair so the mark follows the theme toggle. It links to pensoia.com.
+
+import { glyphWordmark, stdColors } from '../../js/brand-logos.js';
 
 const QR_GLYPH =
   '<svg class="ph-qr-glyph" xmlns="http://www.w3.org/2000/svg" ' +
@@ -60,7 +66,10 @@ export function buildHeaderHtml() {
   return (
     '<header class="ph-bar">' +
       '<div class="ph-left">' +
-        '<div class="ph-logo">PensoIA</div>' +
+        '<a class="ph-logo" href="https://pensoia.com" aria-label="PensoIA, página inicial">' +
+          '<span class="ph-logo-mark ph-logo-light" aria-hidden="true">' + glyphWordmark(stdColors('white')) + '</span>' +
+          '<span class="ph-logo-mark ph-logo-dark" aria-hidden="true">' + glyphWordmark(stdColors('navy')) + '</span>' +
+        '</a>' +
         '<button class="ph-exit-btn" type="button">← Sair</button>' +
       '</div>' +
       '<div class="ph-title"></div>' +
