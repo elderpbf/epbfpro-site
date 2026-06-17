@@ -2,8 +2,10 @@
 // rules that drive the composer's save. Importing must not touch DOM/globals.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 const rel = await import('../content/releases.js');
+const relSrc = readFileSync(new URL('../content/releases.js', import.meta.url), 'utf8');
 
 test('releases module satisfies the tab contract', () => {
   assert.equal(typeof rel.mount, 'function', 'exports mount');
@@ -45,4 +47,20 @@ test('diffOutrosSelection releases new picks and unreleases dropped Outros items
   });
   assert.deepEqual(out.toRelease, [1], 'unreleased+checked -> release');
   assert.deepEqual(out.toUnrelease, [2], 'in-Outros+unchecked -> unrelease');
+});
+
+test('R2: mark-aula-happened control sets happened_on to the scheduled day via a full updateAula', () => {
+  assert.match(relSrc, /data-mark-happened=/, 'renders the mark-happened control on aula rows');
+  assert.match(relSrc, /function _markAulaHappened/, 'has the handler');
+  // Must reuse the FULL aula payload (ct_update_aula replaces every field) and set
+  // happened_on to the scheduled day, not today.
+  assert.match(relSrc, /happened_on:\s*aula\.scheduled_for/, 'happened_on = scheduled_for (occurred on its planned day)');
+  assert.match(relSrc, /scheduled_for:\s*aula\.scheduled_for/, 'preserves scheduled_for in the payload');
+  assert.match(relSrc, /cohortsApi\.updateAula/, 'persists via the cohorts facade');
+  for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
+    const dict = readFileSync(new URL(lang, import.meta.url), 'utf8');
+    for (const k of ['releases.mark_happened', 'releases.mark_happened_title', 'releases.mark_happened_done']) {
+      assert.ok(dict.includes("'" + k + "'"), lang + ' has ' + k);
+    }
+  }
 });

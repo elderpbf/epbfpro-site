@@ -257,6 +257,13 @@ function _renderList() {
       const title = _esc(fresh ? t('releases.clear_fresh') : t('releases.show_fresh'));
       clearBtn = '<button type="button" class="cdx-rel-clear-fresh cdx-dev-only' + (fresh ? '' : ' is-hidden-state') + '" data-toggle-fresh="' + _esc(n) + '" data-make-fresh="' + (fresh ? '0' : '1') + '" title="' + title + '">' + label + '</button>';
     }
+    // "Marcar como ocorrida no dia marcado": only for a scheduled aula not yet
+    // happened. Sets happened_on = scheduled_for (occurred on its planned day).
+    let markBtn = '';
+    if (ds.key !== 'happened' && aula.scheduled_for) {
+      markBtn = '<button type="button" class="cdx-rel-mark-happened" data-mark-happened="' + _esc(aula.id) +
+        '" title="' + _esc(t('releases.mark_happened_title')) + '">' + _esc(t('releases.mark_happened')) + '</button>';
+    }
     html +=
       '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-aula-id="' + _esc(aula.id) + '" data-aula-num="' + _esc(n) + '">' +
         '<span class="cdx-rel-aula-num">' + _esc(n) + '</span>' +
@@ -267,6 +274,7 @@ function _renderList() {
             '<span class="cdx-rel-aula-counts">' + _aulaCountsHtml(n) + '</span>' +
           '</div>' +
         '</div>' +
+        markBtn +
         clearBtn +
       '</div>';
   });
@@ -310,6 +318,8 @@ function _renderPreview() {
 }
 
 function _onListClick(e) {
+  const markBtn = e.target.closest('.cdx-rel-mark-happened');
+  if (markBtn) { _markAulaHappened(markBtn.dataset.markHappened); return; }
   const toggleBtn = e.target.closest('.cdx-rel-clear-fresh');
   if (toggleBtn) { _toggleFresh(toggleBtn.dataset.toggleFresh, toggleBtn.dataset.makeFresh === '1'); return; }
   const row = e.target.closest('.cdx-item-row');
@@ -317,6 +327,29 @@ function _onListClick(e) {
   _selectedAula = row.dataset.aulaId;   // 'outros' or an aula id (string)
   _renderList();
   _renderPreview();
+}
+
+// Mark an aula as occurred on its scheduled day, straight from Releases. ct_update_aula
+// REPLACES every field, so rebuild the full aula payload (preserving title + dates) and
+// only set happened_on = scheduled_for. aula-status.js then reads it as 'happened'.
+function _markAulaHappened(aulaId) {
+  const aula = _aulas.find((a) => String(a.id) === String(aulaId));
+  if (!aula || !aula.scheduled_for) return;
+  const payload = {
+    client_slug: _clientSlug, turma_slug: _turmaSlug,
+    id: aula.id, aula_number: aula.aula_number,
+    title: aula.title || '',
+    scheduled_for: aula.scheduled_for || null,
+    happened_on: aula.scheduled_for,
+    rescheduled_from: aula.rescheduled_from || null,
+    rescheduled_note: aula.rescheduled_note || null,
+  };
+  cohortsApi.updateAula(payload).then((r) => {
+    if (r && r.error) throw new Error(r.error);
+    aula.happened_on = aula.scheduled_for;
+    _toast(t('releases.mark_happened_done'));
+    _renderList();
+  }).catch((err) => notice.internal(_err(err)));
 }
 
 // Debug-only: hide/show the NOVO badge for every item in this aula by moving

@@ -524,6 +524,9 @@ export default {
   'releases.clear_fresh_done':    'Selo NOVO ocultado.',
   'releases.show_fresh':          'Mostrar selo NOVO desta aula',
   'releases.show_fresh_done':     'Selo NOVO exibido.',
+  'releases.mark_happened':       'Ocorreu',
+  'releases.mark_happened_title': 'Marcar como ocorrida no dia marcado',
+  'releases.mark_happened_done':  'Aula marcada como ocorrida.',
 
   // Content → Apostila (imported course content)
   'apostila.title_default':   'Conteúdo do curso',
