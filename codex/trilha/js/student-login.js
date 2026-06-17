@@ -38,6 +38,22 @@ export function gate(loggedIn, openLogin, proceed) {
   else openLogin(proceed);
 }
 
+// PURE. The createLoginFlow options the login modal derives from its own opts plus
+// the page origin. Extracted so the pass-through (client / turma / k / origin) is
+// unit-tested: the modal DOM is only verified on staging, so without this the
+// earlier k-drop (k never reached the flow, so the magic link lost the turma token)
+// was invisible to the suite.
+export function flowOptsFrom(opts, origin) {
+  return {
+    client: opts.client,
+    turma: opts.turma,
+    k: opts.k,
+    origin,
+    api: opts.api,
+    session: opts.session,
+  };
+}
+
 // Build a login flow bound to one turma. `api` + `session` are injectable for
 // tests; in the app they default to the real Trail facade + session module.
 export function createLoginFlow(opts = {}) {
@@ -46,6 +62,7 @@ export function createLoginFlow(opts = {}) {
   const client = opts.client;
   const turma = opts.turma;
   const k = opts.k; // the turma access token, echoed into the magic-link return URL
+  const origin = opts.origin; // the page origin, so the emailed link returns here (staging/prod)
 
   const flow = {
     state: 'anonymous',
@@ -61,6 +78,7 @@ export function createLoginFlow(opts = {}) {
       if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
       const payload = { client_slug: client, turma_slug: turma, email };
       if (k) payload.k = k;
+      if (origin) payload.origin = origin;
       const res = await api.authRequest(payload);
       if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
       this.devToken = res.dev_magic_token || null;

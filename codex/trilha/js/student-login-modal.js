@@ -6,7 +6,7 @@
 // Reuses the Trail's shared modal shell (.tr-modal*, .tr-btn*) from
 // tarefa-modal.css. The consent notice is the LGPD disclosure (login.consent_notice).
 import { t } from '../i18n.js';
-import { createLoginFlow } from './student-login.js';
+import { createLoginFlow, flowOptsFrom } from './student-login.js';
 import { esc } from './utils.js';
 
 // Map a flow error code to a student-facing message (display glue).
@@ -24,7 +24,10 @@ export function openLoginModal(opts = {}) {
   const client = opts.client;
   const turma = opts.turma;
   const onAuthenticated = opts.onAuthenticated || (() => {});
-  const flow = createLoginFlow({ client, turma, api: opts.api, session: opts.session });
+  // Forward client/turma/k plus the page origin into the flow (the magic link must
+  // carry k AND return to this deployment, not always prod).
+  const origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : undefined;
+  const flow = createLoginFlow(flowOptsFrom(opts, origin));
 
   const bd = document.createElement('div');
   bd.className = 'tr-modal-backdrop tr-login-backdrop';

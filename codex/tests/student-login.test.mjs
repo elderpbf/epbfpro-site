@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 
 const login = await import('../trilha/js/student-login.js');
 const {
-  validateEmail, nextStateAfterVerify, gate, createLoginFlow,
+  validateEmail, nextStateAfterVerify, gate, createLoginFlow, flowOptsFrom,
   CONTROLLER, CONTROLLER_CNPJ, CONTROLLER_CONTACT,
 } = login;
 
@@ -116,6 +116,29 @@ test('requestLink echoes the turma token (k) so the magic link can carry it', as
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', k: 'KTOK' });
   await flow.requestLink('aluno@exemplo.com');
   assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', email: 'aluno@exemplo.com', k: 'KTOK' });
+});
+
+test('requestLink echoes the page origin so the magic link returns to this deployment', async () => {
+  api = fakeApi({ authRequest: { ok: true } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', k: 'KTOK', origin: 'https://staging.pensoia.com' });
+  await flow.requestLink('aluno@exemplo.com');
+  assert.deepEqual(api.calls[0].params, {
+    client_slug: 'jfse', turma_slug: 'geral', email: 'aluno@exemplo.com', k: 'KTOK', origin: 'https://staging.pensoia.com',
+  });
+});
+
+test('flowOptsFrom forwards client/turma/k/origin/api/session (guards the modal pass-through)', () => {
+  const fakeApiObj = {}, fakeSessObj = {};
+  const out = flowOptsFrom(
+    { client: 'jfse', turma: 'geral', k: 'KTOK', api: fakeApiObj, session: fakeSessObj, onAuthenticated: () => {} },
+    'https://staging.pensoia.com',
+  );
+  assert.equal(out.client, 'jfse');
+  assert.equal(out.turma, 'geral');
+  assert.equal(out.k, 'KTOK');               // the field whose drop broke the magic link
+  assert.equal(out.origin, 'https://staging.pensoia.com');
+  assert.equal(out.api, fakeApiObj);
+  assert.equal(out.session, fakeSessObj);
 });
 
 test('requestLink captures a dev token when the worker returns one', async () => {
