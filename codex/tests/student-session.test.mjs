@@ -56,3 +56,10 @@ test('CONSENT_VERSION is a stable non-empty string', () => {
   assert.equal(typeof ss.CONSENT_VERSION, 'string');
   assert.ok(ss.CONSENT_VERSION.length > 0);
 });
+
+// Tripwire: the Phase-1 login UI is intentionally hidden until the real
+// access-control model lands. If someone flips this, the failure is the reminder
+// to read the Trail access-control plan before shipping login to production.
+test('LOGIN_ENABLED is off (login UI hidden pending the access-control redesign)', () => {
+  assert.equal(ss.LOGIN_ENABLED, false);
+});

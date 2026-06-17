@@ -9,6 +9,13 @@
 // Bump when the LGPD consent notice text changes, so saved consent is re-prompted.
 export const CONSENT_VERSION = '2026-06-16';
 
+// Master switch for the student-login UI. OFF in production: the Phase-1 magic-link
+// login is built but intentionally hidden while the real access-control model
+// (server-side content gating + presence/window trust + an approval queue) is
+// designed. Flipping this true re-surfaces the header pill, the tarefa gate, and
+// the ?lt= return. Do NOT enable before that model lands.
+export const LOGIN_ENABLED = false;
+
 const PREFIX = 'cdx_student_';
 
 function _key(client, turma) {

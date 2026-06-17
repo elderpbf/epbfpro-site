@@ -9,7 +9,7 @@ import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
-import { extractMagicToken, isLoggedIn, clearToken } from './student-session.js';
+import { extractMagicToken, isLoggedIn, clearToken, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
 
 const PANELS = ['aulas', 'apostila', 'outros'];
@@ -59,7 +59,7 @@ export async function mount(root, ctx = {}) {
     _onHash = () => onHashChange();
     if (_win) _win.addEventListener('hashchange', _onHash);
     onHashChange();
-    handleMagicReturn(loc);
+    if (LOGIN_ENABLED) handleMagicReturn(loc);
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
@@ -162,8 +162,10 @@ function renderHeaderActions() {
       prepend(wa);
     }
 
-    _loginPill = buildLoginPill();
-    prepend(_loginPill);
+    if (LOGIN_ENABLED) {
+      _loginPill = buildLoginPill();
+      prepend(_loginPill);
+    }
   })();
 }
 

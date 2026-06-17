@@ -6,7 +6,7 @@
 import { state } from './state.js';
 import { esc, copyToClipboard, hasSubmittedTarefa } from './utils.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
-import { isLoggedIn } from './student-session.js';
+import { isLoggedIn, LOGIN_ENABLED } from './student-session.js';
 import { gate } from './student-login.js';
 import { openLoginModal } from './student-login-modal.js';
 
@@ -85,9 +85,12 @@ export function openTarefaSubmit(item, sub, opts) {
     token: state.token,
     onSubmitted: () => injectActionButton(sub, item, opts || {}),
   });
+  // Login disabled: submit name-based as before. When the access-control model
+  // lands, the gate (unit-tested in student-login.gate) routes through login first.
+  if (!LOGIN_ENABLED) { proceed(); return; }
   gate(
     isLoggedIn(state.clientSlug, state.turmaSlug),
-    (resume) => openLoginModal({ client: state.clientSlug, turma: state.turmaSlug, onAuthenticated: resume }),
+    (resume) => openLoginModal({ client: state.clientSlug, turma: state.turmaSlug, k: state.token, onAuthenticated: resume }),
     proceed,
   );
 }
