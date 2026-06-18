@@ -542,7 +542,7 @@
 .cdx-bank-bulk-item-opts .cdx-q-opt--correct { color: var(--primary); font-weight: 600; }
 
 /* e2 proposed order: direction chooser + a checkable list in the suggested order. */
-.cdx-bank-order-dir { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem; }
+.cdx-bank-order-dir { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
 .cdx-bank-order-dir-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 .cdx-bank-order-list { list-style: none; margin: 0; padding: 0; max-height: 55vh; overflow-y: auto; }
 .cdx-bank-order-item { padding: 0.28rem 0; font-size: 0.88rem; color: var(--text-primary); }

@@ -1325,12 +1325,12 @@ export function mount(viewEl, ctx) {
             '<button class="cdx-bank-order-dir-btn active" data-dir="asc" type="button">' + t('questions.bank_order_dir_asc') + '</button>' +
             '<button class="cdx-bank-order-dir-btn" data-dir="desc" type="button">' + t('questions.bank_order_dir_desc') + '</button>' +
           '</div>' +
-          '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="order-generate" type="button">' + t('questions.bank_order_generate') + '</button>' +
         '</div>' +
         '<ol class="cdx-bank-order-list" id="cdx-bank-order-list"></ol>' +
         '<p class="cdx-bank-modal-err cdx-bank-order-err"></p>' +
         '<div class="cdx-modal-actions">' +
           '<button class="cdx-btn" data-act="order-cancel" type="button">' + t('questions.bank_cancel') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="order-generate" type="button">' + t('questions.bank_order_generate') + '</button>' +
           '<button class="cdx-btn cdx-btn-primary" data-act="order-apply" type="button" hidden>' + t('questions.bank_order_apply') + '</button>' +
         '</div>' +
       '</div>' +
