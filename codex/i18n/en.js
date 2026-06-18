@@ -305,6 +305,13 @@ export default {
   'cohorts.participant_updated':          'Participant updated.',
   'cohorts.participant_deleted':          'Participant removed.',
   'cohorts.participant_edit_title':       'Edit participant',
+  // Cohorts — participant entry-type tags (inline list)
+  'cohorts.ptag_lista':    'Roster',
+  'cohorts.ptag_qr':       'QR',
+  'cohorts.ptag_aula':     'Class',
+  'cohorts.ptag_manual':   'Manual',
+  'cohorts.ptag_pending':  'Pending',
+  'cohorts.ptag_denied':   'Denied',
 
   // Content tab — sub-tab nav (Items native; the rest bridge to the legacy
   // ClassTrail page until each is migrated)

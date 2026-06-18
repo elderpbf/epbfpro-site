@@ -49,6 +49,8 @@ let _turmaCourses = [];   // course list cached for the turma form's course pick
 let _dossierTurma = null; // the turma currently shown in the dossier (#27 inline edit)
 let _dossierDepsTried = false; // courses/cp loaded once for the inline selects
 let _pickedCourse = null; // full course fetched when the picker changes (for ementa copy)
+let _dossierPFilter = 'all';   // active filter in the dossier participant list
+let _dossierParticipants = []; // cached list; reloaded per turma
 let _cleanup = []; // teardown functions pushed by mount
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -993,6 +995,8 @@ function _renderDossier(turma) {
   if (!el) return;
   if (!turma) { el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
   _dossierTurma = turma;
+  _dossierPFilter = 'all';
+  _dossierParticipants = [];
 
   const client = _clients.find((c) => c.slug === turma.client_slug) || {};
   const clientName = client.display_name || client.name || turma.client_slug;
@@ -1078,9 +1082,11 @@ function _renderDossier(turma) {
       '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.sec_access')) + '</b></div></summary>' +
         '<div id="cdx-doss-acesso"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</details>' +
-      // ── Participantes (colapsável) ──
-      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.participants_title')) + '</b></div></summary>' +
-        '<div class="cdx-doss-sec-actions"><button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></div>' +
+      // ── Participantes (colapsável; inline list with entry-type tags) ──
+      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h">' +
+        '<b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></b>' +
+        '<span class="cdx-doss-sec-acts"><button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></span>' +
+      '</div></summary>' +
         '<div id="cdx-doss-participants"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</details>' +
       // ── Aulas (colapsável; reuses the aula editor via #cdx-aulas-list) ──
@@ -1174,16 +1180,110 @@ function _wireDossierInlineEdit(el, turma) {
   });
 }
 
+// ── Dossier participant list: inline filterable rows with entry-type tags ──
+
+const _P_STATUS_RANK = { pending: 0, approved: 1, denied: 2 };
+
+function _pTag(p) {
+  const st = p.access_status || 'pending';
+  if (st === 'pending') return '<span class="cdx-tag cdx-tag--pendente">' + _esc(t('cohorts.ptag_pending')) + '</span>';
+  if (st === 'denied')  return '<span class="cdx-tag cdx-tag--negado">'   + _esc(t('cohorts.ptag_denied'))  + '</span>';
+  const via = p.approved_via || '';
+  if (p.source === 'roster' || via === 'roster') return '<span class="cdx-tag cdx-tag--lista">'  + _esc(t('cohorts.ptag_lista'))  + '</span>';
+  if (via === 'qr')                              return '<span class="cdx-tag cdx-tag--qr">'     + _esc(t('cohorts.ptag_qr'))     + '</span>';
+  if (via === 'window' || via === 'presence')    return '<span class="cdx-tag cdx-tag--aula">'   + _esc(t('cohorts.ptag_aula'))   + '</span>';
+  if (via === 'manual')                          return '<span class="cdx-tag cdx-tag--manual">' + _esc(t('cohorts.ptag_manual')) + '</span>';
+  return '<span class="cdx-tag cdx-tag--lista">' + _esc(t('cohorts.ptag_lista')) + '</span>';
+}
+
+function _pRow(p) {
+  const st = p.access_status || 'pending';
+  const online = (p.active_sessions || 0) > 0;
+  const unv = (p.email && !p.email_verified)
+    ? ' <span class="cdx-prow-warn" title="' + _esc(t('alunos.unverified')) + '">⚠</span>' : '';
+  let acts = '';
+  if (st === 'pending' || st === 'denied') acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('alunos.approve')) + '</button>';
+  if (st === 'pending')  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-deny">'  + _esc(t('alunos.deny'))   + '</button>';
+  if (st === 'approved') acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-revoke">' + _esc(t('alunos.revoke')) + '</button>';
+  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-remove">' + _esc(t('alunos.remove')) + '</button>';
+  return '<div class="cdx-prow" data-pid="' + p.id + '">' +
+    '<div class="cdx-prow-id">' +
+      '<div class="cdx-prow-name">' + _esc(p.display_name || p.name || ('#' + p.id)) +
+        (online ? ' <span class="cdx-al-online">●</span>' : '') + unv + '</div>' +
+      '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
+    '</div>' +
+    '<div class="cdx-prow-meta">' + _pTag(p) + '</div>' +
+    '<div class="cdx-prow-acts">' + acts + '</div>' +
+  '</div>';
+}
+
+function _paintDossierParticipants(el) {
+  const ps = _dossierParticipants;
+  const pendCount = ps.filter((p) => (p.access_status || 'pending') === 'pending').length;
+  const countEl = _q('cdx-doss-p-count');
+  if (countEl) countEl.textContent = ps.length || '';
+  const chips = ['all', 'pending', 'approved', 'denied'].map((f) =>
+    '<button class="cdx-pchip' + (f === _dossierPFilter ? ' on' : '') + '" data-pfilter="' + f + '">' +
+      _esc(t('alunos.filter_' + f)) + (f === 'pending' && pendCount ? ' (' + pendCount + ')' : '') +
+    '</button>').join('');
+  const approveAll = pendCount
+    ? '<button class="cdx-btn cdx-btn-sm cdx-dp-approve-all" style="margin-left:auto">' + _esc(t('alunos.approve_all')) + '</button>'
+    : '';
+  let list = ps.slice();
+  if (_dossierPFilter !== 'all') list = list.filter((p) => (p.access_status || 'pending') === _dossierPFilter);
+  list.sort((a, b) => {
+    const ra = _P_STATUS_RANK[a.access_status || 'pending'] ?? 9;
+    const rb = _P_STATUS_RANK[b.access_status || 'pending'] ?? 9;
+    return ra !== rb ? ra - rb
+      : String(a.display_name || a.name || '').localeCompare(String(b.display_name || b.name || ''));
+  });
+  el.innerHTML =
+    '<div class="cdx-pfilter">' + chips + approveAll + '</div>' +
+    (list.length ? list.map(_pRow).join('') : '<span class="cdx-empty">' + _esc(t('cohorts.participants_empty')) + '</span>');
+}
+
+function _wireDossierParticipants(el, turma) {
+  el.querySelectorAll('[data-pfilter]').forEach((b) => {
+    b.addEventListener('click', () => {
+      _dossierPFilter = b.dataset.pfilter;
+      _paintDossierParticipants(el);
+      _wireDossierParticipants(el, turma);
+    });
+  });
+  const allBtn = el.querySelector('.cdx-dp-approve-all');
+  if (allBtn) allBtn.addEventListener('click', async () => {
+    const ids = _dossierParticipants.filter((p) => (p.access_status || 'pending') === 'pending').map((p) => p.id);
+    if (!ids.length) return;
+    allBtn.disabled = true;
+    await api.setParticipantAccess({ participant_ids: ids, status: 'approved', origin: location.origin }).catch(() => {});
+    _loadDossierParticipants(turma);
+  });
+  el.querySelectorAll('.cdx-prow').forEach((row) => {
+    const id = Number(row.dataset.pid);
+    const reload = () => _loadDossierParticipants(turma);
+    const ap = row.querySelector('.cdx-dp-approve');
+    const dn = row.querySelector('.cdx-dp-deny');
+    const rv = row.querySelector('.cdx-dp-revoke');
+    const rm = row.querySelector('.cdx-dp-remove');
+    if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'approved', origin: location.origin }).catch(() => {}); reload(); });
+    if (dn) dn.addEventListener('click', async () => { dn.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'denied' }).catch(() => {}); reload(); });
+    if (rv) rv.addEventListener('click', async () => { rv.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'pending' }).catch(() => {}); reload(); });
+    if (rm) rm.addEventListener('click', async () => {
+      if (typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
+      rm.disabled = true;
+      await api.deleteParticipant({ id }).catch(() => {});
+      reload();
+    });
+  });
+}
+
 function _loadDossierParticipants(turma) {
   api.listParticipants({ turma_id: turma.id }).then((d) => {
+    _dossierParticipants = (d && d.participants) || [];
     const el = _q('cdx-doss-participants');
     if (!el) return;
-    const ps = (d && d.participants) || [];
-    if (!ps.length) { el.innerHTML = '<span class="cdx-empty">' + _esc(t('cohorts.participants_empty')) + '</span>'; return; }
-    const chips = ps.slice(0, 8).map((p) =>
-      '<span class="cdx-doss-chip">' + _esc(p.name) + '</span>').join('');
-    const more = ps.length > 8 ? '<span class="cdx-doss-chip cdx-doss-chip--more">+' + (ps.length - 8) + '</span>' : '';
-    el.innerHTML = '<div class="cdx-doss-count">' + ps.length + '</div><div class="cdx-doss-chips">' + chips + more + '</div>';
+    _paintDossierParticipants(el);
+    _wireDossierParticipants(el, turma);
   }).catch(() => {});
 }
 

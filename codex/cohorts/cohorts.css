@@ -847,6 +847,55 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-doss-trail-acts .cdx-btn { padding: .2rem .45rem; font-size: .72rem; }
 .cdx-doss-trail-na { font-size: .8rem; color: var(--text-secondary); }
 
+/* ── Dossier: participant inline list ──────────────────────────────────────── */
+
+/* Count badge inside the section header <b> */
+.cdx-secount { font-size: .8rem; font-weight: 500; color: var(--text-secondary); margin-left: .25rem; }
+
+/* Section-level action row (Pré-aprovar button, etc.) */
+.cdx-doss-sec-acts { display: flex; align-items: center; gap: .4rem; }
+
+/* Filter chip bar */
+.cdx-pfilter { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; margin-bottom: .5rem; }
+.cdx-pchip {
+  font: inherit; font-size: .74rem; font-weight: 600;
+  padding: .2rem .55rem; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--background); color: var(--text-secondary);
+  cursor: pointer; transition: border-color .12s, color .12s, background .12s;
+}
+.cdx-pchip:hover { border-color: var(--primary); color: var(--primary-dark); }
+.cdx-pchip.on { background: var(--primary-dark); border-color: transparent; color: var(--cdx-btn-primary-text); }
+
+/* Entry-type tags */
+.cdx-tag { display: inline-block; font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: .1rem .4rem; border-radius: 4px; white-space: nowrap; }
+.cdx-tag--lista   { background: #dbeafe; color: #1d4ed8; }
+.cdx-tag--qr      { background: #d1fae5; color: #065f46; }
+.cdx-tag--aula    { background: #ede9fe; color: #5b21b6; }
+.cdx-tag--manual  { background: #fef3c7; color: #92400e; }
+.cdx-tag--pendente{ background: #ffedd5; color: #9a3412; }
+.cdx-tag--negado  { background: #fee2e2; color: #991b1b; }
+[data-theme="dark"] .cdx-tag--lista    { background: rgba(59,130,246,.2); color: #93c5fd; }
+[data-theme="dark"] .cdx-tag--qr       { background: rgba(16,185,129,.2); color: #6ee7b7; }
+[data-theme="dark"] .cdx-tag--aula     { background: rgba(139,92,246,.2); color: #c4b5fd; }
+[data-theme="dark"] .cdx-tag--manual   { background: rgba(245,158,11,.2); color: #fcd34d; }
+[data-theme="dark"] .cdx-tag--pendente { background: rgba(249,115,22,.2); color: #fdba74; }
+[data-theme="dark"] .cdx-tag--negado   { background: rgba(239,68,68,.2); color: #fca5a5; }
+
+/* Participant rows */
+.cdx-prow {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .45rem .3rem; border-bottom: 1px solid var(--border);
+  font-size: .84rem;
+}
+.cdx-prow:last-child { border-bottom: none; }
+.cdx-prow:hover { background: var(--cdx-card-hover-bg); }
+.cdx-prow-id { flex: 1; min-width: 0; }
+.cdx-prow-name { font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-prow-mail { font-size: .75rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-prow-warn { color: var(--cdx-warn, #d97706); font-size: .8rem; }
+.cdx-prow-meta { flex: 0 0 auto; }
+.cdx-prow-acts { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
+
 /* ----- Merged turma list (Concept A: turmas grouped under client headers) ----- */
 
 .cdx-cohorts-search {

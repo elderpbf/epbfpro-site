@@ -46,7 +46,7 @@
 <link rel="stylesheet" href="css/classvault.css?v=1.0">
 <link rel="stylesheet" href="css/tokens.css?v=1.2">
 <link rel="stylesheet" href="css/codex.css?v=2.6">
-<link rel="stylesheet" href="cohorts/cohorts.css?v=2.1">
+<link rel="stylesheet" href="cohorts/cohorts.css?v=2.2">
 <link rel="stylesheet" href="content/content.css?v=2.8">
 <link rel="stylesheet" href="content/slides.css?v=1.9">
 <!-- Deck editor styles, scoped under .cdx-deck-editor (no global leak). -->
@@ -54,7 +54,6 @@
 <link rel="stylesheet" href="content/slides/css/slide.css?v=2.5">
 <link rel="stylesheet" href="content/slides/css/ui.css?v=3.2">
 <link rel="stylesheet" href="lessons/lessons.css?v=2.1">
-<link rel="stylesheet" href="alunos/alunos.css?v=1.2">
 <!-- QR share modal styles (Codex copy, pairs with js/qr-share-modal.js). -->
 <link rel="stylesheet" href="css/qr-share-modal.css?v=1.0">
 <link rel="stylesheet" href="questions/questions.css?v=4.0">
@@ -143,7 +142,6 @@
   import * as lessons from './lessons/lessons.js';
   import * as questions from './questions/questions.js';
   import * as certificates from './certificates/certificates.js';
-  import * as alunos from './alunos/alunos.js';
 
   // Stage 2 cutover: Codex's backend is the codex-api Worker. worker-call.js (the
   // boot's first import) already defaults here; this is the explicit page-level
@@ -161,7 +159,7 @@
   // very first call is covered.
   installReconnect();
 
-  const TABS = { cohorts, content, lessons, questions, certificates, alunos };
+  const TABS = { cohorts, content, lessons, questions, certificates };
   const params = new URLSearchParams(location.search);
   const tab = TABS[params.get('tab')] ? params.get('tab') : 'cohorts';
   const sub = params.get('sub') || undefined;

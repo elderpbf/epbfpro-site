@@ -91,7 +91,7 @@ const SLIDES_INBOUND_ALLOWLIST = new Set([
 const SLIDES_CORE_PREFIX = 'content/slides/js/';
 
 // Tab directories.
-const TABS = ['cohorts', 'content', 'questions', 'lessons', 'certificates', 'alunos'];
+const TABS = ['cohorts', 'content', 'questions', 'lessons', 'certificates'];
 
 // All .js files in the tree.
 const allJs = walkJs(ROOT);
