@@ -1201,8 +1201,14 @@ function _pRow(p) {
   const online = (p.active_sessions || 0) > 0;
   const unv = (p.email && !p.email_verified)
     ? ' <span class="cdx-prow-warn" title="' + _esc(t('alunos.unverified')) + '">⚠</span>' : '';
+  const conn = st === 'approved'
+    ? (online
+        ? '<span class="cdx-prow-conn ok">✓ ' + _esc(t('cohorts.conn_online')) + '</span>'
+        : '<span class="cdx-prow-conn">• ' + _esc(t('cohorts.conn_waiting')) + '</span>')
+    : '';
   let acts = '';
-  if (st === 'pending' || st === 'denied') acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('alunos.approve')) + '</button>';
+  if (st === 'pending') acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('alunos.approve')) + '</button>';
+  if (st === 'denied')  acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('cohorts.reactivate')) + '</button>';
   if (st === 'pending')  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-deny">'  + _esc(t('alunos.deny'))   + '</button>';
   if (st === 'approved') acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-revoke">' + _esc(t('alunos.revoke')) + '</button>';
   acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-remove">' + _esc(t('alunos.remove')) + '</button>';
@@ -1212,7 +1218,7 @@ function _pRow(p) {
         (online ? ' <span class="cdx-al-online">●</span>' : '') + unv + '</div>' +
       '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
     '</div>' +
-    '<div class="cdx-prow-meta">' + _pTag(p) + '</div>' +
+    '<div class="cdx-prow-meta">' + _pTag(p) + conn + '</div>' +
     '<div class="cdx-prow-acts">' + acts + '</div>' +
   '</div>';
 }

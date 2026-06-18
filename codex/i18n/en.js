@@ -305,6 +305,10 @@ export default {
   'cohorts.participant_updated':          'Participant updated.',
   'cohorts.participant_deleted':          'Participant removed.',
   'cohorts.participant_edit_title':       'Edit participant',
+  // Cohorts — participant inline list extras
+  'cohorts.reactivate':    'Reactivate',
+  'cohorts.conn_online':   'connected',
+  'cohorts.conn_waiting':  'waiting login',
   // Cohorts — participant entry-type tags (inline list)
   'cohorts.ptag_lista':    'Roster',
   'cohorts.ptag_qr':       'QR',
