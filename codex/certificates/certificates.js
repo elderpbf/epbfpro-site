@@ -1166,7 +1166,9 @@ function _certEmailHtml(cert, validarUrl) {
     bodyHtml,
     cta: { label: 'Validar certificado', url },
     badge: true,
-    logoUrl: origin + '/images/brand/email-logo.png',
+    // ?v= busts Gmail's image proxy, which cached a 404 from before the logo was
+    // deployed (the image is live now). Bump on any change to the logo asset.
+    logoUrl: origin + '/images/brand/email-logo.png?v=2',
     preheader: 'Seu certificado do curso ' + course + ' está em anexo.',
   });
 }

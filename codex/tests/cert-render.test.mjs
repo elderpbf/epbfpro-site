@@ -196,6 +196,17 @@ test('an unsigned cert has no signed note (#21)', () => {
   assert.ok(!html.includes('assinado digitalmente'), 'no signed note when not signed');
 });
 
+test('the BACK also carries the signed note when signed, and the code stays once (#21/2a)', () => {
+  const ds = buildCertData(Object.assign({}, cert, { status: 'signed', signer_cn: 'FULANO:1' }), meta, 'https://pensoia.com');
+  const back = renderBack(ds);
+  assert.ok(back.includes('Certificado assinado digitalmente'), 'back shows the signed note');
+  assert.ok(back.includes('FULANO:1'), 'back shows the CN');
+  // the signed note must not duplicate the code
+  assert.equal(back.split('AB3HNQ4VXY').length - 1, 1, 'code still appears exactly once on the back');
+  // unsigned back has no note
+  assert.ok(!renderBack(d).includes('assinado digitalmente'), 'no note on an unsigned back');
+});
+
 test('data is HTML-escaped (no injection through the holder name)', () => {
   const d2 = buildCertData(Object.assign({}, cert, { holder_name: 'A <script>x</script> B' }), meta, 'https://pensoia.com');
   const html = renderFront('vetor', d2);

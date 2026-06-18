@@ -574,6 +574,12 @@ describe('Assinador app (source contract)', () => {
     assert.ok(page.includes('api.attachPdf') && page.includes('api.markSigned'), 'uploads the signed PDF + flips status');
     assert.ok(page.includes('needApp'), 'in a normal browser it tells the user to open the app');
   });
+  test('the signing page renders the cert AS signed so the line lands in the PDF (#21/2b)', () => {
+    // The cert comes from list({status:'issued'}); without forcing status='signed'
+    // at render time the "assinado digitalmente" line is absent from the signed PDF.
+    assert.ok(/status:\s*'signed'/.test(page), 'forces status=signed for the render');
+    assert.ok(page.includes('renderCertHtml(signedCert'), 'renders the as-signed cert, not the raw issued one');
+  });
 });
 
 // ── Emissão fixes (2026-06-15): per-row PDF, revoked delete, bulk delete, modal

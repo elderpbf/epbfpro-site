@@ -64,7 +64,7 @@ export function attachmentFromBase64(filename, base64) {
 const BRAND = { navy: '#061a51', teal: '#14b8a6', tealDk: '#0d9488', ink: '#1a2433', mut: '#8a93a1', page: '#eef1f6' };
 // Absolute, publicly-reachable logo (e-mail can't use relative paths). Callers may
 // override (e.g. point at staging while testing) via opts.logoUrl.
-const DEFAULT_LOGO_URL = 'https://pensoia.com/images/brand/email-logo.png';
+const DEFAULT_LOGO_URL = 'https://pensoia.com/images/brand/email-logo.png?v=2';
 
 /**
  * Wrap message content in the branded PensoIA shell (gradient header with the real

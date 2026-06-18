@@ -262,7 +262,9 @@ function backHtml(d) {
         + '<div class="mblk"><div class="ml">Instrutor responsável</div><div class="mv">' + d.instructor + '<small>' + d.format + '</small></div></div>'
         + '<div class="mblk"><div class="ml">Data e local de emissão</div><div class="mv">' + d.date + '<small>' + d.place + '</small></div></div>'
         + '<div class="vcard"><span class="qr" data-qr></span><div class="tx"><div class="b">Autenticidade verificável</div>'
-          + '<p>Código <span class="c">' + d.code + '</span> em ' + d.validar + '</p></div></div>'
+          + '<p>Código <span class="c">' + d.code + '</span> em ' + d.validar + '</p>'
+          + signedNote(d)
+        + '</div></div>'
       + '</div></div>'
     + '<div class="pfoot"><span>pensoIA · Certificado de Participação</span><span>' + d.client + '</span></div>';
 }
