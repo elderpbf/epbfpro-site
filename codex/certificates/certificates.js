@@ -30,7 +30,7 @@ import {
   hoursNumber,
 } from './cert-render.js';
 import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
-import { sendEmail, renderEmailHtml } from '../js/codex-email.js';
+import { sendEmail, renderEmailHtml, loadLogoAttachment, LOGO_CID } from '../js/codex-email.js';
 
 // TEMP (testing): send cert e-mails from the Resend sandbox sender, which needs no
 // domain setup but only DELIVERS to the Resend account owner's own address. Switch
@@ -1062,12 +1062,18 @@ async function _sendOne(cert) {
       try { await api.attachPdf({ code: cert.code, pdf_b64: b64 }); }
       catch (e) { if (window.bsLog) window.bsLog('certs: attachPdf ' + cert.code + ': ' + (e && e.message || e), 'error'); }
     }
+    // Embed the brand logo as an INLINE attachment (cid) so the header logo renders
+    // without the client fetching an external URL (Gmail's proxy was refusing/caching
+    // the hosted one). Falls back to the hosted URL if the asset can't be read.
+    const logoAtt = await loadLogoAttachment(origin);
+    const attachments = [{ filename, content: b64 }];
+    if (logoAtt) attachments.push(logoAtt);
     const res = await sendEmail({
       to: cert.email,
       from: CERT_FROM,
       subject: 'Seu certificado: ' + (cert.course_title || 'PensoIA'),
-      html: _certEmailHtml(cert, validarUrl),
-      attachments: [{ filename, content: b64 }],
+      html: _certEmailHtml(cert, validarUrl, logoAtt ? LOGO_CID : null),
+      attachments,
     });
     if (!res.ok) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
     await api.markSent({ code: cert.code });
@@ -1148,12 +1154,13 @@ async function _bulkSend(codes) {
 // so every Codex e-mail looks like the same product; only the message changes here.
 // Just the already-escaped holder/course are interpolated. FUTURE (Trail
 // self-service): swap/duplicate the CTA to "Acesse seu certificado na Trilha".
-function _certEmailHtml(cert, validarUrl) {
+function _certEmailHtml(cert, validarUrl, logoCid) {
   const firstName = esc((cert.holder_name || '').trim().split(/\s+/)[0] || '');
   const course = esc(cert.course_title || '');
   const url = esc(validarUrl);
   const heading = firstName ? ('Parabéns, ' + firstName + '!') : 'Parabéns!';
-  // Same-origin logo so the brand artwork shows on staging too (prod is the default).
+  // Same-origin hosted logo as the FALLBACK; the inline cid logo (when present) is
+  // preferred because it renders without the client fetching an external URL.
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
   const bodyHtml = '' +
     '<p style="margin:0 0 18px;color:#56606e">Seu certificado está pronto.</p>' +
@@ -1166,9 +1173,8 @@ function _certEmailHtml(cert, validarUrl) {
     bodyHtml,
     cta: { label: 'Validar certificado', url },
     badge: true,
-    // ?v= busts Gmail's image proxy, which cached a 404 from before the logo was
-    // deployed (the image is live now). Bump on any change to the logo asset.
-    logoUrl: origin + '/images/brand/email-logo.png?v=2',
+    logoCid: logoCid || undefined, // inline logo (preferred); see loadLogoAttachment
+    logoUrl: origin + '/images/brand/email-logo.png?v=2', // hosted fallback
     preheader: 'Seu certificado do curso ' + course + ' está em anexo.',
   });
 }

@@ -513,7 +513,7 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(!/\bt\(/.test(body), '_certEmailHtml never calls t() (recipient is the student, always PT-BR)');
     assert.ok(body.includes('renderEmailHtml'), 'wraps the message in the shared branded layout');
     assert.ok(body.includes('Parabéns') && body.includes('em anexo'), 'PT-BR cert copy');
-    assert.ok(src.includes("import { sendEmail, renderEmailHtml }"), 'imports the shared layout from the e-mail module');
+    assert.ok(src.includes('import { sendEmail, renderEmailHtml,') && src.includes("from '../js/codex-email.js'"), 'imports the shared layout from the e-mail module');
     // The dead i18n keys are gone from both dictionaries (no English leakage).
     assert.ok(!pt.includes("'certificates.email_subject'"), 'no dead email_* keys in pt');
   });
@@ -530,6 +530,7 @@ describe('Emissão dashboard port (source contract)', () => {
 describe('shared e-mail module (source contract)', () => {
   const mod = readFileSync(new URL('../js/codex-email.js', import.meta.url), 'utf8');
   const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
 
   test('facade exposes a generic email.send mapped to the send_email action', () => {
     assert.ok(api.includes('export const email'), 'email facade export present');
@@ -548,8 +549,20 @@ describe('shared e-mail module (source contract)', () => {
     // (Gmail/Outlook strip both); the lockup is a text wordmark, not a hosted image.
     assert.ok(mod.includes('role="presentation"') && mod.includes('cellpadding'), 'table-based layout');
     assert.ok(!/<svg/i.test(mod), 'no SVG (e-mail clients strip it)');
-    assert.ok(mod.includes('<img') && mod.includes('email-logo.png') && mod.includes('alt="PensoIA"'), 'hosted raster brand logo (e-mail-safe)');
+    assert.ok(mod.includes('<img') && mod.includes('email-logo.png') && mod.includes('alt="PensoIA"'), 'raster brand logo (e-mail-safe)');
     assert.ok(mod.includes('#061a51') && mod.includes('#14b8a6'), 'brand navy + teal');
+  });
+  test('the logo is embedded INLINE (cid), not just a hosted URL (Gmail proxy fix, #11)', () => {
+    assert.ok(mod.includes('export const LOGO_CID'), 'exports the logo Content-ID');
+    assert.ok(mod.includes('export async function loadLogoAttachment'), 'builds the inline logo attachment');
+    assert.ok(mod.includes('content_id'), 'attachment carries a content_id (inline)');
+    assert.ok(/o\.logoCid \? \('cid:'/.test(mod), 'renderEmailHtml emits src="cid:…" when an inline logo is present');
+    assert.ok(mod.includes('logoUrl') && mod.includes('DEFAULT_LOGO_URL'), 'still falls back to a hosted URL');
+  });
+  test('the cert send attaches the inline logo and references it by cid', () => {
+    assert.ok(src.includes('loadLogoAttachment'), 'loads the inline logo attachment before sending');
+    assert.ok(/_certEmailHtml\(cert, validarUrl, logoAtt \? LOGO_CID : null\)/.test(src), 'passes the cid only when the attachment loaded');
+    assert.ok(src.includes('attachments.push(logoAtt)'), 'adds the logo to the e-mail attachments');
   });
 });
 

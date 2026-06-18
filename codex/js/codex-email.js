@@ -66,6 +66,34 @@ const BRAND = { navy: '#061a51', teal: '#14b8a6', tealDk: '#0d9488', ink: '#1a24
 // override (e.g. point at staging while testing) via opts.logoUrl.
 const DEFAULT_LOGO_URL = 'https://pensoia.com/images/brand/email-logo.png?v=2';
 
+// The Content-ID for the INLINE logo attachment. Preferred over a hosted URL: an
+// inline (cid) image renders without the client fetching an external URL, which
+// Gmail's image proxy was caching/refusing for the hosted logo. See loadLogoAttachment.
+export const LOGO_CID = 'pensoia-logo';
+
+/**
+ * Build the inline logo attachment (the real brand PNG, base64) so the e-mail logo
+ * is embedded, not fetched. Returns a Resend-style inline attachment, or null if the
+ * asset can't be read (caller then falls back to the hosted URL). Browser only.
+ * @param {string} [origin]  base origin to read the asset from (defaults to location.origin)
+ * @returns {Promise<{filename:string, content:string, content_id:string, content_type:string}|null>}
+ */
+export async function loadLogoAttachment(origin) {
+  try {
+    if (typeof fetch !== 'function') return null;
+    const base = origin || (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
+    const resp = await fetch(base + '/images/brand/email-logo.png');
+    if (!resp.ok) return null;
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    let binary = '';
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    return { filename: 'pensoia-logo.png', content: btoa(binary), content_id: LOGO_CID, content_type: 'image/png' };
+  } catch (_) {
+    return null;
+  }
+}
+
 /**
  * Wrap message content in the branded PensoIA shell (gradient header with the real
  * logo + an optional seal, a rounded white card, a centered pill CTA, footer). The
@@ -75,14 +103,17 @@ const DEFAULT_LOGO_URL = 'https://pensoia.com/images/brand/email-logo.png?v=2';
  * @param {string} opts.bodyHtml     the message body (already-escaped HTML)
  * @param {{label:string, url:string}} [opts.cta]  optional primary button (centered pill)
  * @param {boolean} [opts.badge]     show the celebratory check seal under the logo
- * @param {string} [opts.logoUrl]    override the logo URL (defaults to the prod logo)
+ * @param {string} [opts.logoCid]    inline logo Content-ID (rendered as src="cid:…", preferred)
+ * @param {string} [opts.logoUrl]    hosted logo URL fallback (used when no logoCid)
  * @param {string} [opts.footerHtml] small print under the card (defaults to the brand line)
  * @param {string} [opts.preheader]  hidden inbox-preview snippet
  * @returns {string} a complete, e-mail-client-safe HTML document body
  */
 export function renderEmailHtml(opts) {
   const o = opts || {};
-  const logo = o.logoUrl || DEFAULT_LOGO_URL;
+  // Prefer the inline (cid) logo — it doesn't depend on the client fetching a URL.
+  // Falls back to the hosted URL when no inline attachment is available.
+  const logo = o.logoCid ? ('cid:' + o.logoCid) : (o.logoUrl || DEFAULT_LOGO_URL);
   const badge = o.badge
     ? '<div style="margin-top:18px"><span style="display:inline-block;width:54px;height:54px;line-height:54px;' +
       'border-radius:50%;background:rgba(255,255,255,.16);color:#ffffff;font-size:27px;' +
