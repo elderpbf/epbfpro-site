@@ -813,7 +813,6 @@ export default {
   'questions.bank_order_generate':    'Gerar ordem',
   'questions.bank_order_generating':  'Propondo uma ordem…',
   'questions.bank_order_error':       'Não consegui propor uma ordem.',
-  'questions.bank_order_no_selection': 'Selecione ao menos uma questão para reordenar.',
   'questions.bank_order_apply':       'Aplicar ordem',
   'questions.bank_order_applied':     'Ordem aplicada.',
   'questions.bank_new_question':      '+ Nova questão',

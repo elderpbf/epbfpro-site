@@ -726,7 +726,14 @@ async function _runProposeOrder() {
   if (!_viewEl) return;
   const ids = (res && res.text) ? parseOrderIds(res.text, _questions.map((q) => q.id)) : null;
   const err = _q('.cdx-bank-order-err');
-  if (!ids) { if (err) err.textContent = t('questions.bank_order_error'); const l = _q('#cdx-bank-order-list'); if (l) l.innerHTML = ''; return; }
+  if (!ids) {
+    if (!res) notice.internal('bank-order: ai.chat returned null (rate-limited or network error)');
+    else if (res.text) notice.internal('bank-order: AI response not a valid id permutation. raw=' + res.text.slice(0, 400));
+    else notice.internal('bank-order: ai.chat returned no text. res=' + JSON.stringify(res).slice(0, 200));
+    if (err) err.textContent = t('questions.bank_order_error');
+    const l = _q('#cdx-bank-order-list'); if (l) l.innerHTML = '';
+    return;
+  }
   _orderProposed = ids;
   _renderOrderReview();
 }
@@ -739,31 +746,17 @@ function _renderOrderReview() {
   list.innerHTML = _orderProposed.map((id, i) => {
     const q = byId[String(id)];
     return '<li class="cdx-bank-order-item">' +
-      '<label class="cdx-bank-order-pick">' +
-        '<input type="checkbox" data-id="' + _esc(String(id)) + '" checked>' +
-        '<span class="cdx-bank-order-num">' + (i + 1) + '.</span> ' +
-        '<span class="cdx-bank-order-text">' + _esc(q ? q.question : ('#' + id)) + '</span>' +
-      '</label>' +
+      '<span class="cdx-bank-order-num">' + (i + 1) + '.</span> ' +
+      '<span class="cdx-bank-order-text">' + _esc(q ? q.question : ('#' + id)) + '</span>' +
     '</li>';
   }).join('');
 }
 
 async function _applyOrder() {
   if (!_orderProposed.length) return;
-  const list = _q('#cdx-bank-order-list');
-  const checkedIds = Array.prototype.slice.call(list.querySelectorAll('input[type="checkbox"]:checked'))
-    .map((c) => c.getAttribute('data-id'));
-  const err = _q('.cdx-bank-order-err');
-  if (!checkedIds.length) { if (err) err.textContent = t('questions.bank_order_no_selection'); return; }
-  // Checked ids take the proposed sequence; unchecked keep their current relative
-  // order and are appended after, so the reorder still covers the whole set.
-  const checkedSet = new Set(checkedIds.map(String));
-  const chosen = _orderProposed.filter((id) => checkedSet.has(String(id)));
-  const rest = _questions.map((q) => q.id).filter((id) => !checkedSet.has(String(id)));
-  const ordered = chosen.concat(rest);
   const btn = _q('[data-act="order-apply"]');
   btn.disabled = true; const orig = btn.textContent; btn.textContent = t('questions.bank_bulk_saving');
-  try { await api.reorder({ list_name: _currentSet, ordered_ids: ordered }); } catch (e) { notice.internal(e); }
+  try { await api.reorder({ list_name: _currentSet, ordered_ids: _orderProposed }); } catch (e) { notice.internal(e); }
   if (!_viewEl) return;
   btn.disabled = false; btn.textContent = orig;
   notice.ok(t('questions.bank_order_applied'));

@@ -247,7 +247,7 @@ test('e2: parseOrderIds validates the AI order is a permutation of the current i
   assert.equal(b.parseOrderIds('not json', [1]), null, 'invalid JSON rejected');
 });
 
-test('e2: propose-order has a direction toggle + checkable selection, applied via reorder', () => {
+test('e2: propose-order has a direction toggle, generates and applies via reorder', () => {
   const src = read('../questions/bank.js');
   // The complexify (#26) flow was moved out of the bank to the external review HTML.
   assert.doesNotMatch(src, /data-act="complexify"/, 'no Mais complexas button in the bank');
@@ -257,10 +257,10 @@ test('e2: propose-order has a direction toggle + checkable selection, applied vi
   assert.match(src, /data-dir="asc"/, 'easier→harder direction option');
   assert.match(src, /data-dir="desc"/, 'harder→easier direction option');
   assert.match(src, /data-act="order-generate"/, 'generate-order trigger');
-  // direction drives the prompt; apply reorders checked-first then the rest
+  // direction drives the prompt; bad parse logs to pill; apply reorders the set
   assert.match(src, /ai\.chat\(\{ system: _orderSys\(_orderDir\)/, 'e2 calls ai.chat with the direction-aware prompt');
-  assert.match(src, /const ordered = chosen\.concat\(rest\)/, 'checked ids take the proposed order, unchecked appended');
-  assert.match(src, /api\.reorder\(\{ list_name: _currentSet, ordered_ids: ordered/, 'applies via reorder');
+  assert.match(src, /notice\.internal\('bank-order:/, 'bad-parse path logs to debug pill');
+  assert.match(src, /api\.reorder\(\{ list_name: _currentSet, ordered_ids: _orderProposed/, 'applies via reorder');
   for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
     const dict = read(lang);
     for (const k of ['questions.bank_propose_order', 'questions.bank_order_dir_asc', 'questions.bank_order_dir_desc', 'questions.bank_order_applied']) {

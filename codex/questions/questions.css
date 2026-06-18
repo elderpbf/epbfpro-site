@@ -504,6 +504,11 @@
 /* Cap bank modal height so tall content (typed-question composer, audience grid)
    scrolls inside the modal instead of bleeding off the top/bottom of the screen. */
 .cdx-bank-modal .cdx-modal { max-height: 90vh; overflow-y: auto; }
+/* Propose-order modal: flex-column so the list scrolls and the action bar is always
+   visible, instead of the outer card scrolling (which would create a double scroll). */
+#cdx-bank-order .cdx-modal { display: flex; flex-direction: column; overflow: hidden; }
+#cdx-bank-order .cdx-bank-order-list { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
+#cdx-bank-order .cdx-modal-actions { flex-shrink: 0; }
 .cdx-comp-ai-row { display: flex; gap: 0.5rem; margin-top: 0.2rem; }
 .cdx-bank-modal-err { font-size: 0.8rem; color: var(--error); min-height: 1rem; margin: 0.5rem 0 0; }
 
@@ -543,10 +548,8 @@
 
 /* e2 proposed order: direction chooser + a checkable list in the suggested order. */
 .cdx-bank-order-dir { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-.cdx-bank-order-list { list-style: none; margin: 0; padding: 0; max-height: 55vh; overflow-y: auto; }
-.cdx-bank-order-item { padding: 0.28rem 0; font-size: 0.88rem; color: var(--text-primary); }
-.cdx-bank-order-pick { display: flex; align-items: flex-start; gap: 0.4rem; cursor: pointer; }
-.cdx-bank-order-pick > input { margin-top: 0.18rem; accent-color: var(--primary); flex-shrink: 0; }
+.cdx-bank-order-list { list-style: none; margin: 0; padding: 0; }
+.cdx-bank-order-item { display: flex; gap: 0.4rem; padding: 0.28rem 0; font-size: 0.88rem; color: var(--text-primary); }
 .cdx-bank-order-num { font-variant-numeric: tabular-nums; color: var(--text-secondary); flex-shrink: 0; }
 .cdx-bank-order-text { flex: 1; min-width: 0; }
 

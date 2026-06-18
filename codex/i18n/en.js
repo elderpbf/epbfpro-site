@@ -814,7 +814,6 @@ export default {
   'questions.bank_order_generate':    'Generate order',
   'questions.bank_order_generating':  'Proposing an order…',
   'questions.bank_order_error':       'Could not propose an order.',
-  'questions.bank_order_no_selection': 'Select at least one question to reorder.',
   'questions.bank_order_apply':       'Apply order',
   'questions.bank_order_applied':     'Order applied.',
   'questions.bank_new_question':      '+ New question',
