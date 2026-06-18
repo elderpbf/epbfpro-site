@@ -47,6 +47,8 @@ export function unmount() {
 
 function body() { return _viewEl.querySelector('.cdx-alunos-body'); }
 async function safe(fn) { try { return await fn(); } catch (_) { return null; } }
+// The admin's deployment, so the access-liberado email links back to staging/prod (not always prod).
+function _origin() { return (typeof location !== 'undefined' && location.origin) ? location.origin : undefined; }
 
 async function loadTurmas(sel) {
   const res = await safe(() => api.listAllTurmas({}));
@@ -209,14 +211,14 @@ function wireQueue() {
     if (!ids.length) return;
     all.disabled = true;
     body().querySelectorAll('.cdx-al-approve, .cdx-al-deny').forEach((b) => { b.disabled = true; });
-    await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'approved' }));
+    await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'approved', origin: _origin() }));
     loadTurma();
   });
   body().querySelectorAll('.cdx-al-qrow').forEach((li) => {
     const id = Number(li.dataset.id);
     const ap = li.querySelector('.cdx-al-approve');
     const dn = li.querySelector('.cdx-al-deny');
-    if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'approved' })); loadTurma(); });
+    if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'approved', origin: _origin() })); loadTurma(); });
     if (dn) dn.addEventListener('click', async () => { dn.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'denied' })); loadTurma(); });
   });
 }
@@ -233,10 +235,13 @@ function studentsCard(participants) {
   const rows = participants.map((p) => {
     const online = (p.active_sessions || 0) > 0;
     const via = p.approved_via ? '<span class="cdx-al-via">' + esc(t('alunos.via_' + p.approved_via)) + '</span>' : '<span class="cdx-al-via"></span>';
+    // An email taken on trust (QR join / self-registration) is flagged until the student
+    // clicks a magic link; the instructor can spot and fix typos in the room.
+    const unv = (p.email && !p.email_verified) ? ' <span class="cdx-al-unverified" title="' + esc(t('alunos.unverified')) + '">⚠</span>' : '';
     return '<li class="cdx-al-srow" data-id="' + p.id + '">' +
       '<span class="cdx-al-name">' + esc(p.display_name || p.name || ('#' + p.id)) +
         (online ? ' <span class="cdx-al-online" title="' + esc(t('alunos.online')) + '">●</span>' : '') + '</span>' +
-      '<span class="cdx-al-email">' + esc(p.email || '') + '</span>' +
+      '<span class="cdx-al-email">' + esc(p.email || '') + unv + '</span>' +
       statusBadge(p) + via +
       '<span class="cdx-al-sact">' +
         ((p.access_status === 'approved') ? '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-revoke">' + esc(t('alunos.revoke')) + '</button>' : '') +

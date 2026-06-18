@@ -57,6 +57,7 @@ export default {
   'alunos.enroll_qr_title':   'Entre na turma',
   'alunos.enroll_hint_open':  'Mostre o QR na tela. Quem ler durante este tempo entra na hora, sem aprovação manual.',
   'alunos.enroll_hint_closed':'Abra a inscrição durante a aula e projete o QR para os alunos entrarem na hora.',
+  'alunos.unverified':        'E-mail não verificado',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Conexão perdida.',

@@ -44,6 +44,7 @@
 .cdx-al-qrglyph { font-size: 1.05em; line-height: 1; }
 .cdx-al-enroll-qr { font-variant-numeric: tabular-nums; min-width: 7rem; }
 .cdx-al-enroll-rem { font-variant-numeric: tabular-nums; }
+.cdx-al-unverified { color: var(--warn, #e0a800); cursor: help; }
 
 .cdx-al-badge {
   display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px;
