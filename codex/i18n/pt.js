@@ -1308,6 +1308,8 @@ export default {
   'certificates.kpi_revoked':         'Revogados',
   'certificates.action_sign':         'Assinar',
   'certificates.action_send':         'Enviar',
+  'certificates.action_resend':       'Reenviar',
+  'certificates.send_none_sendable':  'Nenhum dos certificados selecionados pode ser enviado.',
   'certificates.bulk_count':          '{n} selecionados',
   'certificates.bulk_sign':           'Assinar',
   'certificates.bulk_send':           'Enviar',

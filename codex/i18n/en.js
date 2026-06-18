@@ -1309,6 +1309,8 @@ export default {
   'certificates.kpi_revoked':         'Revoked',
   'certificates.action_sign':         'Sign',
   'certificates.action_send':         'Send',
+  'certificates.action_resend':       'Resend',
+  'certificates.send_none_sendable':  'None of the selected certificates can be sent.',
   'certificates.bulk_count':          '{n} selected',
   'certificates.bulk_sign':           'Sign',
   'certificates.bulk_send':           'Send',

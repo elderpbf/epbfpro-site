@@ -24,6 +24,7 @@ import * as notice from '../js/notice.js';
 import { ementaToCertModules } from '../js/ementa.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
+import { glyphSvg } from '../js/glyphs.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
   buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames,
@@ -140,6 +141,35 @@ export function statusBadgeClass(status) {
     case 'revoked': return 'cdx-cert-badge cdx-cert-badge--revoked';
     default:        return 'cdx-cert-badge cdx-cert-badge--unknown';
   }
+}
+
+// ── Action registry — ONE source of truth for the cert lifecycle actions ───────
+// Both the per-row toolbar and the bulk bar render from this, so they never drift.
+// Each action declares its glyph + label, when it applies (by status), and where it
+// shows: `row` (per cert) and/or `batch` (over a selection). Naturally single-cert
+// actions (preview, copy link) are row-only; delete is batch-only so a single
+// mis-click can't erase a cert. `labelFn(status)` overrides the label per status
+// (Enviar -> Reenviar once already sent). PURE data; exported for tests.
+export const CERT_ACTIONS = [
+  { key: 'sign',    glyph: 'pen-tool', labelKey: 'certificates.action_sign',         applies: (s) => s === 'issued',                      row: true,  batch: true },
+  { key: 'send',    glyph: 'send',     labelKey: 'certificates.action_send',         applies: (s) => s !== 'revoked',                     row: true,  batch: true,
+    labelFn: (s) => (s === 'sent' ? 'certificates.action_resend' : 'certificates.action_send') },
+  { key: 'preview', glyph: 'eye',      labelKey: 'certificates.action_preview',      applies: () => true,                                 row: true,  batch: false },
+  { key: 'copy',    glyph: 'link',     labelKey: 'certificates.action_copy_url',     applies: () => true,                                 row: true,  batch: false },
+  { key: 'pdf',     glyph: 'download', labelKey: 'certificates.action_download_pdf', applies: () => true,                                 row: true,  batch: true },
+  { key: 'revoke',  glyph: 'ban',      labelKey: 'certificates.action_revoke',       applies: (s) => s !== 'revoked',                     row: true,  batch: true, danger: true },
+  { key: 'delete',  glyph: 'trash',    labelKey: 'certificates.action_delete',       applies: (s) => s === 'issued' || s === 'revoked',   row: false, batch: true, danger: true },
+];
+
+// PURE. The actions to show for a single cert (its status), in registry order.
+export function rowActionsFor(status) {
+  return CERT_ACTIONS.filter((a) => a.row && a.applies(status));
+}
+// PURE. The batch actions for a selection: a batch action shows if it applies to at
+// least one selected cert's status (the handler then acts on the eligible subset).
+export function batchActionsFor(statuses) {
+  const set = Array.from(new Set(statuses || []));
+  return CERT_ACTIONS.filter((a) => a.batch && set.some((s) => a.applies(s)));
 }
 
 /**
@@ -577,15 +607,16 @@ function _mountEmitidos() {
       '</div>' +
       // Bulk-action bar: inline, between the toolbar and the table (revealed when
       // rows are selected), so it follows the theme and never floats over content.
+      // Bulk actions render from the SAME CERT_ACTIONS registry as the per-row
+      // toolbar (no more two divergent button sets); each handler acts on the
+      // eligible subset of the selection.
       '<div class="cdx-emissao-bulk" id="cdx-emissao-bulk">' +
         '<b id="cdx-emissao-bulk-count"></b>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="sign">' + esc(t('certificates.bulk_sign')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="send">' + esc(t('certificates.bulk_send')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="pdf">' + esc(t('certificates.bulk_pdf')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="revoke">' + esc(t('certificates.bulk_revoke')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-bulk="delete">' + esc(t('certificates.bulk_delete')) + '</button>' +
+        CERT_ACTIONS.filter((a) => a.batch).map((a) =>
+          _certActionBtn({ bulk: true, act: a.key, label: t(a.labelKey), glyph: a.glyph, danger: a.danger })
+        ).join('') +
         '<span class="cdx-emissao-spacer"></span>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="clear">' + esc(t('certificates.bulk_clear')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-bulk="clear">' + esc(t('certificates.bulk_clear')) + '</button>' +
       '</div>' +
       '<div class="cdx-emissao-tablewrap" id="cdx-certs-list">' +
         '<div class="cdx-empty">' + esc(t('certificates.loading')) + '</div>' +
@@ -664,13 +695,18 @@ function _mountEmitidos() {
       if (!btn) return;
       const action = btn.dataset.action;
       const code   = btn.dataset.code;
-      if (action === 'copy-url')  { _copyValidarUrl(code); return; }
-      if (action === 'revoke')    { _revokeConfirm(code);  return; }
-      if (action === 'sign')      { _markSigned(code);     return; }
-      if (action === 'mark-sent') { _sendCert(code);       return; }
-      if (action === 'preview')   { _previewCert(code);    return; }
-      if (action === 'pdf')       { const cert = _certs.find((x) => x.code === code); if (cert) _printCert(cert); return; }
-      if (action === 'dlstored')  { const cert = _certs.find((x) => x.code === code); if (cert) _downloadStoredPdf(cert); return; }
+      if (action === 'copy')    { _copyValidarUrl(code); return; }
+      if (action === 'revoke')  { _revokeConfirm(code);  return; }
+      if (action === 'sign')    { _markSigned(code);     return; }
+      if (action === 'send')    { _sendCert(code);       return; }
+      if (action === 'preview') { _previewCert(code);    return; }
+      // One PDF action: a stored (signed) file downloads via R2 as a blob; otherwise
+      // the cert is rasterized fresh (print -> PDF). #24.
+      if (action === 'pdf') {
+        const cert = _certs.find((x) => x.code === code);
+        if (cert) { cert.pdf_path ? _downloadStoredPdf(cert) : _printCert(cert); }
+        return;
+      }
     };
     list.addEventListener('click', onClick);
     _cleanup.push(() => list.removeEventListener('click', onClick));
@@ -894,13 +930,15 @@ function _renderCertRow(c) {
   const clientLabel = turma ? _clientName(turma.client_slug) : '';
   const turmaLabel  = _turmaName(turma);
   const sel = _selectedCodes.has(c.code);
-  // Lifecycle next-step buttons. Signing isn't wired yet, so "Enviar" is usable
-  // from BOTH issued and signed (the attached PDF is unsigned but validatable via
-  // the QR/code). Issued still shows "Assinar" too, for when real signing lands.
-  const sendBtn = '<button class="cdx-btn cdx-btn-sm" data-action="mark-sent" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_send')) + '</button>';
-  let nextBtn = '';
-  if (c.status === 'issued') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="sign" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_sign')) + '</button>' + sendBtn;
-  else if (c.status === 'signed') nextBtn = sendBtn;
+  // Per-row actions come from the shared CERT_ACTIONS registry (same source as the
+  // bulk bar). Each renders glyph + label; on a narrow viewport CSS hides the label
+  // and keeps the glyph (see .cdx-cert-act in certificates.css). copy carries the
+  // URL as a title; the rest are routed by data-action in the list click handler.
+  const actionsHtml = rowActionsFor(c.status).map((a) => {
+    const labelKey = a.labelFn ? a.labelFn(c.status) : a.labelKey;
+    const title = a.key === 'copy' ? validarUrl : t(labelKey);
+    return _certActionBtn({ act: a.key, label: t(labelKey), glyph: a.glyph, danger: a.danger, code: c.code, title });
+  }).join('');
   return '<tr' + (sel ? ' class="is-selected"' : '') + '>' +
     '<td class="cdx-emissao-cbcol"><input type="checkbox" data-sel="' + esc(c.code) + '"' + (sel ? ' checked' : '') + '></td>' +
     '<td class="cdx-certs-code"><code>' + esc(c.code) + '</code></td>' +
@@ -910,24 +948,20 @@ function _renderCertRow(c) {
     '<td>' + esc(c.course_title || '') + '</td>' +
     '<td>' + esc(formatIssuedOn(c.issued_on)) + '</td>' +
     '<td><span class="' + statusBadgeClass(c.status) + '">' + esc(t('certificates.status_' + c.status) || c.status) + '</span></td>' +
-    '<td class="cdx-certs-actions">' +
-      nextBtn +
-      '<button class="cdx-btn cdx-btn-sm" data-action="preview" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_preview')) + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm" data-action="copy-url" data-code="' + esc(c.code) + '" title="' + esc(validarUrl) + '">' + esc(t('certificates.action_copy_url')) + '</button>' +
-      // Every row can produce its PDF (print → Salvar como PDF), independent of a
-      // stored file. When a signed PDF is attached later, link that instead.
-      (hasPdf
-        // pdf_path is an R2 key (certificates/<code>.pdf) served cross-origin by the
-        // worker at /r2/<key>. A plain <a download> is ignored cross-origin (opens a
-        // tab), so fetch the bytes and save them as a real download (_downloadStoredPdf).
-        ? '<button class="cdx-btn cdx-btn-sm" data-action="dlstored" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>'
-        : '<button class="cdx-btn cdx-btn-sm" data-action="pdf" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>') +
-      (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
-      // Delete is intentionally NOT a per-row button: it lives only in the bulk bar
-      // (select the checkbox first), so a cert can't be deleted by a single
-      // mis-click. Issued/revoked are deletable there; signed/sent are not.
-    '</td>' +
+    '<td class="cdx-certs-actions">' + actionsHtml + '</td>' +
   '</tr>';
+}
+
+// One action button: glyph + collapsible label. Shared by the row toolbar (data-action)
+// and the bulk bar (data-bulk). `attr` selects which dataset key drives the handler.
+function _certActionBtn(o) {
+  const danger = o.danger ? ' cdx-btn-danger' : '';
+  const keyAttr = o.bulk ? 'data-bulk="' + esc(o.act) + '"' : 'data-action="' + esc(o.act) + '" data-code="' + esc(o.code) + '"';
+  const title = o.title ? ' title="' + esc(o.title) + '"' : '';
+  return '<button type="button" class="cdx-btn cdx-btn-sm cdx-cert-act' + danger + '" ' + keyAttr + title + '>' +
+    glyphSvg(o.glyph, { size: 14, cls: 'cdx-cert-act-i' }) +
+    '<span class="cdx-cert-act-t">' + esc(o.label) + '</span>' +
+  '</button>';
 }
 
 function _copyValidarUrl(code) {
@@ -1027,7 +1061,8 @@ async function _markSigned(code) {
 async function _sendCert(code) {
   const cert = _certs.find((c) => c.code === code);
   if (!cert) return;
-  if (cert.status !== 'issued' && cert.status !== 'signed') { notice.warn(t('certificates.send_only_issued_signed')); return; }
+  // Re-send allowed for already-'sent' certs too; only a revoked cert can't be sent.
+  if (cert.status === 'revoked') { notice.warn(t('certificates.send_only_issued_signed')); return; }
   if (!cert.email) { notice.warn(t('certificates.send_no_email')); return; }
   notice.ok(t('certificates.send_sending'));
   if (await _sendOne(cert)) {
@@ -1045,11 +1080,11 @@ async function _sendOne(cert) {
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
   const validarUrl = buildValidarUrl(origin, cert.code);
   try {
-    // A signed cert already has its SIGNED PDF in R2 — e-mail THAT, never a freshly
-    // re-rendered unsigned copy. Otherwise render fresh and persist it to R2.
+    // A signed (or already-sent-after-signing) cert has its stored PDF in R2 — e-mail
+    // THAT, never a freshly re-rendered unsigned copy. Otherwise render fresh + persist.
     let b64 = null;
     let alreadyStored = false;
-    if (cert.status === 'signed' && cert.pdf_path) {
+    if ((cert.status === 'signed' || cert.status === 'sent') && cert.pdf_path) {
       b64 = await _fetchStoredPdfBase64(cert.pdf_path, cert.status);
       alreadyStored = !!b64;
     }
@@ -1132,12 +1167,17 @@ async function _downloadStoredPdf(cert) {
 // Bulk "Enviar": e-mail every selectable cert (issued|signed with an e-mail),
 // summarizing how many went out and how many had no address.
 async function _bulkSend(codes) {
+  // Anything not revoked can be (re)sent — including already-'sent' certs (Reenviar).
   const certs = codes
     .map((code) => _certs.find((c) => c.code === code))
     .filter(Boolean)
-    .filter((c) => c.status === 'issued' || c.status === 'signed');
+    .filter((c) => c.status !== 'revoked');
   const sendable = certs.filter((c) => c.email);
   const noEmail = certs.length - sendable.length;
+  // Distinguish "nothing in a sendable state" from "selected but missing an e-mail",
+  // so the message is accurate (it used to say "no e-mail" even when the real reason
+  // was the cert being already 'sent' and filtered out).
+  if (!certs.length) { notice.warn(t('certificates.send_none_sendable')); return; }
   if (!sendable.length) { notice.warn(t('certificates.send_no_email')); return; }
   notice.ok(t('certificates.send_sending_bulk').replace('{n}', String(sendable.length)));
   let done = 0;
