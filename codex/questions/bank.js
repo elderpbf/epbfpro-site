@@ -35,6 +35,9 @@ let _editBank = false;
 let _selected = new Set();
 let _dragId = null;
 let _bulkItems = [];
+let _cpxItems = [];           // #26: AI-proposed harder variants under review
+let _cpxOriginals = [];       // #26: the originals paired with each proposed variant
+let _orderProposed = [];      // e2: AI-proposed question id order under review
 let _hubTab = 'export';
 let _exportFormat = 'json';
 let _exportScope = 'current';
@@ -371,9 +374,15 @@ function _conjuntoHeader() {
       '</div>' +
     '</div>';
   }
+  // e2: "Propor ordem" lets the AI suggest a warm-up → complex sequence, applied via
+  // reorder_questions. Only useful with at least two questions.
+  const proposeOrder = (_questions.length >= 2 && !_editBank)
+    ? '<button class="cdx-btn cdx-btn-sm" data-act="propose-order" type="button">' + t('questions.bank_propose_order') + '</button>'
+    : '';
   return '<div class="cdx-bank-conjunto-header">' +
     '<h2 class="cdx-bank-conjunto-title">' + _esc(_currentSet) + '</h2>' +
     '<div class="cdx-bank-conjunto-actions">' +
+      proposeOrder +
       '<button class="cdx-btn cdx-btn-sm' + (_editBank ? ' cdx-btn-primary' : '') + '" data-act="edit-bank" type="button">' +
         t(_editBank ? 'questions.bank_edit_bank_done' : 'questions.bank_edit_bank') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm" data-act="rename" type="button">' + t('questions.bank_edit_name') + '</button>' +
@@ -392,9 +401,15 @@ function _renameRow() {
 }
 
 function _qHeader() {
+  // #26: "Mais complexas" reads the set's questions, AI proposes harder variants,
+  // accepted ones save as NEW questions. Only shown when the set has questions.
+  const complexify = _questions.length
+    ? '<button class="cdx-btn cdx-btn-sm" data-act="complexify" type="button">' + t('questions.bank_complexify') + '</button>'
+    : '';
   return '<div class="cdx-bank-qheader">' +
     '<span class="cdx-bank-qheader-label">' + t('questions.bank_questions_label') + '</span>' +
     '<div class="cdx-bank-qheader-actions">' +
+      complexify +
       '<button class="cdx-btn cdx-btn-sm" data-act="bulk" type="button">' + t('questions.bank_bulk_generate') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="addq" type="button">' + t('questions.bank_new_question') + '</button>' +
     '</div>' +
@@ -654,6 +669,155 @@ async function _bulkSave() {
   _closeBulk();
   await _loadQuestions();
   _loadSets();
+}
+
+// ---- #26 Complexity review (AI proposes a harder variant of each question) ----
+// One ai.chat call sends the set's questions and gets a harder variant of each in
+// the same order; review side-by-side, accepted ones save as NEW questions (the
+// originals are never modified). Reuses _itemsFromJson + _toCanonical.
+const _CPX_SYS =
+  'Você recebe um array JSON de questões de uma aula. Para CADA questão, gere UMA ' +
+  'variante MAIS COMPLEXA e mais profunda sobre o mesmo tema, exigindo mais raciocínio ' +
+  '(não só memorização). Mantenha o mesmo "type". Devolva APENAS um array JSON estrito, ' +
+  'sem markdown, na MESMA ORDEM e com o mesmo número de itens, no formato: [{"type",' +
+  '"question","options":["..."] (ou [] para open/wordcloud, ou {"min","max"} para ' +
+  'rating/numeric),"correct_answer": índice base-0 (mc/tf), array de índices (mc múltipla) ' +
+  'ou "" (sem correta),"max_select"}]. Para mc use 4 opções e a correta. NUNCA inclua a ' +
+  'letra (ex "A)") no texto das opções.';
+
+function _openComplexify() {
+  if (!_currentSet || !_questions.length) { notice.warn(t('questions.bank_complexify_empty')); return; }
+  const modal = _q('#cdx-bank-cpx');
+  if (!modal) return;
+  _cpxItems = []; _cpxOriginals = _questions.slice();
+  _q('.cdx-bank-cpx-err').textContent = '';
+  _q('[data-act="cpx-save"]').hidden = true;
+  _q('#cdx-bank-cpx-list').innerHTML = '<div class="cdx-bank-loading">' + t('questions.bank_complexify_generating') + '</div>';
+  modal.hidden = false;
+  _runComplexify();
+}
+function _closeComplexify() { const m = _q('#cdx-bank-cpx'); if (m) m.hidden = true; _cpxItems = []; _cpxOriginals = []; }
+
+async function _runComplexify() {
+  const payload = _cpxOriginals.map(_toCanonical);
+  let res; try { res = await ai.chat({ system: _CPX_SYS, messages: [{ role: 'user', content: JSON.stringify(payload) }] }); } catch (e) { notice.internal(e); res = null; }
+  if (!_viewEl) return;
+  const items = (res && res.text) ? _itemsFromJson(res.text) : undefined;
+  const err = _q('.cdx-bank-cpx-err');
+  if (!items || !items.length) { if (err) err.textContent = t('questions.bank_complexify_error'); const l = _q('#cdx-bank-cpx-list'); if (l) l.innerHTML = ''; return; }
+  _cpxItems = items;
+  _renderCpxReview();
+}
+
+function _renderCpxReview() {
+  const save = _q('[data-act="cpx-save"]'); if (save) save.hidden = false;
+  const list = _q('#cdx-bank-cpx-list');
+  if (!list) return;
+  list.innerHTML = _cpxItems.map((q, i) => {
+    const orig = _cpxOriginals[i];
+    const raw = q.correct_answer;
+    const correct = new Set(Array.isArray(raw) ? raw.map(Number) : (raw === '' || raw == null ? [] : [Number(raw)]));
+    const opts = Array.isArray(q.options) ? q.options.map((o, oi) =>
+      '<li' + (correct.has(oi) ? ' class="cdx-q-opt--correct"' : '') + '>' + _esc(o) +
+      (correct.has(oi) ? ' (' + t('questions.bank_correct_tag') + ')' : '') + '</li>').join('') : '';
+    return '<label class="cdx-bank-cpx-item">' +
+      '<input type="checkbox" data-i="' + i + '" checked>' +
+      '<div class="cdx-bank-cpx-body">' +
+        '<div class="cdx-bank-cpx-orig"><span class="cdx-bank-cpx-tag">' + t('questions.bank_cpx_original') + '</span> ' + _esc(orig ? orig.question : '') + '</div>' +
+        '<div class="cdx-bank-cpx-prop"><span class="cdx-bank-cpx-tag cdx-bank-cpx-tag--prop">' + t('questions.bank_cpx_proposed') + '</span> ' + _esc(q.question) + '</div>' +
+        (opts ? '<ul class="cdx-bank-bulk-item-opts">' + opts + '</ul>' : '') +
+      '</div>' +
+    '</label>';
+  }).join('');
+}
+
+async function _cpxSave() {
+  const list = _q('#cdx-bank-cpx-list');
+  const checks = Array.prototype.slice.call(list.querySelectorAll('input[type="checkbox"]:checked'));
+  const err = _q('.cdx-bank-cpx-err');
+  if (!checks.length) { if (err) err.textContent = t('questions.bank_bulk_no_selection'); return; }
+  const selected = checks.map((c) => _cpxItems[parseInt(c.getAttribute('data-i'), 10)]);
+  const btn = _q('[data-act="cpx-save"]');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = t('questions.bank_bulk_saving');
+  // add_question per item (not bulk) so max_select + correct serialize, mirroring import.
+  for (const q of selected) {
+    try {
+      await api.addQuestion({
+        list_name: _currentSet, question: q.question, type: q.type || 'mc',
+        options: q.options || [], correct_answer: q.correct_answer,
+        max_select: (q.max_select != null ? q.max_select : 1), audience: q.audience || null,
+      });
+    } catch (e) { notice.internal(e); }
+  }
+  if (!_viewEl) return;
+  btn.disabled = false; btn.textContent = orig;
+  _closeComplexify();
+  await _loadQuestions();
+  _loadSets();
+}
+
+// ---- e2 Propose order (AI suggests a warm-up → complex sequence) ----
+const _ORDER_SYS =
+  'Você recebe um array JSON de questões de uma aula, cada uma com "id", "text" e "type". ' +
+  'Proponha a MELHOR ordem pedagógica de aplicação numa aula: do aquecimento (mais simples, ' +
+  'engajamento) ao mais complexo/aprofundado. Devolva APENAS um array JSON estrito com os ' +
+  '"id" na ordem proposta (ex: [3,1,2]). Inclua TODOS os ids exatamente uma vez, sem texto extra.';
+
+// PURE (exported for tests): validate the AI's id array is a permutation of the current
+// ids. Returns the ordered id list (original element types preserved), or null if invalid.
+export function parseOrderIds(text, validIds) {
+  let arr;
+  try { arr = JSON.parse(String(text == null ? '' : text).replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()); } catch (_) { return null; }
+  if (!Array.isArray(arr)) return null;
+  const want = (validIds || []).map(String);
+  const got = arr.map(String);
+  if (got.length !== want.length) return null;
+  const wantSet = new Set(want);
+  if (got.some((id) => !wantSet.has(id)) || new Set(got).size !== got.length) return null;
+  return arr;
+}
+
+function _closeOrder() { const m = _q('#cdx-bank-order'); if (m) m.hidden = true; _orderProposed = []; }
+
+async function _proposeOrder() {
+  if (!_currentSet || _questions.length < 2) return;
+  const modal = _q('#cdx-bank-order'); if (!modal) return;
+  _orderProposed = [];
+  _q('.cdx-bank-order-err').textContent = '';
+  _q('[data-act="order-apply"]').hidden = true;
+  _q('#cdx-bank-order-list').innerHTML = '<div class="cdx-bank-loading">' + t('questions.bank_order_generating') + '</div>';
+  modal.hidden = false;
+  const payload = _questions.map((q) => ({ id: q.id, text: q.question, type: q.type || 'mc' }));
+  let res; try { res = await ai.chat({ system: _ORDER_SYS, messages: [{ role: 'user', content: JSON.stringify(payload) }] }); } catch (e) { notice.internal(e); res = null; }
+  if (!_viewEl) return;
+  const ids = (res && res.text) ? parseOrderIds(res.text, _questions.map((q) => q.id)) : null;
+  const err = _q('.cdx-bank-order-err');
+  if (!ids) { if (err) err.textContent = t('questions.bank_order_error'); const l = _q('#cdx-bank-order-list'); if (l) l.innerHTML = ''; return; }
+  _orderProposed = ids;
+  _renderOrderReview();
+}
+
+function _renderOrderReview() {
+  const apply = _q('[data-act="order-apply"]'); if (apply) apply.hidden = false;
+  const byId = {}; _questions.forEach((q) => { byId[String(q.id)] = q; });
+  const list = _q('#cdx-bank-order-list');
+  if (!list) return;
+  list.innerHTML = _orderProposed.map((id) => {
+    const q = byId[String(id)];
+    return '<li class="cdx-bank-order-item">' + _esc(q ? q.question : ('#' + id)) + '</li>';
+  }).join('');
+}
+
+async function _applyOrder() {
+  if (!_orderProposed.length) return;
+  const btn = _q('[data-act="order-apply"]');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = t('questions.bank_bulk_saving');
+  try { await api.reorder({ list_name: _currentSet, ordered_ids: _orderProposed }); } catch (e) { notice.internal(e); }
+  if (!_viewEl) return;
+  btn.disabled = false; btn.textContent = orig;
+  notice.ok(t('questions.bank_order_applied'));
+  _closeOrder();
+  await _loadQuestions();
 }
 
 // ---- Import / Export hub (collection-level; scope: current / all / choose) ----
@@ -1133,6 +1297,7 @@ export function mount(viewEl, ctx) {
   _currentSet = null; _banks = []; _questions = []; _editingOriginal = null;
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _cpxItems = []; _cpxOriginals = []; _orderProposed = [];
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
   _classFilter = 'all'; _variaveisView = false; _variaveisItems = [];
@@ -1194,6 +1359,32 @@ export function mount(viewEl, ctx) {
           '<button class="cdx-btn cdx-btn-primary" data-act="bulk-generate" type="button">' + t('questions.bank_bulk_generate_btn') + '</button>' +
           '<button class="cdx-btn" data-act="bulk-discard" type="button" hidden>' + t('questions.bank_bulk_discard') + '</button>' +
           '<button class="cdx-btn cdx-btn-primary" data-act="bulk-save" type="button" hidden>' + t('questions.bank_bulk_save') + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    // #26 complexity review: review proposed harder variants, accept as NEW questions.
+    '<div class="cdx-modal-backdrop cdx-bank-modal" id="cdx-bank-cpx" hidden>' +
+      '<div class="cdx-modal cdx-bank-bulk-card">' +
+        '<div class="cdx-modal-title">' + t('questions.bank_complexify_title') + '</div>' +
+        '<p class="cdx-bank-bulk-hint">' + t('questions.bank_complexify_hint') + '</p>' +
+        '<div class="cdx-bank-cpx-list" id="cdx-bank-cpx-list"></div>' +
+        '<p class="cdx-bank-modal-err cdx-bank-cpx-err"></p>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" data-act="cpx-cancel" type="button">' + t('questions.bank_cancel') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="cpx-save" type="button" hidden>' + t('questions.bank_complexify_save') + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    // e2 propose order: review the AI-proposed sequence, apply via reorder.
+    '<div class="cdx-modal-backdrop cdx-bank-modal" id="cdx-bank-order" hidden>' +
+      '<div class="cdx-modal cdx-bank-bulk-card">' +
+        '<div class="cdx-modal-title">' + t('questions.bank_order_title') + '</div>' +
+        '<p class="cdx-bank-bulk-hint">' + t('questions.bank_order_hint') + '</p>' +
+        '<ol class="cdx-bank-order-list" id="cdx-bank-order-list"></ol>' +
+        '<p class="cdx-bank-modal-err cdx-bank-order-err"></p>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" data-act="order-cancel" type="button">' + t('questions.bank_cancel') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="order-apply" type="button" hidden>' + t('questions.bank_order_apply') + '</button>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -1345,6 +1536,8 @@ export function mount(viewEl, ctx) {
     const act = btn.getAttribute('data-act');
     if (act === 'addq') { _confirmDelQ = null; _openModal(null); }
     else if (act === 'bulk') { _openBulk(); }
+    else if (act === 'complexify') { _openComplexify(); }
+    else if (act === 'propose-order') { _proposeOrder(); }
     else if (act === 'filter-class') { _classFilter = btn.getAttribute('data-class') || 'all'; _renderConjunto(); }
     else if (act === 'edit-bank') { _toggleEditBank(); }
     else if (act === 'select') {
@@ -1447,6 +1640,26 @@ export function mount(viewEl, ctx) {
     else if (act === 'bulk-save') _bulkSave();
   });
 
+  // #26 complexity-review modal (delegated)
+  _on(viewEl.querySelector('#cdx-bank-cpx'), 'click', (e) => {
+    if (e.target === viewEl.querySelector('#cdx-bank-cpx')) { _closeComplexify(); return; }
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.getAttribute('data-act');
+    if (act === 'cpx-cancel') _closeComplexify();
+    else if (act === 'cpx-save') _cpxSave();
+  });
+
+  // e2 propose-order modal (delegated)
+  _on(viewEl.querySelector('#cdx-bank-order'), 'click', (e) => {
+    if (e.target === viewEl.querySelector('#cdx-bank-order')) { _closeOrder(); return; }
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.getAttribute('data-act');
+    if (act === 'order-cancel') _closeOrder();
+    else if (act === 'order-apply') _applyOrder();
+  });
+
   // Import file picker (change, not click): read the chosen .json into the box.
   _on(viewEl.querySelector('#cdx-bank-hub'), 'change', (e) => {
     if (e.target && e.target.classList && e.target.classList.contains('cdx-bank-import-file')) {
@@ -1529,6 +1742,7 @@ export function unmount() {
   _viewEl = null; _currentSet = null; _banks = []; _questions = [];
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _cpxItems = []; _cpxOriginals = []; _orderProposed = [];
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
   _classFilter = 'all'; _variaveisView = false; _variaveisItems = [];

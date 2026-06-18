@@ -541,6 +541,19 @@
 .cdx-bank-bulk-item-opts { margin: 0.4rem 0 0 1rem; padding: 0; color: var(--text-secondary); font-size: 0.82rem; }
 .cdx-bank-bulk-item-opts .cdx-q-opt--correct { color: var(--primary); font-weight: 600; }
 
+/* #26 complexity review: original (muted) above proposed (emphasized) per item. */
+.cdx-bank-cpx-list { display: flex; flex-direction: column; gap: 0.6rem; max-height: 55vh; overflow-y: auto; }
+.cdx-bank-cpx-item { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; }
+.cdx-bank-cpx-item > input { margin-top: 0.2rem; accent-color: var(--primary); flex-shrink: 0; }
+.cdx-bank-cpx-body { flex: 1; min-width: 0; font-size: 0.85rem; }
+.cdx-bank-cpx-orig { color: var(--text-secondary); margin-bottom: 0.25rem; }
+.cdx-bank-cpx-prop { color: var(--text-primary); font-weight: 600; }
+.cdx-bank-cpx-tag { display: inline-block; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-right: 0.3rem; }
+.cdx-bank-cpx-tag--prop { color: var(--primary-dark); }
+/* e2 proposed order: a numbered list of the questions in the suggested sequence. */
+.cdx-bank-order-list { margin: 0; padding-left: 1.5rem; max-height: 55vh; overflow-y: auto; }
+.cdx-bank-order-item { padding: 0.28rem 0; font-size: 0.88rem; color: var(--text-primary); }
+
 /* Import / Export hub modal */
 .cdx-bank-sets-header-actions { display: flex; align-items: center; gap: 0.3rem; }
 .cdx-bank-hub-card { max-width: 640px; }

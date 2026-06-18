@@ -236,3 +236,34 @@ test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
     assert.ok(k in en, `en.js has ${k}`);
   }
 });
+
+test('e2: parseOrderIds validates the AI order is a permutation of the current ids', async () => {
+  const b = await import('../questions/bank.js');
+  assert.deepEqual(b.parseOrderIds('[3,1,2]', [1, 2, 3]), [3, 1, 2]);
+  assert.deepEqual(b.parseOrderIds('```json\n[2,1]\n```', [1, 2]), [2, 1]); // strips code fences
+  assert.equal(b.parseOrderIds('[1,2]', [1, 2, 3]), null, 'wrong length rejected');
+  assert.equal(b.parseOrderIds('[1,1,2]', [1, 2, 3]), null, 'duplicate rejected');
+  assert.equal(b.parseOrderIds('[1,2,9]', [1, 2, 3]), null, 'unknown id rejected');
+  assert.equal(b.parseOrderIds('not json', [1]), null, 'invalid JSON rejected');
+});
+
+test('#26 + e2: bank exposes the complexity-review + propose-order flows (frontend, reuse ai.chat)', () => {
+  const src = read('../questions/bank.js');
+  // Buttons
+  assert.match(src, /data-act="complexify"/, 'Mais complexas button');
+  assert.match(src, /data-act="propose-order"/, 'Propor ordem button');
+  // #26: ai.chat (no new worker action) → review → accepted save as NEW questions
+  assert.match(src, /function _openComplexify/, 'complexify opener');
+  assert.match(src, /ai\.chat\(\{ system: _CPX_SYS/, '#26 calls ai.chat with the harder-variant prompt');
+  assert.match(src, /api\.addQuestion\(/, 'accepted variants save as new questions (originals untouched)');
+  // e2: ai.chat → review → apply via reorder
+  assert.match(src, /function _proposeOrder/, 'order proposer');
+  assert.match(src, /ai\.chat\(\{ system: _ORDER_SYS/, 'e2 calls ai.chat with the ordering prompt');
+  assert.match(src, /api\.reorder\(\{ list_name: _currentSet, ordered_ids: _orderProposed/, 'applies the proposed order via reorder');
+  for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
+    const dict = read(lang);
+    for (const k of ['questions.bank_complexify', 'questions.bank_propose_order', 'questions.bank_order_applied']) {
+      assert.ok(dict.includes("'" + k + "'"), lang + ' has ' + k);
+    }
+  }
+});
