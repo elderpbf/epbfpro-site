@@ -1352,10 +1352,6 @@ function _openIssueFlow() {
             '<input type="text" id="cdx-issue-format" placeholder="' + esc(t('certificates.issue_format_ph')) + '">' +
           '</div>' +
           '<div class="cdx-field">' +
-            '<label>' + esc(t('certificates.issue_modality')) + '</label>' +
-            '<input type="text" id="cdx-issue-modality" value="' + esc(dm.modality) + '">' +
-          '</div>' +
-          '<div class="cdx-field">' +
             '<label>' + esc(t('certificates.issue_meetings')) + '</label>' +
             '<input type="text" id="cdx-issue-meetings" placeholder="' + esc(t('certificates.issue_meetings_ph')) + '">' +
           '</div>' +
@@ -1394,7 +1390,7 @@ function _openIssueFlow() {
   let _thumbTimer = null;
   const debouncedThumb = () => { if (_thumbTimer) clearTimeout(_thumbTimer); _thumbTimer = setTimeout(renderThumb, 350); };
   ['#cdx-issue-course', '#cdx-issue-hours', '#cdx-issue-issuer', '#cdx-issue-date',
-   '#cdx-issue-instructor', '#cdx-issue-place', '#cdx-issue-modality'].forEach((sel) => {
+   '#cdx-issue-instructor', '#cdx-issue-place', '#cdx-issue-format'].forEach((sel) => {
     const el = bd.querySelector(sel);
     if (el) el.addEventListener('input', debouncedThumb);
   });
@@ -1596,7 +1592,6 @@ function _autofillIssueFromTurma(bd, turma) {
   set('#cdx-issue-place', turma.place);
   set('#cdx-issue-meetings', (turma.aula_count != null && Number(turma.aula_count) > 0) ? String(turma.aula_count) : turma.meetings);
   set('#cdx-issue-format', turma.format ? t('cohorts.fmt_' + turma.format) : '');
-  set('#cdx-issue-modality', turma.modality ? t('cohorts.mod_' + turma.modality) : '');
   const modsEl = bd.querySelector('#cdx-issue-modules');
   if (modsEl && turma.ementa_json) {
     const certMods = ementaToCertModules(turma.ementa_json);
@@ -1650,7 +1645,6 @@ function _gatherVersoMeta(bd, clientSel) {
   set('instructor', '#cdx-issue-instructor');
   set('place',      '#cdx-issue-place');
   set('format',     '#cdx-issue-format');
-  set('modality',   '#cdx-issue-modality');
   set('meetings',   '#cdx-issue-meetings');
   const mods = parseModulesText(bd.querySelector('#cdx-issue-modules').value);
   if (mods.length) meta.modules = mods;

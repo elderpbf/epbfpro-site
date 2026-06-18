@@ -20,7 +20,7 @@ test('issue flow auto-fills the form from the selected turma', () => {
   assert.match(certs, /_issueTurma = _issueTurmas\.find/, 'resolves the selected turma');
   assert.match(certs, /if \(_issueTurma\) \{ _autofillIssueFromTurma/, 'calls auto-fill on turma change');
   // pulls each field from the turma
-  for (const f of ['turma.course_title', 'turma.hours', 'turma.place', 'turma.meetings', 'turma.format', 'turma.modality', 'turma.ementa_json']) {
+  for (const f of ['turma.course_title', 'turma.hours', 'turma.place', 'turma.meetings', 'turma.format', 'turma.ementa_json']) {
     assert.ok(certs.includes(f), `auto-fill reads ${f}`);
   }
 });

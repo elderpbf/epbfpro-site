@@ -53,8 +53,7 @@ export function defaultMeta() {
     role: 'Instrutor responsável',
     place: '',
     client: '',
-    format: '',
-    modality: 'Presencial',
+    format: 'Presencial',
     meetings: '',
     modules: [],
   };
@@ -123,7 +122,6 @@ export function buildCertData(cert, meta, origin) {
     place: esc(meta.place),
     client: esc(meta.client),
     format: esc(meta.format),
-    modality: esc(meta.modality),
     meetings: esc(meta.meetings),
     modules: (meta.modules || []).map(function (m) { return { n: esc(m.n), t: esc(m.t), d: esc(m.d) }; }),
   };
@@ -206,7 +204,7 @@ function fConsole(d) {
         + '<div class="cs-fields">'
           + '<div class="fld"><div class="k">Emissor</div><div class="v">' + d.issuerShort + '</div></div>'
           + '<div class="fld"><div class="k">Carga horária</div><div class="v">' + d.hoursLabel + '</div></div>'
-          + '<div class="fld"><div class="k">Modalidade</div><div class="v">' + d.modality + '</div></div>'
+          + '<div class="fld"><div class="k">Formato</div><div class="v">' + d.format + '</div></div>'
           + '<div class="fld"><div class="k">Período</div><div class="v">' + (d.periodo || d.date) + '</div></div>'
           + '<div class="fld"><div class="k">Local</div><div class="v">' + d.place + '</div></div>'
           + '<div class="fld"><div class="k">Emissão</div><div class="v">' + d.date + '</div></div>'
@@ -255,11 +253,11 @@ function backHtml(d) {
       + '<div class="side"><div class="cargo">'
         + '<div class="s"><div class="v">' + d.hoursNum + '</div><div class="l">Horas</div></div>'
         + '<div class="s"><div class="v">' + d.meetings + '</div><div class="l">Encontros</div></div>'
-        // Modalidade reads label-first ("Modalidade / Presencial") since the value is a
+        // Formato reads label-first ("Formato / Presencial") since the value is a
         // word, not a metric like Horas/Encontros (which keep value-first).
-        + '<div class="s cm"><div class="l">Modalidade</div><div class="v sm">' + d.modality + '</div></div></div>'
+        + '<div class="s cm"><div class="l">Formato</div><div class="v sm">' + d.format + '</div></div></div>'
         + '<div class="mblk"><div class="ml">Emissor</div><div class="mv">' + d.issuer + '<small>CNPJ ' + d.cnpj + '</small></div></div>'
-        + '<div class="mblk"><div class="ml">Instrutor responsável</div><div class="mv">' + d.instructor + '<small>' + d.format + '</small></div></div>'
+        + '<div class="mblk"><div class="ml">Instrutor responsável</div><div class="mv">' + d.instructor + '</div></div>'
         + '<div class="mblk"><div class="ml">Data e local de emissão</div><div class="mv">' + d.date + '<small>' + d.place + '</small></div></div>'
         + '<div class="vcard"><span class="qr" data-qr></span><div class="tx"><div class="b">Autenticidade verificável</div>'
           + '<p>Código <span class="c">' + d.code + '</span> em ' + d.validar + '</p>'
