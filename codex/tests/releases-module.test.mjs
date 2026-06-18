@@ -63,6 +63,37 @@ test('R3 + R1a: composer groups items por tipo and greys items already released 
   }
 });
 
+test('#23: an item can be bound to SEVERAL aulas (additive, not move)', async () => {
+  const mod = await import('../content/releases.js');
+  // The additive diff: checking ADDS this aula, unchecking REMOVES it.
+  const bindings = { 7: [1] }; // item 7 currently in aula 1
+  const aulaNumbersOf = (id) => bindings[id] || [];
+  // Check item 7 in aula 3 → it should ADD aula 3 (now [1,3]), not move.
+  let r = mod.diffAulaMultiSelection({ released: [7], aulaNumbersOf, aulaNum: 3, poolIds: [7], selectedIds: [7] });
+  assert.deepEqual(r.toRelease, [], 'already released, no new ct_release');
+  assert.equal(r.updates.length, 1);
+  assert.deepEqual(r.updates[0], { id: 7, aulaNumbers: [1, 3] }, 'aula 3 added, aula 1 kept');
+  // Unchecking item 7 in aula 1 → removes aula 1 only.
+  r = mod.diffAulaMultiSelection({ released: [7], aulaNumbersOf: (id) => (id === 7 ? [1, 3] : []), aulaNum: 1, poolIds: [7], selectedIds: [] });
+  assert.deepEqual(r.updates[0], { id: 7, aulaNumbers: [3] }, 'aula 1 removed, aula 3 kept');
+  // A brand-new item checked needs a first ct_release.
+  r = mod.diffAulaMultiSelection({ released: [], aulaNumbersOf: () => [], aulaNum: 2, poolIds: [9], selectedIds: [9] });
+  assert.deepEqual(r.toRelease, [9], 'unreleased item gets a first ct_release');
+  assert.deepEqual(r.updates[0], { id: 9, aulaNumbers: [2] });
+});
+
+test('#23: the composer saves via setAulas (multi) and reads aula_numbers', () => {
+  assert.match(relSrc, /function diffAulaMultiSelection/, 'has the additive multi-aula diff');
+  assert.match(relSrc, /api\.setAulas/, 'persists via ct_set_release_aulas');
+  assert.match(relSrc, /function _aulaNumbersOf/, 'reads every aula an item is bound to');
+  assert.match(relSrc, /function _elsewhereLabel/, 'renders "já nas aulas 1, 3"');
+  assert.match(relSrc, /aula_numbers/, 'stores the multi-aula bindings');
+  for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
+    const dict = readFileSync(new URL(lang, import.meta.url), 'utf8');
+    assert.ok(dict.includes("'releases.already_aulas'"), lang + ' has the plural marker key');
+  }
+});
+
 test('#22: the apostila pool also carries the "já na aula N" marker', () => {
   // The apostila rows render inline (not via _rowHtml), so the elsewhere marker must
   // be wired into that branch explicitly — pool="apostila" + _releasedElsewhere + note.

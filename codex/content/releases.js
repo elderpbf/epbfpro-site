@@ -67,6 +67,30 @@ export function diffAulaSelection({ released, releasedMeta, aulaNum, poolIds, se
   return { toRelease, toSetAula, toDropAula };
 }
 
+// #23: additive multi-aula diff for one aula's composer. Checking an item ADDS this
+// aula to its bindings (instead of moving it); unchecking REMOVES this aula. Returns
+// the ids needing a first ct_release and the per-item new aula_numbers list to save.
+// `aulaNumbersOf(id)` yields the item's current bindings (array).
+export function diffAulaMultiSelection({ released, aulaNumbersOf, aulaNum, poolIds, selectedIds }) {
+  const rel = new Set((released || []).map(Number));
+  const sel = new Set((selectedIds || []).map(Number));
+  const n = Number(aulaNum);
+  const toRelease = [], updates = [];
+  for (const raw of (poolIds || [])) {
+    const id = Number(raw);
+    const cur = (aulaNumbersOf(id) || []).map(Number);
+    const hasN = cur.indexOf(n) !== -1;
+    const checked = sel.has(id);
+    if (checked && !hasN) {
+      if (!rel.has(id)) toRelease.push(id);
+      updates.push({ id, aulaNumbers: [...new Set(cur.concat(n))].sort((a, b) => a - b) });
+    } else if (!checked && hasN) {
+      updates.push({ id, aulaNumbers: cur.filter((x) => x !== n) });
+    }
+  }
+  return { toRelease, updates };
+}
+
 // Diff the "Outros" (no-lesson) bucket: release newly checked items, unrelease
 // items unchecked that were sitting in Outros (no aula_number).
 export function diffOutrosSelection({ released, releasedMeta, poolIds, selectedIds }) {
@@ -109,7 +133,7 @@ function _relMs(v) {
   return isFinite(ms) ? ms : 0;
 }
 function _aulaReleasedIds(aulaNum) {
-  return _released.filter((id) => String((_releasedMeta[id] || {}).aula_number) === String(aulaNum));
+  return _released.filter((id) => _aulaNumbersOf(id).map(String).indexOf(String(aulaNum)) !== -1);
 }
 // Is any item in this aula currently inside the NOVO window (i.e. the badge shows)?
 function _aulaIsFresh(aulaNum) {
@@ -143,12 +167,19 @@ function _countGlyph(kind, size) {
 function _isTarefa(i) { return !i.set_id && i.type === 'tarefa'; }
 function _isDrive(i) { return i.type === 'drive_file'; }
 function _isOutros(i) { return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file'; }
+// #23: every aula an item is bound to. Falls back to the single aula_number for
+// legacy items that only carry the old single binding.
+function _aulaNumbersOf(id) {
+  const m = _releasedMeta[id] || {};
+  if (Array.isArray(m.aula_numbers)) return m.aula_numbers;
+  return (m.aula_number != null && m.aula_number !== '') ? [m.aula_number] : [];
+}
 function _isBoundTo(id, aulaNum) {
   return _released.indexOf(Number(id)) !== -1 &&
-    String((_releasedMeta[id] || {}).aula_number) === String(aulaNum);
+    _aulaNumbersOf(id).map(String).indexOf(String(aulaNum)) !== -1;
 }
 function _inOutros(id) {
-  return _released.indexOf(Number(id)) !== -1 && !(_releasedMeta[id] || {}).aula_number;
+  return _released.indexOf(Number(id)) !== -1 && _aulaNumbersOf(id).length === 0;
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -191,7 +222,11 @@ function _loadReleases(clientSlug, turmaSlug) {
       const items = (vd && vd.items) || [];
       _released = items.map((i) => i.id);
       _releasedMeta = {};
-      items.forEach((i) => { _releasedMeta[i.id] = { aula_number: i.aula_number || null, released_at: i.released_at }; });
+      items.forEach((i) => { _releasedMeta[i.id] = {
+        aula_number: i.aula_number || null,
+        aula_numbers: Array.isArray(i.aula_numbers) ? i.aula_numbers : (i.aula_number != null ? [i.aula_number] : []),
+        released_at: i.released_at,
+      }; });
       _renderList();
     }).catch((err) => { _released = []; _releasedMeta = {}; _renderList(); notice.internal(_err(err)); });
   }).catch((err) => {
@@ -370,13 +405,17 @@ function _toggleFresh(aulaNum, makeFresh) {
 
 // ── Composer rendering (collapsible accordion, like the Presets picker) ──────
 function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
-  // elsewhereAula: this item is already released to ANOTHER aula in this turma
-  // (greyed + a "já na aula N" note). Checking it here moves it (diffAulaSelection).
-  const already = (elsewhereAula != null && elsewhereAula !== '');
-  return '<label class="cdx-comp-item' + (already ? ' is-already-released' : '') + '" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
+  // elsewhereAula: the OTHER aulas this item is bound to (#23 multi-aula). The row
+  // greys only when it is NOT bound to THIS aula (a "borrow" candidate); the marker
+  // "já nas aulas 1, 3" shows whenever it is bound elsewhere. Checking it here ADDS
+  // this aula (it no longer moves the item).
+  const elsewhere = Array.isArray(elsewhereAula) ? elsewhereAula : (elsewhereAula != null && elsewhereAula !== '' ? [elsewhereAula] : []);
+  const hasElsewhere = elsewhere.length > 0;
+  const grey = hasElsewhere && !checked;
+  return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
     '<input type="checkbox" class="cdx-comp-cb" data-pool="' + pool + '" value="' + _esc(item.id) + '"' + (checked ? ' checked' : '') + '>' +
     '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) +
-      (already ? ' <span class="cdx-comp-elsewhere">' + _esc(t('releases.already_aula').replace('{n}', String(elsewhereAula))) + '</span>' : '') +
+      (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
     '</span>' +
   '</label>';
 }
@@ -401,13 +440,19 @@ function _groupByType(items) {
     .map((k) => ({ type: k, items: byType.get(k) }));
 }
 
-// Is this item released to a DIFFERENT aula than aulaNum? Returns that aula number,
-// else null. Drives the "já aplicada noutra aula" grey-out (R1a).
+// The OTHER aulas this item is bound to (excluding aulaNum). Returns an array, or
+// null if none. Drives the "já nas aulas 1, 3" marker (R1a + #23 multi-aula).
 function _releasedElsewhere(id, aulaNum) {
   if (_released.indexOf(Number(id)) === -1) return null;
-  const a = (_releasedMeta[id] || {}).aula_number;
-  if (a == null || a === '') return null;
-  return String(a) === String(aulaNum) ? null : a;
+  const others = _aulaNumbersOf(id).filter((a) => String(a) !== String(aulaNum));
+  return others.length ? others : null;
+}
+
+// "já na aula 1" (one) or "já nas aulas 1, 3" (several).
+function _elsewhereLabel(aulas) {
+  const list = (Array.isArray(aulas) ? aulas : [aulas]).map(String);
+  if (list.length <= 1) return t('releases.already_aula').replace('{n}', list[0] || '');
+  return t('releases.already_aulas').replace('{ns}', list.join(', '));
 }
 
 // Render the item pools as one search + a single-open accordion of sections,
@@ -480,12 +525,14 @@ function _renderAulaComposer(container, aula) {
   // still carry the "já na aula N" grey marker when released to another aula (R1a/#22).
   const apostilaRows = _apostilaItems.length
     ? _apostilaItems.map((i) => {
-        const elsewhereAula = _releasedElsewhere(i.id, aulaNum);
-        const already = (elsewhereAula != null && elsewhereAula !== '');
-        return '<label class="cdx-comp-item' + (already ? ' is-already-released' : '') + '" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
-          '<input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (_isBoundTo(i.id, aulaNum) ? ' checked' : '') + '>' +
+        const checked = _isBoundTo(i.id, aulaNum);
+        const elsewhere = _releasedElsewhere(i.id, aulaNum) || [];
+        const hasElsewhere = elsewhere.length > 0;
+        const grey = hasElsewhere && !checked;
+        return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
+          '<input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (checked ? ' checked' : '') + '>' +
           '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) +
-            (already ? ' <span class="cdx-comp-elsewhere">' + _esc(t('releases.already_aula').replace('{n}', String(elsewhereAula))) + '</span>' : '') +
+            (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
           '</span></label>';
       }).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_apostila') + '</div>';
@@ -563,22 +610,22 @@ function _saveAula(container, aulaNum, pools) {
     .concat(pools.tarefaItems.map((i) => Number(i.id)))
     .concat(pools.outrosItems.map((i) => Number(i.id)))
     .concat((pools.driveItems || []).map((i) => Number(i.id)));
-  const { toRelease, toSetAula, toDropAula } = diffAulaSelection({
-    released: _released, releasedMeta: _releasedMeta, aulaNum, poolIds, selectedIds,
+  // #23: additive, checking ADDS this aula, unchecking REMOVES it (no longer moves).
+  const { toRelease, updates } = diffAulaMultiSelection({
+    released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum, poolIds, selectedIds,
   });
   const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
 
   Promise.all(toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+    .then(() => Promise.all(updates.map((u) =>
+      api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
     .then(() => {
-      const setCalls = toRelease.concat(toSetAula).map((id) =>
-        api.setAula(Object.assign({ item_id: id, aula_number_or_null: aulaNum }, base)));
-      const dropCalls = toDropAula.map((id) =>
-        api.setAula(Object.assign({ item_id: id, aula_number_or_null: null }, base)));
-      return Promise.all(setCalls.concat(dropCalls));
-    }).then(() => {
-      toRelease.forEach((id) => { _released.push(id); _releasedMeta[id] = { aula_number: aulaNum }; });
-      toSetAula.forEach((id) => { (_releasedMeta[id] || (_releasedMeta[id] = {})).aula_number = aulaNum; });
-      toDropAula.forEach((id) => { if (_releasedMeta[id]) _releasedMeta[id].aula_number = null; });
+      toRelease.forEach((id) => { if (_released.indexOf(id) === -1) _released.push(id); });
+      updates.forEach((u) => {
+        const m = _releasedMeta[u.id] || (_releasedMeta[u.id] = {});
+        m.aula_numbers = u.aulaNumbers;
+        m.aula_number = u.aulaNumbers.length ? u.aulaNumbers[0] : null; // primary (Trail back-compat)
+      });
       _toast(t('releases.saved'));
       _renderList();
       _renderPreview();

@@ -539,6 +539,7 @@ export default {
   'releases.show_fresh':          'Mostrar selo NOVO desta aula',
   'releases.show_fresh_done':     'Selo NOVO exibido.',
   'releases.already_aula':        'já na aula {n}',
+  'releases.already_aulas':       'já nas aulas {ns}',
   'releases.mark_happened':       'Ocorreu',
   'releases.mark_happened_title': 'Marcar como ocorrida no dia marcado',
   'releases.mark_happened_done':  'Aula marcada como ocorrida.',
