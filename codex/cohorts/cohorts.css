@@ -791,6 +791,7 @@ a.cdx-card-mini-icon.is-on:hover {
 .cdx-doss-fact .v { font-size: .85rem; font-weight: 600; color: var(--text-primary); }
 .cdx-doss-fact--course { grid-column: span 2; background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); }
 .cdx-doss-fact--course .v { color: var(--primary-dark); }
+.cdx-doss-fact--course .cdx-doss-edit { color: var(--primary-dark); font-weight: 700; }
 /* #27: inline-editable dossier fields (no more Editar modal). Inputs/selects sit
    inside a .cdx-doss-fact and auto-save on blur/change. */
 .cdx-doss-headmain { min-width: 0; flex: 1; }
@@ -838,6 +839,13 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-doss-cstat--signed i  { background: var(--cdx-cert-signed-ac); }
 .cdx-doss-cstat--sent i    { background: var(--cdx-cert-sent-ac); }
 .cdx-doss-cstat--revoked i { background: var(--cdx-cert-revoked-ac); }
+/* Connecting-cards separator: full-width divider inside .cdx-doss-facts grid */
+.cdx-doss-sep { grid-column: 1 / -1; height: 0; border: none; border-top: 1px solid var(--border); margin: .15rem 0; }
+/* Trail link fact card */
+.cdx-doss-fact--trail { display: flex; flex-direction: column; gap: .4rem; }
+.cdx-doss-trail-acts { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .05rem; }
+.cdx-doss-trail-acts .cdx-btn { padding: .2rem .45rem; font-size: .72rem; }
+.cdx-doss-trail-na { font-size: .8rem; color: var(--text-secondary); }
 
 /* ----- Merged turma list (Concept A: turmas grouped under client headers) ----- */
 

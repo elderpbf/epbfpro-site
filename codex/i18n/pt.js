@@ -251,6 +251,7 @@ export default {
   'cohorts.turma_name_placeholder': 'Ex: Turma A',
   'cohorts.field_whatsapp':         'WhatsApp do grupo (URL, opcional)',
   'cohorts.field_classpulse':       'Sessão ClassPulse',
+  'cohorts.field_trail':            'Link da Trilha',
 
   // Cohorts — aulas
   'cohorts.loading_aulas':          'Carregando aulas...',

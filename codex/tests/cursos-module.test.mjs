@@ -128,7 +128,7 @@ test('per-turma actions moved into the dossier (nothing lost in the merge)', () 
   for (const act of ['data-doss="archive"', 'data-doss="regen"', 'data-doss="copyurl"']) {
     assert.ok(cohorts.includes(act), `dossier wires ${act}`);
   }
-  assert.match(cohorts, /cdx-doss-links/, 'dossier has the trilha link/action strip');
+  assert.match(cohorts, /cdx-doss-fact--trail/, 'dossier has the trail link card inside Dados da turma');
   // those actions reuse the existing helpers
   for (const fn of ['_archiveTurma', '_regenToken', '_copyUrl']) {
     assert.ok(cohorts.includes(fn), `keeps ${fn}`);

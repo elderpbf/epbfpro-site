@@ -1021,8 +1021,8 @@ function _renderDossier(turma) {
   const editText = (field, label, value, ph2) =>
     '<div class="cdx-doss-fact cdx-doss-fact--edit"><label>' + _esc(label) + '</label>' +
     '<input class="cdx-doss-edit" type="text" data-edit-field="' + field + '" value="' + _esc(value == null ? '' : value) + '"' + (ph2 ? ' placeholder="' + _esc(ph2) + '"' : '') + '></div>';
-  const editSelect = (field, label, optsHtml) =>
-    '<div class="cdx-doss-fact cdx-doss-fact--edit"><label>' + _esc(label) + '</label>' +
+  const editSelect = (field, label, optsHtml, extraClass) =>
+    '<div class="cdx-doss-fact cdx-doss-fact--edit' + (extraClass ? ' ' + extraClass : '') + '"><label>' + _esc(label) + '</label>' +
     '<select class="cdx-doss-edit" data-edit-field="' + field + '">' + optsHtml + '</select></div>';
   const courseOpts = '<option value="">' + _esc(t('cohorts.tf_no_course')) + '</option>' +
     (_turmaCourses || []).map((c) => '<option value="' + _esc(String(c.id)) + '"' + (String(turma.course_id || '') === String(c.id) ? ' selected' : '') + '>' + _esc(c.title) + '</option>').join('');
@@ -1033,14 +1033,15 @@ function _renderDossier(turma) {
   const ph = _turmaPhase(turma);
   const archived = turma.status === 'archived';
   const url = turma.token ? _turmaUrl(turma.client_slug, turma.slug, turma.token) : null;
-  const linksRow =
-    '<div class="cdx-doss-links">' +
-      (url
-        ? '<button type="button" class="cdx-doss-url" data-doss="copyurl" data-url="' + _esc(url) + '" title="' + _esc(t('cohorts.copy_url')) + '">' + _esc(url) + '</button>' +
-          '<a class="cdx-doss-urlbtn" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
-          '<button type="button" class="cdx-doss-urlbtn" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>'
-        : '<span class="cdx-empty">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
-      (turma.whatsapp_url ? '<a class="cdx-doss-walink" href="' + _esc(turma.whatsapp_url) + '" target="_blank" rel="noopener">' + _esc(t('cohorts.whatsapp_open')) + '</a>' : '') +
+  const trailCard =
+    '<div class="cdx-doss-fact cdx-doss-fact--trail"><label>' + _esc(t('cohorts.field_trail')) + '</label>' +
+    (url
+      ? '<div class="cdx-doss-trail-acts">' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="copyurl" data-url="' + _esc(url) + '">' + _esc(t('cohorts.copy_url')) + '</button>' +
+          '<a class="cdx-btn cdx-btn-sm" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>' +
+        '</div>'
+      : '<span class="cdx-doss-trail-na">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
     '</div>';
 
   el.innerHTML =
@@ -1056,11 +1057,10 @@ function _renderDossier(turma) {
           '</div>' +
         '</div>' +
       '</div>' +
-      linksRow +
       // ── Dados da turma (colapsável) ──
       '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.sec_turma_data')) + '</b></div></summary>' +
         '<div class="cdx-doss-facts">' +
-          editSelect('course_id', t('cohorts.tf_course'), courseOpts) +
+          editSelect('course_id', t('cohorts.tf_course'), courseOpts, 'cdx-doss-fact--course') +
           factId('cdx-doss-carga', t('cohorts.course_hours_label'), cargaDerived) +
           factId('cdx-doss-encontros', t('cohorts.tf_meetings'), encontrosDerived) +
           fact(t('cohorts.tf_date_start'), dStart) +
@@ -1068,8 +1068,10 @@ function _renderDossier(turma) {
           editSelect('format', t('cohorts.tf_format'), fmtOpts) +
           editText('place', t('cohorts.tf_place'), turma.place, t('cohorts.tf_place_ph')) +
           editText('display_name', t('cohorts.field_display_name'), turma.display_name, t('cohorts.field_display_placeholder')) +
+          '<div class="cdx-doss-sep" role="separator"></div>' +
           editText('whatsapp_url', t('cohorts.field_whatsapp'), turma.whatsapp_url, 'https://chat.whatsapp.com/...') +
           editSelect('classpulse_session_id', t('cohorts.field_classpulse'), cpOpts) +
+          trailCard +
         '</div>' +
       '</details>' +
       // ── Acesso (gating switches; QR enrollment + participants fold in next; mounted from js/access-panel.js) ──
