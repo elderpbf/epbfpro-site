@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mock · Painel de Acesso da Turma</title>
+
+<!-- PORTED CSS: the REAL Codex stylesheets, loaded from /codex/ (resolves on
+     staging where the whole tree deploys). So the cdx- classes below render
+     EXACTLY like the live admin. Only the mock-only chrome + the new tags /
+     collapsibles get extra styles in the <style> block at the end of <head>. -->
+<link rel="stylesheet" href="/codex/css/theme.css">
+<link rel="stylesheet" href="/codex/css/backstage.css">
+<link rel="stylesheet" href="/codex/css/tokens.css">
+<link rel="stylesheet" href="/codex/css/codex.css">
+<link rel="stylesheet" href="/codex/cohorts/cohorts.css">
+<link rel="stylesheet" href="/codex/alunos/alunos.css">
+
+<style>
+  /* ── Mock chrome (not part of the port) ───────────────────────────────── */
+  body { margin: 0; }
+  .mock-bar { background:#0e1622; color:#cfd9e6; padding:10px 18px; font-size:13px;
+              display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .mock-bar b { color:#fff; }
+  .mock-bar .sp { flex:1; }
+  .mock-bar button { background:#1c2a3c; color:#cfd9e6; border:1px solid #2c3e55;
+                     border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer; }
+  .mock-legend { display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+                 padding:12px 18px; background:var(--background); border-bottom:1px solid var(--border);
+                 font-size:12.5px; color:var(--text-secondary); }
+  .mock-wrap { max-width:880px; margin:0 auto; padding:26px 18px 80px; }
+  .mock-opt-h { margin:34px 0 12px; font-size:14px; font-weight:800; letter-spacing:.04em;
+                text-transform:uppercase; color:var(--text-secondary);
+                border-top:2px dashed var(--border); padding-top:18px; }
+  .mock-opt-h:first-of-type { border-top:none; }
+  .mock-opt-h small { display:block; text-transform:none; letter-spacing:0; font-weight:500;
+                      font-size:12.5px; color:var(--text-secondary); margin-top:3px; }
+  /* The right-pane card the dossier lives in (emulates the cohorts detail panel). */
+  .mock-pane { background:var(--surface,#fff); border:1px solid var(--border);
+               border-radius:16px; padding:20px 22px; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+
+  /* ── NEW: entry-type tag (to be ported into cohorts.css later) ─────────── */
+  .cdx-tag { display:inline-flex; align-items:center; font-size:.64rem; font-weight:800;
+             text-transform:uppercase; letter-spacing:.04em; padding:.12rem .42rem;
+             border-radius:999px; border:1px solid transparent; white-space:nowrap; }
+  .cdx-tag--lista   { background:rgba(100,116,139,.14); color:#475569; border-color:rgba(100,116,139,.30); }
+  .cdx-tag--qr      { background:rgba(20,184,166,.15);  color:#0d9488; border-color:rgba(20,184,166,.35); }
+  .cdx-tag--aula    { background:rgba(99,102,241,.14);  color:#4f46e5; border-color:rgba(99,102,241,.32); }
+  .cdx-tag--manual  { background:rgba(22,163,74,.14);   color:#15803d; border-color:rgba(22,163,74,.32); }
+  .cdx-tag--pendente{ background:rgba(217,119,6,.14);   color:#b45309; border-color:rgba(217,119,6,.32); }
+  .cdx-tag--negado  { background:rgba(220,38,38,.12);   color:#b91c1c; border-color:rgba(220,38,38,.30); }
+  [data-theme="dark"] .cdx-tag--lista { color:#cbd5e1; }
+
+  /* ── NEW: participant row (one managed list) ──────────────────────────── */
+  .cdx-prow { display:flex; align-items:center; gap:.6rem; padding:.5rem .2rem;
+              border-bottom:1px solid var(--border); }
+  .cdx-prow:last-child { border-bottom:none; }
+  .cdx-prow-id { min-width:0; flex:1; }
+  .cdx-prow-name { font-size:.86rem; font-weight:600; color:var(--text-primary); }
+  .cdx-prow-name .warn { color:#b45309; font-weight:600; font-size:.74rem; margin-left:.35rem; }
+  .cdx-prow-mail { font-size:.74rem; color:var(--text-secondary); }
+  .cdx-prow-meta { display:flex; align-items:center; gap:.4rem; flex:0 0 auto; }
+  .cdx-prow-conn { font-size:.72rem; color:var(--text-secondary); white-space:nowrap; }
+  .cdx-prow-conn.ok { color:#15803d; }
+  .cdx-prow-acts { display:flex; gap:.3rem; flex:0 0 auto; }
+  .cdx-prow-acts .cdx-btn { padding:.2rem .5rem; font-size:.72rem; }
+
+  /* status filter chips (reuse the merged-list pattern) */
+  .cdx-pfilter { display:flex; gap:.35rem; flex-wrap:wrap; margin:.2rem 0 .7rem; }
+  .cdx-pchip { background:var(--background); border:1px solid var(--border); border-radius:999px;
+               padding:.18rem .6rem; font-size:.74rem; color:var(--text-secondary); cursor:pointer; }
+  .cdx-pchip.on { background:var(--cdx-chip-bg,rgba(20,184,166,.12)); border-color:var(--primary);
+                  color:var(--primary-dark); font-weight:700; }
+
+  /* collapsible dossier section via <details> */
+  details.cdx-doss-sec > summary { list-style:none; cursor:pointer; }
+  details.cdx-doss-sec > summary::-webkit-details-marker { display:none; }
+  details.cdx-doss-sec > summary .cdx-doss-sec-h { margin-bottom:0; }
+  details.cdx-doss-sec[open] > summary .cdx-doss-sec-h { margin-bottom:.6rem; }
+  .cdx-caret { transition:transform .15s; color:var(--text-secondary); font-size:.8rem; }
+  details[open] .cdx-caret { transform:rotate(90deg); }
+  .cdx-secount { font-size:.72rem; color:var(--text-secondary); font-weight:600;
+                 background:var(--background); border:1px solid var(--border);
+                 border-radius:999px; padding:.05rem .45rem; }
+
+  /* QR enrollment button (mirrors alunos.js) */
+  .mock-qr-hint { font-size:.78rem; color:var(--text-secondary); margin:.5rem 0 0; }
+  .mock-acc-row { display:flex; align-items:center; gap:.6rem; padding:.35rem 0; font-size:.86rem; color:var(--text-primary); }
+  .mock-acc-row select { font:inherit; padding:.25rem .4rem; border:1px solid var(--border); border-radius:8px; background:var(--surface,#fff); color:var(--text-primary); }
+  .mock-grp-h { display:flex; align-items:center; gap:.5rem; font-size:.78rem; font-weight:700;
+                color:var(--text-secondary); text-transform:uppercase; letter-spacing:.04em;
+                margin:.6rem 0 .2rem; }
+</style>
+</head>
+<body>
+
+<div class="mock-bar">
+  <b>Mock · Painel de Acesso da Turma</b>
+  <span>3 layouts — escolha um antes de eu mexer no <code>cohorts.js</code>. CSS é o real do admin (<code>/codex/…</code>).</span>
+  <span class="sp"></span>
+  <button id="themeBtn">🌙 / ☀️ tema</button>
+</div>
+
+<div class="mock-legend">
+  <span>Tags de entrada:</span>
+  <span class="cdx-tag cdx-tag--lista">Lista</span> <small>você pré-aprovou (roster)</small>
+  <span class="cdx-tag cdx-tag--qr">QR</span> <small>entrou pelo QR na aula</small>
+  <span class="cdx-tag cdx-tag--aula">Aula</span> <small>entrou na aula ao vivo</small>
+  <span class="cdx-tag cdx-tag--manual">Manual</span> <small>você aprovou depois</small>
+  <span class="cdx-tag cdx-tag--pendente">Pendente</span> <small>aguardando</small>
+  <span class="cdx-tag cdx-tag--negado">Negado</span>
+</div>
+
+<div class="mock-wrap">
+
+  <!-- ============================================================= -->
+  <!-- OPÇÃO A — Lista única + tags inline (mínimo aninhamento)      -->
+  <!-- ============================================================= -->
+  <h2 class="mock-opt-h">Opção A — Lista única, tags na linha
+    <small>O painel inteiro aberto. Uma lista só (pendentes no topo), filtro por status, a tag de entrada em cada linha. Menos cliques, mais rolagem.</small>
+  </h2>
+  <div class="mock-pane">
+    <div class="cdx-doss">
+      <!-- header (markup real do dossiê) -->
+      <div class="cdx-doss-head">
+        <div class="cdx-doss-headmain">
+          <input class="cdx-doss-title cdx-doss-title-edit cdx-doss-edit" type="text" value="TJSE · Turma 2025.1" aria-label="Nome interno">
+          <div class="cdx-doss-sub">Tribunal de Justiça de Sergipe · 4 encontros</div>
+        </div>
+        <div class="cdx-doss-headright">
+          <span class="cdx-doss-pill" style="--ph:#14b8a6">Em andamento</span>
+          <div class="cdx-doss-actions"><button class="cdx-btn cdx-btn-sm cdx-btn-danger">Arquivar</button></div>
+        </div>
+      </div>
+      <div class="cdx-doss-links">
+        <button type="button" class="cdx-doss-url">pensoia.com/trilha/tjse/turma-2025-1?k=ab12cd</button>
+        <a class="cdx-doss-urlbtn" title="Abrir">&#8599;</a>
+        <button type="button" class="cdx-doss-urlbtn" title="Gerar novo link">&#8635;</button>
+      </div>
+
+      <!-- Acesso da turma -->
+      <div class="cdx-doss-sec">
+        <div class="cdx-doss-sec-h"><b>Acesso da turma</b></div>
+        <label class="mock-acc-row"><input type="checkbox" checked> Acesso restrito (exige login)</label>
+        <label class="mock-acc-row">Modo
+          <select><option>Conteúdo visível, trava ao abrir</option><option>Tela de login antes de tudo</option></select>
+        </label>
+        <label class="mock-acc-row"><input type="checkbox" checked> Certificados habilitados</label>
+      </div>
+
+      <!-- Inscrição por QR -->
+      <div class="cdx-doss-sec">
+        <div class="cdx-doss-sec-h"><b>Inscrição por QR</b></div>
+        <button class="cdx-btn cdx-btn-primary">▦ &nbsp;Abrir QR de inscrição</button>
+        <p class="mock-qr-hint">Abra a inscrição durante a aula e projete o QR; quem ler entra na hora.</p>
+      </div>
+
+      <!-- Participantes -->
+      <div class="cdx-doss-sec">
+        <div class="cdx-doss-sec-h"><b>Participantes</b>
+          <span style="display:flex;gap:.4rem">
+            <button class="cdx-btn cdx-btn-sm">Pré-aprovar por e-mail</button>
+            <button class="cdx-btn cdx-btn-sm">Aprovar todos</button>
+          </span>
+        </div>
+        <div class="cdx-pfilter">
+          <span class="cdx-pchip on">Todos</span><span class="cdx-pchip">Pendentes</span>
+          <span class="cdx-pchip">Aprovados</span><span class="cdx-pchip">Negados</span>
+        </div>
+
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Ana Reis<span class="warn">⚠ não verif.</span></div><div class="cdx-prow-mail">ana@adv.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--pendente">Pendente</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn cdx-btn-primary">Aprovar</button><button class="cdx-btn">Negar</button><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">João Lima</div><div class="cdx-prow-mail">joao@tj.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--lista">Lista</span><span class="cdx-prow-conn">• aguardando login</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Maria Souza</div><div class="cdx-prow-mail">maria@tj.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--lista">Lista</span><span class="cdx-prow-conn ok">✓ conectou</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Revogar acesso</button><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Pedro Alves</div><div class="cdx-prow-mail">pedro@adv.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--qr">QR</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Revogar acesso</button><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Bruno Dias</div><div class="cdx-prow-mail">bruno@tj.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--aula">Aula</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Revogar acesso</button><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Clara Nunes</div><div class="cdx-prow-mail">clara@x.com</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--manual">Manual</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Revogar acesso</button><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Rui Pinto</div><div class="cdx-prow-mail">rui@x.com</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--negado">Negado</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn cdx-btn-primary">Reativar</button><button class="cdx-btn">Remover</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- OPÇÃO B — Seções colapsáveis por ORIGEM                       -->
+  <!-- ============================================================= -->
+  <h2 class="mock-opt-h">Opção B — Grupos colapsáveis por origem
+    <small>Pendentes em destaque no topo. Depois "Da sua lista" e "Entraram sozinhos", cada um recolhível com contagem. A tag continua na linha (como entrou/foi aprovado).</small>
+  </h2>
+  <div class="mock-pane">
+    <div class="cdx-doss">
+      <div class="cdx-doss-head">
+        <div class="cdx-doss-headmain">
+          <input class="cdx-doss-title cdx-doss-title-edit cdx-doss-edit" type="text" value="TJSE · Turma 2025.1">
+          <div class="cdx-doss-sub">Tribunal de Justiça de Sergipe · 4 encontros</div>
+        </div>
+        <div class="cdx-doss-headright">
+          <span class="cdx-doss-pill" style="--ph:#14b8a6">Em andamento</span>
+        </div>
+      </div>
+
+      <details class="cdx-doss-sec" open>
+        <summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret">▸</span> Acesso &amp; inscrição</b></div></summary>
+        <label class="mock-acc-row"><input type="checkbox" checked> Acesso restrito (exige login)</label>
+        <label class="mock-acc-row">Modo <select><option>Conteúdo visível, trava ao abrir</option><option>Tela de login antes de tudo</option></select> · <input type="checkbox" checked> Certificados</label>
+        <button class="cdx-btn cdx-btn-primary" style="margin-top:.5rem">▦ &nbsp;Abrir QR de inscrição</button>
+      </details>
+
+      <details class="cdx-doss-sec" open>
+        <summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret">▸</span> Pendentes</b><span class="cdx-secount">1</span></div></summary>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Ana Reis<span class="warn">⚠ não verif.</span></div><div class="cdx-prow-mail">ana@adv.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--qr">QR</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn cdx-btn-primary">Aprovar</button><button class="cdx-btn">Negar</button></div>
+        </div>
+      </details>
+
+      <details class="cdx-doss-sec" open>
+        <summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret">▸</span> Da sua lista (roster)</b><span class="cdx-secount">2</span>
+          <span style="margin-left:auto"><button class="cdx-btn cdx-btn-sm">Pré-aprovar por e-mail</button></span></div></summary>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">João Lima</div><div class="cdx-prow-mail">joao@tj.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-prow-conn">• aguardando login</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Maria Souza</div><div class="cdx-prow-mail">maria@tj.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-prow-conn ok">✓ conectou</span><span class="cdx-tag cdx-tag--aula">Aula</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Revogar</button><button class="cdx-btn">Remover</button></div>
+        </div>
+      </details>
+
+      <details class="cdx-doss-sec">
+        <summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret">▸</span> Entraram sozinhos</b><span class="cdx-secount">3</span></div></summary>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Pedro Alves</div><div class="cdx-prow-mail">pedro@adv.br</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--qr">QR</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Revogar</button><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Clara Nunes</div><div class="cdx-prow-mail">clara@x.com</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--manual">Manual</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn">Revogar</button><button class="cdx-btn">Remover</button></div>
+        </div>
+        <div class="cdx-prow">
+          <div class="cdx-prow-id"><div class="cdx-prow-name">Rui Pinto</div><div class="cdx-prow-mail">rui@x.com</div></div>
+          <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--negado">Negado</span></div>
+          <div class="cdx-prow-acts"><button class="cdx-btn cdx-btn-primary">Reativar</button><button class="cdx-btn">Remover</button></div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- OPÇÃO C — Blocos colapsáveis + filtro por TAG                 -->
+  <!-- ============================================================= -->
+  <h2 class="mock-opt-h">Opção C — Tudo recolhível + filtro por tag
+    <small>Cada bloco (Acesso, QR, Participantes) é um cartão recolhível para tirar a bagunça. Uma lista só, mas você filtra clicando nas próprias tags.</small>
+  </h2>
+  <div class="mock-pane">
+    <div class="cdx-doss">
+      <div class="cdx-doss-head">
+        <div class="cdx-doss-headmain">
+          <input class="cdx-doss-title cdx-doss-title-edit cdx-doss-edit" type="text" value="TJSE · Turma 2025.1">
+          <div class="cdx-doss-sub">Tribunal de Justiça de Sergipe · 4 encontros</div>
+        </div>
+        <div class="cdx-doss-headright"><span class="cdx-doss-pill" style="--ph:#14b8a6">Em andamento</span></div>
+      </div>
+
+      <details class="cdx-doss-sec">
+        <summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret">▸</span> Acesso da turma</b><span class="cdx-secount">restrito</span></div></summary>
+        <label class="mock-acc-row"><input type="checkbox" checked> Acesso restrito (exige login)</label>
+        <label class="mock-acc-row">Modo <select><option>Conteúdo visível, trava ao abrir</option><option>Tela de login antes de tudo</option></select></label>
+        <label class="mock-acc-row"><input type="checkbox" checked> Certificados habilitados</label>
+      </details>
+
+      <details class="cdx-doss-sec">
+        <summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret">▸</span> Inscrição por QR</b><span class="cdx-secount">fechada</span></div></summary>
+        <button class="cdx-btn cdx-btn-primary">▦ &nbsp;Abrir QR de inscrição</button>
+        <p class="mock-qr-hint">Abra a inscrição durante a aula e projete o QR; quem ler entra na hora.</p>
+      </details>
+
+      <details class="cdx-doss-sec" open>
+        <summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret">▸</span> Participantes</b><span class="cdx-secount">7</span>
+          <span style="margin-left:auto;display:flex;gap:.4rem"><button class="cdx-btn cdx-btn-sm">Pré-aprovar</button><button class="cdx-btn cdx-btn-sm">Aprovar todos</button></span></div></summary>
+        <div class="cdx-pfilter" id="tagFilter">
+          <span class="cdx-pchip on" data-t="all">Todos</span>
+          <span class="cdx-pchip" data-t="pendente"><span class="cdx-tag cdx-tag--pendente">Pendente</span></span>
+          <span class="cdx-pchip" data-t="lista"><span class="cdx-tag cdx-tag--lista">Lista</span></span>
+          <span class="cdx-pchip" data-t="qr"><span class="cdx-tag cdx-tag--qr">QR</span></span>
+          <span class="cdx-pchip" data-t="aula"><span class="cdx-tag cdx-tag--aula">Aula</span></span>
+          <span class="cdx-pchip" data-t="manual"><span class="cdx-tag cdx-tag--manual">Manual</span></span>
+          <span class="cdx-pchip" data-t="negado"><span class="cdx-tag cdx-tag--negado">Negado</span></span>
+        </div>
+        <div id="tagList">
+          <div class="cdx-prow" data-t="pendente">
+            <div class="cdx-prow-id"><div class="cdx-prow-name">Ana Reis<span class="warn">⚠ não verif.</span></div><div class="cdx-prow-mail">ana@adv.br</div></div>
+            <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--pendente">Pendente</span></div>
+            <div class="cdx-prow-acts"><button class="cdx-btn cdx-btn-primary">Aprovar</button><button class="cdx-btn">Negar</button></div>
+          </div>
+          <div class="cdx-prow" data-t="lista">
+            <div class="cdx-prow-id"><div class="cdx-prow-name">João Lima</div><div class="cdx-prow-mail">joao@tj.br</div></div>
+            <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--lista">Lista</span><span class="cdx-prow-conn">• aguardando</span></div>
+            <div class="cdx-prow-acts"><button class="cdx-btn">Remover</button></div>
+          </div>
+          <div class="cdx-prow" data-t="lista">
+            <div class="cdx-prow-id"><div class="cdx-prow-name">Maria Souza</div><div class="cdx-prow-mail">maria@tj.br</div></div>
+            <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--lista">Lista</span><span class="cdx-prow-conn ok">✓ conectou</span></div>
+            <div class="cdx-prow-acts"><button class="cdx-btn">Revogar</button><button class="cdx-btn">Remover</button></div>
+          </div>
+          <div class="cdx-prow" data-t="qr">
+            <div class="cdx-prow-id"><div class="cdx-prow-name">Pedro Alves</div><div class="cdx-prow-mail">pedro@adv.br</div></div>
+            <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--qr">QR</span></div>
+            <div class="cdx-prow-acts"><button class="cdx-btn">Revogar</button><button class="cdx-btn">Remover</button></div>
+          </div>
+          <div class="cdx-prow" data-t="aula">
+            <div class="cdx-prow-id"><div class="cdx-prow-name">Bruno Dias</div><div class="cdx-prow-mail">bruno@tj.br</div></div>
+            <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--aula">Aula</span></div>
+            <div class="cdx-prow-acts"><button class="cdx-btn">Revogar</button><button class="cdx-btn">Remover</button></div>
+          </div>
+          <div class="cdx-prow" data-t="manual">
+            <div class="cdx-prow-id"><div class="cdx-prow-name">Clara Nunes</div><div class="cdx-prow-mail">clara@x.com</div></div>
+            <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--manual">Manual</span></div>
+            <div class="cdx-prow-acts"><button class="cdx-btn">Revogar</button><button class="cdx-btn">Remover</button></div>
+          </div>
+          <div class="cdx-prow" data-t="negado">
+            <div class="cdx-prow-id"><div class="cdx-prow-name">Rui Pinto</div><div class="cdx-prow-mail">rui@x.com</div></div>
+            <div class="cdx-prow-meta"><span class="cdx-tag cdx-tag--negado">Negado</span></div>
+            <div class="cdx-prow-acts"><button class="cdx-btn cdx-btn-primary">Reativar</button><button class="cdx-btn">Remover</button></div>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Mock-only interactivity: theme toggle + the Opção-C tag filter.
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const h = document.documentElement;
+    h.dataset.theme = h.dataset.theme === 'dark' ? 'light' : 'dark';
+  });
+  const tf = document.getElementById('tagFilter'), tl = document.getElementById('tagList');
+  if (tf && tl) tf.addEventListener('click', (e) => {
+    const chip = e.target.closest('.cdx-pchip'); if (!chip) return;
+    tf.querySelectorAll('.cdx-pchip').forEach((c) => c.classList.toggle('on', c === chip));
+    const t = chip.dataset.t;
+    tl.querySelectorAll('.cdx-prow').forEach((r) => { r.style.display = (t === 'all' || r.dataset.t === t) ? '' : 'none'; });
+  });
+</script>
+</body>
+</html>
