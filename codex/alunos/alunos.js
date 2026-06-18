@@ -15,6 +15,8 @@ let _viewEl = null;
 let _turmas = [];
 let _current = null; // the selected turma row (from ct_list_all_turmas)
 let _enrollTimer = null; // the live-countdown interval for the open enrollment window
+let _participants = [];  // the loaded roster for the selected turma (one list, filtered client-side)
+let _filter = 'all';     // students-list filter: all | pending | approved | denied
 
 function clearEnrollTimer() { if (_enrollTimer) { clearInterval(_enrollTimer); _enrollTimer = null; } }
 
@@ -72,10 +74,9 @@ async function loadTurma() {
 
 function render(participants) {
   clearEnrollTimer();
-  const pending = participants.filter((p) => p.access_status === 'pending');
-  body().innerHTML = settingsCard() + enrollmentCard() + queueCard(pending) + studentsCard(participants) + rosterCard();
+  _participants = participants;
+  body().innerHTML = settingsCard() + enrollmentCard() + studentsCard() + rosterCard();
   wireSettings();
-  wireQueue();
   wireStudents();
   wireRoster();
   loadEnrollment();
@@ -186,82 +187,103 @@ function renderEnrollBox(box, res) {
   _enrollTimer = setInterval(tick, 1000);
 }
 
-// ── Approval queue (signal d) ────────────────────────────────────────────────
-function queueCard(pending) {
-  if (!pending.length) {
-    return '<section class="cdx-alunos-card"><h2>' + esc(t('alunos.queue')) + '</h2><p class="cdx-alunos-empty">' + esc(t('alunos.queue_empty')) + '</p></section>';
-  }
-  const rows = pending.map((p) =>
-    '<li class="cdx-al-qrow" data-id="' + p.id + '">' +
-      '<span class="cdx-al-name">' + esc(p.display_name || p.name || p.email || ('#' + p.id)) + '</span>' +
-      '<span class="cdx-al-email">' + esc(p.email || '') + '</span>' +
-      '<span class="cdx-al-qact">' +
-        '<button type="button" class="cdx-btn cdx-al-approve">' + esc(t('alunos.approve')) + '</button>' +
-        '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-deny">' + esc(t('alunos.deny')) + '</button>' +
-      '</span>' +
-    '</li>').join('');
-  return '<section class="cdx-alunos-card"><h2>' + esc(t('alunos.queue')) + ' (' + pending.length + ')</h2>' +
-    '<button type="button" class="cdx-btn cdx-al-approve-all">' + esc(t('alunos.approve_all')) + '</button>' +
-    '<ul class="cdx-al-list">' + rows + '</ul></section>';
-}
-function wireQueue() {
-  const all = body().querySelector('.cdx-al-approve-all');
-  if (all) all.addEventListener('click', async () => {
-    const ids = [...body().querySelectorAll('.cdx-al-qrow')].map((li) => Number(li.dataset.id));
-    if (!ids.length) return;
-    all.disabled = true;
-    body().querySelectorAll('.cdx-al-approve, .cdx-al-deny').forEach((b) => { b.disabled = true; });
-    await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'approved', origin: _origin() }));
-    loadTurma();
-  });
-  body().querySelectorAll('.cdx-al-qrow').forEach((li) => {
-    const id = Number(li.dataset.id);
-    const ap = li.querySelector('.cdx-al-approve');
-    const dn = li.querySelector('.cdx-al-deny');
-    if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'approved', origin: _origin() })); loadTurma(); });
-    if (dn) dn.addEventListener('click', async () => { dn.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'denied' })); loadTurma(); });
-  });
-}
+// ── Students (one list: pending on top, status filters, inline approve/deny/revoke) ──
+// Elder's call: no separate approval queue. A single roster, pending sorted first, with a
+// filter bar on top and per-row actions by status, so the instructor manages everyone in
+// one place. The list filters client-side (no refetch); actions reload the turma.
+const _STATUS_RANK = { pending: 0, approved: 1, denied: 2 };
 
-// ── Students list (status + session revocation) ──────────────────────────────
 function statusBadge(p) {
   const s = p.access_status || 'pending';
   return '<span class="cdx-al-badge cdx-al-badge--' + s + '">' + esc(t('alunos.status_' + s)) + '</span>';
 }
-function studentsCard(participants) {
-  if (!participants.length) {
-    return '<section class="cdx-alunos-card"><h2>' + esc(t('alunos.students')) + '</h2><p class="cdx-alunos-empty">' + esc(t('alunos.students_empty')) + '</p></section>';
-  }
-  const rows = participants.map((p) => {
-    const online = (p.active_sessions || 0) > 0;
-    const via = p.approved_via ? '<span class="cdx-al-via">' + esc(t('alunos.via_' + p.approved_via)) + '</span>' : '<span class="cdx-al-via"></span>';
-    // An email taken on trust (QR join / self-registration) is flagged until the student
-    // clicks a magic link; the instructor can spot and fix typos in the room.
-    const unv = (p.email && !p.email_verified) ? ' <span class="cdx-al-unverified" title="' + esc(t('alunos.unverified')) + '">⚠</span>' : '';
-    return '<li class="cdx-al-srow" data-id="' + p.id + '">' +
-      '<span class="cdx-al-name">' + esc(p.display_name || p.name || ('#' + p.id)) +
-        (online ? ' <span class="cdx-al-online" title="' + esc(t('alunos.online')) + '">●</span>' : '') + '</span>' +
-      '<span class="cdx-al-email">' + esc(p.email || '') + unv + '</span>' +
-      statusBadge(p) + via +
-      '<span class="cdx-al-sact">' +
-        ((p.access_status === 'approved') ? '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-revoke">' + esc(t('alunos.revoke')) + '</button>' : '') +
-        '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-remove">' + esc(t('alunos.remove')) + '</button>' +
-      '</span>' +
-    '</li>';
-  }).join('');
-  return '<section class="cdx-alunos-card"><h2>' + esc(t('alunos.students')) + ' (' + participants.length + ')</h2>' +
-    '<ul class="cdx-al-list cdx-al-students">' + rows + '</ul></section>';
+
+function studentsCard() {
+  const pendingCount = _participants.filter((p) => (p.access_status || 'pending') === 'pending').length;
+  const filters = ['all', 'pending', 'approved', 'denied'].map((f) =>
+    '<button type="button" class="cdx-al-filter' + (f === _filter ? ' is-active' : '') + '" data-filter="' + f + '">' +
+      esc(t('alunos.filter_' + f)) + (f === 'pending' && pendingCount ? ' (' + pendingCount + ')' : '') + '</button>').join('');
+  return '<section class="cdx-alunos-card"><h2>' + esc(t('alunos.students')) + ' (' + _participants.length + ')</h2>' +
+    '<div class="cdx-al-filters">' + filters +
+      (pendingCount ? '<button type="button" class="cdx-btn cdx-al-approve-all">' + esc(t('alunos.approve_all')) + '</button>' : '') +
+    '</div>' +
+    '<ul class="cdx-al-list cdx-al-students" id="cdx-al-students-list"></ul></section>';
 }
+
+function _sortedFiltered() {
+  let list = _participants.slice();
+  if (_filter !== 'all') list = list.filter((p) => (p.access_status || 'pending') === _filter);
+  list.sort((a, b) => {
+    const ra = _STATUS_RANK[a.access_status || 'pending'] ?? 9;
+    const rb = _STATUS_RANK[b.access_status || 'pending'] ?? 9;
+    if (ra !== rb) return ra - rb; // pending first
+    return String(a.display_name || a.name || '').localeCompare(String(b.display_name || b.name || ''));
+  });
+  return list;
+}
+
+function studentRow(p) {
+  const st = p.access_status || 'pending';
+  const online = (p.active_sessions || 0) > 0;
+  const via = p.approved_via ? '<span class="cdx-al-via">' + esc(t('alunos.via_' + p.approved_via)) + '</span>' : '<span class="cdx-al-via"></span>';
+  // An email taken on trust (QR join / self-registration) is flagged until the student
+  // clicks a magic link; the instructor can spot and fix typos in the room.
+  const unv = (p.email && !p.email_verified) ? ' <span class="cdx-al-unverified" title="' + esc(t('alunos.unverified')) + '">⚠</span>' : '';
+  let actions = '';
+  if (st === 'pending' || st === 'denied') actions += '<button type="button" class="cdx-btn cdx-al-approve">' + esc(t('alunos.approve')) + '</button>';
+  if (st === 'pending') actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-deny">' + esc(t('alunos.deny')) + '</button>';
+  if (st === 'approved') actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-revoke">' + esc(t('alunos.revoke')) + '</button>';
+  actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-remove">' + esc(t('alunos.remove')) + '</button>';
+  return '<li class="cdx-al-srow" data-id="' + p.id + '">' +
+    '<span class="cdx-al-name">' + esc(p.display_name || p.name || ('#' + p.id)) +
+      (online ? ' <span class="cdx-al-online" title="' + esc(t('alunos.online')) + '">●</span>' : '') + '</span>' +
+    '<span class="cdx-al-email">' + esc(p.email || '') + unv + '</span>' +
+    statusBadge(p) + via +
+    '<span class="cdx-al-sact">' + actions + '</span>' +
+  '</li>';
+}
+
+function paintStudents() {
+  const ul = body() && body().querySelector('#cdx-al-students-list');
+  if (!ul) return;
+  const list = _sortedFiltered();
+  ul.innerHTML = list.length
+    ? list.map(studentRow).join('')
+    : '<li class="cdx-alunos-empty">' + esc(t('alunos.students_empty')) + '</li>';
+  wireStudentRows();
+}
+
 function wireStudents() {
+  body().querySelectorAll('.cdx-al-filter').forEach((b) => {
+    b.addEventListener('click', () => {
+      _filter = b.dataset.filter;
+      body().querySelectorAll('.cdx-al-filter').forEach((x) => x.classList.toggle('is-active', x === b));
+      paintStudents();
+    });
+  });
+  const all = body().querySelector('.cdx-al-approve-all');
+  if (all) all.addEventListener('click', async () => {
+    const ids = _participants.filter((p) => (p.access_status || 'pending') === 'pending').map((p) => p.id);
+    if (!ids.length) return;
+    all.disabled = true;
+    await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'approved', origin: _origin() }));
+    loadTurma();
+  });
+  paintStudents();
+}
+
+function wireStudentRows() {
   body().querySelectorAll('.cdx-al-srow').forEach((li) => {
     const id = Number(li.dataset.id);
+    const ap = li.querySelector('.cdx-al-approve');
+    const dn = li.querySelector('.cdx-al-deny');
     const rv = li.querySelector('.cdx-al-revoke');
     const rm = li.querySelector('.cdx-al-remove');
-    // Revoke = flip access_status back to pending. The content gate reads status
-    // live, so this cuts access immediately; a session-only kill (the old wiring)
-    // left status='approved', so the next login auto-re-approved via the roster path.
+    if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'approved', origin: _origin() })); loadTurma(); });
+    if (dn) dn.addEventListener('click', async () => { dn.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'denied' })); loadTurma(); });
+    // Revoke = flip access_status back to pending (the gate reads it live; the worker also
+    // cuts live sessions, so the student is logged out on their next page load).
     if (rv) rv.addEventListener('click', async () => { rv.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'pending' })); loadTurma(); });
-    // Remove = delete the participant row entirely (clean re-test with the same email).
     if (rm) rm.addEventListener('click', async () => {
       if (typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
       rm.disabled = true; await safe(() => api.deleteParticipant({ id })); loadTurma();

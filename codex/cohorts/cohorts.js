@@ -574,7 +574,10 @@ function _copyUrl(url) {
 // ── Turma form ────────────────────────────────────────────────────────────────
 
 const _TF_FORMATS = ['presencial', 'online', 'hibrido'];
-const _TF_MODALITIES = ['fechada', 'aberta'];
+// Modality = delivery mode (Elder: every turma is in-company; the old open/closed
+// distinction is gone). The cert renders this as the modality field. The legacy
+// fechada/aberta i18n keys are kept so existing turmas still render their stored value.
+const _TF_MODALITIES = ['presencial', 'hibrida', 'virtual'];
 
 function _openTurmaForm(turma) {
   const isEdit = !!turma;

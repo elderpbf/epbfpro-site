@@ -69,7 +69,7 @@ export async function mount(root, ctx = {}) {
       if (_win) _win.addEventListener('hashchange', _onHash);
       onHashChange();
     }
-    if (LOGIN_ENABLED) { claimPresence(); if (!handleEnrollReturn(loc)) handleMagicReturn(loc); }
+    if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); if (!handleEnrollReturn(loc)) handleMagicReturn(loc); }
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
@@ -144,6 +144,19 @@ function buildLoginPill() {
 function refreshLoginPill() {
   if (_loginPill) {
     _loginPill.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
+  }
+}
+
+// Re-check auth on every page open. If we hold a session token but the server no longer
+// recognizes it (revoked/expired -> the gated turma view comes back 'anonymous'), clear
+// the stale token so the UI reflects logout and dead tokens stop being sent. Revocation
+// from the Alunos admin thus takes full effect on the student's next load. (Inert on open
+// turmas, which are never gated, and on a 'pending' student, whose session is still valid.)
+function recheckAuth() {
+  const access = (state.data || {}).access || {};
+  if (access.gated && access.status === 'anonymous' && isLoggedIn(state.clientSlug, state.turmaSlug)) {
+    clearToken(state.clientSlug, state.turmaSlug);
+    refreshLoginPill();
   }
 }
 

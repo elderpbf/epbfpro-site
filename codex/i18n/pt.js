@@ -58,6 +58,10 @@ export default {
   'alunos.enroll_hint_open':  'Mostre o QR na tela. Quem ler durante este tempo entra na hora, sem aprovação manual.',
   'alunos.enroll_hint_closed':'Abra a inscrição durante a aula e projete o QR para os alunos entrarem na hora.',
   'alunos.unverified':        'E-mail não verificado',
+  'alunos.filter_all':        'Todos',
+  'alunos.filter_pending':    'Pendentes',
+  'alunos.filter_approved':   'Aprovados',
+  'alunos.filter_denied':     'Negados',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Conexão perdida.',
@@ -176,6 +180,9 @@ export default {
   'cohorts.fmt_presencial':       'Presencial',
   'cohorts.fmt_online':           'Online',
   'cohorts.fmt_hibrido':          'Híbrido',
+  'cohorts.mod_presencial':       'Presencial',
+  'cohorts.mod_hibrida':          'Híbrida',
+  'cohorts.mod_virtual':          'Virtual',
   'cohorts.mod_fechada':          'Turma fechada (in-company)',
   'cohorts.mod_aberta':           'Turma aberta',
   // Turma dossier (Concept A right pane)

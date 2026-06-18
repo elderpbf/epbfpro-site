@@ -46,6 +46,16 @@
 .cdx-al-enroll-rem { font-variant-numeric: tabular-nums; }
 .cdx-al-unverified { color: var(--warn, #e0a800); cursor: help; }
 
+/* Students filter bar */
+.cdx-al-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.5rem 0 0.25rem; }
+.cdx-al-filter {
+  background: none; border: 1px solid var(--border); color: var(--text-secondary, #666);
+  border-radius: 999px; padding: 0.28rem 0.8rem; font: inherit; font-size: 0.82rem; cursor: pointer;
+}
+.cdx-al-filter:hover { color: var(--text-primary, #111); }
+.cdx-al-filter.is-active { background: var(--accent, #14b8a6); border-color: var(--accent, #14b8a6); color: #fff; }
+.cdx-al-approve-all { margin-left: auto; }
+
 .cdx-al-badge {
   display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px;
   font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;

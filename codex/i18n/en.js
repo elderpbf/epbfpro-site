@@ -59,6 +59,10 @@ export default {
   'alunos.enroll_hint_open':  'Show the QR on screen. Anyone who scans it during this time gets in instantly, no manual approval.',
   'alunos.enroll_hint_closed':'Open enrollment during class and project the QR so students join on the spot.',
   'alunos.unverified':        'Email not verified',
+  'alunos.filter_all':        'All',
+  'alunos.filter_pending':    'Pending',
+  'alunos.filter_approved':   'Approved',
+  'alunos.filter_denied':     'Denied',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Connection lost.',
@@ -177,6 +181,9 @@ export default {
   'cohorts.fmt_presencial':       'In person',
   'cohorts.fmt_online':           'Online',
   'cohorts.fmt_hibrido':          'Hybrid',
+  'cohorts.mod_presencial':       'In person',
+  'cohorts.mod_hibrida':          'Hybrid',
+  'cohorts.mod_virtual':          'Virtual',
   'cohorts.mod_fechada':          'Closed cohort (in-company)',
   'cohorts.mod_aberta':           'Open cohort',
   // Turma dossier (Concept A right pane)
