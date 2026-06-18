@@ -930,6 +930,7 @@ export default {
   'questions.host_bank_reorder_hint':    'Drag questions to change the bank order (applies to future sessions).',
   'questions.host_bank_set_label':       'Set',
   'questions.host_bank_launch':          'Launch',
+  'questions.host_already_applied':      'already applied',
   'questions.host_bank_edit':            'Edit',
   'questions.host_bank_answer':          'answer',
   'questions.host_bank_class_generic':   'Generic',

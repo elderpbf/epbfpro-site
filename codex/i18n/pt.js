@@ -929,6 +929,7 @@ export default {
   'questions.host_bank_reorder_hint':    'Arraste as questões para mudar a ordem do banco (vale para as próximas sessões).',
   'questions.host_bank_set_label':       'Conjunto',
   'questions.host_bank_launch':          'Lançar',
+  'questions.host_already_applied':      'já aplicada',
   'questions.host_bank_edit':            'Editar',
   'questions.host_bank_answer':          'resposta',
   'questions.host_bank_class_generic':   'Genérica',

@@ -88,7 +88,8 @@ export const questions = {
   deleteSession:   (p) => call('delete_session', p),           // { code } -> cascade-deletes answers + questions + student_questions + the session row
   renameSession:   (p) => call('rename_session', p),           // { code, title } -> updates the session title
   // Live polling
-  launchQuestion:  (p) => call('launch_question', p),          // { session_code, text, options, correct_answer?, type?, max_select? } -> { id }
+  launchQuestion:  (p) => call('launch_question', p),          // { session_code, text, options, correct_answer?, type?, max_select?, bank_id? } -> { id }
+  launchedBankIds: (p) => call('launched_bank_ids', p),        // { session_code } -> { ids } (bank questions already applied — worker c)
   closeQuestion:   (p) => call('close_question', p),           // { id, show_results?, reveal_answer? }
   deleteSessionQuestion: (p) => call('delete_session_question', p), // { id } -> delete one launched question + its answers (drops it from history AND stats)
   setVisibility:   (p) => call('set_question_visibility', p),  // { id, session_code, show_results }

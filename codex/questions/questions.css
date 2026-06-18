@@ -919,6 +919,11 @@
 .cdx-bank-item.is-open .cdx-bank-chevron { transform: rotate(90deg); }
 .cdx-bank-item-text { font-size: 0.84rem; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cdx-bank-item.is-open .cdx-bank-item-text { white-space: normal; overflow: visible; }
+/* worker c: a bank question already applied in this turma — greyed, with a small
+   badge. Still launchable (a deliberate re-ask is allowed). */
+.cdx-bank-item.is-applied { opacity: 0.6; }
+.cdx-bank-item.is-applied:hover { opacity: 0.85; }
+.cdx-bank-applied { display: inline-block; margin-left: 0.4rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--primary-dark); white-space: nowrap; }
 /* Row actions are compact glyph buttons (✎ Editar, ▶ Lançar). */
 .cdx-iconbtn { flex-shrink: 0; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text-secondary); font-size: 0.9rem; line-height: 1; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
 .cdx-iconbtn:hover { border-color: var(--primary); color: var(--text-primary); }

@@ -56,6 +56,7 @@ let _bankSetName = '';        // currently loaded conjunto (empty = none picked 
 let _bankRaw = [];            // raw questions for the loaded set (audience/type filtered client-side)
 let _bankReorder = false;     // reorder-mode toggle: drag bank rows to persist a new order
 let _bankDragId = null;       // question id being dragged while reordering
+let _launchedBankIds = new Set(); // bank question ids already applied in this session/turma (worker c)
 let _trailTurma = null;
 let _trailAllTurmas = [];
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
@@ -892,7 +893,19 @@ async function _loadBankQuestions(listName) {
   let res;
   try { res = await api.getQuestions({ list_name: _bankSetName }); } catch (e) { notice.internal(e); res = null; }
   _bankRaw = (res && res.questions) || [];
+  await _loadLaunchedBankIds();
   _renderBankList();
+}
+
+// worker c: load the bank ids already applied in this session/turma, so the picker
+// can mark them "já aplicada". Best-effort: a failure just leaves the set empty.
+async function _loadLaunchedBankIds() {
+  _launchedBankIds = new Set();
+  if (!_session || !_session.code) return;
+  try {
+    const res = await api.launchedBankIds({ session_code: _session.code });
+    (res && res.ids || []).forEach((id) => _launchedBankIds.add(String(id)));
+  } catch (_) { /* non-fatal: no marker rather than a broken picker */ }
 }
 
 // Render the cached set under the current audience + type filters. bankVisible
@@ -915,11 +928,16 @@ function _renderBankList() {
     // (the raw template stays in _bankMap for launch). Editar opens the composer.
     const resolved = resolveQuestion(q, vals);
     const cls = questionType(q);
-    return '<div class="cdx-bank-item' + (_bankReorder ? ' is-reordering' : '') + '" data-bank-i="' + i + '" data-qid="' + _esc(q.id) + '"' + (_bankReorder ? ' draggable="true"' : '') + '>' +
+    // worker c: mark questions already applied in this turma (greyed + a small badge),
+    // so the teacher doesn't re-ask one. Still launchable (a re-ask is allowed).
+    const applied = _launchedBankIds.has(String(q.id));
+    return '<div class="cdx-bank-item' + (_bankReorder ? ' is-reordering' : '') + (applied ? ' is-applied' : '') + '" data-bank-i="' + i + '" data-qid="' + _esc(q.id) + '"' + (_bankReorder ? ' draggable="true"' : '') + '>' +
       '<div class="cdx-bank-item-head">' +
         '<span class="cdx-bank-chevron" aria-hidden="true">▸</span>' +
         '<span class="cdx-bank-glyph cdx-bank-glyph-' + cls + '" aria-hidden="true">' + _CLASS_GLYPH[cls] + '</span>' +
-        '<span class="cdx-bank-item-text">' + _esc(resolved.question) + '</span>' +
+        '<span class="cdx-bank-item-text">' + _esc(resolved.question) +
+          (applied ? ' <span class="cdx-bank-applied">' + _esc(t('questions.host_already_applied')) + '</span>' : '') +
+        '</span>' +
         '<button class="cdx-iconbtn cdx-bank-edit" data-act="bank-edit" data-bank-i="' + i + '" type="button" title="' + _esc(t('questions.host_bank_edit')) + '" aria-label="' + _esc(t('questions.host_bank_edit')) + '">✎</button>' +
         '<button class="cdx-iconbtn cdx-iconbtn-go cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button" title="' + _esc(t('questions.host_bank_launch')) + '" aria-label="' + _esc(t('questions.host_bank_launch')) + '">▶</button>' +
       '</div>' +
@@ -995,10 +1013,15 @@ async function _launchFromBank(q) {
   // correct_answers array; reading only the scalar dropped it on relaunch, so a
   // closed question couldn't highlight on reveal.
   const payload = { session_code: _session.code, type: q.type || 'mc', text: r.question, options: opts,
-    correct_answer: correctForLaunch(q) };
+    correct_answer: correctForLaunch(q), bank_id: q.id };
   if (TEXT_TYPES.includes(q.type)) payload.max_select = 0;
   else payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select, 10) : 1;
-  try { await api.launchQuestion(payload); if (_qEl) _qEl.startPolling(); } catch (e) { notice.internal(e); }
+  try {
+    await api.launchQuestion(payload);
+    if (_qEl) _qEl.startPolling();
+    // Optimistically mark it applied so the "já aplicada" badge shows at once.
+    if (q.id != null) { _launchedBankIds.add(String(q.id)); _renderBankList(); }
+  } catch (e) { notice.internal(e); }
 }
 
 // ── Layout (port of host-layout.js) ──────────────────────────
