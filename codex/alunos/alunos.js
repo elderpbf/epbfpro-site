@@ -146,13 +146,28 @@ async function loadEnrollment() {
 function renderEnrollBox(box, res) {
   clearEnrollTimer();
   if (!res.open) {
+    // Closed: ONE QR button. It mints a window and opens the QR straight away
+    // (mint-if-none), so there is no separate "open enrollment" then "show QR" step.
     box.innerHTML =
-      '<p class="cdx-alunos-hint">' + esc(t('alunos.enroll_hint_closed')) + '</p>' +
-      '<button type="button" class="cdx-btn cdx-btn-primary cdx-al-enroll-open">' + esc(t('alunos.enroll_open_btn')) + '</button>';
-    const ob = box.querySelector('.cdx-al-enroll-open');
-    ob.addEventListener('click', async () => {
-      ob.disabled = true;
-      await safe(() => api.openEnrollment({ client_slug: _current.client_slug, slug: _current.turma_slug }));
+      '<div class="cdx-al-enroll-actions">' +
+        '<button type="button" class="cdx-btn cdx-btn-primary cdx-al-enroll-qr">' +
+          '<span class="cdx-al-qrglyph" aria-hidden="true">▦</span> ' + esc(t('alunos.enroll_open_btn')) +
+        '</button>' +
+      '</div>' +
+      '<p class="cdx-alunos-hint">' + esc(t('alunos.enroll_hint_closed')) + '</p>';
+    const qb = box.querySelector('.cdx-al-enroll-qr');
+    qb.addEventListener('click', async () => {
+      qb.disabled = true;
+      const opened = await safe(() => api.openEnrollment({ client_slug: _current.client_slug, slug: _current.turma_slug }));
+      if (opened && opened.ok) {
+        qr.open({
+          joinUrl: enrollUrl(
+            (typeof location !== 'undefined' && location.origin) ? location.origin : '',
+            _current.client_slug, _current.turma_slug, opened.turma_token, opened.enrollment_token,
+          ),
+          title: t('alunos.enroll_qr_title'),
+        });
+      }
       loadEnrollment();
     });
     return;
@@ -162,6 +177,7 @@ function renderEnrollBox(box, res) {
     (typeof location !== 'undefined' && location.origin) ? location.origin : '',
     _current.client_slug, _current.turma_slug, res.turma_token, res.enrollment_token,
   );
+  // Open: the SAME QR button re-opens the QR and carries the remaining time on it.
   box.innerHTML =
     '<p class="cdx-al-enroll-on"><span class="cdx-al-enroll-dot" aria-hidden="true">●</span> ' + esc(t('alunos.enroll_open')) + '</p>' +
     '<div class="cdx-al-enroll-actions">' +
