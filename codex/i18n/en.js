@@ -51,6 +51,13 @@ export default {
   'alunos.roster_go':    'Pre-approve',
   'alunos.roster_none':  'Enter at least one email.',
   'alunos.roster_done':  'Emails pre-approved.',
+  'alunos.enroll':            'QR enrollment',
+  'alunos.enroll_open':       'Enrollment open',
+  'alunos.enroll_open_btn':   'Open enrollment',
+  'alunos.enroll_close':      'Close',
+  'alunos.enroll_qr_title':   'Join the class',
+  'alunos.enroll_hint_open':  'Show the QR on screen. Anyone who scans it during this time gets in instantly, no manual approval.',
+  'alunos.enroll_hint_closed':'Open enrollment during class and project the QR so students join on the spot.',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Connection lost.',

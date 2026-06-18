@@ -8,10 +8,15 @@
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { cohorts as api } from '../js/codex-api.js';
+import { clockOffset, remainingSec, fmtRemain, enrollUrl } from './enroll-clock.js';
+import * as qr from '../js/qr-share-modal.js';
 
 let _viewEl = null;
 let _turmas = [];
 let _current = null; // the selected turma row (from ct_list_all_turmas)
+let _enrollTimer = null; // the live-countdown interval for the open enrollment window
+
+function clearEnrollTimer() { if (_enrollTimer) { clearInterval(_enrollTimer); _enrollTimer = null; } }
 
 export function mount(viewEl) {
   _viewEl = viewEl;
@@ -36,6 +41,7 @@ export function mount(viewEl) {
 }
 
 export function unmount() {
+  clearEnrollTimer();
   _viewEl = null; _turmas = []; _current = null;
 }
 
@@ -55,6 +61,7 @@ async function loadTurmas(sel) {
 }
 
 async function loadTurma() {
+  clearEnrollTimer();
   body().innerHTML = '<p class="cdx-alunos-empty">' + esc(t('alunos.loading')) + '</p>';
   const res = await safe(() => api.listParticipants({ turma_id: _current.id }));
   if (!res) { body().innerHTML = '<p class="cdx-alunos-error">' + esc(t('alunos.load_error')) + '</p>'; return; }
@@ -62,12 +69,14 @@ async function loadTurma() {
 }
 
 function render(participants) {
+  clearEnrollTimer();
   const pending = participants.filter((p) => p.access_status === 'pending');
-  body().innerHTML = settingsCard() + queueCard(pending) + studentsCard(participants) + rosterCard();
+  body().innerHTML = settingsCard() + enrollmentCard() + queueCard(pending) + studentsCard(participants) + rosterCard();
   wireSettings();
   wireQueue();
   wireStudents();
   wireRoster();
+  loadEnrollment();
 }
 
 // ── Access settings (per-turma switches) ─────────────────────────────────────
@@ -109,6 +118,70 @@ function wireSettings() {
     } else { msg.textContent = t('alunos.save_error'); }
     save.disabled = false;
   });
+}
+
+// ── QR enrollment window (signal a/b, instructor-controlled) ──────────────────
+// Open a time-boxed window and project a QR; scanning it auto-approves the scanner.
+// The countdown is anchored to the server expiry (enroll-clock.js) and the card
+// re-validates against the server, so it is never a silent client-only timer.
+function enrollmentCard() {
+  return '<section class="cdx-alunos-card cdx-al-enroll"><h2>' + esc(t('alunos.enroll')) + '</h2>' +
+    '<div class="cdx-al-enroll-body"><p class="cdx-alunos-empty">' + esc(t('alunos.loading')) + '</p></div></section>';
+}
+
+async function loadEnrollment() {
+  clearEnrollTimer();
+  const card = body() && body().querySelector('.cdx-al-enroll-body');
+  if (!card || !_current) return;
+  const res = await safe(() => api.getEnrollment({ client_slug: _current.client_slug, slug: _current.turma_slug }));
+  const box = body() && body().querySelector('.cdx-al-enroll-body');
+  if (!box) return;
+  if (!res || !res.ok) { box.innerHTML = '<p class="cdx-alunos-error">' + esc(t('alunos.load_error')) + '</p>'; return; }
+  renderEnrollBox(box, res);
+}
+
+function renderEnrollBox(box, res) {
+  clearEnrollTimer();
+  if (!res.open) {
+    box.innerHTML =
+      '<p class="cdx-alunos-hint">' + esc(t('alunos.enroll_hint_closed')) + '</p>' +
+      '<button type="button" class="cdx-btn cdx-btn-primary cdx-al-enroll-open">' + esc(t('alunos.enroll_open_btn')) + '</button>';
+    const ob = box.querySelector('.cdx-al-enroll-open');
+    ob.addEventListener('click', async () => {
+      ob.disabled = true;
+      await safe(() => api.openEnrollment({ client_slug: _current.client_slug, slug: _current.turma_slug }));
+      loadEnrollment();
+    });
+    return;
+  }
+  const offset = clockOffset(res.now, Math.floor(Date.now() / 1000));
+  const joinUrl = enrollUrl(
+    (typeof location !== 'undefined' && location.origin) ? location.origin : '',
+    _current.client_slug, _current.turma_slug, res.turma_token, res.enrollment_token,
+  );
+  box.innerHTML =
+    '<p class="cdx-al-enroll-on"><span class="cdx-al-enroll-dot" aria-hidden="true">●</span> ' + esc(t('alunos.enroll_open')) + '</p>' +
+    '<div class="cdx-al-enroll-actions">' +
+      '<button type="button" class="cdx-btn cdx-btn-primary cdx-al-enroll-qr"><span class="cdx-al-qrglyph" aria-hidden="true">▦</span> <span class="cdx-al-enroll-rem"></span></button>' +
+      '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-enroll-close">' + esc(t('alunos.enroll_close')) + '</button>' +
+    '</div>' +
+    '<p class="cdx-alunos-hint">' + esc(t('alunos.enroll_hint_open')) + '</p>';
+  box.querySelector('.cdx-al-enroll-qr').addEventListener('click', () => qr.open({ joinUrl, title: t('alunos.enroll_qr_title') }));
+  box.querySelector('.cdx-al-enroll-close').addEventListener('click', async () => {
+    clearEnrollTimer();
+    await safe(() => api.closeEnrollment({ client_slug: _current.client_slug, slug: _current.turma_slug }));
+    loadEnrollment();
+  });
+  const remEl = box.querySelector('.cdx-al-enroll-rem');
+  let revalIn = 30; // re-fetch the server state every ~30s so the timer can't drift silently
+  const tick = () => {
+    const remain = remainingSec(res.enrollment_expires_at, offset, Math.floor(Date.now() / 1000));
+    if (remain <= 0) { clearEnrollTimer(); loadEnrollment(); return; }
+    if (remEl) remEl.textContent = fmtRemain(remain);
+    if (--revalIn <= 0) { revalIn = 30; loadEnrollment(); }
+  };
+  tick();
+  _enrollTimer = setInterval(tick, 1000);
 }
 
 // ── Approval queue (signal d) ────────────────────────────────────────────────

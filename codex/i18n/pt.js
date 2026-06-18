@@ -50,6 +50,13 @@ export default {
   'alunos.roster_go':    'Pré-aprovar',
   'alunos.roster_none':  'Informe ao menos um e-mail.',
   'alunos.roster_done':  'E-mails pré-aprovados.',
+  'alunos.enroll':            'Inscrição por QR',
+  'alunos.enroll_open':       'Inscrição aberta',
+  'alunos.enroll_open_btn':   'Abrir inscrição',
+  'alunos.enroll_close':      'Encerrar',
+  'alunos.enroll_qr_title':   'Entre na turma',
+  'alunos.enroll_hint_open':  'Mostre o QR na tela. Quem ler durante este tempo entra na hora, sem aprovação manual.',
+  'alunos.enroll_hint_closed':'Abra a inscrição durante a aula e projete o QR para os alunos entrarem na hora.',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Conexão perdida.',

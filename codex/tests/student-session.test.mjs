@@ -52,6 +52,14 @@ test('extractMagicToken returns null when lt is absent or the input is empty', (
   assert.equal(ss.extractMagicToken(null), null);
 });
 
+test('extractEnrollToken reads et from a query string and a full URL, null when absent', () => {
+  assert.equal(ss.extractEnrollToken('?et=QR123'), 'QR123');
+  assert.equal(ss.extractEnrollToken('https://pensoia.com/trilha/jfse/geral?k=abc&et=QR9'), 'QR9');
+  assert.equal(ss.extractEnrollToken('?k=abc'), null);
+  assert.equal(ss.extractEnrollToken(''), null);
+  assert.equal(ss.extractEnrollToken(null), null);
+});
+
 test('CONSENT_VERSION is a stable non-empty string', () => {
   assert.equal(typeof ss.CONSENT_VERSION, 'string');
   assert.ok(ss.CONSENT_VERSION.length > 0);

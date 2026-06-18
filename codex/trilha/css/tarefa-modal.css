@@ -198,6 +198,18 @@ body.tr-modal-open { overflow: hidden; }
 .tr-login-email,
 .tr-login-name { margin-bottom: 0.2rem; }
 
+/* QR enrollment: the echo-back confirm shows the typed email big to catch typos. */
+.tr-en-confirm-email {
+  margin: 0.4rem 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.08));
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+  word-break: break-all;
+}
+
 .tr-login-consent {
   margin-top: 1rem;
   padding-top: 0.9rem;

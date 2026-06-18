@@ -36,6 +36,15 @@
 .cdx-al-qact { display: flex; gap: 0.4rem; }
 .cdx-al-sact { display: flex; gap: 0.4rem; justify-content: flex-end; }
 
+/* QR enrollment window */
+.cdx-al-enroll-on { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; margin: 0 0 0.6rem; }
+.cdx-al-enroll-dot { color: var(--ok, #2ecc71); animation: cdx-al-pulse 1.4s ease-in-out infinite; }
+@keyframes cdx-al-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.cdx-al-enroll-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.cdx-al-qrglyph { font-size: 1.05em; line-height: 1; }
+.cdx-al-enroll-qr { font-variant-numeric: tabular-nums; min-width: 7rem; }
+.cdx-al-enroll-rem { font-variant-numeric: tabular-nums; }
+
 .cdx-al-badge {
   display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px;
   font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;

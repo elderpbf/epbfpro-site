@@ -78,3 +78,13 @@ export function extractMagicToken(input) {
   const v = new URLSearchParams(q).get('lt');
   return v || null;
 }
+
+// Pull the QR enrollment token (?et=<token>) out of the URL or a bare query string.
+// The in-class QR carries it; presence is claimed and the frictionless join offered.
+// Returns null when absent.
+export function extractEnrollToken(input) {
+  if (!input) return null;
+  const q = input.indexOf('?') !== -1 ? input.slice(input.indexOf('?') + 1) : input;
+  const v = new URLSearchParams(q).get('et');
+  return v || null;
+}

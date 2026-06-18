@@ -9,7 +9,7 @@ import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
-import { extractMagicToken, isLoggedIn, clearToken, getToken, getPresence, setPresence, LOGIN_ENABLED } from './student-session.js';
+import { extractMagicToken, extractEnrollToken, isLoggedIn, clearToken, getToken, getPresence, setPresence, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
 import { isWall } from './access.js';
 
@@ -69,7 +69,7 @@ export async function mount(root, ctx = {}) {
       if (_win) _win.addEventListener('hashchange', _onHash);
       onHashChange();
     }
-    if (LOGIN_ENABLED) { claimPresence(); handleMagicReturn(loc); }
+    if (LOGIN_ENABLED) { claimPresence(); if (!handleEnrollReturn(loc)) handleMagicReturn(loc); }
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
@@ -202,6 +202,29 @@ function handleMagicReturn(loc) {
   });
 }
 
+// QR enrollment return: the in-class QR carries ?et=<token>. Best-effort claim a
+// presence grant (so an off-window login later still auto-approves), then open the
+// login modal in enroll mode (email + name + consent + echo-back -> frictionless join,
+// no email round-trip). Strips et so a refresh cannot replay it. Returns true when it
+// handled an et, so the caller skips the magic-link path.
+function handleEnrollReturn(loc) {
+  const et = extractEnrollToken((loc && loc.search) || '');
+  if (!et) return false;
+  stripEt();
+  try {
+    Promise.resolve(trail.enrollClaim({ client_slug: state.clientSlug, turma_slug: state.turmaSlug, et, _silent: true }))
+      .then((res) => { if (res && res.granted && res.presence_token) setPresence(state.clientSlug, state.turmaSlug, res.presence_token); })
+      .catch(() => {});
+  } catch (_) { /* presence is best-effort */ }
+  openLoginModal({
+    client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+    enrollToken: et,
+    presence: getPresence(state.clientSlug, state.turmaSlug),
+    onAuthenticated: afterAuth,
+  });
+  return true;
+}
+
 // After a successful login: refresh the pill, and on a GATED turma reload so the
 // now-approved session unlocks content (or surfaces the pending wall/notice). An
 // open turma gates nothing, so a reload would be pointless there.
@@ -268,6 +291,16 @@ function stripLt() {
   try {
     const url = new URL(_win.location.href);
     url.searchParams.delete('lt');
+    _win.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+  } catch (_) { /* noop */ }
+}
+
+// Remove the et param from the visible URL so a refresh cannot replay the QR pass.
+function stripEt() {
+  if (!_win || !_win.history || !_win.history.replaceState || !_win.location) return;
+  try {
+    const url = new URL(_win.location.href);
+    url.searchParams.delete('et');
     _win.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
   } catch (_) { /* noop */ }
 }

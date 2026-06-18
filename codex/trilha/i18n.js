@@ -61,6 +61,13 @@ const pt = {
   'login.wall_body':        'Entre com seu e-mail para acessar o conteúdo desta turma.',
   'login.pending_title':    'Acesso em análise',
   'login.pending_body':     'Recebemos seu acesso. Você será liberado em breve, é só aguardar a aprovação.',
+  'login.enroll_title':         'Você está na aula!',
+  'login.enroll_subtitle':      'Entre com seu e-mail para acessar o conteúdo agora. Sem link, sem espera.',
+  'login.enroll_continue':      'Continuar',
+  'login.enroll_confirm_title': 'Confirme seu e-mail',
+  'login.enroll_confirm_desc':  'É esse mesmo o seu e-mail? Ele identifica seu acesso e seu certificado.',
+  'login.enroll_edit':          'Corrigir',
+  'login.enroll_cta':           'Entrar na aula',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -121,6 +128,13 @@ const en = {
   'login.wall_body':        'Sign in with your email to access this class content.',
   'login.pending_title':    'Access under review',
   'login.pending_body':     'We received your request. You will be unlocked shortly, just wait for approval.',
+  'login.enroll_title':         'You are in class!',
+  'login.enroll_subtitle':      'Enter your email to access the content now. No link, no waiting.',
+  'login.enroll_continue':      'Continue',
+  'login.enroll_confirm_title': 'Confirm your email',
+  'login.enroll_confirm_desc':  'Is this your email? It identifies your access and your certificate.',
+  'login.enroll_edit':          'Edit',
+  'login.enroll_cta':           'Join the class',
 };
 
 const DICTS = { 'pt-BR': pt, en };

@@ -36,6 +36,12 @@ export const trail = {
   // live session is open; the device stores it and offers it at login so being in
   // the room earns access even if the student logs in later.
   presenceClaim:  (p) => call('student_presence_claim', p), // { client_slug, turma_slug } -> { ok, granted, presence_token? }
+
+  // QR enrollment (Phase 7b). The QR projected in class carries ?et=<token>. claim
+  // mints a presence grant on scan (bridges an off-window login); join is the
+  // frictionless in-class path that mints an approved session with no email round-trip.
+  enrollClaim:    (p) => call('student_enroll_claim', p),    // { client_slug, turma_slug, et } -> { ok, granted, presence_token? }
+  enrollJoin:     (p) => call('student_enroll_join', p),     // { client_slug, turma_slug, et, email, name? } -> { ok, session_token, ... } | { error }
 };
 
 export { assetUrl };

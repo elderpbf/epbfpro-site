@@ -174,7 +174,12 @@ export const cohorts = {
   // Trail access-control admin (Phase 7): the Alunos section drives these.
   setParticipantAccess:  (p) => call('ct_set_participant_access', p),   // { participant_id|participant_ids, status }
   rosterApprove:         (p) => call('ct_roster_approve', p),           // { turma_id, emails[] }
-  revokeStudentSessions: (p) => call('ct_revoke_student_sessions', p)   // { participant_id }
+  revokeStudentSessions: (p) => call('ct_revoke_student_sessions', p),  // { participant_id }
+  // QR enrollment window (Phase 7b): open mints the token + expiry (+ turma_token to
+  // build the QR URL); get re-reads state for the live countdown; close shuts it.
+  openEnrollment:        (p) => call('ct_open_enrollment', p),          // { client_slug, slug, ttl_seconds? }
+  closeEnrollment:       (p) => call('ct_close_enrollment', p),         // { client_slug, slug }
+  getEnrollment:         (p) => call('ct_get_enrollment', p)            // { client_slug, slug } -> { open, now, enrollment_token, enrollment_expires_at, turma_token }
 };
 
 // Courses — reusable course templates (Cohorts → Cursos sub-tab). A course is a
