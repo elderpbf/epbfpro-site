@@ -247,23 +247,25 @@ test('e2: parseOrderIds validates the AI order is a permutation of the current i
   assert.equal(b.parseOrderIds('not json', [1]), null, 'invalid JSON rejected');
 });
 
-test('#26 + e2: bank exposes the complexity-review + propose-order flows (frontend, reuse ai.chat)', () => {
+test('e2: propose-order has a direction toggle + checkable selection, applied via reorder', () => {
   const src = read('../questions/bank.js');
-  // Buttons
-  assert.match(src, /data-act="complexify"/, 'Mais complexas button');
+  // The complexify (#26) flow was moved out of the bank to the external review HTML.
+  assert.doesNotMatch(src, /data-act="complexify"/, 'no Mais complexas button in the bank');
+  assert.doesNotMatch(src, /_openComplexify|_CPX_SYS/, 'complexify code removed');
+  // e2 button + direction chooser + generate trigger
   assert.match(src, /data-act="propose-order"/, 'Propor ordem button');
-  // #26: ai.chat (no new worker action) → review → accepted save as NEW questions
-  assert.match(src, /function _openComplexify/, 'complexify opener');
-  assert.match(src, /ai\.chat\(\{ system: _CPX_SYS/, '#26 calls ai.chat with the harder-variant prompt');
-  assert.match(src, /api\.addQuestion\(/, 'accepted variants save as new questions (originals untouched)');
-  // e2: ai.chat → review → apply via reorder
-  assert.match(src, /function _proposeOrder/, 'order proposer');
-  assert.match(src, /ai\.chat\(\{ system: _ORDER_SYS/, 'e2 calls ai.chat with the ordering prompt');
-  assert.match(src, /api\.reorder\(\{ list_name: _currentSet, ordered_ids: _orderProposed/, 'applies the proposed order via reorder');
+  assert.match(src, /data-dir="asc"/, 'easier→harder direction option');
+  assert.match(src, /data-dir="desc"/, 'harder→easier direction option');
+  assert.match(src, /data-act="order-generate"/, 'generate-order trigger');
+  // direction drives the prompt; apply reorders checked-first then the rest
+  assert.match(src, /ai\.chat\(\{ system: _orderSys\(_orderDir\)/, 'e2 calls ai.chat with the direction-aware prompt');
+  assert.match(src, /const ordered = chosen\.concat\(rest\)/, 'checked ids take the proposed order, unchecked appended');
+  assert.match(src, /api\.reorder\(\{ list_name: _currentSet, ordered_ids: ordered/, 'applies via reorder');
   for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
     const dict = read(lang);
-    for (const k of ['questions.bank_complexify', 'questions.bank_propose_order', 'questions.bank_order_applied']) {
+    for (const k of ['questions.bank_propose_order', 'questions.bank_order_dir_asc', 'questions.bank_order_dir_desc', 'questions.bank_order_applied']) {
       assert.ok(dict.includes("'" + k + "'"), lang + ' has ' + k);
     }
+    assert.ok(!dict.includes("'questions.bank_complexify'"), lang + ' dropped complexify keys');
   }
 });
