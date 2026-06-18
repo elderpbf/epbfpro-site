@@ -543,7 +543,6 @@
 
 /* e2 proposed order: direction chooser + a checkable list in the suggested order. */
 .cdx-bank-order-dir { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-.cdx-bank-order-dir-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 .cdx-bank-order-list { list-style: none; margin: 0; padding: 0; max-height: 55vh; overflow-y: auto; }
 .cdx-bank-order-item { padding: 0.28rem 0; font-size: 0.88rem; color: var(--text-primary); }
 .cdx-bank-order-pick { display: flex; align-items: flex-start; gap: 0.4rem; cursor: pointer; }
@@ -555,14 +554,14 @@
 .cdx-bank-sets-header-actions { display: flex; align-items: center; gap: 0.3rem; }
 .cdx-bank-hub-card { max-width: 640px; }
 .cdx-bank-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
-.cdx-bank-hub-tab, .cdx-bank-scope-btn, .cdx-bank-export-tab, .cdx-bank-import-tab {
+.cdx-bank-hub-tab, .cdx-bank-scope-btn, .cdx-bank-export-tab, .cdx-bank-import-tab, .cdx-bank-order-dir-btn {
   background: transparent;
   border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
   border-radius: 7px; padding: 0.35rem 0.85rem;
   font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
 }
-.cdx-bank-hub-tab:hover, .cdx-bank-scope-btn:hover, .cdx-bank-export-tab:hover, .cdx-bank-import-tab:hover { color: var(--text-primary); }
-.cdx-bank-hub-tab.active, .cdx-bank-scope-btn.active, .cdx-bank-export-tab.active, .cdx-bank-import-tab.active { color: var(--primary); border-color: var(--primary); }
+.cdx-bank-hub-tab:hover, .cdx-bank-scope-btn:hover, .cdx-bank-export-tab:hover, .cdx-bank-import-tab:hover, .cdx-bank-order-dir-btn:hover { color: var(--text-primary); }
+.cdx-bank-hub-tab.active, .cdx-bank-scope-btn.active, .cdx-bank-export-tab.active, .cdx-bank-import-tab.active, .cdx-bank-order-dir-btn.active { color: var(--primary); border-color: var(--primary); }
 .cdx-bank-hub-tabs { border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.3)); padding-bottom: 0.6rem; }
 .cdx-bank-hub-scope { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
 .cdx-bank-hub-scope .cdx-comp-label { margin: 0; }
