@@ -11,6 +11,7 @@ import { aulaStatus } from '../js/aula-status.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
+import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import * as cursos from './courses.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
@@ -1056,35 +1057,39 @@ function _renderDossier(turma) {
         '</div>' +
       '</div>' +
       linksRow +
-      '<div class="cdx-doss-facts">' +
-        editSelect('course_id', t('cohorts.tf_course'), courseOpts) +
-        factId('cdx-doss-carga', t('cohorts.course_hours_label'), cargaDerived) +
-        factId('cdx-doss-encontros', t('cohorts.tf_meetings'), encontrosDerived) +
-        fact(t('cohorts.tf_date_start'), dStart) +
-        fact(t('cohorts.tf_date_end'), dEnd) +
-        editSelect('format', t('cohorts.tf_format'), fmtOpts) +
-        editText('place', t('cohorts.tf_place'), turma.place, t('cohorts.tf_place_ph')) +
-        editText('display_name', t('cohorts.field_display_name'), turma.display_name, t('cohorts.field_display_placeholder')) +
-        editText('whatsapp_url', t('cohorts.field_whatsapp'), turma.whatsapp_url, 'https://chat.whatsapp.com/...') +
-        editSelect('classpulse_session_id', t('cohorts.field_classpulse'), cpOpts) +
-      '</div>' +
-      // Participantes
-      '<div class="cdx-doss-sec">' +
-        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.participants_title')) + '</b>' +
-          '<button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></div>' +
+      // ── Dados da turma (colapsável) ──
+      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.sec_turma_data')) + '</b></div></summary>' +
+        '<div class="cdx-doss-facts">' +
+          editSelect('course_id', t('cohorts.tf_course'), courseOpts) +
+          factId('cdx-doss-carga', t('cohorts.course_hours_label'), cargaDerived) +
+          factId('cdx-doss-encontros', t('cohorts.tf_meetings'), encontrosDerived) +
+          fact(t('cohorts.tf_date_start'), dStart) +
+          fact(t('cohorts.tf_date_end'), dEnd) +
+          editSelect('format', t('cohorts.tf_format'), fmtOpts) +
+          editText('place', t('cohorts.tf_place'), turma.place, t('cohorts.tf_place_ph')) +
+          editText('display_name', t('cohorts.field_display_name'), turma.display_name, t('cohorts.field_display_placeholder')) +
+          editText('whatsapp_url', t('cohorts.field_whatsapp'), turma.whatsapp_url, 'https://chat.whatsapp.com/...') +
+          editSelect('classpulse_session_id', t('cohorts.field_classpulse'), cpOpts) +
+        '</div>' +
+      '</details>' +
+      // ── Acesso (gating switches; QR enrollment + participants fold in next; mounted from js/access-panel.js) ──
+      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.sec_access')) + '</b></div></summary>' +
+        '<div id="cdx-doss-acesso"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
+      '</details>' +
+      // ── Participantes (colapsável) ──
+      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.participants_title')) + '</b></div></summary>' +
+        '<div class="cdx-doss-sec-actions"><button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></div>' +
         '<div id="cdx-doss-participants"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
-      '</div>' +
-      // Aulas (reuses the aula editor via #cdx-aulas-list)
-      '<div class="cdx-doss-sec">' +
-        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.col_aulas')) + '</b></div>' +
+      '</details>' +
+      // ── Aulas (colapsável; reuses the aula editor via #cdx-aulas-list) ──
+      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.col_aulas')) + '</b></div></summary>' +
         '<div id="' + IDS.aulasList + '"><div class="cdx-empty">' + _esc(t('cohorts.loading_aulas')) + '</div></div>' +
-      '</div>' +
-      // Certificados
-      '<div class="cdx-doss-sec">' +
-        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.doss_certs')) + '</b>' +
-          '<a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
+      '</details>' +
+      // ── Certificados (colapsável) ──
+      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.doss_certs')) + '</b></div></summary>' +
+        '<div class="cdx-doss-sec-actions"><a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
         '<div id="cdx-doss-certs"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
-      '</div>' +
+      '</details>' +
     '</div>';
 
   el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', () => {
@@ -1096,6 +1101,13 @@ function _renderDossier(turma) {
   }));
 
   _wireDossierInlineEdit(el, turma);
+  // Acesso section: the per-turma gating switches, mounted from the shared access
+  // panel (same component the Alunos tab uses, so the logic lives in one place).
+  const accEl = el.querySelector('#cdx-doss-acesso');
+  if (accEl) {
+    accEl.innerHTML = accessSettingsHtml(turma);
+    wireAccessSettings(accEl, turma, { api, clientSlug: turma.client_slug, slug: turma.slug });
+  }
   // The course + classpulse selects need their option lists; load once and re-render
   // this dossier when they arrive (so the saved option is selectable).
   if ((!_turmaCourses || !_turmaCourses.length) || (!_cpSessions || !_cpSessions.length)) {

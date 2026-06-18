@@ -9,6 +9,7 @@ import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { cohorts as api } from '../js/codex-api.js';
 import { clockOffset, remainingSec, fmtRemain, enrollUrl } from './enroll-clock.js';
+import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import * as qr from '../js/qr-share-modal.js';
 
 let _viewEl = null;
@@ -83,43 +84,17 @@ function render(participants) {
 }
 
 // ── Access settings (per-turma switches) ─────────────────────────────────────
+// The switches themselves live in the shared js/access-panel.js (the same
+// component the cohort dossier mounts), so the gating logic is in one place.
 function settingsCard() {
-  const g = !!_current.access_gated;
-  const mode = _current.gate_mode || 'inline';
-  const certs = !!_current.certificates_enabled;
   return '<section class="cdx-alunos-card">' +
     '<h2>' + esc(t('alunos.settings')) + '</h2>' +
-    '<label class="cdx-al-row"><input type="checkbox" class="cdx-al-gated"' + (g ? ' checked' : '') + '> <span>' + esc(t('alunos.gated')) + '</span></label>' +
-    '<label class="cdx-al-row"><span>' + esc(t('alunos.mode')) + '</span> <select class="cdx-al-mode"' + (g ? '' : ' disabled') + '>' +
-      '<option value="inline"' + (mode === 'inline' ? ' selected' : '') + '>' + esc(t('alunos.mode_inline')) + '</option>' +
-      '<option value="upfront"' + (mode === 'upfront' ? ' selected' : '') + '>' + esc(t('alunos.mode_upfront')) + '</option>' +
-    '</select></label>' +
-    '<label class="cdx-al-row"><input type="checkbox" class="cdx-al-certs"' + (certs ? ' checked' : '') + '> <span>' + esc(t('alunos.certs')) + '</span></label>' +
-    '<div class="cdx-al-actions"><button type="button" class="cdx-btn cdx-al-save">' + esc(t('alunos.save')) + '</button>' +
-    '<span class="cdx-al-msg cdx-al-save-msg" aria-live="polite"></span></div>' +
+    accessSettingsHtml(_current) +
   '</section>';
 }
 function wireSettings() {
-  const gated = body().querySelector('.cdx-al-gated');
-  const mode = body().querySelector('.cdx-al-mode');
-  const certs = body().querySelector('.cdx-al-certs');
-  const save = body().querySelector('.cdx-al-save');
-  const msg = body().querySelector('.cdx-al-save-msg');
-  gated.addEventListener('change', () => { mode.disabled = !gated.checked; });
-  save.addEventListener('click', async () => {
-    save.disabled = true; msg.textContent = '';
-    const res = await safe(() => api.updateTurmaMeta({
-      client_slug: _current.client_slug, slug: _current.turma_slug,
-      access_gated: gated.checked ? 1 : 0, gate_mode: mode.value,
-      certificates_enabled: certs.checked ? 1 : 0,
-    }));
-    if (res && res.ok) {
-      _current.access_gated = gated.checked ? 1 : 0;
-      _current.gate_mode = mode.value;
-      _current.certificates_enabled = certs.checked ? 1 : 0;
-      msg.textContent = t('alunos.saved');
-    } else { msg.textContent = t('alunos.save_error'); }
-    save.disabled = false;
+  wireAccessSettings(body(), _current, {
+    api, clientSlug: _current.client_slug, slug: _current.turma_slug,
   });
 }
 

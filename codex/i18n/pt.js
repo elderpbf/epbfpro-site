@@ -277,6 +277,8 @@ export default {
   'cohorts.date_tbd':        'a definir',
 
   // Cohorts — participants (roster)
+  'cohorts.sec_turma_data':               'Dados da turma',
+  'cohorts.sec_access':                   'Acesso',
   'cohorts.participants_btn':             'Participantes',
   'cohorts.participants_btn_title':       'Gerenciar participantes desta turma',
   'cohorts.participants_title':           'Participantes',
