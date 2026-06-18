@@ -181,9 +181,6 @@ export default {
   'cohorts.fmt_presencial':       'In person',
   'cohorts.fmt_online':           'Online',
   'cohorts.fmt_hibrido':          'Hybrid',
-  'cohorts.mod_presencial':       'In person',
-  'cohorts.mod_hibrida':          'Hybrid',
-  'cohorts.mod_virtual':          'Virtual',
   'cohorts.mod_fechada':          'Closed cohort (in-company)',
   'cohorts.mod_aberta':           'Open cohort',
   // Turma dossier (Concept A right pane)

@@ -574,10 +574,10 @@ function _copyUrl(url) {
 // ── Turma form ────────────────────────────────────────────────────────────────
 
 const _TF_FORMATS = ['presencial', 'online', 'hibrido'];
-// Modality = delivery mode (Elder: every turma is in-company; the old open/closed
-// distinction is gone). The cert renders this as the modality field. The legacy
-// fechada/aberta i18n keys are kept so existing turmas still render their stored value.
-const _TF_MODALITIES = ['presencial', 'hibrida', 'virtual'];
+// Modalidade field removed (Elder): delivery mode lives in Formato (and is what the
+// certificate shows); location lives in the Local/place field. The old fechada/aberta
+// concept is gone. Legacy cohorts.mod_* i18n keys are kept so any turma with a stored
+// modality value still renders on its certificate.
 
 function _openTurmaForm(turma) {
   const isEdit = !!turma;
@@ -606,7 +606,6 @@ function _openTurmaForm(turma) {
     const selOptions = (keys, prefix, cur) => '<option value="">' + t('cohorts.none') + '</option>' +
       keys.map(k => '<option value="' + k + '"' + (cur === k ? ' selected' : '') + '>' + t(prefix + k) + '</option>').join('');
     const formatOptions = selOptions(_TF_FORMATS, 'cohorts.fmt_', isEdit ? turma.format : '');
-    const modalityOptions = selOptions(_TF_MODALITIES, 'cohorts.mod_', isEdit ? turma.modality : '');
     const v = (key) => _esc(isEdit && turma[key] != null ? turma[key] : '');
 
     const html =
@@ -635,8 +634,6 @@ function _openTurmaForm(turma) {
             '<input type="date" id="cdx-tf-date-end" value="' + v('date_end') + '"></div>' +
           '<div class="cdx-field"><label>' + t('cohorts.tf_format') + '</label>' +
             '<select id="cdx-tf-format">' + formatOptions + '</select></div>' +
-          '<div class="cdx-field"><label>' + t('cohorts.tf_modality') + '</label>' +
-            '<select id="cdx-tf-modality">' + modalityOptions + '</select></div>' +
         '</div>' +
         '<div class="cdx-field"><label>' + t('cohorts.tf_place') + '</label>' +
           '<input type="text" id="cdx-tf-place" value="' + v('place') + '" placeholder="' + t('cohorts.tf_place_ph') + '"></div>' +
@@ -692,7 +689,6 @@ function _openTurmaForm(turma) {
         date_start: bd.querySelector('#cdx-tf-date-start').value || null,
         date_end: bd.querySelector('#cdx-tf-date-end').value || null,
         format: bd.querySelector('#cdx-tf-format').value || null,
-        modality: bd.querySelector('#cdx-tf-modality').value || null,
         place: bd.querySelector('#cdx-tf-place').value.trim() || null,
       };
       // Copy the course ementa into the turma's own copy only when the course is
