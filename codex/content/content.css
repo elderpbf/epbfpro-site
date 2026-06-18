@@ -755,7 +755,7 @@
 /* Item already released to another aula in this turma: greyed, with a small note. */
 .cdx-comp-item.is-already-released { opacity: 0.5; }
 .cdx-comp-item.is-already-released:hover { opacity: 0.75; }
-.cdx-comp-elsewhere { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.cdx-comp-elsewhere { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; margin-left: 0.6rem; }
 .cdx-comp-actions { display: flex; justify-content: flex-end; flex-shrink: 0; }
 
 /* ── Apostila sub-tab (imported course content) ──────────────────────────── */

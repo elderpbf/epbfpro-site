@@ -476,10 +476,18 @@ function _renderAulaComposer(container, aula) {
   const driveItems = _allItems.filter(_isDrive);
   const outrosItems = _allItems.filter(_isOutros);
 
+  // Apostila rows render inline (the set-position prefix isn't in _rowHtml), but
+  // still carry the "já na aula N" grey marker when released to another aula (R1a/#22).
   const apostilaRows = _apostilaItems.length
-    ? _apostilaItems.map((i) =>
-        '<label class="cdx-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '"><input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (_isBoundTo(i.id, aulaNum) ? ' checked' : '') + '>' +
-        '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) + '</span></label>').join('')
+    ? _apostilaItems.map((i) => {
+        const elsewhereAula = _releasedElsewhere(i.id, aulaNum);
+        const already = (elsewhereAula != null && elsewhereAula !== '');
+        return '<label class="cdx-comp-item' + (already ? ' is-already-released' : '') + '" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
+          '<input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (_isBoundTo(i.id, aulaNum) ? ' checked' : '') + '>' +
+          '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) +
+            (already ? ' <span class="cdx-comp-elsewhere">' + _esc(t('releases.already_aula').replace('{n}', String(elsewhereAula))) + '</span>' : '') +
+          '</span></label>';
+      }).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_apostila') + '</div>';
 
   const tarefaGlyph = _countGlyph('tarefa', 15);

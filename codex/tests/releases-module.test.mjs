@@ -63,6 +63,19 @@ test('R3 + R1a: composer groups items por tipo and greys items already released 
   }
 });
 
+test('#22: the apostila pool also carries the "já na aula N" marker', () => {
+  // The apostila rows render inline (not via _rowHtml), so the elsewhere marker must
+  // be wired into that branch explicitly — pool="apostila" + _releasedElsewhere + note.
+  const apostilaBlock = relSrc.slice(relSrc.indexOf('const apostilaRows'), relSrc.indexOf('const tarefaGlyph'));
+  assert.match(apostilaBlock, /data-pool="apostila"/, 'still the apostila pool');
+  assert.match(apostilaBlock, /_releasedElsewhere\(i\.id, aulaNum\)/, 'apostila checks released-elsewhere');
+  assert.match(apostilaBlock, /is-already-released/, 'apostila greys out when bound elsewhere');
+  assert.match(apostilaBlock, /cdx-comp-elsewhere/, 'apostila shows the "já na aula N" note');
+  // More spacing before the note (CSS margin on the elsewhere span).
+  const css = readFileSync(new URL('../content/content.css', import.meta.url), 'utf8');
+  assert.match(css, /\.cdx-comp-elsewhere\s*\{[^}]*margin-left/, 'elsewhere note has left spacing');
+});
+
 test('R2: mark-aula-happened control sets happened_on to the scheduled day via a full updateAula', () => {
   assert.match(relSrc, /data-mark-happened=/, 'renders the mark-happened control on aula rows');
   assert.match(relSrc, /function _markAulaHappened/, 'has the handler');

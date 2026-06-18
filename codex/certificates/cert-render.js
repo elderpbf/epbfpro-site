@@ -69,6 +69,21 @@ function fmtDate(iso) {
 }
 function hostOf(origin) { return String(origin || '').replace(/^https?:\/\//, '').replace(/\/$/, ''); }
 
+// Extract the numeric carga horária from a stored value. The field is captured
+// as a plain number now, but legacy certs stored strings like "40 horas", "40h"
+// or "40 h/a"; pull the leading number so both render uniformly. '' when absent.
+export function hoursNumber(raw) {
+  if (raw == null) return '';
+  const m = /(\d+(?:[.,]\d+)?)/.exec(String(raw));
+  return m ? m[1] : '';
+}
+// The full human label: "40 horas" (always the word, never "h"/"h/a"). '' when
+// there is no number to show.
+export function hoursLabel(raw) {
+  const n = hoursNumber(raw);
+  return n ? n + ' horas' : '';
+}
+
 // buildCertData(cert, meta, origin) -> the escaped `d` object the render
 // functions consume. cert = the saved certificate record (snapshot fields);
 // meta = course-level metadata (merged over defaults); origin = location.origin.
@@ -83,10 +98,18 @@ export function buildCertData(cert, meta, origin) {
   const periodo = (meta.course_start && meta.course_end)
     ? fmtDate(meta.course_start) + ' a ' + fmtDate(meta.course_end)
     : (meta.course_start ? fmtDate(meta.course_start) : '');
+  const hNum = hoursNumber(cert.hours);
   return {
     holder: esc(cert.holder_name),
     course: esc(cert.course_title),
-    hours: esc(cert.hours || ''),
+    hours: esc(cert.hours || ''),     // raw snapshot (back-compat; not rendered directly)
+    hoursNum: esc(hNum),              // just the number, for metric boxes
+    hoursLabel: hNum ? esc(hNum + ' horas') : '', // "40 horas" for the sentence
+    // A signed cert (status 'signed') gets a "assinado digitalmente" note on the
+    // front; the CN is shown when the signer recorded it. The on-screen note is
+    // informational — the cryptographic signature lives in the stored PDF.
+    signed: cert.status === 'signed',
+    signerCn: esc(cert.signer_cn || cert.signed_by || ''),
     periodo: esc(periodo),
     date: esc(fmtDate(cert.issued_on)),
     code: esc(code),
@@ -119,7 +142,7 @@ function certStatement(d) {
   return 'participou, com frequência e aproveitamento, do curso <b>' + d.course + '</b>'
     + (d.periodo ? ', realizado no período de <b>' + d.periodo + '</b>'
                  : (d.place ? ', realizado em ' + d.place : ''))
-    + (d.hours ? ', com carga horária total de <b>' + d.hours + '</b>' : '')
+    + (d.hoursLabel ? ', com carga horária total de <b>' + d.hoursLabel + '</b>' : '')
     + (d.instructor ? ', ministrado por <b>' + d.instructor + '</b>' : '')
     + '.';
 }
@@ -133,7 +156,17 @@ function valBlock(d, variant) {
       + '<div class="cert-val-label">Autenticidade verificável</div>'
       + '<div class="cert-val-url">' + d.validar + '</div>'
       + '<div class="cert-val-code">' + d.code + '</div>'
+      + signedNote(d)
     + '</div></div>';
+}
+
+// "Certificado assinado digitalmente …" — only on a signed cert. Names the signer
+// CN when the local signer recorded it; otherwise just the ICP-Brasil qualifier.
+function signedNote(d) {
+  if (!d.signed) return '';
+  return '<div class="cert-signed-note">Certificado assinado digitalmente'
+    + (d.signerCn ? ' por <b>' + d.signerCn + '</b>' : '')
+    + ' · ICP-Brasil</div>';
 }
 
 function fVetor(d) {
@@ -172,7 +205,7 @@ function fConsole(d) {
       + '<div class="cs-foot">'
         + '<div class="cs-fields">'
           + '<div class="fld"><div class="k">Emissor</div><div class="v">' + d.issuerShort + '</div></div>'
-          + '<div class="fld"><div class="k">Carga horária</div><div class="v">' + d.hours + '</div></div>'
+          + '<div class="fld"><div class="k">Carga horária</div><div class="v">' + d.hoursLabel + '</div></div>'
           + '<div class="fld"><div class="k">Modalidade</div><div class="v">' + d.modality + '</div></div>'
           + '<div class="fld"><div class="k">Período</div><div class="v">' + (d.periodo || d.date) + '</div></div>'
           + '<div class="fld"><div class="k">Local</div><div class="v">' + d.place + '</div></div>'
@@ -220,7 +253,7 @@ function backHtml(d) {
     + '</div><div class="rule"></div>'
     + '<div class="bcols"><div class="curriculum">' + mods + '</div>'
       + '<div class="side"><div class="cargo">'
-        + '<div class="s"><div class="v">' + (d.hours || '').replace(' horas', '') + '</div><div class="l">Horas</div></div>'
+        + '<div class="s"><div class="v">' + d.hoursNum + '</div><div class="l">Horas</div></div>'
         + '<div class="s"><div class="v">' + d.meetings + '</div><div class="l">Encontros</div></div>'
         // Modalidade reads label-first ("Modalidade / Presencial") since the value is a
         // word, not a metric like Horas/Encontros (which keep value-first).

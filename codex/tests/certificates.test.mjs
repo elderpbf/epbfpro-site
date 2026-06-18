@@ -518,9 +518,10 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(!pt.includes("'certificates.email_subject'"), 'no dead email_* keys in pt');
   });
   test('a stored (signed) PDF downloads via the worker R2 route, not a relative path', () => {
-    // pdf_path is an R2 key; the row must link through assetUrl('/r2/'+key), else the
-    // browser resolves it relative to the page and 404s.
-    assert.ok(src.includes("assetUrl('/r2/' + c.pdf_path)"), 'stored-PDF link goes through the R2 serve route');
+    // pdf_path is an R2 key; the download must go through assetUrl('/r2/'+key), else the
+    // browser resolves it relative to the page and 404s. (Now fetched as a blob in
+    // _downloadStoredPdf — #24 — so the file saves instead of opening a tab.)
+    assert.ok(src.includes("assetUrl('/r2/' + cert.pdf_path)"), 'stored-PDF download goes through the R2 serve route');
   });
 });
 
@@ -595,9 +596,19 @@ describe('Emissão fixes (source contract)', () => {
     assert.ok(/c\.status === 'issued' \|\| c\.status === 'revoked'/.test(src), 'bulk delete filters to deletable statuses');
     assert.ok(api.includes('cert_delete'), 'facade exposes cert_delete');
   });
-  test('issue modal has a select-all checkbox and a model preview', () => {
+  test('issue modal has a select-all checkbox and a live model preview thumbnail', () => {
     assert.ok(src.includes('cdx-issue-selall'), 'roster select-all checkbox');
-    assert.ok(src.includes('cdx-issue-preview'), 'preview button');
+    assert.ok(src.includes('cdx-issue-thumb'), 'live preview thumbnail');
+    assert.ok(src.includes('_renderIssueThumb'), 'thumbnail re-render hook');
     assert.ok(src.includes('_buildIssuePreviewCert'), 'preview builds a cert from the form');
+  });
+  test('stored PDF saves as a real download (blob), never a new tab (#24)', () => {
+    assert.ok(src.includes('data-action="dlstored"'), 'stored-PDF download action present');
+    assert.ok(src.includes("if (action === 'dlstored')"), 'dlstored action routed');
+    assert.ok(src.includes('_downloadStoredPdf'), 'download helper present');
+    // The cross-origin R2 link must NOT be a target=_blank <a> anymore (it opened a tab).
+    assert.ok(!/<a class="cdx-btn cdx-btn-sm" href="' \+ esc\(assetUrl\('\/r2\//.test(src), 'no target=_blank R2 anchor for the PDF');
+    assert.ok(/a\.download = 'certificado-'/.test(src), 'forces a .pdf filename');
+    assert.ok(src.includes('createObjectURL') && src.includes('revokeObjectURL'), 'blob object URL is created and revoked');
   });
 });

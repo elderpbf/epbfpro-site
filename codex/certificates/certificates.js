@@ -27,6 +27,7 @@ import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
   buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames,
+  hoursNumber,
 } from './cert-render.js';
 import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
 import { sendEmail, renderEmailHtml } from '../js/codex-email.js';
@@ -669,6 +670,7 @@ function _mountEmitidos() {
       if (action === 'mark-sent') { _sendCert(code);       return; }
       if (action === 'preview')   { _previewCert(code);    return; }
       if (action === 'pdf')       { const cert = _certs.find((x) => x.code === code); if (cert) _printCert(cert); return; }
+      if (action === 'dlstored')  { const cert = _certs.find((x) => x.code === code); if (cert) _downloadStoredPdf(cert); return; }
     };
     list.addEventListener('click', onClick);
     _cleanup.push(() => list.removeEventListener('click', onClick));
@@ -915,9 +917,10 @@ function _renderCertRow(c) {
       // Every row can produce its PDF (print → Salvar como PDF), independent of a
       // stored file. When a signed PDF is attached later, link that instead.
       (hasPdf
-        // pdf_path is an R2 key (certificates/<code>.pdf); it is served by the worker
-        // at /r2/<key>, NOT as a relative path off the site. Link through assetUrl.
-        ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(assetUrl('/r2/' + c.pdf_path)) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>'
+        // pdf_path is an R2 key (certificates/<code>.pdf) served cross-origin by the
+        // worker at /r2/<key>. A plain <a download> is ignored cross-origin (opens a
+        // tab), so fetch the bytes and save them as a real download (_downloadStoredPdf).
+        ? '<button class="cdx-btn cdx-btn-sm" data-action="dlstored" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>'
         : '<button class="cdx-btn cdx-btn-sm" data-action="pdf" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>') +
       (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
       // Delete is intentionally NOT a per-row button: it lives only in the bulk bar
@@ -1095,6 +1098,31 @@ async function _fetchStoredPdfBase64(pdfPath, cacheBust) {
   }
 }
 
+// Download a cert's STORED PDF (the signed file in R2) as a real save, not a new
+// tab. The R2 URL is cross-origin (worker domain), where <a download> is ignored;
+// so fetch the bytes into a blob and click an object-URL anchor instead.
+async function _downloadStoredPdf(cert) {
+  if (!cert || !cert.pdf_path) return;
+  notice.ok(t('certificates.pdf_generating'));
+  try {
+    const url = assetUrl('/r2/' + cert.pdf_path) + '?v=' + encodeURIComponent(cert.status || '');
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const blob = await resp.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = 'certificado-' + (cert.code || 'pensoia') + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: download stored pdf: ' + (e && e.message || e), 'error');
+    notice.error(t('certificates.pdf_error'));
+  }
+}
+
 // Bulk "Enviar": e-mail every selectable cert (issued|signed with an e-mail),
 // summarizing how many went out and how many had no address.
 async function _bulkSend(codes) {
@@ -1260,24 +1288,27 @@ function _openIssueFlow() {
         '</div>' +
       '</div>' +
 
-      // Step 3: template + theme
-      '<div class="cdx-field-row">' +
-        '<div class="cdx-field">' +
-          '<label>' + esc(t('certificates.issue_template')) + '</label>' +
-          '<select id="cdx-issue-template">' +
-            CERT_TEMPLATES.map((tpl) => '<option value="' + esc(tpl.key) + '">' + esc(tpl.label) + '</option>').join('') +
-          '</select>' +
+      // Step 3: template + theme — selectors on the left, a live thumbnail on the
+      // right that re-renders as the form changes; click it for the big preview.
+      '<div class="cdx-cert-issue-preview-split">' +
+        '<div class="cdx-cert-issue-fields">' +
+          '<div class="cdx-field">' +
+            '<label>' + esc(t('certificates.issue_template')) + '</label>' +
+            '<select id="cdx-issue-template">' +
+              CERT_TEMPLATES.map((tpl) => '<option value="' + esc(tpl.key) + '">' + esc(tpl.label) + '</option>').join('') +
+            '</select>' +
+          '</div>' +
+          '<div class="cdx-field">' +
+            '<label>' + esc(t('certificates.issue_theme')) + '</label>' +
+            '<select id="cdx-issue-theme">' +
+              CERT_THEMES.map((th) => '<option value="' + esc(th.key) + '"' + (th.key === 'duo' ? ' selected' : '') + '>' + esc(t('certificates.theme_' + th.key)) + '</option>').join('') +
+            '</select>' +
+          '</div>' +
         '</div>' +
-        '<div class="cdx-field">' +
-          '<label>' + esc(t('certificates.issue_theme')) + '</label>' +
-          '<select id="cdx-issue-theme">' +
-            CERT_THEMES.map((th) => '<option value="' + esc(th.key) + '"' + (th.key === 'duo' ? ' selected' : '') + '>' + esc(t('certificates.theme_' + th.key)) + '</option>').join('') +
-          '</select>' +
+        '<div class="cdx-cert-issue-thumbwrap">' +
+          '<button type="button" class="cdx-cert-issue-thumb" id="cdx-issue-thumb" aria-label="' + esc(t('certificates.issue_preview_btn')) + '" title="' + esc(t('certificates.issue_preview_btn')) + '"></button>' +
+          '<small class="cdx-field-hint">' + esc(t('certificates.issue_preview_hint')) + '</small>' +
         '</div>' +
-      '</div>' +
-      '<div class="cdx-cert-issue-previewrow">' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" id="cdx-issue-preview">' + esc(t('certificates.issue_preview_btn')) + '</button>' +
-        '<small class="cdx-field-hint">' + esc(t('certificates.issue_preview_hint')) + '</small>' +
       '</div>' +
 
       // Step 4: course metadata
@@ -1288,7 +1319,7 @@ function _openIssueFlow() {
       '<div class="cdx-field-row">' +
         '<div class="cdx-field">' +
           '<label>' + esc(t('certificates.issue_hours')) + '</label>' +
-          '<input type="text" id="cdx-issue-hours" placeholder="' + esc(t('certificates.issue_hours_ph')) + '">' +
+          '<input type="number" min="0" step="1" inputmode="numeric" id="cdx-issue-hours" placeholder="' + esc(t('certificates.issue_hours_ph')) + '">' +
         '</div>' +
         '<div class="cdx-field">' +
           '<label>' + esc(t('certificates.issue_issued_on')) + '</label>' +
@@ -1347,11 +1378,25 @@ function _openIssueFlow() {
 
   bd.querySelector('#cdx-issue-cancel').addEventListener('click', () => closeModal(bd));
 
-  // Preview the chosen model + theme with the form's current data, before issuing.
-  const previewBtn = bd.querySelector('#cdx-issue-preview');
-  if (previewBtn) previewBtn.addEventListener('click', () => {
-    _openCertFullscreen(_buildIssuePreviewCert(bd, bd.querySelector('#cdx-issue-client')));
+  // Live thumbnail of the chosen model + theme with the form's current data. Click
+  // it for the big fullscreen preview. Re-renders on every field change (debounced
+  // for text inputs) so the user sees the certificate take shape before issuing.
+  const renderThumb = () => _renderIssueThumb(bd, bd.querySelector('#cdx-issue-client'));
+  const thumb = bd.querySelector('#cdx-issue-thumb');
+  if (thumb) thumb.addEventListener('click', () =>
+    _openCertFullscreen(_buildIssuePreviewCert(bd, bd.querySelector('#cdx-issue-client'))));
+  ['#cdx-issue-template', '#cdx-issue-theme'].forEach((sel) => {
+    const el = bd.querySelector(sel);
+    if (el) el.addEventListener('change', renderThumb);
   });
+  let _thumbTimer = null;
+  const debouncedThumb = () => { if (_thumbTimer) clearTimeout(_thumbTimer); _thumbTimer = setTimeout(renderThumb, 350); };
+  ['#cdx-issue-course', '#cdx-issue-hours', '#cdx-issue-issuer', '#cdx-issue-date',
+   '#cdx-issue-instructor', '#cdx-issue-place', '#cdx-issue-modality'].forEach((sel) => {
+    const el = bd.querySelector(sel);
+    if (el) el.addEventListener('input', debouncedThumb);
+  });
+  renderThumb();
 
   const clientSel = bd.querySelector('#cdx-issue-client');
   const turmaSel  = bd.querySelector('#cdx-issue-turma');
@@ -1397,7 +1442,7 @@ function _openIssueFlow() {
     // Pull the course/instance data from the turma into the form (the promise:
     // pick a turma, the certificate fields fill themselves).
     _issueTurma = _issueTurmas.find((tt) => String(tt.id) === String(turmaId)) || null;
-    if (_issueTurma) _autofillIssueFromTurma(bd, _issueTurma);
+    if (_issueTurma) { _autofillIssueFromTurma(bd, _issueTurma); renderThumb(); }
     if (rosterEl) rosterEl.innerHTML = '<span class="cdx-empty">' + esc(t('certificates.loading')) + '</span>';
     if (rosterWrap) rosterWrap.style.display = '';
     try {
@@ -1436,6 +1481,7 @@ function _openIssueFlow() {
             if (cb.checked) _issueSelectedIds.add(pid);
             else _issueSelectedIds.delete(pid);
             syncAll();
+            renderThumb();   // the preview holder = first selected participant
           });
         });
         if (selAll) selAll.addEventListener('change', () => {
@@ -1539,7 +1585,9 @@ function _autofillIssueFromTurma(bd, turma) {
     if (el && val != null && String(val).trim()) el.value = String(val);
   };
   set('#cdx-issue-course', turma.course_title);
-  set('#cdx-issue-hours', turma.hours);
+  // The hours field is numeric-only now; legacy turmas may store "40 horas"/"40h",
+  // so normalize to the bare number before filling the number input.
+  set('#cdx-issue-hours', hoursNumber(turma.hours));
   set('#cdx-issue-place', turma.place);
   set('#cdx-issue-meetings', turma.meetings);
   set('#cdx-issue-format', turma.format ? t('cohorts.fmt_' + turma.format) : '');
@@ -1632,6 +1680,20 @@ function _buildIssuePreviewCert(bd, clientSel) {
     theme:         get('#cdx-issue-theme'),
     meta_json:     JSON.stringify(meta),
   };
+}
+
+// Render the live issue-preview thumbnail (front sheet only, scaled to the small
+// box). PURE-ish: reads the form via _buildIssuePreviewCert and paints the thumb.
+function _renderIssueThumb(bd, clientSel) {
+  const thumb = bd && bd.querySelector('#cdx-issue-thumb');
+  if (!thumb) return;
+  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
+  const cert = _buildIssuePreviewCert(bd, clientSel);
+  thumb.innerHTML = _previewSheetsHtml(cert, origin, 'front');
+  hydrate(thumb, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+  autofitNames(thumb);
+  _fitSheetWidth(thumb);
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => _fitSheetWidth(thumb));
 }
 
 // ── Tab contract ──────────────────────────────────────────────────────────────

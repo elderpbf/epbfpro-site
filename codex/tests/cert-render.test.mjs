@@ -10,6 +10,7 @@ import {
   CERT_TEMPLATES, CERT_TEMPLATE_KEYS, CERT_THEMES, CERT_THEME_KEYS,
   isTemplate, isTheme, defaultMeta, buildCertData,
   renderFront, renderBack, renderFrontPage, renderBackPage, renderCertificate,
+  hoursNumber, hoursLabel,
 } from '../certificates/cert-render.js';
 
 const cert = {
@@ -146,6 +147,53 @@ test('renderCertificate emits front then back', () => {
   const iFront = html.indexOf('f-console');
   const iBack = html.indexOf('cdxc-sheet back');
   assert.ok(iFront !== -1 && iBack !== -1 && iFront < iBack);
+});
+
+test('hoursNumber extracts the bare number from numeric or legacy strings (#20)', () => {
+  assert.equal(hoursNumber('40'), '40');
+  assert.equal(hoursNumber('40 horas'), '40');
+  assert.equal(hoursNumber('40h'), '40');
+  assert.equal(hoursNumber('40 h/a'), '40');
+  assert.equal(hoursNumber('12,5'), '12,5');
+  assert.equal(hoursNumber(''), '');
+  assert.equal(hoursNumber(null), '');
+});
+
+test('hoursLabel always renders the full word "horas", never "h"/"h/a" (#20)', () => {
+  assert.equal(hoursLabel('40'), '40 horas');
+  assert.equal(hoursLabel('40 h/a'), '40 horas');
+  assert.equal(hoursLabel(''), '');
+});
+
+test('the sentence renders "N horas" for both numeric and legacy hours, no doubling (#20)', () => {
+  for (const h of ['12', '12 horas', '12h']) {
+    const dx = buildCertData(Object.assign({}, cert, { hours: h }), meta, 'https://pensoia.com');
+    const html = renderFront('vetor', dx);
+    assert.ok(html.includes('carga horária total de <b>12 horas</b>'), 'hours=' + h + ': "12 horas"');
+    assert.ok(!html.includes('12 horas horas'), 'hours=' + h + ': no doubled "horas"');
+    assert.ok(!html.includes('12h<'), 'hours=' + h + ': not bare "12h"');
+  }
+});
+
+test('a signed cert shows the "assinado digitalmente" note with the CN (#21)', () => {
+  const ds = buildCertData(Object.assign({}, cert, { status: 'signed', signer_cn: 'ELDER P B FILHO:123' }), meta, 'https://pensoia.com');
+  for (const k of CERT_TEMPLATE_KEYS) {
+    const html = renderFront(k, ds);
+    assert.ok(html.includes('Certificado assinado digitalmente'), k + ': signed note');
+    assert.ok(html.includes('ELDER P B FILHO:123'), k + ': signer CN');
+    assert.ok(html.includes('ICP-Brasil'), k + ': ICP-Brasil qualifier');
+  }
+});
+
+test('a signed cert with no CN still shows the ICP-Brasil note (#21)', () => {
+  const ds = buildCertData(Object.assign({}, cert, { status: 'signed' }), meta, 'https://pensoia.com');
+  const html = renderFront('vetor', ds);
+  assert.ok(html.includes('Certificado assinado digitalmente · ICP-Brasil'));
+});
+
+test('an unsigned cert has no signed note (#21)', () => {
+  const html = renderFront('vetor', d); // base cert has no status
+  assert.ok(!html.includes('assinado digitalmente'), 'no signed note when not signed');
 });
 
 test('data is HTML-escaped (no injection through the holder name)', () => {
