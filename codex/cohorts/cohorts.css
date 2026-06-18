@@ -791,6 +791,23 @@ a.cdx-card-mini-icon.is-on:hover {
 .cdx-doss-fact .v { font-size: .85rem; font-weight: 600; color: var(--text-primary); }
 .cdx-doss-fact--course { grid-column: span 2; background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); }
 .cdx-doss-fact--course .v { color: var(--primary-dark); }
+/* #27: inline-editable dossier fields (no more Editar modal). Inputs/selects sit
+   inside a .cdx-doss-fact and auto-save on blur/change. */
+.cdx-doss-headmain { min-width: 0; flex: 1; }
+.cdx-doss-edit {
+  width: 100%; box-sizing: border-box; font: inherit; color: var(--text-primary);
+  background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 6px;
+  padding: .25rem .4rem;
+}
+.cdx-doss-edit:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(20,184,166,.18); }
+.cdx-doss-fact--edit { padding-bottom: .55rem; }
+.cdx-doss-fact--edit .cdx-doss-edit { font-size: .85rem; font-weight: 600; margin-top: .05rem; }
+.cdx-doss-title-edit {
+  font-size: 1.25rem; font-weight: 700; border: 1px solid transparent; background: transparent;
+  padding: .1rem .3rem; margin: -.1rem -.3rem; border-radius: 6px;
+}
+.cdx-doss-title-edit:hover { border-color: var(--border); }
+.cdx-doss-title-edit:focus { background: var(--surface, #fff); border-color: var(--primary); box-shadow: 0 0 0 2px rgba(20,184,166,.18); }
 .cdx-doss-linkbtn { border: none; background: transparent; color: var(--primary-dark); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0; }
 .cdx-doss-sec { border-top: 1px solid var(--border); padding-top: .9rem; margin-top: .3rem; margin-bottom: .9rem; }
 .cdx-doss-sec-h { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .6rem; }

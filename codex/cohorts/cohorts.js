@@ -45,6 +45,8 @@ let _relClientSlug = null;
 let _relTurmaSlug = null;
 let _cpSessions = [];
 let _turmaCourses = [];   // course list cached for the turma form's course picker
+let _dossierTurma = null; // the turma currently shown in the dossier (#27 inline edit)
+let _dossierDepsTried = false; // courses/cp loaded once for the inline selects
 let _pickedCourse = null; // full course fetched when the picker changes (for ementa copy)
 let _cleanup = []; // teardown functions pushed by mount
 
@@ -989,6 +991,7 @@ function _renderDossier(turma) {
   const el = _q('cdx-turma-dossier');
   if (!el) return;
   if (!turma) { el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
+  _dossierTurma = turma;
 
   const client = _clients.find((c) => c.slug === turma.client_slug) || {};
   const clientName = client.display_name || client.name || turma.client_slug;
@@ -1011,9 +1014,21 @@ function _renderDossier(turma) {
   // A bare-number fact with a stable id, so an aula-hours edit can refresh it live.
   const factId = (id, label, val) =>
     '<div class="cdx-doss-fact"><label>' + _esc(label) + '</label><div class="v" id="' + id + '">' + (val ? _esc(val) : '—') + '</div></div>';
-  const courseVal = turma.course_title
-    ? _esc(turma.course_title)
-    : '<button class="cdx-doss-linkbtn" data-doss="edit">' + _esc(t('cohorts.tf_no_course')) + '</button>';
+  // #27: the dossier is the single editable surface (no more Editar modal). Each
+  // editable fact is an input/select that auto-saves on blur/change. Modality is
+  // intentionally omitted (being retired). carga/encontros/datas stay derived.
+  const editText = (field, label, value, ph2) =>
+    '<div class="cdx-doss-fact cdx-doss-fact--edit"><label>' + _esc(label) + '</label>' +
+    '<input class="cdx-doss-edit" type="text" data-edit-field="' + field + '" value="' + _esc(value == null ? '' : value) + '"' + (ph2 ? ' placeholder="' + _esc(ph2) + '"' : '') + '></div>';
+  const editSelect = (field, label, optsHtml) =>
+    '<div class="cdx-doss-fact cdx-doss-fact--edit"><label>' + _esc(label) + '</label>' +
+    '<select class="cdx-doss-edit" data-edit-field="' + field + '">' + optsHtml + '</select></div>';
+  const courseOpts = '<option value="">' + _esc(t('cohorts.tf_no_course')) + '</option>' +
+    (_turmaCourses || []).map((c) => '<option value="' + _esc(String(c.id)) + '"' + (String(turma.course_id || '') === String(c.id) ? ' selected' : '') + '>' + _esc(c.title) + '</option>').join('');
+  const fmtOpts = '<option value="">' + _esc(t('cohorts.none')) + '</option>' +
+    _TF_FORMATS.map((k) => '<option value="' + k + '"' + (turma.format === k ? ' selected' : '') + '>' + _esc(t('cohorts.fmt_' + k)) + '</option>').join('');
+  const cpOpts = '<option value="">' + _esc(t('cohorts.none')) + '</option>' +
+    (_cpSessions || []).map((s) => '<option value="' + _esc(s.id) + '"' + (String(turma.classpulse_session_id || '') === String(s.id) ? ' selected' : '') + '>' + _esc(s.name) + '</option>').join('');
   const ph = _turmaPhase(turma);
   const archived = turma.status === 'archived';
   const url = turma.token ? _turmaUrl(turma.client_slug, turma.slug, turma.token) : null;
@@ -1030,25 +1045,28 @@ function _renderDossier(turma) {
   el.innerHTML =
     '<div class="cdx-doss">' +
       '<div class="cdx-doss-head">' +
-        '<div><h2 class="cdx-doss-title">' + _esc(turma.name) + '</h2>' +
+        '<div class="cdx-doss-headmain">' +
+          '<input class="cdx-doss-title cdx-doss-title-edit cdx-doss-edit" type="text" data-edit-field="name" value="' + _esc(turma.name) + '" aria-label="' + _esc(t('cohorts.field_name_internal')) + '">' +
           '<div class="cdx-doss-sub">' + _esc(sub) + '</div></div>' +
         '<div class="cdx-doss-headright">' +
           (ph.label ? '<span class="cdx-doss-pill ' + ph.cls + '">' + _esc(ph.label) + '</span>' : '') +
           '<div class="cdx-doss-actions">' +
-            '<button class="cdx-btn cdx-btn-sm" data-doss="edit">' + _esc(t('cohorts.edit')) + '</button>' +
             (archived ? '' : '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-doss="archive">' + _esc(t('cohorts.archive')) + '</button>') +
           '</div>' +
         '</div>' +
       '</div>' +
       linksRow +
       '<div class="cdx-doss-facts">' +
-        '<div class="cdx-doss-fact cdx-doss-fact--course"><label>' + _esc(t('cohorts.tf_course')) + '</label><div class="v">' + courseVal + '</div></div>' +
+        editSelect('course_id', t('cohorts.tf_course'), courseOpts) +
         factId('cdx-doss-carga', t('cohorts.course_hours_label'), cargaDerived) +
         factId('cdx-doss-encontros', t('cohorts.tf_meetings'), encontrosDerived) +
         fact(t('cohorts.tf_date_start'), dStart) +
         fact(t('cohorts.tf_date_end'), dEnd) +
-        fact(t('cohorts.tf_format'), fmtLabel) +
-        fact(t('cohorts.tf_place'), turma.place) +
+        editSelect('format', t('cohorts.tf_format'), fmtOpts) +
+        editText('place', t('cohorts.tf_place'), turma.place, t('cohorts.tf_place_ph')) +
+        editText('display_name', t('cohorts.field_display_name'), turma.display_name, t('cohorts.field_display_placeholder')) +
+        editText('whatsapp_url', t('cohorts.field_whatsapp'), turma.whatsapp_url, 'https://chat.whatsapp.com/...') +
+        editSelect('classpulse_session_id', t('cohorts.field_classpulse'), cpOpts) +
       '</div>' +
       // Participantes
       '<div class="cdx-doss-sec">' +
@@ -1071,16 +1089,75 @@ function _renderDossier(turma) {
 
   el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', () => {
     const a = b.dataset.doss;
-    if (a === 'edit') _openTurmaForm(turma);
-    else if (a === 'roster') _openRosterModal(turma);
+    if (a === 'roster') _openRosterModal(turma);
     else if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
     else if (a === 'regen') _regenToken(turma.client_slug, turma.slug);
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
   }));
 
+  _wireDossierInlineEdit(el, turma);
+  // The course + classpulse selects need their option lists; load once and re-render
+  // this dossier when they arrive (so the saved option is selectable).
+  if ((!_turmaCourses || !_turmaCourses.length) || (!_cpSessions || !_cpSessions.length)) {
+    _ensureDossierDeps(() => { if (_dossierTurma === turma) _renderDossier(turma); });
+  }
+
   _loadTurmaAulas(turma.client_slug, turma.slug);
   _loadDossierParticipants(turma);
   _loadDossierCerts(turma);
+}
+
+// Load the course + classpulse option lists once, for the dossier's inline selects.
+function _ensureDossierDeps(cb) {
+  const needCourses = !_turmaCourses || !_turmaCourses.length;
+  const needCp = !_cpSessions || !_cpSessions.length;
+  if ((!needCourses && !needCp) || _dossierDepsTried) { if (cb) cb(); return; }
+  _dossierDepsTried = true;
+  Promise.all([
+    needCourses ? coursesApi.list().then((d) => { _turmaCourses = (d && d.courses) || []; }).catch(() => {}) : Promise.resolve(),
+    needCp ? cpApi.listSessions().then((d) => { _cpSessions = (d && d.sessions) || []; }).catch(() => {}) : Promise.resolve(),
+  ]).then(() => { if (cb) cb(); });
+}
+
+// #27: auto-save each inline-editable dossier field on blur (inputs) / change
+// (selects). Meta fields (whatsapp/classpulse) route through ct_update_turma_meta;
+// the rest through ct_update_turma (a conditional update of just that field).
+function _wireDossierInlineEdit(el, turma) {
+  el.querySelectorAll('[data-edit-field]').forEach((inp) => {
+    const isSelect = inp.tagName === 'SELECT';
+    inp.addEventListener(isSelect ? 'change' : 'blur', () => {
+      const field = inp.dataset.editField;
+      const raw = inp.value;
+      const cur = field === 'course_id'
+        ? String(turma.course_id || '')
+        : (turma[field] == null ? '' : String(turma[field]));
+      if (String(raw) === cur) return; // unchanged → no write
+      let call;
+      if (field === 'whatsapp_url' || field === 'classpulse_session_id') {
+        // ct_update_turma_meta sets BOTH meta columns; send current + the change.
+        const meta = {
+          client_slug: turma.client_slug, slug: turma.slug,
+          whatsapp_url: turma.whatsapp_url || null,
+          classpulse_session_id: turma.classpulse_session_id || null,
+        };
+        meta[field] = raw.trim() === '' ? null : raw.trim();
+        call = api.updateTurmaMeta(meta).then(() => { turma[field] = meta[field]; });
+      } else {
+        const payload = { client_slug: turma.client_slug, slug: turma.slug };
+        if (field === 'course_id') payload.course_id = raw ? Number(raw) : null;
+        else payload[field] = raw.trim() === '' ? null : raw.trim();
+        call = api.updateTurma(payload).then(() => {
+          if (field === 'course_id') {
+            turma.course_id = payload.course_id;
+            const c = (_turmaCourses || []).find((x) => String(x.id) === String(payload.course_id));
+            turma.course_title = c ? c.title : null;
+          } else turma[field] = payload[field];
+        });
+      }
+      call.then(() => _toast(t('cohorts.turma_updated')))
+        .catch((err) => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+    });
+  });
 }
 
 function _loadDossierParticipants(turma) {
@@ -1380,6 +1457,8 @@ export function mount(viewEl, ctx) {
   _relClientSlug = null;
   _relTurmaSlug = null;
   _cpSessions = [];
+  _dossierTurma = null;
+  _dossierDepsTried = false;
   _cleanup = [];
 
   // Route by sub-tab. The Cursos sub-view is its own module; the default
