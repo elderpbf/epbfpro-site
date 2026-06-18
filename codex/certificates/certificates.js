@@ -1585,11 +1585,14 @@ function _autofillIssueFromTurma(bd, turma) {
     if (el && val != null && String(val).trim()) el.value = String(val);
   };
   set('#cdx-issue-course', turma.course_title);
-  // The hours field is numeric-only now; legacy turmas may store "40 horas"/"40h",
-  // so normalize to the bare number before filling the number input.
-  set('#cdx-issue-hours', hoursNumber(turma.hours));
+  // #27: carga horária + encontros are DERIVED from the aulas (carga_horaria =
+  // SUM of per-aula hours, aula_count = COUNT). Prefer those; fall back to the
+  // legacy manual fields for turmas with no per-aula hours yet. The hours field is
+  // numeric-only, so normalize legacy "40 horas"/"40h" strings to the bare number.
+  const derivedHours = (turma.carga_horaria != null && Number(turma.carga_horaria) > 0) ? turma.carga_horaria : turma.hours;
+  set('#cdx-issue-hours', hoursNumber(derivedHours));
   set('#cdx-issue-place', turma.place);
-  set('#cdx-issue-meetings', turma.meetings);
+  set('#cdx-issue-meetings', (turma.aula_count != null && Number(turma.aula_count) > 0) ? String(turma.aula_count) : turma.meetings);
   set('#cdx-issue-format', turma.format ? t('cohorts.fmt_' + turma.format) : '');
   set('#cdx-issue-modality', turma.modality ? t('cohorts.mod_' + turma.modality) : '');
   const modsEl = bd.querySelector('#cdx-issue-modules');

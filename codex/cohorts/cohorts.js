@@ -998,6 +998,20 @@ function _renderDossier(turma) {
   const sub = clientName + (modLabel ? ' · ' + modLabel : '');
   const fact = (label, val) =>
     '<div class="cdx-doss-fact"><label>' + _esc(label) + '</label><div class="v">' + (val ? _esc(val) : '—') + '</div></div>';
+
+  // #27: Carga horária = SUM(aula.hours), Encontros = COUNT(aulas), período =
+  // span of the aula dates — all DERIVED from the aulas (worker ct_list_turmas).
+  // Falls back to the legacy manual fields for turmas with no per-aula hours yet.
+  const _num = (v) => (v != null && Number(v) > 0);
+  // Bare number under the "Carga horária" label (no new i18n unit key needed; the
+  // certificate itself renders the full "N horas"). Falls back to legacy manual hours.
+  const cargaDerived = _num(turma.carga_horaria) ? String(turma.carga_horaria) : (turma.hours || '');
+  const encontrosDerived = _num(turma.aula_count) ? String(turma.aula_count) : (turma.meetings || '');
+  const dStart = _fmtDateBr(turma.computed_date_start || turma.date_start);
+  const dEnd = _fmtDateBr(turma.computed_date_end || turma.date_end);
+  // A bare-number fact with a stable id, so an aula-hours edit can refresh it live.
+  const factId = (id, label, val) =>
+    '<div class="cdx-doss-fact"><label>' + _esc(label) + '</label><div class="v" id="' + id + '">' + (val ? _esc(val) : '—') + '</div></div>';
   const courseVal = turma.course_title
     ? _esc(turma.course_title)
     : '<button class="cdx-doss-linkbtn" data-doss="edit">' + _esc(t('cohorts.tf_no_course')) + '</button>';
@@ -1030,10 +1044,10 @@ function _renderDossier(turma) {
       linksRow +
       '<div class="cdx-doss-facts">' +
         '<div class="cdx-doss-fact cdx-doss-fact--course"><label>' + _esc(t('cohorts.tf_course')) + '</label><div class="v">' + courseVal + '</div></div>' +
-        fact(t('cohorts.course_hours_label'), turma.hours) +
-        fact(t('cohorts.tf_meetings'), turma.meetings) +
-        fact(t('cohorts.tf_date_start'), _fmtDateBr(turma.date_start)) +
-        fact(t('cohorts.tf_date_end'), _fmtDateBr(turma.date_end)) +
+        factId('cdx-doss-carga', t('cohorts.course_hours_label'), cargaDerived) +
+        factId('cdx-doss-encontros', t('cohorts.tf_meetings'), encontrosDerived) +
+        fact(t('cohorts.tf_date_start'), dStart) +
+        fact(t('cohorts.tf_date_end'), dEnd) +
         fact(t('cohorts.tf_format'), fmtLabel) +
         fact(t('cohorts.tf_place'), turma.place) +
       '</div>' +
@@ -1170,6 +1184,11 @@ function _renderAulaColEditor(a) {
           '<label>' + t('cohorts.aula_field_scheduled') + '</label>' +
           '<input type="date" class="cdx-aula-scheduled" value="' + _esc(a.scheduled_for || '') + '">' +
         '</div>' +
+        // #27: per-aula carga horária (numeric). The turma total = SUM of these.
+        '<div class="cdx-field">' +
+          '<label>' + t('cohorts.course_hours_label') + '</label>' +
+          '<input type="number" min="0" step="1" inputmode="numeric" class="cdx-aula-hours" value="' + _esc(a.hours != null ? a.hours : '') + '" placeholder="0">' +
+        '</div>' +
         '<div class="cdx-field">' +
           '<label>' + t('cohorts.aula_field_happened') + '</label>' +
           '<input type="date" class="cdx-aula-happened" value="' + _esc(a.happened_on || '') + '">' +
@@ -1264,16 +1283,19 @@ function _wireAulaEditorEvents(row, aula, idx) {
   const deleteBtn = row.querySelector('.cdx-aula-delete');
   const titleInput = row.querySelector('.cdx-aula-title');
   const schedInput = row.querySelector('.cdx-aula-scheduled');
+  const hoursInput = row.querySelector('.cdx-aula-hours');
   const happInput  = row.querySelector('.cdx-aula-happened');
   const rfromInput = row.querySelector('.cdx-aula-rescheduled-from');
   const rnoteInput = row.querySelector('.cdx-aula-rescheduled-note');
 
   saveBtn.addEventListener('click', () => {
+    const hoursVal = hoursInput && hoursInput.value.trim() !== '' ? Number(hoursInput.value) : null;
     const payload = {
       client_slug: _relClientSlug,
       turma_slug: _relTurmaSlug,
       aula_number: aula.aula_number,
       title: titleInput.value.trim(),
+      hours:            hoursVal,
       scheduled_for:    schedInput.value || null,
       happened_on:      happInput.value  || null,
       rescheduled_from: rfromInput.value || null,
@@ -1293,12 +1315,14 @@ function _wireAulaEditorEvents(row, aula, idx) {
         }
       }
       aula.title            = payload.title;
+      aula.hours            = payload.hours;
       aula.scheduled_for    = payload.scheduled_for;
       aula.happened_on      = payload.happened_on;
       aula.rescheduled_from = payload.rescheduled_from;
       aula.rescheduled_note = payload.rescheduled_note;
       _toast(t('cohorts.aula_saved'));
       _renderTurmaAulas();
+      _refreshDerivedFacts();
     }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
   });
 
@@ -1326,10 +1350,23 @@ function _wireAulaEditorEvents(row, aula, idx) {
           _turmaAulas.splice(idx, 1);
           _toast(t('cohorts.aula_deleted'));
           _renderTurmaAulas();
+          _refreshDerivedFacts();
         }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
       }
     });
   });
+}
+
+// #27: recompute the dossier's DERIVED facts (Carga horária = SUM of saved aula
+// hours, Encontros = COUNT of saved aulas) from the in-memory aula list, so an
+// aula-hours edit/delete updates the panel without a full turma reload.
+function _refreshDerivedFacts() {
+  const saved = _turmaAulas.filter((a) => !a._isNew);
+  const carga = saved.reduce((s, a) => s + (Number(a.hours) || 0), 0);
+  const cEl = (typeof document !== 'undefined') && document.getElementById('cdx-doss-carga');
+  if (cEl) cEl.textContent = carga > 0 ? String(carga) : '—';
+  const eEl = (typeof document !== 'undefined') && document.getElementById('cdx-doss-encontros');
+  if (eEl) eEl.textContent = saved.length > 0 ? String(saved.length) : '—';
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
