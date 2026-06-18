@@ -312,10 +312,24 @@ export default {
   // Cohorts — participant entry-type tags (inline list)
   'cohorts.ptag_lista':    'Roster',
   'cohorts.ptag_qr':       'QR',
-  'cohorts.ptag_aula':     'Class',
   'cohorts.ptag_manual':   'Manual',
   'cohorts.ptag_pending':  'Pending',
   'cohorts.ptag_denied':   'Denied',
+  // Cohorts — participant list legend (the "?" help glyph)
+  'cohorts.phelp_btn_title':     'How this list works',
+  'cohorts.phelp_title':         'How the participant list works',
+  'cohorts.phelp_origin_h':      'How the person got in (once approved)',
+  'cohorts.phelp_lista':         'You pre-approved their email on the roster, before class.',
+  'cohorts.phelp_qr':            'They joined on the spot by scanning the QR you projected in class.',
+  'cohorts.phelp_manual':        'They requested access via the link and you approved them by hand.',
+  'cohorts.phelp_status_h':      'Status (while not yet granted)',
+  'cohorts.phelp_pending':       'Requested access via the link and is waiting for your approval.',
+  'cohorts.phelp_denied':        'You blocked their access. You can reactivate anytime.',
+  'cohorts.phelp_approved_note': 'Approved people show no status, just the origin above.',
+  'cohorts.phelp_conn_h':        'Connection (for approved people)',
+  'cohorts.phelp_connected':     'Has logged in and holds active access.',
+  'cohorts.phelp_waiting':       'Is approved but has not logged in even once yet.',
+  'cohorts.phelp_unverified':    'Email is not confirmed yet (never clicked the verification link).',
 
   // Content tab — sub-tab nav (Items native; the rest bridge to the legacy
   // ClassTrail page until each is migrated)

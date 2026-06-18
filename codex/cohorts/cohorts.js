@@ -776,6 +776,42 @@ function _renderRosterTable(participants) {
   );
 }
 
+// A plain-language legend for the participant list: what each tag, status, and
+// connection mark means. Opened from the "?" glyph next to "Participantes" so the
+// scheme is self-explaining months later. Reuses the real tag classes so the
+// swatches match the rows exactly.
+function _openParticipantsHelp() {
+  const tag = (cls, key) => '<span class="cdx-tag ' + cls + '">' + _esc(t(key)) + '</span>';
+  const row = (swatch, text) =>
+    '<div class="cdx-leg-row"><span class="cdx-leg-sw">' + swatch + '</span>' +
+      '<span class="cdx-leg-tx">' + _esc(text) + '</span></div>';
+  const html =
+    '<div class="cdx-modal" style="max-width:540px;max-height:88vh;overflow-y:auto">' +
+      '<div class="cdx-modal-title">' + _esc(t('cohorts.phelp_title')) + '</div>' +
+
+      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_origin_h')) + '</div>' +
+      row(tag('cdx-tag--lista', 'cohorts.ptag_lista'),   t('cohorts.phelp_lista')) +
+      row(tag('cdx-tag--qr', 'cohorts.ptag_qr'),         t('cohorts.phelp_qr')) +
+      row(tag('cdx-tag--manual', 'cohorts.ptag_manual'), t('cohorts.phelp_manual')) +
+
+      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_status_h')) + '</div>' +
+      row(tag('cdx-tag--pendente', 'cohorts.ptag_pending'), t('cohorts.phelp_pending')) +
+      row(tag('cdx-tag--negado', 'cohorts.ptag_denied'),    t('cohorts.phelp_denied')) +
+      '<p class="cdx-leg-note">' + _esc(t('cohorts.phelp_approved_note')) + '</p>' +
+
+      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_conn_h')) + '</div>' +
+      row('<span class="cdx-prow-conn ok">✓</span>', t('cohorts.phelp_connected')) +
+      row('<span class="cdx-prow-conn">•</span>',    t('cohorts.phelp_waiting')) +
+      row('<span class="cdx-prow-warn">⚠</span>',    t('cohorts.phelp_unverified')) +
+
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn cdx-btn-primary" id="cdx-phelp-close">' + _esc(t('cohorts.close')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = _openModal(html);
+  bd.querySelector('#cdx-phelp-close').addEventListener('click', () => _closeModal(bd));
+}
+
 function _openRosterModal(turma) {
   // Build the modal shell. The participant list will be filled after the API call.
   const modalHtml =
@@ -1084,7 +1120,8 @@ function _renderDossier(turma) {
       '</details>' +
       // ── Participantes (colapsável; inline list with entry-type tags) ──
       '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h">' +
-        '<b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></b>' +
+        '<b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span>' +
+          '<button type="button" class="cdx-phelp" data-doss="phelp" title="' + _esc(t('cohorts.phelp_btn_title')) + '" aria-label="' + _esc(t('cohorts.phelp_btn_title')) + '">?</button></b>' +
         '<span class="cdx-doss-sec-acts"><button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></span>' +
       '</div></summary>' +
         '<div id="cdx-doss-participants"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
@@ -1100,9 +1137,12 @@ function _renderDossier(turma) {
       '</details>' +
     '</div>';
 
-  el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', () => {
+  el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', (e) => {
     const a = b.dataset.doss;
+    // roster/phelp live inside a <summary>; stop the click so it doesn't toggle the section.
+    if (a === 'roster' || a === 'phelp') e.stopPropagation();
     if (a === 'roster') _openRosterModal(turma);
+    else if (a === 'phelp') _openParticipantsHelp();
     else if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
     else if (a === 'regen') _regenToken(turma.client_slug, turma.slug);
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
@@ -1186,13 +1226,17 @@ const _P_STATUS_RANK = { pending: 0, approved: 1, denied: 2 };
 
 function _pTag(p) {
   const st = p.access_status || 'pending';
+  // Two orthogonal axes, shown one at a time: while NOT approved the status is the
+  // actionable fact; once approved the origin (how they got in) is. They never
+  // overlap because origin (approved_via) is only stamped on approval, and the
+  // "approved" state itself is the expected default, so it carries no tag.
   if (st === 'pending') return '<span class="cdx-tag cdx-tag--pendente">' + _esc(t('cohorts.ptag_pending')) + '</span>';
   if (st === 'denied')  return '<span class="cdx-tag cdx-tag--negado">'   + _esc(t('cohorts.ptag_denied'))  + '</span>';
   const via = p.approved_via || '';
-  if (p.source === 'roster' || via === 'roster') return '<span class="cdx-tag cdx-tag--lista">'  + _esc(t('cohorts.ptag_lista'))  + '</span>';
-  if (via === 'qr')                              return '<span class="cdx-tag cdx-tag--qr">'     + _esc(t('cohorts.ptag_qr'))     + '</span>';
-  if (via === 'window' || via === 'presence')    return '<span class="cdx-tag cdx-tag--aula">'   + _esc(t('cohorts.ptag_aula'))   + '</span>';
-  if (via === 'manual')                          return '<span class="cdx-tag cdx-tag--manual">' + _esc(t('cohorts.ptag_manual')) + '</span>';
+  if (via === 'manual')                                        return '<span class="cdx-tag cdx-tag--manual">' + _esc(t('cohorts.ptag_manual')) + '</span>';
+  // In-class enrollment window (the projected QR): window/presence/qr all read as QR.
+  if (via === 'qr' || via === 'window' || via === 'presence') return '<span class="cdx-tag cdx-tag--qr">'     + _esc(t('cohorts.ptag_qr'))     + '</span>';
+  // roster pre-approval, or any older/blank value, reads as the pre-approved list.
   return '<span class="cdx-tag cdx-tag--lista">' + _esc(t('cohorts.ptag_lista')) + '</span>';
 }
 
@@ -1214,8 +1258,7 @@ function _pRow(p) {
   acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-remove">' + _esc(t('alunos.remove')) + '</button>';
   return '<div class="cdx-prow" data-pid="' + p.id + '">' +
     '<div class="cdx-prow-id">' +
-      '<div class="cdx-prow-name">' + _esc(p.display_name || p.name || ('#' + p.id)) +
-        (online ? ' <span class="cdx-al-online">●</span>' : '') + unv + '</div>' +
+      '<div class="cdx-prow-name">' + _esc(p.display_name || p.name || ('#' + p.id)) + unv + '</div>' +
       '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
     '</div>' +
     '<div class="cdx-prow-meta">' + _pTag(p) + conn + '</div>' +

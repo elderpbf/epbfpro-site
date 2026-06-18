@@ -311,10 +311,24 @@ export default {
   // Cohorts — participant entry-type tags (inline list)
   'cohorts.ptag_lista':    'Lista',
   'cohorts.ptag_qr':       'QR',
-  'cohorts.ptag_aula':     'Aula',
   'cohorts.ptag_manual':   'Manual',
   'cohorts.ptag_pending':  'Pendente',
   'cohorts.ptag_denied':   'Negado',
+  // Cohorts — participant list legend (the "?" help glyph)
+  'cohorts.phelp_btn_title':     'Como funciona esta lista',
+  'cohorts.phelp_title':         'Como funciona a lista de participantes',
+  'cohorts.phelp_origin_h':      'Como a pessoa entrou (quando já está aprovada)',
+  'cohorts.phelp_lista':         'Você pré-aprovou o e-mail dela na lista, antes da aula.',
+  'cohorts.phelp_qr':            'Entrou na hora lendo o QR que você projetou durante a aula.',
+  'cohorts.phelp_manual':        'Pediu acesso pelo link e você aprovou na mão.',
+  'cohorts.phelp_status_h':      'Situação (enquanto ainda não está liberada)',
+  'cohorts.phelp_pending':       'Pediu acesso pelo link e está esperando você aprovar.',
+  'cohorts.phelp_denied':        'Você bloqueou o acesso. Pode reativar quando quiser.',
+  'cohorts.phelp_approved_note': 'Quem já está aprovado não mostra situação, só a origem acima.',
+  'cohorts.phelp_conn_h':        'Conexão (de quem já está aprovado)',
+  'cohorts.phelp_connected':     'Já entrou com login e tem acesso ativo.',
+  'cohorts.phelp_waiting':       'Está liberado, mas ainda não fez login nenhuma vez.',
+  'cohorts.phelp_unverified':    'O e-mail ainda não foi confirmado (não clicou no link de verificação).',
 
   // Content tab — sub-tab nav (Items native; the rest bridge to the legacy
   // ClassTrail page until each is migrated)

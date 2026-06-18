@@ -908,6 +908,25 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-prow-acts { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
 .cdx-prow-acts .cdx-btn { padding: .2rem .5rem; font-size: .72rem; }
 
+/* "?" help glyph next to the Participantes header */
+.cdx-phelp {
+  display: inline-grid; place-items: center; width: 17px; height: 17px;
+  margin-left: .4rem; padding: 0; vertical-align: middle;
+  font: inherit; font-size: .66rem; font-weight: 700; line-height: 1;
+  color: var(--text-secondary); background: var(--background);
+  border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
+  transition: border-color .12s, color .12s;
+}
+.cdx-phelp:hover { border-color: var(--primary); color: var(--primary-dark); }
+
+/* Participant-list legend modal */
+.cdx-leg-h { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); margin: 1rem 0 .5rem; }
+.cdx-leg-h:first-of-type { margin-top: .25rem; }
+.cdx-leg-row { display: flex; align-items: flex-start; gap: .6rem; padding: .3rem 0; }
+.cdx-leg-sw { flex: 0 0 auto; min-width: 64px; display: flex; align-items: center; }
+.cdx-leg-tx { font-size: .84rem; color: var(--text-primary); line-height: 1.4; }
+.cdx-leg-note { font-size: .78rem; color: var(--text-secondary); margin: .4rem 0 0; font-style: italic; }
+
 /* ----- Merged turma list (Concept A: turmas grouped under client headers) ----- */
 
 .cdx-cohorts-search {
