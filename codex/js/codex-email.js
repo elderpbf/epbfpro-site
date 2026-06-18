@@ -88,7 +88,10 @@ export async function loadLogoAttachment(origin) {
     let binary = '';
     const CHUNK = 0x8000;
     for (let i = 0; i < bytes.length; i += CHUNK) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
-    return { filename: 'pensoia-logo.png', content: btoa(binary), content_id: LOGO_CID, content_type: 'image/png' };
+    // fallbackUrl: the hosted logo, used by providers WITHOUT inline (cid) support
+    // (Brevo transactional). Resend renders the inline attachment; the worker swaps
+    // cid: -> fallbackUrl for Brevo. So the same e-mail works on both providers.
+    return { filename: 'pensoia-logo.png', content: btoa(binary), content_id: LOGO_CID, content_type: 'image/png', fallbackUrl: DEFAULT_LOGO_URL };
   } catch (_) {
     return null;
   }

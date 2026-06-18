@@ -556,6 +556,7 @@ describe('shared e-mail module (source contract)', () => {
     assert.ok(mod.includes('export const LOGO_CID'), 'exports the logo Content-ID');
     assert.ok(mod.includes('export async function loadLogoAttachment'), 'builds the inline logo attachment');
     assert.ok(mod.includes('content_id'), 'attachment carries a content_id (inline)');
+    assert.ok(mod.includes('fallbackUrl'), 'attachment carries a hosted fallbackUrl (for Brevo, which can\'t inline)');
     assert.ok(/o\.logoCid \? \('cid:'/.test(mod), 'renderEmailHtml emits src="cid:…" when an inline logo is present');
     assert.ok(mod.includes('logoUrl') && mod.includes('DEFAULT_LOGO_URL'), 'still falls back to a hosted URL');
   });
