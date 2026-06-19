@@ -24,6 +24,10 @@
   .mk-tabcount { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 5px;
     margin-left: 6px; border-radius: 999px; background: var(--error); color: #fff; font-size: .6rem; font-weight: 800; }
   .mk-subhead { font-size: .82rem; font-weight: 700; color: var(--text-primary); margin: 1.3rem 0 .7rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  /* Acesso em colunas responsivas: enche a largura em vez de virar lista com espaço morto à direita */
+  .mk-acc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .35rem 1.1rem; align-items: center; }
+  .mk-acc-grid .cdx-acc-row { padding: .4rem 0; }
+  .mk-acc-grid .cdx-acc-actions { grid-column: 1 / -1; margin-top: .5rem; }
   /* os toggles novos na Acesso */
   .cdx-acc-row.mk-acc-new { background: rgba(20,184,166,.07); border-radius: 8px; padding: .35rem .5rem; }
   .mk-new { font-size: .56rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px;
@@ -143,13 +147,15 @@
               </div>
 
               <div class="mk-subhead">Acesso</div>
-              <label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-gated" checked> <span>Exigir identificação (acesso controlado)</span></label>
-              <label class="cdx-acc-row"><span>Modo do gate</span>
-                <select class="cdx-acc-mode"><option>Inline</option><option>Upfront</option></select></label>
-              <label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-certs" checked> <span>Certificados habilitados</span></label>
-              <label class="cdx-acc-row mk-acc-new"><input type="checkbox" checked> <span>Fórum da turma</span><span class="mk-new">novo</span></label>
-              <label class="cdx-acc-row mk-acc-new"><input type="checkbox" checked> <span>Notificações (sino)</span><span class="mk-new">novo</span></label>
-              <div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">Salvar</button></div>
+              <div class="mk-acc-grid">
+                <label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-gated" checked> <span>Exigir identificação (acesso controlado)</span></label>
+                <label class="cdx-acc-row"><span>Modo do gate</span>
+                  <select class="cdx-acc-mode"><option>Inline</option><option>Upfront</option></select></label>
+                <label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-certs" checked> <span>Certificados habilitados</span></label>
+                <label class="cdx-acc-row mk-acc-new"><input type="checkbox" checked> <span>Fórum da turma</span><span class="mk-new">novo</span></label>
+                <label class="cdx-acc-row mk-acc-new"><input type="checkbox" checked> <span>Notificações (sino)</span><span class="mk-new">novo</span></label>
+                <div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">Salvar</button></div>
+              </div>
 
             </div>
           </div>
