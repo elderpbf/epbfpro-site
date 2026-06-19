@@ -22,9 +22,10 @@
     --bg: #0f1419; --surface: #1a1f26;
     --text: #e5e7eb; --text2: #d1d5db; --primary: #14b8a6;
   }
-  /* texto do botão: branco no "Hoje" (o problema), ESCURO nas propostas */
+  /* texto do botão: branco no claro; no ESCURO um cinzinha (branco puro estoura) */
   .col-today { --btn-text: #fff; }
-  .col-a, .col-b { --btn-text: #06241f; }
+  body[data-mode="light"] .col-a, body[data-mode="light"] .col-b { --btn-text: #fff; }
+  body[data-mode="dark"]  .col-a, body[data-mode="dark"]  .col-b { --btn-text: #e5e7eb; }
 
   /* ======================= COLUNA HOJE ======================= */
   /* Valores REAIS de hoje. Note a borda teal no escuro, o botão teal
@@ -244,15 +245,15 @@
   </div>
 
   <div class="swatches">
-    <div class="sw-title">Régua de tom do botão — qual "menos claro" você quer?</div>
-    <div class="sw-note">Todos com texto escuro (jeito da marca), menos o último que é o branco atual pra comparar. Da esquerda (mais claro) pra direita (mais escuro).</div>
+    <div class="sw-title">Régua de cor da fonte do botão (no escuro) — qual cinzinha?</div>
+    <div class="sw-note">Botão fixo no teal #0d9488. Texto claro revertido, mas suavizado: branco puro estoura no escuro. O primeiro é o branco puro (pra evitar); da esquerda (quase branco) pra direita (mais cinza).</div>
     <div class="sw-row">
-      <div class="sw"><button class="swbtn" style="background:#14b8a6;color:#06241f">Botão</button><code>#14b8a6 (claro)</code></div>
-      <div class="sw"><button class="swbtn" style="background:#12a596;color:#06241f">Botão</button><code>#12a596</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#06241f">Botão</button><code>#0d9488</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0c857a;color:#06241f">Botão</button><code>#0c857a</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0a766c;color:#06241f">Botão</button><code>#0a766c</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#fff">Botão</button><code>#0d9488 + branco</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#ffffff">Botão</button><code>#ffffff (puro, evitar)</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#eef2f1">Botão</button><code>#eef2f1</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#e5e7eb">Botão</button><code>#e5e7eb</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#d8efe9">Botão</button><code>#d8efe9 (tom teal)</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#d1d5db">Botão</button><code>#d1d5db</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#c2cdd6">Botão</button><code>#c2cdd6</code></div>
     </div>
   </div>
 
@@ -320,7 +321,7 @@
         <button class="btn-ghost">Secundário</button>
         <button class="iconbtn">✎</button>
       </div>
-      <p class="note">Primário = teal escuro + texto escuro.</p>
+      <p class="note">Primário = teal escuro + texto cinza claro (não branco puro).</p>
 
       <div class="sec-label">Chips (fundo = cor da página)</div>
       <div class="btnrow"><span class="chip">Chip</span><span class="chip on">Chip ligado</span></div>
@@ -359,7 +360,7 @@
         <button class="btn-ghost">Secundário</button>
         <button class="iconbtn">✎</button>
       </div>
-      <p class="note">Primário = teal escuro + texto escuro.</p>
+      <p class="note">Primário = teal escuro + texto cinza claro (não branco puro).</p>
 
       <div class="sec-label">Chips (fundo = cor da página)</div>
       <div class="btnrow"><span class="chip">Chip</span><span class="chip on">Chip ligado</span></div>
