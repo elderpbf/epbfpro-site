@@ -140,7 +140,10 @@ function _pollEnroll() {
     const urlEl = document.getElementById('cdx-disp-enroll-url');
     if (urlEl) {
       const code = String(_enrollState.enrollment_code || '');
-      urlEl.innerHTML = entrarUrl('') + '<span class="cdx-disp-enroll-code">' + (/^[0-9]{4}$/.test(code) ? code : '----') + '</span>';
+      const codeOut = /^[0-9]{4}$/.test(code) ? code : '----';
+      // Code on its own line below the address, so it never splits across a wrap.
+      urlEl.innerHTML = '<span class="cdx-disp-enroll-prefix">' + entrarUrl('') + '</span>' +
+        '<span class="cdx-disp-enroll-code">' + codeOut + '</span>';
     }
     overlay.hidden = false;
   }).catch(() => {});
