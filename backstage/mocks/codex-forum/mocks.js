@@ -1,21 +1,21 @@
 /* Mock Review Kit · manifesto — Codex: dossiê tabbed + sino + fórum admin
-   3 superfícies novas do Codex, 2 opções cada. */
+   Lote fiel (refeito): copia o shell real e muda só o delta.
+   Dossiê = 1 (só o delta), sino = S2 corrigido, fórum = A vs B.
+   (a 1ª leva, reconstruída/rejeitada, está em archive/) */
 window.REVIEW_MANIFEST = {
   title: 'Codex · Dossiê tabbed + Sino + Fórum admin',
-  storageKey: 'mockrev_codexforum_ratings_v1',
-  notesKey:   'mockrev_codexforum_notes_v1',
+  storageKey: 'mockrev_codexforum_ratings_v2',
+  notesKey:   'mockrev_codexforum_notes_v2',
   rows: [
-    { label: 'Dossiê tabbed', items: [
-      { id: 'd1', file: 'd1.html', label: 'D1 · Abas horizontais' },
-      { id: 'd2', file: 'd2.html', label: 'D2 · Rail vertical' }
+    { label: 'Dossiê', items: [
+      { id: 'dossie', file: 'dossie.html', label: 'Dossiê tabbed' }
     ]},
     { label: 'Sino', items: [
-      { id: 's1', file: 's1.html', label: 'S1 · Dropdown' },
-      { id: 's2', file: 's2.html', label: 'S2 · Agrupado por turma' }
+      { id: 'sino', file: 'sino.html', label: 'Sino · agrupado' }
     ]},
     { label: 'Fórum admin', items: [
-      { id: 'f1', file: 'f1.html', label: 'F1 · Dois painéis' },
-      { id: 'f2', file: 'f2.html', label: 'F2 · Coluna única' }
+      { id: 'forum-a', file: 'forum-a.html', label: 'A · 2 painéis' },
+      { id: 'forum-b', file: 'forum-b.html', label: 'B · coluna + overlay' }
     ]}
   ]
 };
