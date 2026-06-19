@@ -104,12 +104,18 @@ function _renderStudentQA(data, cpq) {
 // enroll-control), two surfaces — "é tudo o mesmo código".
 function _wireQrToggle() {
   const btn = document.getElementById('cdx-disp-qr-toggle');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    if (!_turma) return;
-    const ids = { client_slug: _turma.client_slug, slug: _turma.turma_slug };
-    Promise.resolve(toggleProjection(cohorts, ids, _enrollState)).then(_pollEnroll).catch(() => {});
-  });
+  if (btn) btn.addEventListener('click', _toggleProjection);
+  // Clicking the projected QR overlay dismisses it too, mirroring the qr-share
+  // modal's backdrop-click close. The overlay only shows while projecting, so a
+  // click un-projects (the same server toggle the button drives).
+  const overlay = document.getElementById('cdx-disp-enroll');
+  if (overlay) overlay.addEventListener('click', _toggleProjection);
+}
+
+function _toggleProjection() {
+  if (!_turma) return;
+  const ids = { client_slug: _turma.client_slug, slug: _turma.turma_slug };
+  Promise.resolve(toggleProjection(cohorts, ids, _enrollState)).then(_pollEnroll).catch(() => {});
 }
 
 // The enrollment QR overlay: shown only while the instructor projects it

@@ -37,6 +37,38 @@
 }
 .cdx-bulk-bar > span { color: var(--text-secondary); font-size: 0.85rem; flex: 1; }
 
+/* ── Search + sort controls (sit above the type-filter chips) ────────────── */
+.cdx-items-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.cdx-items-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.42rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cdx-items-search:focus { outline: none; border-color: var(--primary); }
+.cdx-items-sort-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.cdx-items-sort {
+  padding: 0.38rem 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cdx-items-sort:focus { outline: none; border-color: var(--primary); }
+
 /* ── Filter row ──────────────────────────────────────────────────────────── */
 .cdx-filter-row { display: flex; align-items: center; gap: 0.5rem; }
 

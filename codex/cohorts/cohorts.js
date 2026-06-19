@@ -1122,7 +1122,10 @@ function _renderDossier(turma) {
         '<div class="cdx-doss-headright">' +
           (ph.label ? '<span class="cdx-doss-pill ' + ph.cls + '">' + _esc(ph.label) + '</span>' : '') +
           '<div class="cdx-doss-actions">' +
-            (archived ? '' : '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-doss="archive">' + _esc(t('cohorts.archive')) + '</button>') +
+            (archived
+              ? '<button class="cdx-btn cdx-btn-sm" data-doss="unarchive">' + _esc(t('cohorts.unarchive')) + '</button>' +
+                '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-doss="delete">' + _esc(t('cohorts.delete_turma_btn')) + '</button>'
+              : '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-doss="archive">' + _esc(t('cohorts.archive')) + '</button>') +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -1185,6 +1188,8 @@ function _renderDossier(turma) {
     if (a === 'roster') _openRosterModal(turma);
     else if (a === 'phelp') _openParticipantsHelp();
     else if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
+    else if (a === 'unarchive') _unarchiveTurma(turma.client_slug, turma.slug);
+    else if (a === 'delete') _deleteTurma(turma);
     else if (a === 'regen') _regenToken(turma.client_slug, turma.slug);
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
   }));
