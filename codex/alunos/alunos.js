@@ -8,7 +8,7 @@
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { cohorts as api } from '../js/codex-api.js';
-import { clockOffset, remainingSec, fmtRemain, enrollUrl } from './enroll-clock.js';
+import { clockOffset, remainingSec, fmtRemain, enrollUrl } from '../js/enroll-clock.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import * as qr from '../js/qr-share-modal.js';
 

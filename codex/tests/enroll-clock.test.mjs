@@ -1,11 +1,11 @@
-// codex/alunos/enroll-clock.js — the QR enrollment countdown math (pure).
+// codex/js/enroll-clock.js — the QR enrollment countdown math (pure).
 // The countdown must reflect the REAL server window, not a silent client-only timer,
 // so remaining time is anchored to the server expiry + a measured clock offset. These
-// pin that math; the DOM that ticks it (alunos.js) is verified on staging.
+// pin that math; the DOM that ticks it (the dossier Acesso card) is verified on staging.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const { clockOffset, remainingSec, fmtRemain, enrollUrl } = await import('../alunos/enroll-clock.js');
+const { clockOffset, remainingSec, fmtRemain, enrollUrl } = await import('../js/enroll-clock.js');
 
 test('clockOffset corrects a skewed client clock to server time', () => {
   // Server says 1000, client says 940 -> offset +60.

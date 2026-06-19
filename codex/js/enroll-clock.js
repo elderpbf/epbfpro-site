@@ -1,4 +1,4 @@
-// codex/alunos/enroll-clock.js
+// codex/js/enroll-clock.js
 // Pure clock helpers for the QR enrollment countdown. The remaining time is anchored to
 // the SERVER expiry plus a measured server/client offset, so it reflects the real window
 // even if the admin's clock is skewed, and the card re-validates against the server on a

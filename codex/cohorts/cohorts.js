@@ -11,7 +11,7 @@ import { aulaStatus } from '../js/aula-status.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
-import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
+import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings, enrollmentHtml, loadEnrollment, clearEnrollTimer } from '../js/access-panel.js';
 import * as cursos from './courses.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
@@ -1029,6 +1029,8 @@ function _fmtDateBr(iso) {
 function _renderDossier(turma) {
   const el = _q('cdx-turma-dossier');
   if (!el) return;
+  // Kill any QR countdown left by the previously shown dossier before rebuilding.
+  clearEnrollTimer();
   if (!turma) { el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
   _dossierTurma = turma;
   _dossierPFilter = 'all';
@@ -1114,7 +1116,7 @@ function _renderDossier(turma) {
           trailCard +
         '</div>' +
       '</details>' +
-      // ── Acesso (gating switches; QR enrollment + participants fold in next; mounted from js/access-panel.js) ──
+      // ── Acesso (gating switches + the QR enrollment window; mounted from js/access-panel.js) ──
       '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.sec_access')) + '</b></div></summary>' +
         '<div id="cdx-doss-acesso"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</details>' +
@@ -1153,8 +1155,14 @@ function _renderDossier(turma) {
   // panel (same component the Alunos tab uses, so the logic lives in one place).
   const accEl = el.querySelector('#cdx-doss-acesso');
   if (accEl) {
-    accEl.innerHTML = accessSettingsHtml(turma);
-    wireAccessSettings(accEl, turma, { api, clientSlug: turma.client_slug, slug: turma.slug });
+    const accOpts = { api, clientSlug: turma.client_slug, slug: turma.slug };
+    accEl.innerHTML = accessSettingsHtml(turma) +
+      '<div class="cdx-acc-enroll">' +
+        '<div class="cdx-acc-enroll-h">' + _esc(t('alunos.enroll')) + '</div>' +
+        enrollmentHtml() +
+      '</div>';
+    wireAccessSettings(accEl, turma, accOpts);
+    loadEnrollment(accEl, accOpts);
   }
   // The course + classpulse selects need their option lists; load once and re-render
   // this dossier when they arrive (so the saved option is selectable).
@@ -1635,6 +1643,7 @@ export function mount(viewEl, ctx) {
 
 export function unmount() {
   cursos.unmount();
+  clearEnrollTimer(); // stop any QR countdown the dossier left running
   _cleanup.forEach(fn => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';
