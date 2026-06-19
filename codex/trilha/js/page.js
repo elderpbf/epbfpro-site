@@ -12,8 +12,9 @@ import { t } from '../i18n.js';
 import { extractMagicToken, extractEnrollToken, isLoggedIn, clearToken, getToken, getPresence, setPresence, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
 import { isWall } from './access.js';
+import { createBell } from '../../js/notif-bell.js';
 
-const PANELS = ['aulas', 'apostila', 'outros'];
+const PANELS = ['aulas', 'forum', 'apostila', 'outros'];
 
 // Which panel a location hash selects (default 'aulas').
 export function resolveTab(hash) {
@@ -67,6 +68,12 @@ export async function mount(root, ctx = {}) {
       renderTabs(root);
       _onHash = () => onHashChange();
       if (_win) _win.addEventListener('hashchange', _onHash);
+      // Deeplink: the notification bell emits ?thread=<id>. Land on the Fórum tab
+      // (forum.js reads the param and opens the thread). Only when the turma enabled
+      // the forum and the tab is therefore present.
+      const turma = (state.data || {}).turma || {};
+      const hasThreadLink = (() => { try { return !!new URLSearchParams(loc.search || '').get('thread'); } catch (_) { return false; } })();
+      if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
       onHashChange();
     }
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); if (!handleEnrollReturn(loc)) handleMagicReturn(loc); }
@@ -197,6 +204,28 @@ function renderHeaderActions() {
       _loginPill = buildLoginPill();
       prepend(_loginPill);
     }
+
+    // Notification bell (student): only when the turma enabled notifications AND the
+    // student is logged in (notifications are computed against their identity). Scoped
+    // to this turma; clicking an item follows its ?thread= deeplink. Refreshes on focus.
+    if (data.turma && data.turma.notifications_enabled && state.sessionToken) {
+      const bell = createBell({
+        fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true }),
+        markSeen: () => trail.forumMarkSeen({ session_token: state.sessionToken }),
+        onNavigate: (item) => {
+          if (!item || !item.deeplink || typeof location === 'undefined') return;
+          // The worker deeplink omits the access token (?k=). The clean path supplies
+          // client/turma but page.js requires the token, so a bare deeplink would land
+          // on link_invalid. Re-append the token we already hold for THIS turma.
+          let url = item.deeplink;
+          if (state.token) url += (url.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(state.token);
+          location.href = url;
+        },
+        t,
+        btnClass: 'ph-action-btn',
+      });
+      prepend(bell.el);
+    }
   })();
 }
 
@@ -324,6 +353,7 @@ function stripEt() {
 
 function renderTabs(root) {
   const data = state.data || {};
+  const turma = data.turma || {};
   const items = data.items || [];
   const outros = items.filter((it) => it.aula_number == null && it.set_id == null && it.type !== 'tarefa');
   const apostilaSet = data.apostila_set;
@@ -331,6 +361,10 @@ function renderTabs(root) {
 
   const outrosBtn = root.querySelector('#cdx-tr-tab-outros');
   const apostilaBtn = root.querySelector('#cdx-tr-tab-apostila');
+  const forumBtn = root.querySelector('#cdx-tr-tab-forum');
+
+  // The Fórum tab shows only when the turma enabled it.
+  if (forumBtn) forumBtn.hidden = !turma.forum_enabled;
 
   if (outrosBtn) {
     if (outros.length) outrosBtn.textContent = t('page.tab_outros') + ' (' + outros.length + ')';

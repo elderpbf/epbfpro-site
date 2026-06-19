@@ -32,6 +32,17 @@ export const trail = {
   profileSave:    (p) => call('student_profile_save', p),   // { session_token, display_name, consent, consent_version } -> { ok } | { error }
   sessionCheck:   (p) => call('student_session_check', p),  // { session_token } -> { ok, participant_id, turma_id } | { error }
 
+  // Fórum (Phase 8). Student face: all gated by a valid session token for the turma.
+  // Notifications are computed server-side; the bell consumes forumNotifications /
+  // forumMarkSeen through this same facade.
+  forumListThreads: (p) => call('ct_forum_list_threads', p),  // { session_token } -> { ok, threads }
+  forumGetThread:   (p) => call('ct_forum_get_thread', p),    // { session_token, thread_id } -> { ok, thread, posts }
+  forumCreateThread:(p) => call('ct_forum_create_thread', p), // { session_token, title, body } -> { ok, thread }
+  forumCreatePost:  (p) => call('ct_forum_create_post', p),   // { session_token, thread_id, parent_post_id?, body } -> { ok, post }
+  forumEditPost:    (p) => call('ct_forum_edit_post', p),     // { session_token, post_id, body } -> { ok } | { error }
+  forumNotifications:(p) => call('ct_forum_notifications', p),// { session_token } -> { ok, count, items }
+  forumMarkSeen:    (p) => call('ct_forum_mark_seen', p),     // { session_token } -> { ok }
+
   // Device-presence (Phase 7, signal b): claim a presence grant while the turma's
   // live session is open; the device stores it and offers it at login so being in
   // the room earns access even if the student logs in later.
@@ -41,7 +52,10 @@ export const trail = {
   // mints a presence grant on scan (silently kept in localStorage), so a later
   // off-window magic-link login auto-approves. Email is ALWAYS confirmed via the link.
   enrollClaim:    (p) => call('student_enroll_claim', p),    // { client_slug, turma_slug, et } -> { ok, granted, presence_token? }
+
   // Typed entry (pensoia.com/trilha/<code>): resolve the 4-digit code to the live turma
+  // + et so the entry page forwards into the trilha exactly as a QR scan would. Public,
+  // resolves only while the window is open (same capability + time-box as the QR).
   resolveEnrollCode: (p) => call('ct_resolve_enroll_code', p), // { code } -> { ok, found, client_slug, turma_slug, turma_token, enrollment_token } | { ok, found:false }
 };
 

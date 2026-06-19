@@ -181,7 +181,21 @@ export const cohorts = {
   openEnrollment:        (p) => call('ct_open_enrollment', p),          // { client_slug, slug, ttl_seconds? } — mints if none, REUSES a live window, sets qr_shown=1
   closeEnrollment:       (p) => call('ct_close_enrollment', p),         // { client_slug, slug }
   setEnrollmentQr:       (p) => call('ct_set_enrollment_qr', p),        // { client_slug, slug, shown } — project/un-project the QR without touching the window
-  getEnrollment:         (p) => call('ct_get_enrollment', p)            // { client_slug, slug } -> { open, now, enrollment_token, enrollment_expires_at, turma_token, qr_shown }
+  getEnrollment:         (p) => call('ct_get_enrollment', p),           // { client_slug, slug } -> { open, now, enrollment_token, enrollment_expires_at, turma_token, qr_shown }
+  // Fórum moderation (Phase 8). The instructor moderates ENTIRELY from Codex (no
+  // Trilha access), so this is the full toolkit: list/open threads, open a new one,
+  // reply as professor, pin, delete, and edit his own (admin-authored) post.
+  forumListThreads:  (p) => call('ct_forum_admin_list_threads', p),  // { client_slug, turma_slug } -> { ok, threads }
+  forumGetThread:    (p) => call('ct_forum_admin_get_thread', p),    // { thread_id } -> { ok, thread, posts }
+  forumCreateThread: (p) => call('ct_forum_admin_create_thread', p), // { client_slug, turma_slug, title, body, pinned? } -> { ok, thread }
+  forumReply:        (p) => call('ct_forum_admin_reply', p),         // { thread_id, parent_post_id?, body } -> { ok, post }
+  forumSetPinned:    (p) => call('ct_forum_set_pinned', p),          // { thread_id, pinned } -> { ok }
+  forumDeletePost:   (p) => call('ct_forum_delete_post', p),         // { post_id } -> { ok }
+  forumDeleteThread: (p) => call('ct_forum_delete_thread', p),       // { thread_id } -> { ok }
+  forumEditPost:     (p) => call('ct_forum_admin_edit_post', p),     // { post_id, body } -> { ok } (admin-authored posts only)
+  // Cross-turma teacher notifications (the topbar bell).
+  forumNotifications:(p) => call('ct_forum_admin_notifications', p), // -> { ok, count, items }
+  forumMarkSeen:     (p) => call('ct_forum_admin_mark_seen', p)      // { client_slug?, turma_slug? } -> { ok }
 };
 
 // Courses — reusable course templates (Cohorts → Cursos sub-tab). A course is a

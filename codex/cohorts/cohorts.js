@@ -12,6 +12,7 @@ import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
+import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
@@ -1187,6 +1188,10 @@ function _renderDossier(turma) {
   _loadTurmaAulas(turma.client_slug, turma.slug);
   _loadDossierParticipants(turma);
   _loadDossierCerts(turma);
+  // Fórum moderation (2-pane): the instructor's full toolkit, mounted into the
+  // Fórum sub-tab. Eager like the other dossier loaders.
+  const forumEl = el.querySelector('#cdx-doss-forum');
+  if (forumEl) mountForumAdmin(forumEl, turma);
 }
 
 // Load the course + classpulse option lists once, for the dossier's inline selects.

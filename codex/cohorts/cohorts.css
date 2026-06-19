@@ -827,12 +827,76 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 /* Per-turma dossier sub-tabs (Phase 8): the section stack became tab panels.
    Reuses the Codex .cdx-subtab idiom; the buttons need the native-button reset. */
 .cdx-doss-tabs { margin: .5rem 0 1.1rem; border-bottom: 1px solid var(--border); }
-.cdx-doss-tabs .cdx-subtab { border: none; background: none; cursor: pointer; font-family: inherit; }
+.cdx-doss-tabs .cdx-substrip { display: flex; gap: .25rem; }
+.cdx-doss-tabs .cdx-subtab {
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  padding: .5rem .85rem; font-size: .82rem; font-weight: 600; color: var(--text-secondary);
+  /* The active marker is a primary underline; reserve the space on every tab so
+     activating one doesn't shift the row. */
+  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s ease, border-color .15s ease;
+}
+.cdx-doss-tabs .cdx-subtab:hover { color: var(--text-primary); }
+.cdx-doss-tabs .cdx-subtab.active { color: var(--primary-dark); border-bottom-color: var(--primary); font-weight: 700; }
+[data-theme="dark"] .cdx-doss-tabs .cdx-subtab.active { color: var(--primary-light); }
 .cdx-doss-panel { animation: cdx-doss-fade .18s ease both; }
 @keyframes cdx-doss-fade { from { opacity: 0; } to { opacity: 1; } }
 .cdx-doss-panel[hidden] { display: none; }
 .cdx-doss-subhead { font-size: .8rem; font-weight: 700; color: var(--text-primary); margin: 1.2rem 0 .7rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .cdx-doss-panel-bar { display: flex; align-items: center; gap: .5rem; margin-bottom: .7rem; }
+
+/* Fórum moderation (Phase 8): 2-pane (thread list | open thread), mock Opção A.
+   The instructor moderates entirely from here. cdx-fa- prefix. */
+.cdx-fa { display: grid; grid-template-columns: 280px 1fr; gap: 1rem; min-height: 360px; }
+.cdx-fa-list { border-right: 1px solid var(--border); padding-right: 1rem; display: flex; flex-direction: column; gap: .6rem; }
+.cdx-fa-list-head { display: flex; }
+.cdx-fa-new { width: 100%; }
+.cdx-fa-newform { display: flex; flex-direction: column; gap: .5rem; padding: .6rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.cdx-fa-nt, .cdx-fa-nb, .cdx-fa-editinput, .cdx-fa-replyinput {
+  width: 100%; box-sizing: border-box; font-family: inherit; font-size: .85rem; color: var(--text-primary);
+  background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: .45rem .6rem; resize: vertical;
+}
+.cdx-fa-nt { font-weight: 700; }
+.cdx-fa-pinrow { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--text-secondary); }
+.cdx-fa-newactions { display: flex; justify-content: flex-end; gap: .5rem; }
+.cdx-fa-threads { display: flex; flex-direction: column; gap: .35rem; overflow-y: auto; }
+.cdx-fa-trow { padding: .55rem .6rem; border: 1px solid var(--border); border-radius: 9px; cursor: pointer; background: var(--surface); transition: border-color .12s ease, background .12s ease; }
+.cdx-fa-trow:hover { border-color: var(--primary); }
+.cdx-fa-trow--active { border-color: var(--primary); background: var(--cdx-card-sel-bg, rgba(20,184,166,0.08)); }
+.cdx-fa-trow-top { display: flex; align-items: center; gap: .35rem; }
+.cdx-fa-trow-title { font-size: .85rem; font-weight: 700; color: var(--text-primary); line-height: 1.25; }
+.cdx-fa-trow-meta { font-size: .7rem; color: var(--text-secondary); margin-top: .25rem; }
+.cdx-fa-pin { color: var(--primary-dark); }
+
+.cdx-fa-detail { display: flex; flex-direction: column; gap: .8rem; min-width: 0; }
+.cdx-fa-pick { margin: auto; }
+.cdx-fa-dhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding-bottom: .7rem; }
+.cdx-fa-dtitle { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.cdx-fa-dactions { display: flex; gap: .4rem; flex-shrink: 0; }
+.cdx-fa-tbtn {
+  font-family: inherit; font-size: .72rem; font-weight: 600; color: var(--text-secondary);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: .3rem .55rem; cursor: pointer;
+}
+.cdx-fa-tbtn:hover { color: var(--primary-dark); border-color: var(--primary); }
+.cdx-fa-posts { display: flex; flex-direction: column; gap: .7rem; }
+.cdx-fa-post { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .7rem .85rem; }
+.cdx-fa-post--prof { border-color: rgba(124,58,237,0.35); background: rgba(124,58,237,0.05); }
+[data-theme="dark"] .cdx-fa-post--prof { background: rgba(124,58,237,0.12); }
+.cdx-fa-post-head { display: flex; align-items: center; gap: .45rem; margin-bottom: .3rem; }
+.cdx-fa-post-name { font-size: .82rem; font-weight: 700; color: var(--text-primary); }
+.cdx-fa-post-time { font-size: .7rem; color: var(--text-secondary); }
+.cdx-fa-profbadge {
+  font-size: .6rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px;
+  background: rgba(124,58,237,0.12); color: #6d28d9; border: 1px solid rgba(124,58,237,0.3);
+}
+[data-theme="dark"] .cdx-fa-profbadge { color: #c4b5fd; background: rgba(124,58,237,0.22); }
+.cdx-fa-post-body { font-size: .86rem; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; }
+.cdx-fa-post-actions { display: flex; gap: .8rem; margin-top: .4rem; }
+.cdx-fa-pbtn { font-family: inherit; font-size: .72rem; font-weight: 600; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0; }
+.cdx-fa-pbtn:hover { color: var(--primary-dark); }
+.cdx-fa-pbtn--danger:hover { color: var(--error); }
+.cdx-fa-replybar { display: flex; gap: .5rem; align-items: flex-end; border-top: 1px dashed var(--border); padding-top: .8rem; }
+.cdx-fa-replyinput { flex: 1; }
+@media (max-width: 900px) { .cdx-fa { grid-template-columns: 1fr; } .cdx-fa-list { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 1rem; } }
 
 /* Access settings rows (shared js/access-panel.js, also used by the Alunos tab). */
 /* Rows flow into responsive columns so the panel fills the width (no dead space). */
