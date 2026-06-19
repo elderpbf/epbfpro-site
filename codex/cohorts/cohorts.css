@@ -824,6 +824,9 @@ details.cdx-doss-sec[open] > summary .cdx-doss-sec-h { margin-bottom: .6rem; }
 details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-doss-sec-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
 /* Access settings rows (shared js/access-panel.js, also used by the Alunos tab). */
+/* Rows flow into responsive columns so the panel fills the width (no dead space). */
+.cdx-acc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .15rem 1.1rem; align-items: center; }
+.cdx-acc-grid .cdx-acc-actions { grid-column: 1 / -1; }
 .cdx-acc-row { display: flex; align-items: center; gap: .5rem; padding: .3rem 0; font-size: .86rem; color: var(--text-primary); }
 .cdx-acc-row select { font: inherit; padding: .25rem .4rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface, #fff); color: var(--text-primary); }
 .cdx-acc-actions { display: flex; align-items: center; gap: .6rem; margin-top: .5rem; }

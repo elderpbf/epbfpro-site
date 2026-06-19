@@ -25,6 +25,8 @@ export default {
   'alunos.mode_upfront': 'Login wall before anything',
   'alunos.certs':        'Certificates enabled',
   'alunos.enroll_prompt':'Ask to register on QR scan',
+  'alunos.forum':        'Class forum',
+  'alunos.notifications':'Notifications (bell)',
   'alunos.save':         'Save',
   'alunos.saved':        'Saved.',
   'alunos.save_error':   'Save failed.',
