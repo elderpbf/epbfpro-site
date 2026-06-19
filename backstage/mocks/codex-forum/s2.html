@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sino · S2 (agrupado por turma)</title>
+
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.1">
+<link rel="stylesheet" href="/codex/css/backstage.css?v=1.0">
+<link rel="stylesheet" href="/codex/css/tokens.css?v=1.2">
+<link rel="stylesheet" href="/codex/css/codex.css?v=2.6">
+<link rel="stylesheet" href="/codex/cohorts/cohorts.css?v=2.6">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+
+<style>
+  .mk-bell-wrap { position: relative; display: inline-flex; }
+  .mk-bell-badge { position: absolute; top: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+    background: var(--error); color: #fff; font-size: .6rem; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid var(--surface); }
+  .mk-bell svg { width: 19px; height: 19px; }
+
+  .mk-panel { position: absolute; top: calc(100% + 10px); right: 0; width: 380px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 22px 54px -18px rgba(0,0,0,.35); overflow: hidden; z-index: 80; }
+  .mk-panel-head { display: flex; align-items: center; justify-content: space-between; padding: .8rem 1rem; border-bottom: 1px solid var(--border); }
+  .mk-panel-title { font-size: .92rem; font-weight: 800; color: var(--text-primary); }
+  .mk-panel-mark { font-size: .74rem; font-weight: 700; color: var(--primary-dark); background: none; border: none; cursor: pointer; font-family: inherit; }
+
+  .mk-group-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem 1rem;
+    background: var(--background); font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); }
+  .mk-group-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px;
+    border-radius: 999px; background: var(--primary); color: #fff; font-size: .66rem; font-weight: 800; }
+
+  .mk-notif { display: flex; gap: .7rem; padding: .75rem 1rem; border-bottom: 1px solid var(--border); cursor: pointer; text-decoration: none; }
+  .mk-notif:hover { background: rgba(20,184,166,.06); }
+  .mk-notif--unread { background: rgba(20,184,166,.05); }
+  .mk-notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); margin-top: .42rem; flex-shrink: 0; }
+  .mk-notif-body { flex: 1; min-width: 0; }
+  .mk-notif-text { font-size: .85rem; color: var(--text-primary); line-height: 1.45; }
+  .mk-notif-text b { font-weight: 700; }
+  .mk-notif-meta { font-size: .72rem; color: var(--text-secondary); margin-top: .2rem; }
+  .mk-panel-foot { padding: .6rem 1rem; text-align: center; border-top: 1px solid var(--border); }
+  .mk-panel-foot a { font-size: .78rem; font-weight: 700; color: var(--primary-dark); text-decoration: none; }
+  .mk-gear { font-size: 1.05rem; }
+
+  .mk-stage { max-width: 880px; margin: 2.5rem auto; padding: 0 1.25rem; }
+  .mk-ph { color: var(--text-secondary); font-size: .9rem; line-height: 1.6; background: var(--surface); border: 1px dashed var(--border);
+    border-radius: 14px; padding: 2rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="bs-app">
+  <header class="bs-topbar">
+    <div class="bs-topbar-inner bs-topbar-inner--with-tabs">
+      <a class="bs-topbar-logo" href="#" aria-label="PensoIA Codex"><span class="bs-topbar-name">PensoIA · Codex</span></a>
+      <div class="bs-topbar-spacer"></div>
+      <nav class="cdx-tabs" role="tablist" aria-label="Codex">
+        <a class="cdx-tab cdx-tab--lessons" href="#"><span class="cdx-tab-label">Aula</span></a>
+        <a class="cdx-tab cdx-tab--content" href="#"><span class="cdx-tab-label">Conteúdo</span></a>
+        <a class="cdx-tab cdx-tab--cohorts active" href="#" aria-current="page"><span class="cdx-tab-label">Turmas</span></a>
+        <a class="cdx-tab cdx-tab--questions" href="#"><span class="cdx-tab-label">Perguntas</span></a>
+        <a class="cdx-tab cdx-tab--certificates" href="#"><span class="cdx-tab-label">Certificados</span></a>
+      </nav>
+      <div class="bs-topbar-spacer"></div>
+
+      <!-- NOVO: sino + badge + painel agrupado por turma -->
+      <div class="mk-bell-wrap">
+        <button class="bs-icon-btn mk-bell" aria-label="Notificações">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+        <span class="mk-bell-badge">3</span>
+
+        <div class="mk-panel" role="menu">
+          <div class="mk-panel-head">
+            <span class="mk-panel-title">Notificações</span>
+            <button class="mk-panel-mark">Marcar todas como lidas</button>
+          </div>
+
+          <div class="mk-group-head"><span>IA na Prática Jurídica · 2026.1</span><span class="mk-group-count">2</span></div>
+          <a class="mk-notif mk-notif--unread" href="#">
+            <span class="mk-notif-dot"></span>
+            <div class="mk-notif-body">
+              <div class="mk-notif-text"><b>Ana Beatriz</b> abriu uma conversa no Fórum</div>
+              <div class="mk-notif-meta">há 10 min</div>
+            </div>
+          </a>
+          <a class="mk-notif mk-notif--unread" href="#">
+            <span class="mk-notif-dot"></span>
+            <div class="mk-notif-body">
+              <div class="mk-notif-text"><b>Carlos M.</b> respondeu em "Dúvida sobre contratos"</div>
+              <div class="mk-notif-meta">há 1 h</div>
+            </div>
+          </a>
+
+          <div class="mk-group-head"><span>Direito Digital · Noite</span><span class="mk-group-count">1</span></div>
+          <a class="mk-notif mk-notif--unread" href="#">
+            <span class="mk-notif-dot"></span>
+            <div class="mk-notif-body">
+              <div class="mk-notif-text">Nova pergunta no Fórum</div>
+              <div class="mk-notif-meta">há 3 h</div>
+            </div>
+          </a>
+
+          <div class="mk-panel-foot"><a href="#">Ver tudo</a></div>
+        </div>
+      </div>
+
+      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema"><span id="themeIcon"></span></button>
+      <button class="bs-icon-btn" aria-label="Configurações"><span class="mk-gear">⚙</span></button>
+      <button class="bs-logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <main class="bs-main">
+    <div class="cdx-view">
+      <div class="mk-stage">
+        <div class="mk-ph">Mesmo sino, painel agrupado por turma com contador por seção. Bom quando você dá aula em várias turmas e quer separar de onde vem cada pendência. Na Trilha o aluno só vê a turma dele, então lá o agrupamento some.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  ThemeManager.init({ storageKey: 'bs_theme', toggleEl: document.getElementById('themeToggle'), iconEl: document.getElementById('themeIcon') });
+</script>
+</body>
+</html>

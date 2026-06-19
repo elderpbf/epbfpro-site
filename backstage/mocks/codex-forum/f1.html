@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fórum admin · F1 (dois painéis)</title>
+
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.1">
+<link rel="stylesheet" href="/codex/css/backstage.css?v=1.0">
+<link rel="stylesheet" href="/codex/css/tokens.css?v=1.2">
+<link rel="stylesheet" href="/codex/css/codex.css?v=2.6">
+<link rel="stylesheet" href="/codex/cohorts/cohorts.css?v=2.6">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+
+<style>
+  .mk-doss { max-width: 960px; margin: 1.5rem auto; padding: 0 1.25rem; }
+  .mk-doss-pill { font-size: .72rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: rgba(20,184,166,.14); color: var(--primary-dark); }
+  .mk-subrow { margin: 1rem 0 1.1rem; border-bottom: 1px solid var(--border); }
+  .mk-tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 5px; margin-left: 6px;
+    border-radius: 999px; background: var(--error); color: #fff; font-size: .62rem; font-weight: 800; }
+  .mk-gear { font-size: 1.05rem; }
+
+  .mk-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; font-weight: 800; font-size: .74rem; display: flex; align-items: center; justify-content: center; }
+  .mk-avatar--prof { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+  .mk-prof-badge { font-size: .58rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px;
+    background: rgba(124,58,237,.12); color: #6d28d9; border: 1px solid rgba(124,58,237,.3); }
+  [data-theme="dark"] .mk-prof-badge { color: #c4b5fd; background: rgba(124,58,237,.22); }
+
+  /* split */
+  .mk-fsplit { display: grid; grid-template-columns: 300px 1fr; gap: 1.1rem; min-height: 440px; }
+  .mk-flist { display: flex; flex-direction: column; gap: .5rem; }
+  .mk-fthread { display: flex; gap: .55rem; padding: .7rem .8rem; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); cursor: pointer; }
+  .mk-fthread:hover { border-color: var(--primary-light); }
+  .mk-fthread.is-selected { border-color: var(--primary); background: rgba(20,184,166,.06); box-shadow: 0 0 0 1px var(--primary) inset; }
+  .mk-fthread-body { flex: 1; min-width: 0; }
+  .mk-fthread-title { font-size: .86rem; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+  .mk-fthread-meta { font-size: .72rem; color: var(--text-secondary); margin-top: .25rem; display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+  .mk-pin { font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; padding: 1px 6px; border-radius: 999px;
+    background: rgba(217,119,6,.14); color: #b45309; border: 1px solid rgba(217,119,6,.3); }
+  .mk-count { margin-left: auto; font-size: .7rem; font-weight: 700; color: var(--primary-dark); background: rgba(20,184,166,.12); padding: 1px 8px; border-radius: 999px; }
+
+  .mk-fdetail { border: 1px solid var(--border); border-radius: 13px; background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+  .mk-fdetail-head { display: flex; align-items: center; gap: .6rem; padding: .85rem 1rem; border-bottom: 1px solid var(--border); }
+  .mk-fdetail-title { font-size: 1rem; font-weight: 800; color: var(--text-primary); flex: 1; min-width: 0; }
+  .mk-fdetail-acts { display: flex; gap: .4rem; }
+  .mk-fbody { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; flex: 1; }
+  .mk-post { display: flex; gap: .6rem; }
+  .mk-post-body { flex: 1; min-width: 0; }
+  .mk-post-head { display: flex; align-items: center; gap: .4rem; margin-bottom: .18rem; }
+  .mk-post-name { font-size: .82rem; font-weight: 700; color: var(--text-primary); }
+  .mk-post-time { font-size: .7rem; color: var(--text-secondary); }
+  .mk-post-text { font-size: .86rem; color: var(--text-primary); line-height: 1.5; }
+  .mk-post-del { margin-left: auto; font-size: .68rem; color: var(--text-secondary); background: none; border: none; cursor: pointer; font-family: inherit; }
+  .mk-post-del:hover { color: var(--error); }
+  .mk-sub { margin-left: 2.6rem; padding-left: .8rem; border-left: 2px solid var(--border); }
+  .mk-composer { display: flex; gap: .6rem; align-items: center; margin-top: auto; padding: .9rem 1rem; border-top: 1px solid var(--border); }
+  .mk-composer-input { flex: 1; color: var(--text-secondary); font-size: .85rem; background: var(--background); border: 1px solid var(--border); border-radius: 999px; padding: .55rem .9rem; }
+</style>
+</head>
+<body>
+
+<div class="bs-app">
+  <header class="bs-topbar">
+    <div class="bs-topbar-inner bs-topbar-inner--with-tabs">
+      <a class="bs-topbar-logo" href="#" aria-label="PensoIA Codex"><span class="bs-topbar-name">PensoIA · Codex</span></a>
+      <div class="bs-topbar-spacer"></div>
+      <nav class="cdx-tabs" role="tablist" aria-label="Codex">
+        <a class="cdx-tab cdx-tab--lessons" href="#"><span class="cdx-tab-label">Aula</span></a>
+        <a class="cdx-tab cdx-tab--content" href="#"><span class="cdx-tab-label">Conteúdo</span></a>
+        <a class="cdx-tab cdx-tab--cohorts active" href="#" aria-current="page"><span class="cdx-tab-label">Turmas</span></a>
+        <a class="cdx-tab cdx-tab--questions" href="#"><span class="cdx-tab-label">Perguntas</span></a>
+        <a class="cdx-tab cdx-tab--certificates" href="#"><span class="cdx-tab-label">Certificados</span></a>
+      </nav>
+      <div class="bs-topbar-spacer"></div>
+      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema"><span id="themeIcon"></span></button>
+      <button class="bs-icon-btn" aria-label="Configurações"><span class="mk-gear">⚙</span></button>
+      <button class="bs-logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <main class="bs-main">
+    <div class="cdx-view">
+      <div class="mk-doss">
+        <div class="cdx-doss">
+
+          <div class="cdx-doss-head">
+            <div class="cdx-doss-headmain">
+              <h2 class="cdx-doss-title">IA na Prática Jurídica · Turma 2026.1</h2>
+              <div class="cdx-doss-sub">Tribunal de Justiça · 12 participantes</div>
+            </div>
+            <div class="cdx-doss-headright">
+              <span class="mk-doss-pill">Em andamento</span>
+              <button class="cdx-btn cdx-btn-sm cdx-btn-danger">Arquivar</button>
+            </div>
+          </div>
+
+          <div class="cdx-subrow mk-subrow">
+            <div class="cdx-substrip">
+              <a class="cdx-subtab" href="#">Dados</a>
+              <a class="cdx-subtab" href="#">Participantes</a>
+              <a class="cdx-subtab" href="#">Aulas</a>
+              <a class="cdx-subtab" href="#">Certificados</a>
+              <a class="cdx-subtab active" href="#">Fórum <span class="mk-tab-badge">3</span></a>
+            </div>
+          </div>
+
+          <!-- Fórum admin: lista de threads à esquerda, thread aberta à direita -->
+          <div class="mk-fsplit">
+            <div class="mk-flist">
+              <div class="mk-fthread">
+                <div class="mk-fthread-body">
+                  <div class="mk-fthread-title">Leiam antes da aula 3: roteiro de prompts</div>
+                  <div class="mk-fthread-meta"><span class="mk-pin">📌 Fixado</span> Prof. Élder <span class="mk-count">12</span></div>
+                </div>
+              </div>
+              <div class="mk-fthread is-selected">
+                <div class="mk-fthread-body">
+                  <div class="mk-fthread-title">Alguém conseguiu rodar o exercício da aula 2?</div>
+                  <div class="mk-fthread-meta">Ana Beatriz · ontem <span class="mk-count">3</span></div>
+                </div>
+              </div>
+              <div class="mk-fthread">
+                <div class="mk-fthread-body">
+                  <div class="mk-fthread-title">Dúvida sobre o caso prático de contratos</div>
+                  <div class="mk-fthread-meta">Carlos M. · há 5 h <span class="mk-count">4</span></div>
+                </div>
+              </div>
+              <div class="mk-fthread">
+                <div class="mk-fthread-body">
+                  <div class="mk-fthread-title">Material complementar sobre LGPD</div>
+                  <div class="mk-fthread-meta">Júlia R. · ontem <span class="mk-count">7</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mk-fdetail">
+              <div class="mk-fdetail-head">
+                <span class="mk-fdetail-title">Alguém conseguiu rodar o exercício da aula 2?</span>
+                <div class="mk-fdetail-acts">
+                  <button class="cdx-btn cdx-btn-sm">📌 Fixar</button>
+                  <button class="cdx-btn cdx-btn-sm cdx-btn-danger">Excluir</button>
+                </div>
+              </div>
+              <div class="mk-fbody">
+                <div class="mk-post">
+                  <div class="mk-avatar">AB</div>
+                  <div class="mk-post-body">
+                    <div class="mk-post-head"><span class="mk-post-name">Ana Beatriz</span><span class="mk-post-time">ontem</span><button class="mk-post-del">excluir</button></div>
+                    <p class="mk-post-text">Tô travando no erro de contexto quando colo o contrato inteiro. Alguém passou por isso?</p>
+                  </div>
+                </div>
+                <div class="mk-post mk-sub">
+                  <div class="mk-avatar">RM</div>
+                  <div class="mk-post-body">
+                    <div class="mk-post-head"><span class="mk-post-name">Roberto M.</span><span class="mk-post-time">há 20 h</span><button class="mk-post-del">excluir</button></div>
+                    <p class="mk-post-text">Tive o mesmo erro. Colei só a cláusula em discussão e voltou a responder certinho.</p>
+                  </div>
+                </div>
+                <div class="mk-post mk-sub">
+                  <div class="mk-avatar mk-avatar--prof">É</div>
+                  <div class="mk-post-body">
+                    <div class="mk-post-head"><span class="mk-post-name">Prof. Élder</span><span class="mk-prof-badge">Professor</span><span class="mk-post-time">há 18 h</span></div>
+                    <p class="mk-post-text">Isso, Roberto. Recorte o trecho relevante antes de pedir a análise. Na aula 3 mostro o resumo em blocos.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="mk-composer">
+                <div class="mk-avatar mk-avatar--prof">É</div>
+                <div class="mk-composer-input">Responder como professor…</div>
+                <button class="cdx-btn cdx-btn-sm cdx-btn-primary">Enviar</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  ThemeManager.init({ storageKey: 'bs_theme', toggleEl: document.getElementById('themeToggle'), iconEl: document.getElementById('themeIcon') });
+</script>
+</body>
+</html>
