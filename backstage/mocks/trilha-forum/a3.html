@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fórum · Direção C (mural da turma)</title>
+
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.0">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+<script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
+
+<style>
+  /* ── Mural: feed cronológico casual (mock-only; cores via tokens) ── */
+  .fr-feed { display: flex; flex-direction: column; gap: 14px; }
+  .fr-intro { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.5; margin: -0.25rem 0 0.25rem; }
+
+  .fr-avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; font-weight: 800; font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fr-avatar--sm { width: 32px; height: 32px; font-size: 0.74rem; }
+  .fr-avatar--prof { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+
+  /* Composer fixo no topo do mural */
+  .fr-composer {
+    display: flex; gap: 0.8rem; align-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 0.85rem 1rem;
+    box-shadow: 0 6px 22px -16px var(--shadow); position: sticky; top: 12px; z-index: 3;
+  }
+  .fr-composer-fake {
+    flex: 1; min-width: 0; color: var(--text-secondary); font-size: 0.9rem;
+    background: var(--background); border: 1px solid var(--border);
+    border-radius: 999px; padding: 0.6rem 1rem;
+  }
+  .fr-btn {
+    display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+    padding: 0.55rem 1.05rem; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    border: none; border-radius: 999px; background: var(--primary); color: #fff;
+    cursor: pointer; box-shadow: 0 3px 12px -4px rgba(20,184,166,0.45);
+  }
+
+  /* Divisor de dia */
+  .fr-day {
+    text-align: center; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-secondary); margin: 0.4rem 0;
+    position: relative;
+  }
+  .fr-day span { background: var(--background); padding: 0 0.7rem; position: relative; z-index: 1; }
+  .fr-day::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px;
+    background: var(--border);
+  }
+
+  /* Post = bolha social */
+  .fr-post {
+    display: flex; gap: 0.75rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 0.95rem 1.1rem;
+  }
+  .fr-post--prof { border-color: rgba(124,58,237,0.35); background: rgba(124,58,237,0.04); }
+  [data-theme="dark"] .fr-post--prof { background: rgba(124,58,237,0.1); }
+  .fr-post-body { flex: 1; min-width: 0; }
+  .fr-post-head { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
+  .fr-name { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+  .fr-time { font-size: 0.72rem; color: var(--text-secondary); }
+  .fr-prof-badge {
+    font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 999px;
+    background: rgba(124,58,237,0.12); color: #6d28d9; border: 1px solid rgba(124,58,237,0.3);
+  }
+  [data-theme="dark"] .fr-prof-badge { color: #c4b5fd; background: rgba(124,58,237,0.22); }
+  .fr-text { font-size: 0.9rem; color: var(--text-primary); line-height: 1.6; }
+
+  .fr-react-row { display: flex; align-items: center; gap: 0.85rem; margin-top: 0.55rem; }
+  .fr-react {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.74rem; font-weight: 600; color: var(--text-secondary);
+    background: none; border: none; cursor: pointer; padding: 0; font-family: inherit;
+  }
+  .fr-react:hover { color: var(--primary-dark); }
+  .fr-react-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: rgba(20,184,166,0.12); color: var(--primary-dark);
+  }
+  [data-theme="dark"] .fr-react-pill { background: rgba(94,234,212,0.14); color: var(--primary-light); }
+
+  /* Respostas inline (1 nível) */
+  .fr-thread-replies {
+    margin-top: 0.8rem; padding-top: 0.75rem; border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .fr-mini { display: flex; gap: 0.55rem; }
+  .fr-mini-body { flex: 1; min-width: 0; }
+  .fr-mini-head { display: flex; align-items: center; gap: 0.4rem; }
+  .fr-mini-name { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+  .fr-mini-time { font-size: 0.68rem; color: var(--text-secondary); }
+  .fr-mini-text { font-size: 0.84rem; color: var(--text-primary); line-height: 1.5; }
+  .fr-mini-input {
+    flex: 1; color: var(--text-secondary); font-size: 0.82rem;
+    background: var(--background); border: 1px solid var(--border);
+    border-radius: 999px; padding: 0.45rem 0.85rem;
+  }
+</style>
+</head>
+<body>
+
+<pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
+
+<div class="cdx-trilha-page">
+  <main class="cdx-trilha-main">
+
+    <section class="cdx-trilha-hero">
+      <div class="cdx-trilha-hero-identity">
+        <div class="cdx-tr-client-avatar"><span class="cdx-tr-avatar-initials">TJ</span></div>
+        <div class="cdx-tr-hero-text">
+          <span class="cdx-tr-hero-eyebrow">Sua trilha de aprendizado</span>
+          <h1 class="cdx-tr-client-name">Tribunal de Justiça</h1>
+          <p class="cdx-tr-turma-name">IA na Prática Jurídica · Turma 2026.1</p>
+        </div>
+      </div>
+    </section>
+
+    <nav class="cdx-trilha-tabs" role="tablist">
+      <div class="cdx-trilha-tabs-left">
+        <button class="cdx-tr-tab-btn" role="tab">Aulas</button>
+        <button class="cdx-tr-tab-btn active" role="tab" aria-selected="true">Mural</button>
+        <button class="cdx-tr-tab-btn" role="tab">Outros materiais</button>
+      </div>
+      <div class="cdx-trilha-tabs-right">
+        <button class="cdx-tr-tab-btn" role="tab">Conteúdo do curso</button>
+      </div>
+    </nav>
+
+    <div class="cdx-trilha-tabcontent">
+      <div class="cdx-trilha-panel">
+        <div class="fr-feed">
+
+          <p class="fr-intro">O mural da turma — um fluxo único de mensagens, como um grupo, mas dentro da trilha. Escreva, reaja e responda sem abrir tópicos.</p>
+
+          <!-- Composer fixo -->
+          <div class="fr-composer">
+            <div class="fr-avatar">AB</div>
+            <div class="fr-composer-fake">Escreva algo para a turma…</div>
+            <button class="fr-btn">Enviar</button>
+          </div>
+
+          <div class="fr-day"><span>Hoje</span></div>
+
+          <!-- Post 1 — professor -->
+          <article class="fr-post fr-post--prof">
+            <div class="fr-avatar fr-avatar--prof">É</div>
+            <div class="fr-post-body">
+              <div class="fr-post-head"><span class="fr-name">Prof. Élder</span><span class="fr-prof-badge">Professor</span><span class="fr-time">08:12</span></div>
+              <p class="fr-text">Bom dia, turma! Subi o roteiro da aula 3 em Materiais. Tragam pelo menos uma cláusula real (anonimizada) pra gente analisar ao vivo. 🙌</p>
+              <div class="fr-react-row">
+                <span class="fr-react-pill">👍 14</span>
+                <button class="fr-react">💬 Responder</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Post 2 — aluna, com respostas inline -->
+          <article class="fr-post">
+            <div class="fr-avatar">AB</div>
+            <div class="fr-post-body">
+              <div class="fr-post-head"><span class="fr-name">Ana Beatriz</span><span class="fr-time">09:40</span></div>
+              <p class="fr-text">Alguém mais travou no erro de contexto quando cola o contrato inteiro? 😅</p>
+              <div class="fr-react-row">
+                <span class="fr-react-pill">👍 5</span>
+                <button class="fr-react">💬 3 respostas</button>
+              </div>
+
+              <div class="fr-thread-replies">
+                <div class="fr-mini">
+                  <div class="fr-avatar fr-avatar--sm">RM</div>
+                  <div class="fr-mini-body">
+                    <div class="fr-mini-head"><span class="fr-mini-name">Roberto M.</span><span class="fr-mini-time">09:52</span></div>
+                    <p class="fr-mini-text">Travei tbm! Colei só a cláusula em discussão e voltou a funcionar.</p>
+                  </div>
+                </div>
+                <div class="fr-mini">
+                  <div class="fr-avatar fr-avatar--sm fr-avatar--prof">É</div>
+                  <div class="fr-mini-body">
+                    <div class="fr-mini-head"><span class="fr-mini-name">Prof. Élder</span><span class="fr-prof-badge">Professor</span><span class="fr-mini-time">10:05</span></div>
+                    <p class="fr-mini-text">Isso mesmo. Recorte o trecho relevante antes de pedir a análise — vemos o resumo em blocos na aula 3.</p>
+                  </div>
+                </div>
+                <div class="fr-mini">
+                  <div class="fr-avatar fr-avatar--sm">AB</div>
+                  <div class="fr-mini-input">Responder…</div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Post 3 -->
+          <article class="fr-post">
+            <div class="fr-avatar">JR</div>
+            <div class="fr-post-body">
+              <div class="fr-post-head"><span class="fr-name">Júlia R.</span><span class="fr-time">11:18</span></div>
+              <p class="fr-text">Achei um guia direto sobre LGPD em peças, deixo o link pra quem quiser dar uma olhada. 📎</p>
+              <div class="fr-react-row">
+                <span class="fr-react-pill">👍 8</span>
+                <button class="fr-react">💬 Responder</button>
+              </div>
+            </div>
+          </article>
+
+          <div class="fr-day"><span>Ontem</span></div>
+
+          <!-- Post 4 -->
+          <article class="fr-post">
+            <div class="fr-avatar">CM</div>
+            <div class="fr-post-body">
+              <div class="fr-post-head"><span class="fr-name">Carlos M.</span><span class="fr-time">18:30</span></div>
+              <p class="fr-text">Valeu pela aula de hoje, o exemplo dos contratos ajudou demais. 👏</p>
+              <div class="fr-react-row">
+                <span class="fr-react-pill">👍 11</span>
+                <button class="fr-react">💬 Responder</button>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </div>
+
+    <footer class="cdx-trilha-footer">
+      <span>Feito com PensoIA</span> · <a href="https://pensoia.com" target="_blank" rel="noopener">pensoia.com</a>
+    </footer>
+  </main>
+</div>
+
+<script type="module" src="/codex/trilha/js/pensoia-header.js"></script>
+</body>
+</html>
