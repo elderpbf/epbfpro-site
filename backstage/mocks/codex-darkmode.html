@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Codex — modo escuro: hoje vs 2 variações · PensoIA</title>
+<style>
+  /* ============================================================
+     MOCK DE DECISÃO — bordas + estados + botões do modo escuro do Codex
+     3 colunas: HOJE (valores reais de hoje) | A Neutro | B Teal unificado
+     Toggle claro/escuro pra conferir que dark = versão dark do light.
+     Valores copiados de css/theme.css + css/tokens.css (verbatim).
+     ============================================================ */
+
+  /* ---- Paleta compartilhada (só muda por MODO, igual nas 3 colunas) ---- */
+  body[data-mode="light"] .col {
+    --bg: #d4f4ed; --surface: #ffffff;
+    --text: #134e4a; --text2: #115e59; --primary: #14b8a6;
+  }
+  body[data-mode="dark"] .col {
+    --bg: #0f1419; --surface: #1a1f26;
+    --text: #e5e7eb; --text2: #d1d5db; --primary: #14b8a6;
+  }
+
+  /* ======================= COLUNA HOJE ======================= */
+  /* Valores REAIS de hoje. Note a borda teal no escuro e os 2 tipos
+     de estado (teal nas abas Turmas/Conteúdo, cinza em Perguntas). */
+  body[data-mode="light"] .col-today {
+    --border: #e2e8f0;
+    --card-hover: rgba(20,184,166,.06);
+    --card-sel: rgba(20,184,166,.12); --card-sel-bd: rgba(20,184,166,.4);
+    --state-teal: rgba(20,184,166,.08);          /* estado das abas teal */
+    --state-gray: rgba(127,127,127,.08);         /* estado de Perguntas  */
+    --chip-bg: rgba(20,184,166,.08); --chip-bd: rgba(20,184,166,.18);
+    --opt-hover: #fdf6ec; --opt-sel: #fdf6ec;    /* CREME no claro */
+    --btn-bg: #14b8a6;                           /* botão = var(--primary) */
+  }
+  body[data-mode="dark"] .col-today {
+    --border: #0f766e;                           /* <<< TEAL: o "risquinho" */
+    --card-hover: rgba(20,184,166,.10);
+    --card-sel: rgba(20,184,166,.18); --card-sel-bd: rgba(20,184,166,.55);
+    --state-teal: rgba(20,184,166,.10);
+    --state-gray: rgba(127,127,127,.10);
+    --chip-bg: rgba(20,184,166,.12); --chip-bd: rgba(20,184,166,.25);
+    --opt-hover: rgba(20,184,166,.15); --opt-sel: rgba(20,184,166,.25); /* vira TEAL */
+    --btn-bg: #14b8a6;                           /* <<< teal CLARO, o que te incomoda */
+  }
+
+  /* ================== COLUNA A — NEUTRO ====================== */
+  /* Borda neutra + estados cinza em tudo + botão teal escuro.
+     Teal fica reservado só pro botão e pro traço de selecionado. */
+  body[data-mode="light"] .col-a {
+    --border: #e2e8f0;
+    --card-hover: rgba(0,0,0,.035);
+    --card-sel: rgba(0,0,0,.05); --card-sel-bd: #14b8a6;
+    --state-teal: rgba(0,0,0,.04); --state-gray: rgba(0,0,0,.04);
+    --chip-bg: rgba(0,0,0,.03); --chip-bd: #e2e8f0;
+    --opt-hover: rgba(0,0,0,.04); --opt-sel: rgba(0,0,0,.06);
+    --btn-bg: #14b8a6;
+  }
+  body[data-mode="dark"] .col-a {
+    --border: #2d333b;                           /* cinza neutro > superfície */
+    --card-hover: rgba(255,255,255,.04);
+    --card-sel: rgba(255,255,255,.07); --card-sel-bd: #14b8a6;
+    --state-teal: rgba(255,255,255,.05); --state-gray: rgba(255,255,255,.05);
+    --chip-bg: rgba(255,255,255,.04); --chip-bd: #2d333b;
+    --opt-hover: rgba(255,255,255,.05); --opt-sel: rgba(255,255,255,.08);
+    --btn-bg: #0d9488;                           /* teal ESCURO */
+  }
+
+  /* ============== COLUNA B — TEAL UNIFICADO ================= */
+  /* Borda em repouso neutra (a correção combinada) + botão teal escuro,
+     MAS os estados continuam teal — e Perguntas sobe pro teal dos demais,
+     então tudo fala a mesma língua de teal. */
+  body[data-mode="light"] .col-b {
+    --border: #e2e8f0;
+    --card-hover: rgba(20,184,166,.06);
+    --card-sel: rgba(20,184,166,.12); --card-sel-bd: rgba(20,184,166,.4);
+    --state-teal: rgba(20,184,166,.08); --state-gray: rgba(20,184,166,.08);
+    --chip-bg: rgba(20,184,166,.08); --chip-bd: rgba(20,184,166,.18);
+    --opt-hover: rgba(20,184,166,.10); --opt-sel: rgba(20,184,166,.16);
+    --btn-bg: #14b8a6;
+  }
+  body[data-mode="dark"] .col-b {
+    --border: #2d333b;                           /* repouso neutro */
+    --card-hover: rgba(20,184,166,.10);
+    --card-sel: rgba(20,184,166,.18); --card-sel-bd: rgba(20,184,166,.55);
+    --state-teal: rgba(20,184,166,.10); --state-gray: rgba(20,184,166,.10);
+    --chip-bg: rgba(20,184,166,.12); --chip-bd: rgba(20,184,166,.25);
+    --opt-hover: rgba(20,184,166,.15); --opt-sel: rgba(20,184,166,.25);
+    --btn-bg: #0d9488;                           /* teal ESCURO */
+  }
+
+  /* ----------------------- chrome do mock ----------------------- */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #0b0f14; color: #e2e8f0;
+    padding: 32px 24px 80px; min-height: 100vh; transition: background .2s;
+  }
+  body[data-mode="light"] { background: #eef6f3; color: #134e4a; }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  h1 { font-size: 1.45rem; font-weight: 700; margin-bottom: 6px; }
+  .lede { font-size: .92rem; opacity: .8; max-width: 860px; line-height: 1.55; margin-bottom: 22px; }
+  .toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 30px; flex-wrap: wrap; }
+  .toggle {
+    border: 1px solid currentColor; background: transparent; color: inherit;
+    padding: 8px 16px; border-radius: 8px; font: inherit; font-weight: 600;
+    font-size: .85rem; cursor: pointer; opacity: .85;
+  }
+  .toggle:hover { opacity: 1; }
+  .mode-pill { font-size: .8rem; opacity: .6; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+  /* cada coluna é um "device" com a paleta da variação */
+  .col {
+    background: var(--bg); color: var(--text);
+    border-radius: 16px; padding: 18px;
+    border: 1px solid rgba(127,127,127,.25);
+  }
+  .col-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .col-tag {
+    font-weight: 700; font-size: .8rem; padding: 2px 9px; border-radius: 6px;
+    background: var(--primary); color: #06241f;
+  }
+  .col-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+  .col-sub { font-size: .78rem; color: var(--text2); opacity: .85; margin-bottom: 16px; line-height: 1.45; min-height: 50px; }
+
+  .sec-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--text2); opacity: .7; margin: 18px 0 8px; font-weight: 700; }
+  .sec-label:first-of-type { margin-top: 4px; }
+
+  /* ---- componentes do Codex (mesma estrutura nas 3 colunas) ---- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 11px 13px; margin-bottom: 8px;
+    color: var(--text); font-size: .85rem; transition: all .15s;
+  }
+  .card.hover { background: var(--card-hover); }
+  .card.sel { background: var(--card-sel); border-color: var(--card-sel-bd); }
+  .card small { display: block; color: var(--text2); font-size: .72rem; margin-top: 2px; }
+
+  /* o "1b": estado teal (Turmas) vs estado cinza (Perguntas) */
+  .staterow { display: flex; gap: 8px; }
+  .statebox {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 10px; font-size: .76rem; color: var(--text);
+  }
+  .statebox .tag { font-size: .64rem; color: var(--text2); display: block; margin-bottom: 5px; opacity: .8; }
+  .statebox.teal { background: var(--state-teal); }
+  .statebox.gray { background: var(--state-gray); }
+
+  /* botões */
+  .btnrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn-primary {
+    background: var(--btn-bg); color: #fff; border: none;
+    padding: 8px 16px; border-radius: 8px; font: inherit; font-weight: 600;
+    font-size: .82rem; cursor: pointer;
+  }
+  .btn-ghost {
+    background: var(--surface); color: var(--text2); border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 8px; font: inherit; font-weight: 600;
+    font-size: .82rem; cursor: pointer;
+  }
+  .iconbtn {
+    width: 30px; height: 30px; display: grid; place-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 7px;
+    color: var(--text2); cursor: pointer; font-size: .9rem;
+  }
+  /* chip: fundo = cor da PÁGINA (não da superfície) => o caso de "sumir" */
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 999px; padding: 4px 11px; color: var(--text2);
+    font-size: .76rem; font-weight: 600;
+  }
+  .chip.on { background: var(--chip-bg); border-color: var(--chip-bd); color: var(--text); }
+
+  /* input (no Codex Perguntas usa 2px) */
+  .input {
+    width: 100%; background: var(--surface); border: 2px solid var(--border);
+    border-radius: 8px; padding: 9px 12px; color: var(--text);
+    font: inherit; font-size: .82rem;
+  }
+
+  /* opções de enquete (resposta) */
+  .opt {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 8px; padding: 10px 13px; margin-bottom: 7px;
+    color: var(--text); font-size: .84rem; cursor: pointer;
+  }
+  .opt.hover { background: var(--opt-hover); }
+  .opt.sel { background: var(--opt-sel); border-color: var(--primary); font-weight: 600; }
+
+  /* segmentado */
+  .seg { display: inline-flex; gap: 3px; padding: 3px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 9px; }
+  .seg span { padding: 5px 12px; border-radius: 6px; font-size: .76rem; font-weight: 600; color: var(--text2); }
+  .seg span.on { background: var(--btn-bg); color: #fff; }
+
+  .note { font-size: .72rem; color: var(--text2); opacity: .75; margin-top: 5px; line-height: 1.4; }
+  .legend { margin-top: 36px; font-size: .82rem; opacity: .8; line-height: 1.6; max-width: 900px; }
+  .legend b { color: inherit; }
+  .legend ul { margin: 8px 0 0 18px; }
+</style>
+</head>
+<body data-mode="dark">
+<div class="wrap">
+  <h1>Codex — modo escuro: hoje vs 2 variações</h1>
+  <p class="lede">
+    Mesmos componentes do Codex nas 3 colunas. <b>Hoje</b> mostra os valores reais de agora
+    (inclui a inconsistência: estado teal nas abas Turmas/Conteúdo vs estado cinza em Perguntas).
+    <b>A</b> e <b>B</b> são as duas saídas. As duas corrigem o mesmo: borda em repouso vira cinza neutro
+    e o botão fica teal escuro. A diferença entre elas é só a <b>linguagem dos estados</b> (hover/selecionado/opção):
+    A fala cinza, B fala teal. Use o botão pra alternar claro/escuro e conferir que o escuro é só o claro escurecido.
+  </p>
+
+  <div class="toolbar">
+    <button class="toggle" id="toggle">Alternar para modo claro</button>
+    <span class="mode-pill" id="pill">modo escuro (o foco do problema)</span>
+  </div>
+
+  <div class="grid">
+
+    <!-- ===== HOJE ===== -->
+    <section class="col col-today">
+      <div class="col-head"><span class="col-tag">HOJE</span><span class="col-title">Como está</span></div>
+      <p class="col-sub">Borda teal acesa em volta de tudo, botão teal claro, e os estados não combinam entre abas.</p>
+
+      <div class="sec-label">Caixas (card)</div>
+      <div class="card">Caixa em repouso<small>borda = var(--border)</small></div>
+      <div class="card hover">Caixa em hover</div>
+      <div class="card sel">Caixa selecionada</div>
+
+      <div class="sec-label">O "aparece diferente" (estados)</div>
+      <div class="staterow">
+        <div class="statebox teal"><span class="tag">Turmas / Conteúdo</span>estado teal</div>
+        <div class="statebox gray"><span class="tag">Perguntas</span>estado cinza</div>
+      </div>
+      <p class="note">Esse descompasso é o que você sentiu no 1b.</p>
+
+      <div class="sec-label">Botões</div>
+      <div class="btnrow">
+        <button class="btn-primary">Botão primário</button>
+        <button class="btn-ghost">Secundário</button>
+        <button class="iconbtn">✎</button>
+      </div>
+      <p class="note">Primário = teal claro (#14b8a6) com texto branco.</p>
+
+      <div class="sec-label">Chips (fundo = cor da página)</div>
+      <div class="btnrow"><span class="chip">Chip</span><span class="chip on">Chip ligado</span></div>
+
+      <div class="sec-label">Campo / opções de resposta</div>
+      <input class="input" value="Campo de texto" readonly>
+      <div style="height:8px"></div>
+      <div class="opt">Opção em repouso</div>
+      <div class="opt hover">Opção em hover</div>
+      <div class="opt sel">Opção selecionada</div>
+
+      <div class="sec-label">Segmentado</div>
+      <div class="seg"><span class="on">Ativo</span><span>Outro</span><span>Mais</span></div>
+    </section>
+
+    <!-- ===== A NEUTRO ===== -->
+    <section class="col col-a">
+      <div class="col-head"><span class="col-tag">A</span><span class="col-title">Neutro</span></div>
+      <p class="col-sub">Menos teal. Borda e estados em cinza neutro; teal só no botão e no traço de "selecionado".</p>
+
+      <div class="sec-label">Caixas (card)</div>
+      <div class="card">Caixa em repouso<small>borda neutra (#2d333b)</small></div>
+      <div class="card hover">Caixa em hover</div>
+      <div class="card sel">Caixa selecionada</div>
+
+      <div class="sec-label">O "aparece diferente" (estados)</div>
+      <div class="staterow">
+        <div class="statebox teal"><span class="tag">Turmas / Conteúdo</span>estado neutro</div>
+        <div class="statebox gray"><span class="tag">Perguntas</span>estado neutro</div>
+      </div>
+      <p class="note">Os dois iguais: a inconsistência some.</p>
+
+      <div class="sec-label">Botões</div>
+      <div class="btnrow">
+        <button class="btn-primary">Botão primário</button>
+        <button class="btn-ghost">Secundário</button>
+        <button class="iconbtn">✎</button>
+      </div>
+      <p class="note">Primário = teal escuro (#0d9488).</p>
+
+      <div class="sec-label">Chips (fundo = cor da página)</div>
+      <div class="btnrow"><span class="chip">Chip</span><span class="chip on">Chip ligado</span></div>
+
+      <div class="sec-label">Campo / opções de resposta</div>
+      <input class="input" value="Campo de texto" readonly>
+      <div style="height:8px"></div>
+      <div class="opt">Opção em repouso</div>
+      <div class="opt hover">Opção em hover</div>
+      <div class="opt sel">Opção selecionada</div>
+
+      <div class="sec-label">Segmentado</div>
+      <div class="seg"><span class="on">Ativo</span><span>Outro</span><span>Mais</span></div>
+    </section>
+
+    <!-- ===== B TEAL UNIFICADO ===== -->
+    <section class="col col-b">
+      <div class="col-head"><span class="col-tag">B</span><span class="col-title">Teal unificado</span></div>
+      <p class="col-sub">Mantém a personalidade teal nos estados, mas igual em todo lugar; só a borda em repouso vira neutra e o botão escurece.</p>
+
+      <div class="sec-label">Caixas (card)</div>
+      <div class="card">Caixa em repouso<small>borda neutra (#2d333b)</small></div>
+      <div class="card hover">Caixa em hover</div>
+      <div class="card sel">Caixa selecionada</div>
+
+      <div class="sec-label">O "aparece diferente" (estados)</div>
+      <div class="staterow">
+        <div class="statebox teal"><span class="tag">Turmas / Conteúdo</span>estado teal</div>
+        <div class="statebox gray"><span class="tag">Perguntas</span>estado teal</div>
+      </div>
+      <p class="note">Perguntas sobe pro teal dos demais: tudo combina.</p>
+
+      <div class="sec-label">Botões</div>
+      <div class="btnrow">
+        <button class="btn-primary">Botão primário</button>
+        <button class="btn-ghost">Secundário</button>
+        <button class="iconbtn">✎</button>
+      </div>
+      <p class="note">Primário = teal escuro (#0d9488).</p>
+
+      <div class="sec-label">Chips (fundo = cor da página)</div>
+      <div class="btnrow"><span class="chip">Chip</span><span class="chip on">Chip ligado</span></div>
+
+      <div class="sec-label">Campo / opções de resposta</div>
+      <input class="input" value="Campo de texto" readonly>
+      <div style="height:8px"></div>
+      <div class="opt">Opção em repouso</div>
+      <div class="opt hover">Opção em hover</div>
+      <div class="opt sel">Opção selecionada</div>
+
+      <div class="sec-label">Segmentado</div>
+      <div class="seg"><span class="on">Ativo</span><span>Outro</span><span>Mais</span></div>
+    </section>
+
+  </div>
+
+  <div class="legend">
+    <b>Inventário dos elementos (confirme se entendi o que existe hoje):</b>
+    <ul>
+      <li><b>Caixa / card</b> — fundo superfície + 1px de borda. É o "risquinho teal" no escuro hoje.</li>
+      <li><b>Estados hover / selecionado</b> — hoje teal em Turmas/Conteúdo/Aulas e cinza em Perguntas/Certificados (via um <code>--surface-hover</code> que nunca foi definido e cai no cinza).</li>
+      <li><b>Botão primário</b> — hoje usa var(--primary) = #14b8a6 (teal claro) direto, ignorando o token escuro que já existe.</li>
+      <li><b>Botão secundário / ícone</b> — fundo superfície + borda; sobrevivem porque a superfície já é mais clara que a página.</li>
+      <li><b>Chip</b> — fundo = cor da PÁGINA, só a borda o separa. É o que poderia "sumir" se a borda escurecesse demais; por isso o cinza é mais claro que a superfície.</li>
+      <li><b>Campo / opções de resposta</b> — borda 2px; opção selecionada hoje é creme no claro e teal no escuro (troca de cor entre modos).</li>
+      <li><b>Segmentado</b> — botão ativo herda a cor do primário.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  var body = document.body, btn = document.getElementById('toggle'), pill = document.getElementById('pill');
+  btn.addEventListener('click', function () {
+    var dark = body.getAttribute('data-mode') === 'dark';
+    body.setAttribute('data-mode', dark ? 'light' : 'dark');
+    btn.textContent = dark ? 'Alternar para modo escuro' : 'Alternar para modo claro';
+    pill.textContent = dark ? 'modo claro (a referência)' : 'modo escuro (o foco do problema)';
+  });
+</script>
+</body>
+</html>
