@@ -19,6 +19,7 @@ import { register as registerQuestionEl, TAG as QTAG } from './question-element.
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
 import { clockOffset, remainingSec, fmtRemain } from '../js/enroll-clock.js';
+import { isProjecting, toggleProjection } from '../js/enroll-control.js';
 import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
 import { filterByClass } from './bank.js';
@@ -302,14 +303,13 @@ function _trailModalMarkup() {
 function _applyHostedUI(open) {
   const note = _q('#cdx-host-note'), launch = _q('#cdx-launch-card');
   const qa = _q('#cdx-qa-section'), start = _q('#cdx-host-start'), stop = _q('#cdx-host-stop');
-  const visao = _q('#cdx-host-visao'), display = _q('#cdx-host-display'), panel = _q('#cdx-active-panel');
+  const visao = _q('#cdx-host-visao'), panel = _q('#cdx-active-panel');
   if (note) note.hidden = open;
   if (launch) launch.style.display = open ? '' : 'none';
   if (qa) qa.style.display = open ? '' : 'none';
   if (start) start.hidden = open;
   if (stop) stop.hidden = !open;
   if (visao) visao.hidden = !open;
-  if (display) display.hidden = !open;
   _refreshShareSurface(open);
   if (!open) {
     if (panel) panel.style.display = 'none';
@@ -319,13 +319,15 @@ function _applyHostedUI(open) {
 
 function _refreshShareSurface(open) {
   const hasTrail = !!_buildTrailUrl();
-  const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr');
-  // Trilha + QR show regardless of session state (Élder 2026-06-05): the trilha
-  // link is useful before the session starts too. Both are ALWAYS visible; the
-  // QR needs a join URL (a linked turma), so without one it reads as disabled and
-  // clicking explains why rather than vanishing from the bar (Élder 2026-06-06).
+  const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr'), display = _q('#cdx-host-display');
+  // Trilha + QR + Display show regardless of session state: the trilha link and the
+  // projector are useful BEFORE the session starts too (Élder 2026-06-19, so the QR
+  // can be shown while presenting the trilha, before opening the questions). Both
+  // Trilha and QR are ALWAYS visible; the QR needs a join URL (a linked turma), so
+  // without one it reads as disabled and clicking explains why (Élder 2026-06-06).
   if (trail) { trail.hidden = false; trail.classList.toggle('is-linked', !!_trailTurma); }
   if (qr) { qr.hidden = false; qr.classList.toggle('is-disabled', !hasTrail); }
+  if (display) display.hidden = false;
   _paintEnrollBtn();
 }
 
@@ -409,7 +411,7 @@ function _paintEnrollBtn() {
   const qr = _q('#cdx-host-qr');
   if (!qr) return;
   const open = !!(_enrollState && _enrollState.open);
-  const projecting = open && !!_enrollState.qr_shown;
+  const projecting = isProjecting(_enrollState);
   qr.classList.toggle('is-on', projecting); // QR is projected on the display
   qr.classList.toggle('is-live', open);     // window is open (countdown running) even if the QR is hidden
   const rem = qr.querySelector('.cdx-host-qr-rem');
@@ -445,11 +447,8 @@ function _loadEnrollState() {
 async function _toggleEnroll() {
   if (!_trailTurma) { notice.info(t('questions.host_qr_no_turma')); return; }
   const ids = { client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug };
-  const projecting = !!(_enrollState && _enrollState.open && _enrollState.qr_shown);
-  try {
-    if (projecting) await cohorts.setEnrollmentQr({ ...ids, shown: 0 });
-    else await cohorts.openEnrollment(ids);
-  } catch (e) { notice.internal(e); return; }
+  try { await toggleProjection(cohorts, ids, _enrollState); }
+  catch (e) { notice.internal(e); return; }
   _loadEnrollState();
 }
 

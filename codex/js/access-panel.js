@@ -12,12 +12,14 @@ export function settingsHtml(turma) {
   const g = !!turma.access_gated;
   const mode = turma.gate_mode || 'inline';
   const certs = !!turma.certificates_enabled;
+  const prompt = !!turma.enrollment_prompt_enabled;
   return '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-gated"' + (g ? ' checked' : '') + '> <span>' + esc(t('alunos.gated')) + '</span></label>' +
     '<label class="cdx-acc-row"><span>' + esc(t('alunos.mode')) + '</span> <select class="cdx-acc-mode"' + (g ? '' : ' disabled') + '>' +
       '<option value="inline"' + (mode === 'inline' ? ' selected' : '') + '>' + esc(t('alunos.mode_inline')) + '</option>' +
       '<option value="upfront"' + (mode === 'upfront' ? ' selected' : '') + '>' + esc(t('alunos.mode_upfront')) + '</option>' +
     '</select></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-certs"' + (certs ? ' checked' : '') + '> <span>' + esc(t('alunos.certs')) + '</span></label>' +
+    '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-prompt"' + (prompt ? ' checked' : '') + '> <span>' + esc(t('alunos.enroll_prompt')) + '</span></label>' +
     '<div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">' + esc(t('alunos.save')) + '</button>' +
     '<span class="cdx-acc-msg" aria-live="polite"></span></div>';
 }
@@ -31,6 +33,7 @@ export function wireSettings(scope, turma, opts) {
   const gated = scope.querySelector('.cdx-acc-gated');
   const mode = scope.querySelector('.cdx-acc-mode');
   const certs = scope.querySelector('.cdx-acc-certs');
+  const prompt = scope.querySelector('.cdx-acc-prompt');
   const save = scope.querySelector('.cdx-acc-save');
   const msg = scope.querySelector('.cdx-acc-msg');
   if (!gated || !save) return;
@@ -43,11 +46,13 @@ export function wireSettings(scope, turma, opts) {
         access_gated: gated.checked ? 1 : 0,
         gate_mode: mode.value,
         certificates_enabled: certs.checked ? 1 : 0,
+        enrollment_prompt_enabled: prompt && prompt.checked ? 1 : 0,
       });
       if (res && res.ok) {
         turma.access_gated = gated.checked ? 1 : 0;
         turma.gate_mode = mode.value;
         turma.certificates_enabled = certs.checked ? 1 : 0;
+        turma.enrollment_prompt_enabled = prompt && prompt.checked ? 1 : 0;
         msg.textContent = t('alunos.saved');
         if (opts.onSaved) opts.onSaved(turma);
       } else {

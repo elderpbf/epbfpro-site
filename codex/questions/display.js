@@ -5,9 +5,10 @@
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { cohorts } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
-import { enrollUrl } from '../js/enroll-clock.js';
+import { isProjecting, toggleProjection, enrollQrSrc } from '../js/enroll-control.js';
 
 let _turma = null;            // resolved turma (client_slug, turma_slug, token)
+let _enrollState = null;      // last ct_get_enrollment result (the shared window state)
 
 // Production host: the QR is scanned by students on their own phones.
 function _trilhaUrl(tr) {
@@ -42,6 +43,7 @@ export function start() {
   }
   resolveTrilha();
   _startEnrollWatch();
+  _wireQrToggle();
 
   const centerState = document.getElementById('cdx-disp-center');
   if (centerState) centerState.remove();
@@ -96,6 +98,20 @@ function _renderStudentQA(data, cpq) {
   card.classList.add('is-active');
 }
 
+// The display doubles as a control surface (it is admin-auth'd): the QR button
+// toggles the SAME enrollment projection the host panel does, so the instructor can
+// run it from the projector or their phone. One server state, one toggle (the shared
+// enroll-control), two surfaces — "é tudo o mesmo código".
+function _wireQrToggle() {
+  const btn = document.getElementById('cdx-disp-qr-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (!_turma) return;
+    const ids = { client_slug: _turma.client_slug, slug: _turma.turma_slug };
+    Promise.resolve(toggleProjection(cohorts, ids, _enrollState)).then(_pollEnroll).catch(() => {});
+  });
+}
+
 // The enrollment QR overlay: shown only while the instructor projects it
 // (server state: open && qr_shown). Polled like everything else on the display;
 // the countdown is the instructor's business and lives on the session panel, not here.
@@ -106,14 +122,17 @@ function _startEnrollWatch() {
 
 function _pollEnroll() {
   if (!_turma) return;
-  cohorts.getEnrollment({ client_slug: _turma.client_slug, slug: _turma.turma_slug }).then((res) => {
+  const ids = { client_slug: _turma.client_slug, slug: _turma.turma_slug };
+  cohorts.getEnrollment(ids).then((res) => {
+    _enrollState = (res && res.ok) ? res : null;
+    const toggle = document.getElementById('cdx-disp-qr-toggle');
+    if (toggle) { toggle.hidden = false; toggle.classList.toggle('is-on', isProjecting(_enrollState)); }
     const overlay = document.getElementById('cdx-disp-enroll');
     if (!overlay) return;
-    if (!(res && res.ok && res.open && res.qr_shown)) { overlay.hidden = true; return; }
+    if (!isProjecting(_enrollState)) { overlay.hidden = true; return; }
     const img = document.getElementById('cdx-disp-enroll-qr');
     if (img) {
-      const url = enrollUrl('https://pensoia.com', _turma.client_slug, _turma.turma_slug, res.turma_token, res.enrollment_token);
-      const src = 'https://api.qrserver.com/v1/create-qr-code/?size=1200x1200&margin=2&data=' + encodeURIComponent(url);
+      const src = enrollQrSrc(_enrollState, ids, 1200);
       if (img.dataset.src !== src) { img.src = src; img.dataset.src = src; }
     }
     overlay.hidden = false;

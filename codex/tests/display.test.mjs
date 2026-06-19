@@ -36,13 +36,19 @@ test('display.css copied the cp-qa-student values verbatim', () => {
   assert.match(css, /background: rgba\(245,158,11,0\.10\)/, 'answer wrap tint');
 });
 
-test('display shows the enrollment QR (no countdown) only while projected (open && qr_shown)', () => {
+test('display shows the enrollment QR (no countdown) only while projected, via the shared control', () => {
   assert.match(html, /id="cdx-disp-enroll"/, 'has the enrollment overlay');
   assert.match(html, /display_enroll_title/, 'titled like the old trail QR (Sua trilha de aprendizado)');
+  assert.match(js, /from '\.\.\/js\/enroll-control\.js'/, 'uses the shared enrollment-projection control');
   assert.match(js, /cohorts\.getEnrollment/, 'polls the shared enrollment state');
-  assert.match(js, /res\.open && res\.qr_shown/, 'shows only when the window is open AND projected');
-  assert.match(js, /enrollUrl\(/, 'builds the et join URL for the QR');
+  assert.match(js, /isProjecting\(/, 'shows only while projected (open && qr_shown), via the shared helper');
+  assert.match(js, /enrollQrSrc\(/, 'builds the QR image through the shared control');
   assert.ok(!/remainingSec|fmtRemain/.test(js), 'no countdown on the display — it lives on the session panel');
+});
+
+test('the display is a control surface: a QR toggle drives the same projection as the panel', () => {
+  assert.match(html, /id="cdx-disp-qr-toggle"/, 'has the admin QR toggle button');
+  assert.match(js, /toggleProjection\(/, 'toggles the same server state the host panel does');
 });
 
 test('the live host Display button points at the ported Codex page', () => {

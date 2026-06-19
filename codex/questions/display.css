@@ -35,10 +35,17 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 
 /* Enrollment QR overlay (shown while the instructor projects it). Just the title +
    the QR — no "enrollment open", no countdown (that's on the session panel). */
-.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(16px, 3vh, 36px); padding: 4vh 4vw; }
+.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(10px, 2vh, 24px); padding: 3vh 3vw; }
 .cdx-disp-enroll[hidden] { display: none; }
 .cdx-disp-enroll-title { font-size: clamp(1.6rem, 3.4vw, 2.8rem); font-weight: 700; color: var(--text-primary); text-align: center; }
-.cdx-disp-enroll-qr { width: min(62vh, 78vw); height: auto; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: clamp(12px, 2vh, 28px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); }
+.cdx-disp-enroll-qr { width: min(74vh, 86vw); height: auto; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: clamp(12px, 2vh, 28px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); }
+
+/* Admin QR toggle — fixed corner control, above the projected overlay (z 50) so the
+   instructor can dismiss the QR from the projector itself. Reuses theme tokens. */
+.cdx-disp-qr-toggle { position: fixed; bottom: clamp(12px, 2.5vh, 28px); right: clamp(12px, 2.5vw, 28px); z-index: 60; display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; box-shadow: 0 2px 12px var(--shadow, rgba(0,0,0,0.12)); }
+.cdx-disp-qr-toggle[hidden] { display: none; }
+.cdx-disp-qr-toggle:hover { color: var(--text-primary); }
+.cdx-disp-qr-toggle.is-on { background: var(--primary, #2563eb); color: #fff; border-color: transparent; }
 
 /* Promoted student Q&A card (verbatim from cp-display.css). */
 .cdx-disp-qa {

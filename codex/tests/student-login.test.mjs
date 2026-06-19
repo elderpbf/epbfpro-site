@@ -35,7 +35,6 @@ function fakeApi(responses) {
     authVerify: make('authVerify'),
     profileSave: make('profileSave'),
     sessionCheck: make('sessionCheck'),
-    enrollJoin: make('enrollJoin'),
   };
 }
 
@@ -251,45 +250,14 @@ test('logout clears the token and returns to anonymous', () => {
   assert.equal(flow.state, 'anonymous');
 });
 
-// ── QR enrollment join (frictionless in-class, no email round-trip) ───────────
-
-test('flowOptsFrom forwards the enrollToken (QR enrollment pass-through)', () => {
+// QR enrollment no longer mints a session client-side: the in-class scan only deposits
+// a presence grant, and the login is ALWAYS the magic-link flow above. The flow exposes
+// no enrollJoin and flowOptsFrom drops enrollToken (Élder 2026-06-19).
+test('the flow exposes no frictionless enrollJoin and flowOptsFrom drops enrollToken', () => {
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  assert.equal(typeof flow.enrollJoin, 'undefined');
   const out = flowOptsFrom({ client: 'jfse', turma: 'geral', k: 'K', enrollToken: 'ETOK' }, 'https://staging.pensoia.com');
-  assert.equal(out.enrollToken, 'ETOK');
-});
-
-test('enrollJoin rejects an invalid email without calling the facade', async () => {
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', enrollToken: 'ETOK' });
-  await flow.enrollJoin('nope', 'Ana');
-  assert.equal(flow.error, 'email_invalid');
-  assert.equal(api.calls.length, 0);
-});
-
-test('enrollJoin mints an approved session on a live window and stores the token', async () => {
-  api = fakeApi({ enrollJoin: { ok: true, session_token: 'ENSESS', participant_id: 3, needs_profile: false } });
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', enrollToken: 'ETOK' });
-  await flow.enrollJoin('  Ana@Test.com ', '  Ana  ');
-  assert.equal(api.calls[0].name, 'enrollJoin');
-  assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', et: 'ETOK', email: 'ana@test.com', name: 'Ana' });
-  assert.equal(sess.getToken('jfse', 'geral'), 'ENSESS');
-  assert.equal(flow.participantId, 3);
-  assert.equal(flow.state, 'authenticated');
-});
-
-test('enrollJoin needing profile routes to the profile step', async () => {
-  api = fakeApi({ enrollJoin: { ok: true, session_token: 'S', participant_id: 4, needs_profile: true } });
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', enrollToken: 'ETOK' });
-  await flow.enrollJoin('ana@test.com');
-  assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', et: 'ETOK', email: 'ana@test.com' });
-  assert.equal(flow.state, 'profile');
-});
-
-test('enrollJoin surfaces a closed-window error and stores no token', async () => {
-  api = fakeApi({ enrollJoin: { error: 'enrollment_closed' } });
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', enrollToken: 'STALE' });
-  await flow.enrollJoin('ana@test.com');
-  assert.equal(flow.error, 'enrollment_closed');
-  assert.equal(sess.getToken('jfse', 'geral'), null);
+  assert.equal('enrollToken' in out, false);
 });
 
 // ── LGPD controller constants ────────────────────────────────────────────────

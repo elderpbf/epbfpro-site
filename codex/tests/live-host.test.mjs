@@ -74,6 +74,10 @@ test('live-host renders the faithful host session bar + not-hosted note', () => 
   assert.match(src, /cdx-host-visao/, 'Visao column toggles');
   assert.match(src, /cdx-host-note/, 'not-hosted note');
   assert.match(src, /_applyHostedUI/, 'toggles hosting chrome like the legacy');
+  // Display shows even with the session closed, so the trilha/QR can be projected
+  // before opening the questions (Élder 2026-06-19). It is no longer open-gated.
+  assert.ok(!/display\.hidden = !open/.test(src), 'Display is not hidden when the session is closed');
+  assert.match(src, /if \(display\) display\.hidden = false/, 'Display is shown alongside Trilha + QR');
 });
 
 test('live-host matches host.html fidelity (close-options in the active foot, icons, bank label, sqa hint)', () => {
@@ -112,11 +116,11 @@ test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared glo
   assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
   assert.match(src, /\.lookupTurmaBySession\s*\(/, 'Trilha looks up the linked turma');
   assert.match(src, /\.updateTurmaMeta\s*\(/, 'Trilha links/unlinks via turma meta');
-  // The QR button toggles the QR projected on the session display; the enrollment
-  // window stays open (it's never closed by the button), so it no longer pops a
-  // panel-side QR modal.
-  assert.match(src, /\.openEnrollment\s*\(/, 'opens/reuses the window (mint-if-none) + projects the QR');
-  assert.match(src, /\.setEnrollmentQr\s*\(/, 'un-projects the QR without closing the window');
+  // The QR button toggles the projected QR through the SHARED enroll-control, so the
+  // panel and the display act identically (one server state, one toggle). The window
+  // stays open (the button never closes it), so it pops no panel-side QR modal.
+  assert.match(src, /from\s+['"]\.\.\/js\/enroll-control\.js['"]/, 'uses the shared enrollment-projection control');
+  assert.match(src, /toggleProjection\s*\(/, 'toggles the QR via the shared control (same code as the display)');
   assert.match(src, /\.getEnrollment\s*\(/, 'reads the shared enrollment state');
   assert.match(src, /from\s+['"]\.\.\/js\/enroll-clock\.js['"]/, 'shows the server-anchored countdown on the panel');
   assert.ok(!/window\.QRShareModal\b/.test(src), 'no longer reads the backstage QRShareModal global');

@@ -11,14 +11,16 @@ import { settingsHtml, wireSettings } from '../js/access-panel.js';
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
 test('settingsHtml reflects the turma state', () => {
-  const on = settingsHtml({ access_gated: 1, gate_mode: 'upfront', certificates_enabled: 1 });
+  const on = settingsHtml({ access_gated: 1, gate_mode: 'upfront', certificates_enabled: 1, enrollment_prompt_enabled: 1 });
   assert.match(on, /class="cdx-acc-gated"[^>]*checked/, 'gated checked');
   assert.match(on, /value="upfront" selected/, 'mode preselected');
   assert.match(on, /class="cdx-acc-certs"[^>]*checked/, 'certs checked');
+  assert.match(on, /class="cdx-acc-prompt"[^>]*checked/, 'cadastro prompt checked');
   assert.match(on, /class="cdx-btn cdx-acc-save"/, 'has a save button');
 
   const off = settingsHtml({ access_gated: 0 });
   assert.ok(!/class="cdx-acc-gated"[^>]*checked/.test(off), 'gated unchecked when off');
+  assert.ok(!/class="cdx-acc-prompt"[^>]*checked/.test(off), 'cadastro prompt unchecked when off');
   assert.match(off, /class="cdx-acc-mode" disabled/, 'mode disabled when not gated');
 });
 
@@ -28,24 +30,26 @@ test('wireSettings saves only the access columns and mutates the turma', async (
     '.cdx-acc-gated': { checked: true, addEventListener(ev, fn) { this[ev] = fn; } },
     '.cdx-acc-mode':  { value: 'upfront', disabled: false },
     '.cdx-acc-certs': { checked: true },
+    '.cdx-acc-prompt':{ checked: true },
     '.cdx-acc-save':  { disabled: false, addEventListener(ev, fn) { this[ev] = fn; } },
     '.cdx-acc-msg':   { textContent: '' },
   };
   const scope = { querySelector: (s) => els[s] };
   let sent = null;
   const api = { updateTurmaMeta: async (p) => { sent = p; return { ok: true }; } };
-  const turma = { access_gated: 0, gate_mode: 'inline', certificates_enabled: 0 };
+  const turma = { access_gated: 0, gate_mode: 'inline', certificates_enabled: 0, enrollment_prompt_enabled: 0 };
 
   wireSettings(scope, turma, { api, clientSlug: 'tjse', slug: 'turma-2025-1' });
   await els['.cdx-acc-save'].click();
 
   assert.deepEqual(sent, {
     client_slug: 'tjse', slug: 'turma-2025-1',
-    access_gated: 1, gate_mode: 'upfront', certificates_enabled: 1,
+    access_gated: 1, gate_mode: 'upfront', certificates_enabled: 1, enrollment_prompt_enabled: 1,
   });
   assert.ok(!('whatsapp_url' in sent), 'does not touch whatsapp/classpulse (conditional update)');
   assert.equal(turma.access_gated, 1, 'turma row kept in sync');
   assert.equal(turma.certificates_enabled, 1);
+  assert.equal(turma.enrollment_prompt_enabled, 1, 'cadastro prompt flag kept in sync');
 });
 
 test('the cohort dossier mounts the shared panel into a collapsible Acesso section', () => {

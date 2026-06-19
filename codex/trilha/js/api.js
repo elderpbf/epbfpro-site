@@ -38,10 +38,9 @@ export const trail = {
   presenceClaim:  (p) => call('student_presence_claim', p), // { client_slug, turma_slug } -> { ok, granted, presence_token? }
 
   // QR enrollment (Phase 7b). The QR projected in class carries ?et=<token>. claim
-  // mints a presence grant on scan (bridges an off-window login); join is the
-  // frictionless in-class path that mints an approved session with no email round-trip.
+  // mints a presence grant on scan (silently kept in localStorage), so a later
+  // off-window magic-link login auto-approves. Email is ALWAYS confirmed via the link.
   enrollClaim:    (p) => call('student_enroll_claim', p),    // { client_slug, turma_slug, et } -> { ok, granted, presence_token? }
-  enrollJoin:     (p) => call('student_enroll_join', p),     // { client_slug, turma_slug, et, email, name? } -> { ok, session_token, ... } | { error }
 };
 
 export { assetUrl };

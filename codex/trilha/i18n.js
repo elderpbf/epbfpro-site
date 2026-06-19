@@ -46,7 +46,7 @@ const pt = {
   'login.profile_title':    'Complete seu cadastro',
   'login.profile_desc':     'Falta só uma confirmação para liberar seu acesso.',
   'login.name_label':       'Seu nome completo',
-  'login.name_placeholder': 'Como deve aparecer no seu certificado',
+  'login.name_placeholder': 'Como você quer ser identificado',
   'login.consent_notice':   'Ao entrar, você concorda que a EPBF Soluções em Tecnologia Ltda (CNPJ 65.254.064/0001-64), responsável pela plataforma PensoIA, trate seus dados pessoais (nome e e-mail, e o CPF apenas no momento de emitir o certificado) para identificar você, liberar o acesso à sua trilha e emitir certificados, conforme a Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018). Seus dados não são vendidos nem usados para marketing. Você pode pedir acesso, correção ou exclusão a qualquer momento pelo e-mail contato@pensoia.com.',
   'login.consent_label':    'Li e concordo com o tratamento dos meus dados.',
   'login.consent_required': 'É necessário concordar para continuar.',
@@ -61,13 +61,6 @@ const pt = {
   'login.wall_body':        'Entre com seu e-mail para acessar o conteúdo desta turma.',
   'login.pending_title':    'Acesso em análise',
   'login.pending_body':     'Recebemos seu acesso. Você será liberado em breve, é só aguardar a aprovação.',
-  'login.enroll_title':         'Você está na aula!',
-  'login.enroll_subtitle':      'Entre com seu e-mail para acessar o conteúdo agora. Sem link, sem espera.',
-  'login.enroll_continue':      'Continuar',
-  'login.enroll_confirm_title': 'Confirme seu e-mail',
-  'login.enroll_confirm_desc':  'É esse mesmo o seu e-mail? Ele identifica seu acesso e seu certificado.',
-  'login.enroll_edit':          'Corrigir',
-  'login.enroll_cta':           'Entrar na aula',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -113,7 +106,7 @@ const en = {
   'login.profile_title':    'Complete your profile',
   'login.profile_desc':     'Just one confirmation left to unlock your access.',
   'login.name_label':       'Your full name',
-  'login.name_placeholder': 'As it should appear on your certificate',
+  'login.name_placeholder': 'How you would like to be identified',
   'login.consent_notice':   'By signing in, you agree that EPBF Soluções em Tecnologia Ltda (CNPJ 65.254.064/0001-64), the controller behind the PensoIA platform, will process your personal data (name and email, and your CPF only when issuing a certificate) to identify you, grant access to your trail, and issue certificates, under Brazil\'s data protection law (LGPD, Law 13.709/2018). Your data is not sold or used for marketing. You may request access, correction, or deletion anytime at contato@pensoia.com.',
   'login.consent_label':    'I have read and agree to the processing of my data.',
   'login.consent_required': 'You must agree to continue.',
@@ -128,13 +121,6 @@ const en = {
   'login.wall_body':        'Sign in with your email to access this class content.',
   'login.pending_title':    'Access under review',
   'login.pending_body':     'We received your request. You will be unlocked shortly, just wait for approval.',
-  'login.enroll_title':         'You are in class!',
-  'login.enroll_subtitle':      'Enter your email to access the content now. No link, no waiting.',
-  'login.enroll_continue':      'Continue',
-  'login.enroll_confirm_title': 'Confirm your email',
-  'login.enroll_confirm_desc':  'Is this your email? It identifies your access and your certificate.',
-  'login.enroll_edit':          'Edit',
-  'login.enroll_cta':           'Join the class',
 };
 
 const DICTS = { 'pt-BR': pt, en };

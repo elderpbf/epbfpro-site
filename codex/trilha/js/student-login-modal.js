@@ -6,7 +6,7 @@
 // Reuses the Trail's shared modal shell (.tr-modal*, .tr-btn*) from
 // tarefa-modal.css. The consent notice is the LGPD disclosure (login.consent_notice).
 import { t } from '../i18n.js';
-import { createLoginFlow, flowOptsFrom, validateEmail } from './student-login.js';
+import { createLoginFlow, flowOptsFrom } from './student-login.js';
 import { esc } from './utils.js';
 
 // Map a flow error code to a student-facing message (display glue).
@@ -28,13 +28,6 @@ export function openLoginModal(opts = {}) {
   // carry k AND return to this deployment, not always prod).
   const origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : undefined;
   const flow = createLoginFlow(flowOptsFrom(opts, origin));
-
-  // QR enrollment mode: a live scan (?et=) means the student is in the room, so the
-  // first screen is the frictionless join (email + name + consent + an echo-back
-  // confirm to catch typos) instead of the email-link request. Approval rides the
-  // window, not the email, so a typo only mislabels a record (verified later, P4).
-  const enroll = !!opts.enrollToken;
-  let enEmail = '', enName = '', enConsent = false, enConfirming = false;
 
   const bd = document.createElement('div');
   bd.className = 'tr-modal-backdrop tr-login-backdrop';
@@ -67,69 +60,11 @@ export function openLoginModal(opts = {}) {
 
   function render() {
     const s = flow.state;
-    if (enroll && (s === 'anonymous' || s === 'email')) return enConfirming ? renderEnrollConfirm() : renderEnroll();
     if (s === 'sent') return renderSent();
     if (s === 'verifying') return renderVerifying();
     if (s === 'profile') return renderProfile();
     if (s === 'error') return renderError();
     return renderEmail();
-  }
-
-  // Step 1 of the in-class join: collect email + name + consent. Submitting moves to
-  // the echo-back confirm (the typo guard) rather than joining straight away.
-  function renderEnroll() {
-    bodyEl.innerHTML =
-      '<h2 class="tr-modal-title">' + esc(t('login.enroll_title')) + '</h2>' +
-      '<p class="tr-login-subtitle">' + esc(t('login.enroll_subtitle')) + '</p>' +
-      '<label class="tr-tarefa-field-label" for="tr-en-email">' + esc(t('login.email_label')) + '</label>' +
-      '<input id="tr-en-email" type="email" class="tr-tarefa-name tr-en-email" value="' + esc(enEmail) + '" placeholder="' + esc(t('login.email_placeholder')) + '" autocomplete="email" inputmode="email">' +
-      '<label class="tr-tarefa-field-label" for="tr-en-name">' + esc(t('login.name_label')) + '</label>' +
-      '<input id="tr-en-name" type="text" class="tr-tarefa-name tr-en-name" value="' + esc(enName) + '" placeholder="' + esc(t('login.name_placeholder')) + '" autocomplete="name">' +
-      '<div class="tr-login-consent">' +
-        '<p class="tr-login-consent-notice">' + esc(t('login.consent_notice')) + '</p>' +
-        '<label class="tr-login-consent-row">' +
-          '<input type="checkbox" class="tr-en-consent"' + (enConsent ? ' checked' : '') + '>' +
-          '<span>' + esc(t('login.consent_label')) + '</span>' +
-        '</label>' +
-      '</div>' +
-      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
-      '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-en-continue">' + esc(t('login.enroll_continue')) + '</button>' +
-      '</div>';
-    const emailEl = bodyEl.querySelector('.tr-en-email');
-    const nameEl = bodyEl.querySelector('.tr-en-name');
-    const consentEl = bodyEl.querySelector('.tr-en-consent');
-    bodyEl.querySelector('.tr-en-continue').addEventListener('click', () => {
-      enName = nameEl.value; enConsent = !!consentEl.checked;
-      const email = validateEmail(emailEl.value);
-      enEmail = emailEl.value;
-      if (!email) { flow.error = 'email_invalid'; render(); return; }
-      if (!enConsent) { flow.error = 'consent_required'; render(); return; }
-      enEmail = email; flow.error = null; enConfirming = true; render();
-    });
-    setTimeout(() => { try { emailEl.focus(); } catch (_) {} }, 60);
-  }
-
-  // Step 2: echo the normalized email back so a fat-finger is caught before joining.
-  function renderEnrollConfirm() {
-    bodyEl.innerHTML =
-      '<h2 class="tr-modal-title">' + esc(t('login.enroll_confirm_title')) + '</h2>' +
-      '<p class="tr-login-subtitle">' + esc(t('login.enroll_confirm_desc')) + '</p>' +
-      '<p class="tr-en-confirm-email">' + esc(enEmail) + '</p>' +
-      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
-      '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-ghost tr-en-back">' + esc(t('login.enroll_edit')) + '</button>' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-en-join">' + esc(t('login.enroll_cta')) + '</button>' +
-      '</div>';
-    bodyEl.querySelector('.tr-en-back').addEventListener('click', () => { enConfirming = false; flow.error = null; render(); });
-    const join = bodyEl.querySelector('.tr-en-join');
-    join.addEventListener('click', async () => {
-      join.disabled = true;
-      await flow.enrollJoin(enEmail, enName);
-      if (flow.state === 'profile') { await flow.saveProfile(enName, true); } // consent already given
-      if (flow.state !== 'authenticated') { enConfirming = false; }
-      settle();
-    });
   }
 
   function renderEmail() {
