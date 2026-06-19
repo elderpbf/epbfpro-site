@@ -13,6 +13,7 @@ export function settingsHtml(turma) {
   const mode = turma.gate_mode || 'inline';
   const certs = !!turma.certificates_enabled;
   const prompt = !!turma.enrollment_prompt_enabled;
+  const direct = !!turma.direct_access_enabled;
   const forum = !!turma.forum_enabled;
   const notif = !!turma.notifications_enabled;
   // Rows flow into responsive columns (.cdx-acc-grid) so the panel fills the width
@@ -25,6 +26,7 @@ export function settingsHtml(turma) {
     '</select></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-certs"' + (certs ? ' checked' : '') + '> <span>' + esc(t('alunos.certs')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-prompt"' + (prompt ? ' checked' : '') + '> <span>' + esc(t('alunos.enroll_prompt')) + '</span></label>' +
+    '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-direct"' + (direct ? ' checked' : '') + '> <span>' + esc(t('alunos.direct_access')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-forum"' + (forum ? ' checked' : '') + '> <span>' + esc(t('alunos.forum')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-notif"' + (notif ? ' checked' : '') + '> <span>' + esc(t('alunos.notifications')) + '</span></label>' +
     '<div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">' + esc(t('alunos.save')) + '</button>' +
@@ -42,6 +44,7 @@ export function wireSettings(scope, turma, opts) {
   const mode = scope.querySelector('.cdx-acc-mode');
   const certs = scope.querySelector('.cdx-acc-certs');
   const prompt = scope.querySelector('.cdx-acc-prompt');
+  const direct = scope.querySelector('.cdx-acc-direct');
   const forum = scope.querySelector('.cdx-acc-forum');
   const notif = scope.querySelector('.cdx-acc-notif');
   const save = scope.querySelector('.cdx-acc-save');
@@ -57,6 +60,7 @@ export function wireSettings(scope, turma, opts) {
         gate_mode: mode.value,
         certificates_enabled: certs.checked ? 1 : 0,
         enrollment_prompt_enabled: prompt && prompt.checked ? 1 : 0,
+        direct_access_enabled: direct && direct.checked ? 1 : 0,
         forum_enabled: forum && forum.checked ? 1 : 0,
         notifications_enabled: notif && notif.checked ? 1 : 0,
       });
@@ -65,6 +69,7 @@ export function wireSettings(scope, turma, opts) {
         turma.gate_mode = mode.value;
         turma.certificates_enabled = certs.checked ? 1 : 0;
         turma.enrollment_prompt_enabled = prompt && prompt.checked ? 1 : 0;
+        turma.direct_access_enabled = direct && direct.checked ? 1 : 0;
         turma.forum_enabled = forum && forum.checked ? 1 : 0;
         turma.notifications_enabled = notif && notif.checked ? 1 : 0;
         msg.textContent = t('alunos.saved');

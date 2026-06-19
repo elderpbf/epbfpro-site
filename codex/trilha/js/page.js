@@ -244,13 +244,12 @@ function handleMagicReturn(loc) {
   });
 }
 
-// QR enrollment return: the in-class QR carries ?et=<token>. It ALWAYS does one thing
-// silently — claim a device-presence grant and keep it (so a later off-window login
-// auto-approves) — and never forces a login on its own. The login only opens here when
-// the turma opted into the cadastro prompt (access.enroll_prompt), and then as the plain
-// magic-link request, never an instant join. The fixed ?k= link never reaches this path,
-// so it stays prompt-free. Strips et so a refresh cannot replay it; returns true when it
-// handled an et, so the caller skips the magic-link path.
+// QR enrollment return: the in-class QR carries ?et=<token>. It ALWAYS claims a
+// device-presence grant silently (so a later off-window login auto-approves) and never
+// forces a login on its own. What opens, if anything, is the turma's choice: direct_access
+// (register + access on the spot, no magic link) takes precedence, else enroll_prompt (the
+// magic-link request). The fixed ?k= link never reaches this path, so it stays prompt-free.
+// Strips et so a refresh can't replay it; returns true so the caller skips the magic path.
 function handleEnrollReturn(loc) {
   const et = extractEnrollToken((loc && loc.search) || '');
   if (!et) return false;
@@ -261,7 +260,14 @@ function handleEnrollReturn(loc) {
       .catch(() => {});
   } catch (_) { /* presence is best-effort */ }
   const access = (state.data || {}).access || {};
-  if (access.enroll_prompt) {
+  if (access.direct_access) {
+    openLoginModal({
+      client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+      enrollToken: et,
+      presence: getPresence(state.clientSlug, state.turmaSlug),
+      onAuthenticated: afterAuth,
+    });
+  } else if (access.enroll_prompt) {
     openLoginModal({
       client: state.clientSlug, turma: state.turmaSlug, k: state.token,
       presence: getPresence(state.clientSlug, state.turmaSlug),
