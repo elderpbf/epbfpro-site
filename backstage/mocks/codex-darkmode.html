@@ -25,7 +25,14 @@
   /* texto do botão: branco no claro; no ESCURO um cinzinha (branco puro estoura) */
   .col-today { --btn-text: #fff; }
   body[data-mode="light"] .col-a, body[data-mode="light"] .col-b { --btn-text: #fff; }
-  body[data-mode="dark"]  .col-a, body[data-mode="dark"]  .col-b { --btn-text: var(--pick-text, #e5e7eb); }
+  /* a régua controla o cinzinha de TODO texto das propostas no escuro:
+     corpo, secundário e texto sobre cor. A hierarquia vem da opacity de cada
+     elemento, não de cores diferentes. */
+  body[data-mode="dark"]  .col-a, body[data-mode="dark"]  .col-b {
+    --btn-text: var(--pick-text, #e5e7eb);
+    --text:  var(--pick-text, #e5e7eb);
+    --text2: var(--pick-text, #e5e7eb);
+  }
 
   /* ======================= COLUNA HOJE ======================= */
   /* Valores REAIS de hoje. Note a borda teal no escuro, o botão teal
@@ -262,7 +269,7 @@
       <div class="sw"><button class="swbtn" data-color="#d1d5db" style="background:#0d9488;color:#d1d5db">Botão</button><code>#d1d5db</code></div>
       <div class="sw"><button class="swbtn" data-color="#c2cdd6" style="background:#0d9488;color:#c2cdd6">Botão</button><code>#c2cdd6</code></div>
     </div>
-    <div class="sw-pick">Aplicado em todo texto branco das colunas A e B no escuro (botão, segmento, selo): <code id="pickval">#e5e7eb</code> — clique numa amostra pra trocar.</div>
+    <div class="sw-pick">Aplicado em TODO texto das colunas A e B no escuro (corpo, títulos, secundário, botão, selo, segmento): <code id="pickval">#e5e7eb</code> — clique numa amostra pra trocar.</div>
   </div>
 
   <div class="grid">
