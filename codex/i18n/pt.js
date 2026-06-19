@@ -1072,6 +1072,13 @@ export default {
   'questions.host_start_conflict':       'A sessão "{name}" já está aberta. Encerrá-la para iniciar esta?',
   'questions.host_trail':                'Trilha',
   'questions.host_qr':                   'QR',
+  // Session display (projector) — codex/questions/display.html
+  'questions.display_loading':           'Carregando...',
+  'questions.display_qa_label':          'Pergunta do aluno',
+  'questions.display_qa_answer_label':   'Resposta',
+  'questions.display_anon':              'Anônimo',
+  'questions.display_nocode':            'Nenhum código de sessão na URL.',
+  'questions.display_nocode_hint':       'Abra esta página como:',
   'questions.host_ai_generate':          'Gerar',
   'questions.host_ai_improve':           'Melhorar',
   'questions.host_err_ai':               'Erro ao gerar a pergunta.',

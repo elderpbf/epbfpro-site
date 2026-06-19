@@ -1,0 +1,86 @@
+/* Codex — Questions session display (projector). Ported value-for-value from
+   go/display.html's inline <style> + cp-qa-student rules (backstage/css/cp-display.css);
+   only the class names gained the cdx-disp- prefix. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Main content */
+.cdx-disp-main { display: flex; flex-direction: column; flex: 1; padding: clamp(12px, 1.8vh, 28px) clamp(16px, 2.5vw, 44px); overflow-y: auto; max-width: min(1200px, 92vw); width: 100%; margin: 0 auto; }
+
+/* Center states */
+.cdx-disp-center { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; flex: 1; min-height: 300px; }
+.cdx-disp-center .cdx-disp-state-icon { font-size: 3rem; }
+.cdx-disp-center .cdx-disp-state-text { font-size: 2rem; color: var(--text-secondary); font-weight: 500; }
+.cdx-disp-center .cdx-disp-state-sub  { font-size: 0.9rem; color: var(--text-light); }
+
+/* No code screen */
+#cdx-disp-nocode { display: none; padding: 60px 0; text-align: center; color: var(--text-secondary); }
+#cdx-disp-nocode p   { font-size: 0.88rem; margin-bottom: 8px; }
+#cdx-disp-nocode code { font-size: 0.82rem; background: var(--surface); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
+
+/* Landscape Tablets / Projectors Override */
+@media (max-height: 600px) {
+  pensoia-header .ph-bar { padding: 4px 16px; }
+}
+
+/* Promoted student Q&A card (verbatim from cp-display.css). */
+.cdx-disp-qa {
+  display: none;
+  flex: 1; min-height: 0;
+  width: 100%;
+  padding: clamp(28px, 4vh, 56px) clamp(28px, 4vw, 64px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 6px solid #f59e0b;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px var(--shadow, rgba(0,0,0,0.08));
+}
+.cdx-disp-qa.is-active { display: flex; flex-direction: column; justify-content: center; }
+
+.cdx-disp-qa .cdx-disp-qa-label {
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #d97706;
+  margin-bottom: 16px;
+}
+.cdx-disp-qa .cdx-disp-qa-name {
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+.cdx-disp-qa .cdx-disp-qa-text {
+  font-size: clamp(2.2rem, 4.5vw, 4rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.cdx-disp-qa .cdx-disp-qa-answer-wrap {
+  display: none;
+  margin-top: 32px;
+  padding: 22px 28px;
+  background: rgba(245,158,11,0.10);
+  border-left: 5px solid #d97706;
+  border-radius: 0 16px 16px 0;
+}
+.cdx-disp-qa .cdx-disp-qa-answer-wrap.is-visible { display: block; }
+.cdx-disp-qa .cdx-disp-qa-answer-label {
+  font-size: clamp(0.85rem, 1.2vw, 1.05rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d97706;
+  margin-bottom: 12px;
+}
+.cdx-disp-qa .cdx-disp-qa-answer {
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}

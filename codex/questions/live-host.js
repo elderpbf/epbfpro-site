@@ -139,7 +139,7 @@ function _barMarkup() {
   '</div>';
 }
 
-function _displayHref() { return '/go/display.html?code=' + encodeURIComponent(_session.code); }
+function _displayHref() { return '/codex/questions/display.html?code=' + encodeURIComponent(_session.code); }
 
 // Inline SVG glyph copied node-for-node from host.html (the bank hamburger). The
 // AI Gerar/Melhorar glyphs now live in the shared composer, which renders the AI

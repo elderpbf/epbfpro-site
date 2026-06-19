@@ -1073,6 +1073,13 @@ export default {
   'questions.host_start_conflict':       'Session "{name}" is already open. End it to start this one?',
   'questions.host_trail':                'Trilha',
   'questions.host_qr':                   'QR',
+  // Session display (projector) — codex/questions/display.html
+  'questions.display_loading':           'Loading...',
+  'questions.display_qa_label':          'Student question',
+  'questions.display_qa_answer_label':   'Answer',
+  'questions.display_anon':              'Anonymous',
+  'questions.display_nocode':            'No session code in the URL.',
+  'questions.display_nocode_hint':       'Open this page as:',
   'questions.host_ai_generate':          'Generate',
   'questions.host_ai_improve':           'Improve',
   'questions.host_err_ai':               'Error generating the question.',
