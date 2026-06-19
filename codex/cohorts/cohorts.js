@@ -11,7 +11,7 @@ import { aulaStatus } from '../js/aula-status.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
-import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings, enrollmentHtml, loadEnrollment, clearEnrollTimer } from '../js/access-panel.js';
+import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import * as cursos from './courses.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
@@ -1029,8 +1029,6 @@ function _fmtDateBr(iso) {
 function _renderDossier(turma) {
   const el = _q('cdx-turma-dossier');
   if (!el) return;
-  // Kill any QR countdown left by the previously shown dossier before rebuilding.
-  clearEnrollTimer();
   if (!turma) { el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
   _dossierTurma = turma;
   _dossierPFilter = 'all';
@@ -1155,14 +1153,8 @@ function _renderDossier(turma) {
   // panel (same component the Alunos tab uses, so the logic lives in one place).
   const accEl = el.querySelector('#cdx-doss-acesso');
   if (accEl) {
-    const accOpts = { api, clientSlug: turma.client_slug, slug: turma.slug };
-    accEl.innerHTML = accessSettingsHtml(turma) +
-      '<div class="cdx-acc-enroll">' +
-        '<div class="cdx-acc-enroll-h">' + _esc(t('alunos.enroll')) + '</div>' +
-        enrollmentHtml() +
-      '</div>';
-    wireAccessSettings(accEl, turma, accOpts);
-    loadEnrollment(accEl, accOpts);
+    accEl.innerHTML = accessSettingsHtml(turma);
+    wireAccessSettings(accEl, turma, { api, clientSlug: turma.client_slug, slug: turma.slug });
   }
   // The course + classpulse selects need their option lists; load once and re-render
   // this dossier when they arrive (so the saved option is selectable).
@@ -1643,7 +1635,6 @@ export function mount(viewEl, ctx) {
 
 export function unmount() {
   cursos.unmount();
-  clearEnrollTimer(); // stop any QR countdown the dossier left running
   _cleanup.forEach(fn => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';

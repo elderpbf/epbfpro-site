@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { settingsHtml, wireSettings, enrollmentHtml, loadEnrollment, clearEnrollTimer } from '../js/access-panel.js';
+import { settingsHtml, wireSettings } from '../js/access-panel.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
@@ -55,39 +55,6 @@ test('the cohort dossier mounts the shared panel into a collapsible Acesso secti
   assert.match(src, /accessSettingsHtml\(turma\)/, 'renders the shared settings');
   assert.match(src, /wireAccessSettings\(accEl, turma/, 'wires the shared settings');
   assert.match(src, /<details class="cdx-doss-sec"/, 'sections are collapsible');
-});
-
-test('the cohort dossier mounts the QR enrollment window from the shared module', () => {
-  const src = read('../cohorts/cohorts.js');
-  assert.match(src, /enrollmentHtml, loadEnrollment, clearEnrollTimer/, 'imports the enrollment exports');
-  assert.match(src, /enrollmentHtml\(\)/, 'renders the enroll card body in Acesso');
-  assert.match(src, /loadEnrollment\(accEl, accOpts\)/, 'loads the enroll state into the Acesso scope');
-  // The countdown is torn down when the dossier re-renders and when the tab unmounts.
-  assert.match(src, /clearEnrollTimer\(\);[^]*function _renderDossier|_renderDossier[^]*clearEnrollTimer\(\)/, 'clears the timer on dossier re-render');
-  assert.match(src, /unmount\(\)[^]*clearEnrollTimer\(\)/, 'clears the timer on unmount');
-});
-
-test('enrollmentHtml is the body placeholder the host frames', () => {
-  assert.match(enrollmentHtml(), /cdx-al-enroll-body/, 'has the enroll body mount point');
-});
-
-test('loadEnrollment renders the closed-state one-button QR (mint-if-none)', async () => {
-  const qb = { addEventListener() {} };
-  const box = { innerHTML: '', querySelector: () => qb };
-  const scope = { querySelector: (s) => (s === '.cdx-al-enroll-body' ? box : null) };
-  const api = { getEnrollment: async () => ({ ok: true, open: false }) };
-  await loadEnrollment(scope, { api, clientSlug: 'tjse', slug: 'turma-2025-1' });
-  assert.match(box.innerHTML, /cdx-al-enroll-qr/, 'shows the QR button');
-  assert.match(box.innerHTML, /cdx-al-qrglyph/, 'with the QR glyph');
-  clearEnrollTimer();
-});
-
-test('loadEnrollment shows the error state when the api fails', async () => {
-  const box = { innerHTML: '', querySelector: () => ({ addEventListener() {} }) };
-  const scope = { querySelector: () => box };
-  const api = { getEnrollment: async () => { throw new Error('boom'); } };
-  await loadEnrollment(scope, { api, clientSlug: 'x', slug: 'y' });
-  assert.match(box.innerHTML, /cdx-acc-msg/, 'renders an error message, not a crash');
 });
 
 test('the Alunos tab consumes the same shared panel (no duplicated settings logic)', () => {

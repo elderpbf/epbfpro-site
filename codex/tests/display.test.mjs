@@ -36,6 +36,14 @@ test('display.css copied the cp-qa-student values verbatim', () => {
   assert.match(css, /background: rgba\(245,158,11,0\.10\)/, 'answer wrap tint');
 });
 
+test('display reflects the enrollment window: QR overlay + server-anchored countdown', () => {
+  assert.match(html, /id="cdx-disp-enroll"/, 'has the enrollment overlay');
+  assert.match(js, /from '\.\.\/js\/enroll-clock\.js'/, 'uses the shared countdown helpers');
+  assert.match(js, /cohorts\.getEnrollment/, 'polls the shared enrollment state');
+  assert.match(js, /enrollUrl\(/, 'builds the et join URL for the QR');
+  assert.match(js, /remainingSec\(/, 'countdown anchored to the server expiry, not a free-running timer');
+});
+
 test('the live host Display button points at the ported Codex page', () => {
   assert.match(liveHost, /\/codex\/questions\/display\.html\?code=/, 'updated _displayHref');
   assert.ok(!/\/go\/display\.html/.test(liveHost), 'no longer points at go/');

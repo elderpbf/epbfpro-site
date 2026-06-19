@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/codex/css/theme.css?v=1.1">
 <link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.1">
 <link rel="stylesheet" href="/codex/css/qr-share-modal.css?v=1.0">
-<link rel="stylesheet" href="/codex/questions/questions.css?v=4.0">
+<link rel="stylesheet" href="/codex/questions/questions.css?v=4.1">
 <link rel="stylesheet" href="/codex/questions/display.css?v=1.0">
 
 <script src="/codex/js/theme-manager.js?v=1.0"></script>
@@ -44,6 +44,14 @@
       <div class="cdx-disp-qa-answer" id="cdx-disp-qa-answer"></div>
     </div>
   </div>
+</div>
+
+<!-- Enrollment QR overlay: shows only while the instructor has an enrollment
+     window open (toggled from the live-host QR button). et = auto-approve pass. -->
+<div id="cdx-disp-enroll" class="cdx-disp-enroll" hidden>
+  <div class="cdx-disp-enroll-label" data-i18n="questions.display_enroll_label">Inscrição aberta</div>
+  <img class="cdx-disp-enroll-qr" id="cdx-disp-enroll-qr" alt="QR">
+  <div class="cdx-disp-enroll-rem" id="cdx-disp-enroll-rem"></div>
 </div>
 
 <div id="cdx-disp-nocode">

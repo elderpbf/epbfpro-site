@@ -112,7 +112,12 @@ test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared glo
   assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
   assert.match(src, /\.lookupTurmaBySession\s*\(/, 'Trilha looks up the linked turma');
   assert.match(src, /\.updateTurmaMeta\s*\(/, 'Trilha links/unlinks via turma meta');
-  assert.match(src, /from\s+['"]\.\.\/js\/qr-share-modal\.js['"]/, 'QR uses the Codex qr-share-modal module');
+  // The QR button now toggles the in-class enrollment window (the session display
+  // shows the QR + countdown); it no longer pops a panel-side QR modal.
+  assert.match(src, /\.openEnrollment\s*\(/, 'QR opens the enrollment window');
+  assert.match(src, /\.closeEnrollment\s*\(/, 'QR closes the enrollment window');
+  assert.match(src, /\.getEnrollment\s*\(/, 'reads the shared enrollment state');
+  assert.match(src, /from\s+['"]\.\.\/js\/enroll-clock\.js['"]/, 'uses the shared server-anchored countdown');
   assert.ok(!/window\.QRShareModal\b/.test(src), 'no longer reads the backstage QRShareModal global');
   // AI Gerar/Melhorar now lives in the shared composer (reused by Bank + host),
   // so the host wires it by mounting the composer, not by its own ai.question call.

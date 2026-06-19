@@ -26,6 +26,15 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
   pensoia-header .ph-bar { padding: 4px 16px; }
 }
 
+/* Enrollment QR overlay (shows while a window is open) */
+.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(16px, 3vh, 36px); padding: 4vh 4vw; }
+.cdx-disp-enroll[hidden] { display: none; }
+.cdx-disp-enroll-label { font-size: clamp(1.4rem, 3vw, 2.4rem); font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: .5rem; }
+.cdx-disp-enroll-label::before { content: ""; width: .7em; height: .7em; border-radius: 50%; background: var(--success, #2ecc71); animation: cdx-disp-pulse 1.4s ease-in-out infinite; }
+@keyframes cdx-disp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.cdx-disp-enroll-qr { width: min(62vh, 78vw); height: auto; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: clamp(12px, 2vh, 28px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); }
+.cdx-disp-enroll-rem { font-size: clamp(1.6rem, 4vw, 3rem); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
 /* Promoted student Q&A card (verbatim from cp-display.css). */
 .cdx-disp-qa {
   display: none;

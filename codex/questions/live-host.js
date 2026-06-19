@@ -18,7 +18,7 @@ import { mountComposer, correctForLaunch } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
-import { open as openQrShare } from '../js/qr-share-modal.js';
+import { clockOffset, remainingSec, fmtRemain } from '../js/enroll-clock.js';
 import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
 import { filterByClass } from './bank.js';
@@ -59,6 +59,9 @@ let _bankDragId = null;       // question id being dragged while reordering
 let _launchedBankIds = new Set(); // bank question ids already applied in this session/turma (worker c)
 let _trailTurma = null;
 let _trailAllTurmas = [];
+let _enrollState = null;  // last ct_get_enrollment result (the shared window state)
+let _enrollOffset = 0;    // server/client clock skew for the countdown
+let _enrollTimer = null;  // 1s ticker while a window is open
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
 let _onDelete = null;  // sessions.js callback: delete this session (revealed via the name)
 let _onRename = null;  // sessions.js callback: rename this session (title) via the name menu
@@ -131,7 +134,9 @@ function _barMarkup() {
         '</div>' +
       '</details>' +
       '<button class="cdx-btn cdx-host-trail" id="cdx-host-trail" data-act="trail" type="button" hidden><span class="cdx-host-trail-dot" id="cdx-host-trail-dot"></span>' + _esc(t('questions.host_trail')) + '</button>' +
-      '<button class="cdx-btn cdx-host-qr" id="cdx-host-qr" data-act="qr" type="button" hidden>' + _esc(t('questions.host_qr')) + '</button>' +
+      '<button class="cdx-btn cdx-host-qr" id="cdx-host-qr" data-act="qr" type="button" hidden aria-label="' + _esc(t('questions.host_qr')) + '" title="' + _esc(t('questions.host_qr')) + '">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14h1v1"/><path d="M14 20h1v1"/><path d="M20 20h1v1"/><path d="M17 17h1"/><path d="M20 17h1"/><path d="M17 20h1"/></svg>' +
+        '<span class="cdx-host-qr-rem"></span></button>' +
       '<a class="cdx-btn cdx-host-display" id="cdx-host-display" href="' + _esc(_displayHref()) + '" target="_blank" rel="noopener" hidden>' + _esc(t('questions.host_display')) + '</a>' +
       '<button class="cdx-btn cdx-btn-primary cdx-host-start" id="cdx-host-start" data-act="start" type="button" hidden>' + _esc(t('questions.host_start')) + '</button>' +
       '<button class="cdx-btn cdx-btn-danger cdx-host-stop" id="cdx-host-stop" data-act="stop" type="button" hidden>' + _esc(t('questions.host_stop')) + '</button>' +
@@ -321,6 +326,7 @@ function _refreshShareSurface(open) {
   // clicking explains why rather than vanishing from the bar (Élder 2026-06-06).
   if (trail) { trail.hidden = false; trail.classList.toggle('is-linked', !!_trailTurma); }
   if (qr) { qr.hidden = false; qr.classList.toggle('is-disabled', !hasTrail); }
+  _paintEnrollBtn();
 }
 
 // ── Trilha turma link (port of host-share.js) ────────────────
@@ -341,6 +347,7 @@ async function _loadTrail() {
   } catch (e) { _trailAllTurmas = []; }
   _renderTrailContent();
   _refreshShareSurface(_isOpen());
+  _loadEnrollState();
 }
 
 function _renderTrailContent() {
@@ -392,10 +399,52 @@ async function _unlinkTrail() {
   } catch (e) { notice.internal(e); }
 }
 
-function _openQr() {
-  const joinUrl = _buildTrailUrl();
-  if (!joinUrl) { notice.info(t('questions.host_qr_no_turma')); return; }
-  openQrShare({ joinUrl });
+// ── In-class enrollment window ──
+// The QR button toggles the SERVER enrollment window; the session display polls
+// the same state and shows the QR + countdown. One state, two surfaces, so they
+// can't diverge. The button itself just reflects open/closed + the time left.
+function _clearEnrollTimer() { if (_enrollTimer) { clearInterval(_enrollTimer); _enrollTimer = null; } }
+
+function _paintEnrollBtn() {
+  const qr = _q('#cdx-host-qr');
+  if (!qr) return;
+  const open = !!(_enrollState && _enrollState.open);
+  qr.classList.toggle('is-on', open);
+  const rem = qr.querySelector('.cdx-host-qr-rem');
+  if (!rem) return;
+  if (open && _enrollState.enrollment_expires_at) {
+    const left = remainingSec(_enrollState.enrollment_expires_at, _enrollOffset, Math.floor(Date.now() / 1000));
+    rem.textContent = left > 0 ? fmtRemain(left) : '';
+  } else rem.textContent = '';
+}
+
+function _loadEnrollState() {
+  _clearEnrollTimer();
+  if (!_trailTurma) { _enrollState = null; _paintEnrollBtn(); return; }
+  cohorts.getEnrollment({ client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug }).then((res) => {
+    _enrollState = (res && res.ok) ? res : null;
+    if (_enrollState) _enrollOffset = clockOffset(_enrollState.now, Math.floor(Date.now() / 1000));
+    _paintEnrollBtn();
+    if (_enrollState && _enrollState.open) {
+      let reval = 30; // re-validate against the server so the timer can't drift silently
+      _enrollTimer = setInterval(() => {
+        const left = remainingSec(_enrollState.enrollment_expires_at, _enrollOffset, Math.floor(Date.now() / 1000));
+        if (left <= 0) { _loadEnrollState(); return; }
+        _paintEnrollBtn();
+        if (--reval <= 0) { reval = 30; _loadEnrollState(); }
+      }, 1000);
+    }
+  }).catch(() => {});
+}
+
+async function _toggleEnroll() {
+  if (!_trailTurma) { notice.info(t('questions.host_qr_no_turma')); return; }
+  const ids = { client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug };
+  try {
+    if (_enrollState && _enrollState.open) await cohorts.closeEnrollment(ids);
+    else await cohorts.openEnrollment(ids);
+  } catch (e) { notice.internal(e); return; }
+  _loadEnrollState();
 }
 
 // ── Lifecycle: Iniciar / Encerrar (port of host-session.js) ──
@@ -1140,7 +1189,7 @@ export function mount(containerEl, ctx) {
       if (act === 'reveal-now') return _revealNow();
       if (act === 'sim-run') return _simulate();
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
-      if (act === 'qr') return _openQr();
+      if (act === 'qr') return _toggleEnroll();
       if (act === 'mode') { _setBankMode(btn.getAttribute('data-mode')); return; }
       if (act === 'bank-filter') { if (btn.disabled || btn.classList.contains('is-disabled')) return; _bankFilter = btn.getAttribute('data-f') || 'all'; _syncBankChips(); _renderBankList(); return; }
       if (act === 'bank-launch') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _launchFromBank(q); return; }
@@ -1247,12 +1296,14 @@ export function unmount() {
   if (_composer) { try { _composer.destroy(); } catch (_) { /* ignore */ } _composer = null; }
   if (_sqaDebounce) { clearTimeout(_sqaDebounce); _sqaDebounce = null; }
   if (_autoFlashTimer) { clearTimeout(_autoFlashTimer); _autoFlashTimer = null; }
+  _clearEnrollTimer();
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
   if (_container) _container.innerHTML = '';
   _container = null; _session = null;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
+  _enrollState = null; _enrollOffset = 0;
   _auto = null; _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
   _connected = 0;
   _simRunning = false;

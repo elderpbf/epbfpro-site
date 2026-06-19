@@ -828,19 +828,6 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-acc-row select { font: inherit; padding: .25rem .4rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface, #fff); color: var(--text-primary); }
 .cdx-acc-actions { display: flex; align-items: center; gap: .6rem; margin-top: .5rem; }
 .cdx-acc-msg { font-size: .8rem; color: var(--text-secondary); }
-/* QR enrollment window inside the Acesso section (shared js/access-panel.js) */
-.cdx-acc-enroll { border-top: 1px solid var(--border); margin-top: .75rem; padding-top: .7rem; }
-.cdx-acc-enroll-h { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); font-weight: 700; margin-bottom: .5rem; }
-.cdx-al-enroll-on { display: flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .86rem; color: var(--text-primary); margin: 0 0 .6rem; }
-.cdx-al-enroll-dot { color: var(--success, #2ecc71); animation: cdx-al-pulse 1.4s ease-in-out infinite; }
-@keyframes cdx-al-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-.cdx-al-enroll-actions { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
-.cdx-al-qrglyph { font-size: 1.05em; line-height: 1; }
-.cdx-al-enroll-qr { font-variant-numeric: tabular-nums; min-width: 7rem; }
-.cdx-al-enroll-rem { font-variant-numeric: tabular-nums; }
-/* Ghost button (the "Encerrar" action); cursos defines its own scoped copy. */
-.cdx-al-enroll-actions .cdx-btn-ghost { background: transparent; border: 1px dashed var(--border); color: var(--text-secondary); }
-.cdx-al-enroll-actions .cdx-btn-ghost:hover { border-color: var(--primary); color: var(--primary-dark); }
 .cdx-doss-count { font-size: 1.6rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
 .cdx-doss-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
 .cdx-doss-chip { background: var(--background); border: 1px solid var(--border); border-radius: 999px; padding: .15rem .5rem; font-size: .76rem; color: var(--text-primary); }

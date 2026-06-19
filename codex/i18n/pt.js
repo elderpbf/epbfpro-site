@@ -1079,6 +1079,7 @@ export default {
   'questions.display_anon':              'Anônimo',
   'questions.display_nocode':            'Nenhum código de sessão na URL.',
   'questions.display_nocode_hint':       'Abra esta página como:',
+  'questions.display_enroll_label':      'Inscrição aberta',
   'questions.host_ai_generate':          'Gerar',
   'questions.host_ai_improve':           'Melhorar',
   'questions.host_err_ai':               'Erro ao gerar a pergunta.',
