@@ -224,6 +224,9 @@
     border: 1px solid var(--border); border-radius: 9px; }
   .seg span { padding: 5px 12px; border-radius: 6px; font-size: .76rem; font-weight: 600; color: var(--text2); }
   .seg span.on { background: var(--btn-bg); color: var(--btn-text, #fff); }
+  /* selo cheio: outro texto branco sobre cor (pra mostrar que o cinzinha é global) */
+  .pill-filled { display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 999px;
+    background: var(--btn-bg); color: var(--btn-text, #fff); font-size: .74rem; font-weight: 700; }
 
   .note { font-size: .72rem; color: var(--text2); opacity: .75; margin-top: 5px; line-height: 1.4; }
   .legend { margin-top: 36px; font-size: .82rem; opacity: .8; line-height: 1.6; max-width: 900px; }
@@ -249,8 +252,8 @@
   </div>
 
   <div class="swatches">
-    <div class="sw-title">Régua de cor da fonte do botão (no escuro) — qual cinzinha?</div>
-    <div class="sw-note">Botão fixo no teal #0d9488. Texto claro revertido, mas suavizado: branco puro estoura no escuro. O primeiro é o branco puro (pra evitar); da esquerda (quase branco) pra direita (mais cinza).</div>
+    <div class="sw-title">Régua do cinzinha — substitui o branco puro em TODO texto do modo escuro</div>
+    <div class="sw-note">Não é só botão: no escuro, todo branco puro de fonte (botões, selos, segmento, etc.) vira esse cinza. As amostras estão sobre teal só pra você julgar a cor; o que você escolher aplica em tudo abaixo. O primeiro é o branco puro (pra evitar); da esquerda (quase branco) pra direita (mais cinza).</div>
     <div class="sw-row">
       <div class="sw"><button class="swbtn" data-color="#ffffff" style="background:#0d9488;color:#ffffff">Botão</button><code>#ffffff (puro, evitar)</code></div>
       <div class="sw"><button class="swbtn" data-color="#eef2f1" style="background:#0d9488;color:#eef2f1">Botão</button><code>#eef2f1</code></div>
@@ -259,7 +262,7 @@
       <div class="sw"><button class="swbtn" data-color="#d1d5db" style="background:#0d9488;color:#d1d5db">Botão</button><code>#d1d5db</code></div>
       <div class="sw"><button class="swbtn" data-color="#c2cdd6" style="background:#0d9488;color:#c2cdd6">Botão</button><code>#c2cdd6</code></div>
     </div>
-    <div class="sw-pick">Aplicado nos botões das colunas A e B (no escuro): <code id="pickval">#e5e7eb</code> — clique numa amostra pra trocar.</div>
+    <div class="sw-pick">Aplicado em todo texto branco das colunas A e B no escuro (botão, segmento, selo): <code id="pickval">#e5e7eb</code> — clique numa amostra pra trocar.</div>
   </div>
 
   <div class="grid">
@@ -286,6 +289,7 @@
         <button class="btn-primary">Botão primário</button>
         <button class="btn-ghost">Secundário</button>
         <button class="iconbtn">✎</button>
+        <span class="pill-filled">Selo</span>
       </div>
       <p class="note">Primário = teal claro (#14b8a6) com texto branco.</p>
 
@@ -325,6 +329,7 @@
         <button class="btn-primary">Botão primário</button>
         <button class="btn-ghost">Secundário</button>
         <button class="iconbtn">✎</button>
+        <span class="pill-filled">Selo</span>
       </div>
       <p class="note">Primário = teal escuro + texto cinza claro (não branco puro).</p>
 
@@ -364,6 +369,7 @@
         <button class="btn-primary">Botão primário</button>
         <button class="btn-ghost">Secundário</button>
         <button class="iconbtn">✎</button>
+        <span class="pill-filled">Selo</span>
       </div>
       <p class="note">Primário = teal escuro + texto cinza claro (não branco puro).</p>
 
