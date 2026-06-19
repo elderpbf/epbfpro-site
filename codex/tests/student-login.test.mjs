@@ -35,6 +35,7 @@ function fakeApi(responses) {
     authVerify: make('authVerify'),
     profileSave: make('profileSave'),
     sessionCheck: make('sessionCheck'),
+    enrollJoin: make('enrollJoin'),
   };
 }
 
@@ -250,14 +251,29 @@ test('logout clears the token and returns to anonymous', () => {
   assert.equal(flow.state, 'anonymous');
 });
 
-// QR enrollment no longer mints a session client-side: the in-class scan only deposits
-// a presence grant, and the login is ALWAYS the magic-link flow above. The flow exposes
-// no enrollJoin and flowOptsFrom drops enrollToken (Élder 2026-06-19).
-test('the flow exposes no frictionless enrollJoin and flowOptsFrom drops enrollToken', () => {
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  assert.equal(typeof flow.enrollJoin, 'undefined');
+// Direct-access in-class join (opt-in turma, no email round-trip). Restored 2026-06-19
+// for the period before an email provider is wired; the worker gates it on the flag.
+test('flowOptsFrom forwards the enrollToken (direct-access pass-through)', () => {
   const out = flowOptsFrom({ client: 'jfse', turma: 'geral', k: 'K', enrollToken: 'ETOK' }, 'https://staging.pensoia.com');
-  assert.equal('enrollToken' in out, false);
+  assert.equal(out.enrollToken, 'ETOK');
+});
+
+test('enrollJoin mints an approved session on a live window and stores the token', async () => {
+  api = fakeApi({ enrollJoin: { ok: true, session_token: 'ENSESS', participant_id: 3, needs_profile: false } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', enrollToken: 'ETOK' });
+  await flow.enrollJoin('  Ana@Test.com ', '  Ana  ');
+  assert.equal(api.calls[0].name, 'enrollJoin');
+  assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', et: 'ETOK', email: 'ana@test.com', name: 'Ana' });
+  assert.equal(sess.getToken('jfse', 'geral'), 'ENSESS');
+  assert.equal(flow.state, 'authenticated');
+});
+
+test('enrollJoin surfaces a closed/disabled error and stores no token', async () => {
+  api = fakeApi({ enrollJoin: { error: 'direct_access_disabled' } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', enrollToken: 'ETOK' });
+  await flow.enrollJoin('ana@test.com');
+  assert.equal(flow.error, 'direct_access_disabled');
+  assert.equal(sess.getToken('jfse', 'geral'), null);
 });
 
 // ── LGPD controller constants ────────────────────────────────────────────────

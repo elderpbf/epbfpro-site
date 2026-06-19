@@ -61,6 +61,9 @@ const pt = {
   'login.wall_body':        'Entre com seu e-mail para acessar o conteúdo desta turma.',
   'login.pending_title':    'Acesso em análise',
   'login.pending_body':     'Recebemos seu acesso. Você será liberado em breve, é só aguardar a aprovação.',
+  'login.enroll_title':     'Entrar na turma',
+  'login.enroll_subtitle':  'Cadastre seu e-mail e nome para acessar agora.',
+  'login.enroll_cta':       'Entrar',
   // Fórum (Phase 8)
   'page.tab_forum':         'Conversas',
   'forum.intro':            'O espaço de conversa da turma. Abra um assunto, tire dúvidas e acompanhe o que os colegas e o professor estão discutindo.',
@@ -157,6 +160,9 @@ const en = {
   'login.wall_body':        'Sign in with your email to access this class content.',
   'login.pending_title':    'Access under review',
   'login.pending_body':     'We received your request. You will be unlocked shortly, just wait for approval.',
+  'login.enroll_title':     'Join the class',
+  'login.enroll_subtitle':  'Enter your email and name to access now.',
+  'login.enroll_cta':       'Enter',
   // Forum (Phase 8)
   'page.tab_forum':         'Discussion',
   'forum.intro':            'Your class discussion space. Start a topic, ask questions, and follow what your peers and instructor are discussing.',

@@ -53,6 +53,11 @@ export const trail = {
   // off-window magic-link login auto-approves. Email is ALWAYS confirmed via the link.
   enrollClaim:    (p) => call('student_enroll_claim', p),    // { client_slug, turma_slug, et } -> { ok, granted, presence_token? }
 
+  // Direct access (opt-in per turma, for the period before an email provider is wired):
+  // a live QR/code + open window registers + approves on the spot, no magic link. The
+  // worker gates it on the turma's direct_access flag; email is taken on trust.
+  enrollJoin:     (p) => call('student_enroll_join', p),     // { client_slug, turma_slug, et, email, name? } -> { ok, session_token, ... } | { error }
+
   // Typed entry (pensoia.com/trilha/<code>): resolve the 4-digit code to the live turma
   // + et so the entry page forwards into the trilha exactly as a QR scan would. Public,
   // resolves only while the window is open (same capability + time-box as the QR).

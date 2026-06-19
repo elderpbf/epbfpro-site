@@ -29,6 +29,11 @@ export function openLoginModal(opts = {}) {
   const origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : undefined;
   const flow = createLoginFlow(flowOptsFrom(opts, origin));
 
+  // Direct-access mode (opt-in turma, no email provider yet): a live QR/code (?et=) means
+  // the student is in the room, so the first screen registers + grants access on the spot
+  // (email + name + consent), no magic link. Gated server-side by the turma's flag.
+  const enroll = !!opts.enrollToken;
+
   const bd = document.createElement('div');
   bd.className = 'tr-modal-backdrop tr-login-backdrop';
   bd.innerHTML =
@@ -60,11 +65,46 @@ export function openLoginModal(opts = {}) {
 
   function render() {
     const s = flow.state;
+    if (enroll && (s === 'anonymous' || s === 'email')) return renderEnroll();
     if (s === 'sent') return renderSent();
     if (s === 'verifying') return renderVerifying();
     if (s === 'profile') return renderProfile();
     if (s === 'error') return renderError();
     return renderEmail();
+  }
+
+  // Direct-access single step: email + name + consent -> join (approved on the spot).
+  function renderEnroll() {
+    bodyEl.innerHTML =
+      '<h2 class="tr-modal-title">' + esc(t('login.enroll_title')) + '</h2>' +
+      '<p class="tr-login-subtitle">' + esc(t('login.enroll_subtitle')) + '</p>' +
+      '<label class="tr-tarefa-field-label" for="tr-en-email">' + esc(t('login.email_label')) + '</label>' +
+      '<input id="tr-en-email" type="email" class="tr-tarefa-name tr-en-email" placeholder="' + esc(t('login.email_placeholder')) + '" autocomplete="email" inputmode="email">' +
+      '<label class="tr-tarefa-field-label" for="tr-en-name">' + esc(t('login.name_label')) + '</label>' +
+      '<input id="tr-en-name" type="text" class="tr-tarefa-name tr-en-name" placeholder="' + esc(t('login.name_placeholder')) + '" autocomplete="name">' +
+      '<div class="tr-login-consent">' +
+        '<p class="tr-login-consent-notice">' + esc(t('login.consent_notice')) + '</p>' +
+        '<label class="tr-login-consent-row">' +
+          '<input type="checkbox" class="tr-en-consent">' +
+          '<span>' + esc(t('login.consent_label')) + '</span>' +
+        '</label>' +
+      '</div>' +
+      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
+      '<div class="tr-tarefa-actions">' +
+        '<button type="button" class="tr-btn tr-btn-primary tr-en-join">' + esc(t('login.enroll_cta')) + '</button>' +
+      '</div>';
+    const emailEl = bodyEl.querySelector('.tr-en-email');
+    const nameEl = bodyEl.querySelector('.tr-en-name');
+    const consentEl = bodyEl.querySelector('.tr-en-consent');
+    const join = bodyEl.querySelector('.tr-en-join');
+    join.addEventListener('click', async () => {
+      if (!consentEl.checked) { flow.error = 'consent_required'; render(); return; }
+      join.disabled = true;
+      await flow.enrollJoin(emailEl.value, nameEl.value);
+      if (flow.state === 'profile') await flow.saveProfile(nameEl.value, true); // consent already given
+      settle();
+    });
+    setTimeout(() => { try { emailEl.focus(); } catch (_) {} }, 60);
   }
 
   function renderEmail() {

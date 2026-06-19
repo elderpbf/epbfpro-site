@@ -30,6 +30,7 @@ export default {
   'alunos.mode_upfront': 'Login wall before anything',
   'alunos.certs':        'Certificates enabled',
   'alunos.enroll_prompt':'Ask to register on QR scan',
+  'alunos.direct_access':'Direct access, no email (no magic-link confirmation)',
   'alunos.forum':        'Class forum',
   'alunos.notifications':'Notifications (bell)',
   'alunos.save':         'Save',

@@ -29,6 +29,7 @@ export default {
   'alunos.mode_upfront': 'Tela de login antes de tudo',
   'alunos.certs':        'Certificados habilitados',
   'alunos.enroll_prompt':'Pedir cadastro ao ler o QR da aula',
+  'alunos.direct_access':'Acesso direto, sem e-mail (sem confirmação por link)',
   'alunos.forum':        'Fórum da turma',
   'alunos.notifications':'Notificações (sino)',
   'alunos.save':         'Salvar',

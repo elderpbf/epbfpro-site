@@ -50,6 +50,7 @@ export function flowOptsFrom(opts, origin) {
     k: opts.k,
     origin,
     presence: opts.presence,
+    enrollToken: opts.enrollToken,
     api: opts.api,
     session: opts.session,
   };
@@ -65,6 +66,7 @@ export function createLoginFlow(opts = {}) {
   const k = opts.k; // the turma access token, echoed into the magic-link return URL
   const origin = opts.origin; // the page origin, so the emailed link returns here (staging/prod)
   const presence = opts.presence; // device-presence grant (signal b), offered at verify
+  const enrollToken = opts.enrollToken; // QR enrollment token; direct-access join uses it
 
   const flow = {
     state: 'anonymous',
@@ -97,6 +99,23 @@ export function createLoginFlow(opts = {}) {
       sess.setToken(client, turma, res.session_token);
       this.participantId = res.participant_id != null ? res.participant_id : null;
       this.state = next;
+      return this;
+    },
+
+    // Direct-access in-class join (opt-in turma, no email round-trip). A live QR/code +
+    // open window mints an approved session on the spot. Mirrors verify()'s tail.
+    async enrollJoin(rawEmail, name) {
+      this.error = null;
+      const email = validateEmail(rawEmail);
+      if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
+      const payload = { client_slug: client, turma_slug: turma, et: enrollToken, email };
+      const cleanName = (name || '').trim();
+      if (cleanName) payload.name = cleanName;
+      const res = await api.enrollJoin(payload);
+      if (!res || !res.ok || !res.session_token) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
+      sess.setToken(client, turma, res.session_token);
+      this.participantId = res.participant_id != null ? res.participant_id : null;
+      this.state = res.needs_profile ? 'profile' : 'authenticated';
       return this;
     },
 
