@@ -5,11 +5,13 @@
 // --text-on-accent (default #e5e7eb, byte-identical to the prior hardcoded
 // value, so nothing changes until a tone is picked). Light mode is unaffected.
 //
-// Admin tuning surface: surfaced as a Settings-drawer section in Codex only
+// Admin tuning surface: surfaced as a Settings-drawer control in Codex only
 // (the public Trail has no drawer, so it always renders the default tone).
-// Choice persists in localStorage and is applied to <html> on load.
+// Persist/apply mechanics come from the shared js/css-var-pref.js factory.
 
 'use strict';
+
+import { createCssVarPref } from './css-var-pref.js';
 
 export const TONE_KEY = 'cdx_text_tone';
 export const DEFAULT_TONE = '#e5e7eb';
@@ -24,33 +26,8 @@ export const TONE_OPTIONS = [
   { value: '#c2cdd6', label: 'Cinza fechado' },
 ];
 
-// Any caught error still reaches the debug pill (Codex rule), never swallowed.
-function _log(msg) {
-  try { if (window.bsLog) window.bsLog(msg, 'error'); } catch (_) {}
-}
+const _pref = createCssVarPref({ storageKey: TONE_KEY, cssVar: '--cdx-text-dark', defaultValue: DEFAULT_TONE });
 
-export function getTone() {
-  try {
-    return localStorage.getItem(TONE_KEY) || DEFAULT_TONE;
-  } catch (e) {
-    _log('text-tone: leitura do localStorage falhou — ' + e);
-    return DEFAULT_TONE;
-  }
-}
-
-export function applyTone(value) {
-  const v = value || DEFAULT_TONE;
-  // At the default we REMOVE the override so theme.css keeps its own #e5e7eb
-  // fallback — keeps the var clean and avoids any default-state flash.
-  if (v === DEFAULT_TONE) document.documentElement.style.removeProperty('--cdx-text-dark');
-  else document.documentElement.style.setProperty('--cdx-text-dark', v);
-}
-
-export function setTone(value) {
-  try { localStorage.setItem(TONE_KEY, value); }
-  catch (e) { _log('text-tone: gravação no localStorage falhou — ' + e); }
-  applyTone(value);
-}
-
-// Apply the stored choice on load. Call early (the topbar bootstrap does).
-export function init() { applyTone(getTone()); }
+export const getTone = _pref.get;
+export const setTone = _pref.set;
+export const init = _pref.init;
