@@ -22,6 +22,9 @@
     --bg: #0f1419; --surface: #1a1f26;
     --text: #e5e7eb; --text2: #d1d5db; --primary: #14b8a6;
   }
+  /* texto do botão: branco no "Hoje" (o problema), ESCURO nas propostas */
+  .col-today { --btn-text: #fff; }
+  .col-a, .col-b { --btn-text: #06241f; }
 
   /* ======================= COLUNA HOJE ======================= */
   /* Valores REAIS de hoje. Note a borda teal no escuro, o botão teal
@@ -119,6 +122,15 @@
   .toggle:hover { opacity: 1; }
   .mode-pill { font-size: .8rem; opacity: .6; }
 
+  /* régua de tons do botão */
+  .swatches { margin-bottom: 32px; padding: 16px 18px; border: 1px solid rgba(127,127,127,.25); border-radius: 12px; }
+  .sw-title { font-size: .82rem; font-weight: 700; margin-bottom: 4px; }
+  .sw-note { font-size: .74rem; opacity: .65; margin-bottom: 14px; }
+  .sw-row { display: flex; gap: 18px; flex-wrap: wrap; }
+  .sw { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .swbtn { border: none; border-radius: 8px; padding: 9px 20px; font: inherit; font-weight: 700; font-size: .85rem; cursor: pointer; }
+  .sw code { font-size: .7rem; opacity: .75; }
+
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
   @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
 
@@ -163,7 +175,7 @@
   /* botões */
   .btnrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .btn-primary {
-    background: var(--btn-bg); color: #fff; border: none;
+    background: var(--btn-bg); color: var(--btn-text, #fff); border: none;
     padding: 8px 16px; border-radius: 8px; font: inherit; font-weight: 600;
     font-size: .82rem; cursor: pointer;
   }
@@ -206,7 +218,7 @@
   .seg { display: inline-flex; gap: 3px; padding: 3px; background: var(--bg);
     border: 1px solid var(--border); border-radius: 9px; }
   .seg span { padding: 5px 12px; border-radius: 6px; font-size: .76rem; font-weight: 600; color: var(--text2); }
-  .seg span.on { background: var(--btn-bg); color: #fff; }
+  .seg span.on { background: var(--btn-bg); color: var(--btn-text, #fff); }
 
   .note { font-size: .72rem; color: var(--text2); opacity: .75; margin-top: 5px; line-height: 1.4; }
   .legend { margin-top: 36px; font-size: .82rem; opacity: .8; line-height: 1.6; max-width: 900px; }
@@ -229,6 +241,19 @@
   <div class="toolbar">
     <button class="toggle" id="toggle">Alternar para modo claro</button>
     <span class="mode-pill" id="pill">modo escuro (o foco do problema)</span>
+  </div>
+
+  <div class="swatches">
+    <div class="sw-title">Régua de tom do botão — qual "menos claro" você quer?</div>
+    <div class="sw-note">Todos com texto escuro (jeito da marca), menos o último que é o branco atual pra comparar. Da esquerda (mais claro) pra direita (mais escuro).</div>
+    <div class="sw-row">
+      <div class="sw"><button class="swbtn" style="background:#14b8a6;color:#06241f">Botão</button><code>#14b8a6 (claro)</code></div>
+      <div class="sw"><button class="swbtn" style="background:#12a596;color:#06241f">Botão</button><code>#12a596</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#06241f">Botão</button><code>#0d9488</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0c857a;color:#06241f">Botão</button><code>#0c857a</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0a766c;color:#06241f">Botão</button><code>#0a766c</code></div>
+      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#fff">Botão</button><code>#0d9488 + branco</code></div>
+    </div>
   </div>
 
   <div class="grid">
@@ -295,7 +320,7 @@
         <button class="btn-ghost">Secundário</button>
         <button class="iconbtn">✎</button>
       </div>
-      <p class="note">Primário = teal escuro (#0d9488).</p>
+      <p class="note">Primário = teal escuro + texto escuro.</p>
 
       <div class="sec-label">Chips (fundo = cor da página)</div>
       <div class="btnrow"><span class="chip">Chip</span><span class="chip on">Chip ligado</span></div>
@@ -334,7 +359,7 @@
         <button class="btn-ghost">Secundário</button>
         <button class="iconbtn">✎</button>
       </div>
-      <p class="note">Primário = teal escuro (#0d9488).</p>
+      <p class="note">Primário = teal escuro + texto escuro.</p>
 
       <div class="sec-label">Chips (fundo = cor da página)</div>
       <div class="btnrow"><span class="chip">Chip</span><span class="chip on">Chip ligado</span></div>
