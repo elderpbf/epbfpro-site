@@ -53,6 +53,7 @@ test('readCode reads the 4-digit code from the path or the query', () => {
 test('the served copy is in sync and the 4-digit route is wired', () => {
   assert.equal(served, html, 'Site/trilha/entrar.html matches the source copy');
   assert.match(htaccess, /\^\(\[0-9\]\{4\}\)\/\?\$ entrar\.html\?code=\$1/, '/trilha/<4-digit> routes to entrar.html');
+  assert.match(htaccess, /\^\$ entrar\.html/, 'bare /trilha/ falls back to the manual entry form');
 });
 
 test('entrar i18n keys exist in both pt and en', () => {
