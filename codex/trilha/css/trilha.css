@@ -138,7 +138,7 @@ html, body {
   justify-content: center;
 }
 .cdx-tr-client-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.cdx-tr-avatar-initials { color: #fff; font-weight: 800; font-size: 1.6rem; }
+.cdx-tr-avatar-initials { color: var(--text-on-accent, #fff); font-weight: 800; font-size: 1.6rem; }
 .cdx-tr-hero-text { min-width: 0; }
 .cdx-tr-hero-eyebrow {
   display: block;

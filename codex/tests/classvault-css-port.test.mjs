@@ -12,10 +12,21 @@ import { fileURLToPath } from 'node:url';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
-test('codex/css/classvault.css is a verbatim copy of the frozen backstage source', () => {
+// Codex's ONE intentional, owner-blessed divergence from the frozen backstage
+// source: dark-mode white text routes through --text-on-accent (the dark-mode
+// text-tone token; see css/theme.css + js/text-tone.js). The Codex copy is the
+// backstage source with exactly this substitution applied — nothing else. The
+// test still catches any OTHER drift.
+const applyDarkTextToken = (css) => css.replace(
+  /(?<![-\w])(color\s*:\s*)(#fff(?:fff)?\b|white\b|rgba\(\s*255\s*,\s*255\s*,\s*255[^)]*\))/gi,
+  '$1var(--text-on-accent, #fff)'
+);
+
+test('codex/css/classvault.css = backstage source + the documented dark-text-token swap', () => {
   const codex = read('../css/classvault.css');
   const backstage = read('../../backstage/classvault/css/classvault.css');
-  assert.equal(codex, backstage, 'the Codex copy must match the backstage source byte-for-byte');
+  assert.equal(codex, applyDarkTextToken(backstage),
+    'the Codex copy must match the backstage source modulo the --text-on-accent swap, no other drift');
 });
 
 test('the Codex copy carries the classvault-only live family (sanity on the copy)', () => {

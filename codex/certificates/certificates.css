@@ -493,7 +493,7 @@
   cursor: pointer;
 }
 .cdx-cert-side-tab:hover { background: var(--cdx-card-hover-bg, rgba(127,127,127,0.08)); }
-.cdx-cert-side-tab.is-active { background: var(--primary); color: #fff; }
+.cdx-cert-side-tab.is-active { background: var(--primary); color: var(--text-on-accent, #fff); }
 
 .cdx-cert-tpl-icon { color: var(--accent-color, #8b5cf6); font-size: 1.05rem; }
 
@@ -556,7 +556,7 @@
 }
 .cdx-cert-theme-chip:hover { color: var(--text-primary); background: var(--surface-hover, rgba(127,127,127,0.10)); }
 .cdx-cert-theme-chip.is-active {
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   background: var(--accent-color, #8b5cf6);
   border-color: var(--accent-color, #8b5cf6);
 }
@@ -598,7 +598,7 @@
   border: 0;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.6);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   cursor: pointer;
   display: flex;
   align-items: center;

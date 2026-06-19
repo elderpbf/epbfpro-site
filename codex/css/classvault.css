@@ -228,7 +228,7 @@ body.cv-focus .cv-focus-hot {
   height: 30px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: white;
+  color: var(--text-on-accent, #fff);
   font-size: 0.72rem;
   font-weight: 800;
   display: flex;
@@ -297,7 +297,7 @@ body.cv-focus .cv-focus-hot {
 }
 .cv-sm-chip.is-active {
   background: var(--primary);
-  color: white;
+  color: var(--text-on-accent, #fff);
   border-color: var(--primary);
 }
 .cv-sm-chip:disabled,
@@ -492,7 +492,7 @@ body.cv-focus .cv-focus-hot {
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 0.7rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   background: var(--sec, var(--primary));
   border-radius: 999px;
   padding: 0 7px;
@@ -536,12 +536,12 @@ body.cv-focus .cv-focus-hot {
 }
 .cv-crumb-btn--primary {
   background: var(--primary);
-  color: white;
+  color: var(--text-on-accent, #fff);
   border-color: var(--primary);
 }
 .cv-crumb-btn--primary:hover:not(:disabled) {
   background: var(--primary-dark);
-  color: white;
+  color: var(--text-on-accent, #fff);
   border-color: var(--primary-dark);
 }
 .cv-crumb-btn--icon {
@@ -684,7 +684,7 @@ body.cv-focus .cv-focus-hot {
   width: 42px;
   flex-shrink: 0;
   background: var(--primary);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   display: flex;
   align-items: center;
   justify-content: center;

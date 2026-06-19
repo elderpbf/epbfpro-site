@@ -41,7 +41,7 @@
   width: 96px;
   flex-shrink: 0;
   background: var(--primary);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -147,7 +147,7 @@
 .cdx-tr-novo-banner:hover,
 .cdx-tr-novo-banner:focus-visible {
   background: var(--task);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   outline: none;
 }
 .cdx-tr-novo-text { flex: 1; min-width: 0; }
@@ -160,14 +160,14 @@
   padding: 0 7px;
   border-radius: 999px;
   background: var(--task);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   font-size: 0.72rem;
   font-weight: 800;
 }
 .cdx-tr-novo-banner:hover .cdx-tr-novo-count,
 .cdx-tr-novo-banner:focus-visible .cdx-tr-novo-count {
   background: rgba(255, 255, 255, 0.25);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
 }
 
 .cdx-tr-title {
@@ -255,7 +255,7 @@
   width: 56px;
   flex-shrink: 0;
   background: var(--primary);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -337,7 +337,7 @@
   border-radius: 8px;
   border: none;
   background: var(--primary);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
@@ -407,7 +407,7 @@
 }
 .cdx-tr-type-filter .ct-tf-chip.active {
   background: var(--primary-dark);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   border-color: var(--primary-dark);
 }
 [data-theme="dark"] .cdx-tr-type-filter .ct-tf-chip.active {
@@ -490,7 +490,7 @@
   z-index: 2;
   transition: all 0.22s ease;
 }
-.cdx-tr-tl-dot--done { background: var(--success); border-color: var(--success); color: #fff; }
+.cdx-tr-tl-dot--done { background: var(--success); border-color: var(--success); color: var(--text-on-accent, #fff); }
 .cdx-tr-tl-dot--und  { background: var(--surface); border-color: var(--text-secondary); color: var(--text-secondary); }
 
 .cdx-tr-tl-row.is-open .cdx-tr-tl-dot {
@@ -500,7 +500,7 @@
   left: -35px;
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   box-shadow:
     0 0 0 4px rgba(20, 184, 166, 0.18),
     0 0 0 9px rgba(20, 184, 166, 0.10);

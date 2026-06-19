@@ -987,7 +987,7 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   place-items: center;
   font-size: 0.6rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   background: var(--primary-dark);
 }
 .cdx-cg-name {

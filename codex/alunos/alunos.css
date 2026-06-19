@@ -53,7 +53,7 @@
   border-radius: 999px; padding: 0.28rem 0.8rem; font: inherit; font-size: 0.82rem; cursor: pointer;
 }
 .cdx-al-filter:hover { color: var(--text-primary, #111); }
-.cdx-al-filter.is-active { background: var(--accent, #14b8a6); border-color: var(--accent, #14b8a6); color: #fff; }
+.cdx-al-filter.is-active { background: var(--accent, #14b8a6); border-color: var(--accent, #14b8a6); color: var(--text-on-accent, #fff); }
 .cdx-al-approve-all { margin-left: auto; }
 
 .cdx-al-badge {
@@ -69,7 +69,7 @@
    every button with var(--task) (globally #d97706, orange). */
 .cdx-alunos .cdx-btn {
   cursor: pointer; padding: 0.4rem 0.85rem; border-radius: 8px;
-  border: 1px solid var(--task, #6b5cff); background: var(--task, #6b5cff); color: #fff;
+  border: 1px solid var(--task, #6b5cff); background: var(--task, #6b5cff); color: var(--text-on-accent, #fff);
   font-size: 0.85rem;
 }
 .cdx-alunos .cdx-btn:disabled { opacity: 0.55; cursor: default; }

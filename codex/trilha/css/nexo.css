@@ -150,7 +150,7 @@ body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-in
   height: 28px;
   border-radius: 50%;
   background: var(--primary-dark);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -207,7 +207,7 @@ body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-in
   color: var(--text-primary);
   transition: opacity 0.15s;
 }
-.cp-qa-editor-btn.primary { background: var(--primary-dark); color: #fff; border-color: var(--primary-dark); }
+.cp-qa-editor-btn.primary { background: var(--primary-dark); color: var(--text-on-accent, #fff); border-color: var(--primary-dark); }
 .cp-qa-editor-btn:hover:not(:disabled) { opacity: 0.85; }
 .cp-qa-editor-btn:disabled { opacity: 0.4; cursor: default; }
 .cp-qa-editor-error {
@@ -224,7 +224,7 @@ body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-in
   left: 14px;
   right: 14px;
   background: var(--success);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 0.85rem;

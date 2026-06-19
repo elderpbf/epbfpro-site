@@ -481,7 +481,7 @@
 .cdx-bank-import-bankname { flex: 1; font-weight: 600; }
 .cdx-bank-import-bankcount { color: var(--text-light); }
 .cdx-bank-import-banktag { font-size: 0.72rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--border); color: var(--text-light); }
-.cdx-bank-import-bankrow--new .cdx-bank-import-banktag { background: var(--primary); color: #fff; }
+.cdx-bank-import-bankrow--new .cdx-bank-import-banktag { background: var(--primary); color: var(--text-on-accent, #fff); }
 .cdx-aud-lint { font-size: 0.78rem; color: var(--error); margin: 0.4rem 0; }
 .cdx-var-gridwrap { overflow-x: auto; }
 .cdx-var-grid { border-collapse: collapse; width: 100%; }
@@ -668,7 +668,7 @@
   background: var(--border); padding: 3px 9px; border-radius: 5px;
   flex-shrink: 0; min-width: 30px; text-align: center;
 }
-[data-theme="dark"] .cdx-qr-option-letter { background: rgba(20,184,166,.25); color: #fff; }
+[data-theme="dark"] .cdx-qr-option-letter { background: rgba(20,184,166,.25); color: var(--text-on-accent, #fff); }
 
 /* ── Result bars (shared base, mode overrides below) ────── */
 .cdx-qr-bar {
@@ -731,12 +731,12 @@
 /* ── Correct-answer highlighting ─────────────────────────── */
 .cdx-qr-bar.is-correct {
   background-color: var(--success) !important;
-  border-color: var(--success) !important; color: #fff !important;
+  border-color: var(--success) !important; color: var(--text-on-accent, #fff) !important;
 }
-.cdx-qr-bar.is-correct .cdx-qr-bar-letter { background: rgba(255,255,255,0.2) !important; border-color: transparent !important; color: #fff !important; }
+.cdx-qr-bar.is-correct .cdx-qr-bar-letter { background: rgba(255,255,255,0.2) !important; border-color: transparent !important; color: var(--text-on-accent, #fff) !important; }
 .cdx-qr-bar.is-correct .cdx-qr-bar-text,
 .cdx-qr-bar.is-correct .cdx-qr-bar-pct,
-.cdx-qr-bar.is-correct .cdx-qr-bar-count { color: #fff !important; font-weight: 700 !important; }
+.cdx-qr-bar.is-correct .cdx-qr-bar-count { color: var(--text-on-accent, #fff) !important; font-weight: 700 !important; }
 .cdx-qr-bar.is-correct .cdx-qr-bar-text::after { content: ' \2713'; font-weight: 800; }
 .cdx-qr-bar.is-correct .cdx-qr-bar-fill { background: #fff !important; }
 
@@ -783,7 +783,7 @@
 .cdx-qr-numeric-form { display: flex; gap: 12px; margin-bottom: 16px; }
 .cdx-qr-numeric-input { flex: 1; padding: 14px 16px; border-radius: 8px; border: 2px solid var(--border); background: var(--background); color: var(--text-primary); font-size: 1.1rem; outline: none; transition: border-color 0.2s; min-width: 0; }
 .cdx-qr-numeric-input:focus { border-color: var(--primary); }
-.cdx-qr-submit-btn { padding: 12px 24px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
+.cdx-qr-submit-btn { padding: 12px 24px; background: var(--primary); color: var(--text-on-accent, #fff); border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
 .cdx-qr-submit-btn:hover:not(:disabled) { opacity: 0.85; }
 .cdx-qr-submit-btn:disabled { opacity: 0.4; cursor: default; }
 .cdx-qr-multi-hint { font-size: 0.82rem; color: var(--text-secondary); margin: 8px 0 4px; text-align: center; }
@@ -821,7 +821,7 @@
 .cdx-cpq-resume-title { font-size: 1.15rem; color: var(--text-secondary); margin-bottom: 1.25rem; }
 .cdx-cpq-resume-wait { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.4; }
 .cdx-cpq-resume-checking { font-size: 1.1rem; color: var(--text-secondary); }
-.cdx-cpq-resume-btn { font-size: 1.1rem; padding: 1rem 2rem; border: none; border-radius: 0.5rem; background: var(--primary); color: #fff; cursor: pointer; font-family: inherit; font-weight: 500; }
+.cdx-cpq-resume-btn { font-size: 1.1rem; padding: 1rem 2rem; border: none; border-radius: 0.5rem; background: var(--primary); color: var(--text-on-accent, #fff); cursor: pointer; font-family: inherit; font-weight: 500; }
 
 /* =========================================================
    Q2 live host dashboard (live-host.js + live-qa.js)
@@ -1019,16 +1019,16 @@
 .cdx-hi-btn { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
 .cdx-hi-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(20,184,166,0.05); }
 .cdx-hi-btn-primary { border-color: var(--primary); color: var(--primary); }
-.cdx-hi-btn-primary:hover { background: var(--primary); color: #fff; }
+.cdx-hi-btn-primary:hover { background: var(--primary); color: var(--text-on-accent, #fff); }
 .cdx-hi-btn-danger { border-color: rgba(239,68,68,.35); color: var(--error); }
-.cdx-hi-btn-danger:hover { background: var(--error); color: #fff; border-color: var(--error); }
+.cdx-hi-btn-danger:hover { background: var(--error); color: var(--text-on-accent, #fff); border-color: var(--error); }
 .cdx-hi-results { margin-top: 0.6rem; background: rgba(0,0,0,0.06); border-radius: 6px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
 [data-theme="dark"] .cdx-hi-results { background: rgba(255,255,255,0.06); }
 .cdx-hi-bar { display: flex; align-items: center; font-size: 0.72rem; gap: 0.5rem; }
 .cdx-hi-bar-label { flex: 1; min-width: 0; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; overflow: hidden; }
 .cdx-hi-bar-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cdx-hi-bar-badge { font-weight: 700; background: var(--surface); border: 1px solid var(--border); padding: 0.1rem 0.3rem; border-radius: 4px; color: var(--primary); white-space: nowrap; flex-shrink: 0; }
-.cdx-hi-bar-badge.correct { background: var(--success); color: #fff; border-color: var(--success); }
+.cdx-hi-bar-badge.correct { background: var(--success); color: var(--text-on-accent, #fff); border-color: var(--success); }
 .cdx-hi-bar-pct { font-weight: 600; color: var(--text-primary); width: 32px; text-align: right; }
 .cdx-hi-bar-count { color: var(--text-light); width: 20px; text-align: right; }
 
@@ -1036,7 +1036,7 @@
 .cdx-qa-section { background: var(--surface); border: 1px solid rgba(20,184,166,.15); border-radius: 14px; padding: 1.3rem; }
 .cdx-qa-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
 .cdx-qa-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
-.cdx-qa-badge { display: inline-block; min-width: 22px; text-align: center; padding: 0.15rem 0.5rem; font-size: 0.72rem; font-weight: 700; color: #fff; background: #ef4444; border-radius: 999px; }
+.cdx-qa-badge { display: inline-block; min-width: 22px; text-align: center; padding: 0.15rem 0.5rem; font-size: 0.72rem; font-weight: 700; color: var(--text-on-accent, #fff); background: #ef4444; border-radius: 999px; }
 .cdx-qa-empty { font-size: 0.85rem; color: var(--text-secondary); text-align: center; padding: 1rem 0; }
 .cdx-qa-row { padding: 0.8rem; border: 1px solid rgba(20,184,166,.12); border-radius: 10px; margin-bottom: 0.6rem; background: var(--background); transition: border-color .15s; }
 .cdx-qa-row.cdx-qa-answered { opacity: 0.75; }

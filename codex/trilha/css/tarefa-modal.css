@@ -162,7 +162,7 @@ body.tr-modal-open { overflow: hidden; }
   font-family: inherit;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.tr-btn-primary { background: var(--task); color: white; border-color: var(--task); }
+.tr-btn-primary { background: var(--task); color: var(--text-on-accent, #fff); border-color: var(--task); }
 .tr-btn-primary:hover:not(:disabled) { background: var(--task-dark); border-color: var(--task-dark); }
 .tr-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .tr-btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border); }

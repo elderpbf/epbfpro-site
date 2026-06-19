@@ -22,6 +22,7 @@
   --text-primary: #134e4a;
   --text-secondary: #115e59;
   --text-light: #2dd4bf;
+  --text-on-accent: #ffffff;
   --shadow: rgba(20, 184, 166, 0.1);
   --border: #e2e8f0;
   --success: #10b981;
@@ -44,9 +45,14 @@
   --accent: #134e4a;
   --background: #0f1419;
   --surface: #1a1f26;
-  --text-primary: #e5e7eb;
+  /* --text-primary + --text-on-accent são dirigidos pelo seletor de tom do
+     modo escuro (js/text-tone.js -> --cdx-text-dark). Sem escolha, caem no
+     #e5e7eb (idêntico ao valor anterior). --text-secondary fica fixo de
+     propósito: derivá-lo recoloriria todo texto secundário já no default. */
+  --text-primary: var(--cdx-text-dark, #e5e7eb);
   --text-secondary: #d1d5db;
   --text-light: #5eead4;
+  --text-on-accent: var(--cdx-text-dark, #e5e7eb);
   --shadow: rgba(0, 0, 0, 0.3);
   --border: #0f766e;
   --success: #34d399;

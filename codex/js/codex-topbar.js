@@ -17,6 +17,7 @@ import { anchorLeft, placePill } from './anchored.js';
 import { init as initSettingsDrawer } from './settings-drawer.js';
 import { googleSection, passwordSection } from './settings-auth.js';
 import { glyphWordmark, stdColors } from './brand-logos.js';
+import { TONE_OPTIONS, getTone, setTone, init as initTextTone } from './text-tone.js';
 
 const GEAR_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
@@ -157,6 +158,41 @@ function subtabModeSection() {
         const next = subtabMode() === 'pill' ? 'bar' : 'pill';
         try { localStorage.setItem(SUBTAB_MODE_KEY, next); } catch (_) {}
         location.reload();
+      });
+    },
+  };
+}
+
+// Appearance: the dark-mode light-text tone (the grey for primary text + the old
+// #fff text-on-accent spots). Admin tuning surface, Codex only; persists + applies
+// via js/text-tone.js. Swatches preview the tone as text on a teal fill; clicking
+// also updates the live app text immediately (the var lives on <html>).
+function textToneSection() {
+  const sw = TONE_OPTIONS.map((o) =>
+    '<button type="button" class="cdx-tone-sw" data-tone="' + o.value + '"' +
+      ' title="' + o.label + ' (' + o.value + ')"' +
+      ' style="width:30px;height:30px;border-radius:7px;border:2px solid transparent;outline:none;' +
+        'cursor:pointer;background:#0d9488;color:' + o.value + ';font-weight:700;font-size:.82rem;line-height:1">A</button>'
+  ).join('');
+  return {
+    id: 'cdx-text-tone',
+    title: 'Tom do texto (modo escuro)',
+    content:
+      '<div class="cdx-tone-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.5rem">' + sw + '</div>' +
+      '<p class="bs-hint">Cor do texto claro no modo escuro (corpo e texto sobre botões/selos). Branco puro estoura no escuro; o padrão é um cinza suave.</p>',
+    onInit() {
+      const row = document.querySelector('.cdx-tone-row');
+      if (!row) return;
+      const sync = () => {
+        const cur = getTone();
+        row.querySelectorAll('.cdx-tone-sw').forEach((b) => {
+          b.style.outline = b.getAttribute('data-tone') === cur ? '2px solid var(--primary)' : 'none';
+          b.style.outlineOffset = '2px';
+        });
+      };
+      sync();
+      row.querySelectorAll('.cdx-tone-sw').forEach((b) => {
+        b.addEventListener('click', () => { setTone(b.getAttribute('data-tone')); sync(); });
       });
     },
   };
@@ -402,10 +438,11 @@ export function init(opts) {
   // Shared shell services; the sub-tab mode toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });
   ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
+  initTextTone(); // apply the saved dark-mode text tone (no-op at default)
   // Compose the drawer in display order: the topbar's own sections, then the
   // injected auth + dev sections. The drawer shell owns none of this — Google
   // and password come from the settings-auth component, gated on their globals.
-  const drawerSections = [subtabModeSection(), ...sections];
+  const drawerSections = [subtabModeSection(), textToneSection(), ...sections];
   if (typeof globalThis.BS_GOOGLE !== 'undefined') drawerSections.push(googleSection());
   drawerSections.push(debugSection());
   if (typeof globalThis.callWorker === 'function') drawerSections.push(passwordSection());

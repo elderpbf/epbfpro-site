@@ -176,7 +176,7 @@
 .ct-btn-primary {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
 }
 
 .ct-btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
@@ -720,14 +720,14 @@
 .ct-turma-pill.active {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   box-shadow: 0 4px 14px -4px rgba(20, 184, 166, 0.45);
 }
 
 .ct-turma-pill.active:hover {
   background: var(--primary-dark);
   border-color: var(--primary-dark);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
 }
 
 .ct-turma-pill-client {
@@ -852,7 +852,7 @@
 
 .ct-tf-chip.active {
   background: var(--primary);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   border-color: var(--primary);
 }
 
