@@ -18,7 +18,8 @@ import { mountComposer, correctForLaunch } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
-import { open as openQrShare } from '../js/qr-share-modal.js';
+import { clockOffset, remainingSec, fmtRemain } from '../js/enroll-clock.js';
+import { isProjecting, toggleProjection } from '../js/enroll-control.js';
 import * as notice from '../js/notice.js';
 import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
 import { filterByClass } from './bank.js';
@@ -54,8 +55,14 @@ let _bankMode = 'bank';       // 'bank' | 'new' launch-card mode (Do banco is th
 let _bankFilter = 'all';      // active type chip: 'all'|'generic'|'variable'|'unique'
 let _bankSetName = '';        // currently loaded conjunto (empty = none picked yet)
 let _bankRaw = [];            // raw questions for the loaded set (audience/type filtered client-side)
+let _bankReorder = false;     // reorder-mode toggle: drag bank rows to persist a new order
+let _bankDragId = null;       // question id being dragged while reordering
+let _launchedBankIds = new Set(); // bank question ids already applied in this session/turma (worker c)
 let _trailTurma = null;
 let _trailAllTurmas = [];
+let _enrollState = null;  // last ct_get_enrollment result (the shared window state)
+let _enrollOffset = 0;    // server/client clock skew for the countdown
+let _enrollTimer = null;  // 1s ticker while a window is open
 let _onStats = null;   // sessions.js callback: open the per-session stats overlay
 let _onDelete = null;  // sessions.js callback: delete this session (revealed via the name)
 let _onRename = null;  // sessions.js callback: rename this session (title) via the name menu
@@ -70,6 +77,20 @@ let _connected = 0;        // live count of students with the answer page open (
 
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Pure: move the dragged question before the drop target in the FULL raw list, so a
+// drag in the (possibly filtered) live picker persists a coherent bank order. Returns
+// a new array; ids compared as strings. Exported for unit tests.
+export function reorderByDrag(rawList, dragId, targetId) {
+  const list = (rawList || []).slice();
+  const from = list.findIndex((q) => String(q && q.id) === String(dragId));
+  if (from === -1 || String(dragId) === String(targetId)) return list;
+  const moved = list.splice(from, 1)[0];
+  const to = list.findIndex((q) => String(q && q.id) === String(targetId));
+  if (to === -1) { list.splice(from, 0, moved); return list; } // target gone: no-op
+  list.splice(to, 0, moved);
+  return list;
 }
 function _on(el, evt, fn, opts) { if (!el) return; el.addEventListener(evt, fn, opts); _cleanup.push(() => el.removeEventListener(evt, fn, opts)); }
 function _q(sel) { return _container && _container.querySelector(sel); }
@@ -114,7 +135,9 @@ function _barMarkup() {
         '</div>' +
       '</details>' +
       '<button class="cdx-btn cdx-host-trail" id="cdx-host-trail" data-act="trail" type="button" hidden><span class="cdx-host-trail-dot" id="cdx-host-trail-dot"></span>' + _esc(t('questions.host_trail')) + '</button>' +
-      '<button class="cdx-btn cdx-host-qr" id="cdx-host-qr" data-act="qr" type="button" hidden>' + _esc(t('questions.host_qr')) + '</button>' +
+      '<button class="cdx-btn cdx-host-qr" id="cdx-host-qr" data-act="qr" type="button" hidden aria-label="' + _esc(t('questions.host_qr')) + '" title="' + _esc(t('questions.host_qr')) + '">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14h1v1"/><path d="M14 20h1v1"/><path d="M20 20h1v1"/><path d="M17 17h1"/><path d="M20 17h1"/><path d="M17 20h1"/></svg>' +
+        '<span class="cdx-host-qr-rem"></span></button>' +
       '<a class="cdx-btn cdx-host-display" id="cdx-host-display" href="' + _esc(_displayHref()) + '" target="_blank" rel="noopener" hidden>' + _esc(t('questions.host_display')) + '</a>' +
       '<button class="cdx-btn cdx-btn-primary cdx-host-start" id="cdx-host-start" data-act="start" type="button" hidden>' + _esc(t('questions.host_start')) + '</button>' +
       '<button class="cdx-btn cdx-btn-danger cdx-host-stop" id="cdx-host-stop" data-act="stop" type="button" hidden>' + _esc(t('questions.host_stop')) + '</button>' +
@@ -122,7 +145,7 @@ function _barMarkup() {
   '</div>';
 }
 
-function _displayHref() { return '/go/display.html?code=' + encodeURIComponent(_session.code); }
+function _displayHref() { return '/codex/questions/display.html?code=' + encodeURIComponent(_session.code); }
 
 // Inline SVG glyph copied node-for-node from host.html (the bank hamburger). The
 // AI Gerar/Melhorar glyphs now live in the shared composer, which renders the AI
@@ -158,6 +181,9 @@ function _composerCardMarkup() {
         '<button class="cdx-bank-chip" data-act="bank-filter" data-f="generic" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-generic" aria-hidden="true">' + _CLASS_GLYPH.generic + '</span> ' + _esc(t('questions.host_bank_filter_generic')) + '</button>' +
         '<button class="cdx-bank-chip" data-act="bank-filter" data-f="variable" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-variable" aria-hidden="true">' + _CLASS_GLYPH.variable + '</span> ' + _esc(t('questions.host_bank_filter_variable')) + '</button>' +
         '<button class="cdx-bank-chip" data-act="bank-filter" data-f="unique" type="button"><span class="cdx-bank-glyph cdx-bank-glyph-unique" aria-hidden="true">' + _CLASS_GLYPH.unique + '</span> ' + _esc(t('questions.host_bank_filter_unique')) + '</button>' +
+      '</div>' +
+      '<div class="cdx-bank-reorder-bar">' +
+        '<button class="cdx-bank-reorder-toggle" data-act="bank-reorder" type="button" title="' + _esc(t('questions.host_bank_reorder_hint')) + '">&#8597; ' + _esc(t('questions.host_bank_reorder')) + '</button>' +
       '</div>' +
       '<div class="cdx-bank-list" id="cdx-bank-list"><div class="cdx-bank-msg">' + _esc(t('questions.host_bank_pick_hint')) + '</div></div>' +
     '</div>' +
@@ -277,14 +303,13 @@ function _trailModalMarkup() {
 function _applyHostedUI(open) {
   const note = _q('#cdx-host-note'), launch = _q('#cdx-launch-card');
   const qa = _q('#cdx-qa-section'), start = _q('#cdx-host-start'), stop = _q('#cdx-host-stop');
-  const visao = _q('#cdx-host-visao'), display = _q('#cdx-host-display'), panel = _q('#cdx-active-panel');
+  const visao = _q('#cdx-host-visao'), panel = _q('#cdx-active-panel');
   if (note) note.hidden = open;
   if (launch) launch.style.display = open ? '' : 'none';
   if (qa) qa.style.display = open ? '' : 'none';
   if (start) start.hidden = open;
   if (stop) stop.hidden = !open;
   if (visao) visao.hidden = !open;
-  if (display) display.hidden = !open;
   _refreshShareSurface(open);
   if (!open) {
     if (panel) panel.style.display = 'none';
@@ -294,13 +319,16 @@ function _applyHostedUI(open) {
 
 function _refreshShareSurface(open) {
   const hasTrail = !!_buildTrailUrl();
-  const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr');
-  // Trilha + QR show regardless of session state (Élder 2026-06-05): the trilha
-  // link is useful before the session starts too. Both are ALWAYS visible; the
-  // QR needs a join URL (a linked turma), so without one it reads as disabled and
-  // clicking explains why rather than vanishing from the bar (Élder 2026-06-06).
+  const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr'), display = _q('#cdx-host-display');
+  // Trilha + QR + Display show regardless of session state: the trilha link and the
+  // projector are useful BEFORE the session starts too (Élder 2026-06-19, so the QR
+  // can be shown while presenting the trilha, before opening the questions). Both
+  // Trilha and QR are ALWAYS visible; the QR needs a join URL (a linked turma), so
+  // without one it reads as disabled and clicking explains why (Élder 2026-06-06).
   if (trail) { trail.hidden = false; trail.classList.toggle('is-linked', !!_trailTurma); }
   if (qr) { qr.hidden = false; qr.classList.toggle('is-disabled', !hasTrail); }
+  if (display) display.hidden = false;
+  _paintEnrollBtn();
 }
 
 // ── Trilha turma link (port of host-share.js) ────────────────
@@ -321,6 +349,7 @@ async function _loadTrail() {
   } catch (e) { _trailAllTurmas = []; }
   _renderTrailContent();
   _refreshShareSurface(_isOpen());
+  _loadEnrollState();
 }
 
 function _renderTrailContent() {
@@ -372,10 +401,55 @@ async function _unlinkTrail() {
   } catch (e) { notice.internal(e); }
 }
 
-function _openQr() {
-  const joinUrl = _buildTrailUrl();
-  if (!joinUrl) { notice.info(t('questions.host_qr_no_turma')); return; }
-  openQrShare({ joinUrl });
+// ── In-class enrollment window ──
+// The QR button toggles the SERVER enrollment window; the session display polls
+// the same state and shows the QR + countdown. One state, two surfaces, so they
+// can't diverge. The button itself just reflects open/closed + the time left.
+function _clearEnrollTimer() { if (_enrollTimer) { clearInterval(_enrollTimer); _enrollTimer = null; } }
+
+function _paintEnrollBtn() {
+  const qr = _q('#cdx-host-qr');
+  if (!qr) return;
+  const open = !!(_enrollState && _enrollState.open);
+  const projecting = isProjecting(_enrollState);
+  qr.classList.toggle('is-on', projecting); // QR is projected on the display
+  qr.classList.toggle('is-live', open);     // window is open (countdown running) even if the QR is hidden
+  const rem = qr.querySelector('.cdx-host-qr-rem');
+  if (!rem) return;
+  if (open && _enrollState.enrollment_expires_at) {
+    const left = remainingSec(_enrollState.enrollment_expires_at, _enrollOffset, Math.floor(Date.now() / 1000));
+    rem.textContent = left > 0 ? fmtRemain(left) : '';
+  } else rem.textContent = '';
+}
+
+function _loadEnrollState() {
+  _clearEnrollTimer();
+  if (!_trailTurma) { _enrollState = null; _paintEnrollBtn(); return; }
+  cohorts.getEnrollment({ client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug }).then((res) => {
+    _enrollState = (res && res.ok) ? res : null;
+    if (_enrollState) _enrollOffset = clockOffset(_enrollState.now, Math.floor(Date.now() / 1000));
+    _paintEnrollBtn();
+    if (_enrollState && _enrollState.open) {
+      let reval = 30; // re-validate against the server so the timer can't drift silently
+      _enrollTimer = setInterval(() => {
+        const left = remainingSec(_enrollState.enrollment_expires_at, _enrollOffset, Math.floor(Date.now() / 1000));
+        if (left <= 0) { _loadEnrollState(); return; }
+        _paintEnrollBtn();
+        if (--reval <= 0) { reval = 30; _loadEnrollState(); }
+      }, 1000);
+    }
+  }).catch(() => {});
+}
+
+// Toggle the QR ON THE DISPLAY. Projecting -> un-project (the window STAYS open, the
+// countdown keeps running on this button). Not projecting -> open (mints a window only
+// if none is live; otherwise reuses it, no reset, no new link) and project the QR.
+async function _toggleEnroll() {
+  if (!_trailTurma) { notice.info(t('questions.host_qr_no_turma')); return; }
+  const ids = { client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug };
+  try { await toggleProjection(cohorts, ids, _enrollState); }
+  catch (e) { notice.internal(e); return; }
+  _loadEnrollState();
 }
 
 // ── Lifecycle: Iniciar / Encerrar (port of host-session.js) ──
@@ -853,6 +927,17 @@ function _audienceValues() {
 // Fetch a conjunto's questions once and cache them; audience + type filtering then
 // runs client-side (bankVisible + filterByClass) so chip/audience clicks never hit
 // the network. Selecting the empty option clears the list back to the hint.
+// Apply a drag reorder to the full raw set and persist it to the bank. Optimistic:
+// re-render immediately, then save; a failure surfaces on the pill (order reverts on
+// the next set reload). The new order is the bank's order (same reorder_questions the
+// Banco edit mode uses), so it sticks across sessions.
+async function _persistBankReorder(dragId, targetId) {
+  _bankRaw = reorderByDrag(_bankRaw, dragId, targetId);
+  _renderBankList();
+  try { await api.reorder({ list_name: _bankSetName, ordered_ids: _bankRaw.map((q) => q.id) }); }
+  catch (e) { notice.internal(e); }
+}
+
 async function _loadBankQuestions(listName) {
   _bankSetName = listName || '';
   const list = _q('#cdx-bank-list');
@@ -862,7 +947,19 @@ async function _loadBankQuestions(listName) {
   let res;
   try { res = await api.getQuestions({ list_name: _bankSetName }); } catch (e) { notice.internal(e); res = null; }
   _bankRaw = (res && res.questions) || [];
+  await _loadLaunchedBankIds();
   _renderBankList();
+}
+
+// worker c: load the bank ids already applied in this session/turma, so the picker
+// can mark them "já aplicada". Best-effort: a failure just leaves the set empty.
+async function _loadLaunchedBankIds() {
+  _launchedBankIds = new Set();
+  if (!_session || !_session.code) return;
+  try {
+    const res = await api.launchedBankIds({ session_code: _session.code });
+    (res && res.ids || []).forEach((id) => _launchedBankIds.add(String(id)));
+  } catch (_) { /* non-fatal: no marker rather than a broken picker */ }
 }
 
 // Render the cached set under the current audience + type filters. bankVisible
@@ -885,11 +982,16 @@ function _renderBankList() {
     // (the raw template stays in _bankMap for launch). Editar opens the composer.
     const resolved = resolveQuestion(q, vals);
     const cls = questionType(q);
-    return '<div class="cdx-bank-item" data-bank-i="' + i + '">' +
+    // worker c: mark questions already applied in this turma (greyed + a small badge),
+    // so the teacher doesn't re-ask one. Still launchable (a re-ask is allowed).
+    const applied = _launchedBankIds.has(String(q.id));
+    return '<div class="cdx-bank-item' + (_bankReorder ? ' is-reordering' : '') + (applied ? ' is-applied' : '') + '" data-bank-i="' + i + '" data-qid="' + _esc(q.id) + '"' + (_bankReorder ? ' draggable="true"' : '') + '>' +
       '<div class="cdx-bank-item-head">' +
         '<span class="cdx-bank-chevron" aria-hidden="true">▸</span>' +
         '<span class="cdx-bank-glyph cdx-bank-glyph-' + cls + '" aria-hidden="true">' + _CLASS_GLYPH[cls] + '</span>' +
-        '<span class="cdx-bank-item-text">' + _esc(resolved.question) + '</span>' +
+        '<span class="cdx-bank-item-text">' + _esc(resolved.question) +
+          (applied ? ' <span class="cdx-bank-applied">' + _esc(t('questions.host_already_applied')) + '</span>' : '') +
+        '</span>' +
         '<button class="cdx-iconbtn cdx-bank-edit" data-act="bank-edit" data-bank-i="' + i + '" type="button" title="' + _esc(t('questions.host_bank_edit')) + '" aria-label="' + _esc(t('questions.host_bank_edit')) + '">✎</button>' +
         '<button class="cdx-iconbtn cdx-iconbtn-go cdx-bank-launch" data-act="bank-launch" data-bank-i="' + i + '" type="button" title="' + _esc(t('questions.host_bank_launch')) + '" aria-label="' + _esc(t('questions.host_bank_launch')) + '">▶</button>' +
       '</div>' +
@@ -965,10 +1067,15 @@ async function _launchFromBank(q) {
   // correct_answers array; reading only the scalar dropped it on relaunch, so a
   // closed question couldn't highlight on reveal.
   const payload = { session_code: _session.code, type: q.type || 'mc', text: r.question, options: opts,
-    correct_answer: correctForLaunch(q) };
+    correct_answer: correctForLaunch(q), bank_id: q.id };
   if (TEXT_TYPES.includes(q.type)) payload.max_select = 0;
   else payload.max_select = (q.max_select !== undefined && q.max_select !== null) ? parseInt(q.max_select, 10) : 1;
-  try { await api.launchQuestion(payload); if (_qEl) _qEl.startPolling(); } catch (e) { notice.internal(e); }
+  try {
+    await api.launchQuestion(payload);
+    if (_qEl) _qEl.startPolling();
+    // Optimistically mark it applied so the "já aplicada" badge shows at once.
+    if (q.id != null) { _launchedBankIds.add(String(q.id)); _renderBankList(); }
+  } catch (e) { notice.internal(e); }
 }
 
 // ── Layout (port of host-layout.js) ──────────────────────────
@@ -1087,11 +1194,18 @@ export function mount(containerEl, ctx) {
       if (act === 'reveal-now') return _revealNow();
       if (act === 'sim-run') return _simulate();
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
-      if (act === 'qr') return _openQr();
+      if (act === 'qr') return _toggleEnroll();
       if (act === 'mode') { _setBankMode(btn.getAttribute('data-mode')); return; }
       if (act === 'bank-filter') { if (btn.disabled || btn.classList.contains('is-disabled')) return; _bankFilter = btn.getAttribute('data-f') || 'all'; _syncBankChips(); _renderBankList(); return; }
       if (act === 'bank-launch') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _launchFromBank(q); return; }
       if (act === 'bank-edit') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) { _setBankMode('new'); _prefillFromBank(q); } return; }
+      if (act === 'bank-reorder') {
+        if (!_bankSetName) return;
+        _bankReorder = !_bankReorder;
+        btn.classList.toggle('is-on', _bankReorder);
+        _renderBankList();
+        return;
+      }
       if (act === 'reset-layout') { _layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); _applyLayout(); _saveLayout(); return; }
     }
     const col = e.target.closest('[data-toggle-col]');
@@ -1138,9 +1252,32 @@ export function mount(containerEl, ctx) {
   _on(_q('#cdx-bank-list'), 'click', (e) => {
     // Editar/Lançar are data-act buttons handled by the host click handler; a click
     // on the row body (chevron or text) just expands/collapses the readable detail.
-    if (e.target.closest('[data-act]')) return;
+    // While reordering, a click must not expand (the row is a drag handle).
+    if (_bankReorder || e.target.closest('[data-act]')) return;
     const item = e.target.closest('.cdx-bank-item');
     if (item) item.classList.toggle('is-open');
+  });
+  // Reorder during the session: drag a bank row onto another to persist a new bank
+  // order (reuses reorder_questions). Only armed while reorder mode is on.
+  _on(_q('#cdx-bank-list'), 'dragstart', (e) => {
+    if (!_bankReorder) return;
+    const item = e.target.closest('.cdx-bank-item'); if (!item) return;
+    _bankDragId = item.getAttribute('data-qid');
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+  });
+  _on(_q('#cdx-bank-list'), 'dragover', (e) => {
+    if (!_bankReorder || _bankDragId == null) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  });
+  _on(_q('#cdx-bank-list'), 'drop', (e) => {
+    if (!_bankReorder || _bankDragId == null) return;
+    e.preventDefault();
+    const item = e.target.closest('.cdx-bank-item');
+    const targetId = item ? item.getAttribute('data-qid') : null;
+    const dragId = _bankDragId; _bankDragId = null;
+    if (!targetId || String(targetId) === String(dragId)) return;
+    _persistBankReorder(dragId, targetId);
   });
   _on(_q('#cdx-sqa-response'), 'input', _scheduleSqaSave);
   _on(_q('#cdx-auto-on'), 'change', (e) => { _auto.enabled = !!e.target.checked; _saveAuto(); _syncAutoUI(); });
@@ -1164,12 +1301,14 @@ export function unmount() {
   if (_composer) { try { _composer.destroy(); } catch (_) { /* ignore */ } _composer = null; }
   if (_sqaDebounce) { clearTimeout(_sqaDebounce); _sqaDebounce = null; }
   if (_autoFlashTimer) { clearTimeout(_autoFlashTimer); _autoFlashTimer = null; }
+  _clearEnrollTimer();
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
   if (_container) _container.innerHTML = '';
   _container = null; _session = null;
   _activeQId = null; _activeQType = null; _activeStudentQuestionId = null;
   _historyMap = {}; _bankMap = {}; _trailTurma = null; _trailAllTurmas = [];
+  _enrollState = null; _enrollOffset = 0;
   _auto = null; _autoQId = null; _autoFiredQId = null; _autoLastCount = 0; _autoLastChangeAt = 0;
   _connected = 0;
   _simRunning = false;

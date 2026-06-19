@@ -127,7 +127,7 @@
   width: 100%;
   padding: 0.8rem;
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: white;
+  color: var(--text-on-accent, #fff);
   border: none;
   border-radius: 8px;
   font-family: 'Inter', sans-serif;
@@ -541,7 +541,7 @@
   border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 1.25rem;
-  color: white;
+  color: var(--text-on-accent, #fff);
 }
 
 .bs-tool-codename {

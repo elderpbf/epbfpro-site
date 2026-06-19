@@ -162,7 +162,7 @@ body.tr-modal-open { overflow: hidden; }
   font-family: inherit;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.tr-btn-primary { background: var(--task); color: white; border-color: var(--task); }
+.tr-btn-primary { background: var(--task); color: var(--text-on-accent, #fff); border-color: var(--task); }
 .tr-btn-primary:hover:not(:disabled) { background: var(--task-dark); border-color: var(--task-dark); }
 .tr-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .tr-btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border); }
@@ -197,6 +197,18 @@ body.tr-modal-open { overflow: hidden; }
 .tr-login .tr-tarefa-field-label { display: block; }
 .tr-login-email,
 .tr-login-name { margin-bottom: 0.2rem; }
+
+/* QR enrollment: the echo-back confirm shows the typed email big to catch typos. */
+.tr-en-confirm-email {
+  margin: 0.4rem 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.08));
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+  word-break: break-all;
+}
 
 .tr-login-consent {
   margin-top: 1rem;
@@ -251,3 +263,34 @@ body.tr-modal-open { overflow: hidden; }
 /* Header login/logout pill rides on the shared .ph-action-btn chrome; no extra
    styling needed beyond a stable hook for future tweaks. */
 .cdx-tr-login-pill { cursor: pointer; }
+
+/* ── Access gate (Phase 7) ────────────────────────────────────────────────────
+   Upfront-mode wall (whole turma) + the inline pending notice (a single item). */
+.cdx-tr-wall {
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+}
+.cdx-tr-wall-card {
+  max-width: 30rem;
+  width: 100%;
+  text-align: center;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2.25rem 1.75rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+.cdx-tr-wall-icon { font-size: 2rem; line-height: 1; margin-bottom: 0.75rem; }
+.cdx-tr-wall-title { margin: 0 0 0.5rem; font-size: 1.25rem; }
+.cdx-tr-wall-body { margin: 0 0 1.25rem; color: var(--muted, #555); line-height: 1.5; }
+.cdx-tr-wall-cta { min-width: 12rem; }
+
+.cdx-tr-gate-pending {
+  padding: 1rem 1.1rem;
+  border-left: 3px solid var(--task, #6b5cff);
+  background: var(--surface-2, rgba(0, 0, 0, 0.03));
+  border-radius: 8px;
+}
+.cdx-tr-gate-pending strong { display: block; margin-bottom: 0.25rem; }
+.cdx-tr-gate-pending p { margin: 0; color: var(--muted, #555); line-height: 1.5; }

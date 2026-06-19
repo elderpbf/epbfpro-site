@@ -77,7 +77,7 @@
   width: 100%;
   padding: 0.7rem;
   background: var(--primary, #14b8a6);
-  color: white;
+  color: var(--text-on-accent, #fff);
   border: none;
   border-radius: 8px;
   font-family: 'Inter', sans-serif;

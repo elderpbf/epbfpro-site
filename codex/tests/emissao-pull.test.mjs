@@ -18,9 +18,9 @@ test('issue flow imports the shared ementa flattener (not a cross-tab cohorts im
 test('issue flow auto-fills the form from the selected turma', () => {
   assert.match(certs, /function _autofillIssueFromTurma/, 'has the auto-fill helper');
   assert.match(certs, /_issueTurma = _issueTurmas\.find/, 'resolves the selected turma');
-  assert.match(certs, /if \(_issueTurma\) _autofillIssueFromTurma/, 'calls auto-fill on turma change');
+  assert.match(certs, /if \(_issueTurma\) \{ _autofillIssueFromTurma/, 'calls auto-fill on turma change');
   // pulls each field from the turma
-  for (const f of ['turma.course_title', 'turma.hours', 'turma.place', 'turma.meetings', 'turma.format', 'turma.modality', 'turma.ementa_json']) {
+  for (const f of ['turma.course_title', 'turma.hours', 'turma.place', 'turma.meetings', 'turma.format', 'turma.ementa_json']) {
     assert.ok(certs.includes(f), `auto-fill reads ${f}`);
   }
 });

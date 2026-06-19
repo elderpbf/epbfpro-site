@@ -73,13 +73,15 @@ test('courses builds the ementa with the pure ementa model', () => {
 
 test('turma form gains the course picker + instance fields (feed the certificate)', () => {
   assert.match(cohorts, /import \{ cohorts as api, cp as cpApi, courses as coursesApi/, 'imports the courses facade');
-  for (const id of ['cdx-tf-course', 'cdx-tf-hours', 'cdx-tf-date-start', 'cdx-tf-date-end', 'cdx-tf-format', 'cdx-tf-modality', 'cdx-tf-place', 'cdx-tf-meetings']) {
+  // Modalidade field removed (delivery mode lives in Formato; location in Local/place).
+  for (const id of ['cdx-tf-course', 'cdx-tf-hours', 'cdx-tf-date-start', 'cdx-tf-date-end', 'cdx-tf-format', 'cdx-tf-place', 'cdx-tf-meetings']) {
     assert.ok(cohorts.includes(id), `turma form has #${id}`);
   }
+  assert.ok(!cohorts.includes('cdx-tf-modality'), 'modalidade field removed');
 });
 
 test('turma save sends the course-instance fields to updateTurma', () => {
-  for (const f of ['course_id:', 'date_start:', 'date_end:', 'format:', 'place:', 'meetings:', 'modality:']) {
+  for (const f of ['course_id:', 'date_start:', 'date_end:', 'format:', 'place:', 'meetings:']) {
     assert.ok(cohorts.includes(f), `save payload includes ${f}`);
   }
 });
@@ -126,7 +128,7 @@ test('per-turma actions moved into the dossier (nothing lost in the merge)', () 
   for (const act of ['data-doss="archive"', 'data-doss="regen"', 'data-doss="copyurl"']) {
     assert.ok(cohorts.includes(act), `dossier wires ${act}`);
   }
-  assert.match(cohorts, /cdx-doss-links/, 'dossier has the trilha link/action strip');
+  assert.match(cohorts, /cdx-doss-fact--trail/, 'dossier has the trail link card inside Dados da turma');
   // those actions reuse the existing helpers
   for (const fn of ['_archiveTurma', '_regenToken', '_copyUrl']) {
     assert.ok(cohorts.includes(fn), `keeps ${fn}`);

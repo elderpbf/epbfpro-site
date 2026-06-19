@@ -791,10 +791,121 @@ a.cdx-card-mini-icon.is-on:hover {
 .cdx-doss-fact .v { font-size: .85rem; font-weight: 600; color: var(--text-primary); }
 .cdx-doss-fact--course { grid-column: span 2; background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); }
 .cdx-doss-fact--course .v { color: var(--primary-dark); }
+.cdx-doss-fact--course .cdx-doss-edit { color: var(--primary-dark); font-weight: 700; }
+/* #27: inline-editable dossier fields (no more Editar modal). Inputs/selects sit
+   inside a .cdx-doss-fact and auto-save on blur/change. */
+.cdx-doss-headmain { min-width: 0; flex: 1; }
+.cdx-doss-edit {
+  width: 100%; box-sizing: border-box; font: inherit; color: var(--text-primary);
+  background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 6px;
+  padding: .25rem .4rem;
+}
+.cdx-doss-edit:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(20,184,166,.18); }
+.cdx-doss-fact--edit { padding-bottom: .55rem; }
+.cdx-doss-fact--edit .cdx-doss-edit { font-size: .85rem; font-weight: 600; margin-top: .05rem; }
+.cdx-doss-title-edit {
+  font-size: 1.25rem; font-weight: 700; border: 1px solid transparent; background: transparent;
+  padding: .1rem .3rem; margin: -.1rem -.3rem; border-radius: 6px;
+}
+.cdx-doss-title-edit:hover { border-color: var(--border); }
+.cdx-doss-title-edit:focus { background: var(--surface, #fff); border-color: var(--primary); box-shadow: 0 0 0 2px rgba(20,184,166,.18); }
 .cdx-doss-linkbtn { border: none; background: transparent; color: var(--primary-dark); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0; }
 .cdx-doss-sec { border-top: 1px solid var(--border); padding-top: .9rem; margin-top: .3rem; margin-bottom: .9rem; }
 .cdx-doss-sec-h { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .6rem; }
-.cdx-doss-sec-h b { font-size: .95rem; color: var(--text-primary); }
+.cdx-doss-sec-h b { font-size: .95rem; color: var(--text-primary); display: inline-flex; align-items: center; }
+/* Collapsible dossier sections (<details class="cdx-doss-sec">): the whole panel
+   got taller once Acesso + the managed participants list folded in, so each big
+   section collapses. Summary = the section header; caret rotates when open. */
+details.cdx-doss-sec > summary { list-style: none; cursor: pointer; outline: none; }
+details.cdx-doss-sec > summary::-webkit-details-marker { display: none; }
+details.cdx-doss-sec > summary .cdx-doss-sec-h { margin-bottom: 0; }
+details.cdx-doss-sec[open] > summary .cdx-doss-sec-h { margin-bottom: .6rem; }
+.cdx-caret { display: inline-block; margin-right: .4rem; font-size: .72rem; color: var(--text-secondary); transition: transform .15s ease; }
+details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
+.cdx-doss-sec-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
+
+/* Per-turma dossier sub-tabs (Phase 8): the section stack became tab panels.
+   Reuses the Codex .cdx-subtab idiom; the buttons need the native-button reset. */
+.cdx-doss-tabs { margin: .5rem 0 1.1rem; border-bottom: 1px solid var(--border); }
+.cdx-doss-tabs .cdx-substrip { display: flex; gap: .25rem; }
+.cdx-doss-tabs .cdx-subtab {
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  padding: .5rem .85rem; font-size: .82rem; font-weight: 600; color: var(--text-secondary);
+  /* The active marker is a primary underline; reserve the space on every tab so
+     activating one doesn't shift the row. */
+  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s ease, border-color .15s ease;
+}
+.cdx-doss-tabs .cdx-subtab:hover { color: var(--text-primary); }
+.cdx-doss-tabs .cdx-subtab.active { color: var(--primary-dark); border-bottom-color: var(--primary); font-weight: 700; }
+[data-theme="dark"] .cdx-doss-tabs .cdx-subtab.active { color: var(--primary-light); }
+.cdx-doss-panel { animation: cdx-doss-fade .18s ease both; }
+@keyframes cdx-doss-fade { from { opacity: 0; } to { opacity: 1; } }
+.cdx-doss-panel[hidden] { display: none; }
+.cdx-doss-subhead { font-size: .8rem; font-weight: 700; color: var(--text-primary); margin: 1.2rem 0 .7rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.cdx-doss-panel-bar { display: flex; align-items: center; gap: .5rem; margin-bottom: .7rem; }
+
+/* Fórum moderation (Phase 8): 2-pane (thread list | open thread), mock Opção A.
+   The instructor moderates entirely from here. cdx-fa- prefix. */
+.cdx-fa { display: grid; grid-template-columns: 280px 1fr; gap: 1rem; min-height: 360px; }
+.cdx-fa-list { border-right: 1px solid var(--border); padding-right: 1rem; display: flex; flex-direction: column; gap: .6rem; }
+.cdx-fa-list-head { display: flex; }
+.cdx-fa-new { width: 100%; }
+.cdx-fa-newform { display: flex; flex-direction: column; gap: .5rem; padding: .6rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.cdx-fa-nt, .cdx-fa-nb, .cdx-fa-editinput, .cdx-fa-replyinput {
+  width: 100%; box-sizing: border-box; font-family: inherit; font-size: .85rem; color: var(--text-primary);
+  background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: .45rem .6rem; resize: vertical;
+}
+.cdx-fa-nt { font-weight: 700; }
+.cdx-fa-pinrow { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--text-secondary); }
+.cdx-fa-newactions { display: flex; justify-content: flex-end; gap: .5rem; }
+.cdx-fa-threads { display: flex; flex-direction: column; gap: .35rem; overflow-y: auto; }
+.cdx-fa-trow { padding: .55rem .6rem; border: 1px solid var(--border); border-radius: 9px; cursor: pointer; background: var(--surface); transition: border-color .12s ease, background .12s ease; }
+.cdx-fa-trow:hover { border-color: var(--primary); }
+.cdx-fa-trow--active { border-color: var(--primary); background: var(--cdx-card-sel-bg, rgba(20,184,166,0.08)); }
+.cdx-fa-trow-top { display: flex; align-items: center; gap: .35rem; }
+.cdx-fa-trow-title { font-size: .85rem; font-weight: 700; color: var(--text-primary); line-height: 1.25; }
+.cdx-fa-trow-meta { font-size: .7rem; color: var(--text-secondary); margin-top: .25rem; }
+.cdx-fa-pin { color: var(--primary-dark); }
+
+.cdx-fa-detail { display: flex; flex-direction: column; gap: .8rem; min-width: 0; }
+.cdx-fa-pick { margin: auto; }
+.cdx-fa-dhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding-bottom: .7rem; }
+.cdx-fa-dtitle { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.cdx-fa-dactions { display: flex; gap: .4rem; flex-shrink: 0; }
+.cdx-fa-tbtn {
+  font-family: inherit; font-size: .72rem; font-weight: 600; color: var(--text-secondary);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: .3rem .55rem; cursor: pointer;
+}
+.cdx-fa-tbtn:hover { color: var(--primary-dark); border-color: var(--primary); }
+.cdx-fa-posts { display: flex; flex-direction: column; gap: .7rem; }
+.cdx-fa-post { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .7rem .85rem; }
+.cdx-fa-post--prof { border-color: rgba(124,58,237,0.35); background: rgba(124,58,237,0.05); }
+[data-theme="dark"] .cdx-fa-post--prof { background: rgba(124,58,237,0.12); }
+.cdx-fa-post-head { display: flex; align-items: center; gap: .45rem; margin-bottom: .3rem; }
+.cdx-fa-post-name { font-size: .82rem; font-weight: 700; color: var(--text-primary); }
+.cdx-fa-post-time { font-size: .7rem; color: var(--text-secondary); }
+.cdx-fa-profbadge {
+  font-size: .6rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px;
+  background: rgba(124,58,237,0.12); color: #6d28d9; border: 1px solid rgba(124,58,237,0.3);
+}
+[data-theme="dark"] .cdx-fa-profbadge { color: #c4b5fd; background: rgba(124,58,237,0.22); }
+.cdx-fa-post-body { font-size: .86rem; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; }
+.cdx-fa-post-actions { display: flex; gap: .8rem; margin-top: .4rem; }
+.cdx-fa-pbtn { font-family: inherit; font-size: .72rem; font-weight: 600; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0; }
+.cdx-fa-pbtn:hover { color: var(--primary-dark); }
+.cdx-fa-pbtn--danger:hover { color: var(--error); }
+.cdx-fa-replybar { display: flex; gap: .5rem; align-items: flex-end; border-top: 1px dashed var(--border); padding-top: .8rem; }
+.cdx-fa-replyinput { flex: 1; }
+@media (max-width: 900px) { .cdx-fa { grid-template-columns: 1fr; } .cdx-fa-list { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 1rem; } }
+
+/* Access settings rows (shared js/access-panel.js, also used by the Alunos tab). */
+/* Rows flow into responsive columns so the panel fills the width (no dead space). */
+.cdx-acc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .15rem 1.1rem; align-items: center; }
+.cdx-acc-grid .cdx-acc-actions { grid-column: 1 / -1; }
+.cdx-acc-row { display: flex; align-items: center; gap: .5rem; padding: .3rem 0; font-size: .86rem; color: var(--text-primary); }
+.cdx-acc-row select { font: inherit; padding: .25rem .4rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface, #fff); color: var(--text-primary); }
+.cdx-acc-actions { display: flex; align-items: center; gap: .6rem; margin-top: .5rem; }
+.cdx-acc-msg { font-size: .8rem; color: var(--text-secondary); }
 .cdx-doss-count { font-size: 1.6rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
 .cdx-doss-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
 .cdx-doss-chip { background: var(--background); border: 1px solid var(--border); border-radius: 999px; padding: .15rem .5rem; font-size: .76rem; color: var(--text-primary); }
@@ -806,6 +917,93 @@ a.cdx-card-mini-icon.is-on:hover {
 .cdx-doss-cstat--signed i  { background: var(--cdx-cert-signed-ac); }
 .cdx-doss-cstat--sent i    { background: var(--cdx-cert-sent-ac); }
 .cdx-doss-cstat--revoked i { background: var(--cdx-cert-revoked-ac); }
+/* Connecting-cards separator: full-width divider inside .cdx-doss-facts grid */
+.cdx-doss-sep { grid-column: 1 / -1; height: 0; border: none; border-top: 1px solid var(--border); margin: .15rem 0; }
+/* Trail link fact card */
+.cdx-doss-fact--trail { display: flex; flex-direction: column; gap: .4rem; }
+.cdx-doss-trail-acts { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .05rem; }
+.cdx-doss-trail-acts .cdx-btn { padding: .2rem .45rem; font-size: .72rem; }
+.cdx-doss-trail-na { font-size: .8rem; color: var(--text-secondary); }
+
+/* ── Dossier: participant inline list ──────────────────────────────────────── */
+
+/* Count badge inside the section header <b> */
+.cdx-secount {
+  font-size: .72rem; font-weight: 700; color: var(--text-secondary);
+  background: var(--background); border: 1px solid var(--border);
+  border-radius: 999px; padding: .05rem .5rem; margin-left: .5rem;
+}
+
+/* Section-level action row (Pré-aprovar button, etc.) */
+.cdx-doss-sec-acts { display: flex; align-items: center; gap: .4rem; }
+
+/* Filter chip bar */
+.cdx-pfilter { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; margin-bottom: .5rem; }
+.cdx-pchip {
+  font: inherit; font-size: .74rem; font-weight: 600;
+  padding: .2rem .55rem; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--background); color: var(--text-secondary);
+  cursor: pointer; transition: border-color .12s, color .12s, background .12s;
+}
+.cdx-pchip:hover { border-color: var(--primary); color: var(--primary-dark); }
+.cdx-pchip.on { background: var(--primary-dark); border-color: transparent; color: var(--cdx-btn-primary-text); }
+
+/* Entry-type tags */
+.cdx-tag {
+  display: inline-flex; align-items: center;
+  font-size: .64rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+  padding: .12rem .42rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
+}
+.cdx-tag--lista   { background: rgba(100,116,139,.14); color: #475569; border-color: rgba(100,116,139,.30); }
+.cdx-tag--qr      { background: rgba(20,184,166,.15);  color: #0d9488; border-color: rgba(20,184,166,.35); }
+.cdx-tag--aula    { background: rgba(99,102,241,.14);  color: #4f46e5; border-color: rgba(99,102,241,.32); }
+.cdx-tag--manual  { background: rgba(22,163,74,.14);   color: #15803d; border-color: rgba(22,163,74,.32); }
+.cdx-tag--pendente{ background: rgba(217,119,6,.14);   color: #b45309; border-color: rgba(217,119,6,.32); }
+.cdx-tag--negado  { background: rgba(220,38,38,.12);   color: #b91c1c; border-color: rgba(220,38,38,.30); }
+[data-theme="dark"] .cdx-tag--lista    { background: rgba(100,116,139,.22); color: #cbd5e1; border-color: rgba(100,116,139,.40); }
+[data-theme="dark"] .cdx-tag--qr       { background: rgba(20,184,166,.2);   color: #5eead4; border-color: rgba(20,184,166,.40); }
+[data-theme="dark"] .cdx-tag--aula     { background: rgba(99,102,241,.2);   color: #a5b4fc; border-color: rgba(99,102,241,.40); }
+[data-theme="dark"] .cdx-tag--manual   { background: rgba(22,163,74,.2);    color: #6ee7b7; border-color: rgba(22,163,74,.40); }
+[data-theme="dark"] .cdx-tag--pendente { background: rgba(217,119,6,.2);    color: #fcd34d; border-color: rgba(217,119,6,.40); }
+[data-theme="dark"] .cdx-tag--negado   { background: rgba(220,38,38,.18);   color: #fca5a5; border-color: rgba(220,38,38,.40); }
+
+/* Participant rows */
+.cdx-prow {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .45rem .3rem; border-bottom: 1px solid var(--border);
+  font-size: .84rem;
+}
+.cdx-prow:last-child { border-bottom: none; }
+.cdx-prow:hover { background: var(--cdx-card-hover-bg); }
+.cdx-prow-id { flex: 1; min-width: 0; }
+.cdx-prow-name { font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-prow-mail { font-size: .75rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-prow-warn { color: var(--cdx-warn, #d97706); font-size: .8rem; }
+.cdx-prow-meta { display: flex; align-items: center; gap: .4rem; flex: 0 0 auto; }
+.cdx-prow-conn { font-size: .72rem; color: var(--text-secondary); white-space: nowrap; }
+.cdx-prow-conn.ok { color: #15803d; }
+[data-theme="dark"] .cdx-prow-conn.ok { color: #6ee7b7; }
+.cdx-prow-acts { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
+.cdx-prow-acts .cdx-btn { padding: .2rem .5rem; font-size: .72rem; }
+
+/* "?" help glyph next to the Participantes header */
+.cdx-phelp {
+  display: inline-grid; place-items: center; width: 17px; height: 17px;
+  margin-left: .4rem; padding: 0; vertical-align: middle;
+  font: inherit; font-size: .66rem; font-weight: 700; line-height: 1;
+  color: var(--text-secondary); background: var(--background);
+  border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
+  transition: border-color .12s, color .12s;
+}
+.cdx-phelp:hover { border-color: var(--primary); color: var(--primary-dark); }
+
+/* Participant-list legend modal */
+.cdx-leg-h { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); margin: 1rem 0 .5rem; }
+.cdx-leg-h:first-of-type { margin-top: .25rem; }
+.cdx-leg-row { display: flex; align-items: flex-start; gap: .6rem; padding: .3rem 0; }
+.cdx-leg-sw { flex: 0 0 auto; min-width: 64px; display: flex; align-items: center; }
+.cdx-leg-tx { font-size: .84rem; color: var(--text-primary); line-height: 1.4; }
+.cdx-leg-note { font-size: .78rem; color: var(--text-secondary); margin: .4rem 0 0; font-style: italic; }
 
 /* ----- Merged turma list (Concept A: turmas grouped under client headers) ----- */
 
@@ -853,7 +1051,7 @@ a.cdx-card-mini-icon.is-on:hover {
   place-items: center;
   font-size: 0.6rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   background: var(--primary-dark);
 }
 .cdx-cg-name {

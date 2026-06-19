@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossiê tabbed (fiel · só o delta)</title>
+
+<!-- Codex admin chrome real (same-origin no staging) -->
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.1">
+<link rel="stylesheet" href="/codex/css/backstage.css?v=1.0">
+<link rel="stylesheet" href="/codex/css/tokens.css?v=1.2">
+<link rel="stylesheet" href="/codex/css/codex.css?v=2.6">
+<link rel="stylesheet" href="/codex/cohorts/cohorts.css?v=2.6">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+
+<style>
+  /* mock-only: garante altura no shell e estiliza SÓ o delta (a faixa de abas) */
+  .cdx-three-pane { min-height: calc(100vh - 60px); }
+  .mk-gear { font-size: 1.05rem; }
+
+  /* DELTA: a faixa de sub-abas que substitui as <details> empilhadas */
+  .mk-dosstabs { margin: .2rem 0 1.1rem; }
+  .mk-tabcount { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 5px;
+    margin-left: 6px; border-radius: 999px; background: var(--error); color: #fff; font-size: .6rem; font-weight: 800; }
+  .mk-subhead { font-size: .82rem; font-weight: 700; color: var(--text-primary); margin: 1.3rem 0 .7rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  /* Acesso em colunas responsivas: enche a largura em vez de virar lista com espaço morto à direita */
+  .mk-acc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .35rem 1.1rem; align-items: center; }
+  .mk-acc-grid .cdx-acc-row { padding: .4rem 0; }
+  .mk-acc-grid .cdx-acc-actions { grid-column: 1 / -1; margin-top: .5rem; }
+  /* os toggles novos na Acesso */
+  .cdx-acc-row.mk-acc-new { background: rgba(20,184,166,.07); border-radius: 8px; padding: .35rem .5rem; }
+  .mk-new { font-size: .56rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px;
+    background: var(--primary); color: #fff; margin-left: .4rem; }
+</style>
+</head>
+<body>
+
+<div class="bs-app">
+  <header class="bs-topbar">
+    <div class="bs-topbar-inner bs-topbar-inner--with-tabs">
+      <a class="bs-topbar-logo" href="#" aria-label="PensoIA Codex"><span class="bs-topbar-name">PensoIA · Codex</span></a>
+      <div class="bs-topbar-spacer"></div>
+      <nav class="cdx-tabs" role="tablist" aria-label="Codex">
+        <a class="cdx-tab cdx-tab--lessons" href="#"><span class="cdx-tab-label">Aula</span></a>
+        <a class="cdx-tab cdx-tab--content" href="#"><span class="cdx-tab-label">Conteúdo</span></a>
+        <a class="cdx-tab cdx-tab--cohorts active" href="#" aria-current="page"><span class="cdx-tab-label">Turmas</span></a>
+        <a class="cdx-tab cdx-tab--questions" href="#"><span class="cdx-tab-label">Perguntas</span></a>
+        <a class="cdx-tab cdx-tab--certificates" href="#"><span class="cdx-tab-label">Certificados</span></a>
+      </nav>
+      <div class="bs-topbar-spacer"></div>
+      <button class="bs-icon-btn theme-toggle" id="themeToggle" aria-label="Alternar tema"><span id="themeIcon"></span></button>
+      <button class="bs-icon-btn" aria-label="Configurações"><span class="mk-gear">⚙</span></button>
+      <button class="bs-logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <main class="bs-main">
+    <div class="cdx-view">
+      <!-- SHELL REAL: lista de turmas (300px) | dossiê (1fr) -->
+      <div class="cdx-three-pane">
+
+        <!-- ESQUERDA: lista de turmas (intocada) -->
+        <div class="cdx-cohorts-nav">
+          <div class="cdx-pane cdx-cohorts-listpane">
+            <div class="cdx-pane-header">
+              <input type="search" class="cdx-cohorts-search" placeholder="Buscar turma…" autocomplete="off">
+            </div>
+            <div class="cdx-pane-body cdx-cohorts-list">
+              <div class="cdx-cg">
+                <div class="cdx-cg-head">
+                  <span class="cdx-cg-ava">TJ</span><span class="cdx-cg-name">Tribunal de Justiça</span>
+                  <span class="cdx-cg-acts"><button type="button" class="cdx-cg-act">+</button><button type="button" class="cdx-cg-act">&#9881;</button></span>
+                </div>
+                <div class="cdx-ti is-on"><div class="cdx-ti-main"><div class="cdx-ti-t">Turma 2026.1</div><div class="cdx-ti-s">IA na Prática Jurídica &middot; 4 aulas</div></div><span class="cdx-ti-dot cdx-ph-live"></span></div>
+                <div class="cdx-ti"><div class="cdx-ti-main"><div class="cdx-ti-t">Turma 2025.2</div><div class="cdx-ti-s">IA na Prática Jurídica &middot; 4 aulas</div></div><span class="cdx-ti-dot cdx-ph-done"></span></div>
+              </div>
+              <div class="cdx-cg">
+                <div class="cdx-cg-head">
+                  <span class="cdx-cg-ava">DD</span><span class="cdx-cg-name">Direito Digital</span>
+                  <span class="cdx-cg-acts"><button type="button" class="cdx-cg-act">+</button><button type="button" class="cdx-cg-act">&#9881;</button></span>
+                </div>
+                <div class="cdx-ti"><div class="cdx-ti-main"><div class="cdx-ti-t">Noite</div><div class="cdx-ti-s">LGPD na Prática &middot; 6 aulas</div></div><span class="cdx-ti-dot cdx-ph-plan"></span></div>
+              </div>
+            </div>
+            <div class="cdx-cohorts-listfoot">
+              <button class="cdx-btn cdx-btn-sm cdx-btn-ghost">Novo cliente</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DIREITA: dossiê -->
+        <div class="cdx-pane cdx-doss-pane">
+          <div class="cdx-pane-body cdx-doss-body">
+            <div class="cdx-doss">
+
+              <!-- cabeçalho REAL do dossiê (intocado) -->
+              <div class="cdx-doss-head">
+                <div class="cdx-doss-headmain">
+                  <input class="cdx-doss-title cdx-doss-title-edit cdx-doss-edit" type="text" value="Turma 2026.1" aria-label="Nome interno">
+                  <div class="cdx-doss-sub">Tribunal de Justiça &middot; IA na Prática Jurídica</div>
+                </div>
+                <div class="cdx-doss-headright">
+                  <span class="cdx-doss-pill cdx-ph-live">Em andamento</span>
+                  <div class="cdx-doss-actions"><button class="cdx-btn cdx-btn-sm cdx-btn-danger">Arquivar</button></div>
+                </div>
+              </div>
+
+              <!-- ===== DELTA: as 5 seções empilhadas viram esta faixa de abas ===== -->
+              <div class="cdx-subrow mk-dosstabs">
+                <div class="cdx-substrip">
+                  <a class="cdx-subtab active" href="#">Dados</a>
+                  <a class="cdx-subtab" href="#">Participantes</a>
+                  <a class="cdx-subtab" href="#">Aulas</a>
+                  <a class="cdx-subtab" href="#">Certificados</a>
+                  <a class="cdx-subtab" href="#">Fórum <span class="mk-tabcount">3</span></a>
+                </div>
+              </div>
+              <!-- ================================================================= -->
+
+              <!-- conteúdo da aba Dados = fatos da turma (real) + Acesso (real + 2 toggles novos) -->
+              <div class="cdx-doss-facts">
+                <div class="cdx-doss-fact cdx-doss-fact--course cdx-doss-fact--edit"><label>Curso</label>
+                  <select class="cdx-doss-edit"><option>IA na Prática Jurídica</option></select></div>
+                <div class="cdx-doss-fact"><label>Carga</label><div class="v">16 h</div></div>
+                <div class="cdx-doss-fact"><label>Encontros</label><div class="v">4</div></div>
+                <div class="cdx-doss-fact"><label>Início</label><div class="v">12 mar 2026</div></div>
+                <div class="cdx-doss-fact"><label>Fim</label><div class="v">02 abr 2026</div></div>
+                <div class="cdx-doss-fact cdx-doss-fact--edit"><label>Formato</label>
+                  <select class="cdx-doss-edit"><option>Presencial</option><option>Online</option><option>Híbrido</option></select></div>
+                <div class="cdx-doss-fact cdx-doss-fact--edit"><label>Local</label>
+                  <input class="cdx-doss-edit" type="text" value="Fórum Gumersindo Bessa"></div>
+                <div class="cdx-doss-fact cdx-doss-fact--edit"><label>Nome de exibição</label>
+                  <input class="cdx-doss-edit" type="text" value="IA na Prática Jurídica"></div>
+                <div class="cdx-doss-sep" role="separator"></div>
+                <div class="cdx-doss-fact cdx-doss-fact--edit"><label>WhatsApp</label>
+                  <input class="cdx-doss-edit" type="text" value="https://chat.whatsapp.com/..."></div>
+                <div class="cdx-doss-fact cdx-doss-fact--edit"><label>Sessão ClassPulse</label>
+                  <select class="cdx-doss-edit"><option>Turma 2026.1 · sessão</option></select></div>
+                <div class="cdx-doss-fact cdx-doss-fact--trail"><label>Trilha</label>
+                  <div class="cdx-doss-trail-acts">
+                    <button type="button" class="cdx-btn cdx-btn-sm">Copiar URL</button>
+                    <a class="cdx-btn cdx-btn-sm" href="#">&#8599;</a>
+                    <button type="button" class="cdx-btn cdx-btn-sm">&#8635;</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mk-subhead">Acesso</div>
+              <div class="mk-acc-grid">
+                <label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-gated" checked> <span>Exigir identificação (acesso controlado)</span></label>
+                <label class="cdx-acc-row"><span>Modo do gate</span>
+                  <select class="cdx-acc-mode"><option>Inline</option><option>Upfront</option></select></label>
+                <label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-certs" checked> <span>Certificados habilitados</span></label>
+                <label class="cdx-acc-row mk-acc-new"><input type="checkbox" checked> <span>Fórum da turma</span><span class="mk-new">novo</span></label>
+                <label class="cdx-acc-row mk-acc-new"><input type="checkbox" checked> <span>Notificações (sino)</span><span class="mk-new">novo</span></label>
+                <div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">Salvar</button></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  ThemeManager.init({ storageKey: 'bs_theme', toggleEl: document.getElementById('themeToggle'), iconEl: document.getElementById('themeIcon') });
+</script>
+</body>
+</html>

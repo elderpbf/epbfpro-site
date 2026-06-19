@@ -460,6 +460,7 @@ import { readFileSync } from 'node:fs';
 describe('Emissão dashboard port (source contract)', () => {
   const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
   const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+  const pt = readFileSync(new URL('../i18n/pt.js', import.meta.url), 'utf8');
 
   test('KPI filter cards present', () => {
     assert.ok(src.includes('cdx-emissao-kpi'), 'KPI card class');
@@ -470,15 +471,16 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(src.includes('data-sort='), 'sortable headers');
     assert.ok(src.includes('cdx-emissao-cbcol'), 'checkbox column');
   });
-  test('bulk-action bar present', () => {
+  test('bulk-action bar present, rendered from the shared action registry', () => {
     assert.ok(src.includes('cdx-emissao-bulk'), 'bulk bar');
-    assert.ok(src.includes("data-bulk=\"sign\"") || src.includes("data-bulk='sign'"), 'bulk sign action');
+    assert.ok(/CERT_ACTIONS\.filter\(\(a\) => a\.batch\)/.test(src), 'bulk bar renders from CERT_ACTIONS (not a hand-duplicated set)');
+    assert.ok(/key: 'sign'.*batch: true/s.test(src) || src.includes("key: 'sign'"), 'sign is a batch action');
   });
   test('old status <select> filter is gone (cards replaced it)', () => {
     assert.ok(!src.includes('cdx-certs-filter-status'), 'old status select removed');
   });
   test('sign is LOCAL-only — Assinar points to the local signer, never flips status in the browser', () => {
-    assert.ok(src.includes("data-action=\"sign\""), 'row sign action present');
+    assert.ok(src.includes("action === 'sign'") && src.includes('_markSigned'), 'row sign routes to the local-signer hint');
     assert.ok(src.includes("t('certificates.sign_local')"), 'Assinar shows the local-signer hint');
     assert.ok(!src.includes('api.markSigned'), 'browser never flips status to signed (the local tool does)');
     assert.ok(api.includes('cert_mark_signed'), 'facade still exposes cert_mark_signed (used by the local tool)');
@@ -489,7 +491,7 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(src.includes("assetUrl('/r2/'"), 'reads it via the worker R2 serve route');
   });
   test('send is WIRED: e-mails via the shared module, flips to sent only after a real send', () => {
-    assert.ok(src.includes("data-action=\"mark-sent\""), 'row send action present');
+    assert.ok(src.includes("action === 'send'") && src.includes('_sendCert'), 'row send routes to _sendCert');
     assert.ok(src.includes("from '../js/codex-email.js'"), 'uses the shared Codex e-mail module (not a cert-only sender)');
     assert.ok(src.includes('renderCertsPdfBase64'), 'rasterizes the PDF for the attachment');
     assert.ok(src.includes('sendEmail('), 'sends through the e-mail module');
@@ -505,10 +507,22 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(src.includes('from: CERT_FROM'), 'cert e-mail sets an explicit sender');
     assert.ok(src.includes('onboarding@resend.dev'), 'sandbox sender (delivers to the account owner) until pensoia.com is verified');
   });
+  test('the cert e-mail is ALWAYS PT-BR and uses the shared branded shell (not the admin UI locale)', () => {
+    // Copy is hardcoded PT-BR, never via t() (which follows the panel language).
+    const i = src.indexOf('function _certEmailHtml');
+    const body = src.slice(i, i + 1400);
+    assert.ok(!/\bt\(/.test(body), '_certEmailHtml never calls t() (recipient is the student, always PT-BR)');
+    assert.ok(body.includes('renderEmailHtml'), 'wraps the message in the shared branded layout');
+    assert.ok(body.includes('Parabéns') && body.includes('em anexo'), 'PT-BR cert copy');
+    assert.ok(src.includes('import { sendEmail, renderEmailHtml,') && src.includes("from '../js/codex-email.js'"), 'imports the shared layout from the e-mail module');
+    // The dead i18n keys are gone from both dictionaries (no English leakage).
+    assert.ok(!pt.includes("'certificates.email_subject'"), 'no dead email_* keys in pt');
+  });
   test('a stored (signed) PDF downloads via the worker R2 route, not a relative path', () => {
-    // pdf_path is an R2 key; the row must link through assetUrl('/r2/'+key), else the
-    // browser resolves it relative to the page and 404s.
-    assert.ok(src.includes("assetUrl('/r2/' + c.pdf_path)"), 'stored-PDF link goes through the R2 serve route');
+    // pdf_path is an R2 key; the download must go through assetUrl('/r2/'+key), else the
+    // browser resolves it relative to the page and 404s. (Now fetched as a blob in
+    // _downloadStoredPdf — #24 — so the file saves instead of opening a tab.)
+    assert.ok(src.includes("assetUrl('/r2/' + cert.pdf_path)"), 'stored-PDF download goes through the R2 serve route');
   });
 });
 
@@ -517,6 +531,7 @@ describe('Emissão dashboard port (source contract)', () => {
 describe('shared e-mail module (source contract)', () => {
   const mod = readFileSync(new URL('../js/codex-email.js', import.meta.url), 'utf8');
   const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../certificates/certificates.js', import.meta.url), 'utf8');
 
   test('facade exposes a generic email.send mapped to the send_email action', () => {
     assert.ok(api.includes('export const email'), 'email facade export present');
@@ -528,6 +543,28 @@ describe('shared e-mail module (source contract)', () => {
     assert.ok(/from\b/.test(mod) && mod.includes('attachments'), 'forwards from + attachments (reusable, not cert-only)');
     assert.ok(mod.includes('window.bsLog'), 'logs failures to the debug pill');
     assert.ok(mod.includes("from './codex-api.js'"), 'sends only through the facade');
+  });
+  test('exposes ONE shared branded layout every Codex e-mail wraps its content in', () => {
+    assert.ok(mod.includes('export function renderEmailHtml'), 'exports the shared layout model');
+    // E-mail-client safe: table layout + inline styles, no external CSS, no SVG
+    // (Gmail/Outlook strip both); the lockup is a text wordmark, not a hosted image.
+    assert.ok(mod.includes('role="presentation"') && mod.includes('cellpadding'), 'table-based layout');
+    assert.ok(!/<svg/i.test(mod), 'no SVG (e-mail clients strip it)');
+    assert.ok(mod.includes('<img') && mod.includes('email-logo.png') && mod.includes('alt="PensoIA"'), 'raster brand logo (e-mail-safe)');
+    assert.ok(mod.includes('#061a51') && mod.includes('#14b8a6'), 'brand navy + teal');
+  });
+  test('the logo is embedded INLINE (cid), not just a hosted URL (Gmail proxy fix, #11)', () => {
+    assert.ok(mod.includes('export const LOGO_CID'), 'exports the logo Content-ID');
+    assert.ok(mod.includes('export async function loadLogoAttachment'), 'builds the inline logo attachment');
+    assert.ok(mod.includes('content_id'), 'attachment carries a content_id (inline)');
+    assert.ok(mod.includes('fallbackUrl'), 'attachment carries a hosted fallbackUrl (for Brevo, which can\'t inline)');
+    assert.ok(/o\.logoCid \? \('cid:'/.test(mod), 'renderEmailHtml emits src="cid:…" when an inline logo is present');
+    assert.ok(mod.includes('logoUrl') && mod.includes('DEFAULT_LOGO_URL'), 'still falls back to a hosted URL');
+  });
+  test('the cert send attaches the inline logo and references it by cid', () => {
+    assert.ok(src.includes('loadLogoAttachment'), 'loads the inline logo attachment before sending');
+    assert.ok(/_certEmailHtml\(cert, validarUrl, logoAtt \? LOGO_CID : null\)/.test(src), 'passes the cid only when the attachment loaded');
+    assert.ok(src.includes('attachments.push(logoAtt)'), 'adds the logo to the e-mail attachments');
   });
 });
 
@@ -552,6 +589,12 @@ describe('Assinador app (source contract)', () => {
     assert.ok(page.includes('api.attachPdf') && page.includes('api.markSigned'), 'uploads the signed PDF + flips status');
     assert.ok(page.includes('needApp'), 'in a normal browser it tells the user to open the app');
   });
+  test('the signing page renders the cert AS signed so the line lands in the PDF (#21/2b)', () => {
+    // The cert comes from list({status:'issued'}); without forcing status='signed'
+    // at render time the "assinado digitalmente" line is absent from the signed PDF.
+    assert.ok(/status:\s*'signed'/.test(page), 'forces status=signed for the render');
+    assert.ok(page.includes('renderCertHtml(signedCert'), 'renders the as-signed cert, not the raw issued one');
+  });
 });
 
 // ── Emissão fixes (2026-06-15): per-row PDF, revoked delete, bulk delete, modal
@@ -561,22 +604,49 @@ describe('Emissão fixes (source contract)', () => {
   const api = readFileSync(new URL('../js/codex-api.js', import.meta.url), 'utf8');
 
   test('every row can produce a PDF (print → Salvar como PDF), not gated on a stored file', () => {
-    assert.ok(src.includes('data-action="pdf"'), 'per-row PDF action present');
-    assert.ok(src.includes("if (action === 'pdf')"), 'pdf action routed to print');
+    assert.ok(/key: 'pdf'[^}]*applies: \(\) => true[^}]*row: true/s.test(src), 'pdf is a row action for every status');
+    assert.ok(src.includes("if (action === 'pdf')"), 'pdf action routed');
   });
   test('delete is bulk-only (no per-row delete button), to avoid mis-click deletes', () => {
     assert.ok(!src.includes('data-action="delete"'), 'no per-row delete button');
     assert.ok(!/if \(action === 'delete'\)/.test(src), 'no per-row delete route');
   });
   test('bulk delete present and confirmed, deletable = issued|revoked', () => {
-    assert.ok(src.includes('data-bulk="delete"'), 'bulk delete button');
+    assert.ok(/key: 'delete'[^}]*batch: true/s.test(src), 'delete is a batch action');
     assert.ok(src.includes('_bulkDeleteConfirm'), 'bulk delete goes through a confirm');
     assert.ok(/c\.status === 'issued' \|\| c\.status === 'revoked'/.test(src), 'bulk delete filters to deletable statuses');
     assert.ok(api.includes('cert_delete'), 'facade exposes cert_delete');
   });
-  test('issue modal has a select-all checkbox and a model preview', () => {
+  test('issue modal has a select-all checkbox and a live model preview thumbnail', () => {
     assert.ok(src.includes('cdx-issue-selall'), 'roster select-all checkbox');
-    assert.ok(src.includes('cdx-issue-preview'), 'preview button');
+    assert.ok(src.includes('cdx-issue-thumb'), 'live preview thumbnail');
+    assert.ok(src.includes('_renderIssueThumb'), 'thumbnail re-render hook');
     assert.ok(src.includes('_buildIssuePreviewCert'), 'preview builds a cert from the form');
+  });
+  test('stored PDF saves as a real download (blob), never a new tab (#24)', () => {
+    // One unified pdf action: a stored file downloads as a blob, otherwise rasterize.
+    assert.ok(/cert\.pdf_path \? _downloadStoredPdf\(cert\) : _printCert\(cert\)/.test(src), 'pdf action: stored downloads, else generated');
+    assert.ok(src.includes('_downloadStoredPdf'), 'download helper present');
+    // The cross-origin R2 link must NOT be a target=_blank <a> anymore (it opened a tab).
+    assert.ok(!/<a class="cdx-btn cdx-btn-sm" href="' \+ esc\(assetUrl\('\/r2\//.test(src), 'no target=_blank R2 anchor for the PDF');
+    assert.ok(/a\.download = 'certificado-'/.test(src), 'forces a .pdf filename');
+    assert.ok(src.includes('createObjectURL') && src.includes('revokeObjectURL'), 'blob object URL is created and revoked');
+  });
+
+  test('unified action registry: one source for row + batch, delete batch-only, resend persists (#actions)', () => {
+    assert.ok(src.includes('export const CERT_ACTIONS'), 'a single action registry exists');
+    assert.ok(src.includes('export function rowActionsFor') && src.includes('export function batchActionsFor'), 'row + batch derive from it');
+    // delete is batch-only (no single mis-click); preview/copy are row-only.
+    assert.ok(/key: 'delete'[^}]*row: false[^}]*batch: true/s.test(src), 'delete is batch-only');
+    assert.ok(/key: 'preview'[^}]*row: true[^}]*batch: false/s.test(src), 'preview is row-only');
+    assert.ok(/key: 'copy'[^}]*row: true[^}]*batch: false/s.test(src), 'copy is row-only');
+    // send applies to anything not revoked (so a 'sent' cert can be RE-sent), label flips to Reenviar.
+    assert.ok(/key: 'send'[^}]*applies: \(s\) => s !== 'revoked'/s.test(src), 'send (resend) stays available after sent');
+    assert.ok(src.includes("certificates.action_resend"), 'resend label exists');
+    // every action carries a glyph (icon collapses to glyph-only on small viewports)
+    assert.ok(src.includes('glyphSvg(o.glyph') && src.includes('cdx-cert-act-t'), 'glyph + collapsible label');
+    // bulk send no longer excludes 'sent', and the message is accurate
+    assert.ok(/filter\(\(c\) => c\.status !== 'revoked'\)/.test(src), 'bulk send includes sent certs (re-send)');
+    assert.ok(src.includes("certificates.send_none_sendable"), 'accurate "nothing sendable" message');
   });
 });

@@ -9,10 +9,12 @@ import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
-import { extractMagicToken, isLoggedIn, clearToken, LOGIN_ENABLED } from './student-session.js';
+import { extractMagicToken, extractEnrollToken, isLoggedIn, clearToken, getToken, getPresence, setPresence, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
+import { isWall } from './access.js';
+import { createBell } from '../../js/notif-bell.js';
 
-const PANELS = ['aulas', 'apostila', 'outros'];
+const PANELS = ['aulas', 'forum', 'apostila', 'outros'];
 
 // Which panel a location hash selects (default 'aulas').
 export function resolveTab(hash) {
@@ -41,11 +43,13 @@ export async function mount(root, ctx = {}) {
   if (!state.clientSlug || !state.turmaSlug || !state.token) { showError(root, 'link_invalid', t); return; }
 
   const api = ctx.api || trail;
+  state.sessionToken = LOGIN_ENABLED ? getToken(state.clientSlug, state.turmaSlug) : null;
   try {
     state.data = await api.turmaView({
       client_slug: state.clientSlug,
       turma_slug: state.turmaSlug,
       token: state.token,
+      session_token: state.sessionToken,
       _admin: state.isAdmin,
       _silent: true,
     });
@@ -55,11 +59,24 @@ export async function mount(root, ctx = {}) {
     if (main) main.hidden = false;
     renderHero(root);
     renderHeaderActions();
-    renderTabs(root);
-    _onHash = () => onHashChange();
-    if (_win) _win.addEventListener('hashchange', _onHash);
-    onHashChange();
-    if (LOGIN_ENABLED) handleMagicReturn(loc);
+    // Upfront-gated + unapproved: render the wall instead of the timeline. Inline
+    // mode (and approved / open) renders the timeline as usual; the per-item gate in
+    // sub.js/flat.js handles inline opens.
+    if (LOGIN_ENABLED && isWall((state.data || {}).access)) {
+      renderWall(root);
+    } else {
+      renderTabs(root);
+      _onHash = () => onHashChange();
+      if (_win) _win.addEventListener('hashchange', _onHash);
+      // Deeplink: the notification bell emits ?thread=<id>. Land on the Fórum tab
+      // (forum.js reads the param and opens the thread). Only when the turma enabled
+      // the forum and the tab is therefore present.
+      const turma = (state.data || {}).turma || {};
+      const hasThreadLink = (() => { try { return !!new URLSearchParams(loc.search || '').get('thread'); } catch (_) { return false; } })();
+      if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
+      onHashChange();
+    }
+    if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); if (!handleEnrollReturn(loc)) handleMagicReturn(loc); }
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
@@ -113,12 +130,18 @@ function buildLoginPill() {
   btn.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
   btn.addEventListener('click', () => {
     if (isLoggedIn(state.clientSlug, state.turmaSlug)) {
+      // Logout must re-gate. Content already rendered for an approved session
+      // stays on screen, because the gate only re-checks on the next fetch, so
+      // clearing the token alone left everything visible. Reload so the Trail
+      // re-fetches as anonymous and the gate re-applies.
       clearToken(state.clientSlug, state.turmaSlug);
+      if (typeof location !== 'undefined' && location.reload) { location.reload(); return; }
       refreshLoginPill();
     } else {
       openLoginModal({
         client: state.clientSlug, turma: state.turmaSlug, k: state.token,
-        onAuthenticated: refreshLoginPill,
+        presence: getPresence(state.clientSlug, state.turmaSlug),
+        onAuthenticated: afterAuth,
       });
     }
   });
@@ -128,6 +151,19 @@ function buildLoginPill() {
 function refreshLoginPill() {
   if (_loginPill) {
     _loginPill.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
+  }
+}
+
+// Re-check auth on every page open. If we hold a session token but the server no longer
+// recognizes it (revoked/expired -> the gated turma view comes back 'anonymous'), clear
+// the stale token so the UI reflects logout and dead tokens stop being sent. Revocation
+// from the Alunos admin thus takes full effect on the student's next load. (Inert on open
+// turmas, which are never gated, and on a 'pending' student, whose session is still valid.)
+function recheckAuth() {
+  const access = (state.data || {}).access || {};
+  if (access.gated && access.status === 'anonymous' && isLoggedIn(state.clientSlug, state.turmaSlug)) {
+    clearToken(state.clientSlug, state.turmaSlug);
+    refreshLoginPill();
   }
 }
 
@@ -162,9 +198,33 @@ function renderHeaderActions() {
       prepend(wa);
     }
 
-    if (LOGIN_ENABLED) {
+    // The login pill shows only on a gated turma; open turmas need no login UI and
+    // stay visually unchanged when LOGIN_ENABLED flips on.
+    if (LOGIN_ENABLED && data.access && data.access.gated) {
       _loginPill = buildLoginPill();
       prepend(_loginPill);
+    }
+
+    // Notification bell (student): only when the turma enabled notifications AND the
+    // student is logged in (notifications are computed against their identity). Scoped
+    // to this turma; clicking an item follows its ?thread= deeplink. Refreshes on focus.
+    if (data.turma && data.turma.notifications_enabled && state.sessionToken) {
+      const bell = createBell({
+        fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true }),
+        markSeen: () => trail.forumMarkSeen({ session_token: state.sessionToken }),
+        onNavigate: (item) => {
+          if (!item || !item.deeplink || typeof location === 'undefined') return;
+          // The worker deeplink omits the access token (?k=). The clean path supplies
+          // client/turma but page.js requires the token, so a bare deeplink would land
+          // on link_invalid. Re-append the token we already hold for THIS turma.
+          let url = item.deeplink;
+          if (state.token) url += (url.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(state.token);
+          location.href = url;
+        },
+        t,
+        btnClass: 'ph-action-btn',
+      });
+      prepend(bell.el);
     }
   })();
 }
@@ -178,9 +238,97 @@ function handleMagicReturn(loc) {
   stripLt();
   openLoginModal({
     client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+    presence: getPresence(state.clientSlug, state.turmaSlug),
     startToken: lt,
-    onAuthenticated: refreshLoginPill,
+    onAuthenticated: afterAuth,
   });
+}
+
+// QR enrollment return: the in-class QR carries ?et=<token>. It ALWAYS does one thing
+// silently — claim a device-presence grant and keep it (so a later off-window login
+// auto-approves) — and never forces a login on its own. The login only opens here when
+// the turma opted into the cadastro prompt (access.enroll_prompt), and then as the plain
+// magic-link request, never an instant join. The fixed ?k= link never reaches this path,
+// so it stays prompt-free. Strips et so a refresh cannot replay it; returns true when it
+// handled an et, so the caller skips the magic-link path.
+function handleEnrollReturn(loc) {
+  const et = extractEnrollToken((loc && loc.search) || '');
+  if (!et) return false;
+  stripEt();
+  try {
+    Promise.resolve(trail.enrollClaim({ client_slug: state.clientSlug, turma_slug: state.turmaSlug, et, _silent: true }))
+      .then((res) => { if (res && res.granted && res.presence_token) setPresence(state.clientSlug, state.turmaSlug, res.presence_token); })
+      .catch(() => {});
+  } catch (_) { /* presence is best-effort */ }
+  const access = (state.data || {}).access || {};
+  if (access.enroll_prompt) {
+    openLoginModal({
+      client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+      presence: getPresence(state.clientSlug, state.turmaSlug),
+      onAuthenticated: afterAuth,
+    });
+  }
+  return true;
+}
+
+// After a successful login: refresh the pill, and on a GATED turma reload so the
+// now-approved session unlocks content (or surfaces the pending wall/notice). An
+// open turma gates nothing, so a reload would be pointless there.
+function afterAuth() {
+  refreshLoginPill();
+  const gated = !!(state.data && state.data.access && state.data.access.gated);
+  if (gated && _win && _win.location && typeof _win.location.reload === 'function') {
+    _win.location.reload();
+  }
+}
+
+// Best-effort device-presence claim (signal b): while the turma's live session is
+// open, the worker issues a grant the device keeps and offers at the next login, so
+// being in the room earns access even if the student logs in later.
+function claimPresence() {
+  try {
+    Promise.resolve(trail.presenceClaim({ client_slug: state.clientSlug, turma_slug: state.turmaSlug, _silent: true }))
+      .then((res) => { if (res && res.granted && res.presence_token) setPresence(state.clientSlug, state.turmaSlug, res.presence_token); })
+      .catch(() => {});
+  } catch (_) { /* presence is best-effort */ }
+}
+
+// Upfront-mode wall: hide the tabs + content and show a login CTA, or a "pending
+// approval" notice once the student is logged in but awaiting approval. The hero
+// stays visible so the student still sees which turma this is.
+function renderWall(root) {
+  const main = root.querySelector('.cdx-trilha-main');
+  if (!main) return;
+  const tabs = main.querySelector('.cdx-trilha-tabs');
+  const content = main.querySelector('.cdx-trilha-tabcontent');
+  if (tabs) tabs.hidden = true;
+  if (content) content.hidden = true;
+  let wall = main.querySelector('.cdx-tr-wall');
+  if (!wall) {
+    wall = document.createElement('section');
+    wall.className = 'cdx-tr-wall';
+    const footer = main.querySelector('.cdx-trilha-footer');
+    main.insertBefore(wall, footer || null);
+  }
+  const access = (state.data || {}).access || {};
+  const pending = access.status === 'pending';
+  wall.innerHTML =
+    '<div class="cdx-tr-wall-card">' +
+      '<div class="cdx-tr-wall-icon" aria-hidden="true">🔒</div>' +
+      '<h2 class="cdx-tr-wall-title">' + esc(t(pending ? 'login.pending_title' : 'login.wall_title')) + '</h2>' +
+      '<p class="cdx-tr-wall-body">' + esc(t(pending ? 'login.pending_body' : 'login.wall_body')) + '</p>' +
+      (pending ? '' : '<button type="button" class="tr-btn tr-btn-primary cdx-tr-wall-cta">' + esc(t('login.access_cta')) + '</button>') +
+    '</div>';
+  const cta = wall.querySelector('.cdx-tr-wall-cta');
+  if (cta) {
+    cta.addEventListener('click', () => {
+      openLoginModal({
+        client: state.clientSlug, turma: state.turmaSlug, k: state.token,
+        presence: getPresence(state.clientSlug, state.turmaSlug),
+        onAuthenticated: afterAuth,
+      });
+    });
+  }
 }
 
 // Remove the lt param from the visible URL without a navigation.
@@ -193,8 +341,19 @@ function stripLt() {
   } catch (_) { /* noop */ }
 }
 
+// Remove the et param from the visible URL so a refresh cannot replay the QR pass.
+function stripEt() {
+  if (!_win || !_win.history || !_win.history.replaceState || !_win.location) return;
+  try {
+    const url = new URL(_win.location.href);
+    url.searchParams.delete('et');
+    _win.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+  } catch (_) { /* noop */ }
+}
+
 function renderTabs(root) {
   const data = state.data || {};
+  const turma = data.turma || {};
   const items = data.items || [];
   const outros = items.filter((it) => it.aula_number == null && it.set_id == null && it.type !== 'tarefa');
   const apostilaSet = data.apostila_set;
@@ -202,6 +361,10 @@ function renderTabs(root) {
 
   const outrosBtn = root.querySelector('#cdx-tr-tab-outros');
   const apostilaBtn = root.querySelector('#cdx-tr-tab-apostila');
+  const forumBtn = root.querySelector('#cdx-tr-tab-forum');
+
+  // The Fórum tab shows only when the turma enabled it.
+  if (forumBtn) forumBtn.hidden = !turma.forum_enabled;
 
   if (outrosBtn) {
     if (outros.length) outrosBtn.textContent = t('page.tab_outros') + ' (' + outros.length + ')';

@@ -16,6 +16,24 @@ test('live-host module satisfies the tab contract', async () => {
   assert.equal(typeof mod.unmount, 'function', 'exports unmount');
 });
 
+test('reorderByDrag moves the dragged question before the drop target in the full list', async () => {
+  const { reorderByDrag } = await import('../questions/live-host.js');
+  const list = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
+  assert.deepEqual(reorderByDrag(list, 4, 2).map((q) => q.id), [1, 4, 2, 3], 'drag 4 before 2');
+  assert.deepEqual(reorderByDrag(list, 1, 3).map((q) => q.id), [2, 1, 3, 4], 'drag 1 before 3');
+  assert.deepEqual(reorderByDrag(list, 2, 2).map((q) => q.id), [1, 2, 3, 4], 'same target = no-op');
+  assert.deepEqual(reorderByDrag(list, 9, 2).map((q) => q.id), [1, 2, 3, 4], 'unknown drag id = no-op');
+  assert.deepEqual(list.map((q) => q.id), [1, 2, 3, 4], 'does not mutate the input');
+});
+
+test('live-host wires session reorder (drag rows -> persist bank order)', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /data-act="bank-reorder"/, 'renders the reorder toggle');
+  assert.match(src, /draggable="true"/, 'rows become draggable in reorder mode');
+  assert.match(src, /api\.reorder\(/, 'persists via reorder_questions');
+  assert.match(src, /export function reorderByDrag/, 'pure reorder helper is exported');
+});
+
 test('live-host + live-qa obey the module source rules', () => {
   for (const rel of ['../questions/live-host.js', '../questions/live-qa.js']) {
     const src = read(rel);
@@ -56,6 +74,10 @@ test('live-host renders the faithful host session bar + not-hosted note', () => 
   assert.match(src, /cdx-host-visao/, 'Visao column toggles');
   assert.match(src, /cdx-host-note/, 'not-hosted note');
   assert.match(src, /_applyHostedUI/, 'toggles hosting chrome like the legacy');
+  // Display shows even with the session closed, so the trilha/QR can be projected
+  // before opening the questions (Élder 2026-06-19). It is no longer open-gated.
+  assert.ok(!/display\.hidden = !open/.test(src), 'Display is not hidden when the session is closed');
+  assert.match(src, /if \(display\) display\.hidden = false/, 'Display is shown alongside Trilha + QR');
 });
 
 test('live-host matches host.html fidelity (close-options in the active foot, icons, bank label, sqa hint)', () => {
@@ -94,7 +116,13 @@ test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared glo
   assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
   assert.match(src, /\.lookupTurmaBySession\s*\(/, 'Trilha looks up the linked turma');
   assert.match(src, /\.updateTurmaMeta\s*\(/, 'Trilha links/unlinks via turma meta');
-  assert.match(src, /from\s+['"]\.\.\/js\/qr-share-modal\.js['"]/, 'QR uses the Codex qr-share-modal module');
+  // The QR button toggles the projected QR through the SHARED enroll-control, so the
+  // panel and the display act identically (one server state, one toggle). The window
+  // stays open (the button never closes it), so it pops no panel-side QR modal.
+  assert.match(src, /from\s+['"]\.\.\/js\/enroll-control\.js['"]/, 'uses the shared enrollment-projection control');
+  assert.match(src, /toggleProjection\s*\(/, 'toggles the QR via the shared control (same code as the display)');
+  assert.match(src, /\.getEnrollment\s*\(/, 'reads the shared enrollment state');
+  assert.match(src, /from\s+['"]\.\.\/js\/enroll-clock\.js['"]/, 'shows the server-anchored countdown on the panel');
   assert.ok(!/window\.QRShareModal\b/.test(src), 'no longer reads the backstage QRShareModal global');
   // AI Gerar/Melhorar now lives in the shared composer (reused by Bank + host),
   // so the host wires it by mounting the composer, not by its own ai.question call.

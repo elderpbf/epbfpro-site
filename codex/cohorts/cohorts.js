@@ -11,6 +11,8 @@ import { aulaStatus } from '../js/aula-status.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
+import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
+import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
@@ -45,7 +47,11 @@ let _relClientSlug = null;
 let _relTurmaSlug = null;
 let _cpSessions = [];
 let _turmaCourses = [];   // course list cached for the turma form's course picker
+let _dossierTurma = null; // the turma currently shown in the dossier (#27 inline edit)
+let _dossierDepsTried = false; // courses/cp loaded once for the inline selects
 let _pickedCourse = null; // full course fetched when the picker changes (for ementa copy)
+let _dossierPFilter = 'all';   // active filter in the dossier participant list
+let _dossierParticipants = []; // cached list; reloaded per turma
 let _cleanup = []; // teardown functions pushed by mount
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -574,7 +580,10 @@ function _copyUrl(url) {
 // ── Turma form ────────────────────────────────────────────────────────────────
 
 const _TF_FORMATS = ['presencial', 'online', 'hibrido'];
-const _TF_MODALITIES = ['fechada', 'aberta'];
+// Modalidade field removed (Elder): delivery mode lives in Formato (and is what the
+// certificate shows); location lives in the Local/place field. The old fechada/aberta
+// concept is gone. Legacy cohorts.mod_* i18n keys are kept so any turma with a stored
+// modality value still renders on its certificate.
 
 function _openTurmaForm(turma) {
   const isEdit = !!turma;
@@ -603,7 +612,6 @@ function _openTurmaForm(turma) {
     const selOptions = (keys, prefix, cur) => '<option value="">' + t('cohorts.none') + '</option>' +
       keys.map(k => '<option value="' + k + '"' + (cur === k ? ' selected' : '') + '>' + t(prefix + k) + '</option>').join('');
     const formatOptions = selOptions(_TF_FORMATS, 'cohorts.fmt_', isEdit ? turma.format : '');
-    const modalityOptions = selOptions(_TF_MODALITIES, 'cohorts.mod_', isEdit ? turma.modality : '');
     const v = (key) => _esc(isEdit && turma[key] != null ? turma[key] : '');
 
     const html =
@@ -632,8 +640,6 @@ function _openTurmaForm(turma) {
             '<input type="date" id="cdx-tf-date-end" value="' + v('date_end') + '"></div>' +
           '<div class="cdx-field"><label>' + t('cohorts.tf_format') + '</label>' +
             '<select id="cdx-tf-format">' + formatOptions + '</select></div>' +
-          '<div class="cdx-field"><label>' + t('cohorts.tf_modality') + '</label>' +
-            '<select id="cdx-tf-modality">' + modalityOptions + '</select></div>' +
         '</div>' +
         '<div class="cdx-field"><label>' + t('cohorts.tf_place') + '</label>' +
           '<input type="text" id="cdx-tf-place" value="' + v('place') + '" placeholder="' + t('cohorts.tf_place_ph') + '"></div>' +
@@ -689,7 +695,6 @@ function _openTurmaForm(turma) {
         date_start: bd.querySelector('#cdx-tf-date-start').value || null,
         date_end: bd.querySelector('#cdx-tf-date-end').value || null,
         format: bd.querySelector('#cdx-tf-format').value || null,
-        modality: bd.querySelector('#cdx-tf-modality').value || null,
         place: bd.querySelector('#cdx-tf-place').value.trim() || null,
       };
       // Copy the course ementa into the turma's own copy only when the course is
@@ -770,6 +775,42 @@ function _renderRosterTable(participants) {
       '</tbody>' +
     '</table>'
   );
+}
+
+// A plain-language legend for the participant list: what each tag, status, and
+// connection mark means. Opened from the "?" glyph next to "Participantes" so the
+// scheme is self-explaining months later. Reuses the real tag classes so the
+// swatches match the rows exactly.
+function _openParticipantsHelp() {
+  const tag = (cls, key) => '<span class="cdx-tag ' + cls + '">' + _esc(t(key)) + '</span>';
+  const row = (swatch, text) =>
+    '<div class="cdx-leg-row"><span class="cdx-leg-sw">' + swatch + '</span>' +
+      '<span class="cdx-leg-tx">' + _esc(text) + '</span></div>';
+  const html =
+    '<div class="cdx-modal" style="max-width:540px;max-height:88vh;overflow-y:auto">' +
+      '<div class="cdx-modal-title">' + _esc(t('cohorts.phelp_title')) + '</div>' +
+
+      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_origin_h')) + '</div>' +
+      row(tag('cdx-tag--lista', 'cohorts.ptag_lista'),   t('cohorts.phelp_lista')) +
+      row(tag('cdx-tag--qr', 'cohorts.ptag_qr'),         t('cohorts.phelp_qr')) +
+      row(tag('cdx-tag--manual', 'cohorts.ptag_manual'), t('cohorts.phelp_manual')) +
+
+      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_status_h')) + '</div>' +
+      row(tag('cdx-tag--pendente', 'cohorts.ptag_pending'), t('cohorts.phelp_pending')) +
+      row(tag('cdx-tag--negado', 'cohorts.ptag_denied'),    t('cohorts.phelp_denied')) +
+      '<p class="cdx-leg-note">' + _esc(t('cohorts.phelp_approved_note')) + '</p>' +
+
+      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_conn_h')) + '</div>' +
+      row('<span class="cdx-prow-conn ok">✓</span>', t('cohorts.phelp_connected')) +
+      row('<span class="cdx-prow-conn">•</span>',    t('cohorts.phelp_waiting')) +
+      row('<span class="cdx-prow-warn">⚠</span>',    t('cohorts.phelp_unverified')) +
+
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn cdx-btn-primary" id="cdx-phelp-close">' + _esc(t('cohorts.close')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = _openModal(html);
+  bd.querySelector('#cdx-phelp-close').addEventListener('click', () => _closeModal(bd));
 }
 
 function _openRosterModal(turma) {
@@ -990,6 +1031,9 @@ function _renderDossier(turma) {
   const el = _q('cdx-turma-dossier');
   if (!el) return;
   if (!turma) { el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
+  _dossierTurma = turma;
+  _dossierPFilter = 'all';
+  _dossierParticipants = [];
 
   const client = _clients.find((c) => c.slug === turma.client_slug) || {};
   const clientName = client.display_name || client.name || turma.client_slug;
@@ -998,88 +1042,324 @@ function _renderDossier(turma) {
   const sub = clientName + (modLabel ? ' · ' + modLabel : '');
   const fact = (label, val) =>
     '<div class="cdx-doss-fact"><label>' + _esc(label) + '</label><div class="v">' + (val ? _esc(val) : '—') + '</div></div>';
-  const courseVal = turma.course_title
-    ? _esc(turma.course_title)
-    : '<button class="cdx-doss-linkbtn" data-doss="edit">' + _esc(t('cohorts.tf_no_course')) + '</button>';
+
+  // #27: Carga horária = SUM(aula.hours), Encontros = COUNT(aulas), período =
+  // span of the aula dates — all DERIVED from the aulas (worker ct_list_turmas).
+  // Falls back to the legacy manual fields for turmas with no per-aula hours yet.
+  const _num = (v) => (v != null && Number(v) > 0);
+  // Bare number under the "Carga horária" label (no new i18n unit key needed; the
+  // certificate itself renders the full "N horas"). Falls back to legacy manual hours.
+  const cargaDerived = _num(turma.carga_horaria) ? String(turma.carga_horaria) : (turma.hours || '');
+  const encontrosDerived = _num(turma.aula_count) ? String(turma.aula_count) : (turma.meetings || '');
+  const dStart = _fmtDateBr(turma.computed_date_start || turma.date_start);
+  const dEnd = _fmtDateBr(turma.computed_date_end || turma.date_end);
+  // A bare-number fact with a stable id, so an aula-hours edit can refresh it live.
+  const factId = (id, label, val) =>
+    '<div class="cdx-doss-fact"><label>' + _esc(label) + '</label><div class="v" id="' + id + '">' + (val ? _esc(val) : '—') + '</div></div>';
+  // #27: the dossier is the single editable surface (no more Editar modal). Each
+  // editable fact is an input/select that auto-saves on blur/change. Modality is
+  // intentionally omitted (being retired). carga/encontros/datas stay derived.
+  const editText = (field, label, value, ph2) =>
+    '<div class="cdx-doss-fact cdx-doss-fact--edit"><label>' + _esc(label) + '</label>' +
+    '<input class="cdx-doss-edit" type="text" data-edit-field="' + field + '" value="' + _esc(value == null ? '' : value) + '"' + (ph2 ? ' placeholder="' + _esc(ph2) + '"' : '') + '></div>';
+  const editSelect = (field, label, optsHtml, extraClass) =>
+    '<div class="cdx-doss-fact cdx-doss-fact--edit' + (extraClass ? ' ' + extraClass : '') + '"><label>' + _esc(label) + '</label>' +
+    '<select class="cdx-doss-edit" data-edit-field="' + field + '">' + optsHtml + '</select></div>';
+  const courseOpts = '<option value="">' + _esc(t('cohorts.tf_no_course')) + '</option>' +
+    (_turmaCourses || []).map((c) => '<option value="' + _esc(String(c.id)) + '"' + (String(turma.course_id || '') === String(c.id) ? ' selected' : '') + '>' + _esc(c.title) + '</option>').join('');
+  const fmtOpts = '<option value="">' + _esc(t('cohorts.none')) + '</option>' +
+    _TF_FORMATS.map((k) => '<option value="' + k + '"' + (turma.format === k ? ' selected' : '') + '>' + _esc(t('cohorts.fmt_' + k)) + '</option>').join('');
+  const cpOpts = '<option value="">' + _esc(t('cohorts.none')) + '</option>' +
+    (_cpSessions || []).map((s) => '<option value="' + _esc(s.id) + '"' + (String(turma.classpulse_session_id || '') === String(s.id) ? ' selected' : '') + '>' + _esc(s.name) + '</option>').join('');
   const ph = _turmaPhase(turma);
   const archived = turma.status === 'archived';
   const url = turma.token ? _turmaUrl(turma.client_slug, turma.slug, turma.token) : null;
-  const linksRow =
-    '<div class="cdx-doss-links">' +
-      (url
-        ? '<button type="button" class="cdx-doss-url" data-doss="copyurl" data-url="' + _esc(url) + '" title="' + _esc(t('cohorts.copy_url')) + '">' + _esc(url) + '</button>' +
-          '<a class="cdx-doss-urlbtn" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
-          '<button type="button" class="cdx-doss-urlbtn" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>'
-        : '<span class="cdx-empty">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
-      (turma.whatsapp_url ? '<a class="cdx-doss-walink" href="' + _esc(turma.whatsapp_url) + '" target="_blank" rel="noopener">' + _esc(t('cohorts.whatsapp_open')) + '</a>' : '') +
+  const trailCard =
+    '<div class="cdx-doss-fact cdx-doss-fact--trail"><label>' + _esc(t('cohorts.field_trail')) + '</label>' +
+    (url
+      ? '<div class="cdx-doss-trail-acts">' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="copyurl" data-url="' + _esc(url) + '">' + _esc(t('cohorts.copy_url')) + '</button>' +
+          '<a class="cdx-btn cdx-btn-sm" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>' +
+        '</div>'
+      : '<span class="cdx-doss-trail-na">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
     '</div>';
 
   el.innerHTML =
     '<div class="cdx-doss">' +
       '<div class="cdx-doss-head">' +
-        '<div><h2 class="cdx-doss-title">' + _esc(turma.name) + '</h2>' +
+        '<div class="cdx-doss-headmain">' +
+          '<input class="cdx-doss-title cdx-doss-title-edit cdx-doss-edit" type="text" data-edit-field="name" value="' + _esc(turma.name) + '" aria-label="' + _esc(t('cohorts.field_name_internal')) + '">' +
           '<div class="cdx-doss-sub">' + _esc(sub) + '</div></div>' +
         '<div class="cdx-doss-headright">' +
           (ph.label ? '<span class="cdx-doss-pill ' + ph.cls + '">' + _esc(ph.label) + '</span>' : '') +
           '<div class="cdx-doss-actions">' +
-            '<button class="cdx-btn cdx-btn-sm" data-doss="edit">' + _esc(t('cohorts.edit')) + '</button>' +
             (archived ? '' : '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-doss="archive">' + _esc(t('cohorts.archive')) + '</button>') +
           '</div>' +
         '</div>' +
       '</div>' +
-      linksRow +
-      '<div class="cdx-doss-facts">' +
-        '<div class="cdx-doss-fact cdx-doss-fact--course"><label>' + _esc(t('cohorts.tf_course')) + '</label><div class="v">' + courseVal + '</div></div>' +
-        fact(t('cohorts.course_hours_label'), turma.hours) +
-        fact(t('cohorts.tf_meetings'), turma.meetings) +
-        fact(t('cohorts.tf_date_start'), _fmtDateBr(turma.date_start)) +
-        fact(t('cohorts.tf_date_end'), _fmtDateBr(turma.date_end)) +
-        fact(t('cohorts.tf_format'), fmtLabel) +
-        fact(t('cohorts.tf_place'), turma.place) +
+      // ── Per-turma sub-tabs (Phase 8): the stacked sections become tab panels.
+      // Container-only change: each panel keeps its exact inner content + ids, and
+      // the loaders below still fire eagerly on mount (not lazy-on-tab-show). ──
+      '<div class="cdx-subrow cdx-doss-tabs"><div class="cdx-substrip" role="tablist">' +
+        '<button type="button" class="cdx-subtab active" data-dtab="dados" role="tab">' + _esc(t('cohorts.sec_turma_data')) + '</button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="participantes" role="tab">' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="aulas" role="tab">' + _esc(t('cohorts.col_aulas')) + '</button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="certs" role="tab">' + _esc(t('cohorts.doss_certs')) + '</button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="forum" role="tab">' + _esc(t('cohorts.doss_forum')) + '</button>' +
+      '</div></div>' +
+      // Dados panel = turma facts + Acesso (the short config block folds in here).
+      '<div class="cdx-doss-panel" data-dpanel="dados">' +
+        '<div class="cdx-doss-facts">' +
+          editSelect('course_id', t('cohorts.tf_course'), courseOpts, 'cdx-doss-fact--course') +
+          factId('cdx-doss-carga', t('cohorts.course_hours_label'), cargaDerived) +
+          factId('cdx-doss-encontros', t('cohorts.tf_meetings'), encontrosDerived) +
+          fact(t('cohorts.tf_date_start'), dStart) +
+          fact(t('cohorts.tf_date_end'), dEnd) +
+          editSelect('format', t('cohorts.tf_format'), fmtOpts) +
+          editText('place', t('cohorts.tf_place'), turma.place, t('cohorts.tf_place_ph')) +
+          editText('display_name', t('cohorts.field_display_name'), turma.display_name, t('cohorts.field_display_placeholder')) +
+          '<div class="cdx-doss-sep" role="separator"></div>' +
+          editText('whatsapp_url', t('cohorts.field_whatsapp'), turma.whatsapp_url, 'https://chat.whatsapp.com/...') +
+          editSelect('classpulse_session_id', t('cohorts.field_classpulse'), cpOpts) +
+          trailCard +
+        '</div>' +
+        '<div class="cdx-doss-subhead">' + _esc(t('cohorts.sec_access')) + '</div>' +
+        '<div id="cdx-doss-acesso"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</div>' +
-      // Participantes
-      '<div class="cdx-doss-sec">' +
-        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.participants_title')) + '</b>' +
-          '<button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></div>' +
+      // Participantes panel (the roster/help controls move into a panel toolbar).
+      '<div class="cdx-doss-panel" data-dpanel="participantes" hidden>' +
+        '<div class="cdx-doss-panel-bar">' +
+          '<button type="button" class="cdx-phelp" data-doss="phelp" title="' + _esc(t('cohorts.phelp_btn_title')) + '" aria-label="' + _esc(t('cohorts.phelp_btn_title')) + '">?</button>' +
+          '<span class="cdx-doss-sec-acts"><button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></span>' +
+        '</div>' +
         '<div id="cdx-doss-participants"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</div>' +
-      // Aulas (reuses the aula editor via #cdx-aulas-list)
-      '<div class="cdx-doss-sec">' +
-        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.col_aulas')) + '</b></div>' +
+      // Aulas panel (reuses the aula editor via #cdx-aulas-list).
+      '<div class="cdx-doss-panel" data-dpanel="aulas" hidden>' +
         '<div id="' + IDS.aulasList + '"><div class="cdx-empty">' + _esc(t('cohorts.loading_aulas')) + '</div></div>' +
       '</div>' +
-      // Certificados
-      '<div class="cdx-doss-sec">' +
-        '<div class="cdx-doss-sec-h"><b>' + _esc(t('cohorts.doss_certs')) + '</b>' +
-          '<a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
+      // Certificados panel.
+      '<div class="cdx-doss-panel" data-dpanel="certs" hidden>' +
+        '<div class="cdx-doss-sec-actions"><a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
         '<div id="cdx-doss-certs"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
+      '</div>' +
+      // Fórum panel (Phase 4 fills the admin moderation view).
+      '<div class="cdx-doss-panel" data-dpanel="forum" hidden>' +
+        '<div id="cdx-doss-forum"><span class="cdx-empty">' + _esc(t('cohorts.doss_forum_empty')) + '</span></div>' +
       '</div>' +
     '</div>';
 
-  el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', () => {
+  el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', (e) => {
     const a = b.dataset.doss;
-    if (a === 'edit') _openTurmaForm(turma);
-    else if (a === 'roster') _openRosterModal(turma);
+    // roster/phelp live inside a <summary>; stop the click so it doesn't toggle the section.
+    if (a === 'roster' || a === 'phelp') e.stopPropagation();
+    if (a === 'roster') _openRosterModal(turma);
+    else if (a === 'phelp') _openParticipantsHelp();
     else if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
     else if (a === 'regen') _regenToken(turma.client_slug, turma.slug);
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
   }));
 
+  // Per-turma sub-tab switching: show the picked panel, hide the rest. The loaders
+  // below already fire on mount, so switching is pure show/hide (no re-fetch).
+  const _dtabs = el.querySelectorAll('.cdx-subtab[data-dtab]');
+  const _dpanels = el.querySelectorAll('.cdx-doss-panel[data-dpanel]');
+  _dtabs.forEach((tab) => tab.addEventListener('click', () => {
+    const key = tab.dataset.dtab;
+    _dtabs.forEach((x) => x.classList.toggle('active', x === tab));
+    _dpanels.forEach((p) => { p.hidden = p.dataset.dpanel !== key; });
+  }));
+
+  _wireDossierInlineEdit(el, turma);
+  // Acesso section: the per-turma gating switches, mounted from the shared access
+  // panel (same component the Alunos tab uses, so the logic lives in one place).
+  const accEl = el.querySelector('#cdx-doss-acesso');
+  if (accEl) {
+    accEl.innerHTML = accessSettingsHtml(turma);
+    wireAccessSettings(accEl, turma, { api, clientSlug: turma.client_slug, slug: turma.slug });
+  }
+  // The course + classpulse selects need their option lists; load once and re-render
+  // this dossier when they arrive (so the saved option is selectable).
+  if ((!_turmaCourses || !_turmaCourses.length) || (!_cpSessions || !_cpSessions.length)) {
+    _ensureDossierDeps(() => { if (_dossierTurma === turma) _renderDossier(turma); });
+  }
+
   _loadTurmaAulas(turma.client_slug, turma.slug);
   _loadDossierParticipants(turma);
   _loadDossierCerts(turma);
+  // Fórum moderation (2-pane): the instructor's full toolkit, mounted into the
+  // Fórum sub-tab. Eager like the other dossier loaders.
+  const forumEl = el.querySelector('#cdx-doss-forum');
+  if (forumEl) mountForumAdmin(forumEl, turma);
+}
+
+// Load the course + classpulse option lists once, for the dossier's inline selects.
+function _ensureDossierDeps(cb) {
+  const needCourses = !_turmaCourses || !_turmaCourses.length;
+  const needCp = !_cpSessions || !_cpSessions.length;
+  if ((!needCourses && !needCp) || _dossierDepsTried) { if (cb) cb(); return; }
+  _dossierDepsTried = true;
+  Promise.all([
+    needCourses ? coursesApi.list().then((d) => { _turmaCourses = (d && d.courses) || []; }).catch(() => {}) : Promise.resolve(),
+    needCp ? cpApi.listSessions().then((d) => { _cpSessions = (d && d.sessions) || []; }).catch(() => {}) : Promise.resolve(),
+  ]).then(() => { if (cb) cb(); });
+}
+
+// #27: auto-save each inline-editable dossier field on blur (inputs) / change
+// (selects). Meta fields (whatsapp/classpulse) route through ct_update_turma_meta;
+// the rest through ct_update_turma (a conditional update of just that field).
+function _wireDossierInlineEdit(el, turma) {
+  el.querySelectorAll('[data-edit-field]').forEach((inp) => {
+    const isSelect = inp.tagName === 'SELECT';
+    inp.addEventListener(isSelect ? 'change' : 'blur', () => {
+      const field = inp.dataset.editField;
+      const raw = inp.value;
+      const cur = field === 'course_id'
+        ? String(turma.course_id || '')
+        : (turma[field] == null ? '' : String(turma[field]));
+      if (String(raw) === cur) return; // unchanged → no write
+      let call;
+      if (field === 'whatsapp_url' || field === 'classpulse_session_id') {
+        // ct_update_turma_meta sets BOTH meta columns; send current + the change.
+        const meta = {
+          client_slug: turma.client_slug, slug: turma.slug,
+          whatsapp_url: turma.whatsapp_url || null,
+          classpulse_session_id: turma.classpulse_session_id || null,
+        };
+        meta[field] = raw.trim() === '' ? null : raw.trim();
+        call = api.updateTurmaMeta(meta).then(() => { turma[field] = meta[field]; });
+      } else {
+        const payload = { client_slug: turma.client_slug, slug: turma.slug };
+        if (field === 'course_id') payload.course_id = raw ? Number(raw) : null;
+        else payload[field] = raw.trim() === '' ? null : raw.trim();
+        call = api.updateTurma(payload).then(() => {
+          if (field === 'course_id') {
+            turma.course_id = payload.course_id;
+            const c = (_turmaCourses || []).find((x) => String(x.id) === String(payload.course_id));
+            turma.course_title = c ? c.title : null;
+          } else turma[field] = payload[field];
+        });
+      }
+      call.then(() => _toast(t('cohorts.turma_updated')))
+        .catch((err) => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+    });
+  });
+}
+
+// ── Dossier participant list: inline filterable rows with entry-type tags ──
+
+const _P_STATUS_RANK = { pending: 0, approved: 1, denied: 2 };
+
+function _pTag(p) {
+  const st = p.access_status || 'pending';
+  // Two orthogonal axes, shown one at a time: while NOT approved the status is the
+  // actionable fact; once approved the origin (how they got in) is. They never
+  // overlap because origin (approved_via) is only stamped on approval, and the
+  // "approved" state itself is the expected default, so it carries no tag.
+  if (st === 'pending') return '<span class="cdx-tag cdx-tag--pendente">' + _esc(t('cohorts.ptag_pending')) + '</span>';
+  if (st === 'denied')  return '<span class="cdx-tag cdx-tag--negado">'   + _esc(t('cohorts.ptag_denied'))  + '</span>';
+  const via = p.approved_via || '';
+  if (via === 'manual')                                        return '<span class="cdx-tag cdx-tag--manual">' + _esc(t('cohorts.ptag_manual')) + '</span>';
+  // In-class enrollment window (the projected QR): window/presence/qr all read as QR.
+  if (via === 'qr' || via === 'window' || via === 'presence') return '<span class="cdx-tag cdx-tag--qr">'     + _esc(t('cohorts.ptag_qr'))     + '</span>';
+  // roster pre-approval, or any older/blank value, reads as the pre-approved list.
+  return '<span class="cdx-tag cdx-tag--lista">' + _esc(t('cohorts.ptag_lista')) + '</span>';
+}
+
+function _pRow(p) {
+  const st = p.access_status || 'pending';
+  const online = (p.active_sessions || 0) > 0;
+  const unv = (p.email && !p.email_verified)
+    ? ' <span class="cdx-prow-warn" title="' + _esc(t('alunos.unverified')) + '">⚠</span>' : '';
+  const conn = st === 'approved'
+    ? (online
+        ? '<span class="cdx-prow-conn ok">✓ ' + _esc(t('cohorts.conn_online')) + '</span>'
+        : '<span class="cdx-prow-conn">• ' + _esc(t('cohorts.conn_waiting')) + '</span>')
+    : '';
+  let acts = '';
+  if (st === 'pending') acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('alunos.approve')) + '</button>';
+  if (st === 'denied')  acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('cohorts.reactivate')) + '</button>';
+  if (st === 'pending')  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-deny">'  + _esc(t('alunos.deny'))   + '</button>';
+  if (st === 'approved') acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-revoke">' + _esc(t('alunos.revoke')) + '</button>';
+  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-remove">' + _esc(t('alunos.remove')) + '</button>';
+  return '<div class="cdx-prow" data-pid="' + p.id + '">' +
+    '<div class="cdx-prow-id">' +
+      '<div class="cdx-prow-name">' + _esc(p.display_name || p.name || ('#' + p.id)) + unv + '</div>' +
+      '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
+    '</div>' +
+    '<div class="cdx-prow-meta">' + _pTag(p) + conn + '</div>' +
+    '<div class="cdx-prow-acts">' + acts + '</div>' +
+  '</div>';
+}
+
+function _paintDossierParticipants(el) {
+  const ps = _dossierParticipants;
+  const pendCount = ps.filter((p) => (p.access_status || 'pending') === 'pending').length;
+  const countEl = _q('cdx-doss-p-count');
+  if (countEl) countEl.textContent = ps.length || '';
+  const chips = ['all', 'pending', 'approved', 'denied'].map((f) =>
+    '<button class="cdx-pchip' + (f === _dossierPFilter ? ' on' : '') + '" data-pfilter="' + f + '">' +
+      _esc(t('alunos.filter_' + f)) + (f === 'pending' && pendCount ? ' (' + pendCount + ')' : '') +
+    '</button>').join('');
+  const approveAll = pendCount
+    ? '<button class="cdx-btn cdx-btn-sm cdx-dp-approve-all" style="margin-left:auto">' + _esc(t('alunos.approve_all')) + '</button>'
+    : '';
+  let list = ps.slice();
+  if (_dossierPFilter !== 'all') list = list.filter((p) => (p.access_status || 'pending') === _dossierPFilter);
+  list.sort((a, b) => {
+    const ra = _P_STATUS_RANK[a.access_status || 'pending'] ?? 9;
+    const rb = _P_STATUS_RANK[b.access_status || 'pending'] ?? 9;
+    return ra !== rb ? ra - rb
+      : String(a.display_name || a.name || '').localeCompare(String(b.display_name || b.name || ''));
+  });
+  el.innerHTML =
+    '<div class="cdx-pfilter">' + chips + approveAll + '</div>' +
+    (list.length ? list.map(_pRow).join('') : '<span class="cdx-empty">' + _esc(t('cohorts.participants_empty')) + '</span>');
+}
+
+function _wireDossierParticipants(el, turma) {
+  el.querySelectorAll('[data-pfilter]').forEach((b) => {
+    b.addEventListener('click', () => {
+      _dossierPFilter = b.dataset.pfilter;
+      _paintDossierParticipants(el);
+      _wireDossierParticipants(el, turma);
+    });
+  });
+  const allBtn = el.querySelector('.cdx-dp-approve-all');
+  if (allBtn) allBtn.addEventListener('click', async () => {
+    const ids = _dossierParticipants.filter((p) => (p.access_status || 'pending') === 'pending').map((p) => p.id);
+    if (!ids.length) return;
+    allBtn.disabled = true;
+    await api.setParticipantAccess({ participant_ids: ids, status: 'approved', origin: location.origin }).catch(() => {});
+    _loadDossierParticipants(turma);
+  });
+  el.querySelectorAll('.cdx-prow').forEach((row) => {
+    const id = Number(row.dataset.pid);
+    const reload = () => _loadDossierParticipants(turma);
+    const ap = row.querySelector('.cdx-dp-approve');
+    const dn = row.querySelector('.cdx-dp-deny');
+    const rv = row.querySelector('.cdx-dp-revoke');
+    const rm = row.querySelector('.cdx-dp-remove');
+    if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'approved', origin: location.origin }).catch(() => {}); reload(); });
+    if (dn) dn.addEventListener('click', async () => { dn.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'denied' }).catch(() => {}); reload(); });
+    if (rv) rv.addEventListener('click', async () => { rv.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'pending' }).catch(() => {}); reload(); });
+    if (rm) rm.addEventListener('click', async () => {
+      if (typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
+      rm.disabled = true;
+      await api.deleteParticipant({ id }).catch(() => {});
+      reload();
+    });
+  });
 }
 
 function _loadDossierParticipants(turma) {
   api.listParticipants({ turma_id: turma.id }).then((d) => {
+    _dossierParticipants = (d && d.participants) || [];
     const el = _q('cdx-doss-participants');
     if (!el) return;
-    const ps = (d && d.participants) || [];
-    if (!ps.length) { el.innerHTML = '<span class="cdx-empty">' + _esc(t('cohorts.participants_empty')) + '</span>'; return; }
-    const chips = ps.slice(0, 8).map((p) =>
-      '<span class="cdx-doss-chip">' + _esc(p.name) + '</span>').join('');
-    const more = ps.length > 8 ? '<span class="cdx-doss-chip cdx-doss-chip--more">+' + (ps.length - 8) + '</span>' : '';
-    el.innerHTML = '<div class="cdx-doss-count">' + ps.length + '</div><div class="cdx-doss-chips">' + chips + more + '</div>';
+    _paintDossierParticipants(el);
+    _wireDossierParticipants(el, turma);
   }).catch(() => {});
 }
 
@@ -1169,6 +1449,11 @@ function _renderAulaColEditor(a) {
         '<div class="cdx-field">' +
           '<label>' + t('cohorts.aula_field_scheduled') + '</label>' +
           '<input type="date" class="cdx-aula-scheduled" value="' + _esc(a.scheduled_for || '') + '">' +
+        '</div>' +
+        // #27: per-aula carga horária (numeric). The turma total = SUM of these.
+        '<div class="cdx-field">' +
+          '<label>' + t('cohorts.course_hours_label') + '</label>' +
+          '<input type="number" min="0" step="1" inputmode="numeric" class="cdx-aula-hours" value="' + _esc(a.hours != null ? a.hours : '') + '" placeholder="0">' +
         '</div>' +
         '<div class="cdx-field">' +
           '<label>' + t('cohorts.aula_field_happened') + '</label>' +
@@ -1264,16 +1549,19 @@ function _wireAulaEditorEvents(row, aula, idx) {
   const deleteBtn = row.querySelector('.cdx-aula-delete');
   const titleInput = row.querySelector('.cdx-aula-title');
   const schedInput = row.querySelector('.cdx-aula-scheduled');
+  const hoursInput = row.querySelector('.cdx-aula-hours');
   const happInput  = row.querySelector('.cdx-aula-happened');
   const rfromInput = row.querySelector('.cdx-aula-rescheduled-from');
   const rnoteInput = row.querySelector('.cdx-aula-rescheduled-note');
 
   saveBtn.addEventListener('click', () => {
+    const hoursVal = hoursInput && hoursInput.value.trim() !== '' ? Number(hoursInput.value) : null;
     const payload = {
       client_slug: _relClientSlug,
       turma_slug: _relTurmaSlug,
       aula_number: aula.aula_number,
       title: titleInput.value.trim(),
+      hours:            hoursVal,
       scheduled_for:    schedInput.value || null,
       happened_on:      happInput.value  || null,
       rescheduled_from: rfromInput.value || null,
@@ -1293,12 +1581,14 @@ function _wireAulaEditorEvents(row, aula, idx) {
         }
       }
       aula.title            = payload.title;
+      aula.hours            = payload.hours;
       aula.scheduled_for    = payload.scheduled_for;
       aula.happened_on      = payload.happened_on;
       aula.rescheduled_from = payload.rescheduled_from;
       aula.rescheduled_note = payload.rescheduled_note;
       _toast(t('cohorts.aula_saved'));
       _renderTurmaAulas();
+      _refreshDerivedFacts();
     }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
   });
 
@@ -1326,10 +1616,23 @@ function _wireAulaEditorEvents(row, aula, idx) {
           _turmaAulas.splice(idx, 1);
           _toast(t('cohorts.aula_deleted'));
           _renderTurmaAulas();
+          _refreshDerivedFacts();
         }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
       }
     });
   });
+}
+
+// #27: recompute the dossier's DERIVED facts (Carga horária = SUM of saved aula
+// hours, Encontros = COUNT of saved aulas) from the in-memory aula list, so an
+// aula-hours edit/delete updates the panel without a full turma reload.
+function _refreshDerivedFacts() {
+  const saved = _turmaAulas.filter((a) => !a._isNew);
+  const carga = saved.reduce((s, a) => s + (Number(a.hours) || 0), 0);
+  const cEl = (typeof document !== 'undefined') && document.getElementById('cdx-doss-carga');
+  if (cEl) cEl.textContent = carga > 0 ? String(carga) : '—';
+  const eEl = (typeof document !== 'undefined') && document.getElementById('cdx-doss-encontros');
+  if (eEl) eEl.textContent = saved.length > 0 ? String(saved.length) : '—';
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -1344,6 +1647,8 @@ export function mount(viewEl, ctx) {
   _relClientSlug = null;
   _relTurmaSlug = null;
   _cpSessions = [];
+  _dossierTurma = null;
+  _dossierDepsTried = false;
   _cleanup = [];
 
   // Route by sub-tab. The Cursos sub-view is its own module; the default

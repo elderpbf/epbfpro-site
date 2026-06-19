@@ -24,12 +24,14 @@ import * as notice from '../js/notice.js';
 import { ementaToCertModules } from '../js/ementa.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
+import { glyphSvg } from '../js/glyphs.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
   buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames,
+  hoursNumber,
 } from './cert-render.js';
 import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
-import { sendEmail } from '../js/codex-email.js';
+import { sendEmail, renderEmailHtml, loadLogoAttachment, LOGO_CID } from '../js/codex-email.js';
 
 // TEMP (testing): send cert e-mails from the Resend sandbox sender, which needs no
 // domain setup but only DELIVERS to the Resend account owner's own address. Switch
@@ -139,6 +141,35 @@ export function statusBadgeClass(status) {
     case 'revoked': return 'cdx-cert-badge cdx-cert-badge--revoked';
     default:        return 'cdx-cert-badge cdx-cert-badge--unknown';
   }
+}
+
+// ── Action registry — ONE source of truth for the cert lifecycle actions ───────
+// Both the per-row toolbar and the bulk bar render from this, so they never drift.
+// Each action declares its glyph + label, when it applies (by status), and where it
+// shows: `row` (per cert) and/or `batch` (over a selection). Naturally single-cert
+// actions (preview, copy link) are row-only; delete is batch-only so a single
+// mis-click can't erase a cert. `labelFn(status)` overrides the label per status
+// (Enviar -> Reenviar once already sent). PURE data; exported for tests.
+export const CERT_ACTIONS = [
+  { key: 'sign',    glyph: 'pen-tool', labelKey: 'certificates.action_sign',         applies: (s) => s === 'issued',                      row: true,  batch: true },
+  { key: 'send',    glyph: 'send',     labelKey: 'certificates.action_send',         applies: (s) => s !== 'revoked',                     row: true,  batch: true,
+    labelFn: (s) => (s === 'sent' ? 'certificates.action_resend' : 'certificates.action_send') },
+  { key: 'preview', glyph: 'eye',      labelKey: 'certificates.action_preview',      applies: () => true,                                 row: true,  batch: false },
+  { key: 'copy',    glyph: 'link',     labelKey: 'certificates.action_copy_url',     applies: () => true,                                 row: true,  batch: false },
+  { key: 'pdf',     glyph: 'download', labelKey: 'certificates.action_download_pdf', applies: () => true,                                 row: true,  batch: true },
+  { key: 'revoke',  glyph: 'ban',      labelKey: 'certificates.action_revoke',       applies: (s) => s !== 'revoked',                     row: true,  batch: true, danger: true },
+  { key: 'delete',  glyph: 'trash',    labelKey: 'certificates.action_delete',       applies: (s) => s === 'issued' || s === 'revoked',   row: false, batch: true, danger: true },
+];
+
+// PURE. The actions to show for a single cert (its status), in registry order.
+export function rowActionsFor(status) {
+  return CERT_ACTIONS.filter((a) => a.row && a.applies(status));
+}
+// PURE. The batch actions for a selection: a batch action shows if it applies to at
+// least one selected cert's status (the handler then acts on the eligible subset).
+export function batchActionsFor(statuses) {
+  const set = Array.from(new Set(statuses || []));
+  return CERT_ACTIONS.filter((a) => a.batch && set.some((s) => a.applies(s)));
 }
 
 /**
@@ -576,15 +607,16 @@ function _mountEmitidos() {
       '</div>' +
       // Bulk-action bar: inline, between the toolbar and the table (revealed when
       // rows are selected), so it follows the theme and never floats over content.
+      // Bulk actions render from the SAME CERT_ACTIONS registry as the per-row
+      // toolbar (no more two divergent button sets); each handler acts on the
+      // eligible subset of the selection.
       '<div class="cdx-emissao-bulk" id="cdx-emissao-bulk">' +
         '<b id="cdx-emissao-bulk-count"></b>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="sign">' + esc(t('certificates.bulk_sign')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="send">' + esc(t('certificates.bulk_send')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="pdf">' + esc(t('certificates.bulk_pdf')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="revoke">' + esc(t('certificates.bulk_revoke')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-bulk="delete">' + esc(t('certificates.bulk_delete')) + '</button>' +
+        CERT_ACTIONS.filter((a) => a.batch).map((a) =>
+          _certActionBtn({ bulk: true, act: a.key, label: t(a.labelKey), glyph: a.glyph, danger: a.danger })
+        ).join('') +
         '<span class="cdx-emissao-spacer"></span>' +
-        '<button class="cdx-btn cdx-btn-sm" data-bulk="clear">' + esc(t('certificates.bulk_clear')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-bulk="clear">' + esc(t('certificates.bulk_clear')) + '</button>' +
       '</div>' +
       '<div class="cdx-emissao-tablewrap" id="cdx-certs-list">' +
         '<div class="cdx-empty">' + esc(t('certificates.loading')) + '</div>' +
@@ -663,12 +695,18 @@ function _mountEmitidos() {
       if (!btn) return;
       const action = btn.dataset.action;
       const code   = btn.dataset.code;
-      if (action === 'copy-url')  { _copyValidarUrl(code); return; }
-      if (action === 'revoke')    { _revokeConfirm(code);  return; }
-      if (action === 'sign')      { _markSigned(code);     return; }
-      if (action === 'mark-sent') { _sendCert(code);       return; }
-      if (action === 'preview')   { _previewCert(code);    return; }
-      if (action === 'pdf')       { const cert = _certs.find((x) => x.code === code); if (cert) _printCert(cert); return; }
+      if (action === 'copy')    { _copyValidarUrl(code); return; }
+      if (action === 'revoke')  { _revokeConfirm(code);  return; }
+      if (action === 'sign')    { _markSigned(code);     return; }
+      if (action === 'send')    { _sendCert(code);       return; }
+      if (action === 'preview') { _previewCert(code);    return; }
+      // One PDF action: a stored (signed) file downloads via R2 as a blob; otherwise
+      // the cert is rasterized fresh (print -> PDF). #24.
+      if (action === 'pdf') {
+        const cert = _certs.find((x) => x.code === code);
+        if (cert) { cert.pdf_path ? _downloadStoredPdf(cert) : _printCert(cert); }
+        return;
+      }
     };
     list.addEventListener('click', onClick);
     _cleanup.push(() => list.removeEventListener('click', onClick));
@@ -892,13 +930,15 @@ function _renderCertRow(c) {
   const clientLabel = turma ? _clientName(turma.client_slug) : '';
   const turmaLabel  = _turmaName(turma);
   const sel = _selectedCodes.has(c.code);
-  // Lifecycle next-step buttons. Signing isn't wired yet, so "Enviar" is usable
-  // from BOTH issued and signed (the attached PDF is unsigned but validatable via
-  // the QR/code). Issued still shows "Assinar" too, for when real signing lands.
-  const sendBtn = '<button class="cdx-btn cdx-btn-sm" data-action="mark-sent" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_send')) + '</button>';
-  let nextBtn = '';
-  if (c.status === 'issued') nextBtn = '<button class="cdx-btn cdx-btn-sm" data-action="sign" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_sign')) + '</button>' + sendBtn;
-  else if (c.status === 'signed') nextBtn = sendBtn;
+  // Per-row actions come from the shared CERT_ACTIONS registry (same source as the
+  // bulk bar). Each renders glyph + label; on a narrow viewport CSS hides the label
+  // and keeps the glyph (see .cdx-cert-act in certificates.css). copy carries the
+  // URL as a title; the rest are routed by data-action in the list click handler.
+  const actionsHtml = rowActionsFor(c.status).map((a) => {
+    const labelKey = a.labelFn ? a.labelFn(c.status) : a.labelKey;
+    const title = a.key === 'copy' ? validarUrl : t(labelKey);
+    return _certActionBtn({ act: a.key, label: t(labelKey), glyph: a.glyph, danger: a.danger, code: c.code, title });
+  }).join('');
   return '<tr' + (sel ? ' class="is-selected"' : '') + '>' +
     '<td class="cdx-emissao-cbcol"><input type="checkbox" data-sel="' + esc(c.code) + '"' + (sel ? ' checked' : '') + '></td>' +
     '<td class="cdx-certs-code"><code>' + esc(c.code) + '</code></td>' +
@@ -908,23 +948,20 @@ function _renderCertRow(c) {
     '<td>' + esc(c.course_title || '') + '</td>' +
     '<td>' + esc(formatIssuedOn(c.issued_on)) + '</td>' +
     '<td><span class="' + statusBadgeClass(c.status) + '">' + esc(t('certificates.status_' + c.status) || c.status) + '</span></td>' +
-    '<td class="cdx-certs-actions">' +
-      nextBtn +
-      '<button class="cdx-btn cdx-btn-sm" data-action="preview" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_preview')) + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm" data-action="copy-url" data-code="' + esc(c.code) + '" title="' + esc(validarUrl) + '">' + esc(t('certificates.action_copy_url')) + '</button>' +
-      // Every row can produce its PDF (print → Salvar como PDF), independent of a
-      // stored file. When a signed PDF is attached later, link that instead.
-      (hasPdf
-        // pdf_path is an R2 key (certificates/<code>.pdf); it is served by the worker
-        // at /r2/<key>, NOT as a relative path off the site. Link through assetUrl.
-        ? '<a class="cdx-btn cdx-btn-sm" href="' + esc(assetUrl('/r2/' + c.pdf_path)) + '" target="_blank" rel="noopener">' + esc(t('certificates.action_download_pdf')) + '</a>'
-        : '<button class="cdx-btn cdx-btn-sm" data-action="pdf" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_download_pdf')) + '</button>') +
-      (c.status !== 'revoked' ? '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="revoke" data-code="' + esc(c.code) + '">' + esc(t('certificates.action_revoke')) + '</button>' : '') +
-      // Delete is intentionally NOT a per-row button: it lives only in the bulk bar
-      // (select the checkbox first), so a cert can't be deleted by a single
-      // mis-click. Issued/revoked are deletable there; signed/sent are not.
-    '</td>' +
+    '<td class="cdx-certs-actions">' + actionsHtml + '</td>' +
   '</tr>';
+}
+
+// One action button: glyph + collapsible label. Shared by the row toolbar (data-action)
+// and the bulk bar (data-bulk). `attr` selects which dataset key drives the handler.
+function _certActionBtn(o) {
+  const danger = o.danger ? ' cdx-btn-danger' : '';
+  const keyAttr = o.bulk ? 'data-bulk="' + esc(o.act) + '"' : 'data-action="' + esc(o.act) + '" data-code="' + esc(o.code) + '"';
+  const title = o.title ? ' title="' + esc(o.title) + '"' : '';
+  return '<button type="button" class="cdx-btn cdx-btn-sm cdx-cert-act' + danger + '" ' + keyAttr + title + '>' +
+    glyphSvg(o.glyph, { size: 14, cls: 'cdx-cert-act-i' }) +
+    '<span class="cdx-cert-act-t">' + esc(o.label) + '</span>' +
+  '</button>';
 }
 
 function _copyValidarUrl(code) {
@@ -1024,7 +1061,8 @@ async function _markSigned(code) {
 async function _sendCert(code) {
   const cert = _certs.find((c) => c.code === code);
   if (!cert) return;
-  if (cert.status !== 'issued' && cert.status !== 'signed') { notice.warn(t('certificates.send_only_issued_signed')); return; }
+  // Re-send allowed for already-'sent' certs too; only a revoked cert can't be sent.
+  if (cert.status === 'revoked') { notice.warn(t('certificates.send_only_issued_signed')); return; }
   if (!cert.email) { notice.warn(t('certificates.send_no_email')); return; }
   notice.ok(t('certificates.send_sending'));
   if (await _sendOne(cert)) {
@@ -1042,11 +1080,11 @@ async function _sendOne(cert) {
   const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
   const validarUrl = buildValidarUrl(origin, cert.code);
   try {
-    // A signed cert already has its SIGNED PDF in R2 — e-mail THAT, never a freshly
-    // re-rendered unsigned copy. Otherwise render fresh and persist it to R2.
+    // A signed (or already-sent-after-signing) cert has its stored PDF in R2 — e-mail
+    // THAT, never a freshly re-rendered unsigned copy. Otherwise render fresh + persist.
     let b64 = null;
     let alreadyStored = false;
-    if (cert.status === 'signed' && cert.pdf_path) {
+    if ((cert.status === 'signed' || cert.status === 'sent') && cert.pdf_path) {
       b64 = await _fetchStoredPdfBase64(cert.pdf_path, cert.status);
       alreadyStored = !!b64;
     }
@@ -1059,12 +1097,18 @@ async function _sendOne(cert) {
       try { await api.attachPdf({ code: cert.code, pdf_b64: b64 }); }
       catch (e) { if (window.bsLog) window.bsLog('certs: attachPdf ' + cert.code + ': ' + (e && e.message || e), 'error'); }
     }
+    // Embed the brand logo as an INLINE attachment (cid) so the header logo renders
+    // without the client fetching an external URL (Gmail's proxy was refusing/caching
+    // the hosted one). Falls back to the hosted URL if the asset can't be read.
+    const logoAtt = await loadLogoAttachment(origin);
+    const attachments = [{ filename, content: b64 }];
+    if (logoAtt) attachments.push(logoAtt);
     const res = await sendEmail({
       to: cert.email,
       from: CERT_FROM,
-      subject: t('certificates.email_subject').replace('{course}', cert.course_title || ''),
-      html: _certEmailHtml(cert, validarUrl),
-      attachments: [{ filename, content: b64 }],
+      subject: 'Seu certificado: ' + (cert.course_title || 'PensoIA'),
+      html: _certEmailHtml(cert, validarUrl, logoAtt ? LOGO_CID : null),
+      attachments,
     });
     if (!res.ok) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
     await api.markSent({ code: cert.code });
@@ -1095,15 +1139,45 @@ async function _fetchStoredPdfBase64(pdfPath, cacheBust) {
   }
 }
 
+// Download a cert's STORED PDF (the signed file in R2) as a real save, not a new
+// tab. The R2 URL is cross-origin (worker domain), where <a download> is ignored;
+// so fetch the bytes into a blob and click an object-URL anchor instead.
+async function _downloadStoredPdf(cert) {
+  if (!cert || !cert.pdf_path) return;
+  notice.ok(t('certificates.pdf_generating'));
+  try {
+    const url = assetUrl('/r2/' + cert.pdf_path) + '?v=' + encodeURIComponent(cert.status || '');
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const blob = await resp.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = 'certificado-' + (cert.code || 'pensoia') + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
+  } catch (e) {
+    if (window.bsLog) window.bsLog('certs: download stored pdf: ' + (e && e.message || e), 'error');
+    notice.error(t('certificates.pdf_error'));
+  }
+}
+
 // Bulk "Enviar": e-mail every selectable cert (issued|signed with an e-mail),
 // summarizing how many went out and how many had no address.
 async function _bulkSend(codes) {
+  // Anything not revoked can be (re)sent — including already-'sent' certs (Reenviar).
   const certs = codes
     .map((code) => _certs.find((c) => c.code === code))
     .filter(Boolean)
-    .filter((c) => c.status === 'issued' || c.status === 'signed');
+    .filter((c) => c.status !== 'revoked');
   const sendable = certs.filter((c) => c.email);
   const noEmail = certs.length - sendable.length;
+  // Distinguish "nothing in a sendable state" from "selected but missing an e-mail",
+  // so the message is accurate (it used to say "no e-mail" even when the real reason
+  // was the cert being already 'sent' and filtered out).
+  if (!certs.length) { notice.warn(t('certificates.send_none_sendable')); return; }
   if (!sendable.length) { notice.warn(t('certificates.send_no_email')); return; }
   notice.ok(t('certificates.send_sending_bulk').replace('{n}', String(sendable.length)));
   let done = 0;
@@ -1114,22 +1188,35 @@ async function _bulkSend(codes) {
   await _loadCertList();
 }
 
-// The certificate e-mail body (PT-BR). Kept small + templated so the future Trail
-// "acesse seu certificado na Trilha" CTA is a one-line add here; the transport
-// (codex-email.js / the Worker lib) never changes. Static t() strings, only the
-// already-escaped holder/course are interpolated.
-function _certEmailHtml(cert, validarUrl) {
-  const name = esc(cert.holder_name || '');
+// The certificate e-mail (always PT-BR — the recipient is the student, never the
+// admin UI's language; so this copy is hardcoded, NOT via t() which follows the
+// panel locale). It wraps its body in the shared branded shell (renderEmailHtml),
+// so every Codex e-mail looks like the same product; only the message changes here.
+// Just the already-escaped holder/course are interpolated. FUTURE (Trail
+// self-service): swap/duplicate the CTA to "Acesse seu certificado na Trilha".
+function _certEmailHtml(cert, validarUrl, logoCid) {
+  const firstName = esc((cert.holder_name || '').trim().split(/\s+/)[0] || '');
   const course = esc(cert.course_title || '');
-  return '' +
-    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.6">' +
-      '<p>' + t('certificates.email_greeting').replace('{name}', name) + '</p>' +
-      '<p>' + t('certificates.email_body').replace('{course}', '<strong>' + course + '</strong>') + '</p>' +
-      '<p>' + t('certificates.email_validate') + '<br>' +
-        '<a href="' + esc(validarUrl) + '">' + esc(validarUrl) + '</a></p>' +
-      // FUTURE (Trail self-service): add an "Acesse na Trilha" button/link here.
-      '<p style="color:#666;font-size:13px">' + t('certificates.email_signoff') + '</p>' +
-    '</div>';
+  const url = esc(validarUrl);
+  const heading = firstName ? ('Parabéns, ' + firstName + '!') : 'Parabéns!';
+  // Same-origin hosted logo as the FALLBACK; the inline cid logo (when present) is
+  // preferred because it renders without the client fetching an external URL.
+  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
+  const bodyHtml = '' +
+    '<p style="margin:0 0 18px;color:#56606e">Seu certificado está pronto.</p>' +
+    '<p style="margin:0 0 18px">Você concluiu o curso <strong>' + course +
+      '</strong>. O certificado segue <strong>em anexo</strong>, em PDF.</p>' +
+    '<p style="margin:18px 0 0;font-size:12.5px;color:#8a93a1">Autenticidade verificável em<br>' +
+      '<a href="' + url + '" style="color:#0d9488">' + url + '</a></p>';
+  return renderEmailHtml({
+    heading,
+    bodyHtml,
+    cta: { label: 'Validar certificado', url },
+    badge: true,
+    logoCid: logoCid || undefined, // inline logo (preferred); see loadLogoAttachment
+    logoUrl: origin + '/images/brand/email-logo.png?v=2', // hosted fallback
+    preheader: 'Seu certificado do curso ' + course + ' está em anexo.',
+  });
 }
 
 // ── Preview + print ───────────────────────────────────────────────────────────
@@ -1249,24 +1336,27 @@ function _openIssueFlow() {
         '</div>' +
       '</div>' +
 
-      // Step 3: template + theme
-      '<div class="cdx-field-row">' +
-        '<div class="cdx-field">' +
-          '<label>' + esc(t('certificates.issue_template')) + '</label>' +
-          '<select id="cdx-issue-template">' +
-            CERT_TEMPLATES.map((tpl) => '<option value="' + esc(tpl.key) + '">' + esc(tpl.label) + '</option>').join('') +
-          '</select>' +
+      // Step 3: template + theme — selectors on the left, a live thumbnail on the
+      // right that re-renders as the form changes; click it for the big preview.
+      '<div class="cdx-cert-issue-preview-split">' +
+        '<div class="cdx-cert-issue-fields">' +
+          '<div class="cdx-field">' +
+            '<label>' + esc(t('certificates.issue_template')) + '</label>' +
+            '<select id="cdx-issue-template">' +
+              CERT_TEMPLATES.map((tpl) => '<option value="' + esc(tpl.key) + '">' + esc(tpl.label) + '</option>').join('') +
+            '</select>' +
+          '</div>' +
+          '<div class="cdx-field">' +
+            '<label>' + esc(t('certificates.issue_theme')) + '</label>' +
+            '<select id="cdx-issue-theme">' +
+              CERT_THEMES.map((th) => '<option value="' + esc(th.key) + '"' + (th.key === 'duo' ? ' selected' : '') + '>' + esc(t('certificates.theme_' + th.key)) + '</option>').join('') +
+            '</select>' +
+          '</div>' +
         '</div>' +
-        '<div class="cdx-field">' +
-          '<label>' + esc(t('certificates.issue_theme')) + '</label>' +
-          '<select id="cdx-issue-theme">' +
-            CERT_THEMES.map((th) => '<option value="' + esc(th.key) + '"' + (th.key === 'duo' ? ' selected' : '') + '>' + esc(t('certificates.theme_' + th.key)) + '</option>').join('') +
-          '</select>' +
+        '<div class="cdx-cert-issue-thumbwrap">' +
+          '<button type="button" class="cdx-cert-issue-thumb" id="cdx-issue-thumb" aria-label="' + esc(t('certificates.issue_preview_btn')) + '" title="' + esc(t('certificates.issue_preview_btn')) + '"></button>' +
+          '<small class="cdx-field-hint">' + esc(t('certificates.issue_preview_hint')) + '</small>' +
         '</div>' +
-      '</div>' +
-      '<div class="cdx-cert-issue-previewrow">' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" id="cdx-issue-preview">' + esc(t('certificates.issue_preview_btn')) + '</button>' +
-        '<small class="cdx-field-hint">' + esc(t('certificates.issue_preview_hint')) + '</small>' +
       '</div>' +
 
       // Step 4: course metadata
@@ -1277,7 +1367,7 @@ function _openIssueFlow() {
       '<div class="cdx-field-row">' +
         '<div class="cdx-field">' +
           '<label>' + esc(t('certificates.issue_hours')) + '</label>' +
-          '<input type="text" id="cdx-issue-hours" placeholder="' + esc(t('certificates.issue_hours_ph')) + '">' +
+          '<input type="number" min="0" step="1" inputmode="numeric" id="cdx-issue-hours" placeholder="' + esc(t('certificates.issue_hours_ph')) + '">' +
         '</div>' +
         '<div class="cdx-field">' +
           '<label>' + esc(t('certificates.issue_issued_on')) + '</label>' +
@@ -1308,10 +1398,6 @@ function _openIssueFlow() {
             '<input type="text" id="cdx-issue-format" placeholder="' + esc(t('certificates.issue_format_ph')) + '">' +
           '</div>' +
           '<div class="cdx-field">' +
-            '<label>' + esc(t('certificates.issue_modality')) + '</label>' +
-            '<input type="text" id="cdx-issue-modality" value="' + esc(dm.modality) + '">' +
-          '</div>' +
-          '<div class="cdx-field">' +
             '<label>' + esc(t('certificates.issue_meetings')) + '</label>' +
             '<input type="text" id="cdx-issue-meetings" placeholder="' + esc(t('certificates.issue_meetings_ph')) + '">' +
           '</div>' +
@@ -1336,11 +1422,25 @@ function _openIssueFlow() {
 
   bd.querySelector('#cdx-issue-cancel').addEventListener('click', () => closeModal(bd));
 
-  // Preview the chosen model + theme with the form's current data, before issuing.
-  const previewBtn = bd.querySelector('#cdx-issue-preview');
-  if (previewBtn) previewBtn.addEventListener('click', () => {
-    _openCertFullscreen(_buildIssuePreviewCert(bd, bd.querySelector('#cdx-issue-client')));
+  // Live thumbnail of the chosen model + theme with the form's current data. Click
+  // it for the big fullscreen preview. Re-renders on every field change (debounced
+  // for text inputs) so the user sees the certificate take shape before issuing.
+  const renderThumb = () => _renderIssueThumb(bd, bd.querySelector('#cdx-issue-client'));
+  const thumb = bd.querySelector('#cdx-issue-thumb');
+  if (thumb) thumb.addEventListener('click', () =>
+    _openCertFullscreen(_buildIssuePreviewCert(bd, bd.querySelector('#cdx-issue-client'))));
+  ['#cdx-issue-template', '#cdx-issue-theme'].forEach((sel) => {
+    const el = bd.querySelector(sel);
+    if (el) el.addEventListener('change', renderThumb);
   });
+  let _thumbTimer = null;
+  const debouncedThumb = () => { if (_thumbTimer) clearTimeout(_thumbTimer); _thumbTimer = setTimeout(renderThumb, 350); };
+  ['#cdx-issue-course', '#cdx-issue-hours', '#cdx-issue-issuer', '#cdx-issue-date',
+   '#cdx-issue-instructor', '#cdx-issue-place', '#cdx-issue-format'].forEach((sel) => {
+    const el = bd.querySelector(sel);
+    if (el) el.addEventListener('input', debouncedThumb);
+  });
+  renderThumb();
 
   const clientSel = bd.querySelector('#cdx-issue-client');
   const turmaSel  = bd.querySelector('#cdx-issue-turma');
@@ -1386,7 +1486,7 @@ function _openIssueFlow() {
     // Pull the course/instance data from the turma into the form (the promise:
     // pick a turma, the certificate fields fill themselves).
     _issueTurma = _issueTurmas.find((tt) => String(tt.id) === String(turmaId)) || null;
-    if (_issueTurma) _autofillIssueFromTurma(bd, _issueTurma);
+    if (_issueTurma) { _autofillIssueFromTurma(bd, _issueTurma); renderThumb(); }
     if (rosterEl) rosterEl.innerHTML = '<span class="cdx-empty">' + esc(t('certificates.loading')) + '</span>';
     if (rosterWrap) rosterWrap.style.display = '';
     try {
@@ -1425,6 +1525,7 @@ function _openIssueFlow() {
             if (cb.checked) _issueSelectedIds.add(pid);
             else _issueSelectedIds.delete(pid);
             syncAll();
+            renderThumb();   // the preview holder = first selected participant
           });
         });
         if (selAll) selAll.addEventListener('change', () => {
@@ -1528,11 +1629,15 @@ function _autofillIssueFromTurma(bd, turma) {
     if (el && val != null && String(val).trim()) el.value = String(val);
   };
   set('#cdx-issue-course', turma.course_title);
-  set('#cdx-issue-hours', turma.hours);
+  // #27: carga horária + encontros are DERIVED from the aulas (carga_horaria =
+  // SUM of per-aula hours, aula_count = COUNT). Prefer those; fall back to the
+  // legacy manual fields for turmas with no per-aula hours yet. The hours field is
+  // numeric-only, so normalize legacy "40 horas"/"40h" strings to the bare number.
+  const derivedHours = (turma.carga_horaria != null && Number(turma.carga_horaria) > 0) ? turma.carga_horaria : turma.hours;
+  set('#cdx-issue-hours', hoursNumber(derivedHours));
   set('#cdx-issue-place', turma.place);
-  set('#cdx-issue-meetings', turma.meetings);
+  set('#cdx-issue-meetings', (turma.aula_count != null && Number(turma.aula_count) > 0) ? String(turma.aula_count) : turma.meetings);
   set('#cdx-issue-format', turma.format ? t('cohorts.fmt_' + turma.format) : '');
-  set('#cdx-issue-modality', turma.modality ? t('cohorts.mod_' + turma.modality) : '');
   const modsEl = bd.querySelector('#cdx-issue-modules');
   if (modsEl && turma.ementa_json) {
     const certMods = ementaToCertModules(turma.ementa_json);
@@ -1586,7 +1691,6 @@ function _gatherVersoMeta(bd, clientSel) {
   set('instructor', '#cdx-issue-instructor');
   set('place',      '#cdx-issue-place');
   set('format',     '#cdx-issue-format');
-  set('modality',   '#cdx-issue-modality');
   set('meetings',   '#cdx-issue-meetings');
   const mods = parseModulesText(bd.querySelector('#cdx-issue-modules').value);
   if (mods.length) meta.modules = mods;
@@ -1621,6 +1725,20 @@ function _buildIssuePreviewCert(bd, clientSel) {
     theme:         get('#cdx-issue-theme'),
     meta_json:     JSON.stringify(meta),
   };
+}
+
+// Render the live issue-preview thumbnail (front sheet only, scaled to the small
+// box). PURE-ish: reads the form via _buildIssuePreviewCert and paints the thumb.
+function _renderIssueThumb(bd, clientSel) {
+  const thumb = bd && bd.querySelector('#cdx-issue-thumb');
+  if (!thumb) return;
+  const origin = (typeof location !== 'undefined' ? location.origin : 'https://pensoia.com');
+  const cert = _buildIssuePreviewCert(bd, clientSel);
+  thumb.innerHTML = _previewSheetsHtml(cert, origin, 'front');
+  hydrate(thumb, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
+  autofitNames(thumb);
+  _fitSheetWidth(thumb);
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => _fitSheetWidth(thumb));
 }
 
 // ── Tab contract ──────────────────────────────────────────────────────────────

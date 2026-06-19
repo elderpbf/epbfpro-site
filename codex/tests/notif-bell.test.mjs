@@ -1,0 +1,61 @@
+// tests/notif-bell.test.mjs
+// Shared notification bell (js/notif-bell.js). Unit-tests the pure grouping helper +
+// source-contract assertions: the component is source-agnostic (no facade import — the
+// caller injects fetch/markSeen), and both surfaces mount it with their own source +
+// the corner badge. The dropdown DOM is verified visually on staging.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { groupItems } from '../js/notif-bell.js';
+
+const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
+
+// ── groupItems ──────────────────────────────────────────────────────────────
+test('groupItems: groups by label, preserving first-seen order', () => {
+  const g = groupItems([
+    { group: 'Turma A', title: '1' },
+    { group: 'Turma B', title: '2' },
+    { group: 'Turma A', title: '3' },
+  ]);
+  assert.equal(g.length, 2);
+  assert.equal(g[0].label, 'Turma A');
+  assert.equal(g[0].items.length, 2);
+  assert.equal(g[1].label, 'Turma B');
+});
+test('groupItems: ungrouped items fall into a single empty-label bucket', () => {
+  const g = groupItems([{ title: '1' }, { title: '2' }]);
+  assert.equal(g.length, 1);
+  assert.equal(g[0].label, '');
+  assert.equal(g[0].items.length, 2);
+});
+
+// ── source contract ─────────────────────────────────────────────────────────
+test('notif-bell is source-agnostic (no facade hardcoded)', () => {
+  const src = read('../js/notif-bell.js');
+  assert.ok(!/codex-api\.js|callWorker|ct_forum/.test(src), 'must not import a facade or name actions');
+  assert.match(src, /fetchNotifications/, 'takes an injected fetch');
+  assert.match(src, /markSeen/, 'takes an injected mark-seen');
+  assert.match(src, /from '\.\/rel-time\.js'/, 'reuses the shared rel-time helper');
+});
+test('the teacher topbar mounts the bell against the admin facade', () => {
+  const src = read('../js/codex-topbar.js');
+  assert.match(src, /from '\.\/notif-bell\.js'/, 'imports the bell');
+  assert.match(src, /forumNotifications\(\)/, 'wires the cross-turma source');
+});
+test('the student trilha header mounts the bell only when enabled + logged in', () => {
+  const src = read('../trilha/js/page.js');
+  assert.match(src, /from '\.\.\/\.\.\/js\/notif-bell\.js'/, 'imports the bell');
+  assert.match(src, /notifications_enabled && state\.sessionToken/, 'gates on the flag + session');
+  assert.match(src, /forumNotifications\(\{ session_token/, 'wires the scoped student source');
+  // The deeplink must re-append the access token, else page.js shows link_invalid.
+  assert.match(src, /'k=' \+ encodeURIComponent\(state\.token\)/, 'preserves the ?k= token on navigation');
+});
+test('notif i18n keys exist in codex + trilha dictionaries (pt + en)', () => {
+  for (const f of ['../i18n/pt.js', '../i18n/en.js', '../trilha/i18n.js']) {
+    const src = read(f);
+    for (const k of ['notif.title', 'notif.mark_all', 'notif.empty']) {
+      assert.ok(src.includes("'" + k + "'"), f + ' missing ' + k);
+    }
+  }
+});

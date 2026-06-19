@@ -338,6 +338,16 @@
   flex-wrap: wrap;
 }
 
+/* Action buttons (row toolbar + bulk bar): glyph + label. On a narrow viewport the
+   label collapses and only the glyph stays, so the action set fits without wrapping. */
+.cdx-cert-act { display: inline-flex; align-items: center; gap: 0.32rem; }
+.cdx-cert-act .cdx-cert-act-i { flex: 0 0 auto; display: block; }
+.cdx-cert-act .cdx-cert-act-t { white-space: nowrap; }
+@media (max-width: 1100px) {
+  .cdx-cert-act .cdx-cert-act-t { display: none; }
+  .cdx-cert-act { padding-left: 0.45rem; padding-right: 0.45rem; gap: 0; }
+}
+
 /* ── Status badges ─────────────────────────────────────────────── */
 .cdx-cert-badge {
   display: inline-block;
@@ -398,9 +408,21 @@
 .cdx-cert-roster-all { border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 0.15rem; padding-bottom: 0.35rem; position: sticky; top: -0.4rem; background: var(--surface); }
 .cdx-cert-roster-allk { font-weight: 600; }
 
-/* Preview button row under the model/theme selects in the issue modal. */
-.cdx-cert-issue-previewrow { display: flex; align-items: center; gap: 0.6rem; margin: -0.2rem 0 0.75rem; flex-wrap: wrap; }
-.cdx-cert-issue-previewrow .cdx-field-hint { margin: 0; }
+/* Model/theme selectors (left) + live preview thumbnail (right) in the issue modal. */
+.cdx-cert-issue-preview-split { display: flex; gap: 0.9rem; align-items: flex-start; margin: 0 0 0.75rem; }
+.cdx-cert-issue-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.cdx-cert-issue-thumbwrap { flex: 0 0 auto; width: 180px; display: flex; flex-direction: column; gap: 0.3rem; }
+.cdx-cert-issue-thumb {
+  display: block; width: 180px; padding: 0; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--background); cursor: pointer; overflow: hidden; line-height: 0;
+  box-shadow: 0 2px 8px rgba(6, 26, 81, 0.07); transition: box-shadow 0.15s, border-color 0.15s;
+}
+.cdx-cert-issue-thumb:hover { border-color: var(--primary); box-shadow: 0 4px 14px rgba(6, 26, 81, 0.14); }
+.cdx-cert-issue-thumbwrap .cdx-field-hint { margin: 0; text-align: center; }
+@media (max-width: 560px) {
+  .cdx-cert-issue-preview-split { flex-direction: column; }
+  .cdx-cert-issue-thumbwrap, .cdx-cert-issue-thumb { width: 100%; }
+}
 
 /* Empty-field warning list (pre-issue guard). */
 .cdx-cert-empty-list { margin: 0 0 1.2rem; padding-left: 1.2rem; color: var(--text-secondary); font-size: 0.86rem; }
@@ -471,7 +493,7 @@
   cursor: pointer;
 }
 .cdx-cert-side-tab:hover { background: var(--cdx-card-hover-bg, rgba(127,127,127,0.08)); }
-.cdx-cert-side-tab.is-active { background: var(--primary); color: #fff; }
+.cdx-cert-side-tab.is-active { background: var(--primary); color: var(--text-on-accent, #fff); }
 
 .cdx-cert-tpl-icon { color: var(--accent-color, #8b5cf6); font-size: 1.05rem; }
 
@@ -534,7 +556,7 @@
 }
 .cdx-cert-theme-chip:hover { color: var(--text-primary); background: var(--surface-hover, rgba(127,127,127,0.10)); }
 .cdx-cert-theme-chip.is-active {
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   background: var(--accent-color, #8b5cf6);
   border-color: var(--accent-color, #8b5cf6);
 }
@@ -576,7 +598,7 @@
   border: 0;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.6);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   cursor: pointer;
   display: flex;
   align-items: center;

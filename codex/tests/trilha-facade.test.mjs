@@ -54,10 +54,13 @@ test('trail facade passes params through unchanged (answer payloads)', () => {
   assert.equal(tarefa.answer_json, '{"text":"x"}');
 });
 
-test('trail facade exposes the Phase 1 student-identity methods', () => {
-  for (const m of ['authRequest', 'authVerify', 'profileSave', 'sessionCheck']) {
+test('trail facade exposes the Phase 1 student-identity + Phase 7b enrollment methods', () => {
+  for (const m of ['authRequest', 'authVerify', 'profileSave', 'sessionCheck', 'presenceClaim', 'enrollClaim', 'resolveEnrollCode']) {
     assert.equal(typeof trail[m], 'function', `trail.${m} is a function`);
   }
+  // The frictionless enrollJoin is gone: the in-class scan only deposits presence,
+  // and login is always the magic-link flow (Élder 2026-06-19).
+  assert.equal(typeof trail.enrollJoin, 'undefined', 'no client-side enrollJoin');
 });
 
 test('trail facade maps the student methods to their worker actions', () => {
@@ -66,6 +69,9 @@ test('trail facade maps the student methods to their worker actions', () => {
     [() => trail.authVerify({ token: 'X' }),           'student_auth_verify'],
     [() => trail.profileSave({ session_token: 'S' }),  'student_profile_save'],
     [() => trail.sessionCheck({ session_token: 'S' }), 'student_session_check'],
+    [() => trail.presenceClaim({ client_slug: 'c', turma_slug: 't' }), 'student_presence_claim'],
+    [() => trail.enrollClaim({ client_slug: 'c', turma_slug: 't', et: 'E' }), 'student_enroll_claim'],
+    [() => trail.resolveEnrollCode({ code: '1234' }), 'ct_resolve_enroll_code'],
   ];
   for (const [fn, action] of cases) {
     assert.equal(fn().action, action, `maps to ${action}`);

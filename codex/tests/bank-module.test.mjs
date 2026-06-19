@@ -18,6 +18,15 @@ test('bank module satisfies the tab contract', async () => {
   assert.equal(typeof b.unmount, 'function', 'exports unmount');
 });
 
+test('composer: new MC defaults to 4 option slots', () => {
+  const src = read('../questions/question-composer.js');
+  // New multiple-choice seeds 4 empty options (poll stays 2). Editing keeps stored count.
+  assert.match(src, /\['',\s*'',\s*'',\s*''\]/, 'mc fallback is 4 empty options');
+  // The "Tornar mais complexa" AI button was reverted (Élder asked for an
+  // existing-question review flow instead, not a composer button).
+  assert.ok(!src.includes('data-act="ai-complex"'), 'no ai-complex button');
+});
+
 test('bank moveInArray() reorders immutably and clamps at the ends', async () => {
   const b = await import('../questions/bank.js');
   assert.deepEqual(b.moveInArray(['a', 'b', 'c'], 1, 'up'), ['b', 'a', 'c']);
@@ -225,5 +234,38 @@ test('bank + question-type i18n keys exist in BOTH dictionaries', async () => {
   for (const k of keys) {
     assert.ok(k in pt, `pt.js has ${k}`);
     assert.ok(k in en, `en.js has ${k}`);
+  }
+});
+
+test('e2: parseOrderIds validates the AI order is a permutation of the current ids', async () => {
+  const b = await import('../questions/bank.js');
+  assert.deepEqual(b.parseOrderIds('[3,1,2]', [1, 2, 3]), [3, 1, 2]);
+  assert.deepEqual(b.parseOrderIds('```json\n[2,1]\n```', [1, 2]), [2, 1]); // strips code fences
+  assert.equal(b.parseOrderIds('[1,2]', [1, 2, 3]), null, 'wrong length rejected');
+  assert.equal(b.parseOrderIds('[1,1,2]', [1, 2, 3]), null, 'duplicate rejected');
+  assert.equal(b.parseOrderIds('[1,2,9]', [1, 2, 3]), null, 'unknown id rejected');
+  assert.equal(b.parseOrderIds('not json', [1]), null, 'invalid JSON rejected');
+});
+
+test('e2: propose-order has a direction toggle, generates and applies via reorder', () => {
+  const src = read('../questions/bank.js');
+  // The complexify (#26) flow was moved out of the bank to the external review HTML.
+  assert.doesNotMatch(src, /data-act="complexify"/, 'no Mais complexas button in the bank');
+  assert.doesNotMatch(src, /_openComplexify|_CPX_SYS/, 'complexify code removed');
+  // e2 button + direction chooser + generate trigger
+  assert.match(src, /data-act="propose-order"/, 'Propor ordem button');
+  assert.match(src, /data-dir="asc"/, 'easier→harder direction option');
+  assert.match(src, /data-dir="desc"/, 'harder→easier direction option');
+  assert.match(src, /data-act="order-generate"/, 'generate-order trigger');
+  // direction drives the prompt; bad parse logs to pill; apply reorders the set
+  assert.match(src, /ai\.chat\(\{ system: _orderSys\(_orderDir\)/, 'e2 calls ai.chat with the direction-aware prompt');
+  assert.match(src, /notice\.internal\('bank-order:/, 'bad-parse path logs to debug pill');
+  assert.match(src, /api\.reorder\(\{ list_name: _currentSet, ordered_ids: _orderProposed/, 'applies via reorder');
+  for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
+    const dict = read(lang);
+    for (const k of ['questions.bank_propose_order', 'questions.bank_order_dir_asc', 'questions.bank_order_dir_desc', 'questions.bank_order_applied']) {
+      assert.ok(dict.includes("'" + k + "'"), lang + ' has ' + k);
+    }
+    assert.ok(!dict.includes("'questions.bank_complexify'"), lang + ' dropped complexify keys');
   }
 });

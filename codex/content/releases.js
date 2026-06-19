@@ -67,6 +67,30 @@ export function diffAulaSelection({ released, releasedMeta, aulaNum, poolIds, se
   return { toRelease, toSetAula, toDropAula };
 }
 
+// #23: additive multi-aula diff for one aula's composer. Checking an item ADDS this
+// aula to its bindings (instead of moving it); unchecking REMOVES this aula. Returns
+// the ids needing a first ct_release and the per-item new aula_numbers list to save.
+// `aulaNumbersOf(id)` yields the item's current bindings (array).
+export function diffAulaMultiSelection({ released, aulaNumbersOf, aulaNum, poolIds, selectedIds }) {
+  const rel = new Set((released || []).map(Number));
+  const sel = new Set((selectedIds || []).map(Number));
+  const n = Number(aulaNum);
+  const toRelease = [], updates = [];
+  for (const raw of (poolIds || [])) {
+    const id = Number(raw);
+    const cur = (aulaNumbersOf(id) || []).map(Number);
+    const hasN = cur.indexOf(n) !== -1;
+    const checked = sel.has(id);
+    if (checked && !hasN) {
+      if (!rel.has(id)) toRelease.push(id);
+      updates.push({ id, aulaNumbers: [...new Set(cur.concat(n))].sort((a, b) => a - b) });
+    } else if (!checked && hasN) {
+      updates.push({ id, aulaNumbers: cur.filter((x) => x !== n) });
+    }
+  }
+  return { toRelease, updates };
+}
+
 // Diff the "Outros" (no-lesson) bucket: release newly checked items, unrelease
 // items unchecked that were sitting in Outros (no aula_number).
 export function diffOutrosSelection({ released, releasedMeta, poolIds, selectedIds }) {
@@ -109,7 +133,7 @@ function _relMs(v) {
   return isFinite(ms) ? ms : 0;
 }
 function _aulaReleasedIds(aulaNum) {
-  return _released.filter((id) => String((_releasedMeta[id] || {}).aula_number) === String(aulaNum));
+  return _released.filter((id) => _aulaNumbersOf(id).map(String).indexOf(String(aulaNum)) !== -1);
 }
 // Is any item in this aula currently inside the NOVO window (i.e. the badge shows)?
 function _aulaIsFresh(aulaNum) {
@@ -143,12 +167,19 @@ function _countGlyph(kind, size) {
 function _isTarefa(i) { return !i.set_id && i.type === 'tarefa'; }
 function _isDrive(i) { return i.type === 'drive_file'; }
 function _isOutros(i) { return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file'; }
+// #23: every aula an item is bound to. Falls back to the single aula_number for
+// legacy items that only carry the old single binding.
+function _aulaNumbersOf(id) {
+  const m = _releasedMeta[id] || {};
+  if (Array.isArray(m.aula_numbers)) return m.aula_numbers;
+  return (m.aula_number != null && m.aula_number !== '') ? [m.aula_number] : [];
+}
 function _isBoundTo(id, aulaNum) {
   return _released.indexOf(Number(id)) !== -1 &&
-    String((_releasedMeta[id] || {}).aula_number) === String(aulaNum);
+    _aulaNumbersOf(id).map(String).indexOf(String(aulaNum)) !== -1;
 }
 function _inOutros(id) {
-  return _released.indexOf(Number(id)) !== -1 && !(_releasedMeta[id] || {}).aula_number;
+  return _released.indexOf(Number(id)) !== -1 && _aulaNumbersOf(id).length === 0;
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -191,7 +222,11 @@ function _loadReleases(clientSlug, turmaSlug) {
       const items = (vd && vd.items) || [];
       _released = items.map((i) => i.id);
       _releasedMeta = {};
-      items.forEach((i) => { _releasedMeta[i.id] = { aula_number: i.aula_number || null, released_at: i.released_at }; });
+      items.forEach((i) => { _releasedMeta[i.id] = {
+        aula_number: i.aula_number || null,
+        aula_numbers: Array.isArray(i.aula_numbers) ? i.aula_numbers : (i.aula_number != null ? [i.aula_number] : []),
+        released_at: i.released_at,
+      }; });
       _renderList();
     }).catch((err) => { _released = []; _releasedMeta = {}; _renderList(); notice.internal(_err(err)); });
   }).catch((err) => {
@@ -257,6 +292,13 @@ function _renderList() {
       const title = _esc(fresh ? t('releases.clear_fresh') : t('releases.show_fresh'));
       clearBtn = '<button type="button" class="cdx-rel-clear-fresh cdx-dev-only' + (fresh ? '' : ' is-hidden-state') + '" data-toggle-fresh="' + _esc(n) + '" data-make-fresh="' + (fresh ? '0' : '1') + '" title="' + title + '">' + label + '</button>';
     }
+    // "Marcar como ocorrida no dia marcado": only for a scheduled aula not yet
+    // happened. Sets happened_on = scheduled_for (occurred on its planned day).
+    let markBtn = '';
+    if (ds.key !== 'happened' && aula.scheduled_for) {
+      markBtn = '<button type="button" class="cdx-rel-mark-happened" data-mark-happened="' + _esc(aula.id) +
+        '" title="' + _esc(t('releases.mark_happened_title')) + '">' + _esc(t('releases.mark_happened')) + '</button>';
+    }
     html +=
       '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-aula-id="' + _esc(aula.id) + '" data-aula-num="' + _esc(n) + '">' +
         '<span class="cdx-rel-aula-num">' + _esc(n) + '</span>' +
@@ -267,6 +309,7 @@ function _renderList() {
             '<span class="cdx-rel-aula-counts">' + _aulaCountsHtml(n) + '</span>' +
           '</div>' +
         '</div>' +
+        markBtn +
         clearBtn +
       '</div>';
   });
@@ -310,6 +353,8 @@ function _renderPreview() {
 }
 
 function _onListClick(e) {
+  const markBtn = e.target.closest('.cdx-rel-mark-happened');
+  if (markBtn) { _markAulaHappened(markBtn.dataset.markHappened); return; }
   const toggleBtn = e.target.closest('.cdx-rel-clear-fresh');
   if (toggleBtn) { _toggleFresh(toggleBtn.dataset.toggleFresh, toggleBtn.dataset.makeFresh === '1'); return; }
   const row = e.target.closest('.cdx-item-row');
@@ -317,6 +362,29 @@ function _onListClick(e) {
   _selectedAula = row.dataset.aulaId;   // 'outros' or an aula id (string)
   _renderList();
   _renderPreview();
+}
+
+// Mark an aula as occurred on its scheduled day, straight from Releases. ct_update_aula
+// REPLACES every field, so rebuild the full aula payload (preserving title + dates) and
+// only set happened_on = scheduled_for. aula-status.js then reads it as 'happened'.
+function _markAulaHappened(aulaId) {
+  const aula = _aulas.find((a) => String(a.id) === String(aulaId));
+  if (!aula || !aula.scheduled_for) return;
+  const payload = {
+    client_slug: _clientSlug, turma_slug: _turmaSlug,
+    id: aula.id, aula_number: aula.aula_number,
+    title: aula.title || '',
+    scheduled_for: aula.scheduled_for || null,
+    happened_on: aula.scheduled_for,
+    rescheduled_from: aula.rescheduled_from || null,
+    rescheduled_note: aula.rescheduled_note || null,
+  };
+  cohortsApi.updateAula(payload).then((r) => {
+    if (r && r.error) throw new Error(r.error);
+    aula.happened_on = aula.scheduled_for;
+    _toast(t('releases.mark_happened_done'));
+    _renderList();
+  }).catch((err) => notice.internal(_err(err)));
 }
 
 // Debug-only: hide/show the NOVO badge for every item in this aula by moving
@@ -336,11 +404,55 @@ function _toggleFresh(aulaNum, makeFresh) {
 }
 
 // ── Composer rendering (collapsible accordion, like the Presets picker) ──────
-function _rowHtml(item, pool, checked, glyphHtml) {
-  return '<label class="cdx-comp-item" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
+function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
+  // elsewhereAula: the OTHER aulas this item is bound to (#23 multi-aula). The row
+  // greys only when it is NOT bound to THIS aula (a "borrow" candidate); the marker
+  // "já nas aulas 1, 3" shows whenever it is bound elsewhere. Checking it here ADDS
+  // this aula (it no longer moves the item).
+  const elsewhere = Array.isArray(elsewhereAula) ? elsewhereAula : (elsewhereAula != null && elsewhereAula !== '' ? [elsewhereAula] : []);
+  const hasElsewhere = elsewhere.length > 0;
+  const grey = hasElsewhere && !checked;
+  return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
     '<input type="checkbox" class="cdx-comp-cb" data-pool="' + pool + '" value="' + _esc(item.id) + '"' + (checked ? ' checked' : '') + '>' +
-    '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) + '</span>' +
+    '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) +
+      (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
+    '</span>' +
   '</label>';
+}
+
+// Display label for an item type slug (from the ct_types registry; fallback = slug).
+function _typeLabel(slug) {
+  const ty = _types.find((x) => x.slug === slug);
+  return (ty && ty.label) || slug;
+}
+
+// Group items by their type, ordered by the ct_types registry order (unknown types
+// last). Used to lay the release composer out "por tipo" instead of one Outros bucket.
+function _groupByType(items) {
+  const order = _types.map((tp) => tp.slug);
+  const byType = new Map();
+  items.forEach((i) => { if (!byType.has(i.type)) byType.set(i.type, []); byType.get(i.type).push(i); });
+  return Array.from(byType.keys())
+    .sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    })
+    .map((k) => ({ type: k, items: byType.get(k) }));
+}
+
+// The OTHER aulas this item is bound to (excluding aulaNum). Returns an array, or
+// null if none. Drives the "já nas aulas 1, 3" marker (R1a + #23 multi-aula).
+function _releasedElsewhere(id, aulaNum) {
+  if (_released.indexOf(Number(id)) === -1) return null;
+  const others = _aulaNumbersOf(id).filter((a) => String(a) !== String(aulaNum));
+  return others.length ? others : null;
+}
+
+// "já na aula 1" (one) or "já nas aulas 1, 3" (several).
+function _elsewhereLabel(aulas) {
+  const list = (Array.isArray(aulas) ? aulas : [aulas]).map(String);
+  if (list.length <= 1) return t('releases.already_aula').replace('{n}', list[0] || '');
+  return t('releases.already_aulas').replace('{ns}', list.join(', '));
 }
 
 // Render the item pools as one search + a single-open accordion of sections,
@@ -409,29 +521,41 @@ function _renderAulaComposer(container, aula) {
   const driveItems = _allItems.filter(_isDrive);
   const outrosItems = _allItems.filter(_isOutros);
 
+  // Apostila rows render inline (the set-position prefix isn't in _rowHtml), but
+  // still carry the "já na aula N" grey marker when released to another aula (R1a/#22).
   const apostilaRows = _apostilaItems.length
-    ? _apostilaItems.map((i) =>
-        '<label class="cdx-comp-item" data-title="' + _esc((i.title || '').toLowerCase()) + '"><input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (_isBoundTo(i.id, aulaNum) ? ' checked' : '') + '>' +
-        '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) + '</span></label>').join('')
+    ? _apostilaItems.map((i) => {
+        const checked = _isBoundTo(i.id, aulaNum);
+        const elsewhere = _releasedElsewhere(i.id, aulaNum) || [];
+        const hasElsewhere = elsewhere.length > 0;
+        const grey = hasElsewhere && !checked;
+        return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
+          '<input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (checked ? ' checked' : '') + '>' +
+          '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) +
+            (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
+          '</span></label>';
+      }).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_apostila') + '</div>';
 
   const tarefaGlyph = _countGlyph('tarefa', 15);
   const tarefaRows = tarefaItems.length
-    ? tarefaItems.map((i) => _rowHtml(i, 'tarefa', _isBoundTo(i.id, aulaNum), tarefaGlyph)).join('')
+    ? tarefaItems.map((i) => _rowHtml(i, 'tarefa', _isBoundTo(i.id, aulaNum), tarefaGlyph, _releasedElsewhere(i.id, aulaNum))).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_tarefa') + '</div>';
 
-  const outrosRows = outrosItems.length
-    ? outrosItems.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join('')
-    : '<div class="cdx-comp-empty">' + t('releases.empty_outros') + '</div>';
-
+  // R3: lay the item list out por tipo. Apostila + Tarefas keep their own sections;
+  // the former single "Outros" bucket splits into one section per item type.
   const sections = [
     { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length, rowsHtml: apostilaRows },
     { key: 'tarefa', label: t('releases.section_tarefas'), count: tarefaItems.length, rowsHtml: tarefaRows },
-    { key: 'outros', label: t('releases.section_outros'), count: outrosItems.length, rowsHtml: outrosRows },
   ];
+  _groupByType(outrosItems).forEach((g) => {
+    const glyph = typeIconHtml(_typeIcon(g.type), { size: 15 });
+    const rows = g.items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), glyph, _releasedElsewhere(i.id, aulaNum))).join('');
+    sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length, rowsHtml: rows });
+  });
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
-    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph)).join('');
+    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph, _releasedElsewhere(i.id, aulaNum))).join('');
     sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
   }
 
@@ -450,13 +574,15 @@ function _renderOutrosComposer(container) {
   const standalone = eligible.filter((i) => !_isDrive(i));
   const driveItems = eligible.filter(_isDrive);
 
-  const standaloneRows = standalone.length
-    ? standalone.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join('')
-    : '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>';
-
-  const sections = [
-    { key: 'outros', label: t('releases.section_outros_solo'), count: standalone.length, rowsHtml: standaloneRows },
-  ];
+  // R3: por tipo here too. Empty bucket keeps a single placeholder section.
+  const sections = standalone.length
+    ? _groupByType(standalone).map((g) => ({
+        key: 'type-' + g.type,
+        label: _typeLabel(g.type),
+        count: g.items.length,
+        rowsHtml: g.items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join(''),
+      }))
+    : [{ key: 'outros', label: t('releases.section_outros_solo'), count: 0, rowsHtml: '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>' }];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
     const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');
@@ -484,22 +610,22 @@ function _saveAula(container, aulaNum, pools) {
     .concat(pools.tarefaItems.map((i) => Number(i.id)))
     .concat(pools.outrosItems.map((i) => Number(i.id)))
     .concat((pools.driveItems || []).map((i) => Number(i.id)));
-  const { toRelease, toSetAula, toDropAula } = diffAulaSelection({
-    released: _released, releasedMeta: _releasedMeta, aulaNum, poolIds, selectedIds,
+  // #23: additive, checking ADDS this aula, unchecking REMOVES it (no longer moves).
+  const { toRelease, updates } = diffAulaMultiSelection({
+    released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum, poolIds, selectedIds,
   });
   const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
 
   Promise.all(toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+    .then(() => Promise.all(updates.map((u) =>
+      api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
     .then(() => {
-      const setCalls = toRelease.concat(toSetAula).map((id) =>
-        api.setAula(Object.assign({ item_id: id, aula_number_or_null: aulaNum }, base)));
-      const dropCalls = toDropAula.map((id) =>
-        api.setAula(Object.assign({ item_id: id, aula_number_or_null: null }, base)));
-      return Promise.all(setCalls.concat(dropCalls));
-    }).then(() => {
-      toRelease.forEach((id) => { _released.push(id); _releasedMeta[id] = { aula_number: aulaNum }; });
-      toSetAula.forEach((id) => { (_releasedMeta[id] || (_releasedMeta[id] = {})).aula_number = aulaNum; });
-      toDropAula.forEach((id) => { if (_releasedMeta[id]) _releasedMeta[id].aula_number = null; });
+      toRelease.forEach((id) => { if (_released.indexOf(id) === -1) _released.push(id); });
+      updates.forEach((u) => {
+        const m = _releasedMeta[u.id] || (_releasedMeta[u.id] = {});
+        m.aula_numbers = u.aulaNumbers;
+        m.aula_number = u.aulaNumbers.length ? u.aulaNumbers[0] : null; // primary (Trail back-compat)
+      });
       _toast(t('releases.saved'));
       _renderList();
       _renderPreview();

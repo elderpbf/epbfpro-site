@@ -49,6 +49,7 @@ export function flowOptsFrom(opts, origin) {
     turma: opts.turma,
     k: opts.k,
     origin,
+    presence: opts.presence,
     api: opts.api,
     session: opts.session,
   };
@@ -63,6 +64,7 @@ export function createLoginFlow(opts = {}) {
   const turma = opts.turma;
   const k = opts.k; // the turma access token, echoed into the magic-link return URL
   const origin = opts.origin; // the page origin, so the emailed link returns here (staging/prod)
+  const presence = opts.presence; // device-presence grant (signal b), offered at verify
 
   const flow = {
     state: 'anonymous',
@@ -89,7 +91,7 @@ export function createLoginFlow(opts = {}) {
     async verify(token) {
       this.error = null;
       this.state = 'verifying';
-      const res = await api.authVerify({ token });
+      const res = await api.authVerify(presence ? { token, presence_token: presence } : { token });
       const next = nextStateAfterVerify(res);
       if (next === 'error') { this.state = 'error'; this.error = (res && res.error) || 'invalid_token'; return this; }
       sess.setToken(client, turma, res.session_token);

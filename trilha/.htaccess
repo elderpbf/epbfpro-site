@@ -15,6 +15,13 @@ RewriteRule ^validar/([A-Za-z0-9-]+)/?$ validar.html?code=$1 [QSA,L]
 # /trilha/validar  (bare path, shows manual code-entry form)
 RewriteRule ^validar/?$ validar.html [L]
 
+# ── Typed enrollment entry (MUST precede the generic two-segment rule) ──
+# /trilha/<4-digit code> -> entrar.html?code=NNNN (typed-entry, resolves to the live turma)
+RewriteRule ^([0-9]{4})/?$ entrar.html?code=$1 [QSA,L]
+# /trilha/entrar  and bare /trilha/  -> the manual code-entry fallback form
+RewriteRule ^entrar/?$ entrar.html [L]
+RewriteRule ^$ entrar.html [L]
+
 # Rewrite /trilha/<client>/<turma>[/] to index.html, preserving ?k=token
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

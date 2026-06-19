@@ -154,6 +154,8 @@
 .cdx-cert-page .cert-val-url { font-size:10.5px; color:var(--muted); margin-top:2px; }
 .cdx-cert-page .cert-val-code { font-family:var(--mono); font-size:13.5px; font-weight:600; letter-spacing:.08em; color:var(--ink2); margin-top:1px; }
 .cdx-cert-page .cert-val-card { background:#fff; border:1px solid var(--rule); border-radius:12px; padding:8px 13px; box-shadow:0 6px 18px rgba(6,26,81,.08); }
+.cdx-cert-page .cert-signed-note { font-family:var(--inter); font-size:8.5px; line-height:1.32; color:var(--pdark); font-weight:600; margin-top:5px; max-width:58mm; }
+.cdx-cert-page .cert-signed-note b { font-weight:800; }
 
 /* ============================================================ VERSO (shared) */
 .cdx-cert-page .back { padding:15mm 22mm 13mm; display:flex; flex-direction:column; background:var(--paper); color:var(--ink); }

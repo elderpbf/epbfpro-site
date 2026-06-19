@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fórum · Direção A (aba dedicada)</title>
+
+<!-- Real Trilha chrome (same-origin on staging) -->
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.0">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+<script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
+
+<style>
+  /* ── Forum-specific (mock-only); all colours via theme tokens so dark mode is free ── */
+  .fr-wrap { display: flex; flex-direction: column; gap: 14px; }
+
+  .fr-intro {
+    font-size: 0.83rem; color: var(--text-secondary); line-height: 1.5;
+    margin: -0.25rem 0 0.25rem;
+  }
+
+  .fr-avatar {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; font-weight: 800; font-size: 0.95rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fr-avatar--sm { width: 34px; height: 34px; font-size: 0.78rem; }
+  .fr-avatar--prof { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+
+  /* Composer */
+  .fr-composer {
+    display: flex; gap: 0.85rem; align-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 0.9rem 1.05rem;
+    box-shadow: 0 6px 22px -16px var(--shadow);
+  }
+  .fr-composer-fake {
+    flex: 1; min-width: 0; color: var(--text-secondary); font-size: 0.9rem;
+    background: var(--background); border: 1px solid var(--border);
+    border-radius: 999px; padding: 0.62rem 1rem;
+  }
+  .fr-btn {
+    display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+    padding: 0.55rem 1.1rem; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    border: none; border-radius: 10px; background: var(--primary); color: #fff;
+    cursor: pointer; box-shadow: 0 3px 12px -4px rgba(20,184,166,0.45);
+  }
+  .fr-btn--ghost {
+    background: transparent; color: var(--primary-dark);
+    border: 1.5px solid var(--border); box-shadow: none;
+  }
+
+  /* Thread row */
+  .fr-thread {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.18s ease;
+  }
+  .fr-thread:hover { transform: translateY(-1px); box-shadow: 0 8px 22px -10px var(--shadow); }
+  .fr-thread.open { box-shadow: 0 14px 36px -16px rgba(20,184,166,0.32); }
+  .fr-thread-head {
+    display: flex; align-items: flex-start; gap: 0.85rem;
+    padding: 1rem 1.15rem; cursor: pointer;
+  }
+  .fr-thread-body { flex: 1; min-width: 0; }
+  .fr-thread-topline { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.2rem; }
+  .fr-thread-title {
+    font-size: 1rem; font-weight: 700; color: var(--text-primary);
+    line-height: 1.3; letter-spacing: -0.01em;
+  }
+  .fr-thread-snippet {
+    font-size: 0.83rem; color: var(--text-secondary); line-height: 1.45; margin-top: 0.25rem;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .fr-thread-meta {
+    display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+    margin-top: 0.55rem; font-size: 0.74rem; color: var(--text-secondary);
+  }
+  .fr-author { font-weight: 700; color: var(--text-primary); }
+
+  .fr-pin {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px;
+    background: var(--task-bg); color: var(--task-dark); border: 1px solid var(--task-border);
+  }
+  .fr-prof-badge {
+    font-size: 0.62rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 999px;
+    background: rgba(124,58,237,0.12); color: #6d28d9; border: 1px solid rgba(124,58,237,0.3);
+  }
+  [data-theme="dark"] .fr-prof-badge { color: #c4b5fd; background: rgba(124,58,237,0.22); }
+
+  .fr-count-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+    background: rgba(20,184,166,0.12); color: var(--primary-dark); flex-shrink: 0;
+  }
+  [data-theme="dark"] .fr-count-pill { background: rgba(94,234,212,0.14); color: var(--primary-light); }
+
+  /* Expanded thread replies */
+  .fr-replies {
+    border-top: 1px solid var(--border); padding: 1.1rem 1.25rem 1.25rem;
+    background: linear-gradient(180deg, rgba(20,184,166,0.03), transparent 70%);
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .fr-reply { display: flex; gap: 0.7rem; }
+  .fr-reply-body { flex: 1; min-width: 0; }
+  .fr-reply-head { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.2rem; }
+  .fr-reply-name { font-size: 0.84rem; font-weight: 700; color: var(--text-primary); }
+  .fr-reply-time { font-size: 0.72rem; color: var(--text-secondary); }
+  .fr-reply-text { font-size: 0.88rem; color: var(--text-primary); line-height: 1.55; }
+  .fr-reply-actions { display: flex; gap: 0.9rem; margin-top: 0.35rem; }
+  .fr-reply-action {
+    font-size: 0.74rem; font-weight: 600; color: var(--text-secondary);
+    background: none; border: none; cursor: pointer; padding: 0; font-family: inherit;
+  }
+  .fr-reply-action:hover { color: var(--primary-dark); }
+
+  .fr-reply-composer {
+    display: flex; gap: 0.6rem; align-items: center; margin-top: 0.3rem;
+    padding-top: 0.95rem; border-top: 1px dashed var(--border);
+  }
+  .fr-reply-input {
+    flex: 1; color: var(--text-secondary); font-size: 0.85rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 0.55rem 0.95rem;
+  }
+</style>
+</head>
+<body>
+
+<pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
+
+<div class="cdx-trilha-page">
+  <main class="cdx-trilha-main">
+
+    <!-- HERO (reused verbatim) -->
+    <section class="cdx-trilha-hero">
+      <div class="cdx-trilha-hero-identity">
+        <div class="cdx-tr-client-avatar"><span class="cdx-tr-avatar-initials">TJ</span></div>
+        <div class="cdx-tr-hero-text">
+          <span class="cdx-tr-hero-eyebrow">Sua trilha de aprendizado</span>
+          <h1 class="cdx-tr-client-name">Tribunal de Justiça</h1>
+          <p class="cdx-tr-turma-name">IA na Prática Jurídica · Turma 2026.1</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB NAV — "Conversas" entra como nova aba à esquerda, ativa -->
+    <nav class="cdx-trilha-tabs" role="tablist">
+      <div class="cdx-trilha-tabs-left">
+        <button class="cdx-tr-tab-btn" role="tab">Aulas</button>
+        <button class="cdx-tr-tab-btn active" role="tab" aria-selected="true">Conversas</button>
+        <button class="cdx-tr-tab-btn" role="tab">Outros materiais</button>
+      </div>
+      <div class="cdx-trilha-tabs-right">
+        <button class="cdx-tr-tab-btn" role="tab">Conteúdo do curso</button>
+      </div>
+    </nav>
+
+    <div class="cdx-trilha-tabcontent">
+      <div class="cdx-trilha-panel">
+        <div class="fr-wrap">
+
+          <p class="fr-intro">O espaço de conversa da turma. Abra um assunto, tire dúvidas e acompanhe o que os colegas e o professor estão discutindo.</p>
+
+          <!-- Composer -->
+          <div class="fr-composer">
+            <div class="fr-avatar">AB</div>
+            <div class="fr-composer-fake">Iniciar uma conversa…</div>
+            <button class="fr-btn">Publicar</button>
+          </div>
+
+          <!-- Thread 1 — fixada pelo professor -->
+          <article class="fr-thread">
+            <div class="fr-thread-head">
+              <div class="fr-avatar fr-avatar--prof">É</div>
+              <div class="fr-thread-body">
+                <div class="fr-thread-topline">
+                  <span class="fr-pin">📌 Fixado</span>
+                  <span class="fr-thread-title">Leiam antes da aula 3: roteiro de prompts</span>
+                </div>
+                <p class="fr-thread-snippet">Deixei um roteiro com os 5 prompts que vamos usar ao vivo. Vale revisar e já trazer dúvidas sobre o passo de contexto…</p>
+                <div class="fr-thread-meta">
+                  <span class="fr-author">Prof. Élder</span> · há 2 dias · última resposta há 3 h
+                </div>
+              </div>
+              <span class="fr-count-pill">💬 12</span>
+            </div>
+          </article>
+
+          <!-- Thread 2 — aberta, mostrando respostas aninhadas -->
+          <article class="fr-thread open">
+            <div class="fr-thread-head">
+              <div class="fr-avatar">AB</div>
+              <div class="fr-thread-body">
+                <div class="fr-thread-topline">
+                  <span class="fr-thread-title">Alguém conseguiu rodar o exercício da aula 2?</span>
+                </div>
+                <p class="fr-thread-snippet">Tô travando no erro de contexto quando colo o contrato inteiro. Alguém passou por isso?</p>
+                <div class="fr-thread-meta">
+                  <span class="fr-author">Ana Beatriz</span> · ontem · 3 respostas
+                </div>
+              </div>
+              <span class="fr-count-pill">💬 3</span>
+            </div>
+
+            <div class="fr-replies">
+              <div class="fr-reply">
+                <div class="fr-avatar fr-avatar--sm">RM</div>
+                <div class="fr-reply-body">
+                  <div class="fr-reply-head"><span class="fr-reply-name">Roberto M.</span><span class="fr-reply-time">há 20 h</span></div>
+                  <p class="fr-reply-text">Tive o mesmo erro. Era o tamanho do contrato mesmo — colei só a cláusula em discussão e o modelo voltou a responder certinho.</p>
+                  <div class="fr-reply-actions"><button class="fr-reply-action">👍 4</button><button class="fr-reply-action">Responder</button></div>
+                </div>
+              </div>
+              <div class="fr-reply">
+                <div class="fr-avatar fr-avatar--sm fr-avatar--prof">É</div>
+                <div class="fr-reply-body">
+                  <div class="fr-reply-head"><span class="fr-reply-name">Prof. Élder</span><span class="fr-prof-badge">Professor</span><span class="fr-reply-time">há 18 h</span></div>
+                  <p class="fr-reply-text">Isso, Roberto. Regra prática: recorte o trecho relevante antes de pedir a análise. Na aula 3 mostro como resumir o contrato em blocos primeiro.</p>
+                  <div class="fr-reply-actions"><button class="fr-reply-action">👍 9</button><button class="fr-reply-action">Responder</button></div>
+                </div>
+              </div>
+
+              <div class="fr-reply-composer">
+                <div class="fr-avatar fr-avatar--sm">AB</div>
+                <div class="fr-reply-input">Escreva uma resposta…</div>
+                <button class="fr-btn">Enviar</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Thread 3 -->
+          <article class="fr-thread">
+            <div class="fr-thread-head">
+              <div class="fr-avatar">CM</div>
+              <div class="fr-thread-body">
+                <div class="fr-thread-topline">
+                  <span class="fr-thread-title">Dúvida sobre o caso prático de contratos</span>
+                </div>
+                <p class="fr-thread-snippet">No item 4 ele pede pra comparar duas cláusulas — é pra usar o mesmo chat ou abrir um novo pra cada uma?</p>
+                <div class="fr-thread-meta"><span class="fr-author">Carlos M.</span> · há 5 h · 4 respostas</div>
+              </div>
+              <span class="fr-count-pill">💬 4</span>
+            </div>
+          </article>
+
+          <!-- Thread 4 -->
+          <article class="fr-thread">
+            <div class="fr-thread-head">
+              <div class="fr-avatar">JR</div>
+              <div class="fr-thread-body">
+                <div class="fr-thread-topline">
+                  <span class="fr-thread-title">Material complementar sobre LGPD</span>
+                </div>
+                <p class="fr-thread-snippet">Achei um guia bem direto sobre dados pessoais em peças. Deixo o link aqui pra quem quiser…</p>
+                <div class="fr-thread-meta"><span class="fr-author">Júlia R.</span> · ontem · 7 respostas</div>
+              </div>
+              <span class="fr-count-pill">💬 7</span>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </div>
+
+    <footer class="cdx-trilha-footer">
+      <span>Feito com PensoIA</span> · <a href="https://pensoia.com" target="_blank" rel="noopener">pensoia.com</a>
+    </footer>
+  </main>
+</div>
+
+<script type="module" src="/codex/trilha/js/pensoia-header.js"></script>
+</body>
+</html>

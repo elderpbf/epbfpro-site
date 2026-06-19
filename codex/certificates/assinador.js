@@ -126,7 +126,14 @@ async function signSelected() {
     if (!cert) { fail++; continue; }
     setSt(code, 'work', 'assinando…');
     try {
-      const b64 = await renderCertsPdfBase64([{ html: renderCertHtml(cert, origin), qrUrl: buildValidarUrl(origin, code) }]);
+      // Render the cert AS signed so the "Certificado assinado digitalmente ·
+      // ICP-Brasil" line is baked INTO the PDF we are about to sign (the renderer
+      // keys that note on status === 'signed'). Without this the cryptographic
+      // signature lands but the visible line is missing from the downloaded PDF.
+      // The signer CN would need the local bridge to return it (an .exe change);
+      // until then the generic ICP-Brasil line is shown.
+      const signedCert = Object.assign({}, cert, { status: 'signed' });
+      const b64 = await renderCertsPdfBase64([{ html: renderCertHtml(signedCert, origin), qrUrl: buildValidarUrl(origin, code) }]);
       if (!b64) throw new Error('falha ao gerar o PDF');
       const signed = await window.pywebview.api.sign(b64);
       if (!signed || signed.error) throw new Error((signed && signed.error) || 'falha na assinatura');

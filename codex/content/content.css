@@ -714,11 +714,25 @@
 .cdx-rel-clear-fresh:hover {
   opacity: 1;
   background: var(--danger);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
 }
 /* Hidden state ("+ NOVO", badge currently off): muted, fills on hover. */
 .cdx-rel-clear-fresh.is-hidden-state { background: transparent; opacity: 0.6; }
-.cdx-rel-clear-fresh.is-hidden-state:hover { background: var(--danger); color: #fff; opacity: 1; }
+.cdx-rel-clear-fresh.is-hidden-state:hover { background: var(--danger); color: var(--text-on-accent, #fff); opacity: 1; }
+/* "Marcar como ocorrida": mark an aula happened on its scheduled day, from here. */
+.cdx-rel-mark-happened {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.7rem; font-weight: 700; line-height: 1.4;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.cdx-rel-mark-happened:hover { opacity: 1; background: var(--primary); color: var(--text-on-accent, #fff); }
 /* Composer in the right pane: one search + a single-open accordion (the Presets
    picker layout, .cdx-picker*), filling the body with the Save pinned below. */
 .cdx-releases-split .cdx-preview-body { display: flex; flex-direction: column; gap: 0.8rem; }
@@ -738,6 +752,10 @@
 .cdx-comp-item svg { display: block; flex-shrink: 0; }
 .cdx-comp-cb { flex-shrink: 0; accent-color: var(--primary); }
 .cdx-comp-empty { font-size: 0.82rem; color: var(--text-secondary); padding: 0.4rem 0; }
+/* Item already released to another aula in this turma: greyed, with a small note. */
+.cdx-comp-item.is-already-released { opacity: 0.5; }
+.cdx-comp-item.is-already-released:hover { opacity: 0.75; }
+.cdx-comp-elsewhere { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; margin-left: 0.6rem; }
 .cdx-comp-actions { display: flex; justify-content: flex-end; flex-shrink: 0; }
 
 /* ── Apostila sub-tab (imported course content) ──────────────────────────── */

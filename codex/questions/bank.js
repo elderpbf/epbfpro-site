@@ -35,6 +35,8 @@ let _editBank = false;
 let _selected = new Set();
 let _dragId = null;
 let _bulkItems = [];
+let _orderProposed = [];      // e2: AI-proposed question id order under review
+let _orderDir = 'asc';        // e2: chosen ordering direction (asc = easy→hard)
 let _hubTab = 'export';
 let _exportFormat = 'json';
 let _exportScope = 'current';
@@ -371,9 +373,15 @@ function _conjuntoHeader() {
       '</div>' +
     '</div>';
   }
+  // e2: "Propor ordem" lets the AI suggest a warm-up → complex sequence, applied via
+  // reorder_questions. Only useful with at least two questions.
+  const proposeOrder = (_questions.length >= 2 && !_editBank)
+    ? '<button class="cdx-btn cdx-btn-sm" data-act="propose-order" type="button">' + t('questions.bank_propose_order') + '</button>'
+    : '';
   return '<div class="cdx-bank-conjunto-header">' +
     '<h2 class="cdx-bank-conjunto-title">' + _esc(_currentSet) + '</h2>' +
     '<div class="cdx-bank-conjunto-actions">' +
+      proposeOrder +
       '<button class="cdx-btn cdx-btn-sm' + (_editBank ? ' cdx-btn-primary' : '') + '" data-act="edit-bank" type="button">' +
         t(_editBank ? 'questions.bank_edit_bank_done' : 'questions.bank_edit_bank') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm" data-act="rename" type="button">' + t('questions.bank_edit_name') + '</button>' +
@@ -654,6 +662,106 @@ async function _bulkSave() {
   _closeBulk();
   await _loadQuestions();
   _loadSets();
+}
+
+// ---- e2 Propose order (AI suggests a sequence in the chosen direction) ----
+// The user picks the direction (easiest→hardest or hardest→easiest); the AI orders
+// every question accordingly. In the review the user unchecks any question to leave
+// it out: only checked ids are reordered into the proposed sequence and the unchecked
+// ones are appended after (relative order preserved) so reorder still covers the set.
+const _ORDER_DIRS = {
+  asc: 'do AQUECIMENTO (mais simples, de engajamento) ao MAIS COMPLEXO/aprofundado',
+  desc: 'do MAIS COMPLEXO/aprofundado ao mais simples (de aquecimento)',
+};
+function _orderSys(dir) {
+  return 'Você recebe um array JSON de questões de uma aula, cada uma com "id", "text" e "type". ' +
+    'Proponha a MELHOR ordem pedagógica de aplicação numa aula: ' + (_ORDER_DIRS[dir] || _ORDER_DIRS.asc) + '. ' +
+    'Devolva APENAS um array JSON estrito com os "id" na ordem proposta (ex: [3,1,2]). ' +
+    'Inclua TODOS os ids exatamente uma vez, sem texto extra.';
+}
+
+// PURE (exported for tests): validate the AI's id array is a permutation of the current
+// ids. Returns the ordered id list (original element types preserved), or null if invalid.
+export function parseOrderIds(text, validIds) {
+  let arr;
+  try { arr = JSON.parse(String(text == null ? '' : text).replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()); } catch (_) { return null; }
+  if (!Array.isArray(arr)) return null;
+  const want = (validIds || []).map(String);
+  const got = arr.map(String);
+  if (got.length !== want.length) return null;
+  const wantSet = new Set(want);
+  if (got.some((id) => !wantSet.has(id)) || new Set(got).size !== got.length) return null;
+  return arr;
+}
+
+function _closeOrder() { const m = _q('#cdx-bank-order'); if (m) m.hidden = true; _orderProposed = []; }
+
+function _renderOrderDir() {
+  if (!_viewEl) return;
+  _viewEl.querySelectorAll('.cdx-bank-order-dir-btn').forEach((b) =>
+    b.classList.toggle('active', b.getAttribute('data-dir') === _orderDir));
+}
+
+// Opens the modal on the direction chooser; nothing is generated until the user
+// picks a direction and triggers "Gerar ordem" (_runProposeOrder).
+function _openOrder() {
+  if (!_currentSet || _questions.length < 2) return;
+  const modal = _q('#cdx-bank-order'); if (!modal) return;
+  _orderProposed = []; _orderDir = 'asc';
+  _q('.cdx-bank-order-err').textContent = '';
+  _q('[data-act="order-apply"]').hidden = true;
+  _q('#cdx-bank-order-list').innerHTML = '';
+  _renderOrderDir();
+  modal.hidden = false;
+}
+
+async function _runProposeOrder() {
+  if (!_currentSet || _questions.length < 2) return;
+  _orderProposed = [];
+  _q('.cdx-bank-order-err').textContent = '';
+  _q('[data-act="order-apply"]').hidden = true;
+  _q('#cdx-bank-order-list').innerHTML = '<div class="cdx-bank-loading">' + t('questions.bank_order_generating') + '</div>';
+  const payload = _questions.map((q) => ({ id: q.id, text: q.question, type: q.type || 'mc' }));
+  let res; try { res = await ai.chat({ system: _orderSys(_orderDir), messages: [{ role: 'user', content: JSON.stringify(payload) }] }); } catch (e) { notice.internal(e); res = null; }
+  if (!_viewEl) return;
+  const ids = (res && res.text) ? parseOrderIds(res.text, _questions.map((q) => q.id)) : null;
+  const err = _q('.cdx-bank-order-err');
+  if (!ids) {
+    if (!res) notice.internal('bank-order: ai.chat returned null (rate-limited or network error)');
+    else if (res.text) notice.internal('bank-order: AI response not a valid id permutation. raw=' + res.text.slice(0, 400));
+    else notice.internal('bank-order: ai.chat returned no text. res=' + JSON.stringify(res).slice(0, 200));
+    if (err) err.textContent = t('questions.bank_order_error');
+    const l = _q('#cdx-bank-order-list'); if (l) l.innerHTML = '';
+    return;
+  }
+  _orderProposed = ids;
+  _renderOrderReview();
+}
+
+function _renderOrderReview() {
+  const apply = _q('[data-act="order-apply"]'); if (apply) apply.hidden = false;
+  const byId = {}; _questions.forEach((q) => { byId[String(q.id)] = q; });
+  const list = _q('#cdx-bank-order-list');
+  if (!list) return;
+  list.innerHTML = _orderProposed.map((id, i) => {
+    const q = byId[String(id)];
+    return '<li class="cdx-bank-order-item">' +
+      '<span class="cdx-bank-order-num">' + (i + 1) + '.</span> ' +
+      '<span class="cdx-bank-order-text">' + _esc(q ? q.question : ('#' + id)) + '</span>' +
+    '</li>';
+  }).join('');
+}
+
+async function _applyOrder() {
+  if (!_orderProposed.length) return;
+  const btn = _q('[data-act="order-apply"]');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = t('questions.bank_bulk_saving');
+  try { await api.reorder({ list_name: _currentSet, ordered_ids: _orderProposed }); } catch (e) { notice.internal(e); }
+  if (!_viewEl) return;
+  btn.disabled = false; btn.textContent = orig;
+  notice.ok(t('questions.bank_order_applied'));
+  _closeOrder();
+  await _loadQuestions();
 }
 
 // ---- Import / Export hub (collection-level; scope: current / all / choose) ----
@@ -1133,6 +1241,7 @@ export function mount(viewEl, ctx) {
   _currentSet = null; _banks = []; _questions = []; _editingOriginal = null;
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _orderProposed = []; _orderDir = 'asc';
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
   _classFilter = 'all'; _variaveisView = false; _variaveisItems = [];
@@ -1194,6 +1303,28 @@ export function mount(viewEl, ctx) {
           '<button class="cdx-btn cdx-btn-primary" data-act="bulk-generate" type="button">' + t('questions.bank_bulk_generate_btn') + '</button>' +
           '<button class="cdx-btn" data-act="bulk-discard" type="button" hidden>' + t('questions.bank_bulk_discard') + '</button>' +
           '<button class="cdx-btn cdx-btn-primary" data-act="bulk-save" type="button" hidden>' + t('questions.bank_bulk_save') + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    // e2 propose order: pick a direction, AI proposes the sequence, uncheck any to
+    // leave out, apply via reorder.
+    '<div class="cdx-modal-backdrop cdx-bank-modal" id="cdx-bank-order" hidden>' +
+      '<div class="cdx-modal cdx-bank-bulk-card">' +
+        '<div class="cdx-modal-title">' + t('questions.bank_order_title') + '</div>' +
+        '<p class="cdx-bank-bulk-hint">' + t('questions.bank_order_hint') + '</p>' +
+        '<div class="cdx-bank-order-dir">' +
+          '<span class="cdx-comp-label">' + t('questions.bank_order_dir_label') + '</span>' +
+          '<div class="cdx-bank-tabs">' +
+            '<button class="cdx-bank-order-dir-btn active" data-dir="asc" type="button">' + t('questions.bank_order_dir_asc') + '</button>' +
+            '<button class="cdx-bank-order-dir-btn" data-dir="desc" type="button">' + t('questions.bank_order_dir_desc') + '</button>' +
+          '</div>' +
+        '</div>' +
+        '<ol class="cdx-bank-order-list" id="cdx-bank-order-list"></ol>' +
+        '<p class="cdx-bank-modal-err cdx-bank-order-err"></p>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" data-act="order-cancel" type="button">' + t('questions.bank_cancel') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="order-generate" type="button">' + t('questions.bank_order_generate') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="order-apply" type="button" hidden>' + t('questions.bank_order_apply') + '</button>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -1345,6 +1476,7 @@ export function mount(viewEl, ctx) {
     const act = btn.getAttribute('data-act');
     if (act === 'addq') { _confirmDelQ = null; _openModal(null); }
     else if (act === 'bulk') { _openBulk(); }
+    else if (act === 'propose-order') { _openOrder(); }
     else if (act === 'filter-class') { _classFilter = btn.getAttribute('data-class') || 'all'; _renderConjunto(); }
     else if (act === 'edit-bank') { _toggleEditBank(); }
     else if (act === 'select') {
@@ -1447,6 +1579,19 @@ export function mount(viewEl, ctx) {
     else if (act === 'bulk-save') _bulkSave();
   });
 
+  // e2 propose-order modal (delegated): direction toggle + generate + apply.
+  _on(viewEl.querySelector('#cdx-bank-order'), 'click', (e) => {
+    if (e.target === viewEl.querySelector('#cdx-bank-order')) { _closeOrder(); return; }
+    const dirBtn = e.target.closest('.cdx-bank-order-dir-btn');
+    if (dirBtn) { _orderDir = dirBtn.getAttribute('data-dir') || 'asc'; _renderOrderDir(); return; }
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.getAttribute('data-act');
+    if (act === 'order-cancel') _closeOrder();
+    else if (act === 'order-generate') _runProposeOrder();
+    else if (act === 'order-apply') _applyOrder();
+  });
+
   // Import file picker (change, not click): read the chosen .json into the box.
   _on(viewEl.querySelector('#cdx-bank-hub'), 'change', (e) => {
     if (e.target && e.target.classList && e.target.classList.contains('cdx-bank-import-file')) {
@@ -1529,6 +1674,7 @@ export function unmount() {
   _viewEl = null; _currentSet = null; _banks = []; _questions = [];
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
   _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _orderProposed = []; _orderDir = 'asc';
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
   _classFilter = 'all'; _variaveisView = false; _variaveisItems = [];

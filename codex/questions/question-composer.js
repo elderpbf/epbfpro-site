@@ -102,7 +102,10 @@ function _renderOpts(optsEl, type, initial) {
   const correct = _correctSet(initial);
   const opts = (initial && Array.isArray(initial.options)) ? initial.options : null;
   if (type === 'mc' || type === 'poll') {
-    const rows = (opts && opts.length) ? opts : ['', ''];
+    // New multiple-choice starts with 4 option slots (teacher default); polls keep
+    // a leaner 2. Add/remove still allows 2-6. Editing keeps the stored count.
+    const fallback = (type === 'mc') ? ['', '', '', ''] : ['', ''];
+    const rows = (opts && opts.length) ? opts : fallback;
     const withCorrect = (type === 'mc');
     optsEl.innerHTML =
       '<div class="cdx-comp-optlist">' +

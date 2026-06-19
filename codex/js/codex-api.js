@@ -88,7 +88,8 @@ export const questions = {
   deleteSession:   (p) => call('delete_session', p),           // { code } -> cascade-deletes answers + questions + student_questions + the session row
   renameSession:   (p) => call('rename_session', p),           // { code, title } -> updates the session title
   // Live polling
-  launchQuestion:  (p) => call('launch_question', p),          // { session_code, text, options, correct_answer?, type?, max_select? } -> { id }
+  launchQuestion:  (p) => call('launch_question', p),          // { session_code, text, options, correct_answer?, type?, max_select?, bank_id? } -> { id }
+  launchedBankIds: (p) => call('launched_bank_ids', p),        // { session_code } -> { ids } (bank questions already applied — worker c)
   closeQuestion:   (p) => call('close_question', p),           // { id, show_results?, reveal_answer? }
   deleteSessionQuestion: (p) => call('delete_session_question', p), // { id } -> delete one launched question + its answers (drops it from history AND stats)
   setVisibility:   (p) => call('set_question_visibility', p),  // { id, session_code, show_results }
@@ -170,7 +171,31 @@ export const cohorts = {
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
-  importParticipants: (p) => call('ct_import_participants', p) // { turma_id, rows[] }
+  importParticipants: (p) => call('ct_import_participants', p), // { turma_id, rows[] }
+  // Trail access-control admin (Phase 7): the Alunos section drives these.
+  setParticipantAccess:  (p) => call('ct_set_participant_access', p),   // { participant_id|participant_ids, status }
+  rosterApprove:         (p) => call('ct_roster_approve', p),           // { turma_id, emails[] }
+  revokeStudentSessions: (p) => call('ct_revoke_student_sessions', p),  // { participant_id }
+  // QR enrollment window (Phase 7b): open mints the token + expiry (+ turma_token to
+  // build the QR URL); get re-reads state for the live countdown; close shuts it.
+  openEnrollment:        (p) => call('ct_open_enrollment', p),          // { client_slug, slug, ttl_seconds? } — mints if none, REUSES a live window, sets qr_shown=1
+  closeEnrollment:       (p) => call('ct_close_enrollment', p),         // { client_slug, slug }
+  setEnrollmentQr:       (p) => call('ct_set_enrollment_qr', p),        // { client_slug, slug, shown } — project/un-project the QR without touching the window
+  getEnrollment:         (p) => call('ct_get_enrollment', p),           // { client_slug, slug } -> { open, now, enrollment_token, enrollment_expires_at, turma_token, qr_shown }
+  // Fórum moderation (Phase 8). The instructor moderates ENTIRELY from Codex (no
+  // Trilha access), so this is the full toolkit: list/open threads, open a new one,
+  // reply as professor, pin, delete, and edit his own (admin-authored) post.
+  forumListThreads:  (p) => call('ct_forum_admin_list_threads', p),  // { client_slug, turma_slug } -> { ok, threads }
+  forumGetThread:    (p) => call('ct_forum_admin_get_thread', p),    // { thread_id } -> { ok, thread, posts }
+  forumCreateThread: (p) => call('ct_forum_admin_create_thread', p), // { client_slug, turma_slug, title, body, pinned? } -> { ok, thread }
+  forumReply:        (p) => call('ct_forum_admin_reply', p),         // { thread_id, parent_post_id?, body } -> { ok, post }
+  forumSetPinned:    (p) => call('ct_forum_set_pinned', p),          // { thread_id, pinned } -> { ok }
+  forumDeletePost:   (p) => call('ct_forum_delete_post', p),         // { post_id } -> { ok }
+  forumDeleteThread: (p) => call('ct_forum_delete_thread', p),       // { thread_id } -> { ok }
+  forumEditPost:     (p) => call('ct_forum_admin_edit_post', p),     // { post_id, body } -> { ok } (admin-authored posts only)
+  // Cross-turma teacher notifications (the topbar bell).
+  forumNotifications:(p) => call('ct_forum_admin_notifications', p), // -> { ok, count, items }
+  forumMarkSeen:     (p) => call('ct_forum_admin_mark_seen', p)      // { client_slug?, turma_slug? } -> { ok }
 };
 
 // Courses — reusable course templates (Cohorts → Cursos sub-tab). A course is a
@@ -253,6 +278,7 @@ export const releases = {
   release:   (p) => call('ct_release_item', p),     // { client_slug, turma_slug, item_id }
   unrelease: (p) => call('ct_unrelease_item', p),
   setAula:   (p) => call('ct_set_release_aula', p), // { ..., aula_number_or_null }
+  setAulas:  (p) => call('ct_set_release_aulas', p), // { ..., aula_numbers: [1,3] } (#23 multi-aula)
   // Debug-only: toggle the NOVO badge for every item in an aula by moving
   // released_at relative to the 5-day window. fresh:false hides, fresh:true shows.
   setFreshness: (p) => call('ct_set_release_freshness', p), // { client_slug, turma_slug, aula_number, fresh }

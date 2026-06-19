@@ -12,18 +12,21 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
 
 <!-- Shell chrome reused from Backstage (same origin, so the login carries over). -->
-<link rel="stylesheet" href="css/theme.css?v=1.0">
+<link rel="stylesheet" href="css/theme.css?v=1.2">
 <!-- Admin shell chrome (bs-app/bs-main/bs-topbar, theme-transition) + the inline
      login card (bs-auth-*). Codex copy, verbatim, so the backstage backstage.css
      link is dropped. bs-auth-* rides along unchanged (auth.js stays backstage and
      emits it); the cdx- rename of the Codex-emitted shell classes is a later pass. -->
-<link rel="stylesheet" href="css/backstage.css?v=1.0">
+<link rel="stylesheet" href="css/backstage.css?v=1.1">
 <!-- Settings drawer chrome (Codex copy, pairs with js/settings-drawer.js). -->
-<link rel="stylesheet" href="css/settings-drawer.css?v=1.0">
+<link rel="stylesheet" href="css/settings-drawer.css?v=1.1">
 <!-- Codex toast (.cdx-toast, pairs with js/toast.js). shared-components.css is no
      longer loaded: its only live class here was the toast; the rest was ClassPulse
      /host legacy and the question bars are cdx-qr-bar-* in questions.css. -->
 <link rel="stylesheet" href="css/toast.css?v=1.0">
+<!-- Notification bell (.cdx-bell-*, pairs with js/notif-bell.js). Shared by the
+     topbar (teacher) and the Trilha header (student). -->
+<link rel="stylesheet" href="css/notif-bell.css?v=1.0">
 <!-- .ctr- item-render styles (Codex copy, pairs with js/item-render.js). Prefix-
      scoped, so they do not collide with Codex's cdx- styles. -->
 <link rel="stylesheet" href="css/item-render.css?v=1.0">
@@ -31,7 +34,7 @@
      the deferred shared editor/renderer (ct-/ctr-, window-global JS). Codex copy,
      verbatim, so the backstage classtrail.css link is dropped. The cdx- rename of
      the Codex-owned widgets is a later pass (their names are shared with the Trail). -->
-<link rel="stylesheet" href="css/classtrail.css?v=1.0">
+<link rel="stylesheet" href="css/classtrail.css?v=1.1">
 <!-- Drive file-preview styles (Codex copy, pairs with js/drive-viewer.js). The
      native Drive panel is cdx- styled in content.css; the legacy cv-drive.css is
      no longer loaded. -->
@@ -43,22 +46,22 @@
      leaves; cv-renderer/cv-slides are also covered by drive-viewer.css, but cv-sm
      is classvault-only). Codex copy, verbatim, dropping the LAST backstage CSS
      link. A dead-rule trim + cdx- rename is a later pass. -->
-<link rel="stylesheet" href="css/classvault.css?v=1.0">
-<link rel="stylesheet" href="css/tokens.css?v=1.1">
-<link rel="stylesheet" href="css/codex.css?v=2.5">
-<link rel="stylesheet" href="cohorts/cohorts.css?v=1.8">
-<link rel="stylesheet" href="content/content.css?v=2.6">
+<link rel="stylesheet" href="css/classvault.css?v=1.1">
+<link rel="stylesheet" href="css/tokens.css?v=1.2">
+<link rel="stylesheet" href="css/codex.css?v=2.6">
+<link rel="stylesheet" href="cohorts/cohorts.css?v=2.8">
+<link rel="stylesheet" href="content/content.css?v=2.9">
 <link rel="stylesheet" href="content/slides.css?v=1.9">
 <!-- Deck editor styles, scoped under .cdx-deck-editor (no global leak). -->
 <link rel="stylesheet" href="content/slides/css/tokens.css?v=1.2">
 <link rel="stylesheet" href="content/slides/css/slide.css?v=2.5">
 <link rel="stylesheet" href="content/slides/css/ui.css?v=3.2">
-<link rel="stylesheet" href="lessons/lessons.css?v=2.1">
+<link rel="stylesheet" href="lessons/lessons.css?v=2.2">
 <!-- QR share modal styles (Codex copy, pairs with js/qr-share-modal.js). -->
 <link rel="stylesheet" href="css/qr-share-modal.css?v=1.0">
-<link rel="stylesheet" href="questions/questions.css?v=3.6">
-<link rel="stylesheet" href="certificates/certificates.css?v=2.1">
-<link rel="stylesheet" href="certificates/cert-render.css?v=1.6">
+<link rel="stylesheet" href="questions/questions.css?v=4.2">
+<link rel="stylesheet" href="certificates/certificates.css?v=2.4">
+<link rel="stylesheet" href="certificates/cert-render.css?v=1.7">
 <script src="../backstage/js/debug.js?v=2.5"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
