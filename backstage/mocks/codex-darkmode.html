@@ -25,7 +25,7 @@
   /* texto do botão: branco no claro; no ESCURO um cinzinha (branco puro estoura) */
   .col-today { --btn-text: #fff; }
   body[data-mode="light"] .col-a, body[data-mode="light"] .col-b { --btn-text: #fff; }
-  body[data-mode="dark"]  .col-a, body[data-mode="dark"]  .col-b { --btn-text: #e5e7eb; }
+  body[data-mode="dark"]  .col-a, body[data-mode="dark"]  .col-b { --btn-text: var(--pick-text, #e5e7eb); }
 
   /* ======================= COLUNA HOJE ======================= */
   /* Valores REAIS de hoje. Note a borda teal no escuro, o botão teal
@@ -129,8 +129,12 @@
   .sw-note { font-size: .74rem; opacity: .65; margin-bottom: 14px; }
   .sw-row { display: flex; gap: 18px; flex-wrap: wrap; }
   .sw { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .swbtn { border: none; border-radius: 8px; padding: 9px 20px; font: inherit; font-weight: 700; font-size: .85rem; cursor: pointer; }
+  .swbtn { border: 2px solid transparent; border-radius: 8px; padding: 9px 20px; font: inherit; font-weight: 700; font-size: .85rem; cursor: pointer; }
+  .swbtn.sel { outline: 3px solid #14b8a6; outline-offset: 3px; }
   .sw code { font-size: .7rem; opacity: .75; }
+  .sw.sel code { opacity: 1; font-weight: 700; color: #14b8a6; }
+  .sw-pick { font-size: .76rem; margin-top: 12px; opacity: .85; }
+  .sw-pick code { font-weight: 700; }
 
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
   @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
@@ -248,13 +252,14 @@
     <div class="sw-title">Régua de cor da fonte do botão (no escuro) — qual cinzinha?</div>
     <div class="sw-note">Botão fixo no teal #0d9488. Texto claro revertido, mas suavizado: branco puro estoura no escuro. O primeiro é o branco puro (pra evitar); da esquerda (quase branco) pra direita (mais cinza).</div>
     <div class="sw-row">
-      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#ffffff">Botão</button><code>#ffffff (puro, evitar)</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#eef2f1">Botão</button><code>#eef2f1</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#e5e7eb">Botão</button><code>#e5e7eb</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#d8efe9">Botão</button><code>#d8efe9 (tom teal)</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#d1d5db">Botão</button><code>#d1d5db</code></div>
-      <div class="sw"><button class="swbtn" style="background:#0d9488;color:#c2cdd6">Botão</button><code>#c2cdd6</code></div>
+      <div class="sw"><button class="swbtn" data-color="#ffffff" style="background:#0d9488;color:#ffffff">Botão</button><code>#ffffff (puro, evitar)</code></div>
+      <div class="sw"><button class="swbtn" data-color="#eef2f1" style="background:#0d9488;color:#eef2f1">Botão</button><code>#eef2f1</code></div>
+      <div class="sw"><button class="swbtn" data-color="#e5e7eb" style="background:#0d9488;color:#e5e7eb">Botão</button><code>#e5e7eb</code></div>
+      <div class="sw"><button class="swbtn" data-color="#d8efe9" style="background:#0d9488;color:#d8efe9">Botão</button><code>#d8efe9 (tom teal)</code></div>
+      <div class="sw"><button class="swbtn" data-color="#d1d5db" style="background:#0d9488;color:#d1d5db">Botão</button><code>#d1d5db</code></div>
+      <div class="sw"><button class="swbtn" data-color="#c2cdd6" style="background:#0d9488;color:#c2cdd6">Botão</button><code>#c2cdd6</code></div>
     </div>
+    <div class="sw-pick">Aplicado nos botões das colunas A e B (no escuro): <code id="pickval">#e5e7eb</code> — clique numa amostra pra trocar.</div>
   </div>
 
   <div class="grid">
@@ -400,6 +405,23 @@
     btn.textContent = dark ? 'Alternar para modo escuro' : 'Alternar para modo claro';
     pill.textContent = dark ? 'modo claro (a referência)' : 'modo escuro (o foco do problema)';
   });
+
+  // régua de cor da fonte: clicar aplica nos botões A/B abaixo (no escuro)
+  var pickval = document.getElementById('pickval');
+  function selectSwatch(el) {
+    var color = el.getAttribute('data-color');
+    body.style.setProperty('--pick-text', color);
+    pickval.textContent = color;
+    document.querySelectorAll('.swbtn').forEach(function (b) {
+      b.classList.toggle('sel', b === el);
+      b.parentElement.classList.toggle('sel', b === el);
+    });
+  }
+  document.querySelectorAll('.swbtn').forEach(function (b) {
+    b.addEventListener('click', function () { selectSwatch(b); });
+  });
+  // seleção inicial = #e5e7eb (terceira amostra, o padrão atual)
+  selectSwatch(document.querySelector('.swbtn[data-color="#e5e7eb"]'));
 </script>
 </body>
 </html>
