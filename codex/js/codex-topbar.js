@@ -337,11 +337,20 @@ export function init(opts) {
   }
 
   // Notification bell (teacher, cross-turma). Computed from forum activity; clicking
-  // an item jumps to the Turmas tab. Refreshes on load + window focus.
+  // an item deep-links to THAT turma's dossiê Fórum tab (Cohorts reads fclient/fturma
+  // and opens the Fórum sub-tab). Refreshes on load + window focus.
   const bell = createBell({
     fetchNotifications: () => cohortsApi.forumNotifications(),
     markSeen: () => cohortsApi.forumMarkSeen({}),
-    onNavigate: () => { if (typeof location !== 'undefined') location.href = '/codex/?tab=cohorts'; },
+    onNavigate: (item) => {
+      if (typeof location === 'undefined') return;
+      let url = '/codex/?tab=cohorts';
+      if (item && item.client_slug && item.turma_slug) {
+        url += '&fclient=' + encodeURIComponent(item.client_slug) +
+               '&fturma=' + encodeURIComponent(item.turma_slug);
+      }
+      location.href = url;
+    },
     t,
   });
   inner.appendChild(bell.el);

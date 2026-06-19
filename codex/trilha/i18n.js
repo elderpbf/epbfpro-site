@@ -65,7 +65,7 @@ const pt = {
   'login.enroll_subtitle':  'Cadastre seu e-mail e nome para acessar agora.',
   'login.enroll_cta':       'Entrar',
   // Fórum (Phase 8)
-  'page.tab_forum':         'Conversas',
+  'page.tab_forum':         'Fórum',
   'forum.intro':            'O espaço de conversa da turma. Abra um assunto, tire dúvidas e acompanhe o que os colegas e o professor estão discutindo.',
   'forum.start':            'Iniciar uma conversa…',
   'forum.publish':          'Publicar',
@@ -100,6 +100,10 @@ const pt = {
   'notif.title':            'Notificações',
   'notif.mark_all':         'Marcar todas como lidas',
   'notif.empty':            'Sem novidades por aqui.',
+  'notif.settings_title':   'Notificar-me sobre',
+  'notif.opt_replies':      'Respostas nas minhas conversas',
+  'notif.opt_topics':       'Novos tópicos',
+  'notif.opt_all':          'Tudo no fórum',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -164,7 +168,7 @@ const en = {
   'login.enroll_subtitle':  'Enter your email and name to access now.',
   'login.enroll_cta':       'Enter',
   // Forum (Phase 8)
-  'page.tab_forum':         'Discussion',
+  'page.tab_forum':         'Forum',
   'forum.intro':            'Your class discussion space. Start a topic, ask questions, and follow what your peers and instructor are discussing.',
   'forum.start':            'Start a conversation…',
   'forum.publish':          'Post',
@@ -199,6 +203,10 @@ const en = {
   'notif.title':            'Notifications',
   'notif.mark_all':         'Mark all as read',
   'notif.empty':            'Nothing new here.',
+  'notif.settings_title':   'Notify me about',
+  'notif.opt_replies':      'Replies in my conversations',
+  'notif.opt_topics':       'New topics',
+  'notif.opt_all':          'Everything in the forum',
 };
 
 const DICTS = { 'pt-BR': pt, en };

@@ -254,9 +254,12 @@ function _loadAll() {
     ));
   }).then((lists) => {
     _turmas = lists.reduce((all, l) => all.concat(l), []);
-    _renderList();
+    // Set the selected client BEFORE rendering the list so its action buttons
+    // (+ new-turma / edit) show open, not hover-gated (the row is already is-on).
     const cur = _turmas.find((tm) => tm.client_slug === _relClientSlug && tm.slug === _relTurmaSlug && tm.status !== 'archived');
-    if (cur) { _selectedClientSlug = cur.client_slug; _renderDossier(cur); }
+    if (cur) _selectedClientSlug = cur.client_slug;
+    _renderList();
+    if (cur) { _renderDossier(cur); }
     else { _relClientSlug = null; _relTurmaSlug = null; _autoSelectFirst(); }
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
@@ -320,7 +323,7 @@ function _renderGroup(client, turmas) {
     ? turmas.map((tm) => _renderTurmaRow(tm)).join('')
     : '<div class="cdx-cg-empty">' + t('cohorts.no_turmas') + '</div>';
   return (
-    '<div class="cdx-cg" data-client-slug="' + _esc(client.slug) + '">' +
+    '<div class="cdx-cg' + (client.slug === _selectedClientSlug ? ' is-open' : '') + '" data-client-slug="' + _esc(client.slug) + '">' +
       '<div class="cdx-cg-head">' +
         '<span class="cdx-cg-ava">' + _esc(_initials(name)) + '</span>' +
         '<span class="cdx-cg-name">' + _esc(name) + '</span>' +
@@ -552,6 +555,31 @@ function _archiveTurma(clientSlug, turmaSlug) {
       api.archiveTurma({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
         _toast(t('cohorts.turma_archived'));
         if (_relClientSlug === clientSlug && _relTurmaSlug === turmaSlug) { _relClientSlug = null; _relTurmaSlug = null; }
+        _loadAll();
+      }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+    }
+  });
+}
+
+function _unarchiveTurma(clientSlug, turmaSlug) {
+  api.unarchiveTurma({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
+    _toast(t('cohorts.turma_unarchived'));
+    _loadAll();
+  }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+}
+
+// Permanent, irreversible delete, gated by the typed-name confirm modal. The
+// cascade drops every per-turma row (content, releases, aulas, participants,
+// sessions, forum); global library items and issued certificates are preserved.
+function _deleteTurma(turma) {
+  _openDeleteConfirm({
+    title: t('cohorts.delete_turma_btn'),
+    warningHtml: '<p style="font-size:0.85rem;color:var(--text-secondary);margin:0">' + t('cohorts.delete_turma_warning') + '</p>',
+    confirmName: turma.name,
+    onConfirm() {
+      api.deleteTurma({ client_slug: turma.client_slug, slug: turma.slug }).then(() => {
+        _toast(t('cohorts.turma_deleted'));
+        if (_relClientSlug === turma.client_slug && _relTurmaSlug === turma.slug) { _relClientSlug = null; _relTurmaSlug = null; }
         _loadAll();
       }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     }

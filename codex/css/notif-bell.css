@@ -55,3 +55,43 @@
 .cdx-bell-nbody { flex: 1; min-width: 0; display: block; }
 .cdx-bell-ntext { display: block; font-size: .85rem; color: var(--text-primary); line-height: 1.45; }
 .cdx-bell-nmeta { display: block; font-size: .72rem; color: var(--text-secondary); margin-top: .2rem; }
+
+/* ── Notification preferences (student): initials + gear button + popover ──
+   Shares the panel idiom with the bell. Lives here because it's part of the
+   notification surface. cdx-ns- prefix. */
+.cdx-ns-wrap { position: relative; display: inline-flex; }
+.cdx-ns-btn { display: inline-flex; align-items: center; gap: .35rem; }
+.cdx-ns-initials {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff; font-size: .64rem; font-weight: 800; letter-spacing: .02em;
+}
+.cdx-ns-gear { display: inline-flex; }
+.cdx-ns-gear svg { width: 15px; height: 15px; }
+
+.cdx-ns-panel {
+  position: absolute; top: calc(100% + 10px); right: 0; width: 270px; max-width: 86vw;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: 0 22px 54px -18px rgba(0,0,0,.35); overflow: hidden; z-index: 200;
+}
+.cdx-ns-panel[hidden] { display: none; }
+.cdx-ns-head {
+  padding: .8rem 1rem; border-bottom: 1px solid var(--border);
+  font-size: .74rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--text-secondary);
+}
+.cdx-ns-opts { padding: .35rem .4rem; display: flex; flex-direction: column; }
+.cdx-ns-opt {
+  display: flex; align-items: center; gap: .6rem; padding: .6rem .7rem; border-radius: 9px;
+  font-size: .86rem; color: var(--text-primary); cursor: pointer;
+}
+.cdx-ns-opt:hover { background: rgba(20,184,166,.06); }
+.cdx-ns-opt input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+.cdx-ns-opt--off { opacity: .5; cursor: default; }
+.cdx-ns-opt--off:hover { background: none; }
+
+/* On the Trilha header, public-header.css hides inner <span>s of .ph-action-btn at
+   <=560px (icon-only mode). The settings button IS made of spans (initials + gear),
+   so keep them visible. Specificity beats the icon-only rule. */
+pensoia-header .ph-action-btn .cdx-ns-initials,
+pensoia-header .ph-action-btn .cdx-ns-gear { display: inline-flex; }

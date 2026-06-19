@@ -1067,6 +1067,9 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   min-width: 0;
 }
 .cdx-cg-acts { display: flex; gap: 0.2rem; flex: 0 0 auto; opacity: 0; transition: opacity 0.12s; }
+/* The open client (its turma is in the dossier) shows its actions without a hover-
+   hunt; other clients still reveal on hover/focus to keep the list quiet. */
+.cdx-cg.is-open .cdx-cg-acts,
 .cdx-cg-head:hover .cdx-cg-acts,
 .cdx-cg-acts:focus-within { opacity: 1; }
 .cdx-cg-act {

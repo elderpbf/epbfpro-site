@@ -41,6 +41,7 @@ export function threadMeta(th, now) {
 let _root = null;       // the #cdx-tr-forum-root mount
 let _threads = [];      // last loaded thread list
 let _openId = null;     // currently expanded thread id
+let _pendingFocus = null; // a thread the bell asked us to open on the next render
 
 function avatar(name, mods = '') {
   return '<div class="cdx-fr-avatar' + mods + '">' + esc(initials(name) || '·') + '</div>';
@@ -71,9 +72,26 @@ export async function renderForum(root) {
     return;
   }
   paintBoard();
-  // Deeplink: ?thread=<id> opens that thread straight away.
-  const wanted = deeplinkThreadId();
+  // Open a thread straight away when one was requested: the in-app bell sets
+  // _pendingFocus (no reload), the cross-page deeplink carries ?thread=<id>.
+  const wanted = _pendingFocus || deeplinkThreadId();
+  _pendingFocus = null;
   if (wanted) openThread(wanted);
+}
+
+// Open the Fórum tab and a specific thread WITHOUT a page reload. Called by the
+// student notification bell: the student is already on this turma's page, so we
+// just switch tabs and expand the thread in place. Forces a fresh board render so
+// a brand-new thread (the notification's subject) is present before we open it.
+export function focusThread(id) {
+  _pendingFocus = id || null;
+  state.rendered.forum = false; // make the page re-render the panel on show
+  if (typeof window !== 'undefined' && window.location) {
+    if (window.location.hash !== '#forum') { window.location.hash = '#forum'; return; } // hashchange -> showTab -> renderForum
+  }
+  // Already on #forum (no hashchange will fire): render right here.
+  const root = (typeof document !== 'undefined') && document.getElementById('cdx-trilha-root');
+  if (root) renderForum(root);
 }
 
 function deeplinkThreadId() {

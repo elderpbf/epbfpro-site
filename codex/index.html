@@ -49,8 +49,8 @@
 <link rel="stylesheet" href="css/classvault.css?v=1.1">
 <link rel="stylesheet" href="css/tokens.css?v=1.4">
 <link rel="stylesheet" href="css/codex.css?v=2.6">
-<link rel="stylesheet" href="cohorts/cohorts.css?v=2.8">
-<link rel="stylesheet" href="content/content.css?v=2.9">
+<link rel="stylesheet" href="cohorts/cohorts.css?v=2.9">
+<link rel="stylesheet" href="content/content.css?v=3.0">
 <link rel="stylesheet" href="content/slides.css?v=1.9">
 <!-- Deck editor styles, scoped under .cdx-deck-editor (no global leak). -->
 <link rel="stylesheet" href="content/slides/css/tokens.css?v=1.2">
@@ -184,6 +184,8 @@
 
   const ctx = {};
   if (tab === 'cohorts' || tab === 'content' || tab === 'questions' || tab === 'certificates') ctx.sub = sub;
+  // Fórum deep-link from the notification bell: open this turma's dossiê on the Fórum tab.
+  if (tab === 'cohorts') { ctx.fclient = params.get('fclient') || undefined; ctx.fturma = params.get('fturma') || undefined; ctx.fdtab = params.get('fclient') ? 'forum' : undefined; }
   // Questions deep-link: ?session=<code> opens that session's live host directly
   // (the Lessons live card links here). The Sessions sub-tab reads ctx.session.
   if (tab === 'questions') ctx.session = params.get('session') || undefined;
