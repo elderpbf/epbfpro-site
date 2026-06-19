@@ -41,6 +41,8 @@ export const trail = {
   // mints a presence grant on scan (silently kept in localStorage), so a later
   // off-window magic-link login auto-approves. Email is ALWAYS confirmed via the link.
   enrollClaim:    (p) => call('student_enroll_claim', p),    // { client_slug, turma_slug, et } -> { ok, granted, presence_token? }
+  // Typed entry (pensoia.com/trilha/<code>): resolve the 4-digit code to the live turma
+  resolveEnrollCode: (p) => call('ct_resolve_enroll_code', p), // { code } -> { ok, found, client_slug, turma_slug, turma_token, enrollment_token } | { ok, found:false }
 };
 
 export { assetUrl };

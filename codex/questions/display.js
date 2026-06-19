@@ -5,7 +5,7 @@
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { cohorts } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
-import { isProjecting, toggleProjection, enrollQrSrc } from '../js/enroll-control.js';
+import { isProjecting, toggleProjection, enrollQrSrc, entrarUrl } from '../js/enroll-control.js';
 
 let _turma = null;            // resolved turma (client_slug, turma_slug, token)
 let _enrollState = null;      // last ct_get_enrollment result (the shared window state)
@@ -134,6 +134,13 @@ function _pollEnroll() {
     if (img) {
       const src = enrollQrSrc(_enrollState, ids, 1200);
       if (img.dataset.src !== src) { img.src = src; img.dataset.src = src; }
+    }
+    // The typed-entry address to the right of the QR: pensoia.com/trilha/<code> with
+    // the 4-digit code emphasized, so it can be dictated or typed on a computer.
+    const urlEl = document.getElementById('cdx-disp-enroll-url');
+    if (urlEl) {
+      const code = String(_enrollState.enrollment_code || '');
+      urlEl.innerHTML = entrarUrl('') + '<span class="cdx-disp-enroll-code">' + (/^[0-9]{4}$/.test(code) ? code : '----') + '</span>';
     }
     overlay.hidden = false;
   }).catch(() => {});

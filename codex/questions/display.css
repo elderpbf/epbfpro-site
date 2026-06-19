@@ -35,17 +35,29 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 
 /* Enrollment QR overlay (shown while the instructor projects it). Just the title +
    the QR — no "enrollment open", no countdown (that's on the session panel). */
-.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(10px, 2vh, 24px); padding: 3vh 3vw; }
+.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background); display: flex; flex-direction: row; align-items: center; justify-content: center; gap: clamp(24px, 5vw, 72px); padding: 4vh 4vw; flex-wrap: wrap; }
 .cdx-disp-enroll[hidden] { display: none; }
-.cdx-disp-enroll-title { font-size: clamp(1.6rem, 3.4vw, 2.8rem); font-weight: 700; color: var(--text-primary); text-align: center; }
-.cdx-disp-enroll-qr { width: min(74vh, 86vw); height: auto; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: clamp(12px, 2vh, 28px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); }
+.cdx-disp-enroll-qr { width: min(66vh, 46vw); height: auto; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: clamp(12px, 2vh, 28px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); flex: 0 0 auto; }
+.cdx-disp-enroll-info { display: flex; flex-direction: column; gap: clamp(12px, 2.4vh, 32px); align-items: flex-start; max-width: min(42vw, 560px); }
+.cdx-disp-enroll-title { font-size: clamp(1.6rem, 3.4vw, 2.8rem); font-weight: 700; color: var(--text-primary); text-align: left; line-height: 1.15; }
+.cdx-disp-enroll-lead { font-size: clamp(1rem, 1.7vw, 1.5rem); color: var(--text-secondary); }
+.cdx-disp-enroll-url { font-size: clamp(1.4rem, 2.6vw, 2.4rem); font-weight: 600; color: var(--text-primary); word-break: break-word; }
+.cdx-disp-enroll-url .cdx-disp-enroll-code { color: var(--primary, #2563eb); font-weight: 800; letter-spacing: 0.04em; }
+
+/* Portrait / narrow projectors: stack the QR over the info and re-grow the QR. */
+@media (max-aspect-ratio: 1/1), (max-width: 820px) {
+  .cdx-disp-enroll { flex-direction: column; gap: clamp(12px, 3vh, 28px); }
+  .cdx-disp-enroll-qr { width: min(60vh, 82vw); }
+  .cdx-disp-enroll-info { align-items: center; text-align: center; max-width: 86vw; }
+  .cdx-disp-enroll-title { text-align: center; }
+}
 
 /* Admin QR toggle — fixed corner control, above the projected overlay (z 50) so the
    instructor can dismiss the QR from the projector itself. Reuses theme tokens. */
 .cdx-disp-qr-toggle { position: fixed; bottom: clamp(12px, 2.5vh, 28px); right: clamp(12px, 2.5vw, 28px); z-index: 60; display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; box-shadow: 0 2px 12px var(--shadow, rgba(0,0,0,0.12)); }
 .cdx-disp-qr-toggle[hidden] { display: none; }
 .cdx-disp-qr-toggle:hover { color: var(--text-primary); }
-.cdx-disp-qr-toggle.is-on { background: var(--primary, #2563eb); color: #fff; border-color: transparent; }
+.cdx-disp-qr-toggle.is-on { background: var(--primary, #2563eb); color: var(--text-on-accent, #fff); border-color: transparent; }
 
 /* Promoted student Q&A card (verbatim from cp-display.css). */
 .cdx-disp-qa {

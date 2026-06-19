@@ -1086,6 +1086,7 @@ export default {
   'questions.display_nocode':            'No session code in the URL.',
   'questions.display_nocode_hint':       'Open this page as:',
   'questions.display_enroll_title':      'Your learning trail',
+  'questions.display_enroll_lead':       'Scan the QR or enter on a computer:',
   'questions.display_qr_toggle':         'QR enrollment',
   'questions.host_ai_generate':          'Generate',
   'questions.host_ai_improve':           'Improve',

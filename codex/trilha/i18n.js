@@ -61,6 +61,16 @@ const pt = {
   'login.wall_body':        'Entre com seu e-mail para acessar o conteúdo desta turma.',
   'login.pending_title':    'Acesso em análise',
   'login.pending_body':     'Recebemos seu acesso. Você será liberado em breve, é só aguardar a aprovação.',
+  // Typed entry (pensoia.com/trilha/<code>)
+  'entrar.title':           'Entrar na turma',
+  'entrar.lead':            'Digite o código que aparece na tela da aula.',
+  'entrar.code_label':      'Código de 4 dígitos',
+  'entrar.code_ph':         '0000',
+  'entrar.submit':          'Entrar',
+  'entrar.entering':        'Entrando...',
+  'entrar.invalid':         'Digite os 4 números do código.',
+  'entrar.not_found':       'Código não encontrado ou expirado. Confira na tela ou peça ao professor.',
+  'entrar.note':            'Sem código? Peça o link da trilha ao professor.',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -121,6 +131,16 @@ const en = {
   'login.wall_body':        'Sign in with your email to access this class content.',
   'login.pending_title':    'Access under review',
   'login.pending_body':     'We received your request. You will be unlocked shortly, just wait for approval.',
+  // Typed entry (pensoia.com/trilha/<code>)
+  'entrar.title':           'Join the class',
+  'entrar.lead':            'Enter the code shown on the class screen.',
+  'entrar.code_label':      '4-digit code',
+  'entrar.code_ph':         '0000',
+  'entrar.submit':          'Enter',
+  'entrar.entering':        'Entering...',
+  'entrar.invalid':         'Enter the 4-digit code.',
+  'entrar.not_found':       'Code not found or expired. Check the screen or ask your instructor.',
+  'entrar.note':            'No code? Ask your instructor for the trail link.',
 };
 
 const DICTS = { 'pt-BR': pt, en };

@@ -21,3 +21,8 @@ export function enrollQrSrc(state, ids, size) {
   const url = enrollUrl('https://pensoia.com', ids.client_slug, ids.slug, state.turma_token, state.enrollment_token);
   return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=2&data=' + encodeURIComponent(url);
 }
+
+// The short typed-entry address shown next to the QR: pensoia.com/trilha/<code>, where
+// <code> is the 4-digit enrollment code. Display form (no scheme), the entry page itself
+// redirects on the current origin so staging stays on staging.
+export function entrarUrl(code) { return 'pensoia.com/trilha/' + (code || ''); }

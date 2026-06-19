@@ -55,7 +55,7 @@ test('trail facade passes params through unchanged (answer payloads)', () => {
 });
 
 test('trail facade exposes the Phase 1 student-identity + Phase 7b enrollment methods', () => {
-  for (const m of ['authRequest', 'authVerify', 'profileSave', 'sessionCheck', 'presenceClaim', 'enrollClaim']) {
+  for (const m of ['authRequest', 'authVerify', 'profileSave', 'sessionCheck', 'presenceClaim', 'enrollClaim', 'resolveEnrollCode']) {
     assert.equal(typeof trail[m], 'function', `trail.${m} is a function`);
   }
   // The frictionless enrollJoin is gone: the in-class scan only deposits presence,
@@ -71,6 +71,7 @@ test('trail facade maps the student methods to their worker actions', () => {
     [() => trail.sessionCheck({ session_token: 'S' }), 'student_session_check'],
     [() => trail.presenceClaim({ client_slug: 'c', turma_slug: 't' }), 'student_presence_claim'],
     [() => trail.enrollClaim({ client_slug: 'c', turma_slug: 't', et: 'E' }), 'student_enroll_claim'],
+    [() => trail.resolveEnrollCode({ code: '1234' }), 'ct_resolve_enroll_code'],
   ];
   for (const [fn, action] of cases) {
     assert.equal(fn().action, action, `maps to ${action}`);

@@ -51,6 +51,14 @@ test('the display is a control surface: a QR toggle drives the same projection a
   assert.match(js, /toggleProjection\(/, 'toggles the same server state the host panel does');
 });
 
+test('display shows the typed-entry URL + 4-digit code beside the QR', () => {
+  assert.match(html, /cdx-disp-enroll-info/, 'QR + info two-column overlay');
+  assert.match(html, /id="cdx-disp-enroll-url"/, 'has the URL element');
+  assert.match(html, /display_enroll_lead/, 'the lead line');
+  assert.match(js, /entrarUrl\(/, 'builds pensoia.com/trilha/<code> via the shared helper');
+  assert.match(js, /enrollment_code/, 'reads the 4-digit code from the shared state');
+});
+
 test('the live host Display button points at the ported Codex page', () => {
   assert.match(liveHost, /\/codex\/questions\/display\.html\?code=/, 'updated _displayHref');
   assert.ok(!/\/go\/display\.html/.test(liveHost), 'no longer points at go/');

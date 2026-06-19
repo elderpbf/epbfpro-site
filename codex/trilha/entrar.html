@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Entrar na turma · PensoIA</title>
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="icon" type="image/x-icon" href="/favicon.ico?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
+
+<!-- Shared tokens + public chrome (Codex, no backstage). -->
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.2">
+<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/entrar.css?v=1.0">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+<script>
+  ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });
+</script>
+</head>
+<body>
+
+<pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
+
+<div class="cdx-entrar" id="cdx-entrar">
+  <h1 class="cdx-entrar-title" data-i18n="entrar.title">Entrar na turma</h1>
+  <p class="cdx-entrar-text" data-i18n="entrar.lead">Digite o código que aparece na tela da aula.</p>
+  <div class="cdx-entrar-state" id="cdx-entrar-state" aria-live="polite"></div>
+  <form class="cdx-entrar-form" id="cdx-entrar-form">
+    <div class="cdx-entrar-error" id="cdx-entrar-error" aria-live="polite"></div>
+    <input class="cdx-entrar-input" id="cdx-entrar-input" type="text" inputmode="numeric" pattern="[0-9]*"
+           maxlength="4" autocomplete="off" placeholder="0000"
+           data-i18n-attr="placeholder:entrar.code_ph,aria-label:entrar.code_label">
+    <button class="cdx-entrar-btn" type="submit" id="cdx-entrar-btn" data-i18n="entrar.submit">Entrar</button>
+  </form>
+  <p class="cdx-entrar-note" data-i18n="entrar.note">Sem código? Peça o link da trilha ao professor.</p>
+</div>
+
+<script type="module">
+  import '/codex/js/worker-call.js';
+  import '/codex/trilha/js/pensoia-header.js'; // defines <pensoia-header> (cdx, correct light/dark logo)
+  import { start } from '/codex/trilha/js/entrar.js';
+
+  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+  start();
+</script>
+</body>
+</html>

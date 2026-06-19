@@ -4,7 +4,7 @@
 // injected facade — unit-tested here; the two surfaces are verified on staging.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isProjecting, toggleProjection, enrollQrSrc } from '../js/enroll-control.js';
+import { isProjecting, toggleProjection, enrollQrSrc, entrarUrl } from '../js/enroll-control.js';
 
 test('isProjecting is true only when the window is open AND the QR is shown', () => {
   assert.equal(isProjecting(null), false);
@@ -35,4 +35,9 @@ test('enrollQrSrc builds a QR image URL for the et join link', () => {
   const data = decodeURIComponent(src);
   assert.match(data, /pensoia\.com\/trilha\/c\/t/);
   assert.match(data, /et=ETOK/);
+});
+
+test('entrarUrl builds the short typed-entry address', () => {
+  assert.equal(entrarUrl('1234'), 'pensoia.com/trilha/1234');
+  assert.equal(entrarUrl(''), 'pensoia.com/trilha/'); // prefix-only, used by the display
 });

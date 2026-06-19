@@ -1,0 +1,20 @@
+/* codex/trilha/css/entrar.css — typed-entry landing for pensoia.com/trilha/<code>.
+   Ported value-for-value from go/index.html's inline <style> (.container / h1 / p / .note
+   → cdx-entrar-*); the input + button are the blessed new content (the stub had none). */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column; }
+
+.cdx-entrar { max-width: 480px; margin: 0 auto; padding: 64px 20px; width: 100%; text-align: center; }
+.cdx-entrar-title { font-size: 1.2rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 16px; }
+.cdx-entrar-text { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 14px; }
+.cdx-entrar-note { font-size: 0.78rem; color: var(--text-light); margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--border); }
+
+/* New (blessed): the code field + submit. Theme tokens only, so dark mode follows. */
+.cdx-entrar-form { display: flex; flex-direction: column; gap: 12px; margin: 18px 0 4px; }
+.cdx-entrar-error { font-size: 0.88rem; color: var(--danger, #dc2626); min-height: 1.2em; }
+.cdx-entrar-state { font-size: 0.95rem; color: var(--text-secondary); min-height: 1.2em; }
+.cdx-entrar-input { font-size: 1.8rem; font-weight: 700; letter-spacing: 0.35em; text-align: center; padding: 14px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-primary); }
+.cdx-entrar-input:focus { outline: none; border-color: var(--primary); }
+.cdx-entrar-btn { font-size: 0.98rem; font-weight: 600; padding: 13px 16px; border: none; border-radius: 10px; background: var(--primary); color: var(--text-on-accent, #fff); cursor: pointer; }
+.cdx-entrar-btn:disabled { opacity: 0.6; cursor: default; }
