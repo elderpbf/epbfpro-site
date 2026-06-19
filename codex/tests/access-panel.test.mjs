@@ -62,13 +62,15 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.equal(turma.notifications_enabled, 0, 'notifications flag kept in sync');
 });
 
-test('the cohort dossier mounts the shared panel into a collapsible Acesso section', () => {
+test('the cohort dossier mounts the shared panel into the Dados tab', () => {
   const src = read('../cohorts/cohorts.js');
   assert.match(src, /from '\.\.\/js\/access-panel\.js'/, 'imports the shared module');
   assert.match(src, /id="cdx-doss-acesso"/, 'has the Acesso mount point');
   assert.match(src, /accessSettingsHtml\(turma\)/, 'renders the shared settings');
   assert.match(src, /wireAccessSettings\(accEl, turma/, 'wires the shared settings');
-  assert.match(src, /<details class="cdx-doss-sec"/, 'sections are collapsible');
+  // Phase 8: the section stack became per-turma sub-tab panels.
+  assert.match(src, /data-dpanel="dados"/, 'dossier uses tab panels');
+  assert.match(src, /data-dtab="forum"/, 'dossier has a Fórum tab');
 });
 
 test('the Alunos tab consumes the same shared panel (no duplicated settings logic)', () => {

@@ -188,6 +188,8 @@ export default {
   // Turma dossier (Concept A right pane)
   'cohorts.doss_certs':           'Certificados',
   'cohorts.doss_emit':            'Emitir desta turma →',
+  'cohorts.doss_forum':           'Fórum',
+  'cohorts.doss_forum_empty':     'Nenhuma conversa nesta turma ainda.',
   'cohorts.doss_no_certs':        'Nenhum certificado emitido nesta turma.',
   'cohorts.doss_st_issued':       'aguardando assinatura',
   'cohorts.doss_st_signed':       'aguardando envio',

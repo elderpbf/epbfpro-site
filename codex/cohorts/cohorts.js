@@ -1097,8 +1097,18 @@ function _renderDossier(turma) {
           '</div>' +
         '</div>' +
       '</div>' +
-      // ── Dados da turma (colapsável) ──
-      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.sec_turma_data')) + '</b></div></summary>' +
+      // ── Per-turma sub-tabs (Phase 8): the stacked sections become tab panels.
+      // Container-only change: each panel keeps its exact inner content + ids, and
+      // the loaders below still fire eagerly on mount (not lazy-on-tab-show). ──
+      '<div class="cdx-subrow cdx-doss-tabs"><div class="cdx-substrip" role="tablist">' +
+        '<button type="button" class="cdx-subtab active" data-dtab="dados" role="tab">' + _esc(t('cohorts.sec_turma_data')) + '</button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="participantes" role="tab">' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="aulas" role="tab">' + _esc(t('cohorts.col_aulas')) + '</button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="certs" role="tab">' + _esc(t('cohorts.doss_certs')) + '</button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="forum" role="tab">' + _esc(t('cohorts.doss_forum')) + '</button>' +
+      '</div></div>' +
+      // Dados panel = turma facts + Acesso (the short config block folds in here).
+      '<div class="cdx-doss-panel" data-dpanel="dados">' +
         '<div class="cdx-doss-facts">' +
           editSelect('course_id', t('cohorts.tf_course'), courseOpts, 'cdx-doss-fact--course') +
           factId('cdx-doss-carga', t('cohorts.course_hours_label'), cargaDerived) +
@@ -1113,28 +1123,30 @@ function _renderDossier(turma) {
           editSelect('classpulse_session_id', t('cohorts.field_classpulse'), cpOpts) +
           trailCard +
         '</div>' +
-      '</details>' +
-      // ── Acesso (gating switches + the QR enrollment window; mounted from js/access-panel.js) ──
-      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.sec_access')) + '</b></div></summary>' +
+        '<div class="cdx-doss-subhead">' + _esc(t('cohorts.sec_access')) + '</div>' +
         '<div id="cdx-doss-acesso"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
-      '</details>' +
-      // ── Participantes (colapsável; inline list with entry-type tags) ──
-      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h">' +
-        '<b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span>' +
-          '<button type="button" class="cdx-phelp" data-doss="phelp" title="' + _esc(t('cohorts.phelp_btn_title')) + '" aria-label="' + _esc(t('cohorts.phelp_btn_title')) + '">?</button></b>' +
-        '<span class="cdx-doss-sec-acts"><button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></span>' +
-      '</div></summary>' +
+      '</div>' +
+      // Participantes panel (the roster/help controls move into a panel toolbar).
+      '<div class="cdx-doss-panel" data-dpanel="participantes" hidden>' +
+        '<div class="cdx-doss-panel-bar">' +
+          '<button type="button" class="cdx-phelp" data-doss="phelp" title="' + _esc(t('cohorts.phelp_btn_title')) + '" aria-label="' + _esc(t('cohorts.phelp_btn_title')) + '">?</button>' +
+          '<span class="cdx-doss-sec-acts"><button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></span>' +
+        '</div>' +
         '<div id="cdx-doss-participants"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
-      '</details>' +
-      // ── Aulas (colapsável; reuses the aula editor via #cdx-aulas-list) ──
-      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.col_aulas')) + '</b></div></summary>' +
+      '</div>' +
+      // Aulas panel (reuses the aula editor via #cdx-aulas-list).
+      '<div class="cdx-doss-panel" data-dpanel="aulas" hidden>' +
         '<div id="' + IDS.aulasList + '"><div class="cdx-empty">' + _esc(t('cohorts.loading_aulas')) + '</div></div>' +
-      '</details>' +
-      // ── Certificados (colapsável) ──
-      '<details class="cdx-doss-sec" open><summary><div class="cdx-doss-sec-h"><b><span class="cdx-caret" aria-hidden="true">&#9656;</span>' + _esc(t('cohorts.doss_certs')) + '</b></div></summary>' +
+      '</div>' +
+      // Certificados panel.
+      '<div class="cdx-doss-panel" data-dpanel="certs" hidden>' +
         '<div class="cdx-doss-sec-actions"><a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
         '<div id="cdx-doss-certs"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
-      '</details>' +
+      '</div>' +
+      // Fórum panel (Phase 4 fills the admin moderation view).
+      '<div class="cdx-doss-panel" data-dpanel="forum" hidden>' +
+        '<div id="cdx-doss-forum"><span class="cdx-empty">' + _esc(t('cohorts.doss_forum_empty')) + '</span></div>' +
+      '</div>' +
     '</div>';
 
   el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', (e) => {
@@ -1146,6 +1158,16 @@ function _renderDossier(turma) {
     else if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
     else if (a === 'regen') _regenToken(turma.client_slug, turma.slug);
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
+  }));
+
+  // Per-turma sub-tab switching: show the picked panel, hide the rest. The loaders
+  // below already fire on mount, so switching is pure show/hide (no re-fetch).
+  const _dtabs = el.querySelectorAll('.cdx-subtab[data-dtab]');
+  const _dpanels = el.querySelectorAll('.cdx-doss-panel[data-dpanel]');
+  _dtabs.forEach((tab) => tab.addEventListener('click', () => {
+    const key = tab.dataset.dtab;
+    _dtabs.forEach((x) => x.classList.toggle('active', x === tab));
+    _dpanels.forEach((p) => { p.hidden = p.dataset.dpanel !== key; });
   }));
 
   _wireDossierInlineEdit(el, turma);

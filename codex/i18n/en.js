@@ -189,6 +189,8 @@ export default {
   // Turma dossier (Concept A right pane)
   'cohorts.doss_certs':           'Certificates',
   'cohorts.doss_emit':            'Issue for this cohort →',
+  'cohorts.doss_forum':           'Forum',
+  'cohorts.doss_forum_empty':     'No conversations in this cohort yet.',
   'cohorts.doss_no_certs':        'No certificates issued for this cohort yet.',
   'cohorts.doss_st_issued':       'awaiting signature',
   'cohorts.doss_st_signed':       'awaiting send',
