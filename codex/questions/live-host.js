@@ -409,7 +409,9 @@ function _paintEnrollBtn() {
   const qr = _q('#cdx-host-qr');
   if (!qr) return;
   const open = !!(_enrollState && _enrollState.open);
-  qr.classList.toggle('is-on', open);
+  const projecting = open && !!_enrollState.qr_shown;
+  qr.classList.toggle('is-on', projecting); // QR is projected on the display
+  qr.classList.toggle('is-live', open);     // window is open (countdown running) even if the QR is hidden
   const rem = qr.querySelector('.cdx-host-qr-rem');
   if (!rem) return;
   if (open && _enrollState.enrollment_expires_at) {
@@ -437,11 +439,15 @@ function _loadEnrollState() {
   }).catch(() => {});
 }
 
+// Toggle the QR ON THE DISPLAY. Projecting -> un-project (the window STAYS open, the
+// countdown keeps running on this button). Not projecting -> open (mints a window only
+// if none is live; otherwise reuses it, no reset, no new link) and project the QR.
 async function _toggleEnroll() {
   if (!_trailTurma) { notice.info(t('questions.host_qr_no_turma')); return; }
   const ids = { client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug };
+  const projecting = !!(_enrollState && _enrollState.open && _enrollState.qr_shown);
   try {
-    if (_enrollState && _enrollState.open) await cohorts.closeEnrollment(ids);
+    if (projecting) await cohorts.setEnrollmentQr({ ...ids, shown: 0 });
     else await cohorts.openEnrollment(ids);
   } catch (e) { notice.internal(e); return; }
   _loadEnrollState();

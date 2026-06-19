@@ -178,9 +178,10 @@ export const cohorts = {
   revokeStudentSessions: (p) => call('ct_revoke_student_sessions', p),  // { participant_id }
   // QR enrollment window (Phase 7b): open mints the token + expiry (+ turma_token to
   // build the QR URL); get re-reads state for the live countdown; close shuts it.
-  openEnrollment:        (p) => call('ct_open_enrollment', p),          // { client_slug, slug, ttl_seconds? }
+  openEnrollment:        (p) => call('ct_open_enrollment', p),          // { client_slug, slug, ttl_seconds? } — mints if none, REUSES a live window, sets qr_shown=1
   closeEnrollment:       (p) => call('ct_close_enrollment', p),         // { client_slug, slug }
-  getEnrollment:         (p) => call('ct_get_enrollment', p)            // { client_slug, slug } -> { open, now, enrollment_token, enrollment_expires_at, turma_token }
+  setEnrollmentQr:       (p) => call('ct_set_enrollment_qr', p),        // { client_slug, slug, shown } — project/un-project the QR without touching the window
+  getEnrollment:         (p) => call('ct_get_enrollment', p)            // { client_slug, slug } -> { open, now, enrollment_token, enrollment_expires_at, turma_token, qr_shown }
 };
 
 // Courses — reusable course templates (Cohorts → Cursos sub-tab). A course is a

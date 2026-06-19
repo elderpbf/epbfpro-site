@@ -1080,7 +1080,7 @@ export default {
   'questions.display_anon':              'Anonymous',
   'questions.display_nocode':            'No session code in the URL.',
   'questions.display_nocode_hint':       'Open this page as:',
-  'questions.display_enroll_label':      'Enrollment open',
+  'questions.display_enroll_title':      'Your learning trail',
   'questions.host_ai_generate':          'Generate',
   'questions.host_ai_improve':           'Improve',
   'questions.host_err_ai':               'Error generating the question.',

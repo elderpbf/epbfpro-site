@@ -36,12 +36,13 @@ test('display.css copied the cp-qa-student values verbatim', () => {
   assert.match(css, /background: rgba\(245,158,11,0\.10\)/, 'answer wrap tint');
 });
 
-test('display reflects the enrollment window: QR overlay + server-anchored countdown', () => {
+test('display shows the enrollment QR (no countdown) only while projected (open && qr_shown)', () => {
   assert.match(html, /id="cdx-disp-enroll"/, 'has the enrollment overlay');
-  assert.match(js, /from '\.\.\/js\/enroll-clock\.js'/, 'uses the shared countdown helpers');
+  assert.match(html, /display_enroll_title/, 'titled like the old trail QR (Sua trilha de aprendizado)');
   assert.match(js, /cohorts\.getEnrollment/, 'polls the shared enrollment state');
+  assert.match(js, /res\.open && res\.qr_shown/, 'shows only when the window is open AND projected');
   assert.match(js, /enrollUrl\(/, 'builds the et join URL for the QR');
-  assert.match(js, /remainingSec\(/, 'countdown anchored to the server expiry, not a free-running timer');
+  assert.ok(!/remainingSec|fmtRemain/.test(js), 'no countdown on the display — it lives on the session panel');
 });
 
 test('the live host Display button points at the ported Codex page', () => {

@@ -1100,8 +1100,10 @@
 /* QR is always present; without a linked turma it reads as disabled (still clickable, explains why). */
 .cdx-host-qr { display: inline-flex; align-items: center; gap: 5px; }
 .cdx-host-qr.is-disabled { opacity: 0.45; }
-/* On = an enrollment window is open; the button glows and carries the time left. */
-.cdx-host-qr.is-on { border-color: var(--success); color: var(--success); box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
+/* is-live = window open (countdown running, even if the QR is hidden on the display):
+   the button carries the time. is-on = the QR is actually projected: a stronger glow. */
+.cdx-host-qr.is-live { border-color: var(--success); color: var(--success); }
+.cdx-host-qr.is-on { box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
 .cdx-host-qr-rem { font-variant-numeric: tabular-nums; font-size: .78rem; font-weight: 600; }
 .cdx-host-qr-rem:empty { display: none; }
 

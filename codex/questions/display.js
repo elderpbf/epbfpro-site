@@ -5,11 +5,9 @@
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { cohorts } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
-import { clockOffset, remainingSec, fmtRemain, enrollUrl } from '../js/enroll-clock.js';
+import { enrollUrl } from '../js/enroll-clock.js';
 
 let _turma = null;            // resolved turma (client_slug, turma_slug, token)
-let _enrollOffset = 0;        // server/client clock skew, measured each poll
-let _enrollExpiresAt = 0;     // 0 = no open window
 
 // Production host: the QR is scanned by students on their own phones.
 function _trilhaUrl(tr) {
@@ -98,13 +96,12 @@ function _renderStudentQA(data, cpq) {
   card.classList.add('is-active');
 }
 
-// The enrollment QR overlay: visible only while the instructor's window is open.
-// State is the server window (poll every 3s, re-validated); the 1s tick keeps the
-// countdown honest without trusting a free-running client timer.
+// The enrollment QR overlay: shown only while the instructor projects it
+// (server state: open && qr_shown). Polled like everything else on the display;
+// the countdown is the instructor's business and lives on the session panel, not here.
 function _startEnrollWatch() {
   _pollEnroll();
   setInterval(_pollEnroll, 3000);
-  setInterval(_tickEnroll, 1000);
 }
 
 function _pollEnroll() {
@@ -112,9 +109,7 @@ function _pollEnroll() {
   cohorts.getEnrollment({ client_slug: _turma.client_slug, slug: _turma.turma_slug }).then((res) => {
     const overlay = document.getElementById('cdx-disp-enroll');
     if (!overlay) return;
-    if (!res || !res.ok || !res.open) { overlay.hidden = true; _enrollExpiresAt = 0; return; }
-    _enrollOffset = clockOffset(res.now, Math.floor(Date.now() / 1000));
-    _enrollExpiresAt = res.enrollment_expires_at || 0;
+    if (!(res && res.ok && res.open && res.qr_shown)) { overlay.hidden = true; return; }
     const img = document.getElementById('cdx-disp-enroll-qr');
     if (img) {
       const url = enrollUrl('https://pensoia.com', _turma.client_slug, _turma.turma_slug, res.turma_token, res.enrollment_token);
@@ -122,20 +117,5 @@ function _pollEnroll() {
       if (img.dataset.src !== src) { img.src = src; img.dataset.src = src; }
     }
     overlay.hidden = false;
-    _tickEnroll();
   }).catch(() => {});
-}
-
-function _tickEnroll() {
-  if (!_enrollExpiresAt) return;
-  const remain = remainingSec(_enrollExpiresAt, _enrollOffset, Math.floor(Date.now() / 1000));
-  if (remain <= 0) {
-    const overlay = document.getElementById('cdx-disp-enroll');
-    if (overlay) overlay.hidden = true;
-    _enrollExpiresAt = 0;
-    _pollEnroll();
-    return;
-  }
-  const remEl = document.getElementById('cdx-disp-enroll-rem');
-  if (remEl) remEl.textContent = fmtRemain(remain);
 }

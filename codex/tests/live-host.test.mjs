@@ -112,12 +112,13 @@ test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared glo
   assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
   assert.match(src, /\.lookupTurmaBySession\s*\(/, 'Trilha looks up the linked turma');
   assert.match(src, /\.updateTurmaMeta\s*\(/, 'Trilha links/unlinks via turma meta');
-  // The QR button now toggles the in-class enrollment window (the session display
-  // shows the QR + countdown); it no longer pops a panel-side QR modal.
-  assert.match(src, /\.openEnrollment\s*\(/, 'QR opens the enrollment window');
-  assert.match(src, /\.closeEnrollment\s*\(/, 'QR closes the enrollment window');
+  // The QR button toggles the QR projected on the session display; the enrollment
+  // window stays open (it's never closed by the button), so it no longer pops a
+  // panel-side QR modal.
+  assert.match(src, /\.openEnrollment\s*\(/, 'opens/reuses the window (mint-if-none) + projects the QR');
+  assert.match(src, /\.setEnrollmentQr\s*\(/, 'un-projects the QR without closing the window');
   assert.match(src, /\.getEnrollment\s*\(/, 'reads the shared enrollment state');
-  assert.match(src, /from\s+['"]\.\.\/js\/enroll-clock\.js['"]/, 'uses the shared server-anchored countdown');
+  assert.match(src, /from\s+['"]\.\.\/js\/enroll-clock\.js['"]/, 'shows the server-anchored countdown on the panel');
   assert.ok(!/window\.QRShareModal\b/.test(src), 'no longer reads the backstage QRShareModal global');
   // AI Gerar/Melhorar now lives in the shared composer (reused by Bank + host),
   // so the host wires it by mounting the composer, not by its own ai.question call.
