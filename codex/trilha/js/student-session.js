@@ -1,10 +1,10 @@
 // codex/trilha/js/student-session.js
 // The Trail's student-identity state. Phase 1: a persistent, per-turma session
-// token in localStorage (Elder's call: no forced re-login, the token lives until
-// the student logs out or loses it), the magic-link URL token extraction, and the
-// consent version. Pure logic only; the login modal DOM lives separately. The
-// session token is opaque and server-revocable, so "forever on the client" is
-// safe: a revoked token simply fails its next student_session_check.
+// token in localStorage (Elder's call: no forced re-login on the device), the
+// magic-link URL token extraction, and the consent version. Pure logic only; the
+// login modal DOM lives separately. The session token is opaque, server-revocable,
+// and EXPIRES 7 days after it is minted (server-side, SESSION_TTL_SECONDS): a
+// revoked/expired token simply fails its next student_session_check and re-logs in.
 
 // Bump when the LGPD consent notice text changes, so saved consent is re-prompted.
 export const CONSENT_VERSION = '2026-06-16';
