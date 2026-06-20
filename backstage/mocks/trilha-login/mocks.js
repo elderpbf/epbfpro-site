@@ -19,7 +19,7 @@ window.REVIEW_MANIFEST = {
       { id: 'c', file: 'c.html', label: 'C · Mínimo (código em foco)' }
     ]},
     { label: 'Revisão 2 · entra na última turma, 2 campos sempre abertos (sem hub)', items: [
-      { id: 'd', file: 'd.html', label: 'D · Faixa "Continuar" + 2 campos' },
+      { id: 'd', file: 'd.html', label: '★ D (escolhida) · Continuar + 2 campos · e-mail esconde o card do código' },
       { id: 'e', file: 'e.html', label: 'E · 2 campos no foco + continuar discreto' }
     ]}
   ]

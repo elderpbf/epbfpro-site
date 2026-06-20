@@ -18,7 +18,7 @@ window.REVIEW_MANIFEST = {
     ]},
     { label: 'Revisão 2 · botões iguais + idioma colapsado', items: [
       { id: 'd', file: 'd.html', label: 'D · Acessar minha trilha + Contato · idioma = globo' },
-      { id: 'e', file: 'e.html', label: 'E · idem · idioma = pill "PT ▾"' }
+      { id: 'e', file: 'e.html', label: '★ E (escolhida) · Acessar minha trilha + Contato · idioma = pill "PT ▾"' }
     ]}
   ]
 };

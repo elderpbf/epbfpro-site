@@ -15,10 +15,11 @@
 <script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
 
 <style>
-  /* Direção D (feedback Élder) — SEM hub de "minhas turmas". O modelo decidido:
-     quem volta entra na ÚLTIMA turma logada (faixa "Continuar"); trocar entre turmas
-     já salvas acontece DENTRO da trilha (futura Área do Aluno). Os DOIS campos (código
-     e e-mail) ficam SEMPRE abertos, então logar numa turma nova nunca fica bloqueado. */
+  /* Direção D (escolhida) — SEM hub de "minhas turmas". Quem volta entra na ÚLTIMA
+     turma logada (faixa "Continuar"); trocar entre turmas salvas é DENTRO da trilha
+     (Área do Aluno). Os DOIS campos (código e e-mail) ficam SEMPRE abertos.
+     Feedback aplicado: ao escolher o e-mail, o card do CÓDIGO DA TURMA some e a tela
+     foca só no campo do código que chegou por e-mail (sem confundir os dois). */
   .lg-page { max-width: 720px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
 
   .lg-head { text-align: center; margin-bottom: 1.2rem; }
@@ -50,10 +51,13 @@
   .lg-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: .95rem; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .7rem .85rem; }
   .lg-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
   .lg-input--code { font-size: 1.4rem; font-weight: 800; letter-spacing: .3em; text-align: center; }
+  .lg-input--otp { font-size: 1.4rem; font-weight: 800; letter-spacing: .4em; text-align: center; text-transform: uppercase; }
   .lg-cta { width: 100%; justify-content: center; margin-top: auto; }
   .lg-spacer { height: .7rem; }
+  .lg-link { display: block; width: 100%; margin: .7rem 0 0; background: none; border: none; color: var(--text-secondary); font-family: inherit; font-size: .8rem; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .lg-link:hover { color: var(--primary); }
 
-  .lg-model { margin: 0 auto 1.2rem; max-width: 560px; border: 1px dashed var(--border); border-radius: 12px; padding: .7rem .9rem; font-size: .76rem; color: var(--text-secondary); line-height: 1.55; text-align: center; }
+  .lg-model { margin: 1.4rem auto 0; max-width: 560px; border: 1px dashed var(--border); border-radius: 12px; padding: .7rem .9rem; font-size: .76rem; color: var(--text-secondary); line-height: 1.55; text-align: center; }
   .lg-model b { color: var(--text-primary); }
 
   .lg-foot { margin-top: 1.6rem; text-align: center; font-size: .78rem; color: var(--text-secondary); }
@@ -61,6 +65,17 @@
 
   /* estado: quem volta (st-ret) vê a faixa; usuário novo (st-new) não */
   body.st-new .lg-cont, body.st-new .lg-or { display: none; }
+
+  /* passo "código enviado": foca no card de e-mail e ESCONDE o card do código da turma
+     (e a faixa Continuar), pra não confundir onde digitar o código que chegou */
+  .lg-page.step-code .lg-cont,
+  .lg-page.step-code .lg-or,
+  .lg-page.step-code .lg-card--code,
+  .lg-page.step-code .lg-model { display: none; }
+  .lg-page.step-code .lg-paths { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+
+  /* botões de fonte (A−/A+) removidos: só serviam na antiga página GO */
+  pensoia-header .ph-zoom { display: none !important; }
 
   .lg-switch { position: fixed; top: 74px; right: 12px; z-index: 50; display: flex; gap: 5px; align-items: center; background: var(--surface); border: 1px dashed var(--danger, #dc2626); border-radius: 10px; padding: 6px 8px; box-shadow: 0 10px 26px -14px var(--shadow); }
   .lg-switch small { color: var(--text-secondary); font-size: .66rem; text-transform: uppercase; letter-spacing: .06em; }
@@ -100,7 +115,7 @@
   <div class="lg-sep lg-or">ou entrar em uma turma</div>
 
   <div class="lg-paths">
-    <div class="lg-card">
+    <div class="lg-card lg-card--code">
       <div class="lg-path-ic lg-path-ic--code">#</div>
       <h3 class="lg-path-h">Tenho um código</h3>
       <p class="lg-path-p">Os 4 dígitos que aparecem na tela da aula ao vivo.</p>
@@ -108,18 +123,29 @@
       <div class="lg-spacer"></div>
       <button class="tr-btn tr-btn-primary lg-cta">Entrar</button>
     </div>
-    <div class="lg-card">
+
+    <div class="lg-card lg-card--mail">
       <div class="lg-path-ic lg-path-ic--mail">@</div>
-      <h3 class="lg-path-h">Entrar com e-mail</h3>
-      <p class="lg-path-p">Você recebe um código de 4 letras pra confirmar. Sem senha.</p>
-      <input class="lg-input" type="email" placeholder="voce@exemplo.com" inputmode="email">
-      <div class="lg-spacer"></div>
-      <button class="tr-btn tr-btn-primary lg-cta">Enviar código</button>
+      <div class="lg-email-send">
+        <h3 class="lg-path-h">Entrar com e-mail</h3>
+        <p class="lg-path-p">Enviaremos um código por e-mail para autenticar.</p>
+        <input class="lg-input" id="email-in" type="email" placeholder="voce@exemplo.com" inputmode="email">
+        <div class="lg-spacer"></div>
+        <button class="tr-btn tr-btn-primary lg-cta" id="send-code" type="button">Enviar código</button>
+      </div>
+      <div class="lg-email-code" hidden>
+        <h3 class="lg-path-h">Digite o código</h3>
+        <p class="lg-path-p">Enviamos um código de 4 letras para <b id="sent-to">seu e-mail</b>.</p>
+        <input class="lg-input lg-input--otp" maxlength="4" placeholder="ABCD" autocomplete="one-time-code" aria-label="Código do e-mail">
+        <div class="lg-spacer"></div>
+        <button class="tr-btn tr-btn-primary lg-cta">Confirmar</button>
+        <button class="lg-link" id="back-email" type="button">usar outro e-mail</button>
+      </div>
     </div>
   </div>
 
   <div class="lg-model" style="margin-top:1.4rem">
-    <b>Modelo:</b> sem lista de "minhas turmas" aqui. Quem volta entra na última turma (faixa <b>Continuar</b>); trocar entre turmas já salvas é dentro da trilha (Área do Aluno). Os dois campos ficam sempre abertos pra entrar numa turma nova.
+    <b>Modelo:</b> sem lista de "minhas turmas" aqui. Quem volta entra na última turma (faixa <b>Continuar</b>); trocar entre turmas já salvas é dentro da trilha (Área do Aluno). Os dois campos ficam sempre abertos; ao escolher o e-mail, o card do código da turma some pra não confundir.
   </div>
 
   <footer class="lg-foot">Feito com PensoIA · <a href="https://pensoia.com" target="_blank" rel="noopener">pensoia.com</a></footer>
@@ -135,6 +161,20 @@
     }
     sw.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { set(b.getAttribute('data-st')); }); });
     set('ret');
+
+    // Escolher o e-mail: manda o código, esconde o card da turma e foca no campo do código.
+    var page = document.querySelector('.lg-page');
+    var sendBtn = document.getElementById('send-code'), backBtn = document.getElementById('back-email');
+    var emailIn = document.getElementById('email-in'), sentTo = document.getElementById('sent-to');
+    var sendView = document.querySelector('.lg-email-send'), codeView = document.querySelector('.lg-email-code');
+    sendBtn.addEventListener('click', function () {
+      if (emailIn.value.trim()) sentTo.textContent = emailIn.value.trim();
+      sendView.hidden = true; codeView.hidden = false; page.classList.add('step-code');
+      var otp = codeView.querySelector('.lg-input--otp'); if (otp) otp.focus();
+    });
+    backBtn.addEventListener('click', function () {
+      codeView.hidden = true; sendView.hidden = false; page.classList.remove('step-code');
+    });
   })();
 </script>
 </body>
