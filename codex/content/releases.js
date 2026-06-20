@@ -685,7 +685,7 @@ function _renderShell() {
 }
 
 // ── Tab contract ─────────────────────────────────────────────────────────────
-export function mount(viewEl, ctx) {
+export function mount(viewEl, ctx = {}) {
   _viewEl = viewEl;
   _clientSlug = null;
   _turmaSlug = null;
@@ -699,11 +699,19 @@ export function mount(viewEl, ctx) {
   _cleanup = [];
   _renderShell();
   contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(_err(e)); });
-  _picker = turmaPicker.mount(_q('cdx-rel-picker'), {
-    onSelect: (c, tu) => _loadReleases(c, tu),
-    storageKey: { client: LS_CLIENT, turma: LS_TURMA },
-    autoRestore: true,
-  });
+  // Embedded in a turma dossiê (ctx.clientSlug/turmaSlug given): the turma is already
+  // chosen, so hide the picker and load straight into it. Standalone (Content tab): the
+  // picker drives selection as before.
+  if (ctx.clientSlug && ctx.turmaSlug) {
+    const pk = _q('cdx-rel-picker'); if (pk) pk.style.display = 'none';
+    _loadReleases(ctx.clientSlug, ctx.turmaSlug);
+  } else {
+    _picker = turmaPicker.mount(_q('cdx-rel-picker'), {
+      onSelect: (c, tu) => _loadReleases(c, tu),
+      storageKey: { client: LS_CLIENT, turma: LS_TURMA },
+      autoRestore: true,
+    });
+  }
 }
 
 export function unmount() {

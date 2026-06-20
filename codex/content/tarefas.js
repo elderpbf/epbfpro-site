@@ -569,7 +569,7 @@ function _renderShell() {
 }
 
 // ── Tab contract ─────────────────────────────────────────────────────────────
-export function mount(viewEl, ctx) {
+export function mount(viewEl, ctx = {}) {
   _viewEl = viewEl;
   _client = null;
   _turma = null;
@@ -579,11 +579,18 @@ export function mount(viewEl, ctx) {
   _selectedId = null;
   _cleanup = [];
   _renderShell();
-  _picker = turmaPicker.mount(_q('cdx-tar-picker'), {
-    onSelect: (c, tu) => _loadTarefas(c, tu),
-    storageKey: { client: LS_CLIENT, turma: LS_TURMA },
-    autoRestore: true,
-  });
+  // Embedded in a turma dossiê (ctx.clientSlug/turmaSlug given): turma already chosen,
+  // hide the picker and load it. Standalone (Content tab): the picker drives selection.
+  if (ctx.clientSlug && ctx.turmaSlug) {
+    const pk = _q('cdx-tar-picker'); if (pk) pk.style.display = 'none';
+    _loadTarefas(ctx.clientSlug, ctx.turmaSlug);
+  } else {
+    _picker = turmaPicker.mount(_q('cdx-tar-picker'), {
+      onSelect: (c, tu) => _loadTarefas(c, tu),
+      storageKey: { client: LS_CLIENT, turma: LS_TURMA },
+      autoRestore: true,
+    });
+  }
 }
 
 export function unmount() {
