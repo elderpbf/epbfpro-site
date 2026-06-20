@@ -13,6 +13,10 @@ window.REVIEW_MANIFEST = {
       { id: 'a2', file: 'a2.html', label: 'B · Cadastro em foco' },
       { id: 'a3', file: 'a3.html', label: 'C · Jornada das aulas' }
     ]},
+    { label: 'Densas (cabe na tela, registro em modal)', items: [
+      { id: 'a4', file: 'a4.html', label: 'D · Cartão único' },
+      { id: 'a5', file: 'a5.html', label: 'E · Capa dividida' }
+    ]},
     { label: 'Mobile', items: [
       { id: 'a1m', file: 'a1-mobile.html', label: 'A · Mobile (empilhado)' }
     ]}

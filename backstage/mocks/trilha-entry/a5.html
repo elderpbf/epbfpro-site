@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrada · E · Capa dividida</title>
+
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/tarefa-modal.css?v=1.3">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+<script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
+
+<style>
+  .en-cover { display: grid; grid-template-columns: 0.92fr 1.08fr; gap: 0; margin-top: .4rem;
+    border: 1px solid var(--border); border-radius: 18px; overflow: hidden; box-shadow: 0 20px 56px -28px var(--shadow); }
+  @media (max-width: 780px) { .en-cover { grid-template-columns: 1fr; } }
+
+  /* Left panel */
+  .en-left { padding: 1.5rem 1.5rem 1.4rem; background: linear-gradient(160deg, rgba(20,184,166,0.10), rgba(13,148,136,0.03)); display: flex; flex-direction: column; }
+  .en-id { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; }
+  .en-id-av { width: 50px; height: 50px; flex-shrink: 0; border-radius: 13px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; font-weight: 800; font-size: 1.2rem; }
+  .en-id-eyebrow { font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--primary-dark); }
+  .en-id-name { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); line-height: 1.12; letter-spacing: -0.01em; }
+  .en-id-turma { font-size: .84rem; color: var(--text-secondary); }
+  .en-facts { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+  .en-fact { font-size: .7rem; font-weight: 600; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: .26rem .6rem; }
+
+  .en-lead { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); line-height: 1.3; margin: 0 0 .9rem; }
+  .en-benes { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.1rem; }
+  .en-bene { display: flex; align-items: center; gap: .55rem; font-size: .86rem; font-weight: 600; color: var(--text-primary); }
+  .en-bene-ic { width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .en-bene-ic svg { width: 15px; height: 15px; }
+  .en-bene-ic--tarefa   { background: rgba(20,184,166,0.14);  color: #0d9488; }
+  .en-bene-ic--conteudo { background: rgba(59,130,246,0.14);  color: #2563eb; }
+  .en-bene-ic--forum    { background: rgba(124,58,237,0.14);  color: #7c3aed; }
+  .en-bene-ic--cert     { background: rgba(217,119,6,0.16);   color: #d97706; }
+  [data-theme="dark"] .en-bene-ic--tarefa   { background: rgba(20,184,166,0.22);  color: #5eead4; }
+  [data-theme="dark"] .en-bene-ic--conteudo { background: rgba(59,130,246,0.24);  color: #93c5fd; }
+  [data-theme="dark"] .en-bene-ic--forum    { background: rgba(124,58,237,0.26);  color: #c4b5fd; }
+  [data-theme="dark"] .en-bene-ic--cert     { background: rgba(217,119,6,0.26);   color: #fcd34d; }
+  .en-bene-tag { font-size: .54rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--task-dark); }
+  .en-cta { width: 100%; justify-content: center; font-size: .95rem; padding: .72rem 1.2rem; margin-top: auto; }
+  .en-q { font-size: .74rem; color: var(--text-secondary); text-align: center; margin: .7rem 0 0; }
+  .en-q b { color: var(--text-primary); }
+
+  /* Right panel: locked journey timeline */
+  .en-right { padding: 1.5rem 1.5rem; background: var(--surface); }
+  .en-right-h { font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 1rem; }
+  .en-tl { position: relative; padding-left: 1.6rem; }
+  .en-tl::before { content: ''; position: absolute; left: 10px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
+  .en-step { position: relative; margin-bottom: .7rem; }
+  .en-dot { position: absolute; left: -1.6rem; top: 2px; width: 22px; height: 22px; border-radius: 50%; background: var(--background); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+  .en-dot svg { width: 11px; height: 11px; }
+  .en-step-card { background: var(--background); border: 1px solid var(--border); border-radius: 11px; padding: .65rem .8rem; }
+  .en-step-top { display: flex; align-items: center; gap: .5rem; }
+  .en-step-t { font-size: .86rem; font-weight: 700; color: var(--text-primary); }
+  .en-step-d { font-size: .7rem; color: var(--text-secondary); margin-left: auto; }
+  .en-step-hint { font-size: .76rem; color: var(--text-secondary); margin-top: .25rem; line-height: 1.4; }
+
+  /* Register modal */
+  .en-modal { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50; }
+  .en-modal[hidden] { display: none; }
+  .en-modal-card { width: 420px; max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.4rem; box-shadow: 0 30px 80px -30px rgba(0,0,0,.5); position: relative; }
+  .en-modal-x { position: absolute; top: .8rem; right: .9rem; background: none; border: none; font-size: 1.4rem; line-height: 1; color: var(--text-secondary); cursor: pointer; }
+  .en-modal-h { font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0 0 1rem; }
+  .en-field { margin-bottom: .8rem; }
+  .en-label { display: block; font-size: .78rem; font-weight: 700; color: var(--text-primary); margin-bottom: .3rem; }
+  .en-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: .92rem; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .65rem .85rem; }
+  .en-modal-cta { width: 100%; justify-content: center; margin-top: .3rem; }
+  .en-consent { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--border); font-size: .72rem; color: var(--text-secondary); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
+
+<div class="cdx-trilha-page">
+  <main class="cdx-trilha-main">
+    <div class="en-cover">
+
+      <!-- LEFT: identity + benefits + CTA -->
+      <div class="en-left">
+        <div class="en-id">
+          <div class="en-id-av">TJ</div>
+          <div>
+            <div class="en-id-eyebrow">Sua trilha de aprendizado</div>
+            <div class="en-id-name">Tribunal de Justiça</div>
+            <div class="en-id-turma">IA na Prática Jurídica · Turma 2026.1</div>
+          </div>
+        </div>
+        <div class="en-facts">
+          <span class="en-fact">4 aulas</span>
+          <span class="en-fact">16 h</span>
+          <span class="en-fact">Presencial</span>
+          <span class="en-fact">12 mar – 02 abr</span>
+        </div>
+
+        <p class="en-lead">Faça seu registro e desbloqueie a turma</p>
+        <div class="en-benes">
+          <div class="en-bene"><span class="en-bene-ic en-bene-ic--tarefa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></span>Enviar tarefas</div>
+          <div class="en-bene"><span class="en-bene-ic en-bene-ic--conteudo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Conteúdos e materiais das aulas</div>
+          <div class="en-bene"><span class="en-bene-ic en-bene-ic--forum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>Interagir no fórum da turma</div>
+          <div class="en-bene"><span class="en-bene-ic en-bene-ic--cert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg></span>Emitir certificado <span class="en-bene-tag">se habilitado</span></div>
+        </div>
+
+        <button class="tr-btn tr-btn-primary en-cta" data-open-reg>Criar meu acesso</button>
+        <p class="en-q">Só quer <b>responder as perguntas</b> ao vivo? Não precisa de cadastro.</p>
+      </div>
+
+      <!-- RIGHT: locked journey -->
+      <div class="en-right">
+        <div class="en-right-h">A jornada desta turma</div>
+        <div class="en-tl">
+          <div class="en-step"><span class="en-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <div class="en-step-card"><div class="en-step-top"><span class="en-step-t">Fundamentos de IA no Direito</span><span class="en-step-d">12 mar</span></div><div class="en-step-hint">Materiais, tarefa de abertura e fórum da aula.</div></div></div>
+          <div class="en-step"><span class="en-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <div class="en-step-card"><div class="en-step-top"><span class="en-step-t">Prompts para análise de contratos</span><span class="en-step-d">19 mar</span></div><div class="en-step-hint">Roteiro de prompts e caso prático guiado.</div></div></div>
+          <div class="en-step"><span class="en-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <div class="en-step-card"><div class="en-step-top"><span class="en-step-t">Pesquisa e jurisprudência com IA</span><span class="en-step-d">26 mar</span></div><div class="en-step-hint">Técnicas de busca e validação de fontes.</div></div></div>
+          <div class="en-step"><span class="en-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <div class="en-step-card"><div class="en-step-top"><span class="en-step-t">Casos práticos e ética</span><span class="en-step-d">02 abr</span></div><div class="en-step-hint">Aplicação final e emissão do certificado.</div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Register modal -->
+<div class="en-modal" id="reg" hidden>
+  <div class="en-modal-card">
+    <button class="en-modal-x" data-close-reg aria-label="Fechar">&times;</button>
+    <h3 class="en-modal-h">Criar meu acesso</h3>
+    <div class="en-field"><label class="en-label">Seu nome completo</label><input class="en-input" type="text" placeholder="Como você quer ser identificado"></div>
+    <div class="en-field"><label class="en-label">Seu e-mail</label><input class="en-input" type="email" placeholder="voce@exemplo.com"></div>
+    <button class="tr-btn tr-btn-primary en-modal-cta">Enviar link de acesso</button>
+    <p class="en-consent">Tratamos seu nome e e-mail (e o CPF apenas para emitir o certificado) para liberar seu acesso, conforme a LGPD.</p>
+  </div>
+</div>
+
+<script type="module" src="/codex/trilha/js/pensoia-header.js"></script>
+<script>
+  var reg = document.getElementById('reg');
+  document.querySelectorAll('[data-open-reg]').forEach(function(b){ b.addEventListener('click', function(){ reg.hidden = false; }); });
+  document.querySelectorAll('[data-close-reg]').forEach(function(b){ b.addEventListener('click', function(){ reg.hidden = true; }); });
+  reg.addEventListener('click', function(e){ if (e.target === reg) reg.hidden = true; });
+</script>
+</body>
+</html>
