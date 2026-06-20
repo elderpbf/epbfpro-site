@@ -54,16 +54,16 @@ test('trail facade passes params through unchanged (answer payloads)', () => {
   assert.equal(tarefa.answer_json, '{"text":"x"}');
 });
 
-test('trail facade exposes the Phase 1 student-identity + Phase 7b enrollment methods', () => {
-  for (const m of ['authRequest', 'authVerify', 'profileSave', 'sessionCheck', 'presenceClaim', 'enrollClaim', 'enrollJoin', 'resolveEnrollCode']) {
+test('trail facade exposes the student-identity (OTP) + Phase 7b enrollment methods', () => {
+  for (const m of ['otpRequest', 'otpVerify', 'profileSave', 'sessionCheck', 'presenceClaim', 'enrollClaim', 'enrollJoin', 'resolveEnrollCode']) {
     assert.equal(typeof trail[m], 'function', `trail.${m} is a function`);
   }
 });
 
 test('trail facade maps the student methods to their worker actions', () => {
   const cases = [
-    [() => trail.authRequest({ email: 'a@b.c' }),      'student_auth_request'],
-    [() => trail.authVerify({ token: 'X' }),           'student_auth_verify'],
+    [() => trail.otpRequest({ email: 'a@b.c' }),       'student_otp_request'],
+    [() => trail.otpVerify({ email: 'a@b.c', code: 'WXYZ' }), 'student_otp_verify'],
     [() => trail.profileSave({ session_token: 'S' }),  'student_profile_save'],
     [() => trail.sessionCheck({ session_token: 'S' }), 'student_session_check'],
     [() => trail.presenceClaim({ client_slug: 'c', turma_slug: 't' }), 'student_presence_claim'],

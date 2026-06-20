@@ -18,3 +18,16 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 .cdx-entrar-input:focus { outline: none; border-color: var(--primary); }
 .cdx-entrar-btn { font-size: 0.98rem; font-weight: 600; padding: 13px 16px; border: none; border-radius: 10px; background: var(--primary); color: var(--text-on-accent, #fff); cursor: pointer; }
 .cdx-entrar-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* Minhas turmas hub + the e-mail (OTP) path. Theme tokens only, so dark mode follows. */
+.cdx-entrar-hub { margin: 4px 0 22px; text-align: left; }
+.cdx-entrar-hub-h { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 10px; }
+.cdx-entrar-hub-list { display: flex; flex-direction: column; gap: 8px; }
+.cdx-entrar-hub-card { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); text-decoration: none; }
+.cdx-entrar-hub-card:hover { border-color: var(--primary); }
+.cdx-entrar-hub-turma { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+.cdx-entrar-hub-client { font-size: 0.8rem; color: var(--text-secondary); }
+.cdx-entrar-email { margin-top: 6px; }
+.cdx-entrar-sep { font-size: 0.78rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.08em; margin: 22px 0 12px; }
+.cdx-entrar-dev { font-size: 0.85rem; color: var(--text-primary); }
+.cdx-entrar-dev strong { font-weight: 800; }

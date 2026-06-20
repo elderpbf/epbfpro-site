@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { readCode } from '../trilha/js/entrar.js';
+import { readCode, buildTurmaUrl } from '../trilha/js/entrar.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 const html = read('../trilha/entrar.html');
@@ -51,14 +51,38 @@ test('readCode reads the 4-digit code from the path or the query', () => {
   assert.equal(readCode('', '/trilha/foo/bar'), '');           // not a code path
 });
 
+test('buildTurmaUrl builds the public turma launch URL with k (url-encoded)', () => {
+  assert.equal(
+    buildTurmaUrl({ client_slug: 'jfse', turma_slug: 'geral', k: 'KTOK' }, 'https://staging.pensoia.com'),
+    'https://staging.pensoia.com/trilha/jfse/geral?k=KTOK');
+  // tolerates the OTP-verify entry shape (token instead of k) and encodes
+  assert.equal(
+    buildTurmaUrl({ client_slug: 'a b', turma_slug: 't', token: 'a/b' }, 'https://x.com'),
+    'https://x.com/trilha/a%20b/t?k=a%2Fb');
+});
+
+test('entrar consolidates the three ways in: código + localStorage hub + e-mail OTP', () => {
+  assert.match(js, /getKnownTurmas/, 'reads the device turma registry (localStorage-first)');
+  assert.match(js, /createLoginFlow/, 'drives the shared login controller');
+  assert.match(js, /requestCode|verifyCode/, 'uses the OTP code flow (not the magic link)');
+  assert.match(js, /cdx-entrar-hub/, 'renders the minhas-turmas hub');
+  assert.ok(!/callWorker\s*\(/.test(js), 'never calls callWorker directly');
+});
+
+test('entrar.html hosts the hub + e-mail containers (both copies in sync)', () => {
+  assert.match(html, /id="cdx-entrar-hub"/, 'hub container present');
+  assert.match(html, /id="cdx-entrar-email"/, 'e-mail container present');
+  assert.equal(served, html, 'served copy still matches the source copy');
+});
+
 test('the served copy is in sync and the 4-digit route is wired', () => {
   assert.equal(served, html, 'Site/trilha/entrar.html matches the source copy');
   assert.match(htaccess, /\^\(\[0-9\]\{4\}\)\/\?\$ entrar\.html\?code=\$1/, '/trilha/<4-digit> routes to entrar.html');
   assert.match(htaccess, /\^\$ entrar\.html/, 'bare /trilha/ falls back to the manual entry form');
 });
 
-test('the homepage offers an Área do Aluno entry to /trilha/entrar', () => {
-  assert.match(home, /href="\/trilha\/entrar"/, 'homepage links to the student entry page');
+test('the homepage Área do Aluno entry points at /trilha (the consolidated entry)', () => {
+  assert.match(home, /href="\/trilha"/, 'homepage links to the consolidated /trilha entry');
   assert.match(home, /aria-label="Área do Aluno"/, 'the entry is labelled for students');
 });
 

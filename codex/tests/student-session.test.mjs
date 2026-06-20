@@ -80,3 +80,35 @@ test('stores, reads, and clears a per-turma device-presence grant', () => {
 test('LOGIN_ENABLED is on (access-control model shipped)', () => {
   assert.equal(ss.LOGIN_ENABLED, true);
 });
+
+// Known-turmas registry — powers the /trilha "minhas turmas" hub (relaunch, no re-login).
+test('known-turmas registry: empty by default, then upsert + read', () => {
+  assert.deepEqual(ss.getKnownTurmas(), []);
+  ss.rememberTurma({ client_slug: 'jfse', turma_slug: 'geral', client_name: 'JFSE', turma_name: 'Geral', token: 'KTOK' });
+  assert.deepEqual(ss.getKnownTurmas(), [{ client_slug: 'jfse', turma_slug: 'geral', client_name: 'JFSE', turma_name: 'Geral', k: 'KTOK' }]);
+});
+
+test('rememberTurma is an upsert (no duplicate, most-recent first, token refreshed)', () => {
+  ss.rememberTurma({ client_slug: 'a', turma_slug: 't1', token: 'k1' });
+  ss.rememberTurma({ client_slug: 'b', turma_slug: 't2', token: 'k2' });
+  ss.rememberTurma({ client_slug: 'a', turma_slug: 't1', token: 'k1b' });
+  const list = ss.getKnownTurmas();
+  assert.equal(list.length, 2);
+  assert.equal(list[0].client_slug, 'a');
+  assert.equal(list[0].k, 'k1b');
+});
+
+test('rememberTurma ignores entries without client/turma', () => {
+  ss.rememberTurma({ client_slug: 'a' });
+  ss.rememberTurma(null);
+  assert.deepEqual(ss.getKnownTurmas(), []);
+});
+
+test('forgetTurma drops one turma (trocar de turma / revoked)', () => {
+  ss.rememberTurma({ client_slug: 'a', turma_slug: 't1', token: 'k1' });
+  ss.rememberTurma({ client_slug: 'b', turma_slug: 't2', token: 'k2' });
+  ss.forgetTurma('a', 't1');
+  const list = ss.getKnownTurmas();
+  assert.equal(list.length, 1);
+  assert.equal(list[0].client_slug, 'b');
+});

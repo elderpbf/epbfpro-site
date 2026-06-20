@@ -25,10 +25,10 @@ export const trail = {
   studentInbox:   (p) => call('cp_student_inbox', p),       // { session_code, student_name }
   submitStudentQ: (p) => call('submit_student_question', p),// { session_code, student_name, text }
 
-  // Student identity (Phase 1: magic-link self-registration + consent). Public
-  // actions; session_token-bearing calls POST automatically (see worker-call.js).
-  authRequest:    (p) => call('student_auth_request', p),   // { client_slug, turma_slug, email } -> { ok, dev_magic_token? } | { error }
-  authVerify:     (p) => call('student_auth_verify', p),    // { token } -> { ok, session_token, participant_id, turma_id, needs_profile } | { error }
+  // Student identity (e-mail OTP: the 4-letter code that replaces the magic link).
+  // Public actions; session_token-bearing calls POST automatically (see worker-call.js).
+  otpRequest:     (p) => call('student_otp_request', p),    // { email } -> { ok, dev_otp_code? } | { error }
+  otpVerify:      (p) => call('student_otp_verify', p),     // { email, code, client_slug?, turma_slug?, presence_token? } -> { ok, turmas:[{client_slug,turma_slug,client_name,turma_name,token,session_token,participant_id,needs_profile,access}] } | { error }
   profileSave:    (p) => call('student_profile_save', p),   // { session_token, display_name, consent, consent_version } -> { ok } | { error }
   sessionCheck:   (p) => call('student_session_check', p),  // { session_token } -> { ok, participant_id, turma_id } | { error }
 

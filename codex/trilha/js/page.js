@@ -9,9 +9,10 @@ import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
-import { extractMagicToken, extractEnrollToken, isLoggedIn, clearToken, getToken, getPresence, setPresence, LOGIN_ENABLED } from './student-session.js';
+import { extractEnrollToken, isLoggedIn, clearToken, getToken, getPresence, setPresence, rememberTurma, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
 import { isWall } from './access.js';
+import { renderWall } from './wall.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 // forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
@@ -63,6 +64,16 @@ export async function mount(root, ctx = {}) {
     if (main) main.hidden = false;
     renderHero(root);
     renderHeaderActions();
+    // Remember this turma in the device registry so /trilha can relaunch it (the
+    // "minhas turmas" hub) without a re-login. Only when this device holds a session.
+    if (LOGIN_ENABLED && state.sessionToken) {
+      const rc = (state.data || {}).client || {};
+      const rt = (state.data || {}).turma || {};
+      rememberTurma({
+        client_slug: state.clientSlug, turma_slug: state.turmaSlug,
+        client_name: rc.display_name || rc.name || '', turma_name: rt.display_name || rt.name || '', k: state.token,
+      });
+    }
     // Upfront-gated + unapproved: render the wall instead of the timeline. Inline
     // mode (and approved / open) renders the timeline as usual; the per-item gate in
     // sub.js/flat.js handles inline opens.
@@ -80,7 +91,7 @@ export async function mount(root, ctx = {}) {
       if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
       onHashChange();
     }
-    if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); if (!handleEnrollReturn(loc)) handleMagicReturn(loc); }
+    if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
@@ -257,21 +268,6 @@ function avatarInitials(name) {
   return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
-// Magic-link return: when the URL carries ?lt=<token>, verify it (the page already
-// loaded the timeline from k), then strip lt so a refresh cannot replay a spent
-// token. Opens the login modal straight into its verifying state.
-function handleMagicReturn(loc) {
-  const lt = extractMagicToken((loc && loc.search) || '');
-  if (!lt) return;
-  stripLt();
-  openLoginModal({
-    client: state.clientSlug, turma: state.turmaSlug, k: state.token,
-    presence: getPresence(state.clientSlug, state.turmaSlug),
-    startToken: lt,
-    onAuthenticated: afterAuth,
-  });
-}
-
 // QR enrollment return: the in-class QR carries ?et=<token>. It ALWAYS claims a
 // device-presence grant silently (so a later off-window login auto-approves) and never
 // forces a login on its own. What opens, if anything, is the turma's choice: direct_access
@@ -325,54 +321,6 @@ function claimPresence() {
       .then((res) => { if (res && res.granted && res.presence_token) setPresence(state.clientSlug, state.turmaSlug, res.presence_token); })
       .catch(() => {});
   } catch (_) { /* presence is best-effort */ }
-}
-
-// Upfront-mode wall: hide the tabs + content and show a login CTA, or a "pending
-// approval" notice once the student is logged in but awaiting approval. The hero
-// stays visible so the student still sees which turma this is.
-function renderWall(root) {
-  const main = root.querySelector('.cdx-trilha-main');
-  if (!main) return;
-  const tabs = main.querySelector('.cdx-trilha-tabs');
-  const content = main.querySelector('.cdx-trilha-tabcontent');
-  if (tabs) tabs.hidden = true;
-  if (content) content.hidden = true;
-  let wall = main.querySelector('.cdx-tr-wall');
-  if (!wall) {
-    wall = document.createElement('section');
-    wall.className = 'cdx-tr-wall';
-    const footer = main.querySelector('.cdx-trilha-footer');
-    main.insertBefore(wall, footer || null);
-  }
-  const access = (state.data || {}).access || {};
-  const pending = access.status === 'pending';
-  wall.innerHTML =
-    '<div class="cdx-tr-wall-card">' +
-      '<div class="cdx-tr-wall-icon" aria-hidden="true">🔒</div>' +
-      '<h2 class="cdx-tr-wall-title">' + esc(t(pending ? 'login.pending_title' : 'login.wall_title')) + '</h2>' +
-      '<p class="cdx-tr-wall-body">' + esc(t(pending ? 'login.pending_body' : 'login.wall_body')) + '</p>' +
-      (pending ? '' : '<button type="button" class="tr-btn tr-btn-primary cdx-tr-wall-cta">' + esc(t('login.access_cta')) + '</button>') +
-    '</div>';
-  const cta = wall.querySelector('.cdx-tr-wall-cta');
-  if (cta) {
-    cta.addEventListener('click', () => {
-      openLoginModal({
-        client: state.clientSlug, turma: state.turmaSlug, k: state.token,
-        presence: getPresence(state.clientSlug, state.turmaSlug),
-        onAuthenticated: afterAuth,
-      });
-    });
-  }
-}
-
-// Remove the lt param from the visible URL without a navigation.
-function stripLt() {
-  if (!_win || !_win.history || !_win.history.replaceState || !_win.location) return;
-  try {
-    const url = new URL(_win.location.href);
-    url.searchParams.delete('lt');
-    _win.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
-  } catch (_) { /* noop */ }
 }
 
 // Remove the et param from the visible URL so a refresh cannot replay the QR pass.

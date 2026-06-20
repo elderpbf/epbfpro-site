@@ -5,6 +5,8 @@
 // the per-state markup and wires events, so it is verified visually on staging.
 // Reuses the Trail's shared modal shell (.tr-modal*, .tr-btn*) from
 // tarefa-modal.css. The consent notice is the LGPD disclosure (login.consent_notice).
+// E-mail auth is a 4-letter OTP code (email -> code -> profile): the magic link is
+// retired, so everything stays in one tab and works identically on mobile/desktop.
 import { t } from '../i18n.js';
 import { createLoginFlow, flowOptsFrom } from './student-login.js';
 import { esc } from './utils.js';
@@ -14,24 +16,20 @@ function errorText(code) {
   if (!code) return '';
   if (code === 'email_invalid') return t('login.email_invalid');
   if (code === 'consent_required') return t('login.consent_required');
-  if (code === 'token_expired' || code === 'token_used' || code === 'invalid_token') return t('login.token_invalid');
+  if (code === 'invalid_code') return t('login.code_invalid');
+  if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
   return t('login.error');
 }
 
-// openLoginModal({ client, turma, onAuthenticated?, startToken?, api?, session? })
-// startToken triggers the magic-link return path (verify immediately).
+// openLoginModal({ client, turma, onAuthenticated?, enrollToken?, api?, session? })
 export function openLoginModal(opts = {}) {
-  const client = opts.client;
-  const turma = opts.turma;
   const onAuthenticated = opts.onAuthenticated || (() => {});
-  // Forward client/turma/k plus the page origin into the flow (the magic link must
-  // carry k AND return to this deployment, not always prod).
   const origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : undefined;
   const flow = createLoginFlow(flowOptsFrom(opts, origin));
 
   // Direct-access mode (opt-in turma, no email provider yet): a live QR/code (?et=) means
   // the student is in the room, so the first screen registers + grants access on the spot
-  // (email + name + consent), no magic link. Gated server-side by the turma's flag.
+  // (email + name + consent), no code round-trip. Gated server-side by the turma's flag.
   const enroll = !!opts.enrollToken;
 
   const bd = document.createElement('div');
@@ -66,7 +64,7 @@ export function openLoginModal(opts = {}) {
   function render() {
     const s = flow.state;
     if (enroll && (s === 'anonymous' || s === 'email')) return renderEnroll();
-    if (s === 'sent') return renderSent();
+    if (s === 'code') return renderCode();
     if (s === 'verifying') return renderVerifying();
     if (s === 'profile') return renderProfile();
     if (s === 'error') return renderError();
@@ -115,14 +113,14 @@ export function openLoginModal(opts = {}) {
       '<input id="tr-login-email" type="email" class="tr-tarefa-name tr-login-email" placeholder="' + esc(t('login.email_placeholder')) + '" autocomplete="email" inputmode="email">' +
       '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-login-send">' + esc(t('login.send_link')) + '</button>' +
+        '<button type="button" class="tr-btn tr-btn-primary tr-login-send">' + esc(t('login.send_code')) + '</button>' +
       '</div>';
     const input = bodyEl.querySelector('.tr-login-email');
     const send = bodyEl.querySelector('.tr-login-send');
     const doSend = async () => {
       send.disabled = true;
       send.textContent = t('login.sending');
-      await flow.requestLink(input.value);
+      await flow.requestCode(input.value);
       settle();
     };
     send.addEventListener('click', doSend);
@@ -130,27 +128,34 @@ export function openLoginModal(opts = {}) {
     setTimeout(() => { try { input.focus(); } catch (_) {} }, 60);
   }
 
-  function renderSent() {
-    let dev = '';
-    if (flow.devToken) {
-      dev =
-        '<div class="tr-login-dev">' +
-          '<p class="tr-tarefa-hint">' + esc(t('login.dev_link')) + '</p>' +
-          '<button type="button" class="tr-btn tr-btn-ghost tr-login-dev-continue">' + esc(t('login.verifying')) + '</button>' +
-        '</div>';
-    }
+  // Code step: the student types the 4-letter code from their e-mail. On staging
+  // (no e-mail provider) the worker returns the code; we show + prefill it so the
+  // flow is completable on-screen, exactly like the old magic dev-link.
+  function renderCode() {
+    const dev = flow.devCode
+      ? '<p class="tr-tarefa-hint tr-login-dev">' + esc(t('login.dev_code')) + ' <strong>' + esc(flow.devCode) + '</strong></p>'
+      : '';
     bodyEl.innerHTML =
-      '<h2 class="tr-modal-title">' + esc(t('login.sent_title')) + '</h2>' +
-      '<p class="tr-login-subtitle">' + esc(t('login.sent_desc')) + '</p>' +
-      dev;
-    const cont = bodyEl.querySelector('.tr-login-dev-continue');
-    if (cont) {
-      cont.addEventListener('click', async () => {
-        cont.disabled = true;
-        await flow.verify(flow.devToken);
-        settle();
-      });
-    }
+      '<h2 class="tr-modal-title">' + esc(t('login.code_title')) + '</h2>' +
+      '<p class="tr-login-subtitle">' + esc(t('login.code_desc')) + '</p>' +
+      '<label class="tr-tarefa-field-label" for="tr-login-code">' + esc(t('login.code_label')) + '</label>' +
+      '<input id="tr-login-code" type="text" class="tr-tarefa-name tr-login-code" placeholder="' + esc(t('login.code_ph')) + '" autocomplete="one-time-code" inputmode="text" maxlength="4" autocapitalize="characters">' +
+      dev +
+      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
+      '<div class="tr-tarefa-actions">' +
+        '<button type="button" class="tr-btn tr-btn-primary tr-login-verify">' + esc(t('login.verify')) + '</button>' +
+      '</div>';
+    const input = bodyEl.querySelector('.tr-login-code');
+    if (flow.devCode) input.value = flow.devCode;
+    const verify = bodyEl.querySelector('.tr-login-verify');
+    const doVerify = async () => {
+      verify.disabled = true;
+      await flow.verifyCode(input.value);
+      settle();
+    };
+    verify.addEventListener('click', doVerify);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doVerify(); });
+    setTimeout(() => { try { input.focus(); } catch (_) {} }, 60);
   }
 
   function renderVerifying() {
@@ -193,7 +198,7 @@ export function openLoginModal(opts = {}) {
       '<h2 class="tr-modal-title">' + esc(t('login.title')) + '</h2>' +
       '<div class="tr-tarefa-error tr-login-error">' + esc(errorText(flow.error)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-login-retry">' + esc(t('login.send_link')) + '</button>' +
+        '<button type="button" class="tr-btn tr-btn-primary tr-login-retry">' + esc(t('login.send_code')) + '</button>' +
       '</div>';
     bodyEl.querySelector('.tr-login-retry').addEventListener('click', () => {
       flow.state = 'email';
@@ -202,15 +207,7 @@ export function openLoginModal(opts = {}) {
     });
   }
 
-  // Entry: the magic-link return path verifies straight away; otherwise show email.
-  if (opts.startToken) {
-    render(); // shows nothing yet (anonymous->email); switch to verifying then verify.
-    flow.state = 'verifying';
-    renderVerifying();
-    flow.verify(opts.startToken).then(settle);
-  } else {
-    render();
-  }
+  render();
 
   return { close };
 }
