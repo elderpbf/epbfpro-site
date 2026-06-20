@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entrada · A · Lado a lado</title>
+<title>Entrada · A · Responsiva</title>
 
 <!-- Real Trilha chrome (same-origin on staging) -->
 <link rel="stylesheet" href="/codex/css/theme.css?v=1.1">
@@ -16,10 +16,17 @@
 <script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
 
 <style>
-  /* The hero is a padded card (2rem). Inset the content below it by the same
+  /* ─────────────────────────────────────────────────────────────
+     ONE responsive screen. Test every width with F12.
+     • > 820px  : two columns, register form inline (always visible)
+     • <= 820px : stacks; benefits become a 2×2 grid (no descriptions);
+                  register collapses to a button that expands the fields inline
+     • <= 560px : the client card + spacing compact for phones
+     ───────────────────────────────────────────────────────────── */
+
+  /* The hero is a padded card (2rem); inset the content below it by the same
      2rem so the left column lines up with the client card's inner edge. */
   .en-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1.5rem; align-items: start; margin-top: .5rem; padding: 0 2rem; }
-  @media (max-width: 820px) { .en-grid { grid-template-columns: 1fr; padding: 0; } }
 
   .en-lead-h { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; margin: 0 0 .35rem; }
   .en-lead-s { font-size: .9rem; color: var(--text-secondary); line-height: 1.55; margin: 0 0 1.1rem; }
@@ -49,10 +56,10 @@
   .en-road-row { display: flex; align-items: center; gap: .65rem; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
   .en-road-n { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: var(--background); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center; font-size: .74rem; font-weight: 800; color: var(--text-secondary); }
-  .en-road-t { font-size: .84rem; font-weight: 600; color: var(--text-primary); }
-  .en-road-d { font-size: .72rem; color: var(--text-secondary); margin-left: auto; }
+  .en-road-t { font-size: .84rem; font-weight: 600; color: var(--text-primary); min-width: 0; }
+  .en-road-d { font-size: .72rem; color: var(--text-secondary); margin-left: auto; flex-shrink: 0; }
 
-  /* Cadastro card */
+  /* Register card */
   .en-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.4rem;
     box-shadow: 0 18px 48px -22px var(--shadow); position: sticky; top: 1rem; }
   .en-card-h { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .3rem; }
@@ -66,8 +73,47 @@
   .en-nopass { font-size: .76rem; color: var(--text-secondary); text-align: center; margin: .6rem 0 0; }
   .en-consent { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--border); font-size: .72rem; color: var(--text-secondary); line-height: 1.5; }
 
+  /* Collapse-to-button toggle: shown only when the layout is stacked (mobile). */
+  .en-reg-toggle { display: none; width: 100%; justify-content: center; font-size: .95rem; padding: .72rem 1.2rem; }
+
   .en-questions { margin-top: 1.4rem; padding: 0 2rem; text-align: center; font-size: .82rem; color: var(--text-secondary); }
   .en-questions b { color: var(--text-primary); }
+
+  /* ── Stacked (tablet / phone): one column, compact benefits, collapsed form ── */
+  @media (max-width: 820px) {
+    .en-grid { grid-template-columns: 1fr; padding: 0; gap: 1.25rem; }
+    .en-questions { padding: 0; }
+
+    /* benefits → 2×2 tiles, titles only */
+    .en-benes { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: 0; }
+    .en-bene { align-items: center; gap: .5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: .55rem .6rem; }
+    .en-bene-ic { width: 28px; height: 28px; border-radius: 8px; }
+    .en-bene-ic svg { width: 15px; height: 15px; }
+    .en-bene-t { font-size: .8rem; line-height: 1.2; }
+    .en-bene-d, .en-bene-tag { display: none; }
+
+    .en-road-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* register collapses: card body hidden behind the toggle button */
+    .en-card { position: static; padding: .85rem; }
+    .en-card-h, .en-card-s { display: none; }
+    .en-reg-toggle { display: inline-flex; }
+    .en-reg-fields { display: none; }
+    .en-reg.is-open .en-reg-toggle { display: none; }
+    .en-reg.is-open .en-reg-fields { display: block; }
+  }
+
+  /* ── Phone: compact the client card + page gutters ── */
+  @media (max-width: 560px) {
+    .cdx-trilha-page { padding: 0 1rem 4rem; }
+    .cdx-trilha-hero { margin: 1.25rem 0 1rem; padding: 1.25rem 1.25rem 1.4rem; border-radius: 16px; }
+    .cdx-trilha-hero-identity { gap: .8rem; }
+    .cdx-tr-client-avatar { width: 52px; height: 52px; }
+    .cdx-tr-avatar-initials { font-size: 1.15rem; }
+    .cdx-tr-client-name { font-size: 1.4rem; }
+    .cdx-tr-turma-name { font-size: .85rem; }
+    .en-lead-h { font-size: 1.15rem; }
+  }
 </style>
 </head>
 <body>
@@ -124,22 +170,25 @@
         </div>
       </div>
 
-      <!-- RIGHT: cadastro card -->
+      <!-- RIGHT: cadastro (inline on desktop; collapses to a button on mobile) -->
       <div>
-        <div class="en-card">
+        <div class="en-card en-reg">
           <h3 class="en-card-h">Entrar com e-mail</h3>
           <p class="en-card-s">Enviamos um link de acesso pro seu e-mail. Sem senha, sem complicação.</p>
-          <div class="en-field">
-            <label class="en-label">Seu nome completo</label>
-            <input class="en-input" type="text" placeholder="Como você quer ser identificado">
+          <button class="tr-btn tr-btn-primary en-reg-toggle" data-toggle-reg aria-expanded="false">Criar meu acesso</button>
+          <div class="en-reg-fields">
+            <div class="en-field">
+              <label class="en-label">Seu nome completo</label>
+              <input class="en-input" type="text" placeholder="Como você quer ser identificado">
+            </div>
+            <div class="en-field">
+              <label class="en-label">Seu e-mail</label>
+              <input class="en-input" type="email" placeholder="voce@exemplo.com">
+            </div>
+            <button class="tr-btn tr-btn-primary en-cta">Enviar link de acesso</button>
+            <p class="en-nopass">Você vai receber um link válido por 15 minutos.</p>
+            <p class="en-consent">Ao entrar, você concorda que a EPBF Soluções em Tecnologia Ltda trate seu nome e e-mail (e o CPF apenas no momento de emitir o certificado) para liberar seu acesso, conforme a LGPD.</p>
           </div>
-          <div class="en-field">
-            <label class="en-label">Seu e-mail</label>
-            <input class="en-input" type="email" placeholder="voce@exemplo.com">
-          </div>
-          <button class="tr-btn tr-btn-primary en-cta">Enviar link de acesso</button>
-          <p class="en-nopass">Você vai receber um link válido por 15 minutos.</p>
-          <p class="en-consent">Ao entrar, você concorda que a EPBF Soluções em Tecnologia Ltda trate seu nome e e-mail (e o CPF apenas no momento de emitir o certificado) para liberar seu acesso, conforme a LGPD.</p>
         </div>
       </div>
 
@@ -154,5 +203,17 @@
 </div>
 
 <script type="module" src="/codex/trilha/js/pensoia-header.js"></script>
+<script>
+  // Mobile-only: the toggle button is display:none on desktop, so this just
+  // expands the inline box on narrow widths. No modal anywhere.
+  var reg = document.querySelector('.en-reg');
+  var toggle = reg.querySelector('[data-toggle-reg]');
+  toggle.addEventListener('click', function () {
+    reg.classList.add('is-open');
+    toggle.setAttribute('aria-expanded', 'true');
+    var first = reg.querySelector('.en-reg-fields input');
+    if (first) first.focus();
+  });
+</script>
 </body>
 </html>
