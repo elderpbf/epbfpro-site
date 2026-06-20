@@ -15,8 +15,8 @@
 <script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
 
 <style>
-  /* Phone stage: same look as a1 (PC), just compact. The register form is a modal, so
-     the page fits a phone with little or no scroll. */
+  /* Phone stage: same look as a1 (PC), just compact. The register is an inline
+     box that EXPANDS from a button (no modal), so it costs no space until tapped. */
   body { background: #e5e7eb; margin: 0; padding: 22px 0; }
   [data-theme="dark"] body { background: #0b0f14; }
   .en-phone { position: relative; width: 390px; max-width: 94vw; margin: 0 auto; background: var(--background);
@@ -29,15 +29,13 @@
 
   .en-scroll { padding: 1rem 1rem 1.1rem; }
 
-  /* Compact client identity + facts */
-  .en-id { display: flex; align-items: center; gap: .7rem; }
+  /* Compact client identity */
+  .en-id { display: flex; align-items: center; gap: .7rem; margin-bottom: 1rem; }
   .en-id-av { width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center;
     background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; font-weight: 800; font-size: 1.05rem; }
   .en-id-eyebrow { font-size: .62rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--primary-dark); }
   .en-id-name { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); line-height: 1.12; letter-spacing: -0.01em; }
   .en-id-turma { font-size: .78rem; color: var(--text-secondary); }
-  .en-facts { display: flex; gap: .35rem; flex-wrap: wrap; margin: .7rem 0 1rem; }
-  .en-fact { font-size: .68rem; font-weight: 600; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: .26rem .6rem; }
 
   .en-sec-h { font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 .5rem; }
 
@@ -63,21 +61,20 @@
   .en-road-t { font-size: .77rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .en-road-d { font-size: .68rem; color: var(--text-secondary); margin-left: auto; flex-shrink: 0; }
 
+  /* Register: an inline box that expands from the button (no modal) */
+  .en-reg { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .85rem; }
   .en-reg-cta { width: 100%; justify-content: center; font-size: .95rem; padding: .72rem 1.2rem; }
+  .en-reg-fields { margin-top: .2rem; }
+  .en-reg-fields[hidden] { display: none; }
+  .en-field { margin-bottom: .65rem; }
+  .en-label { display: block; font-size: .74rem; font-weight: 700; color: var(--text-primary); margin-bottom: .26rem; }
+  .en-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: .9rem; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .58rem .8rem; }
+  .en-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
+  .en-reg-submit { width: 100%; justify-content: center; margin-top: .1rem; }
+  .en-consent { margin-top: .8rem; padding-top: .7rem; border-top: 1px dashed var(--border); font-size: .68rem; color: var(--text-secondary); line-height: 1.5; }
+
   .en-questions { margin-top: .8rem; text-align: center; font-size: .76rem; color: var(--text-secondary); }
   .en-questions b { color: var(--text-primary); }
-
-  /* Register modal (overlays the phone frame) */
-  .en-modal { position: absolute; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50; }
-  .en-modal[hidden] { display: none; }
-  .en-modal-card { width: 100%; max-width: 340px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.3rem 1.2rem; box-shadow: 0 30px 80px -30px rgba(0,0,0,.5); position: relative; }
-  .en-modal-x { position: absolute; top: .7rem; right: .8rem; background: none; border: none; font-size: 1.35rem; line-height: 1; color: var(--text-secondary); cursor: pointer; }
-  .en-modal-h { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .9rem; }
-  .en-field { margin-bottom: .7rem; }
-  .en-label { display: block; font-size: .76rem; font-weight: 700; color: var(--text-primary); margin-bottom: .28rem; }
-  .en-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: .9rem; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .6rem .8rem; }
-  .en-modal-cta { width: 100%; justify-content: center; margin-top: .2rem; }
-  .en-consent { margin-top: .9rem; padding-top: .8rem; border-top: 1px dashed var(--border); font-size: .7rem; color: var(--text-secondary); line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -97,17 +94,11 @@
         <div class="en-id-turma">IA na Prática Jurídica · 2026.1</div>
       </div>
     </div>
-    <div class="en-facts">
-      <span class="en-fact">4 aulas</span>
-      <span class="en-fact">16 h</span>
-      <span class="en-fact">Presencial</span>
-      <span class="en-fact">12 mar – 02 abr</span>
-    </div>
 
     <div class="en-sec-h">O que o registro libera</div>
     <div class="en-benes">
-      <div class="en-bene"><span class="en-bene-ic en-bene-ic--tarefa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></span><span class="en-bene-t">Enviar tarefas</span></div>
       <div class="en-bene"><span class="en-bene-ic en-bene-ic--conteudo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="en-bene-t">Conteúdos</span></div>
+      <div class="en-bene"><span class="en-bene-ic en-bene-ic--tarefa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></span><span class="en-bene-t">Enviar tarefas</span></div>
       <div class="en-bene"><span class="en-bene-ic en-bene-ic--forum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="en-bene-t">Fórum</span></div>
       <div class="en-bene"><span class="en-bene-ic en-bene-ic--cert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg></span><span class="en-bene-t">Certificado</span></div>
     </div>
@@ -120,28 +111,31 @@
       <div class="en-road-row"><span class="en-road-n">4</span><span class="en-road-t">Casos práticos e ética</span><span class="en-road-d">02 abr</span></div>
     </div>
 
-    <button class="tr-btn tr-btn-primary en-reg-cta" data-open-reg>Criar meu acesso</button>
-    <p class="en-questions">Só quer <b>responder as perguntas</b>? Não precisa de cadastro.</p>
-  </div>
-
-  <!-- Register modal -->
-  <div class="en-modal" id="reg" hidden>
-    <div class="en-modal-card">
-      <button class="en-modal-x" data-close-reg aria-label="Fechar">&times;</button>
-      <h3 class="en-modal-h">Criar meu acesso</h3>
-      <div class="en-field"><label class="en-label">Seu nome completo</label><input class="en-input" type="text" placeholder="Como você quer ser identificado"></div>
-      <div class="en-field"><label class="en-label">Seu e-mail</label><input class="en-input" type="email" placeholder="voce@exemplo.com"></div>
-      <button class="tr-btn tr-btn-primary en-modal-cta">Enviar link de acesso</button>
-      <p class="en-consent">Tratamos seu nome e e-mail (e o CPF apenas para emitir o certificado) para liberar seu acesso, conforme a LGPD.</p>
+    <!-- Register box: button expands the fields inline -->
+    <div class="en-reg">
+      <button class="tr-btn tr-btn-primary en-reg-cta" data-toggle-reg aria-expanded="false">Criar meu acesso</button>
+      <div class="en-reg-fields" id="regfields" hidden>
+        <div class="en-field"><label class="en-label">Seu nome completo</label><input class="en-input" type="text" placeholder="Como você quer ser identificado"></div>
+        <div class="en-field"><label class="en-label">Seu e-mail</label><input class="en-input" type="email" placeholder="voce@exemplo.com"></div>
+        <button class="tr-btn tr-btn-primary en-reg-submit">Enviar link de acesso</button>
+        <p class="en-consent">Tratamos seu nome e e-mail (e o CPF apenas para emitir o certificado) para liberar seu acesso, conforme a LGPD.</p>
+      </div>
     </div>
+
+    <p class="en-questions">Só quer <b>responder as perguntas</b>? Não precisa de cadastro.</p>
   </div>
 </div>
 
 <script>
-  var reg = document.getElementById('reg');
-  document.querySelectorAll('[data-open-reg]').forEach(function(b){ b.addEventListener('click', function(){ reg.hidden = false; }); });
-  document.querySelectorAll('[data-close-reg]').forEach(function(b){ b.addEventListener('click', function(){ reg.hidden = true; }); });
-  reg.addEventListener('click', function(e){ if (e.target === reg) reg.hidden = true; });
+  var toggle = document.querySelector('[data-toggle-reg]');
+  var fields = document.getElementById('regfields');
+  toggle.addEventListener('click', function(){
+    toggle.hidden = true;
+    fields.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    var first = fields.querySelector('input');
+    if (first) first.focus();
+  });
 </script>
 </body>
 </html>

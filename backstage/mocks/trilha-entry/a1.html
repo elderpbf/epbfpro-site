@@ -16,20 +16,20 @@
 <script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
 
 <style>
-  /* Client facts row in the hero (relevant data up top). */
-  .en-id-facts { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
-  .en-fact { font-size: .72rem; font-weight: 600; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: .3rem .7rem; }
+  /* The hero is a padded card (2rem). Inset the content below it by the same
+     2rem so the left column lines up with the client card's inner edge. */
+  .en-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1.5rem; align-items: start; margin-top: .5rem; padding: 0 2rem; }
+  @media (max-width: 820px) { .en-grid { grid-template-columns: 1fr; padding: 0; } }
 
-  .en-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1.5rem; align-items: start; margin-top: .5rem; }
-  @media (max-width: 820px) { .en-grid { grid-template-columns: 1fr; } }
-
-  .en-lead-h { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; margin: 0 0 1rem; }
+  .en-lead-h { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; margin: 0 0 .35rem; }
+  .en-lead-s { font-size: .9rem; color: var(--text-secondary); line-height: 1.55; margin: 0 0 1.1rem; }
 
   /* Benefits */
   .en-benes { display: flex; flex-direction: column; gap: .7rem; margin: 0 0 1.4rem; }
   .en-bene { display: flex; gap: .7rem; align-items: flex-start; }
   .en-bene-ic { width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
   .en-bene-ic svg { width: 18px; height: 18px; }
+  /* Distinct colour per benefit (light tint bg + strong icon), with dark-mode lift. */
   .en-bene-ic--tarefa   { background: rgba(20,184,166,0.14);  color: #0d9488; }
   .en-bene-ic--conteudo { background: rgba(59,130,246,0.14);  color: #2563eb; }
   .en-bene-ic--forum    { background: rgba(124,58,237,0.14);  color: #7c3aed; }
@@ -43,7 +43,7 @@
   .en-bene-tag { display: inline-block; font-size: .6rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
     padding: 1px 6px; border-radius: 999px; background: var(--task-bg); color: var(--task-dark); border: 1px solid var(--task-border); margin-left: .4rem; vertical-align: middle; }
 
-  /* Aulas roadmap */
+  /* Aulas roadmap (preview of what WILL happen) */
   .en-road-h { font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 .6rem; }
   .en-road { display: flex; flex-direction: column; gap: .4rem; }
   .en-road-row { display: flex; align-items: center; gap: .65rem; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
@@ -52,31 +52,22 @@
   .en-road-t { font-size: .84rem; font-weight: 600; color: var(--text-primary); }
   .en-road-d { font-size: .72rem; color: var(--text-secondary); margin-left: auto; }
 
-  /* Register CTA card (the form lives in a modal now) */
-  .en-reg { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.6rem 1.4rem;
-    box-shadow: 0 18px 48px -22px var(--shadow); position: sticky; top: 1rem; text-align: center; }
-  .en-reg-ic { width: 52px; height: 52px; margin: 0 auto .8rem; border-radius: 14px; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
-  .en-reg-ic svg { width: 26px; height: 26px; }
-  .en-reg-h { font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .4rem; }
-  .en-reg-s { font-size: .85rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 1.1rem; }
-  .en-reg-cta { width: 100%; justify-content: center; font-size: .95rem; padding: .72rem 1.2rem; }
-  .en-reg-foot { font-size: .76rem; color: var(--text-secondary); margin: .8rem 0 0; }
-
-  .en-questions { margin-top: 1.4rem; text-align: center; font-size: .82rem; color: var(--text-secondary); }
-  .en-questions b { color: var(--text-primary); }
-
-  /* Register modal */
-  .en-modal { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50; }
-  .en-modal[hidden] { display: none; }
-  .en-modal-card { width: 420px; max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.4rem; box-shadow: 0 30px 80px -30px rgba(0,0,0,.5); position: relative; }
-  .en-modal-x { position: absolute; top: .8rem; right: .9rem; background: none; border: none; font-size: 1.4rem; line-height: 1; color: var(--text-secondary); cursor: pointer; }
-  .en-modal-h { font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0 0 1rem; }
+  /* Cadastro card */
+  .en-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.4rem;
+    box-shadow: 0 18px 48px -22px var(--shadow); position: sticky; top: 1rem; }
+  .en-card-h { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .3rem; }
+  .en-card-s { font-size: .82rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 1.1rem; }
   .en-field { margin-bottom: .8rem; }
   .en-label { display: block; font-size: .78rem; font-weight: 700; color: var(--text-primary); margin-bottom: .3rem; }
-  .en-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: .92rem; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .65rem .85rem; }
-  .en-modal-cta { width: 100%; justify-content: center; margin-top: .3rem; }
+  .en-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: .92rem; color: var(--text-primary);
+    background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .65rem .85rem; }
+  .en-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
+  .en-cta { width: 100%; justify-content: center; margin-top: .3rem; }
+  .en-nopass { font-size: .76rem; color: var(--text-secondary); text-align: center; margin: .6rem 0 0; }
   .en-consent { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--border); font-size: .72rem; color: var(--text-secondary); line-height: 1.5; }
+
+  .en-questions { margin-top: 1.4rem; padding: 0 2rem; text-align: center; font-size: .82rem; color: var(--text-secondary); }
+  .en-questions b { color: var(--text-primary); }
 </style>
 </head>
 <body>
@@ -86,7 +77,7 @@
 <div class="cdx-trilha-page">
   <main class="cdx-trilha-main">
 
-    <!-- HERO + relevant facts -->
+    <!-- HERO (reused verbatim) -->
     <section class="cdx-trilha-hero">
       <div class="cdx-trilha-hero-identity">
         <div class="cdx-tr-client-avatar"><span class="cdx-tr-avatar-initials">TJ</span></div>
@@ -94,12 +85,6 @@
           <span class="cdx-tr-hero-eyebrow">Sua trilha de aprendizado</span>
           <h1 class="cdx-tr-client-name">Tribunal de Justiça</h1>
           <p class="cdx-tr-turma-name">IA na Prática Jurídica · Turma 2026.1</p>
-          <div class="en-id-facts">
-            <span class="en-fact">4 aulas</span>
-            <span class="en-fact">16 h</span>
-            <span class="en-fact">Presencial</span>
-            <span class="en-fact">12 mar – 02 abr</span>
-          </div>
         </div>
       </div>
     </section>
@@ -109,15 +94,16 @@
       <!-- LEFT: benefits + roadmap -->
       <div>
         <h2 class="en-lead-h">Faça seu registro para entrar na trilha</h2>
+        <p class="en-lead-s">Um cadastro rápido com seu nome e e-mail libera tudo o que esta turma oferece. Sem senha.</p>
 
         <div class="en-benes">
           <div class="en-bene">
-            <span class="en-bene-ic en-bene-ic--tarefa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></span>
-            <div><div class="en-bene-t">Enviar tarefas</div><div class="en-bene-d">Responda e entregue as atividades de cada aula.</div></div>
-          </div>
-          <div class="en-bene">
             <span class="en-bene-ic en-bene-ic--conteudo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
             <div><div class="en-bene-t">Ver conteúdos e materiais</div><div class="en-bene-d">Acesse tudo o que for disponibilizado nas aulas.</div></div>
+          </div>
+          <div class="en-bene">
+            <span class="en-bene-ic en-bene-ic--tarefa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></span>
+            <div><div class="en-bene-t">Enviar tarefas</div><div class="en-bene-d">Responda e entregue as atividades de cada aula.</div></div>
           </div>
           <div class="en-bene">
             <span class="en-bene-ic en-bene-ic--forum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
@@ -138,14 +124,22 @@
         </div>
       </div>
 
-      <!-- RIGHT: register CTA (form opens in a modal) -->
+      <!-- RIGHT: cadastro card -->
       <div>
-        <div class="en-reg">
-          <div class="en-reg-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg></div>
-          <h3 class="en-reg-h">Criar meu acesso</h3>
-          <p class="en-reg-s">Um cadastro com e-mail libera o conteúdo, as tarefas e o fórum desta turma.</p>
-          <button class="tr-btn tr-btn-primary en-reg-cta" data-open-reg>Criar meu acesso</button>
-          <p class="en-reg-foot">Você recebe um link de acesso, válido por 15 minutos.</p>
+        <div class="en-card">
+          <h3 class="en-card-h">Entrar com e-mail</h3>
+          <p class="en-card-s">Enviamos um link de acesso pro seu e-mail. Sem senha, sem complicação.</p>
+          <div class="en-field">
+            <label class="en-label">Seu nome completo</label>
+            <input class="en-input" type="text" placeholder="Como você quer ser identificado">
+          </div>
+          <div class="en-field">
+            <label class="en-label">Seu e-mail</label>
+            <input class="en-input" type="email" placeholder="voce@exemplo.com">
+          </div>
+          <button class="tr-btn tr-btn-primary en-cta">Enviar link de acesso</button>
+          <p class="en-nopass">Você vai receber um link válido por 15 minutos.</p>
+          <p class="en-consent">Ao entrar, você concorda que a EPBF Soluções em Tecnologia Ltda trate seu nome e e-mail (e o CPF apenas no momento de emitir o certificado) para liberar seu acesso, conforme a LGPD.</p>
         </div>
       </div>
 
@@ -159,24 +153,6 @@
   </main>
 </div>
 
-<!-- Register modal -->
-<div class="en-modal" id="reg" hidden>
-  <div class="en-modal-card">
-    <button class="en-modal-x" data-close-reg aria-label="Fechar">&times;</button>
-    <h3 class="en-modal-h">Criar meu acesso</h3>
-    <div class="en-field"><label class="en-label">Seu nome completo</label><input class="en-input" type="text" placeholder="Como você quer ser identificado"></div>
-    <div class="en-field"><label class="en-label">Seu e-mail</label><input class="en-input" type="email" placeholder="voce@exemplo.com"></div>
-    <button class="tr-btn tr-btn-primary en-modal-cta">Enviar link de acesso</button>
-    <p class="en-consent">Tratamos seu nome e e-mail (e o CPF apenas para emitir o certificado) para liberar seu acesso, conforme a LGPD.</p>
-  </div>
-</div>
-
 <script type="module" src="/codex/trilha/js/pensoia-header.js"></script>
-<script>
-  var reg = document.getElementById('reg');
-  document.querySelectorAll('[data-open-reg]').forEach(function(b){ b.addEventListener('click', function(){ reg.hidden = false; }); });
-  document.querySelectorAll('[data-close-reg]').forEach(function(b){ b.addEventListener('click', function(){ reg.hidden = true; }); });
-  reg.addEventListener('click', function(e){ if (e.target === reg) reg.hidden = true; });
-</script>
 </body>
 </html>
