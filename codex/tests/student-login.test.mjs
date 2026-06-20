@@ -149,6 +149,16 @@ test('requestCode surfaces email_not_enrolled and stays on email (no code step)'
   assert.equal(flow.error, 'email_not_enrolled');
 });
 
+// callWorker (the real transport) THROWS on an { error } response; a bare await would
+// hang the "Enviando..." button. The flow must normalize the throw, not reject.
+test('requestCode normalizes a THROWN worker error so the UI never hangs', async () => {
+  const throwingApi = { otpRequest: async () => { const e = new Error('boom'); e.data = { error: 'email_not_enrolled' }; throw e; } };
+  flow = createLoginFlow({ api: throwingApi, session: sess }); // entry page
+  await flow.requestCode('ninguem@exemplo.com');
+  assert.equal(flow.state, 'email');
+  assert.equal(flow.error, 'email_not_enrolled');
+});
+
 test('requestCode captures a dev code when the worker returns one (staging)', async () => {
   api = fakeApi({ otpRequest: { ok: true, dev_otp_code: 'WXYZ' } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });

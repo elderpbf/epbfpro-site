@@ -67,6 +67,15 @@ export function flowOptsFrom(opts, origin) {
   };
 }
 
+// callWorker (worker-call.js) THROWS on any { error } response, so a bare `await api.x()`
+// below would reject and leave the calling UI hung (the wall/entry "Enviando..." button
+// never settles). Normalize a thrown worker error back into the { error } shape every
+// branch here already handles. The error itself was already logged by callWorker.
+async function safeCall(promise) {
+  try { return await promise; }
+  catch (e) { return { error: (e && e.data && e.data.error) || (e && e.message) || 'error' }; }
+}
+
 // Build a login flow. `client`/`turma` BIND it to one turma (the wall + the inline
 // gate + the modal): verify lands the student authenticated on that turma. OMITTING
 // them makes the flow turma-agnostic (the /trilha entry page): verify lands on the
@@ -103,7 +112,7 @@ export function createLoginFlow(opts = {}) {
       const reqParams = { email };
       if (client && turma) { reqParams.client_slug = client; reqParams.turma_slug = turma; }
       else { reqParams.require_enrolled = true; }
-      const res = await api.otpRequest(reqParams);
+      const res = await safeCall(api.otpRequest(reqParams));
       if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
       this.devCode = res.dev_otp_code || null;
       this.state = 'code';
@@ -125,7 +134,7 @@ export function createLoginFlow(opts = {}) {
       // inscription window (signal a): a student who arrived with the class código is
       // approved on sign-up instead of landing pending.
       if (enrollToken) payload.et = enrollToken;
-      const res = await api.otpVerify(payload);
+      const res = await safeCall(api.otpVerify(payload));
       if (!res || !res.ok) { this.state = 'code'; this.error = (res && res.error) || 'invalid_code'; return this; }
       const turmas = Array.isArray(res.turmas) ? res.turmas : [];
       this.turmas = turmas;
@@ -153,7 +162,7 @@ export function createLoginFlow(opts = {}) {
       const payload = { client_slug: client, turma_slug: turma, et: enrollToken, email };
       const cleanName = (name || '').trim();
       if (cleanName) payload.name = cleanName;
-      const res = await api.enrollJoin(payload);
+      const res = await safeCall(api.enrollJoin(payload));
       if (!res || !res.ok || !res.session_token) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
       sess.setToken(client, turma, res.session_token);
       this.participantId = res.participant_id != null ? res.participant_id : null;
@@ -164,12 +173,12 @@ export function createLoginFlow(opts = {}) {
     async saveProfile(displayName, consent) {
       this.error = null;
       if (!consent) { this.error = 'consent_required'; return this; }
-      const res = await api.profileSave({
+      const res = await safeCall(api.profileSave({
         session_token: sess.getToken(client, turma),
         display_name: (displayName || '').trim(),
         consent: true,
         consent_version: sess.CONSENT_VERSION,
-      });
+      }));
       if (!res || !res.ok) { this.error = (res && res.error) || 'error'; return this; }
       this.state = 'authenticated';
       return this;
