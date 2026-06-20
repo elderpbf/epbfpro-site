@@ -34,10 +34,8 @@ const QR_GLYPH =
     '<path d="M17 20h1"/>' +
   '</svg>';
 
-// Zoom state (display mode only). Persisted across reloads.
-const ZOOM_KEY = 'ph_zoom_delta';
-const ZOOM_BASE = 16; // px
-const ZOOM_STEP = 2;  // px per click
+// Text-zoom bounds. The A−/A+ buttons were removed from the bar (they only served the
+// retired GO display page); clampZoom stays as a pure exported helper (still unit-pinned).
 const ZOOM_MIN = -4;
 const ZOOM_MAX = 12;
 
@@ -45,20 +43,6 @@ const ZOOM_MAX = 12;
 export function clampZoom(v) {
   if (isNaN(v)) return 0;
   return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, v));
-}
-
-function readZoom() {
-  return clampZoom(parseInt(localStorage.getItem(ZOOM_KEY) || '0', 10));
-}
-function writeZoom(delta) {
-  delta = clampZoom(delta);
-  localStorage.setItem(ZOOM_KEY, String(delta));
-  applyZoom();
-  return delta;
-}
-function applyZoom() {
-  const delta = readZoom();
-  document.documentElement.style.fontSize = (ZOOM_BASE + delta * ZOOM_STEP) + 'px';
 }
 
 // PURE. The bar markup.
@@ -77,10 +61,6 @@ export function buildHeaderHtml() {
         '<button class="ph-code-btn" type="button" aria-label="Mostrar QR code">' +
           QR_GLYPH +
         '</button>' +
-        '<div class="ph-zoom" role="group" aria-label="Ajuste de texto">' +
-          '<button class="ph-zoom-btn" data-delta="-1" type="button" aria-label="Diminuir texto">A−</button>' +
-          '<button class="ph-zoom-btn" data-delta="1" type="button" aria-label="Aumentar texto">A+</button>' +
-        '</div>' +
         '<button class="ph-theme-btn" type="button" aria-label="Alternar tema">' +
           '<span class="ph-theme-icon"></span>' +
         '</button>' +
@@ -117,7 +97,6 @@ export class PensoiaHeader extends Base {
     this._themeBtn = this.querySelector('.ph-theme-btn');
     this._themeIconEl = this.querySelector('.ph-theme-icon');
     this._exitBtn = this.querySelector('.ph-exit-btn');
-    this._zoomBtns = this.querySelectorAll('.ph-zoom-btn');
 
     // Code button opens QRShareModal. The modal renders a notice when join-url is
     // missing, so the button is never silently dead. On the public Trail
@@ -132,23 +111,11 @@ export class PensoiaHeader extends Base {
       this.dispatchEvent(new CustomEvent('ph-exit', { bubbles: true }));
     });
 
-    // Zoom controls (display mode only, hidden via CSS otherwise).
-    this._zoomBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const step = parseInt(btn.dataset.delta, 10) || 0;
-        writeZoom(readZoom() + step);
-      });
-    });
-
     // Wire up ThemeManager (shared infra) if present.
     if (window.ThemeManager) {
       const key = this.getAttribute('theme-storage-key') || 'bs_theme_public';
       window.ThemeManager.init({ storageKey: key, toggleEl: this._themeBtn, iconEl: this._themeIconEl });
     }
-
-    // Apply saved zoom (display mode only; student mode keeps the browser default
-    // so mobile users aren't affected).
-    if (this.getAttribute('mode') === 'display') applyZoom();
 
     this._syncTitle();
   }
@@ -162,7 +129,6 @@ export class PensoiaHeader extends Base {
     if (oldVal === newVal) return;
     if (name === 'session-title') { this._sessionTitle = newVal; this._syncTitle(); }
     else if (name === 'join-url') this._joinUrl = newVal || null;
-    else if (name === 'mode' && newVal === 'display') applyZoom();
   }
 
   _syncTitle() {

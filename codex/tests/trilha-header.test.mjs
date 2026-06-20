@@ -8,12 +8,11 @@ import { buildHeaderHtml, clampZoom } from '../trilha/js/pensoia-header.js';
 test('buildHeaderHtml: emits the .ph-* bar structure', () => {
   const html = buildHeaderHtml();
   for (const cls of ['ph-bar', 'ph-left', 'ph-logo', 'ph-exit-btn', 'ph-title',
-    'ph-right', 'ph-code-btn', 'ph-zoom', 'ph-zoom-btn', 'ph-theme-btn', 'ph-theme-icon']) {
+    'ph-right', 'ph-code-btn', 'ph-theme-btn', 'ph-theme-icon']) {
     assert.match(html, new RegExp('class="[^"]*' + cls), `has .${cls}`);
   }
-  // Zoom buttons carry their data-delta steps.
-  assert.match(html, /data-delta="-1"/);
-  assert.match(html, /data-delta="1"/);
+  // The A−/A+ text-zoom buttons were removed (they only served the retired GO page).
+  assert.ok(!/ph-zoom/.test(html), 'no zoom buttons in the bar');
   // The logo is now the PensoIA brand wordmark (inline SVG, a theme-aware
   // light/dark pair) wrapped in a link to pensoia.com, not the old text node.
   assert.match(html, /<a class="ph-logo"[^>]*href="https:\/\/pensoia\.com"/, 'logo links to pensoia.com');

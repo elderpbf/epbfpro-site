@@ -1,7 +1,8 @@
 // i18n/pt.js — PT-BR (active). Keys mirrored 1:1 in en.js and es.js.
 // HTML-carrying values use single quotes (they embed double-quoted class attrs).
 export default {
-  "nav.cta": "Conversar",
+  "nav.cta": "Contato",
+  "nav.aluno": "Acessar minha trilha",
   "hero.h1": "Inteligência artificial aplicada ao seu trabalho",
   "hero.rot": ["com método.", "com segurança.", "com responsabilidade."],
   "hero.lead": "Capacitação e consultoria para empresas, instituições e profissionais que querem usar a IA no dia a dia, com clareza, segurança e resultado.",

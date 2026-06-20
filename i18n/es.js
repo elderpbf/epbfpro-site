@@ -1,6 +1,7 @@
 // i18n/es.js — Español. Mirrors pt.js 1:1 (synced to the current PT, agnostic positioning, 1st person).
 export default {
-  "nav.cta": "Hablemos",
+  "nav.cta": "Contacto",
+  "nav.aluno": "Mi recorrido",
   "hero.h1": "Inteligencia artificial aplicada a tu trabajo",
   "hero.rot": ["con método.", "con seguridad.", "con responsabilidad."],
   "hero.lead": "Capacitación y consultoría para empresas, instituciones y profesionales que quieren usar la IA en el día a día, con claridad, seguridad y resultado.",
