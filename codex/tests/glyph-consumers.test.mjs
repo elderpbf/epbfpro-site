@@ -84,7 +84,7 @@ test('Trilha sub-cards render the type icon through CdxGlyphs', () => {
 });
 
 test('ClassVault sub-cards render the type icon through CdxGlyphs', () => {
-  const src = readAbs('../../backstage/classvault/js/classvault.js');
+  const src = readAbs('../../backstage/_archive/classvault/js/classvault.js');
   assert.match(src, /window\.CdxGlyphs|CdxGlyphs\.iconHtml/, 'classvault consults CdxGlyphs');
 });
 
@@ -101,7 +101,7 @@ test('cv-item-picker renders the type icon through CdxGlyphs', () => {
 });
 
 test('ClassTrail ct-admin renders type icons through CdxGlyphs, not BSTypeIcon', () => {
-  const src = readAbs('../../backstage/classtrail/js/ct-admin.js');
+  const src = readAbs('../../backstage/_archive/classtrail/js/ct-admin.js');
   assert.match(src, /window\.CdxGlyphs/, 'ct-admin consults CdxGlyphs');
   assert.ok(!/BSTypeIcon/.test(src), 'ct-admin no longer calls the retired BSTypeIcon');
 });
@@ -110,8 +110,8 @@ test('every page that shows type icons exposes window.CdxGlyphs from the Codex g
   const pages = [
     ['../index.html', false],                              // codex (module boot)
     ['../../trilha/index.html', true],
-    ['../../backstage/classvault/index.html', true],
-    ['../../backstage/classtrail/index.html', true],
+    ['../../backstage/_archive/classvault/index.html', true],
+    ['../../backstage/_archive/classtrail/index.html', true],
   ];
   for (const [rel, needsImportPath] of pages) {
     const html = readAbs(rel);
