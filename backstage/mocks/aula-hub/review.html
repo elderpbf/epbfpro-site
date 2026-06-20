@@ -36,14 +36,44 @@
   .pc .pro::marker{content:"+ ";color:var(--green);font-weight:800}
   .pc .con::marker{content:"− ";color:var(--red);font-weight:800}
   .open{display:inline-flex;align-items:center;gap:.35rem;text-decoration:none;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:9px;padding:.45rem .8rem;font-size:.82rem;font-weight:600}
+  .feat{background:var(--surface);border:2px solid var(--primary);border-radius:16px;box-shadow:0 10px 30px var(--shadow);overflow:hidden;margin-bottom:1.6rem}
+  .feat .ch{display:flex;align-items:center;gap:.8rem}
+  .feat .star{font-size:.72rem;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:999px;padding:.2rem .6rem}
+  .feat .fbody{display:grid;grid-template-columns:1.55fr 1fr}
+  @media(max-width:900px){.feat .fbody{grid-template-columns:1fr}}
+  .feat .frame{height:540px;border-right:1px solid var(--border);border-bottom:none}
+  .feat .frame iframe{width:1480px;height:1080px;transform:scale(.55)}
+  .feat .pc{padding:1.1rem 1.2rem}
+  .subh{font-size:.95rem;color:var(--navy);font-weight:700;margin:.2rem 0 .8rem}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Aula hub · 3 caminhos pra conciliar Aulas, Liberações e Tarefas</h1>
+  <h1>Aula hub · caminhos pra conciliar Aulas, Liberações e Tarefas</h1>
   <p class="lead">A ideia central: a aba <b>Aulas</b> vira o lugar único do trabalho por aula. Cada aula carrega <b>Dados</b> (título, data, carga), <b>Liberações</b> (conteúdo liberado nessa aula) e <b>Tarefas</b> (as tarefas da aula + as respostas da turma, com resposta do instrutor). Liberações e Tarefas deixam de ser abas próprias.</p>
-  <div class="ctx">Com isso o dossiê encolhe pra <b>Dados da turma · Participantes · Aulas · Fórum</b>. A criação de tarefas sai daqui e vira um botão <b>＋ tarefa</b> dentro de <b>Conteúdo → Items</b> (a tarefa fica listada como item, com a tag “Tarefa”). Aqui embaixo, os 3 mocks testam só o <b>layout da aula</b>. Clica em “abrir” pra usar cada um em tela cheia.</div>
+  <div class="ctx">Com isso o dossiê encolhe pra <b>Dados da turma · Participantes · Aulas · Fórum</b>. A criação de tarefas sai daqui e vira um botão <b>＋ tarefa</b> dentro de <b>Conteúdo → Items</b> (a tarefa fica listada como item, com a tag “Tarefa”).</div>
 
+  <!-- featured: D = evolução do B escolhido -->
+  <div class="feat">
+    <div class="ch" style="padding:.85rem 1rem;border-bottom:1px solid var(--border)">
+      <span class="star">★ atual</span><span class="tag">Opção D · evolução do B</span>
+      <h2 style="margin:0;font-size:1.05rem;color:var(--navy)">Aulas em linha no topo + painel redimensionável</h2>
+    </div>
+    <div class="fbody">
+      <div class="frame"><iframe src="d.html" loading="lazy"></iframe></div>
+      <div class="pc">
+        <p style="margin:.1rem 0 .6rem;font-size:.84rem;color:var(--ink2);line-height:1.5">Tela inteira de Turmas, com margens menores. A divisória entre o painel esquerdo (clientes/turmas) e o dossiê é <b>arrastável</b> pra ganhar largura. As aulas viram uma <b>linha de abas no topo</b>; clicou numa aula, o conteúdo aparece embaixo (Dados / Liberações / Tarefas). Sem lista vertical longa.</p>
+        <ul>
+          <li class="pro">Mais espaço útil; o dossiê alarga conforme você precisa</li>
+          <li class="pro">Troca de aula é instantânea, sem rolar lista</li>
+          <li class="con">Dois níveis de aba (aula em cima, faceta embaixo)</li>
+        </ul>
+        <a class="open" href="d.html">abrir D em tela cheia →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="subh">As explorações anteriores (referência)</div>
   <div class="grid">
     <div class="card">
       <div class="ch"><span class="tag">Opção A</span><h2>Colunas redimensionáveis</h2><p>Lista de aulas à esquerda (arrastável), detalhe à direita com sub-abas Dados / Liberações / Tarefas.</p></div>
