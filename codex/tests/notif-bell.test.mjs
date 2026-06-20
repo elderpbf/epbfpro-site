@@ -57,6 +57,15 @@ test('the student trilha header mounts the bell + prefs only when enabled + logg
   // Bell items filtered by the student's chosen categories; settings button mounted.
   assert.match(src, /filterByPrefs\(/, 'filters notifications by prefs');
   assert.match(src, /createNotifSettings\(/, 'mounts the prefs settings button');
+  assert.match(src, /otherKnownTurmas\(/, "computes the device's other turmas (trocar de turma)");
+  assert.match(src, /onForget:/, 'passes the forget callback for a saved turma');
+});
+
+test('the settings box renders the trocar-de-turma list (Idea A) when other turmas exist', () => {
+  const src = read('../trilha/js/notif-prefs.js');
+  assert.match(src, /cdx-ns-turma\b/, 'renders the turma rows');
+  assert.match(src, /notif\.switch_turma/, 'uses the switch-turma label');
+  assert.match(src, /onForget/, 'wires the forget action');
 });
 test('notif i18n keys exist in codex + trilha dictionaries (pt + en)', () => {
   for (const f of ['../i18n/pt.js', '../i18n/en.js', '../trilha/i18n.js']) {

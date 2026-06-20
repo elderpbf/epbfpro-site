@@ -9,7 +9,7 @@ import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
-import { extractEnrollToken, isLoggedIn, clearToken, getToken, getPresence, setPresence, rememberTurma, LOGIN_ENABLED } from './student-session.js';
+import { extractEnrollToken, isLoggedIn, clearToken, getToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
 import { isWall } from './access.js';
 import { renderWall } from './wall.js';
@@ -253,10 +253,21 @@ function renderHeaderActions() {
         });
         prepend(bell.el); // bell to the left of the theme toggle
       }
+      // "Trocar de turma" (Idea A): the device's OTHER saved turmas (those it holds a
+      // session for), listed in the settings box; a dead one is removed via the ✕.
+      const others = otherKnownTurmas(getKnownTurmas(), state.clientSlug, state.turmaSlug)
+        .filter((e) => getToken(e.client_slug, e.turma_slug))
+        .map((e) => ({
+          clientSlug: e.client_slug, turmaSlug: e.turma_slug,
+          name: e.turma_name || e.turma_slug, client: e.client_name || e.client_slug,
+          url: '/trilha/' + encodeURIComponent(e.client_slug) + '/' + encodeURIComponent(e.turma_slug) + '?k=' + encodeURIComponent(e.k || ''),
+        }));
       const settings = createNotifSettings({
         initials: avatarInitials((data.participant || {}).display_name || (data.participant || {}).name),
         turmaKey,
         showPrefs: !!(data.turma && data.turma.forum_enabled),
+        turmas: others,
+        onForget: (c, tt) => forgetTurma(c, tt),
         onChange: () => { if (bell) bell.refresh(); },
         onLogout: () => {
           clearToken(state.clientSlug, state.turmaSlug);

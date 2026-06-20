@@ -31,6 +31,17 @@ test('the session is scoped per turma', () => {
   assert.equal(ss.isLoggedIn('jfse', 'turma-b'), false);
 });
 
+test('otherKnownTurmas excludes the currently open turma (the trocar-de-turma list)', () => {
+  const known = [
+    { client_slug: 'jfse', turma_slug: 'geral', turma_name: 'Geral' },
+    { client_slug: 'acme', turma_slug: 't2', turma_name: 'Turma 2' },
+  ];
+  assert.deepEqual(ss.otherKnownTurmas(known, 'jfse', 'geral').map((e) => e.turma_slug), ['t2']);
+  assert.deepEqual(ss.otherKnownTurmas(known, 'acme', 't2').map((e) => e.turma_slug), ['geral']);
+  assert.deepEqual(ss.otherKnownTurmas(known, 'x', 'y').length, 2);  // none current -> all
+  assert.deepEqual(ss.otherKnownTurmas(null, 'x', 'y'), []);
+});
+
 test('clearToken logs the student out', () => {
   ss.setToken('jfse', 'geral', 'X');
   ss.clearToken('jfse', 'geral');

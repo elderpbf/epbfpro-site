@@ -109,6 +109,14 @@ export function forgetTurma(client, turma) {
   try { ls.setItem(KNOWN_KEY, JSON.stringify(rest)); } catch (_) {}
 }
 
+// PURE. The device's known turmas EXCEPT the one currently open — the "trocar de turma"
+// list in the student settings box (registry order, most-recent-first).
+export function otherKnownTurmas(known, client, turma) {
+  return (Array.isArray(known) ? known : []).filter(
+    (e) => e && !(e.client_slug === client && e.turma_slug === turma)
+  );
+}
+
 // Pull the magic-link token (?lt=<token>) out of the entrar URL or a bare query
 // string. Returns null when absent.
 export function extractMagicToken(input) {

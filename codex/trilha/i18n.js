@@ -149,6 +149,8 @@ const pt = {
   'notif.opt_replies':      'Respostas nas minhas conversas',
   'notif.opt_topics':       'Novos tópicos',
   'notif.opt_all':          'Tudo no fórum',
+  'notif.switch_turma':     'Trocar de turma',
+  'notif.forget_turma':     'Esquecer esta turma',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -297,6 +299,8 @@ const en = {
   'notif.opt_replies':      'Replies in my conversations',
   'notif.opt_topics':       'New topics',
   'notif.opt_all':          'Everything in the forum',
+  'notif.switch_turma':     'Switch class',
+  'notif.forget_turma':     'Forget this class',
 };
 
 const DICTS = { 'pt-BR': pt, en };
