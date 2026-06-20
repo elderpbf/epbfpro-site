@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrada · A · Lado a lado</title>
+
+<!-- Real Trilha chrome (same-origin on staging) -->
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/tarefa-modal.css?v=1.3">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+<script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
+
+<style>
+  .en-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1.5rem; align-items: start; margin-top: .5rem; }
+  @media (max-width: 820px) { .en-grid { grid-template-columns: 1fr; } }
+
+  .en-lead-h { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; margin: 0 0 .35rem; }
+  .en-lead-s { font-size: .9rem; color: var(--text-secondary); line-height: 1.55; margin: 0 0 1.1rem; }
+
+  /* Benefits */
+  .en-benes { display: flex; flex-direction: column; gap: .7rem; margin: 0 0 1.4rem; }
+  .en-bene { display: flex; gap: .7rem; align-items: flex-start; }
+  .en-bene-ic { width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    background: rgba(20,184,166,0.12); color: var(--primary-dark); }
+  [data-theme="dark"] .en-bene-ic { background: rgba(94,234,212,0.14); color: var(--primary-light); }
+  .en-bene-ic svg { width: 18px; height: 18px; }
+  .en-bene-t { font-size: .92rem; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+  .en-bene-d { font-size: .8rem; color: var(--text-secondary); line-height: 1.4; }
+  .en-bene-tag { display: inline-block; font-size: .6rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+    padding: 1px 6px; border-radius: 999px; background: var(--task-bg); color: var(--task-dark); border: 1px solid var(--task-border); margin-left: .4rem; vertical-align: middle; }
+
+  /* Aulas roadmap (preview of what WILL happen) */
+  .en-road-h { font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 .6rem; }
+  .en-road { display: flex; flex-direction: column; gap: .4rem; }
+  .en-road-row { display: flex; align-items: center; gap: .65rem; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .en-road-n { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: var(--background); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: .74rem; font-weight: 800; color: var(--text-secondary); }
+  .en-road-t { font-size: .84rem; font-weight: 600; color: var(--text-primary); }
+  .en-road-d { font-size: .72rem; color: var(--text-secondary); margin-left: auto; }
+
+  /* Cadastro card */
+  .en-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.4rem;
+    box-shadow: 0 18px 48px -22px var(--shadow); position: sticky; top: 1rem; }
+  .en-card-h { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .3rem; }
+  .en-card-s { font-size: .82rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 1.1rem; }
+  .en-field { margin-bottom: .8rem; }
+  .en-label { display: block; font-size: .78rem; font-weight: 700; color: var(--text-primary); margin-bottom: .3rem; }
+  .en-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: .92rem; color: var(--text-primary);
+    background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .65rem .85rem; }
+  .en-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
+  .en-cta { width: 100%; justify-content: center; margin-top: .3rem; }
+  .en-nopass { font-size: .76rem; color: var(--text-secondary); text-align: center; margin: .6rem 0 0; }
+  .en-consent { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--border); font-size: .72rem; color: var(--text-secondary); line-height: 1.5; }
+
+  .en-questions { margin-top: 1.4rem; text-align: center; font-size: .82rem; color: var(--text-secondary); }
+  .en-questions b { color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
+
+<div class="cdx-trilha-page">
+  <main class="cdx-trilha-main">
+
+    <!-- HERO (reused verbatim) -->
+    <section class="cdx-trilha-hero">
+      <div class="cdx-trilha-hero-identity">
+        <div class="cdx-tr-client-avatar"><span class="cdx-tr-avatar-initials">TJ</span></div>
+        <div class="cdx-tr-hero-text">
+          <span class="cdx-tr-hero-eyebrow">Sua trilha de aprendizado</span>
+          <h1 class="cdx-tr-client-name">Tribunal de Justiça</h1>
+          <p class="cdx-tr-turma-name">IA na Prática Jurídica · Turma 2026.1</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="en-grid">
+
+      <!-- LEFT: benefits + roadmap -->
+      <div>
+        <h2 class="en-lead-h">Faça seu registro para entrar na trilha</h2>
+        <p class="en-lead-s">Um cadastro rápido com seu nome e e-mail libera tudo o que esta turma oferece. Sem senha.</p>
+
+        <div class="en-benes">
+          <div class="en-bene">
+            <span class="en-bene-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></span>
+            <div><div class="en-bene-t">Enviar tarefas</div><div class="en-bene-d">Responda e entregue as atividades de cada aula.</div></div>
+          </div>
+          <div class="en-bene">
+            <span class="en-bene-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+            <div><div class="en-bene-t">Ver conteúdos e materiais</div><div class="en-bene-d">Acesse tudo o que for disponibilizado nas aulas.</div></div>
+          </div>
+          <div class="en-bene">
+            <span class="en-bene-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+            <div><div class="en-bene-t">Interagir no fórum</div><div class="en-bene-d">Tire dúvidas com colegas e com o professor.</div></div>
+          </div>
+          <div class="en-bene">
+            <span class="en-bene-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg></span>
+            <div><div class="en-bene-t">Emitir seu certificado <span class="en-bene-tag">se habilitado</span></div><div class="en-bene-d">Receba o comprovante de conclusão da turma.</div></div>
+          </div>
+        </div>
+
+        <div class="en-road-h">As aulas desta turma</div>
+        <div class="en-road">
+          <div class="en-road-row"><span class="en-road-n">1</span><span class="en-road-t">Fundamentos de IA aplicada ao Direito</span><span class="en-road-d">12 mar</span></div>
+          <div class="en-road-row"><span class="en-road-n">2</span><span class="en-road-t">Prompts para análise de contratos</span><span class="en-road-d">19 mar</span></div>
+          <div class="en-road-row"><span class="en-road-n">3</span><span class="en-road-t">Pesquisa e jurisprudência com IA</span><span class="en-road-d">26 mar</span></div>
+          <div class="en-road-row"><span class="en-road-n">4</span><span class="en-road-t">Casos práticos e ética</span><span class="en-road-d">02 abr</span></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: cadastro card -->
+      <div>
+        <div class="en-card">
+          <h3 class="en-card-h">Entrar com e-mail</h3>
+          <p class="en-card-s">Enviamos um link de acesso pro seu e-mail. Sem senha, sem complicação.</p>
+          <div class="en-field">
+            <label class="en-label">Seu nome completo</label>
+            <input class="en-input" type="text" placeholder="Como você quer ser identificado">
+          </div>
+          <div class="en-field">
+            <label class="en-label">Seu e-mail</label>
+            <input class="en-input" type="email" placeholder="voce@exemplo.com">
+          </div>
+          <button class="tr-btn tr-btn-primary en-cta">Enviar link de acesso</button>
+          <p class="en-nopass">Você vai receber um link válido por 15 minutos.</p>
+          <p class="en-consent">Ao entrar, você concorda que a EPBF Soluções em Tecnologia Ltda trate seu nome e e-mail (e o CPF apenas no momento de emitir o certificado) para liberar seu acesso, conforme a LGPD.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="en-questions">Só quer <b>responder as perguntas</b> da aula ao vivo? Isso não precisa de cadastro.</p>
+
+    <footer class="cdx-trilha-footer" style="margin-top:1.6rem">
+      <span>Feito com PensoIA</span> · <a href="https://pensoia.com" target="_blank" rel="noopener">pensoia.com</a>
+    </footer>
+  </main>
+</div>
+
+<script type="module" src="/codex/trilha/js/pensoia-header.js"></script>
+</body>
+</html>

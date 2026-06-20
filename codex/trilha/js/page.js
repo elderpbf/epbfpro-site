@@ -209,12 +209,14 @@ function renderHeaderActions() {
       prepend(_loginPill);
     }
 
-    // Notification bell + preferences (student): only when the turma enabled
-    // notifications AND the student is logged in (notifications are computed against
-    // their identity). Scoped to this turma. The bell filters the server's pending
-    // list by the student's chosen categories; clicking an item opens the Fórum tab +
-    // thread IN PLACE (no reload). The gear button edits which events notify.
-    if (data.turma && data.turma.notifications_enabled && state.sessionToken) {
+    // Notification bell + preferences (student): the bell is a CONSEQUENCE of a
+    // notification-emitting feature being on (today: the forum), not a separate
+    // toggle. So it shows when the forum is enabled AND the student is logged in
+    // (notifications are computed against their identity). Scoped to this turma. The
+    // bell filters the server's pending list by the student's chosen categories;
+    // clicking an item opens the Fórum tab + thread IN PLACE (no reload). The gear
+    // button edits which events notify.
+    if (data.turma && data.turma.forum_enabled && state.sessionToken) {
       const turmaKey = state.clientSlug + '/' + state.turmaSlug;
       const bell = createBell({
         fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true })

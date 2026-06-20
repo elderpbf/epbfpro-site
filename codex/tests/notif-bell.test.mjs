@@ -46,7 +46,7 @@ test('the teacher topbar mounts the bell against the admin facade', () => {
 test('the student trilha header mounts the bell + prefs only when enabled + logged in', () => {
   const src = read('../trilha/js/page.js');
   assert.match(src, /from '\.\.\/\.\.\/js\/notif-bell\.js'/, 'imports the bell');
-  assert.match(src, /notifications_enabled && state\.sessionToken/, 'gates on the flag + session');
+  assert.match(src, /forum_enabled && state\.sessionToken/, 'gates on forum + session (notifications follow the forum)');
   assert.match(src, /forumNotifications\(\{ session_token/, 'wires the scoped student source');
   // In-app open: no reload, switch tab + open the thread by id.
   assert.match(src, /focusThread\(item\.thread_id\)/, 'opens the thread in place');
