@@ -82,3 +82,27 @@ test('client groups are an accordion: collapsed by default, one open', () => {
   assert.match(css, /\.cdx-cg-rows \{ display: none/);
   assert.match(css, /\.cdx-cg\.is-open \.cdx-cg-rows \{ display: block/);
 });
+
+test('phase uses aula-derived dates (a turma with future classes reads live)', () => {
+  assert.match(cohortsJs, /computed_date_start \|\| tm\.date_start/);
+  assert.match(cohortsJs, /computed_date_end \|\| tm\.date_end/);
+});
+
+test('the list sections clients into ativos / futuros / inativos', () => {
+  assert.match(cohortsJs, /_SECTIONS = \['ativo', 'futuro', 'inativo'\]/);
+  assert.match(cohortsJs, /function _clientStatus\(/);
+  assert.match(cohortsJs, /function _sortTurmas\(/);
+  assert.match(cohortsJs, /class="cdx-cg-section"/);
+  for (const key of ['cohorts.section_ativo', 'cohorts.section_futuro', 'cohorts.section_inativo']) {
+    assert.ok(ptJs.includes(`'${key}'`) && enJs.includes(`'${key}'`), `${key} in both dicts`);
+  }
+});
+
+test('turma phase is a left bar (not a dot); client uses its own icon; hover = selected teal', () => {
+  assert.match(cohortsJs, /class="cdx-ti ' \+ ph\.cls/);
+  assert.ok(!/cdx-ti-dot/.test(cohortsJs), 'phase dot removed');
+  assert.match(cohortsJs, /client\.icon_path[\s\S]*?cdx-cg-ava-img/);
+  const css = read('../cohorts/cohorts.css');
+  assert.match(css, /border-left: 3px solid var\(--ph/);
+  assert.match(css, /\.cdx-ti:hover,\s*\.cdx-ti\.is-on \{ background: var\(--cdx-chip-bg\)/);
+});

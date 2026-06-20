@@ -284,17 +284,44 @@ function _initials(name) {
   return (((w[0] || '')[0] || '') + ((w[1] || '')[0] || '')).toUpperCase();
 }
 
-// Derive a lifecycle phase from the turma's dates (the model has no explicit
-// status beyond active/archived). Powers the colored dot in the list.
+// Derive a lifecycle phase from the turma's dates. Prefer the aula-derived span
+// (computed_date_start/end from ct_list_turmas) over the stored fields, so a turma
+// with future classes reads as live even if its typed end date is stale.
 function _turmaPhase(tm) {
   if (tm.status === 'archived') return { cls: 'cdx-ph-arch', label: t('cohorts.archived') };
   const today = new Date().toISOString().slice(0, 10);
-  const s = tm.date_start, e = tm.date_end;
+  const s = String(tm.computed_date_start || tm.date_start || '').slice(0, 10);
+  const e = String(tm.computed_date_end || tm.date_end || '').slice(0, 10);
   if (s && today < s) return { cls: 'cdx-ph-plan', label: t('cohorts.phase_planned') };
   if (e && today > e)  return { cls: 'cdx-ph-done', label: t('cohorts.phase_done') };
   if (s || e)          return { cls: 'cdx-ph-live', label: t('cohorts.phase_live') };
   return { cls: 'cdx-ph-none', label: '' };
 }
+
+// Sort turmas inside a client: archived last; otherwise most-recent/future first
+// (by the aula-derived end date), so upcoming classes sit on top and past ones sink.
+function _sortTurmas(turmas) {
+  const k = (tm) => String(tm.computed_date_end || tm.computed_date_start || tm.date_end || tm.date_start || '').slice(0, 10);
+  return turmas.slice().sort((a, b) => {
+    const aa = a.status === 'archived' ? 1 : 0, ba = b.status === 'archived' ? 1 : 0;
+    if (aa !== ba) return aa - ba;
+    const ka = k(a), kb = k(b);
+    if (ka !== kb) return kb.localeCompare(ka);
+    return String(a.name || '').localeCompare(String(b.name || ''));
+  });
+}
+
+// Classify a client by its turmas (drives the ativos/futuros/inativos sections):
+// ativo = has a turma in progress (or undated/ongoing), futuro = only upcoming,
+// inativo = everything already finished (or archived).
+function _clientStatus(turmas) {
+  const phases = turmas.filter((tm) => tm.status !== 'archived').map((tm) => _turmaPhase(tm).cls);
+  if (phases.some((p) => p === 'cdx-ph-live' || p === 'cdx-ph-none')) return 'ativo';
+  if (phases.includes('cdx-ph-plan')) return 'futuro';
+  return 'inativo';
+}
+
+const _SECTIONS = ['ativo', 'futuro', 'inativo'];
 
 function _renderList() {
   const el = _q(IDS.list);
@@ -302,21 +329,31 @@ function _renderList() {
   const q = (_turmaSearch || '').trim().toLowerCase();
   const byClient = {};
   _turmas.forEach((tm) => { (byClient[tm.client_slug] = byClient[tm.client_slug] || []).push(tm); });
-  const groups = _clients
+  let groups = _clients
     .filter((c) => c.status !== 'archived')
     .map((c) => {
-      let turmas = byClient[c.slug] || [];
-      if (q) turmas = turmas.filter((tm) =>
+      const all = byClient[c.slug] || [];
+      let turmas = all;
+      if (q) turmas = all.filter((tm) =>
         String(tm.name || '').toLowerCase().includes(q) ||
         String(tm.display_name || '').toLowerCase().includes(q));
-      return { client: c, turmas };
+      // status from ALL the client's turmas; rows sorted (future on top).
+      return { client: c, turmas: _sortTurmas(turmas), status: _clientStatus(all) };
     });
-  const visible = q ? groups.filter((g) => g.turmas.length) : groups;
-  if (!visible.length) {
+  if (q) groups = groups.filter((g) => g.turmas.length);
+  if (!groups.length) {
     el.innerHTML = '<div class="cdx-empty">' + t(q ? 'cohorts.no_search_results' : 'cohorts.no_clients') + '</div>';
     return;
   }
-  el.innerHTML = visible.map((g) => _renderGroup(g.client, g.turmas)).join('');
+  // Clients fall into ativos / futuros / inativos sections, divided by a thin line.
+  let html = '';
+  for (const sec of _SECTIONS) {
+    const inSec = groups.filter((g) => g.status === sec);
+    if (!inSec.length) continue;
+    html += '<div class="cdx-cg-section">' + _esc(t('cohorts.section_' + sec)) + '</div>';
+    html += inSec.map((g) => _renderGroup(g.client, g.turmas)).join('');
+  }
+  el.innerHTML = html;
 }
 
 function _renderGroup(client, turmas) {
@@ -324,13 +361,17 @@ function _renderGroup(client, turmas) {
   const rows = turmas.length
     ? turmas.map((tm) => _renderTurmaRow(tm)).join('')
     : '<div class="cdx-cg-empty">' + t('cohorts.no_turmas') + '</div>';
+  // Use the client's own icon when it has one; fall back to the initials avatar.
+  const ava = client.icon_path
+    ? '<img class="cdx-cg-ava cdx-cg-ava-img" src="' + _esc(client.icon_path) + '" alt="">'
+    : '<span class="cdx-cg-ava">' + _esc(_initials(name)) + '</span>';
   // Accordion: a client group is collapsed unless it is the one open client
   // (_expandedClient). The head toggles it; only one group is open at a time.
   return (
     '<div class="cdx-cg' + (client.slug === _expandedClient ? ' is-open' : '') + '" data-client-slug="' + _esc(client.slug) + '">' +
       '<div class="cdx-cg-head">' +
         '<span class="cdx-cg-caret" aria-hidden="true">&#9656;</span>' +
-        '<span class="cdx-cg-ava">' + _esc(_initials(name)) + '</span>' +
+        ava +
         '<span class="cdx-cg-name">' + _esc(name) + '</span>' +
         '<span class="cdx-cg-acts">' +
           '<button type="button" class="cdx-cg-act" data-action="new-turma" data-client-slug="' + _esc(client.slug) + '" title="' + t('cohorts.new_turma') + '">+</button>' +
@@ -350,13 +391,14 @@ function _renderTurmaRow(tm) {
   const n = tm.aula_count || 0;
   const countLabel = n === 1 ? '1 ' + t('cohorts.aula_singular') : n + ' ' + t('cohorts.aula_plural');
   const archBadge = archived ? ' <span class="cdx-badge cdx-badge-archived">' + t('cohorts.archived') + '</span>' : '';
+  // The phase is now a left accent bar (the row's left border, colored via --ph
+  // from the phase class) instead of a dot on the right.
   return (
-    '<div class="cdx-ti' + sel + (archived ? ' is-archived' : '') + '" data-client-slug="' + _esc(tm.client_slug) + '" data-turma-slug="' + _esc(tm.slug) + '">' +
+    '<div class="cdx-ti ' + ph.cls + sel + (archived ? ' is-archived' : '') + '" data-client-slug="' + _esc(tm.client_slug) + '" data-turma-slug="' + _esc(tm.slug) + '" title="' + _esc(ph.label) + '">' +
       '<div class="cdx-ti-main">' +
         '<div class="cdx-ti-t">' + _esc(tm.name) + archBadge + '</div>' +
         '<div class="cdx-ti-s">' + course + ' &middot; ' + _esc(countLabel) + '</div>' +
       '</div>' +
-      '<span class="cdx-ti-dot ' + ph.cls + '" title="' + _esc(ph.label) + '"></span>' +
     '</div>'
   );
 }

@@ -1065,6 +1065,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   color: var(--text-on-accent, #fff);
   background: var(--primary-dark);
 }
+/* When the client has its own icon, the avatar shows it instead of the initials. */
+.cdx-cg-ava-img { background: transparent; object-fit: cover; }
 .cdx-cg-name {
   font-size: 0.74rem;
   font-weight: 700;
@@ -1106,10 +1108,12 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   gap: 0.5rem;
   padding: 0.5rem 0.6rem 0.5rem 0.7rem;
   cursor: pointer;
-  border-left: 3px solid transparent;
+  border-left: 3px solid var(--ph, transparent); /* phase accent bar */
 }
-.cdx-ti:hover { background: var(--background); }
-.cdx-ti.is-on { background: var(--cdx-chip-bg); border-left-color: var(--primary); }
+/* Hover previews the SAME light teal as the selected row (selection persists),
+   so it no longer reads like the client teal. */
+.cdx-ti:hover,
+.cdx-ti.is-on { background: var(--cdx-chip-bg); }
 .cdx-ti.is-archived { opacity: 0.6; }
 .cdx-ti-main { flex: 1; min-width: 0; }
 .cdx-ti-t {
@@ -1127,7 +1131,18 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cdx-ti-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; background: var(--ph, var(--border)); }
+/* Client sections: a thin labelled divider grouping ativos / futuros / inativos. */
+.cdx-cg-section {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 0.55rem 0.6rem 0.25rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.2rem;
+}
+.cdx-cg-section:first-child { border-top: none; margin-top: 0; }
 
 /* ----- Dossier: phase pill + trilha-link strip (moved per-turma actions) ----- */
 
