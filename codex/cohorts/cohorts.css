@@ -46,7 +46,7 @@
 }
 
 .cdx-pane-title {
-  font-size: 0.8rem;
+  font-size: 0.86rem; /* match the turma name size */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
