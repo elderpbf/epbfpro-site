@@ -239,6 +239,34 @@ body.guest-mode .topbar::before {
 const isAuthenticated = () => window.BS_AUTH ? BS_AUTH.isAuthedLocal() : false;
 
 const MOCKS = {
+  landing: {
+    label: 'Site · Landing redesign (home pública · 9 propostas, 3 agentes às cegas)',
+    items: [
+      { name: 'Comparativo · 9 propostas em uma página ★★', file: 'landing/index.html', children: [
+        { name: 'A1 · Aurora Ledger (editorial premium creme/navy)', file: 'landing/a1.html' },
+        { name: 'A2 · Bento Console (dark bento, técnico-caloroso)', file: 'landing/a2.html' },
+        { name: 'A3 · Soft Horizon (teal-forward, humano)', file: 'landing/a3.html' },
+        { name: 'B1 · Dossiê Editorial (whitepaper, serifa)', file: 'landing/b1.html' },
+        { name: 'B2 · Aurora / Ampliação (gradiente + bento flutuante)', file: 'landing/b2.html' },
+        { name: 'B3 · Estúdio / Cream (teal sobre creme, díptico plataformas)', file: 'landing/b3.html' },
+        { name: 'C1 · Editorial / Manifesto (creme+navy, timeline)', file: 'landing/c1.html' },
+        { name: 'C2 · Dark Tech / Bento (malha gradiente, typewriter)', file: 'landing/c2.html' },
+        { name: 'C3 · Split-Screen / Product (split vertical teal + dashboard)', file: 'landing/c3.html' }
+      ]},
+      { name: 'Rodada 1 (arquivada) · Editorial · Console · Bold', file: 'landing/archive/index-v1.html' }
+    ]
+  },
+  certificate: {
+    label: 'Codex · Certificado (modelo A4 paisagem · frente + verso)',
+    items: [
+      { name: 'SELECIONADOS · favoritos (Vetor 8 · Console 6.5 · Monograma 6 · Aurora 6 · Folha 5 · Holograma 5) × 3 temas ★★', file: 'certificate/selecionados.html' },
+      { name: 'Ousado/tech · 10 ideias re-run (sobreviveu: Eclipse 6.5)', file: 'certificate/ousado-10.html' },
+      { name: 'Rodada 1 · A · editorial de luxo (Monograma · Frontispício · Coluna · Folha · Manuscrito)', file: 'certificate/agent-a.html' },
+      { name: 'Rodada 1 · B · ousado/tech (Vetor · Aurora · Console · Diagonal · Holograma)', file: 'certificate/agent-b.html' },
+      { name: 'Rodada 1 · C · institucional atemporal (Brasão · Diploma · Cátedra · Selo · Pergaminho)', file: 'certificate/agent-c.html' },
+      { name: 'Base · 5 frentes (Capa · Editorial · Selo · Split · Minimal)', file: 'certificate/index.html' }
+    ]
+  },
   greenroom: {
     label: 'Greenroom (working title · Instagram com fila de aprovação)',
     items: [

@@ -510,6 +510,20 @@ a.cdx-card-mini-icon.is-on:hover {
   box-shadow: 0 0 0 1px var(--primary);
 }
 
+/* Drag-to-reorder grip (⠿). Mirrors questions.css .cdx-q-drag. */
+.cdx-aula-col-drag {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.cdx-aula-col-drag:active { cursor: grabbing; }
+
+.cdx-aula-col-row.is-dragging { opacity: 0.5; }
+
 .cdx-aula-col-row-main {
   display: flex;
   align-items: center;

@@ -24,7 +24,7 @@ const applyDarkTextToken = (css) => css.replace(
 
 test('codex/css/classvault.css = backstage source + the documented dark-text-token swap', () => {
   const codex = read('../css/classvault.css');
-  const backstage = read('../../backstage/classvault/css/classvault.css');
+  const backstage = read('../../backstage/_archive/classvault/css/classvault.css');
   assert.equal(codex, applyDarkTextToken(backstage),
     'the Codex copy must match the backstage source modulo the --text-on-accent swap, no other drift');
 });

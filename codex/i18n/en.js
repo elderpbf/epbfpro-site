@@ -304,6 +304,8 @@ export default {
   'cohorts.aula_label':             'Lesson',
   'cohorts.aula_no_title':          'no title',
   'cohorts.aula_saved':             'Lesson saved.',
+  'cohorts.aula_drag_hint':         'Drag to reorder',
+  'cohorts.aulas_reordered':        'Lesson order updated.',
   'cohorts.aula_deleted':           'Lesson deleted.',
   'cohorts.delete_aula_title':      'Delete Lesson',
   'cohorts.delete_aula_msg':        'Items released for this lesson will lose their association.',

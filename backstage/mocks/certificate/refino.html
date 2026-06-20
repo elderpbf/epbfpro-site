@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pensoIA · certificado · refino Vetor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700&family=Comfortaa:wght@400;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#061a51; --teal:#14b8a6; --teal-dark:#0d9488; --green:#047857;
+    --paper:#fafdfc; --cream:#faf7f2; --ink:#1d2b33; --muted:#5b7975; --rule:#e3e8e6;
+    --acc-light:#7de8d6;
+    --lora:'Lora',serif; --inter:'Inter',sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { background:#1a1d21; font-family:var(--inter); }
+
+  #pages[data-pal="navy"] { --grad:linear-gradient(135deg,#0b2f73 0%,#061a51 60%,#04123a 100%); --gradr:linear-gradient(118deg,#04123a 0%,#061a51 48%,#0b2f73 100%); --accent:#14b8a6; --ink2:#061a51; --pdark:#0d9488; --glow:rgba(20,184,166,.55); }
+  #pages[data-pal="teal"] { --grad:linear-gradient(135deg,#0d9488 0%,#047857 60%,#134e4a 100%); --gradr:linear-gradient(118deg,#134e4a 0%,#0d9488 55%,#14b8a6 110%); --accent:#7de8d6; --ink2:#134e4a; --pdark:#0d9488; --glow:rgba(125,232,214,.55); }
+  #pages[data-pal="duo"]  { --grad:linear-gradient(135deg,#061a51 0%,#0c5f7a 64%,#14b8a6 122%); --gradr:linear-gradient(118deg,#14b8a6 -8%,#0c5f7a 48%,#061a51 100%); --accent:#7de8d6; --ink2:#061a51; --pdark:#0d9488; --glow:rgba(20,184,166,.6); }
+
+  /* ===== TOOLBAR ===== */
+  .toolbar { position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:11px 20px; background:rgba(6,26,81,0.96); backdrop-filter:blur(8px); color:#fff; }
+  .toolbar .brand { font-family:'Comfortaa',sans-serif; font-weight:700; font-size:13px; }
+  .toolbar .brand b { color:var(--teal); }
+  .tgroup { display:flex; align-items:center; gap:5px; }
+  .tgroup > label { font-family:var(--inter); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.5); margin-right:3px; }
+  .chip { border:1px solid rgba(255,255,255,.22); background:transparent; color:rgba(255,255,255,.82); font-family:var(--inter); font-size:12px; font-weight:500; padding:5px 11px; border-radius:16px; cursor:pointer; transition:all .15s; }
+  .chip:hover { border-color:rgba(255,255,255,.5); color:#fff; }
+  .chip.active { background:var(--teal); border-color:var(--teal); color:#042b27; font-weight:600; }
+  .toolbar .spacer { flex:1; }
+  .print-btn { background:var(--teal); border:none; color:#042b27; font-weight:700; font-family:var(--inter); font-size:12px; padding:7px 16px; border-radius:16px; cursor:pointer; }
+
+  /* ===== STAGE ===== */
+  .stage { position:fixed; top:54px; left:0; right:0; bottom:0; overflow:auto; display:flex; align-items:center; justify-content:center; padding:26px; }
+  #pages { display:flex; gap:24px; transform-origin:center center; transition:transform .15s ease; }
+
+  /* ===== A4 LANDSCAPE PAGE ===== */
+  .page { width:297mm; height:210mm; flex:0 0 auto; background:var(--paper); color:var(--ink); box-shadow:0 18px 60px rgba(0,0,0,.5); position:relative; overflow:hidden; }
+  .page * { line-height:1.5; }
+  .dots { position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,.16) .7px,transparent .7px); background-size:18px 18px; opacity:.6; pointer-events:none; z-index:0; }
+  .eyebrow { font-family:var(--inter); font-weight:500; font-size:12px; letter-spacing:.3em; text-transform:uppercase; }
+  .bmark svg, .mk svg { width:100%; height:auto; display:block; }
+  .qr { background:#fff; padding:4px; border-radius:4px; display:block; }
+  .qr svg { display:block; }
+  .pgrid { position:absolute; inset:0; background-image:radial-gradient(rgba(6,26,81,.05) .8px,transparent .8px); background-size:20px 20px; z-index:0; pointer-events:none; }
+
+  /* ============================================================ 1 · VETOR+ (polido) */
+  .f-pro { background:var(--paper); overflow:hidden; }
+  .f-pro .slab { position:absolute; top:0; right:0; bottom:0; left:0; background:var(--gradr); clip-path:polygon(34% 0,100% 0,100% 100%,8% 100%); z-index:0; }
+  .f-pro .slab .dots { opacity:.5; }
+  .f-pro .ghost { position:absolute; right:-50mm; top:50%; transform:translateY(-50%); width:222mm; opacity:.17; z-index:1; clip-path:polygon(34% 0,100% 0,100% 100%,8% 100%); pointer-events:none; }
+  .f-pro .ghost svg { width:100%; height:auto; display:block; }
+  .f-pro .wrap { position:relative; z-index:3; height:100%; display:flex; flex-direction:column; padding:18mm 22mm 15mm; }
+  .f-pro .top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .f-pro .top .bmark { width:54mm; }
+  .f-pro .top .tag { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#fff; text-align:right; line-height:1.95; opacity:.92; }
+  .f-pro .mid { flex:1; display:flex; flex-direction:column; justify-content:center; max-width:168mm; }
+  .f-pro .mid .eyebrow { color:var(--pdark); margin-bottom:6mm; }
+  .f-pro .mid .lead { font-weight:300; font-size:15px; color:var(--muted); margin-bottom:3mm; }
+  .f-pro .mid .name { font-family:var(--lora); font-weight:600; font-size:84px; line-height:.95; letter-spacing:-.025em; color:var(--ink2); }
+  .f-pro .mid .gbar { width:66mm; height:5px; border-radius:5px; background:var(--grad); margin:8mm 0 6mm; box-shadow:0 4px 18px var(--glow); }
+  .f-pro .mid .stmt { font-size:15px; line-height:1.7; color:var(--ink); max-width:150mm; }
+  .f-pro .mid .stmt b { font-weight:600; color:var(--ink2); }
+  .f-pro .foot { display:flex; justify-content:space-between; align-items:flex-end; gap:18mm; }
+  .f-pro .foot .meta { font-size:10.5px; color:var(--muted); line-height:1.95; }
+  .f-pro .foot .meta b { color:var(--ink2); font-weight:600; }
+  .f-pro .vchip { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.3); border-radius:15px; padding:9px 13px; backdrop-filter:blur(5px); box-shadow:0 10px 30px rgba(0,0,0,.18); }
+  .f-pro .vchip .qr { width:22mm; height:22mm; }
+  .f-pro .vchip .l { font-family:var(--mono); font-size:8.5px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.78); }
+  .f-pro .vchip .c { font-family:var(--mono); font-weight:600; font-size:15px; letter-spacing:.08em; color:#fff; margin:2px 0; }
+  .f-pro .vchip .u { font-size:9.5px; color:rgba(255,255,255,.84); }
+
+  /* ============================================================ 2 · COSTURA (nome em dois tons na emenda) */
+  .f-seam { --seamclip:polygon(47% 0,100% 0,100% 100%,35% 100%); background:var(--paper); overflow:hidden; }
+  .f-seam .slab { position:absolute; inset:0; background:var(--gradr); clip-path:var(--seamclip); z-index:0; }
+  .f-seam .slab .dots { opacity:.42; }
+  .f-seam .ghost { position:absolute; right:-46mm; top:50%; transform:translateY(-50%); width:214mm; opacity:.15; z-index:1; clip-path:var(--seamclip); pointer-events:none; }
+  .f-seam .ghost svg { width:100%; height:auto; display:block; }
+  .f-seam .layer { position:absolute; inset:0; z-index:2; display:flex; flex-direction:column; padding:18mm 22mm 15mm; }
+  .f-seam .layer.base { color:var(--ink2); }
+  .f-seam .layer.over { z-index:3; clip-path:var(--seamclip); }
+  .f-seam .layer.over, .f-seam .layer.over * { color:#fff !important; }
+  .f-seam .s-top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .f-seam .s-top .bmark { width:54mm; }
+  .f-seam .s-top .tag { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; text-align:right; line-height:1.95; }
+  .f-seam .s-mid { flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .f-seam .s-mid .eyebrow { color:var(--pdark); margin-bottom:6mm; }
+  .f-seam .s-mid .lead { font-weight:300; font-size:15px; color:var(--muted); margin-bottom:3mm; }
+  .f-seam .s-mid .name { font-family:var(--lora); font-weight:600; font-size:88px; line-height:.94; letter-spacing:-.025em; max-width:236mm; }
+  .f-seam .s-mid .gbar { width:66mm; height:5px; border-radius:5px; background:var(--grad); margin:8mm 0 6mm; box-shadow:0 4px 18px var(--glow); }
+  .f-seam .s-mid .stmt { font-size:15px; line-height:1.7; max-width:150mm; }
+  .f-seam .s-mid .stmt b { font-weight:600; }
+  .f-seam .s-foot { display:flex; justify-content:space-between; align-items:flex-end; gap:18mm; }
+  .f-seam .s-foot .meta { font-size:10.5px; line-height:1.95; }
+  .f-seam .s-foot .meta b { font-weight:600; }
+  .f-seam .vchip { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3); border-radius:15px; padding:9px 13px; backdrop-filter:blur(5px); }
+  .f-seam .vchip .qr { width:22mm; height:22mm; }
+  .f-seam .vchip .l { font-family:var(--mono); font-size:8.5px; letter-spacing:.16em; text-transform:uppercase; opacity:.8; }
+  .f-seam .vchip .c { font-family:var(--mono); font-weight:600; font-size:15px; letter-spacing:.08em; margin:2px 0; }
+  .f-seam .vchip .u { font-size:9.5px; opacity:.85; }
+
+  /* ============================================================ 3 · REGISTRO (Vetor + registro verificado) */
+  .f-rec { background:#fff; overflow:hidden; }
+  .f-rec .rail { position:absolute; top:0; left:0; bottom:0; width:10mm; background:var(--grad); z-index:2; }
+  .f-rec .grid { position:absolute; inset:0; background-image:linear-gradient(rgba(6,26,81,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(6,26,81,.035) 1px,transparent 1px); background-size:26px 26px; z-index:0; pointer-events:none; }
+  .f-rec .ghost { position:absolute; right:-34mm; top:-30mm; width:150mm; opacity:.06; z-index:0; pointer-events:none; }
+  .f-rec .ghost svg { width:100%; height:auto; display:block; }
+  .f-rec .wrap { position:relative; z-index:3; height:100%; display:flex; flex-direction:column; padding:17mm 22mm 15mm 32mm; }
+  .f-rec .top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .f-rec .top .bmark { width:52mm; }
+  .f-rec .top .status { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11px; color:var(--pdark); border:1px solid var(--rule); border-radius:8px; padding:6px 12px; background:var(--paper); }
+  .f-rec .top .status .d { width:8px; height:8px; border-radius:50%; background:var(--teal); box-shadow:0 0 0 4px rgba(20,184,166,.18); }
+  .f-rec .mid { flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .f-rec .mid .kicker { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:5mm; }
+  .f-rec .mid .kicker b { color:var(--ink2); }
+  .f-rec .mid .lead { font-weight:300; font-size:15px; color:var(--muted); margin-bottom:2mm; }
+  .f-rec .mid .name { font-family:var(--lora); font-weight:600; font-size:78px; line-height:.97; letter-spacing:-.025em; color:var(--ink2); }
+  .f-rec .mid .gbar { width:60mm; height:5px; border-radius:5px; background:var(--grad); margin:7mm 0 6mm; box-shadow:0 4px 16px var(--glow); }
+  .f-rec .mid .stmt { font-size:14.5px; line-height:1.7; color:var(--ink); max-width:180mm; }
+  .f-rec .mid .stmt b { font-weight:600; color:var(--ink2); }
+  .f-rec .foot { display:grid; grid-template-columns:1fr auto; gap:18mm; align-items:end; }
+  .f-rec .fields { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6mm 8mm; }
+  .f-rec .fields .k { font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .f-rec .fields .v { font-size:12.5px; color:var(--ink2); font-weight:500; margin-top:2px; }
+  .f-rec .block { width:76mm; border:1px solid var(--rule); border-radius:12px; overflow:hidden; box-shadow:0 14px 34px rgba(6,26,81,.12); }
+  .f-rec .block .bb { display:flex; align-items:center; gap:6px; padding:8px 12px; background:var(--ink2); }
+  .f-rec .block .bb i { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.34); }
+  .f-rec .block .bb i:nth-child(2) { background:var(--teal); }
+  .f-rec .block .bb span { font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.74); margin-left:6px; }
+  .f-rec .block .bd { display:flex; align-items:center; gap:13px; padding:13px; background:#fff; }
+  .f-rec .block .bd .qr { width:25mm; height:25mm; }
+  .f-rec .block .bd .tx { font-family:var(--mono); font-size:10px; line-height:1.7; color:var(--muted); }
+  .f-rec .block .bd .tx .code { font-size:15px; font-weight:600; color:var(--ink2); letter-spacing:.06em; margin-top:3px; }
+
+  /* ============================================================ 4 · AURORA (Vetor + atmosfera/glow) */
+  .f-aur { background:var(--paper); overflow:hidden; }
+  .f-aur .slab { position:absolute; top:0; right:0; bottom:0; left:0; background:var(--gradr); clip-path:polygon(33% 0,100% 0,100% 100%,7% 100%); z-index:0; }
+  .f-aur .orb { position:absolute; border-radius:50%; filter:blur(64px); z-index:1; pointer-events:none; }
+  .f-aur .orb.o1 { width:120mm; height:120mm; top:-34mm; right:-14mm; background:var(--glow); opacity:.55; }
+  .f-aur .orb.o2 { width:84mm; height:84mm; bottom:-30mm; right:60mm; background:rgba(125,232,214,.4); opacity:.5; }
+  .f-aur .spot { position:absolute; inset:0; clip-path:polygon(33% 0,100% 0,100% 100%,7% 100%); background:radial-gradient(90% 80% at 78% 36%,rgba(255,255,255,.18),transparent 60%); z-index:1; pointer-events:none; }
+  .f-aur .ghost { position:absolute; right:-48mm; top:50%; transform:translateY(-50%); width:216mm; opacity:.13; z-index:1; clip-path:polygon(33% 0,100% 0,100% 100%,7% 100%); pointer-events:none; }
+  .f-aur .ghost svg { width:100%; height:auto; display:block; }
+  .f-aur .wrap { position:relative; z-index:3; height:100%; display:flex; flex-direction:column; padding:18mm 22mm 15mm; }
+  .f-aur .top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .f-aur .top .bmark { width:54mm; }
+  .f-aur .top .seal { display:flex; align-items:center; gap:8px; border:1px solid rgba(255,255,255,.34); border-radius:20px; padding:6px 14px; background:rgba(255,255,255,.08); backdrop-filter:blur(6px); }
+  .f-aur .top .seal .d { width:7px; height:7px; border-radius:50%; background:var(--acc-light); box-shadow:0 0 10px var(--acc-light); }
+  .f-aur .top .seal span { font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#fff; }
+  .f-aur .mid { flex:1; display:flex; flex-direction:column; justify-content:center; max-width:166mm; }
+  .f-aur .mid .eyebrow { color:var(--pdark); margin-bottom:6mm; }
+  .f-aur .mid .lead { font-weight:300; font-size:15px; color:var(--muted); margin-bottom:3mm; }
+  .f-aur .mid .name { font-family:var(--lora); font-weight:600; font-size:84px; line-height:.95; letter-spacing:-.025em; color:var(--ink2); }
+  .f-aur .mid .gbar { width:66mm; height:5px; border-radius:5px; background:var(--grad); margin:8mm 0 6mm; box-shadow:0 4px 18px var(--glow); }
+  .f-aur .mid .stmt { font-size:15px; line-height:1.7; color:var(--ink); max-width:150mm; }
+  .f-aur .mid .stmt b { font-weight:600; color:var(--ink2); }
+  .f-aur .foot { display:flex; justify-content:space-between; align-items:flex-end; gap:18mm; }
+  .f-aur .foot .meta { font-size:10.5px; color:var(--muted); line-height:1.95; }
+  .f-aur .foot .meta b { color:var(--ink2); font-weight:600; }
+  .f-aur .vglass { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.34); border-radius:16px; padding:9px 13px; backdrop-filter:blur(8px); box-shadow:0 12px 32px rgba(0,0,0,.22); }
+  .f-aur .vglass .qr { width:22mm; height:22mm; }
+  .f-aur .vglass .l { font-family:var(--mono); font-size:8.5px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.78); }
+  .f-aur .vglass .c { font-family:var(--mono); font-weight:600; font-size:15px; letter-spacing:.08em; color:#fff; margin:2px 0; }
+  .f-aur .vglass .u { font-size:9.5px; color:rgba(255,255,255,.84); }
+
+  /* ============================================================ VERSO (paisagem · 2 colunas · sem paginação) */
+  .back { padding:15mm 22mm 13mm; display:flex; flex-direction:column; }
+  .back .bhead { display:flex; justify-content:space-between; align-items:flex-start; }
+  .back .bhead .ht .kicker { font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--pdark); font-weight:700; margin-bottom:8px; }
+  .back .bhead .ht .title { font-family:var(--lora); font-weight:500; font-size:30px; line-height:1.1; color:var(--ink2); letter-spacing:-.01em; max-width:185mm; }
+  .back .bhead .hc { text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .back .bhead .hc .bmark { width:42mm; }
+  .back .bhead .hc .code { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .back .bhead .hc .code b { display:block; font-size:13px; letter-spacing:.08em; color:var(--ink2); margin-top:2px; }
+  .back .rule { width:56px; height:3px; background:var(--accent); margin:12px 0 0; }
+  .back .bcols { flex:1; display:grid; grid-template-columns:1.55fr 1fr; gap:18mm; margin-top:7mm; }
+  .back .curriculum { display:flex; flex-direction:column; }
+  .back .ci { display:grid; grid-template-columns:40px 1fr; gap:14px; padding:6.5px 0; border-bottom:1px solid var(--rule); align-items:baseline; }
+  .back .ci:last-child { border-bottom:none; }
+  .back .ci .n { font-family:var(--lora); font-size:22px; font-weight:600; color:var(--pdark); }
+  .back .ci h4 { font-family:var(--inter); font-size:14px; font-weight:700; color:var(--ink2); margin-bottom:3px; }
+  .back .ci p { font-size:12.5px; color:var(--muted); line-height:1.5; margin:0; }
+  .back .side { display:flex; flex-direction:column; border-left:1px solid var(--rule); padding-left:16mm; }
+  .back .cargo { display:flex; border:1px solid var(--rule); border-radius:8px; overflow:hidden; margin-bottom:7mm; }
+  .back .cargo .s { flex:1; padding:11px 6px; text-align:center; border-right:1px solid var(--rule); }
+  .back .cargo .s:last-child { border-right:none; }
+  .back .cargo .v { font-family:var(--lora); font-size:23px; font-weight:600; color:var(--ink2); line-height:1; }
+  .back .cargo .v.sm { font-size:15px; }
+  .back .cargo .l { font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:5px; }
+  .back .mblk { margin-bottom:5mm; }
+  .back .mblk .ml { font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:3px; }
+  .back .mblk .mv { font-size:12.5px; color:var(--ink2); font-weight:500; }
+  .back .mblk .mv small { display:block; color:var(--muted); font-weight:400; margin-top:1px; font-size:10.5px; }
+  .back .vcard { margin-top:auto; display:flex; align-items:center; gap:12px; background:var(--cream); border:1px solid var(--rule); border-radius:10px; padding:5mm; }
+  .back .vcard .qr { width:22mm; height:22mm; flex:0 0 auto; }
+  .back .vcard .tx .b { font-family:var(--lora); font-size:13px; font-weight:600; color:var(--ink2); }
+  .back .vcard .tx p { font-size:11px; color:var(--ink); margin:2px 0 0; }
+  .back .vcard .tx .c { font-weight:700; color:var(--pdark); letter-spacing:.06em; }
+  .back .pfoot { display:flex; justify-content:space-between; margin-top:6mm; padding-top:8px; border-top:1px solid var(--rule); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+
+  /* ===== PRINT ===== */
+  @media print {
+    @page { size:A4 landscape; margin:0; }
+    html, body { background:#fff; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .toolbar { display:none !important; }
+    .stage { position:static; padding:0; overflow:visible; }
+    #pages { transform:none !important; gap:0; display:block; }
+    .page { box-shadow:none; page-break-after:always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="brand">penso<b>IA</b> · certificado · <span style="opacity:.7">refino Vetor</span></span>
+  <div class="tgroup" id="layoutGroup">
+    <label>frente</label>
+    <button class="chip active" data-layout="pro">Vetor+</button>
+    <button class="chip" data-layout="seam">Costura</button>
+    <button class="chip" data-layout="rec">Registro</button>
+    <button class="chip" data-layout="aur">Aurora</button>
+  </div>
+  <div class="tgroup" id="palGroup">
+    <label>tema</label>
+    <button class="chip" data-pal="navy">Navy</button>
+    <button class="chip" data-pal="teal">Teal</button>
+    <button class="chip active" data-pal="duo">Duo</button>
+  </div>
+  <div class="tgroup" id="sideGroup">
+    <label>lado</label>
+    <button class="chip active" data-side="frente">Frente</button>
+    <button class="chip" data-side="verso">Verso</button>
+    <button class="chip" data-side="ambos">Ambos</button>
+  </div>
+  <span class="spacer"></span>
+  <button class="print-btn" onclick="doPrint()">Imprimir / PDF</button>
+</div>
+
+<div class="stage"><div id="pages" data-pal="duo"></div></div>
+
+<script src="../../js/brand-logos.js?v=1.0"></script>
+<script>
+  const D = {
+    holder: 'Marina Andrade Conrado',
+    course: 'Inteligência Artificial: do Zero ao Entendimento Prático',
+    hours: '12 horas', meetings: '3', modality: 'Presencial',
+    format: '3 encontros de 4 horas',
+    date: '15 de agosto de 2026', place: 'Aracaju · SE', client: 'VNC Advocacia',
+    code: 'AB3HNQ4VXY', validar: 'pensoia.com/trilha/validar',
+    issuerShort: 'EPBF Soluções em Tecnologia', issuer: 'EPBF Soluções em Tecnologia Ltda',
+    cnpj: '65.254.064/0001-64',
+    instructor: 'Élder Prudente Barbosa Filho', role: 'Instrutor responsável',
+    modules: [
+      { n:'I',   t:'Fundamentos de LLMs',           d:'Tokens, embeddings e janela de contexto, e como modelos preditivos diferem de mecanismos de busca.' },
+      { n:'II',  t:'Engenharia de Prompt Avançada',  d:'Frameworks com markdown para garantir precisão e evitar resultados não profissionais.' },
+      { n:'III', t:'Gestão de Riscos',               d:'Identificação e mitigação de alucinações, com atenção a precedentes e dados fictícios.' },
+      { n:'IV',  t:'Panorama de Ferramentas',        d:'ChatGPT, Claude e Gemini, com NotebookLM aplicado a grandes volumes processuais.' },
+      { n:'V',   t:'Laboratório Prático',            d:'Construção e teste de prompts para a advocacia, com repertório reutilizável pela equipe.' },
+    ],
+  };
+
+  function fauxQr(seed, mods) {
+    mods = mods || 25;
+    let h = 2166136261;
+    for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    const bit = (i, j) => { let x = (h ^ (i*73856093) ^ (j*19349663)) >>> 0; x = (x * 2654435761) >>> 0; return (x >>> 17) & 1; };
+    const cell = 4, sz = mods * cell;
+    const corners = [[0,0],[0,mods-7],[mods-7,0]];
+    const inFinder = (i,j) => corners.some(([bi,bj]) => i>=bi && i<bi+7 && j>=bj && j<bj+7);
+    const nearFinder = (i,j) => corners.some(([bi,bj]) => i>=bi-1 && i<bi+8 && j>=bj-1 && j<bj+8);
+    let r = '';
+    for (let i = 0; i < mods; i++) for (let j = 0; j < mods; j++) {
+      let on = false;
+      if (inFinder(i,j)) {
+        const c = corners.find(([bi,bj]) => i>=bi && i<bi+7 && j>=bj && j<bj+7);
+        const li = i - c[0], lj = j - c[1];
+        on = (li===0||li===6||lj===0||lj===6) || (li>=2&&li<=4&&lj>=2&&lj<=4);
+      } else if (nearFinder(i,j)) { on = false; }
+      else { on = bit(i,j) === 1; }
+      if (on) r += '<rect x="'+(j*cell)+'" y="'+(i*cell)+'" width="'+cell+'" height="'+cell+'"/>';
+    }
+    return '<svg viewBox="0 0 '+sz+' '+sz+'" width="100%" height="100%" shape-rendering="crispEdges">'
+      + '<rect width="'+sz+'" height="'+sz+'" fill="#fff"/><g fill="#061a51">'+r+'</g></svg>';
+  }
+
+  const logoFor = (where) => stdColors(where === 'grad' ? 'teal' : 'white');
+
+  // ── 1 · VETOR+ ──
+  function fPro() {
+    return '<div class="slab"><div class="dots"></div></div>'
+    + '<div class="ghost" data-mk></div>'
+    + '<div class="wrap">'
+      + '<div class="top"><span class="bmark" data-logo="light"></span>'
+        + '<div class="tag">Certificado · Nº '+D.code+'<br>'+D.client+' · '+D.place+'</div></div>'
+      + '<div class="mid"><div class="eyebrow">Certificado de Participação</div>'
+        + '<div class="lead">Certificamos que</div><h1 class="name">'+D.holder+'</h1>'
+        + '<div class="gbar"></div>'
+        + '<p class="stmt">concluiu o curso <b>'+D.course+'</b>, com carga horária de <b>'+D.hours+'</b>, realizado em '+D.place+'.</p></div>'
+      + '<div class="foot"><div class="meta">Emissor · <b>'+D.issuerShort+'</b><br>Instrutor · <b>'+D.instructor+'</b><br>Emissão · <b>'+D.date+'</b></div>'
+        + '<div class="vchip"><span class="qr" data-qr></span><div><div class="l">Validação</div><div class="c">'+D.code+'</div><div class="u">'+D.validar+'</div></div></div>'
+      + '</div></div>';
+  }
+
+  // ── 2 · COSTURA (conteúdo duplicado: base navy + over branco recortado na emenda) ──
+  function fSeam() {
+    const inner =
+      '<div class="s-top"><span class="bmark" data-logo="light"></span>'
+        + '<div class="tag">Certificado · Nº '+D.code+'<br>'+D.client+' · '+D.place+'</div></div>'
+      + '<div class="s-mid"><div class="eyebrow">Certificado de Participação</div>'
+        + '<div class="lead">Certificamos que</div><h1 class="name">'+D.holder+'</h1>'
+        + '<div class="gbar"></div>'
+        + '<p class="stmt">concluiu o curso <b>'+D.course+'</b>, com carga horária de <b>'+D.hours+'</b>, realizado em '+D.place+'.</p></div>'
+      + '<div class="s-foot"><div class="meta">Emissor · <b>'+D.issuerShort+'</b><br>Instrutor · <b>'+D.instructor+'</b><br>Emissão · <b>'+D.date+'</b></div>'
+        + '<div class="vchip"><span class="qr" data-qr></span><div><div class="l">Validação</div><div class="c">'+D.code+'</div><div class="u">'+D.validar+'</div></div></div>'
+      + '</div>';
+    return '<div class="slab"><div class="dots"></div></div>'
+      + '<div class="ghost" data-mk></div>'
+      + '<div class="layer base">'+inner+'</div>'
+      + '<div class="layer over">'+inner+'</div>';
+  }
+
+  // ── 3 · REGISTRO ──
+  function fRec() {
+    return '<div class="grid"></div><div class="rail"></div>'
+    + '<div class="ghost" data-mk></div>'
+    + '<div class="wrap">'
+      + '<div class="top"><span class="bmark" data-logo="light"></span>'
+        + '<div class="status"><span class="d"></span>verificado · pensoIA</div></div>'
+      + '<div class="mid"><div class="kicker">Certificado de Participação · <b>'+D.client+'</b></div>'
+        + '<div class="lead">Certificamos que</div><h1 class="name">'+D.holder+'</h1>'
+        + '<div class="gbar"></div>'
+        + '<p class="stmt">concluiu o curso <b>'+D.course+'</b>, com carga horária de <b>'+D.hours+'</b>, realizado em '+D.place+'.</p></div>'
+      + '<div class="foot"><div class="fields">'
+        + '<div><div class="k">Emissor</div><div class="v">'+D.issuerShort+'</div></div>'
+        + '<div><div class="k">Instrutor</div><div class="v">'+D.instructor+'</div></div>'
+        + '<div><div class="k">Emissão</div><div class="v">'+D.date+'</div></div>'
+        + '<div><div class="k">Carga horária</div><div class="v">'+D.hours+'</div></div>'
+        + '<div><div class="k">Modalidade</div><div class="v">'+D.modality+'</div></div>'
+        + '<div><div class="k">Local</div><div class="v">'+D.place+'</div></div>'
+      + '</div>'
+      + '<div class="block"><div class="bb"><i></i><i></i><i></i><span>validação</span></div>'
+        + '<div class="bd"><span class="qr" data-qr></span><div class="tx">'+D.validar+'<div class="code">'+D.code+'</div></div></div></div>'
+      + '</div></div>';
+  }
+
+  // ── 4 · AURORA ──
+  function fAur() {
+    return '<div class="slab"></div><div class="spot"></div>'
+    + '<div class="orb o1"></div><div class="orb o2"></div>'
+    + '<div class="ghost" data-mk></div>'
+    + '<div class="wrap">'
+      + '<div class="top"><span class="bmark" data-logo="light"></span>'
+        + '<div class="seal"><span class="d"></span><span>autêntico</span></div></div>'
+      + '<div class="mid"><div class="eyebrow">Certificado de Participação</div>'
+        + '<div class="lead">Certificamos que</div><h1 class="name">'+D.holder+'</h1>'
+        + '<div class="gbar"></div>'
+        + '<p class="stmt">concluiu o curso <b>'+D.course+'</b>, com carga horária de <b>'+D.hours+'</b>, realizado em '+D.place+'.</p></div>'
+      + '<div class="foot"><div class="meta">Emissor · <b>'+D.issuerShort+'</b><br>Instrutor · <b>'+D.instructor+'</b><br>Emissão · <b>'+D.date+'</b></div>'
+        + '<div class="vglass"><span class="qr" data-qr></span><div><div class="l">Validação</div><div class="c">'+D.code+'</div><div class="u">'+D.validar+'</div></div></div>'
+      + '</div></div>';
+  }
+
+  const FRONTS = { pro:fPro, seam:fSeam, rec:fRec, aur:fAur };
+
+  function back() {
+    const mods = D.modules.map(m =>
+      '<div class="ci"><div class="n">'+m.n+'</div><div><h4>'+m.t+'</h4><p>'+m.d+'</p></div></div>').join('');
+    return '<div class="bhead">'
+      + '<div class="ht"><div class="kicker">Conteúdo Programático</div><h2 class="title">'+D.course+'.</h2></div>'
+      + '<div class="hc"><span class="bmark" data-logo="light"></span><div class="code">Código<b>'+D.code+'</b></div></div>'
+    + '</div><div class="rule"></div>'
+    + '<div class="bcols"><div class="curriculum">'+mods+'</div>'
+      + '<div class="side"><div class="cargo">'
+        + '<div class="s"><div class="v">'+D.hours.replace(' horas','')+'</div><div class="l">Horas</div></div>'
+        + '<div class="s"><div class="v">'+D.meetings+'</div><div class="l">Encontros</div></div>'
+        + '<div class="s"><div class="v sm">'+D.modality+'</div><div class="l">Modalidade</div></div></div>'
+        + '<div class="mblk"><div class="ml">Emissor</div><div class="mv">'+D.issuer+'<small>CNPJ '+D.cnpj+'</small></div></div>'
+        + '<div class="mblk"><div class="ml">Instrutor responsável</div><div class="mv">'+D.instructor+'<small>'+D.format+'</small></div></div>'
+        + '<div class="mblk"><div class="ml">Data e local de emissão</div><div class="mv">'+D.date+'<small>'+D.place+'</small></div></div>'
+        + '<div class="vcard"><span class="qr" data-qr></span><div class="tx"><div class="b">Autenticidade verificável</div>'
+          + '<p>Código <span class="c">'+D.code+'</span> em '+D.validar+'</p></div></div>'
+      + '</div></div>'
+    + '<div class="pfoot"><span>pensoIA · Certificado de Participação</span><span>'+D.client+'</span></div>';
+  }
+
+  let state = { layout:'pro', pal:'duo', side:'frente' };
+
+  function makePage(kind) {
+    const page = document.createElement('div');
+    page.className = 'page';
+    if (kind === 'front') { page.classList.add('f-' + state.layout); page.innerHTML = FRONTS[state.layout](); }
+    else { page.classList.add('back'); page.innerHTML = back(); }
+    page.querySelectorAll('[data-logo]').forEach(el => { el.innerHTML = glyphWordmarkTag(logoFor(el.dataset.logo)); });
+    page.querySelectorAll('[data-mk]').forEach(el => { el.innerHTML = mark(stdColors('teal')); });
+    page.querySelectorAll('[data-qr]').forEach(el => { el.innerHTML = fauxQr(D.code); });
+    return page;
+  }
+
+  function render() {
+    const host = document.getElementById('pages');
+    host.dataset.pal = state.pal;
+    host.innerHTML = '';
+    const want = state.side === 'ambos' ? ['front','back'] : (state.side === 'verso' ? ['back'] : ['front']);
+    want.forEach(k => host.appendChild(makePage(k)));
+    fit();
+  }
+
+  function fit() {
+    const host = document.getElementById('pages');
+    host.style.transform = 'scale(1)';
+    const stage = document.querySelector('.stage');
+    const scale = Math.min((stage.clientWidth-50)/host.scrollWidth, (stage.clientHeight-50)/host.scrollHeight, 1);
+    host.style.transform = 'scale(' + scale + ')';
+  }
+
+  function wire(groupId, key) {
+    document.getElementById(groupId).addEventListener('click', e => {
+      const btn = e.target.closest('.chip'); if (!btn) return;
+      state[key] = btn.dataset[key];
+      document.querySelectorAll('#' + groupId + ' .chip').forEach(c => c.classList.toggle('active', c === btn));
+      render();
+    });
+  }
+  wire('layoutGroup', 'layout');
+  wire('palGroup', 'pal');
+  wire('sideGroup', 'side');
+
+  function doPrint() { const p = state.side; state.side = 'ambos'; render(); setTimeout(() => { window.print(); state.side = p; render(); }, 160); }
+  window.doPrint = doPrint;
+
+  window.addEventListener('resize', fit);
+  render();
+</script>
+</body>
+</html>
