@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { readCode, buildTurmaUrl, initials } from '../trilha/js/entrar.js';
+import { readCode, buildTurmaUrl } from '../trilha/js/entrar.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 const html = read('../trilha/entrar.html');
@@ -62,19 +62,23 @@ test('buildTurmaUrl builds the public turma launch URL with k (url-encoded)', ()
     'https://x.com/trilha/a%20b/t?k=a%2Fb');
 });
 
-test('entrar enters the last class (Continuar) + código + e-mail OTP, no hub', () => {
-  assert.match(js, /getKnownTurmas/, 'reads the device turma registry (the Continuar banner)');
-  assert.match(js, /createLoginFlow/, 'drives the shared login controller');
+test('entrar auto-enters a valid device session (no Continuar banner, no hub)', () => {
+  assert.match(js, /getKnownTurmas/, 'reads the device turma registry');
+  assert.match(js, /sessionCheck\(/, 'validates the device session server-side before entering');
+  assert.match(js, /location\.replace\(/, 'a valid session goes straight into its turma');
+  assert.match(js, /createLoginFlow/, 'drives the shared login controller for the e-mail path');
   assert.match(js, /requestCode|verifyCode/, 'uses the OTP code flow (not the magic link)');
-  assert.match(js, /cdx-entrar-cont/, 'renders the Continuar banner (the last class)');
+  assert.match(js, /forgetTurma\(/, 'prunes a revoked/dead turma so it never resurfaces');
   assert.match(js, /cdx-entrar-step-code/, 'choosing e-mail hides the código card (focus the e-mailed code)');
+  assert.ok(!/renderContinue|cdx-entrar-cont/.test(js), 'the Continuar banner is gone');
   assert.ok(!/renderHub|cdx-entrar-hub/.test(js), 'the minhas-turmas hub is gone');
   assert.ok(!/callWorker\s*\(/.test(js), 'never calls callWorker directly');
 });
 
-test('entrar.html hosts the Continuar + e-mail containers, no hub (both copies in sync)', () => {
-  assert.match(html, /id="cdx-entrar-cont"/, 'Continuar banner container present');
+test('entrar.html hosts the código + e-mail entry, no Continuar banner, no hub (both copies in sync)', () => {
   assert.match(html, /id="cdx-entrar-email"/, 'e-mail container present');
+  assert.match(html, /id="cdx-entrar-form"/, 'código form present');
+  assert.ok(!/id="cdx-entrar-cont"/.test(html), 'the Continuar banner is gone');
   assert.ok(!/id="cdx-entrar-hub"/.test(html), 'the hub container is gone');
   assert.equal(served, html, 'served copy still matches the source copy');
 });
@@ -103,11 +107,4 @@ test('entrar i18n carries the new entry copy in both langs', () => {
     const count = (i18n.match(new RegExp("'" + k.replace('.', '\\.') + "'", 'g')) || []).length;
     assert.ok(count >= 2, `${k} present in pt + en`);
   }
-});
-
-test('initials: up to two uppercase letters for the Continuar avatar', () => {
-  assert.equal(initials('Tribunal de Justiça'), 'TJ');
-  assert.equal(initials('Justiça'), 'JU');
-  assert.equal(initials(''), '?');
-  assert.equal(initials('   '), '?');
 });

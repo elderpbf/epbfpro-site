@@ -96,7 +96,14 @@ export function createLoginFlow(opts = {}) {
       const email = validateEmail(rawEmail);
       if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
       this.email = email;
-      const res = await api.otpRequest({ email });
+      // Bound flow (the wall) REGISTERS into the named turma, so it sends the turma context
+      // and the code is always issued. The unbound entry page sets require_enrolled, so the
+      // worker rejects an address that belongs to no turma (email_not_enrolled) BEFORE
+      // sending a code — the "no turma" check happens at e-mail submit, not after verify.
+      const reqParams = { email };
+      if (client && turma) { reqParams.client_slug = client; reqParams.turma_slug = turma; }
+      else { reqParams.require_enrolled = true; }
+      const res = await api.otpRequest(reqParams);
       if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
       this.devCode = res.dev_otp_code || null;
       this.state = 'code';

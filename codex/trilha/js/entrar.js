@@ -9,7 +9,7 @@ import { trail } from './api.js';
 import { t } from '../i18n.js';
 import { esc } from './utils.js';
 import { createLoginFlow } from './student-login.js';
-import { getKnownTurmas } from './student-session.js';
+import { getKnownTurmas, getToken, forgetTurma, clearToken } from './student-session.js';
 
 function applyI18n(root) {
   root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
@@ -40,18 +40,11 @@ export function buildTurmaUrl(entry, origin) {
     encodeURIComponent(entry.turma_slug) + '?k=' + encodeURIComponent(entry.k || entry.token || '');
 }
 
-// PURE. Up to two uppercase initials for the Continuar avatar.
-export function initials(name) {
-  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return '?';
-  const take = words.length === 1 ? words[0].slice(0, 2) : words[0][0] + words[words.length - 1][0];
-  return take.toUpperCase();
-}
-
 // Inline OTP error code -> student-facing message.
 function entryErrorText(code) {
   if (!code) return '';
   if (code === 'email_invalid') return t('login.email_invalid');
+  if (code === 'email_not_enrolled') return t('entrar.no_turmas');
   if (code === 'invalid_code') return t('login.code_invalid');
   if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
   return t('login.error');
@@ -75,22 +68,30 @@ async function resolveAndGo(code, els) {
   els.error.textContent = t('entrar.not_found');
 }
 
-// Fill the Continuar banner from the most-recent known turma (or hide it + the separator
-// when this device knows none). One tap relaunches the last class without re-login.
-function renderContinue(contEl, orEl, entry) {
-  if (!contEl) return;
-  if (!entry) { contEl.hidden = true; if (orEl) orEl.hidden = true; return; }
-  contEl.href = buildTurmaUrl(entry);
-  contEl.innerHTML =
-    '<span class="cdx-entrar-cont-av" aria-hidden="true">' + esc(initials(entry.client_name || entry.client_slug)) + '</span>' +
-    '<span class="cdx-entrar-cont-tx">' +
-      '<span class="cdx-entrar-cont-k">' + esc(t('entrar.continue')) + '</span>' +
-      '<span class="cdx-entrar-cont-name">' + esc(entry.turma_name || entry.turma_slug) + '</span>' +
-      '<span class="cdx-entrar-cont-client">' + esc(entry.client_name || entry.client_slug) + '</span>' +
-    '</span>' +
-    '<span class="cdx-entrar-cont-go" aria-hidden="true">→</span>';
-  contEl.hidden = false;
-  if (orEl) orEl.hidden = false;
+// Auto-enter (Élder, 2026-06-20): NO "Continuar" banner and NO turma list. Having more
+// than one turma on a device is near-zero, so the entry never asks — it validates the
+// device's most-recent session SERVER-SIDE and, if it still opens, goes straight into
+// that turma. A revoked/dead session (e.g. a deleted turma) is pruned so it can never
+// resurface, and the código + e-mail entry is shown instead. Switching between saved
+// turmas lives inside the trilha (student settings), not here.
+async function autoEnter(els) {
+  const known = getKnownTurmas();
+  // Drop registry rows with no session on this device (a name with no way in).
+  known.forEach((e) => { if (!getToken(e.client_slug, e.turma_slug)) forgetTurma(e.client_slug, e.turma_slug); });
+  const live = known.filter((e) => getToken(e.client_slug, e.turma_slug));
+  if (!live.length) return; // not logged in: the código + e-mail entry (already rendered) stays
+  if (els.paths) els.paths.hidden = true;
+  if (els.state) els.state.textContent = t('entrar.entering');
+  for (const entry of live) {
+    let res;
+    try { res = await trail.sessionCheck({ session_token: getToken(entry.client_slug, entry.turma_slug), _silent: true }); }
+    catch (_) { res = null; }
+    if (res && res.ok) { location.replace(buildTurmaUrl(entry)); return; } // logged in for real -> straight in
+    clearToken(entry.client_slug, entry.turma_slug);   // revoked/dead -> prune the token and the registry row
+    forgetTurma(entry.client_slug, entry.turma_slug);
+  }
+  if (els.state) els.state.textContent = ''; // none valid -> reveal the código + e-mail entry
+  if (els.paths) els.paths.hidden = false;
 }
 
 // The e-mail -> OTP flow, rendered inline into the e-mail card. Turma-agnostic: the code
@@ -176,8 +177,7 @@ export function start() {
     btn: document.getElementById('cdx-entrar-btn'),
     error: document.getElementById('cdx-entrar-error'),
     state: document.getElementById('cdx-entrar-state'),
-    cont: document.getElementById('cdx-entrar-cont'),
-    or: document.getElementById('cdx-entrar-or'),
+    paths: document.getElementById('cdx-entrar-paths'),
     email: document.getElementById('cdx-entrar-email'),
   };
   if (!els.form) return;
@@ -187,12 +187,11 @@ export function start() {
     if (!/^[0-9]{4}$/.test(code)) { els.error.textContent = t('entrar.invalid'); return; }
     resolveAndGo(code, els);
   });
-  // Continuar: the last class this device used (the most-recent-first registry).
-  const known = getKnownTurmas();
-  renderContinue(els.cont, els.or, known.length ? known[0] : null);
   // e-mail path (OTP).
   startEmail(els.email, els.root);
   // código link path: auto-resolve when the URL carried a 4-digit code.
   const code = readCode(location.search, location.pathname);
-  if (code) { els.input.value = code; resolveAndGo(code, els); }
+  if (code) { els.input.value = code; resolveAndGo(code, els); return; }
+  // localStorage-first: a valid device session enters its turma directly (no banner/hub).
+  autoEnter(els);
 }

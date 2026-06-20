@@ -123,15 +123,30 @@ test('requestCode rejects an invalid email without calling the facade', async ()
   assert.equal(api.calls.length, 0);
 });
 
-test('requestCode sends a normalized email and moves to the code step', async () => {
+test('requestCode (bound/wall) sends the turma context so the code is always issued', async () => {
   api = fakeApi({ otpRequest: { ok: true } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
   await flow.requestCode('  Aluno@Exemplo.com ');
   assert.equal(api.calls[0].name, 'otpRequest');
-  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com' });
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', client_slug: 'jfse', turma_slug: 'geral' });
   assert.equal(flow.state, 'code');
   assert.equal(flow.email, 'aluno@exemplo.com');
   assert.equal(flow.error, null);
+});
+
+test('requestCode (unbound/entry) sets require_enrolled so an un-enrolled e-mail is rejected before any code', async () => {
+  api = fakeApi({ otpRequest: { ok: true } });
+  flow = createLoginFlow({ api, session: sess }); // no client/turma -> the turma-agnostic /trilha entry
+  await flow.requestCode('aluno@exemplo.com');
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', require_enrolled: true });
+});
+
+test('requestCode surfaces email_not_enrolled and stays on email (no code step)', async () => {
+  api = fakeApi({ otpRequest: { error: 'email_not_enrolled' } });
+  flow = createLoginFlow({ api, session: sess }); // entry page
+  await flow.requestCode('ninguem@exemplo.com');
+  assert.equal(flow.state, 'email');
+  assert.equal(flow.error, 'email_not_enrolled');
 });
 
 test('requestCode captures a dev code when the worker returns one (staging)', async () => {
