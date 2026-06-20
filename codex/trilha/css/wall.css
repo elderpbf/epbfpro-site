@@ -55,6 +55,12 @@
 .cdx-en-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
 .cdx-en-cta { width: 100%; justify-content: center; margin-top: .3rem; }
 .cdx-en-nopass { font-size: .76rem; color: var(--text-secondary); text-align: center; margin: .6rem 0 0; }
+.cdx-en-haveacct { font-size: .76rem; color: var(--text-secondary); text-align: center; margin: .35rem 0 0; }
+/* "Reenviar código": a plain text-button under the verify CTA on the code step. */
+.cdx-en-resend { display: block; width: 100%; margin: .55rem 0 0; padding: 0; background: none; border: none;
+  color: var(--primary-dark); font-family: inherit; font-size: .82rem; font-weight: 700; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px; }
+.cdx-en-resend:disabled { opacity: .55; cursor: default; }
 .cdx-en-consent { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--border); font-size: .72rem; color: var(--text-secondary); line-height: 1.5; }
 
 /* Collapse-to-button toggle: shown only when the layout is stacked (mobile). */
@@ -101,6 +107,7 @@
 
 /* ── Beyond a1: inline error, the code step, and the pending notice ── */
 .cdx-en-error { font-size: .8rem; color: var(--danger, #dc2626); line-height: 1.4; margin: .2rem 0 .5rem; min-height: 1.1em; }
+.cdx-en-error.cdx-en-ok { color: var(--text-secondary); }   /* "novo código enviado" — not an error */
 .cdx-en-code-fields { display: block; }
 .cdx-en-dev { color: var(--text-primary); }
 .cdx-en-dev strong { font-weight: 800; }

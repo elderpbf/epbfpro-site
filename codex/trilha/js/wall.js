@@ -114,6 +114,7 @@ export function renderWall(root) {
     main.insertBefore(wall, footer || null);
   }
   const access = (state.data || {}).access || {};
+  if (access.status === 'denied') { renderDenied(wall); return; }
   if (access.status === 'pending') { renderPending(wall); return; }
   renderRegister(wall);
 }
@@ -124,6 +125,17 @@ function renderPending(wall) {
       '<div class="cdx-en-pending-icon" aria-hidden="true">⏳</div>' +
       '<h2 class="cdx-en-pending-title">' + esc(t('login.pending_title')) + '</h2>' +
       '<p class="cdx-en-pending-body">' + esc(t('login.pending_body')) + '</p>' +
+    '</div>';
+}
+
+// Blocked (denied): the instructor cut this student off. Distinct from pending — no
+// "aguarde aprovação"; they stay out until unblocked. Mirrors the pending layout.
+function renderDenied(wall) {
+  wall.innerHTML =
+    '<div class="cdx-en-pending cdx-en-denied">' +
+      '<div class="cdx-en-pending-icon" aria-hidden="true">🚫</div>' +
+      '<h2 class="cdx-en-pending-title">' + esc(t('login.denied_title')) + '</h2>' +
+      '<p class="cdx-en-pending-body">' + esc(t('login.denied_body')) + '</p>' +
     '</div>';
 }
 
@@ -185,6 +197,7 @@ function renderRegister(wall) {
         '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
         '<button type="button" class="tr-btn tr-btn-primary cdx-en-cta">' + esc(t('wall.cta')) + '</button>' +
         '<p class="cdx-en-nopass">' + esc(t('wall.nopass')) + '</p>' +
+        '<p class="cdx-en-haveacct">' + esc(t('wall.have_account')) + '</p>' +
         '<p class="cdx-en-consent">' + esc(t('login.consent_notice')) + '</p>' +
       '</div>';
     // On an error re-render, reveal the fields on mobile so the message is visible.
@@ -227,13 +240,29 @@ function renderRegister(wall) {
         dev +
         '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
         '<button type="button" class="tr-btn tr-btn-primary cdx-en-cta">' + esc(t('login.verify')) + '</button>' +
+        '<button type="button" class="cdx-en-resend" data-resend>' + esc(t('login.resend')) + '</button>' +
       '</div>';
     const codeEl = cardEl.querySelector('#cdx-en-code');
     if (flow.devCode) codeEl.value = flow.devCode;
     const cta = cardEl.querySelector('.cdx-en-cta');
+    const errEl = cardEl.querySelector('.cdx-en-error');
     const submit = async () => { cta.disabled = true; await flow.verifyCode(codeEl.value); settle(); };
     cta.addEventListener('click', submit);
     codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+    // Reenviar: the expired-code dead end. The e-mail is still in the flow, so re-request
+    // in place — no going back to retype it. A fresh code reprefills (staging) + confirms;
+    // a rate-limit / error falls back to the form via settle().
+    const resend = cardEl.querySelector('[data-resend]');
+    resend.addEventListener('click', async () => {
+      resend.disabled = true;
+      await flow.requestCode(flow.email);
+      if (flow.state === 'code') {
+        if (flow.devCode) codeEl.value = flow.devCode;
+        errEl.classList.add('cdx-en-ok');
+        errEl.textContent = t('login.resend_sent');
+        resend.disabled = false;
+      } else { settle(); }
+    });
     setTimeout(() => { try { codeEl.focus(); } catch (_) {} }, 50);
   }
 

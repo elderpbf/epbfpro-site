@@ -18,6 +18,7 @@ function errorText(code) {
   if (code === 'consent_required') return t('login.consent_required');
   if (code === 'invalid_code') return t('login.code_invalid');
   if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
+  if (code === 'access_blocked') return t('login.denied_body');
   return t('login.error');
 }
 
@@ -144,10 +145,13 @@ export function openLoginModal(opts = {}) {
       '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
         '<button type="button" class="tr-btn tr-btn-primary tr-login-verify">' + esc(t('login.verify')) + '</button>' +
+        '<button type="button" class="tr-btn tr-btn-ghost tr-login-resend">' + esc(t('login.resend')) + '</button>' +
       '</div>';
     const input = bodyEl.querySelector('.tr-login-code');
     if (flow.devCode) input.value = flow.devCode;
     const verify = bodyEl.querySelector('.tr-login-verify');
+    const resend = bodyEl.querySelector('.tr-login-resend');
+    const errEl = bodyEl.querySelector('.tr-login-error');
     const doVerify = async () => {
       verify.disabled = true;
       await flow.verifyCode(input.value);
@@ -155,6 +159,17 @@ export function openLoginModal(opts = {}) {
     };
     verify.addEventListener('click', doVerify);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doVerify(); });
+    // Reenviar: re-request with the flow's e-mail (no retype) when the code expired.
+    resend.addEventListener('click', async () => {
+      resend.disabled = true;
+      await flow.requestCode(flow.email);
+      if (flow.state === 'code') {
+        if (flow.devCode) input.value = flow.devCode;
+        errEl.classList.add('tr-login-ok');
+        errEl.textContent = t('login.resend_sent');
+        resend.disabled = false;
+      } else { settle(); }
+    });
     setTimeout(() => { try { input.focus(); } catch (_) {} }, 60);
   }
 

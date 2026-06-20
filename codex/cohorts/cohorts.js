@@ -283,7 +283,13 @@ function _loadAll() {
 }
 
 function _autoSelectFirst() {
-  const first = _turmas.find((tm) => tm.status !== 'archived') || _turmas[0];
+  // Reopen the turma that was open before a refresh (Élder), else the first live turma.
+  let saved = null;
+  try {
+    const v = localStorage.getItem('cdx_cohorts_last');
+    if (v) { const i = v.indexOf('\n'); saved = _turmas.find((tm) => tm.client_slug === v.slice(0, i) && tm.slug === v.slice(i + 1)); }
+  } catch (_) {}
+  const first = saved || _turmas.find((tm) => tm.status !== 'archived') || _turmas[0];
   if (first) _selectTurma(first.client_slug, first.slug);
   else {
     const el = _q('cdx-turma-dossier');
@@ -1181,6 +1187,7 @@ function _selectTurma(clientSlug, turmaSlug) {
   if (clientSlug === _relClientSlug && turmaSlug === _relTurmaSlug) return;
   _relClientSlug = clientSlug;
   _relTurmaSlug = turmaSlug;
+  try { localStorage.setItem('cdx_cohorts_last', clientSlug + '\n' + turmaSlug); } catch (_) {}  // reopen this turma after a refresh
   _selectedClientSlug = clientSlug; // new-turma / form context follows the selection
   _expandedClient = clientSlug;     // selecting a turma opens its client group
   const turma = _turmas.find((x) => x.client_slug === clientSlug && x.slug === turmaSlug);
@@ -1473,9 +1480,9 @@ function _pRow(p) {
     : '';
   let acts = '';
   if (st === 'pending') acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('alunos.approve')) + '</button>';
-  if (st === 'denied')  acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('cohorts.reactivate')) + '</button>';
-  if (st === 'pending')  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-deny">'  + _esc(t('alunos.deny'))   + '</button>';
-  if (st === 'approved') acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-revoke">' + _esc(t('alunos.revoke')) + '</button>';
+  // Block toggle (Élder): pending/approved -> Bloquear (denied, sticks); denied -> Desbloquear.
+  if (st === 'denied')  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-unblock">' + _esc(t('alunos.unblock')) + '</button>';
+  else                  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-block">'  + _esc(t('alunos.block'))   + '</button>';
   acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-remove">' + _esc(t('alunos.remove')) + '</button>';
   return '<div class="cdx-prow" data-pid="' + p.id + '">' +
     '<div class="cdx-prow-id">' +
@@ -1532,12 +1539,12 @@ function _wireDossierParticipants(el, turma) {
     const id = Number(row.dataset.pid);
     const reload = () => _loadDossierParticipants(turma);
     const ap = row.querySelector('.cdx-dp-approve');
-    const dn = row.querySelector('.cdx-dp-deny');
-    const rv = row.querySelector('.cdx-dp-revoke');
+    const block = row.querySelector('.cdx-dp-block');
+    const unblock = row.querySelector('.cdx-dp-unblock');
     const rm = row.querySelector('.cdx-dp-remove');
     if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'approved', origin: location.origin }).catch(() => {}); reload(); });
-    if (dn) dn.addEventListener('click', async () => { dn.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'denied' }).catch(() => {}); reload(); });
-    if (rv) rv.addEventListener('click', async () => { rv.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'pending' }).catch(() => {}); reload(); });
+    if (block) block.addEventListener('click', async () => { block.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'denied' }).catch(() => {}); reload(); });
+    if (unblock) unblock.addEventListener('click', async () => { unblock.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'pending' }).catch(() => {}); reload(); });
     if (rm) rm.addEventListener('click', async () => {
       if (typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
       rm.disabled = true;

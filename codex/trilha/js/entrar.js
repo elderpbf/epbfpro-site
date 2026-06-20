@@ -139,11 +139,13 @@ function startEmail(emailEl, root) {
       '<input class="cdx-entrar-otp cdx-entrar-code-input" type="text" maxlength="4" autocapitalize="characters" autocomplete="one-time-code" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
       dev +
       '<button class="cdx-entrar-btn cdx-entrar-code-verify" type="button">' + esc(t('login.verify')) + '</button>' +
+      '<button class="cdx-entrar-link cdx-entrar-resend" type="button">' + esc(t('login.resend')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-back" type="button">' + esc(t('entrar.other_email')) + '</button>';
     const input = emailEl.querySelector('.cdx-entrar-code-input');
     if (flow.devCode) input.value = flow.devCode;
     const verify = emailEl.querySelector('.cdx-entrar-code-verify');
     const back = emailEl.querySelector('.cdx-entrar-back');
+    const resend = emailEl.querySelector('.cdx-entrar-resend');
     const err = emailEl.querySelector('.cdx-entrar-email-error');
     const doVerify = async () => {
       err.textContent = '';
@@ -163,6 +165,21 @@ function startEmail(emailEl, root) {
     verify.addEventListener('click', doVerify);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doVerify(); });
     back.addEventListener('click', () => { renderForm(); });
+    // Reenviar: re-request with the e-mail already in the flow (no retype). Fresh code
+    // reprefills (staging) + confirms; rate-limit/error surfaces in the same slot.
+    resend.addEventListener('click', async () => {
+      resend.disabled = true;
+      err.classList.remove('cdx-entrar-ok'); err.textContent = '';
+      await flow.requestCode(flow.email);
+      if (flow.state === 'code') {
+        if (flow.devCode) input.value = flow.devCode;
+        err.classList.add('cdx-entrar-ok');
+        err.textContent = t('login.resend_sent');
+      } else {
+        err.textContent = entryErrorText(flow.error);
+      }
+      resend.disabled = false;
+    });
     setTimeout(() => { try { input.focus(); } catch (_) {} }, 50);
   }
 

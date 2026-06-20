@@ -33,26 +33,32 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 .cdx-disp-main .cdx-qr-state-icon { font-size: clamp(2.4rem, 5vw, 3.5rem); }
 .cdx-disp-main .cdx-qr-state-text { font-size: clamp(1.4rem, 3vw, 2.4rem); }
 
-/* Enrollment QR overlay (shown while the instructor projects it). Just the title +
-   the QR — no "enrollment open", no countdown (that's on the session panel). */
-.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background); display: flex; flex-direction: row; align-items: center; justify-content: center; gap: clamp(24px, 5vw, 72px); padding: 4vh 4vw; flex-wrap: wrap; cursor: pointer; }
+/* Enrollment QR overlay (shown while the instructor projects it): a 50/50 split — the
+   QR centered in one half, the typed-entry URL + big code centered in the other, with a
+   divider between. A 3-track grid (pane / 1px / pane) so neither half is ever cut and
+   both stay centered. Landscape splits left|right; portrait splits top|bottom. Everything
+   is min()/clamp-sized off the viewport, so it scales without overflow on any screen. */
+.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background);
+  display: grid; grid-template-columns: 1fr 1px 1fr; align-items: center; justify-items: center;
+  gap: clamp(20px, 3vw, 56px); padding: clamp(16px, 4vh, 56px); cursor: pointer; overflow: hidden; }
 .cdx-disp-enroll[hidden] { display: none; }
-.cdx-disp-enroll-qr { width: min(58vh, 40vw); height: auto; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: clamp(12px, 2vh, 28px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); flex: 0 0 auto; }
-.cdx-disp-enroll-info { display: flex; flex-direction: column; gap: clamp(14px, 2.6vh, 40px); align-items: flex-start; max-width: min(52vw, 820px); min-width: 0; }
-.cdx-disp-enroll-title { font-size: clamp(2rem, 4.2vw, 4.4rem); font-weight: 700; color: var(--text-primary); text-align: left; line-height: 1.1; }
-.cdx-disp-enroll-lead { font-size: clamp(1.2rem, 2.2vw, 2.2rem); color: var(--text-secondary); line-height: 1.2; }
+.cdx-disp-enroll-divider { width: 1px; height: min(72vh, 78%); background: var(--border); align-self: center; }
+.cdx-disp-enroll-qr { width: min(72vh, 44vw); max-width: 100%; height: auto; aspect-ratio: 1; background: #fff;
+  border-radius: clamp(10px, 1.5vw, 20px); padding: clamp(10px, 1.6vh, 26px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); }
+.cdx-disp-enroll-info { display: flex; flex-direction: column; gap: clamp(12px, 2.4vh, 36px); align-items: center; text-align: center; max-width: 100%; min-width: 0; }
+.cdx-disp-enroll-title { font-size: clamp(1.8rem, 3.4vw, 4rem); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+.cdx-disp-enroll-lead { font-size: clamp(1.05rem, 1.8vw, 2rem); color: var(--text-secondary); line-height: 1.25; }
 /* The address reads from across a room; the 4-digit code sits on its OWN line below it
    (never split by a wrap) and is the biggest, most-readable token. */
-.cdx-disp-enroll-url { display: flex; flex-direction: column; gap: clamp(2px, 0.8vh, 12px); max-width: 100%; }
-.cdx-disp-enroll-prefix { font-size: clamp(1.4rem, 3vw, 3rem); font-weight: 600; color: var(--text-secondary); line-height: 1.1; overflow-wrap: anywhere; }
-.cdx-disp-enroll-code { font-size: clamp(3.4rem, 9vw, 8rem); font-weight: 800; color: var(--primary, #2563eb); letter-spacing: 0.08em; line-height: 1; }
+.cdx-disp-enroll-url { display: flex; flex-direction: column; align-items: center; gap: clamp(2px, 0.8vh, 12px); max-width: 100%; }
+.cdx-disp-enroll-prefix { font-size: clamp(1.2rem, 2.4vw, 2.8rem); font-weight: 600; color: var(--text-secondary); line-height: 1.1; overflow-wrap: anywhere; }
+.cdx-disp-enroll-code { font-size: clamp(3rem, 8vw, 8rem); font-weight: 800; color: var(--primary, #2563eb); letter-spacing: 0.08em; line-height: 1; }
 
-/* Portrait / narrow projectors: stack the QR over the info and re-grow the QR. */
-@media (max-aspect-ratio: 1/1), (max-width: 820px) {
-  .cdx-disp-enroll { flex-direction: column; gap: clamp(12px, 3vh, 28px); }
-  .cdx-disp-enroll-qr { width: min(60vh, 82vw); }
-  .cdx-disp-enroll-info { align-items: center; text-align: center; max-width: 86vw; }
-  .cdx-disp-enroll-title { text-align: center; }
+/* Portrait (taller than wide): split top/bottom, divider goes horizontal, QR re-grows. */
+@media (max-aspect-ratio: 1/1) {
+  .cdx-disp-enroll { grid-template-columns: 1fr; grid-template-rows: 1fr 1px 1fr; }
+  .cdx-disp-enroll-divider { width: min(78vw, 78%); height: 1px; }
+  .cdx-disp-enroll-qr { width: min(56vh, 80vw); }
 }
 
 /* Admin QR toggle — fixed corner control, above the projected overlay (z 50) so the
