@@ -27,7 +27,7 @@ const pt = {
   'page.hero_eyebrow':      'Sua trilha de aprendizado',
   'page.tab_aulas':         'Aulas',
   'page.tab_outros':        'Outros materiais',
-  'page.tab_apostila':      'Conteúdo do curso',
+  'page.tab_apostila':      'Apostila do curso',
   'page.wa_group':          'Grupo no WhatsApp',
   'page.footer':            'Feito com PensoIA',
   // Student login / cadastro (magic-link). Self-registration and login share one flow.
@@ -174,7 +174,7 @@ const en = {
   'page.hero_eyebrow':      'Your learning trail',
   'page.tab_aulas':         'Classes',
   'page.tab_outros':        'Other materials',
-  'page.tab_apostila':      'Course content',
+  'page.tab_apostila':      'Coursebook',
   'page.wa_group':          'WhatsApp group',
   'page.footer':            'Made with PensoIA',
   // Student login / sign-up (magic-link). Sign-up and sign-in share one flow.

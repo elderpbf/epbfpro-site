@@ -66,9 +66,9 @@
 pensoia-header .ph-action-btn.cdx-ns-btn { background: none; border: none; padding: 0; box-shadow: none; min-width: 0; }
 .cdx-ns-initials {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
+  width: 34px; height: 34px; border-radius: 50%;       /* same height/diameter as the header buttons */
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff; font-size: .64rem; font-weight: 800; letter-spacing: .02em;
+  color: #fff; font-size: .82rem; font-weight: 800; letter-spacing: .02em;
 }
 .cdx-ns-gear { display: inline-flex; }
 .cdx-ns-gear svg { width: 15px; height: 15px; }
