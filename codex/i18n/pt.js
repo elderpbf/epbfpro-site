@@ -303,6 +303,8 @@ export default {
   'cohorts.aula_label':             'Aula',
   'cohorts.aula_no_title':          'sem título',
   'cohorts.aula_saved':             'Aula salva.',
+  'cohorts.aula_drag_hint':         'Arraste para reordenar',
+  'cohorts.aulas_reordered':        'Ordem das aulas atualizada.',
   'cohorts.aula_deleted':           'Aula excluída.',
   'cohorts.delete_aula_title':      'Excluir Aula',
   'cohorts.delete_aula_msg':        'Os itens liberados para esta aula perderão a associação.',

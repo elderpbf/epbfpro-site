@@ -168,6 +168,7 @@ export const cohorts = {
   createAula:      (p) => call('ct_create_aula', p),
   updateAula:      (p) => call('ct_update_aula', p),
   deleteAula:      (p) => call('ct_delete_aula', p),           // { id }
+  reorderAulas:    (p) => call('ct_reorder_aulas', p),         // { client_slug, turma_slug, ordered_ids: [aula_id...] } — renumbers + remaps release/plan bindings in lockstep
   // Participant roster (API.md — Participant Roster, ct_* family, auth required)
   listParticipants:   (p) => call('ct_list_participants', p),  // { turma_id }
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }

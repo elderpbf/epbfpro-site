@@ -1619,9 +1619,20 @@ function _renderAulaColRow(a, idx) {
   const titleHtml = a.title
     ? _esc(a.title)
     : '<span class="is-empty">' + t('cohorts.aula_no_title') + '</span>';
+  // Drag-to-reorder is only meaningful with 2+ aulas; the handle (⠿) signals it.
+  // aula_number follows the top-to-bottom order, so a drop renumbers and remaps
+  // the released content + lesson plan in lockstep (see api.reorderAulas).
+  const canDrag = _turmaAulas.length > 1;
+  const handleHtml = canDrag
+    ? '<span class="cdx-aula-col-drag" aria-hidden="true" title="' + _esc(t('cohorts.aula_drag_hint')) + '">⠿</span>'
+    : '';
+  // draggable lives on the display strip (not the row): the row also hosts the
+  // inline editor when open, and a draggable ancestor would fight text selection
+  // in its inputs. The display strip is hidden while editing, so it never does.
   return (
-    '<div class="cdx-aula-col-row" data-aula-idx="' + idx + '">' +
-      '<div class="cdx-aula-col-row-display">' +
+    '<div class="cdx-aula-col-row" data-aula-idx="' + idx + '" data-aula-id="' + _esc(a.id == null ? '' : a.id) + '">' +
+      '<div class="cdx-aula-col-row-display"' + (canDrag ? ' draggable="true"' : '') + '>' +
+        handleHtml +
         '<div class="cdx-aula-col-row-main">' +
           '<span class="cdx-rel-aula-label">' + t('cohorts.aula_label') + ' ' + _esc(a.aula_number) + '</span>' +
           '<span class="cdx-aula-col-row-title">' + titleHtml + '</span>' +
@@ -1682,6 +1693,75 @@ function _wireAulasColEvents() {
   el.querySelectorAll('.cdx-aula-col-row').forEach((row) => {
     const display = row.querySelector('.cdx-aula-col-row-display');
     if (display) display.addEventListener('click', () => _expandAulaCol(row));
+  });
+
+  // Drag-to-reorder. Listeners go on the freshly-rendered list element (recreated
+  // on every _renderTurmaAulas), so they never stack across renders.
+  const listEl = el.querySelector('.cdx-aulas-col-list');
+  if (!listEl) return;
+  let dragId = null;
+  listEl.addEventListener('dragstart', (e) => {
+    // Block while an aula is unsaved or an editor is open: a re-render would drop
+    // the editor, and an unsaved (id=null) aula can't be part of the ordered ids.
+    if (_reorderBlocked()) { e.preventDefault(); return; }
+    const row = e.target.closest('.cdx-aula-col-row');
+    if (!row || !row.dataset.aulaId) { e.preventDefault(); return; }
+    dragId = row.dataset.aulaId;
+    row.classList.add('is-dragging');
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+  });
+  listEl.addEventListener('dragover', (e) => {
+    if (dragId == null) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  });
+  listEl.addEventListener('dragend', () => {
+    listEl.querySelectorAll('.is-dragging').forEach((r) => r.classList.remove('is-dragging'));
+    dragId = null;
+  });
+  listEl.addEventListener('drop', (e) => {
+    if (dragId == null) return;
+    e.preventDefault();
+    const row = e.target.closest('.cdx-aula-col-row');
+    const tgtId = row ? row.dataset.aulaId : null;
+    const fromId = dragId;
+    dragId = null;
+    if (!tgtId || tgtId === fromId) return;
+    _reorderAulas(fromId, tgtId);
+  });
+}
+
+// Reorder is unsafe while an aula is unsaved (id=null, can't be in ordered_ids) or
+// an editor is open (the re-render would discard it). Either condition blocks drag.
+function _reorderBlocked() {
+  if (_turmaAulas.some((a) => a._isNew)) return true;
+  const el = _q(IDS.aulasList);
+  return !!(el && el.querySelector('.cdx-aula-col-row.is-editing'));
+}
+
+// Move the dragged aula to the dropped-on aula's slot, renumber 1..N top-to-bottom
+// (optimistic, so the labels update at once), then persist. aula_number is also the
+// binding key for released content + the lesson plan, so the worker remaps those in
+// lockstep; on failure we reload from the server to discard the optimistic order.
+function _reorderAulas(fromId, tgtId) {
+  const ids = _turmaAulas.map((a) => String(a.id));
+  const from = ids.indexOf(String(fromId));
+  const to = ids.indexOf(String(tgtId));
+  if (from === -1 || to === -1) return;
+  const moved = _turmaAulas.splice(from, 1)[0];
+  _turmaAulas.splice(to, 0, moved);
+  _turmaAulas.forEach((a, i) => { a.aula_number = i + 1; });
+  _renderTurmaAulas();
+  api.reorderAulas({
+    client_slug: _relClientSlug,
+    turma_slug: _relTurmaSlug,
+    ordered_ids: _turmaAulas.map((a) => a.id),
+  }).then(() => {
+    _toast(t('cohorts.aulas_reordered'));
+  }).catch((err) => {
+    if (window.bsLog) window.bsLog('cohorts: reorder aulas failed: ' + (err && err.message || err), 'error');
+    _toastError(t('cohorts.error') + ': ' + (err.message || err));
+    _loadTurmaAulas(_relClientSlug, _relTurmaSlug);
   });
 }
 
