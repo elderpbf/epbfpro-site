@@ -8,17 +8,13 @@ window.REVIEW_MANIFEST = {
   storageKey: 'mockrev_trilhaentry_ratings_v1',
   notesKey:   'mockrev_trilhaentry_notes_v1',
   rows: [
-    { label: 'Direções', items: [
-      { id: 'a1', file: 'a1.html', label: 'A · Lado a lado' },
+    { label: 'Direção (registro em modal)', items: [
+      { id: 'a1',  file: 'a1.html',        label: 'A · PC' },
+      { id: 'a1m', file: 'a1-mobile.html', label: 'A · Mobile (compacto)' }
+    ]},
+    { label: 'Alternativas (referência)', items: [
       { id: 'a2', file: 'a2.html', label: 'B · Cadastro em foco' },
       { id: 'a3', file: 'a3.html', label: 'C · Jornada das aulas' }
-    ]},
-    { label: 'Densas (cabe na tela, registro em modal)', items: [
-      { id: 'a4', file: 'a4.html', label: 'D · Cartão único' },
-      { id: 'a5', file: 'a5.html', label: 'E · Capa dividida' }
-    ]},
-    { label: 'Mobile', items: [
-      { id: 'a1m', file: 'a1-mobile.html', label: 'A · Mobile (empilhado)' }
     ]}
   ]
 };
