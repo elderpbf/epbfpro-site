@@ -15,7 +15,7 @@ import { state } from './state.js';
 import { esc } from './utils.js';
 import { t } from '../i18n.js';
 import { createLoginFlow } from './student-login.js';
-import { getPresence } from './student-session.js';
+import { getPresence, extractEnrollToken } from './student-session.js';
 
 const PT_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -137,10 +137,15 @@ function renderRegister(wall) {
     '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>';
 
   const cardEl = wall.querySelector('.cdx-en-reg');
+  // Capture the QR/código enrollment token NOW: page.js strips ?et= from the URL right
+  // after the wall renders, so reading it here (and passing it through verify) lets the
+  // worker approve a student who entered with the class código via the inscription window.
+  const enrollToken = (typeof location !== 'undefined') ? extractEnrollToken(location.search) : null;
   const flow = createLoginFlow({
     client: state.clientSlug,
     turma: state.turmaSlug,
     presence: getPresence(state.clientSlug, state.turmaSlug),
+    enrollToken,
   });
   let name = '';
 

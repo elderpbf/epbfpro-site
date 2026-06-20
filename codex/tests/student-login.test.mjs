@@ -213,6 +213,17 @@ test('verifyCode forwards the device-presence grant as presence_token (signal b)
   assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', code: 'abcd', client_slug: 'jfse', turma_slug: 'geral', presence_token: 'PGRANT' });
 });
 
+// The wall captures ?et= and passes it as enrollToken; verify forwards it as `et` so the
+// worker approves via the inscription window (signal a) — entered with the class código
+// = approved on sign-up, not pending.
+test('verifyCode forwards the enrollment token as et (signal a, inscription window)', async () => {
+  api = fakeApi({ otpVerify: { ok: true, turmas: [turmaEntry()] } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', enrollToken: 'ETOK' });
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', code: 'abcd', client_slug: 'jfse', turma_slug: 'geral', et: 'ETOK' });
+});
+
 test('verifyCode failure goes back to the code step and stores no token', async () => {
   api = fakeApi({ otpVerify: { error: 'code_expired' } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });

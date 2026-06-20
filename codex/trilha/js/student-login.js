@@ -114,6 +114,10 @@ export function createLoginFlow(opts = {}) {
       if (client) payload.client_slug = client;
       if (turma) payload.turma_slug = turma;
       if (presence) payload.presence_token = presence;
+      // Carry the QR/código enrollment token so the worker can approve via the
+      // inscription window (signal a): a student who arrived with the class código is
+      // approved on sign-up instead of landing pending.
+      if (enrollToken) payload.et = enrollToken;
       const res = await api.otpVerify(payload);
       if (!res || !res.ok) { this.state = 'code'; this.error = (res && res.error) || 'invalid_code'; return this; }
       const turmas = Array.isArray(res.turmas) ? res.turmas : [];
