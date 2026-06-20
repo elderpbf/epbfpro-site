@@ -35,7 +35,7 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 
 /* Enrollment QR overlay (shown while the instructor projects it). Just the title +
    the QR — no "enrollment open", no countdown (that's on the session panel). */
-.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background); display: flex; flex-direction: row; align-items: center; justify-content: center; gap: clamp(24px, 5vw, 72px); padding: 4vh 4vw; flex-wrap: wrap; }
+.cdx-disp-enroll { position: fixed; inset: 0; z-index: 50; background: var(--background); display: flex; flex-direction: row; align-items: center; justify-content: center; gap: clamp(24px, 5vw, 72px); padding: 4vh 4vw; flex-wrap: wrap; cursor: pointer; }
 .cdx-disp-enroll[hidden] { display: none; }
 .cdx-disp-enroll-qr { width: min(58vh, 40vw); height: auto; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: clamp(12px, 2vh, 28px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); flex: 0 0 auto; }
 .cdx-disp-enroll-info { display: flex; flex-direction: column; gap: clamp(14px, 2.6vh, 40px); align-items: flex-start; max-width: min(52vw, 820px); min-width: 0; }

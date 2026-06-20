@@ -43,13 +43,18 @@ test('the teacher topbar mounts the bell against the admin facade', () => {
   assert.match(src, /from '\.\/notif-bell\.js'/, 'imports the bell');
   assert.match(src, /forumNotifications\(\)/, 'wires the cross-turma source');
 });
-test('the student trilha header mounts the bell only when enabled + logged in', () => {
+test('the student trilha header mounts the bell + prefs only when enabled + logged in', () => {
   const src = read('../trilha/js/page.js');
   assert.match(src, /from '\.\.\/\.\.\/js\/notif-bell\.js'/, 'imports the bell');
-  assert.match(src, /notifications_enabled && state\.sessionToken/, 'gates on the flag + session');
+  assert.match(src, /forum_enabled && state\.sessionToken/, 'gates on forum + session (notifications follow the forum)');
   assert.match(src, /forumNotifications\(\{ session_token/, 'wires the scoped student source');
-  // The deeplink must re-append the access token, else page.js shows link_invalid.
-  assert.match(src, /'k=' \+ encodeURIComponent\(state\.token\)/, 'preserves the ?k= token on navigation');
+  // In-app open: no reload, switch tab + open the thread by id.
+  assert.match(src, /focusThread\(item\.thread_id\)/, 'opens the thread in place');
+  // The fallback deeplink still re-appends the access token, else page.js shows link_invalid.
+  assert.match(src, /'k=' \+ encodeURIComponent\(state\.token\)/, 'preserves the ?k= token on fallback navigation');
+  // Bell items filtered by the student's chosen categories; settings button mounted.
+  assert.match(src, /filterByPrefs\(/, 'filters notifications by prefs');
+  assert.match(src, /createNotifSettings\(/, 'mounts the prefs settings button');
 });
 test('notif i18n keys exist in codex + trilha dictionaries (pt + en)', () => {
   for (const f of ['../i18n/pt.js', '../i18n/en.js', '../trilha/i18n.js']) {

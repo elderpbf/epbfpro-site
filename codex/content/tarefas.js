@@ -16,6 +16,7 @@ import { getField, listFields } from '../js/tarefa-fields.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as turmaPicker from './turma-picker.js';
+import { installResizer } from '../js/resizable.js';
 
 const LS_CLIENT = 'ct_admin_tarefas_last_client';
 const LS_TURMA = 'ct_admin_tarefas_last_turma';
@@ -289,7 +290,7 @@ function _renderEditor(container, item) {
     '<div class="cdx-tarefa-editor-actions">' +
       '<button class="cdx-btn cdx-btn-primary cdx-tf-save">' + t('tarefas.save_changes') + '</button>' +
       '<button class="cdx-btn cdx-tf-cancel">' + t('content.cancel') + '</button>' +
-      '<button class="cdx-btn cdx-btn-danger cdx-tf-delete">' + t('tarefas.delete_btn') + '</button>' +
+      '<button class="cdx-btn cdx-btn-danger cdx-tf-delete">' + t('tarefas.remove_btn') + '</button>' +
     '</div>';
 
   container.querySelectorAll('.cdx-field-chip-btn:not(.is-disabled)').forEach((btn) => {
@@ -323,29 +324,28 @@ function _saveTarefa(container, item) {
   }).catch((err) => notice.internal(_err(err)));
 }
 
+// Per-turma removal: take the tarefa OUT of this turma (unrelease). The library item
+// and every other turma it's released to are untouched, re-releasing it in Liberações
+// brings it (and the stored answers) back. Replaces the old global ct_delete_item,
+// which wiped the tarefa from every turma at once (the per-turma delete bug).
 function _deleteTarefa(item) {
   const html =
     '<div class="cdx-modal" style="max-width:460px">' +
-      '<div class="cdx-modal-title">' + t('tarefas.delete_title') + '</div>' +
-      '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.delete_warning') + '</p>' +
-      '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.delete_confirm_prompt') + '</p>' +
+      '<div class="cdx-modal-title">' + t('tarefas.remove_title') + '</div>' +
+      '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.remove_warning') + '</p>' +
       '<p class="cdx-tarefa-delete-quote">' + _esc(item.title) + '</p>' +
-      '<input type="text" class="cdx-tf-del-input" placeholder="' + _esc(t('tarefas.delete_input_placeholder')) + '">' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" data-act="ok" disabled>' + t('tarefas.delete_btn') + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger" data-act="ok">' + t('tarefas.remove_btn') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html);
-  const input = bd.querySelector('.cdx-tf-del-input');
-  const ok = bd.querySelector('[data-act="ok"]');
-  input.addEventListener('input', () => { ok.disabled = (input.value !== item.title); });
   bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
-  ok.addEventListener('click', () => {
-    if (input.value !== item.title) return;
-    api.deleteItem({ id: item.id }).then(() => {
+  bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
+    relApi.unrelease({ item_id: item.id, client_slug: _client, turma_slug: _turma }).then(() => {
       _closeModal(bd);
-      _toast(t('tarefas.deleted'));
+      _toast(t('tarefas.removed'));
+      if (Number(_selectedId) === Number(item.id)) _selectedId = null;
       _loadTarefas(_client, _turma);
     }).catch((err) => notice.internal(_err(err)));
   });
@@ -569,7 +569,7 @@ function _renderShell() {
 }
 
 // ── Tab contract ─────────────────────────────────────────────────────────────
-export function mount(viewEl, ctx) {
+export function mount(viewEl, ctx = {}) {
   _viewEl = viewEl;
   _client = null;
   _turma = null;
@@ -579,11 +579,20 @@ export function mount(viewEl, ctx) {
   _selectedId = null;
   _cleanup = [];
   _renderShell();
-  _picker = turmaPicker.mount(_q('cdx-tar-picker'), {
-    onSelect: (c, tu) => _loadTarefas(c, tu),
-    storageKey: { client: LS_CLIENT, turma: LS_TURMA },
-    autoRestore: true,
-  });
+  // Draggable divider between the tarefa list and the editor/answers (persisted).
+  installResizer(_q('cdx-tarefas-split'), { storeKey: 'cdx_rz_tarefas_split', defaultPx: 380, min: 260, max: 680 });
+  // Embedded in a turma dossiê (ctx.clientSlug/turmaSlug given): turma already chosen,
+  // hide the picker and load it. Standalone (Content tab): the picker drives selection.
+  if (ctx.clientSlug && ctx.turmaSlug) {
+    const pk = _q('cdx-tar-picker'); if (pk) pk.style.display = 'none';
+    _loadTarefas(ctx.clientSlug, ctx.turmaSlug);
+  } else {
+    _picker = turmaPicker.mount(_q('cdx-tar-picker'), {
+      onSelect: (c, tu) => _loadTarefas(c, tu),
+      storageKey: { client: LS_CLIENT, turma: LS_TURMA },
+      autoRestore: true,
+    });
+  }
 }
 
 export function unmount() {

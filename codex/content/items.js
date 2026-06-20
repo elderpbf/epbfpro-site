@@ -28,6 +28,8 @@ let _items = [];
 let _types = [];
 let _tags = [];
 let _selectedTypeFilter = null;
+let _itemSearch = '';            // free-text filter over title + summary
+let _itemSort = 'recent';        // recent (updated_at desc) | alpha (A-Z) | type
 let _selectMode = false;
 let _selectedIds = new Set();
 let _selectedId = null;          // master-detail: id of the item shown in the preview
@@ -176,6 +178,20 @@ function _openPrompt(opts) {
 }
 
 // ── Shell ────────────────────────────────────────────────────────────────────
+// Sort glyph: decreasing horizontal lines + an up/down arrow. The button cycles
+// the sort mode on click (recent -> A-Z -> type) and shows the active mode beside it.
+const _SORT_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h10M5 12h7M5 17h4"/><path d="M19 7v10M16.5 9.5 19 7l2.5 2.5M16.5 14.5 19 17l2.5-2.5"/></svg>';
+
+function _sortLabel(s) {
+  return s === 'alpha' ? t('content.sort_alpha') : s === 'type' ? t('content.sort_type') : t('content.sort_recent');
+}
+function _paintSortBtn() {
+  const lbl = _q('cdx-items-sortlabel');
+  if (lbl) lbl.textContent = _sortLabel(_itemSort);
+  const btn = _q('cdx-items-sort');
+  if (btn) btn.title = t('content.sort_label') + ' ' + _sortLabel(_itemSort);
+}
+
 function _renderShell() {
   _viewEl.innerHTML =
     '<div class="cdx-items">' +
@@ -193,10 +209,21 @@ function _renderShell() {
         '<button class="cdx-btn cdx-btn-danger cdx-btn-sm" id="cdx-btn-bulk-delete">' + t('content.bulk_delete') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm" id="cdx-btn-bulk-cancel">' + t('content.bulk_cancel') + '</button>' +
       '</div>' +
-      '<div id="cdx-items-filter"></div>' +
       '<div class="cdx-items-split" id="cdx-items-split">' +
-        '<div class="cdx-items-list" id="cdx-items-grid">' +
-          '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+        '<div class="cdx-items-listcol">' +
+          // Search + sort at the TOP of the left panel (like the Turmas search),
+          // kept out of the re-rendered grid so typing never loses focus. Sort is
+          // a small toggle button that cycles recent -> A-Z -> type on click.
+          '<div class="cdx-items-listhead">' +
+            '<input type="search" id="cdx-items-search" class="cdx-items-search" placeholder="' + _esc(t('content.search_ph')) + '" autocomplete="off" spellcheck="false">' +
+            '<button type="button" id="cdx-items-sort" class="cdx-items-sortbtn" title="' + _esc(t('content.sort_label')) + '" aria-label="' + _esc(t('content.sort_label')) + '">' +
+              _SORT_ICON + '<span class="cdx-items-sortlabel" id="cdx-items-sortlabel"></span>' +
+            '</button>' +
+          '</div>' +
+          '<div id="cdx-items-filter"></div>' +
+          '<div class="cdx-items-list" id="cdx-items-grid">' +
+            '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+          '</div>' +
         '</div>' +
         '<div class="cdx-item-preview" id="cdx-item-preview">' +
           '<div class="cdx-preview-empty">' + t('content.preview_empty') + '</div>' +
@@ -210,6 +237,18 @@ function _renderShell() {
   _q('cdx-btn-select').addEventListener('click', _toggleSelectMode);
   _q('cdx-btn-bulk-delete').addEventListener('click', _bulkDelete);
   _q('cdx-btn-bulk-cancel').addEventListener('click', _exitSelectMode);
+  const searchEl = _q('cdx-items-search');
+  if (searchEl) searchEl.addEventListener('input', () => { _itemSearch = searchEl.value; _renderItems(); });
+  const sortBtn = _q('cdx-items-sort');
+  if (sortBtn) {
+    _paintSortBtn();
+    sortBtn.addEventListener('click', () => {
+      const order = ['recent', 'alpha', 'type'];
+      _itemSort = order[(order.indexOf(_itemSort) + 1) % order.length];
+      _paintSortBtn();
+      _renderItems();
+    });
+  }
   // Delegated listeners survive innerHTML re-renders of the list / preview.
   _q('cdx-items-grid').addEventListener('click', _onListClick);
   _q('cdx-item-preview').addEventListener('click', _onPreviewClick);
@@ -247,9 +286,31 @@ function _loadTypes() {
 }
 
 // ── Render grid ─────────────────────────────────────────────────────────────
+// Pure, exported for tests: free-text search (title + summary) then the chosen
+// sort. `typeLabelOf(type)` resolves a type's display label (used by 'type').
+// Pure (slices before sorting) so the grid and selection-after-removal agree.
+export function applyItemSearchSort(items, search, sort, typeLabelOf) {
+  let arr = items || [];
+  const q = (search || '').trim().toLowerCase();
+  if (q) arr = arr.filter((it) =>
+    String(it.title || '').toLowerCase().includes(q) ||
+    String(it.summary || '').toLowerCase().includes(q));
+  const label = (type) => String(typeLabelOf ? typeLabelOf(type) : (type || ''));
+  const byTitle = (a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' });
+  if (sort === 'alpha') arr = arr.slice().sort(byTitle);
+  else if (sort === 'type') arr = arr.slice().sort((a, b) =>
+    label(a.type).localeCompare(label(b.type), undefined, { sensitivity: 'base' }) || byTitle(a, b));
+  else arr = arr.slice().sort((a, b) => Number(b.updated_at || 0) - Number(a.updated_at || 0)); // recent
+  return arr;
+}
+
+function _applySearchSort(items) {
+  return applyItemSearchSort(items, _itemSearch, _itemSort, (type) => _typeMeta(type).label);
+}
+
 function _visibleItems() {
   const library = filterLibraryItems(_items);
-  return applyTypeFilter(library, _selectedTypeFilter);
+  return _applySearchSort(applyTypeFilter(library, _selectedTypeFilter));
 }
 
 function _renderItems() {
@@ -265,10 +326,10 @@ function _renderItems() {
     _renderPreview(null);
     return;
   }
-  const filtered = applyTypeFilter(library, _selectedTypeFilter);
+  const filtered = _applySearchSort(applyTypeFilter(library, _selectedTypeFilter));
   if (!filtered.length) {
     _selectedId = null;
-    grid.innerHTML = '<div class="cdx-empty">' + t('content.empty_filter') + '</div>';
+    grid.innerHTML = '<div class="cdx-empty">' + t((_itemSearch || '').trim() ? 'content.empty_search' : 'content.empty_filter') + '</div>';
     _renderPreview(null);
     return;
   }

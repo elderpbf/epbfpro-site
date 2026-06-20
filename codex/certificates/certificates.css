@@ -73,7 +73,7 @@
   gap: 0.5rem;
 }
 
-.cdx-certs-tpl-row:hover { background: var(--surface-hover, rgba(127,127,127,0.10)); }
+.cdx-certs-tpl-row:hover { background: var(--surface-hover, rgba(13, 148, 136,0.10)); }
 .cdx-certs-tpl-row.is-active {
   background: var(--cdx-card-sel-bg, rgba(99,102,241,0.12));
   border-left-color: var(--accent-color, #8b5cf6);
@@ -157,7 +157,7 @@
   padding: 0.22rem 0.6rem;
   border-radius: 5px;
   border: 1px solid var(--border);
-  background: var(--surface-hover, rgba(127,127,127,0.08));
+  background: var(--surface-hover, rgba(13, 148, 136,0.08));
   cursor: pointer;
   font-size: 0.78rem;
   color: var(--text-primary);
@@ -324,7 +324,7 @@
   border-bottom-color: var(--border);
 }
 
-.cdx-certs-table tr:hover td { background: var(--surface-hover, rgba(127,127,127,0.06)); }
+.cdx-certs-table tr:hover td { background: var(--surface-hover, rgba(13, 148, 136,0.06)); }
 
 .cdx-certs-code code {
   font-family: monospace;
@@ -391,7 +391,7 @@
   border-radius: 4px;
   cursor: pointer;
 }
-.cdx-cert-roster-row:hover { background: var(--surface-hover, rgba(127,127,127,0.08)); }
+.cdx-cert-roster-row:hover { background: var(--surface-hover, rgba(13, 148, 136,0.08)); }
 .cdx-cert-roster-row input[type="checkbox"] { margin-top: 0.15rem; }
 /* Person block: name + tier badge on line 1, the delivery e-mail prominent below. */
 .cdx-cert-roster-person { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
@@ -554,7 +554,7 @@
   cursor: pointer;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-.cdx-cert-theme-chip:hover { color: var(--text-primary); background: var(--surface-hover, rgba(127,127,127,0.10)); }
+.cdx-cert-theme-chip:hover { color: var(--text-primary); background: var(--surface-hover, rgba(13, 148, 136,0.10)); }
 .cdx-cert-theme-chip.is-active {
   color: var(--text-on-accent, #fff);
   background: var(--accent-color, #8b5cf6);

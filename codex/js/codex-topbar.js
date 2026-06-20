@@ -18,6 +18,7 @@ import { init as initSettingsDrawer } from './settings-drawer.js';
 import { googleSection, passwordSection } from './settings-auth.js';
 import { glyphWordmark, stdColors } from './brand-logos.js';
 import { TONE_OPTIONS, getTone, setTone, init as initTextTone } from './text-tone.js';
+import { TEAL_OPTIONS, getTeal, setTeal, init as initTealTone } from './teal-tone.js';
 import { createBell } from './notif-bell.js';
 import { cohorts as cohortsApi } from './codex-api.js';
 
@@ -165,37 +166,43 @@ function subtabModeSection() {
   };
 }
 
-// Appearance: the dark-mode light-text tone (the grey for primary text + the old
-// #fff text-on-accent spots). Admin tuning surface, Codex only; persists + applies
-// via js/text-tone.js. Swatches preview the tone as text on a teal fill; clicking
-// also updates the live app text immediately (the var lives on <html>).
-function textToneSection() {
-  const sw = TONE_OPTIONS.map((o) =>
-    '<button type="button" class="cdx-tone-sw" data-tone="' + o.value + '"' +
-      ' title="' + o.label + ' (' + o.value + ')"' +
+// Appearance (dark mode): two live tone pickers in one section — text colour
+// (the grey for primary text + the old #fff text-on-accent spots, via
+// js/text-tone.js → --cdx-text-dark) and the brand teal depth (button fills +
+// accents, via js/teal-tone.js → --cdx-teal-dark). Admin tuning surface, Codex
+// only; both persist and apply live (the vars live on <html>). Text swatches
+// preview the tone as text on a teal fill; teal swatches show the teal itself.
+function appearanceSection() {
+  const swatch = (cls, val, label, bg, fg) =>
+    '<button type="button" class="' + cls + '" data-val="' + val + '"' +
+      ' title="' + label + ' (' + val + ')"' +
       ' style="width:30px;height:30px;border-radius:7px;border:2px solid transparent;outline:none;' +
-        'cursor:pointer;background:#0d9488;color:' + o.value + ';font-weight:700;font-size:.82rem;line-height:1">A</button>'
-  ).join('');
+        'cursor:pointer;background:' + bg + ';color:' + fg + ';font-weight:700;font-size:.82rem;line-height:1">A</button>';
+  const textSw = TONE_OPTIONS.map((o) => swatch('cdx-tone-sw', o.value, o.label, '#0d9488', o.value)).join('');
+  const tealSw = TEAL_OPTIONS.map((o) => swatch('cdx-teal-sw', o.value, o.label, o.value, '#e5e7eb')).join('');
   return {
-    id: 'cdx-text-tone',
-    title: 'Tom do texto (modo escuro)',
+    id: 'cdx-appearance',
+    title: 'Modo escuro',
     content:
-      '<div class="cdx-tone-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.5rem">' + sw + '</div>' +
-      '<p class="bs-hint">Cor do texto claro no modo escuro (corpo e texto sobre botões/selos). Branco puro estoura no escuro; o padrão é um cinza suave.</p>',
+      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">Cor do texto</p>' +
+      '<div class="cdx-tone-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.7rem">' + textSw + '</div>' +
+      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">Cor do turquesa</p>' +
+      '<div class="cdx-teal-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.5rem">' + tealSw + '</div>' +
+      '<p class="bs-hint">Aplicam só no modo escuro, ao vivo, e valem só pra você no Codex.</p>',
     onInit() {
-      const row = document.querySelector('.cdx-tone-row');
-      if (!row) return;
-      const sync = () => {
-        const cur = getTone();
-        row.querySelectorAll('.cdx-tone-sw').forEach((b) => {
-          b.style.outline = b.getAttribute('data-tone') === cur ? '2px solid var(--primary)' : 'none';
+      const wire = (sel, getCur, setFn) => {
+        const row = document.querySelector(sel);
+        if (!row) return;
+        const sync = () => row.querySelectorAll('button').forEach((b) => {
+          b.style.outline = b.getAttribute('data-val') === getCur() ? '2px solid var(--primary)' : 'none';
           b.style.outlineOffset = '2px';
         });
+        sync();
+        row.querySelectorAll('button').forEach((b) =>
+          b.addEventListener('click', () => { setFn(b.getAttribute('data-val')); sync(); }));
       };
-      sync();
-      row.querySelectorAll('.cdx-tone-sw').forEach((b) => {
-        b.addEventListener('click', () => { setTone(b.getAttribute('data-tone')); sync(); });
-      });
+      wire('.cdx-tone-row', getTone, setTone);
+      wire('.cdx-teal-row', getTeal, setTeal);
     },
   };
 }
@@ -330,11 +337,20 @@ export function init(opts) {
   }
 
   // Notification bell (teacher, cross-turma). Computed from forum activity; clicking
-  // an item jumps to the Turmas tab. Refreshes on load + window focus.
+  // an item deep-links to THAT turma's dossiê Fórum tab (Cohorts reads fclient/fturma
+  // and opens the Fórum sub-tab). Refreshes on load + window focus.
   const bell = createBell({
     fetchNotifications: () => cohortsApi.forumNotifications(),
     markSeen: () => cohortsApi.forumMarkSeen({}),
-    onNavigate: () => { if (typeof location !== 'undefined') location.href = '/codex/?tab=cohorts'; },
+    onNavigate: (item) => {
+      if (typeof location === 'undefined') return;
+      let url = '/codex/?tab=cohorts';
+      if (item && item.client_slug && item.turma_slug) {
+        url += '&fclient=' + encodeURIComponent(item.client_slug) +
+               '&fturma=' + encodeURIComponent(item.turma_slug);
+      }
+      location.href = url;
+    },
     t,
   });
   inner.appendChild(bell.el);
@@ -451,10 +467,11 @@ export function init(opts) {
   ThemeManager.init({ storageKey: 'bs_theme' });
   ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
   initTextTone(); // apply the saved dark-mode text tone (no-op at default)
+  initTealTone(); // apply the saved dark-mode teal tone (no-op at default)
   // Compose the drawer in display order: the topbar's own sections, then the
   // injected auth + dev sections. The drawer shell owns none of this — Google
   // and password come from the settings-auth component, gated on their globals.
-  const drawerSections = [subtabModeSection(), textToneSection(), ...sections];
+  const drawerSections = [subtabModeSection(), appearanceSection(), ...sections];
   if (typeof globalThis.BS_GOOGLE !== 'undefined') drawerSections.push(googleSection());
   drawerSections.push(debugSection());
   if (typeof globalThis.callWorker === 'function') drawerSections.push(passwordSection());

@@ -51,6 +51,14 @@ test('the display is a control surface: a QR toggle drives the same projection a
   assert.match(js, /toggleProjection\(/, 'toggles the same server state the host panel does');
 });
 
+test('clicking the projected QR overlay dismisses it (like the qr-share modal backdrop)', () => {
+  // Both the toggle button AND the overlay itself wire to the un-project handler,
+  // so a click anywhere on the projected QR closes it.
+  assert.match(js, /getElementById\('cdx-disp-enroll'\)[\s\S]*?addEventListener\('click', _toggleProjection\)/,
+    'overlay click un-projects');
+  assert.match(css, /\.cdx-disp-enroll \{[^}]*cursor: pointer/, 'overlay reads as clickable');
+});
+
 test('display shows the typed-entry URL + 4-digit code beside the QR', () => {
   assert.match(html, /cdx-disp-enroll-info/, 'QR + info two-column overlay');
   assert.match(html, /id="cdx-disp-enroll-url"/, 'has the URL element');

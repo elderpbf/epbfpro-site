@@ -37,6 +37,39 @@
 }
 .cdx-bulk-bar > span { color: var(--text-secondary); font-size: 0.85rem; flex: 1; }
 
+/* ── Left list column: a search + sort header above the scrolling list ────── */
+/* The search sits at the top of the LEFT panel (like the Turmas search) so it is
+   easy to find; the sort is a small toggle button beside it that cycles modes. */
+.cdx-items-listcol { display: flex; flex-direction: column; gap: 0.5rem; min-height: 0; }
+.cdx-items-listhead { display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
+.cdx-items-search {
+  flex: 1;
+  min-width: 0;
+  padding: 0.42rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cdx-items-search:focus { outline: none; border-color: var(--primary); }
+.cdx-items-sortbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cdx-items-sortbtn:hover { border-color: var(--primary); color: var(--primary-dark); }
+.cdx-items-sortbtn svg { flex: 0 0 auto; }
+
 /* ── Filter row ──────────────────────────────────────────────────────────── */
 .cdx-filter-row { display: flex; align-items: center; gap: 0.5rem; }
 
@@ -57,11 +90,22 @@
 /* Select/bulk mode: hide the preview, the list spans the full width. */
 .cdx-items-split.is-bulk { grid-template-columns: 1fr; }
 .cdx-items-split.is-bulk .cdx-item-preview { display: none; }
+/* Liberações + Tarefas (in the dossiê) get a draggable divider between the two
+   panels: the first column rides the resizer's --cdx-rz-w var (js/resizable.js), and
+   the grip itself is styled in cohorts.css (.cdx-rz-grip). Must come after the base
+   rule + its mobile collapse so it wins on equal specificity; the override re-states
+   the 1fr collapse for phones. */
+.cdx-releases-split, .cdx-tarefas-split { position: relative; grid-template-columns: var(--cdx-rz-w, 380px) 1fr; }
+@media (max-width: 980px) {
+  .cdx-releases-split, .cdx-tarefas-split { grid-template-columns: 1fr; }
+}
 
 .cdx-items-list {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  min-height: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;

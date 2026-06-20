@@ -13,6 +13,10 @@ import { extractMagicToken, extractEnrollToken, isLoggedIn, clearToken, getToken
 import { openLoginModal } from './student-login-modal.js';
 import { isWall } from './access.js';
 import { createBell } from '../../js/notif-bell.js';
+import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
+// forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
+// static import cycle: forum.js imports page.js (registerRenderer), so a static import
+// here would hit page.js's RENDERERS const in its temporal dead zone at load.
 
 const PANELS = ['aulas', 'forum', 'apostila', 'outros'];
 
@@ -205,28 +209,52 @@ function renderHeaderActions() {
       prepend(_loginPill);
     }
 
-    // Notification bell (student): only when the turma enabled notifications AND the
-    // student is logged in (notifications are computed against their identity). Scoped
-    // to this turma; clicking an item follows its ?thread= deeplink. Refreshes on focus.
-    if (data.turma && data.turma.notifications_enabled && state.sessionToken) {
+    // Notification bell + preferences (student): the bell is a CONSEQUENCE of a
+    // notification-emitting feature being on (today: the forum), not a separate
+    // toggle. So it shows when the forum is enabled AND the student is logged in
+    // (notifications are computed against their identity). Scoped to this turma. The
+    // bell filters the server's pending list by the student's chosen categories;
+    // clicking an item opens the Fórum tab + thread IN PLACE (no reload). The gear
+    // button edits which events notify.
+    if (data.turma && data.turma.forum_enabled && state.sessionToken) {
+      const turmaKey = state.clientSlug + '/' + state.turmaSlug;
       const bell = createBell({
-        fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true }),
+        fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true })
+          .then((res) => {
+            const items = filterByPrefs((res && res.items) || [], getPrefs(turmaKey));
+            return { count: items.length, items };
+          }),
         markSeen: () => trail.forumMarkSeen({ session_token: state.sessionToken }),
         onNavigate: (item) => {
-          if (!item || !item.deeplink || typeof location === 'undefined') return;
-          // The worker deeplink omits the access token (?k=). The clean path supplies
-          // client/turma but page.js requires the token, so a bare deeplink would land
-          // on link_invalid. Re-append the token we already hold for THIS turma.
-          let url = item.deeplink;
-          if (state.token) url += (url.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(state.token);
-          location.href = url;
+          // Already on this turma's page: just switch to the Fórum tab and open the
+          // thread (the worker stamps thread_id). Falls back to the token-preserving
+          // deeplink only if the id is somehow missing. Dynamic import dodges the cycle.
+          if (item && item.thread_id) { import('./forum.js').then((m) => m.focusThread(item.thread_id)); return; }
+          if (item && item.deeplink && typeof location !== 'undefined') {
+            let url = item.deeplink;
+            if (state.token) url += (url.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(state.token);
+            location.href = url;
+          }
         },
         t,
         btnClass: 'ph-action-btn',
       });
+      const settings = createNotifSettings({
+        initials: avatarInitials((data.participant || {}).display_name || (data.participant || {}).name),
+        turmaKey,
+        onChange: () => bell.refresh(),
+        btnClass: 'ph-action-btn',
+      });
+      // Order in the header: bell first, then the gear (prepend reverses, so gear last).
+      prepend(settings.el);
       prepend(bell.el);
     }
   })();
+}
+
+// Two-letter avatar initials from a display name (header settings button).
+function avatarInitials(name) {
+  return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
 // Magic-link return: when the URL carries ?lt=<token>, verify it (the page already

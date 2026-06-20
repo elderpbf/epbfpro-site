@@ -38,8 +38,11 @@
 }
 
 [data-theme="dark"] {
-  --primary: #14b8a6;
-  --primary-dark: #0d9488;
+  /* Teal escuro unificado: no modo escuro o teal claro (#14b8a6) não se usa.
+     --primary cai pro tom escuro; cascateia pra fundos de botão, acentos,
+     sublinhados e bordas ativas de uma vez. */
+  --primary: var(--cdx-teal-dark, #0d9488);
+  --primary-dark: #0a766c;
   --primary-light: #2dd4bf;
   --secondary: #0f766e;
   --accent: #134e4a;
@@ -54,7 +57,9 @@
   --text-light: #5eead4;
   --text-on-accent: var(--cdx-text-dark, #e5e7eb);
   --shadow: rgba(0, 0, 0, 0.3);
-  --border: #0f766e;
+  /* Borda em repouso: cinza neutro (era o teal aceso #0f766e). Mais claro que a
+     superfície, então contorna sem brilhar e nada some. */
+  --border: #2d333b;
   --success: #34d399;
   --success-bg: #064e3b;
   --error: #f87171;

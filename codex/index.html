@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
 
 <!-- Shell chrome reused from Backstage (same origin, so the login carries over). -->
-<link rel="stylesheet" href="css/theme.css?v=1.2">
+<link rel="stylesheet" href="css/theme.css?v=1.4">
 <!-- Admin shell chrome (bs-app/bs-main/bs-topbar, theme-transition) + the inline
      login card (bs-auth-*). Codex copy, verbatim, so the backstage backstage.css
      link is dropped. bs-auth-* rides along unchanged (auth.js stays backstage and
@@ -47,10 +47,10 @@
      is classvault-only). Codex copy, verbatim, dropping the LAST backstage CSS
      link. A dead-rule trim + cdx- rename is a later pass. -->
 <link rel="stylesheet" href="css/classvault.css?v=1.1">
-<link rel="stylesheet" href="css/tokens.css?v=1.2">
+<link rel="stylesheet" href="css/tokens.css?v=1.4">
 <link rel="stylesheet" href="css/codex.css?v=2.6">
-<link rel="stylesheet" href="cohorts/cohorts.css?v=2.8">
-<link rel="stylesheet" href="content/content.css?v=2.9">
+<link rel="stylesheet" href="cohorts/cohorts.css?v=3.5">
+<link rel="stylesheet" href="content/content.css?v=3.3">
 <link rel="stylesheet" href="content/slides.css?v=1.9">
 <!-- Deck editor styles, scoped under .cdx-deck-editor (no global leak). -->
 <link rel="stylesheet" href="content/slides/css/tokens.css?v=1.2">
@@ -59,8 +59,8 @@
 <link rel="stylesheet" href="lessons/lessons.css?v=2.2">
 <!-- QR share modal styles (Codex copy, pairs with js/qr-share-modal.js). -->
 <link rel="stylesheet" href="css/qr-share-modal.css?v=1.0">
-<link rel="stylesheet" href="questions/questions.css?v=4.2">
-<link rel="stylesheet" href="certificates/certificates.css?v=2.4">
+<link rel="stylesheet" href="questions/questions.css?v=4.3">
+<link rel="stylesheet" href="certificates/certificates.css?v=2.5">
 <link rel="stylesheet" href="certificates/cert-render.css?v=1.7">
 <script src="../backstage/js/debug.js?v=2.5"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -184,6 +184,8 @@
 
   const ctx = {};
   if (tab === 'cohorts' || tab === 'content' || tab === 'questions' || tab === 'certificates') ctx.sub = sub;
+  // Fórum deep-link from the notification bell: open this turma's dossiê on the Fórum tab.
+  if (tab === 'cohorts') { ctx.fclient = params.get('fclient') || undefined; ctx.fturma = params.get('fturma') || undefined; ctx.fdtab = params.get('fclient') ? 'forum' : undefined; }
   // Questions deep-link: ?session=<code> opens that session's live host directly
   // (the Lessons live card links here). The Sessions sub-tab reads ctx.session.
   if (tab === 'questions') ctx.session = params.get('session') || undefined;

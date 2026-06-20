@@ -8,14 +8,37 @@
 
 .cdx-three-pane {
   display: grid;
-  /* Concept A: ONE grouped turma list (col 1) + the turma dossier (col 2). The
-   * mobile layers below + in codex.css still target .cdx-three-pane and collapse
-   * this to a single column. */
-  grid-template-columns: 300px 1fr;
-  gap: 1.25rem;
+  /* Concept A: ONE grouped turma list (col 1) + the turma dossier (col 2). The width
+   * of col 1 is the draggable --cdx-rz-w (js/resizable.js), so the divider stays where
+   * the user left it. The mobile layers below + in codex.css still target
+   * .cdx-three-pane and collapse this to a single column. */
+  grid-template-columns: var(--cdx-rz-w, 300px) 1fr;
+  gap: 0.65rem;
   min-height: calc(100vh - 220px);
   align-items: stretch;
+  position: relative;          /* containing block for the absolute resize grip */
+  margin: 0 -0.6rem;           /* tighter outer margins (claw back the view padding) */
 }
+
+/* Shared resize grip (cohorts panes + the Liberações/Tarefas split). Absolutely
+ * positioned over the column gap so it never alters the grid template itself. */
+.cdx-rz-grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--cdx-rz-w, 300px);
+  width: 8px;
+  margin-left: 1px;
+  cursor: col-resize;
+  display: grid;
+  place-items: center;
+  z-index: 6;
+  border-radius: 6px;
+}
+.cdx-rz-grip i { width: 3px; height: 40px; border-radius: 3px; background: var(--border); transition: background .12s; }
+.cdx-rz-grip:hover, .cdx-rz-grip.is-drag { background: rgba(20, 184, 166, 0.10); }
+.cdx-rz-grip:hover i, .cdx-rz-grip.is-drag i { background: var(--primary); }
+@media (max-width: 980px) { .cdx-rz-grip { display: none; } }
 
 /* Clients + Turmas wrapper: transparent to the grid on desktop (the two panes
  * stay direct grid items), it becomes the off-canvas drawer on phones (codex.css
@@ -46,11 +69,9 @@
 }
 
 .cdx-pane-title {
-  font-size: 0.8rem;
+  font-size: 1.25rem; /* match the dossiê title (#cdx-turma-dossier) */
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -841,6 +862,17 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-doss-panel { animation: cdx-doss-fade .18s ease both; }
 @keyframes cdx-doss-fade { from { opacity: 0; } to { opacity: 1; } }
 .cdx-doss-panel[hidden] { display: none; }
+/* Liberações + Tarefas reuse the Content split shell (content.css). Its split is
+   sized to the viewport (100vh - 240px), which assumes the slim Content chrome; in
+   a dossier there is extra chrome above (the dossier header + the sub-tab strip), so
+   trim the min-height a touch and drop the modules' own top gap (the panel already
+   spaces them). */
+.cdx-doss-panel--embed .cdx-items-split { min-height: calc(100vh - 360px); }
+.cdx-doss-panel--embed .cdx-tarefas,
+.cdx-doss-panel--embed .cdx-releases { gap: .75rem; }
+/* The Tarefas surface keeps its own "Tarefas" h2; inside the dossier the sub-tab
+   already says Tarefas, so drop the duplicate heading. */
+.cdx-doss-panel--embed .cdx-tarefas-title { display: none; }
 .cdx-doss-subhead { font-size: .8rem; font-weight: 700; color: var(--text-primary); margin: 1.2rem 0 .7rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .cdx-doss-panel-bar { display: flex; align-items: center; gap: .5rem; margin-bottom: .7rem; }
 
@@ -1041,7 +1073,18 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   gap: 0.45rem;
   padding: 0.45rem 0.6rem;
   background: var(--background);
+  cursor: pointer;
 }
+/* Accordion: caret rotates when the group is open; rows collapse when it is not. */
+.cdx-cg-caret {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  transition: transform 0.15s;
+}
+.cdx-cg.is-open .cdx-cg-caret { transform: rotate(90deg); }
+.cdx-cg-rows { display: none; }
+.cdx-cg.is-open .cdx-cg-rows { display: block; }
 .cdx-cg-ava {
   width: 22px;
   height: 22px;
@@ -1054,6 +1097,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   color: var(--text-on-accent, #fff);
   background: var(--primary-dark);
 }
+/* When the client has its own icon, the avatar shows it instead of the initials. */
+.cdx-cg-ava-img { background: transparent; object-fit: cover; }
 .cdx-cg-name {
   font-size: 0.74rem;
   font-weight: 700;
@@ -1067,6 +1112,9 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   min-width: 0;
 }
 .cdx-cg-acts { display: flex; gap: 0.2rem; flex: 0 0 auto; opacity: 0; transition: opacity 0.12s; }
+/* The open client (its turma is in the dossier) shows its actions without a hover-
+   hunt; other clients still reveal on hover/focus to keep the list quiet. */
+.cdx-cg.is-open .cdx-cg-acts,
 .cdx-cg-head:hover .cdx-cg-acts,
 .cdx-cg-acts:focus-within { opacity: 1; }
 .cdx-cg-act {
@@ -1092,10 +1140,12 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   gap: 0.5rem;
   padding: 0.5rem 0.6rem 0.5rem 0.7rem;
   cursor: pointer;
-  border-left: 3px solid transparent;
+  border-left: 3px solid var(--ph, transparent); /* phase accent bar */
 }
-.cdx-ti:hover { background: var(--background); }
-.cdx-ti.is-on { background: var(--cdx-chip-bg); border-left-color: var(--primary); }
+/* Hover previews the SAME light teal as the selected row (selection persists),
+   so it no longer reads like the client teal. */
+.cdx-ti:hover,
+.cdx-ti.is-on { background: var(--cdx-chip-bg); }
 .cdx-ti.is-archived { opacity: 0.6; }
 .cdx-ti-main { flex: 1; min-width: 0; }
 .cdx-ti-t {
@@ -1113,7 +1163,18 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cdx-ti-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; background: var(--ph, var(--border)); }
+/* Client sections: a thin labelled divider grouping ativos / futuros / inativos. */
+.cdx-cg-section {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 0.6rem 0.6rem 0.45rem;
+  border-top: 1px solid var(--border);
+  margin-top: 1.4rem;
+}
+.cdx-cg-section:first-child { border-top: none; margin-top: 0.2rem; }
 
 /* ----- Dossier: phase pill + trilha-link strip (moved per-turma actions) ----- */
 
