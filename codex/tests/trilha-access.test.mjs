@@ -17,14 +17,12 @@ test('gated + approved -> approved, regardless of mode', () => {
   assert.equal(accessState({ gated: true, mode: 'upfront', status: 'approved' }), 'approved');
 });
 
-test('gated inline + unapproved -> inline-gated (anonymous or pending)', () => {
-  assert.equal(accessState({ gated: true, mode: 'inline', status: 'anonymous' }), 'inline-gated');
-  assert.equal(accessState({ gated: true, mode: 'inline', status: 'pending' }), 'inline-gated');
-});
-
-test('gated upfront + unapproved -> upfront-gated', () => {
+test('gated + unapproved -> upfront-gated, regardless of the now-inert mode', () => {
+  assert.equal(accessState({ gated: true, mode: 'inline', status: 'anonymous' }), 'upfront-gated');
+  assert.equal(accessState({ gated: true, mode: 'inline', status: 'pending' }), 'upfront-gated');
   assert.equal(accessState({ gated: true, mode: 'upfront', status: 'anonymous' }), 'upfront-gated');
   assert.equal(accessState({ gated: true, mode: 'upfront', status: 'pending' }), 'upfront-gated');
+  assert.equal(accessState({ gated: true, status: 'anonymous' }), 'upfront-gated'); // no mode field at all
 });
 
 test('isContentGated: true while gated+unapproved, false once open/approved', () => {
@@ -35,10 +33,12 @@ test('isContentGated: true while gated+unapproved, false once open/approved', ()
   assert.equal(isContentGated(null), false);
 });
 
-test('isWall: only an unapproved upfront turma', () => {
+test('isWall: any unapproved gated turma (mode is inert)', () => {
   assert.equal(isWall({ gated: true, mode: 'upfront', status: 'anonymous' }), true);
-  assert.equal(isWall({ gated: true, mode: 'inline', status: 'anonymous' }), false);
+  assert.equal(isWall({ gated: true, mode: 'inline', status: 'anonymous' }), true);
+  assert.equal(isWall({ gated: true, status: 'pending' }), true);
   assert.equal(isWall({ gated: true, mode: 'upfront', status: 'approved' }), false);
+  assert.equal(isWall({ gated: false, status: 'anonymous' }), false);
   assert.equal(isWall(null), false);
 });
 
