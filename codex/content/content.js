@@ -9,22 +9,23 @@
 import { t } from '../js/i18n.js';
 import * as items from './items.js';
 import * as presets from './presets.js';
-import * as releases from './releases.js';
 import * as apostila from './apostila.js';
-import * as tarefas from './tarefas.js';
 import * as labs from './labs.js';
 import * as drive from './drive.js';
 import * as slides from './slides.js';
 
+// Content is the authoring/library surface. The two turma-scoped management
+// sub-tabs (Tarefas answers + Liberações) moved into the cohort dossier, where the
+// turma is already in context; their modules (content/tarefas.js, content/releases.js)
+// are mounted turma-bound from cohorts.js. Keeping the modules where they are avoids
+// duplicating the composer, the dossier just mounts them with { turma }.
 export const SUBTABS = [
   { key: 'items',    labelKey: 'content.sub_items',    module: items },
   { key: 'apostila', labelKey: 'content.sub_apostila', module: apostila },
-  { key: 'tarefas',  labelKey: 'content.sub_tarefas',  module: tarefas },
   { key: 'drive',    labelKey: 'content.sub_drive',    module: drive },
   { key: 'slides',   labelKey: 'content.sub_slides',   module: slides },
   { key: 'labs',     labelKey: 'content.sub_labs',     module: labs },
   { key: 'presets',  labelKey: 'content.sub_presets',  module: presets },
-  { key: 'releases', labelKey: 'content.sub_releases', module: releases },
 ];
 
 function _native() { return SUBTABS.filter((s) => s.module); }

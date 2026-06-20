@@ -45,20 +45,23 @@ test('Codex topbar routes migrated tabs to /codex/, un-migrated to legacy', () =
   assert.match(questions[0], /href:\s*'\/codex\/\?tab=questions'/, 'questions -> /codex/?tab=questions (migrated)');
 });
 
-test('every Content sub-tab is now a native module (no ClassTrail bridges left)', () => {
-  // Task D complete: all six remaining sub-tabs migrated. Items/Presets/Releases/
-  // Apostila/Tarefas are full native; Labs/Drive are native wrappers around a
-  // deferred legacy global (tracked debt). None bridges to the old page.
+test('every Content sub-tab is a native module (no ClassTrail bridges left)', () => {
+  // Content is now the authoring/library surface. Items/Presets/Apostila are full
+  // native; Labs/Drive/Slides are native wrappers around a deferred legacy global
+  // (tracked debt). None bridges to the old page. The two turma-scoped management
+  // surfaces (Tarefas + Liberações) moved to the cohort dossier (Batch B).
   for (const [key, labelKey] of [
     ['items', 'content.sub_items'], ['apostila', 'content.sub_apostila'],
-    ['tarefas', 'content.sub_tarefas'], ['drive', 'content.sub_drive'],
+    ['drive', 'content.sub_drive'], ['slides', 'content.sub_slides'],
     ['labs', 'content.sub_labs'], ['presets', 'content.sub_presets'],
-    ['releases', 'content.sub_releases'],
   ]) {
     const re = new RegExp("key:\\s*'" + key + "',\\s*labelKey:\\s*'" + labelKey.replace('.', '\\.') + "',\\s*module:");
     assert.match(contentJs, re, `${key} is a native module`);
   }
   assert.ok(!/href:\s*'\/backstage\/classtrail/.test(contentJs), 'no SUBTABS entry bridges to ClassTrail');
+  // Tarefas + Liberações relocated to the dossier; they are no longer Content sub-tabs.
+  assert.ok(!/key:\s*'tarefas'/.test(contentJs), 'Tarefas is not a Content sub-tab (moved to the dossier)');
+  assert.ok(!/key:\s*'releases'/.test(contentJs), 'Liberações is not a Content sub-tab (moved to the dossier)');
 });
 
 test('the Codex topbar renders sub-tabs as the pill/bar chrome (5c), only when they exist', () => {

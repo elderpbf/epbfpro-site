@@ -14,6 +14,11 @@ import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
+// Turma-scoped management surfaces, mounted turma-bound into the dossier sub-tabs
+// (the same modules the Content tab used to host, now { turma }-driven so they skip
+// the picker). Reused as-is, no composer logic is duplicated.
+import * as releasesAdmin from '../content/releases.js';
+import * as tarefasAdmin from '../content/tarefas.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 // Cohorts gained sub-tabs with the Cursos data model: the operational
@@ -1268,6 +1273,8 @@ function _renderDossier(turma) {
         '<button type="button" class="cdx-subtab active" data-dtab="dados" role="tab">' + _esc(t('cohorts.sec_turma_data')) + '</button>' +
         '<button type="button" class="cdx-subtab" data-dtab="participantes" role="tab">' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></button>' +
         '<button type="button" class="cdx-subtab" data-dtab="aulas" role="tab">' + _esc(t('cohorts.col_aulas')) + '</button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="liberacoes" role="tab">' + _esc(t('cohorts.doss_liberacoes')) + '</button>' +
+        '<button type="button" class="cdx-subtab" data-dtab="tarefas" role="tab">' + _esc(t('cohorts.doss_tarefas')) + '</button>' +
         '<button type="button" class="cdx-subtab" data-dtab="certs" role="tab">' + _esc(t('cohorts.doss_certs')) + '</button>' +
         '<button type="button" class="cdx-subtab" data-dtab="forum" role="tab">' + _esc(t('cohorts.doss_forum')) + '</button>' +
       '</div></div>' +
@@ -1302,6 +1309,14 @@ function _renderDossier(turma) {
       '<div class="cdx-doss-panel" data-dpanel="aulas" hidden>' +
         '<div id="' + IDS.aulasList + '"><div class="cdx-empty">' + _esc(t('cohorts.loading_aulas')) + '</div></div>' +
       '</div>' +
+      // Liberações panel: the aula-centric release composer, turma-bound (no picker).
+      '<div class="cdx-doss-panel cdx-doss-panel--embed" data-dpanel="liberacoes" hidden>' +
+        '<div id="cdx-doss-liberacoes"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
+      '</div>' +
+      // Tarefas panel: this turma's released assignments + answers, turma-bound.
+      '<div class="cdx-doss-panel cdx-doss-panel--embed" data-dpanel="tarefas" hidden>' +
+        '<div id="cdx-doss-tarefas"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
+      '</div>' +
       // Certificados panel.
       '<div class="cdx-doss-panel" data-dpanel="certs" hidden>' +
         '<div class="cdx-doss-sec-actions"><a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
@@ -1326,14 +1341,24 @@ function _renderDossier(turma) {
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
   }));
 
-  // Per-turma sub-tab switching: show the picked panel, hide the rest. The loaders
-  // below already fire on mount, so switching is pure show/hide (no re-fetch).
+  // Per-turma sub-tab switching: show the picked panel, hide the rest. Most loaders
+  // fire eagerly on mount, so switching is pure show/hide. The two heavier surfaces
+  // (Liberações + Tarefas fetch the whole library) mount LAZILY on first open.
   const _dtabs = el.querySelectorAll('.cdx-subtab[data-dtab]');
   const _dpanels = el.querySelectorAll('.cdx-doss-panel[data-dpanel]');
+  // The modules take a turma-bound mount via { clientSlug, turmaSlug } (the port
+  // foundation), which hides their picker and loads this turma straight in.
+  const _embed = { clientSlug: turma.client_slug, turmaSlug: turma.slug };
+  const _lazyMount = {
+    liberacoes: () => { const e = el.querySelector('#cdx-doss-liberacoes'); if (e) releasesAdmin.mount(e, _embed); },
+    tarefas: () => { const e = el.querySelector('#cdx-doss-tarefas'); if (e) tarefasAdmin.mount(e, _embed); },
+  };
+  const _mounted = {};
   _dtabs.forEach((tab) => tab.addEventListener('click', () => {
     const key = tab.dataset.dtab;
     _dtabs.forEach((x) => x.classList.toggle('active', x === tab));
     _dpanels.forEach((p) => { p.hidden = p.dataset.dpanel !== key; });
+    if (_lazyMount[key] && !_mounted[key]) { _mounted[key] = true; _lazyMount[key](); }
   }));
 
   _wireDossierInlineEdit(el, turma);

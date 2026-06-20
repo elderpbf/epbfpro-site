@@ -15,6 +15,7 @@ const css = read('../trilha/css/entrar.css');
 const js = read('../trilha/js/entrar.js');
 const htaccess = read('../../trilha/.htaccess');
 const i18n = read('../trilha/i18n.js');
+const home = read('../../index.html');
 
 test('entrar rides Codex chrome, no backstage in the appearance layer', () => {
   assert.ok(!/backstage\/(css|js)\//.test(html), 'no backstage CSS/JS');
@@ -54,6 +55,11 @@ test('the served copy is in sync and the 4-digit route is wired', () => {
   assert.equal(served, html, 'Site/trilha/entrar.html matches the source copy');
   assert.match(htaccess, /\^\(\[0-9\]\{4\}\)\/\?\$ entrar\.html\?code=\$1/, '/trilha/<4-digit> routes to entrar.html');
   assert.match(htaccess, /\^\$ entrar\.html/, 'bare /trilha/ falls back to the manual entry form');
+});
+
+test('the homepage offers an Área do Aluno entry to /trilha/entrar', () => {
+  assert.match(home, /href="\/trilha\/entrar"/, 'homepage links to the student entry page');
+  assert.match(home, /aria-label="Área do Aluno"/, 'the entry is labelled for students');
 });
 
 test('entrar i18n keys exist in both pt and en', () => {
