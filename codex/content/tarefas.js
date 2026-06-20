@@ -16,6 +16,7 @@ import { getField, listFields } from '../js/tarefa-fields.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as turmaPicker from './turma-picker.js';
+import { installResizer } from '../js/resizable.js';
 
 const LS_CLIENT = 'ct_admin_tarefas_last_client';
 const LS_TURMA = 'ct_admin_tarefas_last_turma';
@@ -578,6 +579,8 @@ export function mount(viewEl, ctx = {}) {
   _selectedId = null;
   _cleanup = [];
   _renderShell();
+  // Draggable divider between the tarefa list and the editor/answers (persisted).
+  installResizer(_q('cdx-tarefas-split'), { storeKey: 'cdx_rz_tarefas_split', defaultPx: 380, min: 260, max: 680 });
   // Embedded in a turma dossiê (ctx.clientSlug/turmaSlug given): turma already chosen,
   // hide the picker and load it. Standalone (Content tab): the picker drives selection.
   if (ctx.clientSlug && ctx.turmaSlug) {

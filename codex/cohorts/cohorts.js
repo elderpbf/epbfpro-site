@@ -12,6 +12,7 @@ import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
+import { installResizer } from '../js/resizable.js';
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
 // Turma-scoped management surfaces, mounted turma-bound into the dossier sub-tabs
@@ -246,6 +247,9 @@ function _renderShell() {
   _q(IDS.list).addEventListener('click', _onListClick);
   const searchEl = _q(IDS.search);
   if (searchEl) searchEl.addEventListener('input', () => { _turmaSearch = searchEl.value; _renderList(); });
+  // Draggable divider between the clientes/turmas pane and the dossiê (persisted).
+  const pane = _viewEl.querySelector('.cdx-three-pane');
+  if (pane) installResizer(pane, { storeKey: 'cdx_rz_cohorts_nav', defaultPx: 300, min: 220, max: 520 });
 }
 
 // ── Merged list: clients + their turmas (Concept A) ───────────────────────────

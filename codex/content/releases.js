@@ -14,6 +14,7 @@ import { aulaStatus } from '../js/aula-status.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as turmaPicker from './turma-picker.js';
+import { installResizer } from '../js/resizable.js';
 
 const LS_CLIENT = 'ct_admin_releases_last_client';
 const LS_TURMA = 'ct_admin_releases_last_turma';
@@ -698,6 +699,8 @@ export function mount(viewEl, ctx = {}) {
   _selectedAula = null;
   _cleanup = [];
   _renderShell();
+  // Draggable divider between the aula list and the composer (persisted).
+  installResizer(_q('cdx-releases-split'), { storeKey: 'cdx_rz_releases_split', defaultPx: 380, min: 260, max: 680 });
   contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(_err(e)); });
   // Embedded in a turma dossiê (ctx.clientSlug/turmaSlug given): the turma is already
   // chosen, so hide the picker and load straight into it. Standalone (Content tab): the
