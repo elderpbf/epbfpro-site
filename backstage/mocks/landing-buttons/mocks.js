@@ -15,6 +15,10 @@ window.REVIEW_MANIFEST = {
       { id: 'a', file: 'a.html', label: 'A · Pílulas rotuladas (+ Codex por e-mail)' },
       { id: 'b', file: 'b.html', label: 'B · Copy direta (+ Codex bookmark)' },
       { id: 'c', file: 'c.html', label: 'C · Enxuto (+ Codex logo secreto)' }
+    ]},
+    { label: 'Revisão 2 · botões iguais + idioma colapsado', items: [
+      { id: 'd', file: 'd.html', label: 'D · Acessar minha trilha + Contato · idioma = globo' },
+      { id: 'e', file: 'e.html', label: 'E · idem · idioma = pill "PT ▾"' }
     ]}
   ]
 };

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login /trilha · E · 2 campos + continuar discreto</title>
+
+<link rel="stylesheet" href="/codex/css/theme.css?v=1.3">
+<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/tarefa-modal.css?v=1.3">
+
+<script src="/codex/js/theme-manager.js?v=1.0"></script>
+<script>ThemeManager.initPublic({ storageKey: 'trilha_theme', defaultTheme: 'light' });</script>
+
+<style>
+  /* Direção E (feedback Élder) — mesmo modelo da D (sem hub; entra na última turma;
+     os dois campos sempre abertos), mas o "Continuar" é DISCRETO: os dois campos são
+     o herói da tela e quem volta vê só uma pílula fininha em cima ("você estava em…").
+     Pra quem dá mais peso a "entrar numa turma" do que a "voltar". */
+  .lg-page { max-width: 720px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+
+  .lg-head { text-align: center; margin-bottom: 1.2rem; }
+  .lg-eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); }
+  .lg-title { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; margin: .25rem 0 0; }
+
+  /* pílula "continuar" discreta (só pra quem volta) */
+  .lg-back { display: flex; align-items: center; gap: .55rem; width: max-content; max-width: 100%; margin: 0 auto 1.2rem; padding: .5rem .9rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); text-decoration: none; font-size: .82rem; color: var(--text-secondary); box-shadow: 0 8px 22px -16px var(--shadow); }
+  .lg-back:hover { border-color: var(--primary); }
+  .lg-back .lg-back-av { width: 24px; height: 24px; border-radius: 7px; background: var(--background); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: .62rem; color: var(--text-secondary); flex-shrink: 0; }
+  .lg-back b { color: var(--text-primary); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lg-back .go { color: var(--primary); font-weight: 800; flex-shrink: 0; }
+
+  .lg-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .lg-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.4rem 1.3rem; box-shadow: 0 18px 48px -22px var(--shadow); display: flex; flex-direction: column; }
+  .lg-path-ic { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; margin-bottom: .8rem; }
+  .lg-path-ic--code { background: rgba(59,130,246,0.14); color: #2563eb; }
+  .lg-path-ic--mail { background: rgba(20,184,166,0.14); color: #0d9488; }
+  [data-theme="dark"] .lg-path-ic--code { background: rgba(59,130,246,0.24); color: #93c5fd; }
+  [data-theme="dark"] .lg-path-ic--mail { background: rgba(20,184,166,0.22); color: #5eead4; }
+  .lg-path-h { font-size: 1.02rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .25rem; }
+  .lg-path-p { font-size: .82rem; color: var(--text-secondary); line-height: 1.45; margin: 0 0 .9rem; }
+  .lg-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: .95rem; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .7rem .85rem; }
+  .lg-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
+  .lg-input--code { font-size: 1.4rem; font-weight: 800; letter-spacing: .3em; text-align: center; }
+  .lg-cta { width: 100%; justify-content: center; margin-top: auto; }
+  .lg-spacer { height: .7rem; }
+
+  .lg-model { margin: 1.4rem auto 0; max-width: 560px; border: 1px dashed var(--border); border-radius: 12px; padding: .7rem .9rem; font-size: .76rem; color: var(--text-secondary); line-height: 1.55; text-align: center; }
+  .lg-model b { color: var(--text-primary); }
+
+  .lg-foot { margin-top: 1.6rem; text-align: center; font-size: .78rem; color: var(--text-secondary); }
+  .lg-foot a { color: var(--primary); text-decoration: none; }
+
+  body.st-new .lg-back { display: none; }
+
+  .lg-switch { position: fixed; top: 74px; right: 12px; z-index: 50; display: flex; gap: 5px; align-items: center; background: var(--surface); border: 1px dashed var(--danger, #dc2626); border-radius: 10px; padding: 6px 8px; box-shadow: 0 10px 26px -14px var(--shadow); }
+  .lg-switch small { color: var(--text-secondary); font-size: .66rem; text-transform: uppercase; letter-spacing: .06em; }
+  .lg-switch button { font-family: inherit; font-size: .72rem; padding: 3px 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--background); color: var(--text-primary); cursor: pointer; }
+  .lg-switch button.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  @media (max-width: 620px) { .lg-paths { grid-template-columns: 1fr; } .lg-title { font-size: 1.3rem; } }
+</style>
+</head>
+<body class="st-ret">
+
+<pensoia-header mode="student" theme-storage-key="trilha_theme"></pensoia-header>
+
+<div class="lg-switch">
+  <small>estado</small>
+  <button data-st="ret">Retornando</button>
+  <button data-st="new">Novo</button>
+</div>
+
+<div class="lg-page">
+
+  <div class="lg-head">
+    <span class="lg-eyebrow">Área do Aluno</span>
+    <h1 class="lg-title">Acesse sua trilha</h1>
+  </div>
+
+  <a class="lg-back" href="#">
+    <span class="lg-back-av">TJ</span>
+    <span>você estava em <b>IA na Prática Jurídica</b></span>
+    <span class="go">continuar →</span>
+  </a>
+
+  <div class="lg-paths">
+    <div class="lg-card">
+      <div class="lg-path-ic lg-path-ic--code">#</div>
+      <h3 class="lg-path-h">Tenho um código</h3>
+      <p class="lg-path-p">Os 4 dígitos que aparecem na tela da aula ao vivo.</p>
+      <input class="lg-input lg-input--code" maxlength="4" placeholder="0000" inputmode="numeric">
+      <div class="lg-spacer"></div>
+      <button class="tr-btn tr-btn-primary lg-cta">Entrar</button>
+    </div>
+    <div class="lg-card">
+      <div class="lg-path-ic lg-path-ic--mail">@</div>
+      <h3 class="lg-path-h">Entrar com e-mail</h3>
+      <p class="lg-path-p">Você recebe um código de 4 letras pra confirmar. Sem senha.</p>
+      <input class="lg-input" type="email" placeholder="voce@exemplo.com" inputmode="email">
+      <div class="lg-spacer"></div>
+      <button class="tr-btn tr-btn-primary lg-cta">Enviar código</button>
+    </div>
+  </div>
+
+  <div class="lg-model">
+    <b>Modelo:</b> sem lista de "minhas turmas" aqui. Quem volta tem a pílula <b>continuar</b> (última turma); trocar entre turmas já salvas é dentro da trilha. Os dois campos ficam sempre abertos pra entrar numa turma nova.
+  </div>
+
+  <footer class="lg-foot">Feito com PensoIA · <a href="https://pensoia.com" target="_blank" rel="noopener">pensoia.com</a></footer>
+</div>
+
+<script type="module" src="/codex/trilha/js/pensoia-header.js"></script>
+<script>
+  (function () {
+    var sw = document.querySelector('.lg-switch');
+    function set(n) {
+      document.body.className = 'st-' + n;
+      sw.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-st') === n); });
+    }
+    sw.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { set(b.getAttribute('data-st')); }); });
+    set('ret');
+  })();
+</script>
+</body>
+</html>

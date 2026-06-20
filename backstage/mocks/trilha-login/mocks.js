@@ -17,6 +17,10 @@ window.REVIEW_MANIFEST = {
       { id: 'a', file: 'a.html', label: 'A · Launcher (hub primeiro)' },
       { id: 'b', file: 'b.html', label: 'B · Dois caminhos' },
       { id: 'c', file: 'c.html', label: 'C · Mínimo (código em foco)' }
+    ]},
+    { label: 'Revisão 2 · entra na última turma, 2 campos sempre abertos (sem hub)', items: [
+      { id: 'd', file: 'd.html', label: 'D · Faixa "Continuar" + 2 campos' },
+      { id: 'e', file: 'e.html', label: 'E · 2 campos no foco + continuar discreto' }
     ]}
   ]
 };
