@@ -55,7 +55,7 @@ function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').r
 //   initials : the student's avatar initials
 //   turmaKey : storage scope (client/turma)
 //   onChange : called after a toggle, with the new prefs (so the bell re-filters)
-export function createNotifSettings({ initials, turmaKey, onChange, btnClass = 'ph-action-btn' }) {
+export function createNotifSettings({ initials, turmaKey, onChange, onLogout, showPrefs = true, btnClass = 'ph-action-btn' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-ns-wrap';
 
@@ -69,22 +69,28 @@ export function createNotifSettings({ initials, turmaKey, onChange, btnClass = '
     '</label>';
   }).join('');
 
+  // The button is just the initials ball (no gear glyph, no pill background — see
+  // notif-bell.css). The panel holds the notif prefs (only when showPrefs, i.e. there's
+  // a notification source) and the Sair (logout) action at the bottom.
   wrap.innerHTML =
     '<button type="button" class="' + btnClass + ' cdx-ns-btn" aria-label="' + escAttr(t('notif.settings_title')) + '">' +
       '<span class="cdx-ns-initials">' + escAttr(initials || '·') + '</span>' +
-      '<span class="cdx-ns-gear">' + GEAR_SVG + '</span>' +
     '</button>' +
     '<div class="cdx-ns-panel" hidden role="menu">' +
-      '<div class="cdx-ns-head">' + escAttr(t('notif.settings_title')) + '</div>' +
-      '<div class="cdx-ns-opts">' + optsHtml() + '</div>' +
+      (showPrefs
+        ? '<div class="cdx-ns-head">' + escAttr(t('notif.settings_title')) + '</div>' +
+          '<div class="cdx-ns-opts">' + optsHtml() + '</div>'
+        : '') +
+      (onLogout ? '<button type="button" class="cdx-ns-logout">' + escAttr(t('login.logout')) + '</button>' : '') +
     '</div>';
 
   const btn = wrap.querySelector('.cdx-ns-btn');
   const panel = wrap.querySelector('.cdx-ns-panel');
   const opts = wrap.querySelector('.cdx-ns-opts');
 
-  function repaintOpts() { opts.innerHTML = optsHtml(); bindOpts(); }
+  function repaintOpts() { if (!opts) return; opts.innerHTML = optsHtml(); bindOpts(); }
   function bindOpts() {
+    if (!opts) return;
     opts.querySelectorAll('input[data-ns]').forEach((cb) => {
       cb.addEventListener('change', () => {
         prefs = { ...prefs, [cb.getAttribute('data-ns')]: cb.checked };
@@ -100,6 +106,9 @@ export function createNotifSettings({ initials, turmaKey, onChange, btnClass = '
   function close() { panel.hidden = true; document.removeEventListener('click', onOutside, true); }
   function onOutside(e) { if (!wrap.contains(e.target)) close(); }
   btn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); if (panel.hidden) open(); else close(); });
+
+  const logoutBtn = wrap.querySelector('.cdx-ns-logout');
+  if (logoutBtn && onLogout) logoutBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onLogout(); });
 
   return { el: wrap, getPrefs: () => prefs };
 }

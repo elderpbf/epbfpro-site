@@ -213,52 +213,58 @@ function renderHeaderActions() {
       prepend(wa);
     }
 
-    // The login pill shows only on a gated turma; open turmas need no login UI and
-    // stay visually unchanged when LOGIN_ENABLED flips on.
-    if (LOGIN_ENABLED && data.access && data.access.gated) {
+    // Login pill: ONLY for an ANONYMOUS student on a gated turma (a returning student who
+    // wants to log in instead of registering at the wall). When logged in, the logout lives
+    // inside the settings box (below), so there is no standalone "Sair" pill (Élder).
+    if (LOGIN_ENABLED && data.access && data.access.gated && !state.sessionToken) {
       _loginPill = buildLoginPill();
       prepend(_loginPill);
     }
 
-    // Notification bell + preferences (student): the bell is a CONSEQUENCE of a
-    // notification-emitting feature being on (today: the forum), not a separate
-    // toggle. So it shows when the forum is enabled AND the student is logged in
-    // (notifications are computed against their identity). Scoped to this turma. The
-    // bell filters the server's pending list by the student's chosen categories;
-    // clicking an item opens the Fórum tab + thread IN PLACE (no reload). The gear
-    // button edits which events notify.
-    if (data.turma && data.turma.forum_enabled && state.sessionToken) {
+    // Settings box (the initials avatar) whenever the student is logged in on a gated
+    // turma: it carries the logout (ALWAYS) plus the notif prefs (only when the forum is
+    // on, the sole notification source today). The bell shows only with the forum. Header
+    // order: bell + theme toggle stay on the LEFT; the settings gear sits on the RIGHT,
+    // appended AFTER the theme toggle (Élder).
+    if (LOGIN_ENABLED && state.sessionToken && data.access && data.access.gated) {
       const turmaKey = state.clientSlug + '/' + state.turmaSlug;
-      const bell = createBell({
-        fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true })
-          .then((res) => {
-            const items = filterByPrefs((res && res.items) || [], getPrefs(turmaKey));
-            return { count: items.length, items };
-          }),
-        markSeen: () => trail.forumMarkSeen({ session_token: state.sessionToken }),
-        onNavigate: (item) => {
-          // Already on this turma's page: just switch to the Fórum tab and open the
-          // thread (the worker stamps thread_id). Falls back to the token-preserving
-          // deeplink only if the id is somehow missing. Dynamic import dodges the cycle.
-          if (item && item.thread_id) { import('./forum.js').then((m) => m.focusThread(item.thread_id)); return; }
-          if (item && item.deeplink && typeof location !== 'undefined') {
-            let url = item.deeplink;
-            if (state.token) url += (url.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(state.token);
-            location.href = url;
-          }
-        },
-        t,
-        btnClass: 'ph-action-btn',
-      });
+      let bell = null;
+      if (data.turma && data.turma.forum_enabled) {
+        bell = createBell({
+          fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true })
+            .then((res) => {
+              const items = filterByPrefs((res && res.items) || [], getPrefs(turmaKey));
+              return { count: items.length, items };
+            }),
+          markSeen: () => trail.forumMarkSeen({ session_token: state.sessionToken }),
+          onNavigate: (item) => {
+            // Already on this turma's page: just switch to the Fórum tab and open the
+            // thread (the worker stamps thread_id). Falls back to the token-preserving
+            // deeplink only if the id is somehow missing. Dynamic import dodges the cycle.
+            if (item && item.thread_id) { import('./forum.js').then((m) => m.focusThread(item.thread_id)); return; }
+            if (item && item.deeplink && typeof location !== 'undefined') {
+              let url = item.deeplink;
+              if (state.token) url += (url.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(state.token);
+              location.href = url;
+            }
+          },
+          t,
+          btnClass: 'ph-action-btn',
+        });
+        prepend(bell.el); // bell to the left of the theme toggle
+      }
       const settings = createNotifSettings({
         initials: avatarInitials((data.participant || {}).display_name || (data.participant || {}).name),
         turmaKey,
-        onChange: () => bell.refresh(),
+        showPrefs: !!(data.turma && data.turma.forum_enabled),
+        onChange: () => { if (bell) bell.refresh(); },
+        onLogout: () => {
+          clearToken(state.clientSlug, state.turmaSlug);
+          if (typeof location !== 'undefined' && location.reload) location.reload();
+        },
         btnClass: 'ph-action-btn',
       });
-      // Order in the header: bell first, then the gear (prepend reverses, so gear last).
-      prepend(settings.el);
-      prepend(bell.el);
+      phRight.appendChild(settings.el); // the gear sits to the RIGHT of the theme toggle
     }
   })();
 }

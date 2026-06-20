@@ -61,6 +61,9 @@
    notification surface. cdx-ns- prefix. */
 .cdx-ns-wrap { position: relative; display: inline-flex; }
 .cdx-ns-btn { display: inline-flex; align-items: center; gap: .35rem; }
+/* The settings button is just the initials ball — strip the .ph-action-btn pill
+   (no background, border, padding, shadow) so only the gradient avatar shows. */
+pensoia-header .ph-action-btn.cdx-ns-btn { background: none; border: none; padding: 0; box-shadow: none; min-width: 0; }
 .cdx-ns-initials {
   display: inline-flex; align-items: center; justify-content: center;
   width: 22px; height: 22px; border-radius: 50%;
@@ -90,8 +93,15 @@
 .cdx-ns-opt--off { opacity: .5; cursor: default; }
 .cdx-ns-opt--off:hover { background: none; }
 
+/* Sair (logout) row at the bottom of the settings panel. */
+.cdx-ns-logout {
+  width: 100%; padding: .7rem 1rem; border: none; border-top: 1px solid var(--border);
+  background: none; color: var(--error); font-family: inherit; font-size: .86rem; font-weight: 700;
+  text-align: left; cursor: pointer;
+}
+.cdx-ns-logout:hover { background: rgba(220, 38, 38, 0.07); }
+
 /* On the Trilha header, public-header.css hides inner <span>s of .ph-action-btn at
    <=560px (icon-only mode). The settings button IS made of spans (initials + gear),
    so keep them visible. Specificity beats the icon-only rule. */
-pensoia-header .ph-action-btn .cdx-ns-initials,
-pensoia-header .ph-action-btn .cdx-ns-gear { display: inline-flex; }
+pensoia-header .ph-action-btn .cdx-ns-initials { display: inline-flex; }

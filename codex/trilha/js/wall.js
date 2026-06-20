@@ -102,10 +102,13 @@ export function renderWall(root) {
   const content = main.querySelector('.cdx-trilha-tabcontent');
   if (tabs) tabs.hidden = true;
   if (content) content.hidden = true;
-  let wall = main.querySelector('.cdx-tr-wall');
+  let wall = main.querySelector('.cdx-en-wall');
   if (!wall) {
     wall = document.createElement('section');
-    wall.className = 'cdx-tr-wall';
+    // cdx-en-wall (NOT cdx-tr-wall): the tarefa modal's login overlay owns .cdx-tr-wall
+    // with display:flex, which leaked onto this section and turned the grid + questions
+    // line into side-by-side columns. The registration wall uses its own en- name.
+    wall.className = 'cdx-en-wall';
     const footer = main.querySelector('.cdx-trilha-footer');
     main.insertBefore(wall, footer || null);
   }
