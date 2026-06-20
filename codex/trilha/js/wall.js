@@ -43,13 +43,19 @@ export function wallRoadmapRows(aulas) {
 }
 
 // Inline register error code -> student-facing message (the code step).
-function errorText(code) {
+function errorText(code, retryAfter) {
   if (!code) return '';
   if (code === 'email_invalid') return t('login.email_invalid');
-  if (code === 'rate_limited') return t('login.rate_limited');
+  if (code === 'rate_limited') return rateLimitedText(retryAfter);
   if (code === 'invalid_code') return t('login.code_invalid');
   if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
   return t('login.error');
+}
+
+// "Aguarde ~X min" when the worker returns a retry window; a generic wait otherwise.
+function rateLimitedText(retryAfter) {
+  if (retryAfter && retryAfter > 0) return t('login.rate_limited_min').replace('{min}', String(Math.max(1, Math.ceil(retryAfter / 60))));
+  return t('login.rate_limited');
 }
 
 // Benefit icons, ported verbatim from the a1 mock.
@@ -194,7 +200,7 @@ function renderRegister(wall) {
           '<label class="cdx-en-label" for="cdx-en-email">' + esc(t('login.email_label')) + '</label>' +
           '<input id="cdx-en-email" class="cdx-en-input" type="email" autocomplete="email" inputmode="email" placeholder="' + esc(t('login.email_placeholder')) + '">' +
         '</div>' +
-        '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
+        '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
         '<button type="button" class="tr-btn tr-btn-primary cdx-en-cta">' + esc(t('wall.cta')) + '</button>' +
         '<p class="cdx-en-nopass">' + esc(t('wall.nopass')) + '</p>' +
         '<p class="cdx-en-haveacct">' + esc(t('wall.have_account')) + '</p>' +
@@ -238,7 +244,7 @@ function renderRegister(wall) {
           '<input id="cdx-en-code" class="cdx-en-input" type="text" maxlength="4" autocapitalize="characters" autocomplete="one-time-code" placeholder="' + esc(t('login.code_ph')) + '">' +
         '</div>' +
         dev +
-        '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
+        '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
         '<button type="button" class="tr-btn tr-btn-primary cdx-en-cta">' + esc(t('login.verify')) + '</button>' +
         '<button type="button" class="cdx-en-resend" data-resend>' + esc(t('login.resend')) + '</button>' +
       '</div>';

@@ -12,10 +12,14 @@ import { createLoginFlow, flowOptsFrom } from './student-login.js';
 import { esc } from './utils.js';
 
 // Map a flow error code to a student-facing message (display glue).
-function errorText(code) {
+function errorText(code, retryAfter) {
   if (!code) return '';
   if (code === 'email_invalid') return t('login.email_invalid');
   if (code === 'consent_required') return t('login.consent_required');
+  if (code === 'rate_limited') {
+    if (retryAfter && retryAfter > 0) return t('login.rate_limited_min').replace('{min}', String(Math.max(1, Math.ceil(retryAfter / 60))));
+    return t('login.rate_limited');
+  }
   if (code === 'invalid_code') return t('login.code_invalid');
   if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
   if (code === 'access_blocked') return t('login.denied_body');
@@ -88,7 +92,7 @@ export function openLoginModal(opts = {}) {
           '<span>' + esc(t('login.consent_label')) + '</span>' +
         '</label>' +
       '</div>' +
-      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
+      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
         '<button type="button" class="tr-btn tr-btn-primary tr-en-join">' + esc(t('login.enroll_cta')) + '</button>' +
       '</div>';
@@ -112,7 +116,7 @@ export function openLoginModal(opts = {}) {
       '<p class="tr-login-subtitle">' + esc(t('login.subtitle')) + '</p>' +
       '<label class="tr-tarefa-field-label" for="tr-login-email">' + esc(t('login.email_label')) + '</label>' +
       '<input id="tr-login-email" type="email" class="tr-tarefa-name tr-login-email" placeholder="' + esc(t('login.email_placeholder')) + '" autocomplete="email" inputmode="email">' +
-      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
+      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
         '<button type="button" class="tr-btn tr-btn-primary tr-login-send">' + esc(t('login.send_code')) + '</button>' +
       '</div>';
@@ -142,7 +146,7 @@ export function openLoginModal(opts = {}) {
       '<label class="tr-tarefa-field-label" for="tr-login-code">' + esc(t('login.code_label')) + '</label>' +
       '<input id="tr-login-code" type="text" class="tr-tarefa-name tr-login-code" placeholder="' + esc(t('login.code_ph')) + '" autocomplete="one-time-code" inputmode="text" maxlength="4" autocapitalize="characters">' +
       dev +
-      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
+      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
         '<button type="button" class="tr-btn tr-btn-primary tr-login-verify">' + esc(t('login.verify')) + '</button>' +
         '<button type="button" class="tr-btn tr-btn-ghost tr-login-resend">' + esc(t('login.resend')) + '</button>' +
@@ -192,7 +196,7 @@ export function openLoginModal(opts = {}) {
           '<span>' + esc(t('login.consent_label')) + '</span>' +
         '</label>' +
       '</div>' +
-      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error)) + '</div>' +
+      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
         '<button type="button" class="tr-btn tr-btn-primary tr-login-finish">' + esc(t('login.finish')) + '</button>' +
       '</div>';
@@ -211,7 +215,7 @@ export function openLoginModal(opts = {}) {
   function renderError() {
     bodyEl.innerHTML =
       '<h2 class="tr-modal-title">' + esc(t('login.title')) + '</h2>' +
-      '<div class="tr-tarefa-error tr-login-error">' + esc(errorText(flow.error)) + '</div>' +
+      '<div class="tr-tarefa-error tr-login-error">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
         '<button type="button" class="tr-btn tr-btn-primary tr-login-retry">' + esc(t('login.send_code')) + '</button>' +
       '</div>';

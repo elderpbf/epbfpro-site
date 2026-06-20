@@ -41,11 +41,14 @@ export function buildTurmaUrl(entry, origin) {
 }
 
 // Inline OTP error code -> student-facing message.
-function entryErrorText(code) {
+function entryErrorText(code, retryAfter) {
   if (!code) return '';
   if (code === 'email_invalid') return t('login.email_invalid');
   if (code === 'email_not_enrolled') return t('entrar.no_turmas');
-  if (code === 'rate_limited') return t('login.rate_limited');
+  if (code === 'rate_limited') {
+    if (retryAfter && retryAfter > 0) return t('login.rate_limited_min').replace('{min}', String(Math.max(1, Math.ceil(retryAfter / 60))));
+    return t('login.rate_limited');
+  }
   if (code === 'invalid_code') return t('login.code_invalid');
   if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
   return t('login.error');
@@ -119,7 +122,7 @@ function startEmail(emailEl, root) {
       send.textContent = t('login.sending');
       await flow.requestCode(input.value);
       if (flow.state === 'code') { renderCode(); return; }
-      err.textContent = entryErrorText(flow.error);
+      err.textContent = entryErrorText(flow.error, flow.retryAfter);
       send.disabled = false;
       send.textContent = t('login.send_code');
     };
@@ -159,7 +162,7 @@ function startEmail(emailEl, root) {
         location.href = buildTurmaUrl(turmas[0]);
         return;
       }
-      err.textContent = entryErrorText(flow.error);
+      err.textContent = entryErrorText(flow.error, flow.retryAfter);
       verify.disabled = false;
     };
     verify.addEventListener('click', doVerify);
@@ -176,7 +179,7 @@ function startEmail(emailEl, root) {
         err.classList.add('cdx-entrar-ok');
         err.textContent = t('login.resend_sent');
       } else {
-        err.textContent = entryErrorText(flow.error);
+        err.textContent = entryErrorText(flow.error, flow.retryAfter);
       }
       resend.disabled = false;
     });

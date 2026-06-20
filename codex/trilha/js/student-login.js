@@ -73,7 +73,12 @@ export function flowOptsFrom(opts, origin) {
 // branch here already handles. The error itself was already logged by callWorker.
 async function safeCall(promise) {
   try { return await promise; }
-  catch (e) { return { error: (e && e.data && e.data.error) || (e && e.message) || 'error' }; }
+  catch (e) {
+    // Keep the whole worker payload (error + extras like retry_after_seconds), not just
+    // the code, so the UI can say "aguarde ~X min" on a rate-limit.
+    if (e && e.data && typeof e.data === 'object') return e.data;
+    return { error: (e && e.message) || 'error' };
+  }
 }
 
 // Build a login flow. `client`/`turma` BIND it to one turma (the wall + the inline
@@ -91,6 +96,7 @@ export function createLoginFlow(opts = {}) {
   const flow = {
     state: 'anonymous',
     error: null,
+    retryAfter: null,     // seconds to wait after a rate-limit (drives the "aguarde ~X min" copy)
     email: null,
     devCode: null,        // the on-screen code when no e-mail provider is wired (staging)
     turmas: null,         // the verify turma list (the hub on the entry page)
@@ -102,6 +108,7 @@ export function createLoginFlow(opts = {}) {
     // the address, not a turma), so only the email travels.
     async requestCode(rawEmail) {
       this.error = null;
+      this.retryAfter = null;
       const email = validateEmail(rawEmail);
       if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
       this.email = email;
@@ -113,7 +120,7 @@ export function createLoginFlow(opts = {}) {
       if (client && turma) { reqParams.client_slug = client; reqParams.turma_slug = turma; }
       else { reqParams.require_enrolled = true; }
       const res = await safeCall(api.otpRequest(reqParams));
-      if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
+      if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; this.retryAfter = (res && res.retry_after_seconds) || null; return this; }
       this.devCode = res.dev_otp_code || null;
       this.state = 'code';
       return this;
