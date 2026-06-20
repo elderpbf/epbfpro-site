@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula hub · comparar A / B / C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#14b8a6; --primary-dark:#0d9488; --navy:#061a51;
+    --bg:#d4f4ed; --surface:#fff; --ink:#134e4a; --ink2:#115e59; --muted:#5b7975;
+    --border:#e2e8f0; --shadow:rgba(20,184,166,.12);
+    --green:#10b981; --red:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:1500px;margin:0 auto;padding:1.4rem 1.6rem 4rem}
+  h1{font-size:1.4rem;color:var(--navy);margin:0 0 .2rem}
+  .lead{font-size:.9rem;color:var(--ink2);max-width:760px;line-height:1.5;margin:0 0 1.2rem}
+  .lead b{color:var(--navy)}
+  .ctx{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.8rem 1rem;font-size:.84rem;color:var(--ink2);margin-bottom:1.4rem;line-height:1.5}
+  .ctx b{color:var(--primary-dark)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+  @media(max-width:1100px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 22px var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .ch{padding:.85rem 1rem;border-bottom:1px solid var(--border)}
+  .ch .tag{font-size:.72rem;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:.05em}
+  .ch h2{margin:.15rem 0 0;font-size:1.05rem;color:var(--navy)}
+  .ch p{margin:.3rem 0 0;font-size:.8rem;color:var(--muted);line-height:1.4}
+  .frame{position:relative;height:440px;background:var(--bg);border-bottom:1px solid var(--border);overflow:hidden}
+  .frame iframe{width:1300px;height:1466px;border:0;transform:scale(.46);transform-origin:top left}
+  .pc{padding:.8rem 1rem;font-size:.82rem}
+  .pc ul{margin:.2rem 0 .6rem;padding-left:1.1rem}
+  .pc li{margin:.15rem 0}
+  .pc .pro::marker{content:"+ ";color:var(--green);font-weight:800}
+  .pc .con::marker{content:"− ";color:var(--red);font-weight:800}
+  .open{display:inline-flex;align-items:center;gap:.35rem;text-decoration:none;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:9px;padding:.45rem .8rem;font-size:.82rem;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Aula hub · 3 caminhos pra conciliar Aulas, Liberações e Tarefas</h1>
+  <p class="lead">A ideia central: a aba <b>Aulas</b> vira o lugar único do trabalho por aula. Cada aula carrega <b>Dados</b> (título, data, carga), <b>Liberações</b> (conteúdo liberado nessa aula) e <b>Tarefas</b> (as tarefas da aula + as respostas da turma, com resposta do instrutor). Liberações e Tarefas deixam de ser abas próprias.</p>
+  <div class="ctx">Com isso o dossiê encolhe pra <b>Dados da turma · Participantes · Aulas · Fórum</b>. A criação de tarefas sai daqui e vira um botão <b>＋ tarefa</b> dentro de <b>Conteúdo → Items</b> (a tarefa fica listada como item, com a tag “Tarefa”). Aqui embaixo, os 3 mocks testam só o <b>layout da aula</b>. Clica em “abrir” pra usar cada um em tela cheia.</div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="ch"><span class="tag">Opção A</span><h2>Colunas redimensionáveis</h2><p>Lista de aulas à esquerda (arrastável), detalhe à direita com sub-abas Dados / Liberações / Tarefas.</p></div>
+      <div class="frame"><iframe src="a.html" loading="lazy"></iframe></div>
+      <div class="pc">
+        <ul>
+          <li class="pro">Escala bem, mais conteúdo visível ao mesmo tempo</li>
+          <li class="pro">Mesma linguagem do resto do dossiê (lista + detalhe)</li>
+          <li class="con">Duas áreas, fica com mais cara de “app”</li>
+        </ul>
+        <a class="open" href="a.html">abrir A em tela cheia →</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><span class="tag">Opção B</span><h2>Coluna única (acordeão)</h2><p>Cada aula é um card; ao abrir, os 3 (Dados / Liberações / Tarefas) aparecem dentro do próprio card.</p></div>
+      <div class="frame"><iframe src="b.html" loading="lazy"></iframe></div>
+      <div class="pc">
+        <ul>
+          <li class="pro">Uma coluna só, o mais simples de ler</li>
+          <li class="pro">Tudo no mesmo fluxo vertical, sem camadas</li>
+          <li class="con">O card fica alto quando aberto, pode empilhar muito</li>
+        </ul>
+        <a class="open" href="b.html">abrir B em tela cheia →</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><span class="tag">Opção C</span><h2>Cards + modal grande</h2><p>Cards de aula enxutos; botões Liberações/Tarefas abrem um modal em 2 colunas com bastante espaço.</p></div>
+      <div class="frame"><iframe src="c.html" loading="lazy"></iframe></div>
+      <div class="pc">
+        <ul>
+          <li class="pro">Lista de aulas limpíssima, espaço máximo no modal</li>
+          <li class="pro">Foca a tarefa do momento sem distração</li>
+          <li class="con">Abre uma camada por cima, mais cliques pro trabalho frequente</li>
+        </ul>
+        <a class="open" href="c.html">abrir C em tela cheia →</a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

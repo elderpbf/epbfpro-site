@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula hub · B — coluna única (acordeão)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#14b8a6; --primary-dark:#0d9488; --navy:#061a51;
+    --bg:#d4f4ed; --surface:#fff; --ink:#134e4a; --ink2:#115e59; --muted:#5b7975;
+    --border:#e2e8f0; --shadow:rgba(20,184,166,.12);
+    --amber:#f59e0b; --blue:#3b82f6; --green:#10b981; --red:#ef4444;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:1rem 1.6rem 4rem}
+  .mockbar{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.8rem;margin-bottom:.4rem}
+  .mockbar b{color:var(--navy)}
+  .mockbar a{color:var(--primary-dark);text-decoration:none;border:1px solid var(--border);border-radius:8px;padding:.2rem .5rem;background:var(--surface)}
+  .mockbar a.on{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none}
+  .cap{font-size:.82rem;color:var(--ink2);margin:.1rem 0 1rem}
+  .cap b{color:var(--navy)}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:9px;padding:.5rem .85rem;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+  .btn:hover{border-color:var(--primary)}
+  .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;box-shadow:0 6px 16px var(--shadow)}
+  .btn-sm{padding:.3rem .55rem;font-size:.75rem}
+
+  .doss-tabs{display:flex;gap:.3rem;border-bottom:2px solid var(--border);margin-bottom:1rem}
+  .doss-tab{padding:.55rem .9rem;font-size:.88rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:default}
+  .doss-tab.on{color:var(--primary-dark);border-bottom-color:var(--primary)}
+  .topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem}
+  .topline b{color:var(--navy);font-size:.95rem}
+
+  /* aula cards, single column accordion */
+  .acard{background:var(--surface);border:1px solid var(--border);border-radius:13px;box-shadow:0 4px 16px var(--shadow);margin-bottom:.6rem;overflow:hidden}
+  .acard.open{border-color:var(--primary)}
+  .ahead{display:flex;align-items:center;gap:.65rem;padding:.7rem .85rem;cursor:pointer}
+  .ahead:hover{background:#f8fcfb}
+  .caret{flex:0 0 auto;color:var(--muted);transition:transform .15s}
+  .acard.open .caret{transform:rotate(90deg)}
+  .anum{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:var(--bg);color:var(--primary-dark);display:grid;place-items:center;font-weight:700}
+  .ainfo{min-width:0;flex:1}
+  .at{font-weight:600;font-size:.92rem}
+  .as{font-size:.74rem;color:var(--muted);display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.12rem}
+  .dte{font-family:var(--mono);font-size:.72rem;color:var(--ink2);background:var(--bg);border-radius:5px;padding:0 .35rem}
+  .cc{display:inline-flex;align-items:center;gap:.2rem;font-size:.72rem;color:var(--ink2)}
+  .st{font-size:.72rem;font-weight:600;margin-left:auto}
+  .st.done{color:var(--green)} .st.now{color:var(--blue)} .st.soon{color:var(--amber)}
+
+  .abody{border-top:1px solid var(--border);display:none}
+  .acard.open .abody{display:block}
+  .subtabs{display:flex;gap:.25rem;padding:.55rem .85rem 0;border-bottom:1px solid var(--border);background:#f8fcfb}
+  .stab{padding:.42rem .8rem;font-size:.82rem;font-weight:600;color:var(--muted);border:1px solid transparent;border-bottom:none;border-radius:9px 9px 0 0;cursor:pointer;display:flex;align-items:center;gap:.35rem}
+  .stab .b{font-size:.66rem;background:var(--bg);color:var(--ink2);border-radius:999px;padding:0 .35rem;font-weight:700}
+  .stab.on{color:var(--primary-dark);background:var(--surface);border-color:var(--border);border-bottom:1px solid var(--surface);margin-bottom:-1px}
+  .pane{padding:.85rem}
+  .pane.hide{display:none}
+
+  .field{margin-bottom:.6rem}
+  .field label{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:.2rem}
+  .field input{width:100%;border:1px solid var(--border);border-radius:8px;padding:.4rem .55rem;font:inherit;font-size:.85rem;background:#f8fcfb}
+  .frow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}
+  .hint{font-size:.76rem;color:var(--muted);margin-top:.2rem}
+
+  .grp{border:1px solid var(--border);border-radius:10px;margin-bottom:.5rem;overflow:hidden}
+  .glabel{display:flex;align-items:center;gap:.4rem;padding:.45rem .6rem;background:#f8fcfb;font-size:.8rem;font-weight:700;cursor:pointer}
+  .glabel .ct{margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:600}
+  .grows{padding:.25rem .35rem}
+  .crow{display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;font-size:.84rem;border-radius:7px}
+  .crow:hover{background:#f7fbfa}
+  .crow input{accent-color:var(--primary);width:15px;height:15px}
+  .tag{font-size:.64rem;font-weight:700;border-radius:5px;padding:0 .3rem;text-transform:uppercase}
+  .tag.tarefa{background:#fff7ed;color:#c2680c;border:1px solid #fed7aa}
+  .saverow{display:flex;justify-content:flex-end;margin-top:.4rem}
+
+  .tcard{border:1px solid var(--border);border-radius:10px;margin-bottom:.5rem;overflow:hidden}
+  .thead{display:flex;align-items:center;gap:.5rem;padding:.55rem .7rem;cursor:pointer}
+  .thead:hover{background:#f8fcfb}
+  .tname{font-weight:600;font-size:.87rem}
+  .tmeta{margin-left:auto;font-size:.74rem;color:var(--muted);display:flex;gap:.5rem;align-items:center}
+  .tbody2{border-top:1px solid var(--border);padding:.55rem .7rem;background:#fbfefe}
+  .tbody2.hide{display:none}
+  .ans{border:1px solid var(--border);border-radius:9px;padding:.45rem .55rem;margin-bottom:.4rem;background:var(--surface)}
+  .ans .who{font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:.4rem}
+  .ans .who .when{margin-left:auto;font-weight:400;color:var(--muted);font-size:.72rem}
+  .ans .txt{font-size:.83rem;color:var(--ink2);margin-top:.25rem;line-height:1.4}
+  .reply{margin-top:.35rem;display:flex;gap:.4rem}
+  .reply input{flex:1;border:1px solid var(--border);border-radius:8px;padding:.32rem .5rem;font:inherit;font-size:.8rem;background:#f8fcfb}
+  .replied{margin-top:.35rem;font-size:.79rem;color:var(--primary-dark);background:rgba(20,184,166,.08);border-radius:8px;padding:.32rem .5rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mockbar">
+    <b>Aula hub</b>
+    <a href="a.html">A · colunas</a>
+    <a class="on" href="b.html">B · acordeão</a>
+    <a href="c.html">C · modal</a>
+    <a href="review.html">comparar →</a>
+  </div>
+  <div class="cap"><b>Opção B.</b> Coluna única. Cada aula é um card colapsado; ao abrir, dentro do próprio card aparecem 3 sub-abas (Dados, Liberações, Tarefas) e o conteúdo se estende embaixo. Sem split, sem modal.</div>
+
+  <div class="doss-tabs">
+    <div class="doss-tab">Dados da turma</div>
+    <div class="doss-tab">Participantes</div>
+    <div class="doss-tab on">Aulas</div>
+    <div class="doss-tab">Fórum</div>
+  </div>
+
+  <div class="topline"><b>Aulas · TJSE 2025.1</b><button class="btn btn-sm btn-primary">＋ Nova aula</button></div>
+  <div id="alist"></div>
+  <div class="acard" style="border-style:dashed"><div class="ahead" style="color:var(--muted)"><span class="anum" style="background:#f1f5f4;color:var(--muted)">▦</span><div class="ainfo"><div class="at">Outros (sem aula)</div><div class="as">itens liberados sem vínculo com encontro · 2 itens</div></div></div></div>
+</div>
+
+<script>
+const AULAS = [
+  { id:1, n:1, title:'Fundamentos e Prompt', date:'03/03', hours:'4h', st:'done', stl:'concluída',
+    lib:{apostila:3, tarefa:1, outros:1}, tarefas:[
+      { name:'Diagnóstico da rotina', count:8, anon:false, answers:[
+        {who:'Ana Beatriz', when:'há 2 dias', txt:'Hoje gasto ~3h/dia revisando petições repetitivas; queria automatizar a triagem inicial.', reply:'Ótimo recorte. Na aula 2 vamos montar um prompt de triagem pra isso.'},
+        {who:'Bruno Almeida', when:'há 2 dias', txt:'Minha maior dor é resumir processos longos com segurança.', reply:null},
+      ]},
+    ]},
+  { id:2, n:2, title:'Riscos e Ferramentas', date:'10/03', hours:'4h', st:'now', stl:'hoje',
+    lib:{apostila:2, tarefa:1, drive:1}, tarefas:[
+      { name:'Mapa de riscos da sua área', count:3, anon:true, answers:[
+        {who:'Anônimo', when:'há 3h', txt:'Risco de vazamento de dados sigilosos ao colar trechos em ferramentas públicas.', reply:null},
+        {who:'Anônimo', when:'há 1h', txt:'Alucinação em citação de jurisprudência inexistente.', reply:null},
+      ]},
+    ]},
+  { id:3, n:3, title:'Laboratório prático', date:'17/03', hours:'4h', st:'soon', stl:'agendada',
+    lib:{}, tarefas:[ { name:'Projeto final', count:0, anon:false, answers:[] } ]},
+];
+const POOL = {
+  apostila:['1. O que é um LLM','2. Anatomia de um prompt','3. Padrões de contexto','4. Cadeia de raciocínio','5. Verificação e revisão'],
+  tarefa:['Diagnóstico da rotina','Mapa de riscos da sua área','Projeto final'],
+  outros:['Slide · Abertura','Slide · Casos reais'],
+  drive:['PDF · Acórdãos selecionados'],
+};
+const state={}; // id -> {open, tab}
+
+function chips(lib){
+  const out=[];
+  if(lib.apostila) out.push(`<span class="cc">▤ ${lib.apostila}</span>`);
+  if(lib.tarefa) out.push(`<span class="cc">✎ ${lib.tarefa}</span>`);
+  if(lib.outros) out.push(`<span class="cc">▦ ${lib.outros}</span>`);
+  if(lib.drive) out.push(`<span class="cc">▢ ${lib.drive}</span>`);
+  return out.join('') || '<span class="cc" style="color:#cbd5e1">sem conteúdo</span>';
+}
+function libComposer(a){
+  const sec=(key,label,items,glyph)=>`
+    <div class="grp"><div class="glabel">${glyph} ${label}<span class="ct">${(a.lib[key]||0)} de ${items.length}</span></div>
+      <div class="grows">${items.map((t,i)=>`<label class="crow"><input type="checkbox" ${i<(a.lib[key]||0)?'checked':''}><span>${t}</span>${key==='tarefa'?'<span class="tag tarefa">tarefa</span>':''}</label>`).join('')}</div></div>`;
+  return sec('apostila','Apostila',POOL.apostila,'▤')+sec('tarefa','Tarefas',POOL.tarefa,'✎')+sec('outros','Slides e outros',POOL.outros,'▦')+sec('drive','Drive',POOL.drive,'▢')+
+    '<div class="saverow"><button class="btn btn-primary btn-sm">Salvar liberações</button></div>';
+}
+function tarefasPane(a){
+  if(!a.tarefas.length) return '<div class="hint">Nenhuma tarefa liberada nesta aula.</div>';
+  return a.tarefas.map((t,ti)=>`
+    <div class="tcard"><div class="thead" data-t="${a.id}-${ti}"><span class="tname">✎ ${t.name}</span><span class="tmeta">${t.anon?'<span class="tag tarefa">anônima</span>':''}<b>${t.count}</b> respostas</span></div>
+      <div class="tbody2 ${ti===0?'':'hide'}">
+        ${t.answers.length?t.answers.map(an=>`<div class="ans"><div class="who">${an.who}<span class="when">${an.when}</span></div><div class="txt">${an.txt}</div>${an.reply?`<div class="replied"><b>Sua resposta:</b> ${an.reply}</div>`:`<div class="reply"><input placeholder="Responder ao aluno…"><button class="btn btn-sm btn-primary">Enviar</button></div>`}</div>`).join(''):'<div class="hint">Ainda sem respostas.</div>'}
+      </div></div>`).join('');
+}
+function render(){
+  document.getElementById('alist').innerHTML = AULAS.map(a=>{
+    const s=state[a.id]||(state[a.id]={open:a.id===2,tab:'dados'});
+    const libN=Object.values(a.lib).reduce((x,v)=>x+v,0)||0;
+    return `<div class="acard ${s.open?'open':''}" data-a="${a.id}">
+      <div class="ahead"><span class="caret">▸</span><span class="anum">${a.n}</span>
+        <div class="ainfo"><div class="at">${a.title}</div><div class="as"><span class="dte">${a.date}</span>${chips(a.lib)}</div></div>
+        <span class="st ${a.st}">${a.stl}</span></div>
+      <div class="abody">
+        <div class="subtabs">
+          <div class="stab ${s.tab==='dados'?'on':''}" data-tab="dados">Dados</div>
+          <div class="stab ${s.tab==='lib'?'on':''}" data-tab="lib">Liberações <span class="b">${libN}</span></div>
+          <div class="stab ${s.tab==='tarefas'?'on':''}" data-tab="tarefas">Tarefas <span class="b">${a.tarefas.length}</span></div>
+        </div>
+        <div class="pane ${s.tab==='dados'?'':'hide'}">
+          <div class="field"><label>Título do encontro</label><input value="${a.title}"></div>
+          <div class="frow"><div class="field"><label>Data</label><input value="${a.date}/2025"></div><div class="field"><label>Carga</label><input value="${a.hours}"></div><div class="field"><label>Nº</label><input value="${a.n}"></div></div>
+          <div class="hint">Alimenta o certificado e o período da turma.</div>
+        </div>
+        <div class="pane ${s.tab==='lib'?'':'hide'}">${libComposer(a)}</div>
+        <div class="pane ${s.tab==='tarefas'?'':'hide'}">${tarefasPane(a)}</div>
+      </div></div>`;
+  }).join('');
+  document.querySelectorAll('.ahead').forEach(h=>h.onclick=()=>{const id=+h.closest('.acard').dataset.a;state[id].open=!state[id].open;render();});
+  document.querySelectorAll('.stab').forEach(s=>s.onclick=e=>{e.stopPropagation();const id=+s.closest('.acard').dataset.a;state[id].tab=s.dataset.tab;render();});
+  document.querySelectorAll('.thead').forEach(h=>h.onclick=e=>{e.stopPropagation();h.nextElementSibling.classList.toggle('hide');});
+}
+render();
+</script>
+</body>
+</html>
