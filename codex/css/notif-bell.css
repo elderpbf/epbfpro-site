@@ -6,6 +6,10 @@
 
 .cdx-bell-wrap { position: relative; display: inline-flex; }
 .cdx-bell-btn svg { width: 19px; height: 19px; }
+/* On the trilha header, match the fixed 36px theme toggle so the icon buttons are
+   uniform (the bell was padding-sized and read smaller than the others). Scoped to
+   pensoia-header so the Codex topbar bell is unaffected. */
+pensoia-header .ph-action-btn.cdx-bell-btn { width: 36px; height: 36px; padding: 0; justify-content: center; }
 
 /* Badge: top-right corner of the button, not over the glyph. Ringed in the surface
    colour so it reads as a separate chip. */
@@ -66,9 +70,9 @@
 pensoia-header .ph-action-btn.cdx-ns-btn { background: none; border: none; padding: 0; box-shadow: none; min-width: 0; }
 .cdx-ns-initials {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 50%;       /* same height/diameter as the header buttons */
+  width: 36px; height: 36px; border-radius: 50%;       /* same 36px as the theme toggle + bell */
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff; font-size: .82rem; font-weight: 800; letter-spacing: .02em;
+  color: #fff; font-size: .84rem; font-weight: 800; letter-spacing: .02em;
 }
 .cdx-ns-gear { display: inline-flex; }
 .cdx-ns-gear svg { width: 15px; height: 15px; }
