@@ -259,6 +259,7 @@ export default {
   // Cohorts — turmas
   'cohorts.no_turmas':             'Nenhuma turma cadastrada.',
   'cohorts.search_turma':          'Buscar turma…',
+  'cohorts.clients_title':         'Clientes',
   'cohorts.no_search_results':     'Nenhuma turma encontrada.',
   'cohorts.phase_planned':         'Planejada',
   'cohorts.phase_live':            'Em andamento',

@@ -101,7 +101,9 @@ test('the list sections clients into ativos / futuros / inativos', () => {
 test('turma phase is a left bar (not a dot); client uses its own icon; hover = selected teal', () => {
   assert.match(cohortsJs, /class="cdx-ti ' \+ ph\.cls/);
   assert.ok(!/cdx-ti-dot/.test(cohortsJs), 'phase dot removed');
-  assert.match(cohortsJs, /client\.icon_path[\s\S]*?cdx-cg-ava-img/);
+  // icon goes through _iconSrc (R2 key -> served URL), with an initials fallback
+  assert.match(cohortsJs, /src="' \+ _esc\(_iconSrc\(client\.icon_path\)\)/);
+  assert.match(cohortsJs, /function _wireAvatars\(/);
   const css = read('../cohorts/cohorts.css');
   assert.match(css, /border-left: 3px solid var\(--ph/);
   assert.match(css, /\.cdx-ti:hover,\s*\.cdx-ti\.is-on \{ background: var\(--cdx-chip-bg\)/);

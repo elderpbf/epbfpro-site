@@ -1138,11 +1138,11 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
-  padding: 0.55rem 0.6rem 0.25rem;
+  padding: 0.6rem 0.6rem 0.45rem;
   border-top: 1px solid var(--border);
-  margin-top: 0.2rem;
+  margin-top: 1.4rem;
 }
-.cdx-cg-section:first-child { border-top: none; margin-top: 0; }
+.cdx-cg-section:first-child { border-top: none; margin-top: 0.2rem; }
 
 /* ----- Dossier: phase pill + trilha-link strip (moved per-turma actions) ----- */
 

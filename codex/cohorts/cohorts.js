@@ -209,8 +209,11 @@ function _renderShell() {
       // real grid column on desktop.
       '<div class="cdx-cohorts-nav">' +
         '<div class="cdx-pane cdx-cohorts-listpane">' +
+          // Few clients, so the search input is kept but hidden (re-enable by
+          // dropping the hidden attr); the header labels the left column as CLIENTES.
           '<div class="cdx-pane-header">' +
-            '<input type="search" id="' + IDS.search + '" class="cdx-cohorts-search" placeholder="' + t('cohorts.search_turma') + '" autocomplete="off">' +
+            '<div class="cdx-pane-title">' + t('cohorts.clients_title') + '</div>' +
+            '<input type="search" id="' + IDS.search + '" class="cdx-cohorts-search" placeholder="' + t('cohorts.search_turma') + '" autocomplete="off" hidden>' +
           '</div>' +
           '<div class="cdx-pane-body" id="' + IDS.list + '">' +
             '<div class="cdx-empty">' + t('cohorts.loading') + '</div>' +
@@ -354,6 +357,20 @@ function _renderList() {
     html += inSec.map((g) => _renderGroup(g.client, g.turmas)).join('');
   }
   el.innerHTML = html;
+  _wireAvatars(el);
+}
+
+// If a client icon fails to load (missing/blocked R2 object), swap it for the
+// initials avatar so the head never shows a broken-image glyph.
+function _wireAvatars(el) {
+  el.querySelectorAll('.cdx-cg-ava-img').forEach((img) => {
+    img.addEventListener('error', () => {
+      const span = document.createElement('span');
+      span.className = 'cdx-cg-ava';
+      span.textContent = img.dataset.initials || '';
+      img.replaceWith(span);
+    }, { once: true });
+  });
 }
 
 function _renderGroup(client, turmas) {
@@ -361,9 +378,10 @@ function _renderGroup(client, turmas) {
   const rows = turmas.length
     ? turmas.map((tm) => _renderTurmaRow(tm)).join('')
     : '<div class="cdx-cg-empty">' + t('cohorts.no_turmas') + '</div>';
-  // Use the client's own icon when it has one; fall back to the initials avatar.
+  // Use the client's own icon when it has one (icon_path is an R2 key, so it goes
+  // through _iconSrc to a served URL); fall back to the initials if it fails to load.
   const ava = client.icon_path
-    ? '<img class="cdx-cg-ava cdx-cg-ava-img" src="' + _esc(client.icon_path) + '" alt="">'
+    ? '<img class="cdx-cg-ava cdx-cg-ava-img" src="' + _esc(_iconSrc(client.icon_path)) + '" alt="" data-initials="' + _esc(_initials(name)) + '">'
     : '<span class="cdx-cg-ava">' + _esc(_initials(name)) + '</span>';
   // Accordion: a client group is collapsed unless it is the one open client
   // (_expandedClient). The head toggles it; only one group is open at a time.

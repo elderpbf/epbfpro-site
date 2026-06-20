@@ -260,6 +260,7 @@ export default {
   // Cohorts — turmas (cohorts)
   'cohorts.no_turmas':             'No cohorts registered.',
   'cohorts.search_turma':          'Search cohort…',
+  'cohorts.clients_title':         'Clients',
   'cohorts.no_search_results':     'No cohorts found.',
   'cohorts.phase_planned':         'Planned',
   'cohorts.phase_live':            'In progress',
