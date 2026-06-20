@@ -46,6 +46,7 @@ export function wallRoadmapRows(aulas) {
 function errorText(code) {
   if (!code) return '';
   if (code === 'email_invalid') return t('login.email_invalid');
+  if (code === 'rate_limited') return t('login.rate_limited');
   if (code === 'invalid_code') return t('login.code_invalid');
   if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
   return t('login.error');
