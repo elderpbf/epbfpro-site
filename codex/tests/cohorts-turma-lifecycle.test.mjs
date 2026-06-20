@@ -54,3 +54,31 @@ test('lifecycle i18n keys exist in both dictionaries', () => {
     assert.ok(enJs.includes(`'${key}'`), `en.js has ${key}`);
   }
 });
+
+test('delete confirm matches the typed name case-insensitively', () => {
+  // The name is shown uppercased (label styling), so a PascalCase turma must
+  // still confirm when the user types what they see.
+  assert.match(cohortsJs, /toLowerCase\(\) === String\(opts\.confirmName\)\.trim\(\)\.toLowerCase\(\)/);
+});
+
+test('turma actions update in place, not via a full reload', () => {
+  // The success path mutates _turmas + re-renders in place (no _loadAll refetch,
+  // which the user saw as a whole-page refresh).
+  assert.match(cohortsJs, /turma_archived'\)\);\s*const tm = _findTurma/);
+  assert.match(cohortsJs, /turma_unarchived'\)\);\s*const tm = _findTurma/);
+  assert.match(cohortsJs, /turma_deleted'\)\);\s*const wasSelected/);
+  assert.match(cohortsJs, /_refreshDossierHeader\(/, 'archive/unarchive repaint the header in place');
+  // none of the lifecycle success handlers fall back to a full reload
+  assert.ok(!/turma_(archived|unarchived|deleted)'\)\);[\s\S]{0,400}?_loadAll\(\)/.test(cohortsJs),
+    'lifecycle actions do not call _loadAll');
+});
+
+test('client groups are an accordion: collapsed by default, one open', () => {
+  // rows wrapped so CSS can collapse them; is-open keyed to the single _expandedClient.
+  assert.match(cohortsJs, /class="cdx-cg-rows"/);
+  assert.match(cohortsJs, /client\.slug === _expandedClient \? ' is-open'/);
+  assert.match(cohortsJs, /function _toggleClient\(/);
+  const css = read('../cohorts/cohorts.css');
+  assert.match(css, /\.cdx-cg-rows \{ display: none/);
+  assert.match(css, /\.cdx-cg\.is-open \.cdx-cg-rows \{ display: block/);
+});

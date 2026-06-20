@@ -47,14 +47,16 @@ test('is pure: does not mutate the input array', () => {
   assert.deepEqual(input.map((i) => i.id), snapshot);
 });
 
-test('toolbar renders search + sort controls, wired outside the re-rendered grid', () => {
+test('search + sort sit at the top of the left list panel, wired outside the grid', () => {
   const src = read('../content/items.js');
-  assert.match(src, /id="cdx-items-search"/);
-  assert.match(src, /id="cdx-items-sort"/);
-  for (const v of ['recent', 'alpha', 'type']) assert.match(src, new RegExp(`value="${v}"`));
-  // search/sort wired in the shell (rendered once), feeding _renderItems
-  assert.match(src, /cdx-items-search[\s\S]*?_itemSearch = searchEl\.value; _renderItems\(\)/);
-  assert.match(src, /cdx-items-sort[\s\S]*?_itemSort = sortEl\.value; _renderItems\(\)/);
+  // both live in the list-column header (rendered once, not in the re-rendered grid)
+  assert.match(src, /cdx-items-listhead[\s\S]*?id="cdx-items-search"[\s\S]*?id="cdx-items-sort"/);
+  // sort is a click-to-cycle BUTTON, not a dropdown
+  assert.match(src, /button[^>]*id="cdx-items-sort" class="cdx-items-sortbtn"/);
+  assert.ok(!/<select[^>]*id="cdx-items-sort"/.test(src), 'no sort <select> dropdown');
+  // search feeds _renderItems; sort cycles recent -> alpha -> type
+  assert.match(src, /_itemSearch = searchEl\.value; _renderItems\(\)/);
+  assert.match(src, /\['recent', 'alpha', 'type'\]/);
 });
 
 test('search/sort i18n keys exist in both dictionaries', () => {

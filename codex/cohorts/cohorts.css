@@ -1041,7 +1041,18 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   gap: 0.45rem;
   padding: 0.45rem 0.6rem;
   background: var(--background);
+  cursor: pointer;
 }
+/* Accordion: caret rotates when the group is open; rows collapse when it is not. */
+.cdx-cg-caret {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  transition: transform 0.15s;
+}
+.cdx-cg.is-open .cdx-cg-caret { transform: rotate(90deg); }
+.cdx-cg-rows { display: none; }
+.cdx-cg.is-open .cdx-cg-rows { display: block; }
 .cdx-cg-ava {
   width: 22px;
   height: 22px;

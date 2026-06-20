@@ -40,6 +40,7 @@ export function subtabs(activeSub) {
 let _viewEl = null;
 let _clients = [];
 let _selectedClientSlug = null;
+let _expandedClient = null; // accordion: the one client group whose turmas are open
 let _turmas = [];        // ALL turmas across clients (merged Concept-A list)
 let _turmaSearch = '';   // live filter for the merged turma list
 let _turmaAulas = [];
@@ -163,12 +164,13 @@ function _openDeleteConfirm(opts) {
   const bd = _openModal(html, { disableBackdropClose: true });
   const input = bd.querySelector('#cdx-del-confirm-input');
   const confirmBtn = bd.querySelector('#cdx-del-confirm');
-  input.addEventListener('input', () => {
-    confirmBtn.disabled = input.value.trim() !== opts.confirmName;
-  });
+  // Case-insensitive match: the name is shown uppercased (label styling), so
+  // typing what you see must work even when the real name is PascalCase.
+  const matches = () => input.value.trim().toLowerCase() === String(opts.confirmName).trim().toLowerCase();
+  input.addEventListener('input', () => { confirmBtn.disabled = !matches(); });
   bd.querySelector('#cdx-del-cancel').addEventListener('click', () => _closeModal(bd));
   confirmBtn.addEventListener('click', () => {
-    if (input.value.trim() !== opts.confirmName) return;
+    if (!matches()) return;
     _closeModal(bd);
     opts.onConfirm();
   });
@@ -257,7 +259,7 @@ function _loadAll() {
     // Set the selected client BEFORE rendering the list so its action buttons
     // (+ new-turma / edit) show open, not hover-gated (the row is already is-on).
     const cur = _turmas.find((tm) => tm.client_slug === _relClientSlug && tm.slug === _relTurmaSlug && tm.status !== 'archived');
-    if (cur) _selectedClientSlug = cur.client_slug;
+    if (cur) { _selectedClientSlug = cur.client_slug; _expandedClient = cur.client_slug; }
     _renderList();
     if (cur) { _renderDossier(cur); }
     else { _relClientSlug = null; _relTurmaSlug = null; _autoSelectFirst(); }
@@ -322,9 +324,12 @@ function _renderGroup(client, turmas) {
   const rows = turmas.length
     ? turmas.map((tm) => _renderTurmaRow(tm)).join('')
     : '<div class="cdx-cg-empty">' + t('cohorts.no_turmas') + '</div>';
+  // Accordion: a client group is collapsed unless it is the one open client
+  // (_expandedClient). The head toggles it; only one group is open at a time.
   return (
-    '<div class="cdx-cg' + (client.slug === _selectedClientSlug ? ' is-open' : '') + '" data-client-slug="' + _esc(client.slug) + '">' +
+    '<div class="cdx-cg' + (client.slug === _expandedClient ? ' is-open' : '') + '" data-client-slug="' + _esc(client.slug) + '">' +
       '<div class="cdx-cg-head">' +
+        '<span class="cdx-cg-caret" aria-hidden="true">&#9656;</span>' +
         '<span class="cdx-cg-ava">' + _esc(_initials(name)) + '</span>' +
         '<span class="cdx-cg-name">' + _esc(name) + '</span>' +
         '<span class="cdx-cg-acts">' +
@@ -332,7 +337,7 @@ function _renderGroup(client, turmas) {
           '<button type="button" class="cdx-cg-act" data-action="edit-client" data-client-slug="' + _esc(client.slug) + '" title="' + t('cohorts.edit') + '">&#9881;</button>' +
         '</span>' +
       '</div>' +
-      rows +
+      '<div class="cdx-cg-rows">' + rows + '</div>' +
     '</div>'
   );
 }
@@ -367,7 +372,23 @@ function _onListClick(e) {
     return;
   }
   const row = e.target.closest('.cdx-ti');
-  if (row) _selectTurma(row.dataset.clientSlug, row.dataset.turmaSlug);
+  if (row) { _selectTurma(row.dataset.clientSlug, row.dataset.turmaSlug); return; }
+  const head = e.target.closest('.cdx-cg-head');
+  if (head) {
+    const cg = head.closest('.cdx-cg');
+    if (cg && cg.dataset.clientSlug) _toggleClient(cg.dataset.clientSlug);
+  }
+}
+
+// Accordion toggle: open the clicked client (closing whichever was open), or
+// collapse it if it was already open. Pure class flip, no list re-render.
+function _toggleClient(slug) {
+  _expandedClient = (_expandedClient === slug) ? null : slug;
+  if (_expandedClient) _selectedClientSlug = _expandedClient;
+  const el = _q(IDS.list);
+  if (el) el.querySelectorAll('.cdx-cg').forEach((cg) => {
+    cg.classList.toggle('is-open', cg.dataset.clientSlug === _expandedClient);
+  });
 }
 
 function _archiveClient(slug) {
@@ -543,9 +564,49 @@ function _openClientForm(client) {
 }
 
 // ── Turma actions (invoked from the dossier) ──────────────────────────────────
-// The turma list rows are minimal (Concept A); per-turma actions live in the
-// dossier and reuse these helpers. They reload the whole merged list so the
-// row's derived state + the dossier both refresh.
+// Per-turma actions mutate the turma in place and re-render ONLY the affected
+// list row + dossier header (or the trail card), so the page never reloads.
+
+function _findTurma(clientSlug, slug) {
+  return _turmas.find((tm) => tm.client_slug === clientSlug && tm.slug === slug);
+}
+
+// Re-paint the dossier header (phase pill + Arquivar/Desarquivar/Deletar) after a
+// status change, without re-rendering the whole dossier (no sub-data refetch).
+function _refreshDossierHeader(turma) {
+  if (_dossierTurma !== turma) return;
+  const el = _q('cdx-turma-dossier');
+  const hr = el && el.querySelector('.cdx-doss-headright');
+  if (!hr) return;
+  const ph = _turmaPhase(turma);
+  const archived = turma.status === 'archived';
+  hr.innerHTML =
+    (ph.label ? '<span class="cdx-doss-pill ' + ph.cls + '">' + _esc(ph.label) + '</span>' : '') +
+    '<div class="cdx-doss-actions">' +
+      (archived
+        ? '<button class="cdx-btn cdx-btn-sm" data-doss="unarchive">' + _esc(t('cohorts.unarchive')) + '</button>' +
+          '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-doss="delete">' + _esc(t('cohorts.delete_turma_btn')) + '</button>'
+        : '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-doss="archive">' + _esc(t('cohorts.archive')) + '</button>') +
+    '</div>';
+  hr.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', () => {
+    const a = b.dataset.doss;
+    if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
+    else if (a === 'unarchive') _unarchiveTurma(turma.client_slug, turma.slug);
+    else if (a === 'delete') _deleteTurma(turma);
+  }));
+}
+
+// Update the dossier Trilha card (copy URL + open link) after a token rotation.
+function _refreshDossierTrail(turma) {
+  if (_dossierTurma !== turma || !turma.token) return;
+  const el = _q('cdx-turma-dossier');
+  if (!el) return;
+  const url = _turmaUrl(turma.client_slug, turma.slug, turma.token);
+  const copyBtn = el.querySelector('[data-doss="copyurl"]');
+  if (copyBtn) copyBtn.dataset.url = url;
+  const openLink = el.querySelector('.cdx-doss-fact--trail a[href]');
+  if (openLink) openLink.setAttribute('href', url);
+}
 
 function _archiveTurma(clientSlug, turmaSlug) {
   _openArchiveConfirm({
@@ -554,8 +615,8 @@ function _archiveTurma(clientSlug, turmaSlug) {
     onConfirm() {
       api.archiveTurma({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
         _toast(t('cohorts.turma_archived'));
-        if (_relClientSlug === clientSlug && _relTurmaSlug === turmaSlug) { _relClientSlug = null; _relTurmaSlug = null; }
-        _loadAll();
+        const tm = _findTurma(clientSlug, turmaSlug);
+        if (tm) { tm.status = 'archived'; _renderList(); _refreshDossierHeader(tm); }
       }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     }
   });
@@ -564,7 +625,8 @@ function _archiveTurma(clientSlug, turmaSlug) {
 function _unarchiveTurma(clientSlug, turmaSlug) {
   api.unarchiveTurma({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
     _toast(t('cohorts.turma_unarchived'));
-    _loadAll();
+    const tm = _findTurma(clientSlug, turmaSlug);
+    if (tm) { tm.status = 'active'; _renderList(); _refreshDossierHeader(tm); }
   }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
 }
 
@@ -579,8 +641,16 @@ function _deleteTurma(turma) {
     onConfirm() {
       api.deleteTurma({ client_slug: turma.client_slug, slug: turma.slug }).then(() => {
         _toast(t('cohorts.turma_deleted'));
-        if (_relClientSlug === turma.client_slug && _relTurmaSlug === turma.slug) { _relClientSlug = null; _relTurmaSlug = null; }
-        _loadAll();
+        const wasSelected = _relClientSlug === turma.client_slug && _relTurmaSlug === turma.slug;
+        _turmas = _turmas.filter((tm) => !(tm.client_slug === turma.client_slug && tm.slug === turma.slug));
+        _renderList();
+        if (wasSelected) {
+          _relClientSlug = null; _relTurmaSlug = null; _dossierTurma = null;
+          const next = _turmas.find((tm) => tm.client_slug === turma.client_slug && tm.status !== 'archived')
+                    || _turmas.find((tm) => tm.status !== 'archived') || _turmas[0];
+          if (next) _selectTurma(next.client_slug, next.slug);
+          else { const dEl = _q('cdx-turma-dossier'); if (dEl) dEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; }
+        }
       }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     }
   });
@@ -591,9 +661,10 @@ function _regenToken(clientSlug, turmaSlug) {
     title: t('cohorts.regen_token_title'),
     message: t('cohorts.regen_token_msg'),
     onConfirm() {
-      api.regenTurmaToken({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
+      api.regenTurmaToken({ client_slug: clientSlug, slug: turmaSlug }).then((res) => {
         _toast(t('cohorts.token_regenerated'));
-        _loadAll();
+        const tm = _findTurma(clientSlug, turmaSlug);
+        if (tm && res && res.token) { tm.token = res.token; _refreshDossierTrail(tm); }
       }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     }
   });
@@ -1042,6 +1113,7 @@ function _selectTurma(clientSlug, turmaSlug) {
   _relClientSlug = clientSlug;
   _relTurmaSlug = turmaSlug;
   _selectedClientSlug = clientSlug; // new-turma / form context follows the selection
+  _expandedClient = clientSlug;     // selecting a turma opens its client group
   const turma = _turmas.find((x) => x.client_slug === clientSlug && x.slug === turmaSlug);
   _renderDossier(turma);
   _renderList();

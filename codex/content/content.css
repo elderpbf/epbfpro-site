@@ -37,11 +37,14 @@
 }
 .cdx-bulk-bar > span { color: var(--text-secondary); font-size: 0.85rem; flex: 1; }
 
-/* ── Search + sort controls (sit above the type-filter chips) ────────────── */
-.cdx-items-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+/* ── Left list column: a search + sort header above the scrolling list ────── */
+/* The search sits at the top of the LEFT panel (like the Turmas search) so it is
+   easy to find; the sort is a small toggle button beside it that cycles modes. */
+.cdx-items-listcol { display: flex; flex-direction: column; gap: 0.5rem; min-height: 0; }
+.cdx-items-listhead { display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
 .cdx-items-search {
   flex: 1;
-  min-width: 200px;
+  min-width: 0;
   padding: 0.42rem 0.6rem;
   font-size: 0.85rem;
   color: var(--text-primary);
@@ -50,24 +53,22 @@
   border-radius: 8px;
 }
 .cdx-items-search:focus { outline: none; border-color: var(--primary); }
-.cdx-items-sort-wrap {
-  display: flex;
+.cdx-items-sortbtn {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.82rem;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
-  white-space: nowrap;
-}
-.cdx-items-sort {
-  padding: 0.38rem 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-primary);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
+  white-space: nowrap;
 }
-.cdx-items-sort:focus { outline: none; border-color: var(--primary); }
+.cdx-items-sortbtn:hover { border-color: var(--primary); color: var(--primary-dark); }
+.cdx-items-sortbtn svg { flex: 0 0 auto; }
 
 /* ── Filter row ──────────────────────────────────────────────────────────── */
 .cdx-filter-row { display: flex; align-items: center; gap: 0.5rem; }
@@ -94,6 +95,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  min-height: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
