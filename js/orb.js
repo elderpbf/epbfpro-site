@@ -67,7 +67,7 @@ export function initOrb() {
 
   // The left-margin lane the light descends in (Élder: stay well off the content, further
   // left). The hero FOLLOW and the bottom BLOOM are unchanged — only the descent rides here.
-  function leftLane() { return Math.min(Math.max(innerWidth * 0.028, 12), 38); }
+  function leftLane() { return Math.min(Math.max(innerWidth * 0.02, 10), 24); }
 
   function computeTarget(now) {
     const s = getSettings();
@@ -82,8 +82,12 @@ export function initOrb() {
       let tx, ty;
       if (live) { tx = mx; ty = my; }
       else {
-        tx = innerWidth * 0.5 + Math.sin(now * s.wanderFreq) * Math.min(s.wanderXCap, innerWidth * s.wanderX);
-        ty = innerHeight * 0.40 + Math.sin(now * s.wanderYFreq + 1.57) * s.wanderY;
+        // Idle (mobile not being touched, or the mouse has gone): wander WIDE and slow across
+        // the hero, well away from centre — a bigger sweep on mobile, where it used to barely
+        // leave the middle (Élder). Amplitude scales with width but stays generous on phones.
+        const ampX = Math.min(innerWidth * 0.42, 260);
+        tx = innerWidth * 0.5 + Math.sin(now * 0.00040) * ampX;
+        ty = innerHeight * 0.40 + Math.sin(now * 0.00055 + 1.57) * 60;
       }
       if (hb <= ty + 2) { phase = 'descend'; detachScroll = scrollY; detachY = Math.max(40, hb); }
       // Near the hero floor, ease toward the LEFT lane (not centre): the detach point moved.

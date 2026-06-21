@@ -46,7 +46,8 @@ img{max-width:100%;display:block}
   background:radial-gradient(circle,#fff 0%,var(--teal-light) 40%,transparent 72%);
   box-shadow:0 0 20px 6px var(--glow-2),0 0 44px 14px var(--glow)}
 #spark.plp-on{opacity:1}
-#spark.plp-soft{box-shadow:0 0 12px 4px var(--glow-2),0 0 26px 8px var(--glow)}
+/* Descent (outside the hero animation box): a markedly dimmer halo (Élder). */
+#spark.plp-soft{box-shadow:0 0 6px 2px var(--glow-2),0 0 13px 4px var(--glow)}
 #spark.plp-behind{z-index:1}
 #spark.plp-big{width:160px;height:160px;box-shadow:0 0 70px 22px var(--glow-2),0 0 150px 64px var(--glow)}
 .plp-fxbox{position:relative}
