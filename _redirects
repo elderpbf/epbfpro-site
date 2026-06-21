@@ -4,6 +4,13 @@
 # e o destino de um rewrite 200 NAO e reavaliado (sem encadeamento). Por isso da pra reivindicar
 # os literais (validar/entrar) com um rewrite identidade antes da regra generica de codigo.
 
+# Backstage + greenroom sairam pro proprio origin (backstage.pensoia.com) na
+# separacao do repo. Preserva links antigos /backstage/* e /greenroom/* com 301.
+/backstage/*   https://backstage.pensoia.com/:splat            301
+/backstage     https://backstage.pensoia.com/                  301
+/greenroom/*   https://backstage.pensoia.com/greenroom/:splat  301
+/greenroom     https://backstage.pensoia.com/greenroom/        301
+
 # Certificado: validar com codigo, depois o literal bare (manual)
 /trilha/validar/:code   /trilha/validar?code=:code     200
 /trilha/validar         /trilha/validar                200
