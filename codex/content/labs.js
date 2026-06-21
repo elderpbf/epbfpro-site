@@ -108,7 +108,7 @@ function _previewHtml(lab) {
       '<div class="cdx-lab-frame-wrap">' +
         '<iframe class="cdx-lab-frame" title="' + _esc(lab.title) + '" loading="lazy" scrolling="no"' +
           ' allow="autoplay; encrypted-media; clipboard-write; fullscreen"' +
-          ' src="/backstage/labs/' + encodeURIComponent(lab.key) + '/"></iframe>' +
+          ' src="/codex/labs/' + encodeURIComponent(lab.key) + '/"></iframe>' +
       '</div>' +
     '</div>';
 }

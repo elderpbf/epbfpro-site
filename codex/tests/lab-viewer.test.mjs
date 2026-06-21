@@ -56,7 +56,7 @@ test('openModal builds an accessible overlay with a scaled lab iframe', () => {
   assert.ok(body.classList.contains('cv-lab-viewer-open'), 'body marked open');
   const iframe = findByClass(overlay, 'cv-lab-viewer-iframe');
   assert.ok(iframe, 'iframe present');
-  assert.equal(iframe.src, '/backstage/labs/k3/', 'iframes the lab page');
+  assert.equal(iframe.src, '/codex/labs/k3/', 'iframes the lab page');
   assert.match(iframe.attrs.allow, /fullscreen/, 'allows fullscreen');
   view.close();
 });
@@ -64,7 +64,7 @@ test('openModal builds an accessible overlay with a scaled lab iframe', () => {
 test('openModal encodes the key into the iframe URL', () => {
   view.openModal({ key: 'a b/c' });
   const iframe = findByClass(overlayInBody(), 'cv-lab-viewer-iframe');
-  assert.equal(iframe.src, '/backstage/labs/a%20b%2Fc/');
+  assert.equal(iframe.src, '/codex/labs/a%20b%2Fc/');
   view.close();
 });
 
@@ -120,7 +120,7 @@ test('re-opening while open replaces (never stacks) the overlay', () => {
   const overlays = body.children.filter((c) => c.className === 'cv-lab-viewer-overlay');
   assert.equal(overlays.length, 1, 'only one overlay at a time');
   const iframe = findByClass(overlays[0], 'cv-lab-viewer-iframe');
-  assert.equal(iframe.src, '/backstage/labs/k2/', 'shows the latest lab');
+  assert.equal(iframe.src, '/codex/labs/k2/', 'shows the latest lab');
   view.close();
 });
 

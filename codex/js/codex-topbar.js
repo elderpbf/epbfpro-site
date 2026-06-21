@@ -268,7 +268,7 @@ export function init(opts) {
 
   // Brand wordmark (reused from brand-logos.js), links back to the portal.
   const brand = document.createElement('a');
-  brand.href = '/backstage/';
+  brand.href = '/codex/';
   brand.className = 'bs-topbar-logo';
   brand.setAttribute('aria-label', 'PensoIA — Codex');
   const wmLight = document.createElement('span');
