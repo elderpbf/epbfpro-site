@@ -26,7 +26,7 @@ function startRot() {
 
 const LANG_SHORT = { pt: 'PT', en: 'EN', es: 'ES' };
 function syncLangButtons() {
-  document.querySelectorAll('.plp-langpop button').forEach(b =>
+  document.querySelectorAll('.plp-langpop button[data-lang]').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.lang === getLang()));
   const cur = document.getElementById('langCur');
   if (cur) cur.textContent = LANG_SHORT[getLang()] || getLang().toUpperCase();
@@ -95,7 +95,7 @@ export function initUI() {
       langBtn.setAttribute('aria-expanded', 'false');
     });
   }
-  document.querySelectorAll('.plp-langpop button').forEach(b =>
+  document.querySelectorAll('.plp-langpop button[data-lang]').forEach(b =>
     b.addEventListener('click', (e) => {
       e.stopPropagation();
       setLang(b.dataset.lang); apply(document);
