@@ -46,7 +46,8 @@ img{max-width:100%;display:block}
   background:radial-gradient(circle,#fff 0%,var(--teal-light) 40%,transparent 72%);
   box-shadow:0 0 20px 6px var(--glow-2),0 0 44px 14px var(--glow)}
 #spark.plp-on{opacity:1}
-#spark.plp-soft{box-shadow:0 0 12px 4px var(--glow-2),0 0 26px 8px var(--glow)}
+/* Descent (outside the hero animation box): a markedly dimmer halo (Élder). */
+#spark.plp-soft{box-shadow:0 0 6px 2px var(--glow-2),0 0 13px 4px var(--glow)}
 #spark.plp-behind{z-index:1}
 #spark.plp-big{width:160px;height:160px;box-shadow:0 0 70px 22px var(--glow-2),0 0 150px 64px var(--glow)}
 .plp-fxbox{position:relative}
@@ -59,6 +60,9 @@ img{max-width:100%;display:block}
 .plp-hl{background-image:linear-gradient(var(--hl-line),var(--hl-line));background-repeat:no-repeat;background-position:0 100%;background-size:0% 3px;padding-bottom:.05em;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:text-shadow .4s ease,color .4s ease}
 .plp-hl-on{text-shadow:0 0 18px var(--glow);color:var(--ink)}
 @media(max-width:640px){#spark{width:11px;height:11px}}
+/* TEST ONLY: orb behaviour modes listed inside the language menu (remove before production).
+   They reuse the .plp-langpop button styling; only a thin separator marks them off. */
+.plp-orbtest-sep{height:1px;margin:5px 6px;background:var(--line)}
 
 /* ===== header ===== */
 header{position:fixed;inset:0 0 auto 0;z-index:50;transition:.4s var(--ease)}
@@ -67,16 +71,31 @@ header.plp-sc{background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-f
 header.plp-sc .plp-bar{padding:9px clamp(22px,3.5vw,52px)}
 .plp-brand img{height:33px;width:auto}
 .plp-ctrl{display:flex;align-items:center;gap:9px}
-.plp-lang{display:inline-flex;background:var(--pill);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
-.plp-lang button{border:none;background:transparent;color:var(--ink-faint);font:700 .72rem/1 'Inter';letter-spacing:.04em;padding:7px 9px;border-radius:8px;cursor:pointer;transition:.2s}
-.plp-lang button[aria-pressed="true"]{background:linear-gradient(120deg,var(--teal),var(--teal-dark));color:var(--on-teal)}
+/* idioma colapsado: pill "PT ▾" que abre as línguas no clique (quase ninguém troca) */
+.plp-lang{position:relative;display:inline-flex}
+.plp-langbtn{display:inline-flex;align-items:center;gap:6px;height:39px;box-sizing:border-box;padding:0 12px;background:var(--pill);border:1px solid var(--line);color:var(--ink);font:700 .78rem 'Inter';letter-spacing:.04em;border-radius:12px;cursor:pointer;transition:.25s var(--ease)}
+.plp-langbtn:hover{border-color:var(--teal);color:var(--teal-text)}
+.plp-langcar{font-size:.62rem;opacity:.7;transition:.2s}
+.plp-langopen .plp-langcar{transform:rotate(180deg)}
+.plp-langpop{position:absolute;top:46px;right:0;min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px;display:none;flex-direction:column;gap:2px;box-shadow:0 16px 38px -16px var(--glow);z-index:60}
+.plp-langopen .plp-langpop{display:flex}
+.plp-langpop button{display:flex;align-items:center;gap:9px;border:none;background:transparent;color:var(--ink);font:700 .8rem 'Inter';padding:8px 10px;border-radius:9px;cursor:pointer;text-align:left;width:100%}
+.plp-langpop button:hover{background:var(--pill)}
+.plp-langpop button[aria-pressed="true"]{color:var(--teal-text)}
+.plp-langpop button[aria-pressed="true"]::after{content:'✓';margin-left:auto;font-size:.78rem}
 .plp-ic{width:39px;height:39px;border-radius:11px;border:1px solid var(--line);background:var(--pill);color:var(--ink);font-size:.95rem;cursor:pointer;display:grid;place-items:center;transition:.25s}
 .plp-ic:hover{border-color:var(--teal);color:var(--teal-text);transform:translateY(-1px)}
 .plp-ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .plp-cta{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(120deg,var(--teal),var(--teal-dark));color:var(--on-teal);font-weight:700;font-size:.85rem;padding:10px 17px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 10px 26px -12px var(--glow);transition:.25s}
 .plp-cta:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px var(--glow)}
 .plp-cta svg{width:15px;height:15px}
-@media(max-width:560px){.plp-brand img{height:28px}.plp-cta .plp-t{display:none}}
+/* botões do header iguais: aluno (outline secundário) + contato (preenchido), mesma caixa */
+.plp-pill{display:inline-flex;align-items:center;gap:8px;height:39px;box-sizing:border-box;padding:0 16px;background:var(--pill);border:1px solid var(--line);color:var(--ink);font:700 .85rem 'Inter';border-radius:12px;cursor:pointer;transition:.25s var(--ease);text-decoration:none}
+.plp-pill:hover{border-color:var(--teal);color:var(--teal-text);transform:translateY(-1px)}
+.plp-pill svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.plp-cta.plp-eq{height:39px;box-sizing:border-box;padding:0 16px;border:1px solid transparent;border-radius:12px;font-size:.85rem}
+.plp-cta.plp-eq svg{width:16px;height:16px}
+@media(max-width:560px){.plp-brand img{height:28px}.plp-cta .plp-t{display:none}.plp-pill .plp-t{display:none}}
 
 /* ===== hero (chamada primeiro, sem foto) ===== */
 .plp-hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;background:var(--hero);overflow:hidden;padding:120px 0 90px}

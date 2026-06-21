@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { readCode } from '../trilha/js/entrar.js';
+import { readCode, buildTurmaUrl } from '../trilha/js/entrar.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 const html = read('../trilha/entrar.html');
@@ -18,18 +18,23 @@ const i18n = read('../trilha/i18n.js');
 const home = read('../../index.html');
 
 test('entrar rides Codex chrome, no backstage in the appearance layer', () => {
-  assert.ok(!/backstage\/(css|js)\//.test(html), 'no backstage CSS/JS');
+  // The debug pill (infra, gated by bs_debug, invisible to students) is now codex-owned
+  // (/codex/js/debug.js), so the Trail no longer loads ANYTHING from /backstage/ — the
+  // decoupling that lets backstage move out to its own repo (item 12).
+  assert.ok(!/backstage\/(css|js)\//.test(html), 'no backstage CSS/JS (the debug pill is now codex-owned)');
+  assert.match(html, /\/codex\/js\/debug\.js/, 'the debug pill is loaded (error capture on the entry page)');
   assert.match(html, /\/codex\/css\/theme\.css/, 'codex theme tokens');
   assert.match(html, /\/codex\/trilha\/css\/entrar\.css/, 'entrar css');
   assert.match(html, /<pensoia-header mode="student"/, 'codex pensoia-header');
   assert.match(html, /\/codex\/trilha\/js\/pensoia-header\.js/, 'codex header component');
 });
 
-test('entrar.css copied the go container values verbatim (prefixed)', () => {
-  assert.match(css, /\.cdx-entrar\b[^}]*max-width: 480px/, 'container max-width');
-  assert.match(css, /\.cdx-entrar\b[^}]*padding: 64px 20px/, 'container padding');
-  assert.match(css, /\.cdx-entrar-title\b[^}]*font-size: 1\.2rem/, 'title size');
+test('entrar.css carries the mock-D card layout values (prefixed)', () => {
+  assert.match(css, /\.cdx-entrar\b[^}]*max-width: 720px/, 'container max-width (the 2-card layout)');
+  assert.match(css, /\.cdx-entrar\b[^}]*padding: 1\.5rem 1\.25rem 4rem/, 'container padding');
+  assert.match(css, /\.cdx-entrar-title\b[^}]*font-size: 1\.5rem/, 'title size');
   assert.match(css, /\.cdx-entrar-note\b[^}]*border-top: 1px solid var\(--border\)/, 'note rule');
+  assert.match(css, /\.cdx-entrar-step-code[^{]*\.cdx-entrar-card-code\b[^}]*display: none/, 'e-mail step hides the código card');
   assert.ok(!/\.container\s*\{/.test(css), 'old .container selector gone (prefixed to cdx-entrar)');
 });
 
@@ -51,19 +56,58 @@ test('readCode reads the 4-digit code from the path or the query', () => {
   assert.equal(readCode('', '/trilha/foo/bar'), '');           // not a code path
 });
 
+test('buildTurmaUrl builds the public turma launch URL with k (url-encoded)', () => {
+  assert.equal(
+    buildTurmaUrl({ client_slug: 'jfse', turma_slug: 'geral', k: 'KTOK' }, 'https://staging.pensoia.com'),
+    'https://staging.pensoia.com/trilha/jfse/geral?k=KTOK');
+  // tolerates the OTP-verify entry shape (token instead of k) and encodes
+  assert.equal(
+    buildTurmaUrl({ client_slug: 'a b', turma_slug: 't', token: 'a/b' }, 'https://x.com'),
+    'https://x.com/trilha/a%20b/t?k=a%2Fb');
+});
+
+test('entrar auto-enters a valid device session (no Continuar banner, no hub)', () => {
+  assert.match(js, /getKnownTurmas/, 'reads the device turma registry');
+  assert.match(js, /sessionCheck\(/, 'validates the device session server-side before entering');
+  assert.match(js, /location\.replace\(/, 'a valid session goes straight into its turma');
+  assert.match(js, /createLoginFlow/, 'drives the shared login controller for the e-mail path');
+  assert.match(js, /requestCode|verifyCode/, 'uses the OTP code flow (not the magic link)');
+  assert.match(js, /forgetTurma\(/, 'prunes a revoked/dead turma so it never resurfaces');
+  assert.match(js, /cdx-entrar-step-code/, 'choosing e-mail hides the código card (focus the e-mailed code)');
+  assert.ok(!/renderContinue|cdx-entrar-cont/.test(js), 'the Continuar banner is gone');
+  assert.ok(!/renderHub|cdx-entrar-hub/.test(js), 'the minhas-turmas hub is gone');
+  assert.ok(!/callWorker\s*\(/.test(js), 'never calls callWorker directly');
+});
+
+test('entrar.html hosts the código + e-mail entry, no Continuar banner, no hub (both copies in sync)', () => {
+  assert.match(html, /id="cdx-entrar-email"/, 'e-mail container present');
+  assert.match(html, /id="cdx-entrar-form"/, 'código form present');
+  assert.ok(!/id="cdx-entrar-cont"/.test(html), 'the Continuar banner is gone');
+  assert.ok(!/id="cdx-entrar-hub"/.test(html), 'the hub container is gone');
+  assert.equal(served, html, 'served copy still matches the source copy');
+});
+
 test('the served copy is in sync and the 4-digit route is wired', () => {
   assert.equal(served, html, 'Site/trilha/entrar.html matches the source copy');
   assert.match(htaccess, /\^\(\[0-9\]\{4\}\)\/\?\$ entrar\.html\?code=\$1/, '/trilha/<4-digit> routes to entrar.html');
   assert.match(htaccess, /\^\$ entrar\.html/, 'bare /trilha/ falls back to the manual entry form');
 });
 
-test('the homepage offers an Área do Aluno entry to /trilha/entrar', () => {
-  assert.match(home, /href="\/trilha\/entrar"/, 'homepage links to the student entry page');
-  assert.match(home, /aria-label="Área do Aluno"/, 'the entry is labelled for students');
+test('the homepage student entry points at /trilha and reads "Acessar minha trilha"', () => {
+  assert.match(home, /href="\/trilha"/, 'homepage links to the consolidated /trilha entry');
+  assert.match(home, /aria-label="Acessar minha trilha"/, 'the student entry is clearly labelled');
 });
 
 test('entrar i18n keys exist in both pt and en', () => {
   for (const k of ['entrar.title', 'entrar.submit', 'entrar.not_found', 'entrar.note']) {
+    const count = (i18n.match(new RegExp("'" + k.replace('.', '\\.') + "'", 'g')) || []).length;
+    assert.ok(count >= 2, `${k} present in pt + en`);
+  }
+});
+
+test('entrar i18n carries the new entry copy in both langs', () => {
+  assert.match(i18n, /'entrar\.email_lead':\s*'Enviaremos um código por e-mail para autenticar\.'/, 'pt e-mail copy (authenticate, not "4 letras / sem senha")');
+  for (const k of ['entrar.continue', 'entrar.eyebrow', 'entrar.email_h', 'entrar.code_sent', 'entrar.other_email']) {
     const count = (i18n.match(new RegExp("'" + k.replace('.', '\\.') + "'", 'g')) || []).length;
     assert.ok(count >= 2, `${k} present in pt + en`);
   }

@@ -1,20 +1,70 @@
-/* codex/trilha/css/entrar.css — typed-entry landing for pensoia.com/trilha/<code>.
-   Ported value-for-value from go/index.html's inline <style> (.container / h1 / p / .note
-   → cdx-entrar-*); the input + button are the blessed new content (the stub had none). */
+/* codex/trilha/css/entrar.css — the student entry surface at pensoia.com/trilha.
+   Ported value-for-value from the approved mock backstage/mocks/trilha-login/d.html
+   (lg-* -> cdx-entrar-*); theme tokens only, so light/dark follow. Model: enter the
+   last class (the Continuar banner) with the código + e-mail paths always open;
+   choosing e-mail hides the código card and focuses the e-mailed code. */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column; }
 
-.cdx-entrar { max-width: 480px; margin: 0 auto; padding: 64px 20px; width: 100%; text-align: center; }
-.cdx-entrar-title { font-size: 1.2rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 16px; }
-.cdx-entrar-text { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 14px; }
-.cdx-entrar-note { font-size: 0.78rem; color: var(--text-light); margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--border); }
+.cdx-entrar { max-width: 720px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; width: 100%; }
 
-/* New (blessed): the code field + submit. Theme tokens only, so dark mode follows. */
-.cdx-entrar-form { display: flex; flex-direction: column; gap: 12px; margin: 18px 0 4px; }
-.cdx-entrar-error { font-size: 0.88rem; color: var(--danger, #dc2626); min-height: 1.2em; }
-.cdx-entrar-state { font-size: 0.95rem; color: var(--text-secondary); min-height: 1.2em; }
-.cdx-entrar-input { font-size: 1.8rem; font-weight: 700; letter-spacing: 0.35em; text-align: center; padding: 14px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-primary); }
-.cdx-entrar-input:focus { outline: none; border-color: var(--primary); }
-.cdx-entrar-btn { font-size: 0.98rem; font-weight: 600; padding: 13px 16px; border: none; border-radius: 10px; background: var(--primary); color: var(--text-on-accent, #fff); cursor: pointer; }
+.cdx-entrar-head { text-align: center; margin-bottom: 1.2rem; }
+.cdx-entrar-eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); }
+.cdx-entrar-title { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; margin: .25rem 0 0; }
+
+/* Continuar banner — quem volta entra na última turma (preenchido por JS do registro do aparelho) */
+.cdx-entrar-cont { display: flex; align-items: center; gap: .9rem; padding: .9rem 1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: 0 16px 40px -24px var(--shadow); text-decoration: none; margin-bottom: 1.1rem; }
+.cdx-entrar-cont:hover { border-color: var(--primary); }
+.cdx-entrar-cont-av { width: 44px; height: 44px; flex-shrink: 0; border-radius: 11px; background: var(--background); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-secondary); }
+.cdx-entrar-cont-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cdx-entrar-cont-k { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--primary); }
+.cdx-entrar-cont-name { font-size: 1rem; font-weight: 800; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-entrar-cont-client { font-size: .78rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-entrar-cont-go { width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px; background: var(--primary); color: var(--text-on-accent, #fff); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 800; }
+
+.cdx-entrar-sep { display: flex; align-items: center; gap: .8rem; margin: 1.1rem 0; color: var(--text-secondary); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+.cdx-entrar-sep::before, .cdx-entrar-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.cdx-entrar-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.cdx-entrar-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.4rem 1.3rem; box-shadow: 0 18px 48px -22px var(--shadow); display: flex; flex-direction: column; }
+.cdx-entrar-ic { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; margin-bottom: .8rem; }
+.cdx-entrar-ic-code { background: rgba(59,130,246,0.14); color: #2563eb; }
+.cdx-entrar-ic-mail { background: rgba(20,184,166,0.14); color: #0d9488; }
+[data-theme="dark"] .cdx-entrar-ic-code { background: rgba(59,130,246,0.24); color: #93c5fd; }
+[data-theme="dark"] .cdx-entrar-ic-mail { background: rgba(20,184,166,0.22); color: #5eead4; }
+.cdx-entrar-card-h { font-size: 1.02rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .25rem; }
+.cdx-entrar-card-p { font-size: .82rem; color: var(--text-secondary); line-height: 1.45; margin: 0 0 .9rem; }
+
+/* the form / e-mail body fill the card so the action button bottom-aligns across both */
+.cdx-entrar-form, .cdx-entrar-email { flex: 1; display: flex; flex-direction: column; }
+/* Reserve room for ~2 lines so a notice appearing never grows the card and shifts the
+   other one out of alignment (Élder: "um dos cards se move e ficam quebrados"). */
+.cdx-entrar-error { font-size: 0.88rem; color: var(--danger, #dc2626); min-height: 2.5em; line-height: 1.25; }
+.cdx-entrar-error.cdx-entrar-ok { color: var(--text-secondary); }   /* "novo código enviado" — not an error */
+.cdx-entrar-state { font-size: 0.95rem; color: var(--text-secondary); min-height: 1.2em; text-align: center; margin-bottom: .6rem; }
+
+/* código + e-mail inputs share ONE box (same height, same gap above the button) so the
+   two cards read as a matched pair — the código used to be 1.4rem and glued to Entrar. */
+.cdx-entrar-field, .cdx-entrar-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 1rem; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .72rem .85rem; margin-bottom: .7rem; }
+.cdx-entrar-input { font-weight: 800; letter-spacing: .25em; text-align: center; }
+.cdx-entrar-field:focus, .cdx-entrar-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
+.cdx-entrar-otp { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 1.4rem; font-weight: 800; letter-spacing: .4em; text-align: center; text-transform: uppercase; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .7rem .85rem; }
+.cdx-entrar-otp:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
+
+.cdx-entrar-btn { font-size: 0.98rem; font-weight: 700; padding: 13px 16px; border: none; border-radius: 10px; background: var(--primary); color: var(--text-on-accent, #fff); cursor: pointer; width: 100%; margin-top: auto; }
 .cdx-entrar-btn:disabled { opacity: 0.6; cursor: default; }
+.cdx-entrar-link { display: block; width: 100%; margin: .7rem 0 0; background: none; border: none; color: var(--text-secondary); font-family: inherit; font-size: .8rem; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.cdx-entrar-link:hover { color: var(--primary); }
+.cdx-entrar-dev { font-size: 0.85rem; color: var(--text-primary); margin-top: .5rem; }
+.cdx-entrar-dev strong { font-weight: 800; }
+
+.cdx-entrar-note { font-size: 0.78rem; color: var(--text-light); margin-top: 1.8rem; padding-top: 18px; border-top: 1px solid var(--border); text-align: center; }
+
+/* passo "código enviado": esconde o card do código (e a faixa Continuar) e foca no e-mail */
+.cdx-entrar-step-code .cdx-entrar-cont,
+.cdx-entrar-step-code .cdx-entrar-sep,
+.cdx-entrar-step-code .cdx-entrar-card-code { display: none; }
+.cdx-entrar-step-code .cdx-entrar-paths { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+
+@media (max-width: 620px) { .cdx-entrar-paths { grid-template-columns: 1fr; } .cdx-entrar-title { font-size: 1.3rem; } }

@@ -1,7 +1,0 @@
-/* Modal overlay shared by trail-modal (and previously the QR modal,
-   now superseded by QRShareModal). Owned by Share module. */
-
-.qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }
-.qr-modal.open { display: flex; }
-.qr-box { background: var(--surface); border-radius: 16px; padding: 2rem; max-width: 320px; width: 90%; text-align: center; }
-.qr-box h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }

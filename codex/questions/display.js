@@ -103,7 +103,8 @@ function _renderStudentQA(data, cpq) {
 // run it from the projector or their phone. One server state, one toggle (the shared
 // enroll-control), two surfaces — "é tudo o mesmo código".
 function _wireQrToggle() {
-  const btn = document.getElementById('cdx-disp-qr-toggle');
+  // The QR control is the header's code button (top). The old floating bottom button is gone.
+  const btn = document.querySelector('pensoia-header .ph-code-btn');
   if (btn) btn.addEventListener('click', _toggleProjection);
   // Clicking the projected QR overlay dismisses it too, mirroring the qr-share
   // modal's backdrop-click close. The overlay only shows while projecting, so a
@@ -131,8 +132,8 @@ function _pollEnroll() {
   const ids = { client_slug: _turma.client_slug, slug: _turma.turma_slug };
   cohorts.getEnrollment(ids).then((res) => {
     _enrollState = (res && res.ok) ? res : null;
-    const toggle = document.getElementById('cdx-disp-qr-toggle');
-    if (toggle) { toggle.hidden = false; toggle.classList.toggle('is-on', isProjecting(_enrollState)); }
+    const toggle = document.querySelector('pensoia-header .ph-code-btn');
+    if (toggle) toggle.classList.toggle('is-on', isProjecting(_enrollState));
     const overlay = document.getElementById('cdx-disp-enroll');
     if (!overlay) return;
     if (!isProjecting(_enrollState)) { overlay.hidden = true; return; }

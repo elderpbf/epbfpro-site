@@ -6,7 +6,7 @@
 //
 // Public API: openModal({ key, title }), close().
 // Consumed by Content > Labs (content/labs.js fullscreen button). The iframe src
-// still points at /backstage/labs/<key>/ (moving the lab pages is the legacy
+// still points at /codex/labs/<key>/ (moving the lab pages is the legacy
 // quarantine step, not this port).
 
 let _overlay = null;
@@ -85,7 +85,7 @@ export function openModal(opts) {
     'allow',
     'autoplay; encrypted-media; clipboard-write; fullscreen'
   );
-  iframe.src = '/backstage/labs/' + encodeURIComponent(key) + '/';
+  iframe.src = '/codex/labs/' + encodeURIComponent(key) + '/';
 
   frame.appendChild(closeBtn);
   frame.appendChild(iframe);

@@ -9,12 +9,14 @@
 // accessState ->
 //   'open'          not gated: behave exactly as before
 //   'approved'      gated, this session is approved: full content
-//   'inline-gated'  gated inline, not approved: timeline shows, gate fires on open
-//   'upfront-gated' gated upfront, not approved: render the wall
+//   'upfront-gated' gated, not approved: render the wall (the single register gate)
+// Collapsed access model (#4, 2026-06-20): a gated turma is ALWAYS the upfront wall.
+// The legacy 'inline' mode (and the 'inline-gated' state) is retired; `gate_mode` is
+// inert. There is one gate now: register at the wall to enter.
 export function accessState(access) {
   if (!access || !access.gated) return 'open';
   if (access.status === 'approved') return 'approved';
-  return access.mode === 'upfront' ? 'upfront-gated' : 'inline-gated';
+  return 'upfront-gated';
 }
 
 // Should opening an item route through the login/approval gate? True whenever the

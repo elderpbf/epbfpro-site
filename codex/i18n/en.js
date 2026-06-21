@@ -39,6 +39,8 @@ export default {
   'alunos.queue':        'Pending approvals',
   'alunos.queue_empty':  'No students awaiting approval.',
   'alunos.approve':      'Approve',
+  'alunos.block':        'Block',
+  'alunos.unblock':      'Unblock',
   'alunos.deny':         'Deny',
   'alunos.approve_all':  'Approve all',
   'alunos.students':     'Students',
@@ -49,7 +51,7 @@ export default {
   'alunos.remove_confirm': 'Remove this student? They lose access and must sign in again.',
   'alunos.status_approved': 'Approved',
   'alunos.status_pending':  'Pending',
-  'alunos.status_denied':   'Denied',
+  'alunos.status_denied':   'Blocked',
   'alunos.via_window':   'in class',
   'alunos.via_roster':   'roster',
   'alunos.via_presence': 'presence',
@@ -71,7 +73,7 @@ export default {
   'alunos.filter_all':        'All',
   'alunos.filter_pending':    'Pending',
   'alunos.filter_approved':   'Approved',
-  'alunos.filter_denied':     'Denied',
+  'alunos.filter_denied':     'Blocked',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Connection lost.',
@@ -326,7 +328,7 @@ export default {
   // Cohorts — participants (roster)
   'cohorts.sec_turma_data':               'Cohort data',
   'cohorts.sec_access':                   'Access',
-  'cohorts.participants_btn':             'Participants',
+  'cohorts.participants_btn':             'Manage list',
   'cohorts.participants_btn_title':       'Manage participants for this cohort',
   'cohorts.participants_title':           'Participants',
   'cohorts.participants_empty':           'No participants registered.',
@@ -359,7 +361,7 @@ export default {
   'cohorts.ptag_qr':       'QR',
   'cohorts.ptag_manual':   'Manual',
   'cohorts.ptag_pending':  'Pending',
-  'cohorts.ptag_denied':   'Denied',
+  'cohorts.ptag_denied':   'Blocked',
   // Cohorts — participant list legend (the "?" help glyph)
   'cohorts.phelp_btn_title':     'How this list works',
   'cohorts.phelp_title':         'How the participant list works',

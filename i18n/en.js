@@ -1,6 +1,7 @@
 // i18n/en.js — English. Mirrors pt.js 1:1 (synced to the current PT, agnostic positioning, 1st person).
 export default {
-  "nav.cta": "Let's talk",
+  "nav.cta": "Contact",
+  "nav.aluno": "My trail",
   "hero.h1": "Artificial intelligence applied to your work",
   "hero.rot": ["with method.", "safely.", "responsibly."],
   "hero.lead": "Training and consulting for companies, institutions and professionals who want to use AI day to day, with clarity, safety and results.",

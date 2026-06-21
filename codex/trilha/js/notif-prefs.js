@@ -55,7 +55,9 @@ function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').r
 //   initials : the student's avatar initials
 //   turmaKey : storage scope (client/turma)
 //   onChange : called after a toggle, with the new prefs (so the bell re-filters)
-export function createNotifSettings({ initials, turmaKey, onChange, btnClass = 'ph-action-btn' }) {
+//   turmas   : the OTHER turmas on this device ({ name, client, url, clientSlug, turmaSlug }),
+//              the "trocar de turma" list; onForget(clientSlug, turmaSlug) removes a saved one
+export function createNotifSettings({ initials, turmaKey, onChange, onLogout, showPrefs = true, turmas = [], onForget, btnClass = 'ph-action-btn' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-ns-wrap';
 
@@ -69,22 +71,45 @@ export function createNotifSettings({ initials, turmaKey, onChange, btnClass = '
     '</label>';
   }).join('');
 
+  // "Trocar de turma": the device's other saved turmas (Idea A — lives in this one
+  // settings box). Each is a link to enter; the ✕ forgets it (so a dead/old turma can be
+  // cleaned out). Hidden entirely when the device only knows this turma.
+  const turmasHtml = () => (!turmas || !turmas.length) ? '' :
+    '<div class="cdx-ns-turmas">' +
+      '<div class="cdx-ns-head">' + escAttr(t('notif.switch_turma')) + '</div>' +
+      turmas.map((tt, i) =>
+        '<div class="cdx-ns-turma" data-ti="' + i + '">' +
+          '<a class="cdx-ns-turma-go" href="' + escAttr(tt.url || '#') + '">' +
+            '<span class="cdx-ns-turma-name">' + escAttr(tt.name) + '</span>' +
+            (tt.client ? '<span class="cdx-ns-turma-client">' + escAttr(tt.client) + '</span>' : '') +
+          '</a>' +
+          (onForget ? '<button type="button" class="cdx-ns-turma-x" data-ti="' + i + '" aria-label="' + escAttr(t('notif.forget_turma')) + '">&times;</button>' : '') +
+        '</div>').join('') +
+    '</div>';
+
+  // The button is just the initials ball (no gear glyph, no pill background — see
+  // notif-bell.css). The panel holds the notif prefs (only when showPrefs, i.e. there's
+  // a notification source) and the Sair (logout) action at the bottom.
   wrap.innerHTML =
     '<button type="button" class="' + btnClass + ' cdx-ns-btn" aria-label="' + escAttr(t('notif.settings_title')) + '">' +
       '<span class="cdx-ns-initials">' + escAttr(initials || '·') + '</span>' +
-      '<span class="cdx-ns-gear">' + GEAR_SVG + '</span>' +
     '</button>' +
     '<div class="cdx-ns-panel" hidden role="menu">' +
-      '<div class="cdx-ns-head">' + escAttr(t('notif.settings_title')) + '</div>' +
-      '<div class="cdx-ns-opts">' + optsHtml() + '</div>' +
+      (showPrefs
+        ? '<div class="cdx-ns-head">' + escAttr(t('notif.settings_title')) + '</div>' +
+          '<div class="cdx-ns-opts">' + optsHtml() + '</div>'
+        : '') +
+      turmasHtml() +
+      (onLogout ? '<button type="button" class="cdx-ns-logout">' + escAttr(t('login.logout')) + '</button>' : '') +
     '</div>';
 
   const btn = wrap.querySelector('.cdx-ns-btn');
   const panel = wrap.querySelector('.cdx-ns-panel');
   const opts = wrap.querySelector('.cdx-ns-opts');
 
-  function repaintOpts() { opts.innerHTML = optsHtml(); bindOpts(); }
+  function repaintOpts() { if (!opts) return; opts.innerHTML = optsHtml(); bindOpts(); }
   function bindOpts() {
+    if (!opts) return;
     opts.querySelectorAll('input[data-ns]').forEach((cb) => {
       cb.addEventListener('change', () => {
         prefs = { ...prefs, [cb.getAttribute('data-ns')]: cb.checked };
@@ -100,6 +125,21 @@ export function createNotifSettings({ initials, turmaKey, onChange, btnClass = '
   function close() { panel.hidden = true; document.removeEventListener('click', onOutside, true); }
   function onOutside(e) { if (!wrap.contains(e.target)) close(); }
   btn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); if (panel.hidden) open(); else close(); });
+
+  const logoutBtn = wrap.querySelector('.cdx-ns-logout');
+  if (logoutBtn && onLogout) logoutBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onLogout(); });
+
+  // "Trocar de turma": the ✕ forgets a saved turma (removes its row; the link navigates).
+  wrap.querySelectorAll('.cdx-ns-turma-x').forEach((x) => {
+    x.addEventListener('click', (e) => {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+      const tt = turmas[Number(x.getAttribute('data-ti'))];
+      if (tt && onForget) onForget(tt.clientSlug, tt.turmaSlug);
+      const row = x.closest && x.closest('.cdx-ns-turma');
+      if (row && row.parentNode) row.parentNode.removeChild(row);
+    });
+  });
 
   return { el: wrap, getPrefs: () => prefs };
 }

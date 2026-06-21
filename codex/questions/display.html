@@ -13,18 +13,18 @@
 
 <!-- Shared tokens + Codex component CSS (no backstage). -->
 <link rel="stylesheet" href="/codex/css/theme.css?v=1.2">
-<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.2">
 <link rel="stylesheet" href="/codex/css/qr-share-modal.css?v=1.0">
 <link rel="stylesheet" href="/codex/questions/questions.css?v=4.2">
-<link rel="stylesheet" href="/codex/questions/display.css?v=1.7">
+<link rel="stylesheet" href="/codex/questions/display.css?v=2.0">
 
 <script src="/codex/js/theme-manager.js?v=1.0"></script>
 <script>
   ThemeManager.initPublic({ storageKey: 'bs_theme', defaultTheme: 'light' });
 </script>
 <!-- Admin auth (instructor surface): the shared BS_AUTH the Codex shell uses. -->
-<script src="/backstage/js/bs-google.js?v=1.4"></script>
-<script src="/backstage/js/auth.js?v=1.4"></script>
+<script src="/codex/js/bs-google.js?v=1.4"></script>
+<script src="/codex/js/auth.js?v=1.4"></script>
 </head>
 <body>
 
@@ -50,21 +50,13 @@
      QR on the left, the typed-entry address + 4-digit code on the right. -->
 <div id="cdx-disp-enroll" class="cdx-disp-enroll" hidden>
   <img class="cdx-disp-enroll-qr" id="cdx-disp-enroll-qr" alt="QR">
+  <div class="cdx-disp-enroll-divider" aria-hidden="true"></div>
   <div class="cdx-disp-enroll-info">
     <div class="cdx-disp-enroll-title" data-i18n="questions.display_enroll_title">Sua trilha de aprendizado</div>
     <div class="cdx-disp-enroll-lead" data-i18n="questions.display_enroll_lead">Leia o QR ou acesse pelo computador:</div>
     <div class="cdx-disp-enroll-url" id="cdx-disp-enroll-url"></div>
   </div>
 </div>
-
-<!-- Admin QR toggle: the display is admin-auth'd, so it controls the same enrollment
-     window the host panel does. Sits above the projected overlay (z-index) so the
-     instructor can turn the QR off from the projector or their phone. -->
-<button id="cdx-disp-qr-toggle" class="cdx-disp-qr-toggle" type="button" hidden
-        aria-label="Inscrição por QR" title="Inscrição por QR"
-        data-i18n-attr="title:questions.display_qr_toggle,aria-label:questions.display_qr_toggle">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14h1v1"/><path d="M14 20h1v1"/><path d="M20 20h1v1"/><path d="M17 17h1"/><path d="M20 17h1"/><path d="M17 20h1"/></svg>
-</button>
 
 <div id="cdx-disp-nocode">
   <p data-i18n="questions.display_nocode">Nenhum código de sessão na URL.</p>

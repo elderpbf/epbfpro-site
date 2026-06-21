@@ -6,6 +6,10 @@
 
 .cdx-bell-wrap { position: relative; display: inline-flex; }
 .cdx-bell-btn svg { width: 19px; height: 19px; }
+/* On the trilha header, match the fixed 36px theme toggle so the icon buttons are
+   uniform (the bell was padding-sized and read smaller than the others). Scoped to
+   pensoia-header so the Codex topbar bell is unaffected. */
+pensoia-header .ph-action-btn.cdx-bell-btn { width: 36px; height: 36px; padding: 0; justify-content: center; }
 
 /* Badge: top-right corner of the button, not over the glyph. Ringed in the surface
    colour so it reads as a separate chip. */
@@ -61,11 +65,14 @@
    notification surface. cdx-ns- prefix. */
 .cdx-ns-wrap { position: relative; display: inline-flex; }
 .cdx-ns-btn { display: inline-flex; align-items: center; gap: .35rem; }
+/* The settings button is just the initials ball — strip the .ph-action-btn pill
+   (no background, border, padding, shadow) so only the gradient avatar shows. */
+pensoia-header .ph-action-btn.cdx-ns-btn { background: none; border: none; padding: 0; box-shadow: none; min-width: 0; }
 .cdx-ns-initials {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;       /* same 36px as the theme toggle + bell */
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff; font-size: .64rem; font-weight: 800; letter-spacing: .02em;
+  color: #fff; font-size: .84rem; font-weight: 800; letter-spacing: .02em;
 }
 .cdx-ns-gear { display: inline-flex; }
 .cdx-ns-gear svg { width: 15px; height: 15px; }
@@ -90,8 +97,31 @@
 .cdx-ns-opt--off { opacity: .5; cursor: default; }
 .cdx-ns-opt--off:hover { background: none; }
 
+/* Sair (logout) row at the bottom of the settings panel. */
+.cdx-ns-logout {
+  width: 100%; padding: .7rem 1rem; border: none; border-top: 1px solid var(--border);
+  background: none; color: var(--error); font-family: inherit; font-size: .86rem; font-weight: 700;
+  text-align: left; cursor: pointer;
+}
+.cdx-ns-logout:hover { background: rgba(220, 38, 38, 0.07); }
+
+/* "Trocar de turma" list inside the settings panel (Idea A). */
+.cdx-ns-turmas { border-top: 1px solid var(--border); padding: .35rem .4rem; }
+.cdx-ns-turma { display: flex; align-items: center; gap: .3rem; }
+.cdx-ns-turma-go {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .1rem;
+  padding: .5rem .7rem; border-radius: 9px; text-decoration: none;
+}
+.cdx-ns-turma-go:hover { background: rgba(20, 184, 166, .06); }
+.cdx-ns-turma-name { font-size: .86rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-ns-turma-client { font-size: .74rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-ns-turma-x {
+  flex-shrink: 0; width: 26px; height: 26px; border: none; background: none; cursor: pointer;
+  color: var(--text-secondary); font-size: 1.1rem; line-height: 1; border-radius: 7px;
+}
+.cdx-ns-turma-x:hover { background: var(--background); color: var(--error); }
+
 /* On the Trilha header, public-header.css hides inner <span>s of .ph-action-btn at
    <=560px (icon-only mode). The settings button IS made of spans (initials + gear),
    so keep them visible. Specificity beats the icon-only rule. */
-pensoia-header .ph-action-btn .cdx-ns-initials,
-pensoia-header .ph-action-btn .cdx-ns-gear { display: inline-flex; }
+pensoia-header .ph-action-btn .cdx-ns-initials { display: inline-flex; }

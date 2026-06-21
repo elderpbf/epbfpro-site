@@ -1,0 +1,29 @@
+# Rotas do /trilha portadas do trilha/.htaccess (Apache), em URLs LIMPAS.
+# Por que limpas e nao .html: o Pages redireciona /x.html -> /x automaticamente (3xx), entao
+# reescrever pra .html criava loop infinito. Regras: a primeira que casa vence, de cima pra baixo,
+# e o destino de um rewrite 200 NAO e reavaliado (sem encadeamento). Por isso da pra reivindicar
+# os literais (validar/entrar) com um rewrite identidade antes da regra generica de codigo.
+
+# Backstage + greenroom sairam pro proprio origin (backstage.pensoia.com) na
+# separacao do repo. Preserva links antigos /backstage/* e /greenroom/* com 301.
+/backstage/*   https://backstage.pensoia.com/:splat            301
+/backstage     https://backstage.pensoia.com/                  301
+/greenroom/*   https://backstage.pensoia.com/greenroom/:splat  301
+/greenroom     https://backstage.pensoia.com/greenroom/        301
+
+# Certificado: validar com codigo, depois o literal bare (manual)
+/trilha/validar/:code   /trilha/validar?code=:code     200
+/trilha/validar         /trilha/validar                200
+
+# Entrada manual: reivindica o literal antes da regra generica de codigo
+/trilha/entrar          /trilha/entrar                 200
+
+# Deep link cliente/turma -> index.html (servido na raiz /trilha/)
+/trilha/:client/:turma  /trilha/?c=:client&t=:turma    200
+
+# Codigo digitado: qualquer 1 segmento que nao seja um literal acima
+/trilha/:code           /trilha/entrar?code=:code      200
+
+# /trilha sozinho -> entrada (sobrepoe o index.html padrao do diretorio)
+/trilha/                /trilha/entrar                 200
+/trilha                 /trilha/entrar                 200

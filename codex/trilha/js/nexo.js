@@ -20,7 +20,10 @@ const POLL_LIVE_MS    = 15000; // session open: watch for it to close
 const POLL_IDLE_MS    = 8000;  // no session: watch for one to open (snappy)
 const HOST_ID         = 'cdx-tr-nexo-host';
 const HIDDEN_CLS      = 'cdx-tr-hidden-by-nexo';
-const HIDE_SELECTORS  = ['.cdx-trilha-hero', '.cdx-trilha-tabs', '.cdx-trilha-tabcontent', '.cdx-trilha-footer'];
+// The wall (.cdx-en-wall) is in the list so that on a gated turma the live-answer
+// takeover cleanly replaces the register wall (the live Q&A needs no login); the wall
+// is restored when the session closes. (#4: every gated turma now renders the wall.)
+const HIDE_SELECTORS  = ['.cdx-trilha-hero', '.cdx-trilha-tabs', '.cdx-trilha-tabcontent', '.cdx-trilha-footer', '.cdx-en-wall'];
 
 let _loc = null;
 let _timer = null;

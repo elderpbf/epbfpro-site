@@ -1,6 +1,6 @@
 // js/ui.js — header scroll state, theme toggle + logo swap, language buttons,
 // the rotating typewriter in the hero, and the scroll-reveal observer.
-import { t, getLang, setLang, onLang, apply } from './i18n.js?v=17';
+import { t, getLang, setLang, onLang, apply } from './i18n.js?v=18';
 import { getTheme, toggleTheme, onTheme } from './theme.js?v=17';
 
 function applyLogo() {
@@ -24,9 +24,12 @@ function startRot() {
   })();
 }
 
+const LANG_SHORT = { pt: 'PT', en: 'EN', es: 'ES' };
 function syncLangButtons() {
-  document.querySelectorAll('.plp-lang button').forEach(b =>
+  document.querySelectorAll('.plp-langpop button[data-lang]').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.lang === getLang()));
+  const cur = document.getElementById('langCur');
+  if (cur) cur.textContent = LANG_SHORT[getLang()] || getLang().toUpperCase();
 }
 
 // The demo phones (real Codex app in srcdoc iframes) post {plpStep:{i,total,label}}
@@ -77,10 +80,28 @@ export function initUI() {
   onTheme(() => { setIcon(); applyLogo(); syncFrames(); });
   initCaptionTabs();
 
-  // language
+  // language (collapsed pill: shows the current lang, opens the options on click)
   syncLangButtons();
-  document.querySelectorAll('.plp-lang button').forEach(b =>
-    b.addEventListener('click', () => { setLang(b.dataset.lang); apply(document); }));
+  const langWrap = document.getElementById('lang');
+  const langBtn = document.getElementById('langBtn');
+  if (langBtn && langWrap) {
+    langBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = langWrap.classList.toggle('plp-langopen');
+      langBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', () => {
+      langWrap.classList.remove('plp-langopen');
+      langBtn.setAttribute('aria-expanded', 'false');
+    });
+  }
+  document.querySelectorAll('.plp-langpop button[data-lang]').forEach(b =>
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setLang(b.dataset.lang); apply(document);
+      if (langWrap) langWrap.classList.remove('plp-langopen');
+      if (langBtn) langBtn.setAttribute('aria-expanded', 'false');
+    }));
   onLang(() => { syncLangButtons(); startRot(); });
 
   // header scroll state

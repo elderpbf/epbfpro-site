@@ -63,7 +63,7 @@
   <!-- Preload profile image for faster LCP -->
   <link rel="preload" as="image" href="images/profile.jpg" fetchpriority="high">
 
-  <link rel="stylesheet" href="css/landing.css?v=17">
+  <link rel="stylesheet" href="css/landing.css?v=21">
 
   <!-- Structured data (Schema.org JSON-LD) -->
   <script type="application/ld+json">
@@ -126,15 +126,22 @@
   <div class="plp-bar">
     <a class="plp-brand" href="#top" aria-label="PensoIA"><img id="logo" src="images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA"></a>
     <div class="plp-ctrl">
-      <div class="plp-lang" role="group" aria-label="Idioma / Language">
-        <button data-lang="pt" aria-pressed="true">PT</button>
-        <button data-lang="en" aria-pressed="false">EN</button>
-        <button data-lang="es" aria-pressed="false">ES</button>
+      <div class="plp-lang" id="lang" role="group" aria-label="Idioma / Language">
+        <button class="plp-langbtn" id="langBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Idioma / Language"><span id="langCur">PT</span><span class="plp-langcar" aria-hidden="true">▾</span></button>
+        <div class="plp-langpop" role="menu">
+          <button data-lang="pt" aria-pressed="true">Português</button>
+          <button data-lang="en" aria-pressed="false">English</button>
+          <button data-lang="es" aria-pressed="false">Español</button>
+          <!-- TEST ONLY: orb behaviour modes (remove before promoting to production). -->
+          <div class="plp-orbtest-sep" aria-hidden="true"></div>
+          <button class="orb-mode-chip" type="button" data-orb-mode="stay" aria-pressed="false">Fica</button>
+          <button class="orb-mode-chip" type="button" data-orb-mode="descend" aria-pressed="false">Desce</button>
+          <button class="orb-mode-chip" type="button" data-orb-mode="leap" aria-pressed="false">Salta</button>
+        </div>
       </div>
       <button class="plp-ic" id="theme" aria-label="Tema">☀</button>
-      <a class="plp-ic" id="aluno" href="/trilha/entrar" aria-label="Área do Aluno" title="Área do Aluno"><svg viewBox="0 0 24 24"><path d="M22 9 12 5 2 9l10 4 10-4z"/><path d="M6 10.5V15c0 1.1 2.7 2 6 2s6-.9 6-2v-4.5"/><path d="M22 9v5"/></svg></a>
-      <a class="plp-ic" id="login" href="/codex/" aria-label="Entrar" title="Entrar (Codex)"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></a>
-      <a class="plp-cta" href="#contato"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M.06 24l1.68-6.1A11.9 11.9 0 1 1 12 24a11.9 11.9 0 0 1-5.7-1.45L.06 24zM6.6 20.1l.36.2a9.9 9.9 0 1 0-3.4-3.3l.23.37-1 3.6 3.8-.87z"/></svg><span class="plp-t" data-i18n="nav.cta">Conversar</span></a>
+      <a class="plp-pill" id="aluno" href="/trilha" aria-label="Acessar minha trilha" title="Acessar minha trilha"><svg viewBox="0 0 24 24"><path d="M22 9 12 5 2 9l10 4 10-4z"/><path d="M6 10.5V15c0 1.1 2.7 2 6 2s6-.9 6-2v-4.5"/><path d="M22 9v5"/></svg><span class="plp-t" data-i18n="nav.aluno">Acessar minha trilha</span></a>
+      <a class="plp-cta plp-eq" href="#contato"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M.06 24l1.68-6.1A11.9 11.9 0 1 1 12 24a11.9 11.9 0 0 1-5.7-1.45L.06 24zM6.6 20.1l.36.2a9.9 9.9 0 1 0-3.4-3.3l.23.37-1 3.6 3.8-.87z"/></svg><span class="plp-t" data-i18n="nav.cta">Contato</span></a>
     </div>
   </div>
 </header>
@@ -303,7 +310,7 @@
   </div>
 </footer>
 
-<script type="module" src="js/main.js?v=17"></script>
+<script type="module" src="js/main.js?v=27"></script>
 <!-- LGPD consent banner intentionally not loaded: the site sets no tracking
      cookies (only functional localStorage). js/consent.js stays in the repo;
      re-add this include when analytics are introduced. -->

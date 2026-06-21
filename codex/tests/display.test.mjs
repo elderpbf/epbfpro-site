@@ -36,6 +36,17 @@ test('display.css copied the cp-qa-student values verbatim', () => {
   assert.match(css, /background: rgba\(245,158,11,0\.10\)/, 'answer wrap tint');
 });
 
+test('the A−/A+ buttons zoom the whole display body, not the header controls', () => {
+  // The zoom rides one container (.cdx-disp-main) so the A−/A+ buttons scale the entire
+  // question surface as a block. The QR overlay scales its QR image + text blocks the same way.
+  assert.match(css, /\.cdx-disp-main \{[^}]*zoom: var\(--ph-zoom, 1\)/, 'the question area zooms');
+  assert.match(css, /\.cdx-disp-enroll-qr \{[^}]*zoom: var\(--ph-zoom, 1\)/, 'the QR image zooms');
+  assert.match(css, /\.cdx-disp-enroll-info \{[^}]*zoom: var\(--ph-zoom, 1\)/, 'the QR overlay text zooms');
+  // The header (pensoia-header) is a sibling OUTSIDE .cdx-disp-main, so its A−/A+, QR and
+  // theme controls never scale — that is the whole point of zooming the body container.
+  assert.match(html, /<pensoia-header[^>]*>[\s\S]*<div class="cdx-disp-main"/, 'header sits outside the zoomed body');
+});
+
 test('display shows the enrollment QR (no countdown) only while projected, via the shared control', () => {
   assert.match(html, /id="cdx-disp-enroll"/, 'has the enrollment overlay');
   assert.match(html, /display_enroll_title/, 'titled like the old trail QR (Sua trilha de aprendizado)');
@@ -46,9 +57,11 @@ test('display shows the enrollment QR (no countdown) only while projected, via t
   assert.ok(!/remainingSec|fmtRemain/.test(js), 'no countdown on the display — it lives on the session panel');
 });
 
-test('the display is a control surface: a QR toggle drives the same projection as the panel', () => {
-  assert.match(html, /id="cdx-disp-qr-toggle"/, 'has the admin QR toggle button');
+test('the display is a control surface: the header QR button drives the same projection as the panel', () => {
+  // The QR control is the header code button (the old floating #cdx-disp-qr-toggle was removed).
+  assert.match(js, /pensoia-header \.ph-code-btn[\s\S]*?addEventListener\('click', _toggleProjection\)/, 'header QR button toggles projection');
   assert.match(js, /toggleProjection\(/, 'toggles the same server state the host panel does');
+  assert.doesNotMatch(html, /id="cdx-disp-qr-toggle"/, 'the floating bottom QR button is gone');
 });
 
 test('clicking the projected QR overlay dismisses it (like the qr-share modal backdrop)', () => {

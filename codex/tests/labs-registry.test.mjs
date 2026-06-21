@@ -49,7 +49,7 @@ test('findItem builds the synthetic item shape for a real lab id', () => {
   assert.equal(it.type_label, 'Lab');
   assert.equal(it.title, 'Janela de contexto');
   assert.equal(it.summary, 'Orçamento de tokens e compactação');
-  assert.deepEqual(it.meta_json, { url: '/backstage/labs/k3/' });
+  assert.deepEqual(it.meta_json, { url: '/codex/labs/k3/' });
 });
 
 test('findItem rejects non-lab, unknown and empty ids', () => {

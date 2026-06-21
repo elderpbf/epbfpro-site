@@ -1,3 +1,0 @@
-# OAuth artifacts must NEVER land in this public repo.
-credentials.json
-token.json

@@ -221,9 +221,12 @@ function studentRow(p) {
   // clicks a magic link; the instructor can spot and fix typos in the room.
   const unv = (p.email && !p.email_verified) ? ' <span class="cdx-al-unverified" title="' + esc(t('alunos.unverified')) + '">⚠</span>' : '';
   let actions = '';
-  if (st === 'pending' || st === 'denied') actions += '<button type="button" class="cdx-btn cdx-al-approve">' + esc(t('alunos.approve')) + '</button>';
-  if (st === 'pending') actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-deny">' + esc(t('alunos.deny')) + '</button>';
-  if (st === 'approved') actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-revoke">' + esc(t('alunos.revoke')) + '</button>';
+  if (st === 'pending') actions += '<button type="button" class="cdx-btn cdx-al-approve">' + esc(t('alunos.approve')) + '</button>';
+  // Block toggle (Élder): pending/approved -> Bloquear (denied, sticks everywhere until
+  // unblocked); a blocked student -> Desbloquear (back to pending, can try again). REMOVE
+  // is the separate "tirar da lista" (delete) below — block ≠ remove.
+  if (st === 'denied') actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-unblock">' + esc(t('alunos.unblock')) + '</button>';
+  else actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-block">' + esc(t('alunos.block')) + '</button>';
   actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-remove">' + esc(t('alunos.remove')) + '</button>';
   return '<li class="cdx-al-srow" data-id="' + p.id + '">' +
     '<span class="cdx-al-name">' + esc(p.display_name || p.name || ('#' + p.id)) +
@@ -267,14 +270,14 @@ function wireStudentRows() {
   body().querySelectorAll('.cdx-al-srow').forEach((li) => {
     const id = Number(li.dataset.id);
     const ap = li.querySelector('.cdx-al-approve');
-    const dn = li.querySelector('.cdx-al-deny');
-    const rv = li.querySelector('.cdx-al-revoke');
+    const block = li.querySelector('.cdx-al-block');
+    const unblock = li.querySelector('.cdx-al-unblock');
     const rm = li.querySelector('.cdx-al-remove');
     if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'approved', origin: _origin() })); loadTurma(); });
-    if (dn) dn.addEventListener('click', async () => { dn.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'denied' })); loadTurma(); });
-    // Revoke = flip access_status back to pending (the gate reads it live; the worker also
-    // cuts live sessions, so the student is logged out on their next page load).
-    if (rv) rv.addEventListener('click', async () => { rv.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'pending' })); loadTurma(); });
+    // Bloquear -> denied: the worker cuts live sessions AND the block sticks across every
+    // entry path (resolveApproval/enrollJoin/gate) until Desbloquear flips it back to pending.
+    if (block) block.addEventListener('click', async () => { block.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'denied' })); loadTurma(); });
+    if (unblock) unblock.addEventListener('click', async () => { unblock.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'pending' })); loadTurma(); });
     if (rm) rm.addEventListener('click', async () => {
       if (typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
       rm.disabled = true; await safe(() => api.deleteParticipant({ id })); loadTurma();

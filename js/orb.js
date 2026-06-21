@@ -27,6 +27,33 @@ export function initOrb() {
   let phase = 'follow', detachScroll = 0, detachY = innerHeight * 0.4, locked = false, ease = 0.08;
   const urlFin = (location.search.match(/finale=(iris|part)/) || [])[1];
   let armed = false, bP = [], bRAF = 0, bW = 0, bH = 0, innerCY = 0;
+
+  // Behaviour mode — switched live by the header test chips, remembered in localStorage:
+  //   'descend' — the dot rides the scroll down the left lane (the original)
+  //   'stay'    — the dot lives in the hero and never descends; contacts bloom on scroll alone
+  //   'leap'    — the dot stays up top, then streaks down the centre and bursts at the contacts
+  const MODE_KEY = 'plp_orb_mode', MODES = ['stay', 'descend', 'leap'];
+  let mode = 'descend';
+  try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) mode = m; } catch (e) {}
+  let leapDir = 0, leapT0 = 0; const LEAP_MS = 620;   // 0 idle, +1 streak down, -1 streak back up
+
+  // Idle wander: a MEANDER, not a teleport. The target steps a moderate amount from where it is
+  // (so it never darts across the screen at once) inside a calm band that never reaches the very
+  // top, and it is seeded from the dot's current spot the instant the pointer leaves (no jump).
+  let wtx = innerWidth * 0.5, wty = innerHeight * 0.45, wAt = 0, wasLive = false;
+  function clampWander() {
+    const m = 28;
+    wtx = Math.max(m, Math.min(innerWidth - m, wtx));
+    wty = Math.max(innerHeight * 0.28, Math.min(innerHeight * 0.70, wty));   // stay in a middle band, never the top
+  }
+  function stepWanderTarget() {
+    wtx += (Math.random() - 0.5) * innerWidth * 0.6;   // a bounded step, not a leap across the screen
+    wty += (Math.random() - 0.5) * innerHeight * 0.30;
+    clampWander();
+  }
+  function tickWander(now) {
+    if (Math.hypot(sx - wtx, sy - wty) < 40 || now - wAt > 2600) { stepWanderTarget(); wAt = now; }
+  }
   function bSize() { bW = bc.width = bc.offsetWidth; bH = bc.height = bc.offsetHeight; }
   bSize(); addEventListener('resize', bSize); addEventListener('load', bSize);
 
@@ -65,51 +92,114 @@ export function initOrb() {
     locked = false; return null;
   }
 
+  // The left-margin lane the light descends in (Élder: stay well off the content, further
+  // left). The hero FOLLOW and the bottom BLOOM are unchanged — only the descent rides here.
+  function leftLane() { return Math.min(Math.max(innerWidth * 0.02, 10), 24); }
+
   function computeTarget(now) {
     const s = getSettings();
     const hb = hero.getBoundingClientRect().bottom;
     const live = now - mAt < 2500;
-    if (phase === 'follow') {                                 // follows mouse/finger, even scrolling, until the hero floor
-      locked = false; ease = s.easeFollow; clearGlow();
-      let tx = live ? mx : innerWidth * 0.5, ty = live ? my : innerHeight * 0.40;
+    if (phase === 'follow') {                                 // hero: follow the pointer, else wander
+      locked = false; clearGlow();
+      let tx, ty;
+      if (live) { ease = 0.035; tx = mx; ty = my; wasLive = true; }   // follow the mouse/finger at HALF speed (Élder)
+      else {
+        // First frame after the pointer leaves: seed the wander AT the dot's current spot so it
+        // glides on from there instead of darting off to a far point (Élder: no sudden fly to the top).
+        if (wasLive) { wtx = sx; wty = sy; clampWander(); wAt = now; wasLive = false; }
+        ease = 0.02; tickWander(now); tx = wtx; ty = wty;          // calm meander, never full-speed, never the top
+      }
       if (hb <= ty + 2) { phase = 'descend'; detachScroll = scrollY; detachY = Math.max(40, hb); }
-      const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130));
-      tx = tx + (innerWidth * 0.5 - tx) * k; ty = Math.min(ty, hb);
+      // DESCEND mode only: near the hero floor, ease toward the left lane (the detach point).
+      if (mode === 'descend') { const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130)); tx = tx + (leftLane() - tx) * k; }
+      ty = Math.min(ty, hb);
       return { x: tx, y: ty };
     }
     if (scrollY <= detachScroll - 4 && hb > my) phase = 'follow';
-    if (armed) { locked = false; ease = s.easeArmed; clearGlow(); return { x: innerWidth * 0.5, y: innerCY }; }
-    if (innerCY < innerHeight * 1.05) { locked = false; ease = s.easeApproach; clearGlow(); return { x: innerWidth * 0.5, y: Math.max(70, Math.min(innerHeight - 70, innerCY)) }; }
-    const f = descendTarget();
-    if (f) { ease = s.easeLock; return f; }
-    ease = s.easeFree;                                        // free: wanders slowly (vaga-lume figure-eight)
-    return { x: innerWidth * 0.5 + Math.sin(now * s.wanderFreq) * Math.min(s.wanderXCap, innerWidth * s.wanderX),
-             y: innerHeight * 0.5 + Math.sin(now * s.wanderYFreq + 1.57) * s.wanderY };
+    if (mode === 'descend') {                                 // the original: ride the scroll down the left lane
+      if (armed) { locked = false; ease = s.easeArmed; clearGlow(); return { x: innerWidth * 0.5, y: innerCY }; }
+      if (innerCY < innerHeight * 1.05) { locked = false; ease = s.easeApproach; clearGlow(); return { x: innerWidth * 0.5, y: Math.max(70, Math.min(innerHeight - 70, innerCY)) }; }
+      descendTarget();
+      locked = false; ease = s.easeFree;
+      const docMax = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+      const dfrac = Math.max(0, Math.min(1, (scrollY - detachScroll) / Math.max(1, docMax - detachScroll)));
+      return { x: leftLane(), y: 70 + dfrac * (innerHeight - 140) };
+    }
+    // STAY / LEAP: keep painting the underlines as the scroll passes them (Élder: they stay).
+    // The dot is hidden here; park it off-screen-top centre while waiting, but once the contacts
+    // have bloomed pin it AT the contacts so the fade dissolves in place (never flies back up).
+    descendTarget();
+    locked = false; ease = 0.08;
+    return { x: innerWidth * 0.5, y: armed ? innerCY : -60 };
+  }
+
+  // The contacts reveal IS the orb: it streaks to the contacts and the ring expands from it
+  // (onArm), and on the way back the ring shrinks while the dot streaks home (onDisarm) — the
+  // same motion in reverse (Élder's mental model).
+  function onArm(now) {
+    if (mode === 'leap') { leapDir = 1; leapT0 = now; }       // streak DOWN; ring blooms when it lands
+    else { fire(finaleMode()); }                              // stay + descend: bloom immediately
+  }
+  function onDisarm(now) {
+    if (mode === 'leap') { unfire(); leapDir = -1; leapT0 = now; }  // ring shrinks + dot streaks back UP
+    else { unfire(); }
   }
 
   function frame(now) {
     const s = getSettings();
+    const heroRect = hero.getBoundingClientRect();
     const rr = cinner.getBoundingClientRect(); innerCY = rr.top + rr.height / 2;
-    if (!armed && innerCY < innerHeight * s.armAt) { armed = true; fire(finaleMode()); }
-    else if (armed && innerCY > innerHeight * 0.96) { armed = false; unfire(); }
+    if (!armed && innerCY < innerHeight * s.armAt) { armed = true; onArm(now); }
+    else if (armed && innerCY > innerHeight * 0.96) { armed = false; onDisarm(now); }
     const t = computeTarget(now);
     sx += (t.x - sx) * ease; sy += (t.y - sy) * ease;
-    const wob = (phase === 'descend' && !locked && !armed) ? 1 : 0;
-    const wx = sx + Math.cos(now * 0.0016) * s.wobble * wob, wy = sy + Math.sin(now * 0.0022) * s.wobble * wob;
-    spark.style.transform = 'translate(' + wx + 'px,' + wy + 'px) translate(-50%,-50%)';
-    spark.classList.toggle('plp-on', !armed);
-    spark.classList.toggle('plp-soft', phase === 'descend' && !armed && !locked);
-    if (hero.getBoundingClientRect().bottom > 0) {            // constellation only while the hero is visible
+
+    // Per-mode visibility + the LEAP. DESCEND is the original; STAY/LEAP hide the dot mid-scroll
+    // so it never distracts over the content; LEAP streaks it down the centre (and back up).
+    let show, soft = false;
+    if (mode === 'descend') {
+      show = !armed;
+      soft = phase === 'descend' && !armed && !locked;
+    } else if (phase === 'follow' && heroRect.bottom > 0) {
+      show = true;                                            // visible hero interaction
+    } else if (mode === 'leap' && leapDir !== 0) {
+      const k = Math.min(1, (now - leapT0) / LEAP_MS);
+      sx = innerWidth * 0.5;
+      if (leapDir === 1) { sy = -50 + (innerCY + 50) * (k * k); if (k >= 1) { leapDir = 0; fire(finaleMode()); } }  // down: ease-in, then bloom
+      else { sy = -50 + (innerCY + 50) * ((1 - k) * (1 - k)); if (k >= 1) leapDir = 0; }                            // up: the exact reverse path
+      show = true;
+    } else {
+      show = false;                                           // mid-scroll/bloomed: the dot is gone (it became the ring)
+    }
+    spark.style.transform = 'translate(' + sx + 'px,' + sy + 'px) translate(-50%,-50%)';
+    spark.classList.toggle('plp-on', show);
+    spark.classList.toggle('plp-soft', soft);
+    // Pass BEHIND the page content (z-index 1 < content's 2/3), except during the leap streak,
+    // which must stay visible in front (Élder: "o orbe deve passar por trás dos elementos").
+    spark.classList.toggle('plp-behind', !(mode === 'leap' && leapDir !== 0));
+
+    if (heroRect.bottom > 0) {                                // constellation only while the hero is visible
       ctx.clearRect(0, 0, W, H); const c = rgb();
       const r = cv.getBoundingClientRect(); const lx = sx - r.left, ly = sy - r.top;
       for (const q of nodes) { q.x += q.vx; q.y += q.vy; if (q.x < 0 || q.x > W) q.vx *= -1; if (q.y < 0 || q.y > H) q.vy *= -1; }
       for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) { const a = nodes[i], b = nodes[j]; const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (d < 135) { ctx.strokeStyle = 'rgba(' + c + ',' + (.30 * (1 - d / 135)) + ')'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } }
-      for (const q of nodes) { const d = Math.hypot(q.x - lx, q.y - ly); if (d < 220) { ctx.strokeStyle = 'rgba(' + c + ',' + (.5 * (1 - d / 220)) + ')'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(q.x, q.y); ctx.stroke(); } }
+      if (show) for (const q of nodes) { const d = Math.hypot(q.x - lx, q.y - ly); if (d < 220) { ctx.strokeStyle = 'rgba(' + c + ',' + (.5 * (1 - d / 220)) + ')'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(q.x, q.y); ctx.stroke(); } }
       for (const q of nodes) { ctx.fillStyle = 'rgba(' + c + ',.55)'; ctx.beginPath(); ctx.arc(q.x, q.y, 1.6, 0, 7); ctx.fill(); }
     }
     requestAnimationFrame(frame);
   }
+
+  // TEST ONLY: header chips (Fica / Desce / Salta) switch the behaviour live + remember it.
+  // Removed before promoting to production; absent chips simply no-op.
+  function setMode(m) {
+    if (MODES.includes(m)) { mode = m; try { localStorage.setItem(MODE_KEY, m); } catch (e) {} }
+    leapDir = 0; armed = false; unfire();
+    for (const b of document.querySelectorAll('.orb-mode-chip')) b.setAttribute('aria-pressed', String(b.dataset.orbMode === mode));
+  }
+  for (const b of document.querySelectorAll('.orb-mode-chip')) b.addEventListener('click', () => setMode(b.dataset.orbMode));
+  setMode(mode);   // reflect the restored mode on the chips
 
   if (reduce) { spark.classList.add('plp-on'); spark.style.transform = 'translate(' + (innerWidth * 0.5) + 'px,' + (innerHeight * 0.4) + 'px) translate(-50%,-50%)'; contact.classList.add('plp-lit'); }
   else requestAnimationFrame(frame);

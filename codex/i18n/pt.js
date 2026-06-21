@@ -38,6 +38,8 @@ export default {
   'alunos.queue':        'Aprovações pendentes',
   'alunos.queue_empty':  'Nenhum aluno aguardando aprovação.',
   'alunos.approve':      'Aprovar',
+  'alunos.block':        'Bloquear',
+  'alunos.unblock':      'Desbloquear',
   'alunos.deny':         'Negar',
   'alunos.approve_all':  'Aprovar todos',
   'alunos.students':     'Alunos',
@@ -48,7 +50,7 @@ export default {
   'alunos.remove_confirm': 'Remover este aluno? Ele perde o acesso e precisa entrar de novo.',
   'alunos.status_approved': 'Aprovado',
   'alunos.status_pending':  'Pendente',
-  'alunos.status_denied':   'Negado',
+  'alunos.status_denied':   'Bloqueado',
   'alunos.via_window':   'presente na aula',
   'alunos.via_roster':   'lista',
   'alunos.via_presence': 'presença',
@@ -70,7 +72,7 @@ export default {
   'alunos.filter_all':        'Todos',
   'alunos.filter_pending':    'Pendentes',
   'alunos.filter_approved':   'Aprovados',
-  'alunos.filter_denied':     'Negados',
+  'alunos.filter_denied':     'Bloqueados',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Conexão perdida.',
@@ -325,7 +327,7 @@ export default {
   // Cohorts — participants (roster)
   'cohorts.sec_turma_data':               'Dados da turma',
   'cohorts.sec_access':                   'Acesso',
-  'cohorts.participants_btn':             'Participantes',
+  'cohorts.participants_btn':             'Gerenciar lista',
   'cohorts.participants_btn_title':       'Gerenciar participantes desta turma',
   'cohorts.participants_title':           'Participantes',
   'cohorts.participants_empty':           'Nenhum participante cadastrado.',
@@ -358,7 +360,7 @@ export default {
   'cohorts.ptag_qr':       'QR',
   'cohorts.ptag_manual':   'Manual',
   'cohorts.ptag_pending':  'Pendente',
-  'cohorts.ptag_denied':   'Negado',
+  'cohorts.ptag_denied':   'Bloqueado',
   // Cohorts — participant list legend (the "?" help glyph)
   'cohorts.phelp_btn_title':     'Como funciona esta lista',
   'cohorts.phelp_title':         'Como funciona a lista de participantes',

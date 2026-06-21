@@ -46,7 +46,9 @@ test('the teacher topbar mounts the bell against the admin facade', () => {
 test('the student trilha header mounts the bell + prefs only when enabled + logged in', () => {
   const src = read('../trilha/js/page.js');
   assert.match(src, /from '\.\.\/\.\.\/js\/notif-bell\.js'/, 'imports the bell');
-  assert.match(src, /forum_enabled && state\.sessionToken/, 'gates on forum + session (notifications follow the forum)');
+  assert.match(src, /state\.sessionToken && data\.access && data\.access\.gated/, 'the settings box (logout + prefs) shows when logged in on a gated turma');
+  assert.match(src, /data\.turma\.forum_enabled/, 'the bell + notif prefs follow the forum');
+  assert.match(src, /onLogout:/, 'logout lives inside the settings box (no standalone pill when logged in)');
   assert.match(src, /forumNotifications\(\{ session_token/, 'wires the scoped student source');
   // In-app open: no reload, switch tab + open the thread by id.
   assert.match(src, /focusThread\(item\.thread_id\)/, 'opens the thread in place');
@@ -55,6 +57,15 @@ test('the student trilha header mounts the bell + prefs only when enabled + logg
   // Bell items filtered by the student's chosen categories; settings button mounted.
   assert.match(src, /filterByPrefs\(/, 'filters notifications by prefs');
   assert.match(src, /createNotifSettings\(/, 'mounts the prefs settings button');
+  assert.match(src, /otherKnownTurmas\(/, "computes the device's other turmas (trocar de turma)");
+  assert.match(src, /onForget:/, 'passes the forget callback for a saved turma');
+});
+
+test('the settings box renders the trocar-de-turma list (Idea A) when other turmas exist', () => {
+  const src = read('../trilha/js/notif-prefs.js');
+  assert.match(src, /cdx-ns-turma\b/, 'renders the turma rows');
+  assert.match(src, /notif\.switch_turma/, 'uses the switch-turma label');
+  assert.match(src, /onForget/, 'wires the forget action');
 });
 test('notif i18n keys exist in codex + trilha dictionaries (pt + en)', () => {
   for (const f of ['../i18n/pt.js', '../i18n/en.js', '../trilha/i18n.js']) {

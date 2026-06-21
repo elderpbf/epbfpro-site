@@ -12,7 +12,7 @@
 // markup would be dead code emitting cv- classes the native modules forbid.
 
 // Lab definitions are SHIPPED DATA — kept byte-identical with the legacy registry
-// so the same lab pages resolve. The lab HTML still lives at /backstage/labs/<key>/
+// so the same lab pages resolve. The lab HTML still lives at /codex/labs/<key>/
 // (moving it is the legacy quarantine step, not this port).
 export const LABS = [
   {
@@ -91,7 +91,7 @@ function labToItem(lab) {
     type_label: 'Lab',
     title: lab.title,
     summary: lab.summary,
-    meta_json: { url: '/backstage/labs/' + lab.key + '/' }
+    meta_json: { url: '/codex/labs/' + lab.key + '/' }
   };
 }
 

@@ -1,10 +1,14 @@
 // codex/trilha/js/student-login.js
 // The Trail login flow as pure logic over an injected facade + session. The
-// modal (student-login-modal.js) is a thin renderer that drives this controller,
-// so the whole state machine is unit-testable without a DOM:
-//   anonymous -> email -> sent -> (magic link) -> verifying -> profile? -> authenticated
-// Self-registration and login are the SAME flow: requestLink finds-or-creates the
-// participant worker-side. CPF is never collected here (deferred to cert claim).
+// renderers (the wall, the modal, the entry page) are thin and drive this
+// controller, so the whole state machine is unit-testable without a DOM:
+//   anonymous -> email -> code -> verifying -> profile? -> authenticated
+//                                          \-> hub (turma-agnostic entry page)
+// E-mail auth is a 4-letter OTP code (the magic link is retired): one verify
+// exchanges (email, code) for a session PER TURMA the address belongs to, so a
+// single sign-in remembers every turma on this device. Self-registration and
+// login are the SAME flow: verify finds-or-creates the participation worker-side.
+// CPF is never collected here (deferred to cert claim).
 import { trail } from './api.js';
 import * as defaultSession from './student-session.js';
 
@@ -24,10 +28,19 @@ export function validateEmail(raw) {
   return EMAIL_RE.test(e) ? e : null;
 }
 
-// PURE. Decide the post-verify state from the worker's authVerify result.
-export function nextStateAfterVerify(res) {
-  if (!res || !res.ok || !res.session_token) return 'error';
-  return res.needs_profile ? 'profile' : 'authenticated';
+// PURE. Find the turma entry matching (client, turma) in an OTP-verify turma list.
+export function pickTurma(turmas, client, turma) {
+  return (Array.isArray(turmas) ? turmas : []).find(
+    (e) => e && e.client_slug === client && e.turma_slug === turma,
+  ) || null;
+}
+
+// PURE. The post-verify state for the bound turma entry: a missing entry (the bound
+// turma was not in the list) is an error; an unconsented participation needs the
+// profile step; otherwise the session is live and the student is authenticated.
+export function nextStateForTurma(entry) {
+  if (!entry) return 'error';
+  return entry.needs_profile ? 'profile' : 'authenticated';
 }
 
 // PURE control flow. If the student is logged in, proceed immediately; otherwise
@@ -38,11 +51,9 @@ export function gate(loggedIn, openLogin, proceed) {
   else openLogin(proceed);
 }
 
-// PURE. The createLoginFlow options the login modal derives from its own opts plus
-// the page origin. Extracted so the pass-through (client / turma / k / origin) is
-// unit-tested: the modal DOM is only verified on staging, so without this the
-// earlier k-drop (k never reached the flow, so the magic link lost the turma token)
-// was invisible to the suite.
+// PURE. The createLoginFlow options a renderer derives from its own opts plus the
+// page origin. Extracted so the pass-through (client / turma / k / origin / presence
+// / enrollToken) is unit-tested; the renderer DOM is only verified on staging.
 export function flowOptsFrom(opts, origin) {
   return {
     client: opts.client,
@@ -56,54 +67,108 @@ export function flowOptsFrom(opts, origin) {
   };
 }
 
-// Build a login flow bound to one turma. `api` + `session` are injectable for
-// tests; in the app they default to the real Trail facade + session module.
+// callWorker (worker-call.js) THROWS on any { error } response, so a bare `await api.x()`
+// below would reject and leave the calling UI hung (the wall/entry "Enviando..." button
+// never settles). Normalize a thrown worker error back into the { error } shape every
+// branch here already handles. The error itself was already logged by callWorker.
+async function safeCall(promise) {
+  try { return await promise; }
+  catch (e) {
+    // Keep the whole worker payload (error + extras like retry_after_seconds), not just
+    // the code, so the UI can say "aguarde ~X min" on a rate-limit.
+    if (e && e.data && typeof e.data === 'object') return e.data;
+    return { error: (e && e.message) || 'error' };
+  }
+}
+
+// Build a login flow. `client`/`turma` BIND it to one turma (the wall + the inline
+// gate + the modal): verify lands the student authenticated on that turma. OMITTING
+// them makes the flow turma-agnostic (the /trilha entry page): verify lands on the
+// `hub` with the full turma list. `api` + `session` are injectable for tests.
 export function createLoginFlow(opts = {}) {
   const api = opts.api || trail;
   const sess = opts.session || defaultSession;
   const client = opts.client;
   const turma = opts.turma;
-  const k = opts.k; // the turma access token, echoed into the magic-link return URL
-  const origin = opts.origin; // the page origin, so the emailed link returns here (staging/prod)
   const presence = opts.presence; // device-presence grant (signal b), offered at verify
   const enrollToken = opts.enrollToken; // QR enrollment token; direct-access join uses it
 
   const flow = {
     state: 'anonymous',
     error: null,
-    devToken: null,
+    retryAfter: null,     // seconds to wait after a rate-limit / resend cooldown
+    codeStillValid: false, // the prior code is still good — reused, no new e-mail sent
+    email: null,
+    devCode: null,        // the on-screen code when no e-mail provider is wired (staging)
+    turmas: null,         // the verify turma list (the hub on the entry page)
     participantId: null,
 
     isAuthenticated() { return sess.isLoggedIn(client, turma); },
 
-    async requestLink(rawEmail) {
+    // Step 1: send a 4-letter OTP code to the e-mail. Turma-agnostic (the code proves
+    // the address, not a turma), so only the email travels.
+    async requestCode(rawEmail, opts = {}) {
       this.error = null;
+      this.retryAfter = null;
+      this.codeStillValid = false;
       const email = validateEmail(rawEmail);
       if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
-      const payload = { client_slug: client, turma_slug: turma, email };
-      if (k) payload.k = k;
-      if (origin) payload.origin = origin;
-      const res = await api.authRequest(payload);
-      if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
-      this.devToken = res.dev_magic_token || null;
-      this.state = 'sent';
+      this.email = email;
+      // Bound flow (the wall) REGISTERS into the named turma, so it sends the turma context
+      // and the code is always issued. The unbound entry page sets require_enrolled, so the
+      // worker rejects an address that belongs to no turma (email_not_enrolled) BEFORE
+      // sending a code — the "no turma" check happens at e-mail submit, not after verify.
+      const reqParams = { email };
+      if (opts.resend) reqParams.resend = true;
+      if (client && turma) { reqParams.client_slug = client; reqParams.turma_slug = turma; }
+      else { reqParams.require_enrolled = true; }
+      const res = await safeCall(api.otpRequest(reqParams));
+      if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; this.retryAfter = (res && res.retry_after_seconds) || null; return this; }
+      // Cooldown hit on an explicit resend: stay on the code step and surface the countdown.
+      if (res.throttled) { this.retryAfter = res.retry_after_seconds || null; this.state = 'code'; return this; }
+      // The previous code is still valid: reuse it — keep the on-screen dev code (don't null it).
+      if (res.code_still_valid) { this.codeStillValid = true; this.state = 'code'; return this; }
+      if (res.dev_otp_code) this.devCode = res.dev_otp_code; // only overwrite when a NEW code was minted
+      this.state = 'code';
       return this;
     },
 
-    async verify(token) {
+    // Step 2: exchange (email, code) for sessions. The worker returns one entry per
+    // turma the address belongs to; we persist a session for EACH (localStorage-first:
+    // one verify remembers every turma here). Bound -> land authenticated on this turma
+    // (profile step if not yet consented); unbound -> land on the hub with the list.
+    async verifyCode(rawCode) {
       this.error = null;
       this.state = 'verifying';
-      const res = await api.authVerify(presence ? { token, presence_token: presence } : { token });
-      const next = nextStateAfterVerify(res);
-      if (next === 'error') { this.state = 'error'; this.error = (res && res.error) || 'invalid_token'; return this; }
-      sess.setToken(client, turma, res.session_token);
-      this.participantId = res.participant_id != null ? res.participant_id : null;
-      this.state = next;
+      const payload = { email: this.email, code: String(rawCode || '').trim() };
+      if (client) payload.client_slug = client;
+      if (turma) payload.turma_slug = turma;
+      if (presence) payload.presence_token = presence;
+      // Carry the QR/código enrollment token so the worker can approve via the
+      // inscription window (signal a): a student who arrived with the class código is
+      // approved on sign-up instead of landing pending.
+      if (enrollToken) payload.et = enrollToken;
+      const res = await safeCall(api.otpVerify(payload));
+      if (!res || !res.ok) { this.state = 'code'; this.error = (res && res.error) || 'invalid_code'; return this; }
+      const turmas = Array.isArray(res.turmas) ? res.turmas : [];
+      this.turmas = turmas;
+      for (const tt of turmas) {
+        if (!tt) continue;
+        if (tt.session_token) sess.setToken(tt.client_slug, tt.turma_slug, tt.session_token);
+        if (typeof sess.rememberTurma === 'function') sess.rememberTurma(tt); // populate the /trilha hub
+      }
+      if (client && turma) {
+        const entry = pickTurma(turmas, client, turma);
+        this.participantId = entry && entry.participant_id != null ? entry.participant_id : null;
+        this.state = nextStateForTurma(entry);
+      } else {
+        this.state = 'hub';
+      }
       return this;
     },
 
     // Direct-access in-class join (opt-in turma, no email round-trip). A live QR/code +
-    // open window mints an approved session on the spot. Mirrors verify()'s tail.
+    // open window mints an approved session on the spot. Mirrors verifyCode's tail.
     async enrollJoin(rawEmail, name) {
       this.error = null;
       const email = validateEmail(rawEmail);
@@ -111,7 +176,7 @@ export function createLoginFlow(opts = {}) {
       const payload = { client_slug: client, turma_slug: turma, et: enrollToken, email };
       const cleanName = (name || '').trim();
       if (cleanName) payload.name = cleanName;
-      const res = await api.enrollJoin(payload);
+      const res = await safeCall(api.enrollJoin(payload));
       if (!res || !res.ok || !res.session_token) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
       sess.setToken(client, turma, res.session_token);
       this.participantId = res.participant_id != null ? res.participant_id : null;
@@ -122,12 +187,12 @@ export function createLoginFlow(opts = {}) {
     async saveProfile(displayName, consent) {
       this.error = null;
       if (!consent) { this.error = 'consent_required'; return this; }
-      const res = await api.profileSave({
+      const res = await safeCall(api.profileSave({
         session_token: sess.getToken(client, turma),
         display_name: (displayName || '').trim(),
         consent: true,
         consent_version: sess.CONSENT_VERSION,
-      });
+      }));
       if (!res || !res.ok) { this.error = (res && res.error) || 'error'; return this; }
       this.state = 'authenticated';
       return this;
@@ -137,7 +202,8 @@ export function createLoginFlow(opts = {}) {
       sess.clearToken(client, turma);
       this.state = 'anonymous';
       this.error = null;
-      this.devToken = null;
+      this.devCode = null;
+      this.turmas = null;
       this.participantId = null;
     },
   };

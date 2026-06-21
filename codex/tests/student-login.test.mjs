@@ -1,26 +1,34 @@
-// codex/trilha/js/student-login.js — the Trail login flow (RED first).
+// codex/trilha/js/student-login.js — the Trail login flow (OTP).
 // The flow controller is pure logic over an injected facade + session, so the
-// whole state machine (email -> sent -> verify -> profile/authenticated) is
-// unit-tested here; the modal DOM that renders it is verified on staging.
+// whole state machine (email -> code -> verify -> profile/authenticated, or the
+// turma-agnostic hub) is unit-tested here; the renderers that drive it (the wall,
+// the modal, the entry page) are thin and verified on staging.
+//
+// E-mail auth is a 4-letter OTP code (the magic link is retired): requestCode mints
+// the code worker-side, verifyCode exchanges (email, code) for a session PER TURMA
+// the address belongs to. One verify remembers every turma on this device.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 const login = await import('../trilha/js/student-login.js');
 const {
-  validateEmail, nextStateAfterVerify, gate, createLoginFlow, flowOptsFrom,
+  validateEmail, nextStateForTurma, pickTurma, gate, createLoginFlow, flowOptsFrom,
   CONTROLLER, CONTROLLER_CNPJ, CONTROLLER_CONTACT,
 } = login;
 
 // A fake session backed by a Map (mirrors student-session.js's surface).
 function fakeSession() {
   const store = new Map();
+  const remembered = [];
   return {
     CONSENT_VERSION: '2026-06-16',
     _store: store,
+    _remembered: remembered,
     getToken: (c, t) => (store.has(c + '/' + t) ? store.get(c + '/' + t) : null),
     setToken: (c, t, tok) => store.set(c + '/' + t, tok),
     clearToken: (c, t) => { store.delete(c + '/' + t); },
     isLoggedIn: (c, t) => store.has(c + '/' + t),
+    rememberTurma: (e) => remembered.push(e),
   };
 }
 
@@ -31,12 +39,21 @@ function fakeApi(responses) {
   const make = (name) => async (p) => { calls.push({ name, params: p }); return queue[name]; };
   return {
     calls,
-    authRequest: make('authRequest'),
-    authVerify: make('authVerify'),
+    otpRequest: make('otpRequest'),
+    otpVerify: make('otpVerify'),
     profileSave: make('profileSave'),
     sessionCheck: make('sessionCheck'),
     enrollJoin: make('enrollJoin'),
   };
+}
+
+// One turma entry, the shape student_otp_verify returns per participation.
+function turmaEntry(over = {}) {
+  return Object.assign({
+    client_slug: 'jfse', turma_slug: 'geral', client_name: 'JFSE', turma_name: 'Geral',
+    token: 'KTOK', session_token: 'SESS', participant_id: 7, needs_profile: false,
+    access: { gated: true, status: 'approved', via: 'roster' },
+  }, over);
 }
 
 // ── Pure helpers ─────────────────────────────────────────────────────────────
@@ -51,12 +68,17 @@ test('validateEmail normalizes valid input and rejects junk', () => {
   assert.equal(validateEmail(null), null);
 });
 
-test('nextStateAfterVerify routes on ok + needs_profile', () => {
-  assert.equal(nextStateAfterVerify({ ok: true, session_token: 'S', needs_profile: true }), 'profile');
-  assert.equal(nextStateAfterVerify({ ok: true, session_token: 'S', needs_profile: false }), 'authenticated');
-  assert.equal(nextStateAfterVerify({ error: 'token_used' }), 'error');
-  assert.equal(nextStateAfterVerify({ ok: true }), 'error');   // missing session_token
-  assert.equal(nextStateAfterVerify(null), 'error');
+test('nextStateForTurma routes on the bound turma entry', () => {
+  assert.equal(nextStateForTurma({ needs_profile: true }), 'profile');
+  assert.equal(nextStateForTurma({ needs_profile: false }), 'authenticated');
+  assert.equal(nextStateForTurma(null), 'error');     // bound turma absent from the list
+});
+
+test('pickTurma finds the matching (client, turma) entry, else null', () => {
+  const list = [turmaEntry({ turma_slug: 'a' }), turmaEntry({ turma_slug: 'geral' })];
+  assert.equal(pickTurma(list, 'jfse', 'geral').turma_slug, 'geral');
+  assert.equal(pickTurma(list, 'jfse', 'nope'), null);
+  assert.equal(pickTurma(null, 'jfse', 'geral'), null);
 });
 
 test('gate proceeds when logged in, opens login otherwise', () => {
@@ -69,7 +91,6 @@ test('gate proceeds when logged in, opens login otherwise', () => {
   gate(false, (cont) => { opened++; captured = cont; }, () => proceeded++);
   assert.equal(opened, 1);
   assert.equal(proceeded, 0);
-  // openLogin receives the proceed continuation, so a successful login can resume.
   captured();
   assert.equal(proceeded, 1);
 });
@@ -95,112 +116,146 @@ test('a flow with an existing token starts authenticated', () => {
   assert.equal(f.isAuthenticated(), true);
 });
 
-test('requestLink rejects an invalid email without calling the facade', async () => {
-  await flow.requestLink('nope');
+test('requestCode rejects an invalid email without calling the facade', async () => {
+  await flow.requestCode('nope');
   assert.equal(flow.state, 'email');
   assert.equal(flow.error, 'email_invalid');
   assert.equal(api.calls.length, 0);
 });
 
-test('requestLink sends a normalized email and moves to sent', async () => {
-  api = fakeApi({ authRequest: { ok: true } });
+test('requestCode (bound/wall) sends the turma context so the code is always issued', async () => {
+  api = fakeApi({ otpRequest: { ok: true } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  await flow.requestLink('  Aluno@Exemplo.com ');
-  assert.equal(api.calls[0].name, 'authRequest');
-  assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', email: 'aluno@exemplo.com' });
-  assert.equal(flow.state, 'sent');
+  await flow.requestCode('  Aluno@Exemplo.com ');
+  assert.equal(api.calls[0].name, 'otpRequest');
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', client_slug: 'jfse', turma_slug: 'geral' });
+  assert.equal(flow.state, 'code');
+  assert.equal(flow.email, 'aluno@exemplo.com');
   assert.equal(flow.error, null);
 });
 
-test('requestLink echoes the turma token (k) so the magic link can carry it', async () => {
-  api = fakeApi({ authRequest: { ok: true } });
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', k: 'KTOK' });
-  await flow.requestLink('aluno@exemplo.com');
-  assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', email: 'aluno@exemplo.com', k: 'KTOK' });
+test('requestCode (unbound/entry) sets require_enrolled so an un-enrolled e-mail is rejected before any code', async () => {
+  api = fakeApi({ otpRequest: { ok: true } });
+  flow = createLoginFlow({ api, session: sess }); // no client/turma -> the turma-agnostic /trilha entry
+  await flow.requestCode('aluno@exemplo.com');
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', require_enrolled: true });
 });
 
-test('requestLink echoes the page origin so the magic link returns to this deployment', async () => {
-  api = fakeApi({ authRequest: { ok: true } });
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', k: 'KTOK', origin: 'https://staging.pensoia.com' });
-  await flow.requestLink('aluno@exemplo.com');
-  assert.deepEqual(api.calls[0].params, {
-    client_slug: 'jfse', turma_slug: 'geral', email: 'aluno@exemplo.com', k: 'KTOK', origin: 'https://staging.pensoia.com',
-  });
-});
-
-test('flowOptsFrom forwards client/turma/k/origin/api/session (guards the modal pass-through)', () => {
-  const fakeApiObj = {}, fakeSessObj = {};
-  const out = flowOptsFrom(
-    { client: 'jfse', turma: 'geral', k: 'KTOK', api: fakeApiObj, session: fakeSessObj, onAuthenticated: () => {} },
-    'https://staging.pensoia.com',
-  );
-  assert.equal(out.client, 'jfse');
-  assert.equal(out.turma, 'geral');
-  assert.equal(out.k, 'KTOK');               // the field whose drop broke the magic link
-  assert.equal(out.origin, 'https://staging.pensoia.com');
-  assert.equal(out.api, fakeApiObj);
-  assert.equal(out.session, fakeSessObj);
-});
-
-test('requestLink captures a dev token when the worker returns one', async () => {
-  api = fakeApi({ authRequest: { ok: true, dev_magic_token: 'DEVTOK' } });
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  await flow.requestLink('aluno@exemplo.com');
-  assert.equal(flow.devToken, 'DEVTOK');
-});
-
-test('requestLink surfaces a worker error and stays on email', async () => {
-  api = fakeApi({ authRequest: { error: 'turma_not_found' } });
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  await flow.requestLink('aluno@exemplo.com');
+test('requestCode surfaces email_not_enrolled and stays on email (no code step)', async () => {
+  api = fakeApi({ otpRequest: { error: 'email_not_enrolled' } });
+  flow = createLoginFlow({ api, session: sess }); // entry page
+  await flow.requestCode('ninguem@exemplo.com');
   assert.equal(flow.state, 'email');
-  assert.equal(flow.error, 'turma_not_found');
+  assert.equal(flow.error, 'email_not_enrolled');
 });
 
-test('verify success needing profile stores the token and shows profile', async () => {
-  api = fakeApi({ authVerify: { ok: true, session_token: 'SESS', participant_id: 7, needs_profile: true } });
+// callWorker (the real transport) THROWS on an { error } response; a bare await would
+// hang the "Enviando..." button. The flow must normalize the throw, not reject.
+test('requestCode normalizes a THROWN worker error so the UI never hangs', async () => {
+  const throwingApi = { otpRequest: async () => { const e = new Error('boom'); e.data = { error: 'email_not_enrolled' }; throw e; } };
+  flow = createLoginFlow({ api: throwingApi, session: sess }); // entry page
+  await flow.requestCode('ninguem@exemplo.com');
+  assert.equal(flow.state, 'email');
+  assert.equal(flow.error, 'email_not_enrolled');
+});
+
+test('requestCode captures a dev code when the worker returns one (staging)', async () => {
+  api = fakeApi({ otpRequest: { ok: true, dev_otp_code: 'WXYZ' } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  await flow.verify('MAGIC');
-  assert.equal(api.calls[0].name, 'authVerify');
-  assert.deepEqual(api.calls[0].params, { token: 'MAGIC' });
+  await flow.requestCode('aluno@exemplo.com');
+  assert.equal(flow.devCode, 'WXYZ');
+});
+
+test('requestCode surfaces a worker error and stays on email', async () => {
+  api = fakeApi({ otpRequest: { error: 'email_required' } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  await flow.requestCode('aluno@exemplo.com');
+  assert.equal(flow.state, 'email');
+  assert.equal(flow.error, 'email_required');
+});
+
+test('verifyCode (bound turma) needing profile stores the session and shows profile', async () => {
+  api = fakeApi({ otpVerify: { ok: true, turmas: [turmaEntry({ needs_profile: true })] } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
+  assert.equal(api.calls[0].name, 'otpVerify');
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', code: 'abcd', client_slug: 'jfse', turma_slug: 'geral' });
   assert.equal(sess.getToken('jfse', 'geral'), 'SESS');
   assert.equal(flow.participantId, 7);
   assert.equal(flow.state, 'profile');
 });
 
-test('verify success without needing profile goes straight to authenticated', async () => {
-  api = fakeApi({ authVerify: { ok: true, session_token: 'SESS2', participant_id: 9, needs_profile: false } });
+test('verifyCode (bound turma) not needing profile goes straight to authenticated', async () => {
+  api = fakeApi({ otpVerify: { ok: true, turmas: [turmaEntry({ session_token: 'SESS2', needs_profile: false })] } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  await flow.verify('MAGIC');
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
   assert.equal(sess.getToken('jfse', 'geral'), 'SESS2');
   assert.equal(flow.state, 'authenticated');
 });
 
-test('verify forwards the device-presence grant as presence_token (signal b)', async () => {
-  api = fakeApi({ authVerify: { ok: true, session_token: 'S', needs_profile: false } });
+test('verifyCode remembers EVERY returned turma on this device (localStorage-first hub)', async () => {
+  api = fakeApi({ otpVerify: { ok: true, turmas: [
+    turmaEntry({ client_slug: 'jfse', turma_slug: 'geral', session_token: 'S1' }),
+    turmaEntry({ client_slug: 'acme', turma_slug: 't2', session_token: 'S2' }),
+  ] } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
+  assert.equal(sess.getToken('jfse', 'geral'), 'S1');
+  assert.equal(sess.getToken('acme', 't2'), 'S2');   // a second turma's session is stored too
+});
+
+test('verifyCode remembers every returned turma (the /trilha hub registry)', async () => {
+  api = fakeApi({ otpVerify: { ok: true, turmas: [
+    turmaEntry({ client_slug: 'jfse', turma_slug: 'geral' }),
+    turmaEntry({ client_slug: 'acme', turma_slug: 't2' }),
+  ] } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
+  assert.equal(sess._remembered.length, 2);
+  assert.equal(sess._remembered[0].turma_slug, 'geral');
+  assert.equal(sess._remembered[1].turma_slug, 't2');
+});
+
+test('verifyCode unbound (entry page) lands on the hub with the turma list', async () => {
+  api = fakeApi({ otpVerify: { ok: true, turmas: [turmaEntry({ turma_slug: 'a' }), turmaEntry({ turma_slug: 'b' })] } });
+  flow = createLoginFlow({ api, session: sess });   // no client/turma: turma-agnostic
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', code: 'abcd' });
+  assert.equal(flow.state, 'hub');
+  assert.equal(flow.turmas.length, 2);
+});
+
+test('verifyCode forwards the device-presence grant as presence_token (signal b)', async () => {
+  api = fakeApi({ otpVerify: { ok: true, turmas: [turmaEntry()] } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', presence: 'PGRANT' });
-  await flow.verify('MAGIC');
-  assert.deepEqual(api.calls[0].params, { token: 'MAGIC', presence_token: 'PGRANT' });
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', code: 'abcd', client_slug: 'jfse', turma_slug: 'geral', presence_token: 'PGRANT' });
 });
 
-test('verify omits presence_token when the device has no grant', async () => {
-  api = fakeApi({ authVerify: { ok: true, session_token: 'S', needs_profile: false } });
+// The wall captures ?et= and passes it as enrollToken; verify forwards it as `et` so the
+// worker approves via the inscription window (signal a) — entered with the class código
+// = approved on sign-up, not pending.
+test('verifyCode forwards the enrollment token as et (signal a, inscription window)', async () => {
+  api = fakeApi({ otpVerify: { ok: true, turmas: [turmaEntry()] } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral', enrollToken: 'ETOK' });
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', code: 'abcd', client_slug: 'jfse', turma_slug: 'geral', et: 'ETOK' });
+});
+
+test('verifyCode failure goes back to the code step and stores no token', async () => {
+  api = fakeApi({ otpVerify: { error: 'code_expired' } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  await flow.verify('MAGIC');
-  assert.deepEqual(api.calls[0].params, { token: 'MAGIC' });
-});
-
-test('flowOptsFrom forwards the presence grant', () => {
-  const out = flowOptsFrom({ client: 'jfse', turma: 'geral', k: 'K', presence: 'PGRANT' }, 'https://staging.pensoia.com');
-  assert.equal(out.presence, 'PGRANT');
-});
-
-test('verify failure goes to error and stores no token', async () => {
-  api = fakeApi({ authVerify: { error: 'token_expired' } });
-  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  await flow.verify('MAGIC');
-  assert.equal(flow.state, 'error');
-  assert.equal(flow.error, 'token_expired');
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
+  assert.equal(flow.state, 'code');
+  assert.equal(flow.error, 'code_expired');
   assert.equal(sess.getToken('jfse', 'geral'), null);
 });
 
@@ -228,15 +283,13 @@ test('saveProfile sends the session token + consent version and authenticates', 
 });
 
 test('saveProfile surfaces a worker error and stays on the profile step', async () => {
-  // Reach 'profile' the real way (verify sets the token + the profile state), so
-  // the error path's invariant is pinned exactly: a failed save keeps the student
-  // on the consent/profile step, never silently flips them to authenticated.
   api = fakeApi({
-    authVerify: { ok: true, session_token: 'SESS', participant_id: 1, needs_profile: true },
+    otpVerify: { ok: true, turmas: [turmaEntry({ needs_profile: true })] },
     profileSave: { error: 'invalid_session' },
   });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
-  await flow.verify('MAGIC');
+  flow.email = 'aluno@exemplo.com';
+  await flow.verifyCode('abcd');
   assert.equal(flow.state, 'profile');
   await flow.saveProfile('Maria', true);
   assert.equal(flow.error, 'invalid_session');
@@ -251,8 +304,29 @@ test('logout clears the token and returns to anonymous', () => {
   assert.equal(flow.state, 'anonymous');
 });
 
-// Direct-access in-class join (opt-in turma, no email round-trip). Restored 2026-06-19
-// for the period before an email provider is wired; the worker gates it on the flag.
+// ── flowOptsFrom pass-through (guards the renderer -> controller wiring) ───────
+
+test('flowOptsFrom forwards client/turma/k/origin/api/session', () => {
+  const fakeApiObj = {}, fakeSessObj = {};
+  const out = flowOptsFrom(
+    { client: 'jfse', turma: 'geral', k: 'KTOK', api: fakeApiObj, session: fakeSessObj, onAuthenticated: () => {} },
+    'https://staging.pensoia.com',
+  );
+  assert.equal(out.client, 'jfse');
+  assert.equal(out.turma, 'geral');
+  assert.equal(out.k, 'KTOK');
+  assert.equal(out.origin, 'https://staging.pensoia.com');
+  assert.equal(out.api, fakeApiObj);
+  assert.equal(out.session, fakeSessObj);
+});
+
+test('flowOptsFrom forwards the presence grant', () => {
+  const out = flowOptsFrom({ client: 'jfse', turma: 'geral', k: 'K', presence: 'PGRANT' }, 'https://staging.pensoia.com');
+  assert.equal(out.presence, 'PGRANT');
+});
+
+// Direct-access in-class join (opt-in turma, no email round-trip). The worker gates
+// it on the turma's direct_access flag; kept until the access-model collapse.
 test('flowOptsFrom forwards the enrollToken (direct-access pass-through)', () => {
   const out = flowOptsFrom({ client: 'jfse', turma: 'geral', k: 'K', enrollToken: 'ETOK' }, 'https://staging.pensoia.com');
   assert.equal(out.enrollToken, 'ETOK');

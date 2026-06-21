@@ -14,6 +14,26 @@
  * carries no side margin of its own. */
 .bs-topbar-inner--with-tabs { max-width: none; }
 
+/* ── Codex own-login (item 11.2): the e-mail+OTP screen reuses the Backstage
+ * bs-auth-* card; only the secondary "link" actions (resend / use-another-email)
+ * and their row need a Codex rule. Muted text buttons, no new colour. */
+.cdx-login-actions {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.cdx-auth-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cdx-auth-link:hover { color: var(--primary); }
+
 /* ── Rich tab strip in the Codex topbar ─────────────────────── */
 .cdx-tabs {
   display: flex;

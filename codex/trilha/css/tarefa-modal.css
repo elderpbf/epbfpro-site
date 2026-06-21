@@ -169,6 +169,7 @@ body.tr-modal-open { overflow: hidden; }
 .tr-btn-ghost:hover { background: var(--background); color: var(--text-primary); }
 
 .tr-tarefa-error { color: #b91c1c; font-size: 0.84rem; margin-top: 0.55rem; min-height: 1.1em; }
+.tr-login-error.tr-login-ok { color: var(--text-secondary); }   /* "código reenviado / já enviado" — not an error */
 
 @media (max-width: 600px) {
   .tr-modal-backdrop { padding: 0.5rem; }

@@ -1,10 +1,10 @@
 // codex/trilha/js/student-session.js
 // The Trail's student-identity state. Phase 1: a persistent, per-turma session
-// token in localStorage (Elder's call: no forced re-login, the token lives until
-// the student logs out or loses it), the magic-link URL token extraction, and the
-// consent version. Pure logic only; the login modal DOM lives separately. The
-// session token is opaque and server-revocable, so "forever on the client" is
-// safe: a revoked token simply fails its next student_session_check.
+// token in localStorage (Elder's call: no forced re-login on the device), the
+// magic-link URL token extraction, and the consent version. Pure logic only; the
+// login modal DOM lives separately. The session token is opaque, server-revocable,
+// and EXPIRES 7 days after it is minted (server-side, SESSION_TTL_SECONDS): a
+// revoked/expired token simply fails its next student_session_check and re-logs in.
 
 // Bump when the LGPD consent notice text changes, so saved consent is re-prompted.
 export const CONSENT_VERSION = '2026-06-16';
@@ -68,6 +68,53 @@ export function setPresence(client, turma, token) {
 export function clearPresence(client, turma) {
   const ls = _ls();
   if (ls) ls.removeItem(_pkey(client, turma));
+}
+
+// "Minhas turmas" registry: the turmas this device has signed into, so /trilha can
+// list them (the inline hub) and relaunch each WITHOUT re-login. It stores the public
+// turma token (k) — the SAME shareable token already in the turma URL, not the secret
+// session token — alongside the display names, so a launch link can be rebuilt offline.
+const KNOWN_KEY = 'cdx_known_turmas';
+
+export function getKnownTurmas() {
+  const ls = _ls();
+  if (!ls) return [];
+  try {
+    const arr = JSON.parse(ls.getItem(KNOWN_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch (_) { return []; }
+}
+
+// Upsert a turma (most-recent-first), keyed by client_slug + turma_slug. Accepts the
+// OTP-verify entry shape ({ client_slug, turma_slug, client_name, turma_name, token }).
+export function rememberTurma(entry) {
+  if (!entry || !entry.client_slug || !entry.turma_slug) return;
+  const ls = _ls();
+  if (!ls) return;
+  const rest = getKnownTurmas().filter((e) => !(e.client_slug === entry.client_slug && e.turma_slug === entry.turma_slug));
+  const row = {
+    client_slug: entry.client_slug,
+    turma_slug: entry.turma_slug,
+    client_name: entry.client_name || '',
+    turma_name: entry.turma_name || '',
+    k: entry.k || entry.token || '',
+  };
+  try { ls.setItem(KNOWN_KEY, JSON.stringify([row].concat(rest))); } catch (_) {}
+}
+
+export function forgetTurma(client, turma) {
+  const ls = _ls();
+  if (!ls) return;
+  const rest = getKnownTurmas().filter((e) => !(e.client_slug === client && e.turma_slug === turma));
+  try { ls.setItem(KNOWN_KEY, JSON.stringify(rest)); } catch (_) {}
+}
+
+// PURE. The device's known turmas EXCEPT the one currently open — the "trocar de turma"
+// list in the student settings box (registry order, most-recent-first).
+export function otherKnownTurmas(known, client, turma) {
+  return (Array.isArray(known) ? known : []).filter(
+    (e) => e && !(e.client_slug === client && e.turma_slug === turma)
+  );
 }
 
 // Pull the magic-link token (?lt=<token>) out of the entrar URL or a bare query
