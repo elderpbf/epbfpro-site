@@ -87,11 +87,16 @@ export function initOrb() {
     if (armed) { locked = false; ease = s.easeArmed; clearGlow(); return { x: innerWidth * 0.5, y: innerCY }; }
     // Bottom: detach from the left lane and cross to centre to bloom the contacts (as before).
     if (innerCY < innerHeight * 1.05) { locked = false; ease = s.easeApproach; clearGlow(); return { x: innerWidth * 0.5, y: Math.max(70, Math.min(innerHeight - 70, innerCY)) }; }
-    // Descending: hug the left lane; y still tracks the highlights so the underlines fill.
-    const f = descendTarget();
-    if (f) { ease = s.easeLock; return { x: leftX, y: f.y }; }
-    ease = s.easeFree;                                        // free: drifts slowly down the left lane
-    return { x: leftX, y: innerHeight * 0.5 + Math.sin(now * s.wanderYFreq + 1.57) * s.wanderY };
+    // Descending: a calm dot in the LEFT lane that descends in lockstep with the SCROLL — it
+    // never snaps to the highlight rows and never wanders mid-screen (Élder: it must just track
+    // the scroll down the gutter, off the content). descendTarget() still runs, but ONLY for its
+    // side effects (filling the underlines + glow as the scroll passes them), not to place the dot.
+    descendTarget();
+    locked = false;
+    ease = s.easeFree;
+    const docMax = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+    const dfrac = Math.max(0, Math.min(1, (scrollY - detachScroll) / Math.max(1, docMax - detachScroll)));
+    return { x: leftX, y: 70 + dfrac * (innerHeight - 140) };
   }
 
   function frame(now) {
@@ -101,9 +106,9 @@ export function initOrb() {
     else if (armed && innerCY > innerHeight * 0.96) { armed = false; unfire(); }
     const t = computeTarget(now);
     sx += (t.x - sx) * ease; sy += (t.y - sy) * ease;
-    const wob = (phase === 'descend' && !locked && !armed) ? 1 : 0;
-    const wx = sx + Math.cos(now * 0.0016) * s.wobble * wob, wy = sy + Math.sin(now * 0.0022) * s.wobble * wob;
-    spark.style.transform = 'translate(' + wx + 'px,' + wy + 'px) translate(-50%,-50%)';
+    // No wobble on the descent any more — a scroll-tracked dot that also jitters reads as
+    // distracting (Élder). The smoothing (ease) already gives it organic motion.
+    spark.style.transform = 'translate(' + sx + 'px,' + sy + 'px) translate(-50%,-50%)';
     spark.classList.toggle('plp-on', !armed);
     spark.classList.toggle('plp-soft', phase === 'descend' && !armed && !locked);
     if (hero.getBoundingClientRect().bottom > 0) {            // constellation only while the hero is visible

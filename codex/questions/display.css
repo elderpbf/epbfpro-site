@@ -7,8 +7,10 @@
 html, body { height: 100%; }
 body { font-family: 'Inter', sans-serif; background: var(--background); color: var(--text-primary); display: flex; flex-direction: column; min-height: 100vh; }
 
-/* Main content */
-.cdx-disp-main { display: flex; flex-direction: column; flex: 1; padding: clamp(12px, 1.8vh, 28px) clamp(16px, 2.5vw, 44px); overflow-y: auto; max-width: min(1200px, 92vw); width: 100%; margin: 0 auto; }
+/* Main content. `zoom: var(--ph-zoom)` makes the A−/A+ buttons scale the ENTIRE question
+   surface (idle state, the promoted Q&A card, name, text, answer) as one block — the header
+   controls (A−/A+, QR, theme) sit OUTSIDE this container, so they never scale (Élder). */
+.cdx-disp-main { display: flex; flex-direction: column; flex: 1; padding: clamp(12px, 1.8vh, 28px) clamp(16px, 2.5vw, 44px); overflow-y: auto; max-width: min(1200px, 92vw); width: 100%; margin: 0 auto; zoom: var(--ph-zoom, 1); }
 
 /* Center states */
 .cdx-disp-center { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; flex: 1; min-height: 300px; }
@@ -44,16 +46,19 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 .cdx-disp-enroll[hidden] { display: none; }
 .cdx-disp-enroll-divider { width: 1px; height: min(72vh, 78%); background: var(--border); align-self: center; }
 .cdx-disp-enroll-qr { width: min(72vh, 44vw); max-width: 100%; height: auto; aspect-ratio: 1; background: #fff;
-  border-radius: clamp(10px, 1.5vw, 20px); padding: clamp(10px, 1.6vh, 26px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); }
-.cdx-disp-enroll-info { display: flex; flex-direction: column; gap: clamp(12px, 2.4vh, 36px); align-items: center; text-align: center; max-width: 100%; min-width: 0; }
-/* Right side bigger (Élder) + scaled by the A−/A+ buttons via --ph-zoom (default 1). */
-.cdx-disp-enroll-title { font-size: calc(clamp(2.1rem, 4vw, 4.8rem) * var(--ph-zoom, 1)); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
-.cdx-disp-enroll-lead { font-size: calc(clamp(1.2rem, 2.1vw, 2.4rem) * var(--ph-zoom, 1)); color: var(--text-secondary); line-height: 1.25; }
+  border-radius: clamp(10px, 1.5vw, 20px); padding: clamp(10px, 1.6vh, 26px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12));
+  zoom: var(--ph-zoom, 1); }
+/* The A−/A+ buttons scale the QR image AND all of its text together, via `zoom` on the two
+   content blocks (Élder: the QR graphic itself must grow too, not just the words beside it). */
+.cdx-disp-enroll-info { display: flex; flex-direction: column; gap: clamp(12px, 2.4vh, 36px); align-items: center; text-align: center; max-width: 100%; min-width: 0; zoom: var(--ph-zoom, 1); }
+/* Right side bigger (Élder). */
+.cdx-disp-enroll-title { font-size: clamp(2.1rem, 4vw, 4.8rem); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+.cdx-disp-enroll-lead { font-size: clamp(1.2rem, 2.1vw, 2.4rem); color: var(--text-secondary); line-height: 1.25; }
 /* The address reads from across a room; the 4-digit code sits on its OWN line below it
    (never split by a wrap) and is the biggest, most-readable token. */
 .cdx-disp-enroll-url { display: flex; flex-direction: column; align-items: center; gap: clamp(2px, 0.8vh, 12px); max-width: 100%; }
-.cdx-disp-enroll-prefix { font-size: calc(clamp(1.4rem, 2.8vw, 3.2rem) * var(--ph-zoom, 1)); font-weight: 600; color: var(--text-secondary); line-height: 1.1; overflow-wrap: anywhere; }
-.cdx-disp-enroll-code { font-size: calc(clamp(3.4rem, 9vw, 9rem) * var(--ph-zoom, 1)); font-weight: 800; color: var(--primary, #2563eb); letter-spacing: 0.08em; line-height: 1; }
+.cdx-disp-enroll-prefix { font-size: clamp(1.4rem, 2.8vw, 3.2rem); font-weight: 600; color: var(--text-secondary); line-height: 1.1; overflow-wrap: anywhere; }
+.cdx-disp-enroll-code { font-size: clamp(3.4rem, 9vw, 9rem); font-weight: 800; color: var(--primary, #2563eb); letter-spacing: 0.08em; line-height: 1; }
 
 /* Portrait (taller than wide): split top/bottom, divider goes horizontal, QR re-grows. */
 @media (max-aspect-ratio: 1/1) {
@@ -92,13 +97,13 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
   margin-bottom: 16px;
 }
 .cdx-disp-qa .cdx-disp-qa-name {
-  font-size: calc(clamp(1.2rem, 2vw, 1.8rem) * var(--ph-zoom, 1));
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 20px;
 }
 .cdx-disp-qa .cdx-disp-qa-text {
-  font-size: calc(clamp(2.2rem, 4.5vw, 4rem) * var(--ph-zoom, 1));
+  font-size: clamp(2.2rem, 4.5vw, 4rem);
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.25;

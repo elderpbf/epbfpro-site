@@ -32,8 +32,19 @@ test('display boot uses the codex-question element + the codex-api facade', () =
 
 test('display.css copied the cp-qa-student values verbatim', () => {
   assert.match(css, /border-left: 6px solid #f59e0b/, 'card amber accent bar');
-  assert.match(css, /font-size: calc\(clamp\(2\.2rem, 4\.5vw, 4rem\) \* var\(--ph-zoom, 1\)\)/, 'question text size (A−/A+ zoomable)');
+  assert.match(css, /font-size: clamp\(2\.2rem, 4\.5vw, 4rem\)/, 'question text size');
   assert.match(css, /background: rgba\(245,158,11,0\.10\)/, 'answer wrap tint');
+});
+
+test('the A−/A+ buttons zoom the whole display body, not the header controls', () => {
+  // The zoom rides one container (.cdx-disp-main) so the A−/A+ buttons scale the entire
+  // question surface as a block. The QR overlay scales its QR image + text blocks the same way.
+  assert.match(css, /\.cdx-disp-main \{[^}]*zoom: var\(--ph-zoom, 1\)/, 'the question area zooms');
+  assert.match(css, /\.cdx-disp-enroll-qr \{[^}]*zoom: var\(--ph-zoom, 1\)/, 'the QR image zooms');
+  assert.match(css, /\.cdx-disp-enroll-info \{[^}]*zoom: var\(--ph-zoom, 1\)/, 'the QR overlay text zooms');
+  // The header (pensoia-header) is a sibling OUTSIDE .cdx-disp-main, so its A−/A+, QR and
+  // theme controls never scale — that is the whole point of zooming the body container.
+  assert.match(html, /<pensoia-header[^>]*>[\s\S]*<div class="cdx-disp-main"/, 'header sits outside the zoomed body');
 });
 
 test('display shows the enrollment QR (no countdown) only while projected, via the shared control', () => {
