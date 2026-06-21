@@ -65,9 +65,9 @@ export function initOrb() {
     locked = false; return null;
   }
 
-  // The left-margin lane the light descends in (Élder: stay off the content). The hero
-  // FOLLOW and the bottom BLOOM are unchanged — only the descent moved from centre to here.
-  function leftLane() { return Math.min(Math.max(innerWidth * 0.05, 20), 76); }
+  // The left-margin lane the light descends in (Élder: stay well off the content, further
+  // left). The hero FOLLOW and the bottom BLOOM are unchanged — only the descent rides here.
+  function leftLane() { return Math.min(Math.max(innerWidth * 0.028, 12), 38); }
 
   function computeTarget(now) {
     const s = getSettings();
@@ -76,7 +76,15 @@ export function initOrb() {
     const leftX = leftLane();
     if (phase === 'follow') {                                 // follows mouse/finger, even scrolling, until the hero floor
       locked = false; ease = s.easeFollow; clearGlow();
-      let tx = live ? mx : innerWidth * 0.5, ty = live ? my : innerHeight * 0.40;
+      // Live pointer -> follow it (mouse on desktop, finger on touch). Idle (mobile not being
+      // touched, or the mouse has left) -> wander slowly inside the hero box, a gentle vaga-lume
+      // drift so it never sits dead-still (Élder: it must "andar a esmo" on mobile).
+      let tx, ty;
+      if (live) { tx = mx; ty = my; }
+      else {
+        tx = innerWidth * 0.5 + Math.sin(now * s.wanderFreq) * Math.min(s.wanderXCap, innerWidth * s.wanderX);
+        ty = innerHeight * 0.40 + Math.sin(now * s.wanderYFreq + 1.57) * s.wanderY;
+      }
       if (hb <= ty + 2) { phase = 'descend'; detachScroll = scrollY; detachY = Math.max(40, hb); }
       // Near the hero floor, ease toward the LEFT lane (not centre): the detach point moved.
       const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130));
