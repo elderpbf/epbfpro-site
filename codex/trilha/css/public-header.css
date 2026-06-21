@@ -188,16 +188,9 @@ pensoia-header .ph-zoom {
   flex-shrink: 0;
 }
 
-/* Always show on display mode */
+/* Projector display only — NOT the student trilha (Élder: the A−/A+ belong on the display). */
 pensoia-header[mode="display"] .ph-zoom {
   display: flex;
-}
-
-/* Show on student mode for desktop users */
-@media (min-width: 768px) {
-  pensoia-header[mode="student"] .ph-zoom {
-    display: flex;
-  }
 }
 
 pensoia-header .ph-zoom-btn {

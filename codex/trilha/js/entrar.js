@@ -7,7 +7,7 @@
 // the e-mailed code is unmistakable.
 import { trail } from './api.js';
 import { t } from '../i18n.js';
-import { esc } from './utils.js';
+import { esc, cooldownButton } from './utils.js';
 import { createLoginFlow } from './student-login.js';
 import { getKnownTurmas, getToken, forgetTurma, clearToken } from './student-session.js';
 
@@ -104,6 +104,8 @@ async function autoEnter(els) {
 function startEmail(emailEl, root) {
   if (!emailEl) return;
   const flow = createLoginFlow({}); // unbound -> verify lands on 'hub' with the turma list
+  let cooldownUntil = 0;  // Date.now() ms when "Reenviar" frees up again (60s gate)
+  const startCooldown = (s) => { cooldownUntil = Date.now() + Math.max(0, s) * 1000; };
 
   function renderForm() {
     if (root) root.classList.remove('cdx-entrar-step-code');
@@ -121,7 +123,7 @@ function startEmail(emailEl, root) {
       send.disabled = true;
       send.textContent = t('login.sending');
       await flow.requestCode(input.value);
-      if (flow.state === 'code') { renderCode(); return; }
+      if (flow.state === 'code') { if (!flow.codeStillValid) startCooldown(60); renderCode(); return; }
       err.textContent = entryErrorText(flow.error, flow.retryAfter);
       send.disabled = false;
       send.textContent = t('login.send_code');
@@ -150,6 +152,8 @@ function startEmail(emailEl, root) {
     const back = emailEl.querySelector('.cdx-entrar-back');
     const resend = emailEl.querySelector('.cdx-entrar-resend');
     const err = emailEl.querySelector('.cdx-entrar-email-error');
+    // Reused-code hint: re-entering the e-mail didn't fire a new code — the old one works.
+    if (flow.codeStillValid) { err.classList.add('cdx-entrar-ok'); err.textContent = t('login.code_still_valid'); }
     const doVerify = async () => {
       err.textContent = '';
       verify.disabled = true;
@@ -168,20 +172,19 @@ function startEmail(emailEl, root) {
     verify.addEventListener('click', doVerify);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doVerify(); });
     back.addEventListener('click', () => { renderForm(); });
-    // Reenviar: re-request with the e-mail already in the flow (no retype). Fresh code
-    // reprefills (staging) + confirms; rate-limit/error surfaces in the same slot.
+    // Reenviar: re-request with the e-mail in the flow (no retype), gated to once a minute —
+    // the button counts down ("Reenviar em 59s…") and resumes across re-renders.
+    let cancelCd = cooldownButton(resend, Math.ceil((cooldownUntil - Date.now()) / 1000), t('login.resend'), t('login.resend_in'));
     resend.addEventListener('click', async () => {
-      resend.disabled = true;
+      if (resend.disabled) return;
       err.classList.remove('cdx-entrar-ok'); err.textContent = '';
-      await flow.requestCode(flow.email);
-      if (flow.state === 'code') {
-        if (flow.devCode) input.value = flow.devCode;
-        err.classList.add('cdx-entrar-ok');
-        err.textContent = t('login.resend_sent');
-      } else {
-        err.textContent = entryErrorText(flow.error, flow.retryAfter);
-      }
-      resend.disabled = false;
+      await flow.requestCode(flow.email, { resend: true });
+      if (flow.error) { err.textContent = entryErrorText(flow.error, flow.retryAfter); return; }
+      cancelCd();
+      const secs = flow.retryAfter || 60;
+      if (!flow.retryAfter) { if (flow.devCode) input.value = flow.devCode; err.classList.add('cdx-entrar-ok'); err.textContent = t('login.resend_sent'); }
+      startCooldown(secs);
+      cancelCd = cooldownButton(resend, secs, t('login.resend'), t('login.resend_in'));
     });
     setTimeout(() => { try { input.focus(); } catch (_) {} }, 50);
   }

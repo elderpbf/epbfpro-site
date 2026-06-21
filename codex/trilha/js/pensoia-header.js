@@ -58,6 +58,11 @@ export function buildHeaderHtml() {
       '</div>' +
       '<div class="ph-title"></div>' +
       '<div class="ph-right">' +
+        // A−/A+ text zoom — shown on the projector display only (CSS scopes it to mode=display).
+        '<div class="ph-zoom">' +
+          '<button class="ph-zoom-btn ph-zoom-out" type="button" aria-label="Diminuir texto">A−</button>' +
+          '<button class="ph-zoom-btn ph-zoom-in" type="button" aria-label="Aumentar texto">A+</button>' +
+        '</div>' +
         '<button class="ph-code-btn" type="button" aria-label="Mostrar QR code">' +
           QR_GLYPH +
         '</button>' +
@@ -110,6 +115,16 @@ export class PensoiaHeader extends Base {
     this._exitBtn.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('ph-exit', { bubbles: true }));
     });
+
+    // A−/A+ text zoom (projector): scale the page via --ph-zoom; each step = 8%, clamped.
+    const zoomOut = this.querySelector('.ph-zoom-out');
+    const zoomIn = this.querySelector('.ph-zoom-in');
+    if (zoomOut && zoomIn) {
+      let zoom = 0;
+      const apply = () => document.documentElement.style.setProperty('--ph-zoom', String(1 + clampZoom(zoom) * 0.08));
+      zoomOut.addEventListener('click', () => { zoom = clampZoom(zoom - 1); apply(); });
+      zoomIn.addEventListener('click', () => { zoom = clampZoom(zoom + 1); apply(); });
+    }
 
     // Wire up ThemeManager (shared infra) if present.
     if (window.ThemeManager) {

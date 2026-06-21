@@ -96,7 +96,8 @@ export function createLoginFlow(opts = {}) {
   const flow = {
     state: 'anonymous',
     error: null,
-    retryAfter: null,     // seconds to wait after a rate-limit (drives the "aguarde ~X min" copy)
+    retryAfter: null,     // seconds to wait after a rate-limit / resend cooldown
+    codeStillValid: false, // the prior code is still good — reused, no new e-mail sent
     email: null,
     devCode: null,        // the on-screen code when no e-mail provider is wired (staging)
     turmas: null,         // the verify turma list (the hub on the entry page)
@@ -106,9 +107,10 @@ export function createLoginFlow(opts = {}) {
 
     // Step 1: send a 4-letter OTP code to the e-mail. Turma-agnostic (the code proves
     // the address, not a turma), so only the email travels.
-    async requestCode(rawEmail) {
+    async requestCode(rawEmail, opts = {}) {
       this.error = null;
       this.retryAfter = null;
+      this.codeStillValid = false;
       const email = validateEmail(rawEmail);
       if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
       this.email = email;
@@ -117,11 +119,16 @@ export function createLoginFlow(opts = {}) {
       // worker rejects an address that belongs to no turma (email_not_enrolled) BEFORE
       // sending a code — the "no turma" check happens at e-mail submit, not after verify.
       const reqParams = { email };
+      if (opts.resend) reqParams.resend = true;
       if (client && turma) { reqParams.client_slug = client; reqParams.turma_slug = turma; }
       else { reqParams.require_enrolled = true; }
       const res = await safeCall(api.otpRequest(reqParams));
       if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; this.retryAfter = (res && res.retry_after_seconds) || null; return this; }
-      this.devCode = res.dev_otp_code || null;
+      // Cooldown hit on an explicit resend: stay on the code step and surface the countdown.
+      if (res.throttled) { this.retryAfter = res.retry_after_seconds || null; this.state = 'code'; return this; }
+      // The previous code is still valid: reuse it — keep the on-screen dev code (don't null it).
+      if (res.code_still_valid) { this.codeStillValid = true; this.state = 'code'; return this; }
+      if (res.dev_otp_code) this.devCode = res.dev_otp_code; // only overwrite when a NEW code was minted
       this.state = 'code';
       return this;
     },

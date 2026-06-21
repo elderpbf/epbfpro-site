@@ -32,7 +32,7 @@ test('display boot uses the codex-question element + the codex-api facade', () =
 
 test('display.css copied the cp-qa-student values verbatim', () => {
   assert.match(css, /border-left: 6px solid #f59e0b/, 'card amber accent bar');
-  assert.match(css, /font-size: clamp\(2\.2rem, 4\.5vw, 4rem\)/, 'question text size');
+  assert.match(css, /font-size: calc\(clamp\(2\.2rem, 4\.5vw, 4rem\) \* var\(--ph-zoom, 1\)\)/, 'question text size (A−/A+ zoomable)');
   assert.match(css, /background: rgba\(245,158,11,0\.10\)/, 'answer wrap tint');
 });
 
@@ -46,9 +46,11 @@ test('display shows the enrollment QR (no countdown) only while projected, via t
   assert.ok(!/remainingSec|fmtRemain/.test(js), 'no countdown on the display — it lives on the session panel');
 });
 
-test('the display is a control surface: a QR toggle drives the same projection as the panel', () => {
-  assert.match(html, /id="cdx-disp-qr-toggle"/, 'has the admin QR toggle button');
+test('the display is a control surface: the header QR button drives the same projection as the panel', () => {
+  // The QR control is the header code button (the old floating #cdx-disp-qr-toggle was removed).
+  assert.match(js, /pensoia-header \.ph-code-btn[\s\S]*?addEventListener\('click', _toggleProjection\)/, 'header QR button toggles projection');
   assert.match(js, /toggleProjection\(/, 'toggles the same server state the host panel does');
+  assert.doesNotMatch(html, /id="cdx-disp-qr-toggle"/, 'the floating bottom QR button is gone');
 });
 
 test('clicking the projected QR overlay dismisses it (like the qr-share modal backdrop)', () => {

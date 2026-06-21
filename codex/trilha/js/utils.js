@@ -86,6 +86,24 @@ export function copyToClipboard(text, btn, doneLabel = 'Copiado') {
   }
 }
 
+// Cooldown a button: disable it for `seconds`, ticking the remaining count into `tmpl`
+// (which contains "{s}"), then restore `baseLabel`. Returns a cancel fn. Powers the
+// resend buttons' 60s countdown ("Reenviar em 59s…"). DOM-only; verified on staging.
+export function cooldownButton(btn, seconds, baseLabel, tmpl) {
+  if (!btn) return () => {};
+  let remaining = Math.max(0, Math.ceil(Number(seconds) || 0));
+  let timer = null;
+  const tick = () => {
+    if (remaining <= 0) { btn.disabled = false; btn.textContent = baseLabel; timer = null; return; }
+    btn.disabled = true;
+    btn.textContent = tmpl.replace('{s}', String(remaining));
+    remaining -= 1;
+    timer = setTimeout(tick, 1000);
+  };
+  tick();
+  return () => { if (timer) { clearTimeout(timer); timer = null; } btn.disabled = false; btn.textContent = baseLabel; };
+}
+
 // Toggle the page to its error state. `root` is the Trail page container; `t` is
 // the Trail i18n function. code: 'link_invalid' | anything-else -> generic.
 export function showError(root, code, t) {

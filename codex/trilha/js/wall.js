@@ -12,7 +12,7 @@
 // wires the flow. The roadmap rows + compact date are the only data-derived bits,
 // kept pure and unit-tested (trilha-wall.test.mjs); the DOM is verified on staging.
 import { state } from './state.js';
-import { esc } from './utils.js';
+import { esc, cooldownButton } from './utils.js';
 import { t } from '../i18n.js';
 import { createLoginFlow } from './student-login.js';
 import { getPresence, extractEnrollToken } from './student-session.js';
@@ -170,6 +170,8 @@ function renderRegister(wall) {
     enrollToken,
   });
   let name = '';
+  let cooldownUntil = 0;  // Date.now() ms when "Reenviar" frees up again (60s gate)
+  const startCooldown = (s) => { cooldownUntil = Date.now() + Math.max(0, s) * 1000; };
 
   function reload() {
     if (typeof location !== 'undefined' && typeof location.reload === 'function') location.reload();
@@ -224,6 +226,7 @@ function renderRegister(wall) {
       cta.disabled = true;
       cta.textContent = t('login.sending');
       await flow.requestCode(emailEl.value);
+      if (flow.state === 'code' && !flow.codeStillValid) startCooldown(60); // a new code was just sent
       settle();
     };
     cta.addEventListener('click', submit);
@@ -252,22 +255,24 @@ function renderRegister(wall) {
     if (flow.devCode) codeEl.value = flow.devCode;
     const cta = cardEl.querySelector('.cdx-en-cta');
     const errEl = cardEl.querySelector('.cdx-en-error');
+    // Reused-code hint: re-entering the e-mail didn't fire a new code, the old one still works.
+    if (flow.codeStillValid) { errEl.classList.add('cdx-en-ok'); errEl.textContent = t('login.code_still_valid'); }
     const submit = async () => { cta.disabled = true; await flow.verifyCode(codeEl.value); settle(); };
     cta.addEventListener('click', submit);
     codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-    // Reenviar: the expired-code dead end. The e-mail is still in the flow, so re-request
-    // in place — no going back to retype it. A fresh code reprefills (staging) + confirms;
-    // a rate-limit / error falls back to the form via settle().
+    // Reenviar: re-request with the e-mail already in the flow (no retype). Gated to once a
+    // minute — the button counts down ("Reenviar em 59s…") and resumes across re-renders.
     const resend = cardEl.querySelector('[data-resend]');
+    let cancelCd = cooldownButton(resend, Math.ceil((cooldownUntil - Date.now()) / 1000), t('login.resend'), t('login.resend_in'));
     resend.addEventListener('click', async () => {
-      resend.disabled = true;
-      await flow.requestCode(flow.email);
-      if (flow.state === 'code') {
-        if (flow.devCode) codeEl.value = flow.devCode;
-        errEl.classList.add('cdx-en-ok');
-        errEl.textContent = t('login.resend_sent');
-        resend.disabled = false;
-      } else { settle(); }
+      if (resend.disabled) return;
+      await flow.requestCode(flow.email, { resend: true });
+      if (flow.error) { settle(); return; }                          // hour-cap / error -> form with the message
+      cancelCd();
+      const secs = flow.retryAfter || 60;                            // throttled -> wait; else a fresh 60s
+      if (!flow.retryAfter) { if (flow.devCode) codeEl.value = flow.devCode; errEl.classList.add('cdx-en-ok'); errEl.textContent = t('login.resend_sent'); }
+      startCooldown(secs);
+      cancelCd = cooldownButton(resend, secs, t('login.resend'), t('login.resend_in'));
     });
     setTimeout(() => { try { codeEl.focus(); } catch (_) {} }, 50);
   }

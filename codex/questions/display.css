@@ -46,13 +46,14 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 .cdx-disp-enroll-qr { width: min(72vh, 44vw); max-width: 100%; height: auto; aspect-ratio: 1; background: #fff;
   border-radius: clamp(10px, 1.5vw, 20px); padding: clamp(10px, 1.6vh, 26px); box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,0.12)); }
 .cdx-disp-enroll-info { display: flex; flex-direction: column; gap: clamp(12px, 2.4vh, 36px); align-items: center; text-align: center; max-width: 100%; min-width: 0; }
-.cdx-disp-enroll-title { font-size: clamp(1.8rem, 3.4vw, 4rem); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
-.cdx-disp-enroll-lead { font-size: clamp(1.05rem, 1.8vw, 2rem); color: var(--text-secondary); line-height: 1.25; }
+/* Right side bigger (Élder) + scaled by the A−/A+ buttons via --ph-zoom (default 1). */
+.cdx-disp-enroll-title { font-size: calc(clamp(2.1rem, 4vw, 4.8rem) * var(--ph-zoom, 1)); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+.cdx-disp-enroll-lead { font-size: calc(clamp(1.2rem, 2.1vw, 2.4rem) * var(--ph-zoom, 1)); color: var(--text-secondary); line-height: 1.25; }
 /* The address reads from across a room; the 4-digit code sits on its OWN line below it
    (never split by a wrap) and is the biggest, most-readable token. */
 .cdx-disp-enroll-url { display: flex; flex-direction: column; align-items: center; gap: clamp(2px, 0.8vh, 12px); max-width: 100%; }
-.cdx-disp-enroll-prefix { font-size: clamp(1.2rem, 2.4vw, 2.8rem); font-weight: 600; color: var(--text-secondary); line-height: 1.1; overflow-wrap: anywhere; }
-.cdx-disp-enroll-code { font-size: clamp(3rem, 8vw, 8rem); font-weight: 800; color: var(--primary, #2563eb); letter-spacing: 0.08em; line-height: 1; }
+.cdx-disp-enroll-prefix { font-size: calc(clamp(1.4rem, 2.8vw, 3.2rem) * var(--ph-zoom, 1)); font-weight: 600; color: var(--text-secondary); line-height: 1.1; overflow-wrap: anywhere; }
+.cdx-disp-enroll-code { font-size: calc(clamp(3.4rem, 9vw, 9rem) * var(--ph-zoom, 1)); font-weight: 800; color: var(--primary, #2563eb); letter-spacing: 0.08em; line-height: 1; }
 
 /* Portrait (taller than wide): split top/bottom, divider goes horizontal, QR re-grows. */
 @media (max-aspect-ratio: 1/1) {
@@ -91,13 +92,13 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
   margin-bottom: 16px;
 }
 .cdx-disp-qa .cdx-disp-qa-name {
-  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-size: calc(clamp(1.2rem, 2vw, 1.8rem) * var(--ph-zoom, 1));
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 20px;
 }
 .cdx-disp-qa .cdx-disp-qa-text {
-  font-size: clamp(2.2rem, 4.5vw, 4rem);
+  font-size: calc(clamp(2.2rem, 4.5vw, 4rem) * var(--ph-zoom, 1));
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.25;

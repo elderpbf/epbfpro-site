@@ -328,7 +328,7 @@ export default {
   // Cohorts — participants (roster)
   'cohorts.sec_turma_data':               'Cohort data',
   'cohorts.sec_access':                   'Access',
-  'cohorts.participants_btn':             'Participants',
+  'cohorts.participants_btn':             'Manage list',
   'cohorts.participants_btn_title':       'Manage participants for this cohort',
   'cohorts.participants_title':           'Participants',
   'cohorts.participants_empty':           'No participants registered.',

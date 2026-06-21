@@ -77,6 +77,8 @@ const pt = {
   'login.code_expired':     'Código expirado ou já usado. Peça um novo código.',
   'login.resend':           'Reenviar código',
   'login.resend_sent':      'Enviamos um novo código para o seu e-mail.',
+  'login.resend_in':        'Reenviar em {s}s',
+  'login.code_still_valid': 'Já enviamos um código. Confira seu e-mail (e a caixa de spam).',
   // Registration wall (the approved a1 entry mock)
   'wall.lead_title':        'Faça seu registro para entrar na trilha',
   'wall.lead_sub':          'Um cadastro rápido com seu nome e e-mail libera tudo o que esta turma oferece. Sem senha.',
@@ -230,6 +232,8 @@ const en = {
   'login.code_expired':     'Code expired or already used. Request a new one.',
   'login.resend':           'Resend code',
   'login.resend_sent':      'We sent a new code to your e-mail.',
+  'login.resend_in':        'Resend in {s}s',
+  'login.code_still_valid': 'We already sent a code. Check your e-mail (and spam).',
   // Registration wall (the approved a1 entry mock)
   'wall.lead_title':        'Register to enter the trail',
   'wall.lead_sub':          'A quick sign-up with your name and e-mail unlocks everything this class offers. No password.',

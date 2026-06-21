@@ -9,7 +9,7 @@
 // retired, so everything stays in one tab and works identically on mobile/desktop.
 import { t } from '../i18n.js';
 import { createLoginFlow, flowOptsFrom } from './student-login.js';
-import { esc } from './utils.js';
+import { esc, cooldownButton } from './utils.js';
 
 // Map a flow error code to a student-facing message (display glue).
 function errorText(code, retryAfter) {
@@ -31,6 +31,8 @@ export function openLoginModal(opts = {}) {
   const onAuthenticated = opts.onAuthenticated || (() => {});
   const origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : undefined;
   const flow = createLoginFlow(flowOptsFrom(opts, origin));
+  let cooldownUntil = 0;  // Date.now() ms when "Reenviar" frees up again (60s gate)
+  const startCooldown = (s) => { cooldownUntil = Date.now() + Math.max(0, s) * 1000; };
 
   // Direct-access mode (opt-in turma, no email provider yet): a live QR/code (?et=) means
   // the student is in the room, so the first screen registers + grants access on the spot
@@ -126,6 +128,7 @@ export function openLoginModal(opts = {}) {
       send.disabled = true;
       send.textContent = t('login.sending');
       await flow.requestCode(input.value);
+      if (flow.state === 'code' && !flow.codeStillValid) startCooldown(60); // a new code was just sent
       settle();
     };
     send.addEventListener('click', doSend);
@@ -156,6 +159,8 @@ export function openLoginModal(opts = {}) {
     const verify = bodyEl.querySelector('.tr-login-verify');
     const resend = bodyEl.querySelector('.tr-login-resend');
     const errEl = bodyEl.querySelector('.tr-login-error');
+    // Reused-code hint: re-entering the e-mail didn't fire a new code — the old one works.
+    if (flow.codeStillValid) { errEl.classList.add('tr-login-ok'); errEl.textContent = t('login.code_still_valid'); }
     const doVerify = async () => {
       verify.disabled = true;
       await flow.verifyCode(input.value);
@@ -163,16 +168,18 @@ export function openLoginModal(opts = {}) {
     };
     verify.addEventListener('click', doVerify);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doVerify(); });
-    // Reenviar: re-request with the flow's e-mail (no retype) when the code expired.
+    // Reenviar: re-request with the flow's e-mail (no retype), gated to once a minute — the
+    // button counts down ("Reenviar em 59s…") and resumes across re-renders.
+    let cancelCd = cooldownButton(resend, Math.ceil((cooldownUntil - Date.now()) / 1000), t('login.resend'), t('login.resend_in'));
     resend.addEventListener('click', async () => {
-      resend.disabled = true;
-      await flow.requestCode(flow.email);
-      if (flow.state === 'code') {
-        if (flow.devCode) input.value = flow.devCode;
-        errEl.classList.add('tr-login-ok');
-        errEl.textContent = t('login.resend_sent');
-        resend.disabled = false;
-      } else { settle(); }
+      if (resend.disabled) return;
+      await flow.requestCode(flow.email, { resend: true });
+      if (flow.error) { settle(); return; }
+      cancelCd();
+      const secs = flow.retryAfter || 60;
+      if (!flow.retryAfter) { if (flow.devCode) input.value = flow.devCode; errEl.classList.add('tr-login-ok'); errEl.textContent = t('login.resend_sent'); }
+      startCooldown(secs);
+      cancelCd = cooldownButton(resend, secs, t('login.resend'), t('login.resend_in'));
     });
     setTimeout(() => { try { input.focus(); } catch (_) {} }, 60);
   }

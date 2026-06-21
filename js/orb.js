@@ -1,7 +1,6 @@
-// js/orb.js — "A Luz": a constellation in the hero and a light that DESCENDS THE LEFT
-// EDGE as you scroll, then blooms into the contacts. Autonomous (Élder, 2026-06-20): it
-// no longer follows the finger — its descent is tied to scroll progress, which also takes
-// the only touch-coupled handler off the landing. Tunable numbers come from orb-settings.
+// js/orb.js — "A Luz": constellation in the hero, descending light that traces the
+// highlights, finale that reveals the contacts. Ported value-for-value from the mock;
+// the only change is that tunable numbers come from orb-settings (defaults = the mock).
 import { getSettings } from './orb-settings.js?v=17';
 
 export function initOrb() {
@@ -14,15 +13,18 @@ export function initOrb() {
   const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
   let W, H, nodes = [];
-  let sx = innerWidth * 0.08, sy = innerHeight * 0.18;             // smoothed spark (autonomous)
+  let mx = innerWidth * 0.5, my = innerHeight * 0.42, mAt = -9999;   // pointer (viewport)
+  let sx = innerWidth * 0.5, sy = innerHeight * 0.42;               // smoothed spark
   function size() {
     W = cv.width = cv.offsetWidth; H = cv.height = cv.offsetHeight;
     const n = Math.min(64, Math.round(W * H / 15000)); nodes = [];
     for (let i = 0; i < n; i++) nodes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25 });
   }
   size(); addEventListener('resize', size); addEventListener('load', size);
+  addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; mAt = performance.now(); }, { passive: true });
   function rgb() { return getComputedStyle(document.documentElement).getPropertyValue('--line-rgb').trim() || '125,232,214'; }
 
+  let phase = 'follow', detachScroll = 0, detachY = innerHeight * 0.4, locked = false, ease = 0.08;
   const urlFin = (location.search.match(/finale=(iris|part)/) || [])[1];
   let armed = false, bP = [], bRAF = 0, bW = 0, bH = 0, innerCY = 0;
   function bSize() { bW = bc.width = bc.offsetWidth; bH = bc.height = bc.offsetHeight; }
@@ -47,31 +49,49 @@ export function initOrb() {
   function unfire() { contact.classList.remove('plp-lit', 'plp-iris'); ring.classList.remove('plp-open'); burstReset(); }
   function clearGlow() { for (const e of document.querySelectorAll('.plp-hl-on')) e.classList.remove('plp-hl-on'); }
 
-  // The highlighted phrases still draw their underline in by scroll (reversible), and glow
-  // when near the focus line — independent of where the spark is, so the effect survives the
-  // spark moving to the left edge. (Was descendTarget; it no longer returns a spark target.)
-  function descendTarget() {
+  function descendTarget() {                                  // draws each underline by scroll; returns the pen tip
     const s = getSettings(), focus = innerHeight * s.focus;
+    let best = null, bd = 1e9, bp = 0, br = null;
     for (const el of document.querySelectorAll('.plp-hl')) {
       const r = el.getBoundingClientRect();
       if (r.bottom < -30 || r.top > innerHeight + 30) { el.style.backgroundSize = '0% 3px'; el.classList.remove('plp-hl-on'); continue; }
       const p = Math.max(0, Math.min(1, (focus - r.top) / Math.max(1, r.height)));
-      el.style.backgroundSize = (p * 100) + '% 3px';                // underline follows the scroll
-      const cy = r.top + r.height / 2;
-      el.classList.toggle('plp-hl-on', Math.abs(cy - focus) < innerHeight * s.glowBand);
+      el.style.backgroundSize = (p * 100) + '% 3px';         // underline follows the scroll (reversible)
+      const cy = r.top + r.height / 2, d = Math.abs(cy - focus);
+      el.classList.toggle('plp-hl-on', d < innerHeight * s.glowBand);
+      if (d < bd) { bd = d; best = el; bp = p; br = r; }
     }
+    if (best && bd < innerHeight * s.lockBand) { locked = true; return { x: br.left + br.width * bp, y: br.bottom + 6 }; }
+    locked = false; return null;
   }
 
-  // Where the light wants to be. Autonomous: x hugs the LEFT edge (gentle wander); y tracks
-  // page-scroll progress so it descends as you read. When #contato arms, it crosses to the
-  // centre to bloom (the existing iris/burst finale).
-  function sparkTarget(now) {
-    if (armed) return { x: innerWidth * 0.5, y: innerCY };
-    const leftX = Math.min(Math.max(innerWidth * 0.075, 26), 110) + Math.sin(now * 0.0009) * 9;
-    const max = (document.documentElement.scrollHeight - innerHeight) || 1;
-    const p = Math.max(0, Math.min(1, scrollY / max));
-    const y = innerHeight * (0.16 + p * 0.66) + Math.sin(now * 0.0016) * 8;
-    return { x: leftX, y };
+  // The left-margin lane the light descends in (Élder: stay off the content). The hero
+  // FOLLOW and the bottom BLOOM are unchanged — only the descent moved from centre to here.
+  function leftLane() { return Math.min(Math.max(innerWidth * 0.05, 20), 76); }
+
+  function computeTarget(now) {
+    const s = getSettings();
+    const hb = hero.getBoundingClientRect().bottom;
+    const live = now - mAt < 2500;
+    const leftX = leftLane();
+    if (phase === 'follow') {                                 // follows mouse/finger, even scrolling, until the hero floor
+      locked = false; ease = s.easeFollow; clearGlow();
+      let tx = live ? mx : innerWidth * 0.5, ty = live ? my : innerHeight * 0.40;
+      if (hb <= ty + 2) { phase = 'descend'; detachScroll = scrollY; detachY = Math.max(40, hb); }
+      // Near the hero floor, ease toward the LEFT lane (not centre): the detach point moved.
+      const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130));
+      tx = tx + (leftX - tx) * k; ty = Math.min(ty, hb);
+      return { x: tx, y: ty };
+    }
+    if (scrollY <= detachScroll - 4 && hb > my) phase = 'follow';
+    if (armed) { locked = false; ease = s.easeArmed; clearGlow(); return { x: innerWidth * 0.5, y: innerCY }; }
+    // Bottom: detach from the left lane and cross to centre to bloom the contacts (as before).
+    if (innerCY < innerHeight * 1.05) { locked = false; ease = s.easeApproach; clearGlow(); return { x: innerWidth * 0.5, y: Math.max(70, Math.min(innerHeight - 70, innerCY)) }; }
+    // Descending: hug the left lane; y still tracks the highlights so the underlines fill.
+    const f = descendTarget();
+    if (f) { ease = s.easeLock; return { x: leftX, y: f.y }; }
+    ease = s.easeFree;                                        // free: drifts slowly down the left lane
+    return { x: leftX, y: innerHeight * 0.5 + Math.sin(now * s.wanderYFreq + 1.57) * s.wanderY };
   }
 
   function frame(now) {
@@ -79,16 +99,14 @@ export function initOrb() {
     const rr = cinner.getBoundingClientRect(); innerCY = rr.top + rr.height / 2;
     if (!armed && innerCY < innerHeight * s.armAt) { armed = true; fire(finaleMode()); }
     else if (armed && innerCY > innerHeight * 0.96) { armed = false; unfire(); }
-    if (!armed) descendTarget(); else clearGlow();
-    const t = sparkTarget(now);
-    const ease = armed ? s.easeArmed : s.easeApproach;
+    const t = computeTarget(now);
     sx += (t.x - sx) * ease; sy += (t.y - sy) * ease;
-    const wob = armed ? 0 : 1;
+    const wob = (phase === 'descend' && !locked && !armed) ? 1 : 0;
     const wx = sx + Math.cos(now * 0.0016) * s.wobble * wob, wy = sy + Math.sin(now * 0.0022) * s.wobble * wob;
     spark.style.transform = 'translate(' + wx + 'px,' + wy + 'px) translate(-50%,-50%)';
     spark.classList.toggle('plp-on', !armed);
-    spark.classList.toggle('plp-soft', !armed);
-    if (hero.getBoundingClientRect().bottom > 0) {                  // constellation only while the hero is visible
+    spark.classList.toggle('plp-soft', phase === 'descend' && !armed && !locked);
+    if (hero.getBoundingClientRect().bottom > 0) {            // constellation only while the hero is visible
       ctx.clearRect(0, 0, W, H); const c = rgb();
       const r = cv.getBoundingClientRect(); const lx = sx - r.left, ly = sy - r.top;
       for (const q of nodes) { q.x += q.vx; q.y += q.vy; if (q.x < 0 || q.x > W) q.vx *= -1; if (q.y < 0 || q.y > H) q.vy *= -1; }
@@ -100,6 +118,6 @@ export function initOrb() {
     requestAnimationFrame(frame);
   }
 
-  if (reduce) { spark.classList.add('plp-on'); spark.style.transform = 'translate(' + (innerWidth * 0.08) + 'px,' + (innerHeight * 0.4) + 'px) translate(-50%,-50%)'; contact.classList.add('plp-lit'); }
+  if (reduce) { spark.classList.add('plp-on'); spark.style.transform = 'translate(' + (innerWidth * 0.5) + 'px,' + (innerHeight * 0.4) + 'px) translate(-50%,-50%)'; contact.classList.add('plp-lit'); }
   else requestAnimationFrame(frame);
 }
