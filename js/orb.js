@@ -33,7 +33,7 @@ export function initOrb() {
   //   'stay'    — the dot lives in the hero and never descends; contacts bloom on scroll alone
   //   'leap'    — the dot stays up top, then streaks down the centre and bursts at the contacts
   const MODE_KEY = 'plp_orb_mode', MODES = ['stay', 'descend', 'leap'];
-  let mode = 'leap';
+  let mode = 'descend';
   try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) mode = m; } catch (e) {}
   let leapDir = 0, leapT0 = 0; const LEAP_MS = 620;   // 0 idle, +1 streak down, -1 streak back up
 
