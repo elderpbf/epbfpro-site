@@ -35,18 +35,24 @@ export function initOrb() {
   const MODE_KEY = 'plp_orb_mode', MODES = ['stay', 'descend', 'leap'];
   let mode = 'leap';
   try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) mode = m; } catch (e) {}
-  let leaping = false, leapT0 = 0; const LEAP_MS = 700;
+  let leapDir = 0, leapT0 = 0; const LEAP_MS = 620;   // 0 idle, +1 streak down, -1 streak back up
 
-  // Random idle-wander target: a fresh point anywhere in the hero, re-picked when reached or at
-  // random (so the path can change course at any moment), and dropped the instant a pointer moves.
-  let wtx = innerWidth * 0.5, wty = innerHeight * 0.4, wAt = 0;
-  function newWanderTarget() {
+  // Idle wander: a MEANDER, not a teleport. The target steps a moderate amount from where it is
+  // (so it never darts across the screen at once) inside a calm band that never reaches the very
+  // top, and it is seeded from the dot's current spot the instant the pointer leaves (no jump).
+  let wtx = innerWidth * 0.5, wty = innerHeight * 0.45, wAt = 0, wasLive = false;
+  function clampWander() {
     const m = 28;
-    wtx = m + Math.random() * (innerWidth - 2 * m);
-    wty = innerHeight * 0.08 + Math.random() * (innerHeight * 0.70);
+    wtx = Math.max(m, Math.min(innerWidth - m, wtx));
+    wty = Math.max(innerHeight * 0.28, Math.min(innerHeight * 0.70, wty));   // stay in a middle band, never the top
+  }
+  function stepWanderTarget() {
+    wtx += (Math.random() - 0.5) * innerWidth * 0.6;   // a bounded step, not a leap across the screen
+    wty += (Math.random() - 0.5) * innerHeight * 0.30;
+    clampWander();
   }
   function tickWander(now) {
-    if (Math.hypot(sx - wtx, sy - wty) < 36 || (now - wAt > 600 && Math.random() < 0.006)) { newWanderTarget(); wAt = now; }
+    if (Math.hypot(sx - wtx, sy - wty) < 40 || now - wAt > 2600) { stepWanderTarget(); wAt = now; }
   }
   function bSize() { bW = bc.width = bc.offsetWidth; bH = bc.height = bc.offsetHeight; }
   bSize(); addEventListener('resize', bSize); addEventListener('load', bSize);
@@ -97,8 +103,13 @@ export function initOrb() {
     if (phase === 'follow') {                                 // hero: follow the pointer, else wander
       locked = false; clearGlow();
       let tx, ty;
-      if (live) { ease = 0.035; tx = mx; ty = my; }           // follow the mouse/finger at HALF speed (Élder)
-      else { ease = 0.022; tickWander(now); tx = wtx; ty = wty; }  // random wander, full space, interruptible
+      if (live) { ease = 0.035; tx = mx; ty = my; wasLive = true; }   // follow the mouse/finger at HALF speed (Élder)
+      else {
+        // First frame after the pointer leaves: seed the wander AT the dot's current spot so it
+        // glides on from there instead of darting off to a far point (Élder: no sudden fly to the top).
+        if (wasLive) { wtx = sx; wty = sy; clampWander(); wAt = now; wasLive = false; }
+        ease = 0.02; tickWander(now); tx = wtx; ty = wty;          // calm meander, never full-speed, never the top
+      }
       if (hb <= ty + 2) { phase = 'descend'; detachScroll = scrollY; detachY = Math.max(40, hb); }
       // DESCEND mode only: near the hero floor, ease toward the left lane (the detach point).
       if (mode === 'descend') { const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130)); tx = tx + (leftLane() - tx) * k; }
@@ -115,47 +126,58 @@ export function initOrb() {
       const dfrac = Math.max(0, Math.min(1, (scrollY - detachScroll) / Math.max(1, docMax - detachScroll)));
       return { x: leftLane(), y: 70 + dfrac * (innerHeight - 140) };
     }
-    // STAY / LEAP: keep painting the underlines as the scroll passes them (Élder: they stay),
-    // but the dot is parked off-screen-top centre — frame() owns its visibility + the leap.
+    // STAY / LEAP: keep painting the underlines as the scroll passes them (Élder: they stay).
+    // The dot is hidden here; park it off-screen-top centre while waiting, but once the contacts
+    // have bloomed pin it AT the contacts so the fade dissolves in place (never flies back up).
     descendTarget();
     locked = false; ease = 0.08;
-    return { x: innerWidth * 0.5, y: -60 };
+    return { x: innerWidth * 0.5, y: armed ? innerCY : -60 };
   }
 
+  // The contacts reveal IS the orb: it streaks to the contacts and the ring expands from it
+  // (onArm), and on the way back the ring shrinks while the dot streaks home (onDisarm) — the
+  // same motion in reverse (Élder's mental model).
   function onArm(now) {
-    if (mode === 'leap') { leaping = true; leapT0 = now; }    // streak down the centre, burst at the end
+    if (mode === 'leap') { leapDir = 1; leapT0 = now; }       // streak DOWN; ring blooms when it lands
     else { fire(finaleMode()); }                              // stay + descend: bloom immediately
   }
-  function onDisarm() { unfire(); leaping = false; }
+  function onDisarm(now) {
+    if (mode === 'leap') { unfire(); leapDir = -1; leapT0 = now; }  // ring shrinks + dot streaks back UP
+    else { unfire(); }
+  }
 
   function frame(now) {
     const s = getSettings();
     const heroRect = hero.getBoundingClientRect();
     const rr = cinner.getBoundingClientRect(); innerCY = rr.top + rr.height / 2;
     if (!armed && innerCY < innerHeight * s.armAt) { armed = true; onArm(now); }
-    else if (armed && innerCY > innerHeight * 0.96) { armed = false; onDisarm(); }
+    else if (armed && innerCY > innerHeight * 0.96) { armed = false; onDisarm(now); }
     const t = computeTarget(now);
     sx += (t.x - sx) * ease; sy += (t.y - sy) * ease;
 
     // Per-mode visibility + the LEAP. DESCEND is the original; STAY/LEAP hide the dot mid-scroll
-    // so it never distracts over the content, and LEAP streaks it down the centre at the contacts.
+    // so it never distracts over the content; LEAP streaks it down the centre (and back up).
     let show, soft = false;
     if (mode === 'descend') {
       show = !armed;
       soft = phase === 'descend' && !armed && !locked;
     } else if (phase === 'follow' && heroRect.bottom > 0) {
       show = true;                                            // visible hero interaction
-    } else if (mode === 'leap' && leaping) {
-      const k = Math.min(1, (now - leapT0) / LEAP_MS);        // top -> contacts centre, accelerating
-      sx = innerWidth * 0.5; sy = -50 + (innerCY + 50) * (k * k);
+    } else if (mode === 'leap' && leapDir !== 0) {
+      const k = Math.min(1, (now - leapT0) / LEAP_MS);
+      sx = innerWidth * 0.5;
+      if (leapDir === 1) { sy = -50 + (innerCY + 50) * (k * k); if (k >= 1) { leapDir = 0; fire(finaleMode()); } }  // down: ease-in, then bloom
+      else { sy = -50 + (innerCY + 50) * ((1 - k) * (1 - k)); if (k >= 1) leapDir = 0; }                            // up: the exact reverse path
       show = true;
-      if (k >= 1) { leaping = false; fire(finaleMode()); }    // burst at the bottom
     } else {
-      show = false;                                           // mid-scroll: the dot is "up top / gone"
+      show = false;                                           // mid-scroll/bloomed: the dot is gone (it became the ring)
     }
     spark.style.transform = 'translate(' + sx + 'px,' + sy + 'px) translate(-50%,-50%)';
     spark.classList.toggle('plp-on', show);
     spark.classList.toggle('plp-soft', soft);
+    // Pass BEHIND the page content (z-index 1 < content's 2/3), except during the leap streak,
+    // which must stay visible in front (Élder: "o orbe deve passar por trás dos elementos").
+    spark.classList.toggle('plp-behind', !(mode === 'leap' && leapDir !== 0));
 
     if (heroRect.bottom > 0) {                                // constellation only while the hero is visible
       ctx.clearRect(0, 0, W, H); const c = rgb();
@@ -173,7 +195,7 @@ export function initOrb() {
   // Removed before promoting to production; absent chips simply no-op.
   function setMode(m) {
     if (MODES.includes(m)) { mode = m; try { localStorage.setItem(MODE_KEY, m); } catch (e) {} }
-    leaping = false; armed = false; unfire();
+    leapDir = 0; armed = false; unfire();
     for (const b of document.querySelectorAll('.orb-mode-chip')) b.setAttribute('aria-pressed', String(b.dataset.orbMode === mode));
   }
   for (const b of document.querySelectorAll('.orb-mode-chip')) b.addEventListener('click', () => setMode(b.dataset.orbMode));
