@@ -18,10 +18,11 @@ const i18n = read('../trilha/i18n.js');
 const home = read('../../index.html');
 
 test('entrar rides Codex chrome, no backstage in the appearance layer', () => {
-  // The shared debug pill (infra, gated by bs_debug, invisible to students) is allowed,
-  // exactly like the turma page loads it; no OTHER backstage CSS/JS rides the appearance layer.
-  assert.ok(!/backstage\/(css|js)\/(?!debug\.js)/.test(html), 'no backstage CSS/JS except the shared debug pill');
-  assert.match(html, /backstage\/js\/debug\.js/, 'the shared debug pill is loaded (error capture on the entry page)');
+  // The debug pill (infra, gated by bs_debug, invisible to students) is now codex-owned
+  // (/codex/js/debug.js), so the Trail no longer loads ANYTHING from /backstage/ — the
+  // decoupling that lets backstage move out to its own repo (item 12).
+  assert.ok(!/backstage\/(css|js)\//.test(html), 'no backstage CSS/JS (the debug pill is now codex-owned)');
+  assert.match(html, /\/codex\/js\/debug\.js/, 'the debug pill is loaded (error capture on the entry page)');
   assert.match(html, /\/codex\/css\/theme\.css/, 'codex theme tokens');
   assert.match(html, /\/codex\/trilha\/css\/entrar\.css/, 'entrar css');
   assert.match(html, /<pensoia-header mode="student"/, 'codex pensoia-header');
