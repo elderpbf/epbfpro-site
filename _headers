@@ -1,0 +1,14 @@
+# Cloudflare Pages response headers. Portado dos .htaccess de cada app.
+
+# Codex: revalidar a cada load (no-cache) pra um deploy chegar no aluno no proximo
+# load, sem hard-refresh, mantendo CSS+JS em sincronia. Portado de codex/.htaccess.
+/codex/*
+  Cache-Control: no-cache, must-revalidate
+
+# Trilha: mesma logica (o HTML de entrada; JS/CSS vem de /codex/). Portado de trilha/.htaccess.
+/trilha/*
+  Cache-Control: no-cache, must-revalidate
+
+# backstage/ e greenroom/ tinham max-age=3600 so como contorno do CDN do Hostinger.
+# O Pages revalida por padrao, entao deixo no default pra nao cachear HTML 1h e atrasar
+# deploy de admin. Se quiser replicar o 1h literal, a gente adiciona aqui depois.

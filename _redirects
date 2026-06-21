@@ -1,0 +1,16 @@
+# Cloudflare Pages rewrites. Portado de trilha/.htaccess (Apache nao roda no Pages).
+# Primeira regra que casa vence; as especificas vem antes das genericas.
+# Arquivos estaticos reais sao servidos direto; estas regras so valem quando nao ha arquivo.
+
+# Validacao de certificado
+/trilha/validar/:code   /trilha/validar.html?code=:code        200
+/trilha/validar         /trilha/validar.html                   200
+
+# Entrada por codigo digitado.
+# No Apache era restrito a 4 digitos ([0-9]{4}); aqui qualquer 1 segmento cai em
+# entrar.html, que valida o codigo de qualquer forma (frouxidao inofensiva, opcao (a)).
+/trilha/entrar          /trilha/entrar.html                    200
+/trilha/:client/:turma  /trilha/index.html?c=:client&t=:turma  200
+/trilha/:code           /trilha/entrar.html?code=:code         200
+/trilha/                /trilha/entrar.html                    200
+/trilha                 /trilha/entrar.html                    200
