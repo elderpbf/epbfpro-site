@@ -60,7 +60,7 @@
   <!-- Preload profile image for faster LCP -->
   <link rel="preload" as="image" href="images/profile.jpg" fetchpriority="high">
 
-  <link rel="stylesheet" href="css/landing.css?v=19">
+  <link rel="stylesheet" href="css/landing.css?v=20">
 
   <!-- Structured data (Schema.org JSON-LD) -->
   <script type="application/ld+json">
@@ -130,6 +130,12 @@
           <button data-lang="en" aria-pressed="false">English</button>
           <button data-lang="es" aria-pressed="false">Español</button>
         </div>
+      </div>
+      <!-- TEST ONLY: orb behaviour selector (remove before promoting to production). -->
+      <div class="orb-mode-chips" role="group" aria-label="Orbe (teste)">
+        <button class="orb-mode-chip" type="button" data-orb-mode="stay" aria-pressed="false">Fica</button>
+        <button class="orb-mode-chip" type="button" data-orb-mode="descend" aria-pressed="false">Desce</button>
+        <button class="orb-mode-chip" type="button" data-orb-mode="leap" aria-pressed="false">Salta</button>
       </div>
       <button class="plp-ic" id="theme" aria-label="Tema">☀</button>
       <a class="plp-pill" id="aluno" href="/trilha" aria-label="Acessar minha trilha" title="Acessar minha trilha"><svg viewBox="0 0 24 24"><path d="M22 9 12 5 2 9l10 4 10-4z"/><path d="M6 10.5V15c0 1.1 2.7 2 6 2s6-.9 6-2v-4.5"/><path d="M22 9v5"/></svg><span class="plp-t" data-i18n="nav.aluno">Acessar minha trilha</span></a>
@@ -302,7 +308,7 @@
   </div>
 </footer>
 
-<script type="module" src="js/main.js?v=23"></script>
+<script type="module" src="js/main.js?v=24"></script>
 <!-- LGPD consent banner intentionally not loaded: the site sets no tracking
      cookies (only functional localStorage). js/consent.js stays in the repo;
      re-add this include when analytics are introduced. -->
