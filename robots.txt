@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /backstage/
+Disallow: /codex/
+Disallow: /trilha/
+
+Sitemap: https://pensoia.com/sitemap.xml

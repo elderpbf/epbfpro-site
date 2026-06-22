@@ -11,6 +11,12 @@
 /greenroom/*   https://backstage.pensoia.com/greenroom/:splat  301
 /greenroom     https://backstage.pensoia.com/greenroom/        301
 
+# adriana (pagina) + voto-marca (mock) movidos pro backstage 2026-06-22.
+/adriana/*     https://backstage.pensoia.com/adriana/:splat          301
+/adriana       https://backstage.pensoia.com/adriana/                301
+/voto-marca/*  https://backstage.pensoia.com/mocks/voto-marca/:splat  301
+/voto-marca    https://backstage.pensoia.com/mocks/voto-marca/       301
+
 # Certificado: validar com codigo, depois o literal bare (manual)
 /trilha/validar/:code   /trilha/validar?code=:code     200
 /trilha/validar         /trilha/validar                200
