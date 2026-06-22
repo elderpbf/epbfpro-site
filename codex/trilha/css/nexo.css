@@ -223,7 +223,7 @@ body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-in
   top: -36px;
   left: 14px;
   right: 14px;
-  background: var(--success);
+  background: var(--success-fill);
   color: var(--text-on-accent, #fff);
   padding: 8px 12px;
   border-radius: 8px;
