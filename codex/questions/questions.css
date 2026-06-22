@@ -1116,10 +1116,12 @@
 .cdx-trail-status { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
 .cdx-trail-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
 .cdx-trail-engine { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
-/* Action group: open (secondary, teal-outlined) + unlink (danger), both full
-   width with a clear gap so they read as a deliberate pair, not a cramped stack. */
-.cdx-trail-actions { display: flex; flex-direction: column; gap: 0.6rem; }
-.cdx-trail-actions .cdx-btn { width: 100%; justify-content: center; }
+/* EVERY button in the modal is identical: full width, centred, one even stack.
+   Covers the action pair (open + unlink) AND the Fechar sibling below — which
+   relied on the no-op .cdx-btn-full and was the odd one out. */
+.cdx-trail-box .cdx-btn { display: flex; width: 100%; justify-content: center; }
+.cdx-trail-actions { display: flex; flex-direction: column; gap: 0.55rem; }
+.cdx-trail-box > [data-act="trail-close"] { margin-top: 0.55rem; }   /* Fechar, same gap as the pair */
 .cdx-trail-open { color: var(--primary); border-color: var(--primary); }
 .cdx-trail-open:hover { background: var(--cdx-chip-bg); }
 .cdx-trail-box select { width: 100%; margin-bottom: 0.9rem; }
