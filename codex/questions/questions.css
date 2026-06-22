@@ -185,14 +185,15 @@
  * lifecycle, a host bridge, the per-session stats overlay, and a bottom-of-page
  * protected delete. All colors are theme tokens (dark inherited). */
 /* Sessions fills the content area edge-to-edge like the host page. Negative
- * margins negate the shell's top + side padding (.bs-main 2.5rem/1.5rem +
- * .cdx-view 0.5rem/1.5rem = 3rem each) so the surface reaches the content edges
- * WITHOUT width:100vw, which would overflow by the scrollbar gutter and add a
- * horizontal scrollbar. Scoped to Sessions only; the position:fixed sidebar is
- * unaffected. The host content is re-inset 18px below; the bar bleeds back out. */
+ * margins negate the shell's top + side padding (.bs-main 1.25rem/1.5rem +
+ * .cdx-view 0.25rem/1.5rem = 1.5rem top, 3rem each side) so the surface reaches
+ * the content edges WITHOUT width:100vw, which would overflow by the scrollbar
+ * gutter and add a horizontal scrollbar. Scoped to Sessions only; the
+ * position:fixed sidebar is unaffected. The host content is re-inset 18px below;
+ * the bar bleeds back out. (Top was -3rem before the tab-page top gap was halved.) */
 .cdx-sessions-layout {
   position: relative; min-height: 60vh;
-  margin: -3rem -3rem 0;
+  margin: -1.5rem -3rem 0;
 }
 
 /* Floating rail: hidden offscreen, .cdx-sm--open slides it in. Fixed to the
@@ -1114,9 +1115,13 @@
 .cdx-trail-box h3 { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
 .cdx-trail-status { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
 .cdx-trail-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
-.cdx-trail-engine { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.9rem; }
-.cdx-trail-link { display: inline-block; font-size: 0.85rem; color: var(--primary); text-decoration: none; margin-bottom: 0.9rem; }
-.cdx-trail-link:hover { text-decoration: underline; }
+.cdx-trail-engine { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+/* Action group: open (secondary, teal-outlined) + unlink (danger), both full
+   width with a clear gap so they read as a deliberate pair, not a cramped stack. */
+.cdx-trail-actions { display: flex; flex-direction: column; gap: 0.6rem; }
+.cdx-trail-actions .cdx-btn { width: 100%; justify-content: center; }
+.cdx-trail-open { color: var(--primary); border-color: var(--primary); }
+.cdx-trail-open:hover { background: var(--cdx-chip-bg); }
 .cdx-trail-box select { width: 100%; margin-bottom: 0.9rem; }
 .cdx-trail-empty { color: var(--text-secondary); font-size: 0.85rem; padding: 0.6rem 0; }
 
