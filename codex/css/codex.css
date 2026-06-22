@@ -218,8 +218,8 @@
  * Codex; the rest of Backstage keeps its 1200px width. Padding is untouched
  * (the Sessions/host full-bleed views negate exactly 3rem of it). Lessons' own
  * `.bs-app--classvault .bs-main` override still wins for its flush look. */
-.bs-main { max-width: none; }
-.cdx-view { padding: 0.5rem 1.5rem 1.5rem; }
+.bs-main { max-width: none; padding-top: 1.25rem; }   /* halve the 2.5rem shell top gap above each tab page (Élder) */
+.cdx-view { padding: 0.25rem 1.5rem 1.5rem; }          /* + halve the host top pad: 3rem total -> 1.5rem */
 
 /* Language toggle button (PT/EN). The topbar renders it only when more than
  * one dictionary is loaded; it shows the language you'd switch TO. */
