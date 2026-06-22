@@ -1119,7 +1119,7 @@
 /* EVERY button in the modal is identical: full width, centred, one even stack.
    Covers the action pair (open + unlink) AND the Fechar sibling below — which
    relied on the no-op .cdx-btn-full and was the odd one out. */
-.cdx-trail-box .cdx-btn { display: flex; width: 100%; justify-content: center; }
+.cdx-trail-box .cdx-btn { box-sizing: border-box; display: flex; width: 100%; margin: 0; justify-content: center; }
 .cdx-trail-actions { display: flex; flex-direction: column; gap: 0.55rem; }
 .cdx-trail-box > [data-act="trail-close"] { margin-top: 0.55rem; }   /* Fechar, same gap as the pair */
 .cdx-trail-open { color: var(--primary); border-color: var(--primary); }
