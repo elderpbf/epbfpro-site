@@ -70,7 +70,7 @@ function _closeModal(bd) {
   if (target && target.parentNode) target.parentNode.removeChild(target);
 }
 function _openConfirm(opts) {
-  const cls = opts.danger ? ' cdx-btn-danger' : ' cdx-btn-primary';
+  const cls = opts.danger ? ' cdx-btn-danger-solid' : ' cdx-btn-primary';
   const html =
     '<div class="cdx-modal" style="max-width:440px">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +

@@ -149,14 +149,14 @@ function renderSubPill(header, strip, subTabsByTab) {
 function subtabModeSection() {
   return {
     id: 'cdx-subtabs',
-    title: 'Sub-abas',
+    title: t('settings.subtabs_title'),
     content:
       '<button class="bs-toggle-btn" id="sd-subtab-mode"></button>' +
-      '<p class="bs-hint">Como as sub-abas (Conteúdo, Perguntas) aparecem: pílula flutuante ao passar o mouse na aba, ou barra fixa abaixo dela.</p>',
+      '<p class="bs-hint">' + t('settings.subtabs_hint') + '</p>',
     onInit() {
       const btn = document.getElementById('sd-subtab-mode');
       if (!btn) return;
-      const sync = () => { btn.textContent = subtabMode() === 'pill' ? 'Pílula ao passar o mouse' : 'Barra fixa'; };
+      const sync = () => { btn.textContent = subtabMode() === 'pill' ? t('settings.subtabs_pill') : t('settings.subtabs_bar'); };
       sync();
       btn.addEventListener('click', () => {
         const next = subtabMode() === 'pill' ? 'bar' : 'pill';
@@ -183,13 +183,13 @@ function appearanceSection() {
   const tealSw = TEAL_OPTIONS.map((o) => swatch('cdx-teal-sw', o.value, o.label, o.value, '#e5e7eb')).join('');
   return {
     id: 'cdx-appearance',
-    title: 'Modo escuro',
+    title: t('settings.appearance_title'),
     content:
-      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">Cor do texto</p>' +
+      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">' + t('settings.appearance_text') + '</p>' +
       '<div class="cdx-tone-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.7rem">' + textSw + '</div>' +
-      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">Cor do turquesa</p>' +
+      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">' + t('settings.appearance_teal') + '</p>' +
       '<div class="cdx-teal-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.5rem">' + tealSw + '</div>' +
-      '<p class="bs-hint">Aplicam só no modo escuro, ao vivo, e valem só pra você no Codex.</p>',
+      '<p class="bs-hint">' + t('settings.appearance_hint') + '</p>',
     onInit() {
       const wire = (sel, getCur, setFn) => {
         const row = document.querySelector(sel);
@@ -208,23 +208,64 @@ function appearanceSection() {
   };
 }
 
+// Orb section: the homepage hero light's behaviour. The orb lives on the public
+// landing (js/orb.js), but it reads its mode from localStorage on the SAME origin,
+// so Élder sets it here (the admin console) and it applies on pensoia.com's home.
+// Three modes mirror the old landing test chips: Salta / Desce / Fica. Hardcoded
+// PT like its neighbour sections; no new CSS var (inline highlight via --primary).
+const ORB_MODE_KEY = 'plp_orb_mode';
+const ORB_MODES = [
+  { val: 'leap',    key: 'settings.orb_leap' },
+  { val: 'descend', key: 'settings.orb_descend' },
+  { val: 'stay',    key: 'settings.orb_stay' },
+];
+function orbSection() {
+  return {
+    id: 'cdx-orb',
+    title: t('settings.orb_title'),
+    content:
+      '<div class="cdx-orb-row" style="display:flex;gap:8px;margin-bottom:.5rem">' +
+        ORB_MODES.map((o) =>
+          '<button type="button" class="bs-toggle-btn cdx-orb-mode" data-val="' + o.val + '" style="flex:1">' + t(o.key) + '</button>'
+        ).join('') +
+      '</div>' +
+      '<p class="bs-hint">' + t('settings.orb_hint') + '</p>',
+    onInit() {
+      const row = document.querySelector('.cdx-orb-row');
+      if (!row) return;
+      const cur = () => { try { return localStorage.getItem(ORB_MODE_KEY) || 'leap'; } catch (_) { return 'leap'; } };
+      const sync = () => row.querySelectorAll('button').forEach((b) => {
+        const on = b.getAttribute('data-val') === cur();
+        b.style.color = on ? 'var(--primary)' : '';
+        b.style.borderColor = on ? 'var(--primary)' : '';
+      });
+      sync();
+      row.querySelectorAll('button').forEach((b) =>
+        b.addEventListener('click', () => {
+          try { localStorage.setItem(ORB_MODE_KEY, b.getAttribute('data-val')); } catch (_) {}
+          sync();
+        }));
+    },
+  };
+}
+
 // Developer section: toggles the shared debug pill (backstage/js/debug.js) via
 // window.bsDebugMount/Unmount + the bs_debug flag. Dev tooling, not auth, so the
 // topbar (app chrome) composes it into the drawer, not the drawer shell.
 function debugSection() {
   return {
     id: 'sd-debug',
-    title: 'Desenvolvedor',
+    title: t('settings.dev_title'),
     content:
-      '<p style="font-size:.88rem;color:var(--text-primary);margin-bottom:.5rem">Painel de debug</p>' +
-      '<button class="bs-toggle-btn" id="sd-debug-toggle" style="margin-bottom:.5rem">Desativado</button>' +
-      '<p class="bs-hint">Exibe pill flutuante com logs em todas as páginas do Backstage.</p>',
+      '<p style="font-size:.88rem;color:var(--text-primary);margin-bottom:.5rem">' + t('settings.dev_label') + '</p>' +
+      '<button class="bs-toggle-btn" id="sd-debug-toggle" style="margin-bottom:.5rem"></button>' +
+      '<p class="bs-hint">' + t('settings.dev_hint') + '</p>',
     onInit() {
       const btn = document.getElementById('sd-debug-toggle');
       if (!btn) return;
       const sync = () => {
         const on = localStorage.getItem('bs_debug') === '1';
-        btn.textContent = on ? 'Desativar' : 'Ativar';
+        btn.textContent = on ? t('settings.dev_disable') : t('settings.dev_enable');
         btn.style.color = on ? 'var(--primary)' : '';
         btn.style.borderColor = on ? 'var(--primary)' : '';
       };
@@ -375,13 +416,8 @@ export function init(opts) {
   settingsBtn.innerHTML = GEAR_SVG;
   inner.appendChild(settingsBtn);
 
-  // Logout.
-  const logoutBtn = document.createElement('button');
-  logoutBtn.className = 'bs-logout-btn';
-  logoutBtn.id = 'logout-btn';
-  logoutBtn.textContent = t('nav.logout');
-  logoutBtn.addEventListener('click', signOut);
-  inner.appendChild(logoutBtn);
+  // Logout moved into the Settings drawer footer (pinned at the bottom); see the
+  // initSettingsDrawer({ footer }) call below.
 
   header.appendChild(inner);
 
@@ -472,9 +508,18 @@ export function init(opts) {
   // Compose the drawer in display order: the topbar's own sections, then the
   // injected auth + dev sections. The drawer shell owns none of this — Google
   // and password come from the settings-auth component, gated on their globals.
-  const drawerSections = [subtabModeSection(), appearanceSection(), ...sections];
+  const drawerSections = [subtabModeSection(), appearanceSection(), orbSection(), ...sections];
   if (typeof globalThis.BS_GOOGLE !== 'undefined') drawerSections.push(googleSection());
   drawerSections.push(debugSection());
   if (typeof globalThis.callWorker === 'function') drawerSections.push(passwordSection());
-  initSettingsDrawer({ sections: drawerSections });
+  initSettingsDrawer({
+    sections: drawerSections,
+    footer: {
+      content: '<button class="bs-logout-btn" id="logout-btn" type="button">' + t('nav.logout') + '</button>',
+      onInit: function () {
+        var b = document.getElementById('logout-btn');
+        if (b) b.addEventListener('click', signOut);
+      },
+    },
+  });
 }

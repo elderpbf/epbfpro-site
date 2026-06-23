@@ -63,8 +63,9 @@
 .cdx-en-resend:disabled { opacity: .55; cursor: default; }
 .cdx-en-consent { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--border); font-size: .72rem; color: var(--text-secondary); line-height: 1.5; }
 
-/* Collapse-to-button toggle: shown only when the layout is stacked (mobile). */
-.cdx-en-reg-toggle { display: none; width: 100%; justify-content: center; font-size: .95rem; padding: .72rem 1.2rem; }
+/* Collapse-to-button toggle: shown only when the layout is stacked (mobile).
+   Look comes from tr-btn tr-btn-primary cdx-btn in JS; layout only kept here. */
+.cdx-en-reg-toggle { display: none; width: 100%; justify-content: center; }
 
 .cdx-en-questions { margin-top: 1.4rem; padding: 0 2rem; text-align: center; font-size: .82rem; color: var(--text-secondary); }
 .cdx-en-questions b { color: var(--text-primary); }

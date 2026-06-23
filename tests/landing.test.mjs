@@ -109,6 +109,18 @@ test('i18n: copied PT values present (agnostic + 1st person)', () => {
   assert.ok(pt.includes('O que eu ofereço'));
 });
 
+test('orb: idle motion is a constant-speed glide, and the pointer only drives inside the hero', () => {
+  const orb = read('js/orb.js');
+  // Constant-speed glide replaced the old ease-to-a-random-point wander (erratic + fast).
+  assert.ok(/GLIDE_SPEED/.test(orb), 'constant-speed glide (GLIDE_SPEED) missing');
+  assert.ok(/function tickGlide\(/.test(orb), 'tickGlide missing');
+  assert.ok(!/stepWanderTarget|tickWander/.test(orb), 'the old erratic wander is still present');
+  // The pointer only DRIVES the orb while over the box (overHero); in stay/leap the orb freezes +
+  // hides when the pointer leaves (out the bottom / any edge) instead of shooting to the top.
+  assert.ok(/overHero/.test(orb), 'pointer-over-box gating (overHero) missing');
+  assert.ok(/!overHero[\s\S]{0,90}return \{ x: sx, y: sy \}/.test(orb), 'stay/leap freeze-on-leave missing');
+});
+
 test('orb engine + settings + boot wired', () => {
   const orb = read('js/orb.js');
   assert.ok(orb.includes('export function initOrb'), 'initOrb missing');

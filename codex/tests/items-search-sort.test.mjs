@@ -51,8 +51,8 @@ test('search + sort sit at the top of the left list panel, wired outside the gri
   const src = read('../content/items.js');
   // both live in the list-column header (rendered once, not in the re-rendered grid)
   assert.match(src, /cdx-items-listhead[\s\S]*?id="cdx-items-search"[\s\S]*?id="cdx-items-sort"/);
-  // sort is a click-to-cycle BUTTON, not a dropdown
-  assert.match(src, /button[^>]*id="cdx-items-sort" class="cdx-items-sortbtn"/);
+  // sort is a click-to-cycle BUTTON using the system primitive + area class
+  assert.match(src, /button[^>]*id="cdx-items-sort" class="cdx-btn cdx-items-sortbtn"/);
   assert.ok(!/<select[^>]*id="cdx-items-sort"/.test(src), 'no sort <select> dropdown');
   // search feeds _renderItems; sort cycles recent -> alpha -> type
   assert.match(src, /_itemSearch = searchEl\.value; _renderItems\(\)/);

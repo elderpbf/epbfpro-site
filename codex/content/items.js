@@ -141,7 +141,7 @@ function _closeModal(bd) {
 
 // Generic confirm modal (no window.confirm). opts: { title, message, confirmLabel, danger, onConfirm }
 function _openConfirm(opts) {
-  const cls = opts.danger ? ' cdx-btn-danger' : ' cdx-btn-primary';
+  const cls = opts.danger ? ' cdx-btn-danger-solid' : ' cdx-btn-primary';
   const html =
     '<div class="cdx-modal" style="max-width:420px">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
@@ -209,18 +209,20 @@ function _renderShell() {
         '<button class="cdx-btn cdx-btn-danger cdx-btn-sm" id="cdx-btn-bulk-delete">' + t('content.bulk_delete') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm" id="cdx-btn-bulk-cancel">' + t('content.bulk_cancel') + '</button>' +
       '</div>' +
+      // Type-filter chips (Todos / Prompt para IA / …) as a full-width wrapping row ABOVE the
+      // split, so they line up across the top instead of being cramped in the left panel (Élder).
+      '<div id="cdx-items-filter"></div>' +
       '<div class="cdx-items-split" id="cdx-items-split">' +
         '<div class="cdx-items-listcol">' +
           // Search + sort at the TOP of the left panel (like the Turmas search),
           // kept out of the re-rendered grid so typing never loses focus. Sort is
           // a small toggle button that cycles recent -> A-Z -> type on click.
           '<div class="cdx-items-listhead">' +
-            '<input type="search" id="cdx-items-search" class="cdx-items-search" placeholder="' + _esc(t('content.search_ph')) + '" autocomplete="off" spellcheck="false">' +
-            '<button type="button" id="cdx-items-sort" class="cdx-items-sortbtn" title="' + _esc(t('content.sort_label')) + '" aria-label="' + _esc(t('content.sort_label')) + '">' +
+            '<input type="search" id="cdx-items-search" class="cdx-input cdx-items-search" placeholder="' + _esc(t('content.search_ph')) + '" autocomplete="off" spellcheck="false">' +
+            '<button type="button" id="cdx-items-sort" class="cdx-btn cdx-items-sortbtn" title="' + _esc(t('content.sort_label')) + '" aria-label="' + _esc(t('content.sort_label')) + '">' +
               _SORT_ICON + '<span class="cdx-items-sortlabel" id="cdx-items-sortlabel"></span>' +
             '</button>' +
           '</div>' +
-          '<div id="cdx-items-filter"></div>' +
           '<div class="cdx-items-list" id="cdx-items-grid">' +
             '<div class="cdx-empty">' + t('content.loading') + '</div>' +
           '</div>' +
@@ -413,7 +415,7 @@ function _renderPreview(item, opts) {
       '</div>' +
       '<div class="cdx-preview-actions">' +
         '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-pv-action="edit">' + t('content.edit') + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm" data-pv-action="duplicate" title="' + t('content.duplicate_title') + '">' + t('content.duplicate') + '</button>' +
+        '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-pv-action="duplicate" title="' + t('content.duplicate_title') + '">' + t('content.duplicate') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-pv-action="delete">' + t('content.delete') + '</button>' +
       '</div>' +
     '</div>' +
@@ -724,7 +726,7 @@ function _openTypeManager() {
       '</div>' +
       '<div class="cdx-type-manager-list" data-list></div>' +
       '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn cdx-btn-primary" data-act="close">' + t('content.close') + '</button>' +
+        '<button class="cdx-btn" data-act="close">' + t('content.close') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html, { disableBackdropClose: true });
@@ -741,7 +743,7 @@ function _openTypeManager() {
           typeIconHtml(ty.icon, { size: 20 }) + '</button>' +
         '<span class="cdx-type-row-label">' + _esc(ty.label) + '</span>' +
         '<span class="cdx-type-row-slug">' + _esc(ty.slug) + '</span>' +
-        '<button class="cdx-btn cdx-btn-sm" data-action="rename">' + t('content.rename') + '</button>' +
+        '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-action="rename">' + t('content.rename') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete">' + t('content.delete') + '</button>' +
       '</div>').join('');
   }
@@ -808,7 +810,7 @@ function _openTagManager() {
       '</div>' +
       '<div class="cdx-tag-manager-list" data-list></div>' +
       '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn cdx-btn-primary" data-act="close">' + t('content.close') + '</button>' +
+        '<button class="cdx-btn" data-act="close">' + t('content.close') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html, { disableBackdropClose: true });
@@ -834,7 +836,7 @@ function _openTagManager() {
       '<div class="cdx-tag-row" data-id="' + _esc(tg.id) + '">' +
         '<span class="cdx-tag-row-label">' + _esc(tg.label) + '</span>' +
         '<span class="cdx-tag-row-count">' + (tg.item_count || 0) + '</span>' +
-        '<button class="cdx-btn cdx-btn-sm" data-action="rename">' + t('content.rename') + '</button>' +
+        '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-action="rename">' + t('content.rename') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete">' + t('content.delete') + '</button>' +
       '</div>').join('');
   }

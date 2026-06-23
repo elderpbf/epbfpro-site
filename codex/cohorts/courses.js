@@ -344,10 +344,10 @@ function _renderEmenta() {
               '<button class="cdx-cur-x" data-action="del-sub" data-mi="' + mi + '" data-ti="' + ti + '" data-si="' + si + '">×</button>' +
             '</div>'
           ).join('') +
-          '<button class="cdx-btn cdx-btn-ghost cdx-btn-xs" data-action="add-sub" data-mi="' + mi + '" data-ti="' + ti + '">' + esc(t('cohorts.ementa_add_sub')) + '</button>' +
+          '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-btn-xs" data-action="add-sub" data-mi="' + mi + '" data-ti="' + ti + '">' + esc(t('cohorts.ementa_add_sub')) + '</button>' +
         '</div>'
       ).join('') +
-      '<button class="cdx-btn cdx-btn-ghost cdx-btn-xs" data-action="add-top" data-mi="' + mi + '">' + esc(t('cohorts.ementa_add_topic')) + '</button>' +
+      '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-btn-xs" data-action="add-top" data-mi="' + mi + '">' + esc(t('cohorts.ementa_add_topic')) + '</button>' +
     '</div>'
   ).join('') + _addModuleBtn();
 }

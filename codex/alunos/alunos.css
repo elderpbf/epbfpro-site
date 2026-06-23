@@ -49,29 +49,22 @@
 /* Students filter bar */
 .cdx-al-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.5rem 0 0.25rem; }
 .cdx-al-filter {
-  background: none; border: 1px solid var(--border); color: var(--text-secondary, #666);
+  background: none; border: 1px solid var(--border); color: var(--text-secondary);
   border-radius: 999px; padding: 0.28rem 0.8rem; font: inherit; font-size: 0.82rem; cursor: pointer;
 }
-.cdx-al-filter:hover { color: var(--text-primary, #111); }
-.cdx-al-filter.is-active { background: var(--accent, #14b8a6); border-color: var(--accent, #14b8a6); color: var(--text-on-accent, #fff); }
+.cdx-al-filter:hover { color: var(--text-primary); }
+.cdx-al-filter.is-active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 .cdx-al-approve-all { margin-left: auto; }
 
+/* Status badges — look from system role tokens; layout (padding/radius/type) owned here. */
 .cdx-al-badge {
   display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px;
   font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
 }
-.cdx-al-badge--approved { background: rgba(46, 204, 113, 0.15); color: #1e8e4e; }
-.cdx-al-badge--pending  { background: rgba(241, 196, 15, 0.18); color: #9a7d0a; }
-.cdx-al-badge--denied   { background: rgba(192, 57, 43, 0.15); color: #c0392b; }
+.cdx-al-badge--approved { background: var(--tint-success); color: var(--tint-success-tx); }
+.cdx-al-badge--pending  { background: var(--tint-task);    color: var(--tint-task-tx); }
+.cdx-al-badge--denied   { background: var(--tint-danger);  color: var(--tint-danger-tx); }
 
-/* Scoped under .cdx-alunos: these are the Alunos section's buttons. Without the
-   scope they overrode .cdx-btn / .cdx-btn-primary across the WHOLE app, painting
-   every button with var(--task) (globally #d97706, orange). */
-.cdx-alunos .cdx-btn {
-  cursor: pointer; padding: 0.4rem 0.85rem; border-radius: 8px;
-  border: 1px solid var(--task, #6b5cff); background: var(--task, #6b5cff); color: var(--text-on-accent, #fff);
-  font-size: 0.85rem;
-}
-.cdx-alunos .cdx-btn:disabled { opacity: 0.55; cursor: default; }
-.cdx-alunos .cdx-btn-ghost { background: transparent; color: var(--task, #6b5cff); }
+/* Button look is fully owned by components.css (.cdx-btn, .cdx-btn-primary,
+   .cdx-btn-vazado, .cdx-btn-danger, .cdx-btn-danger-solid). No local overrides. */
 .cdx-al-roster { width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid var(--border); border-radius: 8px; resize: vertical; }

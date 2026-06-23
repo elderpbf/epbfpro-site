@@ -114,7 +114,7 @@ function startEmail(emailEl, root) {
       '<p class="cdx-entrar-card-p">' + esc(t('entrar.email_lead')) + '</p>' +
       '<div class="cdx-entrar-error cdx-entrar-email-error" aria-live="polite"></div>' +
       '<input class="cdx-entrar-field cdx-entrar-email-input" type="email" inputmode="email" autocomplete="email" placeholder="' + esc(t('login.email_placeholder')) + '" aria-label="' + esc(t('login.email_label')) + '">' +
-      '<button class="cdx-entrar-btn cdx-entrar-email-send" type="button">' + esc(t('login.send_code')) + '</button>';
+      '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-email-send" type="button">' + esc(t('login.send_code')) + '</button>';
     const input = emailEl.querySelector('.cdx-entrar-email-input');
     const send = emailEl.querySelector('.cdx-entrar-email-send');
     const err = emailEl.querySelector('.cdx-entrar-email-error');
@@ -143,7 +143,7 @@ function startEmail(emailEl, root) {
       '<div class="cdx-entrar-error cdx-entrar-email-error" aria-live="polite"></div>' +
       '<input class="cdx-entrar-otp cdx-entrar-code-input" type="text" maxlength="4" autocapitalize="characters" autocomplete="one-time-code" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
       dev +
-      '<button class="cdx-entrar-btn cdx-entrar-code-verify" type="button">' + esc(t('login.verify')) + '</button>' +
+      '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-code-verify" type="button">' + esc(t('login.verify')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-resend" type="button">' + esc(t('login.resend')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-back" type="button">' + esc(t('entrar.other_email')) + '</button>';
     const input = emailEl.querySelector('.cdx-entrar-code-input');

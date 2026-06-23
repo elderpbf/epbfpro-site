@@ -93,22 +93,11 @@ html, body {
   outline: none;
   transition: border-color 0.15s;
 }
-.cdx-cert-input:focus { border-color: var(--accent); }
+.cdx-cert-input:focus { border-color: var(--primary); }
 
-.cdx-cert-submit {
-  flex: 0 0 auto;
-  padding: 0.6rem 1.3rem;
-  font-size: 0.95rem;
-  font-family: inherit;
-  font-weight: 600;
-  background: var(--accent);
-  color: var(--text-on-accent, #fff);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.cdx-cert-submit:hover { background: var(--accent-hover, var(--accent)); }
+/* .cdx-cert-submit look deleted: system .cdx-btn-primary handles the visual.
+   JS emits cdx-btn cdx-btn-primary alongside cdx-cert-submit. */
+.cdx-cert-submit { flex: 0 0 auto; }
 
 /* ── Error / not-found ───────────────────────────────────── */
 
@@ -139,7 +128,7 @@ html, body {
   line-height: 1.5;
 }
 
-.cdx-cert-try-again { font-size: 0.9rem; color: var(--accent); text-decoration: none; }
+.cdx-cert-try-again { font-size: 0.9rem; color: var(--primary); text-decoration: none; }
 .cdx-cert-try-again:hover { text-decoration: underline; }
 
 /* ── Result card ─────────────────────────────────────────── */
@@ -210,21 +199,9 @@ html, body {
 
 .cdx-cert-pdf-wrap { padding-top: 0.4rem; }
 
-.cdx-cert-pdf-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.9rem;
-  font-family: inherit;
-  font-weight: 600;
-  background: var(--accent);
-  color: var(--text-on-accent, #fff);
-  text-decoration: none;
-  border-radius: 8px;
-  transition: background 0.15s;
-}
-.cdx-cert-pdf-btn:hover { background: var(--accent-hover, var(--accent)); }
+/* .cdx-cert-pdf-btn look deleted: system .cdx-btn-primary handles the visual.
+   JS emits cdx-btn cdx-btn-primary alongside cdx-cert-pdf-btn. */
+.cdx-cert-pdf-btn { display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; }
 
 .cdx-cert-footer {
   margin-top: 1.2rem;

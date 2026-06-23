@@ -1,0 +1,186 @@
+/* ============================================================================
+   Codex Design System — COMPONENT PRIMITIVES (draft for approval)
+   ----------------------------------------------------------------------------
+   The single home for every reusable component look in Codex: buttons, badges,
+   pills, cards, accent-cards, inputs, tabs, tables, toasts, KPI cards, modals.
+   Loaded AFTER tokens.css, BEFORE any area sheet. Consumes tokens only; defines
+   ZERO raw colors of its own (except the proposed-new tokens block below, which
+   moves into tokens.css on approval).
+
+   THE LAW: a component's own CSS file is LAYOUT ONLY. Color, fill, border,
+   button look, badge look, accent treatment all come from the classes here.
+   If two things that play the same role look different, that is a bug.
+   ============================================================================ */
+
+/* ── PROPOSED NEW TOKENS (lift into tokens.css on approval) ──────────────────
+   Only the genuinely missing pieces; everything else already exists. */
+:root {
+  --cdx-danger-border: rgba(220, 38, 38, 0.40);   /* danger-outline resting border */
+  /* Status-accent ramp folded into the deepen-in-dark contract. The cert KPI
+     left-borders + status dots use THESE (not the old theme-stable brights). */
+  --status-issued:  #b45309;   /* amber, deepened */
+  --status-signed:  #1d4ed8;   /* blue,  deepened */
+  --status-sent:    var(--success-fill);
+  --status-revoked: var(--danger-fill);
+}
+[data-theme="dark"] {
+  --cdx-danger-border: rgba(248, 113, 113, 0.45);
+  --status-issued:  #fbbf24;
+  --status-signed:  #93c5fd;
+}
+
+/* ── BUTTONS ─────────────────────────────────────────────────────────────────
+   One base + emphasis tiers. Tier == context + how loud, chosen on purpose.
+     primary       solid teal      the single main commit action on a surface
+     neutral       filled outline  general / toolbar buttons (Gerenciar tags, Selecionar)
+     vazado        hollow outline  SMALL inline row-actions (Editar, Duplicar); pair --sm
+     danger        hollow red      inline destructive (Excluir, Revogar) — quiet until
+                                    reached for; fills red ONLY on hover
+     danger-solid  solid red       the FINAL confirm step inside a destroy modal
+   States: :hover, :focus-visible, :disabled, plus sizes --sm / --lg. */
+.cdx-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  box-sizing: border-box;
+  padding: 0.45rem 0.9rem;
+  font: inherit; font-size: 0.82rem; font-weight: 600; line-height: 1.1;
+  border-radius: 8px; border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--text-primary);
+  cursor: pointer; white-space: nowrap;
+  transition: background .14s, border-color .14s, color .14s, box-shadow .14s;
+}
+.cdx-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 35%, transparent); }
+.cdx-btn:disabled, .cdx-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* neutral (default outline) — explicit modifier optional, base already = neutral */
+.cdx-btn--neutral:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--cdx-card-hover-border); }
+.cdx-btn:hover:not(:disabled):not([class*="cdx-btn--"]) { background: var(--surface-hover); border-color: var(--cdx-card-hover-border); }
+
+/* primary (solid) */
+.cdx-btn--primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.cdx-btn--primary:hover:not(:disabled) { background: color-mix(in oklab, var(--primary) 85%, #000); border-color: color-mix(in oklab, var(--primary) 85%, #000); }
+
+/* danger outline (inline destructive — the new default for delete/revoke) */
+.cdx-btn--danger { background: transparent; border-color: var(--cdx-danger-border); color: var(--tint-danger-tx); }
+.cdx-btn--danger:hover:not(:disabled) { background: var(--danger-fill); border-color: var(--danger-fill); color: var(--on-danger); }
+
+/* danger solid (final confirm only) */
+.cdx-btn--danger-solid { background: var(--danger-fill); border-color: var(--danger-fill); color: var(--on-danger); }
+.cdx-btn--danger-solid:hover:not(:disabled) { background: color-mix(in oklab, var(--danger-fill) 85%, #000); border-color: color-mix(in oklab, var(--danger-fill) 85%, #000); }
+
+/* sizes */
+.cdx-btn--sm { padding: 0.28rem 0.6rem; font-size: 0.74rem; border-radius: 6px; }
+.cdx-btn--lg { padding: 0.6rem 1.25rem; font-size: 0.9rem; border-radius: 9px; }
+
+/* vazado = hollow neutral (transparent bg + border + neutral text, wash on hover).
+   The look for SMALL inline row-actions (Editar, Duplicar). Pair with --sm.
+   Destructive row-actions (Excluir, Revogar) use .cdx-btn--danger instead. */
+.cdx-btn--vazado { background: transparent; border-color: var(--border); color: var(--text-secondary); }
+.cdx-btn--vazado:hover:not(:disabled) { background: var(--surface-hover); color: var(--text-primary); border-color: var(--cdx-card-hover-border); }
+
+/* ── BADGES / PILLS ──────────────────────────────────────────────────────────
+   Status/role badges use the tint + tint-text role pair (legible in both modes).
+   The accent badge renders a category hue via the tinted-card mini: NEUTRAL text
+   + a hue dot, so the hue's lightness never affects legibility. */
+.cdx-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 9px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
+  border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
+}
+.cdx-badge--primary { background: var(--tint-primary); color: var(--tint-primary-tx); }
+.cdx-badge--success { background: var(--tint-success); color: var(--tint-success-tx); }
+.cdx-badge--danger  { background: var(--tint-danger);  color: var(--tint-danger-tx); }
+.cdx-badge--info    { background: var(--tint-info);    color: var(--tint-info-tx); }
+.cdx-badge--task    { background: var(--tint-task);    color: var(--tint-task-tx); }
+/* accent badge: set --acc to any palette hue (or a semantic --acc-<tab>) */
+.cdx-badge--accent {
+  background: color-mix(in oklab, var(--acc, var(--primary)) var(--acc-mix-bg), var(--surface));
+  border-color: color-mix(in oklab, var(--acc, var(--primary)) 35%, transparent);
+  color: var(--text-primary);
+}
+.cdx-badge--accent::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--acc, var(--primary)); flex-shrink: 0;
+}
+/* count badge (numeric pill) */
+.cdx-badge--count { background: var(--cdx-chip-bg); color: var(--tint-primary-tx); border-color: var(--cdx-chip-border); min-width: 20px; justify-content: center; }
+
+/* ── CARDS ───────────────────────────────────────────────────────────────────
+   Base surface card; hover + selected states from the component tokens. */
+.cdx-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+.cdx-card--hover { transition: border-color .12s, box-shadow .12s, background .12s; cursor: pointer; }
+.cdx-card--hover:hover { background: var(--cdx-card-hover-bg); border-color: var(--cdx-card-hover-border); box-shadow: 0 6px 18px -10px var(--shadow); }
+.cdx-card.is-selected { background: var(--cdx-card-sel-bg); border-color: var(--cdx-card-sel-border); }
+
+/* ACCENT CARD — the canonical category treatment. Set --acc to a palette hue.
+   Faint hue tint bg (auto-deepens in dark via --acc-mix-bg) + hue border +
+   NEUTRAL text + a hue dot/glyph. THE only way a category hue ever renders. */
+.cdx-accent-card {
+  background: color-mix(in oklab, var(--acc, var(--primary)) var(--acc-mix-bg), var(--surface));
+  border: 1px solid color-mix(in oklab, var(--acc, var(--primary)) 35%, transparent);
+  border-radius: 12px; padding: 0.85rem 1rem; color: var(--text-primary);
+  display: flex; align-items: center; gap: 10px;
+}
+.cdx-accent-card-dot {
+  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  background: var(--acc, var(--primary));
+  box-shadow: 0 0 8px color-mix(in oklab, var(--acc, var(--primary)) 60%, transparent);
+}
+.cdx-accent-card-glyph { color: var(--acc, var(--primary)); display: inline-flex; flex-shrink: 0; }
+
+/* KPI card — surface card with a status-accent left rail (deepens in dark). */
+.cdx-kpi { display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--kpi-acc, var(--primary));
+  border-radius: 12px; padding: 0.7rem 0.9rem; cursor: pointer; font: inherit; }
+.cdx-kpi:hover { box-shadow: 0 8px 20px -10px var(--shadow); }
+.cdx-kpi.is-active { box-shadow: 0 0 0 2px var(--primary); }
+.cdx-kpi-n { font-size: 1.7rem; font-weight: 700; line-height: 1; color: var(--text-primary); }
+.cdx-kpi-l { font-size: 0.72rem; color: var(--text-secondary); }
+.cdx-kpi--issued  { --kpi-acc: var(--status-issued); }
+.cdx-kpi--signed  { --kpi-acc: var(--status-signed); }
+.cdx-kpi--sent    { --kpi-acc: var(--status-sent); }
+.cdx-kpi--revoked { --kpi-acc: var(--status-revoked); }
+
+/* ── INPUTS ──────────────────────────────────────────────────────────────────*/
+.cdx-input, .cdx-select {
+  box-sizing: border-box; width: 100%; font: inherit; font-size: 0.85rem;
+  padding: 8px 12px; color: var(--text-primary); background: var(--background);
+  border: 1px solid var(--border); border-radius: 9px; outline: none;
+  transition: border-color .12s, box-shadow .12s;
+}
+.cdx-input:focus, .cdx-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 22%, transparent); }
+.cdx-input::placeholder { color: var(--text-muted); }
+.cdx-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+
+/* ── TABS / NAV (the active-tab contract) ────────────────────────────────────
+   Active tab label stays NEUTRAL; the hue lives on the underline + glyph only.
+   Set --tab-acc to the tab's semantic accent. */
+.cdx-tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--border); }
+.cdx-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 0.55rem 0.9rem; font: inherit; font-size: 0.85rem; font-weight: 600;
+  color: var(--text-secondary); background: none; border: none;
+  border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -1px;
+}
+.cdx-tab:hover { color: var(--text-primary); }
+.cdx-tab .cdx-tab-glyph { color: currentColor; display: inline-flex; }
+.cdx-tab.active { color: var(--text-primary); border-bottom-color: var(--tab-acc, var(--primary)); }
+.cdx-tab.active .cdx-tab-glyph { color: var(--tab-acc, var(--primary)); }
+
+/* ── TABLE ───────────────────────────────────────────────────────────────────*/
+.cdx-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.cdx-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+.cdx-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+.cdx-table tr:hover td { background: var(--surface-hover); }
+
+/* ── TOASTS ──────────────────────────────────────────────────────────────────*/
+.cdx-toast { display: flex; align-items: center; gap: 8px; padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.82rem; font-weight: 600; border: 1px solid transparent; }
+.cdx-toast--success { background: var(--tint-success); color: var(--tint-success-tx); border-color: var(--cdx-success-border); }
+.cdx-toast--danger  { background: var(--tint-danger);  color: var(--tint-danger-tx); }
+.cdx-toast--info    { background: var(--tint-info);    color: var(--tint-info-tx); }
+
+/* ── MODAL + BACKDROP ────────────────────────────────────────────────────────*/
+.cdx-backdrop { position: absolute; inset: 0; background: var(--cdx-backdrop); border-radius: inherit; }
+.cdx-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; box-shadow: 0 20px 60px -20px var(--shadow); max-width: 360px; }
+.cdx-modal-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.4rem; }
+.cdx-modal-body { font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 1rem; }
+.cdx-modal-acts { display: flex; gap: 0.5rem; justify-content: flex-end; }

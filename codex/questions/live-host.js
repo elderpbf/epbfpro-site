@@ -294,7 +294,7 @@ function _trailModalMarkup() {
     '<div class="cdx-trail-box">' +
       '<h3>' + _esc(t('questions.host_trail_modal_title')) + '</h3>' +
       '<div id="cdx-trail-content"></div>' +
-      '<button class="cdx-btn cdx-btn--ghost cdx-btn-full" data-act="trail-close" type="button">' + _esc(t('questions.host_trail_close')) + '</button>' +
+      '<button class="cdx-btn cdx-btn-vazado" data-act="trail-close" type="button">' + _esc(t('questions.host_trail_close')) + '</button>' +
     '</div>' +
   '</div>';
 }
@@ -379,7 +379,7 @@ function _renderTrailContent() {
     content.innerHTML =
       '<div class="cdx-trail-status">' + _esc(t('questions.host_trail_none')) + '</div>' +
       '<select class="cdx-select" id="cdx-trail-picker">' + opts + '</select>' +
-      '<button class="cdx-btn cdx-btn-primary cdx-btn-full" data-act="trail-link" type="button">' + _esc(t('questions.host_trail_link')) + '</button>';
+      '<button class="cdx-btn cdx-btn-primary" data-act="trail-link" type="button">' + _esc(t('questions.host_trail_link')) + '</button>';
   } else {
     content.innerHTML = '<div class="cdx-trail-empty">' + _esc(t('questions.host_trail_no_turmas')) + '</div>';
   }
@@ -521,9 +521,9 @@ function _renderHistory(closedQs) {
       '<span class="cdx-hi-type cdx-hi-type-' + (q.type || 'mc') + '">' + _esc(tag) + '</span>' +
       '<div class="cdx-hi-meta">' + _esc(when) + '</div>' + resultsHtml +
       '<div class="cdx-hi-actions">' +
-        '<button class="cdx-hi-btn cdx-hi-btn-primary" data-hi-act="relaunch" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_relaunch')) + '</button>' +
-        '<button class="cdx-hi-btn" data-hi-act="edit" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_edit')) + '</button>' +
-        '<button class="cdx-hi-btn cdx-hi-btn-danger" data-hi-act="delete" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_delete')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-hi-act="relaunch" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_relaunch')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-hi-act="edit" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_edit')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger cdx-btn-sm" data-hi-act="delete" data-qid="' + _esc(q.id) + '" type="button">' + _esc(t('questions.host_delete')) + '</button>' +
       '</div>' +
     '</div>';
   }).join('');

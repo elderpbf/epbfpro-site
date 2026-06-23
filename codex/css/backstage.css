@@ -346,8 +346,9 @@
 }
 
 .bs-topbar-tab.active {
-  color: var(--primary);
-  background: rgba(20,184,166,.12);
+  /* B8: neutral label text; hue stays on background tint only. */
+  color: var(--text-primary);
+  background: var(--cdx-card-sel-bg);
 }
 
 .bs-topbar-tab-dot {
@@ -405,8 +406,9 @@
   background: rgba(255,255,255,0.06);
 }
 [data-theme="light"] .bs-topbar-subtab.active {
-  background: rgba(20,184,166,0.12);
-  color: var(--primary);
+  /* B8: neutral label text, faint tint only. */
+  background: var(--cdx-card-sel-bg);
+  color: var(--text-primary);
 }
 
 @keyframes bs-tab-dot-pulse {

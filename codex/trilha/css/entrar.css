@@ -52,14 +52,15 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 .cdx-entrar-otp { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 1.4rem; font-weight: 800; letter-spacing: .4em; text-align: center; text-transform: uppercase; color: var(--text-primary); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: .7rem .85rem; }
 .cdx-entrar-otp:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.15); }
 
-.cdx-entrar-btn { font-size: 0.98rem; font-weight: 700; padding: 13px 16px; border: none; border-radius: 10px; background: var(--primary); color: var(--text-on-accent, #fff); cursor: pointer; width: 100%; margin-top: auto; }
-.cdx-entrar-btn:disabled { opacity: 0.6; cursor: default; }
+/* .cdx-entrar-btn look deleted: system .cdx-btn-primary handles the visual.
+   HTML carries cdx-btn cdx-btn-primary alongside cdx-entrar-btn. */
+.cdx-entrar-btn { width: 100%; margin-top: auto; justify-content: center; }
 .cdx-entrar-link { display: block; width: 100%; margin: .7rem 0 0; background: none; border: none; color: var(--text-secondary); font-family: inherit; font-size: .8rem; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .cdx-entrar-link:hover { color: var(--primary); }
 .cdx-entrar-dev { font-size: 0.85rem; color: var(--text-primary); margin-top: .5rem; }
 .cdx-entrar-dev strong { font-weight: 800; }
 
-.cdx-entrar-note { font-size: 0.78rem; color: var(--text-light); margin-top: 1.8rem; padding-top: 18px; border-top: 1px solid var(--border); text-align: center; }
+.cdx-entrar-note { font-size: 0.78rem; color: var(--text-secondary); margin-top: 1.8rem; padding-top: 18px; border-top: 1px solid var(--border); text-align: center; }   /* B6: --text-light → --text-secondary */
 
 /* passo "código enviado": esconde o card do código (e a faixa Continuar) e foca no e-mail */
 .cdx-entrar-step-code .cdx-entrar-cont,

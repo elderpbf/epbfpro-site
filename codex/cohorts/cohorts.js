@@ -60,15 +60,17 @@ let _dossierPFilter = 'all';   // active filter in the dossier participant list
 let _dossierParticipants = []; // cached list; reloaded per turma
 let _cleanup = []; // teardown functions pushed by mount
 
-// Auto-hide CLIENTES rail (mirrors the Questions sessions sidebar). Starts
-// hidden so the dossiê is full-width; the left screen edge reveals it.
+// CLIENTES rail (mirrors the Questions sessions sidebar). Starts OPEN + pinned
+// with the dossiê showing the empty prompt; the first turma pick flips it to the
+// hover-reveal overlay (left screen edge reveals, cursor-leave hides). Élder.
 let _overNav = false;
 let _navHideTimer = null;
+let _navPinned = true;       // open + pinned until the first turma is picked
 const NAV_REVEAL_ZONE = 6;   // px from the left edge that triggers the reveal
 const NAV_HIDE_DELAY = 1500; // ms after the cursor leaves the rail before it hides
 function _navLayoutEl() { return _viewEl && _viewEl.querySelector('.cdx-three-pane'); }
 function _openNav() { const l = _navLayoutEl(); if (l) l.classList.add('cdx-sm--open'); }
-function _closeNav() { const l = _navLayoutEl(); if (l) l.classList.remove('cdx-sm--open'); }
+function _closeNav() { const l = _navLayoutEl(); if (!l || _navPinned) return; l.classList.remove('cdx-sm--open'); }
 function _maybeHideNav() { if (!_overNav) _closeNav(); }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -174,7 +176,7 @@ function _openDeleteConfirm(opts) {
       '</div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-del-cancel">' + t('cohorts.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" id="cdx-del-confirm" disabled>' + t('cohorts.delete_confirm_btn') + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-del-confirm" disabled>' + t('cohorts.delete_confirm_btn') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html, { disableBackdropClose: true });
@@ -202,7 +204,7 @@ function _openArchiveConfirm(opts) {
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + _esc(opts.message) + '</p>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-arc-cancel">' + t('cohorts.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" id="cdx-arc-confirm">' + t('cohorts.archive') + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-arc-confirm">' + t('cohorts.archive') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html);
@@ -217,7 +219,7 @@ function _openArchiveConfirm(opts) {
 
 function _renderShell() {
   _viewEl.innerHTML =
-    '<div class="cdx-three-pane">' +
+    '<div class="cdx-three-pane' + (_navPinned ? ' cdx-sm--open' : '') + '">' +
 
       // Concept A: ONE list, turmas grouped under their client. Kept inside
       // .cdx-cohorts-nav so the mobile hamburger drawer (codex-topbar.js targets
@@ -235,7 +237,7 @@ function _renderShell() {
             '<div class="cdx-empty">' + t('cohorts.loading') + '</div>' +
           '</div>' +
           '<div class="cdx-cohorts-listfoot">' +
-            '<button class="cdx-btn cdx-btn-sm cdx-btn-ghost" id="' + IDS.btnNewClient + '">' + t('cohorts.new_client') + '</button>' +
+            '<button class="cdx-btn cdx-btn-sm cdx-btn-vazado" id="' + IDS.btnNewClient + '">' + t('cohorts.new_client') + '</button>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -245,7 +247,7 @@ function _renderShell() {
       // trilha link/actions, participants, aulas, and the cert shortcut.
       '<div class="cdx-pane cdx-doss-pane">' +
         '<div class="cdx-pane-body cdx-doss-body" id="cdx-turma-dossier">' +
-          '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>' +
+          '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>' +
         '</div>' +
       '</div>' +
 
@@ -302,28 +304,20 @@ function _loadAll() {
     const cur = _turmas.find((tm) => tm.client_slug === _relClientSlug && tm.slug === _relTurmaSlug && tm.status !== 'archived');
     if (cur) { _selectedClientSlug = cur.client_slug; _expandedClient = cur.client_slug; }
     _renderList();
-    if (cur) { _renderDossier(cur); }
-    else { _relClientSlug = null; _relTurmaSlug = null; _autoSelectFirst(); }
+    if (cur) { _navPinned = false; _closeNav(); _renderDossier(cur); }
+    else {
+      // No deep-link: start with the rail pinned open and the dossiê showing the
+      // empty prompt until Élder opens a turma (mirrors the Questions picker).
+      _relClientSlug = null; _relTurmaSlug = null;
+      _navPinned = true; _openNav();
+      const dEl = _q('cdx-turma-dossier');
+      if (dEl) dEl.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>';
+    }
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
     const el2 = _q(IDS.list);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
   });
-}
-
-function _autoSelectFirst() {
-  // Reopen the turma that was open before a refresh (Élder), else the first live turma.
-  let saved = null;
-  try {
-    const v = localStorage.getItem('cdx_cohorts_last');
-    if (v) { const i = v.indexOf('\n'); saved = _turmas.find((tm) => tm.client_slug === v.slice(0, i) && tm.slug === v.slice(i + 1)); }
-  } catch (_) {}
-  const first = saved || _turmas.find((tm) => tm.status !== 'archived') || _turmas[0];
-  if (first) _selectTurma(first.client_slug, first.slug);
-  else {
-    const el = _q('cdx-turma-dossier');
-    if (el) el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>';
-  }
 }
 
 function _initials(name) {
@@ -452,7 +446,7 @@ function _renderTurmaRow(tm) {
   const course = tm.course_title ? _esc(tm.course_title) : t('cohorts.tf_no_course');
   const n = tm.aula_count || 0;
   const countLabel = n === 1 ? '1 ' + t('cohorts.aula_singular') : n + ' ' + t('cohorts.aula_plural');
-  const archBadge = archived ? ' <span class="cdx-badge cdx-badge-archived">' + t('cohorts.archived') + '</span>' : '';
+  const archBadge = archived ? ' <span class="cdx-badge cdx-badge-danger">' + t('cohorts.archived') + '</span>' : '';
   // The phase is now a left accent bar (the row's left border, colored via --ph
   // from the phase class) instead of a dot on the right.
   return (
@@ -749,11 +743,12 @@ function _deleteTurma(turma) {
         _turmas = _turmas.filter((tm) => !(tm.client_slug === turma.client_slug && tm.slug === turma.slug));
         _renderList();
         if (wasSelected) {
+          // Back to the pinned picker with the empty prompt (mirrors Questions),
+          // rather than auto-jumping to another turma.
           _relClientSlug = null; _relTurmaSlug = null; _dossierTurma = null;
-          const next = _turmas.find((tm) => tm.client_slug === turma.client_slug && tm.status !== 'archived')
-                    || _turmas.find((tm) => tm.status !== 'archived') || _turmas[0];
-          if (next) _selectTurma(next.client_slug, next.slug);
-          else { const dEl = _q('cdx-turma-dossier'); if (dEl) dEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; }
+          _navPinned = true; _openNav();
+          const dEl = _q('cdx-turma-dossier');
+          if (dEl) dEl.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>';
         }
       }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     }
@@ -994,13 +989,13 @@ function _openParticipantsHelp() {
       '<div class="cdx-modal-title">' + _esc(t('cohorts.phelp_title')) + '</div>' +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_origin_h')) + '</div>' +
-      row(tag('cdx-tag--lista', 'cohorts.ptag_lista'),   t('cohorts.phelp_lista')) +
-      row(tag('cdx-tag--qr', 'cohorts.ptag_qr'),         t('cohorts.phelp_qr')) +
-      row(tag('cdx-tag--manual', 'cohorts.ptag_manual'), t('cohorts.phelp_manual')) +
+      row(tag('cdx-badge cdx-badge-primary', 'cohorts.ptag_lista'),                           t('cohorts.phelp_lista')) +
+      row(tag('cdx-badge cdx-badge-accent" style="--acc:var(--acc-teal)', 'cohorts.ptag_qr'), t('cohorts.phelp_qr')) +
+      row(tag('cdx-badge cdx-badge-success', 'cohorts.ptag_manual'),                          t('cohorts.phelp_manual')) +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_status_h')) + '</div>' +
-      row(tag('cdx-tag--pendente', 'cohorts.ptag_pending'), t('cohorts.phelp_pending')) +
-      row(tag('cdx-tag--negado', 'cohorts.ptag_denied'),    t('cohorts.phelp_denied')) +
+      row(tag('cdx-badge cdx-badge-task', 'cohorts.ptag_pending'),   t('cohorts.phelp_pending')) +
+      row(tag('cdx-badge cdx-badge-danger', 'cohorts.ptag_denied'),  t('cohorts.phelp_denied')) +
       '<p class="cdx-leg-note">' + _esc(t('cohorts.phelp_approved_note')) + '</p>' +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_conn_h')) + '</div>' +
@@ -1222,6 +1217,8 @@ function _selectTurma(clientSlug, turmaSlug) {
   const turma = _turmas.find((x) => x.client_slug === clientSlug && x.slug === turmaSlug);
   _renderDossier(turma);
   _renderList();
+  _navPinned = false;   // first pick flips the rail to the hover-reveal overlay
+  _closeNav();
 }
 
 // ── Turma dossier (Concept A: the rich right-pane detail) ─────────────────────
@@ -1235,7 +1232,7 @@ function _fmtDateBr(iso) {
 function _renderDossier(turma) {
   const el = _q('cdx-turma-dossier');
   if (!el) return;
-  if (!turma) { el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
+  if (!turma) { el.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
   _dossierTurma = turma;
   _dossierPFilter = 'all';
   _dossierParticipants = [];
@@ -1487,14 +1484,14 @@ function _pTag(p) {
   // actionable fact; once approved the origin (how they got in) is. They never
   // overlap because origin (approved_via) is only stamped on approval, and the
   // "approved" state itself is the expected default, so it carries no tag.
-  if (st === 'pending') return '<span class="cdx-tag cdx-tag--pendente">' + _esc(t('cohorts.ptag_pending')) + '</span>';
-  if (st === 'denied')  return '<span class="cdx-tag cdx-tag--negado">'   + _esc(t('cohorts.ptag_denied'))  + '</span>';
+  if (st === 'pending') return '<span class="cdx-badge cdx-badge-task">'    + _esc(t('cohorts.ptag_pending')) + '</span>';
+  if (st === 'denied')  return '<span class="cdx-badge cdx-badge-danger">'  + _esc(t('cohorts.ptag_denied'))  + '</span>';
   const via = p.approved_via || '';
-  if (via === 'manual')                                        return '<span class="cdx-tag cdx-tag--manual">' + _esc(t('cohorts.ptag_manual')) + '</span>';
+  if (via === 'manual')                                        return '<span class="cdx-badge cdx-badge-success">'                                                         + _esc(t('cohorts.ptag_manual')) + '</span>';
   // In-class enrollment window (the projected QR): window/presence/qr all read as QR.
-  if (via === 'qr' || via === 'window' || via === 'presence') return '<span class="cdx-tag cdx-tag--qr">'     + _esc(t('cohorts.ptag_qr'))     + '</span>';
+  if (via === 'qr' || via === 'window' || via === 'presence') return '<span class="cdx-badge cdx-badge-accent" style="--acc:var(--acc-teal)">'                            + _esc(t('cohorts.ptag_qr'))     + '</span>';
   // roster pre-approval, or any older/blank value, reads as the pre-approved list.
-  return '<span class="cdx-tag cdx-tag--lista">' + _esc(t('cohorts.ptag_lista')) + '</span>';
+  return '<span class="cdx-badge cdx-badge-primary">' + _esc(t('cohorts.ptag_lista')) + '</span>';
 }
 
 function _pRow(p) {
@@ -1959,6 +1956,7 @@ export function mount(viewEl, ctx) {
   _cpSessions = [];
   _dossierTurma = null;
   _dossierDepsTried = false;
+  _navPinned = true;
   _cleanup = [];
 
   // Route by sub-tab. The Cursos sub-view is its own module; the default

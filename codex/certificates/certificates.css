@@ -5,7 +5,7 @@
  * Every surface/text/border token has a [data-theme="dark"] override. */
 
 /* ── Tab accent ───────────────────────────────────────────────── */
-.cdx-tab--certificates { --accent-color: var(--codex-certificates, #8b5cf6); }
+.cdx-tab--certificates { --accent-color: var(--acc-certs); }
 
 /* ── Shell layout ─────────────────────────────────────────────── */
 .cdx-certs-shell {
@@ -73,10 +73,10 @@
   gap: 0.5rem;
 }
 
-.cdx-certs-tpl-row:hover { background: var(--surface-hover, rgba(13, 148, 136,0.10)); }
+.cdx-certs-tpl-row:hover { background: var(--surface-hover); }
 .cdx-certs-tpl-row.is-active {
-  background: var(--cdx-card-sel-bg, rgba(99,102,241,0.12));
-  border-left-color: var(--accent-color, #8b5cf6);
+  background: var(--cdx-card-sel-bg);
+  border-left-color: var(--accent-color);
 }
 
 [data-theme="dark"] .cdx-certs-tpl-row.is-active { background: var(--cdx-card-sel-bg); }
@@ -157,7 +157,7 @@
   padding: 0.22rem 0.6rem;
   border-radius: 5px;
   border: 1px solid var(--border);
-  background: var(--surface-hover, rgba(13, 148, 136,0.08));
+  background: var(--surface-hover);
   cursor: pointer;
   font-size: 0.78rem;
   color: var(--text-primary);
@@ -165,18 +165,18 @@
 }
 
 .cdx-cert-chip:hover {
-  background: var(--cdx-card-sel-bg, rgba(99,102,241,0.12));
-  border-color: var(--accent-color, #8b5cf6);
+  background: var(--cdx-card-sel-bg);
+  border-color: var(--accent-color);
 }
 
 .cdx-cert-chip code {
   font-family: monospace;
   font-size: 0.8em;
-  color: var(--codex-certificates, #8b5cf6);
+  color: var(--acc-certs);
   background: none;
 }
 
-[data-theme="dark"] .cdx-cert-chip code { color: var(--codex-certificates, #a78bfa); }
+[data-theme="dark"] .cdx-cert-chip code { color: var(--acc-certs); }
 
 .cdx-cert-chip-label {
   color: var(--text-secondary);
@@ -324,7 +324,7 @@
   border-bottom-color: var(--border);
 }
 
-.cdx-certs-table tr:hover td { background: var(--surface-hover, rgba(13, 148, 136,0.06)); }
+.cdx-certs-table tr:hover td { background: var(--surface-hover); }
 
 .cdx-certs-code code {
   font-family: monospace;
@@ -391,7 +391,7 @@
   border-radius: 4px;
   cursor: pointer;
 }
-.cdx-cert-roster-row:hover { background: var(--surface-hover, rgba(13, 148, 136,0.08)); }
+.cdx-cert-roster-row:hover { background: var(--surface-hover); }
 .cdx-cert-roster-row input[type="checkbox"] { margin-top: 0.15rem; }
 /* Person block: name + tier badge on line 1, the delivery e-mail prominent below. */
 .cdx-cert-roster-person { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
@@ -403,7 +403,7 @@
   font-size: 0.78em;
   font-style: italic;
 }
-.cdx-cert-roster-row--noemail { background: var(--danger-bg, rgba(185,28,28,0.06)); }
+.cdx-cert-roster-row--noemail { background: var(--cdx-danger-bg); }
 /* "Selecionar todos" sits at the top of the roster, separated by a rule. */
 .cdx-cert-roster-all { border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 0.15rem; padding-bottom: 0.35rem; position: sticky; top: -0.4rem; background: var(--surface); }
 .cdx-cert-roster-allk { font-weight: 600; }
@@ -415,9 +415,9 @@
 .cdx-cert-issue-thumb {
   display: block; width: 180px; padding: 0; border: 1px solid var(--border); border-radius: 8px;
   background: var(--background); cursor: pointer; overflow: hidden; line-height: 0;
-  box-shadow: 0 2px 8px rgba(6, 26, 81, 0.07); transition: box-shadow 0.15s, border-color 0.15s;
+  box-shadow: 0 2px 8px var(--shadow); transition: box-shadow 0.15s, border-color 0.15s;
 }
-.cdx-cert-issue-thumb:hover { border-color: var(--primary); box-shadow: 0 4px 14px rgba(6, 26, 81, 0.14); }
+.cdx-cert-issue-thumb:hover { border-color: var(--primary); box-shadow: 0 4px 14px var(--shadow); }
 .cdx-cert-issue-thumbwrap .cdx-field-hint { margin: 0; text-align: center; }
 @media (max-width: 560px) {
   .cdx-cert-issue-preview-split { flex-direction: column; }
@@ -429,7 +429,7 @@
 .cdx-cert-empty-list li { margin-bottom: 0.15rem; }
 
 .cdx-cert-issue-result {
-  background: var(--surface-hover, rgba(99,102,241,0.07));
+  background: var(--surface-hover);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.85rem 1rem;
@@ -509,9 +509,9 @@
   min-height: 0;
   overflow: visible;
   padding: 0.6rem;
-  background: #eef2f1;
+  background: var(--surface-alt, var(--surface));
 }
-[data-theme="dark"] .cdx-cert-preview-body { background: #11161c; }
+[data-theme="dark"] .cdx-cert-preview-body { background: var(--background); }
 
 .cdx-cert-sheet-wrap {
   position: relative;
@@ -554,7 +554,7 @@
   cursor: pointer;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-.cdx-cert-theme-chip:hover { color: var(--text-primary); background: var(--surface-hover, rgba(13, 148, 136,0.10)); }
+.cdx-cert-theme-chip:hover { color: var(--text-primary); background: var(--surface-hover); }
 .cdx-cert-theme-chip.is-active {
   color: var(--text-on-accent, #fff);
   background: var(--accent-color, #8b5cf6);
@@ -669,30 +669,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 0.7rem;
 }
-.cdx-emissao-kpi {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left-width: 4px;
-  border-radius: 12px;
-  padding: 0.7rem 0.9rem;
-  cursor: pointer;
-  font: inherit;
-  transition: transform 0.12s, box-shadow 0.12s;
-}
-.cdx-emissao-kpi:hover { transform: translateY(-1px); box-shadow: 0 8px 20px var(--shadow); }
-.cdx-emissao-kpi.is-active { box-shadow: 0 0 0 2px var(--primary); }
-.cdx-emissao-kpi-n { font-size: 1.7rem; font-weight: 700; line-height: 1; color: var(--text-primary); }
-.cdx-emissao-kpi-l { font-size: 0.72rem; color: var(--text-secondary); }
-.cdx-emissao-kpi--issued  { border-left-color: var(--cdx-cert-issued-ac); }
-.cdx-emissao-kpi--signed  { border-left-color: var(--cdx-cert-signed-ac); }
-.cdx-emissao-kpi--sent    { border-left-color: var(--cdx-cert-sent-ac); }
-.cdx-emissao-kpi--revoked { border-left-color: var(--cdx-cert-revoked-ac); }
-[data-theme="dark"] .cdx-emissao-kpi { background: var(--surface); border-color: var(--border); }
+/* KPI card look comes from .cdx-kpi + .cdx-kpi-{issued|signed|sent|revoked} in css/components.css. */
 
 .cdx-emissao-spacer { flex: 1; }
 

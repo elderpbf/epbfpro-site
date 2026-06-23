@@ -291,13 +291,13 @@ function _renderList() {
       const fresh = _aulaIsFresh(n);
       const label = fresh ? '&minus; NOVO' : '+ NOVO';
       const title = _esc(fresh ? t('releases.clear_fresh') : t('releases.show_fresh'));
-      clearBtn = '<button type="button" class="cdx-rel-clear-fresh cdx-dev-only' + (fresh ? '' : ' is-hidden-state') + '" data-toggle-fresh="' + _esc(n) + '" data-make-fresh="' + (fresh ? '0' : '1') + '" title="' + title + '">' + label + '</button>';
+      clearBtn = '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-danger cdx-rel-clear-fresh cdx-dev-only' + (fresh ? '' : ' is-hidden-state') + '" data-toggle-fresh="' + _esc(n) + '" data-make-fresh="' + (fresh ? '0' : '1') + '" title="' + title + '">' + label + '</button>';
     }
     // "Marcar como ocorrida no dia marcado": only for a scheduled aula not yet
     // happened. Sets happened_on = scheduled_for (occurred on its planned day).
     let markBtn = '';
     if (ds.key !== 'happened' && aula.scheduled_for) {
-      markBtn = '<button type="button" class="cdx-rel-mark-happened" data-mark-happened="' + _esc(aula.id) +
+      markBtn = '<button type="button" class="cdx-btn cdx-btn-sm cdx-rel-mark-happened" data-mark-happened="' + _esc(aula.id) +
         '" title="' + _esc(t('releases.mark_happened_title')) + '">' + _esc(t('releases.mark_happened')) + '</button>';
     }
     html +=

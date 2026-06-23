@@ -14,7 +14,13 @@
   --task-bg:     rgba(217, 119, 6, 0.12);
   --task-border: rgba(217, 119, 6, 0.34);
   --zone-und:    var(--text-secondary);
-  --success-fill: var(--success);  /* solid success fill carrying on-fill text; deepens in dark */
+  /* --success-fill removed: tokens.css provides the WCAG-legible value (#047857 light).
+     The local var(--success) (#10b981) with white text failed WCAG AA (3.5:1). */
+
+  /* Undefined-on-trilha aliases — consumed here before tokens.css added them. */
+  --muted:     var(--text-secondary);   /* tarefa-modal .cdx-tr-wall-body / .cdx-tr-gate-pending */
+  --surface-2: rgba(127, 127, 127, 0.08); /* tarefa-modal .tr-en-confirm-email */
+  /* --danger already defined in tokens.css as var(--error); alias keeps wall.css working. */
 }
 [data-theme="dark"] {
   /* Proposal C (paired): solid fills DEEPEN in dark so the light on-fill text stays
@@ -22,12 +28,12 @@
      white-on-amber bug. The TINT tokens (--task-bg fill + --task-dark text) stay
      bright on purpose; only solid fills + their hover deepen. */
   --task:        #b3690e;   /* deep amber solid fill (was #f59e0b) */
-  --task-dark:   #fbbf24;   /* kept bright: legible amber TEXT on the amber tint */
+  --task-dark:   #fcd34d;   /* aligned to global --tint-task-tx dark (#fcd34d, was #fbbf24) */
   --task-hover:  #8a4f0a;   /* deep amber hover (was brightening to #fbbf24) */
   --task-bg:     rgba(245, 158, 11, 0.16);
   --task-border: rgba(245, 158, 11, 0.42);
   --zone-und:    #374151;
-  --success-fill: #0f8a5a;  /* deep green solid fill (was bright #34d399 under light text) */
+  /* --success-fill dark removed: tokens.css dark value #0f8a5a is identical; defer to it. */
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -154,7 +160,7 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--primary-dark);
+  color: var(--tint-primary-tx);   /* B1: --primary-dark as text */
   margin-bottom: 0.35rem;
 }
 .cdx-tr-client-name {

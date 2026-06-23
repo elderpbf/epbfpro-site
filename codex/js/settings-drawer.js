@@ -15,6 +15,7 @@
 // open() / close(): slide the drawer in / out.
 //
 // ES module: imported by codex-topbar.js (replaces the legacy window.SettingsDrawer).
+import { t } from './i18n.js';
 
 function _esc(s) {
   return String(s == null ? '' : s)
@@ -43,7 +44,7 @@ function _buildSection(id, title, bodyHtml, expanded) {
 var _overlay, _drawer;
 var _onOpenCallbacks = [];
 
-function _injectDrawer(sectionsHtml) {
+function _injectDrawer(sectionsHtml, footerHtml) {
   _overlay = document.createElement('div');
   _overlay.id = 'settings-overlay';
   _overlay.className = 'bs-overlay';
@@ -54,13 +55,14 @@ function _injectDrawer(sectionsHtml) {
   _drawer.id = 'settings-drawer';
   _drawer.className = 'bs-drawer';
   _drawer.hidden = true;
-  _drawer.setAttribute('aria-label', 'Configurações');
+  _drawer.setAttribute('aria-label', t('settings.title'));
   _drawer.innerHTML =
     '<h2>' +
-      '<span>Configurações</span>' +
+      '<span>' + t('settings.title') + '</span>' +
       '<button class="bs-drawer-close" id="sd-close" aria-label="Fechar">&times;</button>' +
     '</h2>' +
-    sectionsHtml;
+    '<div class="sd-scroll">' + sectionsHtml + '</div>' +
+    (footerHtml ? '<div class="sd-footer">' + footerHtml + '</div>' : '');
   document.body.appendChild(_drawer);
 
   document.getElementById('sd-close').addEventListener('click', close);
@@ -126,6 +128,7 @@ function _injectStyles() {
 export function init(opts) {
   opts = opts || {};
   var sections = opts.sections || [];
+  var footer = opts.footer || null; // { content, onInit? } pinned below the scroll (e.g. logout)
 
   _injectStyles();
 
@@ -135,13 +138,16 @@ export function init(opts) {
     html += _buildSection(s.id, s.title, s.content || '', s.expanded === true);
   }
 
-  _injectDrawer(html);
+  _injectDrawer(html, footer && footer.content ? footer.content : '');
 
   // Wire each section: onInit once now, onOpen on every open.
   for (var j = 0; j < sections.length; j++) {
     if (typeof sections[j].onInit === 'function') sections[j].onInit();
     if (typeof sections[j].onOpen === 'function') _onOpenCallbacks.push(sections[j].onOpen);
   }
+
+  // Footer (e.g. logout) is pinned below the scrolling sections; wire it once.
+  if (footer && typeof footer.onInit === 'function') footer.onInit();
 
   var settingsBtn = document.getElementById('settings-btn');
   if (settingsBtn) settingsBtn.addEventListener('click', open);

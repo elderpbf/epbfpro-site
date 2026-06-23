@@ -10,7 +10,7 @@
 
 .bs-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.45);
+  background: var(--cdx-backdrop); /* B7: was rgba(0,0,0,.45) */
   z-index: 9990;
   opacity: 0;
   transition: opacity .3s;
@@ -26,7 +26,9 @@
   border-left: 1px solid rgba(255,255,255,.1);
   z-index: 9991;
   padding: 2rem;
-  overflow-y: auto;
+  overflow: hidden;            /* the .sd-scroll body scrolls; the footer stays pinned */
+  display: flex;
+  flex-direction: column;
   transition: right .3s ease;
   box-shadow: -4px 0 30px rgba(0,0,0,.3);
   box-sizing: border-box;
@@ -35,6 +37,19 @@
 }
 
 .bs-drawer.open { right: 0; }
+
+/* Layout: fixed title, scrolling sections, pinned footer (logout). */
+.bs-drawer > h2 { flex-shrink: 0; }
+.sd-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; margin: 0 -0.25rem; padding: 0 0.25rem; }
+.sd-footer { flex-shrink: 0; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,.1); }
+.sd-footer .bs-logout-btn {
+  display: block; width: 100%; padding: 0.65rem;
+  background: transparent; border: 1.5px solid var(--border); border-radius: 8px;
+  color: var(--text-secondary, #94a3b8);
+  font-family: inherit; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+}
+.sd-footer .bs-logout-btn:hover { background: var(--cdx-card-hover-bg); color: var(--text-primary, #e2e8f0); }
 
 .bs-drawer h2 {
   font-size: 1.2rem;
@@ -109,7 +124,7 @@
   width: 100%;
   padding: 0.65rem;
   background: transparent;
-  border: 1.5px solid rgba(100,160,255,.35);
+  border: 1.5px solid var(--border); /* was rgba(100,160,255,.35) — freehand blue */
   border-radius: 8px;
   color: var(--primary, #14b8a6);
   font-family: 'Inter', sans-serif;
@@ -120,7 +135,7 @@
   transition: all .2s;
 }
 
-.bs-toggle-btn:hover { background: rgba(100,160,255,.08); }
+.bs-toggle-btn:hover { background: var(--cdx-card-hover-bg); } /* was rgba(100,160,255,.08) */
 
 .bs-field { margin-bottom: 0.75rem; }
 .bs-field label { display: block; font-size: 0.82rem; color: var(--text-secondary, #94a3b8); margin-bottom: 0.3rem; }

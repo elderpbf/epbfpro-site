@@ -12,6 +12,7 @@
 // Auth globals (window in the browser; stubbed on globalThis in tests):
 //   callWorker (api-client / worker-call), BS_AUTH (auth.js), BS_GOOGLE.
 // hashPw is Codex-owned (below), no longer the backstage utils.js global.
+import { t } from './i18n.js';
 
 function _esc(s) {
   return String(s == null ? '' : s)
@@ -32,8 +33,7 @@ function _googleSectionHtml() {
   return (
     '<div id="sd-google-state" style="margin-bottom:.6rem;font-size:.92rem"></div>' +
     '<button class="bs-toggle-btn" id="sd-google-action" style="margin-bottom:.5rem"></button>' +
-    '<p class="bs-hint">Conexão necessária apenas para sincronizar pastas do Drive ou ' +
-    'copiar texto de documentos. Pré-visualizações usam sua sessão Google geral do navegador.</p>'
+    '<p class="bs-hint">' + t('settings.google_hint') + '</p>'
   );
 }
 
@@ -45,12 +45,12 @@ function _renderGoogleSection() {
   var authed = !!(bs && bs.isAuthed && bs.isAuthed());
   if (authed) {
     var email = (bs.getEmail && bs.getEmail()) || '';
-    stateEl.innerHTML = '<strong style="color:var(--primary)">Conectado</strong>' +
+    stateEl.innerHTML = '<strong style="color:var(--primary)">' + t('settings.google_connected') + '</strong>' +
       (email ? '<br><span style="color:var(--text-secondary);font-size:.85rem">' + _esc(email) + '</span>' : '');
-    btn.textContent = 'Desconectar';
+    btn.textContent = t('settings.google_disconnect');
   } else {
-    stateEl.innerHTML = '<span style="color:var(--text-secondary)">Não conectado</span>';
-    btn.textContent = 'Conectar Google';
+    stateEl.innerHTML = '<span style="color:var(--text-secondary)">' + t('settings.google_disconnected') + '</span>';
+    btn.textContent = t('settings.google_connect');
   }
 }
 
@@ -79,7 +79,7 @@ function _initGoogleSection() {
 export function googleSection() {
   return {
     id: 'sd-google',
-    title: 'Conta Google',
+    title: t('settings.google_title'),
     content: _googleSectionHtml(),
     onInit: _initGoogleSection,
     // Re-render each time the drawer opens so it reflects any state change
@@ -91,22 +91,22 @@ export function googleSection() {
 // ── Password change ──────────────────────────────────────────────────────────
 function _pwSectionHtml() {
   return (
-    '<button class="bs-toggle-btn" id="sd-show-pw-form">Alterar senha</button>' +
+    '<button class="bs-toggle-btn" id="sd-show-pw-form">' + t('settings.pw_change') + '</button>' +
     '<div id="sd-pw-form" hidden>' +
       '<div class="bs-field" style="margin-top:1rem">' +
-        '<label>Senha atual</label>' +
+        '<label>' + t('settings.pw_current') + '</label>' +
         '<input id="sd-pw-current" type="password" autocomplete="off">' +
       '</div>' +
       '<div class="bs-field">' +
-        '<label>Nova senha</label>' +
+        '<label>' + t('settings.pw_new') + '</label>' +
         '<input id="sd-pw-new" type="password" autocomplete="off">' +
       '</div>' +
       '<div class="bs-field">' +
-        '<label>Confirmar nova senha</label>' +
+        '<label>' + t('settings.pw_confirm') + '</label>' +
         '<input id="sd-pw-confirm" type="password" autocomplete="off">' +
       '</div>' +
       '<p class="bs-form-error" id="sd-pw-error"></p>' +
-      '<button class="bs-save-btn" id="sd-pw-save">Atualizar senha</button>' +
+      '<button class="bs-save-btn" id="sd-pw-save">' + t('settings.pw_update') + '</button>' +
     '</div>'
   );
 }
@@ -130,8 +130,8 @@ function _initPwChange() {
     err.textContent = '';
     err.style.color = '';
 
-    if (newPw.length < 6) { err.textContent = 'A senha deve ter pelo menos 6 caracteres.'; return; }
-    if (newPw !== confirm) { err.textContent = 'As senhas não coincidem.'; return; }
+    if (newPw.length < 6) { err.textContent = t('settings.pw_min'); return; }
+    if (newPw !== confirm) { err.textContent = t('settings.pw_mismatch'); return; }
 
     btn.disabled = true;
     try {
@@ -143,14 +143,14 @@ function _initPwChange() {
       document.getElementById('sd-pw-new').value = '';
       document.getElementById('sd-pw-confirm').value = '';
       err.style.color = 'var(--primary)';
-      err.textContent = 'Senha alterada com sucesso.';
+      err.textContent = t('settings.pw_success');
       setTimeout(function () {
         err.textContent = '';
         err.style.color = '';
         document.getElementById('sd-pw-form').hidden = true;
       }, 2500);
     } catch (e) {
-      err.textContent = 'Senha atual incorreta.';
+      err.textContent = t('settings.pw_wrong');
     } finally {
       btn.disabled = false;
     }
@@ -160,7 +160,7 @@ function _initPwChange() {
 export function passwordSection() {
   return {
     id: 'sd-security',
-    title: 'Segurança',
+    title: t('settings.security_title'),
     content: _pwSectionHtml(),
     onInit: _initPwChange,
   };

@@ -248,7 +248,7 @@ body.cv-focus .cv-focus-hot {
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--primary-dark);
+  color: var(--tint-primary-tx); /* B1: was --primary-dark (near-invisible in dark) */
   line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -642,7 +642,7 @@ body.cv-focus .cv-focus-hot {
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--primary-dark);
+  color: var(--tint-primary-tx); /* B1: was --primary-dark (near-invisible in dark) */
   line-height: 1;
 }
 .cv-turma-menu-name {

@@ -29,7 +29,8 @@
 }
 
 .ct-tab:hover { color: var(--primary); }
-.ct-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+/* B8: active tab uses neutral text; hue stays on the underline only. */
+.ct-tab.active { color: var(--text-primary); border-bottom-color: var(--primary); font-weight: 600; }
 
 .ct-panel { display: none; }
 .ct-panel.active { display: block; }
@@ -232,7 +233,7 @@
 .ct-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: var(--cdx-backdrop); /* B7 */
   z-index: 200;
   display: flex;
   align-items: center;
@@ -582,7 +583,7 @@
 .ct-editor-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: var(--cdx-backdrop); /* B7 */
   z-index: 200;
   display: flex;
   align-items: flex-start;
@@ -1607,11 +1608,12 @@ a.ct-card-mini-icon.is-on:hover {
 
 /* =========================================================
    Phase 5 -- Tarefas tab
-   Mirrors trilha.css --task token for visual continuity.
    ========================================================= */
 
 :root {
-  --task: var(--primary-dark);
+  /* NOTE: --task intentionally NOT redefined here.
+     Resolved from tokens.css --task-fill (amber #d97706 / dark #b3690e).
+     Redefining it as --primary-dark (teal) silently broke the amber task role. */
   --task-bg: rgba(20, 184, 166, 0.08);
 }
 
@@ -2035,7 +2037,7 @@ a.ct-card-mini-icon.is-on:hover {
   align-items: baseline;
   gap: 0.5rem;
   padding: 8px 10px;
-  background: var(--bg-soft, rgba(20, 184, 166, 0.05));
+  background: var(--cdx-card-hover-bg); /* was --bg-soft (undefined) → card hover tint */
   border-radius: 8px;
   border: 1px solid var(--border);
 }

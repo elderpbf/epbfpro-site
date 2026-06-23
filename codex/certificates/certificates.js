@@ -777,9 +777,9 @@ function _renderKpis() {
   const base = _emissaoFiltered(false);
   el.innerHTML = _KPIS.map((c) => {
     const n = base.filter((x) => x.status === c.s).length;
-    return '<button type="button" class="cdx-emissao-kpi cdx-emissao-kpi--' + c.s + (_filterStatus === c.s ? ' is-active' : '') + '" data-status="' + c.s + '">' +
-      '<span class="cdx-emissao-kpi-n">' + n + '</span>' +
-      '<span class="cdx-emissao-kpi-l">' + esc(t(c.k)) + '</span>' +
+    return '<button type="button" class="cdx-statcard cdx-statcard-' + c.s + (_filterStatus === c.s ? ' is-active' : '') + '" data-status="' + c.s + '">' +
+      '<span class="cdx-statcard-n">' + n + '</span>' +
+      '<span class="cdx-statcard-l">' + esc(t(c.k)) + '</span>' +
     '</button>';
   }).join('');
 }
@@ -983,7 +983,7 @@ function _revokeConfirm(code) {
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(t('certificates.revoke_msg').replace('{code}', code)) + '</p>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-rev-cancel">' + esc(t('certificates.cancel')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" id="cdx-rev-confirm">' + esc(t('certificates.action_revoke')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-rev-confirm">' + esc(t('certificates.action_revoke')) + '</button>' +
       '</div>' +
     '</div>';
   const bd = openModal(html);
@@ -1020,7 +1020,7 @@ function _bulkDeleteConfirm(codes) {
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(msg) + '</p>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-bdel-cancel">' + esc(t('certificates.cancel')) + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" id="cdx-bdel-confirm">' + esc(t('certificates.action_delete')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-bdel-confirm">' + esc(t('certificates.action_delete')) + '</button>' +
       '</div>' +
     '</div>';
   const bd = openModal(html);

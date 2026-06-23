@@ -111,7 +111,7 @@ function _closeModal(bd) {
   if (target && target.parentNode) target.parentNode.removeChild(target);
 }
 function _openConfirm(opts) {
-  const cls = opts.danger ? ' cdx-btn-danger' : ' cdx-btn-primary';
+  const cls = opts.danger ? ' cdx-btn-danger-solid' : ' cdx-btn-primary';
   const html =
     '<div class="cdx-modal" style="max-width:420px">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
@@ -276,7 +276,7 @@ function _editorPaneHtml(preset) {
     '</div>' +
     '<div class="cdx-preset-editor-actions">' +
       '<div class="cdx-preset-actions-left">' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="rename">' + t('presets.edit_name') + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-act="rename">' + t('presets.edit_name') + '</button>' +
         delBtn +
       '</div>' +
       '<div class="cdx-preset-actions-right">' +

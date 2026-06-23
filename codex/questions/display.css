@@ -82,7 +82,7 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
   padding: clamp(28px, 4vh, 56px) clamp(28px, 4vw, 64px);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 6px solid #f59e0b;
+  border-left: 6px solid var(--acc-amber);
   border-radius: 18px;
   box-shadow: 0 4px 24px var(--shadow, rgba(0,0,0,0.08));
 }
@@ -93,7 +93,7 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #d97706;
+  color: var(--cdx-warn);
   margin-bottom: 16px;
 }
 .cdx-disp-qa .cdx-disp-qa-name {
@@ -113,8 +113,8 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
   display: none;
   margin-top: 32px;
   padding: 22px 28px;
-  background: rgba(245,158,11,0.10);
-  border-left: 5px solid #d97706;
+  background: color-mix(in oklab, var(--acc-amber) 10%, transparent);
+  border-left: 5px solid var(--cdx-warn);
   border-radius: 0 16px 16px 0;
 }
 .cdx-disp-qa .cdx-disp-qa-answer-wrap.is-visible { display: block; }
@@ -123,7 +123,7 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #d97706;
+  color: var(--cdx-warn);
   margin-bottom: 12px;
 }
 .cdx-disp-qa .cdx-disp-qa-answer {

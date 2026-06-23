@@ -26,7 +26,7 @@ export function mountForumAdmin(el, turma) {
           '<textarea class="cdx-fa-nb" rows="3" placeholder="' + esc(t('cohorts.forum_new_body_ph')) + '"></textarea>' +
           '<label class="cdx-fa-pinrow"><input type="checkbox" class="cdx-fa-np"> ' + esc(t('cohorts.forum_pin_on_create')) + '</label>' +
           '<div class="cdx-fa-newactions">' +
-            '<button type="button" class="cdx-btn cdx-btn--ghost cdx-fa-ncancel">' + esc(t('cohorts.forum_cancel')) + '</button>' +
+            '<button type="button" class="cdx-btn cdx-btn-vazado cdx-fa-ncancel">' + esc(t('cohorts.forum_cancel')) + '</button>' +
             '<button type="button" class="cdx-btn cdx-fa-ncreate">' + esc(t('cohorts.forum_create')) + '</button>' +
           '</div>' +
         '</div>' +

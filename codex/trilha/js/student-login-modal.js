@@ -96,7 +96,7 @@ export function openLoginModal(opts = {}) {
       '</div>' +
       '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-en-join">' + esc(t('login.enroll_cta')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary tr-en-join">' + esc(t('login.enroll_cta')) + '</button>' +
       '</div>';
     const emailEl = bodyEl.querySelector('.tr-en-email');
     const nameEl = bodyEl.querySelector('.tr-en-name');
@@ -120,7 +120,7 @@ export function openLoginModal(opts = {}) {
       '<input id="tr-login-email" type="email" class="tr-tarefa-name tr-login-email" placeholder="' + esc(t('login.email_placeholder')) + '" autocomplete="email" inputmode="email">' +
       '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-login-send">' + esc(t('login.send_code')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary tr-login-send">' + esc(t('login.send_code')) + '</button>' +
       '</div>';
     const input = bodyEl.querySelector('.tr-login-email');
     const send = bodyEl.querySelector('.tr-login-send');
@@ -151,8 +151,8 @@ export function openLoginModal(opts = {}) {
       dev +
       '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-login-verify">' + esc(t('login.verify')) + '</button>' +
-        '<button type="button" class="tr-btn tr-btn-ghost tr-login-resend">' + esc(t('login.resend')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary tr-login-verify">' + esc(t('login.verify')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-vazado tr-login-resend">' + esc(t('login.resend')) + '</button>' +
       '</div>';
     const input = bodyEl.querySelector('.tr-login-code');
     if (flow.devCode) input.value = flow.devCode;
@@ -205,7 +205,7 @@ export function openLoginModal(opts = {}) {
       '</div>' +
       '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-login-finish">' + esc(t('login.finish')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary tr-login-finish">' + esc(t('login.finish')) + '</button>' +
       '</div>';
     const name = bodyEl.querySelector('.tr-login-name');
     const consent = bodyEl.querySelector('.tr-login-consent-cb');
@@ -224,7 +224,7 @@ export function openLoginModal(opts = {}) {
       '<h2 class="tr-modal-title">' + esc(t('login.title')) + '</h2>' +
       '<div class="tr-tarefa-error tr-login-error">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<div class="tr-tarefa-actions">' +
-        '<button type="button" class="tr-btn tr-btn-primary tr-login-retry">' + esc(t('login.send_code')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary tr-login-retry">' + esc(t('login.send_code')) + '</button>' +
       '</div>';
     bodyEl.querySelector('.tr-login-retry').addEventListener('click', () => {
       flow.state = 'email';

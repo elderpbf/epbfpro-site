@@ -448,7 +448,7 @@ function _renderLiveCard() {
         '<span class="cdx-lessons-live-brand">' + _esc(t('nav.questions')) + '</span>' +
         ' \xb7 ' + _esc(tail) +
       '</span>' +
-      '<button type="button" class="cdx-lessons-live-refresh' + (_liveLoading ? ' is-loading' : '') + '" ' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-lessons-live-refresh' + (_liveLoading ? ' is-loading' : '') + '" ' +
         'data-live-action="refresh" title="' + _esc(t('lessons.live_refresh')) + '" aria-label="' + _esc(t('lessons.live_refresh')) + '">' +
         '<span class="cdx-lessons-live-spin">&#8635;</span>' +
       '</button>' +
@@ -833,15 +833,15 @@ function _wireReadingControls(btn) {
       '<div class="cdx-lessons-pop-row">' +
         '<span class="cdx-lessons-pop-label">' + _esc(t('lessons.text_size')) + '</span>' +
         '<div class="cdx-lessons-pop-fontbtns">' +
-          '<button type="button" class="cdx-lessons-pop-fbtn" data-act="font-down" title="' + _esc(t('lessons.text_smaller')) + '">A&minus;</button>' +
-          '<button type="button" class="cdx-lessons-pop-fbtn" data-act="font-up" title="' + _esc(t('lessons.text_bigger')) + '">A+</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-lessons-pop-fbtn" data-act="font-down" title="' + _esc(t('lessons.text_smaller')) + '">A&minus;</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-lessons-pop-fbtn" data-act="font-up" title="' + _esc(t('lessons.text_bigger')) + '">A+</button>' +
         '</div>' +
       '</div>' +
       '<div class="cdx-lessons-pop-row">' +
         '<span class="cdx-lessons-pop-label">' + _esc(t('lessons.width')) + '</span>' +
         '<input type="range" class="cdx-lessons-pop-width" min="0" max="100" step="1" aria-label="' + _esc(t('lessons.width')) + '">' +
       '</div>' +
-      '<button type="button" class="cdx-lessons-pop-reset" data-act="reset">' + _esc(t('lessons.reset_default')) + '</button>';
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-lessons-pop-reset" data-act="reset">' + _esc(t('lessons.reset_default')) + '</button>';
     document.body.appendChild(pop);
     const range = pop.querySelector('.cdx-lessons-pop-width');
     pop.querySelector('[data-act="font-down"]').addEventListener('click', () => _bumpScale(-_scale.STEP));
@@ -896,7 +896,7 @@ function _renderShell() {
       '<div class="cdx-lessons-search-wrap">' +
         '<input type="search" class="cdx-lessons-search" placeholder="' + _esc(t('lessons.search_placeholder')) + '" autocomplete="off" spellcheck="false">' +
       '</div>' +
-      '<button type="button" class="cdx-lessons-aa-btn" title="' + _esc(t('lessons.display_controls')) + '" aria-label="' + _esc(t('lessons.display_controls')) + '">Aa</button>' +
+      '<button type="button" class="cdx-btn cdx-lessons-aa-btn" title="' + _esc(t('lessons.display_controls')) + '" aria-label="' + _esc(t('lessons.display_controls')) + '">Aa</button>' +
     '</div>' +
     '<div class="cdx-lessons-preset-wrap"></div>';
 
