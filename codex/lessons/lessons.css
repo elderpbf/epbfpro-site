@@ -81,7 +81,7 @@
 
 /* ── Top-level section headers (neon-glow card, per-section colour) ──────────
  * --sec is set per .cdx-lesson-section--<key>; the head is the coloured card. */
-.cdx-lesson-section--llm      { --sec: #8b5cf6; }   /* violet */
+.cdx-lesson-section--llm      { --sec: var(--acc-violet); }
 .cdx-lesson-section--external { --sec: #f97316; }   /* orange */
 .cdx-lesson-section--drive    { --sec: #3b82f6; }   /* blue */
 .cdx-lesson-section--items    { --sec: #14b8a6; }   /* teal */
@@ -209,7 +209,7 @@
 }
 .cdx-lesson-sub-zone svg { display: block; width: 18px; height: 18px; }
 .cdx-lesson-sub-zone--tarefa   { background: #ef4444; }
-.cdx-lesson-sub-zone--llm      { background: #8b5cf6; }
+.cdx-lesson-sub-zone--llm      { background: color-mix(in oklab, var(--acc-violet) var(--acc-mix-bg), var(--surface)); color: var(--acc-violet); }
 .cdx-lesson-sub-zone--recurso  { background: #3b82f6; }
 .cdx-lesson-sub-zone--material { background: #14b8a6; }
 .cdx-lesson-sub-meta {

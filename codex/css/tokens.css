@@ -37,6 +37,15 @@
   --acc-drive:     #3b82f6;
   --acc-external:  #f97316;
   --acc-tarefas:   #ef4444;
+  /* Color-named aliases — use these when the role is not yet clear (reusable palette). */
+  --acc-violet:    #8b5cf6;
+  --acc-amber:     #f59e0b;
+  --acc-indigo:    #6366f1;
+  --acc-pink:      #ec4899;
+  --acc-blue:      #3b82f6;
+  --acc-orange:    #f97316;
+  --acc-red:       #ef4444;
+  --acc-teal:      #14b8a6;
   --acc-mix-bg:    6%;            /* accent-card tint strength (light) */
 
   /* Back-compat: the live --codex-* names alias the accent set (identical values). */
