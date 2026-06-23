@@ -60,15 +60,17 @@ let _dossierPFilter = 'all';   // active filter in the dossier participant list
 let _dossierParticipants = []; // cached list; reloaded per turma
 let _cleanup = []; // teardown functions pushed by mount
 
-// Auto-hide CLIENTES rail (mirrors the Questions sessions sidebar). Starts
-// hidden so the dossiê is full-width; the left screen edge reveals it.
+// CLIENTES rail (mirrors the Questions sessions sidebar). Starts OPEN + pinned
+// with the dossiê showing the empty prompt; the first turma pick flips it to the
+// hover-reveal overlay (left screen edge reveals, cursor-leave hides). Élder.
 let _overNav = false;
 let _navHideTimer = null;
+let _navPinned = true;       // open + pinned until the first turma is picked
 const NAV_REVEAL_ZONE = 6;   // px from the left edge that triggers the reveal
 const NAV_HIDE_DELAY = 1500; // ms after the cursor leaves the rail before it hides
 function _navLayoutEl() { return _viewEl && _viewEl.querySelector('.cdx-three-pane'); }
 function _openNav() { const l = _navLayoutEl(); if (l) l.classList.add('cdx-sm--open'); }
-function _closeNav() { const l = _navLayoutEl(); if (l) l.classList.remove('cdx-sm--open'); }
+function _closeNav() { const l = _navLayoutEl(); if (!l || _navPinned) return; l.classList.remove('cdx-sm--open'); }
 function _maybeHideNav() { if (!_overNav) _closeNav(); }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -217,7 +219,7 @@ function _openArchiveConfirm(opts) {
 
 function _renderShell() {
   _viewEl.innerHTML =
-    '<div class="cdx-three-pane">' +
+    '<div class="cdx-three-pane' + (_navPinned ? ' cdx-sm--open' : '') + '">' +
 
       // Concept A: ONE list, turmas grouped under their client. Kept inside
       // .cdx-cohorts-nav so the mobile hamburger drawer (codex-topbar.js targets
@@ -302,28 +304,20 @@ function _loadAll() {
     const cur = _turmas.find((tm) => tm.client_slug === _relClientSlug && tm.slug === _relTurmaSlug && tm.status !== 'archived');
     if (cur) { _selectedClientSlug = cur.client_slug; _expandedClient = cur.client_slug; }
     _renderList();
-    if (cur) { _renderDossier(cur); }
-    else { _relClientSlug = null; _relTurmaSlug = null; _autoSelectFirst(); }
+    if (cur) { _navPinned = false; _closeNav(); _renderDossier(cur); }
+    else {
+      // No deep-link: start with the rail pinned open and the dossiê showing the
+      // empty prompt until Élder opens a turma (mirrors the Questions picker).
+      _relClientSlug = null; _relTurmaSlug = null;
+      _navPinned = true; _openNav();
+      const dEl = _q('cdx-turma-dossier');
+      if (dEl) dEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>';
+    }
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
     const el2 = _q(IDS.list);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
   });
-}
-
-function _autoSelectFirst() {
-  // Reopen the turma that was open before a refresh (Élder), else the first live turma.
-  let saved = null;
-  try {
-    const v = localStorage.getItem('cdx_cohorts_last');
-    if (v) { const i = v.indexOf('\n'); saved = _turmas.find((tm) => tm.client_slug === v.slice(0, i) && tm.slug === v.slice(i + 1)); }
-  } catch (_) {}
-  const first = saved || _turmas.find((tm) => tm.status !== 'archived') || _turmas[0];
-  if (first) _selectTurma(first.client_slug, first.slug);
-  else {
-    const el = _q('cdx-turma-dossier');
-    if (el) el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>';
-  }
 }
 
 function _initials(name) {
@@ -749,11 +743,12 @@ function _deleteTurma(turma) {
         _turmas = _turmas.filter((tm) => !(tm.client_slug === turma.client_slug && tm.slug === turma.slug));
         _renderList();
         if (wasSelected) {
+          // Back to the pinned picker with the empty prompt (mirrors Questions),
+          // rather than auto-jumping to another turma.
           _relClientSlug = null; _relTurmaSlug = null; _dossierTurma = null;
-          const next = _turmas.find((tm) => tm.client_slug === turma.client_slug && tm.status !== 'archived')
-                    || _turmas.find((tm) => tm.status !== 'archived') || _turmas[0];
-          if (next) _selectTurma(next.client_slug, next.slug);
-          else { const dEl = _q('cdx-turma-dossier'); if (dEl) dEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; }
+          _navPinned = true; _openNav();
+          const dEl = _q('cdx-turma-dossier');
+          if (dEl) dEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>';
         }
       }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     }
@@ -1222,6 +1217,8 @@ function _selectTurma(clientSlug, turmaSlug) {
   const turma = _turmas.find((x) => x.client_slug === clientSlug && x.slug === turmaSlug);
   _renderDossier(turma);
   _renderList();
+  _navPinned = false;   // first pick flips the rail to the hover-reveal overlay
+  _closeNav();
 }
 
 // ── Turma dossier (Concept A: the rich right-pane detail) ─────────────────────
@@ -1959,6 +1956,7 @@ export function mount(viewEl, ctx) {
   _cpSessions = [];
   _dossierTurma = null;
   _dossierDepsTried = false;
+  _navPinned = true;
   _cleanup = [];
 
   // Route by sub-tab. The Cursos sub-view is its own module; the default

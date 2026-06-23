@@ -208,6 +208,47 @@ function appearanceSection() {
   };
 }
 
+// Orb section: the homepage hero light's behaviour. The orb lives on the public
+// landing (js/orb.js), but it reads its mode from localStorage on the SAME origin,
+// so Élder sets it here (the admin console) and it applies on pensoia.com's home.
+// Three modes mirror the old landing test chips: Salta / Desce / Fica. Hardcoded
+// PT like its neighbour sections; no new CSS var (inline highlight via --primary).
+const ORB_MODE_KEY = 'plp_orb_mode';
+const ORB_MODES = [
+  { val: 'leap',    label: 'Salta' },
+  { val: 'descend', label: 'Desce' },
+  { val: 'stay',    label: 'Fica' },
+];
+function orbSection() {
+  return {
+    id: 'cdx-orb',
+    title: 'Orbe da página inicial',
+    content:
+      '<div class="cdx-orb-row" style="display:flex;gap:8px;margin-bottom:.5rem">' +
+        ORB_MODES.map((o) =>
+          '<button type="button" class="bs-toggle-btn cdx-orb-mode" data-val="' + o.val + '" style="flex:1">' + o.label + '</button>'
+        ).join('') +
+      '</div>' +
+      '<p class="bs-hint">Como a luz da página inicial se comporta: Salta (mergulha no centro até os contatos), Desce (acompanha a rolagem) ou Fica (só no topo). Aplica na página inicial, e só pra você.</p>',
+    onInit() {
+      const row = document.querySelector('.cdx-orb-row');
+      if (!row) return;
+      const cur = () => { try { return localStorage.getItem(ORB_MODE_KEY) || 'leap'; } catch (_) { return 'leap'; } };
+      const sync = () => row.querySelectorAll('button').forEach((b) => {
+        const on = b.getAttribute('data-val') === cur();
+        b.style.color = on ? 'var(--primary)' : '';
+        b.style.borderColor = on ? 'var(--primary)' : '';
+      });
+      sync();
+      row.querySelectorAll('button').forEach((b) =>
+        b.addEventListener('click', () => {
+          try { localStorage.setItem(ORB_MODE_KEY, b.getAttribute('data-val')); } catch (_) {}
+          sync();
+        }));
+    },
+  };
+}
+
 // Developer section: toggles the shared debug pill (backstage/js/debug.js) via
 // window.bsDebugMount/Unmount + the bs_debug flag. Dev tooling, not auth, so the
 // topbar (app chrome) composes it into the drawer, not the drawer shell.
@@ -472,7 +513,7 @@ export function init(opts) {
   // Compose the drawer in display order: the topbar's own sections, then the
   // injected auth + dev sections. The drawer shell owns none of this — Google
   // and password come from the settings-auth component, gated on their globals.
-  const drawerSections = [subtabModeSection(), appearanceSection(), ...sections];
+  const drawerSections = [subtabModeSection(), appearanceSection(), orbSection(), ...sections];
   if (typeof globalThis.BS_GOOGLE !== 'undefined') drawerSections.push(googleSection());
   drawerSections.push(debugSection());
   if (typeof globalThis.callWorker === 'function') drawerSections.push(passwordSection());
