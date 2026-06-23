@@ -44,9 +44,10 @@ test('the split surfaces install the shared resizer (no duplicated drag code)', 
   assert.match(cohortsJs, /cdx-sm--open/, 'cohorts wires the auto-hide rail instead');
 });
 
-test('CSS drives the grids from the var and the Clientes title matches the dossiê', () => {
-  assert.match(cohortsCss, /\.cdx-three-pane[^}]*grid-template-columns:\s*var\(--cdx-rz-w/, 'three-pane uses the var');
-  assert.match(cohortsCss, /\.cdx-rz-grip\s*\{/, 'grip styled');
+test('CSS keeps the split grid var, the grip, and the Clientes title', () => {
+  // Cohorts' three-pane no longer uses the var (it is the auto-hide rail now);
+  // only the Liberações/Tarefas split drives a grid from --cdx-rz-w (asserted below).
+  assert.match(cohortsCss, /\.cdx-rz-grip\s*\{/, 'grip styled (for the Liberações/Tarefas split)');
   assert.match(cohortsCss, /\.cdx-rz-grip\s*\{\s*display:\s*none|cdx-rz-grip\s*\{\s*display:\s*none/, 'grip hidden on mobile (in a media query)');
   // Clientes title: dossiê size (1.25rem), no uppercase.
   const title = cohortsCss.match(/\.cdx-pane-title\s*\{[^}]*\}/);

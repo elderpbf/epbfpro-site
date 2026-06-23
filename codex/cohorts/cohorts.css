@@ -7,17 +7,13 @@
 /* ----- Three-pane layout ----- */
 
 .cdx-three-pane {
-  display: grid;
-  /* Concept A: ONE grouped turma list (col 1) + the turma dossier (col 2). The width
-   * of col 1 is the draggable --cdx-rz-w (js/resizable.js), so the divider stays where
-   * the user left it. The mobile layers below + in codex.css still target
-   * .cdx-three-pane and collapse this to a single column. */
-  grid-template-columns: var(--cdx-rz-w, 300px) 1fr;
-  gap: 0.65rem;
+  /* The CLIENTES nav is now a fixed auto-hide rail (below) and the dossiê fills
+   * the width, so this wrapper is a plain full-width block. It is still needed:
+   * it hosts the .cdx-sm--open toggle and is the mobile drawer's anchor
+   * (codex.css targets `.cdx-three-pane .cdx-cohorts-nav` at <=700px). */
+  position: relative;
   min-height: calc(100vh - 220px);
-  align-items: stretch;
-  position: relative;          /* containing block for the absolute resize grip */
-  margin: 0 -0.6rem;           /* tighter outer margins (claw back the view padding) */
+  margin: 0 -0.6rem;           /* claw back the view padding so the dossiê runs wide */
 }
 
 /* Shared resize grip (cohorts panes + the Liberações/Tarefas split). Absolutely
@@ -45,18 +41,14 @@
  * mobile layer flips it to a positioned block). */
 .cdx-cohorts-nav { display: contents; }
 
-@media (max-width: 980px) {
-  .cdx-three-pane { grid-template-columns: 1fr; }
-}
-
-/* ── Auto-hide CLIENTES rail (desktop) ───────────────────────────────────────
- * Mirrors the Questions sessions sidebar: the dossiê goes full-width and the
- * clientes/turmas listpane becomes a fixed left rail, revealed by mousing to the
+/* ── Auto-hide CLIENTES rail ──────────────────────────────────────────────────
+ * Mirrors the Questions sessions sidebar: the dossiê is full-width and the
+ * clientes/turmas listpane is a fixed left rail, revealed by mousing to the
  * screen edge and hidden shortly after (wired in cohorts.js). Same 320px width +
- * 94px chrome clearance as Sessions. Scoped to >=981px so the <=980px hamburger
- * drawer (codex.css) keeps its own behaviour. */
-@media (min-width: 981px) {
-  .cdx-three-pane { display: block; margin: 0; }
+ * 94px chrome clearance as Sessions. Active from 701px UP — i.e. everywhere the
+ * codex.css hamburger drawer (<=700px) is NOT, so there is no midsize band where
+ * the listpane falls back to a stacked top panel. */
+@media (min-width: 701px) {
   .cdx-cohorts-listpane {
     position: fixed;
     top: 0; left: 0;
