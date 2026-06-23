@@ -77,6 +77,17 @@
   flex-direction: column;
 }
 
+/* The dossiê detail pane is NOT a card: it matches the Questions host area
+   (.cdx-sessions-main) — transparent, no frame — so the empty placeholder (and
+   the dossiê itself) sit on the page like Perguntas, not inside a white box. The
+   CLIENTES listpane keeps the .cdx-pane card, like the Questions sidebar. */
+.cdx-doss-pane {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
 .cdx-pane-header {
   display: flex;
   align-items: center;

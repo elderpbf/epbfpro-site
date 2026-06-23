@@ -15,6 +15,7 @@
 // open() / close(): slide the drawer in / out.
 //
 // ES module: imported by codex-topbar.js (replaces the legacy window.SettingsDrawer).
+import { t } from './i18n.js';
 
 function _esc(s) {
   return String(s == null ? '' : s)
@@ -54,10 +55,10 @@ function _injectDrawer(sectionsHtml) {
   _drawer.id = 'settings-drawer';
   _drawer.className = 'bs-drawer';
   _drawer.hidden = true;
-  _drawer.setAttribute('aria-label', 'Configurações');
+  _drawer.setAttribute('aria-label', t('settings.title'));
   _drawer.innerHTML =
     '<h2>' +
-      '<span>Configurações</span>' +
+      '<span>' + t('settings.title') + '</span>' +
       '<button class="bs-drawer-close" id="sd-close" aria-label="Fechar">&times;</button>' +
     '</h2>' +
     sectionsHtml;

@@ -149,14 +149,14 @@ function renderSubPill(header, strip, subTabsByTab) {
 function subtabModeSection() {
   return {
     id: 'cdx-subtabs',
-    title: 'Sub-abas',
+    title: t('settings.subtabs_title'),
     content:
       '<button class="bs-toggle-btn" id="sd-subtab-mode"></button>' +
-      '<p class="bs-hint">Como as sub-abas (Conteúdo, Perguntas) aparecem: pílula flutuante ao passar o mouse na aba, ou barra fixa abaixo dela.</p>',
+      '<p class="bs-hint">' + t('settings.subtabs_hint') + '</p>',
     onInit() {
       const btn = document.getElementById('sd-subtab-mode');
       if (!btn) return;
-      const sync = () => { btn.textContent = subtabMode() === 'pill' ? 'Pílula ao passar o mouse' : 'Barra fixa'; };
+      const sync = () => { btn.textContent = subtabMode() === 'pill' ? t('settings.subtabs_pill') : t('settings.subtabs_bar'); };
       sync();
       btn.addEventListener('click', () => {
         const next = subtabMode() === 'pill' ? 'bar' : 'pill';
@@ -183,13 +183,13 @@ function appearanceSection() {
   const tealSw = TEAL_OPTIONS.map((o) => swatch('cdx-teal-sw', o.value, o.label, o.value, '#e5e7eb')).join('');
   return {
     id: 'cdx-appearance',
-    title: 'Modo escuro',
+    title: t('settings.appearance_title'),
     content:
-      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">Cor do texto</p>' +
+      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">' + t('settings.appearance_text') + '</p>' +
       '<div class="cdx-tone-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.7rem">' + textSw + '</div>' +
-      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">Cor do turquesa</p>' +
+      '<p class="bs-hint" style="margin:0 0 .35rem;font-weight:600;color:var(--text-primary)">' + t('settings.appearance_teal') + '</p>' +
       '<div class="cdx-teal-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.5rem">' + tealSw + '</div>' +
-      '<p class="bs-hint">Aplicam só no modo escuro, ao vivo, e valem só pra você no Codex.</p>',
+      '<p class="bs-hint">' + t('settings.appearance_hint') + '</p>',
     onInit() {
       const wire = (sel, getCur, setFn) => {
         const row = document.querySelector(sel);
@@ -215,21 +215,21 @@ function appearanceSection() {
 // PT like its neighbour sections; no new CSS var (inline highlight via --primary).
 const ORB_MODE_KEY = 'plp_orb_mode';
 const ORB_MODES = [
-  { val: 'leap',    label: 'Salta' },
-  { val: 'descend', label: 'Desce' },
-  { val: 'stay',    label: 'Fica' },
+  { val: 'leap',    key: 'settings.orb_leap' },
+  { val: 'descend', key: 'settings.orb_descend' },
+  { val: 'stay',    key: 'settings.orb_stay' },
 ];
 function orbSection() {
   return {
     id: 'cdx-orb',
-    title: 'Orbe da página inicial',
+    title: t('settings.orb_title'),
     content:
       '<div class="cdx-orb-row" style="display:flex;gap:8px;margin-bottom:.5rem">' +
         ORB_MODES.map((o) =>
-          '<button type="button" class="bs-toggle-btn cdx-orb-mode" data-val="' + o.val + '" style="flex:1">' + o.label + '</button>'
+          '<button type="button" class="bs-toggle-btn cdx-orb-mode" data-val="' + o.val + '" style="flex:1">' + t(o.key) + '</button>'
         ).join('') +
       '</div>' +
-      '<p class="bs-hint">Como a luz da página inicial se comporta: Salta (mergulha no centro até os contatos), Desce (acompanha a rolagem) ou Fica (só no topo). Aplica na página inicial, e só pra você.</p>',
+      '<p class="bs-hint">' + t('settings.orb_hint') + '</p>',
     onInit() {
       const row = document.querySelector('.cdx-orb-row');
       if (!row) return;
@@ -255,17 +255,17 @@ function orbSection() {
 function debugSection() {
   return {
     id: 'sd-debug',
-    title: 'Desenvolvedor',
+    title: t('settings.dev_title'),
     content:
-      '<p style="font-size:.88rem;color:var(--text-primary);margin-bottom:.5rem">Painel de debug</p>' +
-      '<button class="bs-toggle-btn" id="sd-debug-toggle" style="margin-bottom:.5rem">Desativado</button>' +
-      '<p class="bs-hint">Exibe pill flutuante com logs em todas as páginas do Backstage.</p>',
+      '<p style="font-size:.88rem;color:var(--text-primary);margin-bottom:.5rem">' + t('settings.dev_label') + '</p>' +
+      '<button class="bs-toggle-btn" id="sd-debug-toggle" style="margin-bottom:.5rem"></button>' +
+      '<p class="bs-hint">' + t('settings.dev_hint') + '</p>',
     onInit() {
       const btn = document.getElementById('sd-debug-toggle');
       if (!btn) return;
       const sync = () => {
         const on = localStorage.getItem('bs_debug') === '1';
-        btn.textContent = on ? 'Desativar' : 'Ativar';
+        btn.textContent = on ? t('settings.dev_disable') : t('settings.dev_enable');
         btn.style.color = on ? 'var(--primary)' : '';
         btn.style.borderColor = on ? 'var(--primary)' : '';
       };
