@@ -21,7 +21,15 @@ export function initOrb() {
     for (let i = 0; i < n; i++) nodes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25 });
   }
   size(); addEventListener('resize', size); addEventListener('load', size);
-  addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; mAt = performance.now(); }, { passive: true });
+  // Only let the pointer DRIVE the orb while it is over the hero (the animation box). Moving the
+  // cursor out of the box must not drag the orb after it — it used to chase the pointer upward out
+  // of the hero (Élder: "when the mouse leaves the animation box the orb jumps upwards").
+  addEventListener('pointermove', e => {
+    const r = hero.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      mx = e.clientX; my = e.clientY; mAt = performance.now();
+    }
+  }, { passive: true });
   function rgb() { return getComputedStyle(document.documentElement).getPropertyValue('--line-rgb').trim() || '125,232,214'; }
 
   let phase = 'follow', detachScroll = 0, detachY = innerHeight * 0.4, locked = false, ease = 0.08;
@@ -37,22 +45,31 @@ export function initOrb() {
   try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) mode = m; } catch (e) {}
   let leapDir = 0, leapT0 = 0; const LEAP_MS = 620;   // 0 idle, +1 streak down, -1 streak back up
 
-  // Idle wander: a MEANDER, not a teleport. The target steps a moderate amount from where it is
-  // (so it never darts across the screen at once) inside a calm band that never reaches the very
-  // top, and it is seeded from the dot's current spot the instant the pointer leaves (no jump).
-  let wtx = innerWidth * 0.5, wty = innerHeight * 0.45, wAt = 0, wasLive = false;
-  function clampWander() {
-    const m = 28;
-    wtx = Math.max(m, Math.min(innerWidth - m, wtx));
-    wty = Math.max(innerHeight * 0.28, Math.min(innerHeight * 0.70, wty));   // stay in a middle band, never the top
+  // Idle glide: when the pointer is NOT driving, the orb drifts at a CONSTANT speed (Élder: "it
+  // should glide at a constant speed when not driven by the mouse", not the old erratic ease-to-a-
+  // random-point darting). We carry a fixed-magnitude velocity and only steer its HEADING — gently,
+  // and away from a soft band — so the dot roams calmly inside the hero and never reaches the top.
+  const GLIDE_SPEED = 0.7;                       // px/frame ≈ a slow, steady glide (constant pace)
+  let gx = sx, gy = sy, gvx = 0, gvy = 0, gSteerAt = 0, wasLive = false;
+  function seedGlide(now) {                       // start the glide AT the dot, so there is no jump
+    gx = sx; gy = sy;
+    const a = Math.random() * 6.283;
+    gvx = Math.cos(a) * GLIDE_SPEED; gvy = Math.sin(a) * GLIDE_SPEED;
+    gSteerAt = now;
   }
-  function stepWanderTarget() {
-    wtx += (Math.random() - 0.5) * innerWidth * 0.6;   // a bounded step, not a leap across the screen
-    wty += (Math.random() - 0.5) * innerHeight * 0.30;
-    clampWander();
-  }
-  function tickWander(now) {
-    if (Math.hypot(sx - wtx, sy - wty) < 40 || now - wAt > 2600) { stepWanderTarget(); wAt = now; }
+  function tickGlide(now, hb) {
+    const xMin = 28, xMax = innerWidth - 28;
+    const yMin = innerHeight * 0.24, yMax = Math.min(innerHeight * 0.68, hb - 12);
+    if (now - gSteerAt > 1800) {                  // curve the path now and then (a small heading nudge)
+      const turn = (Math.random() - 0.5) * 0.9, c = Math.cos(turn), s = Math.sin(turn);
+      const nx = gvx * c - gvy * s, ny = gvx * s + gvy * c; gvx = nx; gvy = ny; gSteerAt = now;
+    }
+    if (gx < xMin + 60) gvx += 0.05; else if (gx > xMax - 60) gvx -= 0.05;   // steer inward before the edges
+    if (gy < yMin + 50) gvy += 0.05; else if (gy > yMax - 50) gvy -= 0.05;
+    const sp = Math.hypot(gvx, gvy) || 1; gvx = gvx / sp * GLIDE_SPEED; gvy = gvy / sp * GLIDE_SPEED;   // hold the pace constant
+    gx += gvx; gy += gvy;
+    if (gx < xMin) { gx = xMin; gvx = Math.abs(gvx); } else if (gx > xMax) { gx = xMax; gvx = -Math.abs(gvx); }
+    if (gy < yMin) { gy = yMin; gvy = Math.abs(gvy); } else if (gy > yMax) { gy = yMax; gvy = -Math.abs(gvy); }
   }
   function bSize() { bW = bc.width = bc.offsetWidth; bH = bc.height = bc.offsetHeight; }
   bSize(); addEventListener('resize', bSize); addEventListener('load', bSize);
@@ -100,19 +117,18 @@ export function initOrb() {
     const s = getSettings();
     const hb = hero.getBoundingClientRect().bottom;
     const live = now - mAt < 2500;
-    if (phase === 'follow') {                                 // hero: follow the pointer, else wander
+    if (phase === 'follow') {                                 // hero: follow the pointer, else glide
       locked = false; clearGlow();
       let tx, ty;
       if (live) { ease = 0.035; tx = mx; ty = my; wasLive = true; }   // follow the mouse/finger at HALF speed (Élder)
       else {
-        // First frame after the pointer leaves: seed the wander AT the dot's current spot so it
-        // glides on from there instead of darting off to a far point (Élder: no sudden fly to the top).
-        if (wasLive) { wtx = sx; wty = sy; clampWander(); wAt = now; wasLive = false; }
-        ease = 0.02; tickWander(now); tx = wtx; ty = wty;          // calm meander, never full-speed, never the top
+        if (wasLive) { seedGlide(now); wasLive = false; }   // seed the glide at the dot the instant the pointer leaves (no jump)
+        tickGlide(now, hb); ease = 1; tx = gx; ty = gy;     // CONSTANT-speed glide: gx already advances at a fixed pace
       }
       if (hb <= ty + 2) { phase = 'descend'; detachScroll = scrollY; detachY = Math.max(40, hb); }
-      // DESCEND mode only: near the hero floor, ease toward the left lane (the detach point).
-      if (mode === 'descend') { const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130)); tx = tx + (leftLane() - tx) * k; }
+      // DESCEND mode only, and only while the mouse is driving toward the floor: ease toward the
+      // left lane (the detach point). The idle glide stays centred (no left-lane pull).
+      if (mode === 'descend' && live) { const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130)); tx = tx + (leftLane() - tx) * k; }
       ty = Math.min(ty, hb);
       return { x: tx, y: ty };
     }
