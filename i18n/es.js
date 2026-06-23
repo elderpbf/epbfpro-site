@@ -3,7 +3,7 @@ export default {
   "nav.cta": "Contacto",
   "nav.aluno": "Mi recorrido",
   "hero.h1": "Inteligencia artificial aplicada a tu trabajo",
-  "hero.rot": ["con método.", "con seguridad.", "con responsabilidad."],
+  "hero.static": "Con método, seguridad y responsabilidad.",
   "hero.lead": "Capacitación y consultoría para empresas, instituciones y profesionales que quieren usar la IA en el día a día, con claridad, seguridad y resultado.",
   "ab.eye": "Instructor",
   "ab.role": "Formación en Derecho y tecnología",

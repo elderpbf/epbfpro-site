@@ -1,7 +1,7 @@
 // js/main.js — boot for the PensoIA landing. The single module entry the page loads.
 import { initTheme } from './theme.js?v=17';
-import { apply } from './i18n.js?v=18';
-import { initUI } from './ui.js?v=19';
+import { apply } from './i18n.js?v=19';
+import { initUI } from './ui.js?v=20';
 import { initDemos } from './demos.js?v=17';
 import { initOrb } from './orb.js?v=28';
 import { initOrbSettings } from './orb-settings.js?v=17';

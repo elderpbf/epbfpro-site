@@ -3,7 +3,7 @@ export default {
   "nav.cta": "Contact",
   "nav.aluno": "My trail",
   "hero.h1": "Artificial intelligence applied to your work",
-  "hero.rot": ["with method.", "safely.", "responsibly."],
+  "hero.static": "With method, safety and responsibility.",
   "hero.lead": "Training and consulting for companies, institutions and professionals who want to use AI day to day, with clarity, safety and results.",
   "ab.eye": "Instructor",
   "ab.role": "Background in Law and technology",

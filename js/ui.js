@@ -1,6 +1,6 @@
 // js/ui.js — header scroll state, theme toggle + logo swap, language buttons,
 // the rotating typewriter in the hero, and the scroll-reveal observer.
-import { t, getLang, setLang, onLang, apply } from './i18n.js?v=18';
+import { getLang, setLang, onLang, apply } from './i18n.js?v=19';
 import { getTheme, toggleTheme, onTheme } from './theme.js?v=17';
 
 function applyLogo() {
@@ -8,20 +8,6 @@ function applyLogo() {
   const l = document.getElementById('logo'), f = document.getElementById('logoFoot');
   if (l) l.src = 'images/brand/' + file;
   if (f) f.src = 'images/brand/' + file;
-}
-
-let rotT;
-function startRot() {
-  clearTimeout(rotT);
-  const el = document.getElementById('rot'); if (!el) return;
-  const a = t('hero.rot'); el.style.opacity = 1;
-  if (matchMedia('(prefers-reduced-motion:reduce)').matches) { el.textContent = a[0]; return; }
-  let i = 0, ci = 0, del = false; el.textContent = '';
-  (function tick() {
-    const w = a[i];
-    if (!del) { el.textContent = w.slice(0, ++ci); if (ci >= w.length) { del = true; rotT = setTimeout(tick, 1600); return; } rotT = setTimeout(tick, 55); }
-    else { el.textContent = w.slice(0, --ci); if (ci <= 0) { del = false; i = (i + 1) % a.length; rotT = setTimeout(tick, 280); return; } rotT = setTimeout(tick, 30); }
-  })();
 }
 
 const LANG_SHORT = { pt: 'PT', en: 'EN', es: 'ES' };
@@ -102,7 +88,7 @@ export function initUI() {
       if (langWrap) langWrap.classList.remove('plp-langopen');
       if (langBtn) langBtn.setAttribute('aria-expanded', 'false');
     }));
-  onLang(() => { syncLangButtons(); startRot(); });
+  onLang(() => { syncLangButtons(); });
 
   // header scroll state
   const hdr = document.getElementById('hdr');
@@ -113,7 +99,4 @@ export function initUI() {
     if (e.isIntersecting) { e.target.classList.add('plp-in'); ro.unobserve(e.target); }
   }), { threshold: .15 });
   document.querySelectorAll('.plp-reveal').forEach(el => ro.observe(el));
-
-  // rotating phrase
-  startRot();
 }
