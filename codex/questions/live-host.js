@@ -364,8 +364,10 @@ function _renderTrailContent() {
       '<div class="cdx-trail-status">' + _esc(t('questions.host_trail_linked')) + '</div>' +
       '<div class="cdx-trail-title">' + _esc(turmaName) + '</div>' +
       '<div class="cdx-trail-engine">' + _esc(clientName) + '</div>' +
-      '<a class="cdx-trail-link" href="' + _esc(url) + '" target="_blank" rel="noopener">' + _esc(t('questions.host_trail_open')) + '</a>' +
-      '<button class="cdx-btn cdx-btn-danger cdx-btn-full" data-act="trail-unlink" type="button">' + _esc(t('questions.host_trail_unlink')) + '</button>';
+      '<div class="cdx-trail-actions">' +
+        '<a class="cdx-btn cdx-trail-open" href="' + _esc(url) + '" target="_blank" rel="noopener">' + _esc(t('questions.host_trail_open')) + '</a>' +
+        '<button class="cdx-btn cdx-btn-danger" data-act="trail-unlink" type="button">' + _esc(t('questions.host_trail_unlink')) + '</button>' +
+      '</div>';
   } else if (_trailAllTurmas.length) {
     const opts = '<option value="">' + _esc(t('questions.host_trail_pick')) + '</option>' + _trailAllTurmas.map((tt) => {
       const name = tt.display_name || tt.name || tt.turma_slug;

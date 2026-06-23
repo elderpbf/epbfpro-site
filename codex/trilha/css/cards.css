@@ -49,7 +49,7 @@
   gap: 3px;
   padding: 0.6rem 0.4rem;
 }
-.cdx-tr-zone--done     { background: var(--success); }
+.cdx-tr-zone--done     { background: var(--success-fill); }
 .cdx-tr-zone--und      { background: var(--zone-und); }
 .cdx-tr-zone--apostila { background: var(--primary-dark); }
 
@@ -366,11 +366,11 @@
   box-shadow: 0 3px 12px -4px rgba(217, 119, 6, 0.5);
 }
 .cdx-tr-item-action--task:hover {
-  background: var(--task-dark);
+  background: var(--task-hover);
   box-shadow: 0 5px 16px -4px rgba(217, 119, 6, 0.6);
 }
 .cdx-tr-item-action.is-done {
-  background: var(--success);
+  background: var(--success-fill);
   box-shadow: 0 3px 12px -4px rgba(16, 185, 129, 0.5);
 }
 
@@ -490,7 +490,7 @@
   z-index: 2;
   transition: all 0.22s ease;
 }
-.cdx-tr-tl-dot--done { background: var(--success); border-color: var(--success); color: var(--text-on-accent, #fff); }
+.cdx-tr-tl-dot--done { background: var(--success-fill); border-color: var(--success-fill); color: var(--text-on-accent, #fff); }
 .cdx-tr-tl-dot--und  { background: var(--surface); border-color: var(--text-secondary); color: var(--text-secondary); }
 
 .cdx-tr-tl-row.is-open .cdx-tr-tl-dot {
@@ -506,8 +506,8 @@
     0 0 0 9px rgba(20, 184, 166, 0.10);
 }
 .cdx-tr-tl-row.is-open .cdx-tr-tl-dot.cdx-tr-tl-dot--done {
-  background: var(--success);
-  border-color: var(--success);
+  background: var(--success-fill);
+  border-color: var(--success-fill);
   box-shadow:
     0 0 0 4px rgba(16, 185, 129, 0.20),
     0 0 0 9px rgba(16, 185, 129, 0.10);

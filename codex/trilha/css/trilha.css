@@ -10,16 +10,24 @@
 :root {
   --task:        #d97706;
   --task-dark:   #92400e;
+  --task-hover:  #92400e;   /* :hover on solid task fills (darker, not brighter) */
   --task-bg:     rgba(217, 119, 6, 0.12);
   --task-border: rgba(217, 119, 6, 0.34);
   --zone-und:    var(--text-secondary);
+  --success-fill: var(--success);  /* solid success fill carrying on-fill text; deepens in dark */
 }
 [data-theme="dark"] {
-  --task:        #f59e0b;
-  --task-dark:   #fbbf24;
+  /* Proposal C (paired): solid fills DEEPEN in dark so the light on-fill text stays
+     legible. Was --task #f59e0b / hover #fbbf24 — brighter than light = the
+     white-on-amber bug. The TINT tokens (--task-bg fill + --task-dark text) stay
+     bright on purpose; only solid fills + their hover deepen. */
+  --task:        #b3690e;   /* deep amber solid fill (was #f59e0b) */
+  --task-dark:   #fbbf24;   /* kept bright: legible amber TEXT on the amber tint */
+  --task-hover:  #8a4f0a;   /* deep amber hover (was brightening to #fbbf24) */
   --task-bg:     rgba(245, 158, 11, 0.16);
   --task-border: rgba(245, 158, 11, 0.42);
   --zone-und:    #374151;
+  --success-fill: #0f8a5a;  /* deep green solid fill (was bright #34d399 under light text) */
 }
 
 *, *::before, *::after { box-sizing: border-box; }
