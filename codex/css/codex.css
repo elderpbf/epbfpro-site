@@ -209,7 +209,7 @@
   .cdx-drawer-backdrop.is-open {
     display: block;
     position: fixed; inset: 0; z-index: 119;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--cdx-backdrop); /* B7: was rgba(0,0,0,0.5) */
   }
 }
 
@@ -392,7 +392,7 @@
 }
 .cdx-tier--registered {
   color: var(--primary, #2563eb);
-  background: var(--primary-bg, rgba(37,99,235,0.10));
+  background: var(--tint-primary); /* was --primary-bg (undefined) → primary tint */
   border-color: var(--primary, #2563eb);
 }
 .cdx-tier--roster {

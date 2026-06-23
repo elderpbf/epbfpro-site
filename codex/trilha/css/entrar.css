@@ -59,7 +59,7 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 .cdx-entrar-dev { font-size: 0.85rem; color: var(--text-primary); margin-top: .5rem; }
 .cdx-entrar-dev strong { font-weight: 800; }
 
-.cdx-entrar-note { font-size: 0.78rem; color: var(--text-light); margin-top: 1.8rem; padding-top: 18px; border-top: 1px solid var(--border); text-align: center; }
+.cdx-entrar-note { font-size: 0.78rem; color: var(--text-secondary); margin-top: 1.8rem; padding-top: 18px; border-top: 1px solid var(--border); text-align: center; }   /* B6: --text-light → --text-secondary */
 
 /* passo "código enviado": esconde o card do código (e a faixa Continuar) e foca no e-mail */
 .cdx-entrar-step-code .cdx-entrar-cont,

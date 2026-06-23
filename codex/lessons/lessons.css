@@ -82,11 +82,11 @@
 /* ── Top-level section headers (neon-glow card, per-section colour) ──────────
  * --sec is set per .cdx-lesson-section--<key>; the head is the coloured card. */
 .cdx-lesson-section--llm      { --sec: var(--acc-violet); }
-.cdx-lesson-section--external { --sec: #f97316; }   /* orange */
-.cdx-lesson-section--drive    { --sec: #3b82f6; }   /* blue */
-.cdx-lesson-section--items    { --sec: #14b8a6; }   /* teal */
-.cdx-lesson-section--apostila { --sec: #f59e0b; }   /* amber */
-.cdx-lesson-section--tarefas  { --sec: #ef4444; }   /* red */
+.cdx-lesson-section--external { --sec: var(--acc-orange); }
+.cdx-lesson-section--drive    { --sec: var(--acc-blue); }
+.cdx-lesson-section--items    { --sec: var(--acc-teal); }
+.cdx-lesson-section--apostila { --sec: var(--acc-amber); }
+.cdx-lesson-section--tarefas  { --sec: var(--acc-red); }
 
 .cdx-lesson-section { margin-bottom: 7px; }
 .cdx-lesson-section-body { display: flex; flex-direction: column; gap: 0; padding: 0 0 4px; }
@@ -101,7 +101,7 @@
   font-weight: 800;
   letter-spacing: -0.005em;
   color: var(--text-primary);
-  background: color-mix(in oklab, var(--sec, var(--primary)) 6%, var(--surface));
+  background: color-mix(in oklab, var(--sec, var(--primary)) var(--acc-mix-bg), var(--surface));
   border: 1px solid color-mix(in oklab, var(--sec, var(--primary)) 35%, transparent);
   border-radius: 10px;
   padding: 9px 12px;
@@ -118,7 +118,7 @@
   transform: translateY(-1px);
 }
 [data-theme="dark"] .cdx-lesson-section-head {
-  background: color-mix(in oklab, var(--sec, var(--primary)) 10%, var(--surface));
+  background: color-mix(in oklab, var(--sec, var(--primary)) var(--acc-mix-bg), var(--surface));
   box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec, var(--primary)) 60%, transparent);
 }
 [data-theme="dark"] .cdx-lesson-section-head:hover { box-shadow: 0 0 24px -6px var(--sec, var(--primary)); }
@@ -139,11 +139,11 @@
   min-width: 22px; height: 22px;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 0.7rem; font-weight: 800;
-  color: var(--text-on-accent, #fff);
-  background: var(--sec, var(--primary));
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec, var(--primary)) var(--acc-mix-bg), var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec, var(--primary)) 35%, transparent);
   border-radius: 999px;
   padding: 0 7px;
-  box-shadow: 0 0 8px -2px color-mix(in oklab, var(--sec, var(--primary)) 80%, transparent);
 }
 .cdx-lesson-section-chev {
   font-size: 0.8rem;
@@ -208,10 +208,10 @@
   color: var(--text-on-accent, #fff);
 }
 .cdx-lesson-sub-zone svg { display: block; width: 18px; height: 18px; }
-.cdx-lesson-sub-zone--tarefa   { background: #ef4444; }
+.cdx-lesson-sub-zone--tarefa   { background: color-mix(in oklab, var(--acc-red)    var(--acc-mix-bg), var(--surface)); color: var(--acc-red); }
 .cdx-lesson-sub-zone--llm      { background: color-mix(in oklab, var(--acc-violet) var(--acc-mix-bg), var(--surface)); color: var(--acc-violet); }
-.cdx-lesson-sub-zone--recurso  { background: #3b82f6; }
-.cdx-lesson-sub-zone--material { background: #14b8a6; }
+.cdx-lesson-sub-zone--recurso  { background: color-mix(in oklab, var(--acc-blue)   var(--acc-mix-bg), var(--surface)); color: var(--acc-blue); }
+.cdx-lesson-sub-zone--material { background: color-mix(in oklab, var(--acc-teal)   var(--acc-mix-bg), var(--surface)); color: var(--acc-teal); }
 .cdx-lesson-sub-meta {
   flex: 1;
   min-width: 0;
@@ -422,8 +422,8 @@
   transition: opacity 0.12s, color 0.12s;
 }
 .cdx-lesson-sub:hover .cdx-lesson-sub-fav { opacity: 0.55; }
-.cdx-lesson-sub-fav:hover { opacity: 1; color: #eab308; }
-.cdx-lesson-sub-fav.is-on { opacity: 1; color: #eab308; }
+.cdx-lesson-sub-fav:hover { opacity: 1; color: var(--acc-amber); }
+.cdx-lesson-sub-fav.is-on { opacity: 1; color: var(--acc-amber); }
 
 /* ── LLM launcher rows ──────────────────────────────────────────────────────── */
 .cdx-lesson-llm {
@@ -441,7 +441,7 @@
 .cdx-lesson-llm-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Favourites section accent (gold), mirroring the legacy --sec. */
-.cdx-lesson-section--favorites { --sec: #eab308; }
+.cdx-lesson-section--favorites { --sec: var(--acc-amber); }
 
 /* ── Empty-state notice (select an item + F focus hint) ─────────────────────── */
 .cdx-lessons-welcome { margin: auto; padding: 2rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.1rem; }
@@ -514,10 +514,10 @@
 }
 
 /* ── Labs section (pink accent) ─────────────────────────────────────────────── */
-.cdx-lesson-section--labs { --sec: #ec4899; }
+.cdx-lesson-section--labs { --sec: var(--acc-pink); }
 
 /* ── Preset section (indigo accent) ────────────────────────────────────────── */
-.cdx-lesson-section--preset { --sec: #6366f1; }
+.cdx-lesson-section--preset { --sec: var(--acc-indigo); }
 
 /* ── Preset loader (CVPresetsUI.mountPresetLoader renders cv- classes into the
  * sidebar head; override to match sidebar visual language) ─────────────────── */
@@ -561,7 +561,7 @@
   border-top: 1px solid var(--border);
 }
 .cdx-lessons-live {
-  --sec: #6366f1;        /* indigo, matches the legacy nexo card */
+  --sec: var(--acc-indigo);   /* indigo, matches the legacy nexo card */
   cursor: pointer;
   box-sizing: border-box;
   width: 100%;
@@ -571,7 +571,7 @@
   font-weight: 800;
   letter-spacing: -0.005em;
   color: var(--text-primary);
-  background: color-mix(in oklab, var(--sec) 6%, var(--surface));
+  background: color-mix(in oklab, var(--sec) var(--acc-mix-bg), var(--surface));
   border: 1px solid color-mix(in oklab, var(--sec) 35%, transparent);
   border-radius: 10px;
   padding: 9px 12px;
@@ -587,7 +587,7 @@
   transform: translateY(-1px);
 }
 [data-theme="dark"] .cdx-lessons-live {
-  background: color-mix(in oklab, var(--sec) 10%, var(--surface));
+  background: color-mix(in oklab, var(--sec) var(--acc-mix-bg), var(--surface));
   box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec) 60%, transparent);
 }
 .cdx-lessons-live-glyph {
@@ -607,7 +607,7 @@
   width: 22px; height: 22px;
   border-radius: 5px;
   border: 1px solid transparent;
-  background: color-mix(in oklab, var(--sec) 14%, transparent);
+  background: color-mix(in oklab, var(--sec) var(--acc-mix-bg), transparent);
   color: var(--sec);
   font-size: 0.85rem;
   line-height: 1;

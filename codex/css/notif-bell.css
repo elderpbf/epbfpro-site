@@ -16,7 +16,7 @@ pensoia-header .ph-action-btn.cdx-bell-btn { width: 36px; height: 36px; padding:
 .cdx-bell-badge {
   position: absolute; top: 0; right: 0; transform: translate(38%, -38%);
   min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
-  background: var(--error); color: #fff; font-size: .6rem; font-weight: 800;
+  background: var(--error); color: var(--on-danger); font-size: .6rem; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 0 0 2px var(--surface); pointer-events: none;
 }
@@ -46,7 +46,7 @@ pensoia-header .ph-action-btn.cdx-bell-btn { width: 36px; height: 36px; padding:
 }
 .cdx-bell-gcount {
   display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: 999px; background: var(--primary); color: #fff; font-size: .66rem; font-weight: 800;
+  border-radius: 999px; background: var(--primary); color: var(--on-primary); font-size: .66rem; font-weight: 800;
 }
 .cdx-bell-notif {
   display: flex; gap: .7rem; padding: .75rem 1rem; border-bottom: 1px solid var(--border);
@@ -72,7 +72,7 @@ pensoia-header .ph-action-btn.cdx-ns-btn { background: none; border: none; paddi
   display: inline-flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; border-radius: 50%;       /* same 36px as the theme toggle + bell */
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff; font-size: .84rem; font-weight: 800; letter-spacing: .02em;
+  color: var(--on-primary); font-size: .84rem; font-weight: 800; letter-spacing: .02em;
 }
 .cdx-ns-gear { display: inline-flex; }
 .cdx-ns-gear svg { width: 15px; height: 15px; }

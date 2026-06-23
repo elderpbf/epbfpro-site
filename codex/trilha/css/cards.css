@@ -20,7 +20,7 @@
 }
 .cdx-tr-card.open {
   transform: none;
-  box-shadow: 0 14px 36px -16px rgba(20, 184, 166, 0.32);
+  box-shadow: 0 14px 36px -16px var(--tint-primary);
 }
 
 .cdx-tr-card-header {
@@ -99,8 +99,8 @@
   font-weight: 600;
   padding: 2px 9px;
   border-radius: 999px;
-  background: rgba(20, 184, 166, 0.12);
-  color: var(--primary-dark);
+  background: var(--tint-primary);
+  color: var(--tint-primary-tx);
 }
 
 .cdx-tr-tarefa-pill {
@@ -194,10 +194,9 @@
   font-weight: 600;
   padding: 2px 9px;
   border-radius: 999px;
-  background: rgba(13, 148, 136, 0.10);
+  background: var(--cdx-chip-bg);
   color: var(--text-secondary);
 }
-[data-theme="dark"] .cdx-tr-topic-chip { background: rgba(94, 234, 212, 0.12); }
 
 .cdx-tr-actions {
   display: flex;
@@ -219,7 +218,7 @@
 .cdx-tr-body {
   border-top: 1px solid var(--border);
   padding: 1.1rem 1.25rem 1.35rem;
-  background: linear-gradient(180deg, rgba(20, 184, 166, 0.03), transparent 70%);
+  background: linear-gradient(180deg, var(--cdx-card-hover-bg), transparent 70%);
   animation: cdx-tr-slide-down 0.22s ease both;
 }
 .cdx-tr-section { margin-bottom: 1.1rem; }
@@ -342,12 +341,12 @@
   text-decoration: none;
   white-space: nowrap;
   transition: background 0.15s, transform 0.1s, box-shadow 0.18s;
-  box-shadow: 0 3px 12px -4px rgba(20, 184, 166, 0.45);
+  box-shadow: 0 3px 12px -4px var(--tint-primary);
 }
 .cdx-tr-item-action:hover {
   background: var(--primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 5px 16px -4px rgba(20, 184, 166, 0.55);
+  box-shadow: 0 5px 16px -4px var(--tint-primary);
 }
 .cdx-tr-item-action:active { transform: translateY(0); }
 .cdx-tr-item-action .cdx-tr-ia-label-short { display: none; }
@@ -402,18 +401,18 @@
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 .cdx-tr-type-filter .ct-tf-chip:hover {
-  border-color: var(--primary-dark);
+  border-color: var(--tint-primary-tx);
   color: var(--text-primary);
 }
 .cdx-tr-type-filter .ct-tf-chip.active {
-  background: var(--primary-dark);
+  background: var(--tint-primary-tx);
   color: var(--text-on-accent, #fff);
-  border-color: var(--primary-dark);
+  border-color: var(--tint-primary-tx);
 }
 [data-theme="dark"] .cdx-tr-type-filter .ct-tf-chip.active {
   background: var(--primary);
   border-color: var(--primary);
-  color: #0f1419;
+  color: var(--on-primary, #fff);
 }
 .cdx-tr-type-filter .ct-tf-icon { font-size: 1rem; line-height: 1; display: inline-flex; align-items: center; }
 .cdx-tr-type-filter .ct-tf-icon svg { display: block; width: 15px; height: 15px; }
@@ -439,15 +438,15 @@
   font-weight: 700;
   padding: 3px 9px;
   border-radius: 6px;
-  background: rgba(20, 184, 166, 0.12);
-  color: var(--primary-dark);
+  background: var(--tint-primary);
+  color: var(--tint-primary-tx);
 }
 .cdx-tr-sub-expanded .ctr-pill {
   display: inline-block;
   font-size: 0.78rem;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(20, 184, 166, 0.08);
+  background: var(--cdx-chip-bg);
   color: var(--text-secondary);
 }
 .cdx-tr-sub-expanded .ctr-strengths-list { margin: 0.6rem 0 0.5rem; padding-left: 1.2em; }
@@ -486,7 +485,7 @@
   justify-content: center;
   font-size: 0.68rem;
   font-weight: 800;
-  color: var(--primary-dark);
+  color: var(--tint-primary-tx);   /* B1: --primary-dark as text → --tint-primary-tx */
   z-index: 2;
   transition: all 0.22s ease;
 }
@@ -502,8 +501,8 @@
   border-color: var(--primary);
   color: var(--text-on-accent, #fff);
   box-shadow:
-    0 0 0 4px rgba(20, 184, 166, 0.18),
-    0 0 0 9px rgba(20, 184, 166, 0.10);
+    0 0 0 4px var(--tint-primary),
+    0 0 0 9px var(--cdx-card-hover-bg);   /* B4: teal rgba → tint tokens */
 }
 .cdx-tr-tl-row.is-open .cdx-tr-tl-dot.cdx-tr-tl-dot--done {
   background: var(--success-fill);

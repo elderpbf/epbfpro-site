@@ -25,19 +25,12 @@
   --teal-700: #0f766e;   /* borders / tint text */
   --teal-900: #134e4a;   /* ink on light teal */
 
-  /* Accent hues — tab identities + categories. Rendered ONLY via the tinted-card
-   * pattern (faint hue tint + hue border + NEUTRAL text + hue dot/glow), so the
-   * hue's own lightness never matters and teal reads as cleanly as violet. This
-   * is the fix for "Content teal is too dark": nothing renders the hue as text. */
-  --acc-lessons:   #6366f1;
-  --acc-content:   #14b8a6;
-  --acc-cohorts:   #f59e0b;
-  --acc-questions: #ec4899;
-  --acc-certs:     #8b5cf6;
-  --acc-drive:     #3b82f6;
-  --acc-external:  #f97316;
-  --acc-tarefas:   #ef4444;
-  /* Color-named aliases — use these when the role is not yet clear (reusable palette). */
+  /* ── Palette layer (color-named, canonical) ───────────────────────────────────
+   * The reusable set of accent hues. Named by WHAT THEY ARE, never by what they
+   * colour today, so any hue is available for whatever need arises. Rendered ONLY
+   * via the tinted-card pattern (faint hue tint + hue border + NEUTRAL text + hue
+   * dot/glow), so the hue's own lightness never matters and teal reads as cleanly
+   * as violet — theme-stable by contract (no dark override; never rendered as text). */
   --acc-violet:    #8b5cf6;
   --acc-amber:     #f59e0b;
   --acc-indigo:    #6366f1;
@@ -48,7 +41,19 @@
   --acc-teal:      #14b8a6;
   --acc-mix-bg:    6%;            /* accent-card tint strength (light) */
 
-  /* Back-compat: the live --codex-* names alias the accent set (identical values). */
+  /* ── Assignment layer (semantic → palette) ────────────────────────────────────
+   * Which tab/category wears which palette hue. The ONLY place this map lives, so
+   * recolouring a tab is a one-line edit. Consumers reference the semantic name. */
+  --acc-lessons:   var(--acc-indigo);
+  --acc-content:   var(--acc-teal);
+  --acc-cohorts:   var(--acc-amber);
+  --acc-questions: var(--acc-pink);
+  --acc-certs:     var(--acc-violet);
+  --acc-drive:     var(--acc-blue);
+  --acc-external:  var(--acc-orange);
+  --acc-tarefas:   var(--acc-red);
+
+  /* Back-compat: the live --codex-* names alias the semantic assignment. */
   --codex-lessons:   var(--acc-lessons);
   --codex-content:   var(--acc-content);
   --codex-cohorts:   var(--acc-cohorts);
@@ -97,6 +102,12 @@
   --cdx-remarcada-text:    #d97706;
   --danger:                var(--error);
 
+  /* Shared tokens consolidated in the consistency pass (were undefined → consumers
+     fell back to hardcoded hex that never adapted to dark). */
+  --surface-hover:         rgba(20, 184, 166, 0.08);  /* primary-tint row/card hover */
+  --text-muted:            #64748b;                    /* neutral muted, distinct from the teal --text-secondary */
+  --cdx-warn:              #d97706;                     /* legible amber warn text */
+
   /* Certificate status palette. Reuses Codex's own status hues: amber
      (= --codex-cohorts / --cdx-remarcada) for "aguardando assinatura", blue
      (= --cdx-agendada) for "aguardando envio", --success for "enviado",
@@ -134,6 +145,9 @@
   --cdx-agendada-text:     #93c5fd;
   --cdx-remarcada-bg:      rgba(245, 158, 11, 0.15);
   --cdx-remarcada-text:    #fcd34d;
+  --surface-hover:         rgba(45, 212, 191, 0.12);
+  --text-muted:            #9ca3af;
+  --cdx-warn:              #fcd34d;
 
   /* Intentional palette — dark. Fills DEEPEN toward the bg, tint-text BRIGHTENS;
    * no bright solid fills. The teal ramp's bright steps become accents, the deep

@@ -53,6 +53,8 @@ test('every owned surface/text/border token has a dark override', () => {
     '--codex-lessons', '--codex-content', '--codex-cohorts', '--codex-questions', '--danger',
     '--cdx-cert-issued-ac', '--cdx-cert-signed-ac', '--cdx-cert-sent-ac', '--cdx-cert-revoked-ac',
     '--teal-100', '--teal-900',
+    '--acc-violet', '--acc-amber', '--acc-indigo', '--acc-pink',
+    '--acc-blue', '--acc-orange', '--acc-red', '--acc-teal',
     '--acc-lessons', '--acc-content', '--acc-cohorts', '--acc-questions',
     '--acc-certs', '--acc-drive', '--acc-external', '--acc-tarefas',
   ]);

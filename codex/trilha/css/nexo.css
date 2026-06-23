@@ -23,7 +23,7 @@
 #cdx-tr-nexo-host .state-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--primary-dark);
+  color: var(--tint-primary-tx);   /* B1: was --primary-dark (near-invisible in dark) */
   margin-bottom: 8px;
 }
 #cdx-tr-nexo-host .state-sub { font-size: 1rem; color: var(--text-secondary); }
@@ -54,7 +54,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--text-light);
+  background: var(--text-secondary);   /* B6: was --text-light (undefined) */
   transition: background 0.3s;
 }
 #cdx-tr-nexo-host .refresh-dot.active { background: var(--success); }
@@ -139,7 +139,7 @@ body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-in
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: 999px;
-  color: var(--text-light);
+  color: var(--text-secondary);   /* B6: was --text-light (undefined) */
   font-size: 0.9rem;
   transition: border-color 0.15s;
 }
@@ -149,8 +149,8 @@ body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-in
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--primary-dark);
-  color: var(--text-on-accent, #fff);
+  background: var(--primary);   /* B2: was --primary-dark used as solid fill in dark */
+  color: var(--on-primary, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,7 +193,7 @@ body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-in
   gap: 10px;
   margin-top: 8px;
 }
-.cp-qa-editor-charcount { font-size: 0.72rem; color: var(--text-light); }
+.cp-qa-editor-charcount { font-size: 0.72rem; color: var(--text-secondary); }   /* B6: was --text-light */
 .cp-qa-editor-actions { display: flex; gap: 8px; }
 .cp-qa-editor-btn {
   padding: 8px 14px;
@@ -207,7 +207,8 @@ body.qa-bar-on #cdx-tr-nexo-host { padding-bottom: calc(160px + env(safe-area-in
   color: var(--text-primary);
   transition: opacity 0.15s;
 }
-.cp-qa-editor-btn.primary { background: var(--primary-dark); color: var(--text-on-accent, #fff); border-color: var(--primary-dark); }
+/* B2: --primary-dark as solid fill in dark → --primary (btn is a fill, not text) */
+.cp-qa-editor-btn.primary { background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); }
 .cp-qa-editor-btn:hover:not(:disabled) { opacity: 0.85; }
 .cp-qa-editor-btn:disabled { opacity: 0.4; cursor: default; }
 .cp-qa-editor-error {

@@ -10,7 +10,7 @@
 
 .bs-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.45);
+  background: var(--cdx-backdrop); /* B7: was rgba(0,0,0,.45) */
   z-index: 9990;
   opacity: 0;
   transition: opacity .3s;
@@ -109,7 +109,7 @@
   width: 100%;
   padding: 0.65rem;
   background: transparent;
-  border: 1.5px solid rgba(100,160,255,.35);
+  border: 1.5px solid var(--border); /* was rgba(100,160,255,.35) — freehand blue */
   border-radius: 8px;
   color: var(--primary, #14b8a6);
   font-family: 'Inter', sans-serif;
@@ -120,7 +120,7 @@
   transition: all .2s;
 }
 
-.bs-toggle-btn:hover { background: rgba(100,160,255,.08); }
+.bs-toggle-btn:hover { background: var(--cdx-card-hover-bg); } /* was rgba(100,160,255,.08) */
 
 .bs-field { margin-bottom: 0.75rem; }
 .bs-field label { display: block; font-size: 0.82rem; color: var(--text-secondary, #94a3b8); margin-bottom: 0.3rem; }

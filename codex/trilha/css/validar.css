@@ -93,7 +93,7 @@ html, body {
   outline: none;
   transition: border-color 0.15s;
 }
-.cdx-cert-input:focus { border-color: var(--accent); }
+.cdx-cert-input:focus { border-color: var(--primary); }
 
 .cdx-cert-submit {
   flex: 0 0 auto;
@@ -101,14 +101,14 @@ html, body {
   font-size: 0.95rem;
   font-family: inherit;
   font-weight: 600;
-  background: var(--accent);
-  color: var(--text-on-accent, #fff);
+  background: var(--primary);
+  color: var(--on-primary, #fff);
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s;
 }
-.cdx-cert-submit:hover { background: var(--accent-hover, var(--accent)); }
+.cdx-cert-submit:hover { background: var(--primary-dark); }
 
 /* ── Error / not-found ───────────────────────────────────── */
 
@@ -139,7 +139,7 @@ html, body {
   line-height: 1.5;
 }
 
-.cdx-cert-try-again { font-size: 0.9rem; color: var(--accent); text-decoration: none; }
+.cdx-cert-try-again { font-size: 0.9rem; color: var(--primary); text-decoration: none; }
 .cdx-cert-try-again:hover { text-decoration: underline; }
 
 /* ── Result card ─────────────────────────────────────────── */
@@ -218,13 +218,13 @@ html, body {
   font-size: 0.9rem;
   font-family: inherit;
   font-weight: 600;
-  background: var(--accent);
-  color: var(--text-on-accent, #fff);
+  background: var(--primary);
+  color: var(--on-primary, #fff);
   text-decoration: none;
   border-radius: 8px;
   transition: background 0.15s;
 }
-.cdx-cert-pdf-btn:hover { background: var(--accent-hover, var(--accent)); }
+.cdx-cert-pdf-btn:hover { background: var(--primary-dark); }
 
 .cdx-cert-footer {
   margin-top: 1.2rem;
