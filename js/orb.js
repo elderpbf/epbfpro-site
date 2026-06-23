@@ -21,15 +21,10 @@ export function initOrb() {
     for (let i = 0; i < n; i++) nodes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25 });
   }
   size(); addEventListener('resize', size); addEventListener('load', size);
-  // Only let the pointer DRIVE the orb while it is over the hero (the animation box). Moving the
-  // cursor out of the box must not drag the orb after it — it used to chase the pointer upward out
-  // of the hero (Élder: "when the mouse leaves the animation box the orb jumps upwards").
-  addEventListener('pointermove', e => {
-    const r = hero.getBoundingClientRect();
-    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-      mx = e.clientX; my = e.clientY; mAt = performance.now();
-    }
-  }, { passive: true });
+  // Track the raw pointer; whether it actually DRIVES the orb is gated per-frame by `overHero`
+  // (is the pointer over the animation box right now). So the cursor leaving the box never drags
+  // the orb after it, and the orb knows to disappear the instant the pointer leaves (Élder).
+  addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; mAt = performance.now(); }, { passive: true });
   function rgb() { return getComputedStyle(document.documentElement).getPropertyValue('--line-rgb').trim() || '125,232,214'; }
 
   let phase = 'follow', detachScroll = 0, detachY = innerHeight * 0.4, locked = false, ease = 0.08;
@@ -113,41 +108,50 @@ export function initOrb() {
   // left). The hero FOLLOW and the bottom BLOOM are unchanged — only the descent rides here.
   function leftLane() { return Math.min(Math.max(innerWidth * 0.02, 10), 24); }
 
-  function computeTarget(now) {
+  function computeTarget(now, overHero) {
     const s = getSettings();
     const hb = hero.getBoundingClientRect().bottom;
-    const live = now - mAt < 2500;
+    const live = (now - mAt < 2500) && overHero;             // the pointer only DRIVES while over the box
+
+    // STAY / LEAP: the dot is a hero-only light — it never descends. It follows the pointer (or
+    // glides when idle) WHILE the pointer is over the box; the instant the pointer leaves (out the
+    // bottom or any edge) it FREEZES where it is and frame() hides it, reappearing when the pointer
+    // is back over the box (Élder: "instead of detaching it disappears until the mouse is over the
+    // box again", never shoots to the top). Underlines still paint via descendTarget as you scroll;
+    // once the contacts bloom the dot pins at them so the bloom dissolves in place.
+    if (mode !== 'descend') {
+      if (armed) { locked = false; descendTarget(); return { x: innerWidth * 0.5, y: innerCY }; }
+      if (!overHero) { descendTarget(); locked = false; wasLive = false; ease = 1; return { x: sx, y: sy }; }
+      locked = false; clearGlow();
+      let tx, ty;
+      if (live) { ease = 0.035; tx = mx; ty = my; wasLive = true; }
+      else { if (wasLive) { seedGlide(now); wasLive = false; } tickGlide(now, hb); ease = 1; tx = gx; ty = gy; }
+      ty = Math.min(ty, hb);
+      return { x: tx, y: ty };
+    }
+
+    // DESCEND mode (the original): hero follow → detach at the floor → ride the scroll down the lane.
     if (phase === 'follow') {                                 // hero: follow the pointer, else glide
       locked = false; clearGlow();
       let tx, ty;
       if (live) { ease = 0.035; tx = mx; ty = my; wasLive = true; }   // follow the mouse/finger at HALF speed (Élder)
       else {
         if (wasLive) { seedGlide(now); wasLive = false; }   // seed the glide at the dot the instant the pointer leaves (no jump)
-        tickGlide(now, hb); ease = 1; tx = gx; ty = gy;     // CONSTANT-speed glide: gx already advances at a fixed pace
+        tickGlide(now, hb); ease = 1; tx = gx; ty = gy;     // CONSTANT-speed glide
       }
       if (hb <= ty + 2) { phase = 'descend'; detachScroll = scrollY; detachY = Math.max(40, hb); }
-      // DESCEND mode only, and only while the mouse is driving toward the floor: ease toward the
-      // left lane (the detach point). The idle glide stays centred (no left-lane pull).
-      if (mode === 'descend' && live) { const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130)); tx = tx + (leftLane() - tx) * k; }
+      if (live) { const k = Math.max(0, Math.min(1, (ty - (hb - 130)) / 130)); tx = tx + (leftLane() - tx) * k; }
       ty = Math.min(ty, hb);
       return { x: tx, y: ty };
     }
     if (scrollY <= detachScroll - 4 && hb > my) phase = 'follow';
-    if (mode === 'descend') {                                 // the original: ride the scroll down the left lane
-      if (armed) { locked = false; ease = s.easeArmed; clearGlow(); return { x: innerWidth * 0.5, y: innerCY }; }
-      if (innerCY < innerHeight * 1.05) { locked = false; ease = s.easeApproach; clearGlow(); return { x: innerWidth * 0.5, y: Math.max(70, Math.min(innerHeight - 70, innerCY)) }; }
-      descendTarget();
-      locked = false; ease = s.easeFree;
-      const docMax = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-      const dfrac = Math.max(0, Math.min(1, (scrollY - detachScroll) / Math.max(1, docMax - detachScroll)));
-      return { x: leftLane(), y: 70 + dfrac * (innerHeight - 140) };
-    }
-    // STAY / LEAP: keep painting the underlines as the scroll passes them (Élder: they stay).
-    // The dot is hidden here; park it off-screen-top centre while waiting, but once the contacts
-    // have bloomed pin it AT the contacts so the fade dissolves in place (never flies back up).
+    if (armed) { locked = false; ease = s.easeArmed; clearGlow(); return { x: innerWidth * 0.5, y: innerCY }; }
+    if (innerCY < innerHeight * 1.05) { locked = false; ease = s.easeApproach; clearGlow(); return { x: innerWidth * 0.5, y: Math.max(70, Math.min(innerHeight - 70, innerCY)) }; }
     descendTarget();
-    locked = false; ease = 0.08;
-    return { x: innerWidth * 0.5, y: armed ? innerCY : -60 };
+    locked = false; ease = s.easeFree;
+    const docMax = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+    const dfrac = Math.max(0, Math.min(1, (scrollY - detachScroll) / Math.max(1, docMax - detachScroll)));
+    return { x: leftLane(), y: 70 + dfrac * (innerHeight - 140) };
   }
 
   // The contacts reveal IS the orb: it streaks to the contacts and the ring expands from it
@@ -165,10 +169,11 @@ export function initOrb() {
   function frame(now) {
     const s = getSettings();
     const heroRect = hero.getBoundingClientRect();
+    const overHero = mx >= heroRect.left && mx <= heroRect.right && my >= heroRect.top && my <= heroRect.bottom && heroRect.bottom > 0;
     const rr = cinner.getBoundingClientRect(); innerCY = rr.top + rr.height / 2;
     if (!armed && innerCY < innerHeight * s.armAt) { armed = true; onArm(now); }
     else if (armed && innerCY > innerHeight * 0.96) { armed = false; onDisarm(now); }
-    const t = computeTarget(now);
+    const t = computeTarget(now, overHero);
     sx += (t.x - sx) * ease; sy += (t.y - sy) * ease;
 
     // Per-mode visibility + the LEAP. DESCEND is the original; STAY/LEAP hide the dot mid-scroll
@@ -177,8 +182,6 @@ export function initOrb() {
     if (mode === 'descend') {
       show = !armed;
       soft = phase === 'descend' && !armed && !locked;
-    } else if (phase === 'follow' && heroRect.bottom > 0) {
-      show = true;                                            // visible hero interaction
     } else if (mode === 'leap' && leapDir !== 0) {
       const k = Math.min(1, (now - leapT0) / LEAP_MS);
       sx = innerWidth * 0.5;
@@ -186,7 +189,9 @@ export function initOrb() {
       else { sy = -50 + (innerCY + 50) * ((1 - k) * (1 - k)); if (k >= 1) leapDir = 0; }                            // up: the exact reverse path
       show = true;
     } else {
-      show = false;                                           // mid-scroll/bloomed: the dot is gone (it became the ring)
+      // STAY / LEAP idle: visible ONLY while the pointer is over the box; otherwise the dot is
+      // frozen in place and hidden (Élder: it disappears at the bottom / on leave, reappears on return).
+      show = overHero && !armed;
     }
     spark.style.transform = 'translate(' + sx + 'px,' + sy + 'px) translate(-50%,-50%)';
     spark.classList.toggle('plp-on', show);

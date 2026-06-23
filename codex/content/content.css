@@ -71,7 +71,7 @@
 .cdx-items-sortbtn svg { flex: 0 0 auto; }
 
 /* ── Filter row ──────────────────────────────────────────────────────────── */
-.cdx-filter-row { display: flex; align-items: center; gap: 0.5rem; }
+.cdx-filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 0.6rem; }
 
 /* ── Lista + Prévia (master-detail) ──────────────────────────────────────── */
 /* Compact item list on the left, live preview on the right. Mirrors the

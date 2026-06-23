@@ -305,8 +305,11 @@ a.cdx-card-mini-icon.is-on:hover {
   border-radius: 5px;
 }
 
-.cdx-btn-danger { border-color: var(--error); color: var(--error); }
-.cdx-btn-danger:hover { background: var(--error-bg); }
+/* Destructive actions (Revogar em Certificados, Excluir na Biblioteca, etc.) use the
+ * palette's DANGER role as a solid fill: --danger-fill + --on-danger, deepened on hover.
+ * Both deepen in dark per the role, so the on-fill text stays legible. */
+.cdx-btn-danger { background: var(--danger-fill); border-color: var(--danger-fill); color: var(--on-danger); }
+.cdx-btn-danger:hover { background: color-mix(in oklab, var(--danger-fill) 82%, #000); border-color: color-mix(in oklab, var(--danger-fill) 82%, #000); }
 
 .cdx-btn:disabled, .cdx-btn[disabled] {
   opacity: 0.45;

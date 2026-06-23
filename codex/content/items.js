@@ -209,6 +209,9 @@ function _renderShell() {
         '<button class="cdx-btn cdx-btn-danger cdx-btn-sm" id="cdx-btn-bulk-delete">' + t('content.bulk_delete') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm" id="cdx-btn-bulk-cancel">' + t('content.bulk_cancel') + '</button>' +
       '</div>' +
+      // Type-filter chips (Todos / Prompt para IA / …) as a full-width wrapping row ABOVE the
+      // split, so they line up across the top instead of being cramped in the left panel (Élder).
+      '<div id="cdx-items-filter"></div>' +
       '<div class="cdx-items-split" id="cdx-items-split">' +
         '<div class="cdx-items-listcol">' +
           // Search + sort at the TOP of the left panel (like the Turmas search),
@@ -220,7 +223,6 @@ function _renderShell() {
               _SORT_ICON + '<span class="cdx-items-sortlabel" id="cdx-items-sortlabel"></span>' +
             '</button>' +
           '</div>' +
-          '<div id="cdx-items-filter"></div>' +
           '<div class="cdx-items-list" id="cdx-items-grid">' +
             '<div class="cdx-empty">' + t('content.loading') + '</div>' +
           '</div>' +
