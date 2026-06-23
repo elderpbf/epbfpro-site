@@ -10,13 +10,63 @@
  * override. Brand accents (--codex-*) are intentionally theme-stable and exempt;
  * --danger is an alias of --error and inherits its dark value. */
 
-/* Per-functionality accent colors. Brand accents, the same in light and dark
- * (they tint a tab glyph + active underline), so they need no dark override. */
+/* ── The intentional palette (appearance contract — 3a APPROVED 2026-06-22) ─────
+ * The single home for Codex colour: a 5-step teal ramp + a small fixed set of
+ * semantic roles (fill/on-fill, tint/tint-text) + the accent hues. Light AND
+ * dark are each deliberate: dark DEEPENS fills toward the background and
+ * BRIGHTENS tint-text, never a bright solid fill. Spec: backstage mocks/palette/.
+ * Components migrate onto these names; the ad-hoc teal hex collapses here over
+ * time (that repoint is visual-review-gated — defining the home is risk-free). */
 :root {
-  --codex-lessons:   #6366f1;
-  --codex-content:   #14b8a6;
-  --codex-cohorts:   #f59e0b;
-  --codex-questions: #ec4899;
+  /* Teal ramp — 5 intentional steps replace the ~9 ad-hoc teals. */
+  --teal-100: #5eead4;   /* highlight / dark accent text */
+  --teal-300: #14b8a6;   /* === --primary (light) */
+  --teal-500: #0d9488;   /* hover / deep */
+  --teal-700: #0f766e;   /* borders / tint text */
+  --teal-900: #134e4a;   /* ink on light teal */
+
+  /* Accent hues — tab identities + categories. Rendered ONLY via the tinted-card
+   * pattern (faint hue tint + hue border + NEUTRAL text + hue dot/glow), so the
+   * hue's own lightness never matters and teal reads as cleanly as violet. This
+   * is the fix for "Content teal is too dark": nothing renders the hue as text. */
+  --acc-lessons:   #6366f1;
+  --acc-content:   #14b8a6;
+  --acc-cohorts:   #f59e0b;
+  --acc-questions: #ec4899;
+  --acc-certs:     #8b5cf6;
+  --acc-drive:     #3b82f6;
+  --acc-external:  #f97316;
+  --acc-tarefas:   #ef4444;
+  --acc-mix-bg:    6%;            /* accent-card tint strength (light) */
+
+  /* Back-compat: the live --codex-* names alias the accent set (identical values). */
+  --codex-lessons:   var(--acc-lessons);
+  --codex-content:   var(--acc-content);
+  --codex-cohorts:   var(--acc-cohorts);
+  --codex-questions: var(--acc-questions);
+
+  /* Semantic roles — a solid fill + paired on-fill text (actions/zones) and a
+   * tint + paired tint-text (pills/badges). These five are the only places
+   * coloured text is hand-tuned, because the set is small and contrast-checked. */
+  --on-primary:      #ffffff;
+  --tint-primary:    rgba(20, 184, 166, 0.12);
+  --tint-primary-tx: #0f766e;
+  --success-fill:    #047857;
+  --on-success:      #ffffff;
+  --tint-success:    rgba(16, 185, 129, 0.14);
+  --tint-success-tx: #047857;
+  --danger-fill:     #dc2626;
+  --on-danger:       #ffffff;
+  --tint-danger:     rgba(239, 68, 68, 0.10);
+  --tint-danger-tx:  #b91c1c;
+  --info-fill:       #2563eb;
+  --on-info:         #ffffff;
+  --tint-info:       rgba(59, 130, 246, 0.12);
+  --tint-info-tx:    #1d4ed8;
+  --task-fill:       #d97706;
+  --on-task:         #ffffff;
+  --tint-task:       rgba(217, 119, 6, 0.12);
+  --tint-task-tx:    #92400e;
 }
 
 /* ── Component + status tokens ─────────────────────────────────────────────── */
@@ -75,6 +125,33 @@
   --cdx-agendada-text:     #93c5fd;
   --cdx-remarcada-bg:      rgba(245, 158, 11, 0.15);
   --cdx-remarcada-text:    #fcd34d;
+
+  /* Intentional palette — dark. Fills DEEPEN toward the bg, tint-text BRIGHTENS;
+   * no bright solid fills. The teal ramp's bright steps become accents, the deep
+   * steps become fills. Accent hues stay theme-stable (no override needed). */
+  --teal-300: #2dd4bf;
+  --teal-500: #0d9488;
+  --teal-700: #0a766c;
+  --acc-mix-bg:      14%;
+  --on-primary:      #e5e7eb;
+  --tint-primary:    rgba(45, 212, 191, 0.16);
+  --tint-primary-tx: #5eead4;
+  --success-fill:    #0f8a5a;
+  --on-success:      #e5e7eb;
+  --tint-success:    rgba(52, 211, 153, 0.18);
+  --tint-success-tx: #6ee7b7;
+  --danger-fill:     #b3322a;
+  --on-danger:       #e5e7eb;
+  --tint-danger:     rgba(239, 68, 68, 0.18);
+  --tint-danger-tx:  #fca5a5;
+  --info-fill:       #2f6fe0;
+  --on-info:         #e5e7eb;
+  --tint-info:       rgba(59, 130, 246, 0.22);
+  --tint-info-tx:    #93c5fd;
+  --task-fill:       #b3690e;
+  --on-task:         #e5e7eb;
+  --tint-task:       rgba(245, 158, 11, 0.16);
+  --tint-task-tx:    #fcd34d;
 
   /* Certificate status — dark. The `-ac` accents are theme-stable brand hues
      (no override needed); only the badge text/fill lighten for dark surfaces. */

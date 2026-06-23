@@ -45,9 +45,16 @@ test('every owned surface/text/border token has a dark override', () => {
   // Brand accents are intentionally theme-stable; --danger inherits via --error.
   // The cert-status `-ac` accents are likewise theme-stable (fixed brand hues, or
   // var(--success)/var(--error) which theme themselves), so they share the exemption.
+  // The intentional-palette accent hues (--acc-*) are theme-stable by contract (the
+  // hue is rendered only via the tinted-card pattern, never as text), and the teal
+  // ramp's endpoints (--teal-100 highlight, --teal-900 ink) are stable; the mid
+  // steps (300/500/700) DO carry dark overrides. All share the exemption.
   const exempt = new Set([
     '--codex-lessons', '--codex-content', '--codex-cohorts', '--codex-questions', '--danger',
     '--cdx-cert-issued-ac', '--cdx-cert-signed-ac', '--cdx-cert-sent-ac', '--cdx-cert-revoked-ac',
+    '--teal-100', '--teal-900',
+    '--acc-lessons', '--acc-content', '--acc-cohorts', '--acc-questions',
+    '--acc-certs', '--acc-drive', '--acc-external', '--acc-tarefas',
   ]);
   const missing = light.filter((v) => !exempt.has(v) && !dark.has(v));
   assert.deepEqual(missing, [], 'tokens missing a [data-theme="dark"] override: ' + missing.join(', '));

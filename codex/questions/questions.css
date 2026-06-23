@@ -692,6 +692,7 @@
 [data-theme="dark"] .cdx-qr-bar-track { background: rgba(255,255,255,0.08); }
 .cdx-qr-bar-fill { height: 100%; background: var(--primary); border-radius: 6px; transition: width 0.6s ease; }
 .cdx-qr-bar-fill.correct { background: var(--success); }
+[data-theme="dark"] .cdx-qr-bar-fill.correct { background: var(--success-fill); }  /* deepen: --success is too bright in dark */
 .cdx-qr-bar-fill.mine    { background: var(--primary-dark); }
 .cdx-qr-bar-count { font-size: 1.1rem; font-weight: 600; color: var(--text-secondary); text-align: right; }
 
@@ -740,6 +741,12 @@
 .cdx-qr-bar.is-correct .cdx-qr-bar-count { color: var(--text-on-accent, #fff) !important; font-weight: 700 !important; }
 .cdx-qr-bar.is-correct .cdx-qr-bar-text::after { content: ' \2713'; font-weight: 800; }
 .cdx-qr-bar.is-correct .cdx-qr-bar-fill { background: #fff !important; }
+/* Dark: deepen the bright --success fill (the deferred admin dark-fill) so the light
+ * on-fill text passes — contract: no bright solid fills in dark. Inner chips stay. */
+[data-theme="dark"] .cdx-qr-bar.is-correct {
+  background-color: var(--success-fill) !important;
+  border-color: var(--success-fill) !important;
+}
 
 /* ── Word cloud ──────────────────────────────────────────── */
 .cdx-qr-wordcloud { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; justify-content: center; align-items: center; padding: 1rem; }
@@ -1030,6 +1037,7 @@
 .cdx-hi-bar-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cdx-hi-bar-badge { font-weight: 700; background: var(--surface); border: 1px solid var(--border); padding: 0.1rem 0.3rem; border-radius: 4px; color: var(--primary); white-space: nowrap; flex-shrink: 0; }
 .cdx-hi-bar-badge.correct { background: var(--success); color: var(--text-on-accent, #fff); border-color: var(--success); }
+[data-theme="dark"] .cdx-hi-bar-badge.correct { background: var(--success-fill); border-color: var(--success-fill); }
 .cdx-hi-bar-pct { font-weight: 600; color: var(--text-primary); width: 32px; text-align: right; }
 .cdx-hi-bar-count { color: var(--text-light); width: 20px; text-align: right; }
 

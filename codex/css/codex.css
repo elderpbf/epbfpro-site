@@ -63,7 +63,11 @@
 .cdx-tab-icon { display: inline-flex; color: var(--accent-color); }
 .cdx-tab:not(.active) .cdx-tab-icon { opacity: 0.8; }
 .cdx-tab.active {
-  color: var(--accent-color);
+  /* Appearance contract: NEUTRAL label text. The hue stays the active indicator
+   * via the underline + the (always-hued) glyph, so every tab's active label
+   * reads the same weight — fixes "Content teal is too dark, not like the others"
+   * (it was the one tab whose label inherited its accent hue as text). */
+  color: var(--text-primary);
   border-bottom-color: var(--accent-color);
 }
 
@@ -136,7 +140,9 @@
   font-size: 0.66rem; font-weight: 600;
 }
 .cdx-botnav-icon { display: inline-flex; color: currentColor; }
-.cdx-botnav-item.active { color: var(--accent-color); }
+/* Contract: neutral active label; the hue stays the active indicator on the glyph. */
+.cdx-botnav-item.active { color: var(--text-primary); }
+.cdx-botnav-item.active .cdx-botnav-icon { color: var(--accent-color); }
 .cdx-botnav-item--lessons   { --accent-color: var(--codex-lessons); }
 .cdx-botnav-item--content   { --accent-color: var(--codex-content); }
 .cdx-botnav-item--cohorts   { --accent-color: var(--codex-cohorts); }
