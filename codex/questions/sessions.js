@@ -129,7 +129,7 @@ function _renderMain() {
   if (!main) return;
   const s = _sessions.find((x) => x.code === _selectedCode);
   if (!s) {
-    main.innerHTML = '<div class="cdx-sessions-placeholder">' + t('questions.sessions_placeholder') + '</div>';
+    main.innerHTML = '<div class="cdx-placeholder">' + t('questions.sessions_placeholder') + '</div>';
     return;
   }
   // The host bar owns the Estatisticas button (left of Visao) and a session-name

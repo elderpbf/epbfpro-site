@@ -58,6 +58,20 @@
 .cdx-btn-sm { padding: 0.28rem 0.6rem; font-size: 0.74rem; border-radius: 6px; }
 .cdx-btn-lg { padding: 0.6rem 1.25rem; font-size: 0.9rem; border-radius: 9px; }
 
+/* ── PLACEHOLDER ─────────────────────────────────────────────────────────────
+   The "nothing selected yet" empty state for a detail pane (Questions sessions,
+   Cohorts dossiê). Centered + generous; fills a flex parent (flex:1) and also
+   stands on its own (min-height) inside a plain block/scroll parent, so the ONE
+   class reads the same in both layouts. Distinct from .cdx-empty (the small
+   inline "list is empty / loading" note that stays top-aligned in a narrow rail). */
+.cdx-placeholder {
+  flex: 1 1 auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 60vh;
+  text-align: center; padding: 4rem 2rem;
+  color: var(--text-secondary); font-size: 0.92rem;
+}
+
 /* ── BADGES / PILLS ──────────────────────────────────────────────────────────
    Status/role badges use the tint + tint-text role pair (legible in both modes).
    The accent badge renders a category hue via the tinted-card mini: NEUTRAL text

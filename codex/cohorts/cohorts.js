@@ -247,7 +247,7 @@ function _renderShell() {
       // trilha link/actions, participants, aulas, and the cert shortcut.
       '<div class="cdx-pane cdx-doss-pane">' +
         '<div class="cdx-pane-body cdx-doss-body" id="cdx-turma-dossier">' +
-          '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>' +
+          '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>' +
         '</div>' +
       '</div>' +
 
@@ -311,7 +311,7 @@ function _loadAll() {
       _relClientSlug = null; _relTurmaSlug = null;
       _navPinned = true; _openNav();
       const dEl = _q('cdx-turma-dossier');
-      if (dEl) dEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>';
+      if (dEl) dEl.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>';
     }
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
@@ -748,7 +748,7 @@ function _deleteTurma(turma) {
           _relClientSlug = null; _relTurmaSlug = null; _dossierTurma = null;
           _navPinned = true; _openNav();
           const dEl = _q('cdx-turma-dossier');
-          if (dEl) dEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>';
+          if (dEl) dEl.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>';
         }
       }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     }
@@ -1232,7 +1232,7 @@ function _fmtDateBr(iso) {
 function _renderDossier(turma) {
   const el = _q('cdx-turma-dossier');
   if (!el) return;
-  if (!turma) { el.innerHTML = '<div class="cdx-empty">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
+  if (!turma) { el.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
   _dossierTurma = turma;
   _dossierPFilter = 'all';
   _dossierParticipants = [];
