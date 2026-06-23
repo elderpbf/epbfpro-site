@@ -12,7 +12,6 @@ import { openModal, closeModal } from '../js/modal.js';
 import { parseRosterLines } from './roster-parser.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
-import { installResizer } from '../js/resizable.js';
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
 // Turma-scoped management surfaces, mounted turma-bound into the dossier sub-tabs
@@ -60,6 +59,17 @@ let _pickedCourse = null; // full course fetched when the picker changes (for em
 let _dossierPFilter = 'all';   // active filter in the dossier participant list
 let _dossierParticipants = []; // cached list; reloaded per turma
 let _cleanup = []; // teardown functions pushed by mount
+
+// Auto-hide CLIENTES rail (mirrors the Questions sessions sidebar). Starts
+// hidden so the dossiê is full-width; the left screen edge reveals it.
+let _overNav = false;
+let _navHideTimer = null;
+const NAV_REVEAL_ZONE = 6;   // px from the left edge that triggers the reveal
+const NAV_HIDE_DELAY = 1500; // ms after the cursor leaves the rail before it hides
+function _navLayoutEl() { return _viewEl && _viewEl.querySelector('.cdx-three-pane'); }
+function _openNav() { const l = _navLayoutEl(); if (l) l.classList.add('cdx-sm--open'); }
+function _closeNav() { const l = _navLayoutEl(); if (l) l.classList.remove('cdx-sm--open'); }
+function _maybeHideNav() { if (!_overNav) _closeNav(); }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -247,9 +257,28 @@ function _renderShell() {
   _q(IDS.list).addEventListener('click', _onListClick);
   const searchEl = _q(IDS.search);
   if (searchEl) searchEl.addEventListener('input', () => { _turmaSearch = searchEl.value; _renderList(); });
-  // Draggable divider between the clientes/turmas pane and the dossiê (persisted).
-  const pane = _viewEl.querySelector('.cdx-three-pane');
-  if (pane) installResizer(pane, { storeKey: 'cdx_rz_cohorts_nav', defaultPx: 300, min: 220, max: 520 });
+  // Auto-hide CLIENTES rail (mirrors the Questions sessions sidebar): the dossiê
+  // is full-width; the listpane is a fixed rail revealed by mousing to the left
+  // edge and hidden shortly after the cursor leaves. Document-level listeners are
+  // pushed to _cleanup so they tear down on unmount (no leak across tab switches).
+  const _sidebar = _viewEl.querySelector('.cdx-cohorts-listpane');
+  const _onNavMove = (e) => { if (e.clientX <= NAV_REVEAL_ZONE) _openNav(); };
+  const _onNavEnter = () => { _overNav = true; clearTimeout(_navHideTimer); };
+  const _onNavLeave = () => { _overNav = false; clearTimeout(_navHideTimer); _navHideTimer = setTimeout(_maybeHideNav, NAV_HIDE_DELAY); };
+  const _onNavKey = (e) => {
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+    if (e.key === 'Escape') _closeNav();
+  };
+  if (_sidebar) { _sidebar.addEventListener('mouseenter', _onNavEnter); _sidebar.addEventListener('mouseleave', _onNavLeave); }
+  document.addEventListener('mousemove', _onNavMove);
+  document.addEventListener('keydown', _onNavKey);
+  _cleanup.push(() => {
+    document.removeEventListener('mousemove', _onNavMove);
+    document.removeEventListener('keydown', _onNavKey);
+    if (_sidebar) { _sidebar.removeEventListener('mouseenter', _onNavEnter); _sidebar.removeEventListener('mouseleave', _onNavLeave); }
+    clearTimeout(_navHideTimer);
+  });
 }
 
 // ── Merged list: clients + their turmas (Concept A) ───────────────────────────

@@ -1,7 +1,8 @@
 // Source-contract for the draggable panel dividers (js/resizable.js). One shared
-// helper, persisted to localStorage via the --cdx-rz-w CSS var, reused by the Cohorts
-// panes and the Liberações/Tarefas split. Pins the clamp math + that all three
-// consumers install it, plus the CSS hooks (var-driven grid, grip, Clientes title).
+// helper, persisted to localStorage via the --cdx-rz-w CSS var, reused by the
+// Liberações/Tarefas split. (Cohorts moved its CLIENTES nav to the auto-hide rail,
+// mirroring Questions, so it no longer installs the resizer.) Pins the clamp math
+// + that both split consumers install it, plus the CSS hooks (grip, Clientes title).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -31,14 +32,16 @@ test('the resizer persists to localStorage via the --cdx-rz-w var', () => {
   assert.match(resizableJs, /class="cdx-rz-grip"|className = 'cdx-rz-grip'/, 'creates the grip element');
 });
 
-test('all three surfaces install the shared resizer (no duplicated drag code)', () => {
-  for (const [name, src] of [['cohorts', cohortsJs], ['releases', releasesJs], ['tarefas', tarefasJs]]) {
+test('the split surfaces install the shared resizer (no duplicated drag code)', () => {
+  for (const [name, src] of [['releases', releasesJs], ['tarefas', tarefasJs]]) {
     assert.match(src, /from '\.\.\/js\/resizable\.js'/, `${name} imports the helper`);
     assert.match(src, /installResizer\(/, `${name} installs the resizer`);
   }
-  assert.match(cohortsJs, /installResizer\([^)]*'cdx_rz_cohorts_nav'|storeKey: 'cdx_rz_cohorts_nav'/, 'cohorts persists under its own key');
   assert.match(releasesJs, /cdx-releases-split'[\s\S]{0,80}cdx_rz_releases_split|cdx_rz_releases_split/, 'releases installs on its split');
   assert.match(tarefasJs, /cdx_rz_tarefas_split/, 'tarefas installs on its split');
+  // Cohorts no longer installs the resizer (its CLIENTES nav is the auto-hide rail).
+  assert.ok(!/installResizer\(/.test(cohortsJs), 'cohorts does not install the resizer anymore');
+  assert.match(cohortsJs, /cdx-sm--open/, 'cohorts wires the auto-hide rail instead');
 });
 
 test('CSS drives the grids from the var and the Clientes title matches the dossiê', () => {
