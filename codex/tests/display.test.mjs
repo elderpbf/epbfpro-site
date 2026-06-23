@@ -31,9 +31,9 @@ test('display boot uses the codex-question element + the codex-api facade', () =
 });
 
 test('display.css copied the cp-qa-student values verbatim', () => {
-  assert.match(css, /border-left: 6px solid #f59e0b/, 'card amber accent bar');
+  assert.match(css, /border-left: 6px solid var\(--acc-amber\)/, 'card amber accent bar (tokenised)');
   assert.match(css, /font-size: clamp\(2\.2rem, 4\.5vw, 4rem\)/, 'question text size');
-  assert.match(css, /background: rgba\(245,158,11,0\.10\)/, 'answer wrap tint');
+  assert.match(css, /background: color-mix\(in oklab, var\(--acc-amber\) 10%, transparent\)/, 'answer wrap tint (tokenised)');
 });
 
 test('the A−/A+ buttons zoom the whole display body, not the header controls', () => {

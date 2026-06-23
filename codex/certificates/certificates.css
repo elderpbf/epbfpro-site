@@ -669,30 +669,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 0.7rem;
 }
-.cdx-emissao-kpi {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left-width: 4px;
-  border-radius: 12px;
-  padding: 0.7rem 0.9rem;
-  cursor: pointer;
-  font: inherit;
-  transition: transform 0.12s, box-shadow 0.12s;
-}
-.cdx-emissao-kpi:hover { transform: translateY(-1px); box-shadow: 0 8px 20px var(--shadow); }
-.cdx-emissao-kpi.is-active { box-shadow: 0 0 0 2px var(--primary); }
-.cdx-emissao-kpi-n { font-size: 1.7rem; font-weight: 700; line-height: 1; color: var(--text-primary); }
-.cdx-emissao-kpi-l { font-size: 0.72rem; color: var(--text-secondary); }
-.cdx-emissao-kpi--issued  { border-left-color: var(--cdx-cert-issued-ac); }
-.cdx-emissao-kpi--signed  { border-left-color: var(--cdx-cert-signed-ac); }
-.cdx-emissao-kpi--sent    { border-left-color: var(--cdx-cert-sent-ac); }
-.cdx-emissao-kpi--revoked { border-left-color: var(--cdx-cert-revoked-ac); }
-[data-theme="dark"] .cdx-emissao-kpi { background: var(--surface); border-color: var(--border); }
+/* KPI card look comes from .cdx-kpi + .cdx-kpi-{issued|signed|sent|revoked} in css/components.css. */
 
 .cdx-emissao-spacer { flex: 1; }
 

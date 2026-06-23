@@ -42,32 +42,15 @@
    easy to find; the sort is a small toggle button beside it that cycles modes. */
 .cdx-items-listcol { display: flex; flex-direction: column; gap: 0.5rem; min-height: 0; }
 .cdx-items-listhead { display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
-.cdx-items-search {
-  flex: 1;
-  min-width: 0;
-  padding: 0.42rem 0.6rem;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.cdx-items-search:focus { outline: none; border-color: var(--primary); }
+.cdx-items-search { flex: 1; min-width: 0; }
+/* .cdx-items-search look → cdx-input primitive (class set in items.js) */
 .cdx-items-sortbtn {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   flex: 0 0 auto;
-  padding: 0.42rem 0.55rem;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  white-space: nowrap;
 }
-.cdx-items-sortbtn:hover { border-color: var(--primary); color: var(--primary-dark); }
+/* .cdx-items-sortbtn look → cdx-btn primitive (class set in items.js) */
 .cdx-items-sortbtn svg { flex: 0 0 auto; }
 
 /* ── Filter row ──────────────────────────────────────────────────────────── */
@@ -743,40 +726,12 @@
 .cdx-rel-count-empty { opacity: 0.6; font-style: italic; }
 /* Debug-only "clear NOVO" pill on the right edge of a lesson row. Border comes
    from the shared .cdx-dev-only marker (dashed --danger); see Codex CLAUDE.md
-   "Developer-mode-only UI". */
-.cdx-rel-clear-fresh {
-  flex-shrink: 0;
-  margin-left: auto;
-  padding: 0.15rem 0.45rem;
-  border-radius: 6px;
-  background: var(--cdx-danger-bg);
-  color: var(--danger);
-  font-size: 0.7rem; font-weight: 700; line-height: 1.4;
-  cursor: pointer;
-  opacity: 0.85;
-}
-.cdx-rel-clear-fresh:hover {
-  opacity: 1;
-  background: var(--danger);
-  color: var(--on-danger);
-}
-/* Hidden state ("+ NOVO", badge currently off): muted, fills on hover. */
-.cdx-rel-clear-fresh.is-hidden-state { background: transparent; opacity: 0.6; }
-.cdx-rel-clear-fresh.is-hidden-state:hover { background: var(--danger); color: var(--on-danger); opacity: 1; }
-/* "Marcar como ocorrida": mark an aula happened on its scheduled day, from here. */
-.cdx-rel-mark-happened {
-  flex-shrink: 0;
-  margin-left: auto;
-  padding: 0.15rem 0.45rem;
-  border: 1px solid var(--primary);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--primary);
-  font-size: 0.7rem; font-weight: 700; line-height: 1.4;
-  cursor: pointer;
-  opacity: 0.85;
-}
-.cdx-rel-mark-happened:hover { opacity: 1; background: var(--primary); color: var(--on-primary); }
+   "Developer-mode-only UI". Look → cdx-btn cdx-btn-sm cdx-btn-danger primitive. */
+.cdx-rel-clear-fresh { flex-shrink: 0; margin-left: auto; }
+/* Hidden state ("+ NOVO", badge currently off): muted. */
+.cdx-rel-clear-fresh.is-hidden-state { opacity: 0.6; }
+/* "Marcar como ocorrida": mark an aula happened on its scheduled day. Look → cdx-btn cdx-btn-sm. */
+.cdx-rel-mark-happened { flex-shrink: 0; margin-left: auto; }
 /* Composer in the right pane: one search + a single-open accordion (the Presets
    picker layout, .cdx-picker*), filling the body with the Save pinned below. */
 .cdx-releases-split .cdx-preview-body { display: flex; flex-direction: column; gap: 0.8rem; }
@@ -860,21 +815,8 @@
 .cdx-tf-del-input { width: 100%; box-sizing: border-box; margin-bottom: 1rem; }
 
 .cdx-resp-toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
-.cdx-resp-search {
-  flex: 1;
-  min-width: 0;
-  font: inherit;
-  font-size: 0.85rem;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text-primary);
-  box-sizing: border-box;
-  -webkit-appearance: none;
-  appearance: none;
-}
-.cdx-resp-search:focus { outline: none; border-color: var(--primary); }
+.cdx-resp-search { flex: 1; min-width: 0; box-sizing: border-box; }
+/* .cdx-resp-search look → cdx-input primitive (class set in tarefas.js) */
 .cdx-resp-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 460px; overflow-y: auto; }
 .cdx-resp-empty { font-size: 0.85rem; color: var(--text-secondary); padding: 0.6rem 0; }
 .cdx-resp-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.7rem; background: var(--surface); }
@@ -962,7 +904,8 @@
 .cdx-drive-editor { display: flex; flex-direction: column; gap: 0.8rem; padding: 1rem 1.1rem; }
 .cdx-drive-editor-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
 .cdx-drive-field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--text-secondary); }
-.cdx-drive-field input { font: inherit; font-size: 0.9rem; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text-primary); }
+.cdx-drive-field input { font: inherit; font-size: 0.9rem; }
+/* .cdx-drive-field input look → cdx-input primitive (class set in drive.js) */
 .cdx-drive-field input.is-invalid { border-color: var(--error); }
 .cdx-drive-editor-error { color: var(--error); font-size: 0.82rem; min-height: 1em; }
 .cdx-drive-editor-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }

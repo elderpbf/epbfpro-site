@@ -174,7 +174,7 @@ function _openDeleteConfirm(opts) {
       '</div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-del-cancel">' + t('cohorts.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" id="cdx-del-confirm" disabled>' + t('cohorts.delete_confirm_btn') + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-del-confirm" disabled>' + t('cohorts.delete_confirm_btn') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html, { disableBackdropClose: true });
@@ -202,7 +202,7 @@ function _openArchiveConfirm(opts) {
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + _esc(opts.message) + '</p>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-arc-cancel">' + t('cohorts.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" id="cdx-arc-confirm">' + t('cohorts.archive') + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-arc-confirm">' + t('cohorts.archive') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html);
@@ -235,7 +235,7 @@ function _renderShell() {
             '<div class="cdx-empty">' + t('cohorts.loading') + '</div>' +
           '</div>' +
           '<div class="cdx-cohorts-listfoot">' +
-            '<button class="cdx-btn cdx-btn-sm cdx-btn-ghost" id="' + IDS.btnNewClient + '">' + t('cohorts.new_client') + '</button>' +
+            '<button class="cdx-btn cdx-btn-sm cdx-btn-vazado" id="' + IDS.btnNewClient + '">' + t('cohorts.new_client') + '</button>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -452,7 +452,7 @@ function _renderTurmaRow(tm) {
   const course = tm.course_title ? _esc(tm.course_title) : t('cohorts.tf_no_course');
   const n = tm.aula_count || 0;
   const countLabel = n === 1 ? '1 ' + t('cohorts.aula_singular') : n + ' ' + t('cohorts.aula_plural');
-  const archBadge = archived ? ' <span class="cdx-badge cdx-badge-archived">' + t('cohorts.archived') + '</span>' : '';
+  const archBadge = archived ? ' <span class="cdx-badge cdx-badge-danger">' + t('cohorts.archived') + '</span>' : '';
   // The phase is now a left accent bar (the row's left border, colored via --ph
   // from the phase class) instead of a dot on the right.
   return (
@@ -994,13 +994,13 @@ function _openParticipantsHelp() {
       '<div class="cdx-modal-title">' + _esc(t('cohorts.phelp_title')) + '</div>' +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_origin_h')) + '</div>' +
-      row(tag('cdx-tag--lista', 'cohorts.ptag_lista'),   t('cohorts.phelp_lista')) +
-      row(tag('cdx-tag--qr', 'cohorts.ptag_qr'),         t('cohorts.phelp_qr')) +
-      row(tag('cdx-tag--manual', 'cohorts.ptag_manual'), t('cohorts.phelp_manual')) +
+      row(tag('cdx-badge cdx-badge-primary', 'cohorts.ptag_lista'),                           t('cohorts.phelp_lista')) +
+      row(tag('cdx-badge cdx-badge-accent" style="--acc:var(--acc-teal)', 'cohorts.ptag_qr'), t('cohorts.phelp_qr')) +
+      row(tag('cdx-badge cdx-badge-success', 'cohorts.ptag_manual'),                          t('cohorts.phelp_manual')) +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_status_h')) + '</div>' +
-      row(tag('cdx-tag--pendente', 'cohorts.ptag_pending'), t('cohorts.phelp_pending')) +
-      row(tag('cdx-tag--negado', 'cohorts.ptag_denied'),    t('cohorts.phelp_denied')) +
+      row(tag('cdx-badge cdx-badge-task', 'cohorts.ptag_pending'),   t('cohorts.phelp_pending')) +
+      row(tag('cdx-badge cdx-badge-danger', 'cohorts.ptag_denied'),  t('cohorts.phelp_denied')) +
       '<p class="cdx-leg-note">' + _esc(t('cohorts.phelp_approved_note')) + '</p>' +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_conn_h')) + '</div>' +
@@ -1487,14 +1487,14 @@ function _pTag(p) {
   // actionable fact; once approved the origin (how they got in) is. They never
   // overlap because origin (approved_via) is only stamped on approval, and the
   // "approved" state itself is the expected default, so it carries no tag.
-  if (st === 'pending') return '<span class="cdx-tag cdx-tag--pendente">' + _esc(t('cohorts.ptag_pending')) + '</span>';
-  if (st === 'denied')  return '<span class="cdx-tag cdx-tag--negado">'   + _esc(t('cohorts.ptag_denied'))  + '</span>';
+  if (st === 'pending') return '<span class="cdx-badge cdx-badge-task">'    + _esc(t('cohorts.ptag_pending')) + '</span>';
+  if (st === 'denied')  return '<span class="cdx-badge cdx-badge-danger">'  + _esc(t('cohorts.ptag_denied'))  + '</span>';
   const via = p.approved_via || '';
-  if (via === 'manual')                                        return '<span class="cdx-tag cdx-tag--manual">' + _esc(t('cohorts.ptag_manual')) + '</span>';
+  if (via === 'manual')                                        return '<span class="cdx-badge cdx-badge-success">'                                                         + _esc(t('cohorts.ptag_manual')) + '</span>';
   // In-class enrollment window (the projected QR): window/presence/qr all read as QR.
-  if (via === 'qr' || via === 'window' || via === 'presence') return '<span class="cdx-tag cdx-tag--qr">'     + _esc(t('cohorts.ptag_qr'))     + '</span>';
+  if (via === 'qr' || via === 'window' || via === 'presence') return '<span class="cdx-badge cdx-badge-accent" style="--acc:var(--acc-teal)">'                            + _esc(t('cohorts.ptag_qr'))     + '</span>';
   // roster pre-approval, or any older/blank value, reads as the pre-approved list.
-  return '<span class="cdx-tag cdx-tag--lista">' + _esc(t('cohorts.ptag_lista')) + '</span>';
+  return '<span class="cdx-badge cdx-badge-primary">' + _esc(t('cohorts.ptag_lista')) + '</span>';
 }
 
 function _pRow(p) {

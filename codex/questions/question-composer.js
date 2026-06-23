@@ -111,7 +111,7 @@ function _renderOpts(optsEl, type, initial) {
       '<div class="cdx-comp-optlist">' +
         rows.map((o, i) => _optionRow(o, correct.has(i), withCorrect, true)).join('') +
       '</div>' +
-      '<button class="cdx-btn cdx-btn--ghost cdx-comp-addopt" data-act="add-opt" type="button">' +
+      '<button class="cdx-btn cdx-btn-vazado cdx-comp-addopt" data-act="add-opt" type="button">' +
         t('questions.bank_add_option') + '</button>' +
       '<label class="cdx-comp-field cdx-comp-maxsel-field"><span class="cdx-comp-label">' + t('questions.comp_max_select') + '</span>' +
         '<input type="number" class="cdx-input cdx-comp-maxsel" min="0" step="1" value="' +
@@ -202,8 +202,8 @@ export function mountComposer(container, initial) {
       '<div class="cdx-comp-class-extra" id="cdx-comp-class-extra"></div>' +
       '<div class="cdx-comp-opts" id="cdx-comp-opts"></div>' +
       '<div class="cdx-comp-ai-row">' +
-        '<button class="cdx-btn cdx-btn--ghost cdx-comp-ai" data-act="ai-generate" type="button">' + _AI_GEN + ' ' + _esc(t('questions.host_ai_generate')) + '</button>' +
-        '<button class="cdx-btn cdx-btn--ghost cdx-comp-ai" data-act="ai-improve" type="button">' + _AI_IMP + ' ' + _esc(t('questions.host_ai_improve')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-vazado cdx-comp-ai" data-act="ai-generate" type="button">' + _AI_GEN + ' ' + _esc(t('questions.host_ai_generate')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-vazado cdx-comp-ai" data-act="ai-improve" type="button">' + _AI_IMP + ' ' + _esc(t('questions.host_ai_improve')) + '</button>' +
       '</div>' +
     '</div>';
   const typeSel = container.querySelector('.cdx-comp-type');

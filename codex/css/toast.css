@@ -1,12 +1,12 @@
-/* css/toast.css: Codex-owned transient toast (pairs with js/toast.js). The values
-   are carried verbatim from the legacy shared-components.css toast rule, renamed to
-   the cdx- contract so Codex no longer loads shared-components.css (the rest of
-   that file was ClassPulse/host legacy, dead in Codex). Looks identical. */
+/* css/toast.css: Codex-owned transient toast (pairs with js/toast.js).
+   LAYOUT ONLY — position, animation, sizing. Look (color/bg/border) comes from
+   components.css .cdx-toast-success / .cdx-toast-danger / .cdx-toast-info.
+   Callers add the relevant modifier class alongside .cdx-toast. */
 
 .cdx-toast {
   position: fixed; bottom: 3.5rem; right: 1rem; z-index: 99998;
-  background: rgba(20,184,166,.15); color: var(--primary); border: 1px solid rgba(20,184,166,.3);
-  border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem;
+  /* no background/color/border here — those live in .cdx-toast-{success,danger,info} */
+  border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.82rem; font-weight: 600;
   opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .3s;
   pointer-events: none; max-width: 320px;
 }

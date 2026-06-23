@@ -46,7 +46,7 @@ function makeActionBtn(action, extraClass) {
     btn = document.createElement('button');
     btn.type = 'button';
   }
-  let cls = 'cdx-tr-item-action' + (extraClass || '');
+  let cls = 'cdx-tr-item-action cdx-btn cdx-btn-primary cdx-btn-sm' + (extraClass || '');
   if (action.kind === 'submitted') cls += ' cdx-tr-item-action--submitted is-done';
   cls.split(/\s+/).forEach((c) => { if (c) btn.classList.add(c); });
 

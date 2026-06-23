@@ -157,7 +157,7 @@ function renderEnrollBox(box, res) {
     '<p class="cdx-al-enroll-on"><span class="cdx-al-enroll-dot" aria-hidden="true">●</span> ' + esc(t('alunos.enroll_open')) + '</p>' +
     '<div class="cdx-al-enroll-actions">' +
       '<button type="button" class="cdx-btn cdx-btn-primary cdx-al-enroll-qr"><span class="cdx-al-qrglyph" aria-hidden="true">▦</span> <span class="cdx-al-enroll-rem"></span></button>' +
-      '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-enroll-close">' + esc(t('alunos.enroll_close')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-al-enroll-close">' + esc(t('alunos.enroll_close')) + '</button>' +
     '</div>' +
     '<p class="cdx-alunos-hint">' + esc(t('alunos.enroll_hint_open')) + '</p>';
   box.querySelector('.cdx-al-enroll-qr').addEventListener('click', () => qr.open({ joinUrl, title: t('alunos.enroll_qr_title') }));
@@ -225,9 +225,9 @@ function studentRow(p) {
   // Block toggle (Élder): pending/approved -> Bloquear (denied, sticks everywhere until
   // unblocked); a blocked student -> Desbloquear (back to pending, can try again). REMOVE
   // is the separate "tirar da lista" (delete) below — block ≠ remove.
-  if (st === 'denied') actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-unblock">' + esc(t('alunos.unblock')) + '</button>';
-  else actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-block">' + esc(t('alunos.block')) + '</button>';
-  actions += '<button type="button" class="cdx-btn cdx-btn-ghost cdx-al-remove">' + esc(t('alunos.remove')) + '</button>';
+  if (st === 'denied') actions += '<button type="button" class="cdx-btn cdx-btn-vazado cdx-al-unblock">' + esc(t('alunos.unblock')) + '</button>';
+  else actions += '<button type="button" class="cdx-btn cdx-btn-vazado cdx-al-block">' + esc(t('alunos.block')) + '</button>';
+  actions += '<button type="button" class="cdx-btn cdx-btn-vazado cdx-al-remove">' + esc(t('alunos.remove')) + '</button>';
   return '<li class="cdx-al-srow" data-id="' + p.id + '">' +
     '<span class="cdx-al-name">' + esc(p.display_name || p.name || ('#' + p.id)) +
       (online ? ' <span class="cdx-al-online" title="' + esc(t('alunos.online')) + '">●</span>' : '') + '</span>' +

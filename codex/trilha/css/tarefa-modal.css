@@ -152,17 +152,14 @@ body.tr-modal-open { overflow: hidden; }
   border-top: 1px solid var(--border);
 }
 
-.tr-btn {
-  padding: 0.55rem 1.1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1.5px solid transparent;
-  font-family: inherit;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.tr-btn-primary { background: var(--task); color: var(--text-on-accent, #fff); border-color: var(--task); }
+/* .tr-btn / .tr-btn-primary / .tr-btn-ghost look deleted: system .cdx-btn-primary /
+   .cdx-btn-vazado handle the visual. JS emits cdx-btn cdx-btn-primary alongside
+   tr-btn tr-btn-primary, and cdx-btn cdx-btn-vazado alongside tr-btn tr-btn-ghost.
+   The tarefa submit CTA (tr-btn-primary) uses amber (--task) because tarefas are the
+   amber/task accent; it keeps cdx-btn-primary as a size/shape base, but the amber
+   fill override stays on .tr-btn-primary so this one surface keeps its distinct colour. */
+.tr-btn { /* layout residual: cursor + transition */ cursor: pointer; }
+.tr-btn-primary { background: var(--task); border-color: var(--task); color: var(--text-on-accent, #fff); }
 .tr-btn-primary:hover:not(:disabled) { background: var(--task-hover); border-color: var(--task-hover); }
 .tr-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .tr-btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border); }

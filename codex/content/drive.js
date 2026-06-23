@@ -146,7 +146,7 @@ function _renderPreview() {
         '<code class="cdx-drive-fid">' + _esc(root.folder_id || '') + '</code>' +
       '</div>' +
       '<div class="cdx-drive-preview-actions">' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" data-action="edit">' + _esc(t('drive.edit')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-action="edit">' + _esc(t('drive.edit')) + '</button>' +
         '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete">' + _esc(t('drive.delete')) + '</button>' +
       '</div>' +
     '</div>' +
@@ -159,12 +159,12 @@ function _editorHtml(folder) {
   return '<form class="cdx-drive-editor" novalidate>' +
       '<div class="cdx-drive-editor-title">' + _esc(isNew ? t('drive.add_folder') : t('drive.edit')) + '</div>' +
       '<label class="cdx-drive-field"><span>' + _esc(t('drive.editor_name')) + '</span>' +
-        '<input class="cdx-drive-editor-name" required value="' + _esc((folder && folder.name) || '') + '"></label>' +
+        '<input class="cdx-input cdx-drive-editor-name" required value="' + _esc((folder && folder.name) || '') + '"></label>' +
       '<label class="cdx-drive-field"><span>' + _esc(t('drive.editor_folder_id')) + '</span>' +
-        '<input class="cdx-drive-editor-fid" required value="' + _esc((folder && folder.folder_id) || '') + '"></label>' +
+        '<input class="cdx-input cdx-drive-editor-fid" required value="' + _esc((folder && folder.folder_id) || '') + '"></label>' +
       '<div class="cdx-drive-editor-error" data-drive-error role="alert" aria-live="polite"></div>' +
       '<div class="cdx-drive-editor-actions">' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" data-action="editor-cancel">' + _esc(t('drive.editor_cancel')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-action="editor-cancel">' + _esc(t('drive.editor_cancel')) + '</button>' +
         '<button type="submit" class="cdx-btn cdx-btn-sm cdx-btn-primary">' + _esc(isNew ? t('drive.editor_add') : t('drive.editor_save')) + '</button>' +
       '</div>' +
     '</form>';

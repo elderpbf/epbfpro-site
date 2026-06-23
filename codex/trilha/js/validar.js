@@ -79,7 +79,7 @@ function entryHtml(t) {
   <p class="cdx-cert-entry-desc">${esc(t('cert.entry_desc'))}</p>
   <form id="cdx-cert-form" class="cdx-cert-form" autocomplete="off">
     <input id="cdx-cert-input" class="cdx-cert-input" type="text" placeholder="${esc(t('cert.entry_placeholder'))}" maxlength="20" spellcheck="false" autocapitalize="characters" required>
-    <button class="cdx-cert-submit" type="submit">${esc(t('cert.verify'))}</button>
+    <button class="cdx-cert-submit cdx-btn cdx-btn-primary" type="submit">${esc(t('cert.verify'))}</button>
   </form>
 </div>`;
 }
@@ -95,7 +95,7 @@ function errorHtml(msg, t) {
 function resultHtml(view, t) {
   const f = view.fields;
   const pdf = view.pdf.show
-    ? `<div class="cdx-cert-pdf-wrap"><a class="cdx-cert-pdf-btn" href="${esc(view.pdf.href)}" target="_blank" rel="noopener">↓ ${esc(t('cert.download_pdf'))}</a></div>`
+    ? `<div class="cdx-cert-pdf-wrap"><a class="cdx-cert-pdf-btn cdx-btn cdx-btn-primary" href="${esc(view.pdf.href)}" target="_blank" rel="noopener">↓ ${esc(t('cert.download_pdf'))}</a></div>`
     : '';
   return `<div class="cdx-cert-result cdx-cert-result--${view.revoked ? 'revoked' : 'valid'}">
   <div class="cdx-cert-badge cdx-cert-badge--${view.badge.kind}"><span class="cdx-cert-badge-icon">${view.badge.icon}</span> ${esc(view.badge.label)}</div>

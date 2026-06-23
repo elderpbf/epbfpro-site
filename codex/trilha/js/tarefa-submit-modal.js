@@ -72,8 +72,8 @@ export function openTarefaSubmitModal(opts) {
           ) +
         '</div>' +
         '<div class="tr-tarefa-actions">' +
-          '<button type="button" class="tr-btn tr-btn-ghost tr-tarefa-cancel">Cancelar</button>' +
-          '<button type="button" class="tr-btn tr-btn-primary tr-tarefa-submit">Enviar resposta</button>' +
+          '<button type="button" class="tr-btn tr-btn-ghost cdx-btn tr-tarefa-cancel">Cancelar</button>' +
+          '<button type="button" class="tr-btn tr-btn-primary cdx-btn tr-tarefa-submit">Enviar resposta</button>' +
         '</div>' +
         '<div class="tr-tarefa-error" aria-live="polite"></div>' +
       '</div>' +

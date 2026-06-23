@@ -70,15 +70,16 @@
 }
 .cdx-stats-clear:hover { color: var(--text-primary); }
 
-/* KPI boxes (legacy .kpi-box: centered, big accent value) */
+/* KPI boxes (legacy .kpi-box: centered, big accent value).
+ * Scoped to .cdx-stats-kpis so the shared .cdx-kpi primitive (status-accent rail)
+ * is not overridden site-wide. Layout + sizing only; token colors only. */
 .cdx-stats-kpis { display: flex; flex-wrap: wrap; gap: 1rem; }
-.cdx-kpi {
+.cdx-stats-kpis .cdx-kpi {
   flex: 1 1 9rem;
-  background: var(--surface);
-  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
-  border-radius: 12px;
   padding: 1.2rem 1rem;
   text-align: center;
+  border-left-width: 1px; /* reset the shared 4px status-accent rail */
+  cursor: default;
 }
 .cdx-kpi-val {
   font-size: 2rem;
@@ -581,15 +582,8 @@
 .cdx-bank-import-in { resize: vertical; }
 .cdx-bank-import-target-row { max-width: 22rem; }
 
-/* Inputs/selects used by Questions (search, rename, new-set, composer). These
- * class names are Questions-local, not a shared primitive defined elsewhere. */
-.cdx-input, .cdx-select, textarea.cdx-input {
-  width: 100%; padding: 0.5rem 0.75rem; box-sizing: border-box;
-  border: 1.5px solid var(--border, rgba(127, 127, 127, 0.3)); border-radius: 8px;
-  background: var(--background); color: var(--text-primary);
-  font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.12s;
-}
-.cdx-input:focus, .cdx-select:focus { border-color: var(--primary); }
+/* .cdx-input / .cdx-select look DELETED — shared primitive in css/components.css.
+ * textarea.cdx-input is covered by the shared rule; no local override needed. */
 
 /* Question composer (shared with the Q2 live launch form) */
 .cdx-comp { display: flex; flex-direction: column; gap: 0.7rem; }
@@ -1015,21 +1009,26 @@
 .cdx-history-item { padding: 0.75rem 0; border-bottom: 1px solid rgba(20,184,166,.08); }
 .cdx-history-item:last-child { border-bottom: none; }
 .cdx-hi-text { font-size: 0.88rem; color: var(--text-primary); }
-.cdx-hi-type { display: inline-block; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 3px; border: 1px solid transparent; margin: 3px 0 5px; background: rgba(20,184,166,.15); color: var(--primary); }
-.cdx-hi-type-tf       { background: color-mix(in oklab, var(--acc-indigo) 15%, var(--surface)); color: var(--text-primary); border-color: color-mix(in oklab, var(--acc-indigo) 35%, transparent); }
-.cdx-hi-type-poll     { background: color-mix(in oklab, var(--acc-blue)   15%, var(--surface)); color: var(--text-primary); border-color: color-mix(in oklab, var(--acc-blue)   35%, transparent); }
-.cdx-hi-type-open     { background: color-mix(in oklab, var(--acc-violet) 15%, var(--surface)); color: var(--text-primary); border-color: color-mix(in oklab, var(--acc-violet) 35%, transparent); }
-.cdx-hi-type-wordcloud{ background: color-mix(in oklab, var(--acc-pink)   15%, var(--surface)); color: var(--text-primary); border-color: color-mix(in oklab, var(--acc-pink)   35%, transparent); }
-.cdx-hi-type-rating   { background: color-mix(in oklab, var(--acc-teal)   15%, var(--surface)); color: var(--text-primary); border-color: color-mix(in oklab, var(--acc-teal)   35%, transparent); }
-.cdx-hi-type-numeric  { background: color-mix(in oklab, var(--acc-orange) 15%, var(--surface)); color: var(--text-primary); border-color: color-mix(in oklab, var(--acc-orange) 35%, transparent); }
+/* History type badge: layout only — look comes from .cdx-badge-accent pattern via --acc. */
+.cdx-hi-type {
+  display: inline-block; font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 1px 6px; border-radius: 3px; margin: 3px 0 5px;
+  /* accent-badge look: faint hue tint + hue border + neutral text + hue dot via ::before */
+  background: color-mix(in oklab, var(--acc, var(--acc-teal)) var(--acc-mix-bg), var(--surface));
+  border: 1px solid color-mix(in oklab, var(--acc, var(--acc-teal)) 35%, transparent);
+  color: var(--text-primary);
+}
+/* Per-type: set --acc to the palette token for that type. DELETE local hardcoded colors. */
+.cdx-hi-type-tf       { --acc: var(--acc-indigo); }
+.cdx-hi-type-poll     { --acc: var(--acc-blue); }
+.cdx-hi-type-open     { --acc: var(--acc-violet); }
+.cdx-hi-type-wordcloud{ --acc: var(--acc-pink); }
+.cdx-hi-type-rating   { --acc: var(--acc-teal); }
+.cdx-hi-type-numeric  { --acc: var(--acc-orange); }
 .cdx-hi-meta { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; margin-bottom: 0.4rem; }
 .cdx-hi-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
-.cdx-hi-btn { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
-.cdx-hi-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(20,184,166,0.05); }
-.cdx-hi-btn-primary { border-color: var(--primary); color: var(--primary); }
-.cdx-hi-btn-primary:hover { background: var(--primary); color: var(--text-on-accent, #fff); }
-.cdx-hi-btn-danger { border-color: rgba(239,68,68,.35); color: var(--error); }
-.cdx-hi-btn-danger:hover { background: var(--error); color: var(--text-on-accent, #fff); border-color: var(--error); }
+/* .cdx-hi-btn* DELETED — migrated to shared primitives (.cdx-btn .cdx-btn-vazado .cdx-btn-sm / .cdx-btn-danger) */
 .cdx-hi-results { margin-top: 0.6rem; background: rgba(0,0,0,0.06); border-radius: 6px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
 [data-theme="dark"] .cdx-hi-results { background: rgba(255,255,255,0.06); }
 .cdx-hi-bar { display: flex; align-items: center; font-size: 0.72rem; gap: 0.5rem; }

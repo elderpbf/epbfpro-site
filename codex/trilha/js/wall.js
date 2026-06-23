@@ -192,7 +192,7 @@ function renderRegister(wall) {
     cardEl.innerHTML =
       '<h3 class="cdx-en-card-h">' + esc(t('wall.card_h')) + '</h3>' +
       '<p class="cdx-en-card-s">' + esc(t('wall.card_sub')) + '</p>' +
-      '<button type="button" class="tr-btn tr-btn-primary cdx-en-reg-toggle" data-toggle-reg aria-expanded="false">' + esc(t('wall.reg_toggle')) + '</button>' +
+      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-reg-toggle" data-toggle-reg aria-expanded="false">' + esc(t('wall.reg_toggle')) + '</button>' +
       '<div class="cdx-en-reg-fields">' +
         '<div class="cdx-en-field">' +
           '<label class="cdx-en-label" for="cdx-en-name">' + esc(t('login.name_label')) + '</label>' +
@@ -203,7 +203,7 @@ function renderRegister(wall) {
           '<input id="cdx-en-email" class="cdx-en-input" type="email" autocomplete="email" inputmode="email" placeholder="' + esc(t('login.email_placeholder')) + '">' +
         '</div>' +
         '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
-        '<button type="button" class="tr-btn tr-btn-primary cdx-en-cta">' + esc(t('wall.cta')) + '</button>' +
+        '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t('wall.cta')) + '</button>' +
         '<p class="cdx-en-nopass">' + esc(t('wall.nopass')) + '</p>' +
         '<p class="cdx-en-haveacct">' + esc(t('wall.have_account')) + '</p>' +
         '<p class="cdx-en-consent">' + esc(t('login.consent_notice')) + '</p>' +
@@ -248,7 +248,7 @@ function renderRegister(wall) {
         '</div>' +
         dev +
         '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
-        '<button type="button" class="tr-btn tr-btn-primary cdx-en-cta">' + esc(t('login.verify')) + '</button>' +
+        '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t('login.verify')) + '</button>' +
         '<button type="button" class="cdx-en-resend" data-resend>' + esc(t('login.resend')) + '</button>' +
       '</div>';
     const codeEl = cardEl.querySelector('#cdx-en-code');

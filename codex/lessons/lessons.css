@@ -351,19 +351,12 @@
 /* ── Sidebar head row: search + the "Aa" display button ─────────────────────── */
 .cdx-lessons-head-row { display: flex; align-items: center; gap: 8px; }
 .cdx-lessons-head-row .cdx-lessons-search-wrap { flex: 1; min-width: 0; }
+/* layout only: fixed square size; look comes from .cdx-btn */
 .cdx-lessons-aa-btn {
   flex-shrink: 0;
   width: 34px; height: 34px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font: 700 0.82rem/1 'Inter', system-ui, sans-serif;
-  color: var(--text-secondary);
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  padding: 0;
 }
-.cdx-lessons-aa-btn:hover { color: var(--text-primary); border-color: var(--primary); }
 
 /* ── "Aa" display popover (text size + width + reset) ───────────────────────── */
 .cdx-lessons-display-pop {
@@ -383,27 +376,11 @@
 .cdx-lessons-pop-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .cdx-lessons-pop-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); }
 .cdx-lessons-pop-fontbtns { display: inline-flex; gap: 6px; }
-.cdx-lessons-pop-fbtn {
-  min-width: 34px; height: 30px; padding: 0 8px;
-  font: 600 0.85rem/1 'Inter', system-ui, sans-serif;
-  color: var(--text-primary);
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-}
-.cdx-lessons-pop-fbtn:hover { border-color: var(--primary); }
+/* layout only: min-width; look comes from .cdx-btn .cdx-btn-vazado .cdx-btn-sm */
+.cdx-lessons-pop-fbtn { min-width: 34px; }
 .cdx-lessons-pop-width { flex: 1; min-width: 96px; accent-color: var(--primary); cursor: pointer; }
-.cdx-lessons-pop-reset {
-  margin-top: 2px; padding: 7px 10px;
-  font: 600 0.78rem/1 'Inter', system-ui, sans-serif;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-}
-.cdx-lessons-pop-reset:hover { color: var(--text-primary); border-color: var(--primary); }
+/* layout only: top margin; look comes from .cdx-btn .cdx-btn-vazado */
+.cdx-lessons-pop-reset { margin-top: 2px; }
 
 /* ── Favourite star on item cards ───────────────────────────────────────────── */
 .cdx-lesson-sub { position: relative; }
@@ -601,24 +578,11 @@
   filter: drop-shadow(0 0 4px color-mix(in oklab, var(--sec) 50%, transparent));
 }
 .cdx-lessons-live-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* layout only: fixed square size, flex-shrink; look comes from .cdx-btn .cdx-btn-vazado .cdx-btn-sm */
 .cdx-lessons-live-refresh {
   flex-shrink: 0;
-  box-sizing: border-box;
   width: 22px; height: 22px;
-  border-radius: 5px;
-  border: 1px solid transparent;
-  background: color-mix(in oklab, var(--sec) var(--acc-mix-bg), transparent);
-  color: var(--sec);
-  font-size: 0.85rem;
-  line-height: 1;
-  display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer;
   padding: 0;
-  transition: background 0.15s, border-color 0.15s;
-}
-.cdx-lessons-live-refresh:hover {
-  background: color-mix(in oklab, var(--sec) 25%, transparent);
-  border-color: var(--sec);
 }
 .cdx-lessons-live-spin { display: inline-block; line-height: 1; }
 .cdx-lessons-live-refresh.is-loading .cdx-lessons-live-spin { animation: cdx-lessons-spin 0.8s linear infinite; }

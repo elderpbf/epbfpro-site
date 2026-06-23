@@ -111,14 +111,14 @@ function paintBoard() {
     '<div class="cdx-fr-composer" data-fr-newopen>' +
       avatar(myName()) +
       '<div class="cdx-fr-composer-fake">' + esc(t('forum.start')) + '</div>' +
-      '<button class="cdx-fr-btn" type="button">' + esc(t('forum.publish')) + '</button>' +
+      '<button class="cdx-fr-btn cdx-btn cdx-btn-primary cdx-btn-sm" type="button">' + esc(t('forum.publish')) + '</button>' +
     '</div>';
   html += '<form class="cdx-fr-newform" hidden>' +
       '<input class="cdx-fr-new-title" type="text" placeholder="' + esc(t('forum.new_title_ph')) + '" maxlength="160">' +
       '<textarea class="cdx-fr-new-body" rows="3" placeholder="' + esc(t('forum.new_body_ph')) + '"></textarea>' +
       '<div class="cdx-fr-newform-actions">' +
-        '<button type="button" class="cdx-fr-btn cdx-fr-btn--ghost" data-fr-newcancel>' + esc(t('forum.cancel')) + '</button>' +
-        '<button type="submit" class="cdx-fr-btn">' + esc(t('forum.publish')) + '</button>' +
+        '<button type="button" class="cdx-fr-btn cdx-btn cdx-btn-vazado cdx-btn-sm" data-fr-newcancel>' + esc(t('forum.cancel')) + '</button>' +
+        '<button type="submit" class="cdx-fr-btn cdx-btn cdx-btn-primary cdx-btn-sm">' + esc(t('forum.publish')) + '</button>' +
       '</div>' +
     '</form>';
   if (!_threads.length) {
@@ -221,7 +221,7 @@ function paintReplies(box, threadId, posts) {
   html += '<div class="cdx-fr-reply-composer">' +
       avatar(myName(), ' cdx-fr-avatar--sm') +
       '<input class="cdx-fr-reply-input" type="text" placeholder="' + esc(t('forum.reply_ph')) + '">' +
-      '<button class="cdx-fr-btn" type="button" data-fr-send="' + threadId + '">' + esc(t('forum.send')) + '</button>' +
+      '<button class="cdx-fr-btn cdx-btn cdx-btn-primary cdx-btn-sm" type="button" data-fr-send="' + threadId + '">' + esc(t('forum.send')) + '</button>' +
     '</div>';
   box.innerHTML = html;
   wireReplies(box, threadId);

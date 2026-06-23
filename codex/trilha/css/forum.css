@@ -39,17 +39,10 @@
   border-radius: 999px; padding: 0.62rem 1rem;
 }
 
-.cdx-fr-btn {
-  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
-  padding: 0.55rem 1.1rem; font-family: inherit; font-size: 0.82rem; font-weight: 700;
-  border: none; border-radius: 10px; background: var(--primary); color: #fff;
-  cursor: pointer; box-shadow: 0 3px 12px -4px var(--tint-primary);
-}
+/* .cdx-fr-btn look deleted: system .cdx-btn-primary / .cdx-btn-vazado handle the visual.
+   Layout-only residuals kept below; JS emits cdx-btn cdx-btn-primary alongside cdx-fr-btn. */
+.cdx-fr-btn { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .cdx-fr-btn:disabled { opacity: 0.55; cursor: default; }
-.cdx-fr-btn--ghost {
-  background: transparent; color: var(--tint-primary-tx);
-  border: 1.5px solid var(--border); box-shadow: none;
-}
 
 /* New-thread form (expanded composer) */
 .cdx-fr-newform {

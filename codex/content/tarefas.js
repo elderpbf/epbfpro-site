@@ -336,7 +336,7 @@ function _deleteTarefa(item) {
       '<p class="cdx-tarefa-delete-quote">' + _esc(item.title) + '</p>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" data-act="ok">' + t('tarefas.remove_btn') + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('tarefas.remove_btn') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html);
@@ -373,7 +373,7 @@ function _renderSubmissions(itemId) {
   pane.innerHTML =
     '<h4 class="cdx-tarefa-pane-title">' + t('tarefas.answers_title') + ' (' + count + ')</h4>' +
     '<div class="cdx-resp-toolbar">' +
-      '<input type="text" class="cdx-resp-search" placeholder="' + _esc(t('tarefas.answers_search')) + '">' +
+      '<input type="text" class="cdx-input cdx-resp-search" placeholder="' + _esc(t('tarefas.answers_search')) + '">' +
       '<button class="cdx-btn cdx-btn-sm cdx-resp-export"' + (count === 0 ? ' disabled' : '') + '>' + t('tarefas.export_csv') + '</button>' +
     '</div>' +
     '<div class="cdx-resp-list">' +
@@ -426,8 +426,8 @@ function _submissionCardHtml(s) {
     '</div>' +
     '<div class="cdx-resp-content">' + content + '</div>' +
     '<div class="cdx-resp-actions">' +
-      '<button class="cdx-btn cdx-btn-sm cdx-resp-card-expand">' + t('tarefas.see_full') + '</button>' +
-      '<button class="cdx-btn cdx-btn-sm cdx-resp-card-copy" data-sid="' + _esc(s.id) + '">' + t('tarefas.copy') + '</button>' +
+      '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-resp-card-expand">' + t('tarefas.see_full') + '</button>' +
+      '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-resp-card-copy" data-sid="' + _esc(s.id) + '">' + t('tarefas.copy') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm cdx-btn-danger cdx-resp-card-delete" data-sid="' + _esc(s.id) + '">' + t('tarefas.answer_delete') + '</button>' +
     '</div>' +
   '</div>';
@@ -448,7 +448,7 @@ function _openConfirmSimple(message, onConfirm) {
       '<p style="margin:0 0 1.2rem;font-size:0.9rem;color:var(--text-primary)">' + _esc(message) + '</p>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger" data-act="ok">' + t('content.delete') + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('content.delete') + '</button>' +
       '</div>' +
     '</div>';
   const bd = _openModal(html);
