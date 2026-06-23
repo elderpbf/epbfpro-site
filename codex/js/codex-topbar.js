@@ -416,13 +416,8 @@ export function init(opts) {
   settingsBtn.innerHTML = GEAR_SVG;
   inner.appendChild(settingsBtn);
 
-  // Logout.
-  const logoutBtn = document.createElement('button');
-  logoutBtn.className = 'bs-logout-btn';
-  logoutBtn.id = 'logout-btn';
-  logoutBtn.textContent = t('nav.logout');
-  logoutBtn.addEventListener('click', signOut);
-  inner.appendChild(logoutBtn);
+  // Logout moved into the Settings drawer footer (pinned at the bottom); see the
+  // initSettingsDrawer({ footer }) call below.
 
   header.appendChild(inner);
 
@@ -517,5 +512,14 @@ export function init(opts) {
   if (typeof globalThis.BS_GOOGLE !== 'undefined') drawerSections.push(googleSection());
   drawerSections.push(debugSection());
   if (typeof globalThis.callWorker === 'function') drawerSections.push(passwordSection());
-  initSettingsDrawer({ sections: drawerSections });
+  initSettingsDrawer({
+    sections: drawerSections,
+    footer: {
+      content: '<button class="bs-logout-btn" id="logout-btn" type="button">' + t('nav.logout') + '</button>',
+      onInit: function () {
+        var b = document.getElementById('logout-btn');
+        if (b) b.addEventListener('click', signOut);
+      },
+    },
+  });
 }
