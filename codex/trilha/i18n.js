@@ -101,6 +101,11 @@ const pt = {
   'wall.q_lead':            'Só quer',
   'wall.q_bold':            'responder as perguntas',
   'wall.q_tail':            'da aula ao vivo? Isso não precisa de cadastro.',
+  'simplewall.card_h':      'Cadastre-se para entrar',
+  'simplewall.card_sub':    'Informe seu nome e e-mail. O acesso é liberado na hora, sem código.',
+  'simplewall.cta':         'Entrar',
+  'simplewall.submitting':  'Entrando…',
+  'simplewall.nopass':      'Acesso liberado imediatamente após o cadastro.',
   // Fórum (Phase 8)
   'page.tab_forum':         'Fórum',
   'forum.intro':            'O espaço de conversa da turma. Abra um assunto, tire dúvidas e acompanhe o que os colegas e o professor estão discutindo.',
@@ -256,6 +261,11 @@ const en = {
   'wall.q_lead':            'Just want to',
   'wall.q_bold':            'answer the questions',
   'wall.q_tail':            'from the live class? That needs no sign-up.',
+  'simplewall.card_h':      'Sign up to enter',
+  'simplewall.card_sub':    'Enter your name and e-mail. Access is granted instantly, no code.',
+  'simplewall.cta':         'Enter',
+  'simplewall.submitting':  'Entering…',
+  'simplewall.nopass':      'Access granted immediately after sign-up.',
   // Forum (Phase 8)
   'page.tab_forum':         'Forum',
   'forum.intro':            'Your class discussion space. Start a topic, ask questions, and follow what your peers and instructor are discussing.',

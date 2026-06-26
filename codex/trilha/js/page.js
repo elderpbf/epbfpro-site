@@ -13,6 +13,7 @@ import { extractEnrollToken, isLoggedIn, clearToken, getToken, getKnownTurmas, g
 import { openLoginModal } from './student-login-modal.js';
 import { isWall } from './access.js';
 import { renderWall } from './wall.js';
+import { renderSimpleWall } from './wall-simple.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 // forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
@@ -78,7 +79,10 @@ export async function mount(root, ctx = {}) {
     // mode (and approved / open) renders the timeline as usual; the per-item gate in
     // sub.js/flat.js handles inline opens.
     if (LOGIN_ENABLED && isWall((state.data || {}).access)) {
-      renderWall(root);
+      // Opt-in: a turma flagged `simple_enroll` uses the separate name+e-mail page that
+      // registers on the spot; every other gated turma keeps the original OTP wall.
+      if (((state.data || {}).access || {}).simple_enroll) renderSimpleWall(root);
+      else renderWall(root);
     } else {
       renderTabs(root);
       _onHash = () => onHashChange();

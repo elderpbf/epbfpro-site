@@ -184,24 +184,6 @@ export function createLoginFlow(opts = {}) {
       return this;
     },
 
-    // Simple sign-up (opt-in turma flag): name + e-mail registers + grants access on the
-    // spot, no code and no QR window. Mirrors enrollJoin's tail but is gated server-side
-    // purely by the turma's simple_enroll flag (no et, no open window required).
-    async simpleEnroll(rawEmail, name) {
-      this.error = null;
-      const email = validateEmail(rawEmail);
-      if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
-      const payload = { client_slug: client, turma_slug: turma, email };
-      const cleanName = (name || '').trim();
-      if (cleanName) payload.name = cleanName;
-      const res = await safeCall(api.simpleEnroll(payload));
-      if (!res || !res.ok || !res.session_token) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
-      sess.setToken(client, turma, res.session_token);
-      this.participantId = res.participant_id != null ? res.participant_id : null;
-      this.state = res.needs_profile ? 'profile' : 'authenticated';
-      return this;
-    },
-
     async saveProfile(displayName, consent) {
       this.error = null;
       if (!consent) { this.error = 'consent_required'; return this; }
