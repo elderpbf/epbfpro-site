@@ -58,6 +58,11 @@ export const trail = {
   // worker gates it on the turma's direct_access flag; email is taken on trust.
   enrollJoin:     (p) => call('student_enroll_join', p),     // { client_slug, turma_slug, et, email, name? } -> { ok, session_token, ... } | { error }
 
+  // Simple sign-up (opt-in per turma, for when no e-mail provider is usable): name + e-mail
+  // registers + approves on the spot, NO OTP code and NO QR window. Gated server-side by the
+  // turma's simple_enroll flag; the e-mail is taken on trust (verified later when mail works).
+  simpleEnroll:   (p) => call('student_simple_enroll', p),   // { client_slug, turma_slug, email, name? } -> { ok, session_token, ... } | { error }
+
   // Typed entry (pensoia.com/trilha/<code>): resolve the 4-digit code to the live turma
   // + et so the entry page forwards into the trilha exactly as a QR scan would. Public,
   // resolves only while the window is open (same capability + time-box as the QR).

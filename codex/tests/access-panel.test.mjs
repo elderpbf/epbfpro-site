@@ -33,6 +33,7 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   // Minimal fake DOM scope + api, enough to drive the save handler.
   const els = {
     '.cdx-acc-gated': { checked: true, addEventListener(ev, fn) { this[ev] = fn; } },
+    '.cdx-acc-simple': { checked: true },
     '.cdx-acc-certs': { checked: true },
     '.cdx-acc-forum': { checked: true },
     '.cdx-acc-save':  { disabled: false, addEventListener(ev, fn) { this[ev] = fn; } },
@@ -48,7 +49,7 @@ test('wireSettings saves only the access columns and mutates the turma', async (
 
   assert.deepEqual(sent, {
     client_slug: 'tjse', slug: 'turma-2025-1',
-    access_gated: 1, certificates_enabled: 1, forum_enabled: 1,
+    access_gated: 1, simple_enroll_enabled: 1, certificates_enabled: 1, forum_enabled: 1,
   });
   assert.ok(!('gate_mode' in sent), 'retired mode not sent');
   assert.ok(!('enrollment_prompt_enabled' in sent), 'retired enroll-prompt not sent');
@@ -56,6 +57,7 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.ok(!('notifications_enabled' in sent), 'retired notifications toggle not sent');
   assert.ok(!('whatsapp_url' in sent), 'does not touch whatsapp/classpulse (conditional update)');
   assert.equal(turma.access_gated, 1, 'turma row kept in sync');
+  assert.equal(turma.simple_enroll_enabled, 1, 'simple enroll flag kept in sync');
   assert.equal(turma.certificates_enabled, 1);
   assert.equal(turma.forum_enabled, 1, 'forum flag kept in sync');
 });
