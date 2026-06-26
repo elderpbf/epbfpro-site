@@ -62,6 +62,7 @@ export default {
   'alunos.load_error':   'Não foi possível carregar. Tente novamente.',
   'alunos.settings':     'Acesso da turma',
   'alunos.gated':        'Acesso restrito (exige login)',
+  'alunos.simple_enroll': 'Cadastro simples (nome e e-mail, sem código)',
   'alunos.mode':         'Modo',
   'alunos.mode_inline':  'Conteúdo visível, trava ao abrir',
   'alunos.mode_upfront': 'Tela de login antes de tudo',

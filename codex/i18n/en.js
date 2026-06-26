@@ -62,6 +62,7 @@ export default {
   'alunos.load_error':   'Could not load. Try again.',
   'alunos.settings':     'Class access',
   'alunos.gated':        'Restricted access (login required)',
+  'alunos.simple_enroll': 'Simple sign-up (name + e-mail, no code)',
   'alunos.mode':         'Mode',
   'alunos.mode_inline':  'Content visible, locks on open',
   'alunos.mode_upfront': 'Login wall before anything',

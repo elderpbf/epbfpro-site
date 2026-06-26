@@ -10,6 +10,7 @@ import { esc } from './dom.js';
 // Returns the rows-only HTML (no card/section wrapper) so each host frames it.
 export function settingsHtml(turma) {
   const g = !!turma.access_gated;
+  const simple = !!turma.simple_enroll_enabled;
   const certs = !!turma.certificates_enabled;
   const forum = !!turma.forum_enabled;
   // Collapsed access model (#4, 2026-06-20): ONE gate. "Exigir cadastro" is the only
@@ -17,6 +18,7 @@ export function settingsHtml(turma) {
   // (a gated turma is always the register wall). Their DB columns stay dormant.
   return '<div class="cdx-acc-grid">' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-gated"' + (g ? ' checked' : '') + '> <span>' + esc(t('alunos.gated')) + '</span></label>' +
+    '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-simple"' + (simple ? ' checked' : '') + '> <span>' + esc(t('alunos.simple_enroll')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-certs"' + (certs ? ' checked' : '') + '> <span>' + esc(t('alunos.certs')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-forum"' + (forum ? ' checked' : '') + '> <span>' + esc(t('alunos.forum')) + '</span></label>' +
     '<div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">' + esc(t('alunos.save')) + '</button>' +
@@ -31,6 +33,7 @@ export function settingsHtml(turma) {
 export function wireSettings(scope, turma, opts) {
   const api = opts.api;
   const gated = scope.querySelector('.cdx-acc-gated');
+  const simple = scope.querySelector('.cdx-acc-simple');
   const certs = scope.querySelector('.cdx-acc-certs');
   const forum = scope.querySelector('.cdx-acc-forum');
   const save = scope.querySelector('.cdx-acc-save');
@@ -42,11 +45,13 @@ export function wireSettings(scope, turma, opts) {
       const res = await api.updateTurmaMeta({
         client_slug: opts.clientSlug, slug: opts.slug,
         access_gated: gated.checked ? 1 : 0,
+        simple_enroll_enabled: simple && simple.checked ? 1 : 0,
         certificates_enabled: certs.checked ? 1 : 0,
         forum_enabled: forum && forum.checked ? 1 : 0,
       });
       if (res && res.ok) {
         turma.access_gated = gated.checked ? 1 : 0;
+        turma.simple_enroll_enabled = simple && simple.checked ? 1 : 0;
         turma.certificates_enabled = certs.checked ? 1 : 0;
         turma.forum_enabled = forum && forum.checked ? 1 : 0;
         msg.textContent = t('alunos.saved');

@@ -169,6 +169,10 @@ function renderRegister(wall) {
     presence: getPresence(state.clientSlug, state.turmaSlug),
     enrollToken,
   });
+  // Simple sign-up mode (opt-in turma flag): the SAME register card, but the CTA registers
+  // + unlocks on the spot (name + e-mail) instead of sending an OTP code. The OTP path is
+  // untouched when the flag is off.
+  const simpleMode = !!(state.data && state.data.access && state.data.access.simple_enroll);
   let name = '';
   let cooldownUntil = 0;  // Date.now() ms when "Reenviar" frees up again (60s gate)
   const startCooldown = (s) => { cooldownUntil = Date.now() + Math.max(0, s) * 1000; };
@@ -225,6 +229,9 @@ function renderRegister(wall) {
       name = (nameEl.value || '').trim();
       cta.disabled = true;
       cta.textContent = t('login.sending');
+      // Simple sign-up: register + grant access on the spot (no code round-trip). settle()
+      // saves the profile/consent if needed and reloads into the now-approved timeline.
+      if (simpleMode) { await flow.simpleEnroll(emailEl.value, name); settle(); return; }
       await flow.requestCode(emailEl.value);
       if (flow.state === 'code' && !flow.codeStillValid) startCooldown(60); // a new code was just sent
       settle();
