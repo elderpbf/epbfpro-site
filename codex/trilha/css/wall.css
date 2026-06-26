@@ -72,11 +72,17 @@
 
 /* ── Stacked (tablet / phone): one column, compact benefits, collapsed form ── */
 @media (max-width: 820px) {
-  .cdx-en-grid { grid-template-columns: 1fr; padding: 0; gap: 1.25rem; }
+  /* minmax(0, …) NOT 1fr: a bare 1fr track is minmax(auto,1fr), and the auto
+     minimum can't shrink below the column's min-content. The aulas roadmap title
+     (.cdx-en-road-t, white-space:nowrap) then forces the track to the full
+     untruncated title width (~400px+), stretching the whole wall past a phone
+     viewport. minmax(0, …) lets the track shrink so the nowrap title ellipsis-
+     truncates (it already has overflow:hidden + text-overflow) and nothing spills. */
+  .cdx-en-grid { grid-template-columns: minmax(0, 1fr); padding: 0; gap: 1.25rem; }
   .cdx-en-questions { padding: 0; }
 
   /* benefits → 2×2 tiles, titles only */
-  .cdx-en-benes { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: 0; }
+  .cdx-en-benes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .5rem; margin-bottom: 0; }
   .cdx-en-bene { align-items: center; gap: .5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: .55rem .6rem; }
   .cdx-en-bene-ic { width: 28px; height: 28px; border-radius: 8px; }
   .cdx-en-bene-ic svg { width: 15px; height: 15px; }
