@@ -16,7 +16,7 @@
 //   window.bsLog        (../backstage/js/debug.js)
 //   brand-logos helpers (../backstage/js/brand-logos.js) — used by hydrate()
 
-import { certificates as api, cohorts as cohortsApi, assetUrl } from '../js/codex-api.js';
+import { certificates as api, cohorts as cohortsApi, courses as coursesApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -27,7 +27,7 @@ import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
 import { glyphSvg } from '../js/glyphs.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
-  buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames,
+  buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames, autofitCurriculum,
   hoursNumber,
 } from './cert-render.js';
 import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
@@ -548,7 +548,7 @@ function _renderTplPreview() {
     '</div>';
 
   const body = _q('#cdx-certs-tpl-preview-body');
-  if (body) { hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) }); autofitNames(body); }
+  if (body) { hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) }); autofitNames(body); autofitCurriculum(body); }
   _scaleTplPreview();
   // Refit once the pane has its final laid-out size (first mount can run before layout).
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(_scaleTplPreview);
@@ -1247,6 +1247,7 @@ function _openCertFullscreen(cert, side) {
   const body = overlay.querySelector('#cdx-cert-fs-body');
   hydrate(body, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
   autofitNames(body);
+  autofitCurriculum(body);
 
   const fit = () => _fitSheets(body);
   fit();
@@ -1486,7 +1487,11 @@ function _openIssueFlow() {
     // Pull the course/instance data from the turma into the form (the promise:
     // pick a turma, the certificate fields fill themselves).
     _issueTurma = _issueTurmas.find((tt) => String(tt.id) === String(turmaId)) || null;
-    if (_issueTurma) { _autofillIssueFromTurma(bd, _issueTurma); renderThumb(); }
+    if (_issueTurma) {
+      const p = _autofillIssueFromTurma(bd, _issueTurma);
+      renderThumb();
+      if (p) p.then(renderThumb);
+    }
     if (rosterEl) rosterEl.innerHTML = '<span class="cdx-empty">' + esc(t('certificates.loading')) + '</span>';
     if (rosterWrap) rosterWrap.style.display = '';
     try {
@@ -1643,6 +1648,17 @@ function _autofillIssueFromTurma(bd, turma) {
     const certMods = ementaToCertModules(turma.ementa_json);
     if (certMods.length) modsEl.value = certMods.map((m) => (m.d ? m.t + ' :: ' + m.d : m.t)).join('\n');
   }
+  // Fallback: turma has no ementa snapshot (created before snapshot logic) — fetch live course.
+  // Returns the promise so the caller can re-render the thumb after the async fill.
+  if (modsEl && !modsEl.value.trim() && turma.course_id) {
+    return coursesApi.get({ id: turma.course_id }).then(function (d) {
+      const c = d && d.course;
+      if (c && c.ementa_json && modsEl && !modsEl.value.trim()) {
+        const certMods = ementaToCertModules(c.ementa_json);
+        if (certMods.length) modsEl.value = certMods.map((m) => (m.d ? m.t + ' :: ' + m.d : m.t)).join('\n');
+      }
+    }).catch(function () {});
+  }
 }
 
 // Pre-issue guard: list the cert-visible fields left blank and ask the user to
@@ -1737,6 +1753,7 @@ function _renderIssueThumb(bd, clientSel) {
   thumb.innerHTML = _previewSheetsHtml(cert, origin, 'front');
   hydrate(thumb, { qr: generateQrSvg, qrUrl: buildValidarUrl(origin, cert.code) });
   autofitNames(thumb);
+  autofitCurriculum(thumb);
   _fitSheetWidth(thumb);
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => _fitSheetWidth(thumb));
 }

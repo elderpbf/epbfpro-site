@@ -11,7 +11,7 @@
 //
 // jsPDF + modern-screenshot are vendored as self-contained UMD bundles in ./vendor
 // and lazy-loaded (≈400KB) on the first download, not at page load.
-import { hydrate, autofitNames } from './cert-render.js';
+import { hydrate, autofitNames, autofitCurriculum } from './cert-render.js';
 import { generateQrSvg } from './vendor/qr.js';
 
 const JSPDF_SRC = new URL('./vendor/jspdf.umd.min.js', import.meta.url).href;
@@ -69,7 +69,8 @@ async function _buildCertsDoc(items, opts) {
   for (let i = 0; i < items.length; i++) {
     if (opts.onStep) opts.onStep(i, items.length);
     const host = _mountOffscreen(items[i].html, items[i].qrUrl);
-    autofitNames(host); // shrink long names to fit before rasterizing
+    autofitNames(host);
+    autofitCurriculum(host);
     try {
       const sheets = host.querySelectorAll('.cdxc-sheet');
       for (const sheet of sheets) {

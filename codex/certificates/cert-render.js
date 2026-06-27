@@ -327,3 +327,29 @@ export function autofitNames(rootEl) {
     }
   });
 }
+
+// Scale curriculum font down so it fits inside .bcols without overflowing A4.
+// Mirrors autofitNames: browser-only, idempotent, call after hydrate().
+export function autofitCurriculum(rootEl) {
+  if (!rootEl || typeof rootEl.querySelectorAll !== 'function' || typeof window === 'undefined') return;
+  var IDEAL = { n: 22, h4: 14, p: 12.5 };
+  var MIN_SCALE = 7 / 12.5; // p=7px minimum legible in print
+  rootEl.querySelectorAll('.cdxc-sheet.back').forEach(function (sheet) {
+    var curr  = sheet.querySelector('.curriculum');
+    var bcols = sheet.querySelector('.bcols');
+    if (!curr || !bcols || !bcols.clientHeight) return;
+    var scale = 1;
+    function apply(s) {
+      curr.querySelectorAll('.n').forEach(function (el) { el.style.fontSize = (IDEAL.n  * s) + 'px'; });
+      curr.querySelectorAll('h4').forEach(function (el) { el.style.fontSize = (IDEAL.h4 * s) + 'px'; });
+      curr.querySelectorAll('p') .forEach(function (el) { el.style.fontSize = (IDEAL.p  * s) + 'px'; });
+    }
+    apply(1);
+    var guard = 60;
+    while (guard-- > 0 && curr.scrollHeight > bcols.clientHeight + 1) {
+      scale -= 0.02;
+      if (scale < MIN_SCALE) { scale = MIN_SCALE; apply(scale); break; }
+      apply(scale);
+    }
+  });
+}

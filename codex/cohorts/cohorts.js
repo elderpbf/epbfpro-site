@@ -828,14 +828,8 @@ function _openTurmaForm(turma) {
           '<small class="cdx-field-hint">' + t('cohorts.tf_course_hint') + '</small>' +
         '</div>' +
         '<div class="cdx-tf-grid">' +
-          '<div class="cdx-field"><label>' + t('cohorts.course_hours_label') + '</label>' +
-            '<input type="text" id="cdx-tf-hours" value="' + v('hours') + '" placeholder="' + t('cohorts.course_hours_ph') + '"></div>' +
-          '<div class="cdx-field"><label>' + t('cohorts.tf_meetings') + '</label>' +
-            '<input type="text" id="cdx-tf-meetings" value="' + v('meetings') + '" placeholder="' + t('cohorts.tf_meetings_ph') + '"></div>' +
           '<div class="cdx-field"><label>' + t('cohorts.tf_date_start') + '</label>' +
             '<input type="date" id="cdx-tf-date-start" value="' + v('date_start') + '"></div>' +
-          '<div class="cdx-field"><label>' + t('cohorts.tf_date_end') + '</label>' +
-            '<input type="date" id="cdx-tf-date-end" value="' + v('date_end') + '"></div>' +
           '<div class="cdx-field"><label>' + t('cohorts.tf_format') + '</label>' +
             '<select id="cdx-tf-format">' + formatOptions + '</select></div>' +
         '</div>' +
@@ -858,21 +852,14 @@ function _openTurmaForm(turma) {
     const bd = _openModal(html);
     bd.querySelector('#cdx-tf-cancel').addEventListener('click', () => _closeModal(bd));
 
-    // Course picker pre-fill (decision 1d): selecting a course seeds the turma's
-    // hours from the course, without clobbering a value already typed. The full
-    // course (with its ementa) is fetched so save can copy it into the turma.
+    // Course picker: fetch the full course (with ementa) when selected so save
+    // can copy it into the turma.
     const courseEl = bd.querySelector('#cdx-tf-course');
-    const hoursEl = bd.querySelector('#cdx-tf-hours');
     courseEl.addEventListener('change', () => {
       _pickedCourse = null;
       const cid = courseEl.value ? Number(courseEl.value) : null;
       if (!cid) return;
-      const fromList = _turmaCourses.find(c => c.id === cid);
-      if (fromList && fromList.hours && !hoursEl.value.trim()) hoursEl.value = fromList.hours;
-      coursesApi.get({ id: cid }).then(d => {
-        _pickedCourse = (d && d.course) || null;
-        if (_pickedCourse && _pickedCourse.hours && !hoursEl.value.trim()) hoursEl.value = _pickedCourse.hours;
-      }).catch(() => {});
+      coursesApi.get({ id: cid }).then(d => { _pickedCourse = (d && d.course) || null; }).catch(() => {});
     });
 
     bd.querySelector('#cdx-tf-save').addEventListener('click', () => {
@@ -888,10 +875,7 @@ function _openTurmaForm(turma) {
       const courseId = courseEl.value ? Number(courseEl.value) : null;
       const instance = {
         course_id: courseId,
-        hours: hoursEl.value.trim() || null,
-        meetings: bd.querySelector('#cdx-tf-meetings').value.trim() || null,
         date_start: bd.querySelector('#cdx-tf-date-start').value || null,
-        date_end: bd.querySelector('#cdx-tf-date-end').value || null,
         format: bd.querySelector('#cdx-tf-format').value || null,
         place: bd.querySelector('#cdx-tf-place').value.trim() || null,
       };
@@ -936,6 +920,30 @@ function _openTurmaForm(turma) {
         }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
     });
   });
+}
+
+// ── CPF utilities ─────────────────────────────────────────────────────────────
+
+function _formatCpf(raw) {
+  const v = String(raw || '').replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
+  if (v.length > 6) return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
+  if (v.length > 3) return v.slice(0,3)+'.'+v.slice(3);
+  return v;
+}
+function _cpfValid(cpf) {
+  const s = String(cpf || '').replace(/\D/g, '');
+  if (s.length !== 11 || /^(.)\1+$/.test(s)) return false;
+  let sum = 0; for (let i = 0; i < 9; i++) sum += Number(s[i]) * (10 - i);
+  let r = (sum * 10) % 11; if (r >= 10) r = 0;
+  if (r !== Number(s[9])) return false;
+  sum = 0; for (let i = 0; i < 10; i++) sum += Number(s[i]) * (11 - i);
+  r = (sum * 10) % 11; if (r >= 10) r = 0;
+  return r === Number(s[10]);
+}
+function _wireCpfMask(el) {
+  if (el && el.value) el.value = _formatCpf(el.value);
+  if (el) el.addEventListener('input', () => { el.value = _formatCpf(el.value); });
 }
 
 // ── Roster (Participantes) ────────────────────────────────────────────────────
@@ -1039,7 +1047,7 @@ function _openRosterModal(turma) {
             '</div>' +
             '<div class="cdx-field">' +
               '<label>' + t('cohorts.participant_cpf') + '</label>' +
-              '<input type="text" id="cdx-roster-add-cpf" autocomplete="off" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
+              '<input type="text" id="cdx-roster-add-cpf" autocomplete="off" maxlength="14" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
             '</div>' +
           '</div>' +
           '<div class="cdx-modal-actions cdx-roster-add-actions">' +
@@ -1069,6 +1077,7 @@ function _openRosterModal(turma) {
 
   // Wire close button
   bd.querySelector('#cdx-roster-close').addEventListener('click', () => _closeModal(bd));
+  _wireCpfMask(bd.querySelector('#cdx-roster-add-cpf'));
 
   // State for the in-modal edit form
   let _participants = [];
@@ -1131,8 +1140,9 @@ function _openRosterModal(turma) {
     const cpfEl   = bd.querySelector('#cdx-roster-add-cpf');
     const name  = nameEl.value.trim();
     const email = emailEl.value.trim() || null;
-    const cpf   = cpfEl.value.trim() || null;
+    const cpf   = cpfEl.value.replace(/\D/g, '') ? cpfEl.value.trim() : null;
     if (!name) { _toast(t('cohorts.name_required')); nameEl.focus(); return; }
+    if (cpf && !_cpfValid(cpf)) { _toast(t('cohorts.cpf_invalid')); cpfEl.focus(); return; }
     api.addParticipant({ turma_id: turma.id, name, email, cpf }).then(() => {
       _toast(t('cohorts.participant_added'));
       nameEl.value  = '';
@@ -1151,6 +1161,8 @@ function _openRosterModal(turma) {
     const text = textEl.value;
     const rows = parseRosterLines(text);
     if (!rows.length) { _toast(t('cohorts.participants_import_empty')); return; }
+    const badCpf = rows.find((r) => r.cpf && !_cpfValid(r.cpf));
+    if (badCpf) { _toast(t('cohorts.cpf_invalid') + ' (' + badCpf.name + ')'); return; }
     api.importParticipants({ turma_id: turma.id, rows }).then(() => {
       _toast(t('cohorts.participants_imported').replace('{n}', String(rows.length)));
       textEl.value = '';
@@ -1178,7 +1190,7 @@ function _openParticipantEditModal(participant, onSaved) {
         '<input type="text" id="cdx-pe-email" value="' + _esc(participant.email || '') + '" placeholder="' + t('cohorts.participant_email_ph') + '">' +
       '</div>' +
       '<div class="cdx-field"><label>' + t('cohorts.participant_cpf') + '</label>' +
-        '<input type="text" id="cdx-pe-cpf" value="' + _esc(participant.cpf || '') + '" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
+        '<input type="text" id="cdx-pe-cpf" value="' + _esc(participant.cpf || '') + '" maxlength="14" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
       '</div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-pe-cancel">' + t('cohorts.cancel') + '</button>' +
@@ -1187,12 +1199,15 @@ function _openParticipantEditModal(participant, onSaved) {
     '</div>';
 
   const bd = _openModal(html);
+  _wireCpfMask(bd.querySelector('#cdx-pe-cpf'));
   bd.querySelector('#cdx-pe-cancel').addEventListener('click', () => _closeModal(bd));
   bd.querySelector('#cdx-pe-save').addEventListener('click', () => {
-    const name  = bd.querySelector('#cdx-pe-name').value.trim();
-    const email = bd.querySelector('#cdx-pe-email').value.trim() || null;
-    const cpf   = bd.querySelector('#cdx-pe-cpf').value.trim() || null;
+    const name   = bd.querySelector('#cdx-pe-name').value.trim();
+    const email  = bd.querySelector('#cdx-pe-email').value.trim() || null;
+    const cpfEl2 = bd.querySelector('#cdx-pe-cpf');
+    const cpf    = cpfEl2.value.replace(/\D/g, '') ? cpfEl2.value.trim() : null;
     if (!name) { _toast(t('cohorts.name_required')); bd.querySelector('#cdx-pe-name').focus(); return; }
+    if (cpf && !_cpfValid(cpf)) { _toast(t('cohorts.cpf_invalid')); cpfEl2.focus(); return; }
     api.updateParticipant({ id: participant.id, name, email, cpf }).then(() => {
       _closeModal(bd);
       _toast(t('cohorts.participant_updated'));
