@@ -139,7 +139,6 @@ function renderCardForm(cardEl) {
       '</div>' +
       '<div class="cdx-en-error" aria-live="polite"></div>' +
       '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t('simplewall.cta')) + '</button>' +
-      '<p class="cdx-en-nopass">' + esc(t('simplewall.nopass')) + '</p>' +
       '<p class="cdx-en-consent">' + esc(t('login.consent_notice')) + '</p>' +
     '</div>';
 

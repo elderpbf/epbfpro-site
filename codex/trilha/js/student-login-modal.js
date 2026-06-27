@@ -120,7 +120,34 @@ export function openLoginModal(opts = {}) {
     setTimeout(() => { try { emailEl.focus(); } catch (_) {} }, 60);
   }
   function renderEnroll() { return renderInstant((email, name) => flow.enrollJoin(email, name)); }
-  function renderSimple() { return renderInstant((email, name) => flow.simpleEnroll(email, name)); }
+
+  // Simple-enroll LOGIN: an already-registered student enters with their e-mail ONLY — no
+  // código, no name, no re-asking consent. It is the simple turma's version of the normal
+  // login (the only difference is instant access instead of a code), so the surface reads as
+  // "Entrar", not a sign-up. A brand-new address still works (simpleEnroll creates it) and is
+  // routed to the profile step for name + consent; a returning one goes straight in.
+  function renderSimple() {
+    bodyEl.innerHTML =
+      '<h2 class="tr-modal-title">' + esc(t('login.title')) + '</h2>' +
+      '<p class="tr-login-subtitle">' + esc(t('login.simple_login_sub')) + '</p>' +
+      '<label class="tr-tarefa-field-label" for="tr-login-email">' + esc(t('login.email_label')) + '</label>' +
+      '<input id="tr-login-email" type="email" class="tr-tarefa-name tr-login-email" placeholder="' + esc(t('login.email_placeholder')) + '" autocomplete="email" inputmode="email">' +
+      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
+      '<div class="tr-tarefa-actions">' +
+        '<button type="button" class="cdx-btn cdx-btn-primary tr-login-enter">' + esc(t('login.enroll_cta')) + '</button>' +
+      '</div>';
+    const input = bodyEl.querySelector('.tr-login-email');
+    const enter = bodyEl.querySelector('.tr-login-enter');
+    const doEnter = async () => {
+      enter.disabled = true;
+      enter.textContent = t('simplewall.submitting');
+      await flow.simpleEnroll(input.value);
+      settle();
+    };
+    enter.addEventListener('click', doEnter);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doEnter(); });
+    setTimeout(() => { try { input.focus(); } catch (_) {} }, 60);
+  }
 
   function renderEmail() {
     bodyEl.innerHTML =
