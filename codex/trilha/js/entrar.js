@@ -8,8 +8,8 @@
 import { trail } from './api.js';
 import { t } from '../i18n.js';
 import { esc, cooldownButton } from './utils.js';
-import { createLoginFlow } from './student-login.js';
-import { getKnownTurmas, getToken, forgetTurma, clearToken } from './student-session.js';
+import { createLoginFlow, validateEmail } from './student-login.js';
+import { getKnownTurmas, getToken, setToken, forgetTurma, clearToken } from './student-session.js';
 
 function applyI18n(root) {
   root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
@@ -120,9 +120,28 @@ function startEmail(emailEl, root) {
     const err = emailEl.querySelector('.cdx-entrar-email-error');
     const doSend = async () => {
       err.textContent = '';
+      const email = validateEmail(input.value);
+      if (!email) { err.textContent = t('login.email_invalid'); return; }
       send.disabled = true;
       send.textContent = t('login.sending');
-      await flow.requestCode(input.value);
+      // 4a (Élder): e-mail-only fast path. If the address's most-recent turma is SIMPLE, the
+      // worker logs the student in here (no código) and we go straight into the trilha.
+      let entry;
+      try { entry = await trail.emailEntry({ email }); }
+      catch (e) { entry = (e && e.data && typeof e.data === 'object') ? e.data : { error: 'error' }; }
+      if (entry && entry.ok && entry.simple && entry.turma && entry.turma.session_token) {
+        const tt = entry.turma;
+        setToken(tt.client_slug, tt.turma_slug, tt.session_token);
+        location.href = buildTurmaUrl({ client_slug: tt.client_slug, turma_slug: tt.turma_slug, k: tt.token });
+        return;
+      }
+      // Not enrolled, or a hard error: surface it and stop (no código for an unknown e-mail).
+      if (!entry || (!entry.ok && entry.error)) {
+        err.textContent = entryErrorText((entry && entry.error) || 'error');
+        send.disabled = false; send.textContent = t('login.send_code'); return;
+      }
+      // Enrolled but NOT a simple turma: fall back to the normal OTP código flow.
+      await flow.requestCode(email);
       if (flow.state === 'code') { if (!flow.codeStillValid) startCooldown(60); renderCode(); return; }
       err.textContent = entryErrorText(flow.error, flow.retryAfter);
       send.disabled = false;
